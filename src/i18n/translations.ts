@@ -1,33 +1,13 @@
 export const translations = {
   de: {
-    designSystem: 'Design-System',
-    typography: 'Typografie',
-    colorPalette: 'Farbpalette',
-    buttons: 'Schaltflächen',
-    labels: 'Beschriftungen',
-    timePicker: 'Zeitauswahl',
-    languageSelector: 'Sprachauswahl',
-    settings: 'Einstellungen',
-
-    // Typography
-    header1: 'Überschrift 1',
-    header2: 'Überschrift 2',
-    body: 'Fließtext',
+    // Onboarding - Categories
     whatInterestsYou: 'Was interessiert dich?',
-    selectCategories: 'Wähle Kategorien aus, die du erkunden möchtest',
     selectCategoriesMinimum: 'Wähle mindestens 5 Kategorien aus, die du erkunden möchtest',
     loadingCategories: 'Kategorien werden geladen...',
 
-    // Colors
-    primary: 'Primär',
-    neutral: 'Neutral',
-    neutralLight: 'Neutral Hell',
-    background: 'Hintergrund',
-
-    // Buttons
-    primaryAction: 'Primäre Aktion',
+    // Common
     continue: 'Weiter',
-    categorySelection: 'Kategorienauswahl',
+    ok: 'OK',
 
     // Onboarding - Language
     selectLanguage: 'Sprache wählen',
@@ -47,21 +27,20 @@ export const translations = {
     allDescription: 'Eine Mischung aus allen Schwierigkeitsgraden',
 
     // Onboarding - Initialization
-    settingUpApp: 'App wird eingerichtet...',
+    settingUpApp: 'Lade Ihre App...',
+    settingUpLanguage: 'Sprache wird eingerichtet...',
     onlyTakeMoment: 'Dies dauert nur einen Moment',
     oops: 'Hoppla!',
     tryAgain: 'Erneut versuchen',
 
     // Onboarding - Notifications
     stayInformed: 'Bleiben Sie informiert mit täglichen Fakten',
-    chooseNotificationTime: 'Wählen Sie, wann Sie Ihr tägliches Faktum erhalten möchten',
     notificationRequired: 'Benachrichtigungen sind erforderlich, um fortzufahren und täglich Fakten zu erhalten',
     selectNotificationTime: 'Wählen Sie Ihre Benachrichtigungszeit',
     oneNotificationPerDay: 'Wir senden Ihnen nur eine Benachrichtigung pro Tag zu dieser Zeit.\nWir respektieren Ihre Aufmerksamkeit und werden Sie nicht zuspammen.',
     enableNotifications: 'Benachrichtigungen aktivieren',
     notificationPermissionRequired: 'Benachrichtigungsberechtigung erforderlich',
     notificationPermissionMessage: 'Um Benachrichtigungen zu aktivieren, gehen Sie zu Einstellungen > Facts A Day > Benachrichtigungen.',
-    ok: 'OK',
 
     // Onboarding - Success
     allSet: 'Alles erledigt!',
@@ -78,74 +57,16 @@ export const translations = {
 
     // Main App
     resetOnboarding: 'Onboarding zurücksetzen (Test)',
-
-    science: 'Wissenschaft',
-    technology: 'Technologie',
-    history: 'Geschichte',
-
-    // Labels
-    default: 'Standard',
-    selected: 'Ausgewählt',
-    disabled: 'Deaktiviert',
-    art: 'Kunst',
-    nature: 'Natur',
-    animals: 'Tiere',
-    space: 'Weltraum',
-    geography: 'Geografie',
-    literature: 'Literatur',
-    movies: 'Filme',
-    health: 'Gesundheit',
-    food: 'Essen',
-    politics: 'Politik',
-    business: 'Geschäft',
-    finance: 'Finanzen',
-    gaming: 'Gaming',
-    music: 'Musik',
-    travel: 'Reisen',
-    sports: 'Sport',
-
-    // Settings
-    toggle: 'Schalter',
-    slider: 'Schieberegler',
-    pushNotifications: 'Push-Benachrichtigungen',
-    textSize: 'Textgröße',
-    small: 'Klein',
-    medium: 'Mittel',
-    large: 'Groß',
-
-    // Theme
-    dark: 'Dunkel',
-    light: 'Hell',
   },
   en: {
-    designSystem: 'Design System',
-    typography: 'Typography',
-    colorPalette: 'Color Palette',
-    buttons: 'Buttons',
-    labels: 'Labels',
-    timePicker: 'Time Picker',
-    languageSelector: 'Language Selector',
-    settings: 'Settings',
-
-    // Typography
-    header1: 'Header 1',
-    header2: 'Header 2',
-    body: 'Body',
+    // Onboarding - Categories
     whatInterestsYou: 'What interests you?',
-    selectCategories: 'Select categories you\'d like to explore',
     selectCategoriesMinimum: 'Select at least 5 categories you\'d like to explore',
     loadingCategories: 'Loading categories...',
 
-    // Colors
-    primary: 'Primary',
-    neutral: 'Neutral',
-    neutralLight: 'Neutral Light',
-    background: 'Background',
-
-    // Buttons
-    primaryAction: 'Primary Action',
+    // Common
     continue: 'Continue',
-    categorySelection: 'Category Selection',
+    ok: 'OK',
 
     // Onboarding - Language
     selectLanguage: 'Select Language',
@@ -166,20 +87,19 @@ export const translations = {
 
     // Onboarding - Initialization
     settingUpApp: 'Setting up your app...',
+    settingUpLanguage: 'Setting up language...',
     onlyTakeMoment: 'This will only take a moment',
     oops: 'Oops!',
     tryAgain: 'Try Again',
 
     // Onboarding - Notifications
     stayInformed: 'Stay informed with daily facts',
-    chooseNotificationTime: 'Choose when you\'d like to receive your daily fact',
     notificationRequired: 'Notifications are required to continue and receive daily facts',
     selectNotificationTime: 'Select Your Notification Time',
     oneNotificationPerDay: 'We\'ll send you just one notification per day at this time.\nWe respect your attention and won\'t spam you.',
     enableNotifications: 'Enable Notifications',
     notificationPermissionRequired: 'Notification Permission Required',
     notificationPermissionMessage: 'To enable notifications, go to Settings > Facts A Day > Notifications.',
-    ok: 'OK',
 
     // Onboarding - Success
     allSet: 'All Set!',
@@ -196,74 +116,16 @@ export const translations = {
 
     // Main App
     resetOnboarding: 'Reset Onboarding (Testing)',
-
-    science: 'Science',
-    technology: 'Technology',
-    history: 'History',
-
-    // Labels
-    default: 'Default',
-    selected: 'Selected',
-    disabled: 'Disabled',
-    art: 'Art',
-    nature: 'Nature',
-    animals: 'Animals',
-    space: 'Space',
-    geography: 'Geography',
-    literature: 'Literature',
-    movies: 'Movies',
-    health: 'Health',
-    food: 'Food',
-    politics: 'Politics',
-    business: 'Business',
-    finance: 'Finance',
-    gaming: 'Gaming',
-    music: 'Music',
-    travel: 'Travel',
-    sports: 'Sports',
-
-    // Settings
-    toggle: 'Toggle',
-    slider: 'Slider',
-    pushNotifications: 'Push Notifications',
-    textSize: 'Text Size',
-    small: 'Small',
-    medium: 'Medium',
-    large: 'Large',
-
-    // Theme
-    dark: 'Dark',
-    light: 'Light',
   },
   es: {
-    designSystem: 'Sistema de Diseño',
-    typography: 'Tipografía',
-    colorPalette: 'Paleta de Colores',
-    buttons: 'Botones',
-    labels: 'Etiquetas',
-    timePicker: 'Selector de Hora',
-    languageSelector: 'Selector de Idioma',
-    settings: 'Configuración',
-
-    // Typography
-    header1: 'Encabezado 1',
-    header2: 'Encabezado 2',
-    body: 'Cuerpo',
+    // Onboarding - Categories
     whatInterestsYou: '¿Qué te interesa?',
-    selectCategories: 'Selecciona las categorías que te gustaría explorar',
     selectCategoriesMinimum: 'Selecciona al menos 5 categorías que te gustaría explorar',
     loadingCategories: 'Cargando categorías...',
 
-    // Colors
-    primary: 'Primario',
-    neutral: 'Neutral',
-    neutralLight: 'Neutral Claro',
-    background: 'Fondo',
-
-    // Buttons
-    primaryAction: 'Acción Principal',
+    // Common
     continue: 'Continuar',
-    categorySelection: 'Selección de Categoría',
+    ok: 'OK',
 
     // Onboarding - Language
     selectLanguage: 'Seleccionar Idioma',
@@ -284,20 +146,19 @@ export const translations = {
 
     // Onboarding - Initialization
     settingUpApp: 'Configurando tu aplicación...',
+    settingUpLanguage: 'Configurando idioma...',
     onlyTakeMoment: 'Esto solo tomará un momento',
     oops: '¡Ups!',
     tryAgain: 'Intentar de Nuevo',
 
     // Onboarding - Notifications
     stayInformed: 'Mantente informado con datos diarios',
-    chooseNotificationTime: 'Elige cuándo te gustaría recibir tu dato diario',
     notificationRequired: 'Las notificaciones son necesarias para continuar y recibir datos diarios',
     selectNotificationTime: 'Selecciona tu Hora de Notificación',
     oneNotificationPerDay: 'Te enviaremos solo una notificación por día a esta hora.\nRespetamos tu atención y no te enviaremos spam.',
     enableNotifications: 'Habilitar Notificaciones',
     notificationPermissionRequired: 'Permiso de Notificación Requerido',
     notificationPermissionMessage: 'Para activar notificaciones, ve a Ajustes > Facts A Day > Notificaciones.',
-    ok: 'OK',
 
     // Onboarding - Success
     allSet: '¡Todo Listo!',
@@ -314,74 +175,16 @@ export const translations = {
 
     // Main App
     resetOnboarding: 'Restablecer Configuración Inicial (Prueba)',
-
-    science: 'Ciencia',
-    technology: 'Tecnología',
-    history: 'Historia',
-
-    // Labels
-    default: 'Predeterminado',
-    selected: 'Seleccionado',
-    disabled: 'Deshabilitado',
-    art: 'Arte',
-    nature: 'Naturaleza',
-    animals: 'Animales',
-    space: 'Espacio',
-    geography: 'Geografía',
-    literature: 'Literatura',
-    movies: 'Películas',
-    health: 'Salud',
-    food: 'Comida',
-    politics: 'Política',
-    business: 'Negocios',
-    finance: 'Finanzas',
-    gaming: 'Videojuegos',
-    music: 'Música',
-    travel: 'Viajes',
-    sports: 'Deportes',
-
-    // Settings
-    toggle: 'Interruptor',
-    slider: 'Deslizador',
-    pushNotifications: 'Notificaciones Push',
-    textSize: 'Tamaño de Texto',
-    small: 'Pequeño',
-    medium: 'Mediano',
-    large: 'Grande',
-
-    // Theme
-    dark: 'Oscuro',
-    light: 'Claro',
   },
   fr: {
-    designSystem: 'Système de Design',
-    typography: 'Typographie',
-    colorPalette: 'Palette de Couleurs',
-    buttons: 'Boutons',
-    labels: 'Étiquettes',
-    timePicker: 'Sélecteur d\'Heure',
-    languageSelector: 'Sélecteur de Langue',
-    settings: 'Paramètres',
-
-    // Typography
-    header1: 'En-tête 1',
-    header2: 'En-tête 2',
-    body: 'Corps',
+    // Onboarding - Categories
     whatInterestsYou: 'Qu\'est-ce qui vous intéresse?',
-    selectCategories: 'Sélectionnez les catégories que vous aimeriez explorer',
     selectCategoriesMinimum: 'Sélectionnez au moins 5 catégories que vous aimeriez explorer',
     loadingCategories: 'Chargement des catégories...',
 
-    // Colors
-    primary: 'Primaire',
-    neutral: 'Neutre',
-    neutralLight: 'Neutre Clair',
-    background: 'Arrière-plan',
-
-    // Buttons
-    primaryAction: 'Action Principale',
+    // Common
     continue: 'Continuer',
-    categorySelection: 'Sélection de Catégorie',
+    ok: 'OK',
 
     // Onboarding - Language
     selectLanguage: 'Sélectionner la Langue',
@@ -402,20 +205,19 @@ export const translations = {
 
     // Onboarding - Initialization
     settingUpApp: 'Configuration de votre application...',
+    settingUpLanguage: 'Configuration de la langue...',
     onlyTakeMoment: 'Cela ne prendra qu\'un instant',
     oops: 'Oups!',
     tryAgain: 'Réessayer',
 
     // Onboarding - Notifications
     stayInformed: 'Restez informé avec des faits quotidiens',
-    chooseNotificationTime: 'Choisissez quand vous souhaitez recevoir votre fait quotidien',
     notificationRequired: 'Les notifications sont nécessaires pour continuer et recevoir des faits quotidiens',
     selectNotificationTime: 'Sélectionnez Votre Heure de Notification',
     oneNotificationPerDay: 'Nous vous enverrons une seule notification par jour à cette heure.\nNous respectons votre attention et ne vous spammerons pas.',
     enableNotifications: 'Activer les Notifications',
     notificationPermissionRequired: 'Permission de Notification Requise',
     notificationPermissionMessage: 'Pour activer les notifications, allez dans Réglages > Facts A Day > Notifications.',
-    ok: 'OK',
 
     // Onboarding - Success
     allSet: 'Tout est Prêt!',
@@ -432,74 +234,16 @@ export const translations = {
 
     // Main App
     resetOnboarding: 'Réinitialiser l\'Intégration (Test)',
-
-    science: 'Science',
-    technology: 'Technologie',
-    history: 'Histoire',
-
-    // Labels
-    default: 'Par Défaut',
-    selected: 'Sélectionné',
-    disabled: 'Désactivé',
-    art: 'Art',
-    nature: 'Nature',
-    animals: 'Animaux',
-    space: 'Espace',
-    geography: 'Géographie',
-    literature: 'Littérature',
-    movies: 'Films',
-    health: 'Santé',
-    food: 'Nourriture',
-    politics: 'Politique',
-    business: 'Affaires',
-    finance: 'Finance',
-    gaming: 'Jeux Vidéo',
-    music: 'Musique',
-    travel: 'Voyage',
-    sports: 'Sports',
-
-    // Settings
-    toggle: 'Interrupteur',
-    slider: 'Curseur',
-    pushNotifications: 'Notifications Push',
-    textSize: 'Taille du Texte',
-    small: 'Petit',
-    medium: 'Moyen',
-    large: 'Grand',
-
-    // Theme
-    dark: 'Sombre',
-    light: 'Clair',
   },
   ja: {
-    designSystem: 'デザインシステム',
-    typography: 'タイポグラフィ',
-    colorPalette: 'カラーパレット',
-    buttons: 'ボタン',
-    labels: 'ラベル',
-    timePicker: '時刻選択',
-    languageSelector: '言語選択',
-    settings: '設定',
-
-    // Typography
-    header1: '見出し1',
-    header2: '見出し2',
-    body: '本文',
+    // Onboarding - Categories
     whatInterestsYou: '何に興味がありますか？',
-    selectCategories: '探索したいカテゴリーを選択してください',
     selectCategoriesMinimum: '探索したいカテゴリーを少なくとも5つ選択してください',
     loadingCategories: 'カテゴリーを読み込んでいます...',
 
-    // Colors
-    primary: 'プライマリ',
-    neutral: 'ニュートラル',
-    neutralLight: 'ニュートラルライト',
-    background: '背景',
-
-    // Buttons
-    primaryAction: 'プライマリアクション',
+    // Common
     continue: '続ける',
-    categorySelection: 'カテゴリー選択',
+    ok: 'OK',
 
     // Onboarding - Language
     selectLanguage: '言語を選択',
@@ -520,20 +264,19 @@ export const translations = {
 
     // Onboarding - Initialization
     settingUpApp: 'アプリをセットアップ中...',
+    settingUpLanguage: '言語を設定中...',
     onlyTakeMoment: 'これはほんの少し時間がかかります',
     oops: 'おっと!',
     tryAgain: '再試行',
 
     // Onboarding - Notifications
     stayInformed: '毎日の豆知識で情報を得よう',
-    chooseNotificationTime: '毎日の豆知識を受け取る時間を選択してください',
     notificationRequired: '続行して毎日の豆知識を受け取るには通知が必要です',
     selectNotificationTime: '通知時間を選択',
     oneNotificationPerDay: 'この時間に1日1回だけ通知をお送りします。\nあなたの時間を尊重し、スパムは送りません。',
     enableNotifications: '通知を有効にする',
     notificationPermissionRequired: '通知の許可が必要です',
     notificationPermissionMessage: '通知を有効にするには、設定 > Facts A Day > 通知に移動してください。',
-    ok: 'OK',
 
     // Onboarding - Success
     allSet: '準備完了！',
@@ -550,74 +293,16 @@ export const translations = {
 
     // Main App
     resetOnboarding: 'オンボーディングをリセット（テスト）',
-
-    science: '科学',
-    technology: 'テクノロジー',
-    history: '歴史',
-
-    // Labels
-    default: 'デフォルト',
-    selected: '選択済み',
-    disabled: '無効',
-    art: 'アート',
-    nature: '自然',
-    animals: '動物',
-    space: '宇宙',
-    geography: '地理',
-    literature: '文学',
-    movies: '映画',
-    health: '健康',
-    food: '食べ物',
-    politics: '政治',
-    business: 'ビジネス',
-    finance: 'ファイナンス',
-    gaming: 'ゲーム',
-    music: '音楽',
-    travel: '旅行',
-    sports: 'スポーツ',
-
-    // Settings
-    toggle: 'トグル',
-    slider: 'スライダー',
-    pushNotifications: 'プッシュ通知',
-    textSize: 'テキストサイズ',
-    small: '小',
-    medium: '中',
-    large: '大',
-
-    // Theme
-    dark: 'ダーク',
-    light: 'ライト',
   },
   ko: {
-    designSystem: '디자인 시스템',
-    typography: '타이포그래피',
-    colorPalette: '컬러 팔레트',
-    buttons: '버튼',
-    labels: '라벨',
-    timePicker: '시간 선택기',
-    languageSelector: '언어 선택기',
-    settings: '설정',
-
-    // Typography
-    header1: '제목 1',
-    header2: '제목 2',
-    body: '본문',
+    // Onboarding - Categories
     whatInterestsYou: '무엇에 관심이 있으신가요?',
-    selectCategories: '탐색하고 싶은 카테고리를 선택하세요',
     selectCategoriesMinimum: '탐색하고 싶은 카테고리를 최소 5개 선택하세요',
     loadingCategories: '카테고리를 로드하는 중...',
 
-    // Colors
-    primary: '기본',
-    neutral: '중립',
-    neutralLight: '밝은 중립',
-    background: '배경',
-
-    // Buttons
-    primaryAction: '기본 동작',
+    // Common
     continue: '계속',
-    categorySelection: '카테고리 선택',
+    ok: '확인',
 
     // Onboarding - Language
     selectLanguage: '언어 선택',
@@ -638,20 +323,19 @@ export const translations = {
 
     // Onboarding - Initialization
     settingUpApp: '앱 설정 중...',
+    settingUpLanguage: '언어 설정 중...',
     onlyTakeMoment: '잠시만 기다려 주세요',
     oops: '앗!',
     tryAgain: '다시 시도',
 
     // Onboarding - Notifications
     stayInformed: '매일 새로운 정보를 받아보세요',
-    chooseNotificationTime: '매일 정보를 받을 시간을 선택하세요',
     notificationRequired: '계속하고 매일 정보를 받으려면 알림이 필요합니다',
     selectNotificationTime: '알림 시간 선택',
     oneNotificationPerDay: '이 시간에 하루에 한 번만 알림을 보내드립니다.\n귀하의 시간을 존중하며 스팸을 보내지 않습니다.',
     enableNotifications: '알림 활성화',
     notificationPermissionRequired: '알림 권한 필요',
     notificationPermissionMessage: '알림을 활성화하려면 설정 > Facts A Day > 알림으로 이동하세요.',
-    ok: '확인',
 
     // Onboarding - Success
     allSet: '모두 완료!',
@@ -668,74 +352,16 @@ export const translations = {
 
     // Main App
     resetOnboarding: '온보딩 재설정 (테스트)',
-
-    science: '과학',
-    technology: '기술',
-    history: '역사',
-
-    // Labels
-    default: '기본값',
-    selected: '선택됨',
-    disabled: '비활성화',
-    art: '예술',
-    nature: '자연',
-    animals: '동물',
-    space: '우주',
-    geography: '지리',
-    literature: '문학',
-    movies: '영화',
-    health: '건강',
-    food: '음식',
-    politics: '정치',
-    business: '비즈니스',
-    finance: '금융',
-    gaming: '게임',
-    music: '음악',
-    travel: '여행',
-    sports: '스포츠',
-
-    // Settings
-    toggle: '토글',
-    slider: '슬라이더',
-    pushNotifications: '푸시 알림',
-    textSize: '텍스트 크기',
-    small: '작게',
-    medium: '보통',
-    large: '크게',
-
-    // Theme
-    dark: '다크',
-    light: '라이트',
   },
   tr: {
-    designSystem: 'Tasarım Sistemi',
-    typography: 'Tipografi',
-    colorPalette: 'Renk Paleti',
-    buttons: 'Butonlar',
-    labels: 'Etiketler',
-    timePicker: 'Saat Seçici',
-    languageSelector: 'Dil Seçici',
-    settings: 'Ayarlar',
-
-    // Typography
-    header1: 'Başlık 1',
-    header2: 'Başlık 2',
-    body: 'Gövde',
+    // Onboarding - Categories
     whatInterestsYou: 'İlginizi çeken nedir?',
-    selectCategories: 'Keşfetmek istediğiniz kategorileri seçin',
     selectCategoriesMinimum: 'Keşfetmek istediğiniz en az 5 kategori seçin',
     loadingCategories: 'Kategoriler yükleniyor...',
 
-    // Colors
-    primary: 'Birincil',
-    neutral: 'Nötr',
-    neutralLight: 'Açık Nötr',
-    background: 'Arka Plan',
-
-    // Buttons
-    primaryAction: 'Birincil Eylem',
+    // Common
     continue: 'Devam Et',
-    categorySelection: 'Kategori Seçimi',
+    ok: 'Tamam',
 
     // Onboarding - Language
     selectLanguage: 'Dil Seç',
@@ -756,20 +382,19 @@ export const translations = {
 
     // Onboarding - Initialization
     settingUpApp: 'Uygulamanız kuruluyor...',
+    settingUpLanguage: 'Dil ayarlanıyor...',
     onlyTakeMoment: 'Bu sadece bir dakika sürecek',
     oops: 'Hay aksi!',
     tryAgain: 'Tekrar Dene',
 
     // Onboarding - Notifications
     stayInformed: 'Her gün yeni bilgiler öğrenin',
-    chooseNotificationTime: 'Günlük bilginizi almak istediğiniz zamanı seçin',
     notificationRequired: 'Devam etmek ve günlük bilgileri almak için bildirimler gereklidir',
     selectNotificationTime: 'Bildirim Saatinizi Seçin',
     oneNotificationPerDay: 'Size bu saatte günde sadece bir bildirim göndereceğiz.\nDikkatinize saygı duyuyoruz ve spam göndermeyeceğiz.',
     enableNotifications: 'Bildirimleri Etkinleştir',
     notificationPermissionRequired: 'Bildirim İzni Gerekli',
     notificationPermissionMessage: 'Bildirimleri etkinleştirmek için Ayarlar > Facts A Day > Bildirimler bölümüne gidin.',
-    ok: 'Tamam',
 
     // Onboarding - Success
     allSet: 'Hazırsınız!',
@@ -786,74 +411,16 @@ export const translations = {
 
     // Main App
     resetOnboarding: 'Başlangıç Kurulumunu Sıfırla (Test)',
-
-    science: 'Bilim',
-    technology: 'Teknoloji',
-    history: 'Tarih',
-
-    // Labels
-    default: 'Varsayılan',
-    selected: 'Seçili',
-    disabled: 'Devre Dışı',
-    art: 'Sanat',
-    nature: 'Doğa',
-    animals: 'Hayvanlar',
-    space: 'Uzay',
-    geography: 'Coğrafya',
-    literature: 'Edebiyat',
-    movies: 'Filmler',
-    health: 'Sağlık',
-    food: 'Yemek',
-    politics: 'Politika',
-    business: 'İş',
-    finance: 'Finans',
-    gaming: 'Oyun',
-    music: 'Müzik',
-    travel: 'Seyahat',
-    sports: 'Spor',
-
-    // Settings
-    toggle: 'Anahtar',
-    slider: 'Kaydırıcı',
-    pushNotifications: 'Anlık Bildirimler',
-    textSize: 'Metin Boyutu',
-    small: 'Küçük',
-    medium: 'Orta',
-    large: 'Büyük',
-
-    // Theme
-    dark: 'Koyu',
-    light: 'Açık',
   },
   zh: {
-    designSystem: '设计系统',
-    typography: '排版',
-    colorPalette: '调色板',
-    buttons: '按钮',
-    labels: '标签',
-    timePicker: '时间选择器',
-    languageSelector: '语言选择器',
-    settings: '设置',
-
-    // Typography
-    header1: '标题1',
-    header2: '标题2',
-    body: '正文',
+    // Onboarding - Categories
     whatInterestsYou: '你对什么感兴趣？',
-    selectCategories: '选择您想要探索的类别',
     selectCategoriesMinimum: '选择至少5个您想要探索的类别',
     loadingCategories: '正在加载类别...',
 
-    // Colors
-    primary: '主色',
-    neutral: '中性色',
-    neutralLight: '浅中性色',
-    background: '背景',
-
-    // Buttons
-    primaryAction: '主要操作',
+    // Common
     continue: '继续',
-    categorySelection: '类别选择',
+    ok: '确定',
 
     // Onboarding - Language
     selectLanguage: '选择语言',
@@ -874,20 +441,19 @@ export const translations = {
 
     // Onboarding - Initialization
     settingUpApp: '正在设置您的应用...',
+    settingUpLanguage: '正在设置语言...',
     onlyTakeMoment: '这只需要一会儿',
     oops: '哎呀!',
     tryAgain: '重试',
 
     // Onboarding - Notifications
     stayInformed: '通过每日知识保持了解',
-    chooseNotificationTime: '选择您希望接收每日知识的时间',
     notificationRequired: '需要启用通知才能继续并接收每日知识',
     selectNotificationTime: '选择您的通知时间',
     oneNotificationPerDay: '我们每天只会在此时间向您发送一条通知。\n我们尊重您的时间，不会发送垃圾信息。',
     enableNotifications: '启用通知',
     notificationPermissionRequired: '需要通知权限',
     notificationPermissionMessage: '要启用通知，请前往 设置 > Facts A Day > 通知。',
-    ok: '确定',
 
     // Onboarding - Success
     allSet: '一切就绪！',
@@ -904,44 +470,6 @@ export const translations = {
 
     // Main App
     resetOnboarding: '重置引导设置（测试）',
-
-    science: '科学',
-    technology: '技术',
-    history: '历史',
-
-    // Labels
-    default: '默认',
-    selected: '已选择',
-    disabled: '已禁用',
-    art: '艺术',
-    nature: '自然',
-    animals: '动物',
-    space: '太空',
-    geography: '地理',
-    literature: '文学',
-    movies: '电影',
-    health: '健康',
-    food: '美食',
-    politics: '政治',
-    business: '商业',
-    finance: '金融',
-    gaming: '游戏',
-    music: '音乐',
-    travel: '旅行',
-    sports: '体育',
-
-    // Settings
-    toggle: '开关',
-    slider: '滑块',
-    pushNotifications: '推送通知',
-    textSize: '文字大小',
-    small: '小',
-    medium: '中',
-    large: '大',
-
-    // Theme
-    dark: '深色',
-    light: '浅色',
   },
 };
 

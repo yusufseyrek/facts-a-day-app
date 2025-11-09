@@ -9,6 +9,7 @@ import { tokens } from "../../src/theme/tokens";
 import { H1, BodyText, Button, ProgressIndicator } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation, type SupportedLocale } from "../../src/i18n";
+import { useOnboarding } from "../../src/contexts";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -95,6 +96,8 @@ export default function LanguageSelectionScreen() {
   const router = useRouter();
   const [selectedLanguage, setSelectedLanguage] =
     useState<SupportedLocale>(locale);
+  const { isInitializing, initializationError, initializeOnboarding } =
+    useOnboarding();
 
   const handleLanguageSelect = (languageCode: SupportedLocale) => {
     setSelectedLanguage(languageCode);
@@ -102,9 +105,15 @@ export default function LanguageSelectionScreen() {
     setLocale(languageCode);
   };
 
-  const handleContinue = () => {
-    // Navigate to initialization
-    router.push("/onboarding");
+  const handleContinue = async () => {
+    // Initialize onboarding with selected language
+    const success = await initializeOnboarding(selectedLanguage);
+
+    if (success) {
+      // Navigate to categories on successful initialization
+      router.push("/onboarding/categories");
+    }
+    // If failed, error state will be shown automatically
   };
 
   // Split languages into rows of 3
@@ -179,7 +188,20 @@ export default function LanguageSelectionScreen() {
         </ScrollView>
 
         <ButtonContainer>
-          <Button onPress={handleContinue}>{t("continue")}</Button>
+          <Button onPress={handleContinue} loading={isInitializing}>
+            {isInitializing ? t("settingUpLanguage") : t("continue")}
+          </Button>
+
+          {initializationError && (
+            <YStack gap="$sm" paddingTop="$md">
+              <BodyText color="$error" textAlign="center" fontSize={tokens.fontSize.small}>
+                {initializationError}
+              </BodyText>
+              <BodyText color="$textSecondary" textAlign="center" fontSize={tokens.fontSize.small}>
+                {t("checkInternetConnection")}
+              </BodyText>
+            </YStack>
+          )}
         </ButtonContainer>
       </ContentContainer>
     </Container>

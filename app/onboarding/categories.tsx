@@ -15,6 +15,7 @@ import {
 } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
+import { useOnboarding } from "../../src/contexts";
 import * as db from "../../src/services/database";
 import { getLucideIcon } from "../../src/utils/iconMapper";
 
@@ -51,9 +52,16 @@ export default function Categories() {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const router = useRouter();
+  const { selectedCategories, setSelectedCategories, isInitialized } = useOnboarding();
   const [categories, setCategories] = useState<db.Category[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Guard: redirect to language selection if not initialized
+  useEffect(() => {
+    if (!isInitialized) {
+      router.replace("/onboarding/language");
+    }
+  }, [isInitialized, router]);
 
   useEffect(() => {
     loadCategories();
@@ -71,17 +79,16 @@ export default function Categories() {
   };
 
   const toggleCategory = (slug: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
+    setSelectedCategories(
+      selectedCategories.includes(slug)
+        ? selectedCategories.filter((s) => s !== slug)
+        : [...selectedCategories, slug]
     );
   };
 
   const handleContinue = () => {
     // Navigate to difficulty selection
-    router.push({
-      pathname: "/onboarding/difficulty",
-      params: { selectedCategories: JSON.stringify(selectedCategories) },
-    });
+    router.push("/onboarding/difficulty");
   };
 
   // Split categories into rows of 3

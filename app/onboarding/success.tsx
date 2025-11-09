@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack } from "tamagui";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import { CheckCircle } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
 import { H1, BodyText } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
-import * as onboardingService from "../../src/services/onboarding";
+import { useOnboarding } from "../../src/contexts";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -50,17 +50,13 @@ export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const params = useLocalSearchParams();
-  const [downloadProgress, setDownloadProgress] = useState(0);
-  const [downloadComplete, setDownloadComplete] = useState(false);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
-
-  // Get data from previous steps
-  const selectedCategories = params.selectedCategories
-    ? JSON.parse(params.selectedCategories as string)
-    : [];
-  const difficulty = (params.difficulty as string) || "all";
-  const notificationTime = params.notificationTime as string;
+  const {
+    isDownloadingFacts,
+    downloadProgress,
+    downloadError,
+    downloadFacts,
+    completeOnboarding,
+  } = useOnboarding();
 
   useEffect(() => {
     downloadFactsAndCompleteOnboarding();
@@ -68,48 +64,28 @@ export default function OnboardingSuccessScreen() {
 
   const downloadFactsAndCompleteOnboarding = async () => {
     try {
-      // Simulate progress updates
-      setDownloadProgress(10);
+      // Download facts
+      const success = await downloadFacts(locale);
 
-      const result = await onboardingService.fetchAllFacts(
-        locale,
-        selectedCategories,
-        difficulty
-      );
-
-      if (result.success) {
-        setDownloadProgress(80);
-
+      if (success) {
         // Complete onboarding
-        await onboardingService.completeOnboarding({
-          selectedCategories,
-          difficultyPreference: difficulty,
-        });
-
-        setDownloadProgress(100);
-        setDownloadComplete(true);
+        await completeOnboarding();
 
         // Navigate to main app after a short delay
         setTimeout(() => {
           router.replace("/");
         }, 2500);
-      } else {
-        setDownloadError(result.error || "Failed to download facts");
       }
     } catch (error) {
       console.error("Error during onboarding completion:", error);
-      setDownloadError(
-        error instanceof Error ? error.message : "Unknown error occurred"
-      );
     }
   };
 
   const handleRetry = () => {
-    setDownloadError(null);
-    setDownloadProgress(0);
-    setDownloadComplete(false);
     downloadFactsAndCompleteOnboarding();
   };
+
+  const downloadComplete = !isDownloadingFacts && downloadProgress?.percentage === 100;
 
   return (
     <Container>
@@ -169,7 +145,7 @@ export default function OnboardingSuccessScreen() {
                 fontSize={tokens.fontSize.h2}
                 color="$primary"
               >
-                {downloadProgress}%
+                {downloadProgress?.percentage || 0}%
               </BodyText>
               <BodyText
                 color="$textSecondary"

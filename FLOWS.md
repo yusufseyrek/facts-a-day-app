@@ -44,40 +44,45 @@ Check Onboarding Status (AsyncStorage)
                           ↓
                     Set locale immediately
                           ↓
-                    [Step 2] Initialization
+                    User clicks Continue
                           ↓
-                    Register Device
+                    Initialize Onboarding (in background):
+                      - Show loading state
+                      - Register Device
+                      - Fetch Metadata (categories, content_types)
+                      - Store in SQLite
                           ↓
-                    Fetch Metadata (categories, content_types)
+                    ├─ Error → Show error, allow retry
+                    └─ Success → Navigate to Categories
                           ↓
-                    Store in SQLite
-                          ↓
-                    [Step 3] Categories Selection
+                    [Step 2] Categories Selection
                           ↓
                     User selects interests (minimum 5)
                           ↓
-                    [Step 4] Difficulty Selection
+                    [Step 3] Difficulty Selection
                           ↓
                     User selects difficulty level
                           ↓
-                    [Step 5] Notifications (REQUIRED)
+                    [Step 4] Notifications (REQUIRED)
                           ↓
                     Set notification time preference
                           ↓
                     Request Notification Permissions
                           ↓
                     ├─ Denied → Show Alert, Block Progress
-                    └─ Granted → Complete Onboarding
+                    └─ Granted → Download Facts & Complete
+                                      ↓
+                                Download all facts with progress
                                       ↓
                                 Mark Complete in AsyncStorage
                                       ↓
-                                Navigate to Success Screen
+                                Navigate to Main App
 ```
 
 ### Step-by-Step Details
 
-#### Step 1: Language Selection (`/onboarding/language`)
-**Purpose**: Allow users to select their preferred language for the app
+#### Step 1: Language Selection & Initialization (`/onboarding/language`)
+**Purpose**: Allow users to select their preferred language and initialize the app
 
 **UI Elements**:
 - Progress: 1/4
@@ -87,13 +92,26 @@ Check Onboarding Status (AsyncStorage)
   - Language name in native script
 - 8 supported languages: English, German, Spanish, French, Japanese, Korean, Turkish, Chinese
 - Continue button (always enabled, uses current locale as default)
+- Loading spinner (shown during initialization)
+- Error message (shown if initialization fails)
 
 **Process**:
 1. Display language options in 3-column grid layout
 2. User selects a language by tapping card
 3. **Immediately set locale** using `setLocale(languageCode)` on selection
 4. UI updates in real-time to show selected language
-5. Navigate to initialization screen
+5. User clicks Continue button
+6. **Initialization starts** (via `initializeOnboarding(selectedLanguage)`):
+   - Button shows "Getting Ready..." and disables
+   - Loading spinner appears below button
+   - Backend calls:
+     - Get device information (platform, model, OS version, language)
+     - Call `POST /api/devices/register` with device info
+     - Receive and store `device_key` in SecureStore
+     - Call `GET /api/metadata?language={locale}`
+     - Store categories and content_types in SQLite
+7. On success → Navigate to `/onboarding/categories`
+8. On error → Show error message with retry instructions
 
 **Languages**:
 - 🇬🇧 English (en)
@@ -109,38 +127,31 @@ Check Onboarding Status (AsyncStorage)
 - No validation required - defaults to current system locale
 - User can select any language regardless of system settings
 
+**Error Handling**:
+- Network errors → Show error message: "Check your internet connection"
+- API errors → Display error with retry instructions
+- User can click Continue again to retry
+
 **Storage**:
 - AsyncStorage: `@app_locale` (automatically saved by i18n system)
+- SecureStore: `device_key` (saved during initialization)
+- SQLite: `categories` table, `content_types` table (saved during initialization)
+
+**State Management**:
+- Uses `OnboardingContext` for state management
+- `isInitializing`: Controls loading state
+- `initializationError`: Stores error message if initialization fails
+- `isInitialized`: Tracks whether initialization completed successfully
 
 **Navigation**:
 ```javascript
-router.push('/onboarding'); // Navigate to initialization
+// On successful initialization
+router.push('/onboarding/categories');
 ```
 
 ---
 
-#### Step 2: Initialization (`/onboarding/index`)
-**Purpose**: Register device and fetch metadata
-
-**Process**:
-1. Get device information (platform, model, OS version, language)
-2. Call `POST /api/devices/register` with device info
-3. Receive and store `device_key` in SecureStore
-4. Call `GET /api/metadata?language={locale}`
-5. Store categories and content_types in SQLite
-6. Navigate to `/onboarding/categories`
-
-**Error Handling**:
-- Network errors → Show retry button
-- API errors → Display error message with retry option
-
-**Storage**:
-- SecureStore: `device_key`
-- SQLite: `categories` table, `content_types` table
-
----
-
-#### Step 3: Categories (`/onboarding/categories`)
+#### Step 2: Categories (`/onboarding/categories`)
 **Purpose**: Let users select categories they're interested in
 
 **UI Elements**:
@@ -151,28 +162,32 @@ router.push('/onboarding'); // Navigate to initialization
 - Continue button (disabled until at least 5 categories selected)
 
 **Process**:
-1. Load categories from SQLite
-2. Display as grid with Lucide icons
-3. User selects at least 5 categories
-4. Pass `selectedCategories` array to next step
+1. Check if onboarding is initialized (guard redirect if not)
+2. Load categories from SQLite
+3. Display as grid with Lucide icons
+4. User selects at least 5 categories
+5. Categories stored in `OnboardingContext`
 
 **Validation**:
 - At least 5 categories must be selected
 - Categories are loaded from database (not hardcoded)
+- Redirects to language screen if initialization not complete
+
+**State Management**:
+- Uses `OnboardingContext` for state management
+- `selectedCategories`: Array of selected category slugs
+- `setSelectedCategories`: Updates selected categories
+- `isInitialized`: Guards against accessing screen before initialization
 
 **Navigation**:
 ```javascript
-router.push({
-  pathname: '/onboarding/difficulty',
-  params: {
-    selectedCategories: JSON.stringify(selectedCategories)
-  }
-});
+// No params needed - using context
+router.push('/onboarding/difficulty');
 ```
 
 ---
 
-#### Step 4: Difficulty (`/onboarding/difficulty`)
+#### Step 3: Difficulty (`/onboarding/difficulty`)
 **Purpose**: Let users select their preferred fact complexity
 
 **UI Elements**:
@@ -185,25 +200,24 @@ router.push({
 - Continue button (always enabled, defaults to "all")
 
 **Process**:
-1. Retrieve `selectedCategories` from params
-2. Display difficulty options
-3. User selects one option (default: "all")
-4. Pass both `selectedCategories` and `difficulty` to next step
+1. Display difficulty options
+2. User selects one option (default: "all")
+3. Difficulty stored in `OnboardingContext`
+
+**State Management**:
+- Uses `OnboardingContext` for state management
+- `difficulty`: Selected difficulty level
+- `setDifficulty`: Updates difficulty preference
 
 **Navigation**:
 ```javascript
-router.push({
-  pathname: '/onboarding/notifications',
-  params: {
-    selectedCategories: JSON.stringify(selectedCategories),
-    difficulty: selectedDifficulty
-  }
-});
+// No params needed - using context
+router.push('/onboarding/notifications');
 ```
 
 ---
 
-#### Step 5: Notifications (`/onboarding/notifications`) ⚠️ CRITICAL
+#### Step 4: Notifications (`/onboarding/notifications`) ⚠️ CRITICAL
 **Purpose**: Request notification permissions and set notification time preference
 
 **🚨 MANDATORY REQUIREMENTS**:
@@ -237,15 +251,15 @@ router.push({
 
 4. **Navigation on Success**:
    ```javascript
-   router.push({
-     pathname: '/onboarding/success',
-     params: {
-       selectedCategories: JSON.stringify(selectedCategories),
-       difficulty: difficulty,
-       notificationTime: notificationTime.toISOString(),
-     },
-   });
+   // No params needed - using context
+   router.push('/onboarding/success');
    ```
+
+**State Management**:
+- Uses `OnboardingContext` for state management
+- `notificationTime`: User's preferred notification time
+- `setNotificationTime`: Updates notification time preference
+- All preferences (categories, difficulty, notificationTime) stored in context
 
 **Error States**:
 1. **Permission Denied**:
@@ -425,22 +439,103 @@ CREATE TABLE facts (
 
 ---
 
+## State Management
+
+### OnboardingContext Architecture
+
+The app uses React Context API for centralized onboarding state management. All onboarding screens access shared state through the `useOnboarding()` hook.
+
+**Context Provider**:
+```tsx
+<OnboardingProvider>
+  {/* All onboarding screens have access to context */}
+</OnboardingProvider>
+```
+
+**State Structure**:
+```typescript
+interface OnboardingState {
+  // User selections
+  selectedCategories: string[];
+  difficulty: DifficultyLevel;
+  notificationTime: Date;
+
+  // Initialization state
+  isInitialized: boolean;
+  isInitializing: boolean;
+  initializationError: string | null;
+
+  // Facts download state
+  isDownloadingFacts: boolean;
+  downloadProgress: {
+    downloaded: number;
+    total: number;
+    percentage: number;
+  } | null;
+  downloadError: string | null;
+}
+```
+
+**Available Methods**:
+- `setSelectedCategories(categories: string[])` - Update selected categories
+- `setDifficulty(difficulty: DifficultyLevel)` - Update difficulty preference
+- `setNotificationTime(time: Date)` - Update notification time
+- `initializeOnboarding(locale: SupportedLocale)` - Register device and fetch metadata
+- `retryInitialization()` - Retry initialization with last used locale
+- `downloadFacts(locale: SupportedLocale)` - Download facts with progress tracking
+- `completeOnboarding()` - Save preferences and mark onboarding complete
+- `resetOnboarding()` - Reset all state
+
+**Benefits**:
+- ✅ No route params needed - all state in context
+- ✅ Automatic state synchronization across screens
+- ✅ Built-in loading and error states
+- ✅ Type-safe state management
+- ✅ Easy to test and debug
+
+**Usage Example**:
+```tsx
+import { useOnboarding } from '../../src/contexts';
+
+function CategoryScreen() {
+  const { selectedCategories, setSelectedCategories, isInitialized } = useOnboarding();
+
+  // Guard: redirect if not initialized
+  if (!isInitialized) {
+    router.replace('/onboarding/language');
+  }
+
+  // Use state and methods
+  const toggleCategory = (slug: string) => {
+    setSelectedCategories(
+      selectedCategories.includes(slug)
+        ? selectedCategories.filter(s => s !== slug)
+        : [...selectedCategories, slug]
+    );
+  };
+}
+```
+
+---
+
 ## File Structure
 
 ```
 app/
-├── _layout.tsx                    # Root layout with onboarding check
+├── _layout.tsx                    # Root layout with onboarding check & OnboardingProvider
 ├── index.tsx                      # Main app (after onboarding)
 └── onboarding/
     ├── _layout.tsx                # Onboarding stack navigation
-    ├── language.tsx               # Step 1: Language selection
-    ├── index.tsx                  # Step 2: Initialization
-    ├── categories.tsx             # Step 3: Category selection (min 5)
-    ├── difficulty.tsx             # Step 4: Difficulty selection
-    ├── notifications.tsx          # Step 5: Permissions + Time preference
+    ├── language.tsx               # Step 1: Language selection + initialization
+    ├── categories.tsx             # Step 2: Category selection (min 5)
+    ├── difficulty.tsx             # Step 3: Difficulty selection
+    ├── notifications.tsx          # Step 4: Permissions + Time preference
     └── success.tsx                # Download screen + Completion
 
 src/
+├── contexts/
+│   ├── OnboardingContext.tsx     # Centralized onboarding state management
+│   └── index.ts                  # Context exports
 ├── services/
 │   ├── onboarding.ts             # Onboarding orchestration
 │   ├── api.ts                    # Backend API client
@@ -462,9 +557,10 @@ src/
 ## Testing Checklist
 
 ### Happy Path
-- [ ] Fresh install → Language selection → Onboarding → Complete → Main App
+- [ ] Fresh install → Language selection → Initialize on Continue → Complete → Main App
 - [ ] Language selection → Select language → UI updates immediately
-- [ ] Initialization → Device registered → Metadata fetched
+- [ ] Language selection → Click Continue → Initialization starts (loading state shown)
+- [ ] Initialization → Device registered → Metadata fetched → Navigate to categories
 - [ ] Categories selection → At least 5 selected → Can proceed
 - [ ] Difficulty selection → Default "all"
 - [ ] Notifications → Set time → Grant permission → Navigate to success
@@ -472,22 +568,25 @@ src/
 - [ ] Relaunch → Goes to Main App in selected language
 
 ### Error Paths
-- [ ] Network failure on init → Retry works
-- [ ] Network failure on metadata fetch → Retry works
+- [ ] Language screen → Network failure on Continue → Error shown with retry instructions
+- [ ] Language screen → Click Continue again → Retry initialization works
+- [ ] Categories: Access before initialization → Redirects to language screen
 - [ ] Categories: Less than 5 selected → Button disabled
 - [ ] Permission denied → Alert shown directing to Settings
 - [ ] Permission denied multiple times → Still blocks progress
 - [ ] Kill app during download → Restart from language selection
 
 ### Edge Cases
-- [ ] No network → Clear error messages on init screen
-- [ ] Slow network → Progress shown on success screen
+- [ ] No network → Clear error messages on language screen after Continue click
+- [ ] Slow network → Loading state shown during initialization
 - [ ] Language selection → All 8 languages display correctly
 - [ ] Language changes immediately reflect in UI
 - [ ] Backend returns 0 facts → Error shown on success screen
 - [ ] User denies then grants permission → Works correctly
 - [ ] Database write fails → Transaction rollback
 - [ ] Time picker works on both iOS and Android
+- [ ] Context state persists across screen navigation
+- [ ] Guards prevent accessing categories before initialization
 
 ---
 
@@ -495,14 +594,18 @@ src/
 
 1. ❌ **Skipping language selection step** → Must be first step in onboarding
 2. ❌ **Not setting locale immediately** → Users expect real-time UI updates
-3. ❌ **Adding a skip button for notifications** → Notifications are REQUIRED
-4. ❌ **Allowing less than 5 categories** → Minimum requirement is 5 categories
-5. ❌ **Using inline error boxes for permission denial** → Use native Alert instead
-6. ❌ **Not using transactions for database writes** → Data corruption risk
-7. ❌ **Hardcoding categories or translations** → Must load from database/i18n system
-8. ❌ **Forgetting to clear state on errors** → Can cause UI bugs
-9. ❌ **Not showing download progress** → Poor UX
-10. ❌ **Allowing onboarding completion with 0 facts** → App won't work
+3. ❌ **Not triggering initialization on language screen** → Must call `initializeOnboarding()` on Continue
+4. ❌ **Passing data via route params** → Use `OnboardingContext` instead
+5. ❌ **Not checking `isInitialized` in categories screen** → Add guard to prevent access before init
+6. ❌ **Adding a skip button for notifications** → Notifications are REQUIRED
+7. ❌ **Allowing less than 5 categories** → Minimum requirement is 5 categories
+8. ❌ **Using inline error boxes for permission denial** → Use native Alert instead
+9. ❌ **Not using transactions for database writes** → Data corruption risk
+10. ❌ **Hardcoding categories or translations** → Must load from database/i18n system
+11. ❌ **Forgetting to clear state on errors** → Can cause UI bugs
+12. ❌ **Not showing download progress** → Poor UX
+13. ❌ **Allowing onboarding completion with 0 facts** → App won't work
+14. ❌ **Not showing loading state during initialization** → Users may think app is frozen
 
 ---
 

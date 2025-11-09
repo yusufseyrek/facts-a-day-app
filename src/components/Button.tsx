@@ -1,5 +1,7 @@
 import React from 'react';
+import { ActivityIndicator } from 'react-native';
 import { styled, View } from '@tamagui/core';
+import { XStack } from 'tamagui';
 import { tokens } from '../theme/tokens';
 import { LabelText } from './Typography';
 
@@ -8,6 +10,7 @@ interface ButtonProps {
   onPress?: () => void;
   variant?: 'primary' | 'secondary';
   disabled?: boolean;
+  loading?: boolean;
 }
 
 const ButtonContainer = styled(View, {
@@ -43,17 +46,26 @@ const ButtonContainer = styled(View, {
   },
 });
 
-export function Button({ children, onPress, variant = 'primary', disabled = false }: ButtonProps) {
+export function Button({ children, onPress, variant = 'primary', disabled = false, loading = false }: ButtonProps) {
   return (
     <ButtonContainer
       variant={variant}
-      disabled={disabled}
-      onPress={disabled ? undefined : onPress}
-      pressStyle={disabled ? {} : { opacity: 0.8 }}
+      disabled={disabled || loading}
+      onPress={disabled || loading ? undefined : onPress}
+      pressStyle={disabled || loading ? {} : { opacity: 0.8 }}
     >
-      <LabelText color="#FFFFFF" fontWeight={tokens.fontWeight.semibold} fontSize={16}>
-        {children}
-      </LabelText>
+      {loading ? (
+        <XStack gap="$sm" alignItems="center">
+          <ActivityIndicator size="small" color="#FFFFFF" />
+          <LabelText color="#FFFFFF" fontWeight={tokens.fontWeight.semibold} fontSize={16}>
+            {children}
+          </LabelText>
+        </XStack>
+      ) : (
+        <LabelText color="#FFFFFF" fontWeight={tokens.fontWeight.semibold} fontSize={16}>
+          {children}
+        </LabelText>
+      )}
     </ButtonContainer>
   );
 }

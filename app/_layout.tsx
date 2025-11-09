@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppThemeProvider } from '../src/theme';
 import { I18nProvider } from '../src/i18n';
+import { OnboardingProvider } from '../src/contexts';
 import * as onboardingService from '../src/services/onboarding';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -59,12 +60,14 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <I18nProvider>
-        <AppThemeProvider>
-          <Stack screenOptions={screenOptions}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="onboarding" />
-          </Stack>
-        </AppThemeProvider>
+        <OnboardingProvider>
+          <AppThemeProvider>
+            <Stack screenOptions={screenOptions}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="onboarding" />
+            </Stack>
+          </AppThemeProvider>
+        </OnboardingProvider>
       </I18nProvider>
     </SafeAreaProvider>
   );

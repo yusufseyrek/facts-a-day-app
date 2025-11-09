@@ -1,0 +1,289 @@
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
+import type { SupportedLocale } from "../i18n";
+import * as onboardingService from "../services/onboarding";
+
+type DifficultyLevel = "beginner" | "intermediate" | "advanced" | "all";
+
+interface OnboardingState {
+  // User selections
+  selectedCategories: string[];
+  difficulty: DifficultyLevel;
+  notificationTime: Date;
+
+  // Initialization state
+  isInitialized: boolean;
+  isInitializing: boolean;
+  initializationError: string | null;
+
+  // Facts download state
+  isDownloadingFacts: boolean;
+  downloadProgress: {
+    downloaded: number;
+    total: number;
+    percentage: number;
+  } | null;
+  downloadError: string | null;
+}
+
+interface OnboardingContextType extends OnboardingState {
+  // Selection methods
+  setSelectedCategories: (categories: string[]) => void;
+  setDifficulty: (difficulty: DifficultyLevel) => void;
+  setNotificationTime: (time: Date) => void;
+
+  // Initialization
+  initializeOnboarding: (locale: SupportedLocale) => Promise<boolean>;
+  retryInitialization: () => Promise<boolean>;
+
+  // Facts download
+  downloadFacts: (locale: SupportedLocale) => Promise<boolean>;
+
+  // Complete onboarding
+  completeOnboarding: () => Promise<void>;
+
+  // Reset
+  resetOnboarding: () => Promise<void>;
+}
+
+const OnboardingContext = createContext<OnboardingContextType | undefined>(
+  undefined
+);
+
+interface OnboardingProviderProps {
+  children: React.ReactNode;
+}
+
+export function OnboardingProvider({ children }: OnboardingProviderProps) {
+  const [state, setState] = useState<OnboardingState>({
+    selectedCategories: [],
+    difficulty: "all",
+    notificationTime: (() => {
+      const defaultTime = new Date();
+      defaultTime.setHours(9, 0, 0, 0);
+      return defaultTime;
+    })(),
+    isInitialized: false,
+    isInitializing: false,
+    initializationError: null,
+    isDownloadingFacts: false,
+    downloadProgress: null,
+    downloadError: null,
+  });
+
+  const [lastLocaleUsed, setLastLocaleUsed] = useState<SupportedLocale | null>(
+    null
+  );
+
+  // ===== Selection Methods =====
+
+  const setSelectedCategories = useCallback((categories: string[]) => {
+    setState((prev) => ({ ...prev, selectedCategories: categories }));
+  }, []);
+
+  const setDifficulty = useCallback((difficulty: DifficultyLevel) => {
+    setState((prev) => ({ ...prev, difficulty }));
+  }, []);
+
+  const setNotificationTime = useCallback((time: Date) => {
+    setState((prev) => ({ ...prev, notificationTime: time }));
+  }, []);
+
+  // ===== Initialization =====
+
+  const initializeOnboarding = useCallback(
+    async (locale: SupportedLocale): Promise<boolean> => {
+      setState((prev) => ({
+        ...prev,
+        isInitializing: true,
+        initializationError: null,
+      }));
+
+      setLastLocaleUsed(locale);
+
+      try {
+        const result = await onboardingService.initializeOnboarding(locale);
+
+        if (result.success) {
+          setState((prev) => ({
+            ...prev,
+            isInitialized: true,
+            isInitializing: false,
+            initializationError: null,
+          }));
+          return true;
+        } else {
+          setState((prev) => ({
+            ...prev,
+            isInitializing: false,
+            initializationError: result.error || "Failed to initialize",
+          }));
+          return false;
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error occurred";
+        setState((prev) => ({
+          ...prev,
+          isInitializing: false,
+          initializationError: errorMessage,
+        }));
+        return false;
+      }
+    },
+    []
+  );
+
+  const retryInitialization = useCallback(async (): Promise<boolean> => {
+    if (!lastLocaleUsed) {
+      console.error("Cannot retry initialization: no locale was used");
+      return false;
+    }
+    return initializeOnboarding(lastLocaleUsed);
+  }, [lastLocaleUsed, initializeOnboarding]);
+
+  // ===== Facts Download =====
+
+  const downloadFacts = useCallback(
+    async (locale: SupportedLocale): Promise<boolean> => {
+      if (state.selectedCategories.length === 0) {
+        console.error("Cannot download facts: no categories selected");
+        return false;
+      }
+
+      setState((prev) => ({
+        ...prev,
+        isDownloadingFacts: true,
+        downloadProgress: null,
+        downloadError: null,
+      }));
+
+      try {
+        const result = await onboardingService.fetchAllFacts(
+          locale,
+          state.selectedCategories,
+          state.difficulty,
+          (progress) => {
+            setState((prev) => ({
+              ...prev,
+              downloadProgress: progress,
+            }));
+          }
+        );
+
+        if (result.success) {
+          setState((prev) => ({
+            ...prev,
+            isDownloadingFacts: false,
+            downloadProgress: {
+              downloaded: result.count || 0,
+              total: result.count || 0,
+              percentage: 100,
+            },
+            downloadError: null,
+          }));
+          return true;
+        } else {
+          setState((prev) => ({
+            ...prev,
+            isDownloadingFacts: false,
+            downloadError: result.error || "Failed to download facts",
+          }));
+          return false;
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error occurred";
+        setState((prev) => ({
+          ...prev,
+          isDownloadingFacts: false,
+          downloadError: errorMessage,
+        }));
+        return false;
+      }
+    },
+    [state.selectedCategories, state.difficulty]
+  );
+
+  // ===== Complete Onboarding =====
+
+  const completeOnboarding = useCallback(async (): Promise<void> => {
+    try {
+      await onboardingService.completeOnboarding({
+        selectedCategories: state.selectedCategories,
+        difficultyPreference: state.difficulty,
+      });
+
+      // Note: notificationTime should be handled separately by the notification system
+      // We're not storing it in AsyncStorage here as it's managed by the notification scheduling
+
+      console.log("Onboarding completed successfully");
+    } catch (error) {
+      console.error("Error completing onboarding:", error);
+      throw error;
+    }
+  }, [state.selectedCategories, state.difficulty]);
+
+  // ===== Reset =====
+
+  const resetOnboarding = useCallback(async (): Promise<void> => {
+    try {
+      await onboardingService.resetOnboarding();
+
+      // Reset state
+      setState({
+        selectedCategories: [],
+        difficulty: "all",
+        notificationTime: (() => {
+          const defaultTime = new Date();
+          defaultTime.setHours(9, 0, 0, 0);
+          return defaultTime;
+        })(),
+        isInitialized: false,
+        isInitializing: false,
+        initializationError: null,
+        isDownloadingFacts: false,
+        downloadProgress: null,
+        downloadError: null,
+      });
+
+      setLastLocaleUsed(null);
+
+      console.log("Onboarding state reset successfully");
+    } catch (error) {
+      console.error("Error resetting onboarding:", error);
+      throw error;
+    }
+  }, []);
+
+  const value: OnboardingContextType = {
+    ...state,
+    setSelectedCategories,
+    setDifficulty,
+    setNotificationTime,
+    initializeOnboarding,
+    retryInitialization,
+    downloadFacts,
+    completeOnboarding,
+    resetOnboarding,
+  };
+
+  return (
+    <OnboardingContext.Provider value={value}>
+      {children}
+    </OnboardingContext.Provider>
+  );
+}
+
+export function useOnboarding() {
+  const context = useContext(OnboardingContext);
+  if (context === undefined) {
+    throw new Error("useOnboarding must be used within OnboardingProvider");
+  }
+  return context;
+}

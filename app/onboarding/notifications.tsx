@@ -4,7 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { Platform, ScrollView, Alert } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Bell } from "@tamagui/lucide-icons";
@@ -12,6 +12,7 @@ import { tokens } from "../../src/theme/tokens";
 import { H1, BodyText, Button, ProgressIndicator } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
+import { useOnboarding } from "../../src/contexts";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -59,19 +60,8 @@ export default function NotificationsScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const router = useRouter();
-  const params = useLocalSearchParams();
-  const [notificationTime, setNotificationTime] = useState(() => {
-    const defaultTime = new Date();
-    defaultTime.setHours(9, 0, 0, 0); // Default to 9:00 AM
-    return defaultTime;
-  });
+  const { notificationTime, setNotificationTime } = useOnboarding();
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
-
-  // Get data from previous steps
-  const selectedCategories = params.selectedCategories
-    ? JSON.parse(params.selectedCategories as string)
-    : [];
-  const difficulty = (params.difficulty as string) || "all";
 
   const handleTimeChange = (event: any, selectedDate?: Date) => {
     // On Android, hide the picker when user confirms or cancels
@@ -91,14 +81,7 @@ export default function NotificationsScreen() {
 
       if (status === "granted") {
         // Navigate to success/download page
-        router.push({
-          pathname: "/onboarding/success",
-          params: {
-            selectedCategories: JSON.stringify(selectedCategories),
-            difficulty: difficulty,
-            notificationTime: notificationTime.toISOString(),
-          },
-        });
+        router.push("/onboarding/success");
       } else {
         // Permission denied - show alert
         Alert.alert(
