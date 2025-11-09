@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { ActivityIndicator } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack } from "tamagui";
 import { useRouter } from "expo-router";
@@ -48,114 +47,51 @@ const ProgressContainer = styled(YStack, {
 
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
-  const {
-    isDownloadingFacts,
-    downloadProgress,
-    downloadError,
-    downloadFacts,
-    completeOnboarding,
-  } = useOnboarding();
+  const { completeOnboarding } = useOnboarding();
 
   useEffect(() => {
-    downloadFactsAndCompleteOnboarding();
+    finishOnboarding();
   }, []);
 
-  const downloadFactsAndCompleteOnboarding = async () => {
+  const finishOnboarding = async () => {
     try {
-      // Download facts
-      const success = await downloadFacts(locale);
+      // Complete onboarding (save preferences)
+      await completeOnboarding();
 
-      if (success) {
-        // Complete onboarding
-        await completeOnboarding();
-
-        // Navigate to main app after a short delay
-        setTimeout(() => {
-          router.replace("/");
-        }, 2500);
-      }
+      // Navigate to main app after showing success message
+      setTimeout(() => {
+        router.replace("/");
+      }, 2000);
     } catch (error) {
-      console.error("Error during onboarding completion:", error);
+      console.error("Error completing onboarding:", error);
     }
   };
-
-  const handleRetry = () => {
-    downloadFactsAndCompleteOnboarding();
-  };
-
-  const downloadComplete = !isDownloadingFacts && downloadProgress?.percentage === 100;
 
   return (
     <Container>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <ContentContainer>
         <IconContainer>
-          {downloadComplete ? (
-            <CheckCircle size={60} color={tokens.color.light.success} />
-          ) : (
-            <ActivityIndicator
-              size="large"
-              color={tokens.color.light.primary}
-            />
-          )}
+          <CheckCircle size={60} color={tokens.color.light.success} />
         </IconContainer>
 
         <YStack gap="$md" alignItems="center" marginBottom="$xl">
-          <H1 textAlign="center">
-            {downloadComplete
-              ? t("allSet")
-              : downloadError
-              ? t("somethingWentWrong")
-              : t("gettingReady")}
-          </H1>
+          <H1 textAlign="center">{t("allSet")}</H1>
           <BodyText textAlign="center" color="$textSecondary">
-            {downloadComplete
-              ? t("welcomeToApp")
-              : downloadError
-              ? t("errorSettingUp")
-              : t("downloadingFacts")}
+            {t("welcomeToApp")}
           </BodyText>
         </YStack>
 
         <ProgressContainer>
-          {downloadError ? (
-            <>
-              <BodyText
-                color="$error"
-                textAlign="center"
-                fontSize={tokens.fontSize.small}
-              >
-                {downloadError}
-              </BodyText>
-              <BodyText
-                color="$textSecondary"
-                textAlign="center"
-                fontSize={tokens.fontSize.small}
-              >
-                {t("checkInternetConnection")}
-              </BodyText>
-              {/* Retry button could be added here */}
-            </>
-          ) : (
-            <>
-              <BodyText
-                fontWeight={tokens.fontWeight.semibold}
-                fontSize={tokens.fontSize.h2}
-                color="$primary"
-              >
-                {downloadProgress?.percentage || 0}%
-              </BodyText>
-              <BodyText
-                color="$textSecondary"
-                textAlign="center"
-                fontSize={tokens.fontSize.small}
-              >
-                {downloadComplete ? t("redirectingToApp") : t("oneMoment")}
-              </BodyText>
-            </>
-          )}
+          <BodyText
+            color="$textSecondary"
+            textAlign="center"
+            fontSize={tokens.fontSize.small}
+          >
+            {t("redirectingToApp")}
+          </BodyText>
         </ProgressContainer>
       </ContentContainer>
     </Container>

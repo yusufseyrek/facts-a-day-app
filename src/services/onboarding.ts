@@ -8,6 +8,7 @@ import * as db from './database';
 export const ONBOARDING_COMPLETE_KEY = '@onboarding_complete';
 export const SELECTED_CATEGORIES_KEY = '@selected_categories';
 export const DIFFICULTY_PREFERENCE_KEY = '@difficulty_preference';
+export const NOTIFICATION_TIME_KEY = '@notification_time';
 
 // ====== Onboarding Status ======
 
@@ -166,6 +167,7 @@ export async function fetchAllFacts(
 export interface OnboardingPreferences {
   selectedCategories: string[];
   difficultyPreference: string;
+  notificationTime?: Date;
 }
 
 /**
@@ -186,6 +188,14 @@ export async function completeOnboarding(
       DIFFICULTY_PREFERENCE_KEY,
       preferences.difficultyPreference
     );
+
+    // Save notification time if provided
+    if (preferences.notificationTime) {
+      await AsyncStorage.setItem(
+        NOTIFICATION_TIME_KEY,
+        preferences.notificationTime.toISOString()
+      );
+    }
 
     // Mark onboarding as complete
     await setOnboardingComplete();
@@ -219,6 +229,16 @@ export async function getDifficultyPreference(): Promise<string> {
   }
 }
 
+export async function getNotificationTime(): Promise<Date | null> {
+  try {
+    const value = await AsyncStorage.getItem(NOTIFICATION_TIME_KEY);
+    return value ? new Date(value) : null;
+  } catch (error) {
+    console.error('Error getting notification time:', error);
+    return null;
+  }
+}
+
 // ====== Reset Onboarding ======
 
 /**
@@ -229,6 +249,7 @@ export async function resetOnboarding(): Promise<void> {
     await AsyncStorage.removeItem(ONBOARDING_COMPLETE_KEY);
     await AsyncStorage.removeItem(SELECTED_CATEGORIES_KEY);
     await AsyncStorage.removeItem(DIFFICULTY_PREFERENCE_KEY);
+    await AsyncStorage.removeItem(NOTIFICATION_TIME_KEY);
     await api.clearDeviceKey();
     await db.clearDatabase();
     console.log('Onboarding reset successfully');

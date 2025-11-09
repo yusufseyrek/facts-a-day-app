@@ -39,6 +39,9 @@ export const translations = {
     selectNotificationTime: 'Wählen Sie Ihre Benachrichtigungszeit',
     oneNotificationPerDay: 'Wir senden Ihnen nur eine Benachrichtigung pro Tag zu dieser Zeit.\nWir respektieren Ihre Aufmerksamkeit und werden Sie nicht zuspammen.',
     enableNotifications: 'Benachrichtigungen aktivieren',
+    gettingAppReady: 'Ihre App wird vorbereitet...',
+    notificationSchedulingFailed: 'Benachrichtigungsplanung fehlgeschlagen',
+    notificationSchedulingFailedMessage: 'Benachrichtigungen konnten nicht erstellt werden. Bitte versuchen Sie es erneut.',
     notificationPermissionRequired: 'Benachrichtigungsberechtigung erforderlich',
     notificationPermissionMessage: 'Um Benachrichtigungen zu aktivieren, gehen Sie zu Einstellungen > Facts A Day > Benachrichtigungen.',
 
@@ -98,6 +101,9 @@ export const translations = {
     selectNotificationTime: 'Select Your Notification Time',
     oneNotificationPerDay: 'We\'ll send you just one notification per day at this time.\nWe respect your attention and won\'t spam you.',
     enableNotifications: 'Enable Notifications',
+    gettingAppReady: 'Getting your app ready...',
+    notificationSchedulingFailed: 'Notification Scheduling Failed',
+    notificationSchedulingFailedMessage: 'Failed to create notifications. Please try again.',
     notificationPermissionRequired: 'Notification Permission Required',
     notificationPermissionMessage: 'To enable notifications, go to Settings > Facts A Day > Notifications.',
 
@@ -157,6 +163,9 @@ export const translations = {
     selectNotificationTime: 'Selecciona tu Hora de Notificación',
     oneNotificationPerDay: 'Te enviaremos solo una notificación por día a esta hora.\nRespetamos tu atención y no te enviaremos spam.',
     enableNotifications: 'Habilitar Notificaciones',
+    gettingAppReady: 'Preparando tu aplicación...',
+    notificationSchedulingFailed: 'Falló la Programación de Notificaciones',
+    notificationSchedulingFailedMessage: 'No se pudieron crear las notificaciones. Por favor, inténtalo de nuevo.',
     notificationPermissionRequired: 'Permiso de Notificación Requerido',
     notificationPermissionMessage: 'Para activar notificaciones, ve a Ajustes > Facts A Day > Notificaciones.',
 
@@ -216,6 +225,9 @@ export const translations = {
     selectNotificationTime: 'Sélectionnez Votre Heure de Notification',
     oneNotificationPerDay: 'Nous vous enverrons une seule notification par jour à cette heure.\nNous respectons votre attention et ne vous spammerons pas.',
     enableNotifications: 'Activer les Notifications',
+    gettingAppReady: 'Préparation de votre application...',
+    notificationSchedulingFailed: 'Échec de la Planification des Notifications',
+    notificationSchedulingFailedMessage: 'Échec de la création des notifications. Veuillez réessayer.',
     notificationPermissionRequired: 'Permission de Notification Requise',
     notificationPermissionMessage: 'Pour activer les notifications, allez dans Réglages > Facts A Day > Notifications.',
 
@@ -275,6 +287,9 @@ export const translations = {
     selectNotificationTime: '通知時間を選択',
     oneNotificationPerDay: 'この時間に1日1回だけ通知をお送りします。\nあなたの時間を尊重し、スパムは送りません。',
     enableNotifications: '通知を有効にする',
+    gettingAppReady: 'アプリを準備中...',
+    notificationSchedulingFailed: '通知のスケジューリングに失敗しました',
+    notificationSchedulingFailedMessage: '通知の作成に失敗しました。もう一度お試しください。',
     notificationPermissionRequired: '通知の許可が必要です',
     notificationPermissionMessage: '通知を有効にするには、設定 > Facts A Day > 通知に移動してください。',
 
@@ -334,6 +349,9 @@ export const translations = {
     selectNotificationTime: '알림 시간 선택',
     oneNotificationPerDay: '이 시간에 하루에 한 번만 알림을 보내드립니다.\n귀하의 시간을 존중하며 스팸을 보내지 않습니다.',
     enableNotifications: '알림 활성화',
+    gettingAppReady: '앱 준비 중...',
+    notificationSchedulingFailed: '알림 예약 실패',
+    notificationSchedulingFailedMessage: '알림을 생성하지 못했습니다. 다시 시도해 주세요.',
     notificationPermissionRequired: '알림 권한 필요',
     notificationPermissionMessage: '알림을 활성화하려면 설정 > Facts A Day > 알림으로 이동하세요.',
 
@@ -393,6 +411,9 @@ export const translations = {
     selectNotificationTime: 'Bildirim Saatinizi Seçin',
     oneNotificationPerDay: 'Size bu saatte günde sadece bir bildirim göndereceğiz.\nDikkatinize saygı duyuyoruz ve spam göndermeyeceğiz.',
     enableNotifications: 'Bildirimleri Etkinleştir',
+    gettingAppReady: 'Uygulamanız hazırlanıyor...',
+    notificationSchedulingFailed: 'Bildirim Planlaması Başarısız',
+    notificationSchedulingFailedMessage: 'Bildirimler oluşturulamadı. Lütfen tekrar deneyin.',
     notificationPermissionRequired: 'Bildirim İzni Gerekli',
     notificationPermissionMessage: 'Bildirimleri etkinleştirmek için Ayarlar > Facts A Day > Bildirimler bölümüne gidin.',
 
@@ -452,6 +473,9 @@ export const translations = {
     selectNotificationTime: '选择您的通知时间',
     oneNotificationPerDay: '我们每天只会在此时间向您发送一条通知。\n我们尊重您的时间，不会发送垃圾信息。',
     enableNotifications: '启用通知',
+    gettingAppReady: '正在准备您的应用...',
+    notificationSchedulingFailed: '通知计划失败',
+    notificationSchedulingFailedMessage: '无法创建通知。请重试。',
     notificationPermissionRequired: '需要通知权限',
     notificationPermissionMessage: '要启用通知，请前往 设置 > Facts A Day > 通知。',
 

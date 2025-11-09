@@ -43,6 +43,7 @@ interface OnboardingContextType extends OnboardingState {
 
   // Facts download
   downloadFacts: (locale: SupportedLocale) => Promise<boolean>;
+  waitForDownloadComplete: () => Promise<void>;
 
   // Complete onboarding
   completeOnboarding: () => Promise<void>;
@@ -210,6 +211,35 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     [state.selectedCategories, state.difficulty]
   );
 
+  const waitForDownloadComplete = useCallback(async (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      // If not downloading, check for errors and return immediately
+      if (!state.isDownloadingFacts) {
+        if (state.downloadError) {
+          reject(new Error(state.downloadError));
+        } else {
+          resolve();
+        }
+        return;
+      }
+
+      // Poll every 100ms until download completes
+      const checkInterval = setInterval(() => {
+        setState((currentState) => {
+          if (!currentState.isDownloadingFacts) {
+            clearInterval(checkInterval);
+            if (currentState.downloadError) {
+              reject(new Error(currentState.downloadError));
+            } else {
+              resolve();
+            }
+          }
+          return currentState;
+        });
+      }, 100);
+    });
+  }, [state.isDownloadingFacts, state.downloadError]);
+
   // ===== Complete Onboarding =====
 
   const completeOnboarding = useCallback(async (): Promise<void> => {
@@ -217,17 +247,15 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       await onboardingService.completeOnboarding({
         selectedCategories: state.selectedCategories,
         difficultyPreference: state.difficulty,
+        notificationTime: state.notificationTime,
       });
-
-      // Note: notificationTime should be handled separately by the notification system
-      // We're not storing it in AsyncStorage here as it's managed by the notification scheduling
 
       console.log("Onboarding completed successfully");
     } catch (error) {
       console.error("Error completing onboarding:", error);
       throw error;
     }
-  }, [state.selectedCategories, state.difficulty]);
+  }, [state.selectedCategories, state.difficulty, state.notificationTime]);
 
   // ===== Reset =====
 
@@ -269,6 +297,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     initializeOnboarding,
     retryInitialization,
     downloadFacts,
+    waitForDownloadComplete,
     completeOnboarding,
     resetOnboarding,
   };

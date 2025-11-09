@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Platform } from "react-native";
@@ -11,6 +11,8 @@ import { H1, BodyText, Button } from "../src/components";
 import { useTheme } from "../src/theme";
 import { useTranslation } from "../src/i18n";
 import * as onboardingService from "../src/services/onboarding";
+import * as notificationService from "../src/services/notifications";
+import * as database from "../src/services/database";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -37,8 +39,45 @@ const IconContainer = styled(YStack, {
 
 export default function MainApp() {
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const router = useRouter();
+
+  // Refresh notifications on app launch if count < 64
+  useEffect(() => {
+    refreshNotificationsIfNeeded();
+  }, []);
+
+  const refreshNotificationsIfNeeded = async () => {
+    try {
+      // Get scheduled notifications count
+      const scheduledCount = await database.getScheduledFactsCount(locale);
+
+      // Only refresh if below 64
+      if (scheduledCount < 64) {
+        console.log(`Scheduled notifications: ${scheduledCount}. Refreshing...`);
+
+        // Get saved notification time
+        const notificationTime = await onboardingService.getNotificationTime();
+
+        if (notificationTime) {
+          const result = await notificationService.refreshNotificationSchedule(
+            notificationTime,
+            locale
+          );
+
+          if (result.success) {
+            console.log(`Refreshed ${result.count} notifications. Total now: ${scheduledCount + result.count}`);
+          } else {
+            console.error('Failed to refresh notifications:', result.error);
+          }
+        }
+      } else {
+        console.log(`Scheduled notifications: ${scheduledCount}. No refresh needed.`);
+      }
+    } catch (error) {
+      console.error("Error checking/refreshing notifications:", error);
+    }
+  };
 
   const handleResetOnboarding = async () => {
     try {

@@ -13,6 +13,7 @@ import { H1, BodyText, Button, ProgressIndicator } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
+import * as notificationService from "../../src/services/notifications";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -58,10 +59,11 @@ const IOSPickerWrapper = styled(YStack, {
 
 export default function NotificationsScreen() {
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const router = useRouter();
-  const { notificationTime, setNotificationTime } = useOnboarding();
+  const { notificationTime, setNotificationTime, isDownloadingFacts, waitForDownloadComplete } = useOnboarding();
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
+  const [isScheduling, setIsScheduling] = useState(false);
 
   const handleTimeChange = (event: any, selectedDate?: Date) => {
     // On Android, hide the picker when user confirms or cancels
@@ -77,16 +79,53 @@ export default function NotificationsScreen() {
 
   const handleEnableNotifications = async () => {
     try {
+      // Step 1: Request notification permissions IMMEDIATELY (don't wait for download)
       const { status } = await Notifications.requestPermissionsAsync();
 
-      if (status === "granted") {
-        // Navigate to success/download page
-        router.push("/onboarding/success");
-      } else {
+      if (status !== "granted") {
         // Permission denied - show alert
         Alert.alert(
           t("notificationPermissionRequired"),
           t("notificationPermissionMessage"),
+          [{ text: t("ok"), style: "default" }]
+        );
+        return;
+      }
+
+      // Step 2: Permission granted - now start scheduling process
+      setIsScheduling(true);
+
+      try {
+        // Step 3: Wait for facts download to complete if still in progress
+        if (isDownloadingFacts) {
+          await waitForDownloadComplete();
+        }
+
+        // Step 4: Schedule notifications
+        const result = await notificationService.scheduleInitialNotifications(
+          notificationTime,
+          locale
+        );
+
+        if (result.success) {
+          // Successfully scheduled notifications - navigate to success screen
+          console.log(`Scheduled ${result.count} notifications`);
+          router.push("/onboarding/success");
+        } else {
+          // Failed to schedule notifications - show error
+          setIsScheduling(false);
+          Alert.alert(
+            t("notificationSchedulingFailed"),
+            t("notificationSchedulingFailedMessage"),
+            [{ text: t("ok"), style: "default" }]
+          );
+        }
+      } catch (error) {
+        console.error("Error in notification flow:", error);
+        setIsScheduling(false);
+        Alert.alert(
+          t("notificationSchedulingFailed"),
+          error instanceof Error ? error.message : t("notificationSchedulingFailedMessage"),
           [{ text: t("ok"), style: "default" }]
         );
       }
@@ -176,8 +215,12 @@ export default function NotificationsScreen() {
           </YStack>
         </ScrollView>
 
-        <Button onPress={handleEnableNotifications}>
-          {t("enableNotifications")}
+        <Button
+          onPress={handleEnableNotifications}
+          loading={isScheduling}
+          disabled={isScheduling}
+        >
+          {isScheduling ? t("gettingAppReady") : t("enableNotifications")}
         </Button>
       </ContentContainer>
     </Container>

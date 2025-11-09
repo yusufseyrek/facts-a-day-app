@@ -97,12 +97,15 @@ const getDifficultyOptions = (
 
 export default function Difficulty() {
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const router = useRouter();
-  const { difficulty, setDifficulty } = useOnboarding();
+  const { difficulty, setDifficulty, downloadFacts } = useOnboarding();
 
   const handleContinue = () => {
-    // Navigate to notifications screen
+    // Start downloading facts in background (don't wait)
+    downloadFacts(locale);
+
+    // Navigate to notifications screen immediately
     router.push("/onboarding/notifications");
   };
 

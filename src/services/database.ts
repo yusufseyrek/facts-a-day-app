@@ -14,6 +14,7 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
 
   db = await SQLite.openDatabaseAsync(DATABASE_NAME);
   await initializeSchema();
+  await runMigrations();
   return db;
 }
 
@@ -76,6 +77,38 @@ async function initializeSchema(): Promise<void> {
   await db.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_facts_category ON facts(category);
   `);
+}
+
+/**
+ * Run database migrations
+ */
+async function runMigrations(): Promise<void> {
+  if (!db) {
+    throw new Error('Database not initialized');
+  }
+
+  // Get current database version
+  const versionResult = await db.getFirstAsync<{ user_version: number }>(
+    'PRAGMA user_version'
+  );
+  const currentVersion = versionResult?.user_version || 0;
+
+  // Migration 1: Add notification scheduling columns
+  if (currentVersion < 1) {
+    await db.execAsync(`
+      ALTER TABLE facts ADD COLUMN scheduled_date TEXT;
+      ALTER TABLE facts ADD COLUMN notification_id TEXT;
+    `);
+
+    // Create index on scheduled_date for faster queries
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_facts_scheduled_date ON facts(scheduled_date);
+    `);
+
+    // Update version
+    await db.execAsync('PRAGMA user_version = 1');
+    console.log('Database migrated to version 1: Added notification scheduling columns');
+  }
 }
 
 /**
@@ -188,6 +221,8 @@ export interface Fact {
   image_url?: string;
   language: string;
   created_at: string;
+  scheduled_date?: string; // ISO date string when fact is scheduled for notification
+  notification_id?: string; // Notification ID from expo-notifications
 }
 
 export async function insertFacts(facts: Fact[]): Promise<void> {
@@ -296,6 +331,90 @@ export async function getFactsCount(language?: string): Promise<number> {
 
   const result = await database.getFirstAsync<{ count: number }>(
     'SELECT COUNT(*) as count FROM facts'
+  );
+  return result?.count || 0;
+}
+
+// ====== NOTIFICATION SCHEDULING ======
+
+/**
+ * Get random unscheduled facts for notification scheduling
+ * @param limit Maximum number of facts to return
+ * @param language Optional language filter
+ */
+export async function getRandomUnscheduledFacts(
+  limit: number,
+  language?: string
+): Promise<Fact[]> {
+  const database = await openDatabase();
+
+  if (language) {
+    const result = await database.getAllAsync<Fact>(
+      'SELECT * FROM facts WHERE language = ? AND scheduled_date IS NULL ORDER BY RANDOM() LIMIT ?',
+      [language, limit]
+    );
+    return result;
+  }
+
+  const result = await database.getAllAsync<Fact>(
+    'SELECT * FROM facts WHERE scheduled_date IS NULL ORDER BY RANDOM() LIMIT ?',
+    [limit]
+  );
+  return result;
+}
+
+/**
+ * Mark a fact as scheduled with notification details
+ */
+export async function markFactAsScheduled(
+  factId: number,
+  scheduledDate: string,
+  notificationId: string
+): Promise<void> {
+  const database = await openDatabase();
+  await database.runAsync(
+    'UPDATE facts SET scheduled_date = ?, notification_id = ? WHERE id = ?',
+    [scheduledDate, notificationId, factId]
+  );
+}
+
+/**
+ * Clear scheduling information for a fact
+ */
+export async function clearFactScheduling(factId: number): Promise<void> {
+  const database = await openDatabase();
+  await database.runAsync(
+    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE id = ?',
+    [factId]
+  );
+}
+
+/**
+ * Clear all scheduled facts (reset all scheduling)
+ */
+export async function clearAllScheduledFacts(): Promise<void> {
+  const database = await openDatabase();
+  await database.runAsync(
+    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL'
+  );
+}
+
+/**
+ * Get count of scheduled facts
+ */
+export async function getScheduledFactsCount(language?: string): Promise<number> {
+  const database = await openDatabase();
+
+  if (language) {
+    const result = await database.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM facts WHERE scheduled_date IS NOT NULL AND language = ?',
+      [language]
+    );
+    return result?.count || 0;
+  }
+
+  const result = await database.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM facts WHERE scheduled_date IS NOT NULL'
   );
   return result?.count || 0;
 }
