@@ -65,8 +65,8 @@ export async function scheduleInitialNotifications(
         // Schedule the notification
         const notificationId = await Notifications.scheduleNotificationAsync({
           content: {
-            title: 'Today\'s Fact',
-            body: fact.title || fact.content.substring(0, 100),
+            title: fact.title || 'Today\'s Fact',
+            body: fact.summary || fact.content.substring(0, 100),
             data: { factId: fact.id },
           },
           trigger: {
@@ -177,8 +177,8 @@ export async function refreshNotificationSchedule(
         // Schedule the notification
         const notificationId = await Notifications.scheduleNotificationAsync({
           content: {
-            title: 'Today\'s Fact',
-            body: fact.title || fact.content.substring(0, 100),
+            title: fact.title || 'Today\'s Fact',
+            body: fact.summary || fact.content.substring(0, 100),
             data: { factId: fact.id },
           },
           trigger: {

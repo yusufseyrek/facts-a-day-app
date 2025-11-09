@@ -1,11 +1,12 @@
 import React, { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Platform } from "react-native";
+import { Platform, Alert } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack } from "tamagui";
 import { Lightbulb } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
+import * as Notifications from "expo-notifications";
 import { tokens } from "../src/theme/tokens";
 import { H1, BodyText, Button } from "../src/components";
 import { useTheme } from "../src/theme";
@@ -38,7 +39,7 @@ const IconContainer = styled(YStack, {
 });
 
 export default function MainApp() {
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
 
@@ -54,7 +55,9 @@ export default function MainApp() {
 
       // Only refresh if below 64
       if (scheduledCount < 64) {
-        console.log(`Scheduled notifications: ${scheduledCount}. Refreshing...`);
+        console.log(
+          `Scheduled notifications: ${scheduledCount}. Refreshing...`
+        );
 
         // Get saved notification time
         const notificationTime = await onboardingService.getNotificationTime();
@@ -66,13 +69,19 @@ export default function MainApp() {
           );
 
           if (result.success) {
-            console.log(`Refreshed ${result.count} notifications. Total now: ${scheduledCount + result.count}`);
+            console.log(
+              `Refreshed ${result.count} notifications. Total now: ${
+                scheduledCount + result.count
+              }`
+            );
           } else {
-            console.error('Failed to refresh notifications:', result.error);
+            console.error("Failed to refresh notifications:", result.error);
           }
         }
       } else {
-        console.log(`Scheduled notifications: ${scheduledCount}. No refresh needed.`);
+        console.log(
+          `Scheduled notifications: ${scheduledCount}. No refresh needed.`
+        );
       }
     } catch (error) {
       console.error("Error checking/refreshing notifications:", error);
@@ -92,6 +101,78 @@ export default function MainApp() {
     }
   };
 
+  const handleTestNotification = async () => {
+    try {
+      console.log("🔔 Starting test notification...");
+
+      // Request permissions first
+      const { status } = await Notifications.getPermissionsAsync();
+      console.log("📱 Permission status:", status);
+
+      if (status !== "granted") {
+        Alert.alert(
+          "Notification Permission Required",
+          "Please enable notifications in settings to test this feature.",
+          [{ text: "OK", style: "default" }]
+        );
+        return;
+      }
+
+      // Get a random fact from the database
+      const facts = await database.getRandomUnscheduledFacts(1, locale);
+      console.log("📚 Facts found:", facts.length);
+
+      if (facts.length === 0) {
+        Alert.alert(
+          "No Facts Available",
+          "There are no facts available to test notifications.",
+          [{ text: "OK", style: "default" }]
+        );
+        return;
+      }
+
+      const fact = facts[0];
+      console.log(
+        "✅ Using fact:",
+        fact.id,
+        "-",
+        fact.content.substring(0, 50) + "..."
+      );
+
+      // Schedule notification for 2 seconds from now
+      // Using exact same format as regular scheduled notifications
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: fact.title || "Today's Fact",
+          body: fact.summary || fact.content.substring(0, 100),
+          data: { factId: fact.id, isTest: true },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: 2,
+          repeats: false,
+        },
+      });
+
+      console.log("✅ Notification scheduled with ID:", notificationId);
+
+      Alert.alert(
+        "Test Notification Scheduled",
+        "You should receive a test notification in 2 seconds! If the app is in the foreground, it should appear as a banner at the top.",
+        [{ text: "OK", style: "default" }]
+      );
+    } catch (error) {
+      console.error("❌ Error scheduling test notification:", error);
+      Alert.alert(
+        "Error",
+        `Failed to schedule test notification: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+        [{ text: "OK", style: "default" }]
+      );
+    }
+  };
+
   return (
     <Container>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
@@ -103,12 +184,19 @@ export default function MainApp() {
         <YStack gap="$md" alignItems="center" width="100%">
           <H1 textAlign="center">{t("welcomeToApp")}</H1>
           <BodyText textAlign="center" color="$textSecondary">
-            {t("onboardingComplete")}{"\n"}
+            {t("onboardingComplete")}
+            {"\n"}
             {t("mainAppPlaceholder")}
           </BodyText>
         </YStack>
 
-        <YStack width="100%" paddingTop="$xl">
+        <YStack width="100%" paddingTop="$xl" gap="$md">
+          <Button onPress={handleTestNotification}>Test Notification</Button>
+
+          <Button variant="secondary" onPress={toggleTheme}>
+            {`Toggle Theme (Current: ${theme})`}
+          </Button>
+
           <Button variant="secondary" onPress={handleResetOnboarding}>
             {t("resetOnboarding")}
           </Button>

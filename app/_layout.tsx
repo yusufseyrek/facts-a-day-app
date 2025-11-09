@@ -5,6 +5,7 @@ import { AppThemeProvider } from '../src/theme';
 import { I18nProvider } from '../src/i18n';
 import { OnboardingProvider } from '../src/contexts';
 import * as onboardingService from '../src/services/onboarding';
+import * as notificationService from '../src/services/notifications';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function RootLayout() {
@@ -13,6 +14,8 @@ export default function RootLayout() {
   const segments = useSegments();
 
   useEffect(() => {
+    // Configure notifications on app start
+    notificationService.configureNotifications();
     checkOnboardingStatus();
   }, []);
 
