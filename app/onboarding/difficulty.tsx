@@ -8,7 +8,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { tokens } from '../../src/theme/tokens';
 import { H1, H2, BodyText, Button, ProgressIndicator } from '../../src/components';
 import { useTheme } from '../../src/theme';
-import { useTranslation } from '../../src/i18n';
+import { useTranslation, type TranslationKeys } from '../../src/i18n';
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -63,7 +63,7 @@ interface DifficultyOption {
 }
 
 // Difficulty options with translation keys
-const getDifficultyOptions = (t: (key: string) => string): DifficultyOption[] => [
+const getDifficultyOptions = (t: (key: TranslationKeys) => string): DifficultyOption[] => [
   {
     value: 'beginner',
     title: t('easyDifficulty'),

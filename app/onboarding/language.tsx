@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { ScrollView, Pressable, Text } from "react-native";
-import { styled } from "@tamagui/core";
+import { ScrollView, Pressable } from "react-native";
+import { styled, Text } from "@tamagui/core";
 import { YStack, XStack, View } from "tamagui";
 import { useRouter } from "expo-router";
 import { tokens } from "../../src/theme/tokens";

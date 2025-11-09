@@ -38,7 +38,13 @@ Check Onboarding Status (AsyncStorage)
     ├─ Complete → Main App
     └─ Not Complete → Onboarding Flow
                           ↓
-                    [Step 0] Initialization
+                    [Step 1] Language Selection
+                          ↓
+                    User selects preferred language
+                          ↓
+                    Set locale immediately
+                          ↓
+                    [Step 2] Initialization
                           ↓
                     Register Device
                           ↓
@@ -46,36 +52,74 @@ Check Onboarding Status (AsyncStorage)
                           ↓
                     Store in SQLite
                           ↓
-                    [Step 1] Categories Selection
+                    [Step 3] Categories Selection
                           ↓
-                    User selects interests
+                    User selects interests (minimum 5)
                           ↓
-                    [Step 2] Difficulty Selection
+                    [Step 4] Difficulty Selection
                           ↓
                     User selects difficulty level
                           ↓
-                    [Step 3] Notifications (REQUIRED)
+                    [Step 5] Notifications (REQUIRED)
                           ↓
-                    Start Facts Download (background)
+                    Set notification time preference
                           ↓
                     Request Notification Permissions
                           ↓
-                    ├─ Denied → Show Error, Block Progress
-                    └─ Granted → Wait for Download
+                    ├─ Denied → Show Alert, Block Progress
+                    └─ Granted → Complete Onboarding
                                       ↓
-                                Download Complete?
+                                Mark Complete in AsyncStorage
                                       ↓
-                                ├─ No → Show Progress, Wait
-                                └─ Yes → Complete Onboarding
-                                              ↓
-                                        Mark Complete in AsyncStorage
-                                              ↓
-                                        Navigate to Main App
+                                Navigate to Success Screen
 ```
 
 ### Step-by-Step Details
 
-#### Step 0: Initialization (`/onboarding/index`)
+#### Step 1: Language Selection (`/onboarding/language`)
+**Purpose**: Allow users to select their preferred language for the app
+
+**UI Elements**:
+- Progress: 1/4
+- 3-column grid of language cards
+- Each card shows:
+  - Flag emoji
+  - Language name in native script
+- 8 supported languages: English, German, Spanish, French, Japanese, Korean, Turkish, Chinese
+- Continue button (always enabled, uses current locale as default)
+
+**Process**:
+1. Display language options in 3-column grid layout
+2. User selects a language by tapping card
+3. **Immediately set locale** using `setLocale(languageCode)` on selection
+4. UI updates in real-time to show selected language
+5. Navigate to initialization screen
+
+**Languages**:
+- 🇬🇧 English (en)
+- 🇩🇪 German (de)
+- 🇪🇸 Spanish (es)
+- 🇫🇷 French (fr)
+- 🇯🇵 Japanese (ja)
+- 🇰🇷 Korean (ko)
+- 🇹🇷 Turkish (tr)
+- 🇨🇳 Chinese (zh)
+
+**Validation**:
+- No validation required - defaults to current system locale
+- User can select any language regardless of system settings
+
+**Storage**:
+- AsyncStorage: `@app_locale` (automatically saved by i18n system)
+
+**Navigation**:
+```javascript
+router.push('/onboarding'); // Navigate to initialization
+```
+
+---
+
+#### Step 2: Initialization (`/onboarding/index`)
 **Purpose**: Register device and fetch metadata
 
 **Process**:
@@ -96,24 +140,24 @@ Check Onboarding Status (AsyncStorage)
 
 ---
 
-#### Step 1: Categories (`/onboarding/categories`)
+#### Step 3: Categories (`/onboarding/categories`)
 **Purpose**: Let users select categories they're interested in
 
 **UI Elements**:
-- Progress: 1/3
+- Progress: 2/4
 - Grid of category cards (3 per row)
 - Each card shows icon + category name
 - Multiple selection allowed
-- Continue button (disabled if no selection)
+- Continue button (disabled until at least 5 categories selected)
 
 **Process**:
 1. Load categories from SQLite
 2. Display as grid with Lucide icons
-3. User selects at least 1 category
+3. User selects at least 5 categories
 4. Pass `selectedCategories` array to next step
 
 **Validation**:
-- At least 1 category must be selected
+- At least 5 categories must be selected
 - Categories are loaded from database (not hardcoded)
 
 **Navigation**:
@@ -128,11 +172,11 @@ router.push({
 
 ---
 
-#### Step 2: Difficulty (`/onboarding/difficulty`)
+#### Step 4: Difficulty (`/onboarding/difficulty`)
 **Purpose**: Let users select their preferred fact complexity
 
 **UI Elements**:
-- Progress: 2/3
+- Progress: 3/4
 - 4 option cards:
   - Beginner: "Simple and easy-to-understand facts"
   - Intermediate: "Moderately detailed and engaging facts"
@@ -159,96 +203,62 @@ router.push({
 
 ---
 
-#### Step 3: Notifications (`/onboarding/notifications`) ⚠️ CRITICAL
-**Purpose**: Request notification permissions AND download all facts
+#### Step 5: Notifications (`/onboarding/notifications`) ⚠️ CRITICAL
+**Purpose**: Request notification permissions and set notification time preference
 
 **🚨 MANDATORY REQUIREMENTS**:
 - Users MUST grant notification permissions
 - NO skip option
-- Facts must be fully downloaded before proceeding
-- Onboarding cannot complete without both permissions AND data
+- Notifications are REQUIRED to complete onboarding
 
 **UI Elements**:
-- Progress: 3/3
-- Bell icon
-- Download status indicator:
-  - "Downloading facts..." (with progress)
-  - "Facts downloaded" (with checkmark)
-- Notification prompt button:
-  - Disabled state: "Preparing..." (while downloading)
-  - Enabled state: "Enable Notifications"
-- NO skip button (this was a mistake in previous implementation)
+- Progress: 4/4
+- Bell icon in circular container
+- Time picker for notification preference:
+  - iOS: Inline spinner picker
+  - Android: Button that opens time picker dialog
+- Default time: 9:00 AM
+- "Enable Notifications" button (always enabled)
+- NO skip button
 
 **Process**:
-1. **Component Mount**: Immediately start downloading facts in background
-   ```javascript
-   useEffect(() => {
-     downloadFactsInBackground();
-   }, []);
-   ```
+1. **Component Mount**: Display notification time picker with default time (9:00 AM)
 
-2. **Background Download**:
-   ```javascript
-   const result = await onboardingService.fetchAllFacts(
-     locale,              // User's language
-     selectedCategories,  // From previous step
-     difficulty,          // From previous step
-     (progress) => {
-       setDownloadProgress(progress); // Update UI
-     }
-   );
-   ```
+2. **User Interaction**:
+   - User can adjust notification time using picker
+   - iOS: Inline spinner picker
+   - Android: Tapping button opens native time picker dialog
 
-3. **Download Progress States**:
-   - `downloading`: Show "Downloading facts... X of Y"
-   - `complete`: Enable notification button, show checkmark
-   - `error`: Show error message, offer retry
-
-4. **Notification Permission Flow**:
-   - Button is DISABLED until download completes
-   - When enabled, user clicks "Enable Notifications"
+3. **Permission Request Flow**:
+   - User clicks "Enable Notifications" button
    - Call `Notifications.requestPermissionsAsync()`
-   - If DENIED → Show error, keep button enabled for retry
-   - If GRANTED → Auto-complete onboarding
+   - If DENIED → Show Alert with brief message directing to Settings
+   - If GRANTED → Navigate to success screen with preferences
 
-5. **Completion Logic**:
+4. **Navigation on Success**:
    ```javascript
-   // BOTH conditions must be true:
-   if (downloadComplete && permissionGranted) {
-     await completeOnboarding({
-       selectedCategories,
-       difficultyPreference: difficulty
-     });
-     router.replace('/'); // Navigate to main app
-   }
+   router.push({
+     pathname: '/onboarding/success',
+     params: {
+       selectedCategories: JSON.stringify(selectedCategories),
+       difficulty: difficulty,
+       notificationTime: notificationTime.toISOString(),
+     },
+   });
    ```
 
 **Error States**:
-1. **Download Failed**:
-   - Show error message
-   - Keep button disabled
-   - Automatically retry (up to 3 times with exponential backoff)
-
-2. **Permission Denied**:
-   - Show error: "Permission Required - We need notification permissions to send you daily facts."
-   - Keep button enabled
-   - User MUST grant to proceed
-   - No alternative path
+1. **Permission Denied**:
+   - Show Alert with title: "Notification Permission Required"
+   - Message: Brief instructions directing user to Settings > Facts A Day > Notifications
+   - Alert has single "OK" button to dismiss
+   - User remains on notifications screen
+   - User MUST grant permissions to proceed
+   - No alternative path or skip option
 
 **Storage**:
-- SQLite: `facts` table (all downloaded facts)
-- AsyncStorage:
-  - `@onboarding_complete: "true"`
-  - `@selected_categories: ["science", "technology", ...]`
-  - `@difficulty_preference: "all"`
-
-**API Calls**:
-```
-GET /api/facts?language={locale}&categories={cats}&difficulty={diff}
-```
-- Handles pagination automatically
-- Downloads ALL facts that match criteria
-- Stores in SQLite with transaction
+- Notification time preference is passed to success screen via navigation params
+- No direct storage happens on this screen
 
 ---
 
@@ -266,7 +276,7 @@ Check AsyncStorage: @onboarding_complete
 ```
 
 **Navigation Rules**:
-1. If onboarding incomplete AND not in onboarding → Redirect to `/onboarding`
+1. If onboarding incomplete AND not in onboarding → Redirect to `/onboarding/language`
 2. If onboarding complete AND in onboarding → Redirect to `/` (main app)
 3. Otherwise → Stay on current screen
 
@@ -277,15 +287,19 @@ Check AsyncStorage: @onboarding_complete
 ### Onboarding Data Pipeline
 
 ```
+Language Selection → AsyncStorage (@app_locale)
+    ↓
 Backend API
     ↓
 Device Registration → SecureStore (device_key)
     ↓
 Metadata Fetch → SQLite (categories, content_types)
     ↓
-Facts Fetch → SQLite (facts table)
-    ↓
 User Preferences → AsyncStorage (categories, difficulty)
+    ↓
+Notification Permission Request
+    ↓
+Success Screen → Facts Download → SQLite (facts table)
     ↓
 Completion Flag → AsyncStorage (@onboarding_complete)
 ```
@@ -419,10 +433,12 @@ app/
 ├── index.tsx                      # Main app (after onboarding)
 └── onboarding/
     ├── _layout.tsx                # Onboarding stack navigation
-    ├── index.tsx                  # Step 0: Initialization
-    ├── categories.tsx             # Step 1: Category selection
-    ├── difficulty.tsx             # Step 2: Difficulty selection
-    └── notifications.tsx          # Step 3: Permissions + Download
+    ├── language.tsx               # Step 1: Language selection
+    ├── index.tsx                  # Step 2: Initialization
+    ├── categories.tsx             # Step 3: Category selection (min 5)
+    ├── difficulty.tsx             # Step 4: Difficulty selection
+    ├── notifications.tsx          # Step 5: Permissions + Time preference
+    └── success.tsx                # Download screen + Completion
 
 src/
 ├── services/
@@ -431,8 +447,12 @@ src/
 │   └── database.ts               # SQLite operations
 ├── components/
 │   ├── CategoryCard.tsx          # Category selection card
-│   ├── ProgressIndicator.tsx    # Step progress (1/3, 2/3, 3/3)
+│   ├── ProgressIndicator.tsx    # Step progress (1/4, 2/4, 3/4, 4/4)
 │   └── Button.tsx                # Primary/secondary buttons
+├── i18n/
+│   ├── config.ts                 # i18n configuration
+│   ├── translations.ts           # Translation strings (8 languages)
+│   └── useTranslation.tsx        # Translation hook
 └── theme/
     └── tokens.ts                 # Design tokens
 ```
@@ -442,38 +462,47 @@ src/
 ## Testing Checklist
 
 ### Happy Path
-- [ ] Fresh install → Onboarding → Complete → Main App
-- [ ] Categories selection → At least 1 selected
+- [ ] Fresh install → Language selection → Onboarding → Complete → Main App
+- [ ] Language selection → Select language → UI updates immediately
+- [ ] Initialization → Device registered → Metadata fetched
+- [ ] Categories selection → At least 5 selected → Can proceed
 - [ ] Difficulty selection → Default "all"
-- [ ] Notifications → Grant permission → Complete
-- [ ] Facts download → Progress shown → Success
-- [ ] Relaunch → Goes to Main App
+- [ ] Notifications → Set time → Grant permission → Navigate to success
+- [ ] Success screen → Facts download → Progress shown → Complete
+- [ ] Relaunch → Goes to Main App in selected language
 
 ### Error Paths
 - [ ] Network failure on init → Retry works
-- [ ] Download fails → Retry works
-- [ ] Permission denied → Error shown, retry available
+- [ ] Network failure on metadata fetch → Retry works
+- [ ] Categories: Less than 5 selected → Button disabled
+- [ ] Permission denied → Alert shown directing to Settings
 - [ ] Permission denied multiple times → Still blocks progress
-- [ ] Kill app during download → Restart from beginning
+- [ ] Kill app during download → Restart from language selection
 
 ### Edge Cases
-- [ ] No network → Clear error messages
-- [ ] Slow network → Progress shown
-- [ ] Backend returns 0 facts → Error shown
-- [ ] User denies then grants permission → Works
+- [ ] No network → Clear error messages on init screen
+- [ ] Slow network → Progress shown on success screen
+- [ ] Language selection → All 8 languages display correctly
+- [ ] Language changes immediately reflect in UI
+- [ ] Backend returns 0 facts → Error shown on success screen
+- [ ] User denies then grants permission → Works correctly
 - [ ] Database write fails → Transaction rollback
+- [ ] Time picker works on both iOS and Android
 
 ---
 
 ## Common Mistakes to Avoid
 
-1. ❌ **Adding a skip button for notifications** → Notifications are REQUIRED
-2. ❌ **Marking onboarding complete before download finishes** → Must wait for both
-3. ❌ **Not using transactions for database writes** → Data corruption risk
-4. ❌ **Hardcoding categories** → Must load from database
-5. ❌ **Forgetting to clear state on errors** → Can cause UI bugs
-6. ❌ **Not showing download progress** → Poor UX
-7. ❌ **Allowing onboarding completion with 0 facts** → App won't work
+1. ❌ **Skipping language selection step** → Must be first step in onboarding
+2. ❌ **Not setting locale immediately** → Users expect real-time UI updates
+3. ❌ **Adding a skip button for notifications** → Notifications are REQUIRED
+4. ❌ **Allowing less than 5 categories** → Minimum requirement is 5 categories
+5. ❌ **Using inline error boxes for permission denial** → Use native Alert instead
+6. ❌ **Not using transactions for database writes** → Data corruption risk
+7. ❌ **Hardcoding categories or translations** → Must load from database/i18n system
+8. ❌ **Forgetting to clear state on errors** → Can cause UI bugs
+9. ❌ **Not showing download progress** → Poor UX
+10. ❌ **Allowing onboarding completion with 0 facts** → App won't work
 
 ---
 
