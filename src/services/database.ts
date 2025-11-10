@@ -4,24 +4,51 @@ import * as FileSystem from "expo-file-system";
 const DATABASE_NAME = "factsaday.db";
 
 let db: SQLite.SQLiteDatabase | null = null;
+let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 /**
  * Initialize and open the database
  */
 export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
+  // If database is already initialized, return it
   if (db) {
     return db;
   }
 
-  db = await SQLite.openDatabaseAsync(DATABASE_NAME);
+  // If initialization is in progress, wait for it to complete
+  if (dbInitPromise) {
+    return dbInitPromise;
+  }
 
-  // Log the database path
-  const dbPath = `${FileSystem.Paths.document.uri}SQLite/${DATABASE_NAME}`;
-  console.log("📁 Database path:", dbPath);
+  // Start initialization
+  dbInitPromise = (async () => {
+    try {
+      console.log("🔄 Initializing database...");
 
-  await initializeSchema();
-  await runMigrations();
-  return db;
+      const database = await SQLite.openDatabaseAsync(DATABASE_NAME);
+
+      // Log the database path
+      const dbPath = `${FileSystem.Paths.document.uri}SQLite/${DATABASE_NAME}`;
+      console.log("📁 Database path:", dbPath);
+
+      // Set the db variable before running schema and migrations
+      db = database;
+
+      await initializeSchema();
+      await runMigrations();
+
+      console.log("✅ Database initialized successfully");
+      return database;
+    } catch (error) {
+      console.error("❌ Database initialization failed:", error);
+      // Reset state on error so it can be retried
+      db = null;
+      dbInitPromise = null;
+      throw error;
+    }
+  })();
+
+  return dbInitPromise;
 }
 
 /**

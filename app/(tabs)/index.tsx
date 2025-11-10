@@ -175,7 +175,6 @@ export default function HomeScreen() {
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id.toString()}
-        style={{ flex: 1 }}
         contentContainerStyle={{
           paddingBottom: tokens.space.lg,
         }}

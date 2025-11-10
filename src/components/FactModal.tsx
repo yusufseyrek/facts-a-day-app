@@ -23,7 +23,7 @@ const Container = styled(SafeAreaView, {
 
 const Header = styled(XStack, {
   padding: tokens.space.lg,
-  alignItems: 'flex-start',
+  alignItems: 'center',
   justifyContent: 'space-between',
   borderBottomWidth: 1,
   borderBottomColor: '$border',

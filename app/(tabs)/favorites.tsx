@@ -81,7 +81,7 @@ export default function FavoritesScreen() {
 
   if (loading) {
     return (
-      <Container>
+      <Container edges={["top"]}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <LoadingContainer>
           <ActivityIndicator size="large" color={tokens.color.light.primary} />
@@ -92,7 +92,7 @@ export default function FavoritesScreen() {
 
   if (favorites.length === 0) {
     return (
-      <Container>
+      <Container edges={["top"]}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <EmptyState
           title={t('noFavorites')}
@@ -103,7 +103,7 @@ export default function FavoritesScreen() {
   }
 
   return (
-    <Container>
+    <Container edges={["top"]}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <FlatList
         data={favorites}

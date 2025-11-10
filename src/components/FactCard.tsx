@@ -113,14 +113,6 @@ export function FactCard({ fact, onReadMore }: FactCardProps) {
       {/* Single ScrollView for all content */}
       <ContentScrollView showsVerticalScrollIndicator={false}>
         <ContentInner>
-          {/* Badges at the top */}
-          {(categoryForBadge || fact.difficulty) && (
-            <BadgesRow>
-              {categoryForBadge && <CategoryBadge category={categoryForBadge} />}
-              {fact.difficulty && <DifficultyBadge difficulty={fact.difficulty} />}
-            </BadgesRow>
-          )}
-
           {/* Main Content */}
           <BodyText fontSize={16} lineHeight={26} color="$text">
             {fact.content}
@@ -129,6 +121,14 @@ export function FactCard({ fact, onReadMore }: FactCardProps) {
           {/* Image */}
           {fact.image_url && (
             <FactImage source={{ uri: fact.image_url }} resizeMode="cover" />
+          )}
+
+          {/* Badges above tags */}
+          {(categoryForBadge || fact.difficulty) && (
+            <BadgesRow>
+              {categoryForBadge && <CategoryBadge category={categoryForBadge} />}
+              {fact.difficulty && <DifficultyBadge difficulty={fact.difficulty} />}
+            </BadgesRow>
           )}
 
           {/* Tags */}

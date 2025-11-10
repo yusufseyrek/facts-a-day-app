@@ -6,18 +6,36 @@ import { I18nProvider } from '../src/i18n';
 import { OnboardingProvider } from '../src/contexts';
 import * as onboardingService from '../src/services/onboarding';
 import * as notificationService from '../src/services/notifications';
+import * as database from '../src/services/database';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function RootLayout() {
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
+  const [isDbReady, setIsDbReady] = useState(false);
   const router = useRouter();
   const segments = useSegments();
 
   useEffect(() => {
-    // Configure notifications on app start
-    notificationService.configureNotifications();
-    checkOnboardingStatus();
+    initializeApp();
   }, []);
+
+  const initializeApp = async () => {
+    try {
+      // Initialize database first
+      await database.openDatabase();
+      setIsDbReady(true);
+
+      // Configure notifications on app start
+      notificationService.configureNotifications();
+
+      // Check onboarding status
+      await checkOnboardingStatus();
+    } catch (error) {
+      console.error('Failed to initialize app:', error);
+      // Still set db ready to true to allow app to continue
+      setIsDbReady(true);
+    }
+  };
 
   const checkOnboardingStatus = async () => {
     const complete = await onboardingService.isOnboardingComplete();
@@ -51,8 +69,8 @@ export default function RootLayout() {
     headerShown: false as const,
   };
 
-  // Show loading while checking onboarding status
-  if (isOnboardingComplete === null) {
+  // Show loading while initializing app and checking onboarding status
+  if (!isDbReady || isOnboardingComplete === null) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />
