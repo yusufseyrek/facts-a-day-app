@@ -1,6 +1,7 @@
-import * as SQLite from 'expo-sqlite';
+import * as SQLite from "expo-sqlite";
+import * as FileSystem from "expo-file-system";
 
-const DATABASE_NAME = 'factsaday.db';
+const DATABASE_NAME = "factsaday.db";
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -13,6 +14,11 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
   }
 
   db = await SQLite.openDatabaseAsync(DATABASE_NAME);
+
+  // Log the database path
+  const dbPath = `${FileSystem.Paths.document.uri}SQLite/${DATABASE_NAME}`;
+  console.log("📁 Database path:", dbPath);
+
   await initializeSchema();
   await runMigrations();
   return db;
@@ -23,7 +29,7 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
  */
 async function initializeSchema(): Promise<void> {
   if (!db) {
-    throw new Error('Database not initialized');
+    throw new Error("Database not initialized");
   }
 
   // Create categories table
@@ -84,12 +90,12 @@ async function initializeSchema(): Promise<void> {
  */
 async function runMigrations(): Promise<void> {
   if (!db) {
-    throw new Error('Database not initialized');
+    throw new Error("Database not initialized");
   }
 
   // Get current database version
   const versionResult = await db.getFirstAsync<{ user_version: number }>(
-    'PRAGMA user_version'
+    "PRAGMA user_version"
   );
   const currentVersion = versionResult?.user_version || 0;
 
@@ -106,8 +112,30 @@ async function runMigrations(): Promise<void> {
     `);
 
     // Update version
-    await db.execAsync('PRAGMA user_version = 1');
-    console.log('Database migrated to version 1: Added notification scheduling columns');
+    await db.execAsync("PRAGMA user_version = 1");
+    console.log(
+      "Database migrated to version 1: Added notification scheduling columns"
+    );
+  }
+
+  // Migration 2: Add favorites table
+  if (currentVersion < 2) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS favorites (
+        fact_id INTEGER PRIMARY KEY,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (fact_id) REFERENCES facts (id) ON DELETE CASCADE
+      );
+    `);
+
+    // Create index on created_at for ordering
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_favorites_created_at ON favorites(created_at);
+    `);
+
+    // Update version
+    await db.execAsync("PRAGMA user_version = 2");
+    console.log("Database migrated to version 2: Added favorites table");
   }
 }
 
@@ -120,6 +148,7 @@ export async function clearDatabase(): Promise<void> {
     DELETE FROM facts;
     DELETE FROM categories;
     DELETE FROM content_types;
+    DELETE FROM favorites;
   `);
 }
 
@@ -156,15 +185,17 @@ export async function insertCategories(categories: Category[]): Promise<void> {
 export async function getAllCategories(): Promise<Category[]> {
   const database = await openDatabase();
   const result = await database.getAllAsync<Category>(
-    'SELECT * FROM categories ORDER BY name ASC'
+    "SELECT * FROM categories ORDER BY name ASC"
   );
   return result;
 }
 
-export async function getCategoryBySlug(slug: string): Promise<Category | null> {
+export async function getCategoryBySlug(
+  slug: string
+): Promise<Category | null> {
   const database = await openDatabase();
   const result = await database.getFirstAsync<Category>(
-    'SELECT * FROM categories WHERE slug = ?',
+    "SELECT * FROM categories WHERE slug = ?",
     [slug]
   );
   return result;
@@ -179,7 +210,9 @@ export interface ContentType {
   description?: string;
 }
 
-export async function insertContentTypes(contentTypes: ContentType[]): Promise<void> {
+export async function insertContentTypes(
+  contentTypes: ContentType[]
+): Promise<void> {
   const database = await openDatabase();
 
   for (const contentType of contentTypes) {
@@ -199,7 +232,7 @@ export async function insertContentTypes(contentTypes: ContentType[]): Promise<v
 export async function getAllContentTypes(): Promise<ContentType[]> {
   const database = await openDatabase();
   const result = await database.getAllAsync<ContentType>(
-    'SELECT * FROM content_types ORDER BY name ASC'
+    "SELECT * FROM content_types ORDER BY name ASC"
   );
   return result;
 }
@@ -223,6 +256,71 @@ export interface Fact {
   created_at: string;
   scheduled_date?: string; // ISO date string when fact is scheduled for notification
   notification_id?: string; // Notification ID from expo-notifications
+}
+
+/**
+ * Extended Fact interface with joined category and content_type data
+ */
+export interface FactWithRelations extends Fact {
+  categoryData?: Category | null;
+  contentTypeData?: ContentType | null;
+}
+
+/**
+ * Helper function to map query results with joined data to FactWithRelations
+ */
+function mapFactsWithRelations(rows: any[]): FactWithRelations[] {
+  return rows.map((row) => {
+    const fact: FactWithRelations = {
+      id: row.id,
+      title: row.title,
+      content: row.content,
+      summary: row.summary,
+      difficulty: row.difficulty,
+      content_type: row.content_type,
+      category: row.category,
+      tags: row.tags,
+      source_url: row.source_url,
+      reading_time: row.reading_time,
+      word_count: row.word_count,
+      image_url: row.image_url,
+      language: row.language,
+      created_at: row.created_at,
+      scheduled_date: row.scheduled_date,
+      notification_id: row.notification_id,
+    };
+
+    // Map category data if present
+    if (row.category_id) {
+      fact.categoryData = {
+        id: row.category_id,
+        name: row.category_name,
+        slug: row.category_slug,
+        description: row.category_description,
+        icon: row.category_icon,
+        color_hex: row.category_color_hex,
+      };
+    }
+
+    // Map content_type data if present
+    if (row.content_type_id) {
+      fact.contentTypeData = {
+        id: row.content_type_id,
+        name: row.content_type_name,
+        slug: row.content_type_slug,
+        description: row.content_type_description,
+      };
+    }
+
+    return fact;
+  });
+}
+
+/**
+ * Helper function to map a single query result with joined data to FactWithRelations
+ */
+function mapSingleFactWithRelations(row: any): FactWithRelations {
+  return mapFactsWithRelations([row])[0];
 }
 
 export async function insertFacts(facts: Fact[]): Promise<void> {
@@ -257,65 +355,179 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
   });
 }
 
-export async function getAllFacts(language?: string): Promise<Fact[]> {
+export async function getAllFacts(language?: string): Promise<FactWithRelations[]> {
   const database = await openDatabase();
 
   if (language) {
-    const result = await database.getAllAsync<Fact>(
-      'SELECT * FROM facts WHERE language = ? ORDER BY created_at DESC',
+    const result = await database.getAllAsync<any>(
+      `SELECT
+        f.*,
+        c.id as category_id,
+        c.name as category_name,
+        c.slug as category_slug,
+        c.description as category_description,
+        c.icon as category_icon,
+        c.color_hex as category_color_hex,
+        ct.id as content_type_id,
+        ct.name as content_type_name,
+        ct.slug as content_type_slug,
+        ct.description as content_type_description
+      FROM facts f
+      LEFT JOIN categories c ON f.category = c.slug
+      LEFT JOIN content_types ct ON f.content_type = ct.slug
+      WHERE f.language = ?
+      ORDER BY f.created_at DESC`,
       [language]
     );
-    return result;
+    return mapFactsWithRelations(result);
   }
 
-  const result = await database.getAllAsync<Fact>(
-    'SELECT * FROM facts ORDER BY created_at DESC'
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex,
+      ct.id as content_type_id,
+      ct.name as content_type_name,
+      ct.slug as content_type_slug,
+      ct.description as content_type_description
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN content_types ct ON f.content_type = ct.slug
+    ORDER BY f.created_at DESC`
   );
-  return result;
+  return mapFactsWithRelations(result);
 }
 
-export async function getFactById(id: number): Promise<Fact | null> {
+export async function getFactById(id: number): Promise<FactWithRelations | null> {
   const database = await openDatabase();
-  const result = await database.getFirstAsync<Fact>(
-    'SELECT * FROM facts WHERE id = ?',
+  const result = await database.getFirstAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex,
+      ct.id as content_type_id,
+      ct.name as content_type_name,
+      ct.slug as content_type_slug,
+      ct.description as content_type_description
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN content_types ct ON f.content_type = ct.slug
+    WHERE f.id = ?`,
     [id]
   );
-  return result;
+  return result ? mapSingleFactWithRelations(result) : null;
 }
 
-export async function getFactsByCategory(category: string, language?: string): Promise<Fact[]> {
+export async function getFactsByCategory(
+  category: string,
+  language?: string
+): Promise<FactWithRelations[]> {
   const database = await openDatabase();
 
   if (language) {
-    const result = await database.getAllAsync<Fact>(
-      'SELECT * FROM facts WHERE category = ? AND language = ? ORDER BY created_at DESC',
+    const result = await database.getAllAsync<any>(
+      `SELECT
+        f.*,
+        c.id as category_id,
+        c.name as category_name,
+        c.slug as category_slug,
+        c.description as category_description,
+        c.icon as category_icon,
+        c.color_hex as category_color_hex,
+        ct.id as content_type_id,
+        ct.name as content_type_name,
+        ct.slug as content_type_slug,
+        ct.description as content_type_description
+      FROM facts f
+      LEFT JOIN categories c ON f.category = c.slug
+      LEFT JOIN content_types ct ON f.content_type = ct.slug
+      WHERE f.category = ? AND f.language = ?
+      ORDER BY f.created_at DESC`,
       [category, language]
     );
-    return result;
+    return mapFactsWithRelations(result);
   }
 
-  const result = await database.getAllAsync<Fact>(
-    'SELECT * FROM facts WHERE category = ? ORDER BY created_at DESC',
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex,
+      ct.id as content_type_id,
+      ct.name as content_type_name,
+      ct.slug as content_type_slug,
+      ct.description as content_type_description
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN content_types ct ON f.content_type = ct.slug
+    WHERE f.category = ?
+    ORDER BY f.created_at DESC`,
     [category]
   );
-  return result;
+  return mapFactsWithRelations(result);
 }
 
-export async function getRandomFact(language?: string): Promise<Fact | null> {
+export async function getRandomFact(language?: string): Promise<FactWithRelations | null> {
   const database = await openDatabase();
 
   if (language) {
-    const result = await database.getFirstAsync<Fact>(
-      'SELECT * FROM facts WHERE language = ? ORDER BY RANDOM() LIMIT 1',
+    const result = await database.getFirstAsync<any>(
+      `SELECT
+        f.*,
+        c.id as category_id,
+        c.name as category_name,
+        c.slug as category_slug,
+        c.description as category_description,
+        c.icon as category_icon,
+        c.color_hex as category_color_hex,
+        ct.id as content_type_id,
+        ct.name as content_type_name,
+        ct.slug as content_type_slug,
+        ct.description as content_type_description
+      FROM facts f
+      LEFT JOIN categories c ON f.category = c.slug
+      LEFT JOIN content_types ct ON f.content_type = ct.slug
+      WHERE f.language = ?
+      ORDER BY RANDOM()
+      LIMIT 1`,
       [language]
     );
-    return result;
+    return result ? mapSingleFactWithRelations(result) : null;
   }
 
-  const result = await database.getFirstAsync<Fact>(
-    'SELECT * FROM facts ORDER BY RANDOM() LIMIT 1'
+  const result = await database.getFirstAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex,
+      ct.id as content_type_id,
+      ct.name as content_type_name,
+      ct.slug as content_type_slug,
+      ct.description as content_type_description
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN content_types ct ON f.content_type = ct.slug
+    ORDER BY RANDOM()
+    LIMIT 1`
   );
-  return result;
+  return result ? mapSingleFactWithRelations(result) : null;
 }
 
 export async function getFactsCount(language?: string): Promise<number> {
@@ -323,14 +535,14 @@ export async function getFactsCount(language?: string): Promise<number> {
 
   if (language) {
     const result = await database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM facts WHERE language = ?',
+      "SELECT COUNT(*) as count FROM facts WHERE language = ?",
       [language]
     );
     return result?.count || 0;
   }
 
   const result = await database.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM facts'
+    "SELECT COUNT(*) as count FROM facts"
   );
   return result?.count || 0;
 }
@@ -345,22 +557,56 @@ export async function getFactsCount(language?: string): Promise<number> {
 export async function getRandomUnscheduledFacts(
   limit: number,
   language?: string
-): Promise<Fact[]> {
+): Promise<FactWithRelations[]> {
   const database = await openDatabase();
 
   if (language) {
-    const result = await database.getAllAsync<Fact>(
-      'SELECT * FROM facts WHERE language = ? AND scheduled_date IS NULL ORDER BY RANDOM() LIMIT ?',
+    const result = await database.getAllAsync<any>(
+      `SELECT
+        f.*,
+        c.id as category_id,
+        c.name as category_name,
+        c.slug as category_slug,
+        c.description as category_description,
+        c.icon as category_icon,
+        c.color_hex as category_color_hex,
+        ct.id as content_type_id,
+        ct.name as content_type_name,
+        ct.slug as content_type_slug,
+        ct.description as content_type_description
+      FROM facts f
+      LEFT JOIN categories c ON f.category = c.slug
+      LEFT JOIN content_types ct ON f.content_type = ct.slug
+      WHERE f.language = ? AND f.scheduled_date IS NULL
+      ORDER BY RANDOM()
+      LIMIT ?`,
       [language, limit]
     );
-    return result;
+    return mapFactsWithRelations(result);
   }
 
-  const result = await database.getAllAsync<Fact>(
-    'SELECT * FROM facts WHERE scheduled_date IS NULL ORDER BY RANDOM() LIMIT ?',
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex,
+      ct.id as content_type_id,
+      ct.name as content_type_name,
+      ct.slug as content_type_slug,
+      ct.description as content_type_description
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN content_types ct ON f.content_type = ct.slug
+    WHERE f.scheduled_date IS NULL
+    ORDER BY RANDOM()
+    LIMIT ?`,
     [limit]
   );
-  return result;
+  return mapFactsWithRelations(result);
 }
 
 /**
@@ -373,7 +619,7 @@ export async function markFactAsScheduled(
 ): Promise<void> {
   const database = await openDatabase();
   await database.runAsync(
-    'UPDATE facts SET scheduled_date = ?, notification_id = ? WHERE id = ?',
+    "UPDATE facts SET scheduled_date = ?, notification_id = ? WHERE id = ?",
     [scheduledDate, notificationId, factId]
   );
 }
@@ -384,7 +630,7 @@ export async function markFactAsScheduled(
 export async function clearFactScheduling(factId: number): Promise<void> {
   const database = await openDatabase();
   await database.runAsync(
-    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE id = ?',
+    "UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE id = ?",
     [factId]
   );
 }
@@ -395,26 +641,218 @@ export async function clearFactScheduling(factId: number): Promise<void> {
 export async function clearAllScheduledFacts(): Promise<void> {
   const database = await openDatabase();
   await database.runAsync(
-    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL'
+    "UPDATE facts SET scheduled_date = NULL, notification_id = NULL"
   );
 }
 
 /**
  * Get count of scheduled facts
  */
-export async function getScheduledFactsCount(language?: string): Promise<number> {
+export async function getScheduledFactsCount(
+  language?: string
+): Promise<number> {
   const database = await openDatabase();
 
   if (language) {
     const result = await database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM facts WHERE scheduled_date IS NOT NULL AND language = ?',
+      "SELECT COUNT(*) as count FROM facts WHERE scheduled_date IS NOT NULL AND language = ?",
       [language]
     );
     return result?.count || 0;
   }
 
   const result = await database.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM facts WHERE scheduled_date IS NOT NULL'
+    "SELECT COUNT(*) as count FROM facts WHERE scheduled_date IS NOT NULL"
   );
   return result?.count || 0;
+}
+
+// ====== FAVORITES ======
+
+/**
+ * Toggle favorite status for a fact
+ * Returns true if fact is now favorited, false if unfavorited
+ */
+export async function toggleFavorite(factId: number): Promise<boolean> {
+  const database = await openDatabase();
+
+  // Check if already favorited
+  const existing = await database.getFirstAsync<{ fact_id: number }>(
+    "SELECT fact_id FROM favorites WHERE fact_id = ?",
+    [factId]
+  );
+
+  if (existing) {
+    // Remove from favorites
+    await database.runAsync("DELETE FROM favorites WHERE fact_id = ?", [
+      factId,
+    ]);
+    return false;
+  } else {
+    // Add to favorites
+    const now = new Date().toISOString();
+    await database.runAsync(
+      "INSERT INTO favorites (fact_id, created_at) VALUES (?, ?)",
+      [factId, now]
+    );
+    return true;
+  }
+}
+
+/**
+ * Check if a fact is favorited
+ */
+export async function isFactFavorited(factId: number): Promise<boolean> {
+  const database = await openDatabase();
+  const result = await database.getFirstAsync<{ fact_id: number }>(
+    "SELECT fact_id FROM favorites WHERE fact_id = ?",
+    [factId]
+  );
+  return !!result;
+}
+
+/**
+ * Get all favorited facts
+ */
+export async function getFavorites(language?: string): Promise<FactWithRelations[]> {
+  const database = await openDatabase();
+
+  if (language) {
+    const result = await database.getAllAsync<any>(
+      `SELECT
+        f.*,
+        c.id as category_id,
+        c.name as category_name,
+        c.slug as category_slug,
+        c.description as category_description,
+        c.icon as category_icon,
+        c.color_hex as category_color_hex,
+        ct.id as content_type_id,
+        ct.name as content_type_name,
+        ct.slug as content_type_slug,
+        ct.description as content_type_description
+      FROM facts f
+      INNER JOIN favorites fav ON f.id = fav.fact_id
+      LEFT JOIN categories c ON f.category = c.slug
+      LEFT JOIN content_types ct ON f.content_type = ct.slug
+      WHERE f.language = ?
+      ORDER BY fav.created_at DESC`,
+      [language]
+    );
+    return mapFactsWithRelations(result);
+  }
+
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex,
+      ct.id as content_type_id,
+      ct.name as content_type_name,
+      ct.slug as content_type_slug,
+      ct.description as content_type_description
+    FROM facts f
+    INNER JOIN favorites fav ON f.id = fav.fact_id
+    LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN content_types ct ON f.content_type = ct.slug
+    ORDER BY fav.created_at DESC`
+  );
+  return mapFactsWithRelations(result);
+}
+
+/**
+ * Get count of favorited facts
+ */
+export async function getFavoritesCount(language?: string): Promise<number> {
+  const database = await openDatabase();
+
+  if (language) {
+    const result = await database.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(*) as count FROM favorites fav
+       INNER JOIN facts f ON fav.fact_id = f.id
+       WHERE f.language = ?`,
+      [language]
+    );
+    return result?.count || 0;
+  }
+
+  const result = await database.getFirstAsync<{ count: number }>(
+    "SELECT COUNT(*) as count FROM favorites"
+  );
+  return result?.count || 0;
+}
+
+// ====== DATE-BASED QUERIES ======
+
+/**
+ * Get facts that were already delivered via notifications
+ * Returns facts from the past 30 days where scheduled_date <= now, ordered by date descending
+ */
+export async function getFactsGroupedByDate(
+  language?: string
+): Promise<FactWithRelations[]> {
+  const database = await openDatabase();
+
+  // Get date 30 days ago
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const cutoffDate = thirtyDaysAgo.toISOString();
+
+  // Get current date/time
+  const now = new Date().toISOString();
+
+  if (language) {
+    const result = await database.getAllAsync<any>(
+      `SELECT
+        f.*,
+        c.id as category_id,
+        c.name as category_name,
+        c.slug as category_slug,
+        c.description as category_description,
+        c.icon as category_icon,
+        c.color_hex as category_color_hex,
+        ct.id as content_type_id,
+        ct.name as content_type_name,
+        ct.slug as content_type_slug,
+        ct.description as content_type_description
+      FROM facts f
+      LEFT JOIN categories c ON f.category = c.slug
+      LEFT JOIN content_types ct ON f.content_type = ct.slug
+      WHERE f.scheduled_date IS NOT NULL
+      AND f.scheduled_date >= ?
+      AND f.scheduled_date <= ?
+      AND f.language = ?
+      ORDER BY f.scheduled_date DESC`,
+      [cutoffDate, now, language]
+    );
+    return mapFactsWithRelations(result);
+  }
+
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex,
+      ct.id as content_type_id,
+      ct.name as content_type_name,
+      ct.slug as content_type_slug,
+      ct.description as content_type_description
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN content_types ct ON f.content_type = ct.slug
+    WHERE f.scheduled_date IS NOT NULL
+    AND f.scheduled_date >= ?
+    AND f.scheduled_date <= ?
+    ORDER BY f.scheduled_date DESC`,
+    [cutoffDate, now]
+  );
+  return mapFactsWithRelations(result);
 }

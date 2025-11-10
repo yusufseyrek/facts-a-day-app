@@ -66,8 +66,15 @@ export default function RootLayout() {
         <OnboardingProvider>
           <AppThemeProvider>
             <Stack screenOptions={screenOptions}>
-              <Stack.Screen name="index" />
+              <Stack.Screen name="(tabs)" />
               <Stack.Screen name="onboarding" />
+              <Stack.Screen
+                name="fact/[id]"
+                options={{
+                  presentation: 'modal',
+                  headerShown: false,
+                }}
+              />
             </Stack>
           </AppThemeProvider>
         </OnboardingProvider>

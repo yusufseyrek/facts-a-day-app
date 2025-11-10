@@ -94,6 +94,31 @@ export interface GetFactsParams {
   since_created_at?: string;
 }
 
+export interface FeedbackRequest {
+  fact_id?: number;
+  feedback_type: 'report' | 'bug' | 'suggestion' | 'other';
+  message: string;
+  user_email?: string;
+}
+
+export interface FeedbackResponse {
+  success: boolean;
+  message: string;
+  feedback_id?: number;
+}
+
+export interface ReportFactRequest {
+  feedback_text: string;
+}
+
+export interface ReportFactResponse {
+  id: number;
+  fact_id: number;
+  status: string;
+  created_at: string;
+  message: string;
+}
+
 // ====== Device Key Management ======
 
 export async function getStoredDeviceKey(): Promise<string | null> {
@@ -312,4 +337,42 @@ export async function getAllFactsWithRetry(
   }
 
   throw lastError || new Error('Failed to fetch facts after multiple retries');
+}
+
+/**
+ * Submit feedback or report an issue
+ * Requires authentication
+ */
+export async function submitFeedback(
+  feedback: FeedbackRequest
+): Promise<FeedbackResponse> {
+  return makeAuthenticatedRequest<FeedbackResponse>('/api/feedback', {
+    method: 'POST',
+    body: JSON.stringify(feedback),
+  });
+}
+
+/**
+ * Report a content issue with a specific fact
+ * Requires authentication
+ */
+export async function reportFact(
+  factId: number,
+  feedbackText: string
+): Promise<ReportFactResponse> {
+  if (feedbackText.length < 10) {
+    throw new Error('Feedback text must be at least 10 characters long.');
+  }
+
+  if (feedbackText.length > 1000) {
+    throw new Error('Feedback text must be at most 1000 characters long.');
+  }
+
+  return makeAuthenticatedRequest<ReportFactResponse>(
+    `/api/facts/${factId}/report`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ feedback_text: feedbackText }),
+    }
+  );
 }
