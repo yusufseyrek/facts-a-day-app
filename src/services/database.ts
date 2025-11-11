@@ -164,6 +164,27 @@ async function runMigrations(): Promise<void> {
     await db.execAsync("PRAGMA user_version = 2");
     console.log("Database migrated to version 2: Added favorites table");
   }
+
+  // Migration 3: Add updated_at column to facts table
+  if (currentVersion < 3) {
+    await db.execAsync(`
+      ALTER TABLE facts ADD COLUMN updated_at TEXT;
+    `);
+
+    // Set updated_at = created_at for existing facts
+    await db.execAsync(`
+      UPDATE facts SET updated_at = created_at WHERE updated_at IS NULL;
+    `);
+
+    // Create index on updated_at for faster queries during sync
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_facts_updated_at ON facts(updated_at);
+    `);
+
+    // Update version
+    await db.execAsync("PRAGMA user_version = 3");
+    console.log("Database migrated to version 3: Added updated_at column to facts table");
+  }
 }
 
 /**
@@ -177,6 +198,50 @@ export async function clearDatabase(): Promise<void> {
     DELETE FROM content_types;
     DELETE FROM favorites;
   `);
+}
+
+/**
+ * Clear facts except those already delivered (scheduled_date <= now)
+ * Used when changing preferences to remove future facts while keeping delivered ones
+ */
+export async function clearFutureAndUnscheduledFacts(): Promise<void> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+
+  await database.execAsync(`
+    DELETE FROM facts
+    WHERE scheduled_date IS NULL OR scheduled_date > ?
+  `, [now]);
+
+  console.log('Cleared future and unscheduled facts');
+}
+
+/**
+ * Get facts that have been delivered (scheduled_date <= now)
+ * Used to preserve delivered facts during preference changes
+ */
+export async function getDeliveredFacts(language?: string): Promise<Fact[]> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+
+  if (language) {
+    return await database.getAllAsync<Fact>(
+      `SELECT * FROM facts
+       WHERE scheduled_date IS NOT NULL
+       AND scheduled_date <= ?
+       AND language = ?
+       ORDER BY scheduled_date DESC`,
+      [now, language]
+    );
+  }
+
+  return await database.getAllAsync<Fact>(
+    `SELECT * FROM facts
+     WHERE scheduled_date IS NOT NULL
+     AND scheduled_date <= ?
+     ORDER BY scheduled_date DESC`,
+    [now]
+  );
 }
 
 // ====== CATEGORIES ======
@@ -281,6 +346,7 @@ export interface Fact {
   image_url?: string;
   language: string;
   created_at: string;
+  updated_at?: string;
   scheduled_date?: string; // ISO date string when fact is scheduled for notification
   notification_id?: string; // Notification ID from expo-notifications
 }
@@ -359,8 +425,8 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
       await database.runAsync(
         `INSERT OR REPLACE INTO facts (
           id, title, content, summary, difficulty, content_type, category,
-          tags, source_url, reading_time, word_count, image_url, language, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          tags, source_url, reading_time, word_count, image_url, language, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           fact.id,
           fact.title || null,
@@ -376,6 +442,7 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
           fact.image_url || null,
           fact.language,
           fact.created_at,
+          fact.updated_at || fact.created_at,
         ]
       );
     }

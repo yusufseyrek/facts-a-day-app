@@ -15,6 +15,7 @@ import type { FactWithRelations } from "../../src/services/database";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import * as database from "../../src/services/database";
+import * as Notifications from "expo-notifications";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -63,6 +64,20 @@ export default function HomeScreen() {
   useEffect(() => {
     loadFacts();
   }, [locale]);
+
+  // Auto-refresh feed when new notifications are received
+  useEffect(() => {
+    const subscription = Notifications.addNotificationReceivedListener((notification) => {
+      const factId = notification.request.content.data.factId;
+
+      // Reload facts to show the newly delivered fact
+      if (factId) {
+        loadFacts();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   const loadFacts = async (isRefresh = false) => {
     try {

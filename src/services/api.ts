@@ -71,6 +71,7 @@ export interface FactResponse {
   image_url?: string;
   language: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface FactsResponse {
@@ -91,7 +92,7 @@ export interface GetFactsParams {
   limit?: number;
   offset?: number;
   batch_size?: number;
-  since_created_at?: string;
+  since_updated?: string;
 }
 
 export interface FeedbackRequest {
@@ -261,8 +262,8 @@ export async function getFacts(params: GetFactsParams): Promise<FactsResponse> {
     queryParams.append('batch_size', params.batch_size.toString());
   }
 
-  if (params.since_created_at) {
-    queryParams.append('since_created_at', params.since_created_at);
+  if (params.since_updated) {
+    queryParams.append('since_updated', params.since_updated);
   }
 
   const endpoint = `/api/facts?${queryParams.toString()}`;

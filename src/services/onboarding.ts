@@ -146,6 +146,7 @@ export async function fetchAllFacts(
       image_url: fact.image_url,
       language: fact.language,
       created_at: fact.created_at,
+      updated_at: fact.updated_at,
     }));
 
     // Store facts in database
@@ -236,6 +237,50 @@ export async function getNotificationTime(): Promise<Date | null> {
   } catch (error) {
     console.error('Error getting notification time:', error);
     return null;
+  }
+}
+
+// ====== Update Preferences ======
+
+/**
+ * Update selected categories
+ */
+export async function setSelectedCategories(categories: string[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(
+      SELECTED_CATEGORIES_KEY,
+      JSON.stringify(categories)
+    );
+    console.log('Selected categories updated:', categories);
+  } catch (error) {
+    console.error('Error setting selected categories:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update difficulty preference
+ */
+export async function setDifficultyPreference(difficulty: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(DIFFICULTY_PREFERENCE_KEY, difficulty);
+    console.log('Difficulty preference updated:', difficulty);
+  } catch (error) {
+    console.error('Error setting difficulty preference:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update notification time
+ */
+export async function setNotificationTime(time: Date): Promise<void> {
+  try {
+    await AsyncStorage.setItem(NOTIFICATION_TIME_KEY, time.toISOString());
+    console.log('Notification time updated:', time.toISOString());
+  } catch (error) {
+    console.error('Error setting notification time:', error);
+    throw error;
   }
 }
 

@@ -7,7 +7,9 @@ import { OnboardingProvider } from '../src/contexts';
 import * as onboardingService from '../src/services/onboarding';
 import * as notificationService from '../src/services/notifications';
 import * as database from '../src/services/database';
+import * as contentRefresh from '../src/services/contentRefresh';
 import { ActivityIndicator, View } from 'react-native';
+import * as Notifications from 'expo-notifications';
 
 export default function RootLayout() {
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
@@ -30,6 +32,17 @@ export default function RootLayout() {
 
       // Check onboarding status
       await checkOnboardingStatus();
+
+      // Refresh content in background if onboarding is complete
+      // This runs asynchronously and doesn't block app startup
+      const isComplete = await onboardingService.isOnboardingComplete();
+      if (isComplete) {
+        // Don't await - run in background
+        contentRefresh.refreshAppContent().catch((error) => {
+          // Silently handle errors - app continues with cached data
+          console.error('Background refresh failed:', error);
+        });
+      }
     } catch (error) {
       console.error('Failed to initialize app:', error);
       // Still set db ready to true to allow app to continue
@@ -64,6 +77,33 @@ export default function RootLayout() {
       router.replace('/');
     }
   }, [isOnboardingComplete, segments]);
+
+  // Handle notification taps (when app is in foreground or background)
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const factId = response.notification.request.content.data.factId;
+
+      // Only navigate if app is ready and onboarding is complete
+      if (factId && isDbReady && isOnboardingComplete) {
+        router.push(`/fact/${factId}`);
+      }
+    });
+
+    return () => subscription.remove();
+  }, [isDbReady, isOnboardingComplete]);
+
+  // Handle notification taps when app was closed (cold start)
+  const lastNotificationResponse = Notifications.useLastNotificationResponse();
+  useEffect(() => {
+    if (lastNotificationResponse) {
+      const factId = lastNotificationResponse.notification.request.content.data.factId;
+
+      // Only navigate if app is ready and onboarding is complete
+      if (factId && isDbReady && isOnboardingComplete) {
+        router.push(`/fact/${factId}`);
+      }
+    }
+  }, [lastNotificationResponse, isDbReady, isOnboardingComplete]);
 
   const screenOptions = {
     headerShown: false as const,
