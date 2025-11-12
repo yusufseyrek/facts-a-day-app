@@ -8,7 +8,7 @@ import { SectionList, RefreshControl, ActivityIndicator } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack, Button } from "tamagui";
 import { Clock, Crown } from "@tamagui/lucide-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { tokens } from "../../src/theme/tokens";
 import { H1, H2, FeedFactCard, EmptyState } from "../../src/components";
 import type { FactWithRelations } from "../../src/services/database";
@@ -16,7 +16,7 @@ import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import * as database from "../../src/services/database";
 import * as Notifications from "expo-notifications";
-import { useIsPremium } from "../../src/contexts/SubscriptionContext";
+import { useIsPremium, useSubscription } from "../../src/contexts/SubscriptionContext";
 import { BannerAd } from "../../src/components/ads";
 import { trackFactView } from "../../src/services/adManager";
 import {
@@ -65,6 +65,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isPremium = useIsPremium();
+  const { checkSubscription } = useSubscription();
 
   const [sections, setSections] = useState<FactSection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +74,14 @@ export default function HomeScreen() {
   useEffect(() => {
     loadFacts();
   }, [locale]);
+
+  // Refresh subscription status when screen comes into focus
+  // This ensures the UI updates after returning from paywall
+  useFocusEffect(
+    React.useCallback(() => {
+      checkSubscription();
+    }, [])
+  );
 
   // Check if paywall should be shown
   useEffect(() => {

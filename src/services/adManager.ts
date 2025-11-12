@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showInterstitialAd } from '../components/ads/InterstitialAd';
+import { ADS_ENABLED } from '../config/ads';
 
 // Storage keys
 const FACT_VIEW_COUNT_KEY = '@fact_view_count';
@@ -13,6 +14,11 @@ const FACTS_BEFORE_INTERSTITIAL = 3; // Show interstitial after every 3 fact vie
  * @param isPremium - Whether user is premium (to skip ads)
  */
 export const trackFactView = async (isPremium: boolean): Promise<void> => {
+  // Don't track or show ads if globally disabled
+  if (!ADS_ENABLED) {
+    return;
+  }
+
   // Don't track or show ads for premium users
   if (isPremium) {
     return;
@@ -72,6 +78,11 @@ export const getFactViewCount = async (): Promise<number> => {
  * @param isPremium - Whether user is premium (to skip ads)
  */
 export const showSettingsInterstitial = async (isPremium: boolean): Promise<void> => {
+  // Don't show ads if globally disabled
+  if (!ADS_ENABLED) {
+    return;
+  }
+
   // Don't show ads for premium users
   if (isPremium) {
     return;

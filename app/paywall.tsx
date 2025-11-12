@@ -64,7 +64,7 @@ export default function PaywallScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { offerings, purchasePackage, subscriptionTier } = useSubscription();
+  const { products, purchaseProduct, subscriptionTier } = useSubscription();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<'monthly' | 'annual'>('annual');
 
@@ -81,7 +81,7 @@ export default function PaywallScreen() {
   };
 
   const handlePurchase = async () => {
-    if (!offerings) {
+    if (!products || products.length === 0) {
       Alert.alert(t('error'), t('unableToLoadSubscriptions'));
       return;
     }
@@ -89,37 +89,26 @@ export default function PaywallScreen() {
     setIsLoading(true);
 
     try {
-      // Get the package to purchase
-      const packageToPurchase =
-        selectedPackage === 'monthly'
-          ? offerings.availablePackages.find((pkg) => pkg.packageType === 'MONTHLY')
-          : offerings.availablePackages.find((pkg) => pkg.packageType === 'ANNUAL');
+      // Get the product to purchase
+      const productToPurchase = products.find((product) => product.type === selectedPackage);
 
-      if (!packageToPurchase) {
+      if (!productToPurchase) {
         Alert.alert(t('error'), t('selectedPackageNotAvailable'));
         setIsLoading(false);
         return;
       }
 
-      const customerInfo = await purchasePackage(packageToPurchase);
+      const success = await purchaseProduct(productToPurchase.productId);
 
-      if (customerInfo) {
-        // Purchase successful
-        Alert.alert(
-          t('success'),
-          t('welcomeToPremium'),
-          [
-            {
-              text: t('ok'),
-              onPress: () => router.back(),
-            },
-          ]
-        );
-      }
-    } catch (error: any) {
-      if (!error.userCancelled) {
+      if (success) {
+        // Purchase successful - let the useEffect at line 72-76 handle navigation
+        // The subscriptionTier will update and trigger automatic navigation
+        // This prevents race conditions with state updates
+      } else {
         Alert.alert(t('error'), t('purchaseFailed'));
       }
+    } catch (error: any) {
+      Alert.alert(t('error'), t('purchaseFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -415,7 +404,7 @@ export default function PaywallScreen() {
             {/* Purchase Button */}
             <Button
               onPress={handlePurchase}
-              disabled={isLoading || !offerings}
+              disabled={isLoading || products.length === 0}
               marginTop={tokens.space.sm}
               paddingVertical={tokens.space.lg}
               borderRadius={tokens.radius.md}

@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Alert, ScrollView, Pressable, Platform, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  ScrollView,
+  Pressable,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import * as Notifications from "expo-notifications";
 import {
   Globe,
@@ -32,7 +40,10 @@ import { useTranslation } from "../../src/i18n";
 import { TranslationKeys } from "../../src/i18n/translations";
 import * as onboardingService from "../../src/services/onboarding";
 import * as database from "../../src/services/database";
-import { useIsPremium, useSubscription } from "../../src/contexts/SubscriptionContext";
+import {
+  useIsPremium,
+  useSubscription,
+} from "../../src/contexts/SubscriptionContext";
 import { showSettingsInterstitial } from "../../src/services/adManager";
 
 const Container = styled(SafeAreaView, {
@@ -108,13 +119,14 @@ export default function SettingsPage() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const isPremium = useIsPremium();
-  const { subscriptionTier, restorePurchases } = useSubscription();
+  const { subscriptionTier, restorePurchases, checkSubscription } =
+    useSubscription();
 
   // Check if running in development mode
   const isDevelopment = __DEV__;
 
   // Use white icons in dark mode for better contrast
-  const iconColor = theme === 'dark' ? '#FFFFFF' : tokens.color[theme].text;
+  const iconColor = theme === "dark" ? "#FFFFFF" : tokens.color[theme].text;
 
   // Modal visibility state
   const [showLanguageModal, setShowLanguageModal] = useState(false);
@@ -131,6 +143,14 @@ export default function SettingsPage() {
   useEffect(() => {
     loadPreferences();
   }, []);
+
+  // Refresh subscription status when screen comes into focus
+  // This ensures premium status updates after returning from paywall
+  useFocusEffect(
+    React.useCallback(() => {
+      checkSubscription();
+    }, [])
+  );
 
   const loadPreferences = async () => {
     try {
@@ -169,43 +189,29 @@ export default function SettingsPage() {
   };
 
   const handleUpgradePress = () => {
-    router.push('/paywall');
+    router.push("/paywall");
   };
 
   const handleRestorePurchases = async () => {
     try {
-      Alert.alert(
-        t('restorePurchases'),
-        t('restoringPurchases'),
-        [{ text: t('ok') }]
-      );
+      Alert.alert(t("restorePurchases"), t("restoringPurchases"), [
+        { text: t("ok") },
+      ]);
 
-      const customerInfo = await restorePurchases();
+      const hasPremium = await restorePurchases();
 
-      if (customerInfo) {
-        const isPremiumNow = customerInfo.entitlements.active['premium'] !== undefined;
-
-        if (isPremiumNow) {
-          Alert.alert(
-            t('success'),
-            t('purchasesRestoredSuccessfully'),
-            [{ text: t('ok') }]
-          );
-        } else {
-          Alert.alert(
-            t('noPurchasesFound'),
-            t('noPurchasesToRestore'),
-            [{ text: t('ok') }]
-          );
-        }
+      if (hasPremium) {
+        Alert.alert(t("success"), t("purchasesRestoredSuccessfully"), [
+          { text: t("ok") },
+        ]);
+      } else {
+        Alert.alert(t("noPurchasesFound"), t("noPurchasesToRestore"), [
+          { text: t("ok") },
+        ]);
       }
     } catch (error) {
-      console.error('Error restoring purchases:', error);
-      Alert.alert(
-        t('error'),
-        t('restorePurchasesFailed'),
-        [{ text: t('ok') }]
-      );
+      console.error("Error restoring purchases:", error);
+      Alert.alert(t("error"), t("restorePurchasesFailed"), [{ text: t("ok") }]);
     }
   };
 
@@ -238,11 +244,9 @@ export default function SettingsPage() {
       console.log("📚 Facts found:", facts.length);
 
       if (facts.length === 0) {
-        Alert.alert(
-          t("noFactAvailable"),
-          t("noFactsAvailableForTest"),
-          [{ text: t("ok"), style: "default" }]
-        );
+        Alert.alert(t("noFactAvailable"), t("noFactsAvailableForTest"), [
+          { text: t("ok"), style: "default" },
+        ]);
         return;
       }
 
@@ -462,7 +466,8 @@ export default function SettingsPage() {
                     style={({ pressed }) => [
                       styles.premiumButton,
                       {
-                        backgroundColor: theme === "dark" ? "#FFA500" : "#FFD700",
+                        backgroundColor:
+                          theme === "dark" ? "#FFA500" : "#FFD700",
                         opacity: pressed ? 0.9 : 1,
                         transform: [{ scale: pressed ? 0.98 : 1 }],
                       },
@@ -471,13 +476,51 @@ export default function SettingsPage() {
                   >
                     <View style={styles.premiumContent}>
                       <View style={styles.premiumLeftContent}>
-                        <View style={[styles.premiumIconContainer, { backgroundColor: theme === "dark" ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.3)" }]}>
-                          <Crown size={24} color={theme === "dark" ? "#FFFFFF" : "#000000"} />
-                          <Sparkles size={14} color={theme === "dark" ? "#FFD700" : "#FFA500"} style={styles.sparkleIcon} />
+                        <View
+                          style={[
+                            styles.premiumIconContainer,
+                            {
+                              backgroundColor:
+                                theme === "dark"
+                                  ? "rgba(255,255,255,0.2)"
+                                  : "rgba(255,255,255,0.3)",
+                            },
+                          ]}
+                        >
+                          <Crown
+                            size={24}
+                            color={theme === "dark" ? "#FFFFFF" : "#000000"}
+                          />
+                          <Sparkles
+                            size={14}
+                            color={theme === "dark" ? "#FFD700" : "#FFA500"}
+                            style={styles.sparkleIcon}
+                          />
                         </View>
                         <View style={styles.premiumTextContainer}>
-                          <Text style={[styles.premiumTitle, { color: theme === "dark" ? "#FFFFFF" : "#000000" }]}>{t("upgradeToPremium")}</Text>
-                          <Text style={[styles.premiumSubtitle, { color: theme === "dark" ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.7)" }]}>{t("removeAds3Facts")}</Text>
+                          <Text
+                            style={[
+                              styles.premiumTitle,
+                              {
+                                color: theme === "dark" ? "#FFFFFF" : "#000000",
+                              },
+                            ]}
+                          >
+                            {t("upgradeToPremium")}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.premiumSubtitle,
+                              {
+                                color:
+                                  theme === "dark"
+                                    ? "rgba(255,255,255,0.8)"
+                                    : "rgba(0,0,0,0.7)",
+                              },
+                            ]}
+                          >
+                            {t("removeAds3Facts")}
+                          </Text>
                         </View>
                       </View>
                       <View style={styles.premiumBadge}>

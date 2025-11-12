@@ -10,8 +10,6 @@
     "newArchEnabled": true,
     "extra": {
       "API_BASE_URL": "http://192.168.1.19:3000",
-      "REVENUECAT_IOS_API_KEY": "test_eWgIkbUumqePZoIQyfFxFSjPgmT",
-      "REVENUECAT_ANDROID_API_KEY": "test_eWgIkbUumqePZoIQyfFxFSjPgmT",
       "ADMOB_IOS_HOME_BANNER_ID": "ca-app-pub-7740246752776234/1196911062",
       "ADMOB_IOS_MODAL_BANNER_ID": "ca-app-pub-7740246752776234/8006410731",
       "ADMOB_IOS_INTERSTITIAL_ID": "ca-app-pub-7740246752776234/2739316775",
@@ -47,7 +45,14 @@
           "androidAppId": "ca-app-pub-7740246752776234~7031691670",
           "iosAppId": "ca-app-pub-7740246752776234~1632574072"
         }
-      ]
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": { "kotlinVersion": "2.1.20" }
+        }
+      ],
+      "expo-iap"
     ]
   }
 }

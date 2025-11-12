@@ -1,25 +1,39 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import Purchases, {
-  CustomerInfo,
-  PurchasesOffering,
-  PurchasesPackage,
-  LOG_LEVEL
-} from 'react-native-purchases';
+import {
+  initConnection,
+  endConnection,
+  fetchProducts,
+  requestPurchase,
+  finishTransaction,
+  restorePurchases as restorePurchasesIAP,
+  getAvailablePurchases,
+  purchaseUpdatedListener,
+  purchaseErrorListener,
+  type Purchase,
+} from 'expo-iap';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
 
 // Subscription tiers
 export type SubscriptionTier = 'free' | 'premium';
+
+// Product information
+export interface ProductInfo {
+  productId: string;
+  price: string;
+  priceFormatted: string;
+  title: string;
+  description: string;
+  type: 'monthly' | 'annual';
+}
 
 // Context type
 interface SubscriptionContextType {
   subscriptionTier: SubscriptionTier;
   isLoading: boolean;
-  customerInfo: CustomerInfo | null;
-  offerings: PurchasesOffering | null;
-  purchasePackage: (pkg: PurchasesPackage) => Promise<CustomerInfo | null>;
-  restorePurchases: () => Promise<CustomerInfo | null>;
+  products: ProductInfo[];
+  purchaseProduct: (productId: string) => Promise<boolean>;
+  restorePurchases: () => Promise<boolean>;
   checkSubscription: () => Promise<void>;
 }
 
@@ -29,8 +43,21 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 const SUBSCRIPTION_TIER_KEY = '@subscription_tier';
 const LAST_SYNC_KEY = '@subscription_last_sync';
 
-// RevenueCat entitlement identifier (you'll configure this in RevenueCat dashboard)
-const ENTITLEMENT_ID = 'premium';
+// Product IDs - Update these with your actual product IDs from App Store Connect and Google Play Console
+const PRODUCT_IDS = Platform.select({
+  ios: {
+    monthly: 'com.factsaday.monthly',
+    annual: 'com.factsaday.annual',
+  },
+  android: {
+    monthly: 'com.factsaday.monthly',
+    annual: 'com.factsaday.annual',
+  },
+  default: {
+    monthly: 'com.factsaday.monthly',
+    annual: 'com.factsaday.annual',
+  },
+})!;
 
 interface SubscriptionProviderProps {
   children: ReactNode;
@@ -39,65 +66,81 @@ interface SubscriptionProviderProps {
 export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ children }) => {
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('free');
   const [isLoading, setIsLoading] = useState(true);
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
-  const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
+  const [products, setProducts] = useState<ProductInfo[]>([]);
 
-  // Initialize RevenueCat
+  // Initialize In-App Purchases
   useEffect(() => {
-    initializeRevenueCat();
-  }, []);
+    let purchaseUpdateSubscription: { remove: () => void } | null = null;
+    let purchaseErrorSubscription: { remove: () => void } | null = null;
 
-  const initializeRevenueCat = async () => {
-    try {
-      // Get API keys from app.json
-      const apiKey = Platform.select({
-        ios: Constants.expoConfig?.extra?.REVENUECAT_IOS_API_KEY,
-        android: Constants.expoConfig?.extra?.REVENUECAT_ANDROID_API_KEY,
-      });
+    const initializeIAP = async () => {
+      try {
+        // Load cached subscription tier first
+        await loadCachedSubscriptionTier();
 
-      if (!apiKey || apiKey.startsWith('YOUR_')) {
-        console.warn('RevenueCat API key not configured. Using free tier.');
-        // Load cached subscription tier
+        // Connect to store
+        await initConnection();
+
+        // Set up purchase listeners
+        purchaseUpdateSubscription = purchaseUpdatedListener(async (purchase: Purchase) => {
+          console.log('Purchase updated:', purchase);
+
+          // Finish the transaction
+          await finishTransaction({
+            purchase,
+            isConsumable: false, // Subscriptions are not consumable
+          });
+
+          // Update subscription status
+          await checkSubscription();
+        });
+
+        purchaseErrorSubscription = purchaseErrorListener((error) => {
+          console.error('Purchase error:', error);
+        });
+
+        // Get products
+        const productList = await fetchProducts({
+          skus: [PRODUCT_IDS.monthly, PRODUCT_IDS.annual],
+          type: 'subs',
+        });
+
+        if (productList && productList.length > 0) {
+          const formattedProducts: ProductInfo[] = productList.map((product) => ({
+            productId: product.id,
+            price: product.price ? String(product.price) : '0',
+            priceFormatted: product.displayPrice || '$0',
+            title: product.title || '',
+            description: product.description || '',
+            type: product.id === PRODUCT_IDS.monthly ? 'monthly' as const : 'annual' as const,
+          }));
+          setProducts(formattedProducts);
+        }
+
+        // Check current subscription status
+        await checkSubscription();
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error initializing IAP:', error);
+        // Load cached subscription tier as fallback
         await loadCachedSubscriptionTier();
         setIsLoading(false);
-        return;
       }
+    };
 
-      // Configure RevenueCat
-      Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-      await Purchases.configure({ apiKey });
+    initializeIAP();
 
-      // Get customer info
-      const info = await Purchases.getCustomerInfo();
-      await updateSubscriptionTier(info);
+    return () => {
+      // Cleanup: remove listeners and disconnect
+      purchaseUpdateSubscription?.remove();
+      purchaseErrorSubscription?.remove();
+      endConnection().catch(console.error);
+    };
+  }, []);
 
-      // Load offerings
-      const offerings = await Purchases.getOfferings();
-      if (offerings.current) {
-        setOfferings(offerings.current);
-      }
-
-      // Listen for purchase updates
-      Purchases.addCustomerInfoUpdateListener((info) => {
-        updateSubscriptionTier(info);
-      });
-
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error initializing RevenueCat:', error);
-      // Load cached subscription tier as fallback
-      await loadCachedSubscriptionTier();
-      setIsLoading(false);
-    }
-  };
-
-  const updateSubscriptionTier = async (info: CustomerInfo) => {
-    setCustomerInfo(info);
-
-    // Check if user has premium entitlement
-    const isPremium = info.entitlements.active[ENTITLEMENT_ID] !== undefined;
+  const updateSubscriptionTier = async (isPremium: boolean) => {
     const tier: SubscriptionTier = isPremium ? 'premium' : 'free';
-
     setSubscriptionTier(tier);
 
     // Cache the subscription tier
@@ -116,47 +159,107 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     }
   };
 
-  const purchasePackage = async (pkg: PurchasesPackage): Promise<CustomerInfo | null> => {
-    try {
-      const { customerInfo } = await Purchases.purchasePackage(pkg);
-      await updateSubscriptionTier(customerInfo);
-      return customerInfo;
-    } catch (error: any) {
-      if (error.userCancelled) {
-        console.log('User cancelled purchase');
-      } else {
-        console.error('Error purchasing package:', error);
-      }
-      return null;
+  const isSubscriptionActive = (purchase: Purchase): boolean => {
+    // Check if purchase is in a valid state
+    if (purchase.purchaseState !== 'purchased') {
+      return false;
     }
-  };
 
-  const restorePurchases = async (): Promise<CustomerInfo | null> => {
-    try {
-      const info = await Purchases.restorePurchases();
-      await updateSubscriptionTier(info);
-      return info;
-    } catch (error) {
-      console.error('Error restoring purchases:', error);
-      return null;
+    // For iOS, check expiration date if available
+    if (Platform.OS === 'ios' && 'expirationDateIOS' in purchase) {
+      const expirationDate = purchase.expirationDateIOS;
+      if (expirationDate) {
+        return expirationDate > Date.now();
+      }
     }
+
+    // For Android, check auto-renewing status
+    if (Platform.OS === 'android' && 'isAcknowledgedAndroid' in purchase) {
+      return purchase.isAutoRenewing;
+    }
+
+    // If no expiration info, consider it active if purchased
+    return true;
   };
 
   const checkSubscription = async () => {
     try {
-      const info = await Purchases.getCustomerInfo();
-      await updateSubscriptionTier(info);
+      const purchases = await getAvailablePurchases();
+
+      if (purchases && purchases.length > 0) {
+        // Check if user has any active premium subscription
+        const hasPremium = purchases.some(
+          (purchase) =>
+            (purchase.productId === PRODUCT_IDS.monthly ||
+             purchase.productId === PRODUCT_IDS.annual) &&
+            isSubscriptionActive(purchase)
+        );
+
+        await updateSubscriptionTier(hasPremium);
+      } else {
+        await updateSubscriptionTier(false);
+      }
     } catch (error) {
       console.error('Error checking subscription:', error);
+    }
+  };
+
+  const purchaseProduct = async (productId: string): Promise<boolean> => {
+    try {
+      await requestPurchase({
+        request: {
+          ios: {
+            sku: productId,
+          },
+          android: {
+            skus: [productId],
+          },
+        },
+        type: 'subs',
+      });
+
+      // Return true to indicate purchase was initiated successfully
+      // The actual result will be handled by the purchase listener
+      return true;
+    } catch (error) {
+      console.error('Error purchasing product:', error);
+      return false;
+    }
+  };
+
+  const restorePurchases = async (): Promise<boolean> => {
+    try {
+      // Restore purchases
+      await restorePurchasesIAP();
+
+      // Get available purchases after restore
+      const purchases = await getAvailablePurchases();
+
+      if (purchases && purchases.length > 0) {
+        // Check if user has any active premium subscription
+        const hasPremium = purchases.some(
+          (purchase) =>
+            (purchase.productId === PRODUCT_IDS.monthly ||
+             purchase.productId === PRODUCT_IDS.annual) &&
+            isSubscriptionActive(purchase)
+        );
+
+        await updateSubscriptionTier(hasPremium);
+        return hasPremium;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error restoring purchases:', error);
+      return false;
     }
   };
 
   const value: SubscriptionContextType = {
     subscriptionTier,
     isLoading,
-    customerInfo,
-    offerings,
-    purchasePackage,
+    products,
+    purchaseProduct,
     restorePurchases,
     checkSubscription,
   };

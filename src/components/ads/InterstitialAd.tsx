@@ -6,6 +6,7 @@ import {
   TestIds,
 } from 'react-native-google-mobile-ads';
 import Constants from 'expo-constants';
+import { ADS_ENABLED } from '../../config/ads';
 
 // Get Interstitial Ad Unit ID based on platform
 const getInterstitialAdUnitId = (): string => {
@@ -95,6 +96,11 @@ export const useInterstitialAd = () => {
 
 // Export function to show interstitial ad (for use without hook)
 export const showInterstitialAd = async (isPremium: boolean): Promise<void> => {
+  // Don't show ads if globally disabled
+  if (!ADS_ENABLED) {
+    return;
+  }
+
   // Don't show ads for premium users
   if (isPremium) {
     return;
@@ -114,5 +120,10 @@ export const showInterstitialAd = async (isPremium: boolean): Promise<void> => {
 
 // Preload interstitial ad (call this when app starts)
 export const preloadInterstitialAd = () => {
+  // Don't preload ads if globally disabled
+  if (!ADS_ENABLED) {
+    return;
+  }
+
   loadInterstitialAd();
 };

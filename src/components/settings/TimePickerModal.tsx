@@ -46,7 +46,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
   // Load saved times on mount
   useEffect(() => {
-    loadSavedTimes();
+    if (visible) {
+      loadSavedTimes();
+    }
   }, [visible]);
 
   const loadSavedTimes = async () => {
@@ -54,7 +56,8 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       const savedTimes = await onboardingService.getNotificationTimes();
 
       if (savedTimes && savedTimes.length > 0) {
-        setTimes(savedTimes.map(t => new Date(t)));
+        const parsedTimes = savedTimes.map(t => new Date(t));
+        setTimes(parsedTimes);
       } else {
         // Default to single time
         setTimes([currentTime]);
@@ -66,15 +69,18 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   };
 
   const handleTimeChange = (event: any, date?: Date) => {
+    // Capture the current active index before resetting (fixes race condition)
+    const currentActiveIndex = activePickerIndex;
+
     // On Android, hide the picker when user confirms or cancels
     if (Platform.OS === 'android') {
       setActivePickerIndex(null);
     }
 
     // Only update time if user confirmed (not cancelled) and we have an active picker
-    if (event.type === 'set' && date && activePickerIndex !== null) {
+    if (event.type === 'set' && date && currentActiveIndex !== null) {
       const newTimes = [...times];
-      newTimes[activePickerIndex] = date;
+      newTimes[currentActiveIndex] = date;
       setTimes(newTimes);
     }
   };
@@ -129,7 +135,14 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       await onboardingService.setNotificationTimes(timeStrings);
 
       // Reschedule notifications with the new times
-      await notificationService.rescheduleNotificationsMultiple(times, locale);
+      // Use the appropriate function based on number of times
+      if (times.length > 1) {
+        // Premium users with multiple times
+        await notificationService.rescheduleNotificationsMultiple(times, locale);
+      } else {
+        // Free users with single time
+        await notificationService.rescheduleNotifications(times[0], locale);
+      }
 
       // Update parent component with the first time (for backward compatibility)
       onTimeChange(times[0]);
@@ -178,32 +191,35 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
           ]}
         >
           {Platform.OS === 'ios' ? (
-            <View style={styles.iosPickerWrapper}>
-              <DateTimePicker
-                value={time}
-                mode="time"
-                is24Hour={false}
-                display="spinner"
-                onChange={(event, date) => {
-                  setActivePickerIndex(index);
-                  handleTimeChange(event, date);
-                }}
-                style={{ width: '100%' }}
-                textColor={theme === 'dark' ? '#FFFFFF' : '#1A1D2E'}
-                themeVariant={theme}
-              />
-            </View>
+            <DateTimePicker
+              value={time}
+              mode="time"
+              is24Hour={false}
+              display="spinner"
+              onChange={(event, date) => {
+                setActivePickerIndex(index);
+                handleTimeChange(event, date);
+              }}
+              textColor={theme === 'dark' ? '#FFFFFF' : '#1A1D2E'}
+              themeVariant={theme}
+            />
           ) : (
             <>
-              <Button
+              <Pressable
                 onPress={() => setActivePickerIndex(index)}
+                style={[
+                  styles.androidTimeButton,
+                  { backgroundColor: colors.primary }
+                ]}
               >
-                {time.toLocaleTimeString('en-US', {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true,
-                })}
-              </Button>
+                <Text style={styles.androidTimeButtonText}>
+                  {time.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                  })}
+                </Text>
+              </Pressable>
               {isActive && (
                 <DateTimePicker
                   value={time}
@@ -347,7 +363,8 @@ const styles = StyleSheet.create({
     padding: tokens.space.xs,
   },
   scrollContent: {
-    flex: 1,
+    flexGrow: 0,
+    flexShrink: 1,
   },
   content: {
     padding: tokens.space.lg,
@@ -380,15 +397,9 @@ const styles = StyleSheet.create({
     padding: tokens.space.lg,
     borderRadius: tokens.radius.md,
     borderWidth: 1,
-    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iosPickerWrapper: {
-    borderRadius: tokens.radius.md,
-    overflow: 'hidden',
-    width: '100%',
-    alignItems: 'center',
+    minHeight: 250, // Ensure enough space for iOS picker
   },
   addButton: {
     flexDirection: 'row',
@@ -413,5 +424,18 @@ const styles = StyleSheet.create({
   footer: {
     padding: tokens.space.lg,
     paddingTop: 0,
+  },
+  androidTimeButton: {
+    paddingVertical: tokens.space.md,
+    paddingHorizontal: tokens.space.xl,
+    borderRadius: tokens.radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 150,
+  },
+  androidTimeButtonText: {
+    color: '#FFFFFF',
+    fontSize: tokens.fontSize.body,
+    fontWeight: tokens.fontWeight.semibold,
   },
 });

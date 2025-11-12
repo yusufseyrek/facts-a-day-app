@@ -1,5 +1,5 @@
-import { createTamagui, createTokens } from '@tamagui/core';
-import { tokens } from './tokens';
+import { createTamagui, createTokens } from "@tamagui/core";
+import { tokens } from "./tokens";
 
 const tamaguiTokens = createTokens({
   color: {
@@ -40,6 +40,18 @@ const tamaguiTokens = createTokens({
     xxl: tokens.space.xxl,
   },
   size: {
+    // Numeric tokens matching the spacing scale
+    1: tokens.space.xs,
+    2: tokens.space.sm,
+    3: tokens.space.md,
+    4: tokens.space.lg,
+    5: tokens.space.xl,
+    6: tokens.space.xxl,
+    7: tokens.size.buttonHeight,
+    8: tokens.size.topicCardSize,
+    9: tokens.size.colorSwatchSize,
+    10: tokens.size.toggleSize,
+    // Semantic tokens for specific use cases
     buttonHeight: tokens.size.buttonHeight,
     topicCard: tokens.size.topicCardSize,
     colorSwatch: tokens.size.colorSwatchSize,
@@ -51,6 +63,23 @@ const tamaguiTokens = createTokens({
     lg: tokens.radius.lg,
     xl: tokens.radius.xl,
     full: tokens.radius.full,
+  },
+  fontSize: {
+    // Numeric tokens
+    1: tokens.fontSize[1],
+    2: tokens.fontSize[2],
+    3: tokens.fontSize[3],
+    4: tokens.fontSize[4],
+    5: tokens.fontSize[5],
+    6: tokens.fontSize[6],
+    7: tokens.fontSize[7],
+    8: tokens.fontSize[8],
+    // Named tokens
+    h1: tokens.fontSize.h1,
+    h2: tokens.fontSize.h2,
+    body: tokens.fontSize.body,
+    label: tokens.fontSize.label,
+    small: tokens.fontSize.small,
   },
   zIndex: {
     0: 0,
@@ -107,25 +136,25 @@ export const config = createTamagui({
     gtLg: { minWidth: 1280 + 1 },
     short: { maxHeight: 820 },
     tall: { minHeight: 820 },
-    hoverNone: { hover: 'none' },
-    pointerCoarse: { pointer: 'coarse' },
+    hoverNone: { hover: "none" },
+    pointerCoarse: { pointer: "coarse" },
   },
   shorthands: {
-    px: 'paddingHorizontal',
-    py: 'paddingVertical',
-    bc: 'backgroundColor',
-    br: 'borderRadius',
-    bw: 'borderWidth',
-    col: 'color',
-    f: 'flex',
-    m: 'margin',
-    w: 'width',
-    h: 'height',
+    px: "paddingHorizontal",
+    py: "paddingVertical",
+    bc: "backgroundColor",
+    br: "borderRadius",
+    bw: "borderWidth",
+    col: "color",
+    f: "flex",
+    m: "margin",
+    w: "width",
+    h: "height",
   } as const,
 });
 
 export type AppConfig = typeof config;
 
-declare module '@tamagui/core' {
+declare module "@tamagui/core" {
   interface TamaguiCustomConfig extends AppConfig {}
 }
