@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable } from "react-native";
+import { Pressable, Platform, Animated } from "react-native";
 import { styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
 import { ChevronRight } from "@tamagui/lucide-icons";
@@ -15,7 +15,6 @@ interface FeedFactCardProps {
 }
 
 const CardWrapper = styled(YStack, {
-  backgroundColor: "$cardBackground",
   borderRadius: tokens.radius.lg,
   padding: tokens.space.lg,
   marginBottom: tokens.space.sm,
@@ -39,47 +38,90 @@ export function FeedFactCard({
   onPress,
 }: FeedFactCardProps) {
   const { theme } = useTheme();
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  };
+
+  // Better background color for light mode contrast
+  const backgroundColor = theme === "dark"
+    ? tokens.color.dark.cardBackground
+    : "#FAFBFC"; // Slightly off-white for better distinction
+
+  // Shadow and border styling
+  const cardStyle = {
+    backgroundColor,
+    borderWidth: theme === "dark" ? 0 : 1,
+    borderColor: theme === "dark" ? "transparent" : "#E8EBF0",
+    ...(Platform.OS === "ios" && {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: theme === "dark" ? 0.3 : 0.08,
+      shadowRadius: 8,
+    }),
+    ...(Platform.OS === "android" && {
+      elevation: theme === "dark" ? 4 : 2,
+    }),
+  };
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-      android_ripple={{
-        color: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
-        borderless: false,
-      }}
-    >
-      <CardWrapper>
-        <ContentRow>
-          <TextContainer>
-            <BodyText
-              fontSize={16}
-              lineHeight={22}
-              color="$text"
-              fontWeight={tokens.fontWeight.semibold}
-              numberOfLines={2}
-            >
-              {title}
-            </BodyText>
-            {summary && (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        android_ripple={{
+          color: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+          borderless: false,
+        }}
+      >
+        <CardWrapper style={cardStyle}>
+          <ContentRow>
+            <TextContainer>
               <BodyText
-                fontSize={14}
-                lineHeight={20}
-                color="$textSecondary"
-                numberOfLines={3}
+                fontSize={16}
+                lineHeight={22}
+                color="$text"
+                fontWeight={tokens.fontWeight.semibold}
+                numberOfLines={2}
               >
-                {summary}
+                {title}
               </BodyText>
-            )}
-          </TextContainer>
-          <ChevronRight
-            size={20}
-            color={
-              theme === "dark" ? "#8892A6" : tokens.color.light.textSecondary
-            }
-          />
-        </ContentRow>
-      </CardWrapper>
-    </Pressable>
+              {summary && (
+                <BodyText
+                  fontSize={14}
+                  lineHeight={20}
+                  color="$textSecondary"
+                  numberOfLines={3}
+                >
+                  {summary}
+                </BodyText>
+              )}
+            </TextContainer>
+            <ChevronRight
+              size={20}
+              color={
+                theme === "dark" ? "#8892A6" : tokens.color.light.textSecondary
+              }
+            />
+          </ContentRow>
+        </CardWrapper>
+      </Pressable>
+    </Animated.View>
   );
 }

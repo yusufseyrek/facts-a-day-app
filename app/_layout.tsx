@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppThemeProvider } from '../src/theme';
 import { I18nProvider } from '../src/i18n';
 import { OnboardingProvider } from '../src/contexts';
+import { SubscriptionProvider } from '../src/contexts/SubscriptionContext';
 import * as onboardingService from '../src/services/onboarding';
 import * as notificationService from '../src/services/notifications';
 import * as database from '../src/services/database';
@@ -121,21 +122,30 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <I18nProvider>
-        <OnboardingProvider>
-          <AppThemeProvider>
-            <Stack screenOptions={screenOptions}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="onboarding" />
-              <Stack.Screen
-                name="fact/[id]"
-                options={{
-                  presentation: 'modal',
-                  headerShown: false,
-                }}
-              />
-            </Stack>
-          </AppThemeProvider>
-        </OnboardingProvider>
+        <SubscriptionProvider>
+          <OnboardingProvider>
+            <AppThemeProvider>
+              <Stack screenOptions={screenOptions}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="onboarding" />
+                <Stack.Screen
+                  name="fact/[id]"
+                  options={{
+                    presentation: 'modal',
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="paywall"
+                  options={{
+                    presentation: 'modal',
+                    headerShown: false,
+                  }}
+                />
+              </Stack>
+            </AppThemeProvider>
+          </OnboardingProvider>
+        </SubscriptionProvider>
       </I18nProvider>
     </SafeAreaProvider>
   );

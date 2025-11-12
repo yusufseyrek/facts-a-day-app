@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Alert, ScrollView } from "react-native";
+import { Alert, ScrollView, Pressable, Platform, StyleSheet, Text, View } from "react-native";
 import { styled } from "@tamagui/core";
-import { YStack } from "tamagui";
+import { YStack, XStack } from "tamagui";
 import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import {
@@ -16,6 +16,9 @@ import {
   TestTube,
   Contrast,
   RotateCcw,
+  Crown,
+  RefreshCw,
+  Sparkles,
 } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
 import { H1, H2 } from "../../src/components";
@@ -29,6 +32,8 @@ import { useTranslation } from "../../src/i18n";
 import { TranslationKeys } from "../../src/i18n/translations";
 import * as onboardingService from "../../src/services/onboarding";
 import * as database from "../../src/services/database";
+import { useIsPremium, useSubscription } from "../../src/contexts/SubscriptionContext";
+import { showSettingsInterstitial } from "../../src/services/adManager";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -102,6 +107,8 @@ export default function SettingsPage() {
   const { theme, themeMode, toggleTheme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
+  const isPremium = useIsPremium();
+  const { subscriptionTier, restorePurchases } = useSubscription();
 
   // Check if running in development mode
   const isDevelopment = __DEV__;
@@ -141,8 +148,65 @@ export default function SettingsPage() {
     }
   };
 
-  const handleCategoriesPress = () => {
+  const handleCategoriesPress = async () => {
+    await showSettingsInterstitial(isPremium);
     router.push("/settings/categories");
+  };
+
+  const handleLanguagePress = async () => {
+    await showSettingsInterstitial(isPremium);
+    setShowLanguageModal(true);
+  };
+
+  const handleDifficultyPress = async () => {
+    await showSettingsInterstitial(isPremium);
+    setShowDifficultyModal(true);
+  };
+
+  const handleTimePress = async () => {
+    await showSettingsInterstitial(isPremium);
+    setShowTimeModal(true);
+  };
+
+  const handleUpgradePress = () => {
+    router.push('/paywall');
+  };
+
+  const handleRestorePurchases = async () => {
+    try {
+      Alert.alert(
+        t('restorePurchases'),
+        t('restoringPurchases'),
+        [{ text: t('ok') }]
+      );
+
+      const customerInfo = await restorePurchases();
+
+      if (customerInfo) {
+        const isPremiumNow = customerInfo.entitlements.active['premium'] !== undefined;
+
+        if (isPremiumNow) {
+          Alert.alert(
+            t('success'),
+            t('purchasesRestoredSuccessfully'),
+            [{ text: t('ok') }]
+          );
+        } else {
+          Alert.alert(
+            t('noPurchasesFound'),
+            t('noPurchasesToRestore'),
+            [{ text: t('ok') }]
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error restoring purchases:', error);
+      Alert.alert(
+        t('error'),
+        t('restorePurchasesFailed'),
+        [{ text: t('ok') }]
+      );
+    }
   };
 
   const handleResetOnboarding = async () => {
@@ -176,7 +240,7 @@ export default function SettingsPage() {
       if (facts.length === 0) {
         Alert.alert(
           t("noFactAvailable"),
-          "There are no facts available to test notifications.",
+          t("noFactsAvailableForTest"),
           [{ text: t("ok"), style: "default" }]
         );
         return;
@@ -206,15 +270,15 @@ export default function SettingsPage() {
       console.log("✅ Notification scheduled with ID:", notificationId);
 
       Alert.alert(
-        "Test Notification Scheduled",
-        "You should receive a test notification in 2 seconds!",
+        t("testNotificationScheduled"),
+        t("testNotificationIn2Seconds"),
         [{ text: t("ok"), style: "default" }]
       );
     } catch (error) {
       console.error("❌ Error scheduling test notification:", error);
       Alert.alert(
-        "Error",
-        `Failed to schedule test notification: ${
+        t("error"),
+        `${t("failedToScheduleTestNotification")}: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
         [{ text: t("ok"), style: "default" }]
@@ -242,7 +306,7 @@ export default function SettingsPage() {
       console.log("📚 Total facts found:", facts.length);
 
       if (facts.length === 0) {
-        Alert.alert(t("noFactAvailable"), "There are no facts available.", [
+        Alert.alert(t("noFactAvailable"), t("noFactsAvailable"), [
           { text: t("ok"), style: "default" },
         ]);
         return;
@@ -329,7 +393,7 @@ export default function SettingsPage() {
                 label={t("settingsLanguage")}
                 value={getLanguageName(locale)}
                 icon={<Globe size={20} color={iconColor} />}
-                onPress={() => setShowLanguageModal(true)}
+                onPress={handleLanguagePress}
               />
 
               <SettingsRow
@@ -350,7 +414,7 @@ export default function SettingsPage() {
                 label={t("settingsDifficulty")}
                 value={getDifficultyName(difficulty, t)}
                 icon={<Signal size={20} color={iconColor} />}
-                onPress={() => setShowDifficultyModal(true)}
+                onPress={handleDifficultyPress}
               />
 
               <SettingsRow
@@ -361,8 +425,73 @@ export default function SettingsPage() {
                   hour12: true,
                 })}
                 icon={<Bell size={20} color={iconColor} />}
-                onPress={() => setShowTimeModal(true)}
+                onPress={handleTimePress}
               />
+            </SettingsGroup>
+          </SectionContainer>
+
+          {/* Subscription Section */}
+          <SectionContainer>
+            <SectionTitle>{t("subscription")}</SectionTitle>
+
+            <SettingsGroup>
+              {isPremium ? (
+                <>
+                  <SettingsRow
+                    label={t("currentPlan")}
+                    value={t("premium")}
+                    icon={<Crown size={20} color={iconColor} />}
+                  />
+                  <SettingsRow
+                    label={t("restorePurchases")}
+                    icon={<RefreshCw size={20} color={iconColor} />}
+                    onPress={handleRestorePurchases}
+                  />
+                </>
+              ) : (
+                <>
+                  <SettingsRow
+                    label={t("currentPlan")}
+                    value={t("free")}
+                    icon={<Crown size={20} color={iconColor} />}
+                  />
+
+                  {/* Premium Upgrade Button */}
+                  <Pressable
+                    onPress={handleUpgradePress}
+                    style={({ pressed }) => [
+                      styles.premiumButton,
+                      {
+                        backgroundColor: theme === "dark" ? "#FFA500" : "#FFD700",
+                        opacity: pressed ? 0.9 : 1,
+                        transform: [{ scale: pressed ? 0.98 : 1 }],
+                      },
+                    ]}
+                    android_ripple={{ color: "rgba(255,255,255,0.3)" }}
+                  >
+                    <View style={styles.premiumContent}>
+                      <View style={styles.premiumLeftContent}>
+                        <View style={[styles.premiumIconContainer, { backgroundColor: theme === "dark" ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.3)" }]}>
+                          <Crown size={24} color={theme === "dark" ? "#FFFFFF" : "#000000"} />
+                          <Sparkles size={14} color={theme === "dark" ? "#FFD700" : "#FFA500"} style={styles.sparkleIcon} />
+                        </View>
+                        <View style={styles.premiumTextContainer}>
+                          <Text style={[styles.premiumTitle, { color: theme === "dark" ? "#FFFFFF" : "#000000" }]}>{t("upgradeToPremium")}</Text>
+                          <Text style={[styles.premiumSubtitle, { color: theme === "dark" ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.7)" }]}>{t("removeAds3Facts")}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.premiumBadge}>
+                        <Text style={styles.premiumBadgeText}>{t("new")}</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                  <SettingsRow
+                    label={t("restorePurchases")}
+                    icon={<RefreshCw size={20} color={iconColor} />}
+                    onPress={handleRestorePurchases}
+                  />
+                </>
+              )}
             </SettingsGroup>
           </SectionContainer>
 
@@ -433,3 +562,70 @@ export default function SettingsPage() {
     </Container>
   );
 }
+
+const styles = StyleSheet.create({
+  premiumButton: {
+    borderRadius: tokens.radius.lg,
+    padding: tokens.space.lg,
+    marginBottom: tokens.space.sm,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  premiumContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  premiumLeftContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: tokens.space.md,
+    flex: 1,
+  },
+  premiumIconContainer: {
+    position: "relative",
+    width: 40,
+    height: 40,
+    borderRadius: tokens.radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sparkleIcon: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+  },
+  premiumTextContainer: {
+    flex: 1,
+  },
+  premiumTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  premiumSubtitle: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  premiumBadge: {
+    backgroundColor: "#FF6B00",
+    paddingHorizontal: tokens.space.sm,
+    paddingVertical: 4,
+    borderRadius: tokens.radius.sm,
+  },
+  premiumBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: 0.5,
+  },
+});

@@ -6,10 +6,12 @@ import type { FactWithRelations } from '../../src/services/database';
 import * as database from '../../src/services/database';
 import { BodyText } from '../../src/components';
 import { tokens } from '../../src/theme/tokens';
+import { useTranslation } from '../../src/i18n';
 
 export default function FactDetailModal() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const [fact, setFact] = useState<FactWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +27,7 @@ export default function FactDetailModal() {
 
       const factId = parseInt(id, 10);
       if (isNaN(factId)) {
-        setError('Invalid fact ID');
+        setError(t('invalidFactId'));
         return;
       }
 
@@ -33,11 +35,11 @@ export default function FactDetailModal() {
       if (factData) {
         setFact(factData);
       } else {
-        setError('Fact not found');
+        setError(t('factNotFound'));
       }
     } catch (err) {
       console.error('Error loading fact:', err);
-      setError('Failed to load fact');
+      setError(t('failedToLoadFact'));
     } finally {
       setLoading(false);
     }
@@ -73,7 +75,7 @@ export default function FactDetailModal() {
           backgroundColor: tokens.color.dark.background,
         }}
       >
-        <BodyText color="$textSecondary">{error || 'Fact not found'}</BodyText>
+        <BodyText color="$textSecondary">{error || t('factNotFound')}</BodyText>
       </View>
     );
   }

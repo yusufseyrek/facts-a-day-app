@@ -133,12 +133,12 @@ export default function CategoriesSettings() {
         console.log(`Successfully refreshed with ${result.factsCount} facts`);
         router.back();
       } else {
-        Alert.alert('Error', result.error || 'Failed to update categories');
+        Alert.alert(t('error'), result.error || t('failedToUpdateCategories'));
         setIsSaving(false);
       }
     } catch (error) {
       console.error('Error saving categories:', error);
-      Alert.alert('Error', 'Failed to save categories. Please try again.');
+      Alert.alert(t('error'), t('failedToSaveCategories'));
       setIsSaving(false);
     }
   };

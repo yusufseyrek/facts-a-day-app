@@ -269,3 +269,114 @@ export async function getScheduledNotificationsCount(): Promise<number> {
     return 0;
   }
 }
+
+/**
+ * Reschedule all notifications with multiple times per day (premium feature)
+ * @param times Array of times to send notifications
+ * @param locale The user's locale for filtering facts
+ */
+export async function rescheduleNotificationsMultiple(
+  times: Date[],
+  locale: string
+): Promise<{ success: boolean; count: number; error?: string }> {
+  try {
+    // Clear all existing notifications
+    await clearAllScheduledNotifications();
+
+    if (times.length === 0) {
+      return {
+        success: false,
+        count: 0,
+        error: 'No notification times provided',
+      };
+    }
+
+    // Calculate how many facts per time slot
+    const factsPerSlot = Math.floor(MAX_SCHEDULED_NOTIFICATIONS / times.length);
+
+    // Get enough unscheduled facts for all time slots
+    const totalFactsNeeded = factsPerSlot * times.length;
+    const facts = await database.getRandomUnscheduledFacts(totalFactsNeeded, locale);
+
+    if (facts.length === 0) {
+      return {
+        success: false,
+        count: 0,
+        error: 'No facts available for scheduling',
+      };
+    }
+
+    let successCount = 0;
+    const now = new Date();
+
+    // Sort times by hour to ensure chronological order
+    const sortedTimes = [...times].sort((a, b) => {
+      const aMinutes = a.getHours() * 60 + a.getMinutes();
+      const bMinutes = b.getHours() * 60 + b.getMinutes();
+      return aMinutes - bMinutes;
+    });
+
+    // Schedule facts for each time slot
+    let factIndex = 0;
+    for (let timeIndex = 0; timeIndex < sortedTimes.length; timeIndex++) {
+      const time = sortedTimes[timeIndex];
+      const hour = time.getHours();
+      const minute = time.getMinutes();
+
+      // Determine start offset based on whether this time has passed today
+      const selectedTimeToday = new Date(now);
+      selectedTimeToday.setHours(hour, minute, 0, 0);
+      const startOffset = selectedTimeToday > now ? 0 : 1;
+
+      // Schedule facts for this time slot
+      for (let dayOffset = 0; dayOffset < factsPerSlot && factIndex < facts.length; dayOffset++) {
+        const fact = facts[factIndex];
+        const scheduledDate = new Date(now);
+        scheduledDate.setDate(scheduledDate.getDate() + dayOffset + startOffset);
+        scheduledDate.setHours(hour, minute, 0, 0);
+
+        try {
+          // Schedule the notification
+          const notificationId = await Notifications.scheduleNotificationAsync({
+            content: {
+              title: fact.title || 'Today\'s Fact',
+              body: fact.summary || fact.content.substring(0, 100),
+              data: { factId: fact.id },
+            },
+            trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.DATE,
+              date: scheduledDate,
+            },
+          });
+
+          // Mark fact as scheduled in database
+          await database.markFactAsScheduled(
+            fact.id,
+            scheduledDate.toISOString(),
+            notificationId
+          );
+
+          successCount++;
+          factIndex++;
+        } catch (error) {
+          console.error(`Failed to schedule notification for fact ${fact.id}:`, error);
+          factIndex++;
+        }
+      }
+    }
+
+    console.log(`Scheduled ${successCount} notifications across ${times.length} time slots`);
+
+    return {
+      success: successCount > 0,
+      count: successCount,
+    };
+  } catch (error) {
+    console.error('Error rescheduling notifications with multiple times:', error);
+    return {
+      success: false,
+      count: 0,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}

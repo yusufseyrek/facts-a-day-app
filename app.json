@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "facts-a-day-app",
+    "name": "Facts a Day",
     "slug": "facts-a-day-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,7 +9,15 @@
     "scheme": "factsaday",
     "newArchEnabled": true,
     "extra": {
-      "API_BASE_URL": "http://192.168.1.19:3000"
+      "API_BASE_URL": "http://192.168.1.19:3000",
+      "REVENUECAT_IOS_API_KEY": "test_eWgIkbUumqePZoIQyfFxFSjPgmT",
+      "REVENUECAT_ANDROID_API_KEY": "test_eWgIkbUumqePZoIQyfFxFSjPgmT",
+      "ADMOB_IOS_HOME_BANNER_ID": "ca-app-pub-7740246752776234/1196911062",
+      "ADMOB_IOS_MODAL_BANNER_ID": "ca-app-pub-7740246752776234/8006410731",
+      "ADMOB_IOS_INTERSTITIAL_ID": "ca-app-pub-7740246752776234/2739316775",
+      "ADMOB_ANDROID_HOME_BANNER_ID": "ca-app-pub-7740246752776234/6776540803",
+      "ADMOB_ANDROID_MODAL_BANNER_ID": "ca-app-pub-7740246752776234/5718610008",
+      "ADMOB_ANDROID_INTERSTITIAL_ID": "ca-app-pub-7740246752776234/6299287835"
     },
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -17,7 +25,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yusufseyrek.factsadayapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,10 +34,20 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.yusufseyrek.factsadayapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-7740246752776234~7031691670",
+          "iosAppId": "ca-app-pub-7740246752776234~1632574072"
+        }
+      ]
+    ]
   }
 }

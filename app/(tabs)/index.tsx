@@ -6,8 +6,8 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { SectionList, RefreshControl, ActivityIndicator } from "react-native";
 import { styled } from "@tamagui/core";
-import { YStack, XStack } from "tamagui";
-import { Clock } from "@tamagui/lucide-icons";
+import { YStack, XStack, Button } from "tamagui";
+import { Clock, Crown } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
 import { tokens } from "../../src/theme/tokens";
 import { H1, H2, FeedFactCard, EmptyState } from "../../src/components";
@@ -16,6 +16,13 @@ import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import * as database from "../../src/services/database";
 import * as Notifications from "expo-notifications";
+import { useIsPremium } from "../../src/contexts/SubscriptionContext";
+import { BannerAd } from "../../src/components/ads";
+import { trackFactView } from "../../src/services/adManager";
+import {
+  shouldShowPaywall,
+  markPaywallShown,
+} from "../../src/services/paywallManager";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -27,6 +34,7 @@ const Header = styled(XStack, {
   paddingBottom: tokens.space.md,
   alignItems: "center",
   gap: tokens.space.sm,
+  justifyContent: "space-between",
 });
 
 const SectionHeader = styled(YStack, {
@@ -56,6 +64,7 @@ export default function HomeScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const isPremium = useIsPremium();
 
   const [sections, setSections] = useState<FactSection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,16 +74,33 @@ export default function HomeScreen() {
     loadFacts();
   }, [locale]);
 
+  // Check if paywall should be shown
+  useEffect(() => {
+    checkAndShowPaywall();
+  }, [isPremium]);
+
+  const checkAndShowPaywall = async () => {
+    const shouldShow = await shouldShowPaywall(isPremium);
+    if (shouldShow) {
+      // Show paywall after a short delay to let the home screen load
+      setTimeout(() => {
+        router.push("/paywall");
+      }, 1000);
+    }
+  };
+
   // Auto-refresh feed when new notifications are received
   useEffect(() => {
-    const subscription = Notifications.addNotificationReceivedListener((notification) => {
-      const factId = notification.request.content.data.factId;
+    const subscription = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        const factId = notification.request.content.data.factId;
 
-      // Reload facts to show the newly delivered fact
-      if (factId) {
-        loadFacts();
+        // Reload facts to show the newly delivered fact
+        if (factId) {
+          loadFacts();
+        }
       }
-    });
+    );
 
     return () => subscription.remove();
   }, []);
@@ -153,7 +179,10 @@ export default function HomeScreen() {
     return sectionsArray;
   };
 
-  const handleFactPress = (fact: FactWithRelations) => {
+  const handleFactPress = async (fact: FactWithRelations) => {
+    // Track fact view and potentially show interstitial ad
+    await trackFactView(isPremium);
+
     router.push(`/fact/${fact.id}`);
   };
 
@@ -195,11 +224,37 @@ export default function HomeScreen() {
         }}
         ListHeaderComponent={() => (
           <Header>
-            <Clock
-              size={28}
-              color={theme === "dark" ? "#FFFFFF" : tokens.color.light.text}
-            />
-            <H1>{t("recentFacts")}</H1>
+            <XStack alignItems="center" gap={tokens.space.sm}>
+              <Clock
+                size={28}
+                color={theme === "dark" ? "#FFFFFF" : tokens.color.light.text}
+              />
+              <H1>{t("recentFacts")}</H1>
+            </XStack>
+            {!isPremium && (
+              <Button
+                paddingHorizontal={tokens.space.lg}
+                paddingVertical={tokens.space.sm}
+                backgroundColor={theme === "dark" ? "#FFA500" : "#FFD700"}
+                color={theme === "dark" ? "#FFFFFF" : "#000000"}
+                borderRadius={tokens.radius.lg}
+                icon={<Crown size={18} color={theme === "dark" ? "#FFFFFF" : "#000000"} />}
+                onPress={() => router.push("/paywall")}
+                fontWeight="600"
+                fontSize={15}
+                pressStyle={{
+                  scale: 0.95,
+                  opacity: 0.9,
+                }}
+                shadowColor="#000"
+                shadowOffset={{ width: 0, height: 2 }}
+                shadowOpacity={theme === "dark" ? 0.4 : 0.2}
+                shadowRadius={4}
+                elevation={theme === "dark" ? 6 : 3}
+              >
+                {t("upgrade")}
+              </Button>
+            )}
           </Header>
         )}
         renderSectionHeader={({ section: { title } }) => (
@@ -217,6 +272,7 @@ export default function HomeScreen() {
             />
           </ContentContainer>
         )}
+        ListFooterComponent={() => <BannerAd position="home" />}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }

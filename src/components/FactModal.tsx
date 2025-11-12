@@ -10,6 +10,7 @@ import { FactActions } from './FactActions';
 import { H1 } from './Typography';
 import { useTheme } from '../theme';
 import type { FactWithRelations } from '../services/database';
+import { BannerAd } from './ads';
 
 interface FactModalProps {
   fact: FactWithRelations;
@@ -88,6 +89,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           <FactCard fact={fact} onReadMore={handleReadMore} />
         </FactCardWrapper>
       </ContentContainer>
+
+      <BannerAd position="modal" />
 
       <FactActions
         factId={fact.id}

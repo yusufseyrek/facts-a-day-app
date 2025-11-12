@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -6,8 +6,10 @@ import {
   StyleSheet,
   Pressable,
   Platform,
+  ScrollView,
+  Alert,
 } from 'react-native';
-import { X } from '@tamagui/lucide-icons';
+import { X, Crown, Plus, Trash2 } from '@tamagui/lucide-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../../theme';
 import { tokens } from '../../theme/tokens';
@@ -15,6 +17,8 @@ import { useTranslation } from '../../i18n/useTranslation';
 import { Button } from '../Button';
 import * as onboardingService from '../../services/onboarding';
 import * as notificationService from '../../services/notifications';
+import { useIsPremium } from '../../contexts/SubscriptionContext';
+import { useRouter } from 'expo-router';
 
 interface TimePickerModalProps {
   visible: boolean;
@@ -32,41 +36,194 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   const { theme } = useTheme();
   const colors = tokens.color[theme];
   const { t, locale } = useTranslation();
-  const [selectedTime, setSelectedTime] = useState(currentTime);
-  const [showAndroidPicker, setShowAndroidPicker] = useState(false);
+  const isPremium = useIsPremium();
+  const router = useRouter();
+
+  // For premium: multiple times, for free: single time
+  const [times, setTimes] = useState<Date[]>([currentTime]);
+  const [activePickerIndex, setActivePickerIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Load saved times on mount
+  useEffect(() => {
+    loadSavedTimes();
+  }, [visible]);
+
+  const loadSavedTimes = async () => {
+    try {
+      const savedTimes = await onboardingService.getNotificationTimes();
+
+      if (savedTimes && savedTimes.length > 0) {
+        setTimes(savedTimes.map(t => new Date(t)));
+      } else {
+        // Default to single time
+        setTimes([currentTime]);
+      }
+    } catch (error) {
+      console.error('Error loading saved times:', error);
+      setTimes([currentTime]);
+    }
+  };
 
   const handleTimeChange = (event: any, date?: Date) => {
     // On Android, hide the picker when user confirms or cancels
     if (Platform.OS === 'android') {
-      setShowAndroidPicker(false);
+      setActivePickerIndex(null);
     }
 
-    // Only update time if user confirmed (not cancelled)
-    if (event.type === 'set' && date) {
-      setSelectedTime(date);
+    // Only update time if user confirmed (not cancelled) and we have an active picker
+    if (event.type === 'set' && date && activePickerIndex !== null) {
+      const newTimes = [...times];
+      newTimes[activePickerIndex] = date;
+      setTimes(newTimes);
     }
+  };
+
+  const handleAddTime = () => {
+    if (!isPremium) {
+      // Show upgrade prompt
+      Alert.alert(
+        'Premium Feature',
+        'Multiple daily facts is a premium feature. Upgrade to get up to 3 facts per day!',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Upgrade',
+            onPress: () => {
+              onClose();
+              router.push('/paywall');
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    if (times.length >= 3) {
+      Alert.alert('Maximum Reached', 'You can schedule up to 3 notifications per day.');
+      return;
+    }
+
+    // Add a new time (default to 2 hours after the last time)
+    const lastTime = times[times.length - 1];
+    const newTime = new Date(lastTime);
+    newTime.setHours(lastTime.getHours() + 2);
+    setTimes([...times, newTime]);
+  };
+
+  const handleRemoveTime = (index: number) => {
+    if (times.length === 1) {
+      Alert.alert('Minimum Required', 'You must have at least one notification time.');
+      return;
+    }
+
+    const newTimes = times.filter((_, i) => i !== index);
+    setTimes(newTimes);
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Save the time to AsyncStorage
-      await onboardingService.setNotificationTime(selectedTime);
+      // Save the times to AsyncStorage
+      const timeStrings = times.map(t => t.toISOString());
+      await onboardingService.setNotificationTimes(timeStrings);
 
-      // Reschedule notifications with the new time
-      await notificationService.rescheduleNotifications(selectedTime, locale);
+      // Reschedule notifications with the new times
+      await notificationService.rescheduleNotificationsMultiple(times, locale);
 
-      // Update parent component
-      onTimeChange(selectedTime);
+      // Update parent component with the first time (for backward compatibility)
+      onTimeChange(times[0]);
 
       // Close modal
       onClose();
     } catch (error) {
-      console.error('Error updating notification time:', error);
+      console.error('Error updating notification times:', error);
+      Alert.alert('Error', 'Failed to update notification times. Please try again.');
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const renderTimePicker = (time: Date, index: number, label?: string) => {
+    const isActive = activePickerIndex === index;
+
+    return (
+      <View key={index} style={styles.timePickerItem}>
+        <View style={styles.timePickerHeader}>
+          {label && (
+            <Text style={[styles.timeLabel, { color: colors.text }]}>
+              {label}
+            </Text>
+          )}
+          {times.length > 1 && (
+            <Pressable
+              onPress={() => handleRemoveTime(index)}
+              style={[
+                styles.removeButton,
+                { backgroundColor: colors.surface },
+              ]}
+            >
+              <Trash2 size={16} color={colors.textSecondary} />
+            </Pressable>
+          )}
+        </View>
+
+        <View
+          style={[
+            styles.timePickerContainer,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          {Platform.OS === 'ios' ? (
+            <View style={styles.iosPickerWrapper}>
+              <DateTimePicker
+                value={time}
+                mode="time"
+                is24Hour={false}
+                display="spinner"
+                onChange={(event, date) => {
+                  setActivePickerIndex(index);
+                  handleTimeChange(event, date);
+                }}
+                style={{ width: '100%' }}
+                textColor={theme === 'dark' ? '#FFFFFF' : '#1A1D2E'}
+                themeVariant={theme}
+              />
+            </View>
+          ) : (
+            <>
+              <Button
+                onPress={() => setActivePickerIndex(index)}
+              >
+                {time.toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true,
+                })}
+              </Button>
+              {isActive && (
+                <DateTimePicker
+                  value={time}
+                  mode="time"
+                  is24Hour={false}
+                  display="default"
+                  onChange={handleTimeChange}
+                />
+              )}
+            </>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  const getTimeLabels = () => {
+    if (times.length === 1) return [undefined];
+    if (times.length === 2) return ['Morning', 'Evening'];
+    return ['Morning', 'Afternoon', 'Evening'];
   };
 
   return (
@@ -97,69 +254,54 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
             </Pressable>
           </View>
 
-          <View style={styles.content}>
-            <Text
-              style={[
-                styles.description,
-                { color: colors.textSecondary },
-              ]}
-            >
-              {t('selectNotificationTime')}
-            </Text>
+          <ScrollView style={styles.scrollContent}>
+            <View style={styles.content}>
+              <Text
+                style={[
+                  styles.description,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {isPremium
+                  ? 'Schedule up to 3 notifications per day'
+                  : t('selectNotificationTime')}
+              </Text>
 
-            <View
-              style={[
-                styles.timePickerContainer,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              {Platform.OS === 'ios' ? (
-                <View style={styles.iosPickerWrapper}>
-                  <DateTimePicker
-                    value={selectedTime}
-                    mode="time"
-                    is24Hour={false}
-                    display="spinner"
-                    onChange={handleTimeChange}
-                    style={{ width: '100%' }}
-                    textColor={theme === 'dark' ? '#FFFFFF' : '#1A1D2E'}
-                    themeVariant={theme}
-                  />
-                </View>
-              ) : (
-                <>
-                  <Button onPress={() => setShowAndroidPicker(true)}>
-                    {selectedTime.toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      hour12: true,
-                    })}
-                  </Button>
-                  {showAndroidPicker && (
-                    <DateTimePicker
-                      value={selectedTime}
-                      mode="time"
-                      is24Hour={false}
-                      display="default"
-                      onChange={handleTimeChange}
-                    />
-                  )}
-                </>
+              {times.map((time, index) =>
+                renderTimePicker(time, index, getTimeLabels()[index])
               )}
-            </View>
 
-            <Text
-              style={[
-                styles.helperText,
-                { color: colors.textSecondary },
-              ]}
-            >
-              {t('oneNotificationPerDay')}
-            </Text>
-          </View>
+              {times.length < 3 && (
+                <Pressable
+                  onPress={handleAddTime}
+                  style={[
+                    styles.addButton,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Plus size={20} color={colors.primary} />
+                  <Text style={[styles.addButtonText, { color: colors.primary }]}>
+                    Add Another Time {!isPremium && '(Premium)'}
+                  </Text>
+                  {!isPremium && <Crown size={16} color={colors.primary} />}
+                </Pressable>
+              )}
+
+              <Text
+                style={[
+                  styles.helperText,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {times.length === 1
+                  ? t('oneNotificationPerDay')
+                  : `${times.length} notifications per day`}
+              </Text>
+            </View>
+          </ScrollView>
 
           <View style={styles.footer}>
             <Button
@@ -185,6 +327,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: '85%',
+    maxHeight: '80%',
     borderRadius: tokens.radius.lg,
     overflow: 'hidden',
   },
@@ -203,6 +346,9 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: tokens.space.xs,
   },
+  scrollContent: {
+    flex: 1,
+  },
   content: {
     padding: tokens.space.lg,
     gap: tokens.space.md,
@@ -211,6 +357,24 @@ const styles = StyleSheet.create({
     fontSize: tokens.fontSize.body,
     fontWeight: tokens.fontWeight.medium,
     textAlign: 'center',
+    marginBottom: tokens.space.sm,
+  },
+  timePickerItem: {
+    marginBottom: tokens.space.md,
+  },
+  timePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: tokens.space.xs,
+  },
+  timeLabel: {
+    fontSize: tokens.fontSize.body,
+    fontWeight: tokens.fontWeight.semibold,
+  },
+  removeButton: {
+    padding: tokens.space.xs,
+    borderRadius: tokens.radius.sm,
   },
   timePickerContainer: {
     padding: tokens.space.lg,
@@ -226,9 +390,25 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: tokens.space.md,
+    borderRadius: tokens.radius.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    gap: tokens.space.xs,
+    marginTop: tokens.space.sm,
+  },
+  addButtonText: {
+    fontSize: tokens.fontSize.body,
+    fontWeight: tokens.fontWeight.medium,
+  },
   helperText: {
     fontSize: tokens.fontSize.small,
     textAlign: 'center',
+    marginTop: tokens.space.sm,
   },
   footer: {
     padding: tokens.space.lg,

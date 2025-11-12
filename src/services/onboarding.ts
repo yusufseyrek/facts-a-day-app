@@ -9,6 +9,7 @@ export const ONBOARDING_COMPLETE_KEY = '@onboarding_complete';
 export const SELECTED_CATEGORIES_KEY = '@selected_categories';
 export const DIFFICULTY_PREFERENCE_KEY = '@difficulty_preference';
 export const NOTIFICATION_TIME_KEY = '@notification_time';
+export const NOTIFICATION_TIMES_KEY = '@notification_times'; // For multiple times (premium)
 
 // ====== Onboarding Status ======
 
@@ -240,6 +241,22 @@ export async function getNotificationTime(): Promise<Date | null> {
   }
 }
 
+export async function getNotificationTimes(): Promise<string[]> {
+  try {
+    const value = await AsyncStorage.getItem(NOTIFICATION_TIMES_KEY);
+    if (value) {
+      return JSON.parse(value);
+    }
+
+    // Fallback to single time if not set
+    const singleTime = await getNotificationTime();
+    return singleTime ? [singleTime.toISOString()] : [];
+  } catch (error) {
+    console.error('Error getting notification times:', error);
+    return [];
+  }
+}
+
 // ====== Update Preferences ======
 
 /**
@@ -280,6 +297,25 @@ export async function setNotificationTime(time: Date): Promise<void> {
     console.log('Notification time updated:', time.toISOString());
   } catch (error) {
     console.error('Error setting notification time:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update multiple notification times (for premium users)
+ */
+export async function setNotificationTimes(times: string[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(NOTIFICATION_TIMES_KEY, JSON.stringify(times));
+
+    // Also update the single time key with the first time for backward compatibility
+    if (times.length > 0) {
+      await AsyncStorage.setItem(NOTIFICATION_TIME_KEY, times[0]);
+    }
+
+    console.log('Notification times updated:', times);
+  } catch (error) {
+    console.error('Error setting notification times:', error);
     throw error;
   }
 }
