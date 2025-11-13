@@ -1,11 +1,13 @@
 # Facts A Day - App Flows Documentation
 
 ## Overview
+
 Facts A Day is a React Native app built with Expo that delivers daily interesting facts to users based on their preferences.
 
 ## Critical Rules
 
 ### 🚨 MANDATORY REQUIREMENTS
+
 1. **Notification Permissions are REQUIRED** - Users MUST grant notification permissions to complete onboarding
 2. **No Skip Option** - There is NO way to skip notification permissions
 3. **Onboarding is Sequential** - Users must complete all steps in order
@@ -16,11 +18,13 @@ Facts A Day is a React Native app built with Expo that delivers daily interestin
 ## App Architecture
 
 ### Storage Layer
+
 - **AsyncStorage**: User preferences, onboarding status
 - **SQLite**: Categories, content types, facts (local database)
 - **Expo SecureStore**: Device authentication key (encrypted)
 
 ### Key Services
+
 - `src/services/onboarding.ts` - Onboarding orchestration
 - `src/services/api.ts` - Backend API communication
 - `src/services/database.ts` - SQLite operations
@@ -30,6 +34,7 @@ Facts A Day is a React Native app built with Expo that delivers daily interestin
 ## Complete Onboarding Flow
 
 ### Flow Diagram
+
 ```
 App Launch
     ↓
@@ -108,9 +113,11 @@ Check Onboarding Status (AsyncStorage)
 ### Step-by-Step Details
 
 #### Step 1: Language Selection & Initialization (`/onboarding/language`)
+
 **Purpose**: Allow users to select their preferred language and initialize the app
 
 **UI Elements**:
+
 - Progress: 1/4
 - 3-column grid of language cards
 - Each card shows:
@@ -122,6 +129,7 @@ Check Onboarding Status (AsyncStorage)
 - Error message (shown if initialization fails)
 
 **Process**:
+
 1. Display language options in 3-column grid layout
 2. User selects a language by tapping card
 3. **Immediately set locale** using `setLocale(languageCode)` on selection
@@ -140,6 +148,7 @@ Check Onboarding Status (AsyncStorage)
 8. On error → Show error message with retry instructions
 
 **Languages**:
+
 - 🇬🇧 English (en)
 - 🇩🇪 German (de)
 - 🇪🇸 Spanish (es)
@@ -150,37 +159,44 @@ Check Onboarding Status (AsyncStorage)
 - 🇨🇳 Chinese (zh)
 
 **Validation**:
+
 - No validation required - defaults to current system locale
 - User can select any language regardless of system settings
 
 **Error Handling**:
+
 - Network errors → Show error message: "Check your internet connection"
 - API errors → Display error with retry instructions
 - User can click Continue again to retry
 
 **Storage**:
+
 - AsyncStorage: `@app_locale` (automatically saved by i18n system)
 - SecureStore: `device_key` (saved during initialization)
 - SQLite: `categories` table, `content_types` table (saved during initialization)
 
 **State Management**:
+
 - Uses `OnboardingContext` for state management
 - `isInitializing`: Controls loading state
 - `initializationError`: Stores error message if initialization fails
 - `isInitialized`: Tracks whether initialization completed successfully
 
 **Navigation**:
+
 ```javascript
 // On successful initialization
-router.push('/onboarding/categories');
+router.push("/onboarding/categories");
 ```
 
 ---
 
 #### Step 2: Categories (`/onboarding/categories`)
+
 **Purpose**: Let users select categories they're interested in
 
 **UI Elements**:
+
 - Progress: 2/4
 - Grid of category cards (3 per row)
 - Each card shows icon + category name
@@ -188,6 +204,7 @@ router.push('/onboarding/categories');
 - Continue button (disabled until at least 5 categories selected)
 
 **Process**:
+
 1. Check if onboarding is initialized (guard redirect if not)
 2. Load categories from SQLite
 3. Display as grid with Lucide icons
@@ -195,28 +212,33 @@ router.push('/onboarding/categories');
 5. Categories stored in `OnboardingContext`
 
 **Validation**:
+
 - At least 5 categories must be selected
 - Categories are loaded from database (not hardcoded)
 - Redirects to language screen if initialization not complete
 
 **State Management**:
+
 - Uses `OnboardingContext` for state management
 - `selectedCategories`: Array of selected category slugs
 - `setSelectedCategories`: Updates selected categories
 - `isInitialized`: Guards against accessing screen before initialization
 
 **Navigation**:
+
 ```javascript
 // No params needed - using context
-router.push('/onboarding/difficulty');
+router.push("/onboarding/difficulty");
 ```
 
 ---
 
 #### Step 3: Difficulty (`/onboarding/difficulty`)
+
 **Purpose**: Let users select their preferred fact complexity and trigger background fact download
 
 **UI Elements**:
+
 - Progress: 3/4
 - 4 option cards:
   - Beginner: "Simple and easy-to-understand facts"
@@ -226,6 +248,7 @@ router.push('/onboarding/difficulty');
 - Continue button (always enabled, defaults to "all")
 
 **Process**:
+
 1. Display difficulty options
 2. User selects one option (default: "all")
 3. Difficulty stored in `OnboardingContext`
@@ -235,6 +258,7 @@ router.push('/onboarding/difficulty');
    - Facts download continues in background while user sets notification time
 
 **Background Download**:
+
 - Download starts when user clicks Continue
 - Does NOT wait for download to complete before navigation
 - Progress tracked via `OnboardingContext`:
@@ -243,30 +267,35 @@ router.push('/onboarding/difficulty');
   - `downloadError`: Error message if download fails
 
 **State Management**:
+
 - Uses `OnboardingContext` for state management
 - `difficulty`: Selected difficulty level
 - `setDifficulty`: Updates difficulty preference
 - `downloadFacts`: Triggers background fact download
 
 **Navigation**:
+
 ```javascript
 // Start background download, then navigate immediately
 downloadFacts(locale);
-router.push('/onboarding/notifications');
+router.push("/onboarding/notifications");
 ```
 
 ---
 
 #### Step 4: Notifications (`/onboarding/notifications`) ⚠️ CRITICAL
+
 **Purpose**: Request notification permissions, set notification time, and schedule 64 daily notifications
 
 **🚨 MANDATORY REQUIREMENTS**:
+
 - Users MUST grant notification permissions
 - NO skip option
 - Notifications are REQUIRED to complete onboarding
 - App schedules 64 notifications (iOS limit) with random facts
 
 **UI Elements**:
+
 - Progress: 4/4
 - Bell icon in circular container
 - Time picker for notification preference:
@@ -279,18 +308,22 @@ router.push('/onboarding/notifications');
 - NO skip button
 
 **Process**:
+
 1. **Component Mount**:
+
    - Facts may still be downloading from previous screen
    - Display notification time picker with default time (9:00 AM)
    - Button is always enabled (user can click whenever ready)
 
 2. **User Interaction**:
+
    - User can adjust notification time using picker
    - iOS: Inline spinner picker
    - Android: Tapping button opens native time picker dialog
    - User clicks "Enable Notifications" button (clickable even if facts still downloading)
 
 3. **Permission Request & Scheduling Flow**:
+
    - **Step 1**: Request permissions IMMEDIATELY (don't wait for download)
      - Call `Notifications.requestPermissionsAsync()`
    - If DENIED → Show Alert directing to Settings, stay on screen
@@ -310,10 +343,11 @@ router.push('/onboarding/notifications');
 4. **Navigation on Success**:
    ```javascript
    // After successful notification scheduling
-   router.push('/onboarding/success');
+   router.push("/onboarding/success");
    ```
 
 **Button Behavior**:
+
 ```typescript
 // Button is always clickable when not scheduling
 {
@@ -324,6 +358,7 @@ router.push('/onboarding/notifications');
 ```
 
 **Flow Details**:
+
 ```typescript
 const handleEnableNotifications = async () => {
   // Step 1: Request permission immediately (don't wait for download)
@@ -355,6 +390,7 @@ const handleEnableNotifications = async () => {
 ```
 
 **Notification Scheduling Details**:
+
 - **Count**: 64 notifications (iOS limit)
 - **Selection**: Random facts from downloaded facts (not yet scheduled)
 - **Timing**: Daily at user's selected time, starting today if selected time hasn't passed yet, otherwise tomorrow
@@ -364,6 +400,7 @@ const handleEnableNotifications = async () => {
 - **Database Query**: Uses `getRandomUnscheduledFacts(64, locale)`
 
 **State Management**:
+
 - Uses `OnboardingContext` for state management
 - `notificationTime`: User's preferred notification time
 - `setNotificationTime`: Updates notification time preference
@@ -372,7 +409,9 @@ const handleEnableNotifications = async () => {
 - Local state: `isScheduling`: Tracks notification scheduling progress (waiting + scheduling)
 
 **Error States**:
+
 1. **Permission Denied**:
+
    - Show Alert with title: "Notification Permission Required"
    - Message: Brief instructions directing user to Settings > Facts A Day > Notifications
    - User remains on notifications screen
@@ -385,6 +424,7 @@ const handleEnableNotifications = async () => {
    - Does NOT proceed to success screen until scheduling succeeds
 
 **Storage**:
+
 - Database: Facts table updated with `scheduled_date` and `notification_id`
 - Notification time saved to AsyncStorage on success screen
 - All preferences (categories, difficulty, notificationTime) in context
@@ -392,9 +432,11 @@ const handleEnableNotifications = async () => {
 ---
 
 #### Step 5: Success Screen (`/onboarding/success`)
+
 **Purpose**: Show completion confirmation and finalize onboarding
 
 **UI Elements**:
+
 - Green checkmark icon in circular container
 - "All Set!" heading
 - "Welcome to Facts A Day!" subheading
@@ -402,7 +444,9 @@ const handleEnableNotifications = async () => {
 - No interactive elements (auto-navigates)
 
 **Process**:
+
 1. **Component Mount**:
+
    - Call `completeOnboarding()` from context:
      - Saves selected categories to AsyncStorage
      - Saves difficulty preference to AsyncStorage
@@ -418,12 +462,14 @@ const handleEnableNotifications = async () => {
    ```
 
 **What Happens Here**:
+
 - ✅ Facts already downloaded (from difficulty screen)
 - ✅ Notifications already scheduled (from notifications screen)
 - ✅ Just saves final preferences and marks onboarding complete
 - ✅ Simple success confirmation for user
 
 **State Management**:
+
 - Uses `OnboardingContext.completeOnboarding()`
 - Saves all preferences to AsyncStorage:
   - `@selected_categories`: Array of category slugs
@@ -432,6 +478,7 @@ const handleEnableNotifications = async () => {
   - `@onboarding_complete`: "true"
 
 **Timeline**:
+
 - Display success message: 2 seconds
 - Then navigate to main app automatically
 
@@ -451,6 +498,7 @@ Check AsyncStorage: @onboarding_complete
 ```
 
 **Navigation Rules**:
+
 1. If onboarding incomplete AND not in onboarding → Redirect to `/onboarding/language`
 2. If onboarding complete AND in onboarding → Redirect to `/` (main app)
 3. Otherwise → Stay on current screen
@@ -460,11 +508,14 @@ Check AsyncStorage: @onboarding_complete
 When the main app loads, it automatically checks and refreshes notifications:
 
 **Process**:
+
 1. **On Component Mount** (`useEffect`):
+
    - Get count of scheduled notifications from database
    - Check if count < 64
 
 2. **If count < 64**:
+
    - Get saved notification time from AsyncStorage
    - Call `refreshNotificationSchedule(notificationTime, locale)`:
      - Calculate how many more needed (64 - current count)
@@ -478,12 +529,14 @@ When the main app loads, it automatically checks and refreshes notifications:
    - Log "No refresh needed"
 
 **Benefits**:
+
 - Ensures user always has notifications queued
 - Automatically tops up when facts are consumed
 - Runs silently in background
 - No user interaction required
 
 **Implementation**:
+
 ```typescript
 const refreshNotificationsIfNeeded = async () => {
   const scheduledCount = await database.getScheduledFactsCount(locale);
@@ -546,6 +599,7 @@ Auto-Refresh Notifications (if < 64)
 ### Database Schema
 
 #### Categories Table
+
 ```sql
 CREATE TABLE categories (
   id INTEGER PRIMARY KEY,
@@ -558,6 +612,7 @@ CREATE TABLE categories (
 ```
 
 #### Content Types Table
+
 ```sql
 CREATE TABLE content_types (
   id INTEGER PRIMARY KEY,
@@ -568,6 +623,7 @@ CREATE TABLE content_types (
 ```
 
 #### Facts Table
+
 ```sql
 CREATE TABLE facts (
   id INTEGER PRIMARY KEY,
@@ -597,6 +653,7 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 ```
 
 **Database Migrations**:
+
 - Version 1: Added `scheduled_date` and `notification_id` columns
 - Migrations run automatically on app start via `PRAGMA user_version`
 
@@ -607,16 +664,19 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 ### Onboarding Errors
 
 1. **Initialization Errors**:
+
    - Network failure → Retry button
    - API error → Show message + retry
    - Never proceed without metadata
 
 2. **Download Errors**:
+
    - Network failure → Auto-retry (3 attempts, exponential backoff)
    - API error → Show error, manual retry
    - Never mark onboarding complete without facts
 
 3. **Permission Errors**:
+
    - User denial → Show explanation, require approval
    - System error → Show error message
    - NO alternative path - MUST grant permissions
@@ -630,6 +690,7 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 ### Fail-Safe Mechanisms
 
 1. **Transaction-Based Writes**:
+
    ```javascript
    await database.withTransactionAsync(async () => {
      // All inserts here
@@ -638,6 +699,7 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
    ```
 
 2. **Retry Logic**:
+
    ```javascript
    async function getAllFactsWithRetry(maxRetries = 3) {
      for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -661,28 +723,33 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 ## Key Technical Decisions
 
 ### Why SQLite for Local Storage?
+
 - Efficient querying for facts display
 - Supports complex filtering (category, difficulty, language)
 - Transaction support for data integrity
 - Works offline after initial download
 
 ### Why SecureStore for Device Key?
+
 - Encrypted storage for authentication token
 - Required for all API calls
 - Persists across app restarts
 
 ### Why AsyncStorage for Preferences?
+
 - Simple key-value storage
 - Fast access for app launch checks
 - User preferences don't require encryption
 
 ### Why Background Download on Difficulty Screen?
+
 - Facts download in background while user sets notification time
 - Better UX - no waiting on dedicated download screen
 - Perceived faster onboarding (happens during user interaction)
 - Can show smart button states on notifications screen
 
 ### Why 64 Scheduled Notifications?
+
 - iOS limit: Maximum 64 scheduled local notifications
 - Daily notifications: Covers ~2 months ahead
 - Auto-refresh: App tops up when count drops below 64
@@ -690,12 +757,15 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 - Database tracking: Prevents duplicate scheduling
 
 ### Notification System Architecture
+
 1. **Initial Scheduling** (Onboarding):
+
    - Schedule 64 random facts
    - Start today if selected time hasn't passed yet, otherwise tomorrow
    - Store notification ID and scheduled date in database
 
 2. **Auto-Refresh** (Main App Launch):
+
    - Check scheduled count on every app open
    - If < 64: Top up with more random unscheduled facts
    - Continue from last scheduled date
@@ -715,6 +785,7 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 The app uses React Context API for centralized onboarding state management. All onboarding screens access shared state through the `useOnboarding()` hook.
 
 **Context Provider**:
+
 ```tsx
 <OnboardingProvider>
   {/* All onboarding screens have access to context */}
@@ -722,6 +793,7 @@ The app uses React Context API for centralized onboarding state management. All 
 ```
 
 **State Structure**:
+
 ```typescript
 interface OnboardingState {
   // User selections
@@ -746,6 +818,7 @@ interface OnboardingState {
 ```
 
 **Available Methods**:
+
 - `setSelectedCategories(categories: string[])` - Update selected categories
 - `setDifficulty(difficulty: DifficultyLevel)` - Update difficulty preference
 - `setNotificationTime(time: Date)` - Update notification time
@@ -757,6 +830,7 @@ interface OnboardingState {
 - `resetOnboarding()` - Reset all state
 
 **Benefits**:
+
 - ✅ No route params needed - all state in context
 - ✅ Automatic state synchronization across screens
 - ✅ Built-in loading and error states
@@ -764,22 +838,24 @@ interface OnboardingState {
 - ✅ Easy to test and debug
 
 **Usage Example**:
+
 ```tsx
-import { useOnboarding } from '../../src/contexts';
+import { useOnboarding } from "../../src/contexts";
 
 function CategoryScreen() {
-  const { selectedCategories, setSelectedCategories, isInitialized } = useOnboarding();
+  const { selectedCategories, setSelectedCategories, isInitialized } =
+    useOnboarding();
 
   // Guard: redirect if not initialized
   if (!isInitialized) {
-    router.replace('/onboarding/language');
+    router.replace("/onboarding/language");
   }
 
   // Use state and methods
   const toggleCategory = (slug: string) => {
     setSelectedCategories(
       selectedCategories.includes(slug)
-        ? selectedCategories.filter(s => s !== slug)
+        ? selectedCategories.filter((s) => s !== slug)
         : [...selectedCategories, slug]
     );
   };
@@ -828,6 +904,7 @@ src/
 ## Testing Checklist
 
 ### Happy Path
+
 - [ ] Fresh install → Language selection → Initialize on Continue → Complete → Main App
 - [ ] Language selection → Select language → UI updates immediately
 - [ ] Language selection → Click Continue → Initialization starts (loading state shown)
@@ -845,6 +922,7 @@ src/
 - [ ] Relaunch → Goes to Main App in selected language
 
 ### Error Paths
+
 - [ ] Language screen → Network failure on Continue → Error shown with retry instructions
 - [ ] Language screen → Click Continue again → Retry initialization works
 - [ ] Categories: Access before initialization → Redirects to language screen
@@ -857,6 +935,7 @@ src/
 - [ ] Kill app during download → Context state lost, restarts from language selection
 
 ### Edge Cases
+
 - [ ] No network → Clear error messages on language screen after Continue click
 - [ ] Slow network → Loading state shown during initialization and fact download
 - [ ] Slow fact download → Button remains clickable, waits for download after permission granted
@@ -904,6 +983,7 @@ src/
 ## Future Considerations
 
 ### Potential Enhancements
+
 - Background fact refresh
 - ✅ ~~Push notification scheduling~~ → **IMPLEMENTED** (64 notifications with auto-refresh)
 - Fact favorites/bookmarks
@@ -915,7 +995,9 @@ src/
 - Notification interaction tracking (fact views from notifications)
 
 ### Migration Strategy
+
 If onboarding flow changes:
+
 1. Version the onboarding state in AsyncStorage
 2. Handle migration from old → new flow
 3. Don't break existing completed users
@@ -925,11 +1007,13 @@ If onboarding flow changes:
 ## Notification Scheduling System (Detailed)
 
 ### Overview
+
 The app implements a robust local notification scheduling system that ensures users always have notifications queued up to 64 days ahead (iOS limit).
 
 ### Key Components
 
 #### 1. Service Layer (`src/services/notifications.ts`)
+
 ```typescript
 // Main functions
 scheduleInitialNotifications(time: Date, locale: string): Promise<Result>
@@ -940,6 +1024,7 @@ getScheduledNotificationsCount(): Promise<number>
 ```
 
 #### 2. Database Layer (`src/services/database.ts`)
+
 ```typescript
 // Notification-related queries
 getRandomUnscheduledFacts(limit: number, locale?: string): Promise<Fact[]>
@@ -950,6 +1035,7 @@ getScheduledFactsCount(locale?: string): Promise<number>
 ```
 
 #### 3. Database Schema
+
 ```sql
 -- Facts table includes notification columns
 scheduled_date TEXT    -- ISO date when notification fires
@@ -962,6 +1048,7 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 ### Scheduling Flow
 
 #### Initial Scheduling (Onboarding)
+
 1. User grants notification permission on notifications screen
 2. System calls `scheduleInitialNotifications(notificationTime, locale)`:
    - Query database: `getRandomUnscheduledFacts(64, locale)`
@@ -974,6 +1061,7 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 4. Show error alert with retry option on failure
 
 #### Auto-Refresh (Main App Launch)
+
 1. User opens app after onboarding complete
 2. `useEffect` in [app/index.tsx](app/index.tsx) triggers:
    ```typescript
@@ -990,6 +1078,7 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
    - Update database with new scheduled facts
 
 #### Rescheduling (Settings - Future)
+
 1. User changes notification time in settings
 2. System calls `rescheduleNotifications(newTime, locale)`:
    - Cancel all scheduled notifications
@@ -1000,11 +1089,13 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 ### Error Handling
 
 **Scheduling Errors**:
+
 - Expo API failure → Show user-visible Alert, allow retry
 - Database write failure → Transaction rollback, safe state
 - Network issues → N/A (all local operations)
 
 **Edge Cases**:
+
 - No unscheduled facts available → Return success with count=0
 - User has < 64 facts total → Schedule all available facts
 - Database migration fails → App startup fails safely
@@ -1019,16 +1110,19 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 ### Storage Details
 
 **AsyncStorage**:
+
 - `@notification_time`: ISO date string of user's selected time
 - Used for auto-refresh and rescheduling
 
 **SQLite**:
+
 - `facts.scheduled_date`: ISO date when notification fires
 - `facts.notification_id`: Expo notification ID for cancellation
 - Allows tracking which facts are scheduled
 - Prevents duplicate scheduling
 
 **Expo Notifications**:
+
 - Stores actual notification triggers
 - Limited to 64 on iOS, higher on Android
 - Managed via Expo Notifications API
@@ -1036,6 +1130,7 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 ### Monitoring & Debugging
 
 **Console Logs**:
+
 ```
 "Scheduled 64 notifications"
 "Refreshed 15 notifications. Total now: 64"
@@ -1045,6 +1140,7 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 ```
 
 **Database Queries** (for debugging):
+
 ```sql
 -- Check scheduled count
 SELECT COUNT(*) FROM facts WHERE scheduled_date IS NOT NULL;
