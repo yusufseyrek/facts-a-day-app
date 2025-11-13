@@ -9,7 +9,7 @@
     "scheme": "factsaday",
     "newArchEnabled": true,
     "extra": {
-      "API_BASE_URL": "http://192.168.1.19:3000",
+      "API_BASE_URL": "https://factsaday.com",
       "ADMOB_IOS_HOME_BANNER_ID": "ca-app-pub-7740246752776234/1196911062",
       "ADMOB_IOS_MODAL_BANNER_ID": "ca-app-pub-7740246752776234/8006410731",
       "ADMOB_IOS_INTERSTITIAL_ID": "ca-app-pub-7740246752776234/2739316775",
