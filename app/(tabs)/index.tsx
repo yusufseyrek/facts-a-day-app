@@ -16,7 +16,10 @@ import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import * as database from "../../src/services/database";
 import * as Notifications from "expo-notifications";
-import { useIsPremium, useSubscription } from "../../src/contexts/SubscriptionContext";
+import {
+  useIsPremium,
+  useSubscription,
+} from "../../src/contexts/SubscriptionContext";
 import { BannerAd } from "../../src/components/ads";
 import { trackFactView } from "../../src/services/adManager";
 import {
@@ -230,7 +233,7 @@ export default function HomeScreen() {
           sections={sections}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={{
-            paddingBottom: isPremium ? tokens.space.lg : 110,
+            paddingBottom: isPremium ? 0 : 70,
           }}
           ListHeaderComponent={() => (
             <Header>
@@ -248,7 +251,12 @@ export default function HomeScreen() {
                   backgroundColor={theme === "dark" ? "#FFA500" : "#FFD700"}
                   color={theme === "dark" ? "#FFFFFF" : "#000000"}
                   borderRadius={tokens.radius.lg}
-                  icon={<Crown size={18} color={theme === "dark" ? "#FFFFFF" : "#000000"} />}
+                  icon={
+                    <Crown
+                      size={18}
+                      color={theme === "dark" ? "#FFFFFF" : "#000000"}
+                    />
+                  }
                   onPress={() => router.push("/paywall")}
                   fontWeight="600"
                   fontSize={15}
