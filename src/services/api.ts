@@ -49,8 +49,6 @@ export interface FactResponse {
   summary?: string;
   category?: string;
   source_url?: string;
-  reading_time?: number;
-  word_count?: number;
   image_url?: string;
   language: string;
   created_at: string;

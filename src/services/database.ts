@@ -79,14 +79,12 @@ async function initializeSchema(): Promise<void> {
       summary TEXT,
       category TEXT,
       source_url TEXT,
-      reading_time INTEGER,
-      word_count INTEGER,
       image_url TEXT,
       language TEXT NOT NULL,
       created_at TEXT NOT NULL,
+      last_updated TEXT,
       scheduled_date TEXT,
-      notification_id TEXT,
-      last_updated TEXT
+      notification_id TEXT
     );
   `);
 
@@ -242,8 +240,6 @@ export interface Fact {
   summary?: string;
   category?: string;
   source_url?: string;
-  reading_time?: number;
-  word_count?: number;
   image_url?: string;
   language: string;
   created_at: string;
@@ -271,12 +267,10 @@ function mapFactsWithRelations(rows: any[]): FactWithRelations[] {
       summary: row.summary,
       category: row.category,
       source_url: row.source_url,
-      reading_time: row.reading_time,
-      word_count: row.word_count,
       image_url: row.image_url,
       language: row.language,
       created_at: row.created_at,
-      updated_at: row.updated_at,
+      last_updated: row.last_updated,
       scheduled_date: row.scheduled_date,
       notification_id: row.notification_id,
     };
@@ -313,8 +307,8 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
       await database.runAsync(
         `INSERT OR REPLACE INTO facts (
           id, title, content, summary, category,
-          source_url, reading_time, word_count, image_url, language, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          source_url, image_url, language, created_at, last_updated
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           fact.id,
           fact.title || null,
@@ -322,12 +316,10 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
           fact.summary || null,
           fact.category || null,
           fact.source_url || null,
-          fact.reading_time || null,
-          fact.word_count || null,
           fact.image_url || null,
           fact.language,
           fact.created_at,
-          fact.updated_at || fact.created_at,
+          fact.last_updated || fact.created_at,
         ]
       );
     }

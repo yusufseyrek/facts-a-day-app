@@ -56,11 +56,12 @@ export default function RootLayout() {
     setIsOnboardingComplete(complete);
   };
 
-  // Re-check onboarding status when navigating to root or onboarding paths
+  // Re-check onboarding status when navigating to onboarding paths
   // This ensures the reset onboarding button works correctly
   useEffect(() => {
     const currentPath = segments[0];
-    if (currentPath === undefined || currentPath === 'onboarding') {
+    // Only re-check when explicitly navigating TO onboarding, not when leaving it
+    if (currentPath === 'onboarding') {
       checkOnboardingStatus();
     }
   }, [segments]);

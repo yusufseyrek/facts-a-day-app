@@ -149,8 +149,6 @@ export async function refreshAppContent(): Promise<RefreshResult> {
           summary: fact.summary,
           category: fact.category,
           source_url: fact.source_url,
-          reading_time: fact.reading_time,
-          word_count: fact.word_count,
           image_url: fact.image_url,
           language: fact.language,
           created_at: fact.created_at,

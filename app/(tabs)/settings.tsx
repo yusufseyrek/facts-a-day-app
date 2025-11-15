@@ -43,6 +43,7 @@ import {
   useIsPremium,
   useSubscription,
 } from "../../src/contexts/SubscriptionContext";
+import { useOnboarding } from "../../src/contexts";
 import { showSettingsInterstitial } from "../../src/services/adManager";
 
 const Container = styled(SafeAreaView, {
@@ -106,6 +107,7 @@ export default function SettingsPage() {
   const isPremium = useIsPremium();
   const { subscriptionTier, restorePurchases, checkSubscription } =
     useSubscription();
+  const { resetOnboarding } = useOnboarding();
 
   // Check if running in development mode
   const isDevelopment = __DEV__;
@@ -193,7 +195,7 @@ export default function SettingsPage() {
 
   const handleResetOnboarding = async () => {
     try {
-      await onboardingService.resetOnboarding();
+      await resetOnboarding();
       router.replace("/onboarding");
     } catch (error) {
       console.error("Error resetting onboarding:", error);

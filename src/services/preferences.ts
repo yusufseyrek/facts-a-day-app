@@ -125,8 +125,8 @@ export async function handleLanguageChange(
           await db.runAsync(`
             INSERT OR REPLACE INTO facts (
               id, title, content, summary, category,
-              source_url, reading_time, word_count, image_url, language, created_at, last_updated
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              source_url, image_url, language, created_at, last_updated
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, [
             fact.id,
             fact.title || null,
@@ -134,8 +134,6 @@ export async function handleLanguageChange(
             fact.summary || null,
             fact.category || null,
             fact.source_url || null,
-            fact.reading_time || null,
-            fact.word_count || null,
             fact.image_url || null,
             fact.language,
             fact.created_at,
@@ -233,8 +231,6 @@ export async function handleCategoriesChange(
       summary: fact.summary,
       category: fact.category,
       source_url: fact.source_url,
-      reading_time: fact.reading_time,
-      word_count: fact.word_count,
       image_url: fact.image_url,
       language: fact.language,
       created_at: fact.created_at,
