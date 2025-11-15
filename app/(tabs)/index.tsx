@@ -225,68 +225,79 @@ export default function HomeScreen() {
   return (
     <Container edges={["top"]}>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
-      <SectionList
-        sections={sections}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{
-          paddingBottom: tokens.space.lg,
-        }}
-        ListHeaderComponent={() => (
-          <Header>
-            <XStack alignItems="center" gap={tokens.space.sm}>
-              <Clock
-                size={28}
-                color={theme === "dark" ? "#FFFFFF" : tokens.color.light.text}
+      <YStack flex={1}>
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={{
+            paddingBottom: isPremium ? tokens.space.lg : 110,
+          }}
+          ListHeaderComponent={() => (
+            <Header>
+              <XStack alignItems="center" gap={tokens.space.sm}>
+                <Clock
+                  size={28}
+                  color={theme === "dark" ? "#FFFFFF" : tokens.color.light.text}
+                />
+                <H1>{t("recentFacts")}</H1>
+              </XStack>
+              {!isPremium && (
+                <Button
+                  paddingHorizontal={tokens.space.lg}
+                  paddingVertical={tokens.space.sm}
+                  backgroundColor={theme === "dark" ? "#FFA500" : "#FFD700"}
+                  color={theme === "dark" ? "#FFFFFF" : "#000000"}
+                  borderRadius={tokens.radius.lg}
+                  icon={<Crown size={18} color={theme === "dark" ? "#FFFFFF" : "#000000"} />}
+                  onPress={() => router.push("/paywall")}
+                  fontWeight="600"
+                  fontSize={15}
+                  pressStyle={{
+                    scale: 0.95,
+                    opacity: 0.9,
+                  }}
+                  shadowColor="#000"
+                  shadowOffset={{ width: 0, height: 2 }}
+                  shadowOpacity={theme === "dark" ? 0.4 : 0.2}
+                  shadowRadius={4}
+                  elevation={theme === "dark" ? 6 : 3}
+                >
+                  {t("upgrade")}
+                </Button>
+              )}
+            </Header>
+          )}
+          renderSectionHeader={({ section: { title } }) => (
+            <SectionHeader>
+              <H2>{title}</H2>
+            </SectionHeader>
+          )}
+          renderItem={({ item }) => (
+            <ContentContainer>
+              <FeedFactCard
+                title={item.title || item.content.substring(0, 80) + "..."}
+                summary={item.summary}
+                onPress={() => handleFactPress(item)}
               />
-              <H1>{t("recentFacts")}</H1>
-            </XStack>
-            {!isPremium && (
-              <Button
-                paddingHorizontal={tokens.space.lg}
-                paddingVertical={tokens.space.sm}
-                backgroundColor={theme === "dark" ? "#FFA500" : "#FFD700"}
-                color={theme === "dark" ? "#FFFFFF" : "#000000"}
-                borderRadius={tokens.radius.lg}
-                icon={<Crown size={18} color={theme === "dark" ? "#FFFFFF" : "#000000"} />}
-                onPress={() => router.push("/paywall")}
-                fontWeight="600"
-                fontSize={15}
-                pressStyle={{
-                  scale: 0.95,
-                  opacity: 0.9,
-                }}
-                shadowColor="#000"
-                shadowOffset={{ width: 0, height: 2 }}
-                shadowOpacity={theme === "dark" ? 0.4 : 0.2}
-                shadowRadius={4}
-                elevation={theme === "dark" ? 6 : 3}
-              >
-                {t("upgrade")}
-              </Button>
-            )}
-          </Header>
-        )}
-        renderSectionHeader={({ section: { title } }) => (
-          <SectionHeader>
-            <H2>{title}</H2>
-          </SectionHeader>
-        )}
-        renderItem={({ item }) => (
-          <ContentContainer>
-            <FeedFactCard
-              title={item.title || item.content.substring(0, 80) + "..."}
-              summary={item.summary}
-              difficulty={item.difficulty}
-              onPress={() => handleFactPress(item)}
-            />
-          </ContentContainer>
-        )}
-        ListFooterComponent={() => <BannerAd position="home" />}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        stickySectionHeadersEnabled={true}
-      />
+            </ContentContainer>
+          )}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          stickySectionHeadersEnabled={true}
+        />
+        <YStack
+          position="absolute"
+          bottom={0}
+          left={0}
+          right={0}
+          backgroundColor="$background"
+          borderTopWidth={1}
+          borderTopColor="$borderColor"
+        >
+          <BannerAd position="home" />
+        </YStack>
+      </YStack>
     </Container>
   );
 }

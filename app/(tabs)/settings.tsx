@@ -33,7 +33,6 @@ import { H1, H2 } from "../../src/components";
 import { SettingsRow } from "../../src/components/SettingsRow";
 import { LanguagePickerModal } from "../../src/components/settings/LanguagePickerModal";
 import { ThemePickerModal } from "../../src/components/settings/ThemePickerModal";
-import { DifficultyPickerModal } from "../../src/components/settings/DifficultyPickerModal";
 import { TimePickerModal } from "../../src/components/settings/TimePickerModal";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
@@ -100,20 +99,6 @@ const getThemeName = (
   return themeNames[mode] || mode;
 };
 
-// Helper to get difficulty display name
-const getDifficultyName = (
-  difficulty: string,
-  t: (key: TranslationKeys) => string
-): string => {
-  const difficultyNames: Record<string, string> = {
-    beginner: t("easyDifficulty"),
-    intermediate: t("mediumDifficulty"),
-    advanced: t("hardDifficulty"),
-    all: t("allDifficulties"),
-  };
-  return difficultyNames[difficulty] || difficulty;
-};
-
 export default function SettingsPage() {
   const { theme, themeMode, toggleTheme } = useTheme();
   const { t, locale } = useTranslation();
@@ -131,12 +116,10 @@ export default function SettingsPage() {
   // Modal visibility state
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
-  const [showDifficultyModal, setShowDifficultyModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
 
   // Preferences state
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [difficulty, setDifficulty] = useState<string>("all");
   const [notificationTime, setNotificationTime] = useState<Date>(new Date());
 
   // Load preferences on mount
@@ -155,11 +138,9 @@ export default function SettingsPage() {
   const loadPreferences = async () => {
     try {
       const categories = await onboardingService.getSelectedCategories();
-      const diff = await onboardingService.getDifficultyPreference();
       const time = await onboardingService.getNotificationTime();
 
       setSelectedCategories(categories);
-      setDifficulty(diff);
       if (time) {
         setNotificationTime(new Date(time));
       }
@@ -176,11 +157,6 @@ export default function SettingsPage() {
   const handleLanguagePress = async () => {
     await showSettingsInterstitial(isPremium);
     setShowLanguageModal(true);
-  };
-
-  const handleDifficultyPress = async () => {
-    await showSettingsInterstitial(isPremium);
-    setShowDifficultyModal(true);
   };
 
   const handleTimePress = async () => {
@@ -415,13 +391,6 @@ export default function SettingsPage() {
               />
 
               <SettingsRow
-                label={t("settingsDifficulty")}
-                value={getDifficultyName(difficulty, t)}
-                icon={<Signal size={20} color={iconColor} />}
-                onPress={handleDifficultyPress}
-              />
-
-              <SettingsRow
                 label={t("settingsNotificationTime")}
                 value={notificationTime.toLocaleTimeString("en-US", {
                   hour: "numeric",
@@ -583,15 +552,6 @@ export default function SettingsPage() {
       <ThemePickerModal
         visible={showThemeModal}
         onClose={() => setShowThemeModal(false)}
-      />
-
-      <DifficultyPickerModal
-        visible={showDifficultyModal}
-        onClose={() => setShowDifficultyModal(false)}
-        currentDifficulty={difficulty}
-        onDifficultyChange={(newDifficulty) => {
-          setDifficulty(newDifficulty);
-        }}
       />
 
       <TimePickerModal

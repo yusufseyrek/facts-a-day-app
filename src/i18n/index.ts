@@ -1,5 +1,5 @@
 export { I18nProvider, useTranslation } from './useTranslation';
 export { i18n, SUPPORTED_LOCALES } from './config';
 export type { SupportedLocale, TranslationKeys } from './translations';
-export { translateDifficulty, translateCategory } from './helpers';
+export { translateCategory } from './helpers';
 export type { TFunction } from './helpers';

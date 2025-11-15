@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TamaguiProvider, Theme } from '@tamagui/core';
 import { config } from './config';
 
-type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 interface ThemeContextType {
   theme: 'light' | 'dark';

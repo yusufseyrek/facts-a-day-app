@@ -4,38 +4,6 @@ import type { Category } from '../services/database';
 export type TFunction = (key: TranslationKeys) => string;
 
 /**
- * Translates a difficulty value from English to the user's language
- * @param difficulty - The difficulty value from the backend (e.g., "Easy", "Medium", "Hard")
- * @param t - The translation function
- * @returns The translated difficulty string
- */
-export function translateDifficulty(difficulty: string | undefined, t: TFunction): string {
-  if (!difficulty) return '';
-
-  const normalized = difficulty.toLowerCase();
-
-  switch (normalized) {
-    case 'easy':
-      return t('easyDifficulty');
-    case 'medium':
-      return t('mediumDifficulty');
-    case 'hard':
-      return t('hardDifficulty');
-    case 'all':
-      return t('allDifficulties');
-    case 'beginner':
-      return t('beginnerDifficulty');
-    case 'intermediate':
-      return t('intermediateDifficulty');
-    case 'advanced':
-      return t('advancedDifficulty');
-    default:
-      // If no match, return the original value
-      return difficulty;
-  }
-}
-
-/**
  * Translates a category slug to the user's language
  * Categories are stored in the backend with both name and slug.
  * This function attempts to extract and translate the category name.

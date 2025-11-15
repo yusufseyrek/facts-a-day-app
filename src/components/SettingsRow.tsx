@@ -7,7 +7,7 @@ import { tokens } from '../theme/tokens';
 interface SettingsRowProps {
   label: string;
   value?: string;
-  onPress: () => void;
+  onPress?: () => void;
   icon?: React.ReactNode;
 }
 
@@ -23,15 +23,13 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   // Use pure white in dark mode for better contrast
   const labelColor = theme === 'dark' ? '#FFFFFF' : colors.text;
 
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
+  const content = (
+    <View
+      style={[
         styles.container,
         {
           backgroundColor: colors.surface,
           borderColor: colors.border,
-          opacity: pressed ? 0.7 : 1,
         },
       ]}
     >
@@ -47,8 +45,25 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
             {value}
           </Text>
         )}
-        <ChevronRight size={20} color={colors.textSecondary} />
+        {onPress && <ChevronRight size={20} color={colors.textSecondary} />}
       </View>
+    </View>
+  );
+
+  if (!onPress) {
+    return content;
+  }
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        {
+          opacity: pressed ? 0.7 : 1,
+        },
+      ]}
+    >
+      {content}
     </Pressable>
   );
 };

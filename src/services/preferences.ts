@@ -1,7 +1,7 @@
 /**
  * Preferences Service
  *
- * Handles preference changes (language, categories, difficulty) with comprehensive
+ * Handles preference changes (language, categories) with comprehensive
  * data refresh logic including:
  * - Clearing future/unscheduled facts
  * - Preserving delivered facts (scheduled_date <= now)
@@ -52,7 +52,7 @@ export async function handleLanguageChange(
     });
 
     const db = await database.openDatabase();
-    await db.execAsync(`
+    await db.runAsync(`
       DELETE FROM facts
       WHERE scheduled_date IS NULL OR scheduled_date > ?
     `, [now]);
@@ -74,7 +74,6 @@ export async function handleLanguageChange(
 
     const metadata = await api.getMetadata(newLanguage);
     await database.insertCategories(metadata.categories);
-    await database.insertContentTypes(metadata.content_types);
 
     // Stage 3: Download ALL facts to find translations for delivered ones + new facts
     onProgress?.({
@@ -84,12 +83,10 @@ export async function handleLanguageChange(
     });
 
     const categories = await onboardingService.getSelectedCategories();
-    const difficulty = await onboardingService.getDifficultyPreference();
 
     const allFacts = await api.getAllFactsWithRetry(
       newLanguage,
       categories.join(','),
-      difficulty,
       (downloaded, total) => {
         const progress = 40 + (downloaded / total) * 50; // 40-90%
         onProgress?.({
@@ -127,25 +124,22 @@ export async function handleLanguageChange(
           // Insert new fact
           await db.runAsync(`
             INSERT OR REPLACE INTO facts (
-              id, title, content, summary, difficulty, content_type, category,
-              tags, source_url, reading_time, word_count, image_url, language, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              id, title, content, summary, category,
+              source_url, reading_time, word_count, image_url, language, created_at, last_updated
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, [
             fact.id,
             fact.title || null,
             fact.content,
             fact.summary || null,
-            fact.difficulty,
-            fact.content_type,
-            fact.category,
-            fact.tags ? JSON.stringify(fact.tags) : null,
+            fact.category || null,
             fact.source_url || null,
             fact.reading_time || null,
             fact.word_count || null,
             fact.image_url || null,
             fact.language,
             fact.created_at,
-            fact.updated_at || fact.created_at
+            fact.last_updated || fact.created_at
           ]);
           insertedCount++;
         }
@@ -206,7 +200,7 @@ export async function handleCategoriesChange(
     });
 
     const db = await database.openDatabase();
-    await db.execAsync(`
+    await db.runAsync(`
       DELETE FROM facts
       WHERE scheduled_date IS NULL OR scheduled_date > ?
     `, [now]);
@@ -218,12 +212,9 @@ export async function handleCategoriesChange(
       message: 'Downloading new facts...'
     });
 
-    const difficulty = await onboardingService.getDifficultyPreference();
-
     const newFacts = await api.getAllFactsWithRetry(
       currentLanguage,
       newCategories.join(','),
-      difficulty,
       (downloaded, total) => {
         const progress = 30 + (downloaded / total) * 60; // 30-90%
         onProgress?.({
@@ -240,17 +231,14 @@ export async function handleCategoriesChange(
       title: fact.title,
       content: fact.content,
       summary: fact.summary,
-      difficulty: fact.difficulty,
-      content_type: fact.content_type,
       category: fact.category,
-      tags: fact.tags ? JSON.stringify(fact.tags) : undefined,
       source_url: fact.source_url,
       reading_time: fact.reading_time,
       word_count: fact.word_count,
       image_url: fact.image_url,
       language: fact.language,
       created_at: fact.created_at,
-      updated_at: fact.updated_at,
+      last_updated: fact.last_updated,
     }));
 
     await database.insertFacts(dbFacts);
@@ -279,107 +267,6 @@ export async function handleCategoriesChange(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to update categories'
-    };
-  }
-}
-
-/**
- * Handle difficulty change - requires downloading new facts
- *
- * Flow:
- * 1. Clear future/unscheduled facts
- * 2. Download new facts matching new difficulty
- * 3. Refresh notification schedule
- */
-export async function handleDifficultyChange(
-  newDifficulty: string,
-  currentLanguage: string,
-  onProgress?: (progress: RefreshProgress) => void
-): Promise<RefreshResult> {
-  try {
-    const now = new Date().toISOString();
-
-    // Stage 1: Clear future and unscheduled facts
-    onProgress?.({
-      stage: 'clearing',
-      percentage: 10,
-      message: 'Clearing old facts...'
-    });
-
-    const db = await database.openDatabase();
-    await db.execAsync(`
-      DELETE FROM facts
-      WHERE scheduled_date IS NULL OR scheduled_date > ?
-    `, [now]);
-
-    // Stage 2: Download new facts
-    onProgress?.({
-      stage: 'downloading',
-      percentage: 30,
-      message: 'Downloading new facts...'
-    });
-
-    const categories = await onboardingService.getSelectedCategories();
-
-    const newFacts = await api.getAllFactsWithRetry(
-      currentLanguage,
-      categories.join(','),
-      newDifficulty,
-      (downloaded, total) => {
-        const progress = 30 + (downloaded / total) * 60; // 30-90%
-        onProgress?.({
-          stage: 'downloading',
-          percentage: Math.round(progress),
-          message: `Downloading facts (${downloaded}/${total})...`
-        });
-      }
-    );
-
-    // Convert and insert new facts
-    const dbFacts: database.Fact[] = newFacts.map((fact) => ({
-      id: fact.id,
-      title: fact.title,
-      content: fact.content,
-      summary: fact.summary,
-      difficulty: fact.difficulty,
-      content_type: fact.content_type,
-      category: fact.category,
-      tags: fact.tags ? JSON.stringify(fact.tags) : undefined,
-      source_url: fact.source_url,
-      reading_time: fact.reading_time,
-      word_count: fact.word_count,
-      image_url: fact.image_url,
-      language: fact.language,
-      created_at: fact.created_at,
-      updated_at: fact.updated_at,
-    }));
-
-    await database.insertFacts(dbFacts);
-
-    // Stage 3: Refresh notification schedule
-    onProgress?.({
-      stage: 'scheduling',
-      percentage: 95,
-      message: 'Updating notifications...'
-    });
-
-    const notificationTime = await onboardingService.getNotificationTime();
-    if (notificationTime) {
-      await notificationService.refreshNotificationSchedule(notificationTime, currentLanguage);
-    }
-
-    onProgress?.({
-      stage: 'complete',
-      percentage: 100,
-      message: 'Difficulty updated successfully!'
-    });
-
-    return { success: true, factsCount: newFacts.length };
-  } catch (error) {
-    console.error('Error handling difficulty change:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update difficulty'
     };
   }
 }

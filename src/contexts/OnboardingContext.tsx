@@ -8,12 +8,9 @@ import React, {
 import type { SupportedLocale } from "../i18n";
 import * as onboardingService from "../services/onboarding";
 
-type DifficultyLevel = "beginner" | "intermediate" | "advanced" | "all";
-
 interface OnboardingState {
   // User selections
   selectedCategories: string[];
-  difficulty: DifficultyLevel;
   notificationTime: Date;
 
   // Initialization state
@@ -34,7 +31,6 @@ interface OnboardingState {
 interface OnboardingContextType extends OnboardingState {
   // Selection methods
   setSelectedCategories: (categories: string[]) => void;
-  setDifficulty: (difficulty: DifficultyLevel) => void;
   setNotificationTime: (time: Date) => void;
 
   // Initialization
@@ -63,7 +59,6 @@ interface OnboardingProviderProps {
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const [state, setState] = useState<OnboardingState>({
     selectedCategories: [],
-    difficulty: "all",
     notificationTime: (() => {
       const defaultTime = new Date();
       defaultTime.setHours(9, 0, 0, 0);
@@ -85,10 +80,6 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
   const setSelectedCategories = useCallback((categories: string[]) => {
     setState((prev) => ({ ...prev, selectedCategories: categories }));
-  }, []);
-
-  const setDifficulty = useCallback((difficulty: DifficultyLevel) => {
-    setState((prev) => ({ ...prev, difficulty }));
   }, []);
 
   const setNotificationTime = useCallback((time: Date) => {
@@ -168,7 +159,6 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         const result = await onboardingService.fetchAllFacts(
           locale,
           state.selectedCategories,
-          state.difficulty,
           (progress) => {
             setState((prev) => ({
               ...prev,
@@ -208,7 +198,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         return false;
       }
     },
-    [state.selectedCategories, state.difficulty]
+    [state.selectedCategories]
   );
 
   const waitForDownloadComplete = useCallback(async (): Promise<void> => {
@@ -246,7 +236,6 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     try {
       await onboardingService.completeOnboarding({
         selectedCategories: state.selectedCategories,
-        difficultyPreference: state.difficulty,
         notificationTime: state.notificationTime,
       });
 
@@ -255,7 +244,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       console.error("Error completing onboarding:", error);
       throw error;
     }
-  }, [state.selectedCategories, state.difficulty, state.notificationTime]);
+  }, [state.selectedCategories, state.notificationTime]);
 
   // ===== Reset =====
 
@@ -266,7 +255,6 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       // Reset state
       setState({
         selectedCategories: [],
-        difficulty: "all",
         notificationTime: (() => {
           const defaultTime = new Date();
           defaultTime.setHours(9, 0, 0, 0);
@@ -292,7 +280,6 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const value: OnboardingContextType = {
     ...state,
     setSelectedCategories,
-    setDifficulty,
     setNotificationTime,
     initializeOnboarding,
     retryInitialization,

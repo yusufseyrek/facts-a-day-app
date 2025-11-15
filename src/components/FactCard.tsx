@@ -4,9 +4,7 @@ import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { tokens } from "../theme/tokens";
 import { BodyText } from "./Typography";
-import { TagPill } from "./TagPill";
 import { CategoryBadge } from "./CategoryBadge";
-import { DifficultyBadge } from "./DifficultyBadge";
 import { useTheme } from "../theme";
 import type { FactWithRelations, Category } from "../services/database";
 
@@ -46,11 +44,6 @@ const BadgesRow = styled(XStack, {
   flexWrap: "wrap",
 });
 
-const TagsContainer = styled(XStack, {
-  flexWrap: "wrap",
-  gap: tokens.space.sm,
-});
-
 const SourceSection = styled(YStack, {
   gap: tokens.space.xs,
   paddingTop: tokens.space.md,
@@ -66,24 +59,6 @@ function slugToTitleCase(slug: string): string {
 
 export function FactCard({ fact, onReadMore }: FactCardProps) {
   const { theme } = useTheme();
-
-  // Parse tags safely - they might be objects or strings
-  let tags: string[] = [];
-  if (fact.tags) {
-    try {
-      const parsed = JSON.parse(fact.tags);
-      // Handle both array of objects and array of strings
-      tags = parsed.map((tag: any) => {
-        if (typeof tag === "string") {
-          return tag;
-        }
-        // If it's an object, extract name or slug
-        return tag.name || tag.slug || String(tag);
-      });
-    } catch (error) {
-      console.warn("Failed to parse tags:", error);
-    }
-  }
 
   // Determine what to pass to CategoryBadge
   let categoryForBadge: string | Category | null = null;
@@ -123,21 +98,11 @@ export function FactCard({ fact, onReadMore }: FactCardProps) {
             <FactImage source={{ uri: fact.image_url }} resizeMode="cover" />
           )}
 
-          {/* Badges above tags */}
-          {(categoryForBadge || fact.difficulty) && (
+          {/* Badges */}
+          {categoryForBadge && (
             <BadgesRow>
-              {categoryForBadge && <CategoryBadge category={categoryForBadge} />}
-              {fact.difficulty && <DifficultyBadge difficulty={fact.difficulty} />}
+              <CategoryBadge category={categoryForBadge} />
             </BadgesRow>
-          )}
-
-          {/* Tags */}
-          {tags.length > 0 && (
-            <TagsContainer>
-              {tags.map((tag, index) => (
-                <TagPill key={index} tag={tag} />
-              ))}
-            </TagsContainer>
           )}
 
           {/* Source Link */}

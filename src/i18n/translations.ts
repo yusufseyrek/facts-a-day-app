@@ -15,22 +15,6 @@ export const translations = {
     choosePreferredLanguage: "Wählen Sie Ihre bevorzugte Sprache für die App",
     languageDescription: "Sie können dies später in den Einstellungen ändern",
 
-    // Onboarding - Difficulty
-    chooseDifficultyLevel: "Wählen Sie Ihren Schwierigkeitsgrad",
-    tailorFactsComplexity:
-      "Wir passen die Fakten an Ihre bevorzugte Komplexität an",
-    easyDifficulty: "Einfach",
-    easyDescription: "Leicht verständliche Fakten",
-    mediumDifficulty: "Mittel",
-    mediumDescription: "Ausgewogene Fakten für die meisten",
-    hardDifficulty: "Schwierig",
-    hardDescription: "Tiefgehende und komplexe Fakten",
-    allDifficulties: "Alle",
-    allDescription: "Eine Mischung aus allen Schwierigkeitsgraden",
-    beginnerDifficulty: "Anfänger",
-    intermediateDifficulty: "Fortgeschrittene",
-    advancedDifficulty: "Experte",
-
     // Onboarding - Initialization
     settingUpApp: "Lade Ihre App...",
     settingUpLanguage: "Sprache wird eingerichtet...",
@@ -74,7 +58,6 @@ export const translations = {
     resetOnboarding: "Onboarding zurücksetzen (Test)",
     readMore: "Mehr Lesen",
     category: "Kategorie",
-    tags: "Tags",
     settings: "Einstellungen",
     developerSettings: "Entwicklereinstellungen",
     testNotification: "Benachrichtigung Testen",
@@ -103,7 +86,6 @@ export const translations = {
     submit: "Absenden",
     factOfTheDay: "Fakt des Tages",
     didYouKnow: "Wussten Sie?",
-    difficulty: "Schwierigkeit",
     source: "Quelle",
     add10RandomFacts: "10 Zufällige Fakten Hinzufügen",
     factsAdded: "Fakten Hinzugefügt",
@@ -121,7 +103,6 @@ export const translations = {
     settingsThemeDarkDescription: "Immer dunkles Design verwenden",
     settingsThemeSystemDescription: "Systemeinstellungen folgen",
     settingsCategories: "Kategorien",
-    settingsDifficulty: "Schwierigkeit",
     settingsNotificationTime: "Benachrichtigungszeit",
     settingsSelected: "ausgewählt",
 
@@ -194,21 +175,6 @@ export const translations = {
     choosePreferredLanguage: "Choose your preferred language for the app",
     languageDescription: "You can change this later in settings",
 
-    // Onboarding - Difficulty
-    chooseDifficultyLevel: "Choose your difficulty level",
-    tailorFactsComplexity: "We'll tailor facts to your preferred complexity",
-    easyDifficulty: "Easy",
-    easyDescription: "Simple, easy-to-understand facts",
-    mediumDifficulty: "Medium",
-    mediumDescription: "Balanced facts for most people",
-    hardDifficulty: "Hard",
-    hardDescription: "In-depth and complex facts",
-    allDifficulties: "All",
-    allDescription: "A mix of all difficulty levels",
-    beginnerDifficulty: "Beginner",
-    intermediateDifficulty: "Intermediate",
-    advancedDifficulty: "Advanced",
-
     // Onboarding - Initialization
     settingUpApp: "Setting up your app...",
     settingUpLanguage: "Setting up language...",
@@ -251,7 +217,6 @@ export const translations = {
     resetOnboarding: "Reset Onboarding (Testing)",
     readMore: "Read More",
     category: "Category",
-    tags: "Tags",
     settings: "Settings",
     developerSettings: "Developer Settings",
     testNotification: "Test Notification",
@@ -280,7 +245,6 @@ export const translations = {
     submit: "Submit",
     factOfTheDay: "Fact of the Day",
     didYouKnow: "Did You Know?",
-    difficulty: "Difficulty",
     source: "Source",
     add10RandomFacts: "Add 10 Random Facts",
     factsAdded: "Facts Added",
@@ -297,7 +261,6 @@ export const translations = {
     settingsThemeDarkDescription: "Always use dark theme",
     settingsThemeSystemDescription: "Follow system settings",
     settingsCategories: "Categories",
-    settingsDifficulty: "Difficulty",
     settingsNotificationTime: "Notification Time",
     settingsSelected: "selected",
 
@@ -370,21 +333,6 @@ export const translations = {
     choosePreferredLanguage: "Elige tu idioma preferido para la aplicación",
     languageDescription: "Puedes cambiar esto más tarde en la configuración",
 
-    // Onboarding - Difficulty
-    chooseDifficultyLevel: "Elige tu nivel de dificultad",
-    tailorFactsComplexity: "Adaptaremos los datos a tu complejidad preferida",
-    easyDifficulty: "Fácil",
-    easyDescription: "Datos simples y fáciles de entender",
-    mediumDifficulty: "Medio",
-    mediumDescription: "Datos equilibrados para la mayoría",
-    hardDifficulty: "Difícil",
-    hardDescription: "Datos complejos y profundos",
-    allDifficulties: "Todos",
-    allDescription: "Una mezcla de todos los niveles de dificultad",
-    beginnerDifficulty: "Principiante",
-    intermediateDifficulty: "Intermedio",
-    advancedDifficulty: "Avanzado",
-
     // Onboarding - Initialization
     settingUpApp: "Configurando tu aplicación...",
     settingUpLanguage: "Configurando idioma...",
@@ -427,7 +375,6 @@ export const translations = {
     resetOnboarding: "Restablecer Configuración Inicial (Prueba)",
     readMore: "Leer Más",
     category: "Categoría",
-    tags: "Etiquetas",
     settings: "Configuración",
     developerSettings: "Configuración de Desarrollador",
     testNotification: "Probar Notificación",
@@ -456,7 +403,6 @@ export const translations = {
     submit: "Enviar",
     factOfTheDay: "Dato del Día",
     didYouKnow: "¿Sabías que...?",
-    difficulty: "Dificultad",
     source: "Fuente",
     add10RandomFacts: "Agregar 10 Datos Aleatorios",
     factsAdded: "Datos Agregados",
@@ -473,7 +419,6 @@ export const translations = {
     settingsThemeDarkDescription: "Usar siempre tema oscuro",
     settingsThemeSystemDescription: "Seguir configuración del sistema",
     settingsCategories: "Categorías",
-    settingsDifficulty: "Dificultad",
     settingsNotificationTime: "Hora de Notificación",
     settingsSelected: "seleccionado",
 
@@ -548,22 +493,6 @@ export const translations = {
     languageDescription:
       "Vous pouvez modifier cela plus tard dans les paramètres",
 
-    // Onboarding - Difficulty
-    chooseDifficultyLevel: "Choisissez votre niveau de difficulté",
-    tailorFactsComplexity:
-      "Nous adapterons les faits à votre complexité préférée",
-    easyDifficulty: "Facile",
-    easyDescription: "Faits simples et faciles à comprendre",
-    mediumDifficulty: "Moyen",
-    mediumDescription: "Faits équilibrés pour la plupart",
-    hardDifficulty: "Difficile",
-    hardDescription: "Faits approfondis et complexes",
-    allDifficulties: "Tous",
-    allDescription: "Un mélange de tous les niveaux de difficulté",
-    beginnerDifficulty: "Débutant",
-    intermediateDifficulty: "Intermédiaire",
-    advancedDifficulty: "Avancé",
-
     // Onboarding - Initialization
     settingUpApp: "Configuration de votre application...",
     settingUpLanguage: "Configuration de la langue...",
@@ -606,7 +535,6 @@ export const translations = {
     resetOnboarding: "Réinitialiser l'Intégration (Test)",
     readMore: "En Savoir Plus",
     category: "Catégorie",
-    tags: "Étiquettes",
     settings: "Paramètres",
     developerSettings: "Paramètres Développeur",
     testNotification: "Tester Notification",
@@ -635,7 +563,6 @@ export const translations = {
     submit: "Soumettre",
     factOfTheDay: "Fait du Jour",
     didYouKnow: "Le saviez-vous ?",
-    difficulty: "Difficulté",
     source: "Source",
     add10RandomFacts: "Ajouter 10 Faits Aléatoires",
     factsAdded: "Faits Ajoutés",
@@ -652,7 +579,6 @@ export const translations = {
     settingsThemeDarkDescription: "Toujours utiliser le thème sombre",
     settingsThemeSystemDescription: "Suivre les paramètres du système",
     settingsCategories: "Catégories",
-    settingsDifficulty: "Difficulté",
     settingsNotificationTime: "Heure de Notification",
     settingsSelected: "sélectionné",
 
@@ -725,21 +651,6 @@ export const translations = {
     choosePreferredLanguage: "アプリの優先言語を選択してください",
     languageDescription: "後で設定で変更できます",
 
-    // Onboarding - Difficulty
-    chooseDifficultyLevel: "難易度を選択",
-    tailorFactsComplexity: "お好みの複雑さに合わせて豆知識をカスタマイズします",
-    easyDifficulty: "簡単",
-    easyDescription: "シンプルで理解しやすい豆知識",
-    mediumDifficulty: "普通",
-    mediumDescription: "ほとんどの人向けのバランスの取れた豆知識",
-    hardDifficulty: "難しい",
-    hardDescription: "深く複雑な豆知識",
-    allDifficulties: "すべて",
-    allDescription: "すべての難易度のミックス",
-    beginnerDifficulty: "初級",
-    intermediateDifficulty: "中級",
-    advancedDifficulty: "上級",
-
     // Onboarding - Initialization
     settingUpApp: "アプリをセットアップ中...",
     settingUpLanguage: "言語を設定中...",
@@ -781,7 +692,6 @@ export const translations = {
     resetOnboarding: "オンボーディングをリセット（テスト）",
     readMore: "続きを読む",
     category: "カテゴリー",
-    tags: "タグ",
     settings: "設定",
     developerSettings: "開発者設定",
     testNotification: "通知をテスト",
@@ -810,7 +720,6 @@ export const translations = {
     submit: "送信",
     factOfTheDay: "今日の豆知識",
     didYouKnow: "ご存知でしたか？",
-    difficulty: "難易度",
     source: "出典",
     add10RandomFacts: "ランダムな豆知識を10個追加",
     factsAdded: "豆知識を追加しました",
@@ -827,7 +736,6 @@ export const translations = {
     settingsThemeDarkDescription: "常にダークテーマを使用",
     settingsThemeSystemDescription: "システム設定に従う",
     settingsCategories: "カテゴリー",
-    settingsDifficulty: "難易度",
     settingsNotificationTime: "通知時刻",
     settingsSelected: "選択済み",
 
@@ -899,21 +807,6 @@ export const translations = {
     choosePreferredLanguage: "앱의 선호 언어를 선택하세요",
     languageDescription: "나중에 설정에서 변경할 수 있습니다",
 
-    // Onboarding - Difficulty
-    chooseDifficultyLevel: "난이도 선택",
-    tailorFactsComplexity: "선호하는 복잡도에 맞게 정보를 맞춤 설정합니다",
-    easyDifficulty: "쉬움",
-    easyDescription: "간단하고 이해하기 쉬운 정보",
-    mediumDifficulty: "보통",
-    mediumDescription: "대부분의 사람들을 위한 균형 잡힌 정보",
-    hardDifficulty: "어려움",
-    hardDescription: "심층적이고 복잡한 정보",
-    allDifficulties: "전체",
-    allDescription: "모든 난이도의 혼합",
-    beginnerDifficulty: "초급",
-    intermediateDifficulty: "중급",
-    advancedDifficulty: "고급",
-
     // Onboarding - Initialization
     settingUpApp: "앱 설정 중...",
     settingUpLanguage: "언어 설정 중...",
@@ -954,7 +847,6 @@ export const translations = {
     resetOnboarding: "온보딩 재설정 (테스트)",
     readMore: "더 읽기",
     category: "카테고리",
-    tags: "태그",
     settings: "설정",
     developerSettings: "개발자 설정",
     testNotification: "알림 테스트",
@@ -982,7 +874,6 @@ export const translations = {
     submit: "제출",
     factOfTheDay: "오늘의 정보",
     didYouKnow: "알고 계셨나요?",
-    difficulty: "난이도",
     source: "출처",
     add10RandomFacts: "무작위 정보 10개 추가",
     factsAdded: "정보 추가됨",
@@ -999,7 +890,6 @@ export const translations = {
     settingsThemeDarkDescription: "항상 다크 테마 사용",
     settingsThemeSystemDescription: "시스템 설정 따르기",
     settingsCategories: "카테고리",
-    settingsDifficulty: "난이도",
     settingsNotificationTime: "알림 시간",
     settingsSelected: "선택됨",
 
@@ -1071,22 +961,6 @@ export const translations = {
     choosePreferredLanguage: "Uygulama için tercih ettiğiniz dili seçin",
     languageDescription: "Bunu daha sonra ayarlardan değiştirebilirsiniz",
 
-    // Onboarding - Difficulty
-    chooseDifficultyLevel: "Zorluk seviyenizi seçin",
-    tailorFactsComplexity:
-      "Bilgileri tercih ettiğiniz karmaşıklığa göre uyarlayacağız",
-    easyDifficulty: "Kolay",
-    easyDescription: "Basit, anlaşılması kolay bilgiler",
-    mediumDifficulty: "Orta",
-    mediumDescription: "Çoğu insan için dengeli bilgiler",
-    hardDifficulty: "Zor",
-    hardDescription: "Derinlemesine ve karmaşık bilgiler",
-    allDifficulties: "Hepsi",
-    allDescription: "Tüm zorluk seviyelerinin karışımı",
-    beginnerDifficulty: "Başlangıç",
-    intermediateDifficulty: "Orta",
-    advancedDifficulty: "İleri",
-
     // Onboarding - Initialization
     settingUpApp: "Uygulamanız kuruluyor...",
     settingUpLanguage: "Dil ayarlanıyor...",
@@ -1129,7 +1003,6 @@ export const translations = {
     resetOnboarding: "Başlangıç Kurulumunu Sıfırla (Test)",
     readMore: "Devamını Oku",
     category: "Kategori",
-    tags: "Etiketler",
     settings: "Ayarlar",
     developerSettings: "Geliştirici Ayarları",
     testNotification: "Bildirimi Test Et",
@@ -1158,7 +1031,6 @@ export const translations = {
     submit: "Gönder",
     factOfTheDay: "Günün Bilgisi",
     didYouKnow: "Biliyor muydunuz?",
-    difficulty: "Zorluk",
     source: "Kaynak",
     add10RandomFacts: "10 Rastgele Bilgi Ekle",
     factsAdded: "Bilgiler Eklendi",
@@ -1175,7 +1047,6 @@ export const translations = {
     settingsThemeDarkDescription: "Her zaman koyu tema kullan",
     settingsThemeSystemDescription: "Sistem ayarlarını takip et",
     settingsCategories: "Kategoriler",
-    settingsDifficulty: "Zorluk",
     settingsNotificationTime: "Bildirim Zamanı",
     settingsSelected: "seçili",
 
@@ -1247,21 +1118,6 @@ export const translations = {
     choosePreferredLanguage: "选择您的首选应用语言",
     languageDescription: "您可以稍后在设置中更改",
 
-    // Onboarding - Difficulty
-    chooseDifficultyLevel: "选择难度等级",
-    tailorFactsComplexity: "我们将根据您喜欢的复杂度定制知识",
-    easyDifficulty: "简单",
-    easyDescription: "简单易懂的知识",
-    mediumDifficulty: "中等",
-    mediumDescription: "适合大多数人的平衡知识",
-    hardDifficulty: "困难",
-    hardDescription: "深入复杂的知识",
-    allDifficulties: "全部",
-    allDescription: "所有难度等级的混合",
-    beginnerDifficulty: "初学者",
-    intermediateDifficulty: "中级",
-    advancedDifficulty: "高级",
-
     // Onboarding - Initialization
     settingUpApp: "正在设置您的应用...",
     settingUpLanguage: "正在设置语言...",
@@ -1301,7 +1157,6 @@ export const translations = {
     resetOnboarding: "重置引导设置（测试）",
     readMore: "阅读更多",
     category: "类别",
-    tags: "标签",
     settings: "设置",
     developerSettings: "开发者设置",
     testNotification: "测试通知",
@@ -1329,7 +1184,6 @@ export const translations = {
     submit: "提交",
     factOfTheDay: "今日知识",
     didYouKnow: "你知道吗？",
-    difficulty: "难度",
     source: "来源",
     add10RandomFacts: "添加10个随机知识",
     factsAdded: "知识已添加",
@@ -1346,7 +1200,6 @@ export const translations = {
     settingsThemeDarkDescription: "始终使用深色主题",
     settingsThemeSystemDescription: "跟随系统设置",
     settingsCategories: "类别",
-    settingsDifficulty: "难度",
     settingsNotificationTime: "通知时间",
     settingsSelected: "已选",
 

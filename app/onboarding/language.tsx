@@ -126,7 +126,7 @@ export default function LanguageSelectionScreen() {
     <Container>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <ContentContainer>
-        <ProgressIndicator currentStep={1} totalSteps={4} />
+        <ProgressIndicator currentStep={1} totalSteps={3} />
 
         <Header>
           <H1>{t("selectLanguage")}</H1>

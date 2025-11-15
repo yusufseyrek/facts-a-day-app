@@ -10,7 +10,6 @@ export default function OnboardingLayout() {
     >
       <Stack.Screen name="language" />
       <Stack.Screen name="categories" />
-      <Stack.Screen name="difficulty" />
       <Stack.Screen name="notifications" />
     </Stack>
   );

@@ -31,11 +31,10 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
       const dbPath = `${FileSystem.Paths.document.uri}SQLite/${DATABASE_NAME}`;
       console.log("📁 Database path:", dbPath);
 
-      // Set the db variable before running schema and migrations
+      // Set the db variable before running schema
       db = database;
 
       await initializeSchema();
-      await runMigrations();
 
       console.log("✅ Database initialized successfully");
       return database;
@@ -71,16 +70,6 @@ async function initializeSchema(): Promise<void> {
     );
   `);
 
-  // Create content_types table
-  await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS content_types (
-      id INTEGER PRIMARY KEY,
-      name TEXT NOT NULL,
-      slug TEXT UNIQUE NOT NULL,
-      description TEXT
-    );
-  `);
-
   // Create facts table with updated schema
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS facts (
@@ -88,16 +77,16 @@ async function initializeSchema(): Promise<void> {
       title TEXT,
       content TEXT NOT NULL,
       summary TEXT,
-      difficulty TEXT,
-      content_type TEXT,
       category TEXT,
-      tags TEXT,
       source_url TEXT,
       reading_time INTEGER,
       word_count INTEGER,
       image_url TEXT,
       language TEXT NOT NULL,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      scheduled_date TEXT,
+      notification_id TEXT,
+      last_updated TEXT
     );
   `);
 
@@ -110,81 +99,30 @@ async function initializeSchema(): Promise<void> {
   await db.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_facts_category ON facts(category);
   `);
-}
 
-/**
- * Run database migrations
- */
-async function runMigrations(): Promise<void> {
-  if (!db) {
-    throw new Error("Database not initialized");
-  }
+  // Create index on scheduled_date for faster queries
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_facts_scheduled_date ON facts(scheduled_date);
+  `);
 
-  // Get current database version
-  const versionResult = await db.getFirstAsync<{ user_version: number }>(
-    "PRAGMA user_version"
-  );
-  const currentVersion = versionResult?.user_version || 0;
+  // Create index on last_updated for faster queries
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_facts_last_updated ON facts(last_updated);
+  `);
 
-  // Migration 1: Add notification scheduling columns
-  if (currentVersion < 1) {
-    await db.execAsync(`
-      ALTER TABLE facts ADD COLUMN scheduled_date TEXT;
-      ALTER TABLE facts ADD COLUMN notification_id TEXT;
-    `);
-
-    // Create index on scheduled_date for faster queries
-    await db.execAsync(`
-      CREATE INDEX IF NOT EXISTS idx_facts_scheduled_date ON facts(scheduled_date);
-    `);
-
-    // Update version
-    await db.execAsync("PRAGMA user_version = 1");
-    console.log(
-      "Database migrated to version 1: Added notification scheduling columns"
+  // Create favorites table
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS favorites (
+      fact_id INTEGER PRIMARY KEY,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (fact_id) REFERENCES facts (id) ON DELETE CASCADE
     );
-  }
+  `);
 
-  // Migration 2: Add favorites table
-  if (currentVersion < 2) {
-    await db.execAsync(`
-      CREATE TABLE IF NOT EXISTS favorites (
-        fact_id INTEGER PRIMARY KEY,
-        created_at TEXT NOT NULL,
-        FOREIGN KEY (fact_id) REFERENCES facts (id) ON DELETE CASCADE
-      );
-    `);
-
-    // Create index on created_at for ordering
-    await db.execAsync(`
-      CREATE INDEX IF NOT EXISTS idx_favorites_created_at ON favorites(created_at);
-    `);
-
-    // Update version
-    await db.execAsync("PRAGMA user_version = 2");
-    console.log("Database migrated to version 2: Added favorites table");
-  }
-
-  // Migration 3: Add updated_at column to facts table
-  if (currentVersion < 3) {
-    await db.execAsync(`
-      ALTER TABLE facts ADD COLUMN updated_at TEXT;
-    `);
-
-    // Set updated_at = created_at for existing facts
-    await db.execAsync(`
-      UPDATE facts SET updated_at = created_at WHERE updated_at IS NULL;
-    `);
-
-    // Create index on updated_at for faster queries during sync
-    await db.execAsync(`
-      CREATE INDEX IF NOT EXISTS idx_facts_updated_at ON facts(updated_at);
-    `);
-
-    // Update version
-    await db.execAsync("PRAGMA user_version = 3");
-    console.log("Database migrated to version 3: Added updated_at column to facts table");
-  }
+  // Create index on favorites created_at for ordering
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_favorites_created_at ON favorites(created_at);
+  `);
 }
 
 /**
@@ -195,7 +133,6 @@ export async function clearDatabase(): Promise<void> {
   await database.execAsync(`
     DELETE FROM facts;
     DELETE FROM categories;
-    DELETE FROM content_types;
     DELETE FROM favorites;
   `);
 }
@@ -208,12 +145,15 @@ export async function clearFutureAndUnscheduledFacts(): Promise<void> {
   const database = await openDatabase();
   const now = new Date().toISOString();
 
-  await database.execAsync(`
+  await database.runAsync(
+    `
     DELETE FROM facts
     WHERE scheduled_date IS NULL OR scheduled_date > ?
-  `, [now]);
+  `,
+    [now]
+  );
 
-  console.log('Cleared future and unscheduled facts');
+  console.log("Cleared future and unscheduled facts");
 }
 
 /**
@@ -293,42 +233,6 @@ export async function getCategoryBySlug(
   return result;
 }
 
-// ====== CONTENT TYPES ======
-
-export interface ContentType {
-  id: number;
-  name: string;
-  slug: string;
-  description?: string;
-}
-
-export async function insertContentTypes(
-  contentTypes: ContentType[]
-): Promise<void> {
-  const database = await openDatabase();
-
-  for (const contentType of contentTypes) {
-    await database.runAsync(
-      `INSERT OR REPLACE INTO content_types (id, name, slug, description)
-       VALUES (?, ?, ?, ?)`,
-      [
-        contentType.id,
-        contentType.name,
-        contentType.slug,
-        contentType.description || null,
-      ]
-    );
-  }
-}
-
-export async function getAllContentTypes(): Promise<ContentType[]> {
-  const database = await openDatabase();
-  const result = await database.getAllAsync<ContentType>(
-    "SELECT * FROM content_types ORDER BY name ASC"
-  );
-  return result;
-}
-
 // ====== FACTS ======
 
 export interface Fact {
@@ -336,27 +240,23 @@ export interface Fact {
   title?: string;
   content: string;
   summary?: string;
-  difficulty?: string;
-  content_type?: string;
   category?: string;
-  tags?: string; // JSON string
   source_url?: string;
   reading_time?: number;
   word_count?: number;
   image_url?: string;
   language: string;
   created_at: string;
-  updated_at?: string;
+  last_updated?: string;
   scheduled_date?: string; // ISO date string when fact is scheduled for notification
   notification_id?: string; // Notification ID from expo-notifications
 }
 
 /**
- * Extended Fact interface with joined category and content_type data
+ * Extended Fact interface with joined category data
  */
 export interface FactWithRelations extends Fact {
   categoryData?: Category | null;
-  contentTypeData?: ContentType | null;
 }
 
 /**
@@ -369,16 +269,14 @@ function mapFactsWithRelations(rows: any[]): FactWithRelations[] {
       title: row.title,
       content: row.content,
       summary: row.summary,
-      difficulty: row.difficulty,
-      content_type: row.content_type,
       category: row.category,
-      tags: row.tags,
       source_url: row.source_url,
       reading_time: row.reading_time,
       word_count: row.word_count,
       image_url: row.image_url,
       language: row.language,
       created_at: row.created_at,
+      updated_at: row.updated_at,
       scheduled_date: row.scheduled_date,
       notification_id: row.notification_id,
     };
@@ -392,16 +290,6 @@ function mapFactsWithRelations(rows: any[]): FactWithRelations[] {
         description: row.category_description,
         icon: row.category_icon,
         color_hex: row.category_color_hex,
-      };
-    }
-
-    // Map content_type data if present
-    if (row.content_type_id) {
-      fact.contentTypeData = {
-        id: row.content_type_id,
-        name: row.content_type_name,
-        slug: row.content_type_slug,
-        description: row.content_type_description,
       };
     }
 
@@ -424,18 +312,15 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
     for (const fact of facts) {
       await database.runAsync(
         `INSERT OR REPLACE INTO facts (
-          id, title, content, summary, difficulty, content_type, category,
-          tags, source_url, reading_time, word_count, image_url, language, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          id, title, content, summary, category,
+          source_url, reading_time, word_count, image_url, language, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           fact.id,
           fact.title || null,
           fact.content,
           fact.summary || null,
-          fact.difficulty || null,
-          fact.content_type || null,
           fact.category || null,
-          fact.tags || null,
           fact.source_url || null,
           fact.reading_time || null,
           fact.word_count || null,
@@ -449,7 +334,9 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
   });
 }
 
-export async function getAllFacts(language?: string): Promise<FactWithRelations[]> {
+export async function getAllFacts(
+  language?: string
+): Promise<FactWithRelations[]> {
   const database = await openDatabase();
 
   if (language) {
@@ -461,14 +348,9 @@ export async function getAllFacts(language?: string): Promise<FactWithRelations[
         c.slug as category_slug,
         c.description as category_description,
         c.icon as category_icon,
-        c.color_hex as category_color_hex,
-        ct.id as content_type_id,
-        ct.name as content_type_name,
-        ct.slug as content_type_slug,
-        ct.description as content_type_description
+        c.color_hex as category_color_hex
       FROM facts f
       LEFT JOIN categories c ON f.category = c.slug
-      LEFT JOIN content_types ct ON f.content_type = ct.slug
       WHERE f.language = ?
       ORDER BY f.created_at DESC`,
       [language]
@@ -484,20 +366,17 @@ export async function getAllFacts(language?: string): Promise<FactWithRelations[
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      ct.id as content_type_id,
-      ct.name as content_type_name,
-      ct.slug as content_type_slug,
-      ct.description as content_type_description
+      c.color_hex as category_color_hex
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN content_types ct ON f.content_type = ct.slug
     ORDER BY f.created_at DESC`
   );
   return mapFactsWithRelations(result);
 }
 
-export async function getFactById(id: number): Promise<FactWithRelations | null> {
+export async function getFactById(
+  id: number
+): Promise<FactWithRelations | null> {
   const database = await openDatabase();
   const result = await database.getFirstAsync<any>(
     `SELECT
@@ -507,14 +386,9 @@ export async function getFactById(id: number): Promise<FactWithRelations | null>
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      ct.id as content_type_id,
-      ct.name as content_type_name,
-      ct.slug as content_type_slug,
-      ct.description as content_type_description
+      c.color_hex as category_color_hex
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN content_types ct ON f.content_type = ct.slug
     WHERE f.id = ?`,
     [id]
   );
@@ -536,14 +410,9 @@ export async function getFactsByCategory(
         c.slug as category_slug,
         c.description as category_description,
         c.icon as category_icon,
-        c.color_hex as category_color_hex,
-        ct.id as content_type_id,
-        ct.name as content_type_name,
-        ct.slug as content_type_slug,
-        ct.description as content_type_description
+        c.color_hex as category_color_hex
       FROM facts f
       LEFT JOIN categories c ON f.category = c.slug
-      LEFT JOIN content_types ct ON f.content_type = ct.slug
       WHERE f.category = ? AND f.language = ?
       ORDER BY f.created_at DESC`,
       [category, language]
@@ -559,14 +428,9 @@ export async function getFactsByCategory(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      ct.id as content_type_id,
-      ct.name as content_type_name,
-      ct.slug as content_type_slug,
-      ct.description as content_type_description
+      c.color_hex as category_color_hex
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN content_types ct ON f.content_type = ct.slug
     WHERE f.category = ?
     ORDER BY f.created_at DESC`,
     [category]
@@ -574,7 +438,9 @@ export async function getFactsByCategory(
   return mapFactsWithRelations(result);
 }
 
-export async function getRandomFact(language?: string): Promise<FactWithRelations | null> {
+export async function getRandomFact(
+  language?: string
+): Promise<FactWithRelations | null> {
   const database = await openDatabase();
 
   if (language) {
@@ -586,14 +452,9 @@ export async function getRandomFact(language?: string): Promise<FactWithRelation
         c.slug as category_slug,
         c.description as category_description,
         c.icon as category_icon,
-        c.color_hex as category_color_hex,
-        ct.id as content_type_id,
-        ct.name as content_type_name,
-        ct.slug as content_type_slug,
-        ct.description as content_type_description
+        c.color_hex as category_color_hex
       FROM facts f
       LEFT JOIN categories c ON f.category = c.slug
-      LEFT JOIN content_types ct ON f.content_type = ct.slug
       WHERE f.language = ?
       ORDER BY RANDOM()
       LIMIT 1`,
@@ -610,14 +471,9 @@ export async function getRandomFact(language?: string): Promise<FactWithRelation
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      ct.id as content_type_id,
-      ct.name as content_type_name,
-      ct.slug as content_type_slug,
-      ct.description as content_type_description
+      c.color_hex as category_color_hex
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN content_types ct ON f.content_type = ct.slug
     ORDER BY RANDOM()
     LIMIT 1`
   );
@@ -663,14 +519,9 @@ export async function getRandomUnscheduledFacts(
         c.slug as category_slug,
         c.description as category_description,
         c.icon as category_icon,
-        c.color_hex as category_color_hex,
-        ct.id as content_type_id,
-        ct.name as content_type_name,
-        ct.slug as content_type_slug,
-        ct.description as content_type_description
+        c.color_hex as category_color_hex
       FROM facts f
       LEFT JOIN categories c ON f.category = c.slug
-      LEFT JOIN content_types ct ON f.content_type = ct.slug
       WHERE f.language = ? AND f.scheduled_date IS NULL
       ORDER BY RANDOM()
       LIMIT ?`,
@@ -687,14 +538,9 @@ export async function getRandomUnscheduledFacts(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      ct.id as content_type_id,
-      ct.name as content_type_name,
-      ct.slug as content_type_slug,
-      ct.description as content_type_description
+      c.color_hex as category_color_hex
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN content_types ct ON f.content_type = ct.slug
     WHERE f.scheduled_date IS NULL
     ORDER BY RANDOM()
     LIMIT ?`,
@@ -808,7 +654,9 @@ export async function isFactFavorited(factId: number): Promise<boolean> {
 /**
  * Get all favorited facts
  */
-export async function getFavorites(language?: string): Promise<FactWithRelations[]> {
+export async function getFavorites(
+  language?: string
+): Promise<FactWithRelations[]> {
   const database = await openDatabase();
 
   if (language) {
@@ -820,15 +668,10 @@ export async function getFavorites(language?: string): Promise<FactWithRelations
         c.slug as category_slug,
         c.description as category_description,
         c.icon as category_icon,
-        c.color_hex as category_color_hex,
-        ct.id as content_type_id,
-        ct.name as content_type_name,
-        ct.slug as content_type_slug,
-        ct.description as content_type_description
+        c.color_hex as category_color_hex
       FROM facts f
       INNER JOIN favorites fav ON f.id = fav.fact_id
       LEFT JOIN categories c ON f.category = c.slug
-      LEFT JOIN content_types ct ON f.content_type = ct.slug
       WHERE f.language = ?
       ORDER BY fav.created_at DESC`,
       [language]
@@ -844,15 +687,10 @@ export async function getFavorites(language?: string): Promise<FactWithRelations
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      ct.id as content_type_id,
-      ct.name as content_type_name,
-      ct.slug as content_type_slug,
-      ct.description as content_type_description
+      c.color_hex as category_color_hex
     FROM facts f
     INNER JOIN favorites fav ON f.id = fav.fact_id
     LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN content_types ct ON f.content_type = ct.slug
     ORDER BY fav.created_at DESC`
   );
   return mapFactsWithRelations(result);
@@ -908,14 +746,9 @@ export async function getFactsGroupedByDate(
         c.slug as category_slug,
         c.description as category_description,
         c.icon as category_icon,
-        c.color_hex as category_color_hex,
-        ct.id as content_type_id,
-        ct.name as content_type_name,
-        ct.slug as content_type_slug,
-        ct.description as content_type_description
+        c.color_hex as category_color_hex
       FROM facts f
       LEFT JOIN categories c ON f.category = c.slug
-      LEFT JOIN content_types ct ON f.content_type = ct.slug
       WHERE f.scheduled_date IS NOT NULL
       AND f.scheduled_date >= ?
       AND f.scheduled_date <= ?
@@ -934,14 +767,9 @@ export async function getFactsGroupedByDate(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      ct.id as content_type_id,
-      ct.name as content_type_name,
-      ct.slug as content_type_slug,
-      ct.description as content_type_description
+      c.color_hex as category_color_hex
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN content_types ct ON f.content_type = ct.slug
     WHERE f.scheduled_date IS NOT NULL
     AND f.scheduled_date >= ?
     AND f.scheduled_date <= ?

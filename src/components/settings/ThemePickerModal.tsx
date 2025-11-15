@@ -22,7 +22,7 @@ interface ThemeOption {
   value: ThemeMode;
   titleKey: TranslationKeys;
   descriptionKey: TranslationKeys;
-  icon: React.ReactNode;
+  icon: (color: string) => React.ReactNode;
 }
 
 export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
@@ -38,19 +38,19 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
       value: 'light',
       titleKey: 'settingsThemeLight',
       descriptionKey: 'settingsThemeLightDescription',
-      icon: <Sun size={24} color={colors.text} />,
+      icon: (color) => <Sun size={24} color={color} />,
     },
     {
       value: 'dark',
       titleKey: 'settingsThemeDark',
       descriptionKey: 'settingsThemeDarkDescription',
-      icon: <Moon size={24} color={colors.text} />,
+      icon: (color) => <Moon size={24} color={color} />,
     },
     {
       value: 'system',
       titleKey: 'settingsThemeSystem',
       descriptionKey: 'settingsThemeSystemDescription',
-      icon: <Smartphone size={24} color={colors.text} />,
+      icon: (color) => <Smartphone size={24} color={color} />,
     },
   ];
 
@@ -122,9 +122,7 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
                               },
                             ]}
                           >
-                            {React.cloneElement(option.icon as React.ReactElement, {
-                              color: isSelected ? '#FFFFFF' : colors.text,
-                            })}
+                            {option.icon(isSelected ? '#FFFFFF' : colors.text)}
                           </View>
                           <View style={styles.optionTextContainer}>
                             <Text

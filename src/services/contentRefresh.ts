@@ -15,7 +15,6 @@ export interface RefreshResult {
   success: boolean;
   updated: {
     categories: number;
-    contentTypes: number;
     facts: number;
   };
   error?: string;
@@ -78,10 +77,10 @@ async function getCurrentLocale(): Promise<string> {
 async function getLastFactUpdatedAt(): Promise<string | null> {
   try {
     const database = await db.openDatabase();
-    const result = await database.getFirstAsync<{ max_updated_at: string | null }>(
-      'SELECT MAX(updated_at) as max_updated_at FROM facts'
+    const result = await database.getFirstAsync<{ max_last_updated: string | null }>(
+      'SELECT MAX(last_updated) as max_last_updated FROM facts'
     );
-    return result?.max_updated_at || null;
+    return result?.max_last_updated || null;
   } catch (error) {
     console.error('Error getting last fact timestamp:', error);
     return null;
@@ -98,7 +97,6 @@ export async function refreshAppContent(): Promise<RefreshResult> {
     success: false,
     updated: {
       categories: 0,
-      contentTypes: 0,
       facts: 0,
     },
   };
@@ -117,19 +115,15 @@ export async function refreshAppContent(): Promise<RefreshResult> {
     // Get current user preferences
     const language = await getCurrentLocale();
     const categories = await onboardingService.getSelectedCategories();
-    const difficulty = await onboardingService.getDifficultyPreference();
 
-    // Step 1: Fetch and update metadata (categories and content_types)
+    // Step 1: Fetch and update metadata (categories)
     console.log('📦 Fetching metadata...');
     const metadata = await api.getMetadata(language);
 
     await db.insertCategories(metadata.categories);
     result.updated.categories = metadata.categories.length;
 
-    await db.insertContentTypes(metadata.content_types);
-    result.updated.contentTypes = metadata.content_types.length;
-
-    console.log(`✅ Updated ${result.updated.categories} categories and ${result.updated.contentTypes} content types`);
+    console.log(`✅ Updated ${result.updated.categories} categories`);
 
     // Step 2: Fetch new or updated facts since last update
     const lastFactUpdatedAt = await getLastFactUpdatedAt();
@@ -142,7 +136,6 @@ export async function refreshAppContent(): Promise<RefreshResult> {
       const response = await api.getFacts({
         language,
         categories: categoriesParam,
-        difficulty,
         since_updated: lastFactUpdatedAt,
         limit: 1000, // Reasonable limit for incremental fetch
       });
@@ -154,17 +147,14 @@ export async function refreshAppContent(): Promise<RefreshResult> {
           title: fact.title,
           content: fact.content,
           summary: fact.summary,
-          difficulty: fact.difficulty,
-          content_type: fact.content_type,
           category: fact.category,
-          tags: fact.tags ? JSON.stringify(fact.tags) : undefined,
           source_url: fact.source_url,
           reading_time: fact.reading_time,
           word_count: fact.word_count,
           image_url: fact.image_url,
           language: fact.language,
           created_at: fact.created_at,
-          updated_at: fact.updated_at,
+          last_updated: fact.last_updated,
         }));
 
         // Insert new or updated facts (INSERT OR REPLACE handles duplicates)

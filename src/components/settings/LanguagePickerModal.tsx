@@ -13,6 +13,7 @@ import { X, Check } from '@tamagui/lucide-icons';
 import { useTheme } from '../../theme';
 import { tokens } from '../../theme/tokens';
 import { useTranslation } from '../../i18n/useTranslation';
+import { SupportedLocale } from '../../i18n/translations';
 import * as preferencesService from '../../services/preferences';
 
 interface LanguagePickerModalProps {
@@ -40,7 +41,7 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
   const { locale, setLocale, t } = useTranslation();
   const [isChanging, setIsChanging] = useState(false);
 
-  const handleSelectLanguage = async (languageCode: string) => {
+  const handleSelectLanguage = async (languageCode: SupportedLocale) => {
     if (languageCode === locale) {
       onClose();
       return;
@@ -122,7 +123,7 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
                   {row.map((language) => (
                     <Pressable
                       key={language.code}
-                      onPress={() => handleSelectLanguage(language.code)}
+                      onPress={() => handleSelectLanguage(language.code as SupportedLocale)}
                       disabled={isChanging}
                       style={({ pressed }) => [
                         styles.languageCard,

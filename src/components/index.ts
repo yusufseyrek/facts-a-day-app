@@ -4,8 +4,6 @@ export { ProgressIndicator } from './ProgressIndicator';
 export { CategoryCard } from './CategoryCard';
 export type { CategoryCardProps } from './CategoryCard';
 export { CategoryBadge } from './CategoryBadge';
-export { DifficultyBadge } from './DifficultyBadge';
-export { TagPill } from './TagPill';
 export { FloatingActionButton } from './FloatingActionButton';
 export { FactCard } from './FactCard';
 export type { Fact } from './FactCard';

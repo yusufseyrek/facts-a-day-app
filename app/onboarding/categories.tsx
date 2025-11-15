@@ -50,9 +50,9 @@ const ButtonContainer = styled(View, {
 
 export default function Categories() {
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const router = useRouter();
-  const { selectedCategories, setSelectedCategories, isInitialized } = useOnboarding();
+  const { selectedCategories, setSelectedCategories, isInitialized, downloadFacts } = useOnboarding();
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -87,8 +87,11 @@ export default function Categories() {
   };
 
   const handleContinue = () => {
-    // Navigate to difficulty selection
-    router.push("/onboarding/difficulty");
+    // Start downloading facts in the background (non-blocking)
+    downloadFacts(locale);
+
+    // Navigate immediately to notifications
+    router.push("/onboarding/notifications");
   };
 
   // Split categories into rows of 3
@@ -113,7 +116,7 @@ export default function Categories() {
     <Container>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <ContentContainer>
-        <ProgressIndicator currentStep={2} totalSteps={4} />
+        <ProgressIndicator currentStep={2} totalSteps={3} />
 
         <Header>
           <H1>{t("whatInterestsYou")}</H1>

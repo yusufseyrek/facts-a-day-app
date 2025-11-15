@@ -37,23 +37,9 @@ export interface Language {
   native_name: string;
 }
 
-export interface ContentType {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-}
-
 export interface MetadataResponse {
   categories: Category[];
   languages: Language[];
-  content_types: ContentType[];
-}
-
-export interface Tag {
-  id: number;
-  name: string;
-  slug: string;
 }
 
 export interface FactResponse {
@@ -61,17 +47,14 @@ export interface FactResponse {
   title?: string;
   content: string;
   summary?: string;
-  difficulty?: string;
-  content_type?: string;
   category?: string;
-  tags?: Tag[];
   source_url?: string;
   reading_time?: number;
   word_count?: number;
   image_url?: string;
   language: string;
   created_at: string;
-  updated_at?: string;
+  last_updated?: string;
 }
 
 export interface FactsResponse {
@@ -87,8 +70,6 @@ export interface FactsResponse {
 export interface GetFactsParams {
   language: string;
   categories?: string;
-  difficulty?: string;
-  content_type?: string;
   limit?: number;
   offset?: number;
   batch_size?: number;
@@ -242,14 +223,6 @@ export async function getFacts(params: GetFactsParams): Promise<FactsResponse> {
     queryParams.append('categories', params.categories);
   }
 
-  if (params.difficulty) {
-    queryParams.append('difficulty', params.difficulty);
-  }
-
-  if (params.content_type) {
-    queryParams.append('content_type', params.content_type);
-  }
-
   if (params.limit !== undefined) {
     queryParams.append('limit', params.limit.toString());
   }
@@ -278,7 +251,6 @@ export async function getFacts(params: GetFactsParams): Promise<FactsResponse> {
 export async function getAllFacts(
   language: string,
   categories?: string,
-  difficulty?: string,
   onProgress?: (downloaded: number, total: number) => void
 ): Promise<FactResponse[]> {
   const allFacts: FactResponse[] = [];
@@ -290,7 +262,6 @@ export async function getAllFacts(
     const response = await getFacts({
       language,
       categories,
-      difficulty,
       offset,
       batch_size: batchSize,
     });
@@ -315,7 +286,6 @@ export async function getAllFacts(
 export async function getAllFactsWithRetry(
   language: string,
   categories?: string,
-  difficulty?: string,
   onProgress?: (downloaded: number, total: number) => void,
   maxRetries = 3
 ): Promise<FactResponse[]> {
@@ -324,7 +294,7 @@ export async function getAllFactsWithRetry(
 
   while (attempt < maxRetries) {
     try {
-      return await getAllFacts(language, categories, difficulty, onProgress);
+      return await getAllFacts(language, categories, onProgress);
     } catch (error) {
       lastError = error as Error;
       attempt++;

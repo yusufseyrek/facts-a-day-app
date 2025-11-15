@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { FlatList, RefreshControl, ActivityIndicator } from 'react-native';
@@ -121,8 +121,7 @@ export default function FavoritesScreen() {
           <ContentContainer>
             <FeedFactCard
               title={item.title || item.content.substring(0, 80) + '...'}
-              category={item.category}
-              categoryData={item.categoryData}
+              summary={item.summary}
               onPress={() => handleFactPress(item)}
             />
           </ContentContainer>

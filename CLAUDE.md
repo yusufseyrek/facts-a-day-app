@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Facts A Day** is a React Native mobile app built with Expo that delivers daily interesting facts to users based on their preferences. Users receive daily notifications with curated facts in their chosen language and difficulty level.
+**Facts A Day** is a React Native mobile app built with Expo that delivers daily interesting facts to users based on their preferences. Users receive daily notifications with curated facts in their chosen language.
 
 **App Type**: React Native (Expo) mobile application
 **Platform**: iOS & Android
@@ -24,7 +24,7 @@
 - **Lucide Icons**: Via @tamagui/lucide-icons
 
 ### Data & Storage
-- **Expo SQLite**: ^16.0.9 (Local database for facts, categories, content types)
+- **Expo SQLite**: ^16.0.9 (Local database for facts, categories)
 - **AsyncStorage**: ^2.2.0 (User preferences, onboarding status)
 - **Expo SecureStore**: ^15.0.7 (Encrypted device authentication key)
 
@@ -49,13 +49,12 @@ facts-a-day-app/
 │   │   ├── index.tsx            # Home/Feed screen (auto-refreshes notifications)
 │   │   ├── favorites.tsx        # Favorites screen
 │   │   └── settings.tsx         # Settings screen
-│   ├── onboarding/              # Onboarding flow (4 steps)
+│   ├── onboarding/              # Onboarding flow (3 steps)
 │   │   ├── _layout.tsx          # Onboarding stack navigation
 │   │   ├── language.tsx         # Step 1: Language selection + initialization
 │   │   ├── categories.tsx       # Step 2: Category selection (min 5)
-│   │   ├── difficulty.tsx       # Step 3: Difficulty selection
-│   │   ├── notifications.tsx    # Step 4: Permissions + scheduling
-│   │   └── success.tsx          # Step 5: Completion screen
+│   │   ├── notifications.tsx    # Step 3: Permissions + scheduling
+│   │   └── success.tsx          # Step 4: Completion screen
 │   ├── fact/[id].tsx            # Dynamic fact detail screen
 │   ├── paywall.tsx              # Subscription paywall
 │   └── settings/
@@ -136,16 +135,6 @@ CREATE TABLE categories (
 );
 ```
 
-**Content Types Table**:
-```sql
-CREATE TABLE content_types (
-  id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL,
-  slug TEXT UNIQUE NOT NULL,
-  description TEXT
-);
-```
-
 **Facts Table**:
 ```sql
 CREATE TABLE facts (
@@ -153,16 +142,14 @@ CREATE TABLE facts (
   title TEXT,
   content TEXT NOT NULL,
   summary TEXT,
-  difficulty TEXT,
-  content_type TEXT,
   category TEXT,
-  tags TEXT,              -- JSON string
   source_url TEXT,
   reading_time INTEGER,
   word_count INTEGER,
   image_url TEXT,
   language TEXT NOT NULL,
   created_at TEXT NOT NULL,
+  last_updated TEXT,      -- Timestamp when fact was last updated (from API)
 
   -- Notification scheduling (migration v1)
   scheduled_date TEXT,    -- ISO date when notification fires
@@ -203,7 +190,7 @@ const text = t('key.path');
 2. **Sequential Steps** - Users must complete all steps in order
 3. **Database Must be Populated** - Onboarding only completes after facts downloaded
 4. **Minimum 5 Categories** - Users must select at least 5 categories
-5. **Background Downloads** - Facts download on difficulty screen, navigate immediately
+5. **Background Downloads** - Facts download on categories screen, navigate immediately
 
 ### Notification System
 - **iOS Limit**: Maximum 64 scheduled notifications
@@ -244,7 +231,7 @@ const text = t('key.path');
 
 3. **Database Operations**
    - Always use transactions for multi-record operations
-   - Never hardcode categories or content types
+   - Never hardcode categories
    - Always check migration status on schema changes
 
 4. **Notifications**
@@ -294,7 +281,7 @@ bun web
 
 ### Key API Calls
 1. `POST /api/devices/register` - Register device, get device_key
-2. `GET /api/metadata?language={locale}` - Fetch categories and content types
+2. `GET /api/metadata?language={locale}` - Fetch categories
 3. Fact downloads - Details in api.ts service
 
 ## AdMob Integration
@@ -323,7 +310,7 @@ bun web
 1. Read FLOWS.md thoroughly
 2. Add route file in `app/onboarding/`
 3. Update OnboardingContext if state needed
-4. Update progress indicators (x/4 → x/5)
+4. Update progress indicators (x/3 → x/4)
 5. Test entire flow end-to-end
 
 ### Adding a New Translation
@@ -358,7 +345,7 @@ bun web
 - Notification scheduling and delivery
 
 ### Critical Paths to Test
-1. Complete onboarding flow (language → categories → difficulty → notifications → success)
+1. Complete onboarding flow (language → categories → notifications → success)
 2. Permission denial and recovery
 3. Network failure during initialization or download
 4. App restart during onboarding
@@ -373,7 +360,7 @@ bun web
 ❌ **DON'T**: Schedule > 64 notifications on iOS
 ❌ **DON'T**: Mark onboarding complete without facts in database
 ❌ **DON'T**: Forget to set locale immediately on language selection
-❌ **DON'T**: Wait for download completion before navigating from difficulty screen
+❌ **DON'T**: Wait for download completion before navigating from categories screen
 ❌ **DON'T**: Use database writes without transactions
 ❌ **DON'T**: Forget to check `isInitialized` before accessing categories
 
@@ -433,7 +420,7 @@ See FLOWS.md "Key Technical Decisions" section for:
 - Why SQLite for local storage
 - Why SecureStore for device key
 - Why AsyncStorage for preferences
-- Why background download on difficulty screen
+- Why background download on categories screen
 - Why 64 scheduled notifications
 
 ## Quick Reference
@@ -441,7 +428,7 @@ See FLOWS.md "Key Technical Decisions" section for:
 ### Get Onboarding State
 ```typescript
 import { useOnboarding } from '../src/contexts';
-const { selectedCategories, difficulty, notificationTime, isInitialized } = useOnboarding();
+const { selectedCategories, notificationTime, isInitialized } = useOnboarding();
 ```
 
 ### Translation

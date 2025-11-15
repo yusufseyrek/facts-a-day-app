@@ -20,7 +20,7 @@ Facts A Day is a React Native app built with Expo that delivers daily interestin
 ### Storage Layer
 
 - **AsyncStorage**: User preferences, onboarding status
-- **SQLite**: Categories, content types, facts (local database)
+- **SQLite**: Categories, facts (local database)
 - **Expo SecureStore**: Device authentication key (encrypted)
 
 ### Key Services
@@ -54,7 +54,7 @@ Check Onboarding Status (AsyncStorage)
                     Initialize Onboarding (in background):
                       - Show loading state
                       - Register Device
-                      - Fetch Metadata (categories, content_types)
+                      - Fetch Metadata (categories)
                       - Store in SQLite
                           ↓
                     ├─ Error → Show error, allow retry
@@ -64,17 +64,13 @@ Check Onboarding Status (AsyncStorage)
                           ↓
                     User selects interests (minimum 5)
                           ↓
-                    [Step 3] Difficulty Selection
-                          ↓
-                    User selects difficulty level
-                          ↓
                     User clicks Continue
                           ↓
                     Start downloading facts in BACKGROUND (non-blocking)
                           ↓
                     Navigate to Notifications immediately
                           ↓
-                    [Step 4] Notifications (REQUIRED)
+                    [Step 3] Notifications (REQUIRED)
                           ↓
                     Facts continue downloading in background
                           ↓
@@ -97,7 +93,7 @@ Check Onboarding Status (AsyncStorage)
                                       ├─ Scheduling Failed → Show Alert, Allow Retry
                                       └─ Scheduling Success → Navigate to Success
                                                 ↓
-                                          [Step 5] Success Screen
+                                          [Step 4] Success Screen
                                                 ↓
                                           Show "All Set!" message
                                                 ↓
@@ -143,7 +139,7 @@ Check Onboarding Status (AsyncStorage)
      - Call `POST /api/devices/register` with device info
      - Receive and store `device_key` in SecureStore
      - Call `GET /api/metadata?language={locale}`
-     - Store categories and content_types in SQLite
+     - Store categories in SQLite
 7. On success → Navigate to `/onboarding/categories`
 8. On error → Show error message with retry instructions
 
@@ -173,7 +169,7 @@ Check Onboarding Status (AsyncStorage)
 
 - AsyncStorage: `@app_locale` (automatically saved by i18n system)
 - SecureStore: `device_key` (saved during initialization)
-- SQLite: `categories` table, `content_types` table (saved during initialization)
+- SQLite: `categories` table (saved during initialization)
 
 **State Management**:
 
@@ -224,34 +220,11 @@ router.push("/onboarding/categories");
 - `setSelectedCategories`: Updates selected categories
 - `isInitialized`: Guards against accessing screen before initialization
 
-**Navigation**:
-
-```javascript
-// No params needed - using context
-router.push("/onboarding/difficulty");
-```
-
----
-
-#### Step 3: Difficulty (`/onboarding/difficulty`)
-
-**Purpose**: Let users select their preferred fact complexity and trigger background fact download
-
-**UI Elements**:
-
-- Progress: 3/4
-- 4 option cards:
-  - Beginner: "Simple and easy-to-understand facts"
-  - Intermediate: "Moderately detailed and engaging facts"
-  - Advanced: "In-depth and complex facts"
-  - All Levels: "Mix of all difficulty levels" (default)
-- Continue button (always enabled, defaults to "all")
-
 **Process**:
 
-1. Display difficulty options
-2. User selects one option (default: "all")
-3. Difficulty stored in `OnboardingContext`
+1. Display categories
+2. User selects at least 5 categories
+3. Categories stored in `OnboardingContext`
 4. **User clicks Continue**:
    - Triggers `downloadFacts(locale)` in background (non-blocking)
    - Immediately navigates to notifications screen
@@ -266,13 +239,6 @@ router.push("/onboarding/difficulty");
   - `downloadProgress`: Object with downloaded/total/percentage
   - `downloadError`: Error message if download fails
 
-**State Management**:
-
-- Uses `OnboardingContext` for state management
-- `difficulty`: Selected difficulty level
-- `setDifficulty`: Updates difficulty preference
-- `downloadFacts`: Triggers background fact download
-
 **Navigation**:
 
 ```javascript
@@ -283,7 +249,7 @@ router.push("/onboarding/notifications");
 
 ---
 
-#### Step 4: Notifications (`/onboarding/notifications`) ⚠️ CRITICAL
+#### Step 3: Notifications (`/onboarding/notifications`) ⚠️ CRITICAL
 
 **Purpose**: Request notification permissions, set notification time, and schedule 64 daily notifications
 
@@ -296,7 +262,7 @@ router.push("/onboarding/notifications");
 
 **UI Elements**:
 
-- Progress: 4/4
+- Progress: 3/3
 - Bell icon in circular container
 - Time picker for notification preference:
   - iOS: Inline spinner picker
@@ -404,7 +370,7 @@ const handleEnableNotifications = async () => {
 - Uses `OnboardingContext` for state management
 - `notificationTime`: User's preferred notification time
 - `setNotificationTime`: Updates notification time preference
-- `isDownloadingFacts`: Tracks if facts still downloading from difficulty screen
+- `isDownloadingFacts`: Tracks if facts still downloading from categories screen
 - `waitForDownloadComplete`: Async method to wait until download finishes
 - Local state: `isScheduling`: Tracks notification scheduling progress (waiting + scheduling)
 
@@ -427,11 +393,11 @@ const handleEnableNotifications = async () => {
 
 - Database: Facts table updated with `scheduled_date` and `notification_id`
 - Notification time saved to AsyncStorage on success screen
-- All preferences (categories, difficulty, notificationTime) in context
+- All preferences (categories, notificationTime) in context
 
 ---
 
-#### Step 5: Success Screen (`/onboarding/success`)
+#### Step 4: Success Screen (`/onboarding/success`)
 
 **Purpose**: Show completion confirmation and finalize onboarding
 
@@ -449,7 +415,6 @@ const handleEnableNotifications = async () => {
 
    - Call `completeOnboarding()` from context:
      - Saves selected categories to AsyncStorage
-     - Saves difficulty preference to AsyncStorage
      - Saves notification time to AsyncStorage
      - Sets `@onboarding_complete` flag to "true"
    - Show success message for 2 seconds
@@ -463,7 +428,7 @@ const handleEnableNotifications = async () => {
 
 **What Happens Here**:
 
-- ✅ Facts already downloaded (from difficulty screen)
+- ✅ Facts already downloaded (from categories screen)
 - ✅ Notifications already scheduled (from notifications screen)
 - ✅ Just saves final preferences and marks onboarding complete
 - ✅ Simple success confirmation for user
@@ -473,7 +438,6 @@ const handleEnableNotifications = async () => {
 - Uses `OnboardingContext.completeOnboarding()`
 - Saves all preferences to AsyncStorage:
   - `@selected_categories`: Array of category slugs
-  - `@difficulty_preference`: Difficulty level
   - `@notification_time`: ISO date string
   - `@onboarding_complete`: "true"
 
@@ -567,13 +531,11 @@ Backend API
     ↓
 Device Registration → SecureStore (device_key)
     ↓
-Metadata Fetch → SQLite (categories, content_types)
+Metadata Fetch → SQLite (categories)
     ↓
 Categories Selection → OnboardingContext (in-memory state)
     ↓
-Difficulty Selection → OnboardingContext (in-memory state)
-    ↓
-Difficulty Continue → TRIGGER BACKGROUND DOWNLOAD
+Categories Continue → TRIGGER BACKGROUND DOWNLOAD
     ↓
 Facts Download (Background) → SQLite (facts table)
     ↓
@@ -587,7 +549,6 @@ Navigate to Success Screen
     ↓
 Save All Preferences → AsyncStorage:
   - @selected_categories
-  - @difficulty_preference
   - @notification_time
   - @onboarding_complete
     ↓
@@ -611,17 +572,6 @@ CREATE TABLE categories (
 );
 ```
 
-#### Content Types Table
-
-```sql
-CREATE TABLE content_types (
-  id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL,
-  slug TEXT UNIQUE NOT NULL,
-  description TEXT
-);
-```
-
 #### Facts Table
 
 ```sql
@@ -630,16 +580,14 @@ CREATE TABLE facts (
   title TEXT,
   content TEXT NOT NULL,
   summary TEXT,
-  difficulty TEXT,
-  content_type TEXT,
   category TEXT,
-  tags TEXT,              -- JSON string
   source_url TEXT,
   reading_time INTEGER,
   word_count INTEGER,
   image_url TEXT,
   language TEXT NOT NULL,
   created_at TEXT NOT NULL,
+  last_updated TEXT,      -- Timestamp when fact was last updated (from API)
 
   -- Notification scheduling columns (added in migration v1)
   scheduled_date TEXT,    -- ISO date when notification fires
@@ -725,7 +673,7 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 ### Why SQLite for Local Storage?
 
 - Efficient querying for facts display
-- Supports complex filtering (category, difficulty, language)
+- Supports complex filtering (category, language)
 - Transaction support for data integrity
 - Works offline after initial download
 
@@ -741,7 +689,7 @@ CREATE INDEX idx_facts_scheduled_date ON facts(scheduled_date);
 - Fast access for app launch checks
 - User preferences don't require encryption
 
-### Why Background Download on Difficulty Screen?
+### Why Background Download on Categories Screen?
 
 - Facts download in background while user sets notification time
 - Better UX - no waiting on dedicated download screen
@@ -798,7 +746,6 @@ The app uses React Context API for centralized onboarding state management. All 
 interface OnboardingState {
   // User selections
   selectedCategories: string[];
-  difficulty: DifficultyLevel;
   notificationTime: Date;
 
   // Initialization state
@@ -820,7 +767,6 @@ interface OnboardingState {
 **Available Methods**:
 
 - `setSelectedCategories(categories: string[])` - Update selected categories
-- `setDifficulty(difficulty: DifficultyLevel)` - Update difficulty preference
 - `setNotificationTime(time: Date)` - Update notification time
 - `initializeOnboarding(locale: SupportedLocale)` - Register device and fetch metadata
 - `retryInitialization()` - Retry initialization with last used locale
@@ -874,9 +820,8 @@ app/
     ├── _layout.tsx                # Onboarding stack navigation
     ├── language.tsx               # Step 1: Language selection + initialization
     ├── categories.tsx             # Step 2: Category selection (min 5)
-    ├── difficulty.tsx             # Step 3: Difficulty selection
-    ├── notifications.tsx          # Step 4: Permissions + Time preference
-    └── success.tsx                # Download screen + Completion
+    ├── notifications.tsx          # Step 3: Permissions + Time preference
+    └── success.tsx                # Completion screen
 
 src/
 ├── contexts/
@@ -889,7 +834,7 @@ src/
 │   └── notifications.ts          # Notification scheduling system (NEW)
 ├── components/
 │   ├── CategoryCard.tsx          # Category selection card
-│   ├── ProgressIndicator.tsx    # Step progress (1/4, 2/4, 3/4, 4/4)
+│   ├── ProgressIndicator.tsx    # Step progress (1/3, 2/3, 3/3)
 │   └── Button.tsx                # Primary/secondary buttons (with loading state)
 ├── i18n/
 │   ├── config.ts                 # i18n configuration
@@ -910,8 +855,7 @@ src/
 - [ ] Language selection → Click Continue → Initialization starts (loading state shown)
 - [ ] Initialization → Device registered → Metadata fetched → Navigate to categories
 - [ ] Categories selection → At least 5 selected → Can proceed
-- [ ] Difficulty selection → Default "all" → Click Continue
-- [ ] Difficulty Continue → Facts download starts in background → Navigates immediately
+- [ ] Categories Continue → Facts download starts in background → Navigates immediately to Notifications
 - [ ] Notifications screen → Button always clickable (shows "Enable Notifications")
 - [ ] Notifications → Set time → Click button → Permission dialog appears immediately
 - [ ] Notifications → Grant permission → Shows loading "Getting your app ready..."
@@ -927,7 +871,7 @@ src/
 - [ ] Language screen → Click Continue again → Retry initialization works
 - [ ] Categories: Access before initialization → Redirects to language screen
 - [ ] Categories: Less than 5 selected → Button disabled
-- [ ] Difficulty Continue → Facts download fails → Error shown on notifications screen
+- [ ] Categories Continue → Facts download fails → Error shown on notifications screen
 - [ ] Notifications → Permission denied → Alert shown directing to Settings, stays on screen
 - [ ] Notifications → Permission denied multiple times → Still blocks progress
 - [ ] Notifications → Scheduling fails → Alert shown, button allows retry
@@ -962,7 +906,7 @@ src/
 5. ❌ **Not checking `isInitialized` in categories screen** → Add guard to prevent access before init
 6. ❌ **Adding a skip button for notifications** → Notifications are REQUIRED
 7. ❌ **Allowing less than 5 categories** → Minimum requirement is 5 categories
-8. ❌ **Waiting for download to complete on difficulty screen** → Trigger download in background, navigate immediately
+8. ❌ **Waiting for download to complete on categories screen** → Trigger download in background, navigate immediately
 9. ❌ **Disabling button while facts download** → Button should always be clickable; wait happens after permission
 10. ❌ **Not scheduling actual notifications** → Must call `scheduleInitialNotifications()` on permission grant
 11. ❌ **Waiting for download before requesting permission** → Request permission immediately, then wait for download

@@ -7,7 +7,6 @@ import * as db from './database';
 // AsyncStorage keys
 export const ONBOARDING_COMPLETE_KEY = '@onboarding_complete';
 export const SELECTED_CATEGORIES_KEY = '@selected_categories';
-export const DIFFICULTY_PREFERENCE_KEY = '@difficulty_preference';
 export const NOTIFICATION_TIME_KEY = '@notification_time';
 export const NOTIFICATION_TIMES_KEY = '@notification_times'; // For multiple times (premium)
 
@@ -73,7 +72,6 @@ export async function initializeOnboarding(
     console.log('Storing metadata in database...');
     await db.openDatabase();
     await db.insertCategories(metadata.categories);
-    await db.insertContentTypes(metadata.content_types);
 
     return { success: true };
   } catch (error) {
@@ -105,7 +103,6 @@ export interface FetchFactsResult {
 export async function fetchAllFacts(
   language: string,
   categories: string[],
-  difficulty: string,
   onProgress?: (progress: FetchFactsProgress) => void
 ): Promise<FetchFactsResult> {
   try {
@@ -113,12 +110,11 @@ export async function fetchAllFacts(
     const categoriesParam = categories.join(',');
 
     // Fetch all facts with retry logic
-    console.log('Fetching facts...', { language, categories: categoriesParam, difficulty });
+    console.log('Fetching facts...', { language, categories: categoriesParam });
 
     const facts = await api.getAllFactsWithRetry(
       language,
       categoriesParam,
-      difficulty,
       (downloaded, total) => {
         if (onProgress) {
           onProgress({
@@ -137,17 +133,14 @@ export async function fetchAllFacts(
       title: fact.title,
       content: fact.content,
       summary: fact.summary,
-      difficulty: fact.difficulty,
-      content_type: fact.content_type,
       category: fact.category,
-      tags: fact.tags ? JSON.stringify(fact.tags) : undefined,
       source_url: fact.source_url,
       reading_time: fact.reading_time,
       word_count: fact.word_count,
       image_url: fact.image_url,
       language: fact.language,
       created_at: fact.created_at,
-      updated_at: fact.updated_at,
+      last_updated: fact.last_updated,
     }));
 
     // Store facts in database
@@ -168,7 +161,6 @@ export async function fetchAllFacts(
 
 export interface OnboardingPreferences {
   selectedCategories: string[];
-  difficultyPreference: string;
   notificationTime?: Date;
 }
 
@@ -184,11 +176,6 @@ export async function completeOnboarding(
     await AsyncStorage.setItem(
       SELECTED_CATEGORIES_KEY,
       JSON.stringify(preferences.selectedCategories)
-    );
-
-    await AsyncStorage.setItem(
-      DIFFICULTY_PREFERENCE_KEY,
-      preferences.difficultyPreference
     );
 
     // Save notification time if provided
@@ -218,16 +205,6 @@ export async function getSelectedCategories(): Promise<string[]> {
   } catch (error) {
     console.error('Error getting selected categories:', error);
     return [];
-  }
-}
-
-export async function getDifficultyPreference(): Promise<string> {
-  try {
-    const value = await AsyncStorage.getItem(DIFFICULTY_PREFERENCE_KEY);
-    return value || 'all';
-  } catch (error) {
-    console.error('Error getting difficulty preference:', error);
-    return 'all';
   }
 }
 
@@ -276,19 +253,6 @@ export async function setSelectedCategories(categories: string[]): Promise<void>
 }
 
 /**
- * Update difficulty preference
- */
-export async function setDifficultyPreference(difficulty: string): Promise<void> {
-  try {
-    await AsyncStorage.setItem(DIFFICULTY_PREFERENCE_KEY, difficulty);
-    console.log('Difficulty preference updated:', difficulty);
-  } catch (error) {
-    console.error('Error setting difficulty preference:', error);
-    throw error;
-  }
-}
-
-/**
  * Update notification time
  */
 export async function setNotificationTime(time: Date): Promise<void> {
@@ -329,7 +293,6 @@ export async function resetOnboarding(): Promise<void> {
   try {
     await AsyncStorage.removeItem(ONBOARDING_COMPLETE_KEY);
     await AsyncStorage.removeItem(SELECTED_CATEGORIES_KEY);
-    await AsyncStorage.removeItem(DIFFICULTY_PREFERENCE_KEY);
     await AsyncStorage.removeItem(NOTIFICATION_TIME_KEY);
     await api.clearDeviceKey();
     await db.clearDatabase();

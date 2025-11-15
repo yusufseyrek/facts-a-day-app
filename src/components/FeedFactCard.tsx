@@ -10,7 +10,6 @@ import { useTheme } from "../theme";
 interface FeedFactCardProps {
   title: string;
   summary?: string;
-  difficulty?: string;
   onPress: () => void;
 }
 
@@ -34,7 +33,6 @@ const TextContainer = styled(YStack, {
 export function FeedFactCard({
   title,
   summary,
-  difficulty,
   onPress,
 }: FeedFactCardProps) {
   const { theme } = useTheme();
