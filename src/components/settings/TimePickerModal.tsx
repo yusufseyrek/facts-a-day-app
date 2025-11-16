@@ -9,7 +9,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { X, Crown, Plus, Trash2 } from '@tamagui/lucide-icons';
+import { X, Plus, Trash2 } from '@tamagui/lucide-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../../theme';
 import { tokens } from '../../theme/tokens';
@@ -17,8 +17,6 @@ import { useTranslation } from '../../i18n/useTranslation';
 import { Button } from '../Button';
 import * as onboardingService from '../../services/onboarding';
 import * as notificationService from '../../services/notifications';
-import { useIsPremium } from '../../contexts/SubscriptionContext';
-import { useRouter } from 'expo-router';
 
 interface TimePickerModalProps {
   visible: boolean;
@@ -36,10 +34,8 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   const { theme } = useTheme();
   const colors = tokens.color[theme];
   const { t, locale } = useTranslation();
-  const isPremium = useIsPremium();
-  const router = useRouter();
 
-  // For premium: multiple times, for free: single time
+  // Support multiple notification times (up to 3 per day)
   const [times, setTimes] = useState<Date[]>([currentTime]);
   const [activePickerIndex, setActivePickerIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -86,25 +82,6 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   };
 
   const handleAddTime = () => {
-    if (!isPremium) {
-      // Show upgrade prompt
-      Alert.alert(
-        'Premium Feature',
-        'Multiple daily facts is a premium feature. Upgrade to get up to 3 facts per day!',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Upgrade',
-            onPress: () => {
-              onClose();
-              router.push('/paywall');
-            },
-          },
-        ]
-      );
-      return;
-    }
-
     if (times.length >= 3) {
       Alert.alert('Maximum Reached', 'You can schedule up to 3 notifications per day.');
       return;
@@ -278,9 +255,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                   { color: colors.textSecondary },
                 ]}
               >
-                {isPremium
-                  ? 'Schedule up to 3 notifications per day'
-                  : t('selectNotificationTime')}
+                Schedule up to 3 notifications per day
               </Text>
 
               {times.map((time, index) =>
@@ -300,9 +275,8 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                 >
                   <Plus size={20} color={colors.primary} />
                   <Text style={[styles.addButtonText, { color: colors.primary }]}>
-                    Add Another Time {!isPremium && '(Premium)'}
+                    Add Another Time
                   </Text>
-                  {!isPremium && <Crown size={16} color={colors.primary} />}
                 </Pressable>
               )}
 

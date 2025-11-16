@@ -95,14 +95,9 @@ export const useInterstitialAd = () => {
 };
 
 // Export function to show interstitial ad (for use without hook)
-export const showInterstitialAd = async (isPremium: boolean): Promise<void> => {
+export const showInterstitialAd = async (): Promise<void> => {
   // Don't show ads if globally disabled
   if (!ADS_ENABLED) {
-    return;
-  }
-
-  // Don't show ads for premium users
-  if (isPremium) {
     return;
   }
 

@@ -6,9 +6,9 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { SectionList, RefreshControl, ActivityIndicator } from "react-native";
 import { styled } from "@tamagui/core";
-import { YStack, XStack, Button } from "tamagui";
-import { Clock, Crown } from "@tamagui/lucide-icons";
-import { useRouter, useFocusEffect } from "expo-router";
+import { YStack, XStack } from "tamagui";
+import { Clock } from "@tamagui/lucide-icons";
+import { useRouter } from "expo-router";
 import { tokens } from "../../src/theme/tokens";
 import { H1, H2, FeedFactCard, EmptyState } from "../../src/components";
 import type { FactWithRelations } from "../../src/services/database";
@@ -16,16 +16,8 @@ import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import * as database from "../../src/services/database";
 import * as Notifications from "expo-notifications";
-import {
-  useIsPremium,
-  useSubscription,
-} from "../../src/contexts/SubscriptionContext";
 import { BannerAd } from "../../src/components/ads";
 import { trackFactView } from "../../src/services/adManager";
-import {
-  shouldShowPaywall,
-  markPaywallShown,
-} from "../../src/services/paywallManager";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -67,8 +59,6 @@ export default function HomeScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const isPremium = useIsPremium();
-  const { checkSubscription } = useSubscription();
 
   const [sections, setSections] = useState<FactSection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,29 +67,6 @@ export default function HomeScreen() {
   useEffect(() => {
     loadFacts();
   }, [locale]);
-
-  // Refresh subscription status when screen comes into focus
-  // This ensures the UI updates after returning from paywall
-  useFocusEffect(
-    React.useCallback(() => {
-      checkSubscription();
-    }, [])
-  );
-
-  // Check if paywall should be shown
-  useEffect(() => {
-    checkAndShowPaywall();
-  }, [isPremium]);
-
-  const checkAndShowPaywall = async () => {
-    const shouldShow = await shouldShowPaywall(isPremium);
-    if (shouldShow) {
-      // Show paywall after a short delay to let the home screen load
-      setTimeout(() => {
-        router.push("/paywall");
-      }, 1000);
-    }
-  };
 
   // Auto-refresh feed when new notifications are received
   useEffect(() => {
@@ -193,7 +160,7 @@ export default function HomeScreen() {
 
   const handleFactPress = async (fact: FactWithRelations) => {
     // Track fact view and potentially show interstitial ad
-    await trackFactView(isPremium);
+    await trackFactView();
 
     router.push(`/fact/${fact.id}`);
   };
@@ -233,7 +200,7 @@ export default function HomeScreen() {
           sections={sections}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={{
-            paddingBottom: isPremium ? 0 : 70,
+            paddingBottom: 70,
           }}
           ListHeaderComponent={() => (
             <Header>
@@ -244,35 +211,6 @@ export default function HomeScreen() {
                 />
                 <H1>{t("recentFacts")}</H1>
               </XStack>
-              {!isPremium && (
-                <Button
-                  paddingHorizontal={tokens.space.lg}
-                  paddingVertical={tokens.space.sm}
-                  backgroundColor={theme === "dark" ? "#FFA500" : "#FFD700"}
-                  color={theme === "dark" ? "#FFFFFF" : "#000000"}
-                  borderRadius={tokens.radius.lg}
-                  icon={
-                    <Crown
-                      size={18}
-                      color={theme === "dark" ? "#FFFFFF" : "#000000"}
-                    />
-                  }
-                  onPress={() => router.push("/paywall")}
-                  fontWeight="600"
-                  fontSize={15}
-                  pressStyle={{
-                    scale: 0.95,
-                    opacity: 0.9,
-                  }}
-                  shadowColor="#000"
-                  shadowOffset={{ width: 0, height: 2 }}
-                  shadowOpacity={theme === "dark" ? 0.4 : 0.2}
-                  shadowRadius={4}
-                  elevation={theme === "dark" ? 6 : 3}
-                >
-                  {t("upgrade")}
-                </Button>
-              )}
             </Header>
           )}
           renderSectionHeader={({ section: { title } }) => (

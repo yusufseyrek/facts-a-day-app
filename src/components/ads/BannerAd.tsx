@@ -2,7 +2,6 @@ import React from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { BannerAd as GoogleBannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { YStack } from 'tamagui';
-import { useIsPremium } from '../../contexts/SubscriptionContext';
 import Constants from 'expo-constants';
 import { ADS_ENABLED } from '../../config/ads';
 
@@ -35,13 +34,6 @@ const getAdUnitId = (position: BannerAdPosition): string => {
 export const BannerAd: React.FC<BannerAdProps> = ({ position }) => {
   // Don't show ads if globally disabled
   if (!ADS_ENABLED) {
-    return null;
-  }
-
-  const isPremium = useIsPremium();
-
-  // Don't show ads for premium users
-  if (isPremium) {
     return null;
   }
 

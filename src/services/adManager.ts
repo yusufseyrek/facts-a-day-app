@@ -11,16 +11,10 @@ const FACTS_BEFORE_INTERSTITIAL = 3; // Show interstitial after every 3 fact vie
 
 /**
  * Track fact view and show interstitial ad if threshold is reached
- * @param isPremium - Whether user is premium (to skip ads)
  */
-export const trackFactView = async (isPremium: boolean): Promise<void> => {
+export const trackFactView = async (): Promise<void> => {
   // Don't track or show ads if globally disabled
   if (!ADS_ENABLED) {
-    return;
-  }
-
-  // Don't track or show ads for premium users
-  if (isPremium) {
     return;
   }
 
@@ -35,7 +29,7 @@ export const trackFactView = async (isPremium: boolean): Promise<void> => {
     // Check if we should show interstitial
     if (newCount >= FACTS_BEFORE_INTERSTITIAL) {
       // Show interstitial ad
-      await showInterstitialAd(isPremium);
+      await showInterstitialAd();
 
       // Reset count
       await AsyncStorage.setItem(FACT_VIEW_COUNT_KEY, '0');
@@ -50,7 +44,7 @@ export const trackFactView = async (isPremium: boolean): Promise<void> => {
 };
 
 /**
- * Reset fact view count (useful for testing or when user becomes premium)
+ * Reset fact view count (useful for testing)
  */
 export const resetFactViewCount = async (): Promise<void> => {
   try {
@@ -75,21 +69,15 @@ export const getFactViewCount = async (): Promise<number> => {
 
 /**
  * Show interstitial ad before settings change
- * @param isPremium - Whether user is premium (to skip ads)
  */
-export const showSettingsInterstitial = async (isPremium: boolean): Promise<void> => {
+export const showSettingsInterstitial = async (): Promise<void> => {
   // Don't show ads if globally disabled
   if (!ADS_ENABLED) {
     return;
   }
 
-  // Don't show ads for premium users
-  if (isPremium) {
-    return;
-  }
-
   try {
-    await showInterstitialAd(isPremium);
+    await showInterstitialAd();
   } catch (error) {
     console.error('Error showing settings interstitial:', error);
   }
