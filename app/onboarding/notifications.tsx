@@ -101,7 +101,16 @@ export default function NotificationsScreen() {
           await waitForDownloadComplete();
         }
 
-        // Step 4: Schedule notifications
+        // Step 4: Mark one fact as shown immediately for new users (BEFORE scheduling)
+        console.log('🎯 Calling showImmediateFact with locale:', locale);
+        const immediateFactResult = await notificationService.showImmediateFact(locale);
+        if (immediateFactResult.success) {
+          console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
+        } else {
+          console.error('❌ Failed to mark immediate fact:', immediateFactResult.error);
+        }
+
+        // Step 5: Schedule notifications (will exclude the fact marked as shown)
         const result = await notificationService.scheduleInitialNotifications(
           notificationTime,
           locale
@@ -110,6 +119,7 @@ export default function NotificationsScreen() {
         if (result.success) {
           // Successfully scheduled notifications - navigate to success screen
           console.log(`Scheduled ${result.count} notifications`);
+
           router.push("/onboarding/success");
         } else {
           // Failed to schedule notifications - show error

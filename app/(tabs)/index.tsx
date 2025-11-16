@@ -10,7 +10,7 @@ import { YStack, XStack } from "tamagui";
 import { Clock } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
 import { tokens } from "../../src/theme/tokens";
-import { H1, H2, FeedFactCard, EmptyState } from "../../src/components";
+import { H1, H2, FeedFactCard, HeroFactCard, EmptyState } from "../../src/components";
 import type { FactWithRelations } from "../../src/services/database";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
@@ -95,8 +95,22 @@ export default function HomeScreen() {
       // Get facts grouped by date
       const facts = await database.getFactsGroupedByDate(locale);
 
+      // Debug logging
+      console.log(`📊 Loaded ${facts.length} facts for locale: ${locale}`);
+      console.log('Facts with shown_in_feed:', facts.filter(f => f.shown_in_feed === 1).length);
+      console.log('Facts with scheduled_date:', facts.filter(f => f.scheduled_date).length);
+      if (facts.length > 0) {
+        console.log('Sample fact:', {
+          id: facts[0].id,
+          shown_in_feed: facts[0].shown_in_feed,
+          scheduled_date: facts[0].scheduled_date,
+          language: facts[0].language
+        });
+      }
+
       // Group facts by date
       const groupedFacts = groupFactsByDate(facts);
+      console.log(`📦 Grouped into ${groupedFacts.length} sections`);
       setSections(groupedFacts);
     } catch (error) {
       console.error("Error loading facts:", error);
@@ -118,9 +132,18 @@ export default function HomeScreen() {
     const grouped: { [key: string]: FactWithRelations[] } = {};
 
     facts.forEach((fact) => {
-      if (!fact.scheduled_date) return;
+      let dateKey: string;
 
-      const dateKey = fact.scheduled_date.split("T")[0];
+      // Facts marked as shown_in_feed (without scheduled_date) should appear under "Today"
+      if (fact.shown_in_feed === 1 && !fact.scheduled_date) {
+        dateKey = todayString;
+      } else if (fact.scheduled_date) {
+        dateKey = fact.scheduled_date.split("T")[0];
+      } else {
+        // Skip facts that are neither scheduled nor marked as shown
+        return;
+      }
+
       if (!grouped[dateKey]) {
         grouped[dateKey] = [];
       }
@@ -218,15 +241,30 @@ export default function HomeScreen() {
               <H2>{title}</H2>
             </SectionHeader>
           )}
-          renderItem={({ item }) => (
-            <ContentContainer>
-              <FeedFactCard
-                title={item.title || item.content.substring(0, 80) + "..."}
-                summary={item.summary}
-                onPress={() => handleFactPress(item)}
-              />
-            </ContentContainer>
-          )}
+          renderItem={({ item, section, index }) => {
+            // Use HeroFactCard for the first item in the first section (Today)
+            const isFirstItem = sections.indexOf(section) === 0 && index === 0;
+            const categoryColor = item.categoryData?.color_hex || "#0066FF";
+
+            return (
+              <ContentContainer>
+                {isFirstItem ? (
+                  <HeroFactCard
+                    title={item.title || item.content.substring(0, 80) + "..."}
+                    summary={item.summary}
+                    categoryColor={categoryColor}
+                    onPress={() => handleFactPress(item)}
+                  />
+                ) : (
+                  <FeedFactCard
+                    title={item.title || item.content.substring(0, 80) + "..."}
+                    summary={item.summary}
+                    onPress={() => handleFactPress(item)}
+                  />
+                )}
+              </ContentContainer>
+            );
+          }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }

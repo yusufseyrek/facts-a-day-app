@@ -103,6 +103,45 @@ export async function scheduleInitialNotifications(
 }
 
 /**
+ * Mark one random fact as shown immediately in feed for new users
+ * @param locale The user's locale for filtering facts
+ * @returns Success status and the fact that was marked
+ */
+export async function showImmediateFact(
+  locale: string
+): Promise<{ success: boolean; fact?: database.FactWithRelations; error?: string }> {
+  try {
+    // Get 1 random unscheduled fact (excluding already scheduled and shown facts)
+    const facts = await database.getRandomUnscheduledFacts(1, locale);
+
+    if (facts.length === 0) {
+      return {
+        success: false,
+        error: 'No facts available to show',
+      };
+    }
+
+    const fact = facts[0];
+
+    // Mark the fact as shown in feed
+    await database.markFactAsShown(fact.id);
+
+    console.log(`Marked fact ${fact.id} as shown in feed for immediate display`);
+
+    return {
+      success: true,
+      fact,
+    };
+  } catch (error) {
+    console.error('Error showing immediate fact:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
  * Refresh notification schedule by topping up to 64 notifications
  * @param notificationTime The time of day to send notifications
  * @param locale The user's locale for filtering facts

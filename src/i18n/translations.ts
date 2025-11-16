@@ -104,6 +104,7 @@ export const translations = {
     settingsThemeSystemDescription: "Systemeinstellungen folgen",
     settingsCategories: "Kategorien",
     settingsNotificationTime: "Benachrichtigungszeit",
+    settingsNotificationTimesCount: "{count} Zeiten",
     settingsSelected: "ausgewählt",
 
     // Error messages
@@ -221,6 +222,7 @@ export const translations = {
     settingsThemeSystemDescription: "Follow system settings",
     settingsCategories: "Categories",
     settingsNotificationTime: "Notification Time",
+    settingsNotificationTimesCount: "{count} times",
     settingsSelected: "selected",
 
     // Error messages
@@ -338,6 +340,7 @@ export const translations = {
     settingsThemeSystemDescription: "Seguir configuración del sistema",
     settingsCategories: "Categorías",
     settingsNotificationTime: "Hora de Notificación",
+    settingsNotificationTimesCount: "{count} veces",
     settingsSelected: "seleccionado",
 
     // Error messages
@@ -457,6 +460,7 @@ export const translations = {
     settingsThemeSystemDescription: "Suivre les paramètres du système",
     settingsCategories: "Catégories",
     settingsNotificationTime: "Heure de Notification",
+    settingsNotificationTimesCount: "{count} fois",
     settingsSelected: "sélectionné",
 
     // Error messages
@@ -573,6 +577,7 @@ export const translations = {
     settingsThemeSystemDescription: "システム設定に従う",
     settingsCategories: "カテゴリー",
     settingsNotificationTime: "通知時刻",
+    settingsNotificationTimesCount: "{count}回",
     settingsSelected: "選択済み",
 
     // Error messages
@@ -686,6 +691,7 @@ export const translations = {
     settingsThemeSystemDescription: "시스템 설정 따르기",
     settingsCategories: "카테고리",
     settingsNotificationTime: "알림 시간",
+    settingsNotificationTimesCount: "{count}번",
     settingsSelected: "선택됨",
 
     // Error messages
@@ -802,6 +808,7 @@ export const translations = {
     settingsThemeSystemDescription: "Sistem ayarlarını takip et",
     settingsCategories: "Kategoriler",
     settingsNotificationTime: "Bildirim Zamanı",
+    settingsNotificationTimesCount: "{count} kez",
     settingsSelected: "seçili",
 
     // Error messages
@@ -914,6 +921,7 @@ export const translations = {
     settingsThemeSystemDescription: "跟随系统设置",
     settingsCategories: "类别",
     settingsNotificationTime: "通知时间",
+    settingsNotificationTimesCount: "{count}次",
     settingsSelected: "已选",
 
     // Error messages

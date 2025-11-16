@@ -84,7 +84,8 @@ async function initializeSchema(): Promise<void> {
       created_at TEXT NOT NULL,
       last_updated TEXT,
       scheduled_date TEXT,
-      notification_id TEXT
+      notification_id TEXT,
+      shown_in_feed INTEGER DEFAULT 0
     );
   `);
 
@@ -246,6 +247,7 @@ export interface Fact {
   last_updated?: string;
   scheduled_date?: string; // ISO date string when fact is scheduled for notification
   notification_id?: string; // Notification ID from expo-notifications
+  shown_in_feed?: number; // 0 or 1, indicates if fact should be shown in feed immediately
 }
 
 /**
@@ -273,6 +275,7 @@ function mapFactsWithRelations(rows: any[]): FactWithRelations[] {
       last_updated: row.last_updated,
       scheduled_date: row.scheduled_date,
       notification_id: row.notification_id,
+      shown_in_feed: row.shown_in_feed,
     };
 
     // Map category data if present
@@ -493,6 +496,7 @@ export async function getFactsCount(language?: string): Promise<number> {
 
 /**
  * Get random unscheduled facts for notification scheduling
+ * Excludes facts that are already scheduled or marked as shown in feed
  * @param limit Maximum number of facts to return
  * @param language Optional language filter
  */
@@ -514,7 +518,7 @@ export async function getRandomUnscheduledFacts(
         c.color_hex as category_color_hex
       FROM facts f
       LEFT JOIN categories c ON f.category = c.slug
-      WHERE f.language = ? AND f.scheduled_date IS NULL
+      WHERE f.language = ? AND f.scheduled_date IS NULL AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
       ORDER BY RANDOM()
       LIMIT ?`,
       [language, limit]
@@ -533,7 +537,7 @@ export async function getRandomUnscheduledFacts(
       c.color_hex as category_color_hex
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.scheduled_date IS NULL
+    WHERE f.scheduled_date IS NULL AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
     ORDER BY RANDOM()
     LIMIT ?`,
     [limit]
@@ -563,6 +567,17 @@ export async function clearFactScheduling(factId: number): Promise<void> {
   const database = await openDatabase();
   await database.runAsync(
     "UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE id = ?",
+    [factId]
+  );
+}
+
+/**
+ * Mark a fact as shown in feed (for immediate display without scheduling)
+ */
+export async function markFactAsShown(factId: number): Promise<void> {
+  const database = await openDatabase();
+  await database.runAsync(
+    "UPDATE facts SET shown_in_feed = 1 WHERE id = ?",
     [factId]
   );
 }
@@ -713,8 +728,8 @@ export async function getFavoritesCount(language?: string): Promise<number> {
 // ====== DATE-BASED QUERIES ======
 
 /**
- * Get facts that were already delivered via notifications
- * Returns facts from the past 30 days where scheduled_date <= now, ordered by date descending
+ * Get facts that were already delivered via notifications or marked as shown
+ * Returns facts from the past 30 days where (scheduled_date <= now OR shown_in_feed = 1), ordered by date descending
  */
 export async function getFactsGroupedByDate(
   language?: string
@@ -741,11 +756,12 @@ export async function getFactsGroupedByDate(
         c.color_hex as category_color_hex
       FROM facts f
       LEFT JOIN categories c ON f.category = c.slug
-      WHERE f.scheduled_date IS NOT NULL
-      AND f.scheduled_date >= ?
-      AND f.scheduled_date <= ?
+      WHERE (
+        (f.scheduled_date IS NOT NULL AND f.scheduled_date >= ? AND f.scheduled_date <= ?)
+        OR f.shown_in_feed = 1
+      )
       AND f.language = ?
-      ORDER BY f.scheduled_date DESC`,
+      ORDER BY COALESCE(f.scheduled_date, f.created_at) DESC`,
       [cutoffDate, now, language]
     );
     return mapFactsWithRelations(result);
@@ -762,10 +778,11 @@ export async function getFactsGroupedByDate(
       c.color_hex as category_color_hex
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.scheduled_date IS NOT NULL
-    AND f.scheduled_date >= ?
-    AND f.scheduled_date <= ?
-    ORDER BY f.scheduled_date DESC`,
+    WHERE (
+      (f.scheduled_date IS NOT NULL AND f.scheduled_date >= ? AND f.scheduled_date <= ?)
+      OR f.shown_in_feed = 1
+    )
+    ORDER BY COALESCE(f.scheduled_date, f.created_at) DESC`,
     [cutoffDate, now]
   );
   return mapFactsWithRelations(result);

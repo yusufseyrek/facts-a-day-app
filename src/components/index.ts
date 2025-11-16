@@ -8,6 +8,7 @@ export { FloatingActionButton } from './FloatingActionButton';
 export { FactCard } from './FactCard';
 export type { Fact } from './FactCard';
 export { FeedFactCard } from './FeedFactCard';
+export { HeroFactCard } from './HeroFactCard';
 export { EmptyState } from './EmptyState';
 export { FactActions } from './FactActions';
 export { FactModal } from './FactModal';

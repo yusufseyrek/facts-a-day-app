@@ -107,7 +107,7 @@ export default function SettingsPage() {
 
   // Preferences state
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [notificationTime, setNotificationTime] = useState<Date>(new Date());
+  const [notificationTimes, setNotificationTimes] = useState<Date[]>([new Date()]);
 
   // Load preferences on mount
   useEffect(() => {
@@ -117,11 +117,11 @@ export default function SettingsPage() {
   const loadPreferences = async () => {
     try {
       const categories = await onboardingService.getSelectedCategories();
-      const time = await onboardingService.getNotificationTime();
+      const times = await onboardingService.getNotificationTimes();
 
       setSelectedCategories(categories);
-      if (time) {
-        setNotificationTime(new Date(time));
+      if (times && times.length > 0) {
+        setNotificationTimes(times.map((t) => new Date(t)));
       }
     } catch (error) {
       console.error("Error loading preferences:", error);
@@ -344,11 +344,18 @@ export default function SettingsPage() {
 
               <SettingsRow
                 label={t("settingsNotificationTime")}
-                value={notificationTime.toLocaleTimeString("en-US", {
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
-                })}
+                value={
+                  notificationTimes.length === 1
+                    ? notificationTimes[0].toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      })
+                    : t("settingsNotificationTimesCount").replace(
+                        "{count}",
+                        notificationTimes.length.toString()
+                      )
+                }
                 icon={<Bell size={20} color={iconColor} />}
                 onPress={handleTimePress}
               />
@@ -404,10 +411,16 @@ export default function SettingsPage() {
 
       <TimePickerModal
         visible={showTimeModal}
-        onClose={() => setShowTimeModal(false)}
-        currentTime={notificationTime}
+        onClose={() => {
+          setShowTimeModal(false);
+          // Reload preferences after modal closes to get updated times
+          loadPreferences();
+        }}
+        currentTime={notificationTimes[0]}
         onTimeChange={(newTime) => {
-          setNotificationTime(newTime);
+          // The modal handles saving multiple times internally
+          // Just update the first time in the array for display
+          setNotificationTimes([newTime]);
         }}
       />
     </Container>
