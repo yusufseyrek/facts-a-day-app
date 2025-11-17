@@ -159,7 +159,8 @@ export async function fetchAllFacts(
 
 export interface OnboardingPreferences {
   selectedCategories: string[];
-  notificationTime?: Date;
+  notificationTime?: Date; // Deprecated - kept for backward compatibility
+  notificationTimes?: Date[]; // New field for multiple times
 }
 
 /**
@@ -176,8 +177,21 @@ export async function completeOnboarding(
       JSON.stringify(preferences.selectedCategories)
     );
 
-    // Save notification time if provided
-    if (preferences.notificationTime) {
+    // Save notification times if provided (new multi-time feature)
+    if (preferences.notificationTimes && preferences.notificationTimes.length > 0) {
+      const timeStrings = preferences.notificationTimes.map(time => time.toISOString());
+      await AsyncStorage.setItem(
+        NOTIFICATION_TIMES_KEY,
+        JSON.stringify(timeStrings)
+      );
+      // Also save first time as single time for backward compatibility
+      await AsyncStorage.setItem(
+        NOTIFICATION_TIME_KEY,
+        preferences.notificationTimes[0].toISOString()
+      );
+    }
+    // Fallback to single notification time if provided
+    else if (preferences.notificationTime) {
       await AsyncStorage.setItem(
         NOTIFICATION_TIME_KEY,
         preferences.notificationTime.toISOString()

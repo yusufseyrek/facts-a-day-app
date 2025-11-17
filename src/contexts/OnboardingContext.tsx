@@ -11,7 +11,7 @@ import * as onboardingService from "../services/onboarding";
 interface OnboardingState {
   // User selections
   selectedCategories: string[];
-  notificationTime: Date;
+  notificationTimes: Date[];
 
   // Initialization state
   isInitialized: boolean;
@@ -31,7 +31,9 @@ interface OnboardingState {
 interface OnboardingContextType extends OnboardingState {
   // Selection methods
   setSelectedCategories: (categories: string[]) => void;
-  setNotificationTime: (time: Date) => void;
+  setNotificationTimes: (times: Date[]) => void;
+  addNotificationTime: (time: Date) => void;
+  removeNotificationTime: (index: number) => void;
 
   // Initialization
   initializeOnboarding: (locale: SupportedLocale) => Promise<boolean>;
@@ -59,11 +61,11 @@ interface OnboardingProviderProps {
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const [state, setState] = useState<OnboardingState>({
     selectedCategories: [],
-    notificationTime: (() => {
+    notificationTimes: [(() => {
       const defaultTime = new Date();
       defaultTime.setHours(9, 0, 0, 0);
       return defaultTime;
-    })(),
+    })()],
     isInitialized: false,
     isInitializing: false,
     initializationError: null,
@@ -82,8 +84,22 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     setState((prev) => ({ ...prev, selectedCategories: categories }));
   }, []);
 
-  const setNotificationTime = useCallback((time: Date) => {
-    setState((prev) => ({ ...prev, notificationTime: time }));
+  const setNotificationTimes = useCallback((times: Date[]) => {
+    setState((prev) => ({ ...prev, notificationTimes: times }));
+  }, []);
+
+  const addNotificationTime = useCallback((time: Date) => {
+    setState((prev) => ({
+      ...prev,
+      notificationTimes: [...prev.notificationTimes, time]
+    }));
+  }, []);
+
+  const removeNotificationTime = useCallback((index: number) => {
+    setState((prev) => ({
+      ...prev,
+      notificationTimes: prev.notificationTimes.filter((_, i) => i !== index)
+    }));
   }, []);
 
   // ===== Initialization =====
@@ -236,7 +252,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     try {
       await onboardingService.completeOnboarding({
         selectedCategories: state.selectedCategories,
-        notificationTime: state.notificationTime,
+        notificationTimes: state.notificationTimes,
       });
 
       console.log("Onboarding completed successfully");
@@ -244,7 +260,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       console.error("Error completing onboarding:", error);
       throw error;
     }
-  }, [state.selectedCategories, state.notificationTime]);
+  }, [state.selectedCategories, state.notificationTimes]);
 
   // ===== Reset =====
 
@@ -255,11 +271,11 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       // Reset state
       setState({
         selectedCategories: [],
-        notificationTime: (() => {
+        notificationTimes: [(() => {
           const defaultTime = new Date();
           defaultTime.setHours(9, 0, 0, 0);
           return defaultTime;
-        })(),
+        })()],
         isInitialized: false,
         isInitializing: false,
         initializationError: null,
@@ -280,7 +296,9 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const value: OnboardingContextType = {
     ...state,
     setSelectedCategories,
-    setNotificationTime,
+    setNotificationTimes,
+    addNotificationTime,
+    removeNotificationTime,
     initializeOnboarding,
     retryInitialization,
     downloadFacts,

@@ -6,10 +6,9 @@ import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { Bell } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
-import { H1, BodyText, Button, ProgressIndicator } from "../../src/components";
+import { H1, BodyText, Button, ProgressIndicator, MultiTimePicker } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
@@ -44,38 +43,19 @@ const IconContainer = styled(XStack, {
 
 const TimePickerContainer = styled(YStack, {
   backgroundColor: "$surface",
-  padding: tokens.space.lg,
-  borderRadius: tokens.radius.md,
+  padding: tokens.space.xl,
+  borderRadius: tokens.radius.lg,
   gap: tokens.space.md,
   borderWidth: 1,
   borderColor: "$border",
-  overflow: "hidden",
-});
-
-const IOSPickerWrapper = styled(YStack, {
-  borderRadius: tokens.radius.md,
-  overflow: "hidden",
 });
 
 export default function NotificationsScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const { notificationTime, setNotificationTime, isDownloadingFacts, waitForDownloadComplete } = useOnboarding();
-  const [showAndroidPicker, setShowAndroidPicker] = useState(false);
+  const { notificationTimes, setNotificationTimes, isDownloadingFacts, waitForDownloadComplete } = useOnboarding();
   const [isScheduling, setIsScheduling] = useState(false);
-
-  const handleTimeChange = (event: any, selectedDate?: Date) => {
-    // On Android, hide the picker when user confirms or cancels
-    if (Platform.OS === "android") {
-      setShowAndroidPicker(false);
-    }
-
-    // Only update time if user confirmed (not cancelled)
-    if (event.type === "set" && selectedDate) {
-      setNotificationTime(selectedDate);
-    }
-  };
 
   const handleEnableNotifications = async () => {
     try {
@@ -111,10 +91,16 @@ export default function NotificationsScreen() {
         }
 
         // Step 5: Schedule notifications (will exclude the fact marked as shown)
-        const result = await notificationService.scheduleInitialNotifications(
-          notificationTime,
-          locale
-        );
+        // Use multiple times if more than 1, otherwise use single time for backward compatibility
+        const result = notificationTimes.length > 1
+          ? await notificationService.rescheduleNotificationsMultiple(
+              notificationTimes,
+              locale
+            )
+          : await notificationService.scheduleInitialNotifications(
+              notificationTimes[0],
+              locale
+            );
 
         if (result.success) {
           // Successfully scheduled notifications - navigate to success screen
@@ -170,57 +156,14 @@ export default function NotificationsScreen() {
               </YStack>
             </Header>
 
-            {/* Time Picker */}
+            {/* Multi-Time Picker */}
             <TimePickerContainer>
-              <BodyText
-                fontWeight={tokens.fontWeight.semibold}
-                textAlign="center"
-              >
-                {t("selectNotificationTime")}
-              </BodyText>
-
-              {Platform.OS === "ios" ? (
-                <IOSPickerWrapper>
-                  <DateTimePicker
-                    value={notificationTime}
-                    mode="time"
-                    is24Hour={false}
-                    display="spinner"
-                    onChange={handleTimeChange}
-                    style={{ width: "100%" }}
-                    textColor={theme === "dark" ? "#FFFFFF" : "#1A1D2E"}
-                    themeVariant={theme}
-                  />
-                </IOSPickerWrapper>
-              ) : (
-                <>
-                  <Button onPress={() => setShowAndroidPicker(true)}>
-                    {notificationTime.toLocaleTimeString("en-US", {
-                      hour: "numeric",
-                      minute: "2-digit",
-                      hour12: true,
-                    })}
-                  </Button>
-                  {showAndroidPicker && (
-                    <DateTimePicker
-                      value={notificationTime}
-                      mode="time"
-                      is24Hour={false}
-                      display="default"
-                      onChange={handleTimeChange}
-                    />
-                  )}
-                </>
-              )}
-
-              <BodyText
-                fontSize={tokens.fontSize.small}
-                color="$textSecondary"
-                textAlign="center"
-                lineHeight={18}
-              >
-                {t("oneNotificationPerDay")}
-              </BodyText>
+              <MultiTimePicker
+                times={notificationTimes}
+                onTimesChange={setNotificationTimes}
+                maxTimes={3}
+                minTimes={1}
+              />
             </TimePickerContainer>
           </YStack>
         </ScrollView>
