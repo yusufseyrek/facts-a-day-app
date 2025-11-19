@@ -126,6 +126,32 @@ export const translations = {
     testNotificationIn2Seconds: "Sie sollten in 2 Sekunden eine Test-Benachrichtigung erhalten!",
     failedToScheduleTestNotification: "Test-Benachrichtigung konnte nicht geplant werden",
     noFactsAvailable: "Keine Fakten verfügbar.",
+    failedToUpdateFavorite: "Favoritenstatus konnte nicht aktualisiert werden",
+    provideFeedback: "Bitte geben Sie Feedback",
+    feedbackMinLength: "Feedback muss mindestens 10 Zeichen lang sein",
+    feedbackMaxLength: "Feedback darf maximal 1000 Zeichen lang sein",
+    failedToSubmitReport: "Meldung konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.",
+    failedToUpdateLanguageData: "Sprachdaten konnten nicht aktualisiert werden",
+    failedToChangeLanguage: "Sprache konnte nicht geändert werden. Bitte versuchen Sie es erneut.",
+    failedToUpdateNotificationTimes: "Benachrichtigungszeiten konnten nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
+
+    // Share & Source
+    sharedFromApp: "Geteilt von Facts A Day",
+    sourcePrefix: "Quelle: ",
+    externalLink: "Externer Link",
+
+    // Loading States
+    updatingLanguage: "Sprache wird aktualisiert...",
+
+    // Time Picker
+    scheduleUpTo3Notifications: "Planen Sie bis zu 3 Benachrichtigungen pro Tag",
+    morning: "Morgen",
+    afternoon: "Nachmittag",
+    evening: "Abend",
+    maximumReached: "Maximum Erreicht",
+    youCanScheduleUpTo3: "Sie können bis zu 3 Benachrichtigungen pro Tag planen",
+    minimumRequired: "Minimum Erforderlich",
+    youMustHaveAtLeastOne: "Sie müssen mindestens eine Benachrichtigungszeit haben",
   },
   en: {
     // Onboarding - Categories
@@ -252,6 +278,32 @@ export const translations = {
     testNotificationIn2Seconds: "You should receive a test notification in 2 seconds!",
     failedToScheduleTestNotification: "Failed to schedule test notification",
     noFactsAvailable: "There are no facts available.",
+    failedToUpdateFavorite: "Failed to update favorite status",
+    provideFeedback: "Please provide feedback",
+    feedbackMinLength: "Feedback must be at least 10 characters long",
+    feedbackMaxLength: "Feedback must be at most 1000 characters long",
+    failedToSubmitReport: "Failed to submit report. Please try again later.",
+    failedToUpdateLanguageData: "Failed to update language data",
+    failedToChangeLanguage: "Failed to change language. Please try again.",
+    failedToUpdateNotificationTimes: "Failed to update notification times. Please try again.",
+
+    // Share & Source
+    sharedFromApp: "Shared from Facts A Day",
+    sourcePrefix: "Source: ",
+    externalLink: "External Link",
+
+    // Loading States
+    updatingLanguage: "Updating language...",
+
+    // Time Picker
+    scheduleUpTo3Notifications: "Schedule up to 3 notifications per day",
+    morning: "Morning",
+    afternoon: "Afternoon",
+    evening: "Evening",
+    maximumReached: "Maximum Reached",
+    youCanScheduleUpTo3: "You can schedule up to 3 notifications per day",
+    minimumRequired: "Minimum Required",
+    youMustHaveAtLeastOne: "You must have at least one notification time",
   },
   es: {
     // Onboarding - Categories
@@ -378,6 +430,32 @@ export const translations = {
     testNotificationIn2Seconds: "¡Deberías recibir una notificación de prueba en 2 segundos!",
     failedToScheduleTestNotification: "Error al programar notificación de prueba",
     noFactsAvailable: "No hay datos disponibles.",
+    failedToUpdateFavorite: "Error al actualizar estado de favorito",
+    provideFeedback: "Por favor proporciona comentarios",
+    feedbackMinLength: "El comentario debe tener al menos 10 caracteres",
+    feedbackMaxLength: "El comentario debe tener como máximo 1000 caracteres",
+    failedToSubmitReport: "Error al enviar reporte. Por favor, inténtalo más tarde.",
+    failedToUpdateLanguageData: "Error al actualizar datos de idioma",
+    failedToChangeLanguage: "Error al cambiar idioma. Por favor, inténtalo de nuevo.",
+    failedToUpdateNotificationTimes: "Error al actualizar horarios de notificación. Por favor, inténtalo de nuevo.",
+
+    // Share & Source
+    sharedFromApp: "Compartido desde Facts A Day",
+    sourcePrefix: "Fuente: ",
+    externalLink: "Enlace Externo",
+
+    // Loading States
+    updatingLanguage: "Actualizando idioma...",
+
+    // Time Picker
+    scheduleUpTo3Notifications: "Programa hasta 3 notificaciones por día",
+    morning: "Mañana",
+    afternoon: "Tarde",
+    evening: "Noche",
+    maximumReached: "Máximo Alcanzado",
+    youCanScheduleUpTo3: "Puedes programar hasta 3 notificaciones por día",
+    minimumRequired: "Mínimo Requerido",
+    youMustHaveAtLeastOne: "Debes tener al menos un horario de notificación",
   },
   fr: {
     // Onboarding - Categories
@@ -506,6 +584,32 @@ export const translations = {
     testNotificationIn2Seconds: "Vous devriez recevoir une notification de test dans 2 secondes !",
     failedToScheduleTestNotification: "Échec de la programmation de la notification de test",
     noFactsAvailable: "Aucun fait disponible.",
+    failedToUpdateFavorite: "Échec de la mise à jour du statut favori",
+    provideFeedback: "Veuillez fournir un commentaire",
+    feedbackMinLength: "Le commentaire doit contenir au moins 10 caractères",
+    feedbackMaxLength: "Le commentaire doit contenir au maximum 1000 caractères",
+    failedToSubmitReport: "Échec de l'envoi du rapport. Veuillez réessayer plus tard.",
+    failedToUpdateLanguageData: "Échec de la mise à jour des données linguistiques",
+    failedToChangeLanguage: "Échec du changement de langue. Veuillez réessayer.",
+    failedToUpdateNotificationTimes: "Échec de la mise à jour des heures de notification. Veuillez réessayer.",
+
+    // Share & Source
+    sharedFromApp: "Partagé depuis Facts A Day",
+    sourcePrefix: "Source : ",
+    externalLink: "Lien Externe",
+
+    // Loading States
+    updatingLanguage: "Mise à jour de la langue...",
+
+    // Time Picker
+    scheduleUpTo3Notifications: "Planifiez jusqu'à 3 notifications par jour",
+    morning: "Matin",
+    afternoon: "Après-midi",
+    evening: "Soir",
+    maximumReached: "Maximum Atteint",
+    youCanScheduleUpTo3: "Vous pouvez planifier jusqu'à 3 notifications par jour",
+    minimumRequired: "Minimum Requis",
+    youMustHaveAtLeastOne: "Vous devez avoir au moins une heure de notification",
   },
   ja: {
     // Onboarding - Categories
@@ -631,6 +735,32 @@ export const translations = {
     testNotificationIn2Seconds: "2秒後にテスト通知を受け取ります！",
     failedToScheduleTestNotification: "テスト通知のスケジュールに失敗しました",
     noFactsAvailable: "利用可能な豆知識がありません。",
+    failedToUpdateFavorite: "お気に入りステータスの更新に失敗しました",
+    provideFeedback: "フィードバックを入力してください",
+    feedbackMinLength: "フィードバックは10文字以上である必要があります",
+    feedbackMaxLength: "フィードバックは1000文字以下である必要があります",
+    failedToSubmitReport: "レポートの送信に失敗しました。後でもう一度お試しください。",
+    failedToUpdateLanguageData: "言語データの更新に失敗しました",
+    failedToChangeLanguage: "言語の変更に失敗しました。もう一度お試しください。",
+    failedToUpdateNotificationTimes: "通知時刻の更新に失敗しました。もう一度お試しください。",
+
+    // Share & Source
+    sharedFromApp: "Facts A Dayから共有",
+    sourcePrefix: "出典: ",
+    externalLink: "外部リンク",
+
+    // Loading States
+    updatingLanguage: "言語を更新中...",
+
+    // Time Picker
+    scheduleUpTo3Notifications: "1日最大3件の通知をスケジュール",
+    morning: "朝",
+    afternoon: "午後",
+    evening: "夜",
+    maximumReached: "最大数に達しました",
+    youCanScheduleUpTo3: "1日最大3件の通知をスケジュールできます",
+    minimumRequired: "最小数が必要です",
+    youMustHaveAtLeastOne: "少なくとも1件の通知時刻が必要です",
   },
   ko: {
     // Onboarding - Categories
@@ -753,6 +883,32 @@ export const translations = {
     testNotificationIn2Seconds: "2초 후에 테스트 알림을 받게 됩니다!",
     failedToScheduleTestNotification: "테스트 알림 예약 실패",
     noFactsAvailable: "사용 가능한 정보가 없습니다.",
+    failedToUpdateFavorite: "즐겨찾기 상태 업데이트 실패",
+    provideFeedback: "피드백을 입력해 주세요",
+    feedbackMinLength: "피드백은 최소 10자 이상이어야 합니다",
+    feedbackMaxLength: "피드백은 최대 1000자 이하여야 합니다",
+    failedToSubmitReport: "신고 제출 실패. 나중에 다시 시도해 주세요.",
+    failedToUpdateLanguageData: "언어 데이터 업데이트 실패",
+    failedToChangeLanguage: "언어 변경 실패. 다시 시도해 주세요.",
+    failedToUpdateNotificationTimes: "알림 시간 업데이트 실패. 다시 시도해 주세요.",
+
+    // Share & Source
+    sharedFromApp: "Facts A Day에서 공유",
+    sourcePrefix: "출처: ",
+    externalLink: "외부 링크",
+
+    // Loading States
+    updatingLanguage: "언어 업데이트 중...",
+
+    // Time Picker
+    scheduleUpTo3Notifications: "하루 최대 3개의 알림 예약",
+    morning: "아침",
+    afternoon: "오후",
+    evening: "저녁",
+    maximumReached: "최대 수 도달",
+    youCanScheduleUpTo3: "하루 최대 3개의 알림을 예약할 수 있습니다",
+    minimumRequired: "최소 수 필요",
+    youMustHaveAtLeastOne: "최소 1개의 알림 시간이 필요합니다",
   },
   tr: {
     // Onboarding - Categories
@@ -878,6 +1034,32 @@ export const translations = {
     testNotificationIn2Seconds: "2 saniye içinde bir test bildirimi almalısınız!",
     failedToScheduleTestNotification: "Test bildirimi planlanamadı",
     noFactsAvailable: "Kullanılabilir bilgi yok.",
+    failedToUpdateFavorite: "Favori durumu güncellenemedi",
+    provideFeedback: "Lütfen geri bildirim sağlayın",
+    feedbackMinLength: "Geri bildirim en az 10 karakter olmalıdır",
+    feedbackMaxLength: "Geri bildirim en fazla 1000 karakter olmalıdır",
+    failedToSubmitReport: "Bildirim gönderilemedi. Lütfen daha sonra tekrar deneyin.",
+    failedToUpdateLanguageData: "Dil verileri güncellenemedi",
+    failedToChangeLanguage: "Dil değiştirilemedi. Lütfen tekrar deneyin.",
+    failedToUpdateNotificationTimes: "Bildirim zamanları güncellenemedi. Lütfen tekrar deneyin.",
+
+    // Share & Source
+    sharedFromApp: "Facts A Day'den paylaşıldı",
+    sourcePrefix: "Kaynak: ",
+    externalLink: "Dış Bağlantı",
+
+    // Loading States
+    updatingLanguage: "Dil güncelleniyor...",
+
+    // Time Picker
+    scheduleUpTo3Notifications: "Günde en fazla 3 bildirim planlayın",
+    morning: "Sabah",
+    afternoon: "Öğleden Sonra",
+    evening: "Akşam",
+    maximumReached: "Maksimuma Ulaşıldı",
+    youCanScheduleUpTo3: "Günde en fazla 3 bildirim planlayabilirsiniz",
+    minimumRequired: "Minimum Gerekli",
+    youMustHaveAtLeastOne: "En az bir bildirim zamanınız olmalıdır",
   },
   zh: {
     // Onboarding - Categories
@@ -999,6 +1181,32 @@ export const translations = {
     testNotificationIn2Seconds: "您应该会在2秒内收到测试通知！",
     failedToScheduleTestNotification: "安排测试通知失败",
     noFactsAvailable: "没有可用的知识。",
+    failedToUpdateFavorite: "更新收藏状态失败",
+    provideFeedback: "请提供反馈",
+    feedbackMinLength: "反馈至少需要10个字符",
+    feedbackMaxLength: "反馈最多不能超过1000个字符",
+    failedToSubmitReport: "提交报告失败。请稍后重试。",
+    failedToUpdateLanguageData: "更新语言数据失败",
+    failedToChangeLanguage: "更改语言失败。请重试。",
+    failedToUpdateNotificationTimes: "更新通知时间失败。请重试。",
+
+    // Share & Source
+    sharedFromApp: "来自 Facts A Day 的分享",
+    sourcePrefix: "来源: ",
+    externalLink: "外部链接",
+
+    // Loading States
+    updatingLanguage: "正在更新语言...",
+
+    // Time Picker
+    scheduleUpTo3Notifications: "每天最多安排3个通知",
+    morning: "早上",
+    afternoon: "下午",
+    evening: "晚上",
+    maximumReached: "已达最大值",
+    youCanScheduleUpTo3: "您每天最多可以安排3个通知",
+    minimumRequired: "需要最小值",
+    youMustHaveAtLeastOne: "您必须至少设置一个通知时间",
   },
 };
 

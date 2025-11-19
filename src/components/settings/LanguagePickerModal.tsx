@@ -64,13 +64,13 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
         console.log(`Successfully refreshed with ${result.factsCount} facts`);
         onClose();
       } else {
-        Alert.alert('Error', result.error || 'Failed to update language data');
+        Alert.alert(t('error'), result.error || t('failedToUpdateLanguageData'));
         // Revert locale on failure
         setLocale(locale);
       }
     } catch (error) {
       console.error('Error changing language:', error);
-      Alert.alert('Error', 'Failed to change language. Please try again.');
+      Alert.alert(t('error'), t('failedToChangeLanguage'));
       // Revert locale on failure
       setLocale(locale);
     } finally {
@@ -182,7 +182,7 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
               <View style={[styles.loadingBox, { backgroundColor: colors.background }]}>
                 <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={[styles.loadingText, { color: colors.text }]}>
-                  Updating language...
+                  {t('updatingLanguage')}
                 </Text>
               </View>
             </View>

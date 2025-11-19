@@ -83,7 +83,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
   const handleAddTime = () => {
     if (times.length >= 3) {
-      Alert.alert('Maximum Reached', 'You can schedule up to 3 notifications per day.');
+      Alert.alert(t('maximumReached'), t('youCanScheduleUpTo3'));
       return;
     }
 
@@ -96,7 +96,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
   const handleRemoveTime = (index: number) => {
     if (times.length === 1) {
-      Alert.alert('Minimum Required', 'You must have at least one notification time.');
+      Alert.alert(t('minimumRequired'), t('youMustHaveAtLeastOne'));
       return;
     }
 
@@ -128,7 +128,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       onClose();
     } catch (error) {
       console.error('Error updating notification times:', error);
-      Alert.alert('Error', 'Failed to update notification times. Please try again.');
+      Alert.alert(t('error'), t('failedToUpdateNotificationTimes'));
     } finally {
       setIsSaving(false);
     }
@@ -215,8 +215,8 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
   const getTimeLabels = () => {
     if (times.length === 1) return [undefined];
-    if (times.length === 2) return ['Morning', 'Evening'];
-    return ['Morning', 'Afternoon', 'Evening'];
+    if (times.length === 2) return [t('morning'), t('evening')];
+    return [t('morning'), t('afternoon'), t('evening')];
   };
 
   return (
@@ -255,7 +255,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                   { color: colors.textSecondary },
                 ]}
               >
-                Schedule up to 3 notifications per day
+                {t('scheduleUpTo3Notifications')}
               </Text>
 
               {times.map((time, index) =>
@@ -275,7 +275,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                 >
                   <Plus size={20} color={colors.primary} />
                   <Text style={[styles.addButtonText, { color: colors.primary }]}>
-                    Add Another Time
+                    {t('addAnotherTime')}
                   </Text>
                 </Pressable>
               )}
@@ -288,7 +288,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
               >
                 {times.length === 1
                   ? t('oneNotificationPerDay')
-                  : `${times.length} notifications per day`}
+                  : t('multipleNotificationsPerDay').replace('{count}', times.length.toString())}
               </Text>
             </View>
           </ScrollView>

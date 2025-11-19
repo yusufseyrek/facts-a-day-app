@@ -58,15 +58,15 @@ export function FactActions({
       setIsFavorited(newFavoriteStatus);
     } catch (error) {
       console.error("Error toggling favorite:", error);
-      Alert.alert(t("error"), "Failed to update favorite status");
+      Alert.alert(t("error"), t("failedToUpdateFavorite"));
     }
   };
 
   const handleShare = async () => {
     try {
       const shareContent = factTitle
-        ? `${factTitle}\n\n${factContent}\n\nShared from Facts A Day`
-        : `${factContent}\n\nShared from Facts A Day`;
+        ? `${factTitle}\n\n${factContent}\n\n${t("sharedFromApp")}`
+        : `${factContent}\n\n${t("sharedFromApp")}`;
 
       await Share.share({
         message: shareContent,
@@ -89,25 +89,19 @@ export function FactActions({
           text: t("submit"),
           onPress: async (feedbackText?: string) => {
             if (!feedbackText || feedbackText.trim() === "") {
-              Alert.alert(t("error"), "Please provide feedback");
+              Alert.alert(t("error"), t("provideFeedback"));
               return;
             }
 
             const trimmedFeedback = feedbackText.trim();
 
             if (trimmedFeedback.length < 10) {
-              Alert.alert(
-                t("error"),
-                "Feedback must be at least 10 characters long"
-              );
+              Alert.alert(t("error"), t("feedbackMinLength"));
               return;
             }
 
             if (trimmedFeedback.length > 1000) {
-              Alert.alert(
-                t("error"),
-                "Feedback must be at most 1000 characters long"
-              );
+              Alert.alert(t("error"), t("feedbackMaxLength"));
               return;
             }
 
@@ -120,7 +114,7 @@ export function FactActions({
               const errorMessage =
                 error instanceof Error
                   ? error.message
-                  : "Failed to submit report. Please try again later.";
+                  : t("failedToSubmitReport");
               Alert.alert(t("error"), errorMessage);
             } finally {
               setIsSubmittingReport(false);

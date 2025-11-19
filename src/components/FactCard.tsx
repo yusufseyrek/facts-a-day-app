@@ -6,6 +6,7 @@ import { tokens } from "../theme/tokens";
 import { BodyText } from "./Typography";
 import { CategoryBadge } from "./CategoryBadge";
 import { useTheme } from "../theme";
+import { useTranslation } from "../i18n";
 import type { FactWithRelations, Category } from "../services/database";
 
 // Re-export FactWithRelations as Fact for backward compatibility
@@ -59,6 +60,7 @@ function slugToTitleCase(slug: string): string {
 
 export function FactCard({ fact, onReadMore }: FactCardProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   // Determine what to pass to CategoryBadge
   let categoryForBadge: string | Category | null = null;
@@ -114,7 +116,8 @@ export function FactCard({ fact, onReadMore }: FactCardProps) {
                   color="$primary"
                   textDecorationLine="underline"
                 >
-                  Source: {extractDomain(fact.source_url)}
+                  {t("sourcePrefix")}
+                  {extractDomain(fact.source_url, t)}
                 </BodyText>
               </Pressable>
             </SourceSection>
@@ -126,11 +129,11 @@ export function FactCard({ fact, onReadMore }: FactCardProps) {
 }
 
 // Helper to extract domain from URL
-function extractDomain(url: string): string {
+function extractDomain(url: string, t: ReturnType<typeof useTranslation>['t']): string {
   try {
     const urlObj = new URL(url);
     return urlObj.hostname.replace("www.", "");
   } catch {
-    return "External Link";
+    return t("externalLink");
   }
 }
