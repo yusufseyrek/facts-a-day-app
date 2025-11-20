@@ -17,11 +17,6 @@
       "ADMOB_ANDROID_MODAL_BANNER_ID": "ca-app-pub-7740246752776234/5718610008",
       "ADMOB_ANDROID_INTERSTITIAL_ID": "ca-app-pub-7740246752776234/6299287835"
     },
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yusufseyrek.factsadayapp"
@@ -29,7 +24,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#073D8A"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -50,6 +45,15 @@
         "expo-build-properties",
         {
           "android": { "kotlinVersion": "2.1.20" }
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#073D8A",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "cover"
         }
       ]
     ]
