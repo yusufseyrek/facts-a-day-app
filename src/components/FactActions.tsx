@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Share, Alert, Pressable } from "react-native";
+import * as Haptics from "expo-haptics";
 
 import { styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
@@ -54,16 +55,23 @@ export function FactActions({
 
   const handleLike = async () => {
     try {
+      // Provide immediate haptic feedback
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const newFavoriteStatus = await database.toggleFavorite(factId);
       setIsFavorited(newFavoriteStatus);
     } catch (error) {
-      console.error("Error toggling favorite:", error);
+      if (__DEV__) {
+        console.error("Error toggling favorite:", error);
+      }
       Alert.alert(t("error"), t("failedToUpdateFavorite"));
     }
   };
 
   const handleShare = async () => {
     try {
+      // Light haptic feedback for share action
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
       const shareContent = factTitle
         ? `${factTitle}\n\n${factContent}\n\n${t("sharedFromApp")}`
         : `${factContent}\n\n${t("sharedFromApp")}`;
@@ -72,7 +80,9 @@ export function FactActions({
         message: shareContent,
       });
     } catch (error) {
-      console.error("Error sharing fact:", error);
+      if (__DEV__) {
+        console.error("Error sharing fact:", error);
+      }
     }
   };
 

@@ -10,8 +10,33 @@ import * as database from '../src/services/database';
 import * as contentRefresh from '../src/services/contentRefresh';
 import { ActivityIndicator, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { initializeSentry } from '../src/config/sentry';
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import * as Sentry from '@sentry/react-native';
 
-export default function RootLayout() {
+Sentry.init({
+  dsn: 'https://3d61ec20d1f2a0b49f22193bf79583be@o4510405546672128.ingest.de.sentry.io/4510405547851856',
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Enable Logs
+  enableLogs: true,
+
+  // Configure Session Replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
+
+// Initialize Sentry as early as possible
+initializeSentry();
+
+export default Sentry.wrap(function RootLayout() {
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
   const [isDbReady, setIsDbReady] = useState(false);
   const router = useRouter();
@@ -120,24 +145,26 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <I18nProvider>
-        <OnboardingProvider>
-          <AppThemeProvider>
-            <Stack screenOptions={screenOptions}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="onboarding" />
-              <Stack.Screen
-                name="fact/[id]"
-                options={{
-                  presentation: 'modal',
-                  headerShown: false,
-                }}
-              />
-            </Stack>
-          </AppThemeProvider>
-        </OnboardingProvider>
-      </I18nProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <I18nProvider>
+          <OnboardingProvider>
+            <AppThemeProvider>
+              <Stack screenOptions={screenOptions}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="onboarding" />
+                <Stack.Screen
+                  name="fact/[id]"
+                  options={{
+                    presentation: 'modal',
+                    headerShown: false,
+                  }}
+                />
+              </Stack>
+            </AppThemeProvider>
+          </OnboardingProvider>
+        </I18nProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
-}
+});

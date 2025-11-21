@@ -30,11 +30,11 @@ const TextContainer = styled(YStack, {
   gap: tokens.space.xs,
 });
 
-export function FeedFactCard({
+const FeedFactCardComponent = ({
   title,
   summary,
   onPress,
-}: FeedFactCardProps) {
+}: FeedFactCardProps) => {
   const { theme } = useTheme();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
@@ -122,4 +122,13 @@ export function FeedFactCard({
       </Pressable>
     </Animated.View>
   );
-}
+};
+
+// Memoize the component to prevent unnecessary re-renders
+export const FeedFactCard = React.memo(FeedFactCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.title === nextProps.title &&
+    prevProps.summary === nextProps.summary
+    // Don't compare onPress as it may be recreated but functionally equivalent
+  );
+});

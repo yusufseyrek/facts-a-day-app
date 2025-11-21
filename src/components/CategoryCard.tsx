@@ -64,7 +64,7 @@ export interface CategoryCardProps {
   onPress: () => void;
 }
 
-export function CategoryCard({ icon, label, selected, onPress }: CategoryCardProps) {
+const CategoryCardComponent = ({ icon, label, selected, onPress }: CategoryCardProps) => {
   const iconColor = selected ? '#FFFFFF' : tokens.color.light.textSecondary;
 
   return (
@@ -98,4 +98,13 @@ export function CategoryCard({ icon, label, selected, onPress }: CategoryCardPro
       )}
     </Pressable>
   );
-}
+};
+
+// Memoize the component to prevent unnecessary re-renders
+export const CategoryCard = React.memo(CategoryCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.label === nextProps.label &&
+    prevProps.selected === nextProps.selected
+    // Don't compare icon and onPress as they may be recreated but functionally equivalent
+  );
+});

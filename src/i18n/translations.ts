@@ -114,6 +114,10 @@ export const translations = {
     settingsNotificationTime: "Benachrichtigungszeit",
     settingsNotificationTimesCount: "{count} Zeiten",
     settingsSelected: "ausgewählt",
+    settingsLegal: "Rechtliches",
+    settingsPrivacyPolicy: "Datenschutzrichtlinie",
+    settingsTermsOfService: "Nutzungsbedingungen",
+    cannotOpenUrl: "Link konnte nicht geöffnet werden",
 
     // Error messages
     invalidFactId: "Ungültige Fakten-ID",
@@ -266,6 +270,10 @@ export const translations = {
     settingsNotificationTime: "Notification Time",
     settingsNotificationTimesCount: "{count} times",
     settingsSelected: "selected",
+    settingsLegal: "Legal",
+    settingsPrivacyPolicy: "Privacy Policy",
+    settingsTermsOfService: "Terms of Service",
+    cannotOpenUrl: "Cannot open URL",
 
     // Error messages
     invalidFactId: "Invalid fact ID",
@@ -418,6 +426,10 @@ export const translations = {
     settingsNotificationTime: "Hora de Notificación",
     settingsNotificationTimesCount: "{count} veces",
     settingsSelected: "seleccionado",
+    settingsLegal: "Legal",
+    settingsPrivacyPolicy: "Política de Privacidad",
+    settingsTermsOfService: "Términos de Servicio",
+    cannotOpenUrl: "No se puede abrir la URL",
 
     // Error messages
     invalidFactId: "ID de dato inválido",
@@ -572,6 +584,10 @@ export const translations = {
     settingsNotificationTime: "Heure de Notification",
     settingsNotificationTimesCount: "{count} fois",
     settingsSelected: "sélectionné",
+    settingsLegal: "Légal",
+    settingsPrivacyPolicy: "Politique de Confidentialité",
+    settingsTermsOfService: "Conditions d'Utilisation",
+    cannotOpenUrl: "Impossible d'ouvrir l'URL",
 
     // Error messages
     invalidFactId: "ID de fait invalide",
@@ -723,6 +739,10 @@ export const translations = {
     settingsNotificationTime: "通知時刻",
     settingsNotificationTimesCount: "{count}回",
     settingsSelected: "選択済み",
+    settingsLegal: "法的情報",
+    settingsPrivacyPolicy: "プライバシーポリシー",
+    settingsTermsOfService: "利用規約",
+    cannotOpenUrl: "URLを開けません",
 
     // Error messages
     invalidFactId: "無効な豆知識ID",
@@ -871,6 +891,10 @@ export const translations = {
     settingsNotificationTime: "알림 시간",
     settingsNotificationTimesCount: "{count}번",
     settingsSelected: "선택됨",
+    settingsLegal: "법적 정보",
+    settingsPrivacyPolicy: "개인정보 처리방침",
+    settingsTermsOfService: "서비스 이용약관",
+    cannotOpenUrl: "URL을 열 수 없습니다",
 
     // Error messages
     invalidFactId: "잘못된 정보 ID",
@@ -1022,6 +1046,10 @@ export const translations = {
     settingsNotificationTime: "Bildirim Zamanı",
     settingsNotificationTimesCount: "{count} kez",
     settingsSelected: "seçili",
+    settingsLegal: "Yasal",
+    settingsPrivacyPolicy: "Gizlilik Politikası",
+    settingsTermsOfService: "Hizmet Şartları",
+    cannotOpenUrl: "URL açılamadı",
 
     // Error messages
     invalidFactId: "Geçersiz bilgi ID'si",
@@ -1169,6 +1197,10 @@ export const translations = {
     settingsNotificationTime: "通知时间",
     settingsNotificationTimesCount: "{count}次",
     settingsSelected: "已选",
+    settingsLegal: "法律信息",
+    settingsPrivacyPolicy: "隐私政策",
+    settingsTermsOfService: "服务条款",
+    cannotOpenUrl: "无法打开链接",
 
     // Error messages
     invalidFactId: "无效的知识ID",

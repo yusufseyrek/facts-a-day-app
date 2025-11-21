@@ -10,6 +10,7 @@
     "newArchEnabled": true,
     "extra": {
       "API_BASE_URL": "https://factsaday.com",
+      "SENTRY_DSN": "https://3d61ec20d1f2a0b49f22193bf79583be@o4510405546672128.ingest.de.sentry.io/4510405547851856",
       "ADMOB_IOS_HOME_BANNER_ID": "ca-app-pub-7740246752776234/1196911062",
       "ADMOB_IOS_MODAL_BANNER_ID": "ca-app-pub-7740246752776234/8006410731",
       "ADMOB_IOS_INTERSTITIAL_ID": "ca-app-pub-7740246752776234/2739316775",
@@ -34,6 +35,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "facts-a-day",
+          "organization": "personal-rq3"
+        }
+      ],
       [
         "react-native-google-mobile-ads",
         {

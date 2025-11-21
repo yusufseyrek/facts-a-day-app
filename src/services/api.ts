@@ -129,14 +129,89 @@ export async function clearDeviceKey(): Promise<void> {
 
 // ====== API Helpers ======
 
-async function makeRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+/**
+ * Fetch with timeout support
+ * @param url - The URL to fetch
+ * @param options - Fetch options
+ * @param timeout - Timeout in milliseconds (default: 30000ms = 30s)
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeout: number = 30000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
     const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    // Check if error is due to timeout
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeout}ms`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Retry a function with exponential backoff
+ * @param fn - The function to retry
+ * @param maxRetries - Maximum number of retries (default: 3)
+ * @param initialDelay - Initial delay in milliseconds (default: 1000)
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  initialDelay: number = 1000
+): Promise<T> {
+  let attempt = 0;
+  let lastError: Error | null = null;
+
+  while (attempt < maxRetries) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      attempt++;
+
+      // Don't retry on client errors (4xx except 429)
+      if (error instanceof Error && error.message.includes('API Error: 4')) {
+        // Check if it's a 429 (rate limit)
+        if (!error.message.includes('429')) {
+          throw error; // Don't retry other 4xx errors
+        }
+      }
+
+      if (attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = initialDelay * Math.pow(2, attempt - 1);
+        if (__DEV__) {
+          console.log(`Retrying request (attempt ${attempt + 1}/${maxRetries}) after ${delay}ms...`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError || new Error('Failed after multiple retries');
+}
+
+async function makeRequest<T>(
+  endpoint: string,
+  options: RequestInit = {},
+  skipRetry: boolean = false
+): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+
+  const executeRequest = async (): Promise<T> => {
+    const response = await fetchWithTimeout(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -146,14 +221,33 @@ async function makeRequest<T>(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(
+      const error = new Error(
         errorData.message || `API Error: ${response.status} ${response.statusText}`
       );
+
+      // Add rate limit info to error if available
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        if (retryAfter) {
+          (error as any).retryAfter = parseInt(retryAfter, 10);
+        }
+      }
+
+      throw error;
     }
 
     return await response.json();
+  };
+
+  try {
+    if (skipRetry) {
+      return await executeRequest();
+    }
+    return await retryWithBackoff(executeRequest);
   } catch (error) {
-    console.error(`API request failed: ${endpoint}`, error);
+    if (__DEV__) {
+      console.error(`API request failed: ${endpoint}`, error);
+    }
     throw error;
   }
 }

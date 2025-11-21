@@ -14,3 +14,4 @@ export { FactActions } from './FactActions';
 export { FactModal } from './FactModal';
 export { SettingsRow } from './SettingsRow';
 export { MultiTimePicker } from './MultiTimePicker';
+export { ErrorBoundary } from './ErrorBoundary';

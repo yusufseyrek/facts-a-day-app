@@ -18,6 +18,7 @@ import * as database from "../../src/services/database";
 import * as Notifications from "expo-notifications";
 import { BannerAd } from "../../src/components/ads";
 import { trackFactView } from "../../src/services/adManager";
+import { checkAndRequestReview } from "../../src/services/appReview";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -163,9 +164,9 @@ export default function HomeScreen() {
         } else if (dateKey === yesterdayString) {
           title = t("yesterday");
         } else {
-          // Format date as "October 24, 2023"
+          // Format date using user's locale (e.g., "October 24, 2023" for en-US)
           const date = new Date(dateKey);
-          title = date.toLocaleDateString("en-US", {
+          title = date.toLocaleDateString(locale, {
             year: "numeric",
             month: "long",
             day: "numeric",
@@ -184,6 +185,9 @@ export default function HomeScreen() {
   const handleFactPress = async (fact: FactWithRelations) => {
     // Track fact view and potentially show interstitial ad
     await trackFactView();
+
+    // Check if we should request app review
+    checkAndRequestReview(); // Non-blocking call
 
     router.push(`/fact/${fact.id}`);
   };

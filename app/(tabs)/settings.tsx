@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import {
-  Alert,
-  ScrollView,
-} from "react-native";
+import { Alert, ScrollView, Linking } from "react-native";
 import { styled } from "@tamagui/core";
-import { YStack, XStack } from "tamagui";
+import { YStack, XStack, Button } from "tamagui";
 import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import {
@@ -19,6 +16,8 @@ import {
   TestTube,
   Contrast,
   RotateCcw,
+  FileText,
+  Shield,
 } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
 import { H1, H2 } from "../../src/components";
@@ -33,6 +32,7 @@ import * as onboardingService from "../../src/services/onboarding";
 import * as database from "../../src/services/database";
 import { useOnboarding } from "../../src/contexts";
 import { showSettingsInterstitial } from "../../src/services/adManager";
+import { Sentry } from "../../src/config/sentry";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -107,7 +107,9 @@ export default function SettingsPage() {
 
   // Preferences state
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [notificationTimes, setNotificationTimes] = useState<Date[]>([new Date()]);
+  const [notificationTimes, setNotificationTimes] = useState<Date[]>([
+    new Date(),
+  ]);
 
   // Load preferences on mount
   useEffect(() => {
@@ -215,6 +217,44 @@ export default function SettingsPage() {
         }`,
         [{ text: t("ok"), style: "default" }]
       );
+    }
+  };
+
+  const handlePrivacyPolicyPress = async () => {
+    try {
+      const url = "https://factsaday.com/privacy";
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(t("error"), t("cannotOpenUrl"), [
+          { text: t("ok"), style: "default" },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error opening privacy policy:", error);
+      Alert.alert(t("error"), t("cannotOpenUrl"), [
+        { text: t("ok"), style: "default" },
+      ]);
+    }
+  };
+
+  const handleTermsOfServicePress = async () => {
+    try {
+      const url = "https://factsaday.com/terms";
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(t("error"), t("cannotOpenUrl"), [
+          { text: t("ok"), style: "default" },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error opening terms of service:", error);
+      Alert.alert(t("error"), t("cannotOpenUrl"), [
+        { text: t("ok"), style: "default" },
+      ]);
     }
   };
 
@@ -346,7 +386,7 @@ export default function SettingsPage() {
                 label={t("settingsNotificationTime")}
                 value={
                   notificationTimes.length === 1
-                    ? notificationTimes[0].toLocaleTimeString("en-US", {
+                    ? notificationTimes[0].toLocaleTimeString(locale, {
                         hour: "numeric",
                         minute: "2-digit",
                         hour12: true,
@@ -392,9 +432,34 @@ export default function SettingsPage() {
                   icon={<RotateCcw size={20} color={iconColor} />}
                   onPress={handleResetOnboarding}
                 />
+                <SettingsRow
+                  label={"Trigger Sentry Error"}
+                  onPress={() => {
+                    Sentry.captureException(new Error("First error"));
+                  }}
+                />
               </SettingsGroup>
             </SectionContainer>
           )}
+
+          {/* Legal Section */}
+          <SectionContainer>
+            <SectionTitle>{t("settingsLegal")}</SectionTitle>
+
+            <SettingsGroup>
+              <SettingsRow
+                label={t("settingsPrivacyPolicy")}
+                icon={<Shield size={20} color={iconColor} />}
+                onPress={handlePrivacyPolicyPress}
+              />
+
+              <SettingsRow
+                label={t("settingsTermsOfService")}
+                icon={<FileText size={20} color={iconColor} />}
+                onPress={handleTermsOfServicePress}
+              />
+            </SettingsGroup>
+          </SectionContainer>
         </ContentContainer>
       </ScrollView>
 

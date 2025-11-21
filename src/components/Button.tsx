@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityIndicator } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { styled, View } from '@tamagui/core';
 import { XStack } from 'tamagui';
 import { tokens } from '../theme/tokens';
@@ -47,11 +48,19 @@ const ButtonContainer = styled(View, {
 });
 
 export function Button({ children, onPress, variant = 'primary', disabled = false, loading = false }: ButtonProps) {
+  const handlePress = () => {
+    if (!disabled && !loading && onPress) {
+      // Provide haptic feedback on button press
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onPress();
+    }
+  };
+
   return (
     <ButtonContainer
       variant={variant}
       disabled={disabled || loading}
-      onPress={disabled || loading ? undefined : onPress}
+      onPress={handlePress}
       pressStyle={disabled || loading ? {} : { opacity: 0.8 }}
     >
       {loading ? (

@@ -33,12 +33,12 @@ const TextContainer = styled(YStack, {
   gap: tokens.space.sm, // Slightly larger gap between title and summary
 });
 
-export function HeroFactCard({
+const HeroFactCardComponent = ({
   title,
   summary,
   categoryColor = "#0066FF",
   onPress,
-}: HeroFactCardProps) {
+}: HeroFactCardProps) => {
   const { theme } = useTheme();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
@@ -166,4 +166,14 @@ export function HeroFactCard({
       </Pressable>
     </Animated.View>
   );
-}
+};
+
+// Memoize the component to prevent unnecessary re-renders
+export const HeroFactCard = React.memo(HeroFactCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.title === nextProps.title &&
+    prevProps.summary === nextProps.summary &&
+    prevProps.categoryColor === nextProps.categoryColor
+    // Don't compare onPress as it may be recreated but functionally equivalent
+  );
+});
