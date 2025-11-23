@@ -3,7 +3,6 @@ import React, {
   useContext,
   useState,
   useCallback,
-  useEffect,
 } from "react";
 import type { SupportedLocale } from "../i18n";
 import * as onboardingService from "../services/onboarding";
@@ -30,7 +29,7 @@ interface OnboardingState {
 
 interface OnboardingContextType extends OnboardingState {
   // Selection methods
-  setSelectedCategories: (categories: string[]) => void;
+  setSelectedCategories: (categories: string[] | ((prev: string[]) => string[])) => void;
   setNotificationTimes: (times: Date[]) => void;
   addNotificationTime: (time: Date) => void;
   removeNotificationTime: (index: number) => void;
@@ -80,8 +79,11 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
   // ===== Selection Methods =====
 
-  const setSelectedCategories = useCallback((categories: string[]) => {
-    setState((prev) => ({ ...prev, selectedCategories: categories }));
+  const setSelectedCategories = useCallback((categories: string[] | ((prev: string[]) => string[])) => {
+    setState((prev) => ({
+      ...prev,
+      selectedCategories: typeof categories === 'function' ? categories(prev.selectedCategories) : categories
+    }));
   }, []);
 
   const setNotificationTimes = useCallback((times: Date[]) => {

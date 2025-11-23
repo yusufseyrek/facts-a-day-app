@@ -99,10 +99,10 @@ export default function CategoriesSettings() {
   };
 
   const toggleCategory = (slug: string) => {
-    setSelectedCategories(
-      selectedCategories.includes(slug)
-        ? selectedCategories.filter((s) => s !== slug)
-        : [...selectedCategories, slug]
+    setSelectedCategories((prev) =>
+      prev.includes(slug)
+        ? prev.filter((s) => s !== slug)
+        : [...prev, slug]
     );
   };
 

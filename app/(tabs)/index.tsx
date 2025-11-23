@@ -10,7 +10,13 @@ import { YStack, XStack } from "tamagui";
 import { Clock } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
 import { tokens } from "../../src/theme/tokens";
-import { H1, H2, FeedFactCard, HeroFactCard, EmptyState } from "../../src/components";
+import {
+  H1,
+  H2,
+  FeedFactCard,
+  HeroFactCard,
+  EmptyState,
+} from "../../src/components";
 import type { FactWithRelations } from "../../src/services/database";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
@@ -55,7 +61,7 @@ interface FactSection {
   data: FactWithRelations[];
 }
 
-export default function HomeScreen() {
+function HomeScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
@@ -98,14 +104,20 @@ export default function HomeScreen() {
 
       // Debug logging
       console.log(`📊 Loaded ${facts.length} facts for locale: ${locale}`);
-      console.log('Facts with shown_in_feed:', facts.filter(f => f.shown_in_feed === 1).length);
-      console.log('Facts with scheduled_date:', facts.filter(f => f.scheduled_date).length);
+      console.log(
+        "Facts with shown_in_feed:",
+        facts.filter((f) => f.shown_in_feed === 1).length
+      );
+      console.log(
+        "Facts with scheduled_date:",
+        facts.filter((f) => f.scheduled_date).length
+      );
       if (facts.length > 0) {
-        console.log('Sample fact:', {
+        console.log("Sample fact:", {
           id: facts[0].id,
           shown_in_feed: facts[0].shown_in_feed,
           scheduled_date: facts[0].scheduled_date,
-          language: facts[0].language
+          language: facts[0].language,
         });
       }
 
@@ -289,3 +301,5 @@ export default function HomeScreen() {
     </Container>
   );
 }
+
+export default HomeScreen;
