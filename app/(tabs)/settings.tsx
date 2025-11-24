@@ -3,9 +3,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Alert, ScrollView, Linking } from "react-native";
 import { styled } from "@tamagui/core";
-import { YStack, XStack, Button } from "tamagui";
+import { YStack, XStack, Button, Text } from "tamagui";
 import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import {
   Globe,
   Palette,
@@ -58,6 +59,14 @@ const SectionTitle = styled(H2, {
 
 const SettingsGroup = styled(YStack, {
   gap: tokens.space.md,
+});
+
+const VersionText = styled(Text, {
+  textAlign: "center",
+  fontSize: tokens.fontSize.small,
+  marginTop: tokens.space.xl,
+  marginBottom: tokens.space.xl,
+  opacity: 0.6,
 });
 
 // Helper to get language display name
@@ -460,6 +469,11 @@ export default function SettingsPage() {
               />
             </SettingsGroup>
           </SectionContainer>
+
+          {/* App Version */}
+          <VersionText color={iconColor}>
+            Version {Constants.expoConfig?.version || "1.0.0"}
+          </VersionText>
         </ContentContainer>
       </ScrollView>
 
