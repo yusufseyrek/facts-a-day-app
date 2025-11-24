@@ -104,32 +104,31 @@ export default Sentry.wrap(function RootLayout() {
     }
   }, [isOnboardingComplete, segments]);
 
-  // Handle notification taps (when app is in foreground or background)
-  useEffect(() => {
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const factId = response.notification.request.content.data.factId;
+  // Track the last processed notification to prevent duplicate navigation
+  const [lastProcessedNotificationId, setLastProcessedNotificationId] = useState<string | null>(null);
 
-      // Only navigate if app is ready and onboarding is complete
-      if (factId && isDbReady && isOnboardingComplete) {
-        router.push(`/fact/${factId}`);
-      }
-    });
-
-    return () => subscription.remove();
-  }, [isDbReady, isOnboardingComplete]);
-
-  // Handle notification taps when app was closed (cold start)
+  // Handle notification taps (all scenarios: foreground, background, and cold start)
   const lastNotificationResponse = Notifications.useLastNotificationResponse();
   useEffect(() => {
     if (lastNotificationResponse) {
       const factId = lastNotificationResponse.notification.request.content.data.factId;
+      const notificationId = lastNotificationResponse.notification.request.identifier;
 
-      // Only navigate if app is ready and onboarding is complete
-      if (factId && isDbReady && isOnboardingComplete) {
+      // Only navigate if:
+      // 1. We haven't already processed this notification
+      // 2. App is ready and onboarding is complete
+      // 3. We have a valid fact ID
+      if (
+        notificationId !== lastProcessedNotificationId &&
+        factId &&
+        isDbReady &&
+        isOnboardingComplete
+      ) {
+        setLastProcessedNotificationId(notificationId);
         router.push(`/fact/${factId}`);
       }
     }
-  }, [lastNotificationResponse, isDbReady, isOnboardingComplete]);
+  }, [lastNotificationResponse, isDbReady, isOnboardingComplete, lastProcessedNotificationId]);
 
   const screenOptions = {
     headerShown: false as const,
