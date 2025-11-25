@@ -1,20 +1,22 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, Easing } from "react-native";
+import React, { useEffect, useRef, useMemo } from "react";
+import { Animated, Easing, View, Dimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { styled } from "@tamagui/core";
-import { YStack, Text } from "tamagui";
+import { YStack, Text, XStack } from "tamagui";
 import { useRouter } from "expo-router";
-import { CheckCircle } from "@tamagui/lucide-icons";
+import { CheckCircle, Sparkle, Star } from "@tamagui/lucide-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { tokens } from "../../src/theme/tokens";
 import { BodyText } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+
 const Container = styled(SafeAreaView, {
   flex: 1,
-  backgroundColor: "$background",
 });
 
 const ContentContainer = styled(YStack, {
@@ -33,12 +35,179 @@ const IconContainer = styled(YStack, {
   alignItems: "center",
   justifyContent: "center",
   marginBottom: tokens.space.lg,
-  shadowColor: "$primary",
-  shadowOffset: { width: 0, height: 8 },
-  shadowOpacity: 0.2,
-  shadowRadius: 16,
-  elevation: 8,
 });
+
+// Particle component for confetti effect
+const Particle = ({ delay, index }: { delay: number; index: number }) => {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.delay(delay),
+      Animated.parallel([
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, []);
+
+  const translateY = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -150 - Math.random() * 100],
+  });
+
+  const translateX = animatedValue.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, (Math.random() - 0.5) * 150, (Math.random() - 0.5) * 200],
+  });
+
+  const scale = animatedValue.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, 1.2, 0],
+  });
+
+  const opacity = animatedValue.interpolate({
+    inputRange: [0, 0.1, 0.9, 1],
+    outputRange: [0, 1, 1, 0],
+  });
+
+  const rotate = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", `${360 + Math.random() * 360}deg`],
+  });
+
+  const colors = [
+    tokens.color.light.primary,
+    tokens.color.light.success,
+    "#FFD700",
+    "#FF69B4",
+    "#00CED1",
+    "#FF6347",
+  ];
+  const particleColor = colors[index % colors.length];
+
+  const ParticleIcon = index % 3 === 0 ? Star : Sparkle;
+
+  return (
+    <Animated.View
+      style={{
+        position: "absolute",
+        transform: [
+          { translateX },
+          { translateY },
+          { scale },
+          { rotate },
+        ],
+        opacity,
+      }}
+    >
+      <ParticleIcon
+        size={20 + Math.random() * 10}
+        color={particleColor}
+        fill={particleColor}
+      />
+    </Animated.View>
+  );
+};
+
+// Ring pulse animation component
+const PulseRing = ({ delay }: { delay: number }) => {
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.parallel([
+          Animated.timing(scaleAnim, {
+            toValue: 2.5,
+            duration: 2000,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacityAnim, {
+            toValue: 0,
+            duration: 2000,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.timing(scaleAnim, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        position: "absolute",
+        width: 140,
+        height: 140,
+        borderRadius: 70,
+        borderWidth: 2,
+        borderColor: tokens.color.light.primary,
+        transform: [{ scale: scaleAnim }],
+        opacity: opacityAnim,
+      }}
+    />
+  );
+};
+
+// Progress bar component
+const ProgressBar = ({ duration }: { duration: number }) => {
+  const widthAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(widthAnim, {
+      toValue: 1,
+      duration: duration,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    }).start();
+  }, []);
+
+  const width = widthAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0%", "100%"],
+  });
+
+  return (
+    <View
+      style={{
+        width: screenWidth * 0.6,
+        height: 3,
+        backgroundColor: "rgba(0, 102, 255, 0.1)",
+        borderRadius: 1.5,
+        overflow: "hidden",
+        marginTop: 40,
+      }}
+    >
+      <Animated.View
+        style={{
+          width,
+          height: "100%",
+          backgroundColor: tokens.color.light.primary,
+          borderRadius: 1.5,
+        }}
+      />
+    </View>
+  );
+};
 
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
@@ -47,70 +216,120 @@ export default function OnboardingSuccessScreen() {
   const { completeOnboarding } = useOnboarding();
 
   // Animation values
-  const iconScale = useRef(new Animated.Value(0)).current;
-  const iconRotate = useRef(new Animated.Value(0)).current;
-  const iconOpacity = useRef(new Animated.Value(0)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current;
-  const textTranslateY = useRef(new Animated.Value(30)).current;
+  const iconDropAnim = useRef(new Animated.Value(0)).current;
+  const iconPulseAnim = useRef(new Animated.Value(1)).current;
+  const mainIconRotate = useRef(new Animated.Value(0)).current;
+  const mainIconOpacity = useRef(new Animated.Value(0)).current;
+
+  // Text animations
+  const titleWords = t("allSet").split(" ");
+  const wordAnimations = useRef(
+    titleWords.map(() => ({
+      opacity: new Animated.Value(0),
+      scale: new Animated.Value(0.5),
+      translateY: new Animated.Value(20),
+    }))
+  ).current;
+
   const subtextOpacity = useRef(new Animated.Value(0)).current;
   const subtextTranslateY = useRef(new Animated.Value(20)).current;
+  const progressOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Start animations
+    // Start all animations
     Animated.sequence([
-      // Icon animation - bouncy entrance with rotation
+      // Phase 1: Icon drop with bounce
       Animated.parallel([
-        Animated.spring(iconScale, {
+        Animated.spring(iconDropAnim, {
           toValue: 1,
-          tension: 50,
-          friction: 7,
+          tension: 30,
+          friction: 5,
           useNativeDriver: true,
         }),
-        Animated.timing(iconRotate, {
+        Animated.timing(mainIconOpacity, {
           toValue: 1,
-          duration: 600,
-          easing: Easing.out(Easing.back(1.5)),
+          duration: 300,
           useNativeDriver: true,
         }),
-        Animated.timing(iconOpacity, {
+        Animated.timing(mainIconRotate, {
           toValue: 1,
-          duration: 400,
+          duration: 800,
+          easing: Easing.out(Easing.back(2)),
           useNativeDriver: true,
         }),
       ]),
-      // Text animations - staggered
+      // Phase 2: Start pulse animation
       Animated.parallel([
-        Animated.timing(textOpacity, {
-          toValue: 1,
-          duration: 500,
-          delay: 100,
-          useNativeDriver: true,
-        }),
-        Animated.spring(textTranslateY, {
-          toValue: 0,
-          tension: 40,
-          friction: 8,
-          delay: 100,
-          useNativeDriver: true,
-        }),
-      ]),
-      // Subtext animation
-      Animated.parallel([
-        Animated.timing(subtextOpacity, {
-          toValue: 1,
-          duration: 500,
-          delay: 150,
-          useNativeDriver: true,
-        }),
-        Animated.spring(subtextTranslateY, {
-          toValue: 0,
-          tension: 40,
-          friction: 8,
-          delay: 150,
-          useNativeDriver: true,
-        }),
+        // Word-by-word title reveal
+        ...wordAnimations.map((wordAnim, index) =>
+          Animated.parallel([
+            Animated.spring(wordAnim.opacity, {
+              toValue: 1,
+              delay: index * 100,
+              useNativeDriver: true,
+            }),
+            Animated.spring(wordAnim.scale, {
+              toValue: 1,
+              tension: 40,
+              friction: 6,
+              delay: index * 100,
+              useNativeDriver: true,
+            }),
+            Animated.spring(wordAnim.translateY, {
+              toValue: 0,
+              tension: 40,
+              friction: 6,
+              delay: index * 100,
+              useNativeDriver: true,
+            }),
+          ])
+        ),
+        // Subtitle animation
+        Animated.sequence([
+          Animated.delay(titleWords.length * 100 + 200),
+          Animated.parallel([
+            Animated.timing(subtextOpacity, {
+              toValue: 1,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+            Animated.spring(subtextTranslateY, {
+              toValue: 0,
+              tension: 40,
+              friction: 8,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+        // Show progress bar
+        Animated.sequence([
+          Animated.delay(1000),
+          Animated.timing(progressOpacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]),
       ]),
     ]).start();
+
+    // Continuous pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(iconPulseAnim, {
+          toValue: 1.05,
+          duration: 1500,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(iconPulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
 
     finishOnboarding();
   }, []);
@@ -129,73 +348,146 @@ export default function OnboardingSuccessScreen() {
     }
   };
 
-  const iconRotateInterpolate = iconRotate.interpolate({
+  // Icon animations
+  const iconTranslateY = iconDropAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-100, 0],
+  });
+
+  // Create separate scale values
+  const iconDropScale = iconDropAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+
+  const iconRotate = mainIconRotate.interpolate({
     inputRange: [0, 1],
     outputRange: ["-180deg", "0deg"],
   });
 
+  // Generate particles
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 15 }, (_, i) => (
+        <Particle key={i} index={i} delay={300 + i * 50} />
+      )),
+    []
+  );
+
+  // Gradient colors based on animation
+  const gradientColors = theme === "dark"
+    ? ["#0A0E27", "#162447", "#1F3A5F"]
+    : ["#F0F7FF", "#E6F0FF", "#D6E7FF"];
+
   return (
-    <Container>
-      <StatusBar style={theme === "dark" ? "light" : "dark"} />
-      <ContentContainer>
-        <YStack alignItems="center" gap="$xl">
-          {/* Animated Icon */}
-          <Animated.View
-            style={{
-              opacity: iconOpacity,
-              transform: [
-                { scale: iconScale },
-                { rotate: iconRotateInterpolate },
-              ],
-            }}
-          >
-            <IconContainer>
-              <CheckCircle
-                size={70}
-                color={tokens.color.light.success}
-                strokeWidth={2.5}
-              />
-            </IconContainer>
-          </Animated.View>
+    <>
+      <Animated.View style={{ flex: 1 }}>
+        <LinearGradient
+          colors={gradientColors}
+          style={{ flex: 1 }}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <Container>
+            <StatusBar style={theme === "dark" ? "light" : "dark"} />
+            <ContentContainer>
+              <YStack alignItems="center" gap="$xl">
+                {/* Icon with particles and pulse rings */}
+                <View style={{ width: 200, height: 200, alignItems: "center", justifyContent: "center" }}>
+                  {/* Pulse rings */}
+                  <PulseRing delay={0} />
+                  <PulseRing delay={1000} />
+                  <PulseRing delay={2000} />
 
-          {/* Large Welcome Text */}
-          <YStack gap="$md" alignItems="center" maxWidth="90%">
-            <Animated.View
-              style={{
-                opacity: textOpacity,
-                transform: [{ translateY: textTranslateY }],
-              }}
-            >
-              <Text
-                fontSize={48}
-                fontWeight="800"
-                textAlign="center"
-                color="$text"
-                letterSpacing={-1}
-                lineHeight={56}
-              >
-                {t("allSet")}
-              </Text>
-            </Animated.View>
+                  {/* Particles */}
+                  {particles}
 
-            <Animated.View
-              style={{
-                opacity: subtextOpacity,
-                transform: [{ translateY: subtextTranslateY }],
-              }}
-            >
-              <BodyText
-                fontSize={18}
-                textAlign="center"
-                color="$textSecondary"
-                lineHeight={26}
-              >
-                {t("welcomeToApp")}
-              </BodyText>
-            </Animated.View>
-          </YStack>
-        </YStack>
-      </ContentContainer>
-    </Container>
+                  {/* Main animated icon */}
+                  <Animated.View
+                    style={{
+                      opacity: mainIconOpacity,
+                      transform: [
+                        { translateY: iconTranslateY },
+                        { scale: iconDropScale },
+                        { rotate: iconRotate },
+                      ],
+                      shadowColor: tokens.color.light.primary,
+                      shadowOffset: { width: 0, height: 10 },
+                      shadowOpacity: 0.15,
+                      shadowRadius: 20,
+                      elevation: 10,
+                    }}
+                  >
+                    <Animated.View
+                      style={{
+                        transform: [{ scale: iconPulseAnim }],
+                      }}
+                    >
+                      <IconContainer>
+                        <CheckCircle
+                          size={70}
+                          color={tokens.color.light.success}
+                          strokeWidth={2.5}
+                        />
+                      </IconContainer>
+                    </Animated.View>
+                  </Animated.View>
+                </View>
+
+                {/* Animated title - word by word */}
+                <XStack gap="$sm" alignItems="center">
+                  {titleWords.map((word, index) => (
+                    <Animated.View
+                      key={index}
+                      style={{
+                        opacity: wordAnimations[index].opacity,
+                        transform: [
+                          { scale: wordAnimations[index].scale },
+                          { translateY: wordAnimations[index].translateY },
+                        ],
+                      }}
+                    >
+                      <Text
+                        fontSize={48}
+                        fontWeight="800"
+                        textAlign="center"
+                        color="$text"
+                        letterSpacing={-1}
+                        lineHeight={56}
+                      >
+                        {word}
+                      </Text>
+                    </Animated.View>
+                  ))}
+                </XStack>
+
+                {/* Animated subtitle */}
+                <Animated.View
+                  style={{
+                    opacity: subtextOpacity,
+                    transform: [{ translateY: subtextTranslateY }],
+                    maxWidth: "90%",
+                  }}
+                >
+                  <BodyText
+                    fontSize={18}
+                    textAlign="center"
+                    color="$textSecondary"
+                    lineHeight={26}
+                  >
+                    {t("welcomeToApp")}
+                  </BodyText>
+                </Animated.View>
+
+                {/* Progress bar */}
+                <Animated.View style={{ opacity: progressOpacity }}>
+                  <ProgressBar duration={2000} />
+                </Animated.View>
+              </YStack>
+            </ContentContainer>
+          </Container>
+        </LinearGradient>
+      </Animated.View>
+    </>
   );
 }

@@ -9,6 +9,7 @@ import { LabelText } from "./Typography";
 import * as database from "../services/database";
 import * as api from "../services/api";
 import { useTranslation } from "../i18n";
+import { ReportFactModal } from "./ReportFactModal";
 
 interface FactActionsProps {
   factId: number;
@@ -38,6 +39,7 @@ export function FactActions({
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Check if fact is favorited on mount
   useEffect(() => {
@@ -87,117 +89,99 @@ export function FactActions({
   };
 
   const handleReport = () => {
-    Alert.prompt(
-      t("reportFact"),
-      t("whatIsWrong"),
-      [
-        {
-          text: t("cancel"),
-          style: "cancel",
-        },
-        {
-          text: t("submit"),
-          onPress: async (feedbackText?: string) => {
-            if (!feedbackText || feedbackText.trim() === "") {
-              Alert.alert(t("error"), t("provideFeedback"));
-              return;
-            }
+    // Light haptic feedback for opening report modal
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowReportModal(true);
+  };
 
-            const trimmedFeedback = feedbackText.trim();
-
-            if (trimmedFeedback.length < 10) {
-              Alert.alert(t("error"), t("feedbackMinLength"));
-              return;
-            }
-
-            if (trimmedFeedback.length > 1000) {
-              Alert.alert(t("error"), t("feedbackMaxLength"));
-              return;
-            }
-
-            setIsSubmittingReport(true);
-            try {
-              await api.reportFact(factId, trimmedFeedback);
-              Alert.alert(t("success"), t("reportSubmitted"));
-            } catch (error) {
-              console.error("Error submitting report:", error);
-              const errorMessage =
-                error instanceof Error
-                  ? error.message
-                  : t("failedToSubmitReport");
-              Alert.alert(t("error"), errorMessage);
-            } finally {
-              setIsSubmittingReport(false);
-            }
-          },
-        },
-      ],
-      "plain-text"
-    );
+  const handleSubmitReport = async (feedbackText: string) => {
+    setIsSubmittingReport(true);
+    try {
+      await api.reportFact(factId, feedbackText);
+      Alert.alert(t("success"), t("reportSubmitted"));
+    } catch (error) {
+      console.error("Error submitting report:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : t("failedToSubmitReport");
+      Alert.alert(t("error"), errorMessage);
+    } finally {
+      setIsSubmittingReport(false);
+    }
   };
 
   return (
-    <Container>
-      <ActionsRow>
-        {/* Like Button - Red */}
-        <Pressable
-          onPress={handleLike}
-          style={({ pressed }) => ({
-            alignItems: "flex-end",
-            justifyContent: "flex-end",
-            opacity: pressed ? 0.6 : 1,
-            paddingHorizontal: 20,
-          })}
-        >
-          <YStack alignItems="center" gap={4}>
-            <Heart
-              size={24}
-              color={isFavorited ? "#EF4444" : "#EF4444"}
-              fill={isFavorited ? "#EF4444" : "none"}
-            />
-            <LabelText fontSize={11} color="#EF4444">
-              {t("like")}
-            </LabelText>
-          </YStack>
-        </Pressable>
+    <>
+      <Container>
+        <ActionsRow>
+          {/* Like Button - Red */}
+          <Pressable
+            onPress={handleLike}
+            style={({ pressed }) => ({
+              alignItems: "flex-end",
+              justifyContent: "flex-end",
+              opacity: pressed ? 0.6 : 1,
+              paddingHorizontal: 20,
+            })}
+          >
+            <YStack alignItems="center" gap={4}>
+              <Heart
+                size={24}
+                color={isFavorited ? "#EF4444" : "#EF4444"}
+                fill={isFavorited ? "#EF4444" : "none"}
+              />
+              <LabelText fontSize={11} color="#EF4444">
+                {t("like")}
+              </LabelText>
+            </YStack>
+          </Pressable>
 
-        {/* Share Button - Green */}
-        <Pressable
-          onPress={handleShare}
-          style={({ pressed }) => ({
-            alignItems: "center",
-            justifyContent: "center",
-            opacity: pressed ? 0.6 : 1,
-            paddingHorizontal: 20,
-          })}
-        >
-          <YStack alignItems="center" gap={4}>
-            <ShareIcon size={24} color="#10B981" />
-            <LabelText fontSize={11} color="#10B981">
-              {t("share")}
-            </LabelText>
-          </YStack>
-        </Pressable>
+          {/* Share Button - Green */}
+          <Pressable
+            onPress={handleShare}
+            style={({ pressed }) => ({
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: pressed ? 0.6 : 1,
+              paddingHorizontal: 20,
+            })}
+          >
+            <YStack alignItems="center" gap={4}>
+              <ShareIcon size={24} color="#10B981" />
+              <LabelText fontSize={11} color="#10B981">
+                {t("share")}
+              </LabelText>
+            </YStack>
+          </Pressable>
 
-        {/* Report Button - Gray */}
-        <Pressable
-          onPress={handleReport}
-          disabled={isSubmittingReport}
-          style={({ pressed }) => ({
-            alignItems: "center",
-            justifyContent: "center",
-            opacity: pressed ? 0.6 : isSubmittingReport ? 0.5 : 1,
-            paddingHorizontal: 20,
-          })}
-        >
-          <YStack alignItems="center" gap={4}>
-            <Flag size={24} color="#6B7280" />
-            <LabelText fontSize={11} color="#6B7280">
-              {t("report")}
-            </LabelText>
-          </YStack>
-        </Pressable>
-      </ActionsRow>
-    </Container>
+          {/* Report Button - Gray */}
+          <Pressable
+            onPress={handleReport}
+            disabled={isSubmittingReport}
+            style={({ pressed }) => ({
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: pressed ? 0.6 : isSubmittingReport ? 0.5 : 1,
+              paddingHorizontal: 20,
+            })}
+          >
+            <YStack alignItems="center" gap={4}>
+              <Flag size={24} color="#6B7280" />
+              <LabelText fontSize={11} color="#6B7280">
+                {t("report")}
+              </LabelText>
+            </YStack>
+          </Pressable>
+        </ActionsRow>
+      </Container>
+
+      <ReportFactModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        onSubmit={handleSubmitReport}
+        isSubmitting={isSubmittingReport}
+      />
+    </>
   );
 }

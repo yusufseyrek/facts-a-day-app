@@ -5,7 +5,8 @@ import { YStack, XStack } from 'tamagui';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Plus, Trash2 } from '@tamagui/lucide-icons';
 import { tokens } from '../theme/tokens';
-import { BodyText, Button } from './';
+import { BodyText } from './Typography';
+import { Button } from './Button';
 import { useTheme } from '../theme';
 import { useTranslation } from '../i18n';
 

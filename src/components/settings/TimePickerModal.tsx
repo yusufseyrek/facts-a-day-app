@@ -22,7 +22,7 @@ interface TimePickerModalProps {
   visible: boolean;
   onClose: () => void;
   currentTime: Date;
-  onTimeChange: (time: Date) => void;
+  onTimeChange?: (time: Date) => void; // Made optional
 }
 
 export const TimePickerModal: React.FC<TimePickerModalProps> = ({
@@ -122,7 +122,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       }
 
       // Update parent component with the first time (for backward compatibility)
-      onTimeChange(times[0]);
+      if (onTimeChange) {
+        onTimeChange(times[0]);
+      }
 
       // Close modal
       onClose();
@@ -171,7 +173,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
             <DateTimePicker
               value={time}
               mode="time"
-              is24Hour={false}
+              is24Hour={true}
               display="spinner"
               onChange={(event, date) => {
                 setActivePickerIndex(index);
@@ -190,10 +192,10 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                 ]}
               >
                 <Text style={styles.androidTimeButtonText}>
-                  {time.toLocaleTimeString('en-US', {
-                    hour: 'numeric',
+                  {time.toLocaleTimeString(locale, {
+                    hour: '2-digit',
                     minute: '2-digit',
-                    hour12: true,
+                    hour12: false,
                   })}
                 </Text>
               </Pressable>
@@ -201,7 +203,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                 <DateTimePicker
                   value={time}
                   mode="time"
-                  is24Hour={false}
+                  is24Hour={true}
                   display="default"
                   onChange={handleTimeChange}
                 />

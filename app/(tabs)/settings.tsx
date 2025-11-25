@@ -64,7 +64,6 @@ const SettingsGroup = styled(YStack, {
 const VersionText = styled(Text, {
   textAlign: "center",
   fontSize: tokens.fontSize.small,
-  marginTop: tokens.space.xl,
   marginBottom: tokens.space.xl,
   opacity: 0.6,
 });
@@ -396,9 +395,9 @@ export default function SettingsPage() {
                 value={
                   notificationTimes.length === 1
                     ? notificationTimes[0].toLocaleTimeString(locale, {
-                        hour: "numeric",
+                        hour: "2-digit",
                         minute: "2-digit",
-                        hour12: true,
+                        hour12: false,
                       })
                     : t("settingsNotificationTimesCount").replace(
                         "{count}",
@@ -490,16 +489,18 @@ export default function SettingsPage() {
 
       <TimePickerModal
         visible={showTimeModal}
-        onClose={() => {
+        onClose={async () => {
           setShowTimeModal(false);
           // Reload preferences after modal closes to get updated times
-          loadPreferences();
+          // Adding a small delay to ensure AsyncStorage write completes
+          setTimeout(() => {
+            loadPreferences();
+          }, 100);
         }}
         currentTime={notificationTimes[0]}
-        onTimeChange={(newTime) => {
-          // The modal handles saving multiple times internally
-          // Just update the first time in the array for display
-          setNotificationTimes([newTime]);
+        onTimeChange={() => {
+          // No-op: We'll reload preferences when modal closes instead
+          // This prevents conflicting state updates
         }}
       />
     </Container>

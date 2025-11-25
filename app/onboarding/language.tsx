@@ -197,7 +197,7 @@ export default function LanguageSelectionScreen() {
               <BodyText color="$error" textAlign="center" fontSize={tokens.fontSize.small}>
                 {initializationError}
               </BodyText>
-              <BodyText color="$textSecondary" textAlign="center" fontSize={tokens.fontSize.small}>
+              <BodyText color="$text" textAlign="center" fontSize={tokens.fontSize.small}>
                 {t("checkInternetConnection")}
               </BodyText>
             </YStack>
