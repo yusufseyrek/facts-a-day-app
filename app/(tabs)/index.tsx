@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -8,7 +8,7 @@ import { SectionList, RefreshControl, ActivityIndicator } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { Clock } from "@tamagui/lucide-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { tokens } from "../../src/theme/tokens";
 import {
   H1,
@@ -71,9 +71,12 @@ function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadFacts();
-  }, [locale]);
+  // Reload facts when tab gains focus (e.g., after settings change)
+  useFocusEffect(
+    useCallback(() => {
+      loadFacts();
+    }, [locale])
+  );
 
   // Auto-refresh feed when new notifications are received
   useEffect(() => {

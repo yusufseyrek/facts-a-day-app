@@ -52,18 +52,28 @@ export async function handleLanguageChange(
     });
 
     const db = await database.openDatabase();
+
+    // Delete facts that are:
+    // - Not yet delivered (scheduled_date IS NULL OR scheduled_date > now)
+    // - Not favorited
+    // - Not shown in feed
     await db.runAsync(`
       DELETE FROM facts
-      WHERE scheduled_date IS NULL OR scheduled_date > ?
+      WHERE (scheduled_date IS NULL OR scheduled_date > ?)
+        AND id NOT IN (SELECT fact_id FROM favorites)
+        AND (shown_in_feed IS NULL OR shown_in_feed = 0)
     `, [now]);
 
-    // Get IDs of facts to update (delivered facts)
-    const deliveredFacts = await db.getAllAsync<{ id: number }>(
-      'SELECT id FROM facts WHERE scheduled_date IS NOT NULL AND scheduled_date <= ?',
+    // Get IDs of facts to update (delivered, favorited, or shown facts)
+    const factsToPreserve = await db.getAllAsync<{ id: number }>(
+      `SELECT id FROM facts WHERE
+        (scheduled_date IS NOT NULL AND scheduled_date <= ?)
+        OR id IN (SELECT fact_id FROM favorites)
+        OR shown_in_feed = 1`,
       [now]
     );
 
-    console.log(`Preserving ${deliveredFacts.length} delivered facts`);
+    console.log(`Preserving ${factsToPreserve.length} facts (delivered, favorited, or shown)`);
 
     // Stage 2: Fetch translated metadata
     onProgress?.({
@@ -97,17 +107,17 @@ export async function handleLanguageChange(
       }
     );
 
-    // Stage 4: Process facts - update delivered ones, insert new ones
+    // Stage 4: Process facts - update preserved ones, insert new ones
     console.log(`Processing ${allFacts.length} facts`);
 
-    const deliveredIds = new Set(deliveredFacts.map(f => f.id));
+    const preservedIds = new Set(factsToPreserve.map((f: { id: number }) => f.id));
     let updatedCount = 0;
     let insertedCount = 0;
 
     await db.withTransactionAsync(async () => {
       for (const fact of allFacts) {
-        if (deliveredIds.has(fact.id)) {
-          // Update existing delivered fact with translation (preserve scheduling info)
+        if (preservedIds.has(fact.id)) {
+          // Update existing preserved fact with translation (keep scheduling info)
           await db.runAsync(`
             UPDATE facts
             SET title = ?, content = ?, summary = ?, language = ?
@@ -144,7 +154,7 @@ export async function handleLanguageChange(
       }
     });
 
-    console.log(`Updated ${updatedCount} delivered facts, inserted ${insertedCount} new facts`);
+    console.log(`Updated ${updatedCount} preserved facts, inserted ${insertedCount} new facts`);
 
     // Stage 5: Reschedule notifications with new language
     onProgress?.({
@@ -190,7 +200,7 @@ export async function handleCategoriesChange(
   try {
     const now = new Date().toISOString();
 
-    // Stage 1: Clear future and unscheduled facts
+    // Stage 1: Clear future and unscheduled facts (preserve favorites and shown)
     onProgress?.({
       stage: 'clearing',
       percentage: 10,
@@ -198,9 +208,16 @@ export async function handleCategoriesChange(
     });
 
     const db = await database.openDatabase();
+
+    // Delete facts that are:
+    // - Not yet delivered (scheduled_date IS NULL OR scheduled_date > now)
+    // - Not favorited
+    // - Not shown in feed
     await db.runAsync(`
       DELETE FROM facts
-      WHERE scheduled_date IS NULL OR scheduled_date > ?
+      WHERE (scheduled_date IS NULL OR scheduled_date > ?)
+        AND id NOT IN (SELECT fact_id FROM favorites)
+        AND (shown_in_feed IS NULL OR shown_in_feed = 0)
     `, [now]);
 
     // Stage 2: Download new facts
