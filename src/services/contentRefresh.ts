@@ -9,6 +9,7 @@ const LAST_CONTENT_REFRESH_KEY = '@last_content_refresh';
 const LOCALE_STORAGE_KEY = '@app_locale';
 
 // Minimum interval between refreshes (1 hour in milliseconds)
+// Note: No longer used - app now refreshes on every open
 const REFRESH_INTERVAL = 60 * 60 * 1000; // 1 hour
 
 export interface RefreshResult {
@@ -23,6 +24,8 @@ export interface RefreshResult {
 /**
  * Check if content should be refreshed based on last refresh time
  * Returns true if more than 1 hour has passed since last refresh
+ * Note: This function is kept for potential future use but is no longer
+ * called by refreshAppContent() - app now refreshes on every open
  */
 export async function shouldRefreshContent(): Promise<boolean> {
   try {
@@ -89,7 +92,8 @@ async function getLastFactUpdatedAt(): Promise<string | null> {
 
 /**
  * Refresh app content from API: metadata and new facts
- * This runs in the background and doesn't block app startup
+ * This runs every time the app opens (no time interval restriction)
+ * Runs in the background and doesn't block app startup
  * Silently fails if offline or network issues occur
  */
 export async function refreshAppContent(): Promise<RefreshResult> {
@@ -104,13 +108,8 @@ export async function refreshAppContent(): Promise<RefreshResult> {
   try {
     console.log('🔄 Starting background content refresh...');
 
-    // Check if we should refresh
-    const shouldRefresh = await shouldRefreshContent();
-    if (!shouldRefresh) {
-      console.log('⏭️  Skipping refresh - last refresh was less than 1 hour ago');
-      result.success = true;
-      return result;
-    }
+    // Always refresh content when app opens (removed 1-hour interval check)
+    // This ensures fresh content every time the user opens the app
 
     // Get current user preferences
     const language = await getCurrentLocale();

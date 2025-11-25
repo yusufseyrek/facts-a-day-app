@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Alert, ScrollView, Linking } from "react-native";
 import { styled } from "@tamagui/core";
-import { YStack, XStack, Button, Text } from "tamagui";
+import { YStack, Text } from "tamagui";
 import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
