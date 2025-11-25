@@ -131,12 +131,24 @@ export async function handleLanguageChange(
           ]);
           updatedCount++;
         } else {
-          // Insert new fact
+          // Insert new fact, preserving any existing scheduling info
           await db.runAsync(`
-            INSERT OR REPLACE INTO facts (
+            INSERT INTO facts (
               id, title, content, summary, category,
               source_url, image_url, language, created_at, last_updated
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+              title = excluded.title,
+              content = excluded.content,
+              summary = excluded.summary,
+              category = excluded.category,
+              source_url = excluded.source_url,
+              image_url = excluded.image_url,
+              language = excluded.language,
+              last_updated = excluded.last_updated,
+              scheduled_date = facts.scheduled_date,
+              notification_id = facts.notification_id,
+              shown_in_feed = facts.shown_in_feed
           `, [
             fact.id,
             fact.title || null,
@@ -189,8 +201,10 @@ export async function handleLanguageChange(
  *
  * Flow:
  * 1. Clear future/unscheduled facts
- * 2. Download new facts matching new categories
- * 3. Refresh notification schedule
+ * 2. Get IDs of shown facts to preserve
+ * 3. Download new facts matching new categories
+ * 4. Update shown facts, insert new ones
+ * 5. Refresh notification schedule
  */
 export async function handleCategoriesChange(
   newCategories: string[],
@@ -220,6 +234,14 @@ export async function handleCategoriesChange(
         AND (shown_in_feed IS NULL OR shown_in_feed = 0)
     `, [now]);
 
+    // Get IDs of shown facts to preserve (keeps scheduling info intact)
+    const shownFacts = await db.getAllAsync<{ id: number }>(
+      `SELECT id FROM facts WHERE shown_in_feed = 1`
+    );
+    const shownIds = new Set(shownFacts.map((f: { id: number }) => f.id));
+
+    console.log(`Preserving ${shownIds.size} shown facts`);
+
     // Stage 2: Download new facts
     onProgress?.({
       stage: 'downloading',
@@ -240,23 +262,71 @@ export async function handleCategoriesChange(
       }
     );
 
-    // Convert and insert new facts
-    const dbFacts: database.Fact[] = newFacts.map((fact) => ({
-      id: fact.id,
-      title: fact.title,
-      content: fact.content,
-      summary: fact.summary,
-      category: fact.category,
-      source_url: fact.source_url,
-      image_url: fact.image_url,
-      language: fact.language,
-      created_at: fact.created_at,
-      last_updated: fact.last_updated,
-    }));
+    // Stage 3: Process facts - update shown ones (keep shown_in_feed), insert new ones
+    console.log(`Processing ${newFacts.length} facts`);
 
-    await database.insertFacts(dbFacts);
+    let updatedCount = 0;
+    let insertedCount = 0;
 
-    // Stage 3: Refresh notification schedule
+    await db.withTransactionAsync(async () => {
+      for (const fact of newFacts) {
+        if (shownIds.has(fact.id)) {
+          // Update existing shown fact (keep shown_in_feed, scheduled_date, notification_id)
+          await db.runAsync(`
+            UPDATE facts
+            SET title = ?, content = ?, summary = ?, category = ?,
+                source_url = ?, image_url = ?, last_updated = ?
+            WHERE id = ?
+          `, [
+            fact.title || null,
+            fact.content,
+            fact.summary || null,
+            fact.category || null,
+            fact.source_url || null,
+            fact.image_url || null,
+            fact.last_updated || fact.created_at,
+            fact.id
+          ]);
+          updatedCount++;
+        } else {
+          // Insert new fact, preserving any existing scheduling info
+          await db.runAsync(`
+            INSERT INTO facts (
+              id, title, content, summary, category,
+              source_url, image_url, language, created_at, last_updated
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+              title = excluded.title,
+              content = excluded.content,
+              summary = excluded.summary,
+              category = excluded.category,
+              source_url = excluded.source_url,
+              image_url = excluded.image_url,
+              language = excluded.language,
+              last_updated = excluded.last_updated,
+              scheduled_date = facts.scheduled_date,
+              notification_id = facts.notification_id,
+              shown_in_feed = facts.shown_in_feed
+          `, [
+            fact.id,
+            fact.title || null,
+            fact.content,
+            fact.summary || null,
+            fact.category || null,
+            fact.source_url || null,
+            fact.image_url || null,
+            fact.language,
+            fact.created_at,
+            fact.last_updated || fact.created_at
+          ]);
+          insertedCount++;
+        }
+      }
+    });
+
+    console.log(`Updated ${updatedCount} shown facts, inserted ${insertedCount} new facts`);
+
+    // Stage 4: Refresh notification schedule
     onProgress?.({
       stage: 'scheduling',
       percentage: 95,

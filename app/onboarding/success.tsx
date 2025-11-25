@@ -375,9 +375,9 @@ export default function OnboardingSuccessScreen() {
   );
 
   // Gradient colors based on animation
-  const gradientColors = theme === "dark"
-    ? ["#0A0E27", "#162447", "#1F3A5F"]
-    : ["#F0F7FF", "#E6F0FF", "#D6E7FF"];
+  const darkColors = ["#0A0E27", "#162447", "#1F3A5F"] as const;
+  const lightColors = ["#F0F7FF", "#E6F0FF", "#D6E7FF"] as const;
+  const gradientColors = theme === "dark" ? darkColors : lightColors;
 
   return (
     <>

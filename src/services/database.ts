@@ -307,11 +307,25 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
   // Use transaction for better performance with batch inserts
   await database.withTransactionAsync(async () => {
     for (const fact of facts) {
+      // Use INSERT ... ON CONFLICT to explicitly preserve local columns
+      // (scheduled_date, notification_id, shown_in_feed) when updating existing facts from API
       await database.runAsync(
-        `INSERT OR REPLACE INTO facts (
+        `INSERT INTO facts (
           id, title, content, summary, category,
           source_url, image_url, language, created_at, last_updated
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          title = excluded.title,
+          content = excluded.content,
+          summary = excluded.summary,
+          category = excluded.category,
+          source_url = excluded.source_url,
+          image_url = excluded.image_url,
+          language = excluded.language,
+          last_updated = excluded.last_updated,
+          scheduled_date = facts.scheduled_date,
+          notification_id = facts.notification_id,
+          shown_in_feed = facts.shown_in_feed`,
         [
           fact.id,
           fact.title || null,
@@ -579,6 +593,18 @@ export async function markFactAsShown(factId: number): Promise<void> {
   await database.runAsync(
     "UPDATE facts SET shown_in_feed = 1 WHERE id = ?",
     [factId]
+  );
+}
+
+/**
+ * Mark a fact as shown in feed with a specific scheduled_date
+ * Used for immediate display (e.g., after onboarding) to properly group by date in feed
+ */
+export async function markFactAsShownWithDate(factId: number, scheduledDate: string): Promise<void> {
+  const database = await openDatabase();
+  await database.runAsync(
+    "UPDATE facts SET shown_in_feed = 1, scheduled_date = ? WHERE id = ?",
+    [scheduledDate, factId]
   );
 }
 

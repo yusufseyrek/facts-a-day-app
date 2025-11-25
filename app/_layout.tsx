@@ -62,7 +62,7 @@ function AppContent() {
     if (isOnboardingComplete === null) return;
 
     const inOnboarding = segments[0] === 'onboarding';
-    const onSuccessScreen = segments[1] === 'success';
+    const onSuccessScreen = (segments as string[])[1] === 'success';
 
     if (!isOnboardingComplete && !inOnboarding) {
       // User hasn't completed onboarding, redirect to language selection

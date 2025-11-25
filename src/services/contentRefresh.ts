@@ -12,6 +12,34 @@ const LOCALE_STORAGE_KEY = '@app_locale';
 // Note: No longer used - app now refreshes on every open
 const REFRESH_INTERVAL = 60 * 60 * 1000; // 1 hour
 
+// Event listeners for feed refresh
+type FeedRefreshListener = () => void;
+const feedRefreshListeners: Set<FeedRefreshListener> = new Set();
+
+/**
+ * Subscribe to feed refresh events
+ * Called when new or updated facts are written to the database
+ */
+export function onFeedRefresh(listener: FeedRefreshListener): () => void {
+  feedRefreshListeners.add(listener);
+  return () => {
+    feedRefreshListeners.delete(listener);
+  };
+}
+
+/**
+ * Emit feed refresh event to all listeners
+ */
+function emitFeedRefresh(): void {
+  feedRefreshListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch (error) {
+      console.error('Error in feed refresh listener:', error);
+    }
+  });
+}
+
 export interface RefreshResult {
   success: boolean;
   updated: {
@@ -159,6 +187,9 @@ export async function refreshAppContent(): Promise<RefreshResult> {
         result.updated.facts = dbFacts.length;
 
         console.log(`✅ Updated ${result.updated.facts} facts (new or modified)`);
+
+        // Notify listeners to refresh the feed
+        emitFeedRefresh();
       } else {
         console.log('✅ No new or updated facts available');
       }

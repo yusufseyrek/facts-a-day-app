@@ -10,7 +10,6 @@ const MAX_SCHEDULED_NOTIFICATIONS = 64;
 export function configureNotifications() {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: false,
       shouldShowBanner: true,
@@ -123,8 +122,9 @@ export async function showImmediateFact(
 
     const fact = facts[0];
 
-    // Mark the fact as shown in feed
-    await database.markFactAsShown(fact.id);
+    // Mark the fact as shown in feed with scheduled_date set to now
+    // This ensures the fact is properly grouped by date in the feed
+    await database.markFactAsShownWithDate(fact.id, new Date().toISOString());
 
     console.log(`Marked fact ${fact.id} as shown in feed for immediate display`);
 

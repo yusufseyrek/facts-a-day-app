@@ -25,6 +25,7 @@ import * as Notifications from "expo-notifications";
 import { BannerAd } from "../../src/components/ads";
 import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
+import { onFeedRefresh } from "../../src/services/contentRefresh";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -98,6 +99,16 @@ function HomeScreen() {
     );
 
     return () => subscription.remove();
+  }, []);
+
+  // Auto-refresh feed when content is updated from API
+  useEffect(() => {
+    const unsubscribe = onFeedRefresh(() => {
+      console.log("📥 Feed refresh triggered by content update");
+      loadFacts();
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const loadFacts = async (isRefresh = false) => {
