@@ -12,6 +12,9 @@ interface OnboardingState {
   selectedCategories: string[];
   notificationTimes: Date[];
 
+  // Onboarding completion status (null = loading, false = incomplete, true = complete)
+  isOnboardingComplete: boolean | null;
+
   // Initialization state
   isInitialized: boolean;
   isInitializing: boolean;
@@ -45,6 +48,9 @@ interface OnboardingContextType extends OnboardingState {
   // Complete onboarding
   completeOnboarding: () => Promise<void>;
 
+  // Set onboarding completion status
+  setIsOnboardingComplete: (complete: boolean) => void;
+
   // Reset
   resetOnboarding: () => Promise<void>;
 }
@@ -55,9 +61,10 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(
 
 interface OnboardingProviderProps {
   children: React.ReactNode;
+  initialComplete?: boolean | null;
 }
 
-export function OnboardingProvider({ children }: OnboardingProviderProps) {
+export function OnboardingProvider({ children, initialComplete = null }: OnboardingProviderProps) {
   const [state, setState] = useState<OnboardingState>({
     selectedCategories: [],
     notificationTimes: [(() => {
@@ -65,6 +72,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       defaultTime.setHours(9, 0, 0, 0);
       return defaultTime;
     })()],
+    isOnboardingComplete: initialComplete,
     isInitialized: false,
     isInitializing: false,
     initializationError: null,
@@ -102,6 +110,10 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       ...prev,
       notificationTimes: prev.notificationTimes.filter((_, i) => i !== index)
     }));
+  }, []);
+
+  const setIsOnboardingComplete = useCallback((complete: boolean) => {
+    setState((prev) => ({ ...prev, isOnboardingComplete: complete }));
   }, []);
 
   // ===== Initialization =====
@@ -257,6 +269,9 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         notificationTimes: state.notificationTimes,
       });
 
+      // Update local state immediately (synchronous) to prevent navigation race condition
+      setState((prev) => ({ ...prev, isOnboardingComplete: true }));
+
       console.log("Onboarding completed successfully");
     } catch (error) {
       console.error("Error completing onboarding:", error);
@@ -278,6 +293,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
           defaultTime.setHours(9, 0, 0, 0);
           return defaultTime;
         })()],
+        isOnboardingComplete: false,
         isInitialized: false,
         isInitializing: false,
         initializationError: null,
@@ -301,6 +317,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     setNotificationTimes,
     addNotificationTime,
     removeNotificationTime,
+    setIsOnboardingComplete,
     initializeOnboarding,
     retryInitialization,
     downloadFacts,

@@ -583,6 +583,40 @@ export async function markFactAsShown(factId: number): Promise<void> {
 }
 
 /**
+ * Mark all delivered facts as shown in feed
+ * This ensures facts that were delivered while the app was closed get marked as shown
+ * @param language Optional language filter
+ * @returns Number of facts marked as shown
+ */
+export async function markDeliveredFactsAsShown(
+  language?: string
+): Promise<number> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+
+  if (language) {
+    const result = await database.runAsync(
+      `UPDATE facts SET shown_in_feed = 1
+       WHERE scheduled_date IS NOT NULL
+       AND scheduled_date <= ?
+       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+       AND language = ?`,
+      [now, language]
+    );
+    return result.changes;
+  }
+
+  const result = await database.runAsync(
+    `UPDATE facts SET shown_in_feed = 1
+     WHERE scheduled_date IS NOT NULL
+     AND scheduled_date <= ?
+     AND (shown_in_feed IS NULL OR shown_in_feed = 0)`,
+    [now]
+  );
+  return result.changes;
+}
+
+/**
  * Clear all scheduled facts (reset all scheduling)
  */
 export async function clearAllScheduledFacts(): Promise<void> {

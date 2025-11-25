@@ -3,7 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppThemeProvider } from '../src/theme';
 import { I18nProvider } from '../src/i18n';
-import { OnboardingProvider } from '../src/contexts';
+import { OnboardingProvider, useOnboarding } from '../src/contexts';
 import * as onboardingService from '../src/services/onboarding';
 import * as notificationService from '../src/services/notifications';
 import * as database from '../src/services/database';
@@ -36,49 +36,14 @@ Sentry.init({
 // Initialize Sentry as early as possible
 initializeSentry();
 
-export default Sentry.wrap(function RootLayout() {
-  const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
-  const [isDbReady, setIsDbReady] = useState(false);
+// Inner component that uses OnboardingContext for routing logic
+function AppContent() {
   const router = useRouter();
   const segments = useSegments();
+  const { isOnboardingComplete, setIsOnboardingComplete } = useOnboarding();
 
-  useEffect(() => {
-    initializeApp();
-  }, []);
-
-  const initializeApp = async () => {
-    try {
-      // Initialize database first
-      await database.openDatabase();
-      setIsDbReady(true);
-
-      // Configure notifications on app start
-      notificationService.configureNotifications();
-
-      // Check onboarding status
-      await checkOnboardingStatus();
-
-      // Refresh content in background if onboarding is complete
-      // This runs asynchronously and doesn't block app startup
-      const isComplete = await onboardingService.isOnboardingComplete();
-      if (isComplete) {
-        // Don't await - run in background
-        contentRefresh.refreshAppContent().catch((error) => {
-          // Silently handle errors - app continues with cached data
-          console.error('Background refresh failed:', error);
-        });
-      }
-    } catch (error) {
-      console.error('Failed to initialize app:', error);
-      // Still set db ready to true to allow app to continue
-      setIsDbReady(true);
-    }
-  };
-
-  const checkOnboardingStatus = async () => {
-    const complete = await onboardingService.isOnboardingComplete();
-    setIsOnboardingComplete(complete);
-  };
+  // Track the last processed notification to prevent duplicate navigation
+  const [lastProcessedNotificationId, setLastProcessedNotificationId] = useState<string | null>(null);
 
   // Re-check onboarding status when navigating to onboarding paths
   // This ensures the reset onboarding button works correctly
@@ -86,26 +51,28 @@ export default Sentry.wrap(function RootLayout() {
     const currentPath = segments[0];
     // Only re-check when explicitly navigating TO onboarding, not when leaving it
     if (currentPath === 'onboarding') {
-      checkOnboardingStatus();
+      onboardingService.isOnboardingComplete().then((complete) => {
+        setIsOnboardingComplete(complete);
+      });
     }
-  }, [segments]);
+  }, [segments, setIsOnboardingComplete]);
 
+  // Handle navigation based on onboarding status
   useEffect(() => {
     if (isOnboardingComplete === null) return;
 
     const inOnboarding = segments[0] === 'onboarding';
+    const onSuccessScreen = segments[1] === 'success';
 
     if (!isOnboardingComplete && !inOnboarding) {
       // User hasn't completed onboarding, redirect to language selection
       router.replace('/onboarding/language');
-    } else if (isOnboardingComplete && inOnboarding) {
-      // User has completed onboarding but is in onboarding screens, redirect to main app
+    } else if (isOnboardingComplete && inOnboarding && !onSuccessScreen) {
+      // User has completed onboarding but is in onboarding screens (except success), redirect to main app
+      // Success screen handles its own navigation after showing the completion animation
       router.replace('/');
     }
-  }, [isOnboardingComplete, segments]);
-
-  // Track the last processed notification to prevent duplicate navigation
-  const [lastProcessedNotificationId, setLastProcessedNotificationId] = useState<string | null>(null);
+  }, [isOnboardingComplete, segments, router]);
 
   // Handle notification taps (all scenarios: foreground, background, and cold start)
   const lastNotificationResponse = Notifications.useLastNotificationResponse();
@@ -121,21 +88,73 @@ export default Sentry.wrap(function RootLayout() {
       if (
         notificationId !== lastProcessedNotificationId &&
         factId &&
-        isDbReady &&
         isOnboardingComplete
       ) {
         setLastProcessedNotificationId(notificationId);
         router.push(`/fact/${factId}`);
       }
     }
-  }, [lastNotificationResponse, isDbReady, isOnboardingComplete, lastProcessedNotificationId]);
+  }, [lastNotificationResponse, isOnboardingComplete, lastProcessedNotificationId, router]);
 
   const screenOptions = {
     headerShown: false as const,
   };
 
+  return (
+    <Stack screenOptions={screenOptions}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="onboarding" />
+      <Stack.Screen
+        name="fact/[id]"
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+        }}
+      />
+    </Stack>
+  );
+}
+
+export default Sentry.wrap(function RootLayout() {
+  const [initialOnboardingStatus, setInitialOnboardingStatus] = useState<boolean | null>(null);
+  const [isDbReady, setIsDbReady] = useState(false);
+
+  useEffect(() => {
+    initializeApp();
+  }, []);
+
+  const initializeApp = async () => {
+    try {
+      // Initialize database first
+      await database.openDatabase();
+      setIsDbReady(true);
+
+      // Configure notifications on app start
+      notificationService.configureNotifications();
+
+      // Check onboarding status
+      const isComplete = await onboardingService.isOnboardingComplete();
+      setInitialOnboardingStatus(isComplete);
+
+      // Refresh content in background if onboarding is complete
+      // This runs asynchronously and doesn't block app startup
+      if (isComplete) {
+        // Don't await - run in background
+        contentRefresh.refreshAppContent().catch((error) => {
+          // Silently handle errors - app continues with cached data
+          console.error('Background refresh failed:', error);
+        });
+      }
+    } catch (error) {
+      console.error('Failed to initialize app:', error);
+      // Still set db ready to true to allow app to continue
+      setIsDbReady(true);
+      setInitialOnboardingStatus(false);
+    }
+  };
+
   // Show loading while initializing app and checking onboarding status
-  if (!isDbReady || isOnboardingComplete === null) {
+  if (!isDbReady || initialOnboardingStatus === null) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />
@@ -147,19 +166,9 @@ export default Sentry.wrap(function RootLayout() {
     <ErrorBoundary>
       <SafeAreaProvider>
         <I18nProvider>
-          <OnboardingProvider>
+          <OnboardingProvider initialComplete={initialOnboardingStatus}>
             <AppThemeProvider>
-              <Stack screenOptions={screenOptions}>
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="onboarding" />
-                <Stack.Screen
-                  name="fact/[id]"
-                  options={{
-                    presentation: 'modal',
-                    headerShown: false,
-                  }}
-                />
-              </Stack>
+              <AppContent />
             </AppThemeProvider>
           </OnboardingProvider>
         </I18nProvider>

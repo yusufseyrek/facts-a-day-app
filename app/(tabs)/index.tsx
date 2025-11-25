@@ -81,11 +81,17 @@ function HomeScreen() {
   // Auto-refresh feed when new notifications are received
   useEffect(() => {
     const subscription = Notifications.addNotificationReceivedListener(
-      (notification) => {
+      async (notification) => {
         const factId = notification.request.content.data.factId;
 
-        // Reload facts to show the newly delivered fact
+        // Mark the fact as shown in feed and reload
         if (factId) {
+          try {
+            await database.markFactAsShown(factId as number);
+            console.log(`✅ Marked fact ${factId} as shown in feed`);
+          } catch (error) {
+            console.error("Error marking fact as shown:", error);
+          }
           loadFacts();
         }
       }
@@ -100,6 +106,12 @@ function HomeScreen() {
         setRefreshing(true);
       } else {
         setLoading(true);
+      }
+
+      // Mark any delivered facts as shown (for facts delivered while app was closed)
+      const markedCount = await database.markDeliveredFactsAsShown(locale);
+      if (markedCount > 0) {
+        console.log(`✅ Marked ${markedCount} delivered facts as shown in feed`);
       }
 
       // Get facts grouped by date
