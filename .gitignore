@@ -40,4 +40,13 @@ yarn-error.*
 /ios
 /android
 
+# Android release signing
+android/keystore.properties
+android/app/release.keystore
+*.keystore
+!android/app/debug.keystore
+
+# Build outputs
+/build
+
 .env.local
