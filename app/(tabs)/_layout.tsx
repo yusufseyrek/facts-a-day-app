@@ -25,19 +25,16 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: activeTintColor,
         tabBarInactiveTintColor: inactiveTintColor,
+        tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor,
           borderTopColor: isDark
             ? tokens.color.dark.border
             : tokens.color.light.border,
           borderTopWidth: 1,
-          height: 60 + insets.bottom,
+          height: 56 + insets.bottom,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-          paddingTop: 8,
-        },
-        tabBarLabelStyle: {
-          fontSize: tokens.fontSize.small,
-          fontWeight: tokens.fontWeight.medium,
+          paddingTop: 10,
         },
       }}
     >
@@ -45,25 +42,21 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t("home"),
-          tabBarIcon: ({ color, size }) => (
-            <Lightbulb size={size} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Lightbulb size={28} color={color} />,
         }}
       />
       <Tabs.Screen
         name="favorites"
         options={{
           title: t("favorites"),
-          tabBarIcon: ({ color, size }) => <Star size={size} color={color} />,
+          tabBarIcon: ({ color }) => <Star size={28} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: t("settings"),
-          tabBarIcon: ({ color, size }) => (
-            <Settings size={size} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Settings size={28} color={color} />,
         }}
       />
     </Tabs>

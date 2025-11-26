@@ -268,22 +268,11 @@ export default function SettingsPage() {
 
   const handleAdd10RandomFacts = async () => {
     try {
-      console.log("📚 Starting to send 10 random fact notifications...");
+      console.log("📚 Adding 10 random facts with past dates for feed testing...");
 
-      // Check notification permissions
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          t("notificationPermissionRequired"),
-          t("notificationPermissionMessage"),
-          [{ text: t("ok"), style: "default" }]
-        );
-        return;
-      }
-
-      // Get 10 random facts
-      const facts = await database.getAllFacts(locale);
-      console.log("📚 Total facts found:", facts.length);
+      // Get 10 random unscheduled facts
+      const facts = await database.getRandomUnscheduledFacts(10, locale);
+      console.log("📚 Unscheduled facts found:", facts.length);
 
       if (facts.length === 0) {
         Alert.alert(t("noFactAvailable"), t("noFactsAvailable"), [
@@ -292,42 +281,22 @@ export default function SettingsPage() {
         return;
       }
 
-      // Select up to 10 random facts
-      const shuffled = facts.sort(() => 0.5 - Math.random());
-      const selectedFacts = shuffled.slice(0, Math.min(10, facts.length));
-
-      console.log(`📚 Scheduling ${selectedFacts.length} notifications...`);
+      console.log(`📚 Adding ${facts.length} facts with random past dates...`);
 
       const now = new Date();
 
-      // Schedule all 10 notifications immediately (staggered by 2 seconds each)
-      // AND mark them as scheduled in the database so they appear in the home feed
-      for (let i = 0; i < selectedFacts.length; i++) {
-        const fact = selectedFacts[i];
+      // Add facts with random past dates (spread across last 10 days)
+      for (let i = 0; i < facts.length; i++) {
+        const fact = facts[i];
 
-        // Schedule notification
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: fact.title || t("didYouKnow"),
-            body: fact.summary || fact.content.substring(0, 100),
-            data: { factId: fact.id },
-          },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-            seconds: 2 + i * 2, // Stagger by 2 seconds each
-            repeats: false,
-          },
-        });
-
-        // Mark fact as scheduled with today's date so it appears in home feed
+        // Generate a random date in the past (0-9 days ago)
+        const daysAgo = i; // Each fact gets a different day for variety
         const scheduledDate = new Date(now);
-        scheduledDate.setHours(
-          now.getHours(),
-          now.getMinutes(),
-          now.getSeconds() + (2 + i * 2),
-          0
-        );
-        const notificationId = `manual_${fact.id}_${Date.now()}_${i}`;
+        scheduledDate.setDate(scheduledDate.getDate() - daysAgo);
+        // Randomize the hour a bit
+        scheduledDate.setHours(9 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 60), 0, 0);
+
+        const notificationId = `test_${fact.id}_${Date.now()}_${i}`;
 
         await database.markFactAsScheduled(
           fact.id,
@@ -335,19 +304,19 @@ export default function SettingsPage() {
           notificationId
         );
 
-        console.log(`✅ Scheduled notification ${i + 1} for fact ${fact.id}`);
+        console.log(`✅ Added fact ${fact.id} with date ${scheduledDate.toISOString().split('T')[0]}`);
       }
 
       // Show success message
       const message = t("factsAddedDescription").replace(
         "{count}",
-        selectedFacts.length.toString()
+        facts.length.toString()
       );
       Alert.alert(t("factsAdded"), message, [
         { text: t("ok"), style: "default" },
       ]);
     } catch (error) {
-      console.error("❌ Error sending notifications:", error);
+      console.error("❌ Error adding facts:", error);
       Alert.alert(
         t("errorAddingFacts"),
         error instanceof Error ? error.message : "Unknown error",
