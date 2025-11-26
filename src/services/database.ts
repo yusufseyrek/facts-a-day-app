@@ -644,11 +644,16 @@ export async function markDeliveredFactsAsShown(
 
 /**
  * Clear all scheduled facts (reset all scheduling)
+ * Only clears FUTURE scheduled facts (scheduled_date > now)
+ * Preserves already-delivered facts so they appear in the correct date group in the feed
  */
 export async function clearAllScheduledFacts(): Promise<void> {
   const database = await openDatabase();
+  const now = new Date().toISOString();
+
   await database.runAsync(
-    "UPDATE facts SET scheduled_date = NULL, notification_id = NULL"
+    "UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ?",
+    [now]
   );
 }
 
