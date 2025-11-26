@@ -69,7 +69,7 @@ function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   const [sections, setSections] = useState<FactSection[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // Reload facts when tab gains focus (e.g., after settings change)
@@ -115,9 +115,8 @@ function HomeScreen() {
     try {
       if (isRefresh) {
         setRefreshing(true);
-      } else {
-        setLoading(true);
       }
+      // Only show loading spinner on initial load (no data yet)
 
       // Mark any delivered facts as shown (for facts delivered while app was closed)
       const markedCount = await database.markDeliveredFactsAsShown(locale);
@@ -154,7 +153,7 @@ function HomeScreen() {
     } catch (error) {
       console.error("Error loading facts:", error);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
       setRefreshing(false);
     }
   };
@@ -234,7 +233,8 @@ function HomeScreen() {
     loadFacts(true);
   };
 
-  if (loading) {
+  // Only show loading spinner on initial load when there's no data yet
+  if (initialLoading && sections.length === 0) {
     return (
       <Container edges={["top"]}>
         <StatusBar style={theme === "dark" ? "light" : "dark"} />
