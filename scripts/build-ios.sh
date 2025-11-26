@@ -122,26 +122,31 @@ fi
 
 echo -e "Using Team ID: ${GREEN}$TEAM_ID${NC}"
 
-# Generate native iOS project if it doesn't exist
-if [ ! -d "$IOS_DIR" ]; then
-    print_step "Generating native iOS project..."
-    npx expo prebuild --platform ios
-fi
-
 # Increment build number if requested
 if [ "$INCREMENT_BUILD" = true ]; then
-    print_step "Incrementing build number..."
-    cd "$IOS_DIR"
+    print_step "Incrementing build number in app.json..."
 
-    # Get current build number from Info.plist
-    CURRENT_BUILD=$(agvtool what-version -terse)
+    APP_JSON="$PROJECT_ROOT/app.json"
+
+    # Get current iOS build number
+    CURRENT_BUILD=$(grep -o '"buildNumber": "[0-9]*"' "$APP_JSON" | grep -o '[0-9]*')
+    if [ -z "$CURRENT_BUILD" ]; then
+        CURRENT_BUILD=0
+    fi
     NEW_BUILD=$((CURRENT_BUILD + 1))
 
-    agvtool new-version -all $NEW_BUILD
-    echo -e "Build number incremented from $CURRENT_BUILD to ${GREEN}$NEW_BUILD${NC}"
+    # Update iOS buildNumber in app.json
+    sed -i '' "s/\"buildNumber\": \"[0-9]*\"/\"buildNumber\": \"$NEW_BUILD\"/" "$APP_JSON"
 
-    cd "$PROJECT_ROOT"
+    # Update Android versionCode in app.json
+    sed -i '' "s/\"versionCode\": [0-9]*/\"versionCode\": $NEW_BUILD/" "$APP_JSON"
+
+    echo -e "Build number incremented from $CURRENT_BUILD to ${GREEN}$NEW_BUILD${NC}"
 fi
+
+# Generate/regenerate native iOS project
+print_step "Generating native iOS project..."
+npx expo prebuild --platform ios
 
 # Clean if requested
 if [ "$CLEAN" = true ]; then
