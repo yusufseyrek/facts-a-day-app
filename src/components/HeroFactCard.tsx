@@ -30,7 +30,7 @@ const ContentRow = styled(XStack, {
 
 const TextContainer = styled(YStack, {
   flex: 1,
-  gap: tokens.space.sm, // Slightly larger gap between title and summary
+  gap: tokens.space.md, // Better visual separation between title and summary
 });
 
 const HeroFactCardComponent = ({
@@ -136,20 +136,22 @@ const HeroFactCardComponent = ({
           <ContentRow style={{ position: "relative" }}>
             <TextContainer>
               <BodyText
-                fontSize={20} // Enhanced from 16px to 20px
-                lineHeight={28} // Better line height for larger text
+                fontSize={21}
+                lineHeight={32}
+                letterSpacing={-0.2}
                 color="$text"
-                fontWeight={tokens.fontWeight.bold} // Bold instead of semibold
-                numberOfLines={3} // Allow more lines for larger text
+                fontWeight={tokens.fontWeight.bold}
+                numberOfLines={3}
               >
                 {title}
               </BodyText>
               {summary && (
                 <BodyText
-                  fontSize={15} // Slightly larger than standard 14px
-                  lineHeight={22} // Better line height
+                  fontSize={16}
+                  lineHeight={26}
+                  letterSpacing={0.3}
                   color="$textSecondary"
-                  numberOfLines={4} // More lines visible in hero card
+                  numberOfLines={4}
                 >
                   {summary}
                 </BodyText>

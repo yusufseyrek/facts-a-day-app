@@ -2,6 +2,7 @@ import { Text, styled } from '@tamagui/core';
 import { tokens } from '../theme/tokens';
 
 export const H1 = styled(Text, {
+  fontFamily: 'SourceSansPro_700Bold',
   fontSize: tokens.fontSize.h1,
   fontWeight: tokens.fontWeight.bold,
   color: '$text',
@@ -9,6 +10,7 @@ export const H1 = styled(Text, {
 });
 
 export const H2 = styled(Text, {
+  fontFamily: 'SourceSansPro_700Bold',
   fontSize: tokens.fontSize.h2,
   fontWeight: tokens.fontWeight.bold,
   color: '$text',
@@ -16,6 +18,7 @@ export const H2 = styled(Text, {
 });
 
 export const BodyText = styled(Text, {
+  fontFamily: 'SourceSansPro_400Regular',
   fontSize: tokens.fontSize.body,
   fontWeight: tokens.fontWeight.regular,
   color: '$textSecondary',
@@ -23,6 +26,7 @@ export const BodyText = styled(Text, {
 });
 
 export const LabelText = styled(Text, {
+  fontFamily: 'SourceSansPro_600SemiBold',
   fontSize: tokens.fontSize.label,
   fontWeight: tokens.fontWeight.medium,
   color: '$text',

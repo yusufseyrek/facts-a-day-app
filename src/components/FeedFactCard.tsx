@@ -27,7 +27,7 @@ const ContentRow = styled(XStack, {
 
 const TextContainer = styled(YStack, {
   flex: 1,
-  gap: tokens.space.xs,
+  gap: tokens.space.sm,
 });
 
 const FeedFactCardComponent = ({
@@ -92,8 +92,9 @@ const FeedFactCardComponent = ({
           <ContentRow>
             <TextContainer>
               <BodyText
-                fontSize={16}
-                lineHeight={22}
+                fontSize={17}
+                lineHeight={26}
+                letterSpacing={0.2}
                 color="$text"
                 fontWeight={tokens.fontWeight.semibold}
                 numberOfLines={2}
@@ -102,8 +103,9 @@ const FeedFactCardComponent = ({
               </BodyText>
               {summary && (
                 <BodyText
-                  fontSize={14}
-                  lineHeight={20}
+                  fontSize={15}
+                  lineHeight={24}
+                  letterSpacing={0.2}
                   color="$textSecondary"
                   numberOfLines={3}
                 >

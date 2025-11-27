@@ -29,9 +29,9 @@ const ContentScrollView = styled(ScrollView, {
 });
 
 const ContentInner = styled(YStack, {
-  gap: tokens.space.lg,
+  gap: tokens.space.xl,
   paddingTop: tokens.space.xl,
-  paddingBottom: tokens.space.xl,
+  paddingBottom: tokens.space.xxl,
 });
 
 const FactImage = styled(Image, {
@@ -47,7 +47,10 @@ const BadgesRow = styled(XStack, {
 
 const SourceSection = styled(YStack, {
   gap: tokens.space.xs,
-  paddingTop: tokens.space.md,
+  paddingTop: tokens.space.sm,
+  borderTopWidth: 1,
+  borderTopColor: "$border",
+  marginTop: tokens.space.sm,
 });
 
 // Helper function to format slug to title case
@@ -91,13 +94,18 @@ export function FactCard({ fact, onReadMore }: FactCardProps) {
       <ContentScrollView showsVerticalScrollIndicator={false}>
         <ContentInner>
           {/* Main Content */}
-          <BodyText fontSize={16} lineHeight={26} color="$text">
+          <BodyText
+            fontSize={18}
+            lineHeight={32}
+            letterSpacing={0.3}
+            color="$text"
+          >
             {fact.content}
           </BodyText>
 
           {/* Image */}
           {fact.image_url && (
-            <FactImage source={{ uri: fact.image_url }} resizeMode="cover" />
+            <FactImage source={{ uri: fact.image_url }} resizeMode="contain" />
           )}
 
           {/* Badges */}
@@ -112,7 +120,8 @@ export function FactCard({ fact, onReadMore }: FactCardProps) {
             <SourceSection>
               <Pressable onPress={handleSourcePress}>
                 <BodyText
-                  fontSize={14}
+                  fontSize={15}
+                  lineHeight={22}
                   color="$primary"
                   textDecorationLine="underline"
                 >
@@ -129,7 +138,10 @@ export function FactCard({ fact, onReadMore }: FactCardProps) {
 }
 
 // Helper to extract domain from URL
-function extractDomain(url: string, t: ReturnType<typeof useTranslation>['t']): string {
+function extractDomain(
+  url: string,
+  t: ReturnType<typeof useTranslation>["t"]
+): string {
   try {
     const urlObj = new URL(url);
     return urlObj.hostname.replace("www.", "");

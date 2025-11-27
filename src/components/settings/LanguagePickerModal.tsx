@@ -217,6 +217,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: tokens.fontSize.h2,
     fontWeight: tokens.fontWeight.bold,
+    fontFamily: 'SourceSansPro_700Bold',
   },
   closeButton: {
     padding: tokens.space.xs,
@@ -259,12 +260,14 @@ const styles = StyleSheet.create({
   languageName: {
     fontSize: tokens.fontSize.body,
     fontWeight: tokens.fontWeight.semibold,
+    fontFamily: 'SourceSansPro_600SemiBold',
     marginBottom: 2,
     textAlign: 'center',
   },
   languageSubtext: {
     fontSize: tokens.fontSize.small,
     fontWeight: tokens.fontWeight.regular,
+    fontFamily: 'SourceSansPro_400Regular',
     textAlign: 'center',
   },
   loadingOverlay: {
@@ -286,5 +289,6 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: tokens.fontSize.body,
     fontWeight: tokens.fontWeight.medium,
+    fontFamily: 'SourceSansPro_600SemiBold',
   },
 });

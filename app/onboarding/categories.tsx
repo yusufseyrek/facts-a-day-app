@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ScrollView, ActivityIndicator } from "react-native";
+import { ScrollView, ActivityIndicator, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { View, styled } from "@tamagui/core";
@@ -48,6 +48,9 @@ const ButtonContainer = styled(View, {
   paddingTop: tokens.space.md,
 });
 
+// Tablet breakpoint (iPad mini is 768px wide)
+const TABLET_BREAKPOINT = 768;
+
 export default function Categories() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
@@ -55,6 +58,12 @@ export default function Categories() {
   const { selectedCategories, setSelectedCategories, isInitialized, downloadFacts } = useOnboarding();
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { width } = useWindowDimensions();
+
+  // Responsive sizing for tablets
+  const isTablet = width >= TABLET_BREAKPOINT;
+  const iconSize = isTablet ? 48 : 32;
+  const labelFontSize = isTablet ? tokens.fontSize.body : tokens.fontSize.small;
 
   // Guard: redirect to language selection if not initialized
   useEffect(() => {
@@ -132,10 +141,11 @@ export default function Categories() {
                 {row.map((category) => (
                   <CategoryCard
                     key={category.slug}
-                    icon={getLucideIcon(category.icon, 32)}
+                    icon={getLucideIcon(category.icon, iconSize)}
                     label={category.name}
                     selected={selectedCategories.includes(category.slug)}
                     onPress={() => toggleCategory(category.slug)}
+                    labelFontSize={labelFontSize}
                   />
                 ))}
                 {/* Add empty placeholders for the last row if needed */}

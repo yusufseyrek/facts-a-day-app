@@ -68,7 +68,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
       <Header>
         {/* Title */}
         <TitleContainer>
-          <H1 fontSize={24} lineHeight={32}>
+          <H1 fontSize={22} lineHeight={30} letterSpacing={-0.3}>
             {fact.title || fact.content.substring(0, 80) + '...'}
           </H1>
         </TitleContainer>

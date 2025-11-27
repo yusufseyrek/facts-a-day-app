@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { ScrollView, Pressable } from "react-native";
+import { ScrollView, Pressable, useWindowDimensions } from "react-native";
 import { styled, Text } from "@tamagui/core";
 import { YStack, XStack, View } from "tamagui";
 import { useRouter } from "expo-router";
@@ -60,13 +60,16 @@ const LanguageCard = styled(View, {
 });
 
 const FlagText = styled(Text, {
-  fontSize: 40,
+  // Base size, will be overridden dynamically for tablets
 });
 
 const LanguageName = styled(BodyText, {
   textAlign: "center",
   fontWeight: tokens.fontWeight.semibold,
 });
+
+// Tablet breakpoint (iPad mini is 768px wide)
+const TABLET_BREAKPOINT = 768;
 
 const ButtonContainer = styled(View, {
   paddingTop: tokens.space.md,
@@ -98,6 +101,12 @@ export default function LanguageSelectionScreen() {
     useState<SupportedLocale>(locale);
   const { isInitializing, initializationError, initializeOnboarding } =
     useOnboarding();
+  const { width } = useWindowDimensions();
+
+  // Responsive sizing for tablets
+  const isTablet = width >= TABLET_BREAKPOINT;
+  const flagFontSize = isTablet ? 56 : 40;
+  const nameFontSize = isTablet ? tokens.fontSize.h2 : tokens.fontSize.body;
 
   const handleLanguageSelect = (languageCode: SupportedLocale) => {
     setSelectedLanguage(languageCode);
@@ -150,8 +159,9 @@ export default function LanguageSelectionScreen() {
                         selected={selectedLanguage === language.code}
                         opacity={pressed ? 0.7 : 1}
                       >
-                        <FlagText>{language.flag}</FlagText>
+                        <FlagText fontSize={flagFontSize}>{language.flag}</FlagText>
                         <LanguageName
+                          fontSize={nameFontSize}
                           color={
                             selectedLanguage === language.code
                               ? "#FFFFFF"
@@ -194,10 +204,10 @@ export default function LanguageSelectionScreen() {
 
           {initializationError && (
             <YStack gap="$sm" paddingTop="$md">
-              <BodyText color="$error" textAlign="center" fontSize={tokens.fontSize.small}>
+              <BodyText color="#FF6B6B" textAlign="center" fontSize={tokens.fontSize.small}>
                 {initializationError}
               </BodyText>
-              <BodyText color="$text" textAlign="center" fontSize={tokens.fontSize.small}>
+              <BodyText color="#FFFFFF" textAlign="center" fontSize={tokens.fontSize.small}>
                 {t("checkInternetConnection")}
               </BodyText>
             </YStack>

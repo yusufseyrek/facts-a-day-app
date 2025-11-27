@@ -62,9 +62,10 @@ export interface CategoryCardProps {
   label: string;
   selected: boolean;
   onPress: () => void;
+  labelFontSize?: number;
 }
 
-const CategoryCardComponent = ({ icon, label, selected, onPress }: CategoryCardProps) => {
+const CategoryCardComponent = ({ icon, label, selected, onPress, labelFontSize }: CategoryCardProps) => {
   const iconColor = selected ? '#FFFFFF' : tokens.color.light.textSecondary;
 
   return (
@@ -88,7 +89,7 @@ const CategoryCardComponent = ({ icon, label, selected, onPress }: CategoryCardP
               fontWeight={tokens.fontWeight.medium}
               color={selected ? '#FFFFFF' : '$text'}
               textAlign="center"
-              fontSize={tokens.fontSize.small}
+              fontSize={labelFontSize ?? tokens.fontSize.small}
               numberOfLines={2}
             >
               {label}
@@ -104,7 +105,8 @@ const CategoryCardComponent = ({ icon, label, selected, onPress }: CategoryCardP
 export const CategoryCard = React.memo(CategoryCardComponent, (prevProps, nextProps) => {
   return (
     prevProps.label === nextProps.label &&
-    prevProps.selected === nextProps.selected
+    prevProps.selected === nextProps.selected &&
+    prevProps.labelFontSize === nextProps.labelFontSize
     // Don't compare icon and onPress as they may be recreated but functionally equivalent
   );
 });

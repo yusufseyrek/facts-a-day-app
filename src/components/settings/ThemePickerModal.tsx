@@ -188,6 +188,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: tokens.fontSize.h2,
     fontWeight: tokens.fontWeight.bold,
+    fontFamily: 'SourceSansPro_700Bold',
   },
   closeButton: {
     padding: tokens.space.xs,
@@ -223,9 +224,11 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: tokens.fontSize.body,
     fontWeight: tokens.fontWeight.semibold,
+    fontFamily: 'SourceSansPro_600SemiBold',
   },
   optionDescription: {
     fontSize: tokens.fontSize.small,
     fontWeight: tokens.fontWeight.regular,
+    fontFamily: 'SourceSansPro_400Regular',
   },
 });

@@ -334,6 +334,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: tokens.fontSize.h2,
     fontWeight: tokens.fontWeight.bold,
+    fontFamily: 'SourceSansPro_700Bold',
   },
   closeButton: {
     padding: tokens.space.xs,
@@ -349,6 +350,7 @@ const styles = StyleSheet.create({
   description: {
     fontSize: tokens.fontSize.body,
     fontWeight: tokens.fontWeight.medium,
+    fontFamily: 'SourceSansPro_600SemiBold',
     textAlign: 'center',
     marginBottom: tokens.space.sm,
   },
@@ -364,6 +366,7 @@ const styles = StyleSheet.create({
   timeLabel: {
     fontSize: tokens.fontSize.body,
     fontWeight: tokens.fontWeight.semibold,
+    fontFamily: 'SourceSansPro_600SemiBold',
   },
   removeButton: {
     padding: tokens.space.xs,
@@ -391,9 +394,11 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: tokens.fontSize.body,
     fontWeight: tokens.fontWeight.medium,
+    fontFamily: 'SourceSansPro_600SemiBold',
   },
   helperText: {
     fontSize: tokens.fontSize.small,
+    fontFamily: 'SourceSansPro_400Regular',
     textAlign: 'center',
     marginTop: tokens.space.sm,
   },
@@ -413,5 +418,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: tokens.fontSize.body,
     fontWeight: tokens.fontWeight.semibold,
+    fontFamily: 'SourceSansPro_600SemiBold',
   },
 });

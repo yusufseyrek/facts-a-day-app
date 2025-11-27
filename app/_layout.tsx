@@ -13,6 +13,12 @@ import * as Notifications from 'expo-notifications';
 import { initializeSentry } from '../src/config/sentry';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import * as Sentry from '@sentry/react-native';
+import {
+  useFonts,
+  SourceSansPro_400Regular,
+  SourceSansPro_600SemiBold,
+  SourceSansPro_700Bold,
+} from '@expo-google-fonts/source-sans-pro';
 
 Sentry.init({
   dsn: 'https://3d61ec20d1f2a0b49f22193bf79583be@o4510405546672128.ingest.de.sentry.io/4510405547851856',
@@ -119,6 +125,12 @@ export default Sentry.wrap(function RootLayout() {
   const [initialOnboardingStatus, setInitialOnboardingStatus] = useState<boolean | null>(null);
   const [isDbReady, setIsDbReady] = useState(false);
 
+  const [fontsLoaded] = useFonts({
+    SourceSansPro_400Regular,
+    SourceSansPro_600SemiBold,
+    SourceSansPro_700Bold,
+  });
+
   useEffect(() => {
     initializeApp();
   }, []);
@@ -153,8 +165,8 @@ export default Sentry.wrap(function RootLayout() {
     }
   };
 
-  // Show loading while initializing app and checking onboarding status
-  if (!isDbReady || initialOnboardingStatus === null) {
+  // Show loading while initializing app, loading fonts, and checking onboarding status
+  if (!isDbReady || initialOnboardingStatus === null || !fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />
