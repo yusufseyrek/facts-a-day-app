@@ -189,9 +189,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
           {/* Main Content */}
           <BodyText
-            fontSize={17}
-            lineHeight={28}
-            letterSpacing={0.2}
+            fontSize={18}
+            lineHeight={32}
+            letterSpacing={0.3}
             color="$text"
           >
             {fact.content}
