@@ -1,9 +1,58 @@
 import { Tabs } from "expo-router";
 import { Lightbulb, Star, Settings } from "@tamagui/lucide-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Pressable, Animated } from "react-native";
+import { useRef, useCallback } from "react";
+import type { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 import { tokens } from "../../src/theme/tokens";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
+
+function AnimatedTabButton({
+  children,
+  onPress,
+  onLongPress,
+  accessibilityLabel,
+  accessibilityRole,
+  accessibilityState,
+  testID,
+}: BottomTabBarButtonProps) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = useCallback(() => {
+    Animated.spring(scale, {
+      toValue: 0.85,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  }, [scale]);
+
+  const handlePressOut = useCallback(() => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 8,
+    }).start();
+  }, [scale]);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole={accessibilityRole}
+      accessibilityState={accessibilityState}
+      testID={testID}
+      style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+    >
+      <Animated.View style={{ transform: [{ scale }] }}>{children}</Animated.View>
+    </Pressable>
+  );
+}
 
 export default function TabLayout() {
   const { theme } = useTheme();
@@ -43,6 +92,7 @@ export default function TabLayout() {
         options={{
           title: t("home"),
           tabBarIcon: ({ color }) => <Lightbulb size={28} color={color} />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} />,
         }}
       />
       <Tabs.Screen
@@ -50,6 +100,7 @@ export default function TabLayout() {
         options={{
           title: t("favorites"),
           tabBarIcon: ({ color }) => <Star size={28} color={color} />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} />,
         }}
       />
       <Tabs.Screen
@@ -57,6 +108,7 @@ export default function TabLayout() {
         options={{
           title: t("settings"),
           tabBarIcon: ({ color }) => <Settings size={28} color={color} />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} />,
         }}
       />
     </Tabs>
