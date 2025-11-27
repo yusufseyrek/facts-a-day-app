@@ -5,7 +5,6 @@ import * as Haptics from "expo-haptics";
 import { styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
 import { Heart, Share as ShareIcon, Flag } from "@tamagui/lucide-icons";
-import { LabelText } from "./Typography";
 import * as database from "../services/database";
 import * as api from "../services/api";
 import { useTranslation } from "../i18n";
@@ -21,13 +20,13 @@ const Container = styled(YStack, {
   borderTopWidth: 1,
   borderTopColor: "$border",
   backgroundColor: "$background",
+  paddingVertical: 12,
 });
 
 const ActionsRow = styled(XStack, {
   justifyContent: "space-around",
   alignItems: "center",
-  height: 60,
-  paddingTop: 10,
+  height: 48,
 });
 
 export function FactActions({
@@ -119,22 +118,17 @@ export function FactActions({
           <Pressable
             onPress={handleLike}
             style={({ pressed }) => ({
-              alignItems: "flex-end",
-              justifyContent: "flex-end",
+              alignItems: "center",
+              justifyContent: "center",
               opacity: pressed ? 0.6 : 1,
-              paddingHorizontal: 20,
+              padding: 12,
             })}
           >
-            <YStack alignItems="center" gap={4}>
-              <Heart
-                size={24}
-                color={isFavorited ? "#EF4444" : "#EF4444"}
-                fill={isFavorited ? "#EF4444" : "none"}
-              />
-              <LabelText fontSize={11} color="#EF4444">
-                {t("like")}
-              </LabelText>
-            </YStack>
+            <Heart
+              size={26}
+              color={isFavorited ? "#EF4444" : "#EF4444"}
+              fill={isFavorited ? "#EF4444" : "none"}
+            />
           </Pressable>
 
           {/* Share Button - Green */}
@@ -144,15 +138,10 @@ export function FactActions({
               alignItems: "center",
               justifyContent: "center",
               opacity: pressed ? 0.6 : 1,
-              paddingHorizontal: 20,
+              padding: 12,
             })}
           >
-            <YStack alignItems="center" gap={4}>
-              <ShareIcon size={24} color="#10B981" />
-              <LabelText fontSize={11} color="#10B981">
-                {t("share")}
-              </LabelText>
-            </YStack>
+            <ShareIcon size={26} color="#10B981" />
           </Pressable>
 
           {/* Report Button - Gray */}
@@ -163,15 +152,10 @@ export function FactActions({
               alignItems: "center",
               justifyContent: "center",
               opacity: pressed ? 0.6 : isSubmittingReport ? 0.5 : 1,
-              paddingHorizontal: 20,
+              padding: 12,
             })}
           >
-            <YStack alignItems="center" gap={4}>
-              <Flag size={24} color="#6B7280" />
-              <LabelText fontSize={11} color="#6B7280">
-                {t("report")}
-              </LabelText>
-            </YStack>
+            <Flag size={26} color="#6B7280" />
           </Pressable>
         </ActionsRow>
       </Container>

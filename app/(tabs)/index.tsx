@@ -9,6 +9,7 @@ import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { Clock } from "@tamagui/lucide-icons";
 import { useRouter, useFocusEffect } from "expo-router";
+import { Image } from "expo-image";
 import { tokens } from "../../src/theme/tokens";
 import {
   H1,
@@ -26,6 +27,18 @@ import { BannerAd } from "../../src/components/ads";
 import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import { onFeedRefresh } from "../../src/services/contentRefresh";
+
+// Prefetch images for faster loading in modal
+const prefetchFactImages = (facts: FactWithRelations[]) => {
+  const imageUrls = facts
+    .filter((fact) => fact.image_url)
+    .map((fact) => fact.image_url!);
+
+  if (imageUrls.length > 0) {
+    Image.prefetch(imageUrls);
+    console.log(`🖼️ Prefetching ${imageUrls.length} fact images`);
+  }
+};
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -145,6 +158,9 @@ function HomeScreen() {
           language: facts[0].language,
         });
       }
+
+      // Prefetch images for faster modal loading
+      prefetchFactImages(facts);
 
       // Group facts by date
       const groupedFacts = groupFactsByDate(facts);
