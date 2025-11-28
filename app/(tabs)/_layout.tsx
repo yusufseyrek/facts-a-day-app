@@ -60,13 +60,19 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
 
   const isDark = theme === "dark";
-  const activeTintColor = tokens.color.light.primary;
+  // Use neon cyan for active tab - subtle but visible
+  const activeTintColor = isDark
+    ? tokens.color.dark.primary // Neon cyan in dark mode
+    : tokens.color.light.primary; // Toned cyan in light mode
   const inactiveTintColor = isDark
     ? tokens.color.dark.textSecondary
     : tokens.color.light.textSecondary;
   const backgroundColor = isDark
     ? tokens.color.dark.surface
     : tokens.color.light.surface;
+  const borderColor = isDark
+    ? tokens.color.dark.border
+    : tokens.color.light.border;
 
   return (
     <Tabs
@@ -77,9 +83,7 @@ export default function TabLayout() {
         tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor,
-          borderTopColor: isDark
-            ? tokens.color.dark.border
-            : tokens.color.light.border,
+          borderTopColor: borderColor,
           borderTopWidth: 1,
           height: 56 + insets.bottom,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,

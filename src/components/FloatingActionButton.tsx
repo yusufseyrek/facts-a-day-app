@@ -1,8 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, View as RNView } from 'react-native';
 import { styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
-import { tokens } from '../theme/tokens';
+import { tokens, useTheme, createGlowStyle } from '../theme';
 
 interface FloatingActionButtonProps {
   icon: React.ComponentType<{ size?: number; color?: string }>;
@@ -17,11 +17,6 @@ const FABContainer = styled(YStack, {
   backgroundColor: '$primary',
   alignItems: 'center',
   justifyContent: 'center',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.3,
-  shadowRadius: 8,
-  elevation: 8,
 });
 
 export function FloatingActionButton({
@@ -29,6 +24,11 @@ export function FloatingActionButton({
   onPress,
   position = 'bottom-right',
 }: FloatingActionButtonProps) {
+  const { theme } = useTheme();
+
+  // Strong cyan glow for FAB
+  const glowStyle = createGlowStyle('cyan', 'strong', theme);
+
   const positionStyle =
     position === 'bottom-right'
       ? {
@@ -46,9 +46,11 @@ export function FloatingActionButton({
 
   return (
     <Pressable onPress={onPress} style={positionStyle}>
-      <FABContainer>
-        <Icon size={24} color="#FFFFFF" />
-      </FABContainer>
+      <RNView style={glowStyle}>
+        <FABContainer>
+          <Icon size={24} color="#FFFFFF" />
+        </FABContainer>
+      </RNView>
     </Pressable>
   );
 }

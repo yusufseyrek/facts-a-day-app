@@ -3,15 +3,15 @@ import { Pressable, Platform, Animated } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { ChevronRight } from "@tamagui/lucide-icons";
-import { tokens } from "../theme/tokens";
+import { tokens, useTheme, getCategoryNeonColor, createGlowStyle, getCategoryNeonColorName } from "../theme";
 import { BodyText } from "./Typography";
-import { useTheme } from "../theme";
 import { LinearGradient } from "expo-linear-gradient";
 
 interface HeroFactCardProps {
   title: string;
   summary?: string;
   categoryColor?: string;
+  categorySlug?: string;
   onPress: () => void;
 }
 
@@ -36,11 +36,21 @@ const TextContainer = styled(YStack, {
 const HeroFactCardComponent = ({
   title,
   summary,
-  categoryColor = "#0066FF",
+  categoryColor,
+  categorySlug,
   onPress,
 }: HeroFactCardProps) => {
   const { theme } = useTheme();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+  // Get neon color based on category slug, fallback to categoryColor or cyan
+  const neonColor = categorySlug
+    ? getCategoryNeonColor(categorySlug, theme)
+    : categoryColor || (theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan);
+
+  const neonColorName = categorySlug
+    ? getCategoryNeonColorName(categorySlug)
+    : "cyan";
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -63,11 +73,26 @@ const HeroFactCardComponent = ({
   // Base background color
   const baseBackground = theme === "dark"
     ? tokens.color.dark.cardBackground
-    : "#FFFFFF";
+    : tokens.color.light.cardBackground;
 
   // Blend category color with base background for solid gradient colors
   // This works better on Android than semi-transparent overlays
   const blendColors = (hex: string, bgHex: string, opacity: number): string => {
+    // Handle rgb format
+    if (hex.startsWith("rgb")) {
+      const match = hex.match(/\d+/g);
+      if (match) {
+        const [r1, g1, b1] = match.map(Number);
+        const r2 = parseInt(bgHex.slice(1, 3), 16);
+        const g2 = parseInt(bgHex.slice(3, 5), 16);
+        const b2 = parseInt(bgHex.slice(5, 7), 16);
+        const r = Math.round(r1 * opacity + r2 * (1 - opacity));
+        const g = Math.round(g1 * opacity + g2 * (1 - opacity));
+        const b = Math.round(b1 * opacity + b2 * (1 - opacity));
+        return `rgb(${r}, ${g}, ${b})`;
+      }
+    }
+
     const r1 = parseInt(hex.slice(1, 3), 16);
     const g1 = parseInt(hex.slice(3, 5), 16);
     const b1 = parseInt(hex.slice(5, 7), 16);
@@ -83,27 +108,24 @@ const HeroFactCardComponent = ({
     return `rgb(${r}, ${g}, ${b})`;
   };
 
-  // Create gradient with blended solid colors
-  const gradientOpacity = theme === "dark" ? [0.12, 0.04] : [0.18, 0.06];
+  // Create gradient with blended neon colors - stronger in dark mode
+  const gradientOpacity = theme === "dark" ? [0.25, 0.08] : [0.15, 0.05];
   const gradientColors: [string, string] = [
-    blendColors(categoryColor, baseBackground, gradientOpacity[0]),
-    blendColors(categoryColor, baseBackground, gradientOpacity[1]),
+    blendColors(neonColor, baseBackground, gradientOpacity[0]),
+    blendColors(neonColor, baseBackground, gradientOpacity[1]),
   ];
 
-  // Enhanced shadow for premium depth
+  // Neon glow effect
+  const glowStyle = createGlowStyle(neonColorName, "medium", theme);
+
+  // Enhanced shadow for premium depth with neon glow
   const cardStyle = {
-    backgroundColor: baseBackground, // Solid background for Android compatibility
-    borderWidth: theme === "dark" ? 0 : 1,
-    borderColor: theme === "dark" ? "transparent" : "#E0E5EB",
-    ...(Platform.OS === "ios" && {
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 }, // Deeper shadow offset
-      shadowOpacity: theme === "dark" ? 0.4 : 0.12, // Stronger shadow
-      shadowRadius: 12, // Larger shadow radius for depth
-    }),
-    ...(Platform.OS === "android" && {
-      elevation: theme === "dark" ? 6 : 4, // Higher elevation for depth
-    }),
+    backgroundColor: baseBackground,
+    borderWidth: 1,
+    borderColor: theme === "dark"
+      ? `${neonColor}30` // Subtle neon border in dark mode
+      : tokens.color.light.border,
+    ...glowStyle,
   };
 
   return (
@@ -158,9 +180,9 @@ const HeroFactCardComponent = ({
               )}
             </TextContainer>
             <ChevronRight
-              size={24} // Larger chevron
+              size={24}
               color={
-                theme === "dark" ? "#8892A6" : tokens.color.light.textSecondary
+                theme === "dark" ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary
               }
             />
           </ContentRow>
@@ -175,7 +197,8 @@ export const HeroFactCard = React.memo(HeroFactCardComponent, (prevProps, nextPr
   return (
     prevProps.title === nextProps.title &&
     prevProps.summary === nextProps.summary &&
-    prevProps.categoryColor === nextProps.categoryColor
+    prevProps.categoryColor === nextProps.categoryColor &&
+    prevProps.categorySlug === nextProps.categorySlug
     // Don't compare onPress as it may be recreated but functionally equivalent
   );
 });

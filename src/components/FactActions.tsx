@@ -9,6 +9,7 @@ import * as database from "../services/database";
 import * as api from "../services/api";
 import { useTranslation } from "../i18n";
 import { ReportFactModal } from "./ReportFactModal";
+import { tokens, useTheme } from "../theme";
 
 interface FactActionsProps {
   factId: number;
@@ -35,6 +36,12 @@ export function FactActions({
   factContent,
 }: FactActionsProps) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+
+  // Neon colors for actions
+  const heartColor = theme === "dark" ? tokens.color.dark.neonRed : tokens.color.light.neonRed;
+  const shareColor = theme === "dark" ? tokens.color.dark.neonGreen : tokens.color.light.neonGreen;
+  const flagColor = theme === "dark" ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
@@ -114,7 +121,7 @@ export function FactActions({
     <>
       <Container>
         <ActionsRow>
-          {/* Like Button - Red */}
+          {/* Like Button - Neon Red/Magenta */}
           <Pressable
             onPress={handleLike}
             style={({ pressed }) => ({
@@ -126,12 +133,12 @@ export function FactActions({
           >
             <Heart
               size={26}
-              color={isFavorited ? "#EF4444" : "#EF4444"}
-              fill={isFavorited ? "#EF4444" : "none"}
+              color={heartColor}
+              fill={isFavorited ? heartColor : "none"}
             />
           </Pressable>
 
-          {/* Share Button - Green */}
+          {/* Share Button - Neon Green */}
           <Pressable
             onPress={handleShare}
             style={({ pressed }) => ({
@@ -141,10 +148,10 @@ export function FactActions({
               padding: 12,
             })}
           >
-            <ShareIcon size={26} color="#10B981" />
+            <ShareIcon size={26} color={shareColor} />
           </Pressable>
 
-          {/* Report Button - Gray */}
+          {/* Report Button - Subtle */}
           <Pressable
             onPress={handleReport}
             disabled={isSubmittingReport}
@@ -155,7 +162,7 @@ export function FactActions({
               padding: 12,
             })}
           >
-            <Flag size={26} color="#6B7280" />
+            <Flag size={26} color={flagColor} />
           </Pressable>
         </ActionsRow>
       </Container>

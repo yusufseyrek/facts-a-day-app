@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { X, Sun, Moon, Smartphone } from '@tamagui/lucide-icons';
-import { useTheme } from '../../theme';
+import { useTheme, createGlowStyle } from '../../theme';
 import { tokens } from '../../theme/tokens';
 import { useTranslation, type TranslationKeys } from '../../i18n';
 import type { ThemeMode } from '../../theme/ThemeProvider';
@@ -91,6 +91,7 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
             <View style={styles.optionsContainer}>
               {themeOptions.map((option) => {
                 const isSelected = themeMode === option.value;
+                const glowStyle = isSelected ? createGlowStyle('cyan', 'medium', theme) : {};
                 return (
                   <Pressable
                     key={option.value}
@@ -109,6 +110,7 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
                               : colors.border,
                             opacity: pressed ? 0.7 : 1,
                           },
+                          glowStyle,
                         ]}
                       >
                         <View style={styles.optionHeader}>

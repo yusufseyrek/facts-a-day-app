@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Platform, ScrollView, Alert } from "react-native";
+import { Platform, ScrollView, Alert, useWindowDimensions } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { useRouter } from "expo-router";
@@ -50,12 +50,20 @@ const TimePickerContainer = styled(YStack, {
   borderColor: "$border",
 });
 
+// Tablet breakpoint (iPad mini is 768px wide)
+const TABLET_BREAKPOINT = 768;
+
 export default function NotificationsScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { notificationTimes, setNotificationTimes, isDownloadingFacts, waitForDownloadComplete } = useOnboarding();
   const [isScheduling, setIsScheduling] = useState(false);
+  const { width } = useWindowDimensions();
+
+  // Responsive sizing for tablets
+  const isTablet = width >= TABLET_BREAKPOINT;
+  const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
 
   const handleEnableNotifications = async () => {
     try {
@@ -150,7 +158,7 @@ export default function NotificationsScreen() {
 
               <YStack gap="$sm" alignItems="center">
                 <H1 textAlign="center">{t("stayInformed")}</H1>
-                <BodyText textAlign="center" color="$textSecondary">
+                <BodyText textAlign="center" color="$textSecondary" fontSize={secondaryFontSize}>
                   {t("notificationRequired")}
                 </BodyText>
               </YStack>

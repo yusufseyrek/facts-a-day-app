@@ -7,7 +7,7 @@ import { YStack, Text, XStack } from "tamagui";
 import { useRouter } from "expo-router";
 import { CheckCircle, Sparkle, Star } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { tokens } from "../../src/theme/tokens";
+import { tokens, getNeonColors } from "../../src/theme";
 import { BodyText } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
@@ -81,13 +81,15 @@ const Particle = ({ delay, index }: { delay: number; index: number }) => {
     outputRange: ["0deg", `${360 + Math.random() * 360}deg`],
   });
 
+  // Use neon colors for particles
+  const neonColors = getNeonColors(theme);
   const colors = [
-    tokens.color.light.primary,
-    tokens.color.light.success,
-    "#FFD700",
-    "#FF69B4",
-    "#00CED1",
-    "#FF6347",
+    neonColors.cyan,
+    neonColors.green,
+    neonColors.yellow,
+    neonColors.magenta,
+    neonColors.purple,
+    neonColors.orange,
   ];
   const particleColor = colors[index % colors.length];
 
@@ -116,9 +118,12 @@ const Particle = ({ delay, index }: { delay: number; index: number }) => {
 };
 
 // Ring pulse animation component
-const PulseRing = ({ delay }: { delay: number }) => {
+const PulseRing = ({ delay, theme }: { delay: number; theme: "light" | "dark" }) => {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  // Use neon cyan for pulse ring
+  const ringColor = theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan;
 
   useEffect(() => {
     Animated.loop(
@@ -160,7 +165,7 @@ const PulseRing = ({ delay }: { delay: number }) => {
         height: 140,
         borderRadius: 70,
         borderWidth: 2,
-        borderColor: tokens.color.light.primary,
+        borderColor: ringColor,
         transform: [{ scale: scaleAnim }],
         opacity: opacityAnim,
       }}
@@ -169,8 +174,12 @@ const PulseRing = ({ delay }: { delay: number }) => {
 };
 
 // Progress bar component
-const ProgressBar = ({ duration }: { duration: number }) => {
+const ProgressBar = ({ duration, theme }: { duration: number; theme: "light" | "dark" }) => {
   const widthAnim = useRef(new Animated.Value(0)).current;
+
+  // Use neon cyan for progress bar
+  const barColor = theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan;
+  const bgColor = theme === "dark" ? "rgba(0, 212, 255, 0.1)" : "rgba(0, 153, 204, 0.1)";
 
   useEffect(() => {
     Animated.timing(widthAnim, {
@@ -191,7 +200,7 @@ const ProgressBar = ({ duration }: { duration: number }) => {
       style={{
         width: screenWidth * 0.6,
         height: 3,
-        backgroundColor: "rgba(0, 102, 255, 0.1)",
+        backgroundColor: bgColor,
         borderRadius: 1.5,
         overflow: "hidden",
         marginTop: 40,
@@ -201,7 +210,7 @@ const ProgressBar = ({ duration }: { duration: number }) => {
         style={{
           width,
           height: "100%",
-          backgroundColor: tokens.color.light.primary,
+          backgroundColor: barColor,
           borderRadius: 1.5,
         }}
       />
@@ -374,9 +383,9 @@ export default function OnboardingSuccessScreen() {
     []
   );
 
-  // Gradient colors based on animation
-  const darkColors = ["#0A0E27", "#162447", "#1F3A5F"] as const;
-  const lightColors = ["#F0F7FF", "#E6F0FF", "#D6E7FF"] as const;
+  // Gradient colors based on theme - using neon palette
+  const darkColors = [tokens.color.dark.background, "#0F1E36", "#1A3D5C"] as const;
+  const lightColors = [tokens.color.light.background, "#E0F7FF", "#D0EFFF"] as const;
   const gradientColors = theme === "dark" ? darkColors : lightColors;
 
   return (
@@ -395,9 +404,9 @@ export default function OnboardingSuccessScreen() {
                 {/* Icon with particles and pulse rings */}
                 <View style={{ width: 200, height: 200, alignItems: "center", justifyContent: "center" }}>
                   {/* Pulse rings */}
-                  <PulseRing delay={0} />
-                  <PulseRing delay={1000} />
-                  <PulseRing delay={2000} />
+                  <PulseRing delay={0} theme={theme} />
+                  <PulseRing delay={1000} theme={theme} />
+                  <PulseRing delay={2000} theme={theme} />
 
                   {/* Particles */}
                   {particles}
@@ -411,9 +420,9 @@ export default function OnboardingSuccessScreen() {
                         { scale: iconDropScale },
                         { rotate: iconRotate },
                       ],
-                      shadowColor: tokens.color.light.primary,
+                      shadowColor: theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan,
                       shadowOffset: { width: 0, height: 10 },
-                      shadowOpacity: 0.15,
+                      shadowOpacity: theme === "dark" ? 0.4 : 0.2,
                       shadowRadius: 20,
                       elevation: 10,
                     }}
@@ -426,7 +435,7 @@ export default function OnboardingSuccessScreen() {
                       <IconContainer>
                         <CheckCircle
                           size={70}
-                          color={tokens.color.light.success}
+                          color={theme === "dark" ? tokens.color.dark.neonGreen : tokens.color.light.neonGreen}
                           strokeWidth={2.5}
                         />
                       </IconContainer>
@@ -482,7 +491,7 @@ export default function OnboardingSuccessScreen() {
 
                 {/* Progress bar */}
                 <Animated.View style={{ opacity: progressOpacity }}>
-                  <ProgressBar duration={2000} />
+                  <ProgressBar duration={2000} theme={theme} />
                 </Animated.View>
               </YStack>
             </ContentContainer>

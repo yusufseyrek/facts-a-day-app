@@ -1,10 +1,13 @@
 import React from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, View as RNView, useWindowDimensions } from 'react-native';
 import { View, styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Check } from '@tamagui/lucide-icons';
 import { BodyText } from './Typography';
-import { tokens } from '../theme/tokens';
+import { tokens, useTheme, getCategoryNeonColor, getCategoryNeonColorName, createGlowStyle } from '../theme';
+
+// Tablet breakpoint
+const TABLET_WIDTH = 768;
 
 const Card = styled(YStack, {
   position: 'relative',
@@ -15,23 +18,6 @@ const Card = styled(YStack, {
   alignItems: 'center',
   justifyContent: 'center',
   gap: tokens.space.sm,
-
-  variants: {
-    selected: {
-      true: {
-        backgroundColor: '$primary',
-        borderColor: '$primary',
-      },
-      false: {
-        backgroundColor: '$surface',
-        borderColor: '$border',
-      },
-    },
-  } as const,
-
-  defaultVariants: {
-    selected: false,
-  },
 });
 
 const CheckmarkContainer = styled(View, {
@@ -41,7 +27,6 @@ const CheckmarkContainer = styled(View, {
   width: 24,
   height: 24,
   borderRadius: tokens.radius.full,
-  backgroundColor: '$primary',
   alignItems: 'center',
   justifyContent: 'center',
 });
@@ -60,42 +45,75 @@ const LabelContainer = styled(YStack, {
 export interface CategoryCardProps {
   icon: React.ReactNode;
   label: string;
+  slug?: string;
   selected: boolean;
   onPress: () => void;
   labelFontSize?: number;
 }
 
-const CategoryCardComponent = ({ icon, label, selected, onPress, labelFontSize }: CategoryCardProps) => {
-  const iconColor = selected ? '#FFFFFF' : tokens.color.light.textSecondary;
+const CategoryCardComponent = ({ icon, label, slug, selected, onPress, labelFontSize }: CategoryCardProps) => {
+  const { theme } = useTheme();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= TABLET_WIDTH;
+
+  // Get neon color for this category
+  const categorySlug = slug || label.toLowerCase().replace(/\s+/g, '-');
+  const neonColor = getCategoryNeonColor(categorySlug, theme);
+  const neonColorName = getCategoryNeonColorName(categorySlug);
+
+  // Colors based on selection state
+  const iconColor = selected
+    ? '#FFFFFF'
+    : theme === 'dark' ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
+
+  const backgroundColor = selected
+    ? neonColor
+    : theme === 'dark' ? tokens.color.dark.surface : tokens.color.light.surface;
+
+  const borderColor = selected
+    ? neonColor
+    : theme === 'dark' ? tokens.color.dark.border : tokens.color.light.border;
+
+  // Glow effect when selected
+  const glowStyle = selected ? createGlowStyle(neonColorName, 'medium', theme) : {};
 
   return (
     <Pressable onPress={onPress} style={{ flex: 1 }}>
       {({ pressed }) => (
-        <Card selected={selected} opacity={pressed ? 0.7 : 1}>
-          {selected && (
-            <CheckmarkContainer>
-              <Check size={16} color="#FFFFFF" strokeWidth={3} />
-            </CheckmarkContainer>
-          )}
-          <IconContainer>
-            {React.isValidElement(icon)
-              ? React.cloneElement(icon as React.ReactElement<any>, {
-                  color: iconColor,
-                })
-              : icon}
-          </IconContainer>
-          <LabelContainer>
-            <BodyText
-              fontWeight={tokens.fontWeight.medium}
-              color={selected ? '#FFFFFF' : '$text'}
-              textAlign="center"
-              fontSize={labelFontSize ?? tokens.fontSize.small}
-              numberOfLines={2}
-            >
-              {label}
-            </BodyText>
-          </LabelContainer>
-        </Card>
+        <RNView style={selected ? glowStyle : undefined}>
+          <Card
+            opacity={pressed ? 0.7 : 1}
+            style={{
+              backgroundColor,
+              borderColor,
+            }}
+          >
+            {selected && (
+              <CheckmarkContainer style={{ backgroundColor: '#FFFFFF30' }}>
+                <Check size={16} color="#FFFFFF" strokeWidth={3} />
+              </CheckmarkContainer>
+            )}
+            <IconContainer>
+              {React.isValidElement(icon)
+                ? React.cloneElement(icon as React.ReactElement<any>, {
+                    color: iconColor,
+                    size: isTablet ? 32 : 24,
+                  })
+                : icon}
+            </IconContainer>
+            <LabelContainer>
+              <BodyText
+                fontWeight={tokens.fontWeight.medium}
+                color={selected ? '#FFFFFF' : '$text'}
+                textAlign="center"
+                fontSize={labelFontSize ?? (isTablet ? tokens.fontSize.body : tokens.fontSize.small)}
+                numberOfLines={2}
+              >
+                {label}
+              </BodyText>
+            </LabelContainer>
+          </Card>
+        </RNView>
       )}
     </Pressable>
   );
@@ -105,6 +123,7 @@ const CategoryCardComponent = ({ icon, label, selected, onPress, labelFontSize }
 export const CategoryCard = React.memo(CategoryCardComponent, (prevProps, nextProps) => {
   return (
     prevProps.label === nextProps.label &&
+    prevProps.slug === nextProps.slug &&
     prevProps.selected === nextProps.selected &&
     prevProps.labelFontSize === nextProps.labelFontSize
     // Don't compare icon and onPress as they may be recreated but functionally equivalent

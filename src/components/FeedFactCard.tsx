@@ -1,11 +1,10 @@
 import React from "react";
-import { Pressable, Platform, Animated } from "react-native";
+import { Pressable, Animated } from "react-native";
 import { styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
 import { ChevronRight } from "@tamagui/lucide-icons";
-import { tokens } from "../theme/tokens";
+import { tokens, useTheme, createGlowStyle } from "../theme";
 import { BodyText } from "./Typography";
-import { useTheme } from "../theme";
 
 interface FeedFactCardProps {
   title: string;
@@ -56,25 +55,22 @@ const FeedFactCardComponent = ({
     }).start();
   };
 
-  // Better background color for light mode contrast
+  // Background colors using new neon theme
   const backgroundColor = theme === "dark"
     ? tokens.color.dark.cardBackground
-    : "#FAFBFC"; // Slightly off-white for better distinction
+    : tokens.color.light.cardBackground;
 
-  // Shadow and border styling
+  // Subtle cyan glow for cards
+  const glowStyle = createGlowStyle("cyan", "subtle", theme);
+
+  // Shadow and border styling with subtle neon glow
   const cardStyle = {
     backgroundColor,
-    borderWidth: theme === "dark" ? 0 : 1,
-    borderColor: theme === "dark" ? "transparent" : "#E8EBF0",
-    ...(Platform.OS === "ios" && {
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: theme === "dark" ? 0.3 : 0.08,
-      shadowRadius: 8,
-    }),
-    ...(Platform.OS === "android" && {
-      elevation: theme === "dark" ? 4 : 2,
-    }),
+    borderWidth: 1,
+    borderColor: theme === "dark"
+      ? tokens.color.dark.border
+      : tokens.color.light.border,
+    ...glowStyle,
   };
 
   return (
@@ -116,7 +112,7 @@ const FeedFactCardComponent = ({
             <ChevronRight
               size={20}
               color={
-                theme === "dark" ? "#8892A6" : tokens.color.light.textSecondary
+                theme === "dark" ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary
               }
             />
           </ContentRow>

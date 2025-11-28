@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, ActivityIndicator, Alert, Pressable } from 'react-native';
+import { ScrollView, ActivityIndicator, Alert, Pressable, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { View, styled } from '@tamagui/core';
@@ -59,6 +59,9 @@ const ButtonContainer = styled(View, {
   paddingTop: tokens.space.md,
 });
 
+// Tablet breakpoint (iPad mini is 768px wide)
+const TABLET_BREAKPOINT = 768;
+
 export default function CategoriesSettings() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
@@ -68,6 +71,13 @@ export default function CategoriesSettings() {
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const { width } = useWindowDimensions();
+
+  // Responsive sizing for tablets
+  const isTablet = width >= TABLET_BREAKPOINT;
+  const iconSize = isTablet ? 48 : 32;
+  const labelFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
+  const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
 
   useEffect(() => {
     loadData();
@@ -174,7 +184,7 @@ export default function CategoriesSettings() {
               <H1>{t('settingsCategories')}</H1>
             </HeaderText>
           </HeaderRow>
-          <BodyText color="$textSecondary">
+          <BodyText color="$textSecondary" fontSize={secondaryFontSize}>
             {t('selectCategoriesMinimum')}
           </BodyText>
         </HeaderContainer>
@@ -186,10 +196,11 @@ export default function CategoriesSettings() {
                 {row.map((category) => (
                   <CategoryCard
                     key={category.slug}
-                    icon={getLucideIcon(category.icon, 32)}
+                    icon={getLucideIcon(category.icon, iconSize)}
                     label={category.name}
                     selected={selectedCategories.includes(category.slug)}
                     onPress={() => toggleCategory(category.slug)}
+                    labelFontSize={labelFontSize}
                   />
                 ))}
                 {/* Add empty placeholders for the last row if needed */}

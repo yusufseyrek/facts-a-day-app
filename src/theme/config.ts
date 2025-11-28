@@ -6,6 +6,7 @@ const tamaguiTokens = createTokens({
     // Light theme colors
     lightPrimary: tokens.color.light.primary,
     lightPrimaryLight: tokens.color.light.primaryLight,
+    lightPrimaryGlow: tokens.color.light.primaryGlow,
     lightNeutral: tokens.color.light.neutral,
     lightNeutralLight: tokens.color.light.neutralLight,
     lightBackground: tokens.color.light.background,
@@ -13,11 +14,28 @@ const tamaguiTokens = createTokens({
     lightCardBackground: tokens.color.light.cardBackground,
     lightText: tokens.color.light.text,
     lightTextSecondary: tokens.color.light.textSecondary,
+    lightTextMuted: tokens.color.light.textMuted,
     lightBorder: tokens.color.light.border,
+    lightBorderGlow: tokens.color.light.borderGlow,
+    lightAccent: tokens.color.light.accent,
+    lightAccentLight: tokens.color.light.accentLight,
+    lightAccentGlow: tokens.color.light.accentGlow,
+    // Light neon colors
+    lightNeonCyan: tokens.color.light.neonCyan,
+    lightNeonOrange: tokens.color.light.neonOrange,
+    lightNeonMagenta: tokens.color.light.neonMagenta,
+    lightNeonGreen: tokens.color.light.neonGreen,
+    lightNeonPurple: tokens.color.light.neonPurple,
+    lightNeonYellow: tokens.color.light.neonYellow,
+    lightNeonRed: tokens.color.light.neonRed,
+    lightSuccess: tokens.color.light.success,
+    lightError: tokens.color.light.error,
+    lightWarning: tokens.color.light.warning,
 
     // Dark theme colors
     darkPrimary: tokens.color.dark.primary,
     darkPrimaryLight: tokens.color.dark.primaryLight,
+    darkPrimaryGlow: tokens.color.dark.primaryGlow,
     darkNeutral: tokens.color.dark.neutral,
     darkNeutralLight: tokens.color.dark.neutralLight,
     darkBackground: tokens.color.dark.background,
@@ -25,7 +43,23 @@ const tamaguiTokens = createTokens({
     darkCardBackground: tokens.color.dark.cardBackground,
     darkText: tokens.color.dark.text,
     darkTextSecondary: tokens.color.dark.textSecondary,
+    darkTextMuted: tokens.color.dark.textMuted,
     darkBorder: tokens.color.dark.border,
+    darkBorderGlow: tokens.color.dark.borderGlow,
+    darkAccent: tokens.color.dark.accent,
+    darkAccentLight: tokens.color.dark.accentLight,
+    darkAccentGlow: tokens.color.dark.accentGlow,
+    // Dark neon colors
+    darkNeonCyan: tokens.color.dark.neonCyan,
+    darkNeonOrange: tokens.color.dark.neonOrange,
+    darkNeonMagenta: tokens.color.dark.neonMagenta,
+    darkNeonGreen: tokens.color.dark.neonGreen,
+    darkNeonPurple: tokens.color.dark.neonPurple,
+    darkNeonYellow: tokens.color.dark.neonYellow,
+    darkNeonRed: tokens.color.dark.neonRed,
+    darkSuccess: tokens.color.dark.success,
+    darkError: tokens.color.dark.error,
+    darkWarning: tokens.color.dark.warning,
 
     // Design system specific colors
     primary: tokens.color.light.primary,
@@ -80,6 +114,12 @@ const tamaguiTokens = createTokens({
     body: tokens.fontSize.body,
     label: tokens.fontSize.label,
     small: tokens.fontSize.small,
+    // Tablet-specific sizes
+    h1Tablet: tokens.fontSize.h1Tablet,
+    h2Tablet: tokens.fontSize.h2Tablet,
+    bodyTablet: tokens.fontSize.bodyTablet,
+    labelTablet: tokens.fontSize.labelTablet,
+    smallTablet: tokens.fontSize.smallTablet,
   },
   zIndex: {
     0: 0,
@@ -94,6 +134,7 @@ const tamaguiTokens = createTokens({
 const lightTheme = {
   primary: tokens.color.light.primary,
   primaryLight: tokens.color.light.primaryLight,
+  primaryGlow: tokens.color.light.primaryGlow,
   neutral: tokens.color.light.neutral,
   neutralLight: tokens.color.light.neutralLight,
   background: tokens.color.light.background,
@@ -101,12 +142,30 @@ const lightTheme = {
   cardBackground: tokens.color.light.cardBackground,
   text: tokens.color.light.text,
   textSecondary: tokens.color.light.textSecondary,
+  textMuted: tokens.color.light.textMuted,
   border: tokens.color.light.border,
+  borderGlow: tokens.color.light.borderGlow,
+  accent: tokens.color.light.accent,
+  accentLight: tokens.color.light.accentLight,
+  accentGlow: tokens.color.light.accentGlow,
+  // Neon colors
+  neonCyan: tokens.color.light.neonCyan,
+  neonOrange: tokens.color.light.neonOrange,
+  neonMagenta: tokens.color.light.neonMagenta,
+  neonGreen: tokens.color.light.neonGreen,
+  neonPurple: tokens.color.light.neonPurple,
+  neonYellow: tokens.color.light.neonYellow,
+  neonRed: tokens.color.light.neonRed,
+  // Semantic
+  success: tokens.color.light.success,
+  error: tokens.color.light.error,
+  warning: tokens.color.light.warning,
 };
 
 const darkTheme = {
   primary: tokens.color.dark.primary,
   primaryLight: tokens.color.dark.primaryLight,
+  primaryGlow: tokens.color.dark.primaryGlow,
   neutral: tokens.color.dark.neutral,
   neutralLight: tokens.color.dark.neutralLight,
   background: tokens.color.dark.background,
@@ -114,7 +173,24 @@ const darkTheme = {
   cardBackground: tokens.color.dark.cardBackground,
   text: tokens.color.dark.text,
   textSecondary: tokens.color.dark.textSecondary,
+  textMuted: tokens.color.dark.textMuted,
   border: tokens.color.dark.border,
+  borderGlow: tokens.color.dark.borderGlow,
+  accent: tokens.color.dark.accent,
+  accentLight: tokens.color.dark.accentLight,
+  accentGlow: tokens.color.dark.accentGlow,
+  // Neon colors
+  neonCyan: tokens.color.dark.neonCyan,
+  neonOrange: tokens.color.dark.neonOrange,
+  neonMagenta: tokens.color.dark.neonMagenta,
+  neonGreen: tokens.color.dark.neonGreen,
+  neonPurple: tokens.color.dark.neonPurple,
+  neonYellow: tokens.color.dark.neonYellow,
+  neonRed: tokens.color.dark.neonRed,
+  // Semantic
+  success: tokens.color.dark.success,
+  error: tokens.color.dark.error,
+  warning: tokens.color.dark.warning,
 };
 
 export const config = createTamagui({

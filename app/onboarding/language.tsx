@@ -106,7 +106,9 @@ export default function LanguageSelectionScreen() {
   // Responsive sizing for tablets
   const isTablet = width >= TABLET_BREAKPOINT;
   const flagFontSize = isTablet ? 56 : 40;
-  const nameFontSize = isTablet ? tokens.fontSize.h2 : tokens.fontSize.body;
+  const nameFontSize = isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.body;
+  const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
+  const smallFontSize = isTablet ? tokens.fontSize.smallTablet : tokens.fontSize.small;
 
   const handleLanguageSelect = (languageCode: SupportedLocale) => {
     setSelectedLanguage(languageCode);
@@ -139,7 +141,7 @@ export default function LanguageSelectionScreen() {
 
         <Header>
           <H1>{t("selectLanguage")}</H1>
-          <BodyText color="$textSecondary">
+          <BodyText color="$textSecondary" fontSize={secondaryFontSize}>
             {t("choosePreferredLanguage")}
           </BodyText>
         </Header>
@@ -189,7 +191,7 @@ export default function LanguageSelectionScreen() {
           <BodyText
             textAlign="center"
             color="$textSecondary"
-            fontSize={tokens.fontSize.small}
+            fontSize={smallFontSize}
             paddingTop="$xl"
             paddingBottom="$xl"
           >
@@ -204,10 +206,10 @@ export default function LanguageSelectionScreen() {
 
           {initializationError && (
             <YStack gap="$sm" paddingTop="$md">
-              <BodyText color="#FF6B6B" textAlign="center" fontSize={tokens.fontSize.small}>
+              <BodyText color="#FF6B6B" textAlign="center" fontSize={smallFontSize}>
                 {initializationError}
               </BodyText>
-              <BodyText color="#FFFFFF" textAlign="center" fontSize={tokens.fontSize.small}>
+              <BodyText color="#FFFFFF" textAlign="center" fontSize={smallFontSize}>
                 {t("checkInternetConnection")}
               </BodyText>
             </YStack>

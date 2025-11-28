@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { X, Check } from '@tamagui/lucide-icons';
-import { useTheme } from '../../theme';
+import { useTheme, createGlowStyle } from '../../theme';
 import { tokens } from '../../theme/tokens';
 import { useTranslation } from '../../i18n/useTranslation';
 import { SupportedLocale } from '../../i18n/translations';
@@ -120,7 +120,10 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
             <View style={styles.gridContainer}>
               {languageRows.map((row, rowIndex) => (
                 <View key={`row-${rowIndex}`} style={styles.gridRow}>
-                  {row.map((language) => (
+                  {row.map((language) => {
+                    const isSelected = locale === language.code;
+                    const glowStyle = isSelected ? createGlowStyle('cyan', 'medium', theme) : {};
+                    return (
                     <Pressable
                       key={language.code}
                       onPress={() => handleSelectLanguage(language.code as SupportedLocale)}
@@ -128,14 +131,15 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
                       style={({ pressed }) => [
                         styles.languageCard,
                         {
-                          backgroundColor: locale === language.code
+                          backgroundColor: isSelected
                             ? colors.primary
                             : colors.surface,
-                          borderColor: locale === language.code
+                          borderColor: isSelected
                             ? colors.primary
                             : colors.border,
                           opacity: pressed || isChanging ? 0.7 : 1,
                         },
+                        glowStyle,
                       ]}
                     >
                       <Text style={styles.flagIcon}>{language.flag}</Text>
@@ -144,7 +148,7 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
                           style={[
                             styles.languageName,
                             {
-                              color: locale === language.code
+                              color: isSelected
                                 ? '#FFFFFF'
                                 : colors.text,
                             },
@@ -157,7 +161,7 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
                             style={[
                               styles.languageSubtext,
                               {
-                                color: locale === language.code
+                                color: isSelected
                                   ? 'rgba(255, 255, 255, 0.9)'
                                   : colors.textSecondary,
                               },
@@ -167,11 +171,12 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
                           </Text>
                         )}
                       </View>
-                      {locale === language.code && (
+                      {isSelected && (
                         <Check size={20} color="#FFFFFF" style={styles.checkIcon} />
                       )}
                     </Pressable>
-                  ))}
+                  );
+                  })}
                 </View>
               ))}
             </View>

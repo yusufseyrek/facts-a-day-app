@@ -63,7 +63,8 @@ export default function Categories() {
   // Responsive sizing for tablets
   const isTablet = width >= TABLET_BREAKPOINT;
   const iconSize = isTablet ? 48 : 32;
-  const labelFontSize = isTablet ? tokens.fontSize.body : tokens.fontSize.small;
+  const labelFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
+  const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
 
   // Guard: redirect to language selection if not initialized
   useEffect(() => {
@@ -129,7 +130,7 @@ export default function Categories() {
 
         <Header>
           <H1>{t("whatInterestsYou")}</H1>
-          <BodyText color="$textSecondary">
+          <BodyText color="$textSecondary" fontSize={secondaryFontSize}>
             {t("selectCategoriesMinimum")}
           </BodyText>
         </Header>

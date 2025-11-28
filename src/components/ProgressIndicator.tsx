@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, styled } from '@tamagui/core';
-import { XStack, YStack } from 'tamagui';
+import { YStack } from 'tamagui';
 import { BodyText } from './Typography';
-import { tokens } from '../theme/tokens';
+import { tokens, useTheme, createGlowStyle } from '../theme';
 
 const Container = styled(YStack, {
   gap: tokens.space.sm,
@@ -28,14 +28,18 @@ interface ProgressIndicatorProps {
 }
 
 export function ProgressIndicator({ currentStep, totalSteps }: ProgressIndicatorProps) {
+  const { theme } = useTheme();
   const progress = (currentStep / totalSteps) * 100;
+
+  // Subtle glow on the progress bar
+  const glowStyle = createGlowStyle('cyan', 'subtle', theme);
 
   return (
     <Container>
       <BodyText fontSize={tokens.fontSize.small} fontWeight={tokens.fontWeight.medium}>
         {currentStep} of {totalSteps}
       </BodyText>
-      <ProgressBarContainer>
+      <ProgressBarContainer style={glowStyle}>
         <ProgressBarFill style={{ width: `${progress}%` }} />
       </ProgressBarContainer>
     </Container>
