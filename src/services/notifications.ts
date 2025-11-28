@@ -1,8 +1,43 @@
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 import * as database from './database';
 
 // iOS has a limit of 64 scheduled notifications
 const MAX_SCHEDULED_NOTIFICATIONS = 64;
+
+// App name for notification title
+const APP_NAME = 'Facts A Day';
+
+/**
+ * Build notification content for a fact
+ */
+export function buildNotificationContent(
+  fact: database.FactWithRelations
+): Notifications.NotificationContentInput {
+  const content: Notifications.NotificationContentInput = {
+    title: APP_NAME,
+    body: fact.summary || fact.content.substring(0, 100),
+    data: { factId: fact.id },
+  };
+
+  // Add image attachment if available
+  if (fact.image_url) {
+    if (Platform.OS === 'ios') {
+      content.attachments = [
+        {
+          identifier: `fact-${fact.id}`,
+          url: fact.image_url,
+          type: 'public.jpeg',
+        },
+      ];
+    } else {
+      // Android uses different approach for images
+      content.data = { ...content.data, imageUrl: fact.image_url };
+    }
+  }
+
+  return content;
+}
 
 /**
  * Configure notification behavior
@@ -63,11 +98,7 @@ export async function scheduleInitialNotifications(
       try {
         // Schedule the notification
         const notificationId = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: fact.title || 'Today\'s Fact',
-            body: fact.summary || fact.content.substring(0, 100),
-            data: { factId: fact.id },
-          },
+          content: buildNotificationContent(fact),
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
             date: scheduledDate,
@@ -215,11 +246,7 @@ export async function refreshNotificationSchedule(
       try {
         // Schedule the notification
         const notificationId = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: fact.title || 'Today\'s Fact',
-            body: fact.summary || fact.content.substring(0, 100),
-            data: { factId: fact.id },
-          },
+          content: buildNotificationContent(fact),
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
             date: scheduledDate,
@@ -377,11 +404,7 @@ export async function rescheduleNotificationsMultiple(
         try {
           // Schedule the notification
           const notificationId = await Notifications.scheduleNotificationAsync({
-            content: {
-              title: fact.title || 'Today\'s Fact',
-              body: fact.summary || fact.content.substring(0, 100),
-              data: { factId: fact.id },
-            },
+            content: buildNotificationContent(fact),
             trigger: {
               type: Notifications.SchedulableTriggerInputTypes.DATE,
               date: scheduledDate,

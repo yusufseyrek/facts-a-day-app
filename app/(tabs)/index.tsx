@@ -334,8 +334,6 @@ function HomeScreen() {
           left={0}
           right={0}
           backgroundColor="$background"
-          borderTopWidth={1}
-          borderTopColor="$borderColor"
         >
           <BannerAd position="home" />
         </YStack>

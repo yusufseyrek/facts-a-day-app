@@ -31,6 +31,7 @@ import { useTranslation } from "../../src/i18n";
 import { TranslationKeys } from "../../src/i18n/translations";
 import * as onboardingService from "../../src/services/onboarding";
 import * as database from "../../src/services/database";
+import { buildNotificationContent } from "../../src/services/notifications";
 import { useOnboarding } from "../../src/contexts";
 import { showSettingsInterstitial } from "../../src/services/adManager";
 import { Sentry } from "../../src/config/sentry";
@@ -196,12 +197,12 @@ export default function SettingsPage() {
         fact.content.substring(0, 50) + "..."
       );
 
+      const content = buildNotificationContent(fact);
+      // Add isTest flag to data
+      content.data = { ...content.data, isTest: true };
+
       const notificationId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: fact.title || t("todaysFact"),
-          body: fact.summary || fact.content.substring(0, 100),
-          data: { factId: fact.id, isTest: true },
-        },
+        content,
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: 2,
