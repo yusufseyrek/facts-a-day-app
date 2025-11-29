@@ -216,9 +216,8 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   };
 
   const getTimeLabels = () => {
-    if (times.length === 1) return [undefined];
-    if (times.length === 2) return [t('morning'), t('evening')];
-    return [t('morning'), t('afternoon'), t('evening')];
+    // Always show labels as "Time 1", "Time 2", "Time 3" for clarity
+    return times.map((_, index) => `${t('time')} ${index + 1}`);
   };
 
   return (
@@ -355,7 +354,7 @@ const styles = StyleSheet.create({
     marginBottom: tokens.space.sm,
   },
   timePickerItem: {
-    marginBottom: tokens.space.md,
+    marginBottom: tokens.space.sm,
   },
   timePickerHeader: {
     flexDirection: 'row',
@@ -373,12 +372,12 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.sm,
   },
   timePickerContainer: {
-    padding: tokens.space.lg,
+    padding: Platform.OS === 'ios' ? tokens.space.lg : tokens.space.md,
     borderRadius: tokens.radius.md,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 250, // Ensure enough space for iOS picker
+    minHeight: Platform.OS === 'ios' ? 200 : 60, // iOS needs space for spinner, Android only shows button
   },
   addButton: {
     flexDirection: 'row',
