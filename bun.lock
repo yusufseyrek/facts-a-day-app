@@ -4,7 +4,7 @@
     "": {
       "name": "facts-a-day-app",
       "dependencies": {
-        "@expo-google-fonts/playfair-display": "^0.4.2",
+        "@expo-google-fonts/noto-serif": "^0.4.2",
         "@expo-google-fonts/source-sans-pro": "^0.2.3",
         "@react-native-async-storage/async-storage": "^2.2.0",
         "@react-native-community/datetimepicker": "8.4.4",
@@ -244,7 +244,7 @@
 
     "@emotion/memoize": ["@emotion/memoize@0.7.4", "", {}, "sha512-Ja/Vfqe3HpuzRsG1oBtWTHk2PGZ7GR+2Vz5iYGelAw8dx32K0y7PjVuxK6z1nMpZOqAFsRUPCkK1YjJ56qJlgw=="],
 
-    "@expo-google-fonts/playfair-display": ["@expo-google-fonts/playfair-display@0.4.2", "", {}, "sha512-mWhBV59RUjSS3aYpytUb7UyHHTnXcHh7epAn7gq+M4XAEh5PuMKUrP8eiUfkJLb6UwHZCi7EhQpUzxHu5OL96w=="],
+    "@expo-google-fonts/noto-serif": ["@expo-google-fonts/noto-serif@0.4.2", "", {}, "sha512-1xvAYegrtpCuPPunSyhvhV9FHWEzCWjikEoUJkvHt+WWvt+h7lKr+vkXNpqwFQM4W3KjXOccfLd5s04xLMjjDQ=="],
 
     "@expo-google-fonts/source-sans-pro": ["@expo-google-fonts/source-sans-pro@0.2.3", "", {}, "sha512-/vDE5/vECqJT4Xdi1QiKG6rL8+mdrvqu3OlSe2dMPB7B9BR+cWsu0fSHTqRa1cQY03bXSPSIwOiHG4fy/CHBJg=="],
 

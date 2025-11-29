@@ -89,7 +89,7 @@ const FeedFactCardComponent = ({
           <ContentRow>
             <TextContainer>
               <SerifTitle
-                fontSize={17}
+                fontSize={18}
                 lineHeight={26}
                 letterSpacing={0.3}
                 color="$text"

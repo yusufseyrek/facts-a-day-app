@@ -9,7 +9,7 @@ import { Image } from "expo-image";
 import { tokens } from "../theme/tokens";
 import { FactActions } from "./FactActions";
 import { CategoryBadge } from "./CategoryBadge";
-import { BodyText, H1 } from "./Typography";
+import { BodyText, SerifTitle } from "./Typography";
 import { useTheme } from "../theme";
 import { useTranslation } from "../i18n";
 import type { FactWithRelations, Category } from "../services/database";
@@ -176,9 +176,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         {/* Content Section */}
         <ContentSection>
           {/* Title */}
-          <H1 fontSize={24} lineHeight={32} letterSpacing={-0.5}>
+          <SerifTitle fontSize={24} lineHeight={34} letterSpacing={0}>
             {fact.title || fact.content.substring(0, 60) + "..."}
-          </H1>
+          </SerifTitle>
 
           {/* Category Badge */}
           {categoryForBadge && (

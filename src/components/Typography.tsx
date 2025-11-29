@@ -34,7 +34,7 @@ export const LabelText = styled(Text, {
 });
 
 export const SerifTitle = styled(Text, {
-  fontFamily: 'PlayfairDisplay_700Bold',
+  fontFamily: 'NotoSerif_700Bold',
   fontSize: tokens.fontSize.h2,
   fontWeight: tokens.fontWeight.bold,
   color: '$text',
