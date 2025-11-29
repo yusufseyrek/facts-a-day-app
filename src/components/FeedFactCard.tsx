@@ -4,7 +4,7 @@ import { styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
 import { ChevronRight } from "@tamagui/lucide-icons";
 import { tokens, useTheme, createGlowStyle } from "../theme";
-import { BodyText } from "./Typography";
+import { BodyText, SerifTitle } from "./Typography";
 
 interface FeedFactCardProps {
   title: string;
@@ -56,9 +56,10 @@ const FeedFactCardComponent = ({
   };
 
   // Background colors using new neon theme
-  const backgroundColor = theme === "dark"
-    ? tokens.color.dark.cardBackground
-    : tokens.color.light.cardBackground;
+  const backgroundColor =
+    theme === "dark"
+      ? tokens.color.dark.cardBackground
+      : tokens.color.light.cardBackground;
 
   // Subtle cyan glow for cards
   const glowStyle = createGlowStyle("cyan", "subtle", theme);
@@ -67,9 +68,8 @@ const FeedFactCardComponent = ({
   const cardStyle = {
     backgroundColor,
     borderWidth: 1,
-    borderColor: theme === "dark"
-      ? tokens.color.dark.border
-      : tokens.color.light.border,
+    borderColor:
+      theme === "dark" ? tokens.color.dark.border : tokens.color.light.border,
     ...glowStyle,
   };
 
@@ -80,23 +80,23 @@ const FeedFactCardComponent = ({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         android_ripple={{
-          color: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+          color:
+            theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
           borderless: false,
         }}
       >
         <CardWrapper style={cardStyle}>
           <ContentRow>
             <TextContainer>
-              <BodyText
+              <SerifTitle
                 fontSize={17}
                 lineHeight={26}
-                letterSpacing={0.2}
+                letterSpacing={0.3}
                 color="$text"
-                fontWeight={tokens.fontWeight.semibold}
                 numberOfLines={2}
               >
                 {title}
-              </BodyText>
+              </SerifTitle>
               {summary && (
                 <BodyText
                   fontSize={15}
@@ -112,7 +112,9 @@ const FeedFactCardComponent = ({
             <ChevronRight
               size={20}
               color={
-                theme === "dark" ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary
+                theme === "dark"
+                  ? tokens.color.dark.textSecondary
+                  : tokens.color.light.textSecondary
               }
             />
           </ContentRow>
@@ -123,10 +125,13 @@ const FeedFactCardComponent = ({
 };
 
 // Memoize the component to prevent unnecessary re-renders
-export const FeedFactCard = React.memo(FeedFactCardComponent, (prevProps, nextProps) => {
-  return (
-    prevProps.title === nextProps.title &&
-    prevProps.summary === nextProps.summary
-    // Don't compare onPress as it may be recreated but functionally equivalent
-  );
-});
+export const FeedFactCard = React.memo(
+  FeedFactCardComponent,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.title === nextProps.title &&
+      prevProps.summary === nextProps.summary
+      // Don't compare onPress as it may be recreated but functionally equivalent
+    );
+  }
+);

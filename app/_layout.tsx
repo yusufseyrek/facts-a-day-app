@@ -19,6 +19,10 @@ import {
   SourceSansPro_600SemiBold,
   SourceSansPro_700Bold,
 } from '@expo-google-fonts/source-sans-pro';
+import {
+  PlayfairDisplay_600SemiBold,
+  PlayfairDisplay_700Bold,
+} from '@expo-google-fonts/playfair-display';
 
 Sentry.init({
   dsn: 'https://3d61ec20d1f2a0b49f22193bf79583be@o4510405546672128.ingest.de.sentry.io/4510405547851856',
@@ -129,6 +133,8 @@ export default Sentry.wrap(function RootLayout() {
     SourceSansPro_400Regular,
     SourceSansPro_600SemiBold,
     SourceSansPro_700Bold,
+    PlayfairDisplay_600SemiBold,
+    PlayfairDisplay_700Bold,
   });
 
   useEffect(() => {

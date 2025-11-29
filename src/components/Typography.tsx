@@ -32,3 +32,11 @@ export const LabelText = styled(Text, {
   color: '$text',
   lineHeight: tokens.fontSize.label * 1.4,
 });
+
+export const SerifTitle = styled(Text, {
+  fontFamily: 'PlayfairDisplay_700Bold',
+  fontSize: tokens.fontSize.h2,
+  fontWeight: tokens.fontWeight.bold,
+  color: '$text',
+  lineHeight: tokens.fontSize.h2 * 1.35,
+});

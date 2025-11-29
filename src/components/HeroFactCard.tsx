@@ -3,8 +3,14 @@ import { Pressable, Platform, Animated } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { ChevronRight } from "@tamagui/lucide-icons";
-import { tokens, useTheme, getCategoryNeonColor, createGlowStyle, getCategoryNeonColorName } from "../theme";
-import { BodyText } from "./Typography";
+import {
+  tokens,
+  useTheme,
+  getCategoryNeonColor,
+  createGlowStyle,
+  getCategoryNeonColorName,
+} from "../theme";
+import { BodyText, SerifTitle } from "./Typography";
 import { LinearGradient } from "expo-linear-gradient";
 
 interface HeroFactCardProps {
@@ -46,7 +52,10 @@ const HeroFactCardComponent = ({
   // Get neon color based on category slug, fallback to categoryColor or cyan
   const neonColor = categorySlug
     ? getCategoryNeonColor(categorySlug, theme)
-    : categoryColor || (theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan);
+    : categoryColor ||
+      (theme === "dark"
+        ? tokens.color.dark.neonCyan
+        : tokens.color.light.neonCyan);
 
   const neonColorName = categorySlug
     ? getCategoryNeonColorName(categorySlug)
@@ -71,9 +80,10 @@ const HeroFactCardComponent = ({
   };
 
   // Base background color
-  const baseBackground = theme === "dark"
-    ? tokens.color.dark.cardBackground
-    : tokens.color.light.cardBackground;
+  const baseBackground =
+    theme === "dark"
+      ? tokens.color.dark.cardBackground
+      : tokens.color.light.cardBackground;
 
   // Blend category color with base background for solid gradient colors
   // This works better on Android than semi-transparent overlays
@@ -122,9 +132,10 @@ const HeroFactCardComponent = ({
   const cardStyle = {
     backgroundColor: baseBackground,
     borderWidth: 1,
-    borderColor: theme === "dark"
-      ? `${neonColor}30` // Subtle neon border in dark mode
-      : tokens.color.light.border,
+    borderColor:
+      theme === "dark"
+        ? `${neonColor}30` // Subtle neon border in dark mode
+        : tokens.color.light.border,
     ...glowStyle,
   };
 
@@ -135,7 +146,8 @@ const HeroFactCardComponent = ({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         android_ripple={{
-          color: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+          color:
+            theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
           borderless: false,
         }}
       >
@@ -157,16 +169,15 @@ const HeroFactCardComponent = ({
           {/* Content on top of gradient */}
           <ContentRow style={{ position: "relative" }}>
             <TextContainer>
-              <BodyText
+              <SerifTitle
                 fontSize={21}
                 lineHeight={32}
-                letterSpacing={-0.2}
+                letterSpacing={0.2}
                 color="$text"
-                fontWeight={tokens.fontWeight.bold}
                 numberOfLines={3}
               >
                 {title}
-              </BodyText>
+              </SerifTitle>
               {summary && (
                 <BodyText
                   fontSize={16}
@@ -182,7 +193,9 @@ const HeroFactCardComponent = ({
             <ChevronRight
               size={24}
               color={
-                theme === "dark" ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary
+                theme === "dark"
+                  ? tokens.color.dark.textSecondary
+                  : tokens.color.light.textSecondary
               }
             />
           </ContentRow>
@@ -193,12 +206,15 @@ const HeroFactCardComponent = ({
 };
 
 // Memoize the component to prevent unnecessary re-renders
-export const HeroFactCard = React.memo(HeroFactCardComponent, (prevProps, nextProps) => {
-  return (
-    prevProps.title === nextProps.title &&
-    prevProps.summary === nextProps.summary &&
-    prevProps.categoryColor === nextProps.categoryColor &&
-    prevProps.categorySlug === nextProps.categorySlug
-    // Don't compare onPress as it may be recreated but functionally equivalent
-  );
-});
+export const HeroFactCard = React.memo(
+  HeroFactCardComponent,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.title === nextProps.title &&
+      prevProps.summary === nextProps.summary &&
+      prevProps.categoryColor === nextProps.categoryColor &&
+      prevProps.categorySlug === nextProps.categorySlug
+      // Don't compare onPress as it may be recreated but functionally equivalent
+    );
+  }
+);
