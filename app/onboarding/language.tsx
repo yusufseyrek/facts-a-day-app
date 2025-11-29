@@ -106,7 +106,7 @@ export default function LanguageSelectionScreen() {
   // Responsive sizing for tablets
   const isTablet = width >= TABLET_BREAKPOINT;
   const flagFontSize = isTablet ? 56 : 40;
-  const nameFontSize = isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.body;
+  const nameFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
   const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
   const smallFontSize = isTablet ? tokens.fontSize.smallTablet : tokens.fontSize.small;
 

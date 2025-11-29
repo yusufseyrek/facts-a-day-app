@@ -25,7 +25,7 @@ interface FactModalProps {
 
 const Container = styled(YStack, {
   flex: 1,
-  backgroundColor: "$cardBackground", // Use white/card background for modals
+  backgroundColor: "$surface",
 });
 
 const CloseButton = styled(YStack, {

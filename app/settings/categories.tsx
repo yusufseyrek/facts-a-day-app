@@ -198,6 +198,7 @@ export default function CategoriesSettings() {
                     key={category.slug}
                     icon={getLucideIcon(category.icon, iconSize)}
                     label={category.name}
+                    colorHex={category.color_hex}
                     selected={selectedCategories.includes(category.slug)}
                     onPress={() => toggleCategory(category.slug)}
                     labelFontSize={labelFontSize}

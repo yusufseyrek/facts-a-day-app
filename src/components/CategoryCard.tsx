@@ -46,19 +46,20 @@ export interface CategoryCardProps {
   icon: React.ReactNode;
   label: string;
   slug?: string;
+  colorHex?: string;
   selected: boolean;
   onPress: () => void;
   labelFontSize?: number;
 }
 
-const CategoryCardComponent = ({ icon, label, slug, selected, onPress, labelFontSize }: CategoryCardProps) => {
+const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress, labelFontSize }: CategoryCardProps) => {
   const { theme } = useTheme();
   const { width } = useWindowDimensions();
   const isTablet = width >= TABLET_WIDTH;
 
-  // Get neon color for this category
+  // Get neon color for this category - prefer colorHex from DB, fallback to theme-based
   const categorySlug = slug || label.toLowerCase().replace(/\s+/g, '-');
-  const neonColor = getCategoryNeonColor(categorySlug, theme);
+  const neonColor = colorHex || getCategoryNeonColor(categorySlug, theme);
   const neonColorName = getCategoryNeonColorName(categorySlug);
 
   // Colors based on selection state
@@ -124,6 +125,7 @@ export const CategoryCard = React.memo(CategoryCardComponent, (prevProps, nextPr
   return (
     prevProps.label === nextProps.label &&
     prevProps.slug === nextProps.slug &&
+    prevProps.colorHex === nextProps.colorHex &&
     prevProps.selected === nextProps.selected &&
     prevProps.labelFontSize === nextProps.labelFontSize
     // Don't compare icon and onPress as they may be recreated but functionally equivalent
