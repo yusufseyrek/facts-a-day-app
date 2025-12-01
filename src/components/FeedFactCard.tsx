@@ -3,7 +3,7 @@ import { Pressable, Animated } from "react-native";
 import { styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
 import { ChevronRight } from "@tamagui/lucide-icons";
-import { tokens, useTheme, createGlowStyle } from "../theme";
+import { tokens, useTheme } from "../theme";
 import { BodyText, SerifTitle } from "./Typography";
 
 interface FeedFactCardProps {
@@ -71,16 +71,12 @@ const FeedFactCardComponent = ({
       ? tokens.color.dark.cardBackground
       : tokens.color.light.cardBackground;
 
-  // Subtle cyan glow for cards
-  const glowStyle = createGlowStyle("cyan", "subtle", theme);
-
-  // Shadow and border styling with subtle neon glow
+  // Shadow and border styling
   const cardStyle = {
     backgroundColor,
     borderWidth: 1,
     borderColor:
       theme === "dark" ? tokens.color.dark.border : tokens.color.light.border,
-    ...glowStyle,
   };
 
   return (

@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { X, Check } from '@tamagui/lucide-icons';
-import { useTheme, createGlowStyle } from '../../theme';
+import { useTheme } from '../../theme';
 import { tokens } from '../../theme/tokens';
 import { useTranslation } from '../../i18n/useTranslation';
 import { SupportedLocale } from '../../i18n/translations';
@@ -122,7 +122,6 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
                 <View key={`row-${rowIndex}`} style={styles.gridRow}>
                   {row.map((language) => {
                     const isSelected = locale === language.code;
-                    const glowStyle = isSelected ? createGlowStyle('cyan', 'medium', theme) : {};
                     return (
                     <Pressable
                       key={language.code}
@@ -139,7 +138,6 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
                             : colors.border,
                           opacity: pressed || isChanging ? 0.7 : 1,
                         },
-                        glowStyle,
                       ]}
                     >
                       <Text style={styles.flagIcon}>{language.flag}</Text>

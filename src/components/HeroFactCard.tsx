@@ -7,7 +7,6 @@ import {
   tokens,
   useTheme,
   getCategoryNeonColor,
-  createGlowStyle,
   getCategoryNeonColorName,
 } from "../theme";
 import { BodyText, SerifTitle } from "./Typography";
@@ -135,10 +134,7 @@ const HeroFactCardComponent = ({
     blendColors(neonColor, baseBackground, gradientOpacity[1]),
   ];
 
-  // Neon glow effect
-  const glowStyle = createGlowStyle(neonColorName, "medium", theme);
-
-  // Enhanced shadow for premium depth with neon glow
+  // Card styling
   const cardStyle = {
     backgroundColor: baseBackground,
     borderWidth: 1,
@@ -146,7 +142,6 @@ const HeroFactCardComponent = ({
       theme === "dark"
         ? `${neonColor}30` // Subtle neon border in dark mode
         : tokens.color.light.border,
-    ...glowStyle,
   };
 
   return (

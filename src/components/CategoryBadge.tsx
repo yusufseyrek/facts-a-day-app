@@ -1,8 +1,7 @@
 import React from 'react';
-import { View as RNView } from 'react-native';
 import { styled } from '@tamagui/core';
 import { XStack } from 'tamagui';
-import { tokens, useTheme, getCategoryNeonColor, getCategoryNeonColorName, createGlowStyle } from '../theme';
+import { tokens, useTheme, getCategoryNeonColor } from '../theme';
 import { LabelText } from './Typography';
 import { useTranslation, translateCategory } from '../i18n';
 import type { Category } from '../services/database';
@@ -36,14 +35,9 @@ export function CategoryBadge({ category }: CategoryBadgeProps) {
 
   // Get neon color for this category
   const neonColor = getCategoryNeonColor(categorySlug, theme);
-  const neonColorName = getCategoryNeonColorName(categorySlug);
-
-  // Subtle glow effect
-  const glowStyle = createGlowStyle(neonColorName, 'subtle', theme);
 
   return (
-    <RNView style={glowStyle}>
-      <BadgeContainer style={{ backgroundColor: neonColor }}>
+    <BadgeContainer style={{ backgroundColor: neonColor }}>
         <LabelText
           fontSize={12}
           color="#FFFFFF"
@@ -52,6 +46,5 @@ export function CategoryBadge({ category }: CategoryBadgeProps) {
           {displayName}
         </LabelText>
       </BadgeContainer>
-    </RNView>
   );
 }

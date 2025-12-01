@@ -1,10 +1,10 @@
 import React from 'react';
-import { Pressable, View as RNView, useWindowDimensions } from 'react-native';
+import { Pressable, useWindowDimensions } from 'react-native';
 import { View, styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Check } from '@tamagui/lucide-icons';
 import { BodyText } from './Typography';
-import { tokens, useTheme, getCategoryNeonColor, getCategoryNeonColorName, createGlowStyle } from '../theme';
+import { tokens, useTheme, getCategoryNeonColor } from '../theme';
 
 // Tablet breakpoint
 const TABLET_WIDTH = 768;
@@ -60,7 +60,6 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
   // Get neon color for this category - prefer colorHex from DB, fallback to theme-based
   const categorySlug = slug || label.toLowerCase().replace(/\s+/g, '-');
   const neonColor = colorHex || getCategoryNeonColor(categorySlug, theme);
-  const neonColorName = getCategoryNeonColorName(categorySlug);
 
   // Colors based on selection state
   const iconColor = selected
@@ -75,14 +74,10 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
     ? neonColor
     : theme === 'dark' ? tokens.color.dark.border : tokens.color.light.border;
 
-  // Glow effect when selected
-  const glowStyle = selected ? createGlowStyle(neonColorName, 'medium', theme) : {};
-
   return (
     <Pressable onPress={onPress} style={{ flex: 1 }}>
       {({ pressed }) => (
-        <RNView style={selected ? glowStyle : undefined}>
-          <Card
+        <Card
             opacity={pressed ? 0.7 : 1}
             style={{
               backgroundColor,
@@ -114,7 +109,6 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
               </BodyText>
             </LabelContainer>
           </Card>
-        </RNView>
       )}
     </Pressable>
   );

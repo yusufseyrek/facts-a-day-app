@@ -1,9 +1,9 @@
 import React from 'react';
-import { ActivityIndicator, Platform, View as RNView } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { styled, View } from '@tamagui/core';
 import { XStack } from 'tamagui';
-import { tokens, useTheme, createGlowStyle } from '../theme';
+import { tokens, useTheme } from '../theme';
 import { LabelText } from './Typography';
 
 interface ButtonProps {
@@ -12,8 +12,6 @@ interface ButtonProps {
   variant?: 'primary' | 'secondary';
   disabled?: boolean;
   loading?: boolean;
-  /** Disable glow effect */
-  noGlow?: boolean;
 }
 
 const ButtonContainer = styled(View, {
@@ -55,7 +53,6 @@ export function Button({
   variant = 'primary',
   disabled = false,
   loading = false,
-  noGlow = false,
 }: ButtonProps) {
   const { theme } = useTheme();
 
@@ -67,15 +64,8 @@ export function Button({
     }
   };
 
-  // Get glow style for primary button
-  const showGlow = variant === 'primary' && !disabled && !loading && !noGlow;
-  const glowStyle = showGlow
-    ? createGlowStyle('cyan', 'medium', theme)
-    : {};
-
   return (
-    <RNView style={showGlow ? glowStyle : undefined}>
-      <ButtonContainer
+    <ButtonContainer
         variant={variant}
         disabled={disabled || loading}
         onPress={handlePress}
@@ -94,6 +84,5 @@ export function Button({
           </LabelText>
         )}
       </ButtonContainer>
-    </RNView>
   );
 }
