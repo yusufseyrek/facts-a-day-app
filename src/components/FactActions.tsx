@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Share, Alert, Pressable } from "react-native";
 import * as Haptics from "expo-haptics";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
@@ -21,13 +22,11 @@ const Container = styled(YStack, {
   borderTopWidth: 1,
   borderTopColor: "$border",
   backgroundColor: "$background",
-  paddingVertical: 12,
 });
 
 const ActionsRow = styled(XStack, {
   justifyContent: "space-around",
   alignItems: "center",
-  height: 48,
 });
 
 export function FactActions({
@@ -37,6 +36,7 @@ export function FactActions({
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   // Neon colors for actions
   const heartColor = theme === "dark" ? tokens.color.dark.neonRed : tokens.color.light.neonRed;
@@ -119,7 +119,13 @@ export function FactActions({
 
   return (
     <>
-      <Container>
+      <Container
+        style={{
+          height: 56 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          paddingTop: 10,
+        }}
+      >
         <ActionsRow>
           {/* Like Button - Neon Red/Magenta */}
           <Pressable

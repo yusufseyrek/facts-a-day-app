@@ -33,6 +33,8 @@ export const LabelText = styled(Text, {
   lineHeight: tokens.fontSize.label * 1.4,
 });
 
+// For Android, ensure the font name matches exactly what's registered in useFonts
+// The font name should be the key used in the useFonts object
 export const SerifTitle = styled(Text, {
   fontFamily: 'NotoSerif_700Bold',
   fontSize: tokens.fontSize.h2,

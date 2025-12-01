@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Modal, TextInput, Keyboard, Platform, TouchableWithoutFeedback } from 'react-native';
+import { Modal, TextInput, Keyboard, Platform, TouchableWithoutFeedback, KeyboardAvoidingView, ScrollView, View } from 'react-native';
 import { styled } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { X } from '@tamagui/lucide-icons';
-import { tokens } from '../theme/tokens';
+import { tokens, useTheme } from '../theme';
 import { H2, BodyText, LabelText } from './Typography';
 import { Button } from './Button';
 import { useTranslation } from '../i18n';
@@ -30,6 +30,8 @@ const ModalContainer = styled(YStack, {
   maxWidth: 500,
   padding: tokens.space.lg,
   gap: tokens.space.md,
+  flexShrink: 0,
+  alignSelf: 'center',
   ...Platform.select({
     ios: {
       shadowColor: '#000',
@@ -67,6 +69,7 @@ const StyledTextInput = styled(TextInput, {
   textAlignVertical: 'top',
   borderWidth: 1,
   borderColor: '$border',
+  alignSelf: 'stretch',
 });
 
 const ButtonRow = styled(XStack, {
@@ -81,8 +84,10 @@ export function ReportFactModal({
   isSubmitting,
 }: ReportFactModalProps) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
+  const [inputWidth, setInputWidth] = useState<number | undefined>(undefined);
 
   const handleClose = () => {
     setFeedback('');
@@ -122,74 +127,106 @@ export function ReportFactModal({
       onRequestClose={handleClose}
       statusBarTranslucent
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <Overlay>
-          <TouchableWithoutFeedback>
-            <ModalContainer>
-              <Header>
-                <H2>{t('reportFact')}</H2>
-                <TouchableWithoutFeedback onPress={handleClose}>
-                  <CloseButton>
-                    <X size={20} color={tokens.color.dark.text} />
-                  </CloseButton>
-                </TouchableWithoutFeedback>
-              </Header>
-
-              <BodyText color="$text" fontSize={14}>
-                {t('whatIsWrong')}
-              </BodyText>
-
-              <StyledTextInput
-                value={feedback}
-                onChangeText={(text) => {
-                  setFeedback(text);
-                  setError('');
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <Overlay>
+            <TouchableWithoutFeedback>
+              <ScrollView
+                contentContainerStyle={{ 
+                  flexGrow: 1,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  paddingVertical: tokens.space.lg,
                 }}
-                placeholder={t('reportPlaceholder') || 'Enter your feedback...'}
-                placeholderTextColor={tokens.color.dark.text}
-                multiline
-                maxLength={1000}
-                editable={!isSubmitting}
-                autoFocus
-                style={{ fontSize: 16, color: tokens.color.dark.text }}
-              />
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+              >
+                <ModalContainer>
+                  <Header>
+                    <H2>{t('reportFact')}</H2>
+                    <TouchableWithoutFeedback onPress={handleClose}>
+                      <CloseButton>
+                        <X size={20} color={tokens.color[theme].text} />
+                      </CloseButton>
+                    </TouchableWithoutFeedback>
+                  </Header>
 
-              <XStack justifyContent="space-between" alignItems="center">
-                {error ? (
-                  <LabelText color="#EF4444" fontSize={12}>
-                    {error}
-                  </LabelText>
-                ) : (
-                  <LabelText color="$text" fontSize={12}>
-                    {feedback.length}/1000
-                  </LabelText>
-                )}
-              </XStack>
+                  <BodyText color="$text" fontSize={14}>
+                    {t('whatIsWrong')}
+                  </BodyText>
 
-              <ButtonRow>
-                <YStack flex={1}>
-                  <Button
-                    variant="secondary"
-                    onPress={handleClose}
-                    disabled={isSubmitting}
+                  <View 
+                    style={{ width: '100%', flexShrink: 0 }}
+                    onLayout={(e) => {
+                      const { width } = e.nativeEvent.layout;
+                      if (width > 0) {
+                        setInputWidth(width);
+                      }
+                    }}
                   >
-                    {t('cancel')}
-                  </Button>
-                </YStack>
-                <YStack flex={1}>
-                  <Button
-                    variant="primary"
-                    onPress={handleSubmit}
-                    disabled={isSubmitting || feedback.trim().length === 0}
-                  >
-                    {isSubmitting ? t('submitting') || 'Submitting...' : t('submit')}
-                  </Button>
-                </YStack>
-              </ButtonRow>
-            </ModalContainer>
-          </TouchableWithoutFeedback>
-        </Overlay>
-      </TouchableWithoutFeedback>
+                    <StyledTextInput
+                      value={feedback}
+                      onChangeText={(text) => {
+                        setFeedback(text);
+                        setError('');
+                      }}
+                      placeholder={t('reportPlaceholder') || 'Enter your feedback...'}
+                      placeholderTextColor={tokens.color[theme].textMuted}
+                      multiline
+                      maxLength={1000}
+                      editable={!isSubmitting}
+                      autoFocus
+                      style={{ 
+                        fontSize: 16, 
+                        color: tokens.color[theme].text,
+                        width: inputWidth || '100%',
+                      }}
+                    />
+                  </View>
+
+                  <XStack justifyContent="space-between" alignItems="center">
+                    {error ? (
+                      <LabelText color="#EF4444" fontSize={12}>
+                        {error}
+                      </LabelText>
+                    ) : (
+                      <LabelText color="$text" fontSize={12}>
+                        {feedback.length}/1000
+                      </LabelText>
+                    )}
+                  </XStack>
+
+                  <ButtonRow>
+                    <YStack flex={1}>
+                      <Button
+                        variant="secondary"
+                        onPress={handleClose}
+                        disabled={isSubmitting}
+                      >
+                        {t('cancel')}
+                      </Button>
+                    </YStack>
+                    <YStack flex={1}>
+                      <Button
+                        variant="primary"
+                        onPress={handleSubmit}
+                        disabled={isSubmitting || feedback.trim().length === 0}
+                      >
+                        {isSubmitting ? t('submitting') || 'Submitting...' : t('submit')}
+                      </Button>
+                    </YStack>
+                  </ButtonRow>
+                </ModalContainer>
+              </ScrollView>
+            </TouchableWithoutFeedback>
+          </Overlay>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

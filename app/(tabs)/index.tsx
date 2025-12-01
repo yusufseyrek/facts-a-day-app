@@ -24,6 +24,7 @@ import { useTranslation } from "../../src/i18n";
 import * as database from "../../src/services/database";
 import * as Notifications from "expo-notifications";
 import { BannerAd } from "../../src/components/ads";
+import { ADS_ENABLED } from "../../src/config/ads";
 import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import { onFeedRefresh } from "../../src/services/contentRefresh";
@@ -281,7 +282,7 @@ function HomeScreen() {
           sections={sections}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={{
-            paddingBottom: 70,
+            paddingBottom: ADS_ENABLED ? 70 : 0,
           }}
           ListHeaderComponent={() => (
             <Header>
@@ -328,15 +329,17 @@ function HomeScreen() {
           }
           stickySectionHeadersEnabled={true}
         />
-        <YStack
-          position="absolute"
-          bottom={0}
-          left={0}
-          right={0}
-          backgroundColor="$background"
-        >
-          <BannerAd position="home" />
-        </YStack>
+        {ADS_ENABLED && (
+          <YStack
+            position="absolute"
+            bottom={0}
+            left={0}
+            right={0}
+            backgroundColor="$background"
+          >
+            <BannerAd position="home" />
+          </YStack>
+        )}
       </YStack>
     </Container>
   );
