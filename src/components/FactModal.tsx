@@ -154,12 +154,12 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const hasImage = !!fact.image_url;
   
   // Calculate dynamic header height first (needed for transition calculations)
-  const basePaddingTop = Platform.OS === "ios" ? tokens.space.md : insets.top + tokens.space.sm;
-  const basePaddingBottom = tokens.space.md;
+  const basePaddingTop = Platform.OS === "ios" ? tokens.space.lg : insets.top + tokens.space.sm;
+  const basePaddingBottom = Platform.OS === "ios" ? tokens.space.lg : tokens.space.md;
   const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight + 8;
-  const minHeaderHeight = Platform.OS === "ios" ? 80 : 70 + insets.top;
+  const minHeaderHeight = Platform.OS === "ios" ? 100 : 70 + insets.top;
   const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
-  
+
   // Header background appears when image starts to be covered (for images) or early for no image
   const HEADER_BG_TRANSITION = hasImage ? IMAGE_HEIGHT - headerHeight : 100;
   
@@ -227,27 +227,30 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     extrapolate: "clamp",
   });
 
+  const iosShadowOffset = Platform.OS === "ios" ? 4 : 0;
+
   // Header title opacity - visible when header appears
   const headerTitleOpacity = headerOpacity;
 
-  // Header title translateY - slides up from bottom of header at the same pace as scrollY
-  // At TRANSITION_START, title starts at bottom. As scroll increases, it moves up 1:1 with scroll
-  const headerTitleStartY = headerHeight * 0.3; // Start from bottom portion of header
+  // Header title translateY - slides up from bottom of header as scrollY increases
+  // Animation starts when header becomes visible (at HEADER_BG_TRANSITION)
+  const headerTitleStartY = dynamicHeaderHeight - basePaddingTop + basePaddingBottom - iosShadowOffset; // Start from bottom of header
   
-  // Direct 1:1 mapping: scrollY increases by X → translateY decreases by X
-  // This ensures the title moves up at exactly the same pace as scrolling
+  // Continuous animation: translateY decreases (moves up) as scrollY increases
+  // The title starts moving up when header becomes visible and continues to move up as user scrolls
+  // Clamped at 0 to prevent going below the header
   const headerTitleTranslateY = scrollY.interpolate({
     inputRange: [
-      Math.max(0, TRANSITION_START - 1), 
-      TRANSITION_START, 
-      TRANSITION_START + headerTitleStartY
+      Math.max(0, HEADER_BG_TRANSITION - 1), 
+      HEADER_BG_TRANSITION, 
+      HEADER_BG_TRANSITION + headerTitleStartY
     ],
     outputRange: [
       headerTitleStartY, 
       headerTitleStartY, 
       0
     ], 
-    extrapolate: "clamp",
+    extrapolate: "clamp", // Clamp at 0 to prevent going below header
   });
 
   // Header background image position - shows the center portion of the image
@@ -290,8 +293,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         }}
       >
         <SerifTitle
-          fontSize={isTablet ? tokens.fontSize.h1Tablet : 22}
-          lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 28}
+          fontSize={isTablet ? tokens.fontSize.h1Tablet : 26}
+          lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 34}
           letterSpacing={0}
         >
           {factTitle}
@@ -307,7 +310,14 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           zIndex: 100,
           opacity: headerOpacity,
           minHeight: headerHeight,
-          paddingTop: Platform.OS === "ios" ? 0 : insets.top,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: iosShadowOffset },
+              shadowOpacity: 0.3,
+              shadowRadius: 12,
+            },
+          }),
         }}
         collapsable={false}
         pointerEvents={
@@ -316,94 +326,111 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             : "box-none"
         }
       >
-        {/* Faded background image behind header */}
-        {hasImage && (
-          <Animated.View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              overflow: "hidden",
-            }}
-          >
+        <Animated.View
+          style={{
+            minHeight: headerHeight,
+            paddingTop: Platform.OS === "ios" ? 0 : insets.top,
+            overflow: "hidden",
+            ...Platform.select({
+              android: {
+                elevation: 12,
+                // Background color for elevation - matches the overlay/solid background
+                backgroundColor: hasImage
+                  ? (theme === "dark" ? "rgba(0, 0, 0, 0.4)" : "rgba(255, 255, 255, 0.5)")
+                  : (theme === "dark" ? "rgba(0, 0, 0, 0.85)" : "rgba(255, 255, 255, 0.95)"),
+              },
+            }),
+          }}
+        >
+          {/* Faded background image behind header */}
+          {hasImage && (
             <Animated.View
               style={{
-                width: SCREEN_WIDTH,
-                height: IMAGE_HEIGHT,
-                transform: [{ translateY: fadedImageTranslateY }],
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                overflow: "hidden",
               }}
             >
-              <Image
-                source={{ uri: fact.image_url! }}
+              <Animated.View
                 style={{
                   width: SCREEN_WIDTH,
                   height: IMAGE_HEIGHT,
+                  transform: [{ translateY: fadedImageTranslateY }],
                 }}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={0}
+              >
+                <Image
+                  source={{ uri: fact.image_url! }}
+                  style={{
+                    width: SCREEN_WIDTH,
+                    height: IMAGE_HEIGHT,
+                  }}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={0}
+                />
+              </Animated.View>
+              {/* Overlay for better text readability */}
+              <Animated.View
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    opacity: fadeOpacity,
+                    backgroundColor:
+                      theme === "dark"
+                        ? "rgba(0, 0, 0, 0.4)"
+                        : "rgba(255, 255, 255, 0.5)",
+                  },
+                ]}
               />
             </Animated.View>
-            {/* Overlay for better text readability */}
-            <Animated.View
+          )}
+          {/* Solid background for header when no image */}
+          {!hasImage && (
+            <View
               style={[
                 StyleSheet.absoluteFill,
                 {
-                  opacity: fadeOpacity,
                   backgroundColor:
                     theme === "dark"
-                      ? "rgba(0, 0, 0, 0.4)"
-                      : "rgba(255, 255, 255, 0.5)",
+                      ? "rgba(0, 0, 0, 0.85)"
+                      : "rgba(255, 255, 255, 0.95)",
                 },
               ]}
             />
-          </Animated.View>
-        )}
-        {/* Solid background for header when no image */}
-        {!hasImage && (
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                backgroundColor:
-                  theme === "dark"
-                    ? "rgba(0, 0, 0, 0.85)"
-                    : "rgba(255, 255, 255, 0.95)",
-              },
-            ]}
-          />
-        )}
-        {/* Header content */}
-        <HeaderContainer
-          tablet={isTablet}
-          style={{
-            paddingTop: Platform.OS === "ios" ? tokens.space.md : insets.top + tokens.space.sm,
-            minHeight: headerHeight,
-            paddingBottom: Platform.OS === "ios" ? tokens.space.md : tokens.space.md,
-            zIndex: 101,
-            alignItems: "center",
-          }}
-        >
-          <HeaderTitleContainer>
-            <Animated.View
+          )}
+          {/* Header content */}
+          <HeaderContainer
+            tablet={isTablet}
               style={{
-                opacity: headerTitleOpacity,
-                flex: 1,
-                transform: [{ translateY: headerTitleTranslateY }],
+                paddingTop: Platform.OS === "ios" ? tokens.space.lg : insets.top + tokens.space.sm,
+                minHeight: headerHeight,
+                paddingBottom: Platform.OS === "ios" ? tokens.space.lg : tokens.space.md,
+                zIndex: 101,
+                alignItems: "center",
               }}
-            >
-              <SerifTitle
-                fontSize={isTablet ? tokens.fontSize.h1Tablet : 22}
-                lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 28}
-                letterSpacing={0}
+          >
+            <HeaderTitleContainer>
+              <Animated.View
+                style={{
+                  opacity: headerTitleOpacity,
+                  flex: 1,
+                  transform: [{ translateY: headerTitleTranslateY }],
+                }}
               >
-                {factTitle}
-              </SerifTitle>
-            </Animated.View>
-          </HeaderTitleContainer>
-        </HeaderContainer>
+                <SerifTitle
+                  fontSize={isTablet ? tokens.fontSize.h1Tablet : 26}
+                  lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 34}
+                  letterSpacing={0}
+                >
+                  {factTitle}
+                </SerifTitle>
+              </Animated.View>
+            </HeaderTitleContainer>
+          </HeaderContainer>
+        </Animated.View>
       </Animated.View>
 
       <Animated.ScrollView
@@ -472,8 +499,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 }}
               >
                 <SerifTitle 
-                  fontSize={isTablet ? tokens.fontSize.h1Tablet : 22} 
-                  lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 28} 
+                  fontSize={isTablet ? tokens.fontSize.h1Tablet : 26} 
+                  lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 34} 
                   letterSpacing={0}
                 >
                   {factTitle}
@@ -574,8 +601,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 }}
               >
                 <SerifTitle 
-                  fontSize={22} 
-                  lineHeight={28} 
+                  fontSize={26} 
+                  lineHeight={34} 
                   letterSpacing={0}
                 >
                   {factTitle}
