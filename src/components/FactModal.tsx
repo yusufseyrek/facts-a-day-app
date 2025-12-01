@@ -17,7 +17,6 @@ import { BannerAd } from "./ads";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
-const MAX_CONTENT_WIDTH = 800; // Optimal reading width for tablets
 
 interface FactModalProps {
   fact: FactWithRelations;
@@ -81,8 +80,6 @@ const ContentSection = styled(YStack, {
 
 const TabletWrapper = styled(YStack, {
   width: "100%",
-  maxWidth: MAX_CONTENT_WIDTH,
-  alignSelf: "center",
 });
 
 const BadgesRow = styled(XStack, {
@@ -116,15 +113,20 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
   const isTablet = SCREEN_WIDTH >= TABLET_BREAKPOINT;
+  const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
   const scrollY = useRef(new Animated.Value(0)).current;
   const [closeButtonVisible, setCloseButtonVisible] = React.useState(true);
   const [headerShouldBlock, setHeaderShouldBlock] = React.useState(false);
   const [titleHeight, setTitleHeight] = React.useState(24); // Default to 1 line height
   
-  // For tablets, use a more reasonable image height (not full screen width)
-  const IMAGE_HEIGHT = isTablet ? Math.min(SCREEN_WIDTH * 0.6, 500) : SCREEN_WIDTH;
+  // For tablets: full width in portrait (square), full width with half height in landscape
+  // For phones: square (full width)
+  const IMAGE_WIDTH = SCREEN_WIDTH;
+  const IMAGE_HEIGHT = isTablet 
+    ? (isLandscape ? IMAGE_WIDTH * 0.4 : IMAGE_WIDTH * 0.8) 
+    : SCREEN_WIDTH;
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -210,15 +212,23 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     extrapolate: "clamp",
   });
 
-  // Header opacity - appears instantly when header background should show (no fade)
+  // Header container opacity - appears instantly when header background should show
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, Math.max(0, HEADER_BG_TRANSITION - 0.01), HEADER_BG_TRANSITION],
     outputRange: [0, 0, 1],
     extrapolate: "clamp",
   });
 
-  // Fade opacity - overlay for header background image
-  const fadeOpacity = headerOpacity;
+  // Fade opacity - overlay for header background image (fades in smoothly)
+  const FADE_DURATION = 80; // Pixels over which to fade in
+  const fadeOpacity = scrollY.interpolate({
+    inputRange: [
+      Math.max(0, HEADER_BG_TRANSITION - FADE_DURATION), 
+      HEADER_BG_TRANSITION
+    ],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
 
   // Content title opacity - stays visible, no fade
   const contentTitleOpacity = scrollY.interpolate({
@@ -228,13 +238,14 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   });
 
   const iosShadowOffset = Platform.OS === "ios" ? 4 : 0;
+  const tabletMagicNumber = (isTablet ? tokens.space.lg : 0)
 
-  // Header title opacity - visible when header appears
-  const headerTitleOpacity = headerOpacity;
+  // Header title opacity - fades in with overlay for smooth appearance
+  const headerTitleOpacity = fadeOpacity;
 
   // Header title translateY - slides up from bottom of header as scrollY increases
   // Animation starts when header becomes visible (at HEADER_BG_TRANSITION)
-  const headerTitleStartY = dynamicHeaderHeight - basePaddingTop + basePaddingBottom - iosShadowOffset; // Start from bottom of header
+  const headerTitleStartY = headerHeight - basePaddingTop + basePaddingBottom - iosShadowOffset + tabletMagicNumber; // Start from bottom of header
   
   // Continuous animation: translateY decreases (moves up) as scrollY increases
   // The title starts moving up when header becomes visible and continues to move up as user scrolls
@@ -282,7 +293,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           pointerEvents: "none",
           zIndex: -1,
           width: isTablet 
-            ? Math.min(MAX_CONTENT_WIDTH, SCREEN_WIDTH) - tokens.space.xxl * 2
+            ? SCREEN_WIDTH - tokens.space.xxl * 2
             : SCREEN_WIDTH - tokens.space.lg * 2,
         }}
         onLayout={(event) => {
@@ -356,7 +367,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             >
               <Animated.View
                 style={{
-                  width: SCREEN_WIDTH,
+                  width: IMAGE_WIDTH,
                   height: IMAGE_HEIGHT,
                   transform: [{ translateY: fadedImageTranslateY }],
                 }}
@@ -364,7 +375,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 <Image
                   source={{ uri: fact.image_url! }}
                   style={{
-                    width: SCREEN_WIDTH,
+                    width: IMAGE_WIDTH,
                     height: IMAGE_HEIGHT,
                   }}
                   contentFit="cover"
@@ -441,15 +452,15 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         scrollEventThrottle={16}
       >
         {isTablet ? (
-          <TabletWrapper>
-            {/* Hero Image Section */}
+          <>
+            {/* Hero Image Section - Full width outside wrapper */}
             {hasImage && (
               <Animated.View
                 style={{
                   position: "relative",
                   overflow: "hidden",
-                  width: "100%",
-                  height: IMAGE_HEIGHT, // Keep space even when image fades out
+                  width: IMAGE_WIDTH,
+                  height: IMAGE_HEIGHT,
                   opacity: bodyImageOpacity,
                 }}
               >
@@ -466,7 +477,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   <Image
                     source={{ uri: fact.image_url! }}
                     style={{
-                      width: "100%",
+                      width: IMAGE_WIDTH,
                       height: IMAGE_HEIGHT,
                     }}
                     contentFit="cover"
@@ -489,7 +500,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               </Animated.View>
             )}
 
-            {/* Content Section */}
+            <TabletWrapper>
+              {/* Content Section */}
             <ContentSection tablet={isTablet}>
               {/* Title - shown in content when header is not visible */}
               <Animated.View
@@ -541,7 +553,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 </SourceLink>
               )}
             </ContentSection>
-          </TabletWrapper>
+            </TabletWrapper>
+          </>
         ) : (
           <>
             {/* Hero Image Section */}
