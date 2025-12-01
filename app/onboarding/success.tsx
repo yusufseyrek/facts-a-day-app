@@ -459,7 +459,7 @@ export default function OnboardingSuccessScreen() {
                       <Text
                         fontSize={48}
                         fontWeight="800"
-                        fontFamily="SourceSansPro_700Bold"
+                        fontFamily="Montserrat_700Bold"
                         textAlign="center"
                         color="$text"
                         letterSpacing={-1}

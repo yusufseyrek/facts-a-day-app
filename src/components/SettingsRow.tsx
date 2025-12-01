@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: tokens.fontSize.body,
     fontWeight: tokens.fontWeight.medium,
-    fontFamily: 'SourceSansPro_600SemiBold',
+    fontFamily: 'Montserrat_600SemiBold',
   },
   rightContent: {
     flexDirection: 'row',
@@ -100,6 +100,6 @@ const styles = StyleSheet.create({
   value: {
     fontSize: tokens.fontSize.body,
     fontWeight: tokens.fontWeight.regular,
-    fontFamily: 'SourceSansPro_400Regular',
+    fontFamily: 'Montserrat_400Regular',
   },
 });

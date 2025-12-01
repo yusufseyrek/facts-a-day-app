@@ -19,13 +19,22 @@ interface HeroFactCardProps {
   categoryColor?: string;
   categorySlug?: string;
   onPress: () => void;
+  isTablet?: boolean;
 }
 
 const CardWrapper = styled(YStack, {
   borderRadius: tokens.radius.xl, // 24px for more premium feel
-  padding: tokens.space.xl, // 24px for larger card
+  padding: tokens.space.xl, // Increased for better spacing on phones
   marginBottom: tokens.space.md,
   overflow: "hidden", // Ensure gradient doesn't overflow
+  variants: {
+    tablet: {
+      true: {
+        padding: tokens.space.xxl,
+        marginBottom: tokens.space.lg,
+      },
+    },
+  } as const,
 });
 
 const ContentRow = styled(XStack, {
@@ -36,7 +45,7 @@ const ContentRow = styled(XStack, {
 
 const TextContainer = styled(YStack, {
   flex: 1,
-  gap: tokens.space.md, // Better visual separation between title and summary
+  gap: tokens.space.lg, // Better visual separation between title and summary
 });
 
 const HeroFactCardComponent = ({
@@ -45,6 +54,7 @@ const HeroFactCardComponent = ({
   categoryColor,
   categorySlug,
   onPress,
+  isTablet = false,
 }: HeroFactCardProps) => {
   const { theme } = useTheme();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
@@ -151,7 +161,7 @@ const HeroFactCardComponent = ({
           borderless: false,
         }}
       >
-        <CardWrapper style={cardStyle}>
+        <CardWrapper style={cardStyle} tablet={isTablet}>
           {/* Gradient Background */}
           <LinearGradient
             colors={gradientColors}
@@ -170,28 +180,28 @@ const HeroFactCardComponent = ({
           <ContentRow style={{ position: "relative" }}>
             <TextContainer>
               <SerifTitle
-                fontSize={21}
-                lineHeight={32}
+                fontSize={isTablet ? tokens.fontSize.h1Tablet : 21}
+                lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 28}
                 letterSpacing={0.2}
                 color="$text"
-                numberOfLines={3}
+                numberOfLines={isTablet ? 4 : 3}
               >
                 {title}
               </SerifTitle>
               {summary && (
                 <BodyText
-                  fontSize={16}
-                  lineHeight={26}
+                  fontSize={isTablet ? tokens.fontSize.bodyTablet : 15}
+                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.6 : 24}
                   letterSpacing={0.3}
                   color="$textSecondary"
-                  numberOfLines={4}
+                  numberOfLines={isTablet ? 5 : 4}
                 >
                   {summary}
                 </BodyText>
               )}
             </TextContainer>
             <ChevronRight
-              size={24}
+              size={isTablet ? 28 : 20}
               color={
                 theme === "dark"
                   ? tokens.color.dark.textSecondary
@@ -213,7 +223,8 @@ export const HeroFactCard = React.memo(
       prevProps.title === nextProps.title &&
       prevProps.summary === nextProps.summary &&
       prevProps.categoryColor === nextProps.categoryColor &&
-      prevProps.categorySlug === nextProps.categorySlug
+      prevProps.categorySlug === nextProps.categorySlug &&
+      prevProps.isTablet === nextProps.isTablet
       // Don't compare onPress as it may be recreated but functionally equivalent
     );
   }

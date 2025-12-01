@@ -1,12 +1,11 @@
 import React, { useRef } from "react";
-import { Pressable, Linking, Dimensions, Animated, View, StyleSheet, Platform } from "react-native";
+import { Pressable, Linking, Dimensions, Animated, View, StyleSheet, Platform, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { X } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
-import { BlurView } from "expo-blur";
 import { tokens } from "../theme/tokens";
 import { FactActions } from "./FactActions";
 import { CategoryBadge } from "./CategoryBadge";
@@ -16,8 +15,9 @@ import { useTranslation } from "../i18n";
 import type { FactWithRelations, Category } from "../services/database";
 import { BannerAd } from "./ads";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const IMAGE_HEIGHT = SCREEN_WIDTH;
+// Device breakpoints
+const TABLET_BREAKPOINT = 768;
+const MAX_CONTENT_WIDTH = 800; // Optimal reading width for tablets
 
 interface FactModalProps {
   fact: FactWithRelations;
@@ -46,22 +46,43 @@ const HeaderContainer = styled(XStack, {
   zIndex: 100,
   alignItems: "center",
   justifyContent: "space-between",
-  paddingHorizontal: tokens.space.xl,
-  minHeight: 60,
+  paddingHorizontal: tokens.space.lg,
+  variants: {
+    tablet: {
+      true: {
+        paddingHorizontal: tokens.space.xxl,
+      },
+    },
+  } as const,
 });
 
 const HeaderTitleContainer = styled(XStack, {
   flex: 1,
   alignItems: "center",
   justifyContent: "center",
-  paddingHorizontal: tokens.space.md,
 });
 
 const ContentSection = styled(YStack, {
-  paddingHorizontal: tokens.space.xl,
-  paddingTop: tokens.space.xl,
-  paddingBottom: tokens.space.lg,
-  gap: tokens.space.lg,
+  paddingHorizontal: tokens.space.lg,
+  paddingTop: tokens.space.lg,
+  paddingBottom: tokens.space.md,
+  gap: tokens.space.md,
+  variants: {
+    tablet: {
+      true: {
+        paddingHorizontal: tokens.space.xxl,
+        paddingTop: tokens.space.xxl,
+        paddingBottom: tokens.space.xl,
+        gap: tokens.space.xl,
+      },
+    },
+  } as const,
+});
+
+const TabletWrapper = styled(YStack, {
+  width: "100%",
+  maxWidth: MAX_CONTENT_WIDTH,
+  alignSelf: "center",
 });
 
 const BadgesRow = styled(XStack, {
@@ -95,9 +116,15 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const isTablet = SCREEN_WIDTH >= TABLET_BREAKPOINT;
   const scrollY = useRef(new Animated.Value(0)).current;
   const [closeButtonVisible, setCloseButtonVisible] = React.useState(true);
   const [headerShouldBlock, setHeaderShouldBlock] = React.useState(false);
+  const [titleHeight, setTitleHeight] = React.useState(24); // Default to 1 line height
+  
+  // For tablets, use a more reasonable image height (not full screen width)
+  const IMAGE_HEIGHT = isTablet ? Math.min(SCREEN_WIDTH * 0.6, 500) : SCREEN_WIDTH;
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -125,80 +152,118 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   }
 
   const hasImage = !!fact.image_url;
-  // Header starts appearing at 60% of image height (or 100px for no image), fully visible at 80%
-  const HEADER_START = hasImage ? IMAGE_HEIGHT * 0.6 : 100;
-  const HEADER_END = hasImage ? IMAGE_HEIGHT * 0.8 : 150;
+  
+  // Calculate dynamic header height first (needed for transition calculations)
+  const basePaddingTop = Platform.OS === "ios" ? tokens.space.md : insets.top + tokens.space.sm;
+  const basePaddingBottom = tokens.space.md;
+  const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight + 8;
+  const minHeaderHeight = Platform.OS === "ios" ? 80 : 70 + insets.top;
+  const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
+  
+  // Header background appears when image starts to be covered (for images) or early for no image
+  const HEADER_BG_TRANSITION = hasImage ? IMAGE_HEIGHT - headerHeight : 100;
+  
+  // Title animation starts when scroll position reaches headerHeight + contentPaddingTop
+  const contentPaddingTop = isTablet ? tokens.space.xxl : tokens.space.lg;
+  const TRANSITION_START = headerHeight + contentPaddingTop;
+  const TRANSITION_END = TRANSITION_START + 10; // Small buffer for smooth transition
   
   // Update close button visibility and header pointer events for Android
   React.useEffect(() => {
     if (Platform.OS === "android" && hasImage) {
-      const threshold = HEADER_START * 0.5;
-      // Check initial value
+      const threshold = HEADER_BG_TRANSITION * 0.5;
       const initialValue = (scrollY as any)._value || 0;
       setCloseButtonVisible(initialValue < threshold);
-      setHeaderShouldBlock(initialValue >= HEADER_START);
+      setHeaderShouldBlock(initialValue >= HEADER_BG_TRANSITION);
       
       const listener = scrollY.addListener(({ value }) => {
         setCloseButtonVisible(value < threshold);
-        setHeaderShouldBlock(value >= HEADER_START);
+        setHeaderShouldBlock(value >= HEADER_BG_TRANSITION);
       });
       return () => scrollY.removeListener(listener);
     }
-  }, [HEADER_START, hasImage]);
+  }, [HEADER_BG_TRANSITION, hasImage]);
 
-  // Image parallax and scale animations
-  const imageTranslateY = scrollY.interpolate({
-    inputRange: [-100, 0, IMAGE_HEIGHT],
-    outputRange: [-50, 0, IMAGE_HEIGHT * 0.4],
-    extrapolate: "clamp",
-  });
-
+  // Image scale - stays at 1, no scaling
   const imageScale = scrollY.interpolate({
     inputRange: [-100, 0],
     outputRange: [1.3, 1],
     extrapolateRight: "clamp",
   });
 
-  // Header opacity animation - smooth fade in as user scrolls
+  // Image parallax - moves image down to show center portion
+  // At transition: scroll = IMAGE_HEIGHT - headerHeight
+  // Visible portion = headerHeight, we want to show center
+  // To center: translateY = (IMAGE_HEIGHT - headerHeight) / 2
+  const centeredTranslateY = hasImage ? (IMAGE_HEIGHT - headerHeight) / 2 : 0;
+  const imageTranslateY = scrollY.interpolate({
+    inputRange: [-100, 0, HEADER_BG_TRANSITION],
+    outputRange: [-50, 0, centeredTranslateY], // At transition, show center portion
+    extrapolate: "clamp",
+  });
+  
+  // Body image opacity - hides instantly when header background appears (no fade)
+  // Use very small epsilon to create instant cutoff without fade
+  const bodyImageOpacity = scrollY.interpolate({
+    inputRange: [0, Math.max(0, HEADER_BG_TRANSITION - 0.01), HEADER_BG_TRANSITION],
+    outputRange: [1, 1, 0],
+    extrapolate: "clamp",
+  });
+
+  // Header opacity - appears instantly when header background should show (no fade)
   const headerOpacity = scrollY.interpolate({
-    inputRange: [0, HEADER_START, HEADER_END],
-    outputRange: [0, 0.1, 1],
+    inputRange: [0, Math.max(0, HEADER_BG_TRANSITION - 0.01), HEADER_BG_TRANSITION],
+    outputRange: [0, 0, 1],
     extrapolate: "clamp",
   });
 
-  // Blur opacity - should be visible when header is visible
-  // Use header opacity to control blur visibility
-  const blurOpacity = headerOpacity;
+  // Fade opacity - overlay for header background image
+  const fadeOpacity = headerOpacity;
 
-  // Title opacity in header - fades in slightly after header starts appearing
-  const headerTitleOpacity = scrollY.interpolate({
-    inputRange: [0, HEADER_START, HEADER_START + 40, HEADER_END],
-    outputRange: [0, 0, 0.5, 1],
-    extrapolate: "clamp",
-  });
-
-  // Blurred background image position - should show what's currently at the top (header position)
-  // The blurred image needs to move to reveal the portion that's at scrollY position
-  // When scrollY = 0, show top of image (translateY = 0)
-  // When scrollY increases, move image up (negative translateY) to show lower portion
-  // Use direct scroll mapping to show what's at the top of viewport
-  const blurredImageTranslateY = scrollY.interpolate({
-    inputRange: [-100, 0, IMAGE_HEIGHT],
-    outputRange: [-50, 0, -IMAGE_HEIGHT * 0.6],
-    extrapolate: "clamp",
-  });
-
-  // Close button opacity - fades out smoothly as header appears
-  const closeButtonOpacity = scrollY.interpolate({
-    inputRange: [0, HEADER_START * 0.5, HEADER_START],
-    outputRange: [1, 0.6, 0],
-    extrapolate: "clamp",
-  });
-
-  // Content title opacity - fades out as header title fades in
+  // Content title opacity - stays visible, no fade
   const contentTitleOpacity = scrollY.interpolate({
-    inputRange: [0, HEADER_START * 0.7, HEADER_START, HEADER_END],
-    outputRange: [1, 0.8, 0.3, 0],
+    inputRange: [0, 1000],
+    outputRange: [1, 1],
+    extrapolate: "clamp",
+  });
+
+  // Header title opacity - visible when header appears
+  const headerTitleOpacity = headerOpacity;
+
+  // Header title translateY - slides up from bottom of header at the same pace as scrollY
+  // At TRANSITION_START, title starts at bottom. As scroll increases, it moves up 1:1 with scroll
+  const headerTitleStartY = headerHeight * 0.3; // Start from bottom portion of header
+  
+  // Direct 1:1 mapping: scrollY increases by X → translateY decreases by X
+  // This ensures the title moves up at exactly the same pace as scrolling
+  const headerTitleTranslateY = scrollY.interpolate({
+    inputRange: [
+      Math.max(0, TRANSITION_START - 1), 
+      TRANSITION_START, 
+      TRANSITION_START + headerTitleStartY
+    ],
+    outputRange: [
+      headerTitleStartY, 
+      headerTitleStartY, 
+      0
+    ], 
+    extrapolate: "clamp",
+  });
+
+  // Header background image position - shows the center portion of the image
+  // To center the image in the header: translate up by (IMAGE_HEIGHT - headerHeight) / 2
+  // This aligns the center of the image with the center of the header
+  const headerImageTranslateY = hasImage ? -(IMAGE_HEIGHT - headerHeight) / 2 : 0;
+  const fadedImageTranslateY = hasImage ? scrollY.interpolate({
+    inputRange: [-100, 0, HEADER_BG_TRANSITION, HEADER_BG_TRANSITION + 1000],
+    outputRange: [-50, headerImageTranslateY, headerImageTranslateY, headerImageTranslateY], // Show center portion
+    extrapolate: "clamp",
+  }) : new Animated.Value(0);
+
+  // Close button opacity - hides when header appears (no X button in header)
+  const closeButtonOpacity = scrollY.interpolate({
+    inputRange: [0, HEADER_BG_TRANSITION * 0.7, HEADER_BG_TRANSITION],
+    outputRange: [1, 0.5, 0],
     extrapolate: "clamp",
   });
 
@@ -206,7 +271,33 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
   return (
     <Container>
-      {/* Sticky Header with Blur Background */}
+      {/* Hidden measurement view to get accurate title height */}
+      <View
+        style={{
+          position: "absolute",
+          opacity: 0,
+          pointerEvents: "none",
+          zIndex: -1,
+          width: isTablet 
+            ? Math.min(MAX_CONTENT_WIDTH, SCREEN_WIDTH) - tokens.space.xxl * 2
+            : SCREEN_WIDTH - tokens.space.lg * 2,
+        }}
+        onLayout={(event) => {
+          const { height } = event.nativeEvent.layout;
+          if (height > 0 && height !== titleHeight) {
+            setTitleHeight(height);
+          }
+        }}
+      >
+        <SerifTitle
+          fontSize={isTablet ? tokens.fontSize.h1Tablet : 22}
+          lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 28}
+          letterSpacing={0}
+        >
+          {factTitle}
+        </SerifTitle>
+      </View>
+      {/* Sticky Header with Faded Image Background */}
       <Animated.View
         style={{
           position: "absolute",
@@ -215,7 +306,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           right: 0,
           zIndex: 100,
           opacity: headerOpacity,
-          minHeight: Platform.OS === "ios" ? 80 : 70 + insets.top,
+          minHeight: headerHeight,
           paddingTop: Platform.OS === "ios" ? 0 : insets.top,
         }}
         collapsable={false}
@@ -225,7 +316,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             : "box-none"
         }
       >
-        {/* Blurred background image behind header */}
+        {/* Faded background image behind header */}
         {hasImage && (
           <Animated.View
             style={{
@@ -240,51 +331,31 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             <Animated.View
               style={{
                 width: SCREEN_WIDTH,
-                height: IMAGE_HEIGHT * 2,
-                transform: [{ translateY: blurredImageTranslateY }],
+                height: IMAGE_HEIGHT,
+                transform: [{ translateY: fadedImageTranslateY }],
               }}
             >
               <Image
                 source={{ uri: fact.image_url! }}
                 style={{
                   width: SCREEN_WIDTH,
-                  height: IMAGE_HEIGHT * 2,
+                  height: IMAGE_HEIGHT,
                 }}
                 contentFit="cover"
                 cachePolicy="memory-disk"
                 transition={0}
               />
             </Animated.View>
-            <Animated.View
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                opacity: blurOpacity,
-              }}
-            >
-              <BlurView
-                intensity={Platform.OS === "android" ? 100 : 20}
-                tint={theme === "dark" ? "dark" : "light"}
-                style={StyleSheet.absoluteFill}
-              />
-            </Animated.View>
-            {/* Semi-transparent overlay for better text readability - lighter on Android for better blur visibility */}
+            {/* Overlay for better text readability */}
             <Animated.View
               style={[
                 StyleSheet.absoluteFill,
                 {
+                  opacity: fadeOpacity,
                   backgroundColor:
                     theme === "dark"
-                      ? Platform.OS === "android"
-                        ? "rgba(0, 0, 0, 0.1)"
-                        : "rgba(0, 0, 0, 0.15)"
-                      : Platform.OS === "android"
-                      ? "rgba(255, 255, 255, 0.15)"
-                      : "rgba(255, 255, 255, 0.25)",
-                  opacity: headerOpacity,
+                      ? "rgba(0, 0, 0, 0.4)"
+                      : "rgba(255, 255, 255, 0.5)",
                 },
               ]}
             />
@@ -306,55 +377,32 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         )}
         {/* Header content */}
         <HeaderContainer
+          tablet={isTablet}
           style={{
             paddingTop: Platform.OS === "ios" ? tokens.space.md : insets.top + tokens.space.sm,
-            minHeight: Platform.OS === "ios" ? 80 : 70 + insets.top,
+            minHeight: headerHeight,
             paddingBottom: Platform.OS === "ios" ? tokens.space.md : tokens.space.md,
             zIndex: 101,
             alignItems: "center",
           }}
         >
-          <Pressable 
-            onPress={onClose} 
-            style={{ zIndex: 102 }} 
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <CloseButton
-              backgroundColor={
-                theme === "dark"
-                  ? "rgba(255,255,255,0.15)"
-                  : "rgba(0,0,0,0.1)"
-              }
-            >
-              <X
-                size={20}
-                color={
-                  theme === "dark"
-                    ? "#FFFFFF"
-                    : tokens.color.light.text
-                }
-              />
-            </CloseButton>
-          </Pressable>
           <HeaderTitleContainer>
             <Animated.View
               style={{
                 opacity: headerTitleOpacity,
                 flex: 1,
+                transform: [{ translateY: headerTitleTranslateY }],
               }}
             >
               <SerifTitle
-                fontSize={18}
-                lineHeight={24}
+                fontSize={isTablet ? tokens.fontSize.h1Tablet : 22}
+                lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 28}
                 letterSpacing={0}
-                numberOfLines={2}
-                ellipsizeMode="tail"
               >
                 {factTitle}
               </SerifTitle>
             </Animated.View>
           </HeaderTitleContainer>
-          <View style={{ width: 36 }} />
         </HeaderContainer>
       </Animated.View>
 
@@ -365,93 +413,211 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        {/* Hero Image Section */}
-        {hasImage && (
-          <Animated.View
-            style={{
-              position: "relative",
-              overflow: "hidden",
-              transform: [{ scale: imageScale }],
-            }}
-          >
-            <Animated.View
-              style={{
-                transform: [{ translateY: imageTranslateY }],
-              }}
-            >
-              <Image
-                source={{ uri: fact.image_url! }}
+        {isTablet ? (
+          <TabletWrapper>
+            {/* Hero Image Section */}
+            {hasImage && (
+              <Animated.View
                 style={{
-                  width: SCREEN_WIDTH,
-                  height: SCREEN_WIDTH,
+                  position: "relative",
+                  overflow: "hidden",
+                  width: "100%",
+                  height: IMAGE_HEIGHT, // Keep space even when image fades out
+                  opacity: bodyImageOpacity,
                 }}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={200}
-                placeholder={{ blurhash: "L6PZfSi_.AyE_3t7t7R**0o#DgR4" }}
-              />
-            </Animated.View>
-            {/* Gradient overlay */}
-            <LinearGradient
-              colors={["rgba(0,0,0,0.5)", "transparent", "transparent"]}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 120,
-              }}
-            />
-          </Animated.View>
-        )}
-
-        {/* Content Section */}
-        <ContentSection>
-          {/* Title - shown in content when header is not visible */}
-          <Animated.View
-            style={{
-              opacity: contentTitleOpacity,
-            }}
-          >
-            <SerifTitle fontSize={24} lineHeight={34} letterSpacing={0}>
-              {factTitle}
-            </SerifTitle>
-          </Animated.View>
-
-          {/* Category Badge */}
-          {categoryForBadge && (
-            <BadgesRow>
-              <CategoryBadge category={categoryForBadge} />
-            </BadgesRow>
-          )}
-
-          {/* Main Content */}
-          <BodyText
-            fontSize={18}
-            lineHeight={32}
-            letterSpacing={0.3}
-            color="$text"
-          >
-            {fact.content}
-          </BodyText>
-
-          {/* Source Link */}
-          {fact.source_url && (
-            <SourceLink>
-              <Pressable onPress={handleSourcePress}>
-                <BodyText
-                  fontSize={14}
-                  lineHeight={20}
-                  color="$primary"
-                  textDecorationLine="underline"
+              >
+                <Animated.View
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    transform: [{ scale: imageScale }, { translateY: imageTranslateY }],
+                  }}
                 >
-                  {t("sourcePrefix")}
-                  {extractDomain(fact.source_url)}
-                </BodyText>
-              </Pressable>
-            </SourceLink>
-          )}
-        </ContentSection>
+                  <Image
+                    source={{ uri: fact.image_url! }}
+                    style={{
+                      width: "100%",
+                      height: IMAGE_HEIGHT,
+                    }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
+                    placeholder={{ blurhash: "L6PZfSi_.AyE_3t7t7R**0o#DgR4" }}
+                  />
+                </Animated.View>
+                {/* Gradient overlay */}
+                <LinearGradient
+                  colors={["rgba(0,0,0,0.5)", "transparent", "transparent"]}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 120,
+                  }}
+                />
+              </Animated.View>
+            )}
+
+            {/* Content Section */}
+            <ContentSection tablet={isTablet}>
+              {/* Title - shown in content when header is not visible */}
+              <Animated.View
+                style={{
+                  opacity: contentTitleOpacity,
+                  minHeight: isTablet ? 44 : 30, // Preserve space to prevent layout shift
+                }}
+              >
+                <SerifTitle 
+                  fontSize={isTablet ? tokens.fontSize.h1Tablet : 22} 
+                  lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 28} 
+                  letterSpacing={0}
+                >
+                  {factTitle}
+                </SerifTitle>
+              </Animated.View>
+
+              {/* Category Badge */}
+              {categoryForBadge && (
+                <BadgesRow>
+                  <CategoryBadge category={categoryForBadge} />
+                </BadgesRow>
+              )}
+
+              {/* Main Content */}
+              <BodyText
+                fontSize={isTablet ? tokens.fontSize.bodyTablet : 16}
+                lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.85 : 28}
+                letterSpacing={isTablet ? 0.5 : 0.3}
+                color="$text"
+              >
+                {fact.content}
+              </BodyText>
+
+              {/* Source Link */}
+              {fact.source_url && (
+                <SourceLink>
+                  <Pressable onPress={handleSourcePress}>
+                    <BodyText
+                      fontSize={isTablet ? tokens.fontSize.labelTablet : 13}
+                      lineHeight={isTablet ? tokens.fontSize.labelTablet * 1.4 : 18}
+                      color="$primary"
+                      textDecorationLine="underline"
+                    >
+                      {t("sourcePrefix")}
+                      {extractDomain(fact.source_url)}
+                    </BodyText>
+                  </Pressable>
+                </SourceLink>
+              )}
+            </ContentSection>
+          </TabletWrapper>
+        ) : (
+          <>
+            {/* Hero Image Section */}
+            {hasImage && (
+              <Animated.View
+                style={{
+                  position: "relative",
+                  overflow: "hidden",
+                  width: SCREEN_WIDTH,
+                  height: SCREEN_WIDTH, // Keep space even when image fades out
+                  opacity: bodyImageOpacity,
+                }}
+              >
+                <Animated.View
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    transform: [{ scale: imageScale }, { translateY: imageTranslateY }],
+                  }}
+                >
+                  <Image
+                    source={{ uri: fact.image_url! }}
+                    style={{
+                      width: SCREEN_WIDTH,
+                      height: SCREEN_WIDTH,
+                    }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
+                    placeholder={{ blurhash: "L6PZfSi_.AyE_3t7t7R**0o#DgR4" }}
+                  />
+                </Animated.View>
+                {/* Gradient overlay */}
+                <LinearGradient
+                  colors={["rgba(0,0,0,0.5)", "transparent", "transparent"]}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 120,
+                  }}
+                />
+              </Animated.View>
+            )}
+
+            {/* Content Section */}
+            <ContentSection tablet={isTablet}>
+              {/* Title - shown in content when header is not visible */}
+              <Animated.View
+                style={{
+                  opacity: contentTitleOpacity,
+                  minHeight: 30, // Preserve space to prevent layout shift
+                }}
+              >
+                <SerifTitle 
+                  fontSize={22} 
+                  lineHeight={28} 
+                  letterSpacing={0}
+                >
+                  {factTitle}
+                </SerifTitle>
+              </Animated.View>
+
+              {/* Category Badge */}
+              {categoryForBadge && (
+                <BadgesRow>
+                  <CategoryBadge category={categoryForBadge} />
+                </BadgesRow>
+              )}
+
+              {/* Main Content */}
+              <BodyText
+                fontSize={16}
+                lineHeight={28}
+                letterSpacing={0.3}
+                color="$text"
+              >
+                {fact.content}
+              </BodyText>
+
+              {/* Source Link */}
+              {fact.source_url && (
+                <SourceLink>
+                  <Pressable onPress={handleSourcePress}>
+                    <BodyText
+                      fontSize={13}
+                      lineHeight={18}
+                      color="$primary"
+                      textDecorationLine="underline"
+                    >
+                      {t("sourcePrefix")}
+                      {extractDomain(fact.source_url)}
+                    </BodyText>
+                  </Pressable>
+                </SourceLink>
+              )}
+            </ContentSection>
+          </>
+        )}
       </Animated.ScrollView>
 
       {/* Fixed Close Button - visible when header is not shown */}
@@ -459,8 +625,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         <Animated.View
           style={{
             position: "absolute",
-            top: (Platform.OS === "ios" ? 0 : insets.top) + tokens.space.xl,
-            right: tokens.space.xl,
+            top: (Platform.OS === "ios" ? 0 : insets.top) + (isTablet ? tokens.space.xxl : tokens.space.xl),
+            right: isTablet ? tokens.space.xxl : tokens.space.xl,
             opacity: closeButtonOpacity,
             zIndex: 110,
           }}
@@ -472,7 +638,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <CloseButton backgroundColor="rgba(0, 0, 0, 0.4)">
-              <X size={20} color="#FFFFFF" />
+              <X size={isTablet ? 24 : 18} color="#FFFFFF" />
             </CloseButton>
           </Pressable>
         </Animated.View>
@@ -483,8 +649,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         <Animated.View
           style={{
             position: "absolute",
-            top: insets.top + tokens.space.xl,
-            right: tokens.space.xl,
+            top: insets.top + (isTablet ? tokens.space.xxl : tokens.space.xl),
+            right: isTablet ? tokens.space.xxl : tokens.space.xl,
             zIndex: 10,
           }}
         >
@@ -497,7 +663,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               }
             >
               <X
-                size={20}
+                size={isTablet ? 24 : 18}
                 color={
                   theme === "dark"
                     ? "#FFFFFF"

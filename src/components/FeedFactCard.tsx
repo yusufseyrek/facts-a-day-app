@@ -10,12 +10,21 @@ interface FeedFactCardProps {
   title: string;
   summary?: string;
   onPress: () => void;
+  isTablet?: boolean;
 }
 
 const CardWrapper = styled(YStack, {
   borderRadius: tokens.radius.lg,
   padding: tokens.space.lg,
-  marginBottom: tokens.space.sm,
+  marginBottom: tokens.space.md,
+  variants: {
+    tablet: {
+      true: {
+        padding: tokens.space.xl,
+        marginBottom: tokens.space.md,
+      },
+    },
+  } as const,
 });
 
 const ContentRow = styled(XStack, {
@@ -26,13 +35,14 @@ const ContentRow = styled(XStack, {
 
 const TextContainer = styled(YStack, {
   flex: 1,
-  gap: tokens.space.sm,
+  gap: tokens.space.md,
 });
 
 const FeedFactCardComponent = ({
   title,
   summary,
   onPress,
+  isTablet = false,
 }: FeedFactCardProps) => {
   const { theme } = useTheme();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
@@ -85,32 +95,32 @@ const FeedFactCardComponent = ({
           borderless: false,
         }}
       >
-        <CardWrapper style={cardStyle}>
+        <CardWrapper style={cardStyle} tablet={isTablet}>
           <ContentRow>
             <TextContainer>
               <SerifTitle
-                fontSize={18}
-                lineHeight={26}
+                fontSize={isTablet ? tokens.fontSize.h2Tablet : 18}
+                lineHeight={isTablet ? tokens.fontSize.h2Tablet * 1.35 : 24}
                 letterSpacing={0.3}
                 color="$text"
-                numberOfLines={2}
+                numberOfLines={isTablet ? 3 : 2}
               >
                 {title}
               </SerifTitle>
               {summary && (
                 <BodyText
-                  fontSize={15}
-                  lineHeight={24}
+                  fontSize={isTablet ? tokens.fontSize.bodyTablet : 14}
+                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.6 : 22}
                   letterSpacing={0.2}
                   color="$textSecondary"
-                  numberOfLines={3}
+                  numberOfLines={isTablet ? 4 : 3}
                 >
                   {summary}
                 </BodyText>
               )}
             </TextContainer>
             <ChevronRight
-              size={20}
+              size={isTablet ? 24 : 18}
               color={
                 theme === "dark"
                   ? tokens.color.dark.textSecondary
@@ -130,7 +140,8 @@ export const FeedFactCard = React.memo(
   (prevProps, nextProps) => {
     return (
       prevProps.title === nextProps.title &&
-      prevProps.summary === nextProps.summary
+      prevProps.summary === nextProps.summary &&
+      prevProps.isTablet === nextProps.isTablet
       // Don't compare onPress as it may be recreated but functionally equivalent
     );
   }

@@ -4,7 +4,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { SectionList, RefreshControl, ActivityIndicator } from "react-native";
+import { SectionList, RefreshControl, ActivityIndicator, useWindowDimensions } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { Clock } from "@tamagui/lucide-icons";
@@ -14,6 +14,7 @@ import { tokens } from "../../src/theme/tokens";
 import {
   H1,
   H2,
+  BodyText,
   FeedFactCard,
   HeroFactCard,
   EmptyState,
@@ -28,6 +29,10 @@ import { ADS_ENABLED } from "../../src/config/ads";
 import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import { onFeedRefresh } from "../../src/services/contentRefresh";
+
+// Device breakpoints
+const TABLET_BREAKPOINT = 768;
+const MAX_CONTENT_WIDTH = 800; // Optimal reading width for tablets
 
 // Prefetch images for faster loading in modal
 const prefetchFactImages = (facts: FactWithRelations[]) => {
@@ -52,16 +57,45 @@ const Header = styled(XStack, {
   alignItems: "center",
   gap: tokens.space.sm,
   justifyContent: "space-between",
+  variants: {
+    tablet: {
+      true: {
+        padding: tokens.space.xxl,
+        paddingBottom: tokens.space.lg,
+      },
+    },
+  } as const,
 });
 
 const SectionHeader = styled(YStack, {
   paddingHorizontal: tokens.space.xl,
   paddingVertical: tokens.space.md,
   backgroundColor: "$background",
+  variants: {
+    tablet: {
+      true: {
+        paddingHorizontal: tokens.space.xxl,
+        paddingVertical: tokens.space.lg,
+      },
+    },
+  } as const,
 });
 
 const ContentContainer = styled(YStack, {
   paddingHorizontal: tokens.space.lg,
+  variants: {
+    tablet: {
+      true: {
+        paddingHorizontal: tokens.space.xl,
+      },
+    },
+  } as const,
+});
+
+const TabletWrapper = styled(YStack, {
+  width: "100%",
+  maxWidth: MAX_CONTENT_WIDTH,
+  alignSelf: "center",
 });
 
 const LoadingContainer = styled(YStack, {
@@ -81,6 +115,8 @@ function HomeScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= TABLET_BREAKPOINT;
 
   const [sections, setSections] = useState<FactSection[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -274,61 +310,77 @@ function HomeScreen() {
     );
   }
 
+  const SectionListContent = (
+    <SectionList
+      sections={sections}
+      keyExtractor={(item) => item.id.toString()}
+      contentContainerStyle={{
+        paddingBottom: ADS_ENABLED ? 70 : 0,
+      }}
+      ListHeaderComponent={() => (
+        <Header tablet={isTablet}>
+          <XStack alignItems="center" gap={tokens.space.sm}>
+            <Clock
+              size={isTablet ? 32 : 24}
+              color={theme === "dark" ? "#FFFFFF" : tokens.color.light.text}
+            />
+            <H1 fontSize={isTablet ? tokens.fontSize.h1Tablet : tokens.fontSize.h1}>
+              {t("recentFacts")}
+            </H1>
+          </XStack>
+        </Header>
+      )}
+      renderSectionHeader={({ section: { title } }) => (
+        <SectionHeader tablet={isTablet}>
+          <H2 fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}>
+            {title}
+          </H2>
+        </SectionHeader>
+      )}
+      renderItem={({ item, section, index }) => {
+        // Use HeroFactCard for the first item in the first section (Today)
+        const isFirstItem = sections.indexOf(section) === 0 && index === 0;
+        const categoryColor = item.categoryData?.color_hex || "#0066FF";
+
+        return (
+          <ContentContainer tablet={isTablet}>
+            {isFirstItem ? (
+              <HeroFactCard
+                title={item.title || item.content.substring(0, 80) + "..."}
+                summary={item.summary}
+                categoryColor={categoryColor}
+                onPress={() => handleFactPress(item)}
+                isTablet={isTablet}
+              />
+            ) : (
+              <FeedFactCard
+                title={item.title || item.content.substring(0, 80) + "..."}
+                summary={item.summary}
+                onPress={() => handleFactPress(item)}
+                isTablet={isTablet}
+              />
+            )}
+          </ContentContainer>
+        );
+      }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+      }
+      stickySectionHeadersEnabled={true}
+    />
+  );
+
   return (
     <Container edges={["top"]}>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <YStack flex={1}>
-        <SectionList
-          sections={sections}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={{
-            paddingBottom: ADS_ENABLED ? 70 : 0,
-          }}
-          ListHeaderComponent={() => (
-            <Header>
-              <XStack alignItems="center" gap={tokens.space.sm}>
-                <Clock
-                  size={28}
-                  color={theme === "dark" ? "#FFFFFF" : tokens.color.light.text}
-                />
-                <H1>{t("recentFacts")}</H1>
-              </XStack>
-            </Header>
-          )}
-          renderSectionHeader={({ section: { title } }) => (
-            <SectionHeader>
-              <H2>{title}</H2>
-            </SectionHeader>
-          )}
-          renderItem={({ item, section, index }) => {
-            // Use HeroFactCard for the first item in the first section (Today)
-            const isFirstItem = sections.indexOf(section) === 0 && index === 0;
-            const categoryColor = item.categoryData?.color_hex || "#0066FF";
-
-            return (
-              <ContentContainer>
-                {isFirstItem ? (
-                  <HeroFactCard
-                    title={item.title || item.content.substring(0, 80) + "..."}
-                    summary={item.summary}
-                    categoryColor={categoryColor}
-                    onPress={() => handleFactPress(item)}
-                  />
-                ) : (
-                  <FeedFactCard
-                    title={item.title || item.content.substring(0, 80) + "..."}
-                    summary={item.summary}
-                    onPress={() => handleFactPress(item)}
-                  />
-                )}
-              </ContentContainer>
-            );
-          }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          stickySectionHeadersEnabled={true}
-        />
+        {isTablet ? (
+          <TabletWrapper flex={1}>
+            {SectionListContent}
+          </TabletWrapper>
+        ) : (
+          SectionListContent
+        )}
         {ADS_ENABLED && (
           <YStack
             position="absolute"
@@ -344,5 +396,6 @@ function HomeScreen() {
     </Container>
   );
 }
+
 
 export default HomeScreen;

@@ -15,14 +15,13 @@ import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import * as Sentry from '@sentry/react-native';
 import {
   useFonts,
-  SourceSansPro_400Regular,
-  SourceSansPro_600SemiBold,
-  SourceSansPro_700Bold,
-} from '@expo-google-fonts/source-sans-pro';
-import {
-  NotoSerif_600SemiBold,
-  NotoSerif_700Bold,
-} from '@expo-google-fonts/noto-serif';
+  Montserrat_400Regular,
+  Montserrat_500Medium,
+  Montserrat_600SemiBold,
+  Montserrat_700Bold,
+  Montserrat_800ExtraBold,
+  Montserrat_900Black,
+} from '@expo-google-fonts/montserrat';
 
 Sentry.init({
   dsn: 'https://3d61ec20d1f2a0b49f22193bf79583be@o4510405546672128.ingest.de.sentry.io/4510405547851856',
@@ -129,13 +128,20 @@ export default Sentry.wrap(function RootLayout() {
   const [initialOnboardingStatus, setInitialOnboardingStatus] = useState<boolean | null>(null);
   const [isDbReady, setIsDbReady] = useState(false);
 
-  const [fontsLoaded] = useFonts({
-    SourceSansPro_400Regular,
-    SourceSansPro_600SemiBold,
-    SourceSansPro_700Bold,
-    NotoSerif_600SemiBold,
-    NotoSerif_700Bold,
+  const [fontsLoaded, fontError] = useFonts({
+    Montserrat_400Regular,
+    Montserrat_500Medium,
+    Montserrat_600SemiBold,
+    Montserrat_700Bold,
+    Montserrat_800ExtraBold,
+    Montserrat_900Black,
   });
+
+  useEffect(() => {
+    if (fontError) {
+      console.error('Font loading error:', fontError);
+    }
+  }, [fontError]);
 
   useEffect(() => {
     initializeApp();

@@ -132,14 +132,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    fontFamily: 'SourceSansPro_700Bold',
+    fontFamily: 'Montserrat_700Bold',
     color: tokens.color.light.text,
     marginBottom: tokens.space.md,
     textAlign: 'center',
   },
   message: {
     fontSize: 16,
-    fontFamily: 'SourceSansPro_400Regular',
+    fontFamily: 'Montserrat_400Regular',
     color: tokens.color.light.textSecondary,
     marginBottom: tokens.space.xl,
     textAlign: 'center',
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    fontFamily: 'SourceSansPro_700Bold',
+    fontFamily: 'Montserrat_700Bold',
     color: '#DC2626',
     marginBottom: tokens.space.sm,
   },
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'SourceSansPro_600SemiBold',
+    fontFamily: 'Montserrat_600SemiBold',
     textAlign: 'center',
   },
 });
