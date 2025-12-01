@@ -1,13 +1,13 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { SectionList, RefreshControl, ActivityIndicator, useWindowDimensions } from "react-native";
+import { SectionList, RefreshControl, ActivityIndicator, useWindowDimensions, TextInput, FlatList, Pressable, LayoutAnimation, Platform, UIManager } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
-import { Clock } from "@tamagui/lucide-icons";
+import { Clock, Search, X } from "@tamagui/lucide-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
 import { tokens } from "../../src/theme/tokens";
@@ -34,15 +34,22 @@ import { onFeedRefresh } from "../../src/services/contentRefresh";
 const TABLET_BREAKPOINT = 768;
 const MAX_CONTENT_WIDTH = 800; // Optimal reading width for tablets
 
+// Track prefetched images to avoid redundant prefetching
+const prefetchedImages = new Set<string>();
+
 // Prefetch images for faster loading in modal
 const prefetchFactImages = (facts: FactWithRelations[]) => {
   const imageUrls = facts
     .filter((fact) => fact.image_url)
     .map((fact) => fact.image_url!);
 
-  if (imageUrls.length > 0) {
-    Image.prefetch(imageUrls);
-    console.log(`🖼️ Prefetching ${imageUrls.length} fact images`);
+  // Filter out already prefetched images
+  const newImageUrls = imageUrls.filter((url) => !prefetchedImages.has(url));
+
+  if (newImageUrls.length > 0) {
+    Image.prefetch(newImageUrls);
+    // Track newly prefetched images
+    newImageUrls.forEach((url) => prefetchedImages.add(url));
   }
 };
 
@@ -105,6 +112,48 @@ const LoadingContainer = styled(YStack, {
   gap: tokens.space.md,
 });
 
+const SearchContainer = styled(XStack, {
+  paddingHorizontal: tokens.space.xl,
+  paddingBottom: tokens.space.md,
+  gap: tokens.space.sm,
+  alignItems: "center",
+  variants: {
+    tablet: {
+      true: {
+        paddingHorizontal: tokens.space.xxl,
+        paddingBottom: tokens.space.lg,
+      },
+    },
+  } as const,
+});
+
+const SearchInputContainer = styled(XStack, {
+  flex: 1,
+  height: 40,
+  alignItems: "center",
+  backgroundColor: "$surface",
+  borderRadius: tokens.radius.md,
+  paddingHorizontal: tokens.space.md,
+  borderWidth: 1,
+  borderColor: "$border",
+  gap: tokens.space.sm,
+});
+
+const SearchInput = styled(TextInput, {
+  flex: 1,
+  height: "100%",
+  paddingVertical: 0, // Remove padding to center text in fixed height container
+});
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android') {
+  if (UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+}
+
+// ClearButton and SearchIconButton will be inline Pressable components
+
 interface FactSection {
   title: string;
   data: FactWithRelations[];
@@ -121,6 +170,12 @@ function HomeScreen() {
   const [sections, setSections] = useState<FactSection[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<FactWithRelations[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
 
   // Reload facts when tab gains focus (e.g., after settings change)
   useFocusEffect(
@@ -161,6 +216,41 @@ function HomeScreen() {
     return () => unsubscribe();
   }, []);
 
+  const performSearch = useCallback(async (query: string) => {
+    if (!query || query.trim().length === 0) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    // setIsSearching(true) is already called in handleSearchChange
+    try {
+      const results = await database.searchFacts(query.trim(), locale);
+      setSearchResults(results);
+      // Prefetch images for search results
+      prefetchFactImages(results);
+    } catch (error) {
+      console.error("Error searching facts:", error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [locale]);
+
+  // Debounce search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim()) {
+        performSearch(searchQuery);
+      } else {
+        setSearchResults([]);
+        setIsSearching(false);
+      }
+    }, 500); // Increased delay to 500ms for better UX
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, performSearch]);
+
   const loadFacts = async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -177,31 +267,11 @@ function HomeScreen() {
       // Get facts grouped by date
       const facts = await database.getFactsGroupedByDate(locale);
 
-      // Debug logging
-      console.log(`📊 Loaded ${facts.length} facts for locale: ${locale}`);
-      console.log(
-        "Facts with shown_in_feed:",
-        facts.filter((f) => f.shown_in_feed === 1).length
-      );
-      console.log(
-        "Facts with scheduled_date:",
-        facts.filter((f) => f.scheduled_date).length
-      );
-      if (facts.length > 0) {
-        console.log("Sample fact:", {
-          id: facts[0].id,
-          shown_in_feed: facts[0].shown_in_feed,
-          scheduled_date: facts[0].scheduled_date,
-          language: facts[0].language,
-        });
-      }
-
       // Prefetch images for faster modal loading
       prefetchFactImages(facts);
 
       // Group facts by date
       const groupedFacts = groupFactsByDate(facts);
-      console.log(`📦 Grouped into ${groupedFacts.length} sections`);
       setSections(groupedFacts);
     } catch (error) {
       console.error("Error loading facts:", error);
@@ -283,11 +353,160 @@ function HomeScreen() {
   };
 
   const handleRefresh = () => {
-    loadFacts(true);
+    if (searchQuery.trim()) {
+      performSearch(searchQuery);
+    } else {
+      loadFacts(true);
+    }
   };
 
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    if (text.trim().length > 0) {
+      setIsSearching(true);
+    } else {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearchIconPress = () => {
+    if (!isSearchMode) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setIsSearchMode(true);
+      // Focus the input after a brief delay to ensure it's rendered
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    } else {
+      // If already in search mode, just focus the input
+      searchInputRef.current?.focus();
+    }
+  };
+
+  const clearSearch = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSearchQuery("");
+    setSearchResults([]);
+    setIsSearching(false);
+    setIsSearchMode(false);
+    searchInputRef.current?.blur();
+    loadFacts();
+  };
+
+  const handleSearchFocus = () => {
+    setIsInputFocused(true);
+  };
+
+  const handleSearchBlur = () => {
+    setIsInputFocused(false);
+    // Only exit search mode if there's no query
+    // Use a small delay to allow for potential focus events (like clicking clear button)
+    setTimeout(() => {
+      if (!searchQuery.trim() && !isInputFocused) {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setIsSearchMode(false);
+      }
+    }, 150);
+  };
+
+  const renderHeader = () => (
+    <Header tablet={isTablet}>
+      {isSearchMode ? (
+        <SearchInputContainer style={{ flex: 1 }}>
+          <Search
+            size={20}
+            color={
+              theme === "dark"
+                ? tokens.color.dark.textSecondary
+                : tokens.color.light.textSecondary
+            }
+          />
+          <SearchInput
+            ref={searchInputRef}
+            value={searchQuery}
+            onChangeText={handleSearchChange}
+            onFocus={handleSearchFocus}
+            onBlur={handleSearchBlur}
+            placeholder={t("searchPlaceholder")}
+            placeholderTextColor={
+              theme === "dark"
+                ? tokens.color.dark.textMuted
+                : tokens.color.light.textMuted
+            }
+            style={{
+              color:
+                theme === "dark"
+                  ? tokens.color.dark.text
+                  : tokens.color.light.text,
+              fontSize: tokens.fontSize.body,
+            }}
+            autoFocus
+          />
+          {isSearching ? (
+            <ActivityIndicator size="small" color={tokens.color[theme].textSecondary} />
+          ) : (
+            <Pressable
+              onPress={clearSearch}
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: tokens.radius.full,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <X
+                size={16}
+                color={
+                  theme === "dark"
+                    ? tokens.color.dark.textSecondary
+                    : tokens.color.light.textSecondary
+                }
+              />
+            </Pressable>
+          )}
+        </SearchInputContainer>
+      ) : (
+        <XStack alignItems="center" justifyContent="space-between" flex={1}>
+          <XStack alignItems="center" gap={tokens.space.sm}>
+            <Clock
+              size={isTablet ? 32 : 24}
+              color={theme === "dark" ? "#FFFFFF" : tokens.color.light.text}
+            />
+            <H1 fontSize={isTablet ? tokens.fontSize.h1Tablet : tokens.fontSize.h1}>
+              {t("recentFacts")}
+            </H1>
+          </XStack>
+          <Pressable
+            onPress={handleSearchIconPress}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: tokens.radius.md,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor:
+                theme === "dark"
+                  ? tokens.color.dark.surface
+                  : tokens.color.light.surface,
+            }}
+          >
+            <Search
+              size={isTablet ? 24 : 20}
+              color={
+                theme === "dark"
+                  ? tokens.color.dark.textSecondary
+                  : tokens.color.light.textSecondary
+              }
+            />
+          </Pressable>
+        </XStack>
+      )}
+    </Header>
+  );
+
   // Only show loading spinner on initial load when there's no data yet
-  if (initialLoading && sections.length === 0) {
+  if (initialLoading && sections.length === 0 && !searchQuery) {
     return (
       <Container edges={["top"]}>
         <StatusBar style={theme === "dark" ? "light" : "dark"} />
@@ -298,88 +517,133 @@ function HomeScreen() {
     );
   }
 
-  if (sections.length === 0) {
-    return (
-      <Container edges={["top"]}>
-        <StatusBar style={theme === "dark" ? "light" : "dark"} />
+  // Render content based on state
+  const renderContent = () => {
+    const hasQuery = searchQuery.trim().length > 0;
+    const hasResults = searchResults.length > 0;
+    const searchFinished = !isSearching;
+    
+    // Show Search Results (if we have them, regardless of searching status - handles refinement)
+    // OR Show "No Results" (only if search finished and no results found)
+    const showSearchResults = hasQuery && (hasResults || searchFinished);
+
+    if (showSearchResults) {
+      if (searchResults.length === 0) {
+        return (
+          <EmptyState
+            title={t("noSearchResults")}
+            description={t("noSearchResultsDescription")}
+          />
+        );
+      }
+
+      return (
+        <FlatList
+          data={searchResults}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={{
+            paddingBottom: ADS_ENABLED ? (isTablet ? 120 : 70) : 0,
+          }}
+          renderItem={({ item, index }) => {
+            const categoryColor = item.categoryData?.color_hex || "#0066FF";
+            const isFirstItem = index === 0;
+
+            return (
+              <ContentContainer tablet={isTablet}>
+                {isFirstItem ? (
+                  <HeroFactCard
+                    title={item.title || item.content.substring(0, 80) + "..."}
+                    summary={item.summary}
+                    categoryColor={categoryColor}
+                    onPress={() => handleFactPress(item)}
+                    isTablet={isTablet}
+                  />
+                ) : (
+                  <FeedFactCard
+                    title={item.title || item.content.substring(0, 80) + "..."}
+                    summary={item.summary}
+                    onPress={() => handleFactPress(item)}
+                    isTablet={isTablet}
+                  />
+                )}
+              </ContentContainer>
+            );
+          }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+        />
+      );
+    }
+
+    if (sections.length === 0) {
+      return (
         <EmptyState
           title={t("emptyStateTitle")}
           description={t("emptyStateDescription")}
         />
-      </Container>
+      );
+    }
+
+    return (
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{
+          paddingBottom: ADS_ENABLED ? (isTablet ? 120 : 70) : 0,
+        }}
+        renderSectionHeader={({ section: { title } }) => (
+          <SectionHeader tablet={isTablet}>
+            <H2 fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}>
+              {title}
+            </H2>
+          </SectionHeader>
+        )}
+        renderItem={({ item, section, index }) => {
+          // Use HeroFactCard for the first item in the first section (Today)
+          const isFirstItem = sections.indexOf(section) === 0 && index === 0;
+          const categoryColor = item.categoryData?.color_hex || "#0066FF";
+
+          return (
+            <ContentContainer tablet={isTablet}>
+              {isFirstItem ? (
+                <HeroFactCard
+                  title={item.title || item.content.substring(0, 80) + "..."}
+                  summary={item.summary}
+                  categoryColor={categoryColor}
+                  onPress={() => handleFactPress(item)}
+                  isTablet={isTablet}
+                />
+              ) : (
+                <FeedFactCard
+                  title={item.title || item.content.substring(0, 80) + "..."}
+                  summary={item.summary}
+                  onPress={() => handleFactPress(item)}
+                  isTablet={isTablet}
+                />
+              )}
+            </ContentContainer>
+          );
+        }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+        stickySectionHeadersEnabled={true}
+      />
     );
-  }
-
-  const SectionListContent = (
-    <SectionList
-      sections={sections}
-      keyExtractor={(item) => item.id.toString()}
-      contentContainerStyle={{
-        paddingBottom: ADS_ENABLED ? 70 : 0,
-      }}
-      ListHeaderComponent={() => (
-        <Header tablet={isTablet}>
-          <XStack alignItems="center" gap={tokens.space.sm}>
-            <Clock
-              size={isTablet ? 32 : 24}
-              color={theme === "dark" ? "#FFFFFF" : tokens.color.light.text}
-            />
-            <H1 fontSize={isTablet ? tokens.fontSize.h1Tablet : tokens.fontSize.h1}>
-              {t("recentFacts")}
-            </H1>
-          </XStack>
-        </Header>
-      )}
-      renderSectionHeader={({ section: { title } }) => (
-        <SectionHeader tablet={isTablet}>
-          <H2 fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}>
-            {title}
-          </H2>
-        </SectionHeader>
-      )}
-      renderItem={({ item, section, index }) => {
-        // Use HeroFactCard for the first item in the first section (Today)
-        const isFirstItem = sections.indexOf(section) === 0 && index === 0;
-        const categoryColor = item.categoryData?.color_hex || "#0066FF";
-
-        return (
-          <ContentContainer tablet={isTablet}>
-            {isFirstItem ? (
-              <HeroFactCard
-                title={item.title || item.content.substring(0, 80) + "..."}
-                summary={item.summary}
-                categoryColor={categoryColor}
-                onPress={() => handleFactPress(item)}
-                isTablet={isTablet}
-              />
-            ) : (
-              <FeedFactCard
-                title={item.title || item.content.substring(0, 80) + "..."}
-                summary={item.summary}
-                onPress={() => handleFactPress(item)}
-                isTablet={isTablet}
-              />
-            )}
-          </ContentContainer>
-        );
-      }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
-      stickySectionHeadersEnabled={true}
-    />
-  );
+  };
 
   return (
     <Container edges={["top"]}>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
+      {renderHeader()}
       <YStack flex={1}>
         {isTablet ? (
           <TabletWrapper flex={1}>
-            {SectionListContent}
+            {renderContent()}
           </TabletWrapper>
         ) : (
-          SectionListContent
+          renderContent()
         )}
         {ADS_ENABLED && (
           <YStack

@@ -219,12 +219,12 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     extrapolate: "clamp",
   });
 
-  // Fade opacity - overlay for header background image (fades in smoothly)
-  const FADE_DURATION = 80; // Pixels over which to fade in
+  // Fade opacity - overlay for header background image (slowly fades in after header becomes visible)
+  const FADE_DURATION = 70; // Pixels over which to fade in after header becomes visible
   const fadeOpacity = scrollY.interpolate({
     inputRange: [
-      Math.max(0, HEADER_BG_TRANSITION - FADE_DURATION), 
-      HEADER_BG_TRANSITION
+      HEADER_BG_TRANSITION, 
+      HEADER_BG_TRANSITION + FADE_DURATION
     ],
     outputRange: [0, 1],
     extrapolate: "clamp",

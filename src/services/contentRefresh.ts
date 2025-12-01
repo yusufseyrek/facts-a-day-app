@@ -119,6 +119,30 @@ async function getLastFactUpdatedAt(): Promise<string | null> {
 }
 
 /**
+ * Get existing fact IDs from database
+ * Used to determine which facts are new vs updated
+ */
+async function getExistingFactIds(factIds: number[]): Promise<number[]> {
+  if (factIds.length === 0) {
+    return [];
+  }
+
+  try {
+    const database = await db.openDatabase();
+    // Create placeholders for IN clause
+    const placeholders = factIds.map(() => '?').join(',');
+    const result = await database.getAllAsync<{ id: number }>(
+      `SELECT id FROM facts WHERE id IN (${placeholders})`,
+      factIds
+    );
+    return result.map((row) => row.id);
+  } catch (error) {
+    console.error('Error getting existing fact IDs:', error);
+    return [];
+  }
+}
+
+/**
  * Refresh app content from API: metadata and new facts
  * This runs every time the app opens (no time interval restriction)
  * Runs in the background and doesn't block app startup
@@ -144,20 +168,15 @@ export async function refreshAppContent(): Promise<RefreshResult> {
     const categories = await onboardingService.getSelectedCategories();
 
     // Step 1: Fetch and update metadata (categories)
-    console.log('📦 Fetching metadata...');
     const metadata = await api.getMetadata(language);
 
     await db.insertCategories(metadata.categories);
     result.updated.categories = metadata.categories.length;
 
-    console.log(`✅ Updated ${result.updated.categories} categories`);
-
     // Step 2: Fetch new or updated facts since last update
     const lastFactUpdatedAt = await getLastFactUpdatedAt();
 
     if (lastFactUpdatedAt) {
-      console.log(`📥 Fetching facts updated after ${lastFactUpdatedAt}...`);
-
       // Fetch only new or updated facts using since_updated parameter
       const categoriesParam = categories.join(',');
       const response = await api.getFacts({
@@ -182,19 +201,34 @@ export async function refreshAppContent(): Promise<RefreshResult> {
           last_updated: fact.last_updated,
         }));
 
+        // Check which facts already exist in database
+        const factIds = dbFacts.map((f) => f.id);
+        const existingFactIds = await getExistingFactIds(factIds);
+        const existingIdsSet = new Set(existingFactIds);
+
+        // Separate new and updated facts
+        const newFacts = dbFacts.filter((f) => !existingIdsSet.has(f.id));
+        const updatedFacts = dbFacts.filter((f) => existingIdsSet.has(f.id));
+
         // Insert new or updated facts (INSERT OR REPLACE handles duplicates)
         await db.insertFacts(dbFacts);
         result.updated.facts = dbFacts.length;
 
-        console.log(`✅ Updated ${result.updated.facts} facts (new or modified)`);
+        // Log new and updated facts separately with IDs
+        if (newFacts.length > 0) {
+          const newIds = newFacts.map((f) => f.id).join(', ');
+          console.log(`✨ Fetched ${newFacts.length} new facts: [${newIds}]`);
+        }
+        if (updatedFacts.length > 0) {
+          const updatedIds = updatedFacts.map((f) => f.id).join(', ');
+          console.log(`🔄 Updated ${updatedFacts.length} facts: [${updatedIds}]`);
+        }
 
         // Notify listeners to refresh the feed
         emitFeedRefresh();
       } else {
         console.log('✅ No new or updated facts available');
       }
-    } else {
-      console.log('ℹ️  No existing facts - skipping incremental fetch');
     }
 
     // Update last refresh timestamp

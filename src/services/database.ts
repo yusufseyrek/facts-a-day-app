@@ -27,7 +27,7 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
 
       const database = await SQLite.openDatabaseAsync(DATABASE_NAME);
 
-      // Log the database path
+      // Log the database path for testing
       const dbPath = `${FileSystem.Paths.document.uri}SQLite/${DATABASE_NAME}`;
       console.log("📁 Database path:", dbPath);
 
@@ -849,6 +849,73 @@ export async function getFactsGroupedByDate(
     )
     ORDER BY COALESCE(f.scheduled_date, f.created_at) DESC`,
     [cutoffDate, now]
+  );
+  return mapFactsWithRelations(result);
+}
+
+/**
+ * Search facts by query string (searches in title, content, and summary)
+ * Returns facts that match the search query, ordered by relevance (title matches first, then content/summary)
+ */
+export async function searchFacts(
+  query: string,
+  language?: string
+): Promise<FactWithRelations[]> {
+  const database = await openDatabase();
+
+  if (!query || query.trim().length === 0) {
+    return [];
+  }
+
+  // Escape special characters for LIKE query
+  const searchTerm = `%${query.trim()}%`;
+
+  if (language) {
+    const result = await database.getAllAsync<any>(
+      `SELECT
+        f.*,
+        c.id as category_id,
+        c.name as category_name,
+        c.slug as category_slug,
+        c.description as category_description,
+        c.icon as category_icon,
+        c.color_hex as category_color_hex
+      FROM facts f
+      LEFT JOIN categories c ON f.category = c.slug
+      WHERE f.language = ?
+      AND (
+        f.title LIKE ? OR
+        f.content LIKE ? OR
+        f.summary LIKE ?
+      )
+      ORDER BY 
+        CASE WHEN f.title LIKE ? THEN 1 ELSE 2 END,
+        COALESCE(f.scheduled_date, f.created_at) DESC`,
+      [language, searchTerm, searchTerm, searchTerm, searchTerm]
+    );
+    return mapFactsWithRelations(result);
+  }
+
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    WHERE (
+      f.title LIKE ? OR
+      f.content LIKE ? OR
+      f.summary LIKE ?
+    )
+    ORDER BY 
+      CASE WHEN f.title LIKE ? THEN 1 ELSE 2 END,
+      COALESCE(f.scheduled_date, f.created_at) DESC`,
+    [searchTerm, searchTerm, searchTerm, searchTerm]
   );
   return mapFactsWithRelations(result);
 }
