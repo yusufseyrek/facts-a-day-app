@@ -336,7 +336,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 elevation: 12,
                 // Background color for elevation - matches the overlay/solid background
                 backgroundColor: hasImage
-                  ? (theme === "dark" ? "rgba(0, 0, 0, 0.4)" : "rgba(255, 255, 255, 0.5)")
+                  ? (theme === "dark" ? "rgba(0, 0, 0, 0.4)" : "rgba(255, 255, 255, 0.7)")
                   : (theme === "dark" ? "rgba(0, 0, 0, 0.85)" : "rgba(255, 255, 255, 0.95)"),
               },
             }),
@@ -381,7 +381,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                     backgroundColor:
                       theme === "dark"
                         ? "rgba(0, 0, 0, 0.4)"
-                        : "rgba(255, 255, 255, 0.5)",
+                        : "rgba(255, 255, 255, 0.7)",
                   },
                 ]}
               />
