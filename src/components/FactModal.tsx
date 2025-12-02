@@ -119,9 +119,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
   const currentScrollY = useRef(0);
-  const scrollStartRef = useRef(0);
-  const lastTargetScrollY = useRef(0);
-  const momentumScroll = useRef(new Animated.Value(0)).current;
   const [closeButtonVisible, setCloseButtonVisible] = React.useState(true);
   const [headerShouldBlock, setHeaderShouldBlock] = React.useState(false);
   const [titleHeight, setTitleHeight] = React.useState(24); // Default to 1 line height
@@ -182,67 +179,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     });
     return () => scrollY.removeListener(id);
   }, [scrollY]);
-
-  // Handle momentum scrolling
-  React.useEffect(() => {
-    const id = momentumScroll.addListener(({ value }) => {
-      if (value >= 0) {
-        scrollViewRef.current?.scrollTo({
-          y: value,
-          animated: false,
-        });
-      }
-    });
-    return () => momentumScroll.removeListener(id);
-  }, [momentumScroll]);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => Platform.OS === "android",
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return (
-          Platform.OS === "android" &&
-          Math.abs(gestureState.dy) > Math.abs(gestureState.dx) &&
-          Math.abs(gestureState.dy) > 5
-        );
-      },
-      onPanResponderGrant: () => {
-        momentumScroll.stopAnimation();
-        scrollStartRef.current = currentScrollY.current;
-        lastTargetScrollY.current = currentScrollY.current;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        const { dy } = gestureState;
-        const newScrollY = Math.max(0, scrollStartRef.current - dy);
-
-        if (newScrollY === 0 && currentScrollY.current <= 0) {
-          // Pulling down while at top - potential visual feedback could go here
-        } else {
-          lastTargetScrollY.current = newScrollY;
-          scrollViewRef.current?.scrollTo({
-            y: newScrollY,
-            animated: false,
-          });
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        // Momentum scroll
-        // Negate velocity because swiping down (positive vy) should decrease scroll Y
-        // Boost velocity slightly to feel more natural
-        const velocity = -gestureState.vy * 1.2;
-        
-        if (Math.abs(velocity) > 0.05) {
-          momentumScroll.setValue(lastTargetScrollY.current);
-          
-          Animated.decay(momentumScroll, {
-            velocity: velocity,
-            deceleration: 0.998, // Slightly smoother deceleration
-            useNativeDriver: false, // Must be false to drive scrollTo in JS
-          }).start();
-        }
-      },
-    })
-  ).current;
 
   // Update close button visibility and header pointer events for Android
   React.useEffect(() => {
@@ -387,7 +323,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
       </View>
       {/* Sticky Header with Faded Image Background */}
       <Animated.View
-        {...panResponder.panHandlers}
         style={{
           position: "absolute",
           top: 0,
@@ -409,6 +344,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         pointerEvents="box-none"
       >
         <Animated.View
+          pointerEvents="none"
           style={{
             minHeight: headerHeight,
             paddingTop: Platform.OS === "ios" ? 0 : insets.top,
@@ -486,6 +422,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           {/* Header content */}
           <HeaderContainer
             tablet={isTablet}
+            pointerEvents="box-none"
               style={{
                 paddingTop: Platform.OS === "ios" ? tokens.space.lg : insets.top + tokens.space.sm,
                 minHeight: headerHeight,
@@ -494,7 +431,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 alignItems: "center",
               }}
           >
-            <HeaderTitleContainer>
+            <HeaderTitleContainer pointerEvents="none">
               <Animated.View
                 style={{
                   opacity: headerTitleOpacity,
@@ -522,8 +459,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         contentContainerStyle={{ paddingBottom: tokens.space.lg }}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        onScrollBeginDrag={() => momentumScroll.stopAnimation()}
-        onTouchStart={() => momentumScroll.stopAnimation()}
       >
         {isTablet ? (
           <>
