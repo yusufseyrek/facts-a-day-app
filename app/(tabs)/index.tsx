@@ -4,7 +4,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { SectionList, RefreshControl, ActivityIndicator, useWindowDimensions, TextInput, FlatList, Pressable, LayoutAnimation, Platform, UIManager } from "react-native";
+import { SectionList, RefreshControl, ActivityIndicator, useWindowDimensions, TextInput, FlatList, Pressable, Animated, Easing, Platform, UIManager } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { Clock, Search, X } from "@tamagui/lucide-icons";
@@ -176,6 +176,10 @@ function HomeScreen() {
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
+  
+  // Animation values for smooth search bar transition
+  const searchAnimValue = useRef(new Animated.Value(0)).current;
+  const titleOpacity = useRef(new Animated.Value(1)).current;
 
   // Reload facts when tab gains focus (e.g., after settings change)
   useFocusEffect(
@@ -371,12 +375,24 @@ function HomeScreen() {
 
   const handleSearchIconPress = () => {
     if (!isSearchMode) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setIsSearchMode(true);
-      // Focus the input after a brief delay to ensure it's rendered
-      setTimeout(() => {
+      // Animate search bar expansion
+      Animated.parallel([
+        Animated.timing(searchAnimValue, {
+          toValue: 1,
+          duration: 300,
+          easing: Easing.bezier(0.4, 0, 0.2, 1),
+          useNativeDriver: false,
+        }),
+        Animated.timing(titleOpacity, {
+          toValue: 0,
+          duration: 150,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: false,
+        }),
+      ]).start(() => {
         searchInputRef.current?.focus();
-      }, 100);
+      });
     } else {
       // If already in search mode, just focus the input
       searchInputRef.current?.focus();
@@ -384,12 +400,30 @@ function HomeScreen() {
   };
 
   const clearSearch = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    searchInputRef.current?.blur();
     setSearchQuery("");
     setSearchResults([]);
     setIsSearching(false);
-    setIsSearchMode(false);
-    searchInputRef.current?.blur();
+    
+    // Animate search bar collapse
+    Animated.parallel([
+      Animated.timing(searchAnimValue, {
+        toValue: 0,
+        duration: 300,
+        easing: Easing.bezier(0.4, 0, 0.2, 1),
+        useNativeDriver: false,
+      }),
+      Animated.timing(titleOpacity, {
+        toValue: 1,
+        duration: 200,
+        delay: 150,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: false,
+      }),
+    ]).start(() => {
+      setIsSearchMode(false);
+    });
+    
     loadFacts();
   };
 
@@ -403,72 +437,70 @@ function HomeScreen() {
     // Use a small delay to allow for potential focus events (like clicking clear button)
     setTimeout(() => {
       if (!searchQuery.trim() && !isInputFocused) {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setIsSearchMode(false);
+        // Animate search bar collapse
+        Animated.parallel([
+          Animated.timing(searchAnimValue, {
+            toValue: 0,
+            duration: 300,
+            easing: Easing.bezier(0.4, 0, 0.2, 1),
+            useNativeDriver: false,
+          }),
+          Animated.timing(titleOpacity, {
+            toValue: 1,
+            duration: 200,
+            delay: 150,
+            easing: Easing.in(Easing.ease),
+            useNativeDriver: false,
+          }),
+        ]).start(() => {
+          setIsSearchMode(false);
+        });
       }
     }, 150);
   };
 
-  const renderHeader = () => (
-    <Header tablet={isTablet}>
-      {isSearchMode ? (
-        <SearchInputContainer style={{ flex: 1 }}>
-          <Search
-            size={20}
-            color={
-              theme === "dark"
-                ? tokens.color.dark.textSecondary
-                : tokens.color.light.textSecondary
-            }
-          />
-          <SearchInput
-            ref={searchInputRef}
-            value={searchQuery}
-            onChangeText={handleSearchChange}
-            onFocus={handleSearchFocus}
-            onBlur={handleSearchBlur}
-            placeholder={t("searchPlaceholder")}
-            placeholderTextColor={
-              theme === "dark"
-                ? tokens.color.dark.textMuted
-                : tokens.color.light.textMuted
-            }
-            style={{
-              color:
-                theme === "dark"
-                  ? tokens.color.dark.text
-                  : tokens.color.light.text,
-              fontSize: tokens.fontSize.body,
+  const renderHeader = () => {
+    // Calculate available width for search bar
+    const padding = isTablet ? tokens.space.xxl * 2 : tokens.space.xl * 2;
+    const availableWidth = width - padding;
+
+    // Animated interpolations
+    const searchBarWidth = searchAnimValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [40, availableWidth],
+    });
+    
+    const inputOpacity = searchAnimValue.interpolate({
+      inputRange: [0, 0.5, 1],
+      outputRange: [0, 0, 1],
+    });
+    
+    const closeButtonScale = searchAnimValue.interpolate({
+      inputRange: [0, 0.7, 1],
+      outputRange: [0, 0, 1],
+    });
+    
+    const containerBorderWidth = searchAnimValue.interpolate({
+      inputRange: [0, 0.05, 1],
+      outputRange: [0, 1, 1],
+    });
+
+    return (
+      <Header tablet={isTablet}>
+        <XStack alignItems="center" flex={1} position="relative">
+          {/* Title section - fades out when searching */}
+          <Animated.View 
+            style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              gap: tokens.space.sm,
+              opacity: titleOpacity,
+              position: 'absolute',
+              left: 0,
+              zIndex: 1,
             }}
-            autoFocus
-          />
-          {isSearching ? (
-            <ActivityIndicator size="small" color={tokens.color[theme].textSecondary} />
-          ) : (
-            <Pressable
-              onPress={clearSearch}
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: tokens.radius.full,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <X
-                size={16}
-                color={
-                  theme === "dark"
-                    ? tokens.color.dark.textSecondary
-                    : tokens.color.light.textSecondary
-                }
-              />
-            </Pressable>
-          )}
-        </SearchInputContainer>
-      ) : (
-        <XStack alignItems="center" justifyContent="space-between" flex={1}>
-          <XStack alignItems="center" gap={tokens.space.sm}>
+            pointerEvents={isSearchMode ? 'none' : 'auto'}
+          >
             <Clock
               size={isTablet ? 32 : 24}
               color={theme === "dark" ? "#FFFFFF" : tokens.color.light.text}
@@ -476,34 +508,116 @@ function HomeScreen() {
             <H1 fontSize={isTablet ? tokens.fontSize.h1Tablet : tokens.fontSize.h1}>
               {t("recentFacts")}
             </H1>
-          </XStack>
-          <Pressable
-            onPress={handleSearchIconPress}
+          </Animated.View>
+
+          {/* Search container - expands from right */}
+          <Animated.View
             style={{
-              width: 40,
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginLeft: 'auto',
+              width: searchBarWidth,
               height: 40,
+              backgroundColor: theme === "dark" ? tokens.color.dark.surface : tokens.color.light.surface,
               borderRadius: tokens.radius.md,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor:
-                theme === "dark"
-                  ? tokens.color.dark.surface
-                  : tokens.color.light.surface,
+              borderWidth: containerBorderWidth,
+              borderColor: theme === "dark" ? tokens.color.dark.border : tokens.color.light.border,
+              overflow: 'hidden',
+              zIndex: 2,
             }}
           >
-            <Search
-              size={isTablet ? 24 : 20}
-              color={
-                theme === "dark"
-                  ? tokens.color.dark.textSecondary
-                  : tokens.color.light.textSecondary
-              }
-            />
-          </Pressable>
+            {/* Search icon button - always visible */}
+            <Pressable
+              onPress={handleSearchIconPress}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: tokens.radius.md,
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Search
+                size={isTablet ? 24 : 20}
+                color={
+                  theme === "dark"
+                    ? tokens.color.dark.textSecondary
+                    : tokens.color.light.textSecondary
+                }
+              />
+            </Pressable>
+
+            {/* Input field - expands when searching */}
+            <Animated.View
+              style={{
+                flex: 1,
+                height: '100%',
+                opacity: inputOpacity,
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingRight: tokens.space.sm,
+              }}
+            >
+              <SearchInput
+                ref={searchInputRef}
+                value={searchQuery}
+                onChangeText={handleSearchChange}
+                onFocus={handleSearchFocus}
+                onBlur={handleSearchBlur}
+                placeholder={t("searchPlaceholder")}
+                placeholderTextColor={
+                  theme === "dark"
+                    ? tokens.color.dark.textMuted
+                    : tokens.color.light.textMuted
+                }
+                style={{
+                  color:
+                    theme === "dark"
+                      ? tokens.color.dark.text
+                      : tokens.color.light.text,
+                  fontSize: tokens.fontSize.body,
+                }}
+              />
+              
+              {/* Close/Loading button */}
+              <Animated.View style={{ transform: [{ scale: closeButtonScale }] }}>
+                {isSearching ? (
+                  <ActivityIndicator size="small" color={tokens.color[theme].textSecondary} />
+                ) : (
+                  <Pressable
+                    onPress={clearSearch}
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: tokens.radius.full,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: theme === "dark"
+                        ? tokens.color.dark.border
+                        : tokens.color.light.border,
+                    }}
+                  >
+                    <X
+                      size={16}
+                      color={
+                        theme === "dark"
+                          ? tokens.color.dark.textSecondary
+                          : tokens.color.light.textSecondary
+                      }
+                    />
+                  </Pressable>
+                )}
+              </Animated.View>
+            </Animated.View>
+          </Animated.View>
+          
+          {/* Hack to hide border on the icon when collapsed - we overlay the border color? 
+              No, simpler: bind borderColor opacity to animation */}
         </XStack>
-      )}
-    </Header>
-  );
+      </Header>
+    );
+  };
 
   // Only show loading spinner on initial load when there's no data yet
   if (initialLoading && sections.length === 0 && !searchQuery) {

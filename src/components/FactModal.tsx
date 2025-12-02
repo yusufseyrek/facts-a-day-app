@@ -1,5 +1,5 @@
-import React, { useRef } from "react";
-import { Pressable, Linking, Dimensions, Animated, View, StyleSheet, Platform, useWindowDimensions } from "react-native";
+import React, { useRef, useEffect } from "react";
+import { Pressable, Linking, Dimensions, Animated, View, StyleSheet, Platform, useWindowDimensions, PanResponder, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
@@ -117,6 +117,11 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const isTablet = SCREEN_WIDTH >= TABLET_BREAKPOINT;
   const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
   const scrollY = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const currentScrollY = useRef(0);
+  const scrollStartRef = useRef(0);
+  const lastTargetScrollY = useRef(0);
+  const momentumScroll = useRef(new Animated.Value(0)).current;
   const [closeButtonVisible, setCloseButtonVisible] = React.useState(true);
   const [headerShouldBlock, setHeaderShouldBlock] = React.useState(false);
   const [titleHeight, setTitleHeight] = React.useState(24); // Default to 1 line height
@@ -170,6 +175,75 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const TRANSITION_START = headerHeight + contentPaddingTop;
   const TRANSITION_END = TRANSITION_START + 10; // Small buffer for smooth transition
   
+  // Track scroll position for gesture handling
+  React.useEffect(() => {
+    const id = scrollY.addListener(({ value }) => {
+      currentScrollY.current = value;
+    });
+    return () => scrollY.removeListener(id);
+  }, [scrollY]);
+
+  // Handle momentum scrolling
+  React.useEffect(() => {
+    const id = momentumScroll.addListener(({ value }) => {
+      if (value >= 0) {
+        scrollViewRef.current?.scrollTo({
+          y: value,
+          animated: false,
+        });
+      }
+    });
+    return () => momentumScroll.removeListener(id);
+  }, [momentumScroll]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => Platform.OS === "android",
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return (
+          Platform.OS === "android" &&
+          Math.abs(gestureState.dy) > Math.abs(gestureState.dx) &&
+          Math.abs(gestureState.dy) > 5
+        );
+      },
+      onPanResponderGrant: () => {
+        momentumScroll.stopAnimation();
+        scrollStartRef.current = currentScrollY.current;
+        lastTargetScrollY.current = currentScrollY.current;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const { dy } = gestureState;
+        const newScrollY = Math.max(0, scrollStartRef.current - dy);
+
+        if (newScrollY === 0 && currentScrollY.current <= 0) {
+          // Pulling down while at top - potential visual feedback could go here
+        } else {
+          lastTargetScrollY.current = newScrollY;
+          scrollViewRef.current?.scrollTo({
+            y: newScrollY,
+            animated: false,
+          });
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        // Momentum scroll
+        // Negate velocity because swiping down (positive vy) should decrease scroll Y
+        // Boost velocity slightly to feel more natural
+        const velocity = -gestureState.vy * 1.2;
+        
+        if (Math.abs(velocity) > 0.05) {
+          momentumScroll.setValue(lastTargetScrollY.current);
+          
+          Animated.decay(momentumScroll, {
+            velocity: velocity,
+            deceleration: 0.998, // Slightly smoother deceleration
+            useNativeDriver: false, // Must be false to drive scrollTo in JS
+          }).start();
+        }
+      },
+    })
+  ).current;
+
   // Update close button visibility and header pointer events for Android
   React.useEffect(() => {
     if (Platform.OS === "android" && hasImage) {
@@ -313,6 +387,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
       </View>
       {/* Sticky Header with Faded Image Background */}
       <Animated.View
+        {...panResponder.panHandlers}
         style={{
           position: "absolute",
           top: 0,
@@ -331,11 +406,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           }),
         }}
         collapsable={false}
-        pointerEvents={
-          Platform.OS === "android" && hasImage && !headerShouldBlock
-            ? "none"
-            : "box-none"
-        }
+        pointerEvents="box-none"
       >
         <Animated.View
           style={{
@@ -347,7 +418,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 elevation: 12,
                 // Background color for elevation - matches the overlay/solid background
                 backgroundColor: hasImage
-                  ? (theme === "dark" ? "rgba(0, 0, 0, 0.4)" : "rgba(255, 255, 255, 0.7)")
+                  ? (theme === "dark" ? "rgba(0, 0, 0, 0.35)" : "rgba(255, 255, 255, 0.5)")
                   : (theme === "dark" ? "rgba(0, 0, 0, 0.85)" : "rgba(255, 255, 255, 0.95)"),
               },
             }),
@@ -391,8 +462,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                     opacity: fadeOpacity,
                     backgroundColor:
                       theme === "dark"
-                        ? "rgba(0, 0, 0, 0.4)"
-                        : "rgba(255, 255, 255, 0.7)",
+                        ? "rgba(0, 0, 0, 0.35)"
+                        : "rgba(255, 255, 255, 0.5)",
                   },
                 ]}
               />
@@ -445,11 +516,14 @@ export function FactModal({ fact, onClose }: FactModalProps) {
       </Animated.View>
 
       <Animated.ScrollView
+        ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         bounces={true}
         contentContainerStyle={{ paddingBottom: tokens.space.lg }}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        onScrollBeginDrag={() => momentumScroll.stopAnimation()}
+        onTouchStart={() => momentumScroll.stopAnimation()}
       >
         {isTablet ? (
           <>
