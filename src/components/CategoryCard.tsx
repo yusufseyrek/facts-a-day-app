@@ -3,8 +3,9 @@ import { Pressable, useWindowDimensions } from 'react-native';
 import { View, styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Check } from '@tamagui/lucide-icons';
-import { BodyText } from './Typography';
+import { BodyText, LabelText } from './Typography';
 import { tokens, useTheme, getCategoryNeonColor } from '../theme';
+import { getContrastColor } from '../utils/colors';
 
 // Tablet breakpoint
 const TABLET_WIDTH = 768;
@@ -60,10 +61,13 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
   // Get neon color for this category - prefer colorHex from DB, fallback to theme-based
   const categorySlug = slug || label.toLowerCase().replace(/\s+/g, '-');
   const neonColor = colorHex || getCategoryNeonColor(categorySlug, theme);
+  
+  // Determine contrast color for selected state
+  const contrastColor = getContrastColor(neonColor);
 
   // Colors based on selection state
   const iconColor = selected
-    ? '#FFFFFF'
+    ? contrastColor
     : theme === 'dark' ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
 
   const backgroundColor = selected
@@ -85,8 +89,8 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
             }}
           >
             {selected && (
-              <CheckmarkContainer style={{ backgroundColor: '#FFFFFF30' }}>
-                <Check size={16} color="#FFFFFF" strokeWidth={3} />
+              <CheckmarkContainer style={{ backgroundColor: contrastColor === '#000000' ? '#00000020' : '#FFFFFF30' }}>
+                <Check size={16} color={contrastColor} strokeWidth={3} />
               </CheckmarkContainer>
             )}
             <IconContainer>
@@ -98,15 +102,15 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
                 : icon}
             </IconContainer>
             <LabelContainer>
-              <BodyText
-                fontWeight={tokens.fontWeight.medium}
-                color={selected ? '#FFFFFF' : '$text'}
+              <LabelText
+                fontWeight={tokens.fontWeight.semibold}
+                color={selected ? contrastColor : '$text'}
                 textAlign="center"
                 fontSize={labelFontSize ?? (isTablet ? tokens.fontSize.body : tokens.fontSize.small)}
                 numberOfLines={2}
               >
                 {label}
-              </BodyText>
+              </LabelText>
             </LabelContainer>
           </Card>
       )}

@@ -62,8 +62,9 @@ export default function Categories() {
 
   // Responsive sizing for tablets
   const isTablet = width >= TABLET_BREAKPOINT;
+  const numColumns = isTablet ? 4 : 3;
   const iconSize = isTablet ? 48 : 32;
-  const labelFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
+  const labelFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.small;
   const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
 
   // Guard: redirect to language selection if not initialized
@@ -104,10 +105,10 @@ export default function Categories() {
     router.push("/onboarding/notifications");
   };
 
-  // Split categories into rows of 3
+  // Split categories into rows
   const rows: db.Category[][] = [];
-  for (let i = 0; i < categories.length; i += 3) {
-    rows.push(categories.slice(i, i + 3));
+  for (let i = 0; i < categories.length; i += numColumns) {
+    rows.push(categories.slice(i, i + numColumns));
   }
 
   if (isLoading) {
@@ -151,9 +152,9 @@ export default function Categories() {
                   />
                 ))}
                 {/* Add empty placeholders for the last row if needed */}
-                {row.length < 3 && (
+                {row.length < numColumns && (
                   <>
-                    {Array.from({ length: 3 - row.length }).map((_, idx) => (
+                    {Array.from({ length: numColumns - row.length }).map((_, idx) => (
                       <View key={`placeholder-${idx}`} style={{ flex: 1 }} />
                     ))}
                   </>

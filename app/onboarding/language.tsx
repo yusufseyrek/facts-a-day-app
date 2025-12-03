@@ -6,7 +6,7 @@ import { styled, Text } from "@tamagui/core";
 import { YStack, XStack, View } from "tamagui";
 import { useRouter } from "expo-router";
 import { tokens } from "../../src/theme/tokens";
-import { H1, BodyText, Button, ProgressIndicator } from "../../src/components";
+import { H1, BodyText, LabelText, Button, ProgressIndicator } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation, type SupportedLocale } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
@@ -63,7 +63,7 @@ const FlagText = styled(Text, {
   // Base size, will be overridden dynamically for tablets
 });
 
-const LanguageName = styled(BodyText, {
+const LanguageName = styled(LabelText, {
   textAlign: "center",
   fontWeight: tokens.fontWeight.semibold,
 });
@@ -106,7 +106,7 @@ export default function LanguageSelectionScreen() {
   // Responsive sizing for tablets
   const isTablet = width >= TABLET_BREAKPOINT;
   const flagFontSize = isTablet ? 56 : 40;
-  const nameFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
+  const nameFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.small;
   const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
   const smallFontSize = isTablet ? tokens.fontSize.smallTablet : tokens.fontSize.small;
 

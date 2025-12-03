@@ -531,7 +531,11 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               {/* Category Badge */}
               {categoryForBadge && (
                 <BadgesRow>
-                  <CategoryBadge category={categoryForBadge} />
+                  <CategoryBadge 
+                    category={categoryForBadge} 
+                    fontWeight={tokens.fontWeight.bold}
+                    fontSize={isTablet ? tokens.fontSize.labelTablet : tokens.fontSize.label}
+                  />
                 </BadgesRow>
               )}
 
@@ -634,7 +638,11 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               {/* Category Badge */}
               {categoryForBadge && (
                 <BadgesRow>
-                  <CategoryBadge category={categoryForBadge} />
+                  <CategoryBadge 
+                    category={categoryForBadge} 
+                    fontWeight={tokens.fontWeight.bold}
+                    fontSize={isTablet ? tokens.fontSize.labelTablet : tokens.fontSize.label}
+                  />
                 </BadgesRow>
               )}
 

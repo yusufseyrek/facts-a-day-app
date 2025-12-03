@@ -4,10 +4,13 @@ import { XStack } from 'tamagui';
 import { tokens, useTheme, getCategoryNeonColor } from '../theme';
 import { LabelText } from './Typography';
 import { useTranslation, translateCategory } from '../i18n';
+import { getContrastColor } from '../utils/colors';
 import type { Category } from '../services/database';
 
 interface CategoryBadgeProps {
   category: string | Category;
+  fontWeight?: string;
+  fontSize?: number;
 }
 
 const BadgeContainer = styled(XStack, {
@@ -17,7 +20,7 @@ const BadgeContainer = styled(XStack, {
   alignSelf: 'flex-start',
 });
 
-export function CategoryBadge({ category }: CategoryBadgeProps) {
+export function CategoryBadge({ category, fontWeight, fontSize }: CategoryBadgeProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
 
@@ -35,13 +38,14 @@ export function CategoryBadge({ category }: CategoryBadgeProps) {
 
   // Get neon color for this category
   const neonColor = getCategoryNeonColor(categorySlug, theme);
+  const contrastColor = getContrastColor(neonColor);
 
   return (
     <BadgeContainer style={{ backgroundColor: neonColor }}>
         <LabelText
-          fontSize={12}
-          color="#FFFFFF"
-          fontWeight={tokens.fontWeight.semibold}
+          fontSize={fontSize || 12}
+          color={contrastColor}
+          fontWeight={fontWeight || tokens.fontWeight.semibold}
         >
           {displayName}
         </LabelText>
