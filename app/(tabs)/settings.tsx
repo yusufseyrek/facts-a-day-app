@@ -205,7 +205,7 @@ export default function SettingsPage() {
         content,
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: 2,
+          seconds: 5,
           repeats: false,
         },
       });
@@ -214,7 +214,7 @@ export default function SettingsPage() {
 
       Alert.alert(
         t("testNotificationScheduled"),
-        t("testNotificationIn2Seconds"),
+        t("testNotificationIn5Seconds"),
         [{ text: t("ok"), style: "default" }]
       );
     } catch (error) {
