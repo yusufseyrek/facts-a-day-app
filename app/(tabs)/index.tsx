@@ -28,7 +28,7 @@ import { BannerAd } from "../../src/components/ads";
 import { ADS_ENABLED } from "../../src/config/ads";
 import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
-import { onFeedRefresh } from "../../src/services/contentRefresh";
+import { onFeedRefresh, forceRefreshContent } from "../../src/services/contentRefresh";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -356,11 +356,20 @@ function HomeScreen() {
     router.push(`/fact/${fact.id}`);
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     if (searchQuery.trim()) {
       performSearch(searchQuery);
     } else {
-      loadFacts(true);
+      setRefreshing(true);
+      try {
+        // First fetch new content from API
+        await forceRefreshContent();
+      } catch (error) {
+        console.error("Error refreshing content from API:", error);
+      }
+      // Then reload facts from database
+      // loadFacts will set refreshing to false in its finally block
+      await loadFacts(false);
     }
   };
 
