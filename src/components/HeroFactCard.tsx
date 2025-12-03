@@ -178,7 +178,11 @@ const HeroFactCardComponent = ({
                 fontSize={isTablet ? tokens.fontSize.h1Tablet : 21}
                 lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 28}
                 letterSpacing={0.2}
-                color="$text"
+                color={
+                  theme === "dark"
+                    ? tokens.color.dark.text
+                    : tokens.color.light.text
+                }
                 numberOfLines={isTablet ? 4 : 3}
               >
                 {title}
@@ -188,7 +192,11 @@ const HeroFactCardComponent = ({
                   fontSize={isTablet ? tokens.fontSize.bodyTablet : 15}
                   lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.6 : 24}
                   letterSpacing={0.3}
-                  color="$textSecondary"
+                  color={
+                    theme === "dark"
+                      ? "#B8C9DC" // Lighter than textSecondary for better contrast on gradient
+                      : tokens.color.light.text // Use primary text color in light mode
+                  }
                   numberOfLines={isTablet ? 5 : 4}
                 >
                   {summary}
