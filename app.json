@@ -8,6 +8,16 @@
     "userInterfaceStyle": "automatic",
     "scheme": "factsaday",
     "newArchEnabled": true,
+    "locales": {
+      "en": "./src/i18n/locales/en.json",
+      "de": "./src/i18n/locales/de.json",
+      "es": "./src/i18n/locales/es.json",
+      "fr": "./src/i18n/locales/fr.json",
+      "ja": "./src/i18n/locales/ja.json",
+      "ko": "./src/i18n/locales/ko.json",
+      "tr": "./src/i18n/locales/tr.json",
+      "zh": "./src/i18n/locales/zh.json"
+    },
     "extra": {
       "API_BASE_URL": "https://factsaday.com",
       "SENTRY_DSN": "https://3d61ec20d1f2a0b49f22193bf79583be@o4510405546672128.ingest.de.sentry.io/4510405547851856",
@@ -23,6 +33,7 @@
       "bundleIdentifier": "dev.seyrek.factsaday",
       "buildNumber": "6",
       "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false,
         "SKAdNetworkItems": [
           { "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork" },
@@ -85,6 +96,12 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-localization",
+        {
+          "supportedLocales": ["en", "de", "es", "fr", "ja", "ko", "tr", "zh"]
+        }
+      ],
       [
         "@sentry/react-native/expo",
         {
