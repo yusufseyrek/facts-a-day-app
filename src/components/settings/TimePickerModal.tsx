@@ -65,20 +65,24 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
     }
   };
 
-  const handleTimeChange = (event: any, date?: Date) => {
-    // Capture the current active index before resetting (fixes race condition)
-    const currentActiveIndex = activePickerIndex;
-
+  const handleTimeChange = (index: number, event: any, date?: Date) => {
     // On Android, hide the picker when user confirms or cancels
     if (Platform.OS === 'android') {
       setActivePickerIndex(null);
-    }
-
-    // Only update time if user confirmed (not cancelled) and we have an active picker
-    if (event.type === 'set' && date && currentActiveIndex !== null) {
-      const newTimes = [...times];
-      newTimes[currentActiveIndex] = date;
-      setTimes(newTimes);
+      // Only update time if user confirmed (not cancelled)
+      if (event.type === 'set' && date) {
+        const newTimes = [...times];
+        newTimes[index] = date;
+        setTimes(newTimes);
+      }
+    } else {
+      // On iOS with spinner display, onChange fires continuously as user scrolls
+      // No need to check event.type - just update when we have a valid date
+      if (date) {
+        const newTimes = [...times];
+        newTimes[index] = date;
+        setTimes(newTimes);
+      }
     }
   };
 
@@ -179,10 +183,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
               mode="time"
               is24Hour={true}
               display="spinner"
-              onChange={(event, date) => {
-                setActivePickerIndex(index);
-                handleTimeChange(event, date);
-              }}
+              onChange={(event, date) => handleTimeChange(index, event, date)}
               textColor={theme === 'dark' ? '#FFFFFF' : '#1A1D2E'}
               themeVariant={theme}
             />
@@ -209,7 +210,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                   mode="time"
                   is24Hour={true}
                   display="default"
-                  onChange={handleTimeChange}
+                  onChange={(event, date) => handleTimeChange(index, event, date)}
                 />
               )}
             </>
