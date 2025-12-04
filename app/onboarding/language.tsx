@@ -5,6 +5,7 @@ import { ScrollView, Pressable, useWindowDimensions } from "react-native";
 import { styled, Text } from "@tamagui/core";
 import { YStack, XStack, View } from "tamagui";
 import { useRouter } from "expo-router";
+import * as Localization from "expo-localization";
 import { tokens } from "../../src/theme/tokens";
 import { H1, BodyText, LabelText, Button, ProgressIndicator } from "../../src/components";
 import { useTheme } from "../../src/theme";
@@ -93,15 +94,42 @@ const LANGUAGES: Language[] = [
   { code: "tr", name: "Turkish", nativeName: "Türkçe", flag: "🇹🇷" },
 ];
 
+const SUPPORTED_LOCALE_CODES: SupportedLocale[] = ["zh", "de", "en", "es", "fr", "ja", "ko", "tr"];
+
+/**
+ * Gets the device's preferred language and maps it to a supported locale.
+ * Falls back to 'en' if the device language is not supported.
+ */
+const getDevicePreferredLanguage = (): SupportedLocale => {
+  const deviceLocales = Localization.getLocales();
+  
+  // Check each of the user's preferred languages in order
+  for (const locale of deviceLocales) {
+    const languageCode = locale.languageCode?.toLowerCase();
+    if (languageCode && SUPPORTED_LOCALE_CODES.includes(languageCode as SupportedLocale)) {
+      return languageCode as SupportedLocale;
+    }
+  }
+  
+  return "en";
+};
+
 export default function LanguageSelectionScreen() {
   const { theme } = useTheme();
-  const { t, locale, setLocale } = useTranslation();
+  const { t, setLocale } = useTranslation();
   const router = useRouter();
-  const [selectedLanguage, setSelectedLanguage] =
-    useState<SupportedLocale>(locale);
+  // Initialize with device's preferred language for best UX during onboarding
+  const [selectedLanguage, setSelectedLanguage] = useState<SupportedLocale>(
+    () => getDevicePreferredLanguage()
+  );
   const { isInitializing, initializationError, initializeOnboarding } =
     useOnboarding();
   const { width } = useWindowDimensions();
+
+  // Set the i18n locale to match the device's preferred language on mount
+  React.useEffect(() => {
+    setLocale(selectedLanguage);
+  }, []);
 
   // Responsive sizing for tablets
   const isTablet = width >= TABLET_BREAKPOINT;

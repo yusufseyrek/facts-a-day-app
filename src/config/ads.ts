@@ -5,4 +5,4 @@
  * To re-enable ads, simply change ADS_ENABLED to true.
  */
 
-export const ADS_ENABLED = false;
+export const ADS_ENABLED = true;
