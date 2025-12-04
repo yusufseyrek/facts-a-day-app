@@ -152,6 +152,7 @@ export const translations = {
 
     // Loading States
     updatingLanguage: "Sprache wird aktualisiert...",
+    syncingContent: "Inhalte werden synchronisiert...",
 
     // Time Picker
     scheduleUpTo3Notifications: "Planen Sie bis zu 3 Benachrichtigungen pro Tag",
@@ -314,6 +315,7 @@ export const translations = {
 
     // Loading States
     updatingLanguage: "Updating language...",
+    syncingContent: "Syncing content...",
 
     // Time Picker
     scheduleUpTo3Notifications: "Schedule up to 3 notifications per day",
@@ -476,6 +478,7 @@ export const translations = {
 
     // Loading States
     updatingLanguage: "Actualizando idioma...",
+    syncingContent: "Sincronizando contenido...",
 
     // Time Picker
     scheduleUpTo3Notifications: "Programa hasta 3 notificaciones por día",
@@ -640,6 +643,7 @@ export const translations = {
 
     // Loading States
     updatingLanguage: "Mise à jour de la langue...",
+    syncingContent: "Synchronisation du contenu...",
 
     // Time Picker
     scheduleUpTo3Notifications: "Planifiez jusqu'à 3 notifications par jour",
@@ -801,6 +805,7 @@ export const translations = {
 
     // Loading States
     updatingLanguage: "言語を更新中...",
+    syncingContent: "コンテンツを同期中...",
 
     // Time Picker
     scheduleUpTo3Notifications: "1日最大3件の通知をスケジュール",
@@ -959,6 +964,7 @@ export const translations = {
 
     // Loading States
     updatingLanguage: "언어 업데이트 중...",
+    syncingContent: "콘텐츠 동기화 중...",
 
     // Time Picker
     scheduleUpTo3Notifications: "하루 최대 3개의 알림 예약",
@@ -1120,6 +1126,7 @@ export const translations = {
 
     // Loading States
     updatingLanguage: "Dil güncelleniyor...",
+    syncingContent: "İçerik senkronize ediliyor...",
 
     // Time Picker
     scheduleUpTo3Notifications: "Günde en fazla 3 bildirim planlayın",
@@ -1277,6 +1284,7 @@ export const translations = {
 
     // Loading States
     updatingLanguage: "正在更新语言...",
+    syncingContent: "正在同步内容...",
 
     // Time Picker
     scheduleUpTo3Notifications: "每天最多安排3个通知",

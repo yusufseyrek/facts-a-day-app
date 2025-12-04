@@ -17,6 +17,7 @@ import { useTranslation } from '../../i18n/useTranslation';
 import { Button } from '../Button';
 import * as onboardingService from '../../services/onboarding';
 import * as notificationService from '../../services/notifications';
+import { showSettingsInterstitial } from '../../services/adManager';
 
 interface TimePickerModalProps {
   visible: boolean;
@@ -125,6 +126,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       if (onTimeChange) {
         onTimeChange(times[0]);
       }
+
+      // Show interstitial ad after successful notification time update
+      await showSettingsInterstitial();
 
       // Close modal
       onClose();

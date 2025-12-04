@@ -19,6 +19,7 @@ import * as db from '../../src/services/database';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import * as onboardingService from '../../src/services/onboarding';
 import * as preferencesService from '../../src/services/preferences';
+import { showSettingsInterstitial } from '../../src/services/adManager';
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -142,6 +143,8 @@ export default function CategoriesSettings() {
 
       if (result.success) {
         console.log(`Successfully refreshed with ${result.factsCount} facts`);
+        // Show interstitial ad after successful category update
+        await showSettingsInterstitial();
         router.back();
       } else {
         Alert.alert(t('error'), result.error || t('failedToUpdateCategories'));

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
-import { ChevronRight } from '@tamagui/lucide-icons';
+import { ChevronRight, ExternalLink } from '@tamagui/lucide-icons';
 import { useTheme } from '../theme';
 import { tokens } from '../theme/tokens';
 
@@ -9,6 +9,8 @@ interface SettingsRowProps {
   value?: string;
   onPress?: () => void;
   icon?: React.ReactNode;
+  /** Show external link icon instead of chevron (for links that open outside the app) */
+  showExternalLink?: boolean;
 }
 
 export const SettingsRow: React.FC<SettingsRowProps> = ({
@@ -16,6 +18,7 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   value,
   onPress,
   icon,
+  showExternalLink = false,
 }) => {
   const { theme } = useTheme();
   const colors = tokens.color[theme];
@@ -45,7 +48,11 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
             {value}
           </Text>
         )}
-        {onPress && <ChevronRight size={20} color={colors.textSecondary} />}
+        {onPress && (
+          showExternalLink 
+            ? <ExternalLink size={18} color={colors.textSecondary} />
+            : <ChevronRight size={20} color={colors.textSecondary} />
+        )}
       </View>
     </View>
   );

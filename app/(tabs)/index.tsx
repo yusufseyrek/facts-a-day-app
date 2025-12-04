@@ -28,7 +28,8 @@ import { BannerAd } from "../../src/components/ads";
 import { ADS_ENABLED } from "../../src/config/ads";
 import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
-import { onFeedRefresh, forceRefreshContent } from "../../src/services/contentRefresh";
+import { onFeedRefresh, forceRefreshContent, onRefreshStatusChange, getRefreshStatus, RefreshStatus } from "../../src/services/contentRefresh";
+import { onPreferenceFeedRefresh } from "../../src/services/preferences";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -112,6 +113,19 @@ const LoadingContainer = styled(YStack, {
   gap: tokens.space.md,
 });
 
+const LocaleChangeOverlay = styled(YStack, {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "$background",
+  zIndex: 100,
+  gap: tokens.space.lg,
+});
+
 const SearchContainer = styled(XStack, {
   paddingHorizontal: tokens.space.xl,
   paddingBottom: tokens.space.md,
@@ -175,6 +189,7 @@ function HomeScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() => getRefreshStatus());
   const searchInputRef = useRef<TextInput>(null);
   
   // Animation values for smooth search bar transition
@@ -215,6 +230,26 @@ function HomeScreen() {
     const unsubscribe = onFeedRefresh(() => {
       console.log("📥 Feed refresh triggered by content update");
       loadFacts();
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Auto-refresh feed when language or categories change (from device settings or in-app)
+  useEffect(() => {
+    const unsubscribe = onPreferenceFeedRefresh(() => {
+      console.log("🌍 Feed refresh triggered by preference change (language/categories)");
+      loadFacts();
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Subscribe to background refresh status for loading indicator
+  useEffect(() => {
+    const unsubscribe = onRefreshStatusChange((status) => {
+      console.log(`📊 Background refresh status changed: ${status}`);
+      setBackgroundRefreshStatus(status);
     });
 
     return () => unsubscribe();
@@ -756,6 +791,20 @@ function HomeScreen() {
     );
   };
 
+  const renderLocaleChangeOverlay = () => {
+    // Only show overlay for locale changes, not for regular background refresh
+    if (backgroundRefreshStatus !== 'locale-change') return null;
+    
+    return (
+      <LocaleChangeOverlay>
+        <ActivityIndicator size="large" color={tokens.color[theme].primary} />
+        <BodyText fontSize={tokens.fontSize.body} color="$textSecondary">
+          {t("updatingLanguage")}
+        </BodyText>
+      </LocaleChangeOverlay>
+    );
+  };
+
   return (
     <Container edges={["top"]}>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
@@ -779,6 +828,7 @@ function HomeScreen() {
             <BannerAd position="home" />
           </YStack>
         )}
+        {renderLocaleChangeOverlay()}
       </YStack>
     </Container>
   );

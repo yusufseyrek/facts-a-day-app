@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Alert, ScrollView, Linking } from "react-native";
+import { Alert, ScrollView, Linking, Platform } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, Text } from "tamagui";
 import { useRouter } from "expo-router";
@@ -11,7 +11,6 @@ import {
   Globe,
   Palette,
   Grid,
-  Signal,
   Bell,
   Plus,
   TestTube,
@@ -23,7 +22,6 @@ import {
 import { tokens } from "../../src/theme/tokens";
 import { H1, H2 } from "../../src/components";
 import { SettingsRow } from "../../src/components/SettingsRow";
-import { LanguagePickerModal } from "../../src/components/settings/LanguagePickerModal";
 import { ThemePickerModal } from "../../src/components/settings/ThemePickerModal";
 import { TimePickerModal } from "../../src/components/settings/TimePickerModal";
 import { useTheme } from "../../src/theme";
@@ -33,7 +31,6 @@ import * as onboardingService from "../../src/services/onboarding";
 import * as database from "../../src/services/database";
 import { buildNotificationContent } from "../../src/services/notifications";
 import { useOnboarding } from "../../src/contexts";
-import { showSettingsInterstitial } from "../../src/services/adManager";
 import { Sentry } from "../../src/config/sentry";
 
 const Container = styled(SafeAreaView, {
@@ -110,7 +107,6 @@ export default function SettingsPage() {
   const iconColor = theme === "dark" ? "#FFFFFF" : tokens.color[theme].text;
 
   // Modal visibility state
-  const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
 
@@ -139,18 +135,29 @@ export default function SettingsPage() {
     }
   };
 
-  const handleCategoriesPress = async () => {
-    await showSettingsInterstitial();
+  const handleCategoriesPress = () => {
     router.push("/settings/categories");
   };
 
   const handleLanguagePress = async () => {
-    await showSettingsInterstitial();
-    setShowLanguageModal(true);
+    // Open device app settings where user can change app language
+    // On iOS: Settings > Facts a Day > Language
+    // On Android: Settings > Apps > Facts a Day > Language
+    try {
+      if (Platform.OS === 'ios') {
+        await Linking.openURL('app-settings:');
+      } else {
+        await Linking.openSettings();
+      }
+    } catch (error) {
+      console.error('Error opening app settings:', error);
+      Alert.alert(t('error'), t('cannotOpenUrl'), [
+        { text: t('ok'), style: 'default' },
+      ]);
+    }
   };
 
-  const handleTimePress = async () => {
-    await showSettingsInterstitial();
+  const handleTimePress = () => {
     setShowTimeModal(true);
   };
 
@@ -344,6 +351,7 @@ export default function SettingsPage() {
                 value={getLanguageName(locale)}
                 icon={<Globe size={20} color={iconColor} />}
                 onPress={handleLanguagePress}
+                showExternalLink
               />
 
               <SettingsRow
@@ -447,11 +455,6 @@ export default function SettingsPage() {
       </ScrollView>
 
       {/* Modals */}
-      <LanguagePickerModal
-        visible={showLanguageModal}
-        onClose={() => setShowLanguageModal(false)}
-      />
-
       <ThemePickerModal
         visible={showThemeModal}
         onClose={() => setShowThemeModal(false)}

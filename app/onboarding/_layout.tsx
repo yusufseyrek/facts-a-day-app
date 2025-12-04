@@ -8,7 +8,12 @@ export default function OnboardingLayout() {
         animation: "slide_from_right",
       }}
     >
-      <Stack.Screen name="language" />
+      {/* Language selection removed - now handled via device settings */}
+      {/* Redirect /onboarding to /onboarding/categories */}
+      <Stack.Screen 
+        name="index" 
+        options={{ headerShown: false }}
+      />
       <Stack.Screen name="categories" />
       <Stack.Screen name="notifications" />
     </Stack>

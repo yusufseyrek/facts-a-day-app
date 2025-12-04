@@ -14,7 +14,7 @@ import {
   CategoryCard,
 } from "../../src/components";
 import { useTheme } from "../../src/theme";
-import { useTranslation } from "../../src/i18n";
+import { useTranslation, type SupportedLocale } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
 import * as db from "../../src/services/database";
 import { getLucideIcon } from "../../src/utils/iconMapper";
@@ -55,7 +55,15 @@ export default function Categories() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const { selectedCategories, setSelectedCategories, isInitialized, downloadFacts } = useOnboarding();
+  const { 
+    selectedCategories, 
+    setSelectedCategories, 
+    isInitialized, 
+    isInitializing,
+    initializationError,
+    initializeOnboarding,
+    downloadFacts 
+  } = useOnboarding();
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { width } = useWindowDimensions();
@@ -67,16 +75,20 @@ export default function Categories() {
   const labelFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.small;
   const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
 
-  // Guard: redirect to language selection if not initialized
+  // Auto-initialize with device locale if not already initialized
+  // Language selection has been removed - we use device language settings
   useEffect(() => {
-    if (!isInitialized) {
-      router.replace("/onboarding/language");
+    if (!isInitialized && !isInitializing) {
+      // Initialize with the current device locale
+      initializeOnboarding(locale as SupportedLocale);
     }
-  }, [isInitialized, router]);
+  }, [isInitialized, isInitializing, locale, initializeOnboarding]);
 
   useEffect(() => {
-    loadCategories();
-  }, []);
+    if (isInitialized) {
+      loadCategories();
+    }
+  }, [isInitialized]);
 
   const loadCategories = async () => {
     try {
@@ -111,13 +123,34 @@ export default function Categories() {
     rows.push(categories.slice(i, i + numColumns));
   }
 
-  if (isLoading) {
+  // Show loading while initializing or loading categories
+  if (isInitializing || (!isInitialized && !initializationError) || isLoading) {
     return (
       <Container>
         <StatusBar style={theme === "dark" ? "light" : "dark"} />
         <ContentContainer justifyContent="center" alignItems="center">
           <ActivityIndicator size="large" color={tokens.color.light.primary} />
-          <BodyText>{t("loadingCategories")}</BodyText>
+          <BodyText>{isInitializing ? t("settingUpApp") : t("loadingCategories")}</BodyText>
+        </ContentContainer>
+      </Container>
+    );
+  }
+
+  // Show error if initialization failed
+  if (initializationError) {
+    return (
+      <Container>
+        <StatusBar style={theme === "dark" ? "light" : "dark"} />
+        <ContentContainer justifyContent="center" alignItems="center" gap="$lg">
+          <BodyText color="#FF6B6B" textAlign="center">
+            {initializationError}
+          </BodyText>
+          <BodyText color="$textSecondary" textAlign="center">
+            {t("checkInternetConnection")}
+          </BodyText>
+          <Button onPress={() => initializeOnboarding(locale as SupportedLocale)}>
+            {t("tryAgain")}
+          </Button>
         </ContentContainer>
       </Container>
     );
@@ -127,7 +160,7 @@ export default function Categories() {
     <Container>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <ContentContainer>
-        <ProgressIndicator currentStep={2} totalSteps={3} />
+        <ProgressIndicator currentStep={1} totalSteps={2} />
 
         <Header>
           <H1>{t("whatInterestsYou")}</H1>

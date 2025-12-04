@@ -149,7 +149,7 @@ export default function NotificationsScreen() {
       <ContentContainer>
         <ScrollView showsVerticalScrollIndicator={false}>
           <YStack gap="$md" paddingBottom="$xl">
-            <ProgressIndicator currentStep={3} totalSteps={3} />
+            <ProgressIndicator currentStep={2} totalSteps={2} />
 
             <Header>
               <IconContainer>

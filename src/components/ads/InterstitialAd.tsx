@@ -94,6 +94,52 @@ export const useInterstitialAd = () => {
   return { showAd, isLoaded };
 };
 
+/**
+ * Wait for the interstitial ad to be loaded (with timeout)
+ * @param timeoutMs Maximum time to wait for ad to load
+ * @returns true if ad loaded, false if timeout
+ */
+const waitForAdToLoad = (timeoutMs: number = 5000): Promise<boolean> => {
+  return new Promise((resolve) => {
+    // If already loaded, resolve immediately
+    if (interstitial && interstitial.loaded) {
+      resolve(true);
+      return;
+    }
+
+    // If no interstitial instance, try to create and load one
+    if (!interstitial) {
+      loadInterstitialAd();
+    }
+
+    // Set up timeout
+    const timeout = setTimeout(() => {
+      console.log('⏱️ Ad load timeout reached');
+      resolve(false);
+    }, timeoutMs);
+
+    // Set up load listener
+    if (interstitial) {
+      const loadedListener = interstitial.addAdEventListener(AdEventType.LOADED, () => {
+        clearTimeout(timeout);
+        loadedListener(); // Remove listener
+        console.log('✅ Ad loaded successfully while waiting');
+        resolve(true);
+      });
+
+      const errorListener = interstitial.addAdEventListener(AdEventType.ERROR, (error) => {
+        clearTimeout(timeout);
+        errorListener(); // Remove listener
+        console.error('❌ Ad failed to load while waiting:', error);
+        resolve(false);
+      });
+    } else {
+      clearTimeout(timeout);
+      resolve(false);
+    }
+  });
+};
+
 // Export function to show interstitial ad (for use without hook)
 export const showInterstitialAd = async (): Promise<void> => {
   // Don't show ads if globally disabled
@@ -101,8 +147,22 @@ export const showInterstitialAd = async (): Promise<void> => {
     return;
   }
 
+  console.log('📺 Attempting to show interstitial ad...');
+  
+  // If ad not loaded yet, wait for it (with timeout)
+  if (!interstitial || !interstitial.loaded) {
+    console.log('⏳ Ad not loaded yet, waiting...');
+    const loaded = await waitForAdToLoad(5000); // Wait up to 5 seconds
+    if (!loaded) {
+      console.log('⚠️ Ad did not load in time, skipping');
+      return;
+    }
+  }
+
   if (interstitial && interstitial.loaded) {
     try {
+      console.log('🎬 Showing interstitial ad...');
+      
       // Create a promise that resolves when the ad is closed
       const adClosedPromise = new Promise<void>((resolve) => {
         const closeListener = interstitial!.addAdEventListener(AdEventType.CLOSED, () => {
@@ -117,6 +177,8 @@ export const showInterstitialAd = async (): Promise<void> => {
       // Wait for the ad to be closed
       await adClosedPromise;
 
+      console.log('✅ Interstitial ad closed');
+
       // Add a small delay on iOS to ensure the view hierarchy is fully restored
       // This prevents the settings screen from becoming unclickable
       if (Platform.OS === 'ios') {
@@ -126,7 +188,8 @@ export const showInterstitialAd = async (): Promise<void> => {
       console.error('Error showing interstitial ad:', error);
     }
   } else {
-    // If ad not loaded yet, load it for next time
+    // If ad still not loaded, load it for next time
+    console.log('⚠️ Ad still not loaded, loading for next time');
     loadInterstitialAd();
   }
 };

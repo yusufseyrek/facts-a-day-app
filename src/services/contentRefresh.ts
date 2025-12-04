@@ -2,11 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as api from './api';
 import * as db from './database';
 import * as onboardingService from './onboarding';
-import { i18n } from '../i18n';
+import * as preferencesService from './preferences';
+import { getLocaleFromCode } from '../i18n';
+import * as Localization from 'expo-localization';
+import { showInterstitialAd } from '../components/ads/InterstitialAd';
+import { ADS_ENABLED } from '../config/ads';
 
 // AsyncStorage keys
 const LAST_CONTENT_REFRESH_KEY = '@last_content_refresh';
-const LOCALE_STORAGE_KEY = '@app_locale';
+const STORED_LOCALE_KEY = '@stored_locale';
 
 // Minimum interval between refreshes (1 hour in milliseconds)
 // Note: No longer used - app now refreshes on every open
@@ -15,6 +19,59 @@ const REFRESH_INTERVAL = 60 * 60 * 1000; // 1 hour
 // Event listeners for feed refresh
 type FeedRefreshListener = () => void;
 const feedRefreshListeners: Set<FeedRefreshListener> = new Set();
+
+// Event listeners for background refresh status (loading indicator)
+export type RefreshStatus = 'idle' | 'refreshing' | 'locale-change';
+type RefreshStatusListener = (status: RefreshStatus) => void;
+const refreshStatusListeners: Set<RefreshStatusListener> = new Set();
+
+// Track current refresh status so new subscribers get the current state immediately
+let currentRefreshStatus: RefreshStatus = 'idle';
+
+/**
+ * Subscribe to refresh status changes
+ * Used to show loading indicators in the UI
+ * Immediately emits current status to new subscribers
+ */
+export function onRefreshStatusChange(listener: RefreshStatusListener): () => void {
+  refreshStatusListeners.add(listener);
+  
+  // Immediately emit current status to new subscriber
+  // This ensures late subscribers (like home screen mounting after refresh started) get the current state
+  if (currentRefreshStatus !== 'idle') {
+    try {
+      listener(currentRefreshStatus);
+    } catch (error) {
+      console.error('Error in refresh status listener (initial emit):', error);
+    }
+  }
+  
+  return () => {
+    refreshStatusListeners.delete(listener);
+  };
+}
+
+/**
+ * Get current refresh status (for checking state without subscribing)
+ */
+export function getRefreshStatus(): RefreshStatus {
+  return currentRefreshStatus;
+}
+
+/**
+ * Emit refresh status change to all listeners
+ */
+function emitRefreshStatus(status: RefreshStatus): void {
+  currentRefreshStatus = status;
+  console.log(`📊 Refresh status: ${status}`);
+  refreshStatusListeners.forEach((listener) => {
+    try {
+      listener(status);
+    } catch (error) {
+      console.error('Error in refresh status listener:', error);
+    }
+  });
+}
 
 /**
  * Subscribe to feed refresh events
@@ -89,16 +146,51 @@ async function updateLastRefreshTime(): Promise<void> {
 }
 
 /**
- * Get current app locale from AsyncStorage or fallback to i18n.locale
+ * Get the current device locale from system settings.
+ * This respects per-app language selection on iOS 13+ and Android 13+.
  */
-async function getCurrentLocale(): Promise<string> {
+function getDeviceLocale(): string {
+  const deviceLanguage = Localization.getLocales()[0]?.languageCode || 'en';
+  return getLocaleFromCode(deviceLanguage);
+}
+
+/**
+ * Get the stored locale from AsyncStorage
+ * Returns null if no locale has been stored yet
+ */
+async function getStoredLocale(): Promise<string | null> {
   try {
-    const savedLocale = await AsyncStorage.getItem(LOCALE_STORAGE_KEY);
-    return savedLocale || i18n.locale || 'en';
+    return await AsyncStorage.getItem(STORED_LOCALE_KEY);
   } catch (error) {
-    console.error('Error getting current locale:', error);
-    return i18n.locale || 'en';
+    console.error('Error getting stored locale:', error);
+    return null;
   }
+}
+
+/**
+ * Save the current locale to AsyncStorage
+ */
+async function saveCurrentLocale(locale: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORED_LOCALE_KEY, locale);
+    console.log(`📍 Stored locale saved: ${locale}`);
+  } catch (error) {
+    console.error('Error saving current locale:', error);
+  }
+}
+
+/**
+ * Check if the device locale has changed compared to the stored locale
+ */
+async function hasLocaleChanged(): Promise<{ changed: boolean; currentLocale: string; storedLocale: string | null }> {
+  const currentLocale = getDeviceLocale();
+  const storedLocale = await getStoredLocale();
+  
+  return {
+    changed: storedLocale !== null && storedLocale !== currentLocale,
+    currentLocale,
+    storedLocale,
+  };
 }
 
 /**
@@ -147,6 +239,10 @@ async function getExistingFactIds(factIds: number[]): Promise<number[]> {
  * This runs every time the app opens (no time interval restriction)
  * Runs in the background and doesn't block app startup
  * Silently fails if offline or network issues occur
+ * 
+ * On initial load, checks if locale has changed compared to DB.
+ * If locale changed: triggers full refresh (fetch all facts, insert/update)
+ * and shows an interstitial ad
  */
 export async function refreshAppContent(): Promise<RefreshResult> {
   const result: RefreshResult = {
@@ -160,15 +256,62 @@ export async function refreshAppContent(): Promise<RefreshResult> {
   try {
     console.log('🔄 Starting background content refresh...');
 
-    // Always refresh content when app opens (removed 1-hour interval check)
-    // This ensures fresh content every time the user opens the app
+    // Check if locale has changed since last app open
+    const localeStatus = await hasLocaleChanged();
+    const currentLocale = localeStatus.currentLocale;
+    
+    if (localeStatus.changed) {
+      // Locale has changed - trigger full refresh with new language
+      console.log(`🌍 Locale changed from "${localeStatus.storedLocale}" to "${currentLocale}" - triggering full refresh...`);
+      
+      // Emit locale-change status for UI loading indicator
+      emitRefreshStatus('locale-change');
+      
+      // Show interstitial ad in parallel with language update (don't block the refresh)
+      if (ADS_ENABLED) {
+        console.log('📺 Showing interstitial ad for locale change (in parallel)...');
+        // Fire and forget - don't await, let it run in parallel
+        showInterstitialAd().catch((error) => {
+          console.error('Error showing interstitial ad:', error);
+        });
+      }
+      
+      const languageChangeResult = await preferencesService.handleLanguageChange(currentLocale);
+      
+      if (languageChangeResult.success) {
+        // Save the new locale after successful refresh
+        await saveCurrentLocale(currentLocale);
+        await updateLastRefreshTime();
+        
+        result.success = true;
+        result.updated.facts = languageChangeResult.factsCount || 0;
+        console.log(`✅ Locale change refresh completed: ${result.updated.facts} facts updated`);
+      } else {
+        console.error('❌ Locale change refresh failed:', languageChangeResult.error);
+        result.error = languageChangeResult.error;
+      }
+      
+      // Emit idle status when done
+      emitRefreshStatus('idle');
+      
+      return result;
+    }
+
+    // No locale change - proceed with regular incremental refresh
+    // Emit refreshing status for UI loading indicator
+    emitRefreshStatus('refreshing');
+    
+    // Also save current locale if this is the first time (storedLocale is null)
+    if (localeStatus.storedLocale === null) {
+      await saveCurrentLocale(currentLocale);
+      console.log(`📍 First app open - stored locale: ${currentLocale}`);
+    }
 
     // Get current user preferences
-    const language = await getCurrentLocale();
     const categories = await onboardingService.getSelectedCategories();
 
     // Step 1: Fetch and update metadata (categories)
-    const metadata = await api.getMetadata(language);
+    const metadata = await api.getMetadata(currentLocale);
 
     await db.insertCategories(metadata.categories);
     result.updated.categories = metadata.categories.length;
@@ -180,7 +323,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
       // Fetch only new or updated facts using since_updated parameter
       const categoriesParam = categories.join(',');
       const response = await api.getFacts({
-        language,
+        language: currentLocale,
         categories: categoriesParam,
         since_updated: lastFactUpdatedAt,
         limit: 1000, // Reasonable limit for incremental fetch
@@ -243,6 +386,9 @@ export async function refreshAppContent(): Promise<RefreshResult> {
 
     // Don't throw - silently fail for offline scenarios
     // The app will continue using cached data
+  } finally {
+    // Always emit idle status when done (success or error)
+    emitRefreshStatus('idle');
   }
 
   return result;

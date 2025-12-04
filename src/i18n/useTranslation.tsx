@@ -1,32 +1,31 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Localization from 'expo-localization';
 import { i18n, getLocaleFromCode } from './config';
 import { SupportedLocale, TranslationKeys } from './translations';
 
-const LOCALE_STORAGE_KEY = '@app_locale';
-
 interface I18nContextType {
   locale: SupportedLocale;
-  setLocale: (locale: SupportedLocale) => Promise<void>;
   t: (key: TranslationKeys) => string;
 }
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<SupportedLocale>(() => {
-    return getLocaleFromCode(i18n.locale);
-  });
+/**
+ * Get the current device locale from system settings.
+ * This respects per-app language selection on iOS 13+ and Android 13+.
+ */
+export const getDeviceLocale = (): SupportedLocale => {
+  const deviceLanguage = Localization.getLocales()[0]?.languageCode || 'en';
+  return getLocaleFromCode(deviceLanguage);
+};
 
-  const setLocale = useCallback(async (newLocale: SupportedLocale) => {
-    i18n.locale = newLocale;
-    setLocaleState(newLocale);
-    try {
-      await AsyncStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
-    } catch (error) {
-      console.warn('Failed to save locale:', error);
-    }
-  }, []);
+export function I18nProvider({ children }: { children: React.ReactNode }) {
+  // Initialize with the device's current locale (respects per-app language settings)
+  const [locale, setLocaleState] = useState<SupportedLocale>(() => {
+    const deviceLocale = getDeviceLocale();
+    i18n.locale = deviceLocale;
+    return deviceLocale;
+  });
 
   const t = useCallback(
     (key: TranslationKeys): string => {
@@ -35,24 +34,18 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     [locale]
   );
 
-  // Load saved locale on mount
+  // Sync locale when device locale changes (e.g., app comes to foreground)
+  // Content refresh is handled separately by the layout
   React.useEffect(() => {
-    const loadLocale = async () => {
-      try {
-        const savedLocale = await AsyncStorage.getItem(LOCALE_STORAGE_KEY);
-        const validLocales: SupportedLocale[] = ['de', 'en', 'es', 'fr', 'ja', 'ko', 'tr', 'zh'];
-        if (savedLocale && validLocales.includes(savedLocale as SupportedLocale)) {
-          await setLocale(savedLocale as SupportedLocale);
-        }
-      } catch (error) {
-        console.warn('Failed to load locale:', error);
-      }
-    };
-    loadLocale();
-  }, []);
+    const deviceLocale = getDeviceLocale();
+    if (deviceLocale !== locale) {
+      i18n.locale = deviceLocale;
+      setLocaleState(deviceLocale);
+    }
+  });
 
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t }}>
+    <I18nContext.Provider value={{ locale, t }}>
       {children}
     </I18nContext.Provider>
   );

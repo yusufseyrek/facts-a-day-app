@@ -8,6 +8,7 @@ import * as onboardingService from '../src/services/onboarding';
 import * as notificationService from '../src/services/notifications';
 import * as database from '../src/services/database';
 import * as contentRefresh from '../src/services/contentRefresh';
+import { preloadInterstitialAd } from '../src/components/ads';
 import { ActivityIndicator, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { initializeSentry } from '../src/config/sentry';
@@ -74,8 +75,8 @@ function AppContent() {
     const onSuccessScreen = (segments as string[])[1] === 'success';
 
     if (!isOnboardingComplete && !inOnboarding) {
-      // User hasn't completed onboarding, redirect to language selection
-      router.replace('/onboarding/language');
+      // User hasn't completed onboarding, redirect to categories selection
+      router.replace('/onboarding');
     } else if (isOnboardingComplete && inOnboarding && !onSuccessScreen) {
       // User has completed onboarding but is in onboarding screens (except success), redirect to main app
       // Success screen handles its own navigation after showing the completion animation
@@ -149,6 +150,9 @@ export default Sentry.wrap(function RootLayout() {
 
   const initializeApp = async () => {
     try {
+      // Preload interstitial ad early so it's ready for locale change detection
+      preloadInterstitialAd();
+      
       // Initialize database first
       await database.openDatabase();
       setIsDbReady(true);

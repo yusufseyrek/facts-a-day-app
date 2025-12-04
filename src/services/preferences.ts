@@ -15,6 +15,35 @@ import * as api from './api';
 import * as onboardingService from './onboarding';
 import * as notificationService from './notifications';
 
+// Feed refresh listeners for preference changes
+type FeedRefreshListener = () => void;
+const feedRefreshListeners: Set<FeedRefreshListener> = new Set();
+
+/**
+ * Subscribe to feed refresh events triggered by preference changes
+ * (language change, categories change)
+ */
+export function onPreferenceFeedRefresh(listener: FeedRefreshListener): () => void {
+  feedRefreshListeners.add(listener);
+  return () => {
+    feedRefreshListeners.delete(listener);
+  };
+}
+
+/**
+ * Emit feed refresh event to all listeners after preference changes
+ */
+function emitFeedRefresh(): void {
+  console.log('📢 Emitting feed refresh after preference change');
+  feedRefreshListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch (error) {
+      console.error('Error in feed refresh listener:', error);
+    }
+  });
+}
+
 export interface RefreshProgress {
   stage: 'clearing' | 'translating' | 'downloading' | 'scheduling' | 'complete';
   percentage: number;
@@ -186,6 +215,9 @@ export async function handleLanguageChange(
       message: 'Language updated successfully!'
     });
 
+    // Notify listeners to refresh the feed with new language content
+    emitFeedRefresh();
+
     return { success: true, factsCount: allFacts.length };
   } catch (error) {
     console.error('Error handling language change:', error);
@@ -343,6 +375,9 @@ export async function handleCategoriesChange(
       percentage: 100,
       message: 'Categories updated successfully!'
     });
+
+    // Notify listeners to refresh the feed with new category content
+    emitFeedRefresh();
 
     return { success: true, factsCount: newFacts.length };
   } catch (error) {
