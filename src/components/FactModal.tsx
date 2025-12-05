@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { Pressable, Linking, Dimensions, Animated, View, StyleSheet, Platform, useWindowDimensions, PanResponder, ScrollView } from "react-native";
+import { Pressable, Linking, Dimensions, Animated, View, StyleSheet, Platform, useWindowDimensions, PanResponder, ScrollView, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
@@ -183,7 +183,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   // Update close button visibility and header pointer events for Android
   React.useEffect(() => {
     if (Platform.OS === "android" && hasImage) {
-      const threshold = HEADER_BG_TRANSITION * 0.5;
+      // Match the opacity animation - button is visible until HEADER_BG_TRANSITION
+      const threshold = HEADER_BG_TRANSITION * 0.95;
       const initialValue = (scrollY as any)._value || 0;
       setCloseButtonVisible(initialValue < threshold);
       setHeaderShouldBlock(initialValue >= HEADER_BG_TRANSITION);
@@ -505,6 +506,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                     right: 0,
                     height: 120,
                   }}
+                  pointerEvents="none"
                 />
               </Animated.View>
             )}
@@ -613,6 +615,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                     right: 0,
                     height: 120,
                   }}
+                  pointerEvents="none"
                 />
               </Animated.View>
             )}
@@ -685,19 +688,31 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             top: (Platform.OS === "ios" ? 0 : insets.top) + (isTablet ? tokens.space.xxl : tokens.space.xl),
             right: isTablet ? tokens.space.xxl : tokens.space.xl,
             opacity: closeButtonOpacity,
-            zIndex: 110,
+            zIndex: 9999,
+            ...Platform.select({
+              android: {
+                elevation: 999, // Much higher than any other element to receive touches
+              },
+            }),
           }}
           collapsable={false}
-          pointerEvents={Platform.OS === "android" && hasImage && !closeButtonVisible ? "none" : "auto"}
+          pointerEvents={Platform.OS === "android" && hasImage && !closeButtonVisible ? "none" : "box-none"}
         >
-          <Pressable 
+          <TouchableOpacity
             onPress={onClose}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: tokens.radius.full,
+              backgroundColor: "rgba(0, 0, 0, 0.4)",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
           >
-            <CloseButton backgroundColor="rgba(0, 0, 0, 0.4)">
-              <X size={isTablet ? 24 : 18} color="#FFFFFF" />
-            </CloseButton>
-          </Pressable>
+            <X size={isTablet ? 24 : 18} color="#FFFFFF" />
+          </TouchableOpacity>
         </Animated.View>
       )}
 
@@ -708,27 +723,39 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             position: "absolute",
             top: insets.top + (isTablet ? tokens.space.xxl : tokens.space.xl),
             right: isTablet ? tokens.space.xxl : tokens.space.xl,
-            zIndex: 10,
+            zIndex: 9999,
+            ...Platform.select({
+              android: {
+                elevation: 999, // Much higher than any other element to receive touches
+              },
+            }),
           }}
+          pointerEvents="box-none"
         >
-          <Pressable onPress={onClose}>
-            <CloseButton
-              backgroundColor={
+          <TouchableOpacity
+            onPress={onClose}
+            activeOpacity={0.7}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: tokens.radius.full,
+              backgroundColor: theme === "dark"
+                ? "rgba(255,255,255,0.1)"
+                : "rgba(0,0,0,0.08)",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <X
+              size={isTablet ? 24 : 18}
+              color={
                 theme === "dark"
-                  ? "rgba(255,255,255,0.1)"
-                  : "rgba(0,0,0,0.08)"
+                  ? "#FFFFFF"
+                  : tokens.color.light.text
               }
-            >
-              <X
-                size={isTablet ? 24 : 18}
-                color={
-                  theme === "dark"
-                    ? "#FFFFFF"
-                    : tokens.color.light.text
-                }
-              />
-            </CloseButton>
-          </Pressable>
+            />
+          </TouchableOpacity>
         </Animated.View>
       )}
 
