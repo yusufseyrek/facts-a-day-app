@@ -1,21 +1,27 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import * as database from './database';
+import { i18n } from '../i18n/config';
+import { SupportedLocale } from '../i18n/translations';
 
 // iOS has a limit of 64 scheduled notifications
 const MAX_SCHEDULED_NOTIFICATIONS = 64;
-
-// App name for notification title
-const APP_NAME = 'Facts A Day';
 
 /**
  * Build notification content for a fact
  */
 export function buildNotificationContent(
-  fact: database.FactWithRelations
+  fact: database.FactWithRelations,
+  locale: SupportedLocale = 'en'
 ): Notifications.NotificationContentInput {
+  // Set locale temporarily to get the correct app name
+  const previousLocale = i18n.locale;
+  i18n.locale = locale;
+  const appName = i18n.t('appName');
+  i18n.locale = previousLocale;
+
   const content: Notifications.NotificationContentInput = {
-    title: APP_NAME,
+    title: appName,
     body: fact.summary || fact.content.substring(0, 100),
     data: { factId: fact.id },
   };
@@ -98,7 +104,7 @@ export async function scheduleInitialNotifications(
       try {
         // Schedule the notification
         const notificationId = await Notifications.scheduleNotificationAsync({
-          content: buildNotificationContent(fact),
+          content: buildNotificationContent(fact, locale),
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
             date: scheduledDate,
@@ -246,7 +252,7 @@ export async function refreshNotificationSchedule(
       try {
         // Schedule the notification
         const notificationId = await Notifications.scheduleNotificationAsync({
-          content: buildNotificationContent(fact),
+          content: buildNotificationContent(fact, locale),
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
             date: scheduledDate,

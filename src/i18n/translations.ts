@@ -9,6 +9,7 @@ export const translations = {
     // Common
     continue: "Weiter",
     ok: "OK",
+    appName: "Täglich Wissen",
 
     // Onboarding - Language
     selectLanguage: "Sprache wählen",
@@ -45,13 +46,13 @@ export const translations = {
     notificationPermissionRequired:
       "Benachrichtigungsberechtigung erforderlich",
     notificationPermissionMessage:
-      "Um Benachrichtigungen zu aktivieren, gehen Sie zu Einstellungen > Facts A Day > Benachrichtigungen.",
+      "Um Benachrichtigungen zu aktivieren, gehen Sie zu Einstellungen > Täglich Wissen > Benachrichtigungen.",
 
     // Onboarding - Success
     allSet: "Alles erledigt!",
     gettingReady: "Alles wird vorbereitet",
     somethingWentWrong: "Hoppla, etwas ist schiefgelaufen",
-    welcomeToApp: "Willkommen bei Facts A Day!",
+    welcomeToApp: "Willkommen bei Täglich Wissen!",
     onboardingComplete: "Sie haben das Onboarding erfolgreich abgeschlossen.",
     mainAppPlaceholder: "Die Haupt-App wird hier implementiert.",
     errorSettingUp: "Beim Einrichten ist ein Fehler aufgetreten",
@@ -146,7 +147,7 @@ export const translations = {
     failedToUpdateNotificationTimes: "Benachrichtigungszeiten konnten nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
 
     // Share & Source
-    sharedFromApp: "Geteilt von Facts A Day",
+    sharedFromApp: "Geteilt von Täglich Wissen",
     sourcePrefix: "Quelle: ",
     externalLink: "Externer Link",
 
@@ -174,6 +175,7 @@ export const translations = {
     // Common
     continue: "Continue",
     ok: "OK",
+    appName: "Facts A Day",
 
     // Onboarding - Language
     selectLanguage: "Select Language",
@@ -337,6 +339,7 @@ export const translations = {
     // Common
     continue: "Continuar",
     ok: "OK",
+    appName: "Conocimiento Diario",
 
     // Onboarding - Language
     selectLanguage: "Seleccionar Idioma",
@@ -372,13 +375,13 @@ export const translations = {
       "No se pudieron crear las notificaciones. Por favor, inténtalo de nuevo.",
     notificationPermissionRequired: "Permiso de Notificación Requerido",
     notificationPermissionMessage:
-      "Para activar notificaciones, ve a Ajustes > Facts A Day > Notificaciones.",
+      "Para activar notificaciones, ve a Ajustes > Conocimiento Diario > Notificaciones.",
 
     // Onboarding - Success
     allSet: "¡Todo Listo!",
     gettingReady: "Preparando Todo",
     somethingWentWrong: "Ups, Algo Salió Mal",
-    welcomeToApp: "¡Bienvenido a Facts A Day!",
+    welcomeToApp: "¡Bienvenido a Conocimiento Diario!",
     onboardingComplete: "Has completado exitosamente la configuración inicial.",
     mainAppPlaceholder: "La aplicación principal se implementará aquí.",
     errorSettingUp: "Encontramos un error durante la configuración",
@@ -472,7 +475,7 @@ export const translations = {
     failedToUpdateNotificationTimes: "Error al actualizar horarios de notificación. Por favor, inténtalo de nuevo.",
 
     // Share & Source
-    sharedFromApp: "Compartido desde Facts A Day",
+    sharedFromApp: "Compartido desde Conocimiento Diario",
     sourcePrefix: "Fuente: ",
     externalLink: "Enlace Externo",
 
@@ -500,6 +503,7 @@ export const translations = {
     // Common
     continue: "Continuer",
     ok: "OK",
+    appName: "Savoir Quotidien",
 
     // Onboarding - Language
     selectLanguage: "Sélectionner la Langue",
@@ -537,13 +541,13 @@ export const translations = {
       "Échec de la création des notifications. Veuillez réessayer.",
     notificationPermissionRequired: "Permission de Notification Requise",
     notificationPermissionMessage:
-      "Pour activer les notifications, allez dans Réglages > Facts A Day > Notifications.",
+      "Pour activer les notifications, allez dans Réglages > Savoir Quotidien > Notifications.",
 
     // Onboarding - Success
     allSet: "Tout est Prêt!",
     gettingReady: "Préparation de Tout",
     somethingWentWrong: "Oups, Quelque Chose s'est Mal Passé",
-    welcomeToApp: "Bienvenue sur Facts A Day!",
+    welcomeToApp: "Bienvenue sur Savoir Quotidien!",
     onboardingComplete: "Vous avez terminé l'intégration avec succès.",
     mainAppPlaceholder: "L'application principale sera implémentée ici.",
     errorSettingUp: "Nous avons rencontré une erreur lors de la configuration",
@@ -637,7 +641,7 @@ export const translations = {
     failedToUpdateNotificationTimes: "Échec de la mise à jour des heures de notification. Veuillez réessayer.",
 
     // Share & Source
-    sharedFromApp: "Partagé depuis Facts A Day",
+    sharedFromApp: "Partagé depuis Savoir Quotidien",
     sourcePrefix: "Source : ",
     externalLink: "Lien Externe",
 
@@ -665,6 +669,7 @@ export const translations = {
     // Common
     continue: "続ける",
     ok: "OK",
+    appName: "毎日の知識",
 
     // Onboarding - Language
     selectLanguage: "言語を選択",
@@ -699,13 +704,13 @@ export const translations = {
       "通知の作成に失敗しました。もう一度お試しください。",
     notificationPermissionRequired: "通知の許可が必要です",
     notificationPermissionMessage:
-      "通知を有効にするには、設定 > Facts A Day > 通知に移動してください。",
+      "通知を有効にするには、設定 > 毎日の知識 > 通知に移動してください。",
 
     // Onboarding - Success
     allSet: "準備完了！",
     gettingReady: "すべて準備中",
     somethingWentWrong: "おっと、問題が発生しました",
-    welcomeToApp: "Facts A Dayへようこそ！",
+    welcomeToApp: "毎日の知識へようこそ！",
     onboardingComplete: "オンボーディングが正常に完了しました。",
     mainAppPlaceholder: "メインアプリはここに実装されます。",
     errorSettingUp: "セットアップ中にエラーが発生しました",
@@ -799,7 +804,7 @@ export const translations = {
     failedToUpdateNotificationTimes: "通知時刻の更新に失敗しました。もう一度お試しください。",
 
     // Share & Source
-    sharedFromApp: "Facts A Dayから共有",
+    sharedFromApp: "毎日の知識から共有",
     sourcePrefix: "出典: ",
     externalLink: "外部リンク",
 
@@ -826,6 +831,7 @@ export const translations = {
     // Common
     continue: "계속",
     ok: "확인",
+    appName: "매일 지식",
 
     // Onboarding - Language
     selectLanguage: "언어 선택",
@@ -860,13 +866,13 @@ export const translations = {
       "알림을 생성하지 못했습니다. 다시 시도해 주세요.",
     notificationPermissionRequired: "알림 권한 필요",
     notificationPermissionMessage:
-      "알림을 활성화하려면 설정 > Facts A Day > 알림으로 이동하세요.",
+      "알림을 활성화하려면 설정 > 매일 지식 > 알림으로 이동하세요.",
 
     // Onboarding - Success
     allSet: "모두 완료!",
     gettingReady: "모든 준비 중",
     somethingWentWrong: "앗, 문제가 발생했습니다",
-    welcomeToApp: "Facts A Day에 오신 것을 환영합니다!",
+    welcomeToApp: "매일 지식에 오신 것을 환영합니다!",
     onboardingComplete: "온보딩을 성공적으로 완료했습니다.",
     mainAppPlaceholder: "메인 앱은 여기에 구현됩니다.",
     errorSettingUp: "설정 중 오류가 발생했습니다",
@@ -958,7 +964,7 @@ export const translations = {
     failedToUpdateNotificationTimes: "알림 시간 업데이트 실패. 다시 시도해 주세요.",
 
     // Share & Source
-    sharedFromApp: "Facts A Day에서 공유",
+    sharedFromApp: "매일 지식에서 공유",
     sourcePrefix: "출처: ",
     externalLink: "외부 링크",
 
@@ -985,6 +991,7 @@ export const translations = {
     // Common
     continue: "Devam Et",
     ok: "Tamam",
+    appName: "Günlük Bilgi",
 
     // Onboarding - Language
     selectLanguage: "Dil Seç",
@@ -1020,13 +1027,13 @@ export const translations = {
       "Bildirimler oluşturulamadı. Lütfen tekrar deneyin.",
     notificationPermissionRequired: "Bildirim İzni Gerekli",
     notificationPermissionMessage:
-      "Bildirimleri etkinleştirmek için Ayarlar > Facts A Day > Bildirimler bölümüne gidin.",
+      "Bildirimleri etkinleştirmek için Ayarlar > Günlük Bilgi > Bildirimler bölümüne gidin.",
 
     // Onboarding - Success
     allSet: "Hazırsınız!",
     gettingReady: "Her Şey Hazırlanıyor",
     somethingWentWrong: "Hata, Bir Şeyler Yanlış Gitti",
-    welcomeToApp: "Facts A Day'e Hoş Geldiniz!",
+    welcomeToApp: "Günlük Bilgi'ye Hoş Geldiniz!",
     onboardingComplete: "Başlangıç kurulumunu başarıyla tamamladınız.",
     mainAppPlaceholder: "Ana uygulama burada uygulanacak.",
     errorSettingUp: "Kurulum sırasında bir hata ile karşılaştık",
@@ -1120,7 +1127,7 @@ export const translations = {
     failedToUpdateNotificationTimes: "Bildirim zamanları güncellenemedi. Lütfen tekrar deneyin.",
 
     // Share & Source
-    sharedFromApp: "Facts A Day'den paylaşıldı",
+    sharedFromApp: "Günlük Bilgi'den paylaşıldı",
     sourcePrefix: "Kaynak: ",
     externalLink: "Dış Bağlantı",
 
@@ -1147,6 +1154,7 @@ export const translations = {
     // Common
     continue: "继续",
     ok: "确定",
+    appName: "每日知识",
 
     // Onboarding - Language
     selectLanguage: "选择语言",
@@ -1180,13 +1188,13 @@ export const translations = {
     notificationSchedulingFailedMessage: "无法创建通知。请重试。",
     notificationPermissionRequired: "需要通知权限",
     notificationPermissionMessage:
-      "要启用通知，请前往 设置 > Facts A Day > 通知。",
+      "要启用通知，请前往 设置 > 每日知识 > 通知。",
 
     // Onboarding - Success
     allSet: "一切就绪！",
     gettingReady: "正在准备一切",
     somethingWentWrong: "哎呀，出了点问题",
-    welcomeToApp: "欢迎来到 Facts A Day！",
+    welcomeToApp: "欢迎来到 每日知识！",
     onboardingComplete: "您已成功完成引导设置。",
     mainAppPlaceholder: "主应用程序将在此实现。",
     errorSettingUp: "设置时遇到错误",
@@ -1278,7 +1286,7 @@ export const translations = {
     failedToUpdateNotificationTimes: "更新通知时间失败。请重试。",
 
     // Share & Source
-    sharedFromApp: "来自 Facts A Day 的分享",
+    sharedFromApp: "来自 每日知识 的分享",
     sourcePrefix: "来源: ",
     externalLink: "外部链接",
 
