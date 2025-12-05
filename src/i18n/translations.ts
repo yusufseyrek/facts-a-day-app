@@ -124,6 +124,7 @@ export const translations = {
     settingsLegal: "Rechtliches",
     settingsPrivacyPolicy: "Datenschutzrichtlinie",
     settingsTermsOfService: "Nutzungsbedingungen",
+    settingsCopyright: "© 2025 {appName}. Alle Rechte vorbehalten.",
     cannotOpenUrl: "Link konnte nicht geöffnet werden",
 
     // Error messages
@@ -288,6 +289,7 @@ export const translations = {
     settingsLegal: "Legal",
     settingsPrivacyPolicy: "Privacy Policy",
     settingsTermsOfService: "Terms of Service",
+    settingsCopyright: "© 2025 {appName}. All rights reserved.",
     cannotOpenUrl: "Cannot open URL",
 
     // Error messages
@@ -452,6 +454,7 @@ export const translations = {
     settingsLegal: "Legal",
     settingsPrivacyPolicy: "Política de Privacidad",
     settingsTermsOfService: "Términos de Servicio",
+    settingsCopyright: "© 2025 {appName}. Todos los derechos reservados.",
     cannotOpenUrl: "No se puede abrir la URL",
 
     // Error messages
@@ -618,6 +621,7 @@ export const translations = {
     settingsLegal: "Légal",
     settingsPrivacyPolicy: "Politique de Confidentialité",
     settingsTermsOfService: "Conditions d'Utilisation",
+    settingsCopyright: "© 2025 {appName}. Tous droits réservés.",
     cannotOpenUrl: "Impossible d'ouvrir l'URL",
 
     // Error messages
@@ -781,6 +785,7 @@ export const translations = {
     settingsLegal: "法的情報",
     settingsPrivacyPolicy: "プライバシーポリシー",
     settingsTermsOfService: "利用規約",
+    settingsCopyright: "© 2025 {appName}. 全著作権所有。",
     cannotOpenUrl: "URLを開けません",
 
     // Error messages
@@ -941,6 +946,7 @@ export const translations = {
     settingsLegal: "법적 정보",
     settingsPrivacyPolicy: "개인정보 처리방침",
     settingsTermsOfService: "서비스 이용약관",
+    settingsCopyright: "© 2025 {appName}. 모든 권리 보유.",
     cannotOpenUrl: "URL을 열 수 없습니다",
 
     // Error messages
@@ -1104,6 +1110,7 @@ export const translations = {
     settingsLegal: "Yasal",
     settingsPrivacyPolicy: "Gizlilik Politikası",
     settingsTermsOfService: "Hizmet Şartları",
+    settingsCopyright: "© 2025 {appName}. Tüm hakları saklıdır.",
     cannotOpenUrl: "URL açılamadı",
 
     // Error messages
@@ -1263,6 +1270,7 @@ export const translations = {
     settingsLegal: "法律信息",
     settingsPrivacyPolicy: "隐私政策",
     settingsTermsOfService: "服务条款",
+    settingsCopyright: "© 2025 {appName}. 版权所有。",
     cannotOpenUrl: "无法打开链接",
 
     // Error messages

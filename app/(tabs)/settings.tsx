@@ -62,7 +62,7 @@ const SettingsGroup = styled(YStack, {
 const VersionText = styled(Text, {
   textAlign: "center",
   fontSize: tokens.fontSize.small,
-  marginBottom: tokens.space.xl,
+  marginBottom: tokens.space.md,
   opacity: 0.6,
 });
 
@@ -238,7 +238,7 @@ export default function SettingsPage() {
 
   const handlePrivacyPolicyPress = async () => {
     try {
-      const url = "https://factsaday.com/privacy";
+      const url = `https://factsaday.com/privacy/${locale}`;
       const supported = await Linking.canOpenURL(url);
       if (supported) {
         await Linking.openURL(url);
@@ -257,7 +257,7 @@ export default function SettingsPage() {
 
   const handleTermsOfServicePress = async () => {
     try {
-      const url = "https://factsaday.com/terms";
+      const url = `https://factsaday.com/terms/${locale}`;
       const supported = await Linking.canOpenURL(url);
       if (supported) {
         await Linking.openURL(url);
@@ -449,7 +449,10 @@ export default function SettingsPage() {
 
           {/* App Version */}
           <VersionText color={iconColor}>
-            Version {Constants.expoConfig?.version || "1.0.0"}
+            Version {Constants.expoConfig?.version || "1.0.0"} ({Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber || 'N/A' : Constants.expoConfig?.android?.versionCode || 'N/A'})
+          </VersionText>
+          <VersionText color={iconColor}>
+            {t("settingsCopyright").replace("{appName}", t("appName"))}
           </VersionText>
         </ContentContainer>
       </ScrollView>
