@@ -27,21 +27,24 @@ export function CategoryBadge({ category, fontWeight, fontSize }: CategoryBadgeP
   // Determine if category is a Category object or a string
   let displayName: string;
   let categorySlug: string;
+  let backgroundColor: string;
 
   if (typeof category === 'string') {
     displayName = translateCategory(category, t);
     categorySlug = category;
+    // Use hardcoded color mapping for string categories
+    backgroundColor = getCategoryNeonColor(categorySlug, theme);
   } else {
     displayName = category.name;
     categorySlug = category.slug || category.name.toLowerCase().replace(/\s+/g, '-');
+    // Use color_hex from database if available, otherwise fall back to hardcoded mapping
+    backgroundColor = category.color_hex || getCategoryNeonColor(categorySlug, theme);
   }
 
-  // Get neon color for this category
-  const neonColor = getCategoryNeonColor(categorySlug, theme);
-  const contrastColor = getContrastColor(neonColor);
+  const contrastColor = getContrastColor(backgroundColor);
 
   return (
-    <BadgeContainer style={{ backgroundColor: neonColor }}>
+    <BadgeContainer style={{ backgroundColor }}>
         <LabelText
           fontSize={fontSize || 12}
           color={contrastColor}
