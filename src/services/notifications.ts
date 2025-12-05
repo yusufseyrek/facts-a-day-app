@@ -67,7 +67,7 @@ export function configureNotifications() {
  */
 export async function scheduleInitialNotifications(
   notificationTime: Date,
-  locale: string
+  locale: SupportedLocale
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
     // Get 64 random unscheduled facts
@@ -144,7 +144,7 @@ export async function scheduleInitialNotifications(
  * @returns Success status and the fact that was marked
  */
 export async function showImmediateFact(
-  locale: string
+  locale: SupportedLocale
 ): Promise<{ success: boolean; fact?: database.FactWithRelations; error?: string }> {
   try {
     // Get 1 random unscheduled fact (excluding already scheduled and shown facts)
@@ -186,7 +186,7 @@ export async function showImmediateFact(
  */
 export async function refreshNotificationSchedule(
   notificationTime: Date,
-  locale: string
+  locale: SupportedLocale
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
     // Get current scheduled count
@@ -311,7 +311,7 @@ export async function clearAllScheduledNotifications(): Promise<void> {
  */
 export async function rescheduleNotifications(
   newTime: Date,
-  locale: string
+  locale: SupportedLocale
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
     // Clear all existing notifications
@@ -349,7 +349,7 @@ export async function getScheduledNotificationsCount(): Promise<number> {
  */
 export async function rescheduleNotificationsMultiple(
   times: Date[],
-  locale: string
+  locale: SupportedLocale
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
     // Clear all existing notifications
@@ -410,7 +410,7 @@ export async function rescheduleNotificationsMultiple(
         try {
           // Schedule the notification
           const notificationId = await Notifications.scheduleNotificationAsync({
-            content: buildNotificationContent(fact),
+            content: buildNotificationContent(fact, locale),
             trigger: {
               type: Notifications.SchedulableTriggerInputTypes.DATE,
               date: scheduledDate,

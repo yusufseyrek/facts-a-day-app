@@ -14,6 +14,7 @@ import * as database from './database';
 import * as api from './api';
 import * as onboardingService from './onboarding';
 import * as notificationService from './notifications';
+import { SupportedLocale } from '../i18n/translations';
 
 // Feed refresh listeners for preference changes
 type FeedRefreshListener = () => void;
@@ -67,7 +68,7 @@ export interface RefreshResult {
  * 5. Reschedule notifications with new language
  */
 export async function handleLanguageChange(
-  newLanguage: string,
+  newLanguage: SupportedLocale,
   onProgress?: (progress: RefreshProgress) => void
 ): Promise<RefreshResult> {
   try {
@@ -240,7 +241,7 @@ export async function handleLanguageChange(
  */
 export async function handleCategoriesChange(
   newCategories: string[],
-  currentLanguage: string,
+  currentLanguage: SupportedLocale,
   onProgress?: (progress: RefreshProgress) => void
 ): Promise<RefreshResult> {
   try {

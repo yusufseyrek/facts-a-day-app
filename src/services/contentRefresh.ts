@@ -3,7 +3,7 @@ import * as api from './api';
 import * as db from './database';
 import * as onboardingService from './onboarding';
 import * as preferencesService from './preferences';
-import { getLocaleFromCode } from '../i18n';
+import { getLocaleFromCode, SupportedLocale } from '../i18n';
 import * as Localization from 'expo-localization';
 import { showInterstitialAd } from '../components/ads/InterstitialAd';
 import { ADS_ENABLED } from '../config/ads';
@@ -149,7 +149,7 @@ async function updateLastRefreshTime(): Promise<void> {
  * Get the current device locale from system settings.
  * This respects per-app language selection on iOS 13+ and Android 13+.
  */
-function getDeviceLocale(): string {
+function getDeviceLocale(): SupportedLocale {
   const deviceLanguage = Localization.getLocales()[0]?.languageCode || 'en';
   return getLocaleFromCode(deviceLanguage);
 }
@@ -182,7 +182,7 @@ async function saveCurrentLocale(locale: string): Promise<void> {
 /**
  * Check if the device locale has changed compared to the stored locale
  */
-async function hasLocaleChanged(): Promise<{ changed: boolean; currentLocale: string; storedLocale: string | null }> {
+async function hasLocaleChanged(): Promise<{ changed: boolean; currentLocale: SupportedLocale; storedLocale: string | null }> {
   const currentLocale = getDeviceLocale();
   const storedLocale = await getStoredLocale();
   
