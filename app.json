@@ -35,6 +35,7 @@
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false,
+        "NSUserTrackingUsageDescription": "This app uses tracking to deliver personalized ads and improve your experience.",
         "SKAdNetworkItems": [
           { "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork" },
           { "SKAdNetworkIdentifier": "4fzdc2evr5.skadnetwork" },
