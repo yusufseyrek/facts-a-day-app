@@ -179,7 +179,7 @@ echo -e "Version code incremented from $CURRENT_VERSION to ${GREEN}$NEW_VERSION$
 
 # Generate/regenerate native Android project
 print_step "Generating native Android project..."
-npx expo prebuild --platform android
+npx expo prebuild --platform android --clean
 
 # Generate keystore if needed
 print_step "Checking release keystore..."
