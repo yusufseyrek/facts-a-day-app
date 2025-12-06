@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # iOS Build and Submission Script for Facts a Day
-# This script builds the iOS app and optionally submits to App Store Connect
+# This script builds the iOS app and submits to App Store Connect
 
 set -e
 
@@ -63,51 +63,9 @@ if ! command -v xcrun &> /dev/null; then
 fi
 
 # Parse arguments
-SUBMIT=false
-VALIDATE_ONLY=false
-CLEAN=false
-INCREMENT_BUILD=false
+# No arguments required - this is a full release script
 
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --submit)
-            SUBMIT=true
-            shift
-            ;;
-        --validate)
-            VALIDATE_ONLY=true
-            shift
-            ;;
-        --clean)
-            CLEAN=true
-            shift
-            ;;
-        --increment-build)
-            INCREMENT_BUILD=true
-            shift
-            ;;
-        --help)
-            echo "Usage: $0 [options]"
-            echo ""
-            echo "Options:"
-            echo "  --clean            Clean build before building"
-            echo "  --increment-build  Increment build number before building"
-            echo "  --validate         Validate the build with App Store Connect (requires credentials)"
-            echo "  --submit           Submit to App Store Connect after building (requires credentials)"
-            echo "  --help             Show this help message"
-            echo ""
-            echo "Environment variables for submission:"
-            echo "  APPLE_ID           Your Apple ID email"
-            echo "  APP_SPECIFIC_PWD   App-specific password from appleid.apple.com"
-            echo "  TEAM_ID            Your Apple Developer Team ID"
-            exit 0
-            ;;
-        *)
-            print_error "Unknown option: $1"
-            exit 1
-            ;;
-    esac
-done
+
 
 # Navigate to project root
 cd "$PROJECT_ROOT"
@@ -122,38 +80,31 @@ fi
 
 echo -e "Using Team ID: ${GREEN}$TEAM_ID${NC}"
 
-# Increment build number if requested
-if [ "$INCREMENT_BUILD" = true ]; then
-    print_step "Incrementing build number in app.json..."
+# Increment build number
+print_step "Incrementing build number in app.json..."
 
-    APP_JSON="$PROJECT_ROOT/app.json"
+APP_JSON="$PROJECT_ROOT/app.json"
 
-    # Get current iOS build number
-    CURRENT_BUILD=$(grep -o '"buildNumber": "[0-9]*"' "$APP_JSON" | grep -o '[0-9]*')
-    if [ -z "$CURRENT_BUILD" ]; then
-        CURRENT_BUILD=0
-    fi
-    NEW_BUILD=$((CURRENT_BUILD + 1))
-
-    # Update iOS buildNumber in app.json
-    sed -i '' "s/\"buildNumber\": \"[0-9]*\"/\"buildNumber\": \"$NEW_BUILD\"/" "$APP_JSON"
-
-    # Update Android versionCode in app.json
-    sed -i '' "s/\"versionCode\": [0-9]*/\"versionCode\": $NEW_BUILD/" "$APP_JSON"
-
-    echo -e "Build number incremented from $CURRENT_BUILD to ${GREEN}$NEW_BUILD${NC}"
+# Get current iOS build number
+CURRENT_BUILD=$(grep -o '"buildNumber": "[0-9]*"' "$APP_JSON" | grep -o '[0-9]*')
+if [ -z "$CURRENT_BUILD" ]; then
+    CURRENT_BUILD=0
 fi
+NEW_BUILD=$((CURRENT_BUILD + 1))
+
+# Update iOS buildNumber in app.json
+sed -i '' "s/\"buildNumber\": \"[0-9]*\"/\"buildNumber\": \"$NEW_BUILD\"/" "$APP_JSON"
+
+echo -e "Build number incremented from $CURRENT_BUILD to ${GREEN}$NEW_BUILD${NC}"
 
 # Generate/regenerate native iOS project
 print_step "Generating native iOS project..."
 npx expo prebuild --platform ios
 
-# Clean if requested
-if [ "$CLEAN" = true ]; then
-    print_step "Cleaning previous builds..."
-    rm -rf "$PROJECT_ROOT/build/ios"
-    xcodebuild clean -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release
-fi
+# Clean previous builds
+print_step "Cleaning previous builds..."
+rm -rf "$PROJECT_ROOT/build/ios"
+xcodebuild clean -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release
 
 # Install pods if needed
 print_step "Checking CocoaPods..."
