@@ -1,6 +1,11 @@
 {
-  "CFBundleDisplayName": "每日知识",
-  "CFBundleName": "每日知识",
-  "NSHumanReadableCopyright": "每天学习新知识"
+  "ios": {
+    "CFBundleDisplayName": "每日知识",
+    "CFBundleName": "每日知识",
+    "NSHumanReadableCopyright": "每天学习新知识"
+  },
+  "android": {
+    "app_name": "每日知识"
+  }
 }
 

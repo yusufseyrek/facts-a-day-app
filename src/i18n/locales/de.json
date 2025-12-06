@@ -1,6 +1,11 @@
 {
-  "CFBundleDisplayName": "Täglich Wissen",
-  "CFBundleName": "Täglich Wissen",
-  "NSHumanReadableCopyright": "Jeden Tag etwas Neues lernen"
+  "ios": {
+    "CFBundleDisplayName": "Täglich Wissen",
+    "CFBundleName": "Täglich Wissen",
+    "NSHumanReadableCopyright": "Jeden Tag etwas Neues lernen"
+  },
+  "android": {
+    "app_name": "Täglich Wissen"
+  }
 }
 

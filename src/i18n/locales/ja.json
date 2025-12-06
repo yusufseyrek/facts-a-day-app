@@ -1,6 +1,11 @@
 {
-  "CFBundleDisplayName": "毎日の知識",
-  "CFBundleName": "毎日の知識",
-  "NSHumanReadableCopyright": "毎日新しいことを学ぼう"
+  "ios": {
+    "CFBundleDisplayName": "毎日の知識",
+    "CFBundleName": "毎日の知識",
+    "NSHumanReadableCopyright": "毎日新しいことを学ぼう"
+  },
+  "android": {
+    "app_name": "毎日の知識"
+  }
 }
 

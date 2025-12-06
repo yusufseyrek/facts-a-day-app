@@ -1,6 +1,11 @@
 {
-  "CFBundleDisplayName": "Günlük Bilgi",
-  "CFBundleName": "Günlük Bilgi",
-  "NSHumanReadableCopyright": "Her gün yeni bir şey öğrenin"
+  "ios": {
+    "CFBundleDisplayName": "Günlük Bilgi",
+    "CFBundleName": "Günlük Bilgi",
+    "NSHumanReadableCopyright": "Her gün yeni bir şey öğrenin"
+  },
+  "android": {
+    "app_name": "Günlük Bilgi"
+  }
 }
 

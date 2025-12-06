@@ -1,6 +1,11 @@
 {
-  "CFBundleDisplayName": "Savoir Quotidien",
-  "CFBundleName": "Savoir Quotidien",
-  "NSHumanReadableCopyright": "Un fait nouveau chaque jour"
+  "ios": {
+    "CFBundleDisplayName": "Savoir Quotidien",
+    "CFBundleName": "Savoir Quotidien",
+    "NSHumanReadableCopyright": "Un fait nouveau chaque jour"
+  },
+  "android": {
+    "app_name": "Savoir Quotidien"
+  }
 }
 

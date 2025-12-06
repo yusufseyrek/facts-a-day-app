@@ -1,6 +1,11 @@
 {
-  "CFBundleDisplayName": "Conocimiento Diario",
-  "CFBundleName": "Conocimiento Diario",
-  "NSHumanReadableCopyright": "Aprende algo nuevo cada día"
+  "ios": {
+    "CFBundleDisplayName": "Conocimiento Diario",
+    "CFBundleName": "Conocimiento Diario",
+    "NSHumanReadableCopyright": "Aprende algo nuevo cada día"
+  },
+  "android": {
+    "app_name": "Conocimiento Diario"
+  }
 }
 
