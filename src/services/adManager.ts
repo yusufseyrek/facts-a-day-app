@@ -1,13 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showInterstitialAd } from '../components/ads/InterstitialAd';
-import { ADS_ENABLED } from '../config/ads';
+import { ADS_ENABLED, FACTS_BEFORE_INTERSTITIAL } from '../config/ads';
 
 // Storage keys
 const FACT_VIEW_COUNT_KEY = '@fact_view_count';
 const LAST_INTERSTITIAL_DATE_KEY = '@last_interstitial_date';
-
-// Configuration
-const FACTS_BEFORE_INTERSTITIAL = 3; // Show interstitial after every 3 fact views
 
 /**
  * Track fact view and show interstitial ad if threshold is reached
