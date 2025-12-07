@@ -41,6 +41,15 @@ export function initializeSentry() {
     enableAutoSessionTracking: true,
     // Automatically track performance and errors
     enableAutoPerformanceTracing: true,
+    
+    // Configure Session Replay
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+    integrations: [
+      Sentry.mobileReplayIntegration(),
+      Sentry.feedbackIntegration(),
+    ],
+
     // Before sending events, you can modify them here
     beforeSend(event) {
       // Don't send events in development
