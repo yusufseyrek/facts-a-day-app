@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppThemeProvider } from '../src/theme';
 import { I18nProvider } from '../src/i18n';
 import { OnboardingProvider, useOnboarding } from '../src/contexts';
@@ -25,36 +26,16 @@ import {
   Montserrat_900Black,
 } from '@expo-google-fonts/montserrat';
 
-Sentry.init({
-  dsn: Constants.expoConfig?.extra?.SENTRY_DSN,
-
-  // Adds more context data to events (IP address, cookies, user, etc.)
-  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
-  sendDefaultPii: true,
-
-  // Enable Logs
-  enableLogs: true,
-
-  // Configure Session Replay
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1,
-  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
-
-  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
-  // spotlight: __DEV__,
-});
-
 // Initialize Sentry as early as possible
 initializeSentry();
+
+const NOTIFICATION_TRACK_KEY = 'last_processed_notification_id';
 
 // Inner component that uses OnboardingContext for routing logic
 function AppContent() {
   const router = useRouter();
   const segments = useSegments();
   const { isOnboardingComplete, setIsOnboardingComplete } = useOnboarding();
-
-  // Track the last processed notification to prevent duplicate navigation
-  const [lastProcessedNotificationId, setLastProcessedNotificationId] = useState<string | null>(null);
 
   // Re-check onboarding status when navigating to onboarding paths
   // This ensures the reset onboarding button works correctly
@@ -93,19 +74,20 @@ function AppContent() {
       const notificationId = lastNotificationResponse.notification.request.identifier;
 
       // Only navigate if:
-      // 1. We haven't already processed this notification
-      // 2. App is ready and onboarding is complete
-      // 3. We have a valid fact ID
-      if (
-        notificationId !== lastProcessedNotificationId &&
-        factId &&
-        isOnboardingComplete
-      ) {
-        setLastProcessedNotificationId(notificationId);
-        router.push(`/fact/${factId}`);
+      // 1. App is ready and onboarding is complete
+      // 2. We have a valid fact ID
+      // 3. We haven't already processed this notification (check persistent storage)
+      if (factId && isOnboardingComplete) {
+        AsyncStorage.getItem(NOTIFICATION_TRACK_KEY).then((lastId) => {
+          if (lastId !== notificationId) {
+            // New notification - mark as processed and navigate
+            AsyncStorage.setItem(NOTIFICATION_TRACK_KEY, notificationId);
+            router.push(`/fact/${factId}`);
+          }
+        });
       }
     }
-  }, [lastNotificationResponse, isOnboardingComplete, lastProcessedNotificationId, router]);
+  }, [lastNotificationResponse, isOnboardingComplete, router]);
 
   const screenOptions = {
     headerShown: false as const,
