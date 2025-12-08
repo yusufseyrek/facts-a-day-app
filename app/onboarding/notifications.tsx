@@ -71,73 +71,117 @@ export default function NotificationsScreen() {
       const { status } = await Notifications.requestPermissionsAsync();
 
       if (status !== "granted") {
-        // Permission denied - show alert
+        // Permission denied - show friendly message and allow continuing
         Alert.alert(
-          t("notificationPermissionRequired"),
-          t("notificationPermissionMessage"),
-          [{ text: t("ok"), style: "default" }]
+          t("notificationPermissionSkipped"),
+          t("notificationPermissionSkippedMessage"),
+          [
+            {
+              text: t("ok"),
+              style: "default",
+              onPress: () => proceedWithoutNotifications(),
+            },
+          ]
         );
         return;
       }
 
       // Step 2: Permission granted - now start scheduling process
-      setIsScheduling(true);
+      await scheduleNotificationsAndProceed();
+    } catch (error) {
+      console.error("Error requesting notification permissions:", error);
+      // On error, still allow continuing without notifications
+      Alert.alert(
+        t("notificationPermissionSkipped"),
+        t("notificationPermissionSkippedMessage"),
+        [
+          {
+            text: t("ok"),
+            style: "default",
+            onPress: () => proceedWithoutNotifications(),
+          },
+        ]
+      );
+    }
+  };
 
-      try {
-        // Step 3: Wait for facts download to complete if still in progress
-        if (isDownloadingFacts) {
-          await waitForDownloadComplete();
-        }
+  const proceedWithoutNotifications = async () => {
+    setIsScheduling(true);
+    try {
+      // Wait for facts download to complete if still in progress
+      if (isDownloadingFacts) {
+        await waitForDownloadComplete();
+      }
 
-        // Step 4: Mark one fact as shown immediately for new users (BEFORE scheduling)
-        console.log('🎯 Calling showImmediateFact with locale:', locale);
-        const immediateFactResult = await notificationService.showImmediateFact(locale);
-        if (immediateFactResult.success) {
-          console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
-        } else {
-          console.error('❌ Failed to mark immediate fact:', immediateFactResult.error);
-        }
+      // Mark one fact as shown immediately for new users
+      console.log('🎯 Calling showImmediateFact with locale:', locale);
+      const immediateFactResult = await notificationService.showImmediateFact(locale);
+      if (immediateFactResult.success) {
+        console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
+      } else {
+        console.error('❌ Failed to mark immediate fact:', immediateFactResult.error);
+      }
 
-        // Step 5: Schedule notifications (will exclude the fact marked as shown)
-        // Use multiple times if more than 1, otherwise use single time for backward compatibility
-        const result = notificationTimes.length > 1
-          ? await notificationService.rescheduleNotificationsMultiple(
-              notificationTimes,
-              locale
-            )
-          : await notificationService.scheduleInitialNotifications(
-              notificationTimes[0],
-              locale
-            );
+      // Navigate to success screen without scheduling notifications
+      router.push("/onboarding/success");
+    } catch (error) {
+      console.error("Error proceeding without notifications:", error);
+      setIsScheduling(false);
+      // Still try to proceed even on error
+      router.push("/onboarding/success");
+    }
+  };
 
-        if (result.success) {
-          // Successfully scheduled notifications - navigate to success screen
-          console.log(`Scheduled ${result.count} notifications`);
+  const scheduleNotificationsAndProceed = async () => {
+    setIsScheduling(true);
 
-          router.push("/onboarding/success");
-        } else {
-          // Failed to schedule notifications - show error
-          setIsScheduling(false);
-          Alert.alert(
-            t("notificationSchedulingFailed"),
-            t("notificationSchedulingFailedMessage"),
-            [{ text: t("ok"), style: "default" }]
+    try {
+      // Wait for facts download to complete if still in progress
+      if (isDownloadingFacts) {
+        await waitForDownloadComplete();
+      }
+
+      // Mark one fact as shown immediately for new users (BEFORE scheduling)
+      console.log('🎯 Calling showImmediateFact with locale:', locale);
+      const immediateFactResult = await notificationService.showImmediateFact(locale);
+      if (immediateFactResult.success) {
+        console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
+      } else {
+        console.error('❌ Failed to mark immediate fact:', immediateFactResult.error);
+      }
+
+      // Schedule notifications (will exclude the fact marked as shown)
+      // Use multiple times if more than 1, otherwise use single time for backward compatibility
+      const result = notificationTimes.length > 1
+        ? await notificationService.rescheduleNotificationsMultiple(
+            notificationTimes,
+            locale
+          )
+        : await notificationService.scheduleInitialNotifications(
+            notificationTimes[0],
+            locale
           );
-        }
-      } catch (error) {
-        console.error("Error in notification flow:", error);
+
+      if (result.success) {
+        // Successfully scheduled notifications - navigate to success screen
+        console.log(`Scheduled ${result.count} notifications`);
+
+        router.push("/onboarding/success");
+      } else {
+        // Failed to schedule notifications - show error
         setIsScheduling(false);
         Alert.alert(
           t("notificationSchedulingFailed"),
-          error instanceof Error ? error.message : t("notificationSchedulingFailedMessage"),
+          t("notificationSchedulingFailedMessage"),
           [{ text: t("ok"), style: "default" }]
         );
       }
     } catch (error) {
-      console.error("Error requesting notification permissions:", error);
+      console.error("Error in notification flow:", error);
+      setIsScheduling(false);
       Alert.alert(
-        t("notificationPermissionRequired"),
-        t("notificationPermissionMessage"),
+        t("notificationSchedulingFailed"),
+        error instanceof Error ? error.message : t("notificationSchedulingFailedMessage"),
         [{ text: t("ok"), style: "default" }]
       );
     }

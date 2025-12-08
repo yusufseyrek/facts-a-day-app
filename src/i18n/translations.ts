@@ -26,7 +26,7 @@ export const translations = {
     // Onboarding - Notifications
     stayInformed: "Bleiben Sie informiert mit täglichen Fakten",
     notificationRequired:
-      "Benachrichtigungen sind erforderlich, um fortzufahren und täglich Fakten zu erhalten",
+      "Aktivieren Sie Benachrichtigungen, um täglich neue Fakten direkt auf Ihr Gerät zu erhalten",
     selectNotificationTime: "Wählen Sie Ihre Benachrichtigungszeit",
     oneNotificationPerDay:
       "Wir senden Ihnen nur eine Benachrichtigung pro Tag zu dieser Zeit.\nWir respektieren Ihre Aufmerksamkeit und werden Sie nicht zuspammen.",
@@ -47,6 +47,9 @@ export const translations = {
       "Benachrichtigungsberechtigung erforderlich",
     notificationPermissionMessage:
       "Um Benachrichtigungen zu aktivieren, gehen Sie zu Einstellungen > Täglich Wissen > Benachrichtigungen.",
+    notificationPermissionSkipped: "Benachrichtigungen helfen Ihnen, täglich neue Fakten zu entdecken",
+    notificationPermissionSkippedMessage:
+      "Sie können Benachrichtigungen jederzeit aktivieren unter Einstellungen > Apps > Täglich Wissen > Benachrichtigungen.",
 
     // Onboarding - Success
     allSet: "Alles erledigt!",
@@ -193,7 +196,7 @@ export const translations = {
     // Onboarding - Notifications
     stayInformed: "Stay informed with daily facts",
     notificationRequired:
-      "Notifications are required to continue and receive daily facts",
+      "Enable notifications to receive new facts delivered straight to your device each day",
     selectNotificationTime: "Select Your Notification Time",
     oneNotificationPerDay:
       "We'll send you just one notification per day at this time.\nWe respect your attention and won't spam you.",
@@ -213,6 +216,9 @@ export const translations = {
     notificationPermissionRequired: "Notification Permission Required",
     notificationPermissionMessage:
       "To enable notifications, go to Settings > Facts A Day > Notifications.",
+    notificationPermissionSkipped: "Notifications help you discover new facts every day",
+    notificationPermissionSkippedMessage:
+      "You can enable notifications anytime in Settings > Apps > Facts A Day > Notifications.",
 
     // Onboarding - Success
     allSet: "All Set!",
@@ -358,7 +364,7 @@ export const translations = {
     // Onboarding - Notifications
     stayInformed: "Mantente informado con datos diarios",
     notificationRequired:
-      "Las notificaciones son necesarias para continuar y recibir datos diarios",
+      "Activa las notificaciones para recibir nuevos datos directamente en tu dispositivo cada día",
     selectNotificationTime: "Selecciona tu Hora de Notificación",
     oneNotificationPerDay:
       "Te enviaremos solo una notificación por día a esta hora.\nRespetamos tu atención y no te enviaremos spam.",
@@ -378,6 +384,9 @@ export const translations = {
     notificationPermissionRequired: "Permiso de Notificación Requerido",
     notificationPermissionMessage:
       "Para activar notificaciones, ve a Ajustes > Conocimiento Diario > Notificaciones.",
+    notificationPermissionSkipped: "Las notificaciones te ayudan a descubrir nuevos datos cada día",
+    notificationPermissionSkippedMessage:
+      "Puedes activar las notificaciones en cualquier momento en Ajustes > Apps > Conocimiento Diario > Notificaciones.",
 
     // Onboarding - Success
     allSet: "¡Todo Listo!",
@@ -525,7 +534,7 @@ export const translations = {
     // Onboarding - Notifications
     stayInformed: "Restez informé avec des faits quotidiens",
     notificationRequired:
-      "Les notifications sont nécessaires pour continuer et recevoir des faits quotidiens",
+      "Activez les notifications pour recevoir de nouveaux faits directement sur votre appareil chaque jour",
     selectNotificationTime: "Sélectionnez Votre Heure de Notification",
     oneNotificationPerDay:
       "Nous vous enverrons une seule notification par jour à cette heure.\nNous respectons votre attention et ne vous spammerons pas.",
@@ -545,6 +554,9 @@ export const translations = {
     notificationPermissionRequired: "Permission de Notification Requise",
     notificationPermissionMessage:
       "Pour activer les notifications, allez dans Réglages > Savoir Quotidien > Notifications.",
+    notificationPermissionSkipped: "Les notifications vous aident à découvrir de nouveaux faits chaque jour",
+    notificationPermissionSkippedMessage:
+      "Vous pouvez activer les notifications à tout moment dans Réglages > Apps > Savoir Quotidien > Notifications.",
 
     // Onboarding - Success
     allSet: "Tout est Prêt!",
@@ -689,7 +701,7 @@ export const translations = {
 
     // Onboarding - Notifications
     stayInformed: "毎日の豆知識で情報を得よう",
-    notificationRequired: "続行して毎日の豆知識を受け取るには通知が必要です",
+    notificationRequired: "通知を有効にすると、毎日新しい豆知識があなたのデバイスに届きます",
     selectNotificationTime: "通知時間を選択",
     oneNotificationPerDay:
       "この時間に1日1回だけ通知をお送りします。\nあなたの時間を尊重し、スパムは送りません。",
@@ -709,6 +721,9 @@ export const translations = {
     notificationPermissionRequired: "通知の許可が必要です",
     notificationPermissionMessage:
       "通知を有効にするには、設定 > 毎日の知識 > 通知に移動してください。",
+    notificationPermissionSkipped: "通知で毎日新しい豆知識を発見できます",
+    notificationPermissionSkippedMessage:
+      "通知はいつでも設定 > アプリ > 毎日の知識 > 通知から有効にできます。",
 
     // Onboarding - Success
     allSet: "準備完了！",
@@ -852,7 +867,7 @@ export const translations = {
 
     // Onboarding - Notifications
     stayInformed: "매일 새로운 정보를 받아보세요",
-    notificationRequired: "계속하고 매일 정보를 받으려면 알림이 필요합니다",
+    notificationRequired: "알림을 활성화하면 매일 새로운 정보가 기기로 바로 전달됩니다",
     selectNotificationTime: "알림 시간 선택",
     oneNotificationPerDay:
       "이 시간에 하루에 한 번만 알림을 보내드립니다.\n귀하의 시간을 존중하며 스팸을 보내지 않습니다.",
@@ -872,6 +887,9 @@ export const translations = {
     notificationPermissionRequired: "알림 권한 필요",
     notificationPermissionMessage:
       "알림을 활성화하려면 설정 > 매일 지식 > 알림으로 이동하세요.",
+    notificationPermissionSkipped: "알림을 통해 매일 새로운 정보를 발견할 수 있습니다",
+    notificationPermissionSkippedMessage:
+      "알림은 설정 > 앱 > 매일 지식 > 알림에서 언제든지 활성화할 수 있습니다.",
 
     // Onboarding - Success
     allSet: "모두 완료!",
@@ -1014,7 +1032,7 @@ export const translations = {
     // Onboarding - Notifications
     stayInformed: "Her gün yeni bilgiler öğrenin",
     notificationRequired:
-      "Devam etmek ve günlük bilgileri almak için bildirimler gereklidir",
+      "Bildirimleri etkinleştirerek her gün yeni bilgileri doğrudan cihazınıza alın",
     selectNotificationTime: "Bildirim Saatinizi Seçin",
     oneNotificationPerDay:
       "Size bu saatte günde sadece bir bildirim göndereceğiz.\nDikkatinize saygı duyuyoruz ve spam göndermeyeceğiz.",
@@ -1034,6 +1052,9 @@ export const translations = {
     notificationPermissionRequired: "Bildirim İzni Gerekli",
     notificationPermissionMessage:
       "Bildirimleri etkinleştirmek için Ayarlar > Günlük Bilgi > Bildirimler bölümüne gidin.",
+    notificationPermissionSkipped: "Bildirimler her gün yeni bilgiler keşfetmenize yardımcı olur",
+    notificationPermissionSkippedMessage:
+      "Bildirimleri istediğiniz zaman Ayarlar > Uygulamalar > Günlük Bilgi > Bildirimler bölümünden etkinleştirebilirsiniz.",
 
     // Onboarding - Success
     allSet: "Hazırsınız!",
@@ -1177,7 +1198,7 @@ export const translations = {
 
     // Onboarding - Notifications
     stayInformed: "通过每日知识保持了解",
-    notificationRequired: "需要启用通知才能继续并接收每日知识",
+    notificationRequired: "启用通知，每天将新知识直接发送到您的设备",
     selectNotificationTime: "选择您的通知时间",
     oneNotificationPerDay:
       "我们每天只会在此时间向您发送一条通知。\n我们尊重您的时间，不会发送垃圾信息。",
@@ -1196,6 +1217,9 @@ export const translations = {
     notificationPermissionRequired: "需要通知权限",
     notificationPermissionMessage:
       "要启用通知，请前往 设置 > 每日知识 > 通知。",
+    notificationPermissionSkipped: "通知可以帮助您每天发现新知识",
+    notificationPermissionSkippedMessage:
+      "您可以随时在 设置 > 应用 > 每日知识 > 通知 中启用通知。",
 
     // Onboarding - Success
     allSet: "一切就绪！",
