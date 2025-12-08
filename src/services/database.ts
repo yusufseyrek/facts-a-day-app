@@ -658,6 +658,51 @@ export async function clearAllScheduledFacts(): Promise<void> {
 }
 
 /**
+ * Clear ALL scheduled facts completely (including past ones)
+ * Used when notification permissions are revoked to sync DB with OS state
+ * Facts with shown_in_feed = 1 will keep their scheduled_date for feed grouping
+ */
+export async function clearAllScheduledFactsCompletely(): Promise<void> {
+  const database = await openDatabase();
+
+  // Clear scheduling data for all facts that are NOT shown in feed
+  // (shown_in_feed facts should keep their scheduled_date for proper feed grouping)
+  await database.runAsync(
+    "UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE (shown_in_feed IS NULL OR shown_in_feed = 0)"
+  );
+}
+
+/**
+ * Clear scheduled_date and notification_id for facts whose notifications are no longer in the OS
+ * Used to sync DB state with OS state after permissions are revoked/re-enabled
+ * @param validNotificationIds Array of notification IDs that are still scheduled in the OS
+ */
+export async function clearStaleScheduledFacts(validNotificationIds: string[]): Promise<number> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+
+  // If no valid notification IDs, clear all future scheduled facts
+  if (validNotificationIds.length === 0) {
+    const result = await database.runAsync(
+      "UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ? AND notification_id IS NOT NULL",
+      [now]
+    );
+    return result.changes;
+  }
+
+  // Clear facts whose notification_id is not in the valid list and scheduled_date is in the future
+  const placeholders = validNotificationIds.map(() => '?').join(',');
+  const result = await database.runAsync(
+    `UPDATE facts SET scheduled_date = NULL, notification_id = NULL 
+     WHERE scheduled_date > ? 
+     AND notification_id IS NOT NULL 
+     AND notification_id NOT IN (${placeholders})`,
+    [now, ...validNotificationIds]
+  );
+  return result.changes;
+}
+
+/**
  * Get count of scheduled facts
  */
 export async function getScheduledFactsCount(
@@ -675,6 +720,36 @@ export async function getScheduledFactsCount(
 
   const result = await database.getFirstAsync<{ count: number }>(
     "SELECT COUNT(*) as count FROM facts WHERE scheduled_date IS NOT NULL"
+  );
+  return result?.count || 0;
+}
+
+/**
+ * Get count of future scheduled facts that are pending (not yet shown in feed)
+ * These are facts with scheduled_date > now AND shown_in_feed = 0 or NULL
+ */
+export async function getFutureScheduledFactsCount(
+  language?: string
+): Promise<number> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+
+  if (language) {
+    const result = await database.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(*) as count FROM facts 
+       WHERE scheduled_date > ? 
+       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+       AND language = ?`,
+      [now, language]
+    );
+    return result?.count || 0;
+  }
+
+  const result = await database.getFirstAsync<{ count: number }>(
+    `SELECT COUNT(*) as count FROM facts 
+     WHERE scheduled_date > ? 
+     AND (shown_in_feed IS NULL OR shown_in_feed = 0)`,
+    [now]
   );
   return result?.count || 0;
 }

@@ -168,6 +168,7 @@ export const translations = {
     youCanScheduleUpTo3: "Sie können bis zu 3 Benachrichtigungen pro Tag planen",
     minimumRequired: "Minimum Erforderlich",
     youMustHaveAtLeastOne: "Sie müssen mindestens eine Benachrichtigungszeit haben",
+    notificationPermissionWarning: "Sie müssen Benachrichtigungen erlauben, um tägliche Fakten zu erhalten",
   },
   en: {
     // Onboarding - Categories
@@ -336,6 +337,7 @@ export const translations = {
     youCanScheduleUpTo3: "You can schedule up to 3 notifications per day",
     minimumRequired: "Minimum Required",
     youMustHaveAtLeastOne: "You must have at least one notification time",
+    notificationPermissionWarning: "You need to allow notifications to get daily facts",
   },
   es: {
     // Onboarding - Categories
@@ -504,6 +506,7 @@ export const translations = {
     youCanScheduleUpTo3: "Puedes programar hasta 3 notificaciones por día",
     minimumRequired: "Mínimo Requerido",
     youMustHaveAtLeastOne: "Debes tener al menos un horario de notificación",
+    notificationPermissionWarning: "Necesitas permitir notificaciones para recibir datos diarios",
   },
   fr: {
     // Onboarding - Categories
@@ -674,6 +677,7 @@ export const translations = {
     youCanScheduleUpTo3: "Vous pouvez planifier jusqu'à 3 notifications par jour",
     minimumRequired: "Minimum Requis",
     youMustHaveAtLeastOne: "Vous devez avoir au moins une heure de notification",
+    notificationPermissionWarning: "Vous devez autoriser les notifications pour recevoir des faits quotidiens",
   },
   ja: {
     // Onboarding - Categories
@@ -841,6 +845,7 @@ export const translations = {
     youCanScheduleUpTo3: "1日最大3件の通知をスケジュールできます",
     minimumRequired: "最小数が必要です",
     youMustHaveAtLeastOne: "少なくとも1件の通知時刻が必要です",
+    notificationPermissionWarning: "毎日の豆知識を受け取るには通知を許可する必要があります",
   },
   ko: {
     // Onboarding - Categories
@@ -1005,6 +1010,7 @@ export const translations = {
     youCanScheduleUpTo3: "하루 최대 3개의 알림을 예약할 수 있습니다",
     minimumRequired: "최소 수 필요",
     youMustHaveAtLeastOne: "최소 1개의 알림 시간이 필요합니다",
+    notificationPermissionWarning: "매일 정보를 받으려면 알림을 허용해야 합니다",
   },
   tr: {
     // Onboarding - Categories
@@ -1172,6 +1178,7 @@ export const translations = {
     youCanScheduleUpTo3: "Günde en fazla 3 bildirim planlayabilirsiniz",
     minimumRequired: "Minimum Gerekli",
     youMustHaveAtLeastOne: "En az bir bildirim zamanınız olmalıdır",
+    notificationPermissionWarning: "Günlük bilgiler almak için bildirimlere izin vermeniz gerekir",
   },
   zh: {
     // Onboarding - Categories
@@ -1335,6 +1342,7 @@ export const translations = {
     youCanScheduleUpTo3: "您每天最多可以安排3个通知",
     minimumRequired: "需要最小值",
     youMustHaveAtLeastOne: "您必须至少设置一个通知时间",
+    notificationPermissionWarning: "您需要允许通知才能获取每日知识",
   },
 };
 

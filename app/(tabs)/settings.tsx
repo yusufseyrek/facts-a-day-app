@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Alert, ScrollView, Linking, Platform } from "react-native";
+import { Alert, ScrollView, Linking, Platform, AppState } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, Text } from "tamagui";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import {
@@ -115,10 +115,45 @@ export default function SettingsPage() {
   const [notificationTimes, setNotificationTimes] = useState<Date[]>([
     new Date(),
   ]);
+  
+  // Notification permission state
+  const [notificationPermissionGranted, setNotificationPermissionGranted] = useState(true);
+
+  // Check notification permission status
+  const checkNotificationPermission = async () => {
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      setNotificationPermissionGranted(status === "granted");
+    } catch (error) {
+      console.error("Error checking notification permission:", error);
+    }
+  };
 
   // Load preferences on mount
   useEffect(() => {
     loadPreferences();
+    checkNotificationPermission();
+  }, []);
+
+  // Re-check permission when screen is focused (user may have changed it in system settings)
+  useFocusEffect(
+    useCallback(() => {
+      checkNotificationPermission();
+    }, [])
+  );
+
+  // Listen for app state changes (when user returns from system settings)
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
+        // Re-check permission when app becomes active (user may have changed it in system settings)
+        checkNotificationPermission();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   const loadPreferences = async () => {
@@ -384,6 +419,7 @@ export default function SettingsPage() {
                 }
                 icon={<Bell size={20} color={iconColor} />}
                 onPress={handleTimePress}
+                showWarning={!notificationPermissionGranted}
               />
             </SettingsGroup>
           </SectionContainer>
@@ -478,6 +514,7 @@ export default function SettingsPage() {
           // No-op: We'll reload preferences when modal closes instead
           // This prevents conflicting state updates
         }}
+        hasNotificationPermission={notificationPermissionGranted}
       />
     </Container>
   );

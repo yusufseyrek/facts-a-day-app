@@ -1,17 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppThemeProvider } from '../src/theme';
-import { I18nProvider } from '../src/i18n';
+import { I18nProvider, getLocaleFromCode } from '../src/i18n';
 import { OnboardingProvider, useOnboarding } from '../src/contexts';
 import * as onboardingService from '../src/services/onboarding';
 import * as notificationService from '../src/services/notifications';
 import * as database from '../src/services/database';
 import * as contentRefresh from '../src/services/contentRefresh';
 import { preloadInterstitialAd } from '../src/components/ads';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, AppState, AppStateStatus } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import * as Localization from 'expo-localization';
 import { initializeSentry } from '../src/config/sentry';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import * as Sentry from '@sentry/react-native';
@@ -127,9 +128,39 @@ export default Sentry.wrap(function RootLayout() {
     }
   }, [fontError]);
 
+  // Track previous app state to detect foreground transitions
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+
   useEffect(() => {
     initializeApp();
   }, []);
+
+  // Listen for app state changes to top up notifications when app enters foreground
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      // Only run when app transitions from background/inactive to active (foreground)
+      if (
+        appStateRef.current.match(/inactive|background/) &&
+        nextAppState === 'active' &&
+        initialOnboardingStatus === true
+      ) {
+        console.log('📱 App entered foreground, checking notifications...');
+        const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
+        notificationService.checkAndTopUpNotifications(
+          getLocaleFromCode(deviceLocale)
+        ).catch((error) => {
+          console.error('Notification top-up failed:', error);
+        });
+      }
+      appStateRef.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [initialOnboardingStatus]);
 
   const initializeApp = async () => {
     try {
@@ -154,6 +185,16 @@ export default Sentry.wrap(function RootLayout() {
         contentRefresh.refreshAppContent().catch((error) => {
           // Silently handle errors - app continues with cached data
           console.error('Background refresh failed:', error);
+        });
+
+        // Check and top up notifications to 64 if enabled
+        // This runs asynchronously and doesn't block app startup
+        const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
+        notificationService.checkAndTopUpNotifications(
+          getLocaleFromCode(deviceLocale)
+        ).catch((error) => {
+          // Silently handle errors - notifications continue with existing schedule
+          console.error('Notification top-up failed:', error);
         });
       }
     } catch (error) {

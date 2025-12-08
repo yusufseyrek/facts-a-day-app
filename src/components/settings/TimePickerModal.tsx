@@ -8,8 +8,9 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Linking,
 } from 'react-native';
-import { X, Plus, Trash2 } from '@tamagui/lucide-icons';
+import { X, Plus, Trash2, AlertTriangle } from '@tamagui/lucide-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../../theme';
 import { tokens } from '../../theme/tokens';
@@ -24,6 +25,8 @@ interface TimePickerModalProps {
   onClose: () => void;
   currentTime: Date;
   onTimeChange?: (time: Date) => void; // Made optional
+  /** Whether notification permission is granted */
+  hasNotificationPermission?: boolean;
 }
 
 export const TimePickerModal: React.FC<TimePickerModalProps> = ({
@@ -31,10 +34,14 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   onClose,
   currentTime,
   onTimeChange,
+  hasNotificationPermission = true,
 }) => {
   const { theme } = useTheme();
   const colors = tokens.color[theme];
   const { t, locale } = useTranslation();
+  
+  // Warning color - darker in light mode for better readability
+  const warningColor = theme === 'dark' ? '#F59E0B' : '#B45309';
 
   // Support multiple notification times (up to 3 per day)
   const [times, setTimes] = useState<Date[]>([currentTime]);
@@ -112,23 +119,32 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Save the times to AsyncStorage
+      // Save the times to AsyncStorage (always save user preference, even if notifications fail)
       const timeStrings = times.map(t => t.toISOString());
       await onboardingService.setNotificationTimes(timeStrings);
 
       // Reschedule notifications with the new times
       // Use the appropriate function based on number of times
+      let result;
       if (times.length > 1) {
         // Premium users with multiple times
-        await notificationService.rescheduleNotificationsMultiple(times, locale);
+        result = await notificationService.rescheduleNotificationsMultiple(times, locale);
       } else {
         // Free users with single time
-        await notificationService.rescheduleNotifications(times[0], locale);
+        result = await notificationService.rescheduleNotifications(times[0], locale);
       }
 
       // Update parent component with the first time (for backward compatibility)
       if (onTimeChange) {
         onTimeChange(times[0]);
+      }
+
+      // Check if scheduling failed due to permission issues
+      if (!result.success && result.error?.includes('permission')) {
+        console.log('Notification scheduling failed due to permission, but times were saved');
+        // Still close modal - times were saved, just notifications couldn't be scheduled
+      } else if (result.success) {
+        console.log(`Successfully rescheduled ${result.count} notifications`);
       }
 
       // Show interstitial ad after successful notification time update
@@ -255,6 +271,35 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
           <ScrollView style={styles.scrollContent}>
             <View style={styles.content}>
+              {!hasNotificationPermission && (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.warningContainer,
+                    { 
+                      backgroundColor: `${warningColor}20`, 
+                      borderColor: warningColor,
+                      opacity: pressed ? 0.7 : 1,
+                    }
+                  ]}
+                  onPress={async () => {
+                    try {
+                      if (Platform.OS === 'ios') {
+                        await Linking.openURL('app-settings:');
+                      } else {
+                        await Linking.openSettings();
+                      }
+                    } catch (error) {
+                      console.error('Error opening notification settings:', error);
+                    }
+                  }}
+                >
+                  <AlertTriangle size={18} color={warningColor} />
+                  <Text style={[styles.warningText, { color: warningColor }]}>
+                    {t('notificationPermissionWarning')}
+                  </Text>
+                </Pressable>
+              )}
+
               <Text
                 style={[
                   styles.description,
@@ -357,6 +402,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat_600SemiBold',
     textAlign: 'center',
     marginBottom: tokens.space.sm,
+  },
+  warningContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: tokens.space.md,
+    borderRadius: tokens.radius.md,
+    borderWidth: 1,
+    gap: tokens.space.sm,
+    marginBottom: tokens.space.sm,
+  },
+  warningText: {
+    fontSize: tokens.fontSize.small,
+    fontWeight: tokens.fontWeight.medium,
+    fontFamily: 'Montserrat_500Medium',
+    flex: 1,
   },
   timePickerItem: {
     marginBottom: tokens.space.sm,

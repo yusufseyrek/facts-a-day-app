@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
-import { ChevronRight, ExternalLink } from '@tamagui/lucide-icons';
+import { ChevronRight, ExternalLink, AlertCircle } from '@tamagui/lucide-icons';
 import { useTheme } from '../theme';
 import { tokens } from '../theme/tokens';
 
@@ -11,6 +11,8 @@ interface SettingsRowProps {
   icon?: React.ReactNode;
   /** Show external link icon instead of chevron (for links that open outside the app) */
   showExternalLink?: boolean;
+  /** Show warning indicator (e.g., for missing permissions) */
+  showWarning?: boolean;
 }
 
 export const SettingsRow: React.FC<SettingsRowProps> = ({
@@ -19,12 +21,16 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   onPress,
   icon,
   showExternalLink = false,
+  showWarning = false,
 }) => {
   const { theme } = useTheme();
   const colors = tokens.color[theme];
 
   // Use pure white in dark mode for better contrast
   const labelColor = theme === 'dark' ? '#FFFFFF' : colors.text;
+  
+  // Warning indicator color - darker in light mode for better readability
+  const warningColor = theme === 'dark' ? '#F59E0B' : '#B45309';
 
   const content = (
     <View
@@ -32,7 +38,7 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
         styles.container,
         {
           backgroundColor: colors.surface,
-          borderColor: colors.border,
+          borderColor: showWarning ? warningColor : colors.border,
         },
       ]}
     >
@@ -41,6 +47,11 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
         <Text style={[styles.label, { color: labelColor }]}>
           {label}
         </Text>
+        {showWarning && (
+          <View style={styles.warningContainer}>
+            <AlertCircle size={16} color={warningColor} />
+          </View>
+        )}
       </View>
       <View style={styles.rightContent}>
         {value && (
@@ -98,6 +109,9 @@ const styles = StyleSheet.create({
     fontSize: tokens.fontSize.body,
     fontWeight: tokens.fontWeight.medium,
     fontFamily: 'Montserrat_600SemiBold',
+  },
+  warningContainer: {
+    marginLeft: tokens.space.sm,
   },
   rightContent: {
     flexDirection: 'row',
