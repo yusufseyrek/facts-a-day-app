@@ -32,6 +32,7 @@ import * as database from "../../src/services/database";
 import { buildNotificationContent } from "../../src/services/notifications";
 import { useOnboarding } from "../../src/contexts";
 import { Sentry } from "../../src/config/sentry";
+import { openInAppBrowser } from "../../src/utils/browser";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -274,14 +275,7 @@ export default function SettingsPage() {
   const handlePrivacyPolicyPress = async () => {
     try {
       const url = `https://factsaday.com/privacy/${locale}`;
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert(t("error"), t("cannotOpenUrl"), [
-          { text: t("ok"), style: "default" },
-        ]);
-      }
+      await openInAppBrowser(url, { theme });
     } catch (error) {
       console.error("Error opening privacy policy:", error);
       Alert.alert(t("error"), t("cannotOpenUrl"), [
@@ -293,14 +287,7 @@ export default function SettingsPage() {
   const handleTermsOfServicePress = async () => {
     try {
       const url = `https://factsaday.com/terms/${locale}`;
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert(t("error"), t("cannotOpenUrl"), [
-          { text: t("ok"), style: "default" },
-        ]);
-      }
+      await openInAppBrowser(url, { theme });
     } catch (error) {
       console.error("Error opening terms of service:", error);
       Alert.alert(t("error"), t("cannotOpenUrl"), [

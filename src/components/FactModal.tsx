@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { Pressable, Linking, Dimensions, Animated, View, StyleSheet, Platform, useWindowDimensions, PanResponder, ScrollView, TouchableOpacity } from "react-native";
+import { Pressable, Dimensions, Animated, View, StyleSheet, Platform, useWindowDimensions, PanResponder, ScrollView, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
@@ -14,6 +14,7 @@ import { useTheme } from "../theme";
 import { useTranslation } from "../i18n";
 import type { FactWithRelations, Category } from "../services/database";
 import { BannerAd } from "./ads";
+import { openInAppBrowser } from "../utils/browser";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -137,7 +138,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
   const handleSourcePress = () => {
     if (fact?.source_url) {
-      Linking.openURL(fact.source_url).catch((err) => {
+      openInAppBrowser(fact.source_url, { theme }).catch((err) => {
         console.error("Failed to open URL:", err);
       });
     }
