@@ -457,7 +457,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         bounces={true}
-        contentContainerStyle={{ paddingBottom: tokens.space.lg }}
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
@@ -556,10 +555,11 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 <SourceLink>
                   <Pressable onPress={handleSourcePress}>
                     <BodyText
-                      fontSize={isTablet ? tokens.fontSize.labelTablet : 13}
-                      lineHeight={isTablet ? tokens.fontSize.labelTablet * 1.4 : 18}
+                      fontSize={isTablet ? tokens.fontSize.bodyTablet : 15}
+                      lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.5 : 22}
                       color="$primary"
                       textDecorationLine="underline"
+                      fontFamily="Montserrat_600SemiBold"
                     >
                       {t("sourcePrefix")}
                       {extractDomain(fact.source_url)}
@@ -664,10 +664,11 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 <SourceLink>
                   <Pressable onPress={handleSourcePress}>
                     <BodyText
-                      fontSize={13}
-                      lineHeight={18}
+                      fontSize={15}
+                      lineHeight={22}
                       color="$primary"
                       textDecorationLine="underline"
+                      fontFamily="Montserrat_600SemiBold"
                     >
                       {t("sourcePrefix")}
                       {extractDomain(fact.source_url)}
