@@ -16,8 +16,8 @@ export { canShowPersonalizedAds, shouldRequestNonPersonalizedAdsOnly } from './a
 let isSDKInitialized = false;
 
 /**
- * Check if consent gathering is required
- * Returns true if we need to show consent form, false if consent is already obtained or not required
+ * Check if GDPR consent gathering is required (user is in EEA/UK)
+ * Returns true if we need to show GDPR consent form, false otherwise
  */
 export const isConsentRequired = async (): Promise<boolean> => {
   if (!ADS_ENABLED) {
@@ -26,17 +26,21 @@ export const isConsentRequired = async (): Promise<boolean> => {
 
   try {
     // Request info update to get current consent status
-    const consentInfo = await AdsConsent.requestInfoUpdate();
+    const consentInfo = await AdsConsent.requestInfoUpdate({ debugGeography: AdsConsentDebugGeography.EEA });
     console.log('Consent info:', consentInfo);
 
-    // Consent is required if status is REQUIRED and form is available
-    const required = consentInfo.status === AdsConsentStatus.REQUIRED;
-    console.log('Consent required:', required);
+    // Check if GDPR specifically applies (user is in EEA/UK)
+    const gdprApplies = await AdsConsent.getGdprApplies();
+    console.log('GDPR applies:', gdprApplies);
+
+    // Only require soft message if GDPR applies AND consent status is REQUIRED
+    const required = gdprApplies && consentInfo.status === AdsConsentStatus.REQUIRED;
+    console.log('GDPR consent required:', required);
     return required;
   } catch (error) {
     console.error('Error checking if consent is required:', error);
-    // On error, assume consent is required to be safe
-    return true;
+    // On error, don't show soft message - ATT will still be shown on iOS
+    return false;
   }
 };
 
@@ -55,7 +59,7 @@ export const requestGDPRConsent = async (): Promise<{
     // - Requests consent info update
     // - Shows the consent form if required
     // - Returns the final consent status
-    const consentInfo = await AdsConsent.gatherConsent();
+    const consentInfo = await AdsConsent.gatherConsent({ debugGeography: AdsConsentDebugGeography.EEA });
     console.log('Consent gathered:', consentInfo);
     return consentInfo;
   } catch (error) {
@@ -71,33 +75,50 @@ export const requestGDPRConsent = async (): Promise<{
 
 /**
  * Request App Tracking Transparency permission (iOS only)
- * Only requests ATT if GDPR doesn't apply or user has consent for purpose one
- * See: https://docs.page/invertase/react-native-google-mobile-ads/european-user-consent#gathering-user-consent
+ * For non-EEA users, this shows the ATT dialog directly.
+ * For EEA users with consent for purpose one, this also shows the ATT dialog.
  * Returns true if tracking is authorized
  */
 export const requestATTPermission = async (): Promise<boolean> => {
+  console.log('requestATTPermission called, platform:', Platform.OS);
+  
   if (Platform.OS !== 'ios') {
     // ATT is iOS only, return true for other platforms
     return true;
   }
 
   try {
-    // Check if GDPR applies and if user has consent for purpose one
-    const gdprApplies = await AdsConsent.getGdprApplies();
+    // For non-EEA users, we can request ATT directly
+    // For EEA users, we need to check if they consented to purpose one first
+    let shouldRequestATT = true;
     
-    if (gdprApplies) {
-      // Check purpose consents - purpose one is "Store and/or access information on a device"
-      const purposeConsents = await AdsConsent.getPurposeConsents();
-      const hasConsentForPurposeOne = purposeConsents.startsWith('1');
+    try {
+      const gdprApplies = await AdsConsent.getGdprApplies();
+      console.log('ATT check - GDPR applies:', gdprApplies);
       
-      if (!hasConsentForPurposeOne) {
-        // User hasn't consented to purpose one, don't request ATT
-        console.log('GDPR applies and no consent for purpose one, skipping ATT');
-        return false;
+      if (gdprApplies) {
+        // Check purpose consents - purpose one is "Store and/or access information on a device"
+        const purposeConsents = await AdsConsent.getPurposeConsents();
+        const hasConsentForPurposeOne = purposeConsents.startsWith('1');
+        console.log('ATT check - purpose consents:', purposeConsents, 'has purpose one:', hasConsentForPurposeOne);
+        
+        if (!hasConsentForPurposeOne) {
+          // User hasn't consented to purpose one, don't request ATT
+          console.log('GDPR applies and no consent for purpose one, skipping ATT');
+          shouldRequestATT = false;
+        }
       }
+    } catch (gdprError) {
+      // If we can't determine GDPR status, still try to show ATT for non-EEA users
+      console.log('Could not determine GDPR status, proceeding with ATT:', gdprError);
     }
 
-    // Request ATT permission
+    if (!shouldRequestATT) {
+      return false;
+    }
+
+    // Request ATT permission - this shows the native iOS dialog
+    console.log('Requesting ATT permission dialog...');
     const { status } = await requestTrackingPermissionsAsync();
     console.log('ATT permission status:', status);
     return status === 'granted';

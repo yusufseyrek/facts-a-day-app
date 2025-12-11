@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useMemo, useState } from "react";
-import { Animated, Easing, View, Dimensions, ActivityIndicator } from "react-native";
+import { Animated, Easing, View, Dimensions, ActivityIndicator, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { styled } from "@tamagui/core";
@@ -17,7 +17,8 @@ import { ADS_ENABLED } from "../../src/config/ads";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-// Flow: loading -> consent (if required) -> processing -> animation -> navigate
+// Flow: loading -> consent (if GDPR required) -> processing -> animation -> navigate
+// Non-EEA iOS users go directly: loading -> processing -> animation (ATT shown during processing)
 type ScreenState = "loading" | "consent" | "processing" | "animation";
 
 const Container = styled(SafeAreaView, {
@@ -251,6 +252,8 @@ export default function OnboardingSuccessScreen() {
   }, []);
 
   const checkConsentRequired = async () => {
+    console.log("checkConsentRequired started, ADS_ENABLED:", ADS_ENABLED);
+    
     if (!ADS_ENABLED) {
       // Ads disabled, skip to animation
       setScreenState("animation");
@@ -259,12 +262,25 @@ export default function OnboardingSuccessScreen() {
     }
 
     try {
-      const required = await isConsentRequired();
-      if (required) {
-        // Consent is required, show soft message
+      // Check if GDPR consent is required (user is in EEA/UK)
+      const gdprRequired = await isConsentRequired();
+      console.log("isConsentRequired (GDPR) returned:", gdprRequired);
+      
+      if (gdprRequired) {
+        // GDPR consent is required (EEA/UK user), show GDPR soft message
+        console.log("Showing GDPR consent screen");
         setScreenState("consent");
+      } else if (Platform.OS === "ios") {
+        // Non-EEA iOS user: skip soft message, run consent flow directly for ATT
+        console.log("Non-EEA iOS user, running consent flow directly for ATT...");
+        setScreenState("processing");
+        const result = await completeConsentFlow();
+        console.log("Consent flow completed:", result);
+        setScreenState("animation");
+        setShouldRunAnimations(true);
       } else {
-        // Consent not required (already obtained or not needed), initialize SDK and show animation
+        // Android user outside EEA, no consent screens needed
+        console.log("No consent required, initializing ads...");
         await initializeAdsSDK();
         setScreenState("animation");
         setShouldRunAnimations(true);
