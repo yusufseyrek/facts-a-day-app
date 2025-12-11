@@ -112,7 +112,7 @@ function extractDomain(url: string): string {
 
 export function FactModal({ fact, onClose }: FactModalProps) {
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
   const isTablet = SCREEN_WIDTH >= TABLET_BREAKPOINT;
@@ -138,7 +138,11 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
   const handleSourcePress = () => {
     if (fact?.source_url) {
-      openInAppBrowser(fact.source_url, { theme }).catch((err) => {
+      openInAppBrowser(fact.source_url, { 
+        theme,
+        // Translate the source URL if user's locale is not English
+        translateTo: locale !== 'en' ? locale : undefined,
+      }).catch((err) => {
         console.error("Failed to open URL:", err);
       });
     }
