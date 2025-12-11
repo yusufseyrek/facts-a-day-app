@@ -18,6 +18,11 @@ import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import * as Sentry from '@sentry/react-native';
 import Constants from 'expo-constants';
 import {
+  getTrackingPermissionsAsync,
+  requestTrackingPermissionsAsync,
+} from 'expo-tracking-transparency';
+import mobileAds from 'react-native-google-mobile-ads';
+import {
   useFonts,
   Montserrat_400Regular,
   Montserrat_500Medium,
@@ -164,6 +169,17 @@ export default Sentry.wrap(function RootLayout() {
 
   const initializeApp = async () => {
     try {
+      // Request App Tracking Transparency permission (iOS only)
+      // This must be done before initializing the Mobile Ads SDK
+      // to serve personalized ads
+      const { status } = await getTrackingPermissionsAsync();
+      if (status === 'undetermined') {
+        await requestTrackingPermissionsAsync();
+      }
+
+      // Initialize the Google Mobile Ads SDK
+      await mobileAds().initialize();
+
       // Preload interstitial ad early so it's ready for locale change detection
       preloadInterstitialAd();
       

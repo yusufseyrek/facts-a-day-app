@@ -4,7 +4,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { SectionList, RefreshControl, ActivityIndicator, useWindowDimensions, TextInput, FlatList, Pressable, Animated, Easing, Platform, UIManager } from "react-native";
+import { SectionList, RefreshControl, ActivityIndicator, useWindowDimensions, TextInput, FlatList, Pressable, Animated, Easing } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { Clock, Search, X } from "@tamagui/lucide-icons";
@@ -159,12 +159,6 @@ const SearchInput = styled(TextInput, {
   paddingVertical: 0, // Remove padding to center text in fixed height container
 });
 
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android') {
-  if (UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-  }
-}
 
 // ClearButton and SearchIconButton will be inline Pressable components
 

@@ -31,7 +31,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.seyrek.factsaday",
-      "buildNumber": "15",
+      "buildNumber": "17",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false,
@@ -191,7 +191,8 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-7740246752776234~7031691670",
-          "iosAppId": "ca-app-pub-7740246752776234~1632574072"
+          "iosAppId": "ca-app-pub-7740246752776234~1632574072",
+          "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
         }
       ],
       [
@@ -214,7 +215,8 @@
           "resizeMode": "cover"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-tracking-transparency"
     ]
   }
 }

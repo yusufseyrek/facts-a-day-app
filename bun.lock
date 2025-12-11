@@ -29,6 +29,7 @@
         "expo-sqlite": "^16.0.9",
         "expo-status-bar": "~3.0.8",
         "expo-store-review": "^9.0.8",
+        "expo-tracking-transparency": "~6.0.8",
         "expo-web-browser": "~15.0.10",
         "i18n-js": "^4.5.1",
         "react": "19.1.0",
@@ -1013,6 +1014,8 @@
     "expo-status-bar": ["expo-status-bar@3.0.8", "", { "dependencies": { "react-native-is-edge-to-edge": "^1.2.1" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-L248XKPhum7tvREoS1VfE0H6dPCaGtoUWzRsUv7hGKdiB4cus33Rc0sxkWkoQ77wE8stlnUlL5lvmT0oqZ3ZBw=="],
 
     "expo-store-review": ["expo-store-review@9.0.8", "", { "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-S8ExQRqQBHHmZOX2gabEeRJDrgeAhzBf5FOtnhp5fMinpwT7umNOMHy+PwrTYJ/+AjnnKHgLoM1o/MDgcL3qCw=="],
+
+    "expo-tracking-transparency": ["expo-tracking-transparency@6.0.8", "", { "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-4/NW47Kmrtj3J0udUmzxiq01gRY+vG8wFsUop6CTOVWlk+2MypjDFwBSscHcyiS2dJGNQLOQSBZ1RNhLdgSBOQ=="],
 
     "expo-web-browser": ["expo-web-browser@15.0.10", "", { "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-fvDhW4bhmXAeWFNFiInmsGCK83PAqAcQaFyp/3pE/jbdKmFKoRCWr46uZGIfN4msLK/OODhaQ/+US7GSJNDHJg=="],
 
