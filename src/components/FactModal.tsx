@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import { Pressable, Dimensions, Animated, View, StyleSheet, Platform, useWindowDimensions, PanResponder, ScrollView, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
@@ -111,9 +111,51 @@ function extractDomain(url: string): string {
   }
 }
 
+/**
+ * Splits content by the first empty line (double newline or line with only whitespace).
+ * Returns an object with the first part, second part (if exists), and whether a split occurred.
+ */
+function splitContentByEmptyLine(content: string): {
+  firstPart: string;
+  secondPart: string | null;
+  hasSplit: boolean;
+} {
+  // Match double newline with optional whitespace between
+  const emptyLineMatch = content.match(/\n\s*\n/);
+  
+  if (emptyLineMatch && emptyLineMatch.index !== undefined) {
+    const splitIndex = emptyLineMatch.index;
+    const matchLength = emptyLineMatch[0].length;
+    
+    const firstPart = content.substring(0, splitIndex).trim();
+    const secondPart = content.substring(splitIndex + matchLength).trim();
+    
+    // Only split if both parts have content
+    if (firstPart && secondPart) {
+      return {
+        firstPart,
+        secondPart,
+        hasSplit: true,
+      };
+    }
+  }
+  
+  // No valid split found, return entire content as first part
+  return {
+    firstPart: content,
+    secondPart: null,
+    hasSplit: false,
+  };
+}
+
 export function FactModal({ fact, onClose }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
+
+  // Split content by empty line for inline ad placement
+  const contentParts = useMemo(() => {
+    return splitContentByEmptyLine(fact.content);
+  }, [fact.content]);
   const insets = useSafeAreaInsets();
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
   const isTablet = SCREEN_WIDTH >= TABLET_BREAKPOINT;
@@ -587,15 +629,35 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 </BadgesRow>
               )}
 
-              {/* Main Content */}
+              {/* Main Content - First Part */}
               <BodyText
                 fontSize={isTablet ? tokens.fontSize.bodyTablet : 16}
                 lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.85 : 28}
                 letterSpacing={isTablet ? 0.5 : 0.3}
                 color="$text"
               >
-                {fact.content}
+                {contentParts.firstPart}
               </BodyText>
+
+              {/* Inline Ad - shown between content parts if there's a split */}
+              {contentParts.hasSplit && (
+                <BannerAd position="fact-modal-1" />
+              )}
+
+              {/* Main Content - Second Part */}
+              {contentParts.secondPart && (
+                <BodyText
+                  fontSize={isTablet ? tokens.fontSize.bodyTablet : 16}
+                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.85 : 28}
+                  letterSpacing={isTablet ? 0.5 : 0.3}
+                  color="$text"
+                >
+                  {contentParts.secondPart}
+                </BodyText>
+              )}
+
+              {/* End of content banner - always shown */}
+              <BannerAd position="fact-modal-2" />
 
               {/* Source Link */}
               {fact.source_url && (
@@ -696,15 +758,35 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 </BadgesRow>
               )}
 
-              {/* Main Content */}
+              {/* Main Content - First Part */}
               <BodyText
                 fontSize={16}
                 lineHeight={28}
                 letterSpacing={0.3}
                 color="$text"
               >
-                {fact.content}
+                {contentParts.firstPart}
               </BodyText>
+
+              {/* Inline Ad - shown between content parts if there's a split */}
+              {contentParts.hasSplit && (
+                <BannerAd position="fact-modal-1" />
+              )}
+
+              {/* Main Content - Second Part */}
+              {contentParts.secondPart && (
+                <BodyText
+                  fontSize={16}
+                  lineHeight={28}
+                  letterSpacing={0.3}
+                  color="$text"
+                >
+                  {contentParts.secondPart}
+                </BodyText>
+              )}
+
+              {/* End of content banner - always shown */}
+              <BannerAd position="fact-modal-2" />
 
               {/* Source Link */}
               {fact.source_url && (
@@ -723,6 +805,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   </Pressable>
                 </SourceLink>
               )}
+
             </ContentSection>
           </>
         )}
@@ -806,8 +889,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           </TouchableOpacity>
         </Animated.View>
       )}
-
-      <BannerAd position="modal" />
 
       <FactActions
         factId={fact.id}

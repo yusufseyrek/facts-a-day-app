@@ -6,7 +6,7 @@ import Constants from 'expo-constants';
 import { ADS_ENABLED } from '../../config/ads';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 
-type BannerAdPosition = 'home' | 'modal';
+type BannerAdPosition = 'home' | 'favorites' | 'fact-modal-1' | 'fact-modal-2';
 
 interface BannerAdProps {
   position: BannerAdPosition;
@@ -19,17 +19,57 @@ const getAdUnitId = (position: BannerAdPosition): string => {
 
   // Get configured Ad Unit IDs from app.json
   const homeIOS = Constants.expoConfig?.extra?.ADMOB_IOS_HOME_BANNER_ID;
-  const modalIOS = Constants.expoConfig?.extra?.ADMOB_IOS_MODAL_BANNER_ID;
+  const favoritesIOS = Constants.expoConfig?.extra?.ADMOB_IOS_FAVORITES_BANNER_ID;
+  const modal1IOS = Constants.expoConfig?.extra?.ADMOB_IOS_MODAL_BANNER_ID;
+  const modal2IOS = Constants.expoConfig?.extra?.ADMOB_IOS_MODAL_BANNER_2_ID;
+  
   const homeAndroid = Constants.expoConfig?.extra?.ADMOB_ANDROID_HOME_BANNER_ID;
-  const modalAndroid = Constants.expoConfig?.extra?.ADMOB_ANDROID_MODAL_BANNER_ID;
+  const favoritesAndroid = Constants.expoConfig?.extra?.ADMOB_ANDROID_FAVORITES_BANNER_ID;
+  const modal1Android = Constants.expoConfig?.extra?.ADMOB_ANDROID_MODAL_BANNER_ID;
+  const modal2Android = Constants.expoConfig?.extra?.ADMOB_ANDROID_MODAL_BANNER_2_ID;
 
   // Use test IDs if real IDs not configured
   const defaultTestId = TestIds.BANNER;
 
   if (isIOS) {
-    return position === 'home' ? (homeIOS || defaultTestId) : (modalIOS || defaultTestId);
+    switch (position) {
+      case 'home':
+        return homeIOS || defaultTestId;
+      case 'favorites':
+        return favoritesIOS || defaultTestId;
+      case 'fact-modal-1':
+        return modal1IOS || defaultTestId;
+      case 'fact-modal-2':
+        return modal2IOS || defaultTestId;
+    }
   } else {
-    return position === 'home' ? (homeAndroid || defaultTestId) : (modalAndroid || defaultTestId);
+    switch (position) {
+      case 'home':
+        return homeAndroid || defaultTestId;
+      case 'favorites':
+        return favoritesAndroid || defaultTestId;
+      case 'fact-modal-1':
+        return modal1Android || defaultTestId;
+      case 'fact-modal-2':
+        return modal2Android || defaultTestId;
+    }
+  }
+};
+
+// Get banner size based on position
+const getBannerSize = (position: BannerAdPosition): BannerAdSize => {
+  switch (position) {
+    case 'fact-modal-1':
+      // Inline adaptive banner - shown between content parts
+      return BannerAdSize.INLINE_ADAPTIVE_BANNER;
+    case 'fact-modal-2':
+      // Full banner - shown at the end of content
+      return BannerAdSize.FULL_BANNER;
+    case 'home':
+    case 'favorites':
+    default:
+      // Anchored adaptive banner for main screens
+      return BannerAdSize.ANCHORED_ADAPTIVE_BANNER;
   }
 };
 
@@ -75,6 +115,7 @@ export const BannerAd: React.FC<BannerAdProps> = ({ position, onAdLoadChange }) 
   }
 
   const adUnitId = getAdUnitId(position);
+  const adSize = getBannerSize(position);
 
   return (
     <YStack 
@@ -86,7 +127,7 @@ export const BannerAd: React.FC<BannerAdProps> = ({ position, onAdLoadChange }) 
     >
       <GoogleBannerAd
         unitId={adUnitId}
-        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+        size={adSize}
         requestOptions={{
           requestNonPersonalizedAdsOnly: requestNonPersonalized
         }}
