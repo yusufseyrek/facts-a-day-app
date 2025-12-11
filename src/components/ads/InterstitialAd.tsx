@@ -4,9 +4,11 @@ import {
   InterstitialAd,
   AdEventType,
   TestIds,
+  AdsConsent,
 } from 'react-native-google-mobile-ads';
 import Constants from 'expo-constants';
 import { ADS_ENABLED } from '../../config/ads';
+import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 
 // Get Interstitial Ad Unit ID based on platform
 const getInterstitialAdUnitId = (): string => {
@@ -26,11 +28,14 @@ const getInterstitialAdUnitId = (): string => {
 const adUnitId = getInterstitialAdUnitId();
 let interstitial: InterstitialAd | null = null;
 
-// Initialize and load the interstitial ad
-const loadInterstitialAd = () => {
+// Initialize and load the interstitial ad with consent-based personalization
+const loadInterstitialAd = async () => {
+  // Check consent status to determine if we should request non-personalized ads
+  const nonPersonalized = await shouldRequestNonPersonalizedAdsOnly();
+
   if (!interstitial) {
     interstitial = InterstitialAd.createForAdRequest(adUnitId, {
-      requestNonPersonalizedAdsOnly: false,
+      requestNonPersonalizedAdsOnly: nonPersonalized,
     });
 
     // Set up event listeners
@@ -59,7 +64,7 @@ export const useInterstitialAd = () => {
 
   useEffect(() => {
     // Initialize and load the first ad
-    loadInterstitialAd();
+    loadInterstitialAd().catch(console.error);
 
     // Set up listener to update loaded state
     if (interstitial) {
@@ -99,19 +104,18 @@ export const useInterstitialAd = () => {
  * @param timeoutMs Maximum time to wait for ad to load
  * @returns true if ad loaded, false if timeout
  */
-const waitForAdToLoad = (timeoutMs: number = 5000): Promise<boolean> => {
+const waitForAdToLoad = async (timeoutMs: number = 5000): Promise<boolean> => {
+  // If already loaded, resolve immediately
+  if (interstitial && interstitial.loaded) {
+    return true;
+  }
+
+  // If no interstitial instance, try to create and load one
+  if (!interstitial) {
+    await loadInterstitialAd();
+  }
+
   return new Promise((resolve) => {
-    // If already loaded, resolve immediately
-    if (interstitial && interstitial.loaded) {
-      resolve(true);
-      return;
-    }
-
-    // If no interstitial instance, try to create and load one
-    if (!interstitial) {
-      loadInterstitialAd();
-    }
-
     // Set up timeout
     const timeout = setTimeout(() => {
       console.log('⏱️ Ad load timeout reached');
@@ -144,6 +148,18 @@ const waitForAdToLoad = (timeoutMs: number = 5000): Promise<boolean> => {
 export const showInterstitialAd = async (): Promise<void> => {
   // Don't show ads if globally disabled
   if (!ADS_ENABLED) {
+    return;
+  }
+
+  // Check if user has given consent to show ads
+  try {
+    const { canRequestAds } = await AdsConsent.getConsentInfo();
+    if (!canRequestAds) {
+      console.log('⚠️ Cannot show interstitial ad - no consent');
+      return;
+    }
+  } catch (error) {
+    console.error('Error checking consent:', error);
     return;
   }
 
@@ -190,16 +206,28 @@ export const showInterstitialAd = async (): Promise<void> => {
   } else {
     // If ad still not loaded, load it for next time
     console.log('⚠️ Ad still not loaded, loading for next time');
-    loadInterstitialAd();
+    loadInterstitialAd().catch(console.error);
   }
 };
 
 // Preload interstitial ad (call this when app starts)
-export const preloadInterstitialAd = () => {
+export const preloadInterstitialAd = async () => {
   // Don't preload ads if globally disabled
   if (!ADS_ENABLED) {
     return;
   }
 
-  loadInterstitialAd();
+  // Check if user has given consent before preloading
+  try {
+    const { canRequestAds } = await AdsConsent.getConsentInfo();
+    if (!canRequestAds) {
+      console.log('⚠️ Cannot preload interstitial ad - no consent');
+      return;
+    }
+  } catch (error) {
+    console.error('Error checking consent for preload:', error);
+    return;
+  }
+
+  await loadInterstitialAd();
 };

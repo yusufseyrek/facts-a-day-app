@@ -1,19 +1,24 @@
-import React, { useEffect, useRef, useMemo } from "react";
-import { Animated, Easing, View, Dimensions } from "react-native";
+import React, { useEffect, useRef, useMemo, useState } from "react";
+import { Animated, Easing, View, Dimensions, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { styled } from "@tamagui/core";
 import { YStack, Text, XStack } from "tamagui";
 import { useRouter } from "expo-router";
-import { CheckCircle, Sparkle, Star } from "@tamagui/lucide-icons";
+import { CheckCircle, Sparkle, Star, Gift } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { tokens, getNeonColors } from "../../src/theme";
-import { BodyText } from "../../src/components";
+import { BodyText, Button } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
+import { completeConsentFlow, isConsentRequired, initializeAdsSDK } from "../../src/services/ads";
+import { ADS_ENABLED } from "../../src/config/ads";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+const { width: screenWidth } = Dimensions.get("window");
+
+// Flow: loading -> consent (if required) -> processing -> animation -> navigate
+type ScreenState = "loading" | "consent" | "processing" | "animation";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -35,6 +40,16 @@ const IconContainer = styled(YStack, {
   alignItems: "center",
   justifyContent: "center",
   marginBottom: tokens.space.lg,
+});
+
+const ConsentIconContainer = styled(YStack, {
+  width: 100,
+  height: 100,
+  borderRadius: tokens.radius.full,
+  backgroundColor: "$primaryLight",
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom: tokens.space.md,
 });
 
 // Particle component for confetti effect
@@ -224,11 +239,52 @@ export default function OnboardingSuccessScreen() {
   const router = useRouter();
   const { completeOnboarding } = useOnboarding();
 
-  // Animation values
+  // Screen state: loading -> consent (if required) -> processing -> animation -> navigate
+  const [screenState, setScreenState] = useState<ScreenState>("loading");
+
+  // Track if animations should run
+  const [shouldRunAnimations, setShouldRunAnimations] = useState(false);
+
+  // Check if consent is required on mount
+  useEffect(() => {
+    checkConsentRequired();
+  }, []);
+
+  const checkConsentRequired = async () => {
+    if (!ADS_ENABLED) {
+      // Ads disabled, skip to animation
+      setScreenState("animation");
+      setShouldRunAnimations(true);
+      return;
+    }
+
+    try {
+      const required = await isConsentRequired();
+      if (required) {
+        // Consent is required, show soft message
+        setScreenState("consent");
+      } else {
+        // Consent not required (already obtained or not needed), initialize SDK and show animation
+        await initializeAdsSDK();
+        setScreenState("animation");
+        setShouldRunAnimations(true);
+      }
+    } catch (error) {
+      console.error("Error checking consent requirement:", error);
+      // On error, skip to animation
+      setScreenState("animation");
+      setShouldRunAnimations(true);
+    }
+  };
+
+  // Animation values for success screen
   const iconDropAnim = useRef(new Animated.Value(0)).current;
   const iconPulseAnim = useRef(new Animated.Value(1)).current;
   const mainIconRotate = useRef(new Animated.Value(0)).current;
   const mainIconOpacity = useRef(new Animated.Value(0)).current;
+
+  // Animation values for consent screen
+  const consentOpacity = useRef(new Animated.Value(1)).current;
 
   // Text animations
   const titleWords = t("allSet").split(" ");
@@ -244,7 +300,10 @@ export default function OnboardingSuccessScreen() {
   const subtextTranslateY = useRef(new Animated.Value(20)).current;
   const progressOpacity = useRef(new Animated.Value(0)).current;
 
+  // Run success animations when animation screen is shown
   useEffect(() => {
+    if (!shouldRunAnimations) return;
+
     // Start all animations
     Animated.sequence([
       // Phase 1: Icon drop with bounce
@@ -340,8 +399,9 @@ export default function OnboardingSuccessScreen() {
       ])
     ).start();
 
+    // Complete onboarding and navigate after animation
     finishOnboarding();
-  }, []);
+  }, [shouldRunAnimations]);
 
   const finishOnboarding = async () => {
     try {
@@ -354,7 +414,27 @@ export default function OnboardingSuccessScreen() {
       }, 3000);
     } catch (error) {
       console.error("Error completing onboarding:", error);
+      // Even on error, navigate to main app
+      setTimeout(() => {
+        router.replace("/");
+      }, 3000);
     }
+  };
+
+  const handleConsentContinue = async () => {
+    setScreenState("processing");
+
+    try {
+      // Run the complete consent flow (shows GDPR consent + ATT dialog)
+      const result = await completeConsentFlow();
+      console.log("Consent flow completed:", result);
+    } catch (error) {
+      console.error("Error during consent flow:", error);
+    }
+
+    // After consent flow, show success animation
+    setScreenState("animation");
+    setShouldRunAnimations(true);
   };
 
   // Icon animations
@@ -388,6 +468,184 @@ export default function OnboardingSuccessScreen() {
   const lightColors = [tokens.color.light.background, "#E0F7FF", "#D0EFFF"] as const;
   const gradientColors = theme === "dark" ? darkColors : lightColors;
 
+  // Render consent screen
+  const renderConsentScreen = () => (
+    <Animated.View
+      style={{
+        flex: 1,
+        opacity: consentOpacity,
+      }}
+    >
+      <ContentContainer>
+        <YStack alignItems="center" gap="$lg" paddingHorizontal="$md">
+          {/* Icon */}
+          <ConsentIconContainer>
+            <Gift
+              size={50}
+              color={theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan}
+              strokeWidth={2}
+            />
+          </ConsentIconContainer>
+
+          {/* Title */}
+          <Text
+            fontSize={28}
+            fontWeight="700"
+            fontFamily="Montserrat_700Bold"
+            textAlign="center"
+            color="$text"
+            letterSpacing={-0.5}
+          >
+            {t("adsConsentTitle")}
+          </Text>
+
+          {/* Message */}
+          <BodyText
+            fontSize={16}
+            textAlign="center"
+            color="$textSecondary"
+            lineHeight={24}
+            paddingHorizontal="$sm"
+          >
+            {t("adsConsentMessage")}
+          </BodyText>
+
+          {/* Button */}
+          <YStack width="100%" paddingTop="$lg">
+            <Button onPress={handleConsentContinue} size="$5">
+              {t("adsConsentButton")}
+            </Button>
+          </YStack>
+        </YStack>
+      </ContentContainer>
+    </Animated.View>
+  );
+
+  // Render loading screen (checking consent requirement)
+  const renderLoadingScreen = () => (
+    <ContentContainer>
+      <YStack alignItems="center" gap="$lg">
+        <ActivityIndicator size="large" color={theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan} />
+      </YStack>
+    </ContentContainer>
+  );
+
+  // Render processing screen
+  const renderProcessingScreen = () => (
+    <ContentContainer>
+      <YStack alignItems="center" gap="$lg">
+        <ActivityIndicator size="large" color={theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan} />
+        <BodyText
+          fontSize={16}
+          textAlign="center"
+          color="$textSecondary"
+        >
+          {t("oneMoment")}
+        </BodyText>
+      </YStack>
+    </ContentContainer>
+  );
+
+  // Render success animation screen
+  const renderAnimationScreen = () => (
+    <ContentContainer>
+      <YStack alignItems="center" gap="$xl">
+        {/* Icon with particles and pulse rings */}
+        <View style={{ width: 200, height: 200, alignItems: "center", justifyContent: "center" }}>
+          {/* Pulse rings */}
+          <PulseRing delay={0} theme={theme} />
+          <PulseRing delay={1000} theme={theme} />
+          <PulseRing delay={2000} theme={theme} />
+
+          {/* Particles */}
+          {particles}
+
+          {/* Main animated icon */}
+          <Animated.View
+            style={{
+              opacity: mainIconOpacity,
+              transform: [
+                { translateY: iconTranslateY },
+                { scale: iconDropScale },
+                { rotate: iconRotate },
+              ],
+              shadowColor: theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan,
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: theme === "dark" ? 0.4 : 0.2,
+              shadowRadius: 20,
+              elevation: 10,
+            }}
+          >
+            <Animated.View
+              style={{
+                transform: [{ scale: iconPulseAnim }],
+              }}
+            >
+              <IconContainer>
+                <CheckCircle
+                  size={70}
+                  color={theme === "dark" ? tokens.color.dark.neonGreen : tokens.color.light.neonGreen}
+                  strokeWidth={2.5}
+                />
+              </IconContainer>
+            </Animated.View>
+          </Animated.View>
+        </View>
+
+        {/* Animated title - word by word */}
+        <XStack gap="$sm" alignItems="center">
+          {titleWords.map((word, index) => (
+            <Animated.View
+              key={index}
+              style={{
+                opacity: wordAnimations[index].opacity,
+                transform: [
+                  { scale: wordAnimations[index].scale },
+                  { translateY: wordAnimations[index].translateY },
+                ],
+              }}
+            >
+              <Text
+                fontSize={48}
+                fontWeight="800"
+                fontFamily="Montserrat_700Bold"
+                textAlign="center"
+                color="$text"
+                letterSpacing={-1}
+                lineHeight={56}
+              >
+                {word}
+              </Text>
+            </Animated.View>
+          ))}
+        </XStack>
+
+        {/* Animated subtitle */}
+        <Animated.View
+          style={{
+            opacity: subtextOpacity,
+            transform: [{ translateY: subtextTranslateY }],
+            maxWidth: "90%",
+          }}
+        >
+          <BodyText
+            fontSize={18}
+            textAlign="center"
+            color="$textSecondary"
+            lineHeight={26}
+          >
+            {t("welcomeToApp")}
+          </BodyText>
+        </Animated.View>
+
+        {/* Progress bar */}
+        <Animated.View style={{ opacity: progressOpacity }}>
+          <ProgressBar duration={2000} theme={theme} />
+        </Animated.View>
+      </YStack>
+    </ContentContainer>
+  );
+
   return (
     <>
       <Animated.View style={{ flex: 1 }}>
@@ -399,102 +657,10 @@ export default function OnboardingSuccessScreen() {
         >
           <Container>
             <StatusBar style={theme === "dark" ? "light" : "dark"} />
-            <ContentContainer>
-              <YStack alignItems="center" gap="$xl">
-                {/* Icon with particles and pulse rings */}
-                <View style={{ width: 200, height: 200, alignItems: "center", justifyContent: "center" }}>
-                  {/* Pulse rings */}
-                  <PulseRing delay={0} theme={theme} />
-                  <PulseRing delay={1000} theme={theme} />
-                  <PulseRing delay={2000} theme={theme} />
-
-                  {/* Particles */}
-                  {particles}
-
-                  {/* Main animated icon */}
-                  <Animated.View
-                    style={{
-                      opacity: mainIconOpacity,
-                      transform: [
-                        { translateY: iconTranslateY },
-                        { scale: iconDropScale },
-                        { rotate: iconRotate },
-                      ],
-                      shadowColor: theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan,
-                      shadowOffset: { width: 0, height: 10 },
-                      shadowOpacity: theme === "dark" ? 0.4 : 0.2,
-                      shadowRadius: 20,
-                      elevation: 10,
-                    }}
-                  >
-                    <Animated.View
-                      style={{
-                        transform: [{ scale: iconPulseAnim }],
-                      }}
-                    >
-                      <IconContainer>
-                        <CheckCircle
-                          size={70}
-                          color={theme === "dark" ? tokens.color.dark.neonGreen : tokens.color.light.neonGreen}
-                          strokeWidth={2.5}
-                        />
-                      </IconContainer>
-                    </Animated.View>
-                  </Animated.View>
-                </View>
-
-                {/* Animated title - word by word */}
-                <XStack gap="$sm" alignItems="center">
-                  {titleWords.map((word, index) => (
-                    <Animated.View
-                      key={index}
-                      style={{
-                        opacity: wordAnimations[index].opacity,
-                        transform: [
-                          { scale: wordAnimations[index].scale },
-                          { translateY: wordAnimations[index].translateY },
-                        ],
-                      }}
-                    >
-                      <Text
-                        fontSize={48}
-                        fontWeight="800"
-                        fontFamily="Montserrat_700Bold"
-                        textAlign="center"
-                        color="$text"
-                        letterSpacing={-1}
-                        lineHeight={56}
-                      >
-                        {word}
-                      </Text>
-                    </Animated.View>
-                  ))}
-                </XStack>
-
-                {/* Animated subtitle */}
-                <Animated.View
-                  style={{
-                    opacity: subtextOpacity,
-                    transform: [{ translateY: subtextTranslateY }],
-                    maxWidth: "90%",
-                  }}
-                >
-                  <BodyText
-                    fontSize={18}
-                    textAlign="center"
-                    color="$textSecondary"
-                    lineHeight={26}
-                  >
-                    {t("welcomeToApp")}
-                  </BodyText>
-                </Animated.View>
-
-                {/* Progress bar */}
-                <Animated.View style={{ opacity: progressOpacity }}>
-                  <ProgressBar duration={2000} theme={theme} />
-                </Animated.View>
-              </YStack>
-            </ContentContainer>
+            {screenState === "loading" && renderLoadingScreen()}
+            {screenState === "consent" && renderConsentScreen()}
+            {screenState === "processing" && renderProcessingScreen()}
+            {screenState === "animation" && renderAnimationScreen()}
           </Container>
         </LinearGradient>
       </Animated.View>

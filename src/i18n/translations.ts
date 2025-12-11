@@ -169,6 +169,11 @@ export const translations = {
     minimumRequired: "Minimum Erforderlich",
     youMustHaveAtLeastOne: "Sie müssen mindestens eine Benachrichtigungszeit haben",
     notificationPermissionWarning: "Sie müssen Benachrichtigungen erlauben, um tägliche Fakten zu erhalten",
+
+    // Ads Consent
+    adsConsentTitle: "Helfen Sie uns, Täglich Wissen kostenlos zu halten",
+    adsConsentMessage: "Wir zeigen Werbung, um diese App kostenlos zu halten und ihre Entwicklung zu unterstützen. Indem Sie personalisierte Werbung zulassen, helfen Sie uns, Ihnen weiterhin jeden Tag interessante Fakten zu bringen.",
+    adsConsentButton: "Weiter",
   },
   en: {
     // Onboarding - Categories
@@ -338,6 +343,11 @@ export const translations = {
     minimumRequired: "Minimum Required",
     youMustHaveAtLeastOne: "You must have at least one notification time",
     notificationPermissionWarning: "You need to allow notifications to get daily facts",
+
+    // Ads Consent
+    adsConsentTitle: "Help Us Keep Facts a Day Free",
+    adsConsentMessage: "We show ads to keep this app free and support its development. By allowing personalized ads, you help us continue bringing you interesting facts every day.",
+    adsConsentButton: "Continue",
   },
   es: {
     // Onboarding - Categories
@@ -507,6 +517,11 @@ export const translations = {
     minimumRequired: "Mínimo Requerido",
     youMustHaveAtLeastOne: "Debes tener al menos un horario de notificación",
     notificationPermissionWarning: "Necesitas permitir notificaciones para recibir datos diarios",
+
+    // Ads Consent
+    adsConsentTitle: "Ayúdanos a mantener Conocimiento Diario gratis",
+    adsConsentMessage: "Mostramos anuncios para mantener esta aplicación gratuita y apoyar su desarrollo. Al permitir anuncios personalizados, nos ayudas a seguir trayéndote datos interesantes cada día.",
+    adsConsentButton: "Continuar",
   },
   fr: {
     // Onboarding - Categories
@@ -678,6 +693,11 @@ export const translations = {
     minimumRequired: "Minimum Requis",
     youMustHaveAtLeastOne: "Vous devez avoir au moins une heure de notification",
     notificationPermissionWarning: "Vous devez autoriser les notifications pour recevoir des faits quotidiens",
+
+    // Ads Consent
+    adsConsentTitle: "Aidez-nous à garder Savoir Quotidien gratuit",
+    adsConsentMessage: "Nous affichons des publicités pour garder cette application gratuite et soutenir son développement. En autorisant les publicités personnalisées, vous nous aidez à continuer à vous apporter des faits intéressants chaque jour.",
+    adsConsentButton: "Continuer",
   },
   ja: {
     // Onboarding - Categories
@@ -846,6 +866,11 @@ export const translations = {
     minimumRequired: "最小数が必要です",
     youMustHaveAtLeastOne: "少なくとも1件の通知時刻が必要です",
     notificationPermissionWarning: "毎日の豆知識を受け取るには通知を許可する必要があります",
+
+    // Ads Consent
+    adsConsentTitle: "毎日の知識を無料で維持するためにご協力ください",
+    adsConsentMessage: "このアプリを無料で提供し、開発をサポートするために広告を表示しています。パーソナライズされた広告を許可することで、毎日興味深い豆知識をお届けし続けることができます。",
+    adsConsentButton: "続ける",
   },
   ko: {
     // Onboarding - Categories
@@ -1011,6 +1036,11 @@ export const translations = {
     minimumRequired: "최소 수 필요",
     youMustHaveAtLeastOne: "최소 1개의 알림 시간이 필요합니다",
     notificationPermissionWarning: "매일 정보를 받으려면 알림을 허용해야 합니다",
+
+    // Ads Consent
+    adsConsentTitle: "매일 지식을 무료로 유지하도록 도와주세요",
+    adsConsentMessage: "이 앱을 무료로 유지하고 개발을 지원하기 위해 광고를 표시합니다. 맞춤형 광고를 허용하면 매일 흥미로운 정보를 계속 제공할 수 있습니다.",
+    adsConsentButton: "계속",
   },
   tr: {
     // Onboarding - Categories
@@ -1179,6 +1209,11 @@ export const translations = {
     minimumRequired: "Minimum Gerekli",
     youMustHaveAtLeastOne: "En az bir bildirim zamanınız olmalıdır",
     notificationPermissionWarning: "Günlük bilgiler almak için bildirimlere izin vermeniz gerekir",
+
+    // Ads Consent
+    adsConsentTitle: "Günlük Bilgi'yi ücretsiz tutmamıza yardım edin",
+    adsConsentMessage: "Bu uygulamayı ücretsiz tutmak ve gelişimini desteklemek için reklam gösteriyoruz. Kişiselleştirilmiş reklamlara izin vererek, size her gün ilginç bilgiler sunmaya devam etmemize yardımcı olursunuz.",
+    adsConsentButton: "Devam Et",
   },
   zh: {
     // Onboarding - Categories
@@ -1343,6 +1378,11 @@ export const translations = {
     minimumRequired: "需要最小值",
     youMustHaveAtLeastOne: "您必须至少设置一个通知时间",
     notificationPermissionWarning: "您需要允许通知才能获取每日知识",
+
+    // Ads Consent
+    adsConsentTitle: "帮助我们保持每日知识免费",
+    adsConsentMessage: "我们通过展示广告来保持此应用免费并支持其开发。允许个性化广告可以帮助我们继续每天为您带来有趣的知识。",
+    adsConsentButton: "继续",
   },
 };
 

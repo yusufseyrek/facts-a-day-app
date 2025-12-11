@@ -9,19 +9,13 @@ import * as onboardingService from '../src/services/onboarding';
 import * as notificationService from '../src/services/notifications';
 import * as database from '../src/services/database';
 import * as contentRefresh from '../src/services/contentRefresh';
-import { preloadInterstitialAd } from '../src/components/ads';
+import { initializeAdsForReturningUser } from '../src/services/ads';
 import { ActivityIndicator, View, AppState, AppStateStatus } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Localization from 'expo-localization';
 import { initializeSentry } from '../src/config/sentry';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import * as Sentry from '@sentry/react-native';
-import Constants from 'expo-constants';
-import {
-  getTrackingPermissionsAsync,
-  requestTrackingPermissionsAsync,
-} from 'expo-tracking-transparency';
-import mobileAds from 'react-native-google-mobile-ads';
 import {
   useFonts,
   Montserrat_400Regular,
@@ -169,20 +163,6 @@ export default Sentry.wrap(function RootLayout() {
 
   const initializeApp = async () => {
     try {
-      // Request App Tracking Transparency permission (iOS only)
-      // This must be done before initializing the Mobile Ads SDK
-      // to serve personalized ads
-      const { status } = await getTrackingPermissionsAsync();
-      if (status === 'undetermined') {
-        await requestTrackingPermissionsAsync();
-      }
-
-      // Initialize the Google Mobile Ads SDK
-      await mobileAds().initialize();
-
-      // Preload interstitial ad early so it's ready for locale change detection
-      preloadInterstitialAd();
-      
       // Initialize database first
       await database.openDatabase();
       setIsDbReady(true);
@@ -194,10 +174,17 @@ export default Sentry.wrap(function RootLayout() {
       const isComplete = await onboardingService.isOnboardingComplete();
       setInitialOnboardingStatus(isComplete);
 
-      // Refresh content in background if onboarding is complete
-      // This runs asynchronously and doesn't block app startup
+      // Only initialize ads for returning users (those who already completed onboarding)
+      // New users will have ads initialized during the onboarding success screen
+      // after they go through the consent flow
       if (isComplete) {
-        // Don't await - run in background
+        // Initialize ads using consent obtained in the previous session
+        initializeAdsForReturningUser().catch((error) => {
+          console.error('Failed to initialize ads for returning user:', error);
+        });
+
+        // Refresh content in background
+        // This runs asynchronously and doesn't block app startup
         contentRefresh.refreshAppContent().catch((error) => {
           // Silently handle errors - app continues with cached data
           console.error('Background refresh failed:', error);

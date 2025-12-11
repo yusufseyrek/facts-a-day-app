@@ -1,9 +1,10 @@
-import React from 'react';
-import { Platform, StyleSheet } from 'react-native';
-import { BannerAd as GoogleBannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import React, { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
+import { BannerAd as GoogleBannerAd, BannerAdSize, TestIds, AdsConsent } from 'react-native-google-mobile-ads';
 import { YStack } from 'tamagui';
 import Constants from 'expo-constants';
 import { ADS_ENABLED } from '../../config/ads';
+import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 
 type BannerAdPosition = 'home' | 'modal';
 
@@ -32,8 +33,37 @@ const getAdUnitId = (position: BannerAdPosition): string => {
 };
 
 export const BannerAd: React.FC<BannerAdProps> = ({ position }) => {
-  // Don't show ads if globally disabled
-  if (!ADS_ENABLED) {
+  const [canRequestAds, setCanRequestAds] = useState<boolean | null>(null);
+  const [requestNonPersonalized, setRequestNonPersonalized] = useState<boolean>(true);
+
+  useEffect(() => {
+    const checkConsent = async () => {
+      try {
+        // Check if we can request ads at all
+        const info = await AdsConsent.getConsentInfo();
+        setCanRequestAds(info.canRequestAds);
+
+        // If we can request ads, check if they should be non-personalized
+        if (info.canRequestAds) {
+          const nonPersonalized = await shouldRequestNonPersonalizedAdsOnly();
+          setRequestNonPersonalized(nonPersonalized);
+        }
+      } catch (error) {
+        console.error('Error checking consent for banner ad:', error);
+        setCanRequestAds(false);
+      }
+    };
+
+    checkConsent();
+  }, []);
+
+  // Don't show ads if globally disabled or consent not given
+  if (!ADS_ENABLED || canRequestAds === false) {
+    return null;
+  }
+
+  // Don't render until we know consent status
+  if (canRequestAds === null) {
     return null;
   }
 
@@ -45,7 +75,7 @@ export const BannerAd: React.FC<BannerAdProps> = ({ position }) => {
         unitId={adUnitId}
         size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
         requestOptions={{
-          requestNonPersonalizedAdsOnly: false,
+          requestNonPersonalizedAdsOnly: requestNonPersonalized,
         }}
         onAdFailedToLoad={(error) => {
           console.error(`Banner ad (${position}) failed to load:`, error);
