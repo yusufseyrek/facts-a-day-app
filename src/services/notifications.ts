@@ -1,4 +1,6 @@
 import * as Notifications from 'expo-notifications';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { Platform } from 'react-native';
 import * as database from './database';
 import { i18n } from '../i18n/config';
@@ -7,13 +9,349 @@ import { SupportedLocale } from '../i18n/translations';
 // iOS has a limit of 64 scheduled notifications
 const MAX_SCHEDULED_NOTIFICATIONS = 64;
 
+// Only download images for notifications within this many days
+// This avoids downloading all 64 images upfront
+const DAYS_TO_PRELOAD_IMAGES = 7;
+
+// Directory for notification images - use documentDirectory instead of cacheDirectory
+// because cache can be cleared by iOS before scheduled notifications fire
+const NOTIFICATION_IMAGES_DIR = `${FileSystem.documentDirectory}notification-images/`;
+
+/**
+ * Ensure the notification images directory exists
+ */
+async function ensureNotificationImagesDirExists(): Promise<void> {
+  const dirInfo = await FileSystem.getInfoAsync(NOTIFICATION_IMAGES_DIR);
+  if (!dirInfo.exists) {
+    await FileSystem.makeDirectoryAsync(NOTIFICATION_IMAGES_DIR, { intermediates: true });
+    console.log(`📁 Created notification images directory: ${NOTIFICATION_IMAGES_DIR}`);
+  }
+}
+
+/**
+ * Convert an image to JPEG format if needed (iOS notification attachments don't support WebP well)
+ */
+async function convertToJpegIfNeeded(localUri: string, factId: number): Promise<string> {
+  const extension = localUri.split('.').pop()?.toLowerCase();
+  
+  // If already JPEG or PNG, no conversion needed
+  if (extension === 'jpg' || extension === 'jpeg' || extension === 'png') {
+    return localUri;
+  }
+  
+  // Convert WebP and other formats to JPEG
+  console.log(`🖼️ Converting ${extension} to JPEG for fact ${factId}...`);
+  
+  try {
+    const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
+    
+    // Check if converted version already exists
+    const existingJpeg = await FileSystem.getInfoAsync(jpegUri);
+    if (existingJpeg.exists) {
+      console.log(`🖼️ Using existing JPEG conversion for fact ${factId}`);
+      return jpegUri;
+    }
+    
+    // Convert to JPEG using ImageManipulator
+    const result = await ImageManipulator.manipulateAsync(
+      localUri,
+      [], // No transformations
+      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+    );
+    
+    // Move the result to our notification images directory with proper name
+    await FileSystem.moveAsync({
+      from: result.uri,
+      to: jpegUri,
+    });
+    
+    console.log(`🖼️ Converted to JPEG for fact ${factId}: ${jpegUri}`);
+    return jpegUri;
+  } catch (error) {
+    console.warn(`🖼️ Failed to convert image for fact ${factId}:`, error);
+    // Return original if conversion fails
+    return localUri;
+  }
+}
+
+/**
+ * Download an image for notification attachment
+ * Returns the local file URI or null if download fails
+ */
+async function downloadImageForNotification(imageUrl: string, factId: number): Promise<string | null> {
+  try {
+    await ensureNotificationImagesDirExists();
+    
+    // First check if we already have a JPEG version (converted previously)
+    const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
+    const jpegInfo = await FileSystem.getInfoAsync(jpegUri);
+    if (jpegInfo.exists) {
+      console.log(`🖼️ Using cached JPEG image for fact ${factId}: ${jpegUri}`);
+      return jpegUri;
+    }
+    
+    // Extract file extension from URL or default to jpg
+    const urlPath = imageUrl.split('?')[0]; // Remove query params
+    const extension = urlPath.split('.').pop()?.toLowerCase() || 'jpg';
+    const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    const fileExtension = validExtensions.includes(extension) ? extension : 'jpg';
+    
+    const localUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.${fileExtension}`;
+    
+    // Check if already downloaded (original format)
+    const fileInfo = await FileSystem.getInfoAsync(localUri);
+    let downloadedUri = localUri;
+    
+    if (fileInfo.exists) {
+      console.log(`🖼️ Using cached image for fact ${factId}: ${localUri}`);
+      downloadedUri = localUri;
+    } else {
+      // Download the image
+      console.log(`🖼️ Downloading image for fact ${factId}: ${imageUrl}`);
+      const downloadResult = await FileSystem.downloadAsync(imageUrl, localUri);
+      
+      if (downloadResult.status !== 200) {
+        console.warn(`🖼️ Failed to download notification image for fact ${factId}: status ${downloadResult.status}`);
+        return null;
+      }
+      
+      console.log(`🖼️ Downloaded image for fact ${factId}: ${downloadResult.uri}`);
+      downloadedUri = downloadResult.uri;
+    }
+    
+    // Convert to JPEG if needed (WebP not well supported by iOS notification attachments)
+    const finalUri = await convertToJpegIfNeeded(downloadedUri, factId);
+    return finalUri;
+  } catch (error) {
+    console.warn(`🖼️ Error downloading notification image for fact ${factId}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get the type hint for iOS notification attachment based on file extension
+ * Note: We convert most images to JPEG for better iOS notification compatibility
+ */
+function getTypeHintForExtension(uri: string): string {
+  const extension = uri.split('.').pop()?.toLowerCase();
+  switch (extension) {
+    case 'png':
+      return 'public.png';
+    case 'gif':
+      return 'public.gif';
+    case 'jpg':
+    case 'jpeg':
+    default:
+      // WebP and other formats should have been converted to JPEG
+      return 'public.jpeg';
+  }
+}
+
+/**
+ * Get the local notification image path for a fact if it exists
+ * Returns the JPEG path (converted for iOS notification compatibility)
+ * @param factId The ID of the fact
+ * @returns The local file URI or null if not found
+ */
+export async function getLocalNotificationImagePath(factId: number): Promise<string | null> {
+  try {
+    // Check for JPEG version first (most common - converted for iOS)
+    const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
+    const jpegInfo = await FileSystem.getInfoAsync(jpegUri);
+    if (jpegInfo.exists) {
+      return jpegUri;
+    }
+    
+    // Check for WebP version (original download before conversion)
+    const webpUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.webp`;
+    const webpInfo = await FileSystem.getInfoAsync(webpUri);
+    if (webpInfo.exists) {
+      return webpUri;
+    }
+    
+    // Check for PNG version
+    const pngUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.png`;
+    const pngInfo = await FileSystem.getInfoAsync(pngUri);
+    if (pngInfo.exists) {
+      return pngUri;
+    }
+    
+    return null;
+  } catch (error) {
+    console.warn(`🖼️ Error checking local notification image for fact ${factId}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Delete notification image(s) for a specific fact
+ * Removes both the original and any converted versions
+ * @param factId The ID of the fact
+ */
+export async function deleteNotificationImage(factId: number): Promise<void> {
+  try {
+    const extensions = ['jpg', 'jpeg', 'webp', 'png', 'gif'];
+    
+    for (const ext of extensions) {
+      const uri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.${ext}`;
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+      
+      if (fileInfo.exists) {
+        await FileSystem.deleteAsync(uri, { idempotent: true });
+        console.log(`🗑️ Deleted notification image: ${uri}`);
+      }
+    }
+  } catch (error) {
+    console.warn(`🗑️ Error deleting notification image for fact ${factId}:`, error);
+  }
+}
+
+/**
+ * Clean up old notification images that are older than the specified days
+ * This should be called on app start to prevent disk space buildup
+ * @param maxAgeDays Maximum age in days before images are deleted (default: 7)
+ */
+export async function cleanupOldNotificationImages(maxAgeDays: number = 7): Promise<number> {
+  try {
+    await ensureNotificationImagesDirExists();
+    
+    const dirInfo = await FileSystem.getInfoAsync(NOTIFICATION_IMAGES_DIR);
+    if (!dirInfo.exists) {
+      return 0;
+    }
+    
+    const files = await FileSystem.readDirectoryAsync(NOTIFICATION_IMAGES_DIR);
+    const now = Date.now();
+    const maxAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;
+    let deletedCount = 0;
+    
+    for (const file of files) {
+      const filePath = `${NOTIFICATION_IMAGES_DIR}${file}`;
+      
+      try {
+        const fileInfo = await FileSystem.getInfoAsync(filePath);
+        
+        if (fileInfo.exists && fileInfo.modificationTime) {
+          const fileAgeMs = now - fileInfo.modificationTime * 1000;
+          
+          if (fileAgeMs > maxAgeMs) {
+            await FileSystem.deleteAsync(filePath, { idempotent: true });
+            console.log(`🗑️ Cleaned up old notification image: ${file} (${Math.round(fileAgeMs / (24 * 60 * 60 * 1000))} days old)`);
+            deletedCount++;
+          }
+        }
+      } catch (fileError) {
+        console.warn(`🗑️ Error processing file ${file}:`, fileError);
+      }
+    }
+    
+    if (deletedCount > 0) {
+      console.log(`🗑️ Cleaned up ${deletedCount} old notification images`);
+    }
+    
+    return deletedCount;
+  } catch (error) {
+    console.warn('🗑️ Error cleaning up old notification images:', error);
+    return 0;
+  }
+}
+
+/**
+ * Check if a scheduled date is within the image preload window
+ */
+function shouldPreloadImage(scheduledDate: Date): boolean {
+  const now = new Date();
+  const daysUntilNotification = Math.ceil(
+    (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  return daysUntilNotification <= DAYS_TO_PRELOAD_IMAGES;
+}
+
+/**
+ * Preload images for upcoming scheduled notifications
+ * This is called when the app opens to download images for notifications
+ * that are now within the preload window
+ */
+export async function preloadUpcomingNotificationImages(locale: SupportedLocale): Promise<number> {
+  if (Platform.OS !== 'ios') {
+    // Only iOS needs image preloading for notification attachments
+    return 0;
+  }
+
+  try {
+    // Get all scheduled notifications from the OS
+    const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    
+    if (scheduledNotifications.length === 0) {
+      return 0;
+    }
+
+    const now = new Date();
+    let preloadedCount = 0;
+
+    for (const notification of scheduledNotifications) {
+      const trigger = notification.trigger;
+      
+      // Get the trigger date
+      let triggerDate: Date | null = null;
+      if (trigger && 'date' in trigger && trigger.date) {
+        triggerDate = trigger.date instanceof Date ? trigger.date : new Date(trigger.date);
+      }
+
+      if (!triggerDate) continue;
+
+      // Check if this notification is within the preload window
+      const daysUntil = Math.ceil((triggerDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysUntil <= DAYS_TO_PRELOAD_IMAGES && daysUntil > 0) {
+        // Get fact ID from notification data
+        const factId = notification.content.data?.factId as number | undefined;
+        
+        if (factId) {
+          // Check if image already exists
+          const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
+          const jpegInfo = await FileSystem.getInfoAsync(jpegUri);
+          
+          if (!jpegInfo.exists) {
+            // Get the fact from database to get the image URL
+            const fact = await database.getFactById(factId);
+            
+            if (fact?.image_url) {
+              console.log(`🖼️ Preloading image for upcoming notification (fact ${factId}, fires in ${daysUntil} days)`);
+              const localUri = await downloadImageForNotification(fact.image_url, factId);
+              
+              if (localUri) {
+                preloadedCount++;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (preloadedCount > 0) {
+      console.log(`🖼️ Preloaded ${preloadedCount} images for upcoming notifications`);
+    }
+
+    return preloadedCount;
+  } catch (error) {
+    console.warn('🖼️ Error preloading notification images:', error);
+    return 0;
+  }
+}
+
 /**
  * Build notification content for a fact
+ * Downloads image to local storage for iOS attachments (only for upcoming notifications)
+ * @param fact The fact to build content for
+ * @param locale The locale to use for the notification
+ * @param scheduledDate The date the notification will fire (used to decide if we should download image)
  */
-export function buildNotificationContent(
+export async function buildNotificationContent(
   fact: database.FactWithRelations,
-  locale: SupportedLocale = 'en'
-): Notifications.NotificationContentInput {
+  locale: SupportedLocale = 'en',
+  scheduledDate?: Date
+): Promise<Notifications.NotificationContentInput> {
   // Set locale temporarily to get the correct app name
   const previousLocale = i18n.locale;
   i18n.locale = locale;
@@ -26,20 +364,45 @@ export function buildNotificationContent(
     data: { factId: fact.id },
   };
 
-  // Add image attachment if available
-  if (fact.image_url) {
-    if (Platform.OS === 'ios') {
-      content.attachments = [
-        {
-          identifier: `fact-${fact.id}`,
-          url: fact.image_url,
-          type: 'public.jpeg',
-        },
-      ];
+  // Add image attachment if available (iOS only - Android local notifications don't support images)
+  // Only download images for notifications within the preload window to avoid downloading all 64 upfront
+  const shouldDownloadImage = scheduledDate ? shouldPreloadImage(scheduledDate) : true;
+  
+  if (fact.image_url && Platform.OS === 'ios' && shouldDownloadImage) {
+    console.log(`🖼️ Preparing image attachment for fact ${fact.id}, image_url: ${fact.image_url}`);
+    
+    // Download image to local storage - iOS requires local file URLs for attachments
+    const localImageUri = await downloadImageForNotification(fact.image_url, fact.id);
+    
+    if (localImageUri) {
+      const typeHint = getTypeHintForExtension(localImageUri);
+      console.log(`🖼️ Creating attachment with uri: ${localImageUri}, typeHint: ${typeHint}`);
+      
+      // IMPORTANT: expo-notifications native iOS code (Records.swift line 408) expects 'uri' key, not 'url'
+      // This is a mismatch with the TypeScript types which define 'url'
+      // We create the object with both keys to ensure compatibility
+      const attachment = {
+        identifier: `fact-${fact.id}`,
+        uri: localImageUri,  // This is what native iOS code actually looks for
+        url: localImageUri,  // TypeScript types expect this
+        typeHint: typeHint,  // Native code uses typeHint for UNNotificationAttachmentOptionsTypeHintKey
+      };
+      
+      // Cast to any to bypass TypeScript's type checking since native code expects different keys
+      content.attachments = [attachment] as any;
+      console.log(`🖼️ Attachment created:`, JSON.stringify(content.attachments));
     } else {
-      // Android uses different approach for images
-      content.data = { ...content.data, imageUrl: fact.image_url };
+      console.warn(`🖼️ No local image available for fact ${fact.id}, skipping attachment`);
     }
+  } else if (fact.image_url && Platform.OS === 'ios' && !shouldDownloadImage) {
+    // Log that we're skipping image download for distant notifications
+    const daysUntil = scheduledDate ? Math.ceil((scheduledDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+    console.log(`🖼️ Skipping image download for fact ${fact.id} (scheduled in ${daysUntil} days, preload window is ${DAYS_TO_PRELOAD_IMAGES} days)`);
+  }
+
+  // For Android, store image URL in data for potential future use
+  if (fact.image_url && Platform.OS === 'android') {
+    content.data = { ...content.data, imageUrl: fact.image_url };
   }
 
   return content;
@@ -102,9 +465,12 @@ export async function scheduleInitialNotifications(
       scheduledDate.setHours(hour, minute, 0, 0);
 
       try {
+        // Build notification content (downloads image only for upcoming notifications)
+        const notificationContent = await buildNotificationContent(fact, locale, scheduledDate);
+        
         // Schedule the notification FIRST - this must succeed before marking in DB
         const notificationId = await Notifications.scheduleNotificationAsync({
-          content: buildNotificationContent(fact, locale),
+          content: notificationContent,
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
             date: scheduledDate,
@@ -254,9 +620,12 @@ export async function refreshNotificationSchedule(
       scheduledDate.setHours(hour, minute, 0, 0);
 
       try {
+        // Build notification content (downloads image only for upcoming notifications)
+        const notificationContent = await buildNotificationContent(fact, locale, scheduledDate);
+        
         // Schedule the notification FIRST - this must succeed before marking in DB
         const notificationId = await Notifications.scheduleNotificationAsync({
-          content: buildNotificationContent(fact, locale),
+          content: notificationContent,
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
             date: scheduledDate,
@@ -403,8 +772,11 @@ export async function refreshNotificationScheduleMultiple(
         }
 
         try {
+          // Build notification content (downloads image only for upcoming notifications)
+          const notificationContent = await buildNotificationContent(fact, locale, scheduledDate);
+          
           const notificationId = await Notifications.scheduleNotificationAsync({
-            content: buildNotificationContent(fact, locale),
+            content: notificationContent,
             trigger: {
               type: Notifications.SchedulableTriggerInputTypes.DATE,
               date: scheduledDate,
@@ -687,6 +1059,10 @@ export async function checkAndTopUpNotifications(
       console.error('🔔 Failed to schedule notifications:', result.error);
     }
 
+    // Step 9: Preload images for upcoming notifications that may have been scheduled without images
+    // This ensures notifications entering the preload window get their images downloaded
+    await preloadUpcomingNotificationImages(locale);
+
     return result;
   } catch (error) {
     console.error('Error checking and topping up notifications:', error);
@@ -775,9 +1151,12 @@ export async function rescheduleNotificationsMultiple(
         scheduledDate.setHours(hour, minute, 0, 0);
 
         try {
+          // Build notification content (downloads image only for upcoming notifications)
+          const notificationContent = await buildNotificationContent(fact, locale, scheduledDate);
+          
           // Schedule the notification FIRST - this must succeed before marking in DB
           const notificationId = await Notifications.scheduleNotificationAsync({
-            content: buildNotificationContent(fact, locale),
+            content: notificationContent,
             trigger: {
               type: Notifications.SchedulableTriggerInputTypes.DATE,
               date: scheduledDate,

@@ -169,6 +169,12 @@ export default Sentry.wrap(function RootLayout() {
 
       // Configure notifications on app start
       notificationService.configureNotifications();
+      
+      // Clean up old notification images (older than 7 days)
+      // This runs asynchronously and doesn't block app startup
+      notificationService.cleanupOldNotificationImages(7).catch((error) => {
+        console.error('Notification image cleanup failed:', error);
+      });
 
       // Check onboarding status
       const isComplete = await onboardingService.isOnboardingComplete();

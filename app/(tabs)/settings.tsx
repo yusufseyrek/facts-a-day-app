@@ -240,7 +240,7 @@ export default function SettingsPage() {
         fact.content.substring(0, 50) + "..."
       );
 
-      const content = buildNotificationContent(fact, locale);
+      const content = await buildNotificationContent(fact, locale);
       // Add isTest flag to data
       content.data = { ...content.data, isTest: true };
 

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Pressable, Dimensions, Animated, View, StyleSheet, Platform, useWindowDimensions, PanResponder, ScrollView, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
@@ -15,6 +15,7 @@ import { useTranslation } from "../i18n";
 import type { FactWithRelations, Category } from "../services/database";
 import { BannerAd } from "./ads";
 import { openInAppBrowser } from "../utils/browser";
+import { getLocalNotificationImagePath, deleteNotificationImage } from "../services/notifications";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -120,9 +121,50 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
   const currentScrollY = useRef(0);
-  const [closeButtonVisible, setCloseButtonVisible] = React.useState(true);
-  const [headerShouldBlock, setHeaderShouldBlock] = React.useState(false);
-  const [titleHeight, setTitleHeight] = React.useState(24); // Default to 1 line height
+  const [closeButtonVisible, setCloseButtonVisible] = useState(true);
+  const [headerShouldBlock, setHeaderShouldBlock] = useState(false);
+  const [titleHeight, setTitleHeight] = useState(24); // Default to 1 line height
+  
+  // Local notification image state - use cached image if available to avoid re-downloading
+  const [imageUri, setImageUri] = useState<string | null>(fact.image_url || null);
+  
+  // Check for local notification image and use it if available, then delete it
+  useEffect(() => {
+    let isMounted = true;
+    
+    const checkAndUseLocalImage = async () => {
+      if (!fact.image_url) return;
+      
+      try {
+        // Check if we have a locally cached notification image
+        const localImagePath = await getLocalNotificationImagePath(fact.id);
+        
+        if (localImagePath && isMounted) {
+          console.log(`🖼️ Using local notification image for fact ${fact.id}: ${localImagePath}`);
+          setImageUri(localImagePath);
+          
+          // Delete the notification image after a short delay to ensure it's loaded
+          // This prevents the image from being deleted before it's displayed
+          setTimeout(async () => {
+            await deleteNotificationImage(fact.id);
+            console.log(`🗑️ Deleted notification image for fact ${fact.id} after viewing`);
+          }, 1000);
+        }
+      } catch (error) {
+        console.warn(`🖼️ Error checking local notification image:`, error);
+        // Fall back to remote URL
+        if (isMounted) {
+          setImageUri(fact.image_url);
+        }
+      }
+    };
+    
+    checkAndUseLocalImage();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [fact.id, fact.image_url]);
   
   // For tablets: full width in portrait (square), full width with half height in landscape
   // For phones: square (full width)
@@ -160,7 +202,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     }
   }
 
-  const hasImage = !!fact.image_url;
+  const hasImage = !!imageUri;
   
   // Calculate dynamic header height first (needed for transition calculations)
   const basePaddingTop = Platform.OS === "ios" ? tokens.space.lg : insets.top + tokens.space.sm;
@@ -386,7 +428,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 }}
               >
                 <Image
-                  source={{ uri: fact.image_url! }}
+                  source={{ uri: imageUri! }}
                   style={{
                     width: IMAGE_WIDTH,
                     height: IMAGE_HEIGHT,
@@ -489,7 +531,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   }}
                 >
                   <Image
-                    source={{ uri: fact.image_url! }}
+                    source={{ uri: imageUri! }}
                     style={{
                       width: IMAGE_WIDTH,
                       height: IMAGE_HEIGHT,
@@ -599,7 +641,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   }}
                 >
                   <Image
-                    source={{ uri: fact.image_url! }}
+                    source={{ uri: imageUri! }}
                     style={{
                       width: SCREEN_WIDTH,
                       height: SCREEN_WIDTH,
