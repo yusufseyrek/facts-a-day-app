@@ -43,7 +43,7 @@ export default function FavoritesScreen() {
   const router = useRouter();
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // Reload favorites when screen comes into focus
@@ -57,16 +57,15 @@ export default function FavoritesScreen() {
     try {
       if (isRefresh) {
         setRefreshing(true);
-      } else {
-        setLoading(true);
       }
+      // Only show loading spinner on initial load (no data yet)
 
       const favoritedFacts = await database.getFavorites(locale);
       setFavorites(favoritedFacts);
     } catch (error) {
       console.error('Error loading favorites:', error);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
       setRefreshing(false);
     }
   };
@@ -79,7 +78,8 @@ export default function FavoritesScreen() {
     loadFavorites(true);
   };
 
-  if (loading) {
+  // Only show loading spinner on initial load when there's no data yet
+  if (initialLoading && favorites.length === 0) {
     return (
       <Container edges={["top"]}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />

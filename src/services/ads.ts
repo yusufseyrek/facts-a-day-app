@@ -26,7 +26,7 @@ export const isConsentRequired = async (): Promise<boolean> => {
 
   try {
     // Request info update to get current consent status
-    const consentInfo = await AdsConsent.requestInfoUpdate({ debugGeography: AdsConsentDebugGeography.EEA });
+    const consentInfo = await AdsConsent.requestInfoUpdate();
     console.log('Consent info:', consentInfo);
 
     // Check if GDPR specifically applies (user is in EEA/UK)
@@ -59,7 +59,7 @@ export const requestGDPRConsent = async (): Promise<{
     // - Requests consent info update
     // - Shows the consent form if required
     // - Returns the final consent status
-    const consentInfo = await AdsConsent.gatherConsent({ debugGeography: AdsConsentDebugGeography.EEA });
+    const consentInfo = await AdsConsent.gatherConsent();
     console.log('Consent gathered:', consentInfo);
     return consentInfo;
   } catch (error) {
