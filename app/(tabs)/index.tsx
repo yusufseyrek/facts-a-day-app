@@ -184,6 +184,7 @@ function HomeScreen() {
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() => getRefreshStatus());
+  const [bannerAdLoaded, setBannerAdLoaded] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
   
   // Animation values for smooth search bar transition
@@ -694,7 +695,7 @@ function HomeScreen() {
           data={searchResults}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={{
-            paddingBottom: ADS_ENABLED ? (isTablet ? 120 : 70) : 0,
+            paddingBottom: bannerAdLoaded ? (isTablet ? 120 : 70) : 0,
           }}
           renderItem={({ item, index }) => {
             const categoryColor = item.categoryData?.color_hex || "#0066FF";
@@ -742,7 +743,7 @@ function HomeScreen() {
         sections={sections}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{
-          paddingBottom: ADS_ENABLED ? (isTablet ? 120 : 70) : 0,
+          paddingBottom: bannerAdLoaded ? (isTablet ? 120 : 70) : 0,
         }}
         renderSectionHeader={({ section: { title } }) => (
           <SectionHeader tablet={isTablet}>
@@ -819,7 +820,7 @@ function HomeScreen() {
             right={0}
             backgroundColor="$background"
           >
-            <BannerAd position="home" />
+            <BannerAd position="home" onAdLoadChange={setBannerAdLoaded} />
           </YStack>
         )}
         {renderLocaleChangeOverlay()}

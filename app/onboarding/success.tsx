@@ -512,7 +512,7 @@ export default function OnboardingSuccessScreen() {
 
           {/* Button */}
           <YStack width="100%" paddingTop="$lg">
-            <Button onPress={handleConsentContinue} size="$5">
+            <Button onPress={handleConsentContinue}>
               {t("adsConsentButton")}
             </Button>
           </YStack>

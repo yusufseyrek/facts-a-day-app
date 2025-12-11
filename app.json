@@ -160,9 +160,6 @@
         "com.google.android.gms.permission.AD_ID"
       ]
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
     "plugins": [
       [
         "expo-localization",

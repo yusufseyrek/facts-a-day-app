@@ -10,6 +10,7 @@ type BannerAdPosition = 'home' | 'modal';
 
 interface BannerAdProps {
   position: BannerAdPosition;
+  onAdLoadChange?: (loaded: boolean) => void;
 }
 
 // Get Ad Unit IDs based on position and platform
@@ -32,9 +33,10 @@ const getAdUnitId = (position: BannerAdPosition): string => {
   }
 };
 
-export const BannerAd: React.FC<BannerAdProps> = ({ position }) => {
+export const BannerAd: React.FC<BannerAdProps> = ({ position, onAdLoadChange }) => {
   const [canRequestAds, setCanRequestAds] = useState<boolean | null>(null);
   const [requestNonPersonalized, setRequestNonPersonalized] = useState<boolean>(true);
+  const [adLoaded, setAdLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     const checkConsent = async () => {
@@ -57,6 +59,11 @@ export const BannerAd: React.FC<BannerAdProps> = ({ position }) => {
     checkConsent();
   }, []);
 
+  // Notify parent when ad load state changes
+  useEffect(() => {
+    onAdLoadChange?.(adLoaded);
+  }, [adLoaded, onAdLoadChange]);
+
   // Don't show ads if globally disabled or consent not given
   if (!ADS_ENABLED || canRequestAds === false) {
     return null;
@@ -70,15 +77,25 @@ export const BannerAd: React.FC<BannerAdProps> = ({ position }) => {
   const adUnitId = getAdUnitId(position);
 
   return (
-    <YStack alignItems="center" justifyContent="center" paddingVertical="$2">
+    <YStack 
+      alignItems="center" 
+      justifyContent="center" 
+      paddingVertical={adLoaded ? "$2" : "$0"}
+      height={adLoaded ? "auto" : 0}
+      overflow="hidden"
+    >
       <GoogleBannerAd
         unitId={adUnitId}
         size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
         requestOptions={{
-          requestNonPersonalizedAdsOnly: requestNonPersonalized,
+          requestNonPersonalizedAdsOnly: requestNonPersonalized
+        }}
+        onAdLoaded={() => {
+          setAdLoaded(true);
         }}
         onAdFailedToLoad={(error) => {
           console.error(`Banner ad (${position}) failed to load:`, error);
+          setAdLoaded(false);
         }}
       />
     </YStack>
