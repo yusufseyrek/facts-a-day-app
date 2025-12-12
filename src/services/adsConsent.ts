@@ -56,3 +56,4 @@ export const shouldRequestNonPersonalizedAdsOnly = async (): Promise<boolean> =>
   const canPersonalize = await canShowPersonalizedAds();
   return !canPersonalize;
 };
+
