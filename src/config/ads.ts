@@ -8,4 +8,4 @@
 export const ADS_ENABLED = true;
 
 // Interstitial ad frequency
-export const FACTS_BEFORE_INTERSTITIAL = 4; // Show interstitial after every 4 fact views
+export const FACTS_BEFORE_INTERSTITIAL = 8; // Show interstitial after every 8 fact views

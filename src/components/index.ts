@@ -15,3 +15,4 @@ export { FactModal } from './FactModal';
 export { SettingsRow } from './SettingsRow';
 export { MultiTimePicker } from './MultiTimePicker';
 export { ErrorBoundary } from './ErrorBoundary';
+export { SuccessToast } from './SuccessToast';

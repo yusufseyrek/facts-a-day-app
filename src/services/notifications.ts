@@ -583,13 +583,17 @@ export async function refreshNotificationSchedule(
 
     // Find the last scheduled date to continue from there
     const allScheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-    let lastScheduledDate = new Date();
+    const now = new Date();
+    const hour = notificationTime.getHours();
+    const minute = notificationTime.getMinutes();
 
+    // Determine the starting day offset
+    let startDayOffset: number;
+    
     if (allScheduledNotifications.length > 0) {
       // Find the latest trigger date
       const latestTrigger = allScheduledNotifications.reduce((latest, notification) => {
         const trigger = notification.trigger;
-        // Check if trigger has a date property (DateTriggerInput)
         if (trigger && 'date' in trigger && trigger.date) {
           const triggerDate = trigger.date instanceof Date ? trigger.date : new Date(trigger.date);
           return triggerDate > latest ? triggerDate : latest;
@@ -597,26 +601,31 @@ export async function refreshNotificationSchedule(
         return latest;
       }, new Date());
 
-      lastScheduledDate = latestTrigger;
+      // Calculate days from today to the last scheduled date
+      const todayMidnight = new Date(now);
+      todayMidnight.setHours(0, 0, 0, 0);
+      const lastScheduledMidnight = new Date(latestTrigger);
+      lastScheduledMidnight.setHours(0, 0, 0, 0);
+      
+      const daysToLastScheduled = Math.round((lastScheduledMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Start from the day AFTER the last scheduled notification
+      startDayOffset = daysToLastScheduled + 1;
+    } else {
+      // No existing notifications - start today if time hasn't passed, else tomorrow
+      const selectedTimeToday = new Date(now);
+      selectedTimeToday.setHours(hour, minute, 0, 0);
+      startDayOffset = selectedTimeToday > now ? 0 : 1;
     }
 
-    // Schedule notifications for each fact
+    console.log(`🔔 Topping up: scheduling ${facts.length} new notifications starting from day +${startDayOffset}`);
+    
     let successCount = 0;
-    const hour = notificationTime.getHours();
-    const minute = notificationTime.getMinutes();
-
-    // Check if notification time is later today (only relevant if no notifications scheduled yet)
-    const now = new Date();
-    const selectedTimeToday = new Date(now);
-    selectedTimeToday.setHours(hour, minute, 0, 0);
-    const startOffset = selectedTimeToday > now ? 0 : 1; // Start today if time hasn't passed, else tomorrow
-
-    console.log(`🔔 Scheduling ${facts.length} new notifications...`);
     
     for (let i = 0; i < facts.length; i++) {
       const fact = facts[i];
-      const scheduledDate = new Date(lastScheduledDate);
-      scheduledDate.setDate(scheduledDate.getDate() + i + startOffset);
+      const scheduledDate = new Date(now);
+      scheduledDate.setDate(scheduledDate.getDate() + startDayOffset + i);
       scheduledDate.setHours(hour, minute, 0, 0);
 
       try {
@@ -639,7 +648,7 @@ export async function refreshNotificationSchedule(
             scheduledDate.toISOString(),
             notificationId
           );
-          console.log(`🔔 Scheduled fact ${fact.id} for ${scheduledDate.toISOString()}, notificationId: ${notificationId}`);
+          console.log(`🔔 Scheduled fact ${fact.id} for ${scheduledDate.toISOString()}`);
           successCount++;
         }
       } catch (error) {
@@ -665,6 +674,7 @@ export async function refreshNotificationSchedule(
 /**
  * Refresh notification schedule with multiple times per day (premium feature)
  * Tops up to 64 notifications distributed across time slots
+ * Properly tracks the last scheduled date for EACH time slot to avoid duplicates
  * @param times Array of times to send notifications
  * @param locale The user's locale for filtering facts
  * @returns Success status and count of newly scheduled notifications
@@ -706,7 +716,7 @@ export async function refreshNotificationScheduleMultiple(
       };
     }
 
-    // Find the last scheduled date per time slot to continue from there
+    // Get all scheduled notifications to find the last scheduled date per time slot
     const allScheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
     
     // Sort times by hour to ensure chronological order
@@ -716,60 +726,87 @@ export async function refreshNotificationScheduleMultiple(
       return aMinutes - bMinutes;
     });
 
-    // Find the latest trigger date across all time slots
-    let lastScheduledDate = new Date();
-    if (allScheduledNotifications.length > 0) {
-      const latestTrigger = allScheduledNotifications.reduce((latest, notification) => {
-        const trigger = notification.trigger;
-        if (trigger && 'date' in trigger && trigger.date) {
-          const triggerDate = trigger.date instanceof Date ? trigger.date : new Date(trigger.date);
-          return triggerDate > latest ? triggerDate : latest;
+    const now = new Date();
+    const timeSlotsPerDay = sortedTimes.length;
+
+    // Build a map of time slot -> last scheduled date for that slot
+    // A time slot is identified by its hour:minute
+    const lastScheduledPerSlot = new Map<string, Date>();
+    
+    for (const notification of allScheduledNotifications) {
+      const trigger = notification.trigger;
+      if (trigger && 'date' in trigger && trigger.date) {
+        const triggerDate = trigger.date instanceof Date ? trigger.date : new Date(trigger.date);
+        const slotKey = `${triggerDate.getHours()}:${triggerDate.getMinutes()}`;
+        
+        const existing = lastScheduledPerSlot.get(slotKey);
+        if (!existing || triggerDate > existing) {
+          lastScheduledPerSlot.set(slotKey, triggerDate);
         }
-        return latest;
-      }, new Date());
-      lastScheduledDate = latestTrigger;
+      }
     }
 
-    let successCount = 0;
-    const now = new Date();
+    // Find the overall last scheduled day (the latest date across all slots)
+    let lastScheduledDay = new Date(now);
+    lastScheduledDay.setHours(0, 0, 0, 0);
     
-    // Calculate facts per time slot for even distribution
-    const factsPerSlot = Math.ceil(facts.length / sortedTimes.length);
-    
-    console.log(`🔔 Scheduling ${facts.length} new notifications across ${sortedTimes.length} time slots...`);
-
-    let factIndex = 0;
-    for (let timeIndex = 0; timeIndex < sortedTimes.length && factIndex < facts.length; timeIndex++) {
-      const time = sortedTimes[timeIndex];
-      const hour = time.getHours();
-      const minute = time.getMinutes();
-
-      // Determine start offset based on whether this time has passed today
-      const selectedTimeToday = new Date(now);
-      selectedTimeToday.setHours(hour, minute, 0, 0);
-      
-      // Calculate starting day - continue from last scheduled date
-      let startDay = 0;
-      if (allScheduledNotifications.length > 0) {
-        // Start from the day after the last scheduled notification
-        const daysDiff = Math.ceil((lastScheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        startDay = Math.max(0, daysDiff);
-      } else {
-        // No existing notifications - start today if time hasn't passed, else tomorrow
-        startDay = selectedTimeToday > now ? 0 : 1;
+    for (const date of lastScheduledPerSlot.values()) {
+      const dayOnly = new Date(date);
+      dayOnly.setHours(0, 0, 0, 0);
+      if (dayOnly > lastScheduledDay) {
+        lastScheduledDay = dayOnly;
       }
+    }
 
-      // Schedule facts for this time slot
-      for (let dayOffset = 0; dayOffset < factsPerSlot && factIndex < facts.length; dayOffset++) {
-        const fact = facts[factIndex];
+    // Calculate the starting day for new notifications
+    // We need to find the first day where we can add notifications without creating duplicates
+    const todayMidnight = new Date(now);
+    todayMidnight.setHours(0, 0, 0, 0);
+    
+    // Calculate days from today to the last scheduled day
+    const daysToLastScheduled = Math.round((lastScheduledDay.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Start from the day AFTER the last scheduled day
+    let startDayOffset = Math.max(1, daysToLastScheduled + 1);
+    
+    // But if there are no existing notifications, start from today/tomorrow based on time
+    if (allScheduledNotifications.length === 0) {
+      // Check if any time slot is still available today
+      startDayOffset = 1; // Default to starting tomorrow
+      for (const time of sortedTimes) {
+        const timeToday = new Date(now);
+        timeToday.setHours(time.getHours(), time.getMinutes(), 0, 0);
+        if (timeToday > now) {
+          startDayOffset = 0;
+          break;
+        }
+      }
+    }
+
+    console.log(`🔔 Topping up: scheduling ${facts.length} new notifications across ${timeSlotsPerDay} time slots, starting from day +${startDayOffset}`);
+
+    let successCount = 0;
+    const totalDays = Math.ceil(facts.length / timeSlotsPerDay);
+
+    // Schedule facts by iterating through days, then time slots within each day
+    let factIndex = 0;
+    for (let dayOffset = 0; dayOffset < totalDays && factIndex < facts.length; dayOffset++) {
+      for (let timeIndex = 0; timeIndex < timeSlotsPerDay && factIndex < facts.length; timeIndex++) {
+        const time = sortedTimes[timeIndex];
+        const hour = time.getHours();
+        const minute = time.getMinutes();
+
+        // Calculate the scheduled date
         const scheduledDate = new Date(now);
-        scheduledDate.setDate(scheduledDate.getDate() + startDay + dayOffset);
+        scheduledDate.setDate(scheduledDate.getDate() + startDayOffset + dayOffset);
         scheduledDate.setHours(hour, minute, 0, 0);
 
-        // Skip if this date is in the past
+        // Skip if this specific time slot is in the past
         if (scheduledDate <= now) {
-          scheduledDate.setDate(scheduledDate.getDate() + 1);
+          continue; // Skip this time slot, don't consume a fact
         }
+
+        const fact = facts[factIndex];
 
         try {
           // Build notification content (downloads image only for upcoming notifications)
@@ -789,7 +826,7 @@ export async function refreshNotificationScheduleMultiple(
               scheduledDate.toISOString(),
               notificationId
             );
-            console.log(`🔔 Scheduled fact ${fact.id} for ${scheduledDate.toISOString()}, notificationId: ${notificationId}`);
+            console.log(`🔔 Scheduled fact ${fact.id} for ${scheduledDate.toISOString()}`);
             successCount++;
           }
           factIndex++;
@@ -1076,6 +1113,7 @@ export async function checkAndTopUpNotifications(
 
 /**
  * Reschedule all notifications with multiple times per day (premium feature)
+ * Distributes notifications evenly: Day 1 gets time1/time2/time3, Day 2 gets time1/time2/time3, etc.
  * @param times Array of times to send notifications
  * @param locale The user's locale for filtering facts
  */
@@ -1106,12 +1144,8 @@ export async function rescheduleNotificationsMultiple(
       };
     }
 
-    // Calculate how many facts per time slot
-    const factsPerSlot = Math.floor(MAX_SCHEDULED_NOTIFICATIONS / times.length);
-
-    // Get enough unscheduled facts for all time slots
-    const totalFactsNeeded = factsPerSlot * times.length;
-    const facts = await database.getRandomUnscheduledFacts(totalFactsNeeded, locale);
+    // Get facts to schedule (up to max limit)
+    const facts = await database.getRandomUnscheduledFacts(MAX_SCHEDULED_NOTIFICATIONS, locale);
 
     if (facts.length === 0) {
       return {
@@ -1124,31 +1158,53 @@ export async function rescheduleNotificationsMultiple(
     let successCount = 0;
     const now = new Date();
 
-    // Sort times by hour to ensure chronological order
+    // Sort times by hour to ensure chronological order within each day
     const sortedTimes = [...times].sort((a, b) => {
       const aMinutes = a.getHours() * 60 + a.getMinutes();
       const bMinutes = b.getHours() * 60 + b.getMinutes();
       return aMinutes - bMinutes;
     });
 
-    // Schedule facts for each time slot
+    // Calculate how many days we'll need to cover all facts
+    const timeSlotsPerDay = sortedTimes.length;
+    const totalDays = Math.ceil(facts.length / timeSlotsPerDay);
+
+    console.log(`🔔 Scheduling ${facts.length} notifications across ${timeSlotsPerDay} time slots over ${totalDays} days`);
+
+    // Determine starting day offset: start today only if any time slot is still in the future
+    const todayDate = new Date(now);
+    todayDate.setSeconds(0, 0);
+    
+    // Check if any time slot is still available today
+    let startDayOffset = 1; // Default to starting tomorrow
+    for (const time of sortedTimes) {
+      const timeToday = new Date(now);
+      timeToday.setHours(time.getHours(), time.getMinutes(), 0, 0);
+      if (timeToday > now) {
+        startDayOffset = 0; // At least one time is still in the future today
+        break;
+      }
+    }
+
+    // Schedule facts by iterating through days, then time slots within each day
     let factIndex = 0;
-    for (let timeIndex = 0; timeIndex < sortedTimes.length; timeIndex++) {
-      const time = sortedTimes[timeIndex];
-      const hour = time.getHours();
-      const minute = time.getMinutes();
+    for (let dayOffset = 0; dayOffset < totalDays && factIndex < facts.length; dayOffset++) {
+      for (let timeIndex = 0; timeIndex < timeSlotsPerDay && factIndex < facts.length; timeIndex++) {
+        const time = sortedTimes[timeIndex];
+        const hour = time.getHours();
+        const minute = time.getMinutes();
 
-      // Determine start offset based on whether this time has passed today
-      const selectedTimeToday = new Date(now);
-      selectedTimeToday.setHours(hour, minute, 0, 0);
-      const startOffset = selectedTimeToday > now ? 0 : 1;
-
-      // Schedule facts for this time slot
-      for (let dayOffset = 0; dayOffset < factsPerSlot && factIndex < facts.length; dayOffset++) {
-        const fact = facts[factIndex];
+        // Calculate the scheduled date
         const scheduledDate = new Date(now);
-        scheduledDate.setDate(scheduledDate.getDate() + dayOffset + startOffset);
+        scheduledDate.setDate(scheduledDate.getDate() + dayOffset + startDayOffset);
         scheduledDate.setHours(hour, minute, 0, 0);
+
+        // Skip if this specific time slot is in the past (only matters for day 0)
+        if (scheduledDate <= now) {
+          continue; // Skip this time slot, don't consume a fact
+        }
+
+        const fact = facts[factIndex];
 
         try {
           // Build notification content (downloads image only for upcoming notifications)
@@ -1170,6 +1226,7 @@ export async function rescheduleNotificationsMultiple(
               scheduledDate.toISOString(),
               notificationId
             );
+            console.log(`🔔 Scheduled fact ${fact.id} for ${scheduledDate.toISOString()}`);
             successCount++;
           }
           factIndex++;
@@ -1181,7 +1238,7 @@ export async function rescheduleNotificationsMultiple(
       }
     }
 
-    console.log(`Scheduled ${successCount} notifications across ${times.length} time slots`);
+    console.log(`🔔 Successfully scheduled ${successCount} notifications across ${times.length} time slots`);
 
     return {
       success: successCount > 0,

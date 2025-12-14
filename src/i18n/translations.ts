@@ -174,6 +174,9 @@ export const translations = {
     adsConsentTitle: "Helfen Sie uns, Täglich Wissen kostenlos zu halten",
     adsConsentMessage: "Wir zeigen Werbung, um diese App kostenlos zu halten und ihre Entwicklung zu unterstützen. Indem Sie personalisierte Werbung zulassen, helfen Sie uns, Ihnen weiterhin jeden Tag interessante Fakten zu bringen.",
     adsConsentButton: "Weiter",
+
+    // Success Messages
+    settingsUpdated: "Einstellungen aktualisiert",
   },
   en: {
     // Onboarding - Categories
@@ -348,6 +351,9 @@ export const translations = {
     adsConsentTitle: "Help Us Keep Facts a Day Free",
     adsConsentMessage: "We show ads to keep this app free and support its development. By allowing personalized ads, you help us continue bringing you interesting facts every day.",
     adsConsentButton: "Continue",
+
+    // Success Messages
+    settingsUpdated: "Settings updated",
   },
   es: {
     // Onboarding - Categories
@@ -522,6 +528,9 @@ export const translations = {
     adsConsentTitle: "Ayúdanos a mantener Conocimiento Diario gratis",
     adsConsentMessage: "Mostramos anuncios para mantener esta aplicación gratuita y apoyar su desarrollo. Al permitir anuncios personalizados, nos ayudas a seguir trayéndote datos interesantes cada día.",
     adsConsentButton: "Continuar",
+
+    // Success Messages
+    settingsUpdated: "Configuración actualizada",
   },
   fr: {
     // Onboarding - Categories
@@ -698,6 +707,9 @@ export const translations = {
     adsConsentTitle: "Aidez-nous à garder Savoir Quotidien gratuit",
     adsConsentMessage: "Nous affichons des publicités pour garder cette application gratuite et soutenir son développement. En autorisant les publicités personnalisées, vous nous aidez à continuer à vous apporter des faits intéressants chaque jour.",
     adsConsentButton: "Continuer",
+
+    // Success Messages
+    settingsUpdated: "Paramètres mis à jour",
   },
   ja: {
     // Onboarding - Categories
@@ -871,6 +883,9 @@ export const translations = {
     adsConsentTitle: "毎日の知識を無料で維持するためにご協力ください",
     adsConsentMessage: "このアプリを無料で提供し、開発をサポートするために広告を表示しています。パーソナライズされた広告を許可することで、毎日興味深い豆知識をお届けし続けることができます。",
     adsConsentButton: "続ける",
+
+    // Success Messages
+    settingsUpdated: "設定が更新されました",
   },
   ko: {
     // Onboarding - Categories
@@ -1041,6 +1056,9 @@ export const translations = {
     adsConsentTitle: "매일 지식을 무료로 유지하도록 도와주세요",
     adsConsentMessage: "이 앱을 무료로 유지하고 개발을 지원하기 위해 광고를 표시합니다. 맞춤형 광고를 허용하면 매일 흥미로운 정보를 계속 제공할 수 있습니다.",
     adsConsentButton: "계속",
+
+    // Success Messages
+    settingsUpdated: "설정이 업데이트되었습니다",
   },
   tr: {
     // Onboarding - Categories
@@ -1214,6 +1232,9 @@ export const translations = {
     adsConsentTitle: "Günlük Bilgi'yi ücretsiz tutmamıza yardım edin",
     adsConsentMessage: "Bu uygulamayı ücretsiz tutmak ve gelişimini desteklemek için reklam gösteriyoruz. Kişiselleştirilmiş reklamlara izin vererek, size her gün ilginç bilgiler sunmaya devam etmemize yardımcı olursunuz.",
     adsConsentButton: "Devam Et",
+
+    // Success Messages
+    settingsUpdated: "Ayarlar güncellendi",
   },
   zh: {
     // Onboarding - Categories
@@ -1383,6 +1404,9 @@ export const translations = {
     adsConsentTitle: "帮助我们保持每日知识免费",
     adsConsentMessage: "我们通过展示广告来保持此应用免费并支持其开发。允许个性化广告可以帮助我们继续每天为您带来有趣的知识。",
     adsConsentButton: "继续",
+
+    // Success Messages
+    settingsUpdated: "设置已更新",
   },
 };
 

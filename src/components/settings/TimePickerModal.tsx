@@ -16,6 +16,7 @@ import { useTheme } from '../../theme';
 import { tokens } from '../../theme/tokens';
 import { useTranslation } from '../../i18n/useTranslation';
 import { Button } from '../Button';
+import { SuccessToast } from '../SuccessToast';
 import * as onboardingService from '../../services/onboarding';
 import * as notificationService from '../../services/notifications';
 import { showSettingsInterstitial } from '../../services/adManager';
@@ -45,8 +46,10 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
   // Support multiple notification times (up to 3 per day)
   const [times, setTimes] = useState<Date[]>([currentTime]);
+  const [originalTimes, setOriginalTimes] = useState<Date[]>([]);
   const [activePickerIndex, setActivePickerIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   // Load saved times on mount
   useEffect(() => {
@@ -62,14 +65,37 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       if (savedTimes && savedTimes.length > 0) {
         const parsedTimes = savedTimes.map(t => new Date(t));
         setTimes(parsedTimes);
+        setOriginalTimes(parsedTimes);
       } else {
         // Default to single time
         setTimes([currentTime]);
+        setOriginalTimes([currentTime]);
       }
     } catch (error) {
       console.error('Error loading saved times:', error);
       setTimes([currentTime]);
+      setOriginalTimes([currentTime]);
     }
+  };
+
+  // Check if times have changed (compare hours and minutes only)
+  const hasTimesChanged = (): boolean => {
+    if (times.length !== originalTimes.length) {
+      return true;
+    }
+    
+    for (let i = 0; i < times.length; i++) {
+      const current = times[i];
+      const original = originalTimes[i];
+      if (
+        current.getHours() !== original.getHours() ||
+        current.getMinutes() !== original.getMinutes()
+      ) {
+        return true;
+      }
+    }
+    
+    return false;
   };
 
   const handleTimeChange = (index: number, event: any, date?: Date) => {
@@ -117,6 +143,12 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   };
 
   const handleSave = async () => {
+    // If no changes, just close the modal without rescheduling
+    if (!hasTimesChanged()) {
+      onClose();
+      return;
+    }
+
     setIsSaving(true);
     try {
       // Save the times to AsyncStorage (always save user preference, even if notifications fail)
@@ -142,7 +174,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       // Check if scheduling failed due to permission issues
       if (!result.success && result.error?.includes('permission')) {
         console.log('Notification scheduling failed due to permission, but times were saved');
-        // Still close modal - times were saved, just notifications couldn't be scheduled
+        // Still show success - times were saved, just notifications couldn't be scheduled
       } else if (result.success) {
         console.log(`Successfully rescheduled ${result.count} notifications`);
       }
@@ -150,8 +182,10 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       // Show interstitial ad after successful notification time update
       await showSettingsInterstitial();
 
-      // Close modal
-      onClose();
+      // Show success toast after ad closes (small delay to ensure proper render after ad)
+      setTimeout(() => {
+        setShowSuccessToast(true);
+      }, 100);
     } catch (error) {
       console.error('Error updating notification times:', error);
       Alert.alert(t('error'), t('failedToUpdateNotificationTimes'));
@@ -241,6 +275,11 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
     return times.map((_, index) => `${t('time')} ${index + 1}`);
   };
 
+  const handleSuccessToastHide = () => {
+    setShowSuccessToast(false);
+    onClose();
+  };
+
   return (
     <Modal
       visible={visible}
@@ -249,6 +288,11 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
+        <SuccessToast
+          visible={showSuccessToast}
+          message={t('settingsUpdated')}
+          onHide={handleSuccessToastHide}
+        />
         <View
           style={[
             styles.modalContainer,

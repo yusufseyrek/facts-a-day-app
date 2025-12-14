@@ -12,6 +12,7 @@ import {
   BodyText,
   Button,
   CategoryCard,
+  SuccessToast,
 } from '../../src/components';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
@@ -72,6 +73,7 @@ export default function CategoriesSettings() {
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
   const { width } = useWindowDimensions();
 
   // Responsive sizing for tablets
@@ -145,7 +147,11 @@ export default function CategoriesSettings() {
         console.log(`Successfully refreshed with ${result.factsCount} facts`);
         // Show interstitial ad after successful category update
         await showSettingsInterstitial();
-        router.back();
+        
+        // Show success toast after ad closes (small delay to ensure proper render after ad)
+        setTimeout(() => {
+          setShowSuccessToast(true);
+        }, 100);
       } else {
         Alert.alert(t('error'), result.error || t('failedToUpdateCategories'));
         setIsSaving(false);
@@ -155,6 +161,11 @@ export default function CategoriesSettings() {
       Alert.alert(t('error'), t('failedToSaveCategories'));
       setIsSaving(false);
     }
+  };
+
+  const handleSuccessToastHide = () => {
+    setShowSuccessToast(false);
+    router.back();
   };
 
   // Split categories into rows
@@ -178,6 +189,11 @@ export default function CategoriesSettings() {
   return (
     <Container>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+      <SuccessToast
+        visible={showSuccessToast}
+        message={t('settingsUpdated')}
+        onHide={handleSuccessToastHide}
+      />
       <ContentContainer>
         <HeaderContainer>
           <HeaderRow>

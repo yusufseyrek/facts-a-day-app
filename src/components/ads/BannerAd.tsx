@@ -64,7 +64,7 @@ const getBannerSize = (position: BannerAdPosition): BannerAdSize => {
       return BannerAdSize.INLINE_ADAPTIVE_BANNER;
     case 'fact-modal-2':
       // Full banner - shown at the end of content
-      return BannerAdSize.FULL_BANNER;
+      return BannerAdSize.INLINE_ADAPTIVE_BANNER;
     case 'home':
     case 'favorites':
     default:
