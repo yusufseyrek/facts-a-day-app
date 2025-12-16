@@ -296,10 +296,11 @@ export async function registerDevice(
 /**
  * Get metadata (categories, languages, content types)
  * Optionally specify language to get translated metadata
+ * Requires authentication
  */
 export async function getMetadata(language?: string): Promise<MetadataResponse> {
   const endpoint = language ? `/api/metadata?language=${language}` : '/api/metadata';
-  return makeRequest<MetadataResponse>(endpoint);
+  return makeAuthenticatedRequest<MetadataResponse>(endpoint);
 }
 
 /**
