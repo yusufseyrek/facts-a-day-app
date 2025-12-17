@@ -63,7 +63,7 @@ const SettingsGroup = styled(YStack, {
 const VersionText = styled(Text, {
   textAlign: "center",
   fontSize: tokens.fontSize.small,
-  marginBottom: tokens.space.md,
+  marginBottom: tokens.space.xs,
   opacity: 0.6,
 });
 
@@ -452,7 +452,7 @@ export default function SettingsPage() {
           )}
 
           {/* Legal Section */}
-          <SectionContainer>
+          <SectionContainer marginBottom={tokens.space.md}>
             <SectionTitle>{t("settingsLegal")}</SectionTitle>
 
             <SettingsGroup>
@@ -471,12 +471,14 @@ export default function SettingsPage() {
           </SectionContainer>
 
           {/* App Version */}
-          <VersionText color={iconColor}>
-            Version {Constants.expoConfig?.version || "1.0.0"} ({Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber || 'N/A' : Constants.expoConfig?.android?.versionCode || 'N/A'})
-          </VersionText>
-          <VersionText color={iconColor}>
-            {t("settingsCopyright").replace("{appName}", t("appName"))}
-          </VersionText>
+          <YStack alignItems="center" marginBottom={tokens.space.lg}>
+            <VersionText color={iconColor}>
+              Version {Constants.expoConfig?.version || "1.0.0"} ({Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber || 'N/A' : Constants.expoConfig?.android?.versionCode || 'N/A'})
+            </VersionText>
+            <VersionText color={iconColor}>
+              {t("settingsCopyright").replace("{appName}", t("appName"))}
+            </VersionText>
+          </YStack>
         </ContentContainer>
       </ScrollView>
 
