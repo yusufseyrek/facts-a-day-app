@@ -67,6 +67,11 @@ export const translations = {
 
     // Main App
     home: "Startseite",
+    discover: "Entdecken",
+    discoverPlaceholder: "Fakten entdecken...",
+    discoverDescription: "Suche nach interessanten Fakten zu jedem Thema",
+    noDiscoverResults: "Keine Ergebnisse gefunden",
+    noDiscoverResultsDescription: "Versuchen Sie andere Suchbegriffe",
     resetOnboarding: "Onboarding zurücksetzen (Test)",
     readMore: "Mehr Lesen",
     category: "Kategorie",
@@ -245,6 +250,11 @@ export const translations = {
 
     // Main App
     home: "Home",
+    discover: "Discover",
+    discoverPlaceholder: "Discover facts...",
+    discoverDescription: "Search for interesting facts on any topic",
+    noDiscoverResults: "No results found",
+    noDiscoverResultsDescription: "Try different search terms",
     resetOnboarding: "Reset Onboarding (Testing)",
     readMore: "Read More",
     category: "Category",
@@ -422,6 +432,11 @@ export const translations = {
 
     // Main App
     home: "Inicio",
+    discover: "Descubrir",
+    discoverPlaceholder: "Descubrir datos...",
+    discoverDescription: "Busca datos interesantes sobre cualquier tema",
+    noDiscoverResults: "No se encontraron resultados",
+    noDiscoverResultsDescription: "Pruebe con otros términos de búsqueda",
     resetOnboarding: "Restablecer Configuración Inicial (Prueba)",
     readMore: "Leer Más",
     category: "Categoría",
@@ -601,6 +616,11 @@ export const translations = {
 
     // Main App
     home: "Accueil",
+    discover: "Découvrir",
+    discoverPlaceholder: "Découvrir des faits...",
+    discoverDescription: "Recherchez des faits intéressants sur n'importe quel sujet",
+    noDiscoverResults: "Aucun résultat trouvé",
+    noDiscoverResultsDescription: "Essayez d'autres termes de recherche",
     resetOnboarding: "Réinitialiser l'Intégration (Test)",
     readMore: "En Savoir Plus",
     category: "Catégorie",
@@ -777,6 +797,11 @@ export const translations = {
 
     // Main App
     home: "ホーム",
+    discover: "発見",
+    discoverPlaceholder: "豆知識を発見...",
+    discoverDescription: "あらゆるトピックの興味深い豆知識を検索",
+    noDiscoverResults: "結果が見つかりません",
+    noDiscoverResultsDescription: "別の検索語を試してください",
     resetOnboarding: "オンボーディングをリセット（テスト）",
     readMore: "続きを読む",
     category: "カテゴリー",
@@ -951,6 +976,11 @@ export const translations = {
 
     // Main App
     home: "홈",
+    discover: "발견",
+    discoverPlaceholder: "정보 발견...",
+    discoverDescription: "모든 주제에 대한 흥미로운 정보를 검색하세요",
+    noDiscoverResults: "결과를 찾을 수 없습니다",
+    noDiscoverResultsDescription: "다른 검색어를 시도해보세요",
     resetOnboarding: "온보딩 재설정 (테스트)",
     readMore: "더 읽기",
     category: "카테고리",
@@ -1126,6 +1156,11 @@ export const translations = {
 
     // Main App
     home: "Ana Sayfa",
+    discover: "Keşfet",
+    discoverPlaceholder: "Bilgi keşfet...",
+    discoverDescription: "Her konuda ilginç bilgiler arayın",
+    noDiscoverResults: "Sonuç bulunamadı",
+    noDiscoverResultsDescription: "Farklı arama terimleri deneyin",
     resetOnboarding: "Başlangıç Kurulumunu Sıfırla (Test)",
     readMore: "Devamını Oku",
     category: "Kategori",
@@ -1299,6 +1334,11 @@ export const translations = {
 
     // Main App
     home: "首页",
+    discover: "发现",
+    discoverPlaceholder: "发现知识...",
+    discoverDescription: "搜索任何主题的有趣知识",
+    noDiscoverResults: "未找到结果",
+    noDiscoverResultsDescription: "尝试使用其他搜索词",
     resetOnboarding: "重置引导设置（测试）",
     readMore: "阅读更多",
     category: "类别",

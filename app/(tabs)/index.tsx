@@ -1,13 +1,10 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import React, { useEffect, useState, useCallback } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { SectionList, RefreshControl, ActivityIndicator, useWindowDimensions, TextInput, FlatList, Pressable, Animated, Easing } from "react-native";
+import { SectionList, RefreshControl, ActivityIndicator, useWindowDimensions } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
-import { Clock, Search, X } from "@tamagui/lucide-icons";
+import { Clock } from "@tamagui/lucide-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
 import { tokens } from "../../src/theme/tokens";
@@ -64,7 +61,6 @@ const Header = styled(XStack, {
   paddingBottom: tokens.space.md,
   alignItems: "center",
   gap: tokens.space.sm,
-  justifyContent: "space-between",
   variants: {
     tablet: {
       true: {
@@ -126,42 +122,6 @@ const LocaleChangeOverlay = styled(YStack, {
   gap: tokens.space.lg,
 });
 
-const SearchContainer = styled(XStack, {
-  paddingHorizontal: tokens.space.xl,
-  paddingBottom: tokens.space.md,
-  gap: tokens.space.sm,
-  alignItems: "center",
-  variants: {
-    tablet: {
-      true: {
-        paddingHorizontal: tokens.space.xxl,
-        paddingBottom: tokens.space.lg,
-      },
-    },
-  } as const,
-});
-
-const SearchInputContainer = styled(XStack, {
-  flex: 1,
-  height: 40,
-  alignItems: "center",
-  backgroundColor: "$surface",
-  borderRadius: tokens.radius.md,
-  paddingHorizontal: tokens.space.md,
-  borderWidth: 1,
-  borderColor: "$border",
-  gap: tokens.space.sm,
-});
-
-const SearchInput = styled(TextInput, {
-  flex: 1,
-  height: "100%",
-  paddingVertical: 0, // Remove padding to center text in fixed height container
-});
-
-
-// ClearButton and SearchIconButton will be inline Pressable components
-
 interface FactSection {
   title: string;
   data: FactWithRelations[];
@@ -171,25 +131,14 @@ function HomeScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isTablet = width >= TABLET_BREAKPOINT;
 
   const [sections, setSections] = useState<FactSection[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<FactWithRelations[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [isSearchMode, setIsSearchMode] = useState(false);
-  const [isInputFocused, setIsInputFocused] = useState(false);
   const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() => getRefreshStatus());
   const [bannerAdLoaded, setBannerAdLoaded] = useState(false);
-  const searchInputRef = useRef<TextInput>(null);
-  
-  // Animation values for smooth search bar transition
-  const searchAnimValue = useRef(new Animated.Value(0)).current;
-  const titleOpacity = useRef(new Animated.Value(1)).current;
 
   // Reload facts when tab gains focus (e.g., after settings change)
   useFocusEffect(
@@ -249,41 +198,6 @@ function HomeScreen() {
 
     return () => unsubscribe();
   }, []);
-
-  const performSearch = useCallback(async (query: string) => {
-    if (!query || query.trim().length === 0) {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
-
-    // setIsSearching(true) is already called in handleSearchChange
-    try {
-      const results = await database.searchFacts(query.trim(), locale);
-      setSearchResults(results);
-      // Prefetch images for search results
-      prefetchFactImages(results);
-    } catch (error) {
-      console.error("Error searching facts:", error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  }, [locale]);
-
-  // Debounce search
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (searchQuery.trim()) {
-        performSearch(searchQuery);
-      } else {
-        setSearchResults([]);
-        setIsSearching(false);
-      }
-    }, 500); // Increased delay to 500ms for better UX
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, performSearch]);
 
   const loadFacts = async (isRefresh = false) => {
     try {
@@ -387,279 +301,32 @@ function HomeScreen() {
   };
 
   const handleRefresh = async () => {
-    if (searchQuery.trim()) {
-      performSearch(searchQuery);
-    } else {
-      setRefreshing(true);
-      try {
-        // First fetch new content from API
-        await forceRefreshContent();
-      } catch (error) {
-        console.error("Error refreshing content from API:", error);
-      }
-      // Then reload facts from database
-      // loadFacts will set refreshing to false in its finally block
-      await loadFacts(false);
+    setRefreshing(true);
+    try {
+      // First fetch new content from API
+      await forceRefreshContent();
+    } catch (error) {
+      console.error("Error refreshing content from API:", error);
     }
+    // Then reload facts from database
+    // loadFacts will set refreshing to false in its finally block
+    await loadFacts(false);
   };
 
-  const handleSearchChange = (text: string) => {
-    setSearchQuery(text);
-    if (text.trim().length > 0) {
-      setIsSearching(true);
-    } else {
-      setIsSearching(false);
-    }
-  };
-
-  const handleSearchIconPress = () => {
-    if (!isSearchMode) {
-      setIsSearchMode(true);
-      // Animate search bar expansion
-      Animated.parallel([
-        Animated.timing(searchAnimValue, {
-          toValue: 1,
-          duration: 300,
-          easing: Easing.bezier(0.4, 0, 0.2, 1),
-          useNativeDriver: false,
-        }),
-        Animated.timing(titleOpacity, {
-          toValue: 0,
-          duration: 150,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: false,
-        }),
-      ]).start(() => {
-        searchInputRef.current?.focus();
-      });
-    } else {
-      // If already in search mode, just focus the input
-      searchInputRef.current?.focus();
-    }
-  };
-
-  const clearSearch = () => {
-    searchInputRef.current?.blur();
-    setSearchQuery("");
-    setSearchResults([]);
-    setIsSearching(false);
-    
-    // Animate search bar collapse
-    Animated.parallel([
-      Animated.timing(searchAnimValue, {
-        toValue: 0,
-        duration: 300,
-        easing: Easing.bezier(0.4, 0, 0.2, 1),
-        useNativeDriver: false,
-      }),
-      Animated.timing(titleOpacity, {
-        toValue: 1,
-        duration: 200,
-        delay: 150,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: false,
-      }),
-    ]).start(() => {
-      setIsSearchMode(false);
-    });
-    
-    loadFacts();
-  };
-
-  const handleSearchFocus = () => {
-    setIsInputFocused(true);
-  };
-
-  const handleSearchBlur = () => {
-    setIsInputFocused(false);
-    // Only exit search mode if there's no query
-    // Use a small delay to allow for potential focus events (like clicking clear button)
-    setTimeout(() => {
-      if (!searchQuery.trim() && !isInputFocused) {
-        // Animate search bar collapse
-        Animated.parallel([
-          Animated.timing(searchAnimValue, {
-            toValue: 0,
-            duration: 300,
-            easing: Easing.bezier(0.4, 0, 0.2, 1),
-            useNativeDriver: false,
-          }),
-          Animated.timing(titleOpacity, {
-            toValue: 1,
-            duration: 200,
-            delay: 150,
-            easing: Easing.in(Easing.ease),
-            useNativeDriver: false,
-          }),
-        ]).start(() => {
-          setIsSearchMode(false);
-        });
-      }
-    }, 150);
-  };
-
-  const renderHeader = () => {
-    // Calculate available width for search bar
-    const padding = isTablet ? tokens.space.xxl * 2 : tokens.space.xl * 2;
-    const availableWidth = width - padding;
-
-    // Animated interpolations
-    const searchBarWidth = searchAnimValue.interpolate({
-      inputRange: [0, 1],
-      outputRange: [40, availableWidth],
-    });
-    
-    const inputOpacity = searchAnimValue.interpolate({
-      inputRange: [0, 0.5, 1],
-      outputRange: [0, 0, 1],
-    });
-    
-    const closeButtonScale = searchAnimValue.interpolate({
-      inputRange: [0, 0.7, 1],
-      outputRange: [0, 0, 1],
-    });
-    
-    const containerBorderWidth = searchAnimValue.interpolate({
-      inputRange: [0, 0.05, 1],
-      outputRange: [0, 1, 1],
-    });
-
-    return (
-      <Header tablet={isTablet}>
-        <XStack alignItems="center" flex={1} position="relative">
-          {/* Title section - fades out when searching */}
-          <Animated.View 
-            style={{ 
-              flexDirection: 'row', 
-              alignItems: 'center', 
-              gap: tokens.space.sm,
-              opacity: titleOpacity,
-              position: 'absolute',
-              left: 0,
-              zIndex: 1,
-            }}
-            pointerEvents={isSearchMode ? 'none' : 'auto'}
-          >
-            <Clock
-              size={isTablet ? 32 : 24}
-              color={theme === "dark" ? "#FFFFFF" : tokens.color.light.text}
-            />
-            <H1 fontSize={isTablet ? tokens.fontSize.h1Tablet : tokens.fontSize.h1}>
-              {t("recentFacts")}
-            </H1>
-          </Animated.View>
-
-          {/* Search container - expands from right */}
-          <Animated.View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              marginLeft: 'auto',
-              width: searchBarWidth,
-              height: 40,
-              backgroundColor: theme === "dark" ? tokens.color.dark.surface : tokens.color.light.surface,
-              borderRadius: tokens.radius.md,
-              borderWidth: containerBorderWidth,
-              borderColor: theme === "dark" ? tokens.color.dark.border : tokens.color.light.border,
-              overflow: 'hidden',
-              zIndex: 2,
-            }}
-          >
-            {/* Search icon button - always visible */}
-            <Pressable
-              onPress={handleSearchIconPress}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: tokens.radius.md,
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <Search
-                size={isTablet ? 24 : 20}
-                color={
-                  theme === "dark"
-                    ? tokens.color.dark.textSecondary
-                    : tokens.color.light.textSecondary
-                }
-              />
-            </Pressable>
-
-            {/* Input field - expands when searching */}
-            <Animated.View
-              style={{
-                flex: 1,
-                height: '100%',
-                opacity: inputOpacity,
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingRight: tokens.space.sm,
-              }}
-            >
-              <SearchInput
-                ref={searchInputRef}
-                value={searchQuery}
-                onChangeText={handleSearchChange}
-                onFocus={handleSearchFocus}
-                onBlur={handleSearchBlur}
-                placeholder={t("searchPlaceholder")}
-                placeholderTextColor={
-                  theme === "dark"
-                    ? tokens.color.dark.textMuted
-                    : tokens.color.light.textMuted
-                }
-                style={{
-                  color:
-                    theme === "dark"
-                      ? tokens.color.dark.text
-                      : tokens.color.light.text,
-                  fontSize: tokens.fontSize.body,
-                }}
-              />
-              
-              {/* Close/Loading button */}
-              <Animated.View style={{ transform: [{ scale: closeButtonScale }] }}>
-                {isSearching ? (
-                  <ActivityIndicator size="small" color={tokens.color[theme].textSecondary} />
-                ) : (
-                  <Pressable
-                    onPress={clearSearch}
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: tokens.radius.full,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: theme === "dark"
-                        ? tokens.color.dark.border
-                        : tokens.color.light.border,
-                    }}
-                  >
-                    <X
-                      size={16}
-                      color={
-                        theme === "dark"
-                          ? tokens.color.dark.textSecondary
-                          : tokens.color.light.textSecondary
-                      }
-                    />
-                  </Pressable>
-                )}
-              </Animated.View>
-            </Animated.View>
-          </Animated.View>
-          
-          {/* Hack to hide border on the icon when collapsed - we overlay the border color? 
-              No, simpler: bind borderColor opacity to animation */}
-        </XStack>
-      </Header>
-    );
-  };
+  const renderHeader = () => (
+    <Header tablet={isTablet}>
+      <Clock
+        size={isTablet ? 32 : 24}
+        color={theme === "dark" ? "#FFFFFF" : tokens.color.light.text}
+      />
+      <H1 fontSize={isTablet ? tokens.fontSize.h1Tablet : tokens.fontSize.h1}>
+        {t("recentFacts")}
+      </H1>
+    </Header>
+  );
 
   // Only show loading spinner on initial load when there's no data yet
-  if (initialLoading && sections.length === 0 && !searchQuery) {
+  if (initialLoading && sections.length === 0) {
     return (
       <Container edges={["top"]}>
         <StatusBar style={theme === "dark" ? "light" : "dark"} />
@@ -672,63 +339,6 @@ function HomeScreen() {
 
   // Render content based on state
   const renderContent = () => {
-    const hasQuery = searchQuery.trim().length > 0;
-    const hasResults = searchResults.length > 0;
-    const searchFinished = !isSearching;
-    
-    // Show Search Results (if we have them, regardless of searching status - handles refinement)
-    // OR Show "No Results" (only if search finished and no results found)
-    const showSearchResults = hasQuery && (hasResults || searchFinished);
-
-    if (showSearchResults) {
-      if (searchResults.length === 0) {
-        return (
-          <EmptyState
-            title={t("noSearchResults")}
-            description={t("noSearchResultsDescription")}
-          />
-        );
-      }
-
-      return (
-        <FlatList
-          data={searchResults}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={{
-            paddingBottom: bannerAdLoaded ? (isTablet ? 120 : 70) : 0,
-          }}
-          renderItem={({ item, index }) => {
-            const categoryColor = item.categoryData?.color_hex || "#0066FF";
-            const isFirstItem = index === 0;
-
-            return (
-              <ContentContainer tablet={isTablet}>
-                {isFirstItem ? (
-                  <HeroFactCard
-                    title={item.title || item.content.substring(0, 80) + "..."}
-                    summary={item.summary}
-                    categoryColor={categoryColor}
-                    onPress={() => handleFactPress(item)}
-                    isTablet={isTablet}
-                  />
-                ) : (
-                  <FeedFactCard
-                    title={item.title || item.content.substring(0, 80) + "..."}
-                    summary={item.summary}
-                    onPress={() => handleFactPress(item)}
-                    isTablet={isTablet}
-                  />
-                )}
-              </ContentContainer>
-            );
-          }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-        />
-      );
-    }
-
     if (sections.length === 0) {
       return (
         <EmptyState
