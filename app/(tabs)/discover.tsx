@@ -377,7 +377,7 @@ function DiscoverScreen() {
             right={0}
             backgroundColor="$background"
           >
-            <BannerAd position="favorites" onAdLoadChange={setBannerAdLoaded} />
+            <BannerAd position="discover" onAdLoadChange={setBannerAdLoaded} />
           </YStack>
         )}
       </YStack>
