@@ -5,6 +5,7 @@ import { XStack, YStack } from "tamagui";
 import { ChevronRight } from "@tamagui/lucide-icons";
 import { tokens, useTheme } from "../theme";
 import { BodyText, SerifTitle } from "./Typography";
+import { useResponsive } from "../utils/useResponsive";
 
 interface FeedFactCardProps {
   title: string;
@@ -42,9 +43,11 @@ const FeedFactCardComponent = ({
   title,
   summary,
   onPress,
-  isTablet = false,
+  isTablet: isTabletProp = false,
 }: FeedFactCardProps) => {
   const { theme } = useTheme();
+  const { fontSizes, isTablet: isTabletDevice } = useResponsive();
+  const isTablet = isTabletProp || isTabletDevice;
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -95,8 +98,8 @@ const FeedFactCardComponent = ({
           <ContentRow>
             <TextContainer>
               <SerifTitle
-                fontSize={isTablet ? tokens.fontSize.h2Tablet : 18}
-                lineHeight={isTablet ? tokens.fontSize.h2Tablet * 1.35 : 24}
+                fontSize={isTablet ? tokens.fontSize.h2Tablet : Math.round(fontSizes.body * 1.2)}
+                lineHeight={isTablet ? tokens.fontSize.h2Tablet * 1.35 : Math.round(fontSizes.body * 1.2 * 1.35)}
                 letterSpacing={0.3}
                 color="$text"
                 numberOfLines={isTablet ? 3 : 2}
@@ -105,8 +108,8 @@ const FeedFactCardComponent = ({
               </SerifTitle>
               {summary && (
                 <BodyText
-                  fontSize={isTablet ? tokens.fontSize.bodyTablet : 14}
-                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.6 : 22}
+                  fontSize={isTablet ? tokens.fontSize.bodyTablet : Math.round(fontSizes.body * 0.93)}
+                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.6 : Math.round(fontSizes.body * 0.93 * 1.6)}
                   letterSpacing={0.2}
                   color="$textSecondary"
                   numberOfLines={isTablet ? 4 : 3}

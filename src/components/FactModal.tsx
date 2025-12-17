@@ -16,6 +16,7 @@ import type { FactWithRelations, Category } from "../services/database";
 import { BannerAd } from "./ads";
 import { openInAppBrowser } from "../utils/browser";
 import { getLocalNotificationImagePath, deleteNotificationImage } from "../services/notifications";
+import { useResponsive } from "../utils/useResponsive";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -151,14 +152,13 @@ function splitContentByEmptyLine(content: string): {
 export function FactModal({ fact, onClose }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
+  const { fontSizes, isTablet, screenWidth: SCREEN_WIDTH, screenHeight: SCREEN_HEIGHT } = useResponsive();
 
   // Split content by empty line for inline ad placement
   const contentParts = useMemo(() => {
     return splitContentByEmptyLine(fact.content);
   }, [fact.content]);
   const insets = useSafeAreaInsets();
-  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
-  const isTablet = SCREEN_WIDTH >= TABLET_BREAKPOINT;
   const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
@@ -404,8 +404,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         }}
       >
         <SerifTitle
-          fontSize={isTablet ? tokens.fontSize.h1Tablet : 26}
-          lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 34}
+          fontSize={isTablet ? tokens.fontSize.h1Tablet : fontSizes.h1}
+          lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : Math.round(fontSizes.h1 * 1.3)}
           letterSpacing={0}
         >
           {factTitle}
@@ -530,8 +530,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 }}
               >
                 <SerifTitle
-                  fontSize={isTablet ? tokens.fontSize.h1Tablet : 26}
-                  lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 34}
+                  fontSize={isTablet ? tokens.fontSize.h1Tablet : fontSizes.h1}
+                  lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : Math.round(fontSizes.h1 * 1.3)}
                   letterSpacing={0}
                 >
                   {factTitle}
@@ -610,8 +610,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 }}
               >
                 <SerifTitle 
-                  fontSize={isTablet ? tokens.fontSize.h1Tablet : 26} 
-                  lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 34} 
+                  fontSize={isTablet ? tokens.fontSize.h1Tablet : fontSizes.h1} 
+                  lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : Math.round(fontSizes.h1 * 1.3)} 
                   letterSpacing={0}
                 >
                   {factTitle}
@@ -631,8 +631,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
               {/* Main Content - First Part */}
               <BodyText
-                fontSize={isTablet ? tokens.fontSize.bodyTablet : 16}
-                lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.85 : 28}
+                fontSize={isTablet ? tokens.fontSize.bodyTablet : Math.round(fontSizes.body * 1.07)}
+                lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.85 : Math.round(fontSizes.body * 1.07 * 1.85)}
                 letterSpacing={isTablet ? 0.5 : 0.3}
                 color="$text"
               >
@@ -647,8 +647,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               {/* Main Content - Second Part */}
               {contentParts.secondPart && (
                 <BodyText
-                  fontSize={isTablet ? tokens.fontSize.bodyTablet : 16}
-                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.85 : 28}
+                  fontSize={isTablet ? tokens.fontSize.bodyTablet : Math.round(fontSizes.body * 1.07)}
+                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.85 : Math.round(fontSizes.body * 1.07 * 1.85)}
                   letterSpacing={isTablet ? 0.5 : 0.3}
                   color="$text"
                 >
@@ -664,8 +664,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 <SourceLink>
                   <Pressable onPress={handleSourcePress}>
                     <BodyText
-                      fontSize={isTablet ? tokens.fontSize.bodyTablet : 15}
-                      lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.5 : 22}
+                      fontSize={isTablet ? tokens.fontSize.bodyTablet : fontSizes.body}
+                      lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.5 : Math.round(fontSizes.body * 1.5)}
                       color="$primary"
                       textDecorationLine="underline"
                       fontFamily="Montserrat_600SemiBold"
@@ -739,8 +739,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 }}
               >
                 <SerifTitle 
-                  fontSize={26} 
-                  lineHeight={34} 
+                  fontSize={fontSizes.h1} 
+                  lineHeight={Math.round(fontSizes.h1 * 1.3)} 
                   letterSpacing={0}
                 >
                   {factTitle}
@@ -760,8 +760,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
               {/* Main Content - First Part */}
               <BodyText
-                fontSize={16}
-                lineHeight={28}
+                fontSize={Math.round(fontSizes.body * 1.07)}
+                lineHeight={Math.round(fontSizes.body * 1.07 * 1.85)}
                 letterSpacing={0.3}
                 color="$text"
               >
@@ -776,8 +776,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               {/* Main Content - Second Part */}
               {contentParts.secondPart && (
                 <BodyText
-                  fontSize={16}
-                  lineHeight={28}
+                  fontSize={Math.round(fontSizes.body * 1.07)}
+                  lineHeight={Math.round(fontSizes.body * 1.07 * 1.85)}
                   letterSpacing={0.3}
                   color="$text"
                 >
@@ -793,8 +793,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 <SourceLink>
                   <Pressable onPress={handleSourcePress}>
                     <BodyText
-                      fontSize={15}
-                      lineHeight={22}
+                      fontSize={fontSizes.body}
+                      lineHeight={Math.round(fontSizes.body * 1.5)}
                       color="$primary"
                       textDecorationLine="underline"
                       fontFamily="Montserrat_600SemiBold"

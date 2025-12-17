@@ -11,6 +11,7 @@ import {
 } from "../theme";
 import { BodyText, SerifTitle } from "./Typography";
 import { LinearGradient } from "expo-linear-gradient";
+import { useResponsive } from "../utils/useResponsive";
 
 interface HeroFactCardProps {
   title: string;
@@ -53,9 +54,11 @@ const HeroFactCardComponent = ({
   categoryColor,
   categorySlug,
   onPress,
-  isTablet = false,
+  isTablet: isTabletProp = false,
 }: HeroFactCardProps) => {
   const { theme } = useTheme();
+  const { fontSizes, isTablet: isTabletDevice } = useResponsive();
+  const isTablet = isTabletProp || isTabletDevice;
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   // Get neon color based on category slug, fallback to categoryColor or cyan
@@ -175,8 +178,8 @@ const HeroFactCardComponent = ({
           <ContentRow style={{ position: "relative" }}>
             <TextContainer>
               <SerifTitle
-                fontSize={isTablet ? tokens.fontSize.h1Tablet : 21}
-                lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : 28}
+                fontSize={isTablet ? tokens.fontSize.h1Tablet : Math.round(fontSizes.h1 * 0.81)}
+                lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : Math.round(fontSizes.h1 * 0.81 * 1.35)}
                 letterSpacing={0.2}
                 color={
                   theme === "dark"
@@ -189,8 +192,8 @@ const HeroFactCardComponent = ({
               </SerifTitle>
               {summary && (
                 <BodyText
-                  fontSize={isTablet ? tokens.fontSize.bodyTablet : 15}
-                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.6 : 24}
+                  fontSize={isTablet ? tokens.fontSize.bodyTablet : fontSizes.body}
+                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.6 : Math.round(fontSizes.body * 1.6)}
                   letterSpacing={0.3}
                   color={
                     theme === "dark"

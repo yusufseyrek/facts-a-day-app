@@ -1,14 +1,12 @@
 import React from 'react';
-import { Pressable, useWindowDimensions } from 'react-native';
+import { Pressable } from 'react-native';
 import { View, styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Check } from '@tamagui/lucide-icons';
-import { BodyText, LabelText } from './Typography';
+import { LabelText } from './Typography';
 import { tokens, useTheme, getCategoryNeonColor } from '../theme';
 import { getContrastColor } from '../utils/colors';
-
-// Tablet breakpoint
-const TABLET_WIDTH = 768;
+import { useResponsive } from '../utils/useResponsive';
 
 const Card = styled(YStack, {
   position: 'relative',
@@ -55,8 +53,7 @@ export interface CategoryCardProps {
 
 const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress, labelFontSize }: CategoryCardProps) => {
   const { theme } = useTheme();
-  const { width } = useWindowDimensions();
-  const isTablet = width >= TABLET_WIDTH;
+  const { isTablet, fontSizes } = useResponsive();
 
   // Get neon color for this category - prefer colorHex from DB, fallback to theme-based
   const categorySlug = slug || label.toLowerCase().replace(/\s+/g, '-');
@@ -106,7 +103,7 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
                 fontWeight={tokens.fontWeight.semibold}
                 color={selected ? contrastColor : '$text'}
                 textAlign="center"
-                fontSize={labelFontSize ?? (isTablet ? tokens.fontSize.body : tokens.fontSize.small)}
+                fontSize={labelFontSize ?? (isTablet ? tokens.fontSize.body : fontSizes.small)}
                 numberOfLines={2}
               >
                 {label}
