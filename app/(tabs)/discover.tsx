@@ -11,7 +11,7 @@ import {
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { Compass, Search, X } from "@tamagui/lucide-icons";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { tokens } from "../../src/theme/tokens";
 import {
@@ -136,17 +136,6 @@ function DiscoverScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [bannerAdLoaded, setBannerAdLoaded] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
-
-  // Focus the search input when screen is focused
-  useFocusEffect(
-    useCallback(() => {
-      // Small delay to ensure the screen is fully mounted
-      const timeout = setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 100);
-      return () => clearTimeout(timeout);
-    }, [])
-  );
 
   const performSearch = useCallback(
     async (query: string) => {

@@ -254,7 +254,8 @@ async function makeRequest<T>(
 
 async function makeAuthenticatedRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  skipRetry: boolean = false
 ): Promise<T> {
   const deviceKey = await getStoredDeviceKey();
 
@@ -268,7 +269,7 @@ async function makeAuthenticatedRequest<T>(
       Authorization: `Bearer ${deviceKey}`,
       ...options.headers,
     },
-  });
+  }, skipRetry);
 }
 
 // ====== API Endpoints ======
