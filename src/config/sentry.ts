@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/react-native";
 import Constants from "expo-constants";
+import { getStoredDeviceKey } from "../services/api";
 
 /**
  * Initialize Sentry crash reporting
@@ -15,7 +16,7 @@ import Constants from "expo-constants";
  *   "SENTRY_DSN": "https://your-key@sentry.io/your-project-id"
  * }
  */
-export function initializeSentry() {
+export async function initializeSentry() {
   const sentryDsn = Constants.expoConfig?.extra?.SENTRY_DSN;
 
   // Only initialize if DSN is provided
@@ -28,7 +29,7 @@ export function initializeSentry() {
     }
     return;
   }
-
+  
   Sentry.init({
     dsn: sentryDsn,
     // Enable in production, disable in development
@@ -59,6 +60,12 @@ export function initializeSentry() {
       return event;
     },
   });
+
+  // Set device key as user ID for tracking
+  const deviceKey = await getStoredDeviceKey();
+  if (deviceKey) {
+    Sentry.setUser({ id: deviceKey });
+  }
 
   if (__DEV__) {
     console.log(

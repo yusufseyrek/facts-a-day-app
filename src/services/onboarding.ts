@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import * as Sentry from '@sentry/react-native';
 import * as api from './api';
 import * as db from './database';
 
@@ -62,7 +63,10 @@ export async function initializeOnboarding(
 
     // Register device and get device_key
     console.log('Registering device...');
-    await api.registerDevice(deviceInfo);
+    const registration = await api.registerDevice(deviceInfo);
+    
+    // Set device key as Sentry user ID for tracking
+    Sentry.setUser({ id: registration.device_key });
 
     // Fetch metadata with device language for translations
     console.log('Fetching metadata...');
