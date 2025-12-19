@@ -229,16 +229,26 @@ export function MultiTimePicker({
         </AddTimeButton>
       )}
 
-      <BodyText
-        fontSize={tokens.fontSize.small}
-        color="$textSecondary"
-        textAlign="center"
-        lineHeight={20}
-        marginTop="$md"
-        fontWeight={tokens.fontWeight.medium}
-      >
-        {t('multipleNotificationsPerDay').replace('{count}', times.length.toString())}
-      </BodyText>
+      <YStack gap="$xs" marginTop="$md">
+        <BodyText
+          fontSize={tokens.fontSize.small}
+          color="$textSecondary"
+          textAlign="center"
+          lineHeight={20}
+          fontWeight={tokens.fontWeight.semibold}
+        >
+          {t('multipleNotificationsPerDay').replace('{count}', times.length.toString())}
+        </BodyText>
+        <BodyText
+          fontSize={tokens.fontSize.small}
+          color="$textSecondary"
+          textAlign="center"
+          lineHeight={18}
+          fontStyle="italic"
+        >
+          {t('notificationRespectMessage')}
+        </BodyText>
+      </YStack>
     </TimeSlotContainer>
   );
 }

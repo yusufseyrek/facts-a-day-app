@@ -191,7 +191,7 @@ export default function CategoriesSettings() {
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <SuccessToast
         visible={showSuccessToast}
-        message={t('settingsUpdated')}
+        message={t('categoriesUpdated')}
         onHide={handleSuccessToastHide}
       />
       <ContentContainer>

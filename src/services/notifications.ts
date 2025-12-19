@@ -581,8 +581,7 @@ export async function refreshNotificationSchedule(
       };
     }
 
-    // Find the last scheduled date to continue from there
-    const allScheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    // Find the last scheduled date from the database (more reliable than parsing OS notification triggers)
     const now = new Date();
     const hour = notificationTime.getHours();
     const minute = notificationTime.getMinutes();
@@ -590,29 +589,27 @@ export async function refreshNotificationSchedule(
     // Determine the starting day offset
     let startDayOffset: number;
     
-    if (allScheduledNotifications.length > 0) {
-      // Find the latest trigger date
-      const latestTrigger = allScheduledNotifications.reduce((latest, notification) => {
-        const trigger = notification.trigger;
-        if (trigger && 'date' in trigger && trigger.date) {
-          const triggerDate = trigger.date instanceof Date ? trigger.date : new Date(trigger.date);
-          return triggerDate > latest ? triggerDate : latest;
-        }
-        return latest;
-      }, new Date());
-
+    // Get the latest scheduled date from the database
+    const latestScheduledDateStr = await database.getLatestScheduledDate(locale);
+    
+    if (latestScheduledDateStr) {
+      const latestScheduledDate = new Date(latestScheduledDateStr);
+      
       // Calculate days from today to the last scheduled date
       const todayMidnight = new Date(now);
       todayMidnight.setHours(0, 0, 0, 0);
-      const lastScheduledMidnight = new Date(latestTrigger);
+      const lastScheduledMidnight = new Date(latestScheduledDate);
       lastScheduledMidnight.setHours(0, 0, 0, 0);
       
       const daysToLastScheduled = Math.round((lastScheduledMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
       
+      console.log(`🔔 Latest scheduled notification in DB is on ${latestScheduledDate.toISOString()}, ${daysToLastScheduled} days from today`);
+      
       // Start from the day AFTER the last scheduled notification
       startDayOffset = daysToLastScheduled + 1;
     } else {
-      // No existing notifications - start today if time hasn't passed, else tomorrow
+      // No existing scheduled notifications - start today if time hasn't passed, else tomorrow
+      console.log('🔔 No scheduled notifications in DB, starting fresh');
       const selectedTimeToday = new Date(now);
       selectedTimeToday.setHours(hour, minute, 0, 0);
       startDayOffset = selectedTimeToday > now ? 0 : 1;
@@ -716,9 +713,6 @@ export async function refreshNotificationScheduleMultiple(
       };
     }
 
-    // Get all scheduled notifications to find the last scheduled date per time slot
-    const allScheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-    
     // Sort times by hour to ensure chronological order
     const sortedTimes = [...times].sort((a, b) => {
       const aMinutes = a.getHours() * 60 + a.getMinutes();
@@ -729,50 +723,86 @@ export async function refreshNotificationScheduleMultiple(
     const now = new Date();
     const timeSlotsPerDay = sortedTimes.length;
 
-    // Build a map of time slot -> last scheduled date for that slot
-    // A time slot is identified by its hour:minute
-    const lastScheduledPerSlot = new Map<string, Date>();
-    
-    for (const notification of allScheduledNotifications) {
-      const trigger = notification.trigger;
-      if (trigger && 'date' in trigger && trigger.date) {
-        const triggerDate = trigger.date instanceof Date ? trigger.date : new Date(trigger.date);
-        const slotKey = `${triggerDate.getHours()}:${triggerDate.getMinutes()}`;
-        
-        const existing = lastScheduledPerSlot.get(slotKey);
-        if (!existing || triggerDate > existing) {
-          lastScheduledPerSlot.set(slotKey, triggerDate);
-        }
-      }
-    }
-
-    // Find the overall last scheduled day (the latest date across all slots)
-    let lastScheduledDay = new Date(now);
-    lastScheduledDay.setHours(0, 0, 0, 0);
-    
-    for (const date of lastScheduledPerSlot.values()) {
-      const dayOnly = new Date(date);
-      dayOnly.setHours(0, 0, 0, 0);
-      if (dayOnly > lastScheduledDay) {
-        lastScheduledDay = dayOnly;
-      }
-    }
-
-    // Calculate the starting day for new notifications
-    // We need to find the first day where we can add notifications without creating duplicates
+    // Get the latest scheduled date from the database
+    const latestScheduledDateStr = await database.getLatestScheduledDate(locale);
     const todayMidnight = new Date(now);
     todayMidnight.setHours(0, 0, 0, 0);
+
+    // Build a list of time slots to fill
+    // Each slot is { dayOffset: number, timeIndex: number }
+    const slotsToFill: Array<{ dayOffset: number; timeIndex: number }> = [];
     
-    // Calculate days from today to the last scheduled day
-    const daysToLastScheduled = Math.round((lastScheduledDay.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
-    
-    // Start from the day AFTER the last scheduled day
-    let startDayOffset = Math.max(1, daysToLastScheduled + 1);
-    
-    // But if there are no existing notifications, start from today/tomorrow based on time
-    if (allScheduledNotifications.length === 0) {
-      // Check if any time slot is still available today
-      startDayOffset = 1; // Default to starting tomorrow
+    if (latestScheduledDateStr) {
+      const latestScheduledDate = new Date(latestScheduledDateStr);
+      const lastScheduledMidnight = new Date(latestScheduledDate);
+      lastScheduledMidnight.setHours(0, 0, 0, 0);
+      
+      // Calculate days from today to the last scheduled day (using LOCAL dates)
+      const daysToLastScheduled = Math.round((lastScheduledMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
+      
+      console.log(`🔔 Latest scheduled notification in DB is on ${latestScheduledDate.toISOString()}, ${daysToLastScheduled} days from today`);
+      
+      // Get the LOCAL date string for the last scheduled day
+      // We need to use LOCAL date because that's how we compare with user's notification times
+      const year = lastScheduledMidnight.getFullYear();
+      const month = String(lastScheduledMidnight.getMonth() + 1).padStart(2, '0');
+      const day = String(lastScheduledMidnight.getDate()).padStart(2, '0');
+      const lastScheduledDayLocalStr = `${year}-${month}-${day}`;
+      
+      // Query database using UTC date (since that's how dates are stored)
+      // But we need to find all notifications for this LOCAL day
+      // A local day spans from local midnight to local midnight, which in UTC is:
+      // startUTC = localMidnight.toISOString()
+      // endUTC = (localMidnight + 24h).toISOString()
+      const localDayStart = new Date(lastScheduledMidnight);
+      const localDayEnd = new Date(lastScheduledMidnight);
+      localDayEnd.setDate(localDayEnd.getDate() + 1);
+      
+      const existingTimesOnLastDay = await database.getScheduledTimesInRange(
+        localDayStart.toISOString(),
+        localDayEnd.toISOString(),
+        locale
+      );
+      
+      console.log(`🔔 Last scheduled day (${lastScheduledDayLocalStr}) has ${existingTimesOnLastDay.length}/${timeSlotsPerDay} time slots filled`);
+      
+      // Find which time slots are still available on the last scheduled day
+      // Use LOCAL hours since user's notification times are in local time
+      const filledTimeSlots = new Set<string>();
+      for (const existingTime of existingTimesOnLastDay) {
+        const existingDate = new Date(existingTime);
+        // getHours() returns LOCAL hours, which matches how user selected times
+        const slotKey = `${existingDate.getHours()}:${existingDate.getMinutes()}`;
+        filledTimeSlots.add(slotKey);
+        console.log(`🔔 Found filled slot: ${slotKey} (${existingTime})`);
+      }
+      
+      // First, add remaining slots from the last scheduled day (if any)
+      for (let timeIndex = 0; timeIndex < timeSlotsPerDay; timeIndex++) {
+        const time = sortedTimes[timeIndex];
+        const slotKey = `${time.getHours()}:${time.getMinutes()}`;
+        
+        if (!filledTimeSlots.has(slotKey)) {
+          // This slot is not filled on the last scheduled day
+          console.log(`🔔 Slot ${slotKey} is available on day ${daysToLastScheduled}`);
+          slotsToFill.push({ dayOffset: daysToLastScheduled, timeIndex });
+        }
+      }
+      
+      // Then add slots for subsequent days
+      let dayOffset = daysToLastScheduled + 1;
+      while (slotsToFill.length < facts.length) {
+        for (let timeIndex = 0; timeIndex < timeSlotsPerDay && slotsToFill.length < facts.length; timeIndex++) {
+          slotsToFill.push({ dayOffset, timeIndex });
+        }
+        dayOffset++;
+      }
+    } else {
+      // No existing scheduled notifications - start from today/tomorrow based on time
+      console.log('🔔 No scheduled notifications in DB, starting fresh');
+      
+      // Determine starting day
+      let startDayOffset = 1; // Default to starting tomorrow
       for (const time of sortedTimes) {
         const timeToday = new Date(now);
         timeToday.setHours(time.getHours(), time.getMinutes(), 0, 0);
@@ -781,59 +811,63 @@ export async function refreshNotificationScheduleMultiple(
           break;
         }
       }
+      
+      // Build slots starting from startDayOffset
+      let dayOffset = startDayOffset;
+      while (slotsToFill.length < facts.length) {
+        for (let timeIndex = 0; timeIndex < timeSlotsPerDay && slotsToFill.length < facts.length; timeIndex++) {
+          slotsToFill.push({ dayOffset, timeIndex });
+        }
+        dayOffset++;
+      }
     }
 
-    console.log(`🔔 Topping up: scheduling ${facts.length} new notifications across ${timeSlotsPerDay} time slots, starting from day +${startDayOffset}`);
+    console.log(`🔔 Topping up: scheduling ${facts.length} new notifications across ${timeSlotsPerDay} time slots`);
 
     let successCount = 0;
-    const totalDays = Math.ceil(facts.length / timeSlotsPerDay);
 
-    // Schedule facts by iterating through days, then time slots within each day
-    let factIndex = 0;
-    for (let dayOffset = 0; dayOffset < totalDays && factIndex < facts.length; dayOffset++) {
-      for (let timeIndex = 0; timeIndex < timeSlotsPerDay && factIndex < facts.length; timeIndex++) {
-        const time = sortedTimes[timeIndex];
-        const hour = time.getHours();
-        const minute = time.getMinutes();
+    // Schedule facts using the pre-calculated slots
+    for (let i = 0; i < facts.length && i < slotsToFill.length; i++) {
+      const fact = facts[i];
+      const slot = slotsToFill[i];
+      const time = sortedTimes[slot.timeIndex];
+      const hour = time.getHours();
+      const minute = time.getMinutes();
 
-        // Calculate the scheduled date
-        const scheduledDate = new Date(now);
-        scheduledDate.setDate(scheduledDate.getDate() + startDayOffset + dayOffset);
-        scheduledDate.setHours(hour, minute, 0, 0);
+      // Calculate the scheduled date
+      const scheduledDate = new Date(now);
+      scheduledDate.setDate(scheduledDate.getDate() + slot.dayOffset);
+      scheduledDate.setHours(hour, minute, 0, 0);
 
-        // Skip if this specific time slot is in the past
-        if (scheduledDate <= now) {
-          continue; // Skip this time slot, don't consume a fact
+      // Skip if this specific time slot is in the past
+      if (scheduledDate <= now) {
+        console.log(`🔔 Skipping past time slot: ${scheduledDate.toISOString()}`);
+        continue;
+      }
+
+      try {
+        // Build notification content (downloads image only for upcoming notifications)
+        const notificationContent = await buildNotificationContent(fact, locale, scheduledDate);
+        
+        const notificationId = await Notifications.scheduleNotificationAsync({
+          content: notificationContent,
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: scheduledDate,
+          },
+        });
+
+        if (notificationId) {
+          await database.markFactAsScheduled(
+            fact.id,
+            scheduledDate.toISOString(),
+            notificationId
+          );
+          console.log(`🔔 Scheduled fact ${fact.id} for ${scheduledDate.toISOString()}`);
+          successCount++;
         }
-
-        const fact = facts[factIndex];
-
-        try {
-          // Build notification content (downloads image only for upcoming notifications)
-          const notificationContent = await buildNotificationContent(fact, locale, scheduledDate);
-          
-          const notificationId = await Notifications.scheduleNotificationAsync({
-            content: notificationContent,
-            trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.DATE,
-              date: scheduledDate,
-            },
-          });
-
-          if (notificationId) {
-            await database.markFactAsScheduled(
-              fact.id,
-              scheduledDate.toISOString(),
-              notificationId
-            );
-            console.log(`🔔 Scheduled fact ${fact.id} for ${scheduledDate.toISOString()}`);
-            successCount++;
-          }
-          factIndex++;
-        } catch (error) {
-          console.error(`Failed to schedule notification for fact ${fact.id}:`, error);
-          factIndex++;
-        }
+      } catch (error) {
+        console.error(`Failed to schedule notification for fact ${fact.id}:`, error);
       }
     }
 

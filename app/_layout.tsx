@@ -78,11 +78,21 @@ function AppContent() {
       // 2. We have a valid fact ID
       // 3. We haven't already processed this notification (check persistent storage)
       if (factId && isOnboardingComplete) {
-        AsyncStorage.getItem(NOTIFICATION_TRACK_KEY).then((lastId) => {
+        AsyncStorage.getItem(NOTIFICATION_TRACK_KEY).then(async (lastId) => {
           if (lastId !== notificationId) {
             // New notification - mark as processed and navigate
-            AsyncStorage.setItem(NOTIFICATION_TRACK_KEY, notificationId);
+            await AsyncStorage.setItem(NOTIFICATION_TRACK_KEY, notificationId);
             router.push(`/fact/${factId}`);
+            
+            // Top up notifications since one was just consumed
+            // This ensures we always have 64 scheduled notifications
+            const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
+            console.log('🔔 Notification opened, checking if top-up needed...');
+            notificationService.checkAndTopUpNotifications(
+              getLocaleFromCode(deviceLocale)
+            ).catch((error) => {
+              console.error('Notification top-up after open failed:', error);
+            });
           }
         });
       }

@@ -290,7 +290,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       <View style={styles.overlay}>
         <SuccessToast
           visible={showSuccessToast}
-          message={t('settingsUpdated')}
+          message={t('notificationTimesUpdated')}
           onHide={handleSuccessToastHide}
         />
         <View
@@ -381,9 +381,15 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                   { color: colors.textSecondary },
                 ]}
               >
-                {times.length === 1
-                  ? t('oneNotificationPerDay')
-                  : t('multipleNotificationsPerDay').replace('{count}', times.length.toString())}
+                {t('multipleNotificationsPerDay').replace('{count}', times.length.toString())}
+              </Text>
+              <Text
+                style={[
+                  styles.respectText,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {t('notificationRespectMessage')}
               </Text>
             </View>
           </ScrollView>
@@ -506,9 +512,16 @@ const styles = StyleSheet.create({
   },
   helperText: {
     fontSize: tokens.fontSize.small,
-    fontFamily: 'Montserrat_400Regular',
+    fontFamily: 'Montserrat_600SemiBold',
     textAlign: 'center',
     marginTop: tokens.space.sm,
+  },
+  respectText: {
+    fontSize: tokens.fontSize.small,
+    fontFamily: 'Montserrat_400Regular',
+    textAlign: 'center',
+    marginTop: tokens.space.xs,
+    fontStyle: 'italic',
   },
   footer: {
     padding: tokens.space.lg,

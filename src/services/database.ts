@@ -754,6 +754,112 @@ export async function getFutureScheduledFactsCount(
   return result?.count || 0;
 }
 
+/**
+ * Get the latest scheduled date from all scheduled facts
+ * Used to determine where to append new scheduled notifications
+ * Returns the MAX scheduled_date as an ISO string, or null if no scheduled facts exist
+ */
+export async function getLatestScheduledDate(
+  language?: string
+): Promise<string | null> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+
+  if (language) {
+    const result = await database.getFirstAsync<{ max_date: string | null }>(
+      `SELECT MAX(scheduled_date) as max_date FROM facts 
+       WHERE scheduled_date > ? 
+       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+       AND language = ?`,
+      [now, language]
+    );
+    return result?.max_date || null;
+  }
+
+  const result = await database.getFirstAsync<{ max_date: string | null }>(
+    `SELECT MAX(scheduled_date) as max_date FROM facts 
+     WHERE scheduled_date > ? 
+     AND (shown_in_feed IS NULL OR shown_in_feed = 0)`,
+    [now]
+  );
+  return result?.max_date || null;
+}
+
+/**
+ * Get all scheduled dates for a specific day (used for multi-time scheduling)
+ * Returns an array of scheduled_date ISO strings for the given date
+ * @param dateString The date to check in YYYY-MM-DD format
+ * @param language Optional language filter
+ */
+export async function getScheduledTimesForDate(
+  dateString: string,
+  language?: string
+): Promise<string[]> {
+  const database = await openDatabase();
+  
+  // Match scheduled_date that starts with the given date string (YYYY-MM-DD)
+  const datePrefix = dateString + 'T';
+  
+  if (language) {
+    const result = await database.getAllAsync<{ scheduled_date: string }>(
+      `SELECT scheduled_date FROM facts 
+       WHERE scheduled_date LIKE ? 
+       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+       AND language = ?
+       ORDER BY scheduled_date ASC`,
+      [datePrefix + '%', language]
+    );
+    return result.map(r => r.scheduled_date);
+  }
+
+  const result = await database.getAllAsync<{ scheduled_date: string }>(
+    `SELECT scheduled_date FROM facts 
+     WHERE scheduled_date LIKE ? 
+     AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+     ORDER BY scheduled_date ASC`,
+    [datePrefix + '%']
+  );
+  return result.map(r => r.scheduled_date);
+}
+
+/**
+ * Get all scheduled dates within a time range (used for multi-time scheduling with timezone support)
+ * Returns an array of scheduled_date ISO strings within the given range
+ * @param startIso The start of the range in ISO format (inclusive)
+ * @param endIso The end of the range in ISO format (exclusive)
+ * @param language Optional language filter
+ */
+export async function getScheduledTimesInRange(
+  startIso: string,
+  endIso: string,
+  language?: string
+): Promise<string[]> {
+  const database = await openDatabase();
+  
+  if (language) {
+    const result = await database.getAllAsync<{ scheduled_date: string }>(
+      `SELECT scheduled_date FROM facts 
+       WHERE scheduled_date >= ? 
+       AND scheduled_date < ?
+       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+       AND language = ?
+       ORDER BY scheduled_date ASC`,
+      [startIso, endIso, language]
+    );
+    return result.map(r => r.scheduled_date);
+  }
+
+  const result = await database.getAllAsync<{ scheduled_date: string }>(
+    `SELECT scheduled_date FROM facts 
+     WHERE scheduled_date >= ? 
+     AND scheduled_date < ?
+     AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+     ORDER BY scheduled_date ASC`,
+    [startIso, endIso]
+  );
+  return result.map(r => r.scheduled_date);
+}
+
 // ====== FAVORITES ======
 
 /**

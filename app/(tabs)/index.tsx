@@ -158,8 +158,17 @@ function HomeScreen() {
           try {
             await database.markFactAsShown(factId as number);
             console.log(`✅ Marked fact ${factId} as shown in feed`);
+            
+            // Top up notifications since one was just delivered
+            // This ensures we always have 64 scheduled notifications
+            console.log('🔔 Notification received, checking if top-up needed...');
+            const { checkAndTopUpNotifications } = await import("../../src/services/notifications");
+            const { getLocaleFromCode } = await import("../../src/i18n");
+            const Localization = await import("expo-localization");
+            const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
+            await checkAndTopUpNotifications(getLocaleFromCode(deviceLocale));
           } catch (error) {
-            console.error("Error marking fact as shown:", error);
+            console.error("Error marking fact as shown or topping up:", error);
           }
           loadFacts();
         }

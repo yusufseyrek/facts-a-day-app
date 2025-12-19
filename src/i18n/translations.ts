@@ -34,6 +34,7 @@ export const translations = {
     time: "Zeit",
     addAnotherTime: "Weitere Zeit hinzufügen",
     multipleNotificationsPerDay: "Sie erhalten {count} Benachrichtigungen pro Tag",
+    notificationRespectMessage: "Wir respektieren Ihre Aufmerksamkeit und werden Sie nicht zuspammen.",
     maxTimesReached: "Maximale Zeiten erreicht",
     maxTimesReachedMessage: "Sie können maximal {max} Benachrichtigungszeiten haben",
     minTimesRequired: "Mindestens eine Zeit erforderlich",
@@ -183,6 +184,8 @@ export const translations = {
 
     // Success Messages
     settingsUpdated: "Einstellungen aktualisiert",
+    categoriesUpdated: "Kategorien aktualisiert",
+    notificationTimesUpdated: "Benachrichtigungszeiten aktualisiert",
   },
   en: {
     // Onboarding - Categories
@@ -219,6 +222,7 @@ export const translations = {
     time: "Time",
     addAnotherTime: "Add Another Time",
     multipleNotificationsPerDay: "You'll receive {count} notifications per day",
+    notificationRespectMessage: "We respect your attention and won't spam you.",
     maxTimesReached: "Maximum Times Reached",
     maxTimesReachedMessage: "You can have a maximum of {max} notification times",
     minTimesRequired: "Minimum Time Required",
@@ -366,6 +370,8 @@ export const translations = {
 
     // Success Messages
     settingsUpdated: "Settings updated",
+    categoriesUpdated: "Categories updated",
+    notificationTimesUpdated: "Notification times updated",
   },
   es: {
     // Onboarding - Categories
@@ -402,6 +408,7 @@ export const translations = {
     time: "Hora",
     addAnotherTime: "Agregar Otra Hora",
     multipleNotificationsPerDay: "Recibirás {count} notificaciones por día",
+    notificationRespectMessage: "Respetamos tu atención y no te enviaremos spam.",
     maxTimesReached: "Máximo de Horarios Alcanzado",
     maxTimesReachedMessage: "Puedes tener un máximo de {max} horarios de notificación",
     minTimesRequired: "Mínimo de Horario Requerido",
@@ -549,6 +556,8 @@ export const translations = {
 
     // Success Messages
     settingsUpdated: "Configuración actualizada",
+    categoriesUpdated: "Categorías actualizadas",
+    notificationTimesUpdated: "Horarios de notificación actualizados",
   },
   fr: {
     // Onboarding - Categories
@@ -587,6 +596,7 @@ export const translations = {
     time: "Heure",
     addAnotherTime: "Ajouter une Autre Heure",
     multipleNotificationsPerDay: "Vous recevrez {count} notifications par jour",
+    notificationRespectMessage: "Nous respectons votre attention et ne vous spammerons pas.",
     maxTimesReached: "Nombre Maximum d'Heures Atteint",
     maxTimesReachedMessage: "Vous pouvez avoir un maximum de {max} heures de notification",
     minTimesRequired: "Heure Minimum Requise",
@@ -734,6 +744,8 @@ export const translations = {
 
     // Success Messages
     settingsUpdated: "Paramètres mis à jour",
+    categoriesUpdated: "Catégories mises à jour",
+    notificationTimesUpdated: "Heures de notification mises à jour",
   },
   ja: {
     // Onboarding - Categories
@@ -769,6 +781,7 @@ export const translations = {
     time: "時刻",
     addAnotherTime: "別の時刻を追加",
     multipleNotificationsPerDay: "1日に{count}件の通知を受け取ります",
+    notificationRespectMessage: "あなたの時間を尊重し、スパムは送りません。",
     maxTimesReached: "最大時刻数に達しました",
     maxTimesReachedMessage: "通知時刻は最大{max}件まで設定できます",
     minTimesRequired: "最小時刻数が必要です",
@@ -916,6 +929,8 @@ export const translations = {
 
     // Success Messages
     settingsUpdated: "設定が更新されました",
+    categoriesUpdated: "カテゴリーが更新されました",
+    notificationTimesUpdated: "通知時刻が更新されました",
   },
   ko: {
     // Onboarding - Categories
@@ -950,6 +965,7 @@ export const translations = {
     time: "시간",
     addAnotherTime: "다른 시간 추가",
     multipleNotificationsPerDay: "하루에 {count}개의 알림을 받게 됩니다",
+    notificationRespectMessage: "귀하의 시간을 존중하며 스팸을 보내지 않습니다.",
     maxTimesReached: "최대 시간 수에 도달했습니다",
     maxTimesReachedMessage: "최대 {max}개의 알림 시간을 설정할 수 있습니다",
     minTimesRequired: "최소 시간이 필요합니다",
@@ -1095,6 +1111,8 @@ export const translations = {
 
     // Success Messages
     settingsUpdated: "설정이 업데이트되었습니다",
+    categoriesUpdated: "카테고리가 업데이트되었습니다",
+    notificationTimesUpdated: "알림 시간이 업데이트되었습니다",
   },
   tr: {
     // Onboarding - Categories
@@ -1130,6 +1148,7 @@ export const translations = {
     time: "Saat",
     addAnotherTime: "Başka Bir Saat Ekle",
     multipleNotificationsPerDay: "Günde {count} bildirim alacaksınız",
+    notificationRespectMessage: "Dikkatinize saygı duyuyoruz ve spam göndermeyeceğiz.",
     maxTimesReached: "Maksimum Saat Sayısına Ulaşıldı",
     maxTimesReachedMessage: "Maksimum {max} bildirim saati belirleyebilirsiniz",
     minTimesRequired: "Minimum Saat Gerekli",
@@ -1277,6 +1296,8 @@ export const translations = {
 
     // Success Messages
     settingsUpdated: "Ayarlar güncellendi",
+    categoriesUpdated: "Kategoriler güncellendi",
+    notificationTimesUpdated: "Bildirim saatleri güncellendi",
   },
   zh: {
     // Onboarding - Categories
@@ -1311,6 +1332,7 @@ export const translations = {
     time: "时间",
     addAnotherTime: "添加其他时间",
     multipleNotificationsPerDay: "您每天将收到{count}条通知",
+    notificationRespectMessage: "我们尊重您的时间，不会发送垃圾信息。",
     maxTimesReached: "已达到最大时间数",
     maxTimesReachedMessage: "您最多可以设置{max}个通知时间",
     minTimesRequired: "需要最少时间",
@@ -1455,6 +1477,8 @@ export const translations = {
 
     // Success Messages
     settingsUpdated: "设置已更新",
+    categoriesUpdated: "类别已更新",
+    notificationTimesUpdated: "通知时间已更新",
   },
 };
 
