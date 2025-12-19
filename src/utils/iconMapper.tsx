@@ -16,11 +16,12 @@ function kebabToPascalCase(str: string): string {
  * Get a Lucide icon component by its kebab-case name
  * @param iconName - Icon name in kebab-case (e.g., "book-open")
  * @param size - Icon size (default: 32)
+ * @param color - Optional icon color
  * @returns React element of the icon, or Lightbulb as fallback
  */
-export function getLucideIcon(iconName: string | undefined, size = 32): React.ReactElement {
+export function getLucideIcon(iconName: string | undefined, size = 32, color?: string): React.ReactElement {
   if (!iconName) {
-    return <LucideIcons.Lightbulb size={size} />;
+    return <LucideIcons.Lightbulb size={size} color={color} />;
   }
 
   // Convert kebab-case to PascalCase
@@ -31,10 +32,10 @@ export function getLucideIcon(iconName: string | undefined, size = 32): React.Re
 
   if (!IconComponent || typeof IconComponent !== 'function') {
     console.warn(`Icon "${iconName}" (${pascalCaseName}) not found in Lucide icons. Using Lightbulb as fallback.`);
-    return <LucideIcons.Lightbulb size={size} />;
+    return <LucideIcons.Lightbulb size={size} color={color} />;
   }
 
-  return <IconComponent size={size} />;
+  return <IconComponent size={size} color={color} />;
 }
 
 /**
