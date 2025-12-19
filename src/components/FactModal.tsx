@@ -3,7 +3,7 @@ import { Pressable, Dimensions, Animated, View, StyleSheet, Platform, useWindowD
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
-import { X } from "@tamagui/lucide-icons";
+import { X, Calendar } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import { tokens } from "../theme/tokens";
@@ -88,6 +88,9 @@ const TabletWrapper = styled(YStack, {
 const BadgesRow = styled(XStack, {
   gap: tokens.space.sm,
   flexWrap: "wrap",
+  alignItems: "center",
+  justifyContent: "space-between",
+  width: "100%",
 });
 
 const SourceLink = styled(YStack, {
@@ -109,6 +112,21 @@ function extractDomain(url: string): string {
     return urlObj.hostname.replace("www.", "");
   } catch {
     return "Source";
+  }
+}
+
+function formatLastUpdated(dateString: string, locale: string): string {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleString(locale, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
   }
 }
 
@@ -548,6 +566,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         bounces={true}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        // Optimize scroll performance on Android
+        removeClippedSubviews={Platform.OS === 'android'}
       >
         {isTablet ? (
           <>
@@ -618,15 +638,43 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 </SerifTitle>
               </Animated.View>
 
-              {/* Category Badge */}
-              {categoryForBadge && (
+              {/* Category Badge & Date */}
+              {(categoryForBadge || fact.last_updated || fact.created_at) && (
                 <BadgesRow>
-                  <CategoryBadge 
-                    category={categoryForBadge} 
-                    fontWeight={tokens.fontWeight.bold}
-                    fontSize={isTablet ? tokens.fontSize.labelTablet : tokens.fontSize.label}
-                  />
+                  {categoryForBadge && (
+                    <CategoryBadge 
+                      category={categoryForBadge} 
+                      fontWeight={tokens.fontWeight.bold}
+                      fontSize={isTablet ? tokens.fontSize.labelTablet : tokens.fontSize.label}
+                    />
+                  )}
+                  {(fact.last_updated || fact.created_at) && (
+                    <XStack alignItems="center" gap={tokens.space.xs}>
+                      <BodyText
+                        fontSize={isTablet ? tokens.fontSize.labelTablet : tokens.fontSize.label}
+                        lineHeight={isTablet ? tokens.fontSize.labelTablet * 1.5 : tokens.fontSize.label * 1.5}
+                        color="$textSecondary"
+                        fontFamily="Montserrat_700Bold"
+                      >
+                        {formatLastUpdated(fact.last_updated || fact.created_at, locale)}
+                      </BodyText>
+                      <Calendar size={isTablet ? 18 : 16} color="$textSecondary" />
+                    </XStack>
+                  )}
                 </BadgesRow>
+              )}
+
+              {/* Summary */}
+              {fact.summary && (
+                <BodyText
+                  fontSize={isTablet ? tokens.fontSize.bodyTablet : Math.round(fontSizes.body * 1.07)}
+                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.85 : Math.round(fontSizes.body * 1.07 * 1.85)}
+                  letterSpacing={isTablet ? 0.5 : 0.3}
+                  color="$text"
+                  fontFamily="Montserrat_500Medium"
+                >
+                  {fact.summary}
+                </BodyText>
               )}
 
               {/* Main Content - First Part */}
@@ -747,15 +795,43 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 </SerifTitle>
               </Animated.View>
 
-              {/* Category Badge */}
-              {categoryForBadge && (
+              {/* Category Badge & Date */}
+              {(categoryForBadge || fact.last_updated || fact.created_at) && (
                 <BadgesRow>
-                  <CategoryBadge 
-                    category={categoryForBadge} 
-                    fontWeight={tokens.fontWeight.bold}
-                    fontSize={isTablet ? tokens.fontSize.labelTablet : tokens.fontSize.label}
-                  />
+                  {categoryForBadge && (
+                    <CategoryBadge 
+                      category={categoryForBadge} 
+                      fontWeight={tokens.fontWeight.bold}
+                      fontSize={tokens.fontSize.label}
+                    />
+                  )}
+                  {(fact.last_updated || fact.created_at) && (
+                    <XStack alignItems="center" gap={tokens.space.xs}>
+                      <BodyText
+                        fontSize={tokens.fontSize.label}
+                        lineHeight={tokens.fontSize.label * 1.5}
+                        color="$textSecondary"
+                        fontFamily="Montserrat_700Bold"
+                      >
+                        {formatLastUpdated(fact.last_updated || fact.created_at, locale)}
+                      </BodyText>
+                      <Calendar size={16} color="$textSecondary" />
+                    </XStack>
+                  )}
                 </BadgesRow>
+              )}
+
+              {/* Summary */}
+              {fact.summary && (
+                <BodyText
+                  fontSize={Math.round(fontSizes.body * 1.07)}
+                  lineHeight={Math.round(fontSizes.body * 1.07 * 1.85)}
+                  letterSpacing={0.3}
+                  color="$text"
+                  fontFamily="Montserrat_500Medium"
+                >
+                  {fact.summary}
+                </BodyText>
               )}
 
               {/* Main Content - First Part */}
