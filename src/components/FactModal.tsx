@@ -835,7 +835,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   lineHeight={Math.round(fontSizes.body * 1.07 * 1.85)}
                   letterSpacing={0.3}
                   color="$text"
-                  fontFamily="Montserrat_500Medium"
+                  fontFamily="Montserrat_600SemiBold"
                 >
                   {fact.summary}
                 </BodyText>

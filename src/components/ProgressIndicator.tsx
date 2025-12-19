@@ -2,7 +2,7 @@ import React from 'react';
 import { View, styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { BodyText } from './Typography';
-import { tokens, useTheme } from '../theme';
+import { tokens } from '../theme/tokens';
 
 const Container = styled(YStack, {
   gap: tokens.space.sm,
@@ -28,7 +28,6 @@ interface ProgressIndicatorProps {
 }
 
 export function ProgressIndicator({ currentStep, totalSteps }: ProgressIndicatorProps) {
-  const { theme } = useTheme();
   const progress = (currentStep / totalSteps) * 100;
 
   return (

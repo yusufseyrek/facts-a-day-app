@@ -36,7 +36,7 @@ const ContentRow = styled(XStack, {
 
 const TextContainer = styled(YStack, {
   flex: 1,
-  gap: tokens.space.md,
+  gap: tokens.space.sm,
 });
 
 const FeedFactCardComponent = ({

@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, Platform, Animated } from "react-native";
+import { Pressable, Animated } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { ChevronRight } from "@tamagui/lucide-icons";
@@ -45,7 +45,7 @@ const ContentRow = styled(XStack, {
 
 const TextContainer = styled(YStack, {
   flex: 1,
-  gap: tokens.space.lg, // Better visual separation between title and summary
+  gap: tokens.space.md, // Better visual separation between title and summary
 });
 
 const HeroFactCardComponent = ({
