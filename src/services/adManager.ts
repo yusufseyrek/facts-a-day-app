@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showInterstitialAd } from '../components/ads/InterstitialAd';
 import { ADS_ENABLED, FACTS_BEFORE_INTERSTITIAL } from '../config/ads';
+import { trackInterstitialShown, type InterstitialSource } from './analytics';
 
 // Storage keys
 const FACT_VIEW_COUNT_KEY = '@fact_view_count';
@@ -27,6 +28,7 @@ export const trackFactView = async (): Promise<void> => {
     if (newCount >= FACTS_BEFORE_INTERSTITIAL) {
       // Show interstitial ad
       await showInterstitialAd();
+      trackInterstitialShown('fact_view');
 
       // Reset count
       await AsyncStorage.setItem(FACT_VIEW_COUNT_KEY, '0');
@@ -75,6 +77,7 @@ export const showSettingsInterstitial = async (): Promise<void> => {
 
   try {
     await showInterstitialAd();
+    trackInterstitialShown('settings');
   } catch (error) {
     console.error('Error showing settings interstitial:', error);
   }

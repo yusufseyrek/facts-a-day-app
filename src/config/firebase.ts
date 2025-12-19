@@ -11,8 +11,8 @@ import {
 import {
   getAnalytics,
   logEvent as analyticsLogEvent,
-  logScreenView as analyticsLogScreenView,
   setUserId as setAnalyticsUserId,
+  setUserProperty as analyticsSetUserProperty,
 } from "@react-native-firebase/analytics";
 import { getStoredDeviceKey } from "../services/api";
 
@@ -81,15 +81,30 @@ export async function clearFirebaseUser() {
 }
 
 /**
- * Add custom attributes to crash reports
+ * Add custom attributes to crash reports (Crashlytics)
  */
-export async function setFirebaseAttribute(key: string, value: string) {
+export async function setCrashlyticsAttribute(key: string, value: string) {
   try {
     await setAttribute(crashlyticsInstance, key, value);
   } catch (error) {
-    console.error("Failed to set Firebase attribute:", error);
+    console.error("Failed to set Crashlytics attribute:", error);
   }
 }
+
+/**
+ * Set user property for Analytics
+ * User properties are attached to all subsequent events
+ */
+export async function setAnalyticsUserProperty(name: string, value: string | null) {
+  try {
+    await analyticsSetUserProperty(analyticsInstance, name, value);
+  } catch (error) {
+    console.error("Failed to set Analytics user property:", error);
+  }
+}
+
+// Legacy alias for backwards compatibility
+export const setFirebaseAttribute = setCrashlyticsAttribute;
 
 /**
  * Record an error to Crashlytics
@@ -135,6 +150,9 @@ export async function logEvent(
   name: string,
   params?: Record<string, string | number | boolean>
 ) {
+  if (__DEV__) {
+    console.log(`📊 Analytics Event: ${name}`, params);
+  }
   try {
     await analyticsLogEvent(analyticsInstance, name, params);
   } catch (error) {
@@ -144,10 +162,14 @@ export async function logEvent(
 
 /**
  * Log screen view for analytics
+ * Uses custom 'app_screen_view' event to avoid confusion with Firebase's automatic screen_view
  */
 export async function logScreenView(screenName: string, screenClass?: string) {
+  if (__DEV__) {
+    console.log(`📊 Analytics Screen: ${screenName}`);
+  }
   try {
-    await analyticsLogScreenView(analyticsInstance, {
+    await analyticsLogEvent(analyticsInstance, 'app_screen_view', {
       screen_name: screenName,
       screen_class: screenClass || screenName,
     });

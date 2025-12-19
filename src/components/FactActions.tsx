@@ -11,11 +11,18 @@ import * as api from "../services/api";
 import { useTranslation } from "../i18n";
 import { ReportFactModal } from "./ReportFactModal";
 import { tokens, useTheme } from "../theme";
+import {
+  trackFactShare,
+  trackFactFavoriteAdd,
+  trackFactFavoriteRemove,
+  trackFactReport,
+} from "../services/analytics";
 
 interface FactActionsProps {
   factId: number;
   factTitle?: string;
   factContent: string;
+  category?: string;
 }
 
 const Container = styled(YStack, {
@@ -33,6 +40,7 @@ export function FactActions({
   factId,
   factTitle,
   factContent,
+  category = 'unknown',
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -67,6 +75,13 @@ export function FactActions({
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const newFavoriteStatus = await database.toggleFavorite(factId);
       setIsFavorited(newFavoriteStatus);
+
+      // Track favorite add/remove
+      if (newFavoriteStatus) {
+        trackFactFavoriteAdd({ factId, category });
+      } else {
+        trackFactFavoriteRemove({ factId, category });
+      }
     } catch (error) {
       if (__DEV__) {
         console.error("Error toggling favorite:", error);
@@ -84,9 +99,14 @@ export function FactActions({
         ? `${factTitle}\n\n${factContent}\n\n${t("sharedFromApp")}`
         : `${factContent}\n\n${t("sharedFromApp")}`;
 
-      await Share.share({
+      const result = await Share.share({
         message: shareContent,
       });
+
+      // Track share action (only if actually shared, not cancelled)
+      if (result.action === Share.sharedAction) {
+        trackFactShare({ factId, category });
+      }
     } catch (error) {
       if (__DEV__) {
         console.error("Error sharing fact:", error);
@@ -104,6 +124,10 @@ export function FactActions({
     setIsSubmittingReport(true);
     try {
       await api.reportFact(factId, feedbackText);
+      
+      // Track report submission
+      trackFactReport(factId);
+      
       Alert.alert(t("success"), t("reportSubmitted"));
     } catch (error) {
       console.error("Error submitting report:", error);

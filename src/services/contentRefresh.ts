@@ -7,6 +7,7 @@ import { getLocaleFromCode, SupportedLocale } from '../i18n';
 import * as Localization from 'expo-localization';
 import { showInterstitialAd } from '../components/ads/InterstitialAd';
 import { ADS_ENABLED } from '../config/ads';
+import { trackInterstitialShown } from './analytics';
 
 // AsyncStorage keys
 const LAST_CONTENT_REFRESH_KEY = '@last_content_refresh';
@@ -271,7 +272,9 @@ export async function refreshAppContent(): Promise<RefreshResult> {
       if (ADS_ENABLED) {
         console.log('📺 Showing interstitial ad for locale change (in parallel)...');
         // Fire and forget - don't await, let it run in parallel
-        showInterstitialAd().catch((error) => {
+        showInterstitialAd().then(() => {
+          trackInterstitialShown('content_refresh');
+        }).catch((error) => {
           console.error('Error showing interstitial ad:', error);
         });
       }

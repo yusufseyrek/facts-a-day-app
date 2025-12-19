@@ -21,6 +21,7 @@ import { getLucideIcon } from '../../src/utils/iconMapper';
 import * as onboardingService from '../../src/services/onboarding';
 import * as preferencesService from '../../src/services/preferences';
 import { showSettingsInterstitial } from '../../src/services/adManager';
+import { trackCategoriesUpdate, trackScreenView, Screens, updateCategoriesProperty } from '../../src/services/analytics';
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -85,6 +86,7 @@ export default function CategoriesSettings() {
 
   useEffect(() => {
     loadData();
+    trackScreenView(Screens.SETTINGS_CATEGORIES);
   }, []);
 
   const loadData = async () => {
@@ -145,6 +147,17 @@ export default function CategoriesSettings() {
 
       if (result.success) {
         console.log(`Successfully refreshed with ${result.factsCount} facts`);
+
+        // Track categories update and update user property
+        const addedCount = selectedCategories.filter((cat) => !initialCategories.includes(cat)).length;
+        const removedCount = initialCategories.filter((cat) => !selectedCategories.includes(cat)).length;
+        trackCategoriesUpdate({
+          count: selectedCategories.length,
+          addedCount,
+          removedCount,
+        });
+        updateCategoriesProperty(selectedCategories);
+
         // Show interstitial ad after successful category update
         await showSettingsInterstitial();
         

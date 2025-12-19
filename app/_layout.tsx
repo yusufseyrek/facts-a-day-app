@@ -15,6 +15,7 @@ import * as Notifications from 'expo-notifications';
 import * as Localization from 'expo-localization';
 import { initializeFirebase } from '../src/config/firebase';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { initAnalytics } from '../src/services/analytics';
 import {
   useFonts,
   Montserrat_400Regular,
@@ -27,6 +28,9 @@ import {
 
 // Initialize Firebase Crashlytics and Analytics as early as possible
 initializeFirebase();
+
+// Initialize analytics with device_key user property
+initAnalytics();
 
 const NOTIFICATION_TRACK_KEY = 'last_processed_notification_id';
 
@@ -81,7 +85,7 @@ function AppContent() {
           if (lastId !== notificationId) {
             // New notification - mark as processed and navigate
             await AsyncStorage.setItem(NOTIFICATION_TRACK_KEY, notificationId);
-            router.push(`/fact/${factId}`);
+            router.push(`/fact/${factId}?source=notification`);
             
             // Top up notifications since one was just consumed
             // This ensures we always have 64 scheduled notifications

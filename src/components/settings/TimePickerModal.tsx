@@ -20,6 +20,7 @@ import * as onboardingService from '../../services/onboarding';
 import * as notificationService from '../../services/notifications';
 import { showSettingsInterstitial } from '../../services/adManager';
 import { H2, LabelText, BodyText, SmallText } from '../Typography';
+import { trackNotificationTimeChange, updateNotificationProperty } from '../../services/analytics';
 
 interface TimePickerModalProps {
   visible: boolean;
@@ -178,6 +179,10 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       } else if (result.success) {
         console.log(`Successfully rescheduled ${result.count} notifications`);
       }
+
+      // Track notification time change and update user property
+      trackNotificationTimeChange(times.length);
+      updateNotificationProperty(times);
 
       // Show interstitial ad after successful notification time update
       await showSettingsInterstitial();

@@ -17,6 +17,7 @@ import { BannerAd } from "./ads";
 import { openInAppBrowser } from "../utils/browser";
 import { getLocalNotificationImagePath, deleteNotificationImage } from "../services/notifications";
 import { useResponsive } from "../utils/useResponsive";
+import { trackSourceLinkClick } from "../services/analytics";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -247,6 +248,12 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
   const handleSourcePress = () => {
     if (fact?.source_url) {
+      // Track source link click
+      trackSourceLinkClick({
+        factId: fact.id,
+        domain: extractDomain(fact.source_url),
+      });
+
       openInAppBrowser(fact.source_url, { 
         theme,
         // Translate the source URL if user's locale is not English
@@ -987,6 +994,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         factId={fact.id}
         factTitle={fact.title}
         factContent={fact.content}
+        category={fact.categoryData?.slug || fact.category || 'unknown'}
       />
     </Container>
   );

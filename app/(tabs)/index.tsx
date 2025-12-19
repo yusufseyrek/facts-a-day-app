@@ -27,6 +27,7 @@ import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import { onFeedRefresh, forceRefreshContent, onRefreshStatusChange, getRefreshStatus, RefreshStatus } from "../../src/services/contentRefresh";
 import { onPreferenceFeedRefresh } from "../../src/services/preferences";
+import { trackFeedRefresh, trackScreenView, Screens } from "../../src/services/analytics";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -144,6 +145,8 @@ function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       loadFacts();
+      // Track screen view when tab gains focus
+      trackScreenView(Screens.HOME);
     }, [locale])
   );
 
@@ -306,11 +309,15 @@ function HomeScreen() {
     // Check if we should request app review
     checkAndRequestReview(); // Non-blocking call
 
-    router.push(`/fact/${fact.id}`);
+    router.push(`/fact/${fact.id}?source=feed`);
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    
+    // Track pull-to-refresh
+    trackFeedRefresh('pull');
+
     try {
       // First fetch new content from API
       await forceRefreshContent();

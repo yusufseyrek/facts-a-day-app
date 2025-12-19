@@ -180,7 +180,7 @@ const HeroFactCardComponent = ({
               <SerifTitle
                 fontSize={isTablet ? tokens.fontSize.h1Tablet : Math.round(fontSizes.h1 * 0.81)}
                 lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : Math.round(fontSizes.h1 * 0.81 * 1.35)}
-                letterSpacing={0.2}
+                letterSpacing={0.3}
                 color={
                   theme === "dark"
                     ? tokens.color.dark.text

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -35,6 +36,12 @@ import { BannerAd } from "../../src/components/ads";
 import { ADS_ENABLED } from "../../src/config/ads";
 import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
+import {
+  trackSearch,
+  trackCategoryBrowse,
+  trackScreenView,
+  Screens,
+} from "../../src/services/analytics";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -234,6 +241,13 @@ function DiscoverScreen() {
         
         setSearchResults(results);
         prefetchFactImages(results);
+
+        // Track search event
+        trackSearch({
+          searchTerm: query.trim(),
+          resultsCount: results.length,
+          categoryFilter: categorySlug || undefined,
+        });
       } catch (error) {
         console.error("Error searching facts:", error);
         setSearchResults([]);
@@ -242,6 +256,13 @@ function DiscoverScreen() {
       }
     },
     [locale]
+  );
+
+  // Track screen view when tab is focused
+  useFocusEffect(
+    useCallback(() => {
+      trackScreenView(Screens.DISCOVER);
+    }, [])
   );
 
   // Load user's selected categories on mount
@@ -294,7 +315,7 @@ function DiscoverScreen() {
   const handleFactPress = async (fact: FactWithRelations) => {
     await trackFactView();
     checkAndRequestReview();
-    router.push(`/fact/${fact.id}`);
+    router.push(`/fact/${fact.id}?source=discover`);
   };
 
   const handleRefresh = async () => {
@@ -346,6 +367,12 @@ function DiscoverScreen() {
       const facts = await database.getFactsByCategory(categorySlug, locale);
       setCategoryFacts(facts);
       prefetchFactImages(facts);
+
+      // Track category browse event
+      trackCategoryBrowse({
+        category: categorySlug,
+        factsCount: facts.length,
+      });
     } catch (error) {
       console.error("Error loading category facts:", error);
       setCategoryFacts([]);

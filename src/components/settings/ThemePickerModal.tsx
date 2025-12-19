@@ -12,6 +12,7 @@ import { tokens } from '../../theme/tokens';
 import { useTranslation, type TranslationKeys } from '../../i18n';
 import type { ThemeMode } from '../../theme/ThemeProvider';
 import { H2, LabelText, SmallText } from '../Typography';
+import { trackThemeChange, updateThemeProperty } from '../../services/analytics';
 
 interface ThemePickerModalProps {
   visible: boolean;
@@ -55,6 +56,11 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
   ];
 
   const handleSelectTheme = (mode: ThemeMode) => {
+    // Track theme change if different from current
+    if (mode !== themeMode) {
+      trackThemeChange({ from: themeMode, to: mode });
+      updateThemeProperty(mode);
+    }
     setThemeMode(mode);
     onClose();
   };

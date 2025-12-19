@@ -33,6 +33,7 @@ import { buildNotificationContent } from "../../src/services/notifications";
 import { useOnboarding } from "../../src/contexts";
 import { recordError, logMessage } from "../../src/config/firebase";
 import { openInAppBrowser } from "../../src/utils/browser";
+import { trackScreenView, Screens } from "../../src/services/analytics";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -130,9 +131,10 @@ export default function SettingsPage() {
     checkNotificationPermission();
   }, []);
 
-  // Re-check permission when screen is focused (user may have changed it in system settings)
+  // Track screen view and re-check permission when screen is focused
   useFocusEffect(
     useCallback(() => {
+      trackScreenView(Screens.SETTINGS);
       checkNotificationPermission();
     }, [])
   );

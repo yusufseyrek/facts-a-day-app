@@ -14,6 +14,8 @@ import { useTranslation } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
 import { completeConsentFlow, isConsentRequired, initializeAdsSDK } from "../../src/services/ads";
 import { ADS_ENABLED } from "../../src/config/ads";
+import { trackOnboardingComplete, trackScreenView, Screens } from "../../src/services/analytics";
+import { getNotificationTimes } from "../../src/services/onboarding";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -236,9 +238,9 @@ const ProgressBar = ({ duration, theme }: { duration: number; theme: "light" | "
 
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const router = useRouter();
-  const { completeOnboarding } = useOnboarding();
+  const { completeOnboarding, selectedCategories } = useOnboarding();
 
   // Screen state: loading -> consent (if required) -> processing -> animation -> navigate
   const [screenState, setScreenState] = useState<ScreenState>("loading");
@@ -246,9 +248,10 @@ export default function OnboardingSuccessScreen() {
   // Track if animations should run
   const [shouldRunAnimations, setShouldRunAnimations] = useState(false);
 
-  // Check if consent is required on mount
+  // Check if consent is required on mount and track screen view
   useEffect(() => {
     checkConsentRequired();
+    trackScreenView(Screens.ONBOARDING_SUCCESS);
   }, []);
 
   const checkConsentRequired = async () => {
@@ -423,6 +426,15 @@ export default function OnboardingSuccessScreen() {
     try {
       // Complete onboarding (save preferences)
       await completeOnboarding();
+
+      // Track onboarding complete event
+      const notificationTimes = await getNotificationTimes();
+      const notificationsEnabled = notificationTimes !== null && notificationTimes.length > 0;
+      trackOnboardingComplete({
+        locale,
+        categoriesCount: selectedCategories.length,
+        notificationsEnabled,
+      });
 
       // Navigate to main app after showing success message
       setTimeout(() => {

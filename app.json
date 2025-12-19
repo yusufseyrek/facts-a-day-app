@@ -41,6 +41,7 @@
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false,
+        "FirebaseAutomaticScreenReportingEnabled": false,
         "SKAdNetworkItems": [
           {
             "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork"
@@ -186,13 +187,14 @@
       "@react-native-firebase/app",
       "@react-native-firebase/crashlytics",
       "./plugins/withModularHeaders.js",
+      "./plugins/withDisableAutoScreenReporting.js",
       [
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-7740246752776234~7031691670",
           "iosAppId": "ca-app-pub-7740246752776234~1632574072",
           "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
-          "delayAppMeasurementInit": true
+          "delayAppMeasurementInit": false
         }
       ],
       [

@@ -8,6 +8,11 @@ import mobileAds, {
 import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
 import { ADS_ENABLED } from '../config/ads';
+import {
+  trackGDPRConsentResult,
+  trackATTPermissionResult,
+  trackAdsSdkInitialized,
+} from './analytics';
 
 // Re-export consent utilities for backwards compatibility
 export { canShowPersonalizedAds, shouldRequestNonPersonalizedAdsOnly } from './adsConsent';
@@ -61,9 +66,26 @@ export const requestGDPRConsent = async (): Promise<{
     // - Returns the final consent status
     const consentInfo = await AdsConsent.gatherConsent();
     console.log('Consent gathered:', consentInfo);
+
+    // Track GDPR consent result
+    const gdprApplies = await AdsConsent.getGdprApplies();
+    trackGDPRConsentResult({
+      status: AdsConsentStatus[consentInfo.status] || 'UNKNOWN',
+      canRequestAds: consentInfo.canRequestAds,
+      gdprApplies,
+    });
+
     return consentInfo;
   } catch (error) {
     console.error('Error requesting GDPR consent:', error);
+
+    // Track failed consent
+    trackGDPRConsentResult({
+      status: 'ERROR',
+      canRequestAds: false,
+      gdprApplies: false,
+    });
+
     // Return a safe default - assume we can't request personalized ads
     return {
       canRequestAds: false,
@@ -121,9 +143,14 @@ export const requestATTPermission = async (): Promise<boolean> => {
     console.log('Requesting ATT permission dialog...');
     const { status } = await requestTrackingPermissionsAsync();
     console.log('ATT permission status:', status);
+
+    // Track ATT permission result
+    trackATTPermissionResult(status);
+
     return status === 'granted';
   } catch (error) {
     console.error('Error requesting ATT permission:', error);
+    trackATTPermissionResult('error');
     return false;
   }
 };
@@ -165,12 +192,16 @@ export const initializeAdsSDK = async (): Promise<boolean> => {
     isSDKInitialized = true;
     console.log('Google Mobile Ads SDK initialized successfully');
 
+    // Track successful SDK initialization
+    trackAdsSdkInitialized(true);
+
     // Preload interstitial ad
     preloadInterstitialAd();
 
     return true;
   } catch (error) {
     console.error('Failed to initialize Google Mobile Ads SDK:', error);
+    trackAdsSdkInitialized(false);
     return false;
   }
 };

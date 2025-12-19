@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { FlatList, RefreshControl, ActivityIndicator } from 'react-native';
@@ -14,6 +14,7 @@ import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import * as database from '../../src/services/database';
 import { useFocusEffect } from '@react-navigation/native';
+import { trackScreenView, Screens } from '../../src/services/analytics';
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -47,9 +48,10 @@ export default function FavoritesScreen() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Reload favorites when screen comes into focus
+  // Track screen view and reload favorites when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
+      trackScreenView(Screens.FAVORITES);
       loadFavorites();
     }, [locale])
   );
@@ -72,7 +74,7 @@ export default function FavoritesScreen() {
   };
 
   const handleFactPress = (fact: FactWithRelations) => {
-    router.push(`/fact/${fact.id}`);
+    router.push(`/fact/${fact.id}?source=favorites`);
   };
 
   const handleRefresh = () => {

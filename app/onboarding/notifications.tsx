@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Platform, ScrollView, Alert, useWindowDimensions } from "react-native";
@@ -13,6 +13,12 @@ import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
 import * as notificationService from "../../src/services/notifications";
+import {
+  trackOnboardingNotificationsEnabled,
+  trackOnboardingNotificationsSkipped,
+  trackScreenView,
+  Screens,
+} from "../../src/services/analytics";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -65,6 +71,11 @@ export default function NotificationsScreen() {
   const isTablet = width >= TABLET_BREAKPOINT;
   const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
 
+  // Track screen view on mount
+  useEffect(() => {
+    trackScreenView(Screens.ONBOARDING_NOTIFICATIONS);
+  }, []);
+
   const handleEnableNotifications = async () => {
     try {
       // Step 1: Request notification permissions IMMEDIATELY (don't wait for download)
@@ -107,6 +118,10 @@ export default function NotificationsScreen() {
 
   const proceedWithoutNotifications = async () => {
     setIsScheduling(true);
+
+    // Track that notifications were skipped
+    trackOnboardingNotificationsSkipped();
+
     try {
       // Wait for facts download to complete if still in progress
       if (isDownloadingFacts) {
@@ -165,6 +180,9 @@ export default function NotificationsScreen() {
       if (result.success) {
         // Successfully scheduled notifications - navigate to success screen
         console.log(`Scheduled ${result.count} notifications`);
+
+        // Track that notifications were enabled
+        trackOnboardingNotificationsEnabled(notificationTimes.length);
 
         router.push("/onboarding/success");
       } else {

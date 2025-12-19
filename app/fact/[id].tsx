@@ -7,17 +7,20 @@ import * as database from '../../src/services/database';
 import { BodyText } from '../../src/components';
 import { tokens } from '../../src/theme/tokens';
 import { useTranslation } from '../../src/i18n';
+import { trackFactView, trackScreenView, Screens, type FactViewSource } from '../../src/services/analytics';
 
 export default function FactDetailModal() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, source } = useLocalSearchParams<{ id: string; source?: FactViewSource }>();
   const router = useRouter();
   const { t } = useTranslation();
   const [fact, setFact] = useState<FactWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasTrackedView, setHasTrackedView] = useState(false);
 
   useEffect(() => {
     loadFact();
+    trackScreenView(Screens.FACT_DETAIL);
   }, [id]);
 
   const loadFact = async () => {
@@ -34,6 +37,17 @@ export default function FactDetailModal() {
       const factData = await database.getFactById(factId);
       if (factData) {
         setFact(factData);
+        
+        // Track fact view (only once per modal open)
+        if (!hasTrackedView) {
+          setHasTrackedView(true);
+          const categorySlug = factData.categoryData?.slug || factData.category || 'unknown';
+          trackFactView({
+            factId: factData.id,
+            category: categorySlug,
+            source: source || 'feed',
+          });
+        }
       } else {
         setError(t('factNotFound'));
       }

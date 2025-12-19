@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ScrollView, ActivityIndicator, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -18,6 +18,12 @@ import { useTranslation, type SupportedLocale } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
 import * as db from "../../src/services/database";
 import { getLucideIcon } from "../../src/utils/iconMapper";
+import {
+  trackOnboardingStart,
+  trackOnboardingCategoriesSelected,
+  trackScreenView,
+  Screens,
+} from "../../src/services/analytics";
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -75,6 +81,9 @@ export default function Categories() {
   const labelFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.small;
   const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
 
+  // Track if we've already logged the onboarding start event
+  const hasLoggedStart = useRef(false);
+
   // Auto-initialize with device locale if not already initialized
   // Language selection has been removed - we use device language settings
   useEffect(() => {
@@ -83,6 +92,15 @@ export default function Categories() {
       initializeOnboarding(locale as SupportedLocale);
     }
   }, [isInitialized, isInitializing, locale, initializeOnboarding]);
+
+  // Track onboarding start and screen view when screen is initialized
+  useEffect(() => {
+    if (isInitialized && !hasLoggedStart.current) {
+      hasLoggedStart.current = true;
+      trackOnboardingStart(locale);
+      trackScreenView(Screens.ONBOARDING_CATEGORIES);
+    }
+  }, [isInitialized, locale]);
 
   useEffect(() => {
     if (isInitialized) {
@@ -110,6 +128,9 @@ export default function Categories() {
   };
 
   const handleContinue = () => {
+    // Track categories selected
+    trackOnboardingCategoriesSelected(selectedCategories);
+
     // Start downloading facts in the background (non-blocking)
     downloadFacts(locale);
 
