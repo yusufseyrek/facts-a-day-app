@@ -9,7 +9,7 @@ import { Image } from "expo-image";
 import { tokens } from "../theme/tokens";
 import { FactActions } from "./FactActions";
 import { CategoryBadge } from "./CategoryBadge";
-import { BodyText, SerifTitle } from "./Typography";
+import { BodyText, SerifTitle, FONT_FAMILIES } from "./Typography";
 import { useTheme } from "../theme";
 import { useTranslation } from "../i18n";
 import type { FactWithRelations, Category } from "../services/database";
@@ -431,7 +431,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         <SerifTitle
           fontSize={isTablet ? tokens.fontSize.h1Tablet : fontSizes.h1}
           lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : Math.round(fontSizes.h1 * 1.3)}
-          letterSpacing={0}
+          letterSpacing={-0.2}
+          fontFamily={FONT_FAMILIES.bold}
         >
           {factTitle}
         </SerifTitle>
@@ -557,7 +558,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 <SerifTitle
                   fontSize={isTablet ? tokens.fontSize.h1Tablet : fontSizes.h1}
                   lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : Math.round(fontSizes.h1 * 1.3)}
-                  letterSpacing={0}
+                  letterSpacing={-0.2}
+                  fontFamily={FONT_FAMILIES.bold}
                 >
                   {factTitle}
                 </SerifTitle>
@@ -639,7 +641,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 <SerifTitle 
                   fontSize={isTablet ? tokens.fontSize.h1Tablet : fontSizes.h1} 
                   lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : Math.round(fontSizes.h1 * 1.3)} 
-                  letterSpacing={0}
+                  letterSpacing={-0.2}
+                  fontFamily={FONT_FAMILIES.bold}
                 >
                   {factTitle}
                 </SerifTitle>
@@ -651,7 +654,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   {categoryForBadge && (
                     <CategoryBadge 
                       category={categoryForBadge} 
-                      fontFamily="Montserrat_700Bold"
+                      fontFamily={FONT_FAMILIES.bold}
                       fontSize={isTablet ? tokens.fontSize.labelTablet : tokens.fontSize.label}
                     />
                   )}
@@ -660,8 +663,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                       <BodyText
                         fontSize={isTablet ? tokens.fontSize.labelTablet : tokens.fontSize.label}
                         lineHeight={isTablet ? tokens.fontSize.labelTablet * 1.5 : tokens.fontSize.label * 1.5}
+                        letterSpacing={0.3}
                         color="$textSecondary"
-                        fontFamily="Montserrat_700Bold"
+                        fontFamily={FONT_FAMILIES.semibold}
                       >
                         {formatLastUpdated(fact.last_updated || fact.created_at, locale)}
                       </BodyText>
@@ -674,11 +678,10 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               {/* Summary */}
               {fact.summary && (
                 <BodyText
-                  fontSize={isTablet ? tokens.fontSize.bodyTablet : Math.round(fontSizes.body * 1.07)}
-                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.85 : Math.round(fontSizes.body * 1.07 * 1.85)}
-                  letterSpacing={isTablet ? 0.5 : 0.3}
+                  fontSize={isTablet ? Math.round(tokens.fontSize.bodyTablet * 1.1) : Math.round(fontSizes.body * 1.15)}
+                  lineHeight={isTablet ? Math.round(tokens.fontSize.bodyTablet * 1.1 * 1.75) : Math.round(fontSizes.body * 1.15 * 1.75)}
                   color="$text"
-                  fontFamily="Montserrat_500Medium"
+                  fontFamily={FONT_FAMILIES.medium}
                 >
                   {fact.summary}
                 </BodyText>
@@ -691,8 +694,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               <BodyText
                 fontSize={isTablet ? tokens.fontSize.bodyTablet : Math.round(fontSizes.body * 1.07)}
                 lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.85 : Math.round(fontSizes.body * 1.07 * 1.85)}
-                letterSpacing={isTablet ? 0.5 : 0.3}
+                letterSpacing={0.2}
                 color="$text"
+                fontFamily={FONT_FAMILIES.regular}
               >
                 {contentParts.firstPart}
               </BodyText>
@@ -707,8 +711,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 <BodyText
                   fontSize={isTablet ? tokens.fontSize.bodyTablet : Math.round(fontSizes.body * 1.07)}
                   lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.85 : Math.round(fontSizes.body * 1.07 * 1.85)}
-                  letterSpacing={isTablet ? 0.5 : 0.3}
+                  letterSpacing={0.2}
                   color="$text"
+                  fontFamily={FONT_FAMILIES.regular}
                 >
                   {contentParts.secondPart}
                 </BodyText>
@@ -721,9 +726,10 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                     <BodyText
                       fontSize={isTablet ? tokens.fontSize.bodyTablet : fontSizes.body}
                       lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.5 : Math.round(fontSizes.body * 1.5)}
+                      letterSpacing={0.2}
                       color="$primary"
                       textDecorationLine="underline"
-                      fontFamily="Montserrat_600SemiBold"
+                      fontFamily={FONT_FAMILIES.semibold}
                     >
                       {t("sourcePrefix")}
                       {extractDomain(fact.source_url)}
@@ -796,7 +802,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 <SerifTitle 
                   fontSize={fontSizes.h1} 
                   lineHeight={Math.round(fontSizes.h1 * 1.3)} 
-                  letterSpacing={0}
+                  letterSpacing={-0.2}
+                  fontFamily={FONT_FAMILIES.bold}
                 >
                   {factTitle}
                 </SerifTitle>
@@ -808,7 +815,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   {categoryForBadge && (
                     <CategoryBadge 
                       category={categoryForBadge} 
-                      fontFamily="Montserrat_700Bold"
+                      fontFamily={FONT_FAMILIES.bold}
                       fontSize={tokens.fontSize.label}
                     />
                   )}
@@ -817,8 +824,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                       <BodyText
                         fontSize={tokens.fontSize.label}
                         lineHeight={tokens.fontSize.label * 1.5}
+                        letterSpacing={0.3}
                         color="$textSecondary"
-                        fontFamily="Montserrat_700Bold"
+                        fontFamily={FONT_FAMILIES.semibold}
                       >
                         {formatLastUpdated(fact.last_updated || fact.created_at, locale)}
                       </BodyText>
@@ -831,11 +839,10 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               {/* Summary */}
               {fact.summary && (
                 <BodyText
-                  fontSize={Math.round(fontSizes.body * 1.07)}
-                  lineHeight={Math.round(fontSizes.body * 1.07 * 1.85)}
-                  letterSpacing={0.3}
+                  fontSize={Math.round(fontSizes.body * 1.15)}
+                  lineHeight={Math.round(fontSizes.body * 1.15 * 1.75)}
                   color="$text"
-                  fontFamily="Montserrat_600SemiBold"
+                  fontFamily={FONT_FAMILIES.medium}
                 >
                   {fact.summary}
                 </BodyText>
@@ -848,8 +855,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               <BodyText
                 fontSize={Math.round(fontSizes.body * 1.07)}
                 lineHeight={Math.round(fontSizes.body * 1.07 * 1.85)}
-                letterSpacing={0.3}
+                letterSpacing={0.2}
                 color="$text"
+                fontFamily={FONT_FAMILIES.regular}
               >
                 {contentParts.firstPart}
               </BodyText>
@@ -864,8 +872,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 <BodyText
                   fontSize={Math.round(fontSizes.body * 1.07)}
                   lineHeight={Math.round(fontSizes.body * 1.07 * 1.85)}
-                  letterSpacing={0.3}
+                  letterSpacing={0.2}
                   color="$text"
+                  fontFamily={FONT_FAMILIES.regular}
                 >
                   {contentParts.secondPart}
                 </BodyText>
@@ -878,9 +887,10 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                     <BodyText
                       fontSize={fontSizes.body}
                       lineHeight={Math.round(fontSizes.body * 1.5)}
+                      letterSpacing={0.2}
                       color="$primary"
                       textDecorationLine="underline"
-                      fontFamily="Montserrat_600SemiBold"
+                      fontFamily={FONT_FAMILIES.semibold}
                     >
                       {t("sourcePrefix")}
                       {extractDomain(fact.source_url)}
