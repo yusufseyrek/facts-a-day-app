@@ -29,7 +29,7 @@ export const translations = {
       "Aktivieren Sie Benachrichtigungen, um täglich neue Fakten direkt auf Ihr Gerät zu erhalten",
     selectNotificationTime: "Wählen Sie Ihre Benachrichtigungszeit",
     oneNotificationPerDay:
-      "Wir senden Ihnen nur eine Benachrichtigung pro Tag zu dieser Zeit.\nWir respektieren Ihre Aufmerksamkeit und werden Sie nicht zuspammen.",
+      "Wir senden Ihnen nur eine Benachrichtigung pro Tag zu dieser Zeit.\n\nWir respektieren Ihre Aufmerksamkeit und werden Sie nicht zuspammen.",
     notificationTimes: "Benachrichtigungszeiten",
     time: "Zeit",
     addAnotherTime: "Weitere Zeit hinzufügen",
@@ -214,7 +214,7 @@ export const translations = {
       "Enable notifications to receive new facts delivered straight to your device each day",
     selectNotificationTime: "Select Your Notification Time",
     oneNotificationPerDay:
-      "We'll send you just one notification per day at this time.\nWe respect your attention and won't spam you.",
+      "We'll send you just one notification per day at this time.\n\nWe respect your attention and won't spam you.",
     notificationTimes: "Notification Times",
     time: "Time",
     addAnotherTime: "Add Another Time",
@@ -397,7 +397,7 @@ export const translations = {
       "Activa las notificaciones para recibir nuevos datos directamente en tu dispositivo cada día",
     selectNotificationTime: "Selecciona tu Hora de Notificación",
     oneNotificationPerDay:
-      "Te enviaremos solo una notificación por día a esta hora.\nRespetamos tu atención y no te enviaremos spam.",
+      "Te enviaremos solo una notificación por día a esta hora.\n\nRespetamos tu atención y no te enviaremos spam.",
     notificationTimes: "Horarios de Notificación",
     time: "Hora",
     addAnotherTime: "Agregar Otra Hora",
@@ -582,7 +582,7 @@ export const translations = {
       "Activez les notifications pour recevoir de nouveaux faits directement sur votre appareil chaque jour",
     selectNotificationTime: "Sélectionnez Votre Heure de Notification",
     oneNotificationPerDay:
-      "Nous vous enverrons une seule notification par jour à cette heure.\nNous respectons votre attention et ne vous spammerons pas.",
+      "Nous vous enverrons une seule notification par jour à cette heure.\n\nNous respectons votre attention et ne vous spammerons pas.",
     notificationTimes: "Heures de Notification",
     time: "Heure",
     addAnotherTime: "Ajouter une Autre Heure",
@@ -764,7 +764,7 @@ export const translations = {
     notificationRequired: "通知を有効にすると、毎日新しい豆知識があなたのデバイスに届きます",
     selectNotificationTime: "通知時間を選択",
     oneNotificationPerDay:
-      "この時間に1日1回だけ通知をお送りします。\nあなたの時間を尊重し、スパムは送りません。",
+      "この時間に1日1回だけ通知をお送りします。\n\nあなたの時間を尊重し、スパムは送りません。",
     notificationTimes: "通知時刻",
     time: "時刻",
     addAnotherTime: "別の時刻を追加",
@@ -945,7 +945,7 @@ export const translations = {
     notificationRequired: "알림을 활성화하면 매일 새로운 정보가 기기로 바로 전달됩니다",
     selectNotificationTime: "알림 시간 선택",
     oneNotificationPerDay:
-      "이 시간에 하루에 한 번만 알림을 보내드립니다.\n귀하의 시간을 존중하며 스팸을 보내지 않습니다.",
+      "이 시간에 하루에 한 번만 알림을 보내드립니다.\n\n귀하의 시간을 존중하며 스팸을 보내지 않습니다.",
     notificationTimes: "알림 시간",
     time: "시간",
     addAnotherTime: "다른 시간 추가",
@@ -1125,7 +1125,7 @@ export const translations = {
       "Bildirimleri etkinleştirerek her gün yeni bilgileri doğrudan cihazınıza alın",
     selectNotificationTime: "Bildirim Saatinizi Seçin",
     oneNotificationPerDay:
-      "Size bu saatte günde sadece bir bildirim göndereceğiz.\nDikkatinize saygı duyuyoruz ve spam göndermeyeceğiz.",
+      "Size bu saatte günde sadece bir bildirim göndereceğiz.\n\nDikkatinize saygı duyuyoruz ve spam göndermeyeceğiz.",
     notificationTimes: "Bildirim Saatleri",
     time: "Saat",
     addAnotherTime: "Başka Bir Saat Ekle",
@@ -1306,7 +1306,7 @@ export const translations = {
     notificationRequired: "启用通知，每天将新知识直接发送到您的设备",
     selectNotificationTime: "选择您的通知时间",
     oneNotificationPerDay:
-      "我们每天只会在此时间向您发送一条通知。\n我们尊重您的时间，不会发送垃圾信息。",
+      "我们每天只会在此时间向您发送一条通知。\n\n我们尊重您的时间，不会发送垃圾信息。",
     notificationTimes: "通知时间",
     time: "时间",
     addAnotherTime: "添加其他时间",
