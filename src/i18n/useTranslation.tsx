@@ -5,7 +5,7 @@ import { SupportedLocale, TranslationKeys } from './translations';
 
 interface I18nContextType {
   locale: SupportedLocale;
-  t: (key: TranslationKeys) => string;
+  t: (key: TranslationKeys, options?: Record<string, string | number>) => string;
 }
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
@@ -28,8 +28,8 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   });
 
   const t = useCallback(
-    (key: TranslationKeys): string => {
-      return i18n.t(key);
+    (key: TranslationKeys, options?: Record<string, string | number>): string => {
+      return i18n.t(key, options);
     },
     [locale]
   );

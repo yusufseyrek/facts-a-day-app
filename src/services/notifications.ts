@@ -360,7 +360,7 @@ export async function buildNotificationContent(
 
   const content: Notifications.NotificationContentInput = {
     title: appName,
-    body: fact.summary || fact.content.substring(0, 100),
+    body: fact.title || fact.content.substring(0, 100),
     data: { factId: fact.id },
   };
 

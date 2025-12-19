@@ -131,7 +131,7 @@ function formatLastUpdated(dateString: string, locale: string): string {
 }
 
 /**
- * Splits content by the first empty line (double newline or line with only whitespace).
+ * Splits content by the last empty line (double newline or line with only whitespace).
  * Returns an object with the first part, second part (if exists), and whether a split occurred.
  */
 function splitContentByEmptyLine(content: string): {
@@ -139,12 +139,19 @@ function splitContentByEmptyLine(content: string): {
   secondPart: string | null;
   hasSplit: boolean;
 } {
-  // Match double newline with optional whitespace between
-  const emptyLineMatch = content.match(/\n\s*\n/);
+  // Find all empty line matches (double newline with optional whitespace between)
+  const emptyLineRegex = /\n\s*\n/g;
+  let lastMatch: RegExpExecArray | null = null;
+  let match: RegExpExecArray | null;
   
-  if (emptyLineMatch && emptyLineMatch.index !== undefined) {
-    const splitIndex = emptyLineMatch.index;
-    const matchLength = emptyLineMatch[0].length;
+  // Find the last match
+  while ((match = emptyLineRegex.exec(content)) !== null) {
+    lastMatch = match;
+  }
+  
+  if (lastMatch && lastMatch.index !== undefined) {
+    const splitIndex = lastMatch.index;
+    const matchLength = lastMatch[0].length;
     
     const firstPart = content.substring(0, splitIndex).trim();
     const secondPart = content.substring(splitIndex + matchLength).trim();
@@ -677,6 +684,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 </BodyText>
               )}
 
+              {/* Banner between summary and content */}
+              <BannerAd position="fact-modal-1" />
+
               {/* Main Content - First Part */}
               <BodyText
                 fontSize={isTablet ? tokens.fontSize.bodyTablet : Math.round(fontSizes.body * 1.07)}
@@ -689,7 +699,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
               {/* Inline Ad - shown between content parts if there's a split */}
               {contentParts.hasSplit && (
-                <BannerAd position="fact-modal-1" />
+                <BannerAd position="fact-modal-2" />
               )}
 
               {/* Main Content - Second Part */}
@@ -703,9 +713,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   {contentParts.secondPart}
                 </BodyText>
               )}
-
-              {/* End of content banner - always shown */}
-              <BannerAd position="fact-modal-2" />
 
               {/* Source Link */}
               {fact.source_url && (
@@ -834,6 +841,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 </BodyText>
               )}
 
+              {/* Banner between summary and content */}
+              <BannerAd position="fact-modal-1" />
+
               {/* Main Content - First Part */}
               <BodyText
                 fontSize={Math.round(fontSizes.body * 1.07)}
@@ -846,7 +856,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
               {/* Inline Ad - shown between content parts if there's a split */}
               {contentParts.hasSplit && (
-                <BannerAd position="fact-modal-1" />
+                <BannerAd position="fact-modal-2" />
               )}
 
               {/* Main Content - Second Part */}
@@ -860,9 +870,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   {contentParts.secondPart}
                 </BodyText>
               )}
-
-              {/* End of content banner - always shown */}
-              <BannerAd position="fact-modal-2" />
 
               {/* Source Link */}
               {fact.source_url && (

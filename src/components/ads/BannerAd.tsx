@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import React, { useEffect, useState, useCallback, memo } from 'react';
+import { Platform, View, StyleSheet, LayoutAnimation } from 'react-native';
 import { BannerAd as GoogleBannerAd, BannerAdSize, TestIds, AdsConsent } from 'react-native-google-mobile-ads';
-import { YStack } from 'tamagui';
 import Constants from 'expo-constants';
 import { ADS_ENABLED } from '../../config/ads';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
@@ -80,7 +79,7 @@ const getBannerSize = (position: BannerAdPosition): BannerAdSize => {
   }
 };
 
-export const BannerAd: React.FC<BannerAdProps> = ({ position, onAdLoadChange }) => {
+const BannerAdComponent: React.FC<BannerAdProps> = ({ position, onAdLoadChange }) => {
   const [canRequestAds, setCanRequestAds] = useState<boolean | null>(null);
   const [requestNonPersonalized, setRequestNonPersonalized] = useState<boolean>(true);
   const [adLoaded, setAdLoaded] = useState<boolean>(false);
@@ -111,6 +110,23 @@ export const BannerAd: React.FC<BannerAdProps> = ({ position, onAdLoadChange }) 
     onAdLoadChange?.(adLoaded);
   }, [adLoaded, onAdLoadChange]);
 
+  // Memoized callbacks to prevent re-renders during scroll
+  const handleAdLoaded = useCallback(() => {
+    // Use a subtle layout animation for height change to prevent jarring layout shifts
+    LayoutAnimation.configureNext({
+      duration: 150,
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+      },
+    });
+    setAdLoaded(true);
+  }, []);
+
+  const handleAdFailedToLoad = useCallback((error: any) => {
+    console.error(`Banner ad (${position}) failed to load:`, error);
+    setAdLoaded(false);
+  }, [position]);
+
   // Don't show ads if globally disabled or consent not given
   if (!ADS_ENABLED || canRequestAds === false) {
     return null;
@@ -125,27 +141,43 @@ export const BannerAd: React.FC<BannerAdProps> = ({ position, onAdLoadChange }) 
   const adSize = getBannerSize(position);
 
   return (
-    <YStack 
-      alignItems="center" 
-      justifyContent="center" 
-      paddingVertical={adLoaded ? "$2" : "$0"}
-      height={adLoaded ? "auto" : 0}
-      overflow="hidden"
+    <View
+      style={[
+        styles.container,
+        {
+          minHeight: adLoaded ? undefined : 0,
+          paddingVertical: adLoaded ? 8 : 0,
+        },
+      ]}
+      // Prevent view collapsing on Android which can cause scroll issues
+      collapsable={false}
     >
-      <GoogleBannerAd
-        unitId={adUnitId}
-        size={adSize}
-        requestOptions={{
-          requestNonPersonalizedAdsOnly: requestNonPersonalized
-        }}
-        onAdLoaded={() => {
-          setAdLoaded(true);
-        }}
-        onAdFailedToLoad={(error) => {
-          console.error(`Banner ad (${position}) failed to load:`, error);
-          setAdLoaded(false);
-        }}
-      />
-    </YStack>
+      <View style={styles.adWrapper}>
+        <GoogleBannerAd
+          unitId={adUnitId}
+          size={adSize}
+          requestOptions={{
+            requestNonPersonalizedAdsOnly: requestNonPersonalized
+          }}
+          onAdLoaded={handleAdLoaded}
+          onAdFailedToLoad={handleAdFailedToLoad}
+        />
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  adWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
+// Memoize the component to prevent unnecessary re-renders during scroll
+export const BannerAd = memo(BannerAdComponent);

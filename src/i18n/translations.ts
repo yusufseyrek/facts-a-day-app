@@ -159,6 +159,7 @@ export const translations = {
     sharedFromApp: "Geteilt von Täglich Wissen",
     sourcePrefix: "Quelle: ",
     externalLink: "Externer Link",
+    lastUpdated: "Aktualisiert: {date}",
 
     // Loading States
     updatingLanguage: "Sprache wird aktualisiert...",
@@ -341,6 +342,7 @@ export const translations = {
     sharedFromApp: "Shared from Facts A Day",
     sourcePrefix: "Source: ",
     externalLink: "External Link",
+    lastUpdated: "Updated: {date}",
 
     // Loading States
     updatingLanguage: "Updating language...",
@@ -523,6 +525,7 @@ export const translations = {
     sharedFromApp: "Compartido desde Conocimiento Diario",
     sourcePrefix: "Fuente: ",
     externalLink: "Enlace Externo",
+    lastUpdated: "Actualizado: {date}",
 
     // Loading States
     updatingLanguage: "Actualizando idioma...",
@@ -707,6 +710,7 @@ export const translations = {
     sharedFromApp: "Partagé depuis Savoir Quotidien",
     sourcePrefix: "Source : ",
     externalLink: "Lien Externe",
+    lastUpdated: "Mis à jour : {date}",
 
     // Loading States
     updatingLanguage: "Mise à jour de la langue...",
@@ -888,6 +892,7 @@ export const translations = {
     sharedFromApp: "毎日の知識から共有",
     sourcePrefix: "出典: ",
     externalLink: "外部リンク",
+    lastUpdated: "更新日: {date}",
 
     // Loading States
     updatingLanguage: "言語を更新中...",
@@ -1066,6 +1071,7 @@ export const translations = {
     sharedFromApp: "매일 지식에서 공유",
     sourcePrefix: "출처: ",
     externalLink: "외부 링크",
+    lastUpdated: "업데이트: {date}",
 
     // Loading States
     updatingLanguage: "언어 업데이트 중...",
@@ -1247,6 +1253,7 @@ export const translations = {
     sharedFromApp: "Günlük Bilgi'den paylaşıldı",
     sourcePrefix: "Kaynak: ",
     externalLink: "Dış Bağlantı",
+    lastUpdated: "Güncellendi: {date}",
 
     // Loading States
     updatingLanguage: "Dil güncelleniyor...",
@@ -1424,6 +1431,7 @@ export const translations = {
     sharedFromApp: "来自 每日知识 的分享",
     sourcePrefix: "来源: ",
     externalLink: "外部链接",
+    lastUpdated: "更新于: {date}",
 
     // Loading States
     updatingLanguage: "正在更新语言...",
