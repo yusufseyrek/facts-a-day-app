@@ -11,25 +11,14 @@ export const translations = {
     ok: "OK",
     appName: "Täglich Wissen",
 
-    // Onboarding - Language
-    selectLanguage: "Sprache wählen",
-    choosePreferredLanguage: "Wählen Sie Ihre bevorzugte Sprache für die App",
-    languageDescription: "Sie können dies später in den Einstellungen ändern",
-
     // Onboarding - Initialization
     settingUpApp: "Lade Ihre App...",
-    settingUpLanguage: "Sprache wird eingerichtet...",
-    onlyTakeMoment: "Dies dauert nur einen Moment",
-    oops: "Hoppla!",
     tryAgain: "Erneut versuchen",
 
     // Onboarding - Notifications
     stayInformed: "Bleiben Sie informiert mit täglichen Fakten",
     notificationRequired:
       "Aktivieren Sie Benachrichtigungen, um täglich neue Fakten direkt auf Ihr Gerät zu erhalten",
-    selectNotificationTime: "Wählen Sie Ihre Benachrichtigungszeit",
-    oneNotificationPerDay:
-      "Wir senden Ihnen nur eine Benachrichtigung pro Tag zu dieser Zeit.\n\nWir respektieren Ihre Aufmerksamkeit und werden Sie nicht zuspammen.",
     notificationTimes: "Benachrichtigungszeiten",
     time: "Zeit",
     addAnotherTime: "Weitere Zeit hinzufügen",
@@ -54,16 +43,9 @@ export const translations = {
 
     // Onboarding - Success
     allSet: "Alles erledigt!",
-    gettingReady: "Alles wird vorbereitet",
-    somethingWentWrong: "Hoppla, etwas ist schiefgelaufen",
     welcomeToApp: "Willkommen bei Täglich Wissen!",
-    onboardingComplete: "Sie haben das Onboarding erfolgreich abgeschlossen.",
-    mainAppPlaceholder: "Die Haupt-App wird hier implementiert.",
-    errorSettingUp: "Beim Einrichten ist ein Fehler aufgetreten",
-    downloadingFacts: "Lade Ihre personalisierten Fakten herunter...",
     checkInternetConnection:
       "Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut",
-    redirectingToApp: "Fertig! Weiterleitung zur App...",
     oneMoment: "Dies dauert nur einen Moment...",
 
     // Main App
@@ -74,31 +56,21 @@ export const translations = {
     noDiscoverResults: "Keine Ergebnisse gefunden",
     noDiscoverResultsDescription: "Versuchen Sie andere Suchbegriffe",
     resetOnboarding: "Onboarding zurücksetzen (Test)",
-    readMore: "Mehr Lesen",
-    category: "Kategorie",
     settings: "Einstellungen",
     developerSettings: "Entwicklereinstellungen",
     testNotification: "Benachrichtigung Testen",
     toggleTheme: "Design Wechseln",
     noFactAvailable: "Keine Fakten verfügbar",
-    loadingFact: "Lädt...",
-    todaysFact: "Heutiger Fakt",
     recentFacts: "Letzte Fakten",
     today: "Heute",
     yesterday: "Gestern",
     searchPlaceholder: "Fakten durchsuchen...",
-    searchResults: "Suchergebnisse",
-    noSearchResults: "Keine Ergebnisse gefunden",
-    noSearchResultsDescription: "Versuchen Sie es mit anderen Suchbegriffen",
     emptyStateTitle: "Ihr täglicher Fakt wartet",
     emptyStateDescription: "Hier wird jeden Tag ein neues Wissen erscheinen.",
     favorites: "Favoriten",
     noFavorites: "Noch keine gespeicherten Fakten",
     noFavoritesDescription:
       "Beginnen Sie, Fakten zu favorisieren, um sie hier zu sehen.",
-    like: "Gefällt mir",
-    share: "Teilen",
-    report: "Melden",
     reportFact: "Fakt melden",
     whatIsWrong: "Was stimmt mit diesem Inhalt nicht?",
     reportSubmitted: "Danke! Ihr Feedback wurde eingereicht.",
@@ -108,9 +80,6 @@ export const translations = {
     submit: "Absenden",
     submitting: "Wird gesendet...",
     reportPlaceholder: "Beschreiben Sie, was mit diesem Fakt nicht stimmt...",
-    factOfTheDay: "Fakt des Tages",
-    didYouKnow: "Wussten Sie?",
-    source: "Quelle",
     add10RandomFacts: "10 Zufällige Fakten Hinzufügen",
     factsAdded: "Fakten Hinzugefügt",
     factsAddedDescription:
@@ -152,25 +121,18 @@ export const translations = {
     feedbackMinLength: "Feedback muss mindestens 10 Zeichen lang sein",
     feedbackMaxLength: "Feedback darf maximal 1000 Zeichen lang sein",
     failedToSubmitReport: "Meldung konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.",
-    failedToUpdateLanguageData: "Sprachdaten konnten nicht aktualisiert werden",
-    failedToChangeLanguage: "Sprache konnte nicht geändert werden. Bitte versuchen Sie es erneut.",
     failedToUpdateNotificationTimes: "Benachrichtigungszeiten konnten nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
 
     // Share & Source
     sharedFromApp: "Geteilt von Täglich Wissen",
     sourcePrefix: "Quelle: ",
     externalLink: "Externer Link",
-    lastUpdated: "Aktualisiert: {date}",
 
     // Loading States
     updatingLanguage: "Sprache wird aktualisiert...",
-    syncingContent: "Inhalte werden synchronisiert...",
 
     // Time Picker
     scheduleUpTo3Notifications: "Planen Sie bis zu 3 Benachrichtigungen pro Tag",
-    morning: "Morgen",
-    afternoon: "Nachmittag",
-    evening: "Abend",
     maximumReached: "Maximum Erreicht",
     youCanScheduleUpTo3: "Sie können bis zu 3 Benachrichtigungen pro Tag planen",
     minimumRequired: "Minimum Erforderlich",
@@ -183,7 +145,6 @@ export const translations = {
     adsConsentButton: "Weiter",
 
     // Success Messages
-    settingsUpdated: "Einstellungen aktualisiert",
     categoriesUpdated: "Kategorien aktualisiert",
     notificationTimesUpdated: "Benachrichtigungszeiten aktualisiert",
   },
@@ -199,25 +160,14 @@ export const translations = {
     ok: "OK",
     appName: "Facts A Day",
 
-    // Onboarding - Language
-    selectLanguage: "Select Language",
-    choosePreferredLanguage: "Choose your preferred language for the app",
-    languageDescription: "You can change this later in settings",
-
     // Onboarding - Initialization
     settingUpApp: "Setting up your app...",
-    settingUpLanguage: "Setting up language...",
-    onlyTakeMoment: "This will only take a moment",
-    oops: "Oops!",
     tryAgain: "Try Again",
 
     // Onboarding - Notifications
     stayInformed: "Stay informed with daily facts",
     notificationRequired:
       "Enable notifications to receive new facts delivered straight to your device each day",
-    selectNotificationTime: "Select Your Notification Time",
-    oneNotificationPerDay:
-      "We'll send you just one notification per day at this time.\n\nWe respect your attention and won't spam you.",
     notificationTimes: "Notification Times",
     time: "Time",
     addAnotherTime: "Add Another Time",
@@ -241,16 +191,9 @@ export const translations = {
 
     // Onboarding - Success
     allSet: "All Set!",
-    gettingReady: "Getting Everything Ready",
-    somethingWentWrong: "Oops, Something Went Wrong",
     welcomeToApp: "Welcome to Facts A Day!",
-    onboardingComplete: "You've successfully completed onboarding.",
-    mainAppPlaceholder: "The main app will be implemented here.",
-    errorSettingUp: "We encountered an error while setting up",
-    downloadingFacts: "Downloading your personalized facts...",
     checkInternetConnection:
       "Please check your internet connection and try again",
-    redirectingToApp: "Complete! Redirecting you to the app...",
     oneMoment: "This will only take a moment...",
 
     // Main App
@@ -261,31 +204,21 @@ export const translations = {
     noDiscoverResults: "No results found",
     noDiscoverResultsDescription: "Try different search terms",
     resetOnboarding: "Reset Onboarding (Testing)",
-    readMore: "Read More",
-    category: "Category",
     settings: "Settings",
     developerSettings: "Developer Settings",
     testNotification: "Test Notification",
     toggleTheme: "Toggle Theme",
     noFactAvailable: "No fact available",
-    loadingFact: "Loading...",
-    todaysFact: "Today's Fact",
     recentFacts: "Recent Facts",
     today: "Today",
     yesterday: "Yesterday",
     searchPlaceholder: "Search facts...",
-    searchResults: "Search Results",
-    noSearchResults: "No results found",
-    noSearchResultsDescription: "Try different search terms",
     emptyStateTitle: "Your Daily Fact Awaits",
     emptyStateDescription:
       "A new piece of knowledge will appear here every day.",
     favorites: "Favorites",
     noFavorites: "No saved facts yet",
     noFavoritesDescription: "Start favoriting facts to see them here.",
-    like: "Like",
-    share: "Share",
-    report: "Report",
     reportFact: "Report Fact",
     whatIsWrong: "What's wrong with this content?",
     reportSubmitted: "Thank you! Your feedback has been submitted.",
@@ -295,9 +228,6 @@ export const translations = {
     submit: "Submit",
     submitting: "Submitting...",
     reportPlaceholder: "Describe what's wrong with this fact...",
-    factOfTheDay: "Fact of the Day",
-    didYouKnow: "Did You Know?",
-    source: "Source",
     add10RandomFacts: "Add 10 Random Facts",
     factsAdded: "Facts Added",
     factsAddedDescription: "{count} facts have been added to your schedule!",
@@ -338,25 +268,18 @@ export const translations = {
     feedbackMinLength: "Feedback must be at least 10 characters long",
     feedbackMaxLength: "Feedback must be at most 1000 characters long",
     failedToSubmitReport: "Failed to submit report. Please try again later.",
-    failedToUpdateLanguageData: "Failed to update language data",
-    failedToChangeLanguage: "Failed to change language. Please try again.",
     failedToUpdateNotificationTimes: "Failed to update notification times. Please try again.",
 
     // Share & Source
     sharedFromApp: "Shared from Facts A Day",
     sourcePrefix: "Source: ",
     externalLink: "External Link",
-    lastUpdated: "Updated: {date}",
 
     // Loading States
     updatingLanguage: "Updating language...",
-    syncingContent: "Syncing content...",
 
     // Time Picker
     scheduleUpTo3Notifications: "Schedule up to 3 notifications per day",
-    morning: "Morning",
-    afternoon: "Afternoon",
-    evening: "Evening",
     maximumReached: "Maximum Reached",
     youCanScheduleUpTo3: "You can schedule up to 3 notifications per day",
     minimumRequired: "Minimum Required",
@@ -369,7 +292,6 @@ export const translations = {
     adsConsentButton: "Continue",
 
     // Success Messages
-    settingsUpdated: "Settings updated",
     categoriesUpdated: "Categories updated",
     notificationTimesUpdated: "Notification times updated",
   },
@@ -385,25 +307,14 @@ export const translations = {
     ok: "OK",
     appName: "Conocimiento Diario",
 
-    // Onboarding - Language
-    selectLanguage: "Seleccionar Idioma",
-    choosePreferredLanguage: "Elige tu idioma preferido para la aplicación",
-    languageDescription: "Puedes cambiar esto más tarde en la configuración",
-
     // Onboarding - Initialization
     settingUpApp: "Configurando tu aplicación...",
-    settingUpLanguage: "Configurando idioma...",
-    onlyTakeMoment: "Esto solo tomará un momento",
-    oops: "¡Ups!",
     tryAgain: "Intentar de Nuevo",
 
     // Onboarding - Notifications
     stayInformed: "Mantente informado con datos diarios",
     notificationRequired:
       "Activa las notificaciones para recibir nuevos datos directamente en tu dispositivo cada día",
-    selectNotificationTime: "Selecciona tu Hora de Notificación",
-    oneNotificationPerDay:
-      "Te enviaremos solo una notificación por día a esta hora.\n\nRespetamos tu atención y no te enviaremos spam.",
     notificationTimes: "Horarios de Notificación",
     time: "Hora",
     addAnotherTime: "Agregar Otra Hora",
@@ -427,16 +338,9 @@ export const translations = {
 
     // Onboarding - Success
     allSet: "¡Todo Listo!",
-    gettingReady: "Preparando Todo",
-    somethingWentWrong: "Ups, Algo Salió Mal",
     welcomeToApp: "¡Bienvenido a Conocimiento Diario!",
-    onboardingComplete: "Has completado exitosamente la configuración inicial.",
-    mainAppPlaceholder: "La aplicación principal se implementará aquí.",
-    errorSettingUp: "Encontramos un error durante la configuración",
-    downloadingFacts: "Descargando tus datos personalizados...",
     checkInternetConnection:
       "Por favor verifica tu conexión a internet e intenta nuevamente",
-    redirectingToApp: "¡Completado! Redirigiendo a la aplicación...",
     oneMoment: "Esto solo tomará un momento...",
 
     // Main App
@@ -447,31 +351,21 @@ export const translations = {
     noDiscoverResults: "No se encontraron resultados",
     noDiscoverResultsDescription: "Pruebe con otros términos de búsqueda",
     resetOnboarding: "Restablecer Configuración Inicial (Prueba)",
-    readMore: "Leer Más",
-    category: "Categoría",
     settings: "Configuración",
     developerSettings: "Configuración de Desarrollador",
     testNotification: "Probar Notificación",
     toggleTheme: "Cambiar Tema",
     noFactAvailable: "No hay datos disponibles",
-    loadingFact: "Cargando...",
-    todaysFact: "Dato de Hoy",
     recentFacts: "Datos Recientes",
     today: "Hoy",
     yesterday: "Ayer",
     searchPlaceholder: "Buscar datos...",
-    searchResults: "Resultados de búsqueda",
-    noSearchResults: "No se encontraron resultados",
-    noSearchResultsDescription: "Pruebe con otros términos de búsqueda",
     emptyStateTitle: "Su Dato Diario Espera",
     emptyStateDescription: "Aquí aparecerá un nuevo conocimiento cada día.",
     favorites: "Favoritos",
     noFavorites: "Aún no hay datos guardados",
     noFavoritesDescription:
       "Comienza a marcar datos como favoritos para verlos aquí.",
-    like: "Me gusta",
-    share: "Compartir",
-    report: "Reportar",
     reportFact: "Reportar Dato",
     whatIsWrong: "¿Qué está mal con este contenido?",
     reportSubmitted: "¡Gracias! Tu comentario ha sido enviado.",
@@ -481,9 +375,6 @@ export const translations = {
     submit: "Enviar",
     submitting: "Enviando...",
     reportPlaceholder: "Describe qué está mal con este dato...",
-    factOfTheDay: "Dato del Día",
-    didYouKnow: "¿Sabías que...?",
-    source: "Fuente",
     add10RandomFacts: "Agregar 10 Datos Aleatorios",
     factsAdded: "Datos Agregados",
     factsAddedDescription: "¡Se han agregado {count} datos a tu programación!",
@@ -524,25 +415,18 @@ export const translations = {
     feedbackMinLength: "El comentario debe tener al menos 10 caracteres",
     feedbackMaxLength: "El comentario debe tener como máximo 1000 caracteres",
     failedToSubmitReport: "Error al enviar reporte. Por favor, inténtalo más tarde.",
-    failedToUpdateLanguageData: "Error al actualizar datos de idioma",
-    failedToChangeLanguage: "Error al cambiar idioma. Por favor, inténtalo de nuevo.",
     failedToUpdateNotificationTimes: "Error al actualizar horarios de notificación. Por favor, inténtalo de nuevo.",
 
     // Share & Source
     sharedFromApp: "Compartido desde Conocimiento Diario",
     sourcePrefix: "Fuente: ",
     externalLink: "Enlace Externo",
-    lastUpdated: "Actualizado: {date}",
 
     // Loading States
     updatingLanguage: "Actualizando idioma...",
-    syncingContent: "Sincronizando contenido...",
 
     // Time Picker
     scheduleUpTo3Notifications: "Programa hasta 3 notificaciones por día",
-    morning: "Mañana",
-    afternoon: "Tarde",
-    evening: "Noche",
     maximumReached: "Máximo Alcanzado",
     youCanScheduleUpTo3: "Puedes programar hasta 3 notificaciones por día",
     minimumRequired: "Mínimo Requerido",
@@ -555,7 +439,6 @@ export const translations = {
     adsConsentButton: "Continuar",
 
     // Success Messages
-    settingsUpdated: "Configuración actualizada",
     categoriesUpdated: "Categorías actualizadas",
     notificationTimesUpdated: "Horarios de notificación actualizados",
   },
@@ -571,27 +454,14 @@ export const translations = {
     ok: "OK",
     appName: "Savoir Quotidien",
 
-    // Onboarding - Language
-    selectLanguage: "Sélectionner la Langue",
-    choosePreferredLanguage:
-      "Choisissez votre langue préférée pour l'application",
-    languageDescription:
-      "Vous pouvez modifier cela plus tard dans les paramètres",
-
     // Onboarding - Initialization
     settingUpApp: "Configuration de votre application...",
-    settingUpLanguage: "Configuration de la langue...",
-    onlyTakeMoment: "Cela ne prendra qu'un instant",
-    oops: "Oups!",
     tryAgain: "Réessayer",
 
     // Onboarding - Notifications
     stayInformed: "Restez informé avec des faits quotidiens",
     notificationRequired:
       "Activez les notifications pour recevoir de nouveaux faits directement sur votre appareil chaque jour",
-    selectNotificationTime: "Sélectionnez Votre Heure de Notification",
-    oneNotificationPerDay:
-      "Nous vous enverrons une seule notification par jour à cette heure.\n\nNous respectons votre attention et ne vous spammerons pas.",
     notificationTimes: "Heures de Notification",
     time: "Heure",
     addAnotherTime: "Ajouter une Autre Heure",
@@ -615,16 +485,9 @@ export const translations = {
 
     // Onboarding - Success
     allSet: "Tout est Prêt!",
-    gettingReady: "Préparation de Tout",
-    somethingWentWrong: "Oups, Quelque Chose s'est Mal Passé",
     welcomeToApp: "Bienvenue sur Savoir Quotidien!",
-    onboardingComplete: "Vous avez terminé l'intégration avec succès.",
-    mainAppPlaceholder: "L'application principale sera implémentée ici.",
-    errorSettingUp: "Nous avons rencontré une erreur lors de la configuration",
-    downloadingFacts: "Téléchargement de vos faits personnalisés...",
     checkInternetConnection:
       "Veuillez vérifier votre connexion internet et réessayer",
-    redirectingToApp: "Terminé! Redirection vers l'application...",
     oneMoment: "Cela ne prendra qu'un instant...",
 
     // Main App
@@ -635,31 +498,21 @@ export const translations = {
     noDiscoverResults: "Aucun résultat trouvé",
     noDiscoverResultsDescription: "Essayez d'autres termes de recherche",
     resetOnboarding: "Réinitialiser l'Intégration (Test)",
-    readMore: "En Savoir Plus",
-    category: "Catégorie",
     settings: "Paramètres",
     developerSettings: "Paramètres Développeur",
     testNotification: "Tester Notification",
     toggleTheme: "Changer Thème",
     noFactAvailable: "Aucun fait disponible",
-    loadingFact: "Chargement...",
-    todaysFact: "Fait du Jour",
     recentFacts: "Faits Récents",
     today: "Aujourd'hui",
     yesterday: "Hier",
     searchPlaceholder: "Rechercher des faits...",
-    searchResults: "Résultats de recherche",
-    noSearchResults: "Aucun résultat trouvé",
-    noSearchResultsDescription: "Essayez d'autres termes de recherche",
     emptyStateTitle: "Votre Fait Quotidien Vous Attend",
     emptyStateDescription: "Un nouveau savoir apparaîtra ici chaque jour.",
     favorites: "Favoris",
     noFavorites: "Aucun fait enregistré",
     noFavoritesDescription:
       "Commencez à ajouter des faits aux favoris pour les voir ici.",
-    like: "J'aime",
-    share: "Partager",
-    report: "Signaler",
     reportFact: "Signaler le Fait",
     whatIsWrong: "Qu'est-ce qui ne va pas avec ce contenu?",
     reportSubmitted: "Merci! Votre commentaire a été soumis.",
@@ -669,9 +522,6 @@ export const translations = {
     submit: "Soumettre",
     submitting: "Envoi en cours...",
     reportPlaceholder: "Décrivez ce qui ne va pas avec ce fait...",
-    factOfTheDay: "Fait du Jour",
-    didYouKnow: "Le saviez-vous ?",
-    source: "Source",
     add10RandomFacts: "Ajouter 10 Faits Aléatoires",
     factsAdded: "Faits Ajoutés",
     factsAddedDescription: "{count} faits ont été ajoutés à votre calendrier !",
@@ -712,25 +562,18 @@ export const translations = {
     feedbackMinLength: "Le commentaire doit contenir au moins 10 caractères",
     feedbackMaxLength: "Le commentaire doit contenir au maximum 1000 caractères",
     failedToSubmitReport: "Échec de l'envoi du rapport. Veuillez réessayer plus tard.",
-    failedToUpdateLanguageData: "Échec de la mise à jour des données linguistiques",
-    failedToChangeLanguage: "Échec du changement de langue. Veuillez réessayer.",
     failedToUpdateNotificationTimes: "Échec de la mise à jour des heures de notification. Veuillez réessayer.",
 
     // Share & Source
     sharedFromApp: "Partagé depuis Savoir Quotidien",
     sourcePrefix: "Source : ",
     externalLink: "Lien Externe",
-    lastUpdated: "Mis à jour : {date}",
 
     // Loading States
     updatingLanguage: "Mise à jour de la langue...",
-    syncingContent: "Synchronisation du contenu...",
 
     // Time Picker
     scheduleUpTo3Notifications: "Planifiez jusqu'à 3 notifications par jour",
-    morning: "Matin",
-    afternoon: "Après-midi",
-    evening: "Soir",
     maximumReached: "Maximum Atteint",
     youCanScheduleUpTo3: "Vous pouvez planifier jusqu'à 3 notifications par jour",
     minimumRequired: "Minimum Requis",
@@ -743,7 +586,6 @@ export const translations = {
     adsConsentButton: "Continuer",
 
     // Success Messages
-    settingsUpdated: "Paramètres mis à jour",
     categoriesUpdated: "Catégories mises à jour",
     notificationTimesUpdated: "Heures de notification mises à jour",
   },
@@ -759,24 +601,13 @@ export const translations = {
     ok: "OK",
     appName: "毎日の知識",
 
-    // Onboarding - Language
-    selectLanguage: "言語を選択",
-    choosePreferredLanguage: "アプリの優先言語を選択してください",
-    languageDescription: "後で設定で変更できます",
-
     // Onboarding - Initialization
     settingUpApp: "アプリをセットアップ中...",
-    settingUpLanguage: "言語を設定中...",
-    onlyTakeMoment: "これはほんの少し時間がかかります",
-    oops: "おっと!",
     tryAgain: "再試行",
 
     // Onboarding - Notifications
     stayInformed: "毎日の豆知識で情報を得よう",
     notificationRequired: "通知を有効にすると、毎日新しい豆知識があなたのデバイスに届きます",
-    selectNotificationTime: "通知時間を選択",
-    oneNotificationPerDay:
-      "この時間に1日1回だけ通知をお送りします。\n\nあなたの時間を尊重し、スパムは送りません。",
     notificationTimes: "通知時刻",
     time: "時刻",
     addAnotherTime: "別の時刻を追加",
@@ -800,16 +631,9 @@ export const translations = {
 
     // Onboarding - Success
     allSet: "準備完了！",
-    gettingReady: "すべて準備中",
-    somethingWentWrong: "おっと、問題が発生しました",
     welcomeToApp: "毎日の知識へようこそ！",
-    onboardingComplete: "オンボーディングが正常に完了しました。",
-    mainAppPlaceholder: "メインアプリはここに実装されます。",
-    errorSettingUp: "セットアップ中にエラーが発生しました",
-    downloadingFacts: "パーソナライズされた豆知識をダウンロード中...",
     checkInternetConnection:
       "インターネット接続を確認して、もう一度お試しください",
-    redirectingToApp: "完了！アプリにリダイレクト中...",
     oneMoment: "これは少しだけ時間がかかります...",
 
     // Main App
@@ -820,31 +644,21 @@ export const translations = {
     noDiscoverResults: "結果が見つかりません",
     noDiscoverResultsDescription: "別の検索語を試してください",
     resetOnboarding: "オンボーディングをリセット（テスト）",
-    readMore: "続きを読む",
-    category: "カテゴリー",
     settings: "設定",
     developerSettings: "開発者設定",
     testNotification: "通知をテスト",
     toggleTheme: "テーマを切り替え",
     noFactAvailable: "豆知識がありません",
-    loadingFact: "読み込み中...",
-    todaysFact: "今日の豆知識",
     recentFacts: "最近の豆知識",
     today: "今日",
     yesterday: "昨日",
     searchPlaceholder: "豆知識を検索...",
-    searchResults: "検索結果",
-    noSearchResults: "結果が見つかりません",
-    noSearchResultsDescription: "別の検索語を試してください",
     emptyStateTitle: "あなたの毎日の豆知識が待っています",
     emptyStateDescription: "毎日新しい知識がここに表示されます。",
     favorites: "お気に入り",
     noFavorites: "保存された豆知識はありません",
     noFavoritesDescription:
       "豆知識をお気に入りに追加して、ここに表示しましょう。",
-    like: "いいね",
-    share: "共有",
-    report: "報告",
     reportFact: "豆知識を報告",
     whatIsWrong: "このコンテンツの何が問題ですか？",
     reportSubmitted: "ありがとうございます！フィードバックが送信されました。",
@@ -854,9 +668,6 @@ export const translations = {
     submit: "送信",
     submitting: "送信中...",
     reportPlaceholder: "この豆知識の問題点を説明してください...",
-    factOfTheDay: "今日の豆知識",
-    didYouKnow: "ご存知でしたか？",
-    source: "出典",
     add10RandomFacts: "ランダムな豆知識を10個追加",
     factsAdded: "豆知識を追加しました",
     factsAddedDescription: "{count}個の豆知識がスケジュールに追加されました！",
@@ -897,25 +708,18 @@ export const translations = {
     feedbackMinLength: "フィードバックは10文字以上である必要があります",
     feedbackMaxLength: "フィードバックは1000文字以下である必要があります",
     failedToSubmitReport: "レポートの送信に失敗しました。後でもう一度お試しください。",
-    failedToUpdateLanguageData: "言語データの更新に失敗しました",
-    failedToChangeLanguage: "言語の変更に失敗しました。もう一度お試しください。",
     failedToUpdateNotificationTimes: "通知時刻の更新に失敗しました。もう一度お試しください。",
 
     // Share & Source
     sharedFromApp: "毎日の知識から共有",
     sourcePrefix: "出典: ",
     externalLink: "外部リンク",
-    lastUpdated: "更新日: {date}",
 
     // Loading States
     updatingLanguage: "言語を更新中...",
-    syncingContent: "コンテンツを同期中...",
 
     // Time Picker
     scheduleUpTo3Notifications: "1日最大3件の通知をスケジュール",
-    morning: "朝",
-    afternoon: "午後",
-    evening: "夜",
     maximumReached: "最大数に達しました",
     youCanScheduleUpTo3: "1日最大3件の通知をスケジュールできます",
     minimumRequired: "最小数が必要です",
@@ -928,7 +732,6 @@ export const translations = {
     adsConsentButton: "続ける",
 
     // Success Messages
-    settingsUpdated: "設定が更新されました",
     categoriesUpdated: "カテゴリーが更新されました",
     notificationTimesUpdated: "通知時刻が更新されました",
   },
@@ -943,24 +746,13 @@ export const translations = {
     ok: "확인",
     appName: "매일 지식",
 
-    // Onboarding - Language
-    selectLanguage: "언어 선택",
-    choosePreferredLanguage: "앱의 선호 언어를 선택하세요",
-    languageDescription: "나중에 설정에서 변경할 수 있습니다",
-
     // Onboarding - Initialization
     settingUpApp: "앱 설정 중...",
-    settingUpLanguage: "언어 설정 중...",
-    onlyTakeMoment: "잠시만 기다려 주세요",
-    oops: "앗!",
     tryAgain: "다시 시도",
 
     // Onboarding - Notifications
     stayInformed: "매일 새로운 정보를 받아보세요",
     notificationRequired: "알림을 활성화하면 매일 새로운 정보가 기기로 바로 전달됩니다",
-    selectNotificationTime: "알림 시간 선택",
-    oneNotificationPerDay:
-      "이 시간에 하루에 한 번만 알림을 보내드립니다.\n\n귀하의 시간을 존중하며 스팸을 보내지 않습니다.",
     notificationTimes: "알림 시간",
     time: "시간",
     addAnotherTime: "다른 시간 추가",
@@ -984,15 +776,8 @@ export const translations = {
 
     // Onboarding - Success
     allSet: "모두 완료!",
-    gettingReady: "모든 준비 중",
-    somethingWentWrong: "앗, 문제가 발생했습니다",
     welcomeToApp: "매일 지식에 오신 것을 환영합니다!",
-    onboardingComplete: "온보딩을 성공적으로 완료했습니다.",
-    mainAppPlaceholder: "메인 앱은 여기에 구현됩니다.",
-    errorSettingUp: "설정 중 오류가 발생했습니다",
-    downloadingFacts: "맞춤형 정보를 다운로드하는 중...",
     checkInternetConnection: "인터넷 연결을 확인하고 다시 시도하세요",
-    redirectingToApp: "완료! 앱으로 리디렉션 중...",
     oneMoment: "잠시만 기다려 주세요...",
 
     // Main App
@@ -1003,30 +788,20 @@ export const translations = {
     noDiscoverResults: "결과를 찾을 수 없습니다",
     noDiscoverResultsDescription: "다른 검색어를 시도해보세요",
     resetOnboarding: "온보딩 재설정 (테스트)",
-    readMore: "더 읽기",
-    category: "카테고리",
     settings: "설정",
     developerSettings: "개발자 설정",
     testNotification: "알림 테스트",
     toggleTheme: "테마 전환",
     noFactAvailable: "사용 가능한 정보 없음",
-    loadingFact: "로딩 중...",
-    todaysFact: "오늘의 정보",
     recentFacts: "최근 정보",
     today: "오늘",
     yesterday: "어제",
     searchPlaceholder: "정보 검색...",
-    searchResults: "검색 결과",
-    noSearchResults: "결과를 찾을 수 없습니다",
-    noSearchResultsDescription: "다른 검색어를 시도해보세요",
     emptyStateTitle: "일일 정보가 기다립니다",
     emptyStateDescription: "매일 새로운 지식이 여기에 나타납니다.",
     favorites: "즐겨찾기",
     noFavorites: "저장된 정보가 없습니다",
     noFavoritesDescription: "정보를 즐겨찾기에 추가하여 여기에서 확인하세요.",
-    like: "좋아요",
-    share: "공유",
-    report: "신고",
     reportFact: "정보 신고",
     whatIsWrong: "이 콘텐츠의 문제점은 무엇인가요?",
     reportSubmitted: "감사합니다! 피드백이 제출되었습니다.",
@@ -1036,9 +811,6 @@ export const translations = {
     submit: "제출",
     submitting: "제출 중...",
     reportPlaceholder: "이 정보의 문제점을 설명해 주세요...",
-    factOfTheDay: "오늘의 정보",
-    didYouKnow: "알고 계셨나요?",
-    source: "출처",
     add10RandomFacts: "무작위 정보 10개 추가",
     factsAdded: "정보 추가됨",
     factsAddedDescription: "{count}개의 정보가 일정에 추가되었습니다!",
@@ -1079,25 +851,18 @@ export const translations = {
     feedbackMinLength: "피드백은 최소 10자 이상이어야 합니다",
     feedbackMaxLength: "피드백은 최대 1000자 이하여야 합니다",
     failedToSubmitReport: "신고 제출 실패. 나중에 다시 시도해 주세요.",
-    failedToUpdateLanguageData: "언어 데이터 업데이트 실패",
-    failedToChangeLanguage: "언어 변경 실패. 다시 시도해 주세요.",
     failedToUpdateNotificationTimes: "알림 시간 업데이트 실패. 다시 시도해 주세요.",
 
     // Share & Source
     sharedFromApp: "매일 지식에서 공유",
     sourcePrefix: "출처: ",
     externalLink: "외부 링크",
-    lastUpdated: "업데이트: {date}",
 
     // Loading States
     updatingLanguage: "언어 업데이트 중...",
-    syncingContent: "콘텐츠 동기화 중...",
 
     // Time Picker
     scheduleUpTo3Notifications: "하루 최대 3개의 알림 예약",
-    morning: "아침",
-    afternoon: "오후",
-    evening: "저녁",
     maximumReached: "최대 수 도달",
     youCanScheduleUpTo3: "하루 최대 3개의 알림을 예약할 수 있습니다",
     minimumRequired: "최소 수 필요",
@@ -1110,7 +875,6 @@ export const translations = {
     adsConsentButton: "계속",
 
     // Success Messages
-    settingsUpdated: "설정이 업데이트되었습니다",
     categoriesUpdated: "카테고리가 업데이트되었습니다",
     notificationTimesUpdated: "알림 시간이 업데이트되었습니다",
   },
@@ -1125,25 +889,14 @@ export const translations = {
     ok: "Tamam",
     appName: "Günlük Bilgi",
 
-    // Onboarding - Language
-    selectLanguage: "Dil Seç",
-    choosePreferredLanguage: "Uygulama için tercih ettiğiniz dili seçin",
-    languageDescription: "Bunu daha sonra ayarlardan değiştirebilirsiniz",
-
     // Onboarding - Initialization
     settingUpApp: "Uygulamanız kuruluyor...",
-    settingUpLanguage: "Dil ayarlanıyor...",
-    onlyTakeMoment: "Bu sadece bir dakika sürecek",
-    oops: "Hay aksi!",
     tryAgain: "Tekrar Dene",
 
     // Onboarding - Notifications
     stayInformed: "Her gün yeni bilgiler öğrenin",
     notificationRequired:
       "Bildirimleri etkinleştirerek her gün yeni bilgileri doğrudan cihazınıza alın",
-    selectNotificationTime: "Bildirim Saatinizi Seçin",
-    oneNotificationPerDay:
-      "Size bu saatte günde sadece bir bildirim göndereceğiz.\n\nDikkatinize saygı duyuyoruz ve spam göndermeyeceğiz.",
     notificationTimes: "Bildirim Saatleri",
     time: "Saat",
     addAnotherTime: "Başka Bir Saat Ekle",
@@ -1167,16 +920,9 @@ export const translations = {
 
     // Onboarding - Success
     allSet: "Hazırsınız!",
-    gettingReady: "Her Şey Hazırlanıyor",
-    somethingWentWrong: "Hata, Bir Şeyler Yanlış Gitti",
     welcomeToApp: "Günlük Bilgi'ye Hoş Geldiniz!",
-    onboardingComplete: "Başlangıç kurulumunu başarıyla tamamladınız.",
-    mainAppPlaceholder: "Ana uygulama burada uygulanacak.",
-    errorSettingUp: "Kurulum sırasında bir hata ile karşılaştık",
-    downloadingFacts: "Kişiselleştirilmiş bilgileriniz indiriliyor...",
     checkInternetConnection:
       "Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin",
-    redirectingToApp: "Tamamlandı! Uygulamaya yönlendiriliyorsunuz...",
     oneMoment: "Bu sadece bir dakika sürecek...",
 
     // Main App
@@ -1187,31 +933,21 @@ export const translations = {
     noDiscoverResults: "Sonuç bulunamadı",
     noDiscoverResultsDescription: "Farklı arama terimleri deneyin",
     resetOnboarding: "Başlangıç Kurulumunu Sıfırla (Test)",
-    readMore: "Devamını Oku",
-    category: "Kategori",
     settings: "Ayarlar",
     developerSettings: "Geliştirici Ayarları",
     testNotification: "Bildirimi Test Et",
     toggleTheme: "Temayı Değiştir",
     noFactAvailable: "Bilgi mevcut değil",
-    loadingFact: "Yükleniyor...",
-    todaysFact: "Bugünün Bilgisi",
     recentFacts: "Son Bilgiler",
     today: "Bugün",
     yesterday: "Dün",
     searchPlaceholder: "Bilgileri ara...",
-    searchResults: "Arama Sonuçları",
-    noSearchResults: "Sonuç bulunamadı",
-    noSearchResultsDescription: "Farklı arama terimleri deneyin",
     emptyStateTitle: "Günlük Bilginiz Bekliyor",
     emptyStateDescription: "Her gün burada yeni bir bilgi görünecek.",
     favorites: "Favoriler",
     noFavorites: "Henüz kaydedilmiş bilgi yok",
     noFavoritesDescription:
       "Bilgileri favorilere ekleyerek burada görebilirsiniz.",
-    like: "Beğen",
-    share: "Paylaş",
-    report: "Bildir",
     reportFact: "Bilgiyi Bildir",
     whatIsWrong: "Bu içerikle ilgili sorun nedir?",
     reportSubmitted: "Teşekkürler! Geri bildiriminiz gönderildi.",
@@ -1221,9 +957,6 @@ export const translations = {
     submit: "Gönder",
     submitting: "Gönderiliyor...",
     reportPlaceholder: "Bu bilgiyle ilgili sorunu açıklayın...",
-    factOfTheDay: "Günün Bilgisi",
-    didYouKnow: "Biliyor muydunuz?",
-    source: "Kaynak",
     add10RandomFacts: "10 Rastgele Bilgi Ekle",
     factsAdded: "Bilgiler Eklendi",
     factsAddedDescription: "{count} bilgi programınıza eklendi!",
@@ -1264,25 +997,18 @@ export const translations = {
     feedbackMinLength: "Geri bildirim en az 10 karakter olmalıdır",
     feedbackMaxLength: "Geri bildirim en fazla 1000 karakter olmalıdır",
     failedToSubmitReport: "Bildirim gönderilemedi. Lütfen daha sonra tekrar deneyin.",
-    failedToUpdateLanguageData: "Dil verileri güncellenemedi",
-    failedToChangeLanguage: "Dil değiştirilemedi. Lütfen tekrar deneyin.",
     failedToUpdateNotificationTimes: "Bildirim zamanları güncellenemedi. Lütfen tekrar deneyin.",
 
     // Share & Source
     sharedFromApp: "Günlük Bilgi'den paylaşıldı",
     sourcePrefix: "Kaynak: ",
     externalLink: "Dış Bağlantı",
-    lastUpdated: "Güncellendi: {date}",
 
     // Loading States
     updatingLanguage: "Dil güncelleniyor...",
-    syncingContent: "İçerik senkronize ediliyor...",
 
     // Time Picker
     scheduleUpTo3Notifications: "Günde en fazla 3 bildirim planlayın",
-    morning: "Sabah",
-    afternoon: "Öğleden Sonra",
-    evening: "Akşam",
     maximumReached: "Maksimuma Ulaşıldı",
     youCanScheduleUpTo3: "Günde en fazla 3 bildirim planlayabilirsiniz",
     minimumRequired: "Minimum Gerekli",
@@ -1295,7 +1021,6 @@ export const translations = {
     adsConsentButton: "Devam Et",
 
     // Success Messages
-    settingsUpdated: "Ayarlar güncellendi",
     categoriesUpdated: "Kategoriler güncellendi",
     notificationTimesUpdated: "Bildirim saatleri güncellendi",
   },
@@ -1310,24 +1035,13 @@ export const translations = {
     ok: "确定",
     appName: "每日知识",
 
-    // Onboarding - Language
-    selectLanguage: "选择语言",
-    choosePreferredLanguage: "选择您的首选应用语言",
-    languageDescription: "您可以稍后在设置中更改",
-
     // Onboarding - Initialization
     settingUpApp: "正在设置您的应用...",
-    settingUpLanguage: "正在设置语言...",
-    onlyTakeMoment: "这只需要一会儿",
-    oops: "哎呀!",
     tryAgain: "重试",
 
     // Onboarding - Notifications
     stayInformed: "通过每日知识保持了解",
     notificationRequired: "启用通知，每天将新知识直接发送到您的设备",
-    selectNotificationTime: "选择您的通知时间",
-    oneNotificationPerDay:
-      "我们每天只会在此时间向您发送一条通知。\n\n我们尊重您的时间，不会发送垃圾信息。",
     notificationTimes: "通知时间",
     time: "时间",
     addAnotherTime: "添加其他时间",
@@ -1350,15 +1064,8 @@ export const translations = {
 
     // Onboarding - Success
     allSet: "一切就绪！",
-    gettingReady: "正在准备一切",
-    somethingWentWrong: "哎呀，出了点问题",
     welcomeToApp: "欢迎来到 每日知识！",
-    onboardingComplete: "您已成功完成引导设置。",
-    mainAppPlaceholder: "主应用程序将在此实现。",
-    errorSettingUp: "设置时遇到错误",
-    downloadingFacts: "正在下载您的个性化知识...",
     checkInternetConnection: "请检查您的网络连接并重试",
-    redirectingToApp: "完成！正在跳转到应用程序...",
     oneMoment: "这只需要一会儿...",
 
     // Main App
@@ -1369,30 +1076,20 @@ export const translations = {
     noDiscoverResults: "未找到结果",
     noDiscoverResultsDescription: "尝试使用其他搜索词",
     resetOnboarding: "重置引导设置（测试）",
-    readMore: "阅读更多",
-    category: "类别",
     settings: "设置",
     developerSettings: "开发者设置",
     testNotification: "测试通知",
     toggleTheme: "切换主题",
     noFactAvailable: "无可用知识",
-    loadingFact: "加载中...",
-    todaysFact: "今日知识",
     recentFacts: "最近知识",
     today: "今天",
     yesterday: "昨天",
     searchPlaceholder: "搜索知识...",
-    searchResults: "搜索结果",
-    noSearchResults: "未找到结果",
-    noSearchResultsDescription: "尝试使用其他搜索词",
     emptyStateTitle: "您的每日知识等待着",
     emptyStateDescription: "每天都会在这里出现新知识。",
     favorites: "收藏夹",
     noFavorites: "还没有保存的知识",
     noFavoritesDescription: "开始收藏知识以在此处查看。",
-    like: "喜欢",
-    share: "分享",
-    report: "举报",
     reportFact: "举报知识",
     whatIsWrong: "此内容有什么问题？",
     reportSubmitted: "谢谢！您的反馈已提交。",
@@ -1402,9 +1099,6 @@ export const translations = {
     submit: "提交",
     submitting: "提交中...",
     reportPlaceholder: "描述这条知识有什么问题...",
-    factOfTheDay: "今日知识",
-    didYouKnow: "你知道吗？",
-    source: "来源",
     add10RandomFacts: "添加10个随机知识",
     factsAdded: "知识已添加",
     factsAddedDescription: "{count}个知识已添加到您的日程！",
@@ -1445,25 +1139,18 @@ export const translations = {
     feedbackMinLength: "反馈至少需要10个字符",
     feedbackMaxLength: "反馈最多不能超过1000个字符",
     failedToSubmitReport: "提交报告失败。请稍后重试。",
-    failedToUpdateLanguageData: "更新语言数据失败",
-    failedToChangeLanguage: "更改语言失败。请重试。",
     failedToUpdateNotificationTimes: "更新通知时间失败。请重试。",
 
     // Share & Source
     sharedFromApp: "来自 每日知识 的分享",
     sourcePrefix: "来源: ",
     externalLink: "外部链接",
-    lastUpdated: "更新于: {date}",
 
     // Loading States
     updatingLanguage: "正在更新语言...",
-    syncingContent: "正在同步内容...",
 
     // Time Picker
     scheduleUpTo3Notifications: "每天最多安排3个通知",
-    morning: "早上",
-    afternoon: "下午",
-    evening: "晚上",
     maximumReached: "已达最大值",
     youCanScheduleUpTo3: "您每天最多可以安排3个通知",
     minimumRequired: "需要最小值",
@@ -1476,7 +1163,6 @@ export const translations = {
     adsConsentButton: "继续",
 
     // Success Messages
-    settingsUpdated: "设置已更新",
     categoriesUpdated: "类别已更新",
     notificationTimesUpdated: "通知时间已更新",
   },
