@@ -1,6 +1,6 @@
 import React, { Component, ReactNode } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
-import { captureException } from '../config/sentry';
+import { recordError } from '../config/firebase';
 import { tokens } from '../theme/tokens';
 import { H1, BodyText, LabelText, SmallText } from './Typography';
 
@@ -19,7 +19,7 @@ interface State {
  * Error Boundary Component
  *
  * Catches JavaScript errors anywhere in the child component tree,
- * logs those errors to Sentry, and displays a fallback UI.
+ * logs those errors to Firebase Crashlytics, and displays a fallback UI.
  *
  * Usage:
  * ```tsx
@@ -51,11 +51,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log error to Sentry
-    captureException(error, {
-      errorInfo: {
-        componentStack: errorInfo.componentStack,
-      },
+    // Log error to Firebase Crashlytics
+    recordError(error, {
+      componentStack: errorInfo.componentStack || 'unknown',
     });
 
     // Call optional error callback

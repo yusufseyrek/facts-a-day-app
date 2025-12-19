@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "451740521594",
+    "project_id": "facts-a-day",
+    "storage_bucket": "facts-a-day.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:451740521594:android:6da2dfd860a19c4a96d7c3",
+        "android_client_info": {
+          "package_name": "dev.seyrek.factsaday"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9pIEWnNACfAEBu2uuG2LVQFgyMof0zro"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

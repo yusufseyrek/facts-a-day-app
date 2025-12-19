@@ -13,9 +13,8 @@ import { initializeAdsForReturningUser } from '../src/services/ads';
 import { ActivityIndicator, View, AppState, AppStateStatus } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Localization from 'expo-localization';
-import { initializeSentry } from '../src/config/sentry';
+import { initializeFirebase } from '../src/config/firebase';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import * as Sentry from '@sentry/react-native';
 import {
   useFonts,
   Montserrat_400Regular,
@@ -26,8 +25,8 @@ import {
   Montserrat_900Black,
 } from '@expo-google-fonts/montserrat';
 
-// Initialize Sentry as early as possible
-initializeSentry();
+// Initialize Firebase Crashlytics and Analytics as early as possible
+initializeFirebase();
 
 const NOTIFICATION_TRACK_KEY = 'last_processed_notification_id';
 
@@ -118,7 +117,7 @@ function AppContent() {
   );
 }
 
-export default Sentry.wrap(function RootLayout() {
+export default function RootLayout() {
   const [initialOnboardingStatus, setInitialOnboardingStatus] = useState<boolean | null>(null);
   const [isDbReady, setIsDbReady] = useState(false);
 
@@ -246,4 +245,4 @@ export default Sentry.wrap(function RootLayout() {
       </SafeAreaProvider>
     </ErrorBoundary>
   );
-});
+}

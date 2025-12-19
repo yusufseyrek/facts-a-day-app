@@ -31,7 +31,7 @@ import * as onboardingService from "../../src/services/onboarding";
 import * as database from "../../src/services/database";
 import { buildNotificationContent } from "../../src/services/notifications";
 import { useOnboarding } from "../../src/contexts";
-import { Sentry } from "../../src/config/sentry";
+import { recordError, logMessage } from "../../src/config/firebase";
 import { openInAppBrowser } from "../../src/utils/browser";
 
 const Container = styled(SafeAreaView, {
@@ -436,9 +436,10 @@ export default function SettingsPage() {
                   onPress={handleResetOnboarding}
                 />
                 <SettingsRow
-                  label={"Trigger Sentry Error"}
+                  label={"Test Crashlytics"}
                   onPress={() => {
-                    Sentry.captureException(new Error("First error"));
+                    logMessage("Test crash button pressed");
+                    recordError(new Error("Test error from settings"));
                   }}
                 />
               </SettingsGroup>

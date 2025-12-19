@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
-import * as Sentry from '@sentry/react-native';
+import { setFirebaseUser } from '../config/firebase';
 import * as api from './api';
 import * as db from './database';
 
@@ -65,8 +65,8 @@ export async function initializeOnboarding(
     console.log('Registering device...');
     const registration = await api.registerDevice(deviceInfo);
     
-    // Set device key as Sentry user ID for tracking
-    Sentry.setUser({ id: registration.device_key });
+    // Set device key as Firebase user ID for crash tracking and analytics
+    await setFirebaseUser(registration.device_key);
 
     // Fetch metadata with device language for translations
     console.log('Fetching metadata...');
