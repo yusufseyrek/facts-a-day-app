@@ -3,12 +3,12 @@ import { Animated, Easing, View, Dimensions, ActivityIndicator, Platform } from 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { styled } from "@tamagui/core";
-import { YStack, Text, XStack } from "tamagui";
+import { YStack, XStack } from "tamagui";
 import { useRouter } from "expo-router";
 import { CheckCircle, Sparkle, Star, Gift } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { tokens, getNeonColors } from "../../src/theme";
-import { BodyText, Button } from "../../src/components";
+import { BodyText, Button, H1, H2, FONT_FAMILIES } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
@@ -493,7 +493,7 @@ export default function OnboardingSuccessScreen() {
       }}
     >
       <ContentContainer>
-        <YStack alignItems="center" gap="$lg" paddingHorizontal="$md">
+        <YStack alignItems="center" gap={tokens.space.lg} paddingHorizontal={tokens.space.md}>
           {/* Icon */}
           <ConsentIconContainer>
             <Gift
@@ -504,16 +504,14 @@ export default function OnboardingSuccessScreen() {
           </ConsentIconContainer>
 
           {/* Title */}
-          <Text
+          <H2
             fontSize={28}
-            fontWeight="700"
-            fontFamily="Montserrat_700Bold"
             textAlign="center"
             color="$text"
             letterSpacing={-0.5}
           >
             {t("adsConsentTitle")}
-          </Text>
+          </H2>
 
           {/* Message */}
           <BodyText
@@ -521,13 +519,12 @@ export default function OnboardingSuccessScreen() {
             textAlign="center"
             color="$textSecondary"
             lineHeight={24}
-            paddingHorizontal="$sm"
           >
             {t("adsConsentMessage")}
           </BodyText>
 
           {/* Button */}
-          <YStack width="100%" paddingTop="$lg">
+          <YStack width="100%" paddingTop={tokens.space.lg}>
             <Button onPress={handleConsentContinue}>
               {t("adsConsentButton")}
             </Button>
@@ -540,7 +537,7 @@ export default function OnboardingSuccessScreen() {
   // Render loading screen (checking consent requirement)
   const renderLoadingScreen = () => (
     <ContentContainer>
-      <YStack alignItems="center" gap="$lg">
+      <YStack alignItems="center" gap={tokens.space.lg}>
         <ActivityIndicator size="large" color={theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan} />
       </YStack>
     </ContentContainer>
@@ -549,7 +546,7 @@ export default function OnboardingSuccessScreen() {
   // Render processing screen
   const renderProcessingScreen = () => (
     <ContentContainer>
-      <YStack alignItems="center" gap="$lg">
+      <YStack alignItems="center" gap={tokens.space.lg}>
         <ActivityIndicator size="large" color={theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan} />
         <BodyText
           fontSize={16}
@@ -565,7 +562,7 @@ export default function OnboardingSuccessScreen() {
   // Render success animation screen
   const renderAnimationScreen = () => (
     <ContentContainer>
-      <YStack alignItems="center" gap="$xl">
+      <YStack alignItems="center" gap={tokens.space.xl}>
         {/* Icon with particles and pulse rings */}
         <View style={{ width: 200, height: 200, alignItems: "center", justifyContent: "center" }}>
           {/* Pulse rings */}
@@ -609,7 +606,7 @@ export default function OnboardingSuccessScreen() {
         </View>
 
         {/* Animated title - word by word */}
-        <XStack gap="$sm" alignItems="center">
+        <XStack gap={tokens.space.sm} alignItems="center">
           {titleWords.map((word, index) => (
             <Animated.View
               key={index}
@@ -621,17 +618,16 @@ export default function OnboardingSuccessScreen() {
                 ],
               }}
             >
-              <Text
+              <H1
                 fontSize={48}
-                fontWeight="800"
-                fontFamily="Montserrat_700Bold"
+                fontFamily={FONT_FAMILIES.extrabold}
                 textAlign="center"
                 color="$text"
                 letterSpacing={-1}
                 lineHeight={56}
               >
                 {word}
-              </Text>
+              </H1>
             </Animated.View>
           ))}
         </XStack>

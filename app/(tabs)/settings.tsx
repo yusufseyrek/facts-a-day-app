@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Alert, ScrollView, Linking, Platform, AppState } from "react-native";
 import { styled } from "@tamagui/core";
-import { YStack, Text } from "tamagui";
+import { YStack } from "tamagui";
 import { useRouter, useFocusEffect } from "expo-router";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
@@ -20,7 +20,7 @@ import {
   Shield,
 } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
-import { H1, H2 } from "../../src/components";
+import { H1, H2, SmallText } from "../../src/components";
 import { SettingsRow } from "../../src/components/SettingsRow";
 import { ThemePickerModal } from "../../src/components/settings/ThemePickerModal";
 import { TimePickerModal } from "../../src/components/settings/TimePickerModal";
@@ -60,12 +60,6 @@ const SettingsGroup = styled(YStack, {
   gap: tokens.space.md,
 });
 
-const VersionText = styled(Text, {
-  textAlign: "center",
-  fontSize: tokens.fontSize.small,
-  marginBottom: tokens.space.xs,
-  opacity: 0.6,
-});
 
 // Helper to get language display name
 const getLanguageName = (code: string): string => {
@@ -472,12 +466,12 @@ export default function SettingsPage() {
 
           {/* App Version */}
           <YStack alignItems="center" marginBottom={tokens.space.lg}>
-            <VersionText color={iconColor}>
+            <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
               Version {Constants.expoConfig?.version || "1.0.0"} ({Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber || 'N/A' : Constants.expoConfig?.android?.versionCode || 'N/A'})
-            </VersionText>
-            <VersionText color={iconColor}>
+            </SmallText>
+            <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
               {t("settingsCopyright").replace("{appName}", t("appName"))}
-            </VersionText>
+            </SmallText>
           </YStack>
         </ContentContainer>
       </ScrollView>

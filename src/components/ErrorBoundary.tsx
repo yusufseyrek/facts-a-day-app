@@ -1,7 +1,8 @@
 import React, { Component, ReactNode } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { captureException } from '../config/sentry';
 import { tokens } from '../theme/tokens';
+import { H1, BodyText, LabelText, SmallText } from './Typography';
 
 interface Props {
   children: ReactNode;
@@ -82,16 +83,22 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <View style={styles.container}>
           <View style={styles.content}>
-            <Text style={styles.emoji}>😔</Text>
-            <Text style={styles.title}>Oops! Something went wrong</Text>
-            <Text style={styles.message}>
+            <H1 style={styles.emoji}>😔</H1>
+            <H1 textAlign="center" color={tokens.color.light.text} style={{ marginBottom: tokens.space.md }}>
+              Oops! Something went wrong
+            </H1>
+            <BodyText textAlign="center" color={tokens.color.light.textSecondary} style={{ marginBottom: tokens.space.xl }}>
               We've been notified and will fix this soon.
-            </Text>
+            </BodyText>
 
             {__DEV__ && this.state.error && (
               <View style={styles.errorDetails}>
-                <Text style={styles.errorTitle}>Error Details (Dev Only):</Text>
-                <Text style={styles.errorText}>{this.state.error.toString()}</Text>
+                <LabelText color="#DC2626" style={{ marginBottom: tokens.space.sm }}>
+                  Error Details (Dev Only):
+                </LabelText>
+                <SmallText color="#991B1B" style={{ fontFamily: 'monospace' }}>
+                  {this.state.error.toString()}
+                </SmallText>
               </View>
             )}
 
@@ -102,7 +109,7 @@ export class ErrorBoundary extends Component<Props, State> {
               ]}
               onPress={this.resetError}
             >
-              <Text style={styles.buttonText}>Try Again</Text>
+              <LabelText textAlign="center" color="#FFFFFF">Try Again</LabelText>
             </Pressable>
           </View>
         </View>
@@ -129,40 +136,12 @@ const styles = StyleSheet.create({
     fontSize: 64,
     marginBottom: tokens.space.lg,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    fontFamily: 'Montserrat_700Bold',
-    color: tokens.color.light.text,
-    marginBottom: tokens.space.md,
-    textAlign: 'center',
-  },
-  message: {
-    fontSize: 16,
-    fontFamily: 'Montserrat_400Regular',
-    color: tokens.color.light.textSecondary,
-    marginBottom: tokens.space.xl,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
   errorDetails: {
     backgroundColor: '#FEF2F2',
     borderRadius: tokens.radius.md,
     padding: tokens.space.md,
     marginBottom: tokens.space.xl,
     width: '100%',
-  },
-  errorTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: 'Montserrat_700Bold',
-    color: '#DC2626',
-    marginBottom: tokens.space.sm,
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#991B1B',
-    fontFamily: 'monospace',
   },
   button: {
     backgroundColor: tokens.color.light.primary,
@@ -173,12 +152,5 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     opacity: 0.8,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Montserrat_600SemiBold',
-    textAlign: 'center',
   },
 });

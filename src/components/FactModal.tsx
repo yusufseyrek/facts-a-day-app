@@ -651,7 +651,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   {categoryForBadge && (
                     <CategoryBadge 
                       category={categoryForBadge} 
-                      fontWeight={tokens.fontWeight.bold}
+                      fontFamily="Montserrat_700Bold"
                       fontSize={isTablet ? tokens.fontSize.labelTablet : tokens.fontSize.label}
                     />
                   )}
@@ -808,7 +808,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   {categoryForBadge && (
                     <CategoryBadge 
                       category={categoryForBadge} 
-                      fontWeight={tokens.fontWeight.bold}
+                      fontFamily="Montserrat_700Bold"
                       fontSize={tokens.fontSize.label}
                     />
                   )}

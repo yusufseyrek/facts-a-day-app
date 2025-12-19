@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Modal,
   View,
-  Text,
   StyleSheet,
   Pressable,
   ScrollView,
@@ -12,6 +11,7 @@ import { useTheme } from '../../theme';
 import { tokens } from '../../theme/tokens';
 import { useTranslation, type TranslationKeys } from '../../i18n';
 import type { ThemeMode } from '../../theme/ThemeProvider';
+import { H2, LabelText, SmallText } from '../Typography';
 
 interface ThemePickerModalProps {
   visible: boolean;
@@ -79,9 +79,9 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
               { borderBottomColor: colors.border },
             ]}
           >
-            <Text style={[styles.title, { color: colors.text }]}>
+            <H2 color={colors.text}>
               {t('settingsThemeTitle')}
-            </Text>
+            </H2>
             <Pressable onPress={onClose} style={styles.closeButton}>
               <X size={24} color={colors.text} />
             </Pressable>
@@ -125,30 +125,16 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
                             {option.icon(isSelected ? '#FFFFFF' : colors.text)}
                           </View>
                           <View style={styles.optionTextContainer}>
-                            <Text
-                              style={[
-                                styles.optionTitle,
-                                {
-                                  color: isSelected
-                                    ? '#FFFFFF'
-                                    : colors.text,
-                                },
-                              ]}
+                            <LabelText
+                              color={isSelected ? '#FFFFFF' : colors.text}
                             >
                               {t(option.titleKey)}
-                            </Text>
-                            <Text
-                              style={[
-                                styles.optionDescription,
-                                {
-                                  color: isSelected
-                                    ? 'rgba(255, 255, 255, 0.9)'
-                                    : colors.textSecondary,
-                                },
-                              ]}
+                            </LabelText>
+                            <SmallText
+                              color={isSelected ? 'rgba(255, 255, 255, 0.9)' : colors.textSecondary}
                             >
                               {t(option.descriptionKey)}
-                            </Text>
+                            </SmallText>
                           </View>
                         </View>
                       </View>
@@ -185,11 +171,6 @@ const styles = StyleSheet.create({
     paddingVertical: tokens.space.lg,
     borderBottomWidth: 1,
   },
-  title: {
-    fontSize: tokens.fontSize.h2,
-    fontWeight: tokens.fontWeight.bold,
-    fontFamily: 'Montserrat_700Bold',
-  },
   closeButton: {
     padding: tokens.space.xs,
   },
@@ -220,15 +201,5 @@ const styles = StyleSheet.create({
   optionTextContainer: {
     flex: 1,
     gap: 4,
-  },
-  optionTitle: {
-    fontSize: tokens.fontSize.body,
-    fontWeight: tokens.fontWeight.semibold,
-    fontFamily: 'Montserrat_600SemiBold',
-  },
-  optionDescription: {
-    fontSize: tokens.fontSize.small,
-    fontWeight: tokens.fontWeight.regular,
-    fontFamily: 'Montserrat_400Regular',
   },
 });

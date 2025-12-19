@@ -152,10 +152,10 @@ export function MultiTimePicker({
   return (
     <TimeSlotContainer>
       <BodyText
-        fontWeight={tokens.fontWeight.bold}
+        fontFamily="Montserrat_700Bold"
         textAlign="center"
         fontSize={tokens.fontSize.body}
-        marginBottom="$xs"
+        style={{ marginBottom: tokens.space.xs }}
       >
         {t('notificationTimes')}
       </BodyText>
@@ -165,8 +165,8 @@ export function MultiTimePicker({
           <BodyText
             fontSize={tokens.fontSize.small}
             color="$textSecondary"
-            fontWeight={tokens.fontWeight.medium}
-            minWidth={60}
+            fontFamily="Montserrat_500Medium"
+            style={{ minWidth: 60 }}
           >
             {t('time')} {index + 1}
           </BodyText>
@@ -221,7 +221,7 @@ export function MultiTimePicker({
           <Plus size={24} color={tokens.color.light.primary} />
           <BodyText
             color="$primary"
-            fontWeight={tokens.fontWeight.bold}
+            fontFamily="Montserrat_700Bold"
             fontSize={tokens.fontSize.body}
           >
             {t('addAnotherTime')}
@@ -229,13 +229,13 @@ export function MultiTimePicker({
         </AddTimeButton>
       )}
 
-      <YStack gap="$xs" marginTop="$md">
+      <YStack gap={tokens.space.xs} marginTop={tokens.space.md}>
         <BodyText
           fontSize={tokens.fontSize.small}
           color="$textSecondary"
           textAlign="center"
           lineHeight={20}
-          fontWeight={tokens.fontWeight.semibold}
+          fontFamily="Montserrat_600SemiBold"
         >
           {t('multipleNotificationsPerDay').replace('{count}', times.length.toString())}
         </BodyText>

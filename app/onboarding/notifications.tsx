@@ -192,7 +192,7 @@ export default function NotificationsScreen() {
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <ContentContainer>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <YStack gap="$md" paddingBottom="$xl">
+          <YStack gap={tokens.space.md} paddingBottom={tokens.space.xl}>
             <ProgressIndicator currentStep={2} totalSteps={2} />
 
             <Header>
@@ -200,7 +200,7 @@ export default function NotificationsScreen() {
                 <Bell size={60} color={tokens.color.light.primary} />
               </IconContainer>
 
-              <YStack gap="$sm" alignItems="center">
+              <YStack gap={tokens.space.sm} alignItems="center">
                 <H1 textAlign="center">{t("stayInformed")}</H1>
                 <BodyText textAlign="center" color="$textSecondary" fontSize={secondaryFontSize}>
                   {t("notificationRequired")}

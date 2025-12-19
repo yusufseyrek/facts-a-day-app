@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
-  Text,
   StyleSheet,
   Pressable,
   Platform,
@@ -20,6 +19,7 @@ import { SuccessToast } from '../SuccessToast';
 import * as onboardingService from '../../services/onboarding';
 import * as notificationService from '../../services/notifications';
 import { showSettingsInterstitial } from '../../services/adManager';
+import { H2, LabelText, BodyText, SmallText } from '../Typography';
 
 interface TimePickerModalProps {
   visible: boolean;
@@ -201,9 +201,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       <View key={index} style={styles.timePickerItem}>
         <View style={styles.timePickerHeader}>
           {label && (
-            <Text style={[styles.timeLabel, { color: colors.text }]}>
+            <LabelText color={colors.text}>
               {label}
-            </Text>
+            </LabelText>
           )}
           {times.length > 1 && (
             <Pressable
@@ -246,13 +246,13 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                   { backgroundColor: colors.primary }
                 ]}
               >
-                <Text style={styles.androidTimeButtonText}>
+                <LabelText color="#FFFFFF">
                   {time.toLocaleTimeString(locale, {
                     hour: '2-digit',
                     minute: '2-digit',
                     hour12: false,
                   })}
-                </Text>
+                </LabelText>
               </Pressable>
               {isActive && (
                 <DateTimePicker
@@ -305,9 +305,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
               { borderBottomColor: colors.border },
             ]}
           >
-            <Text style={[styles.title, { color: colors.text }]}>
+            <H2 color={colors.text}>
               {t('settingsNotificationTime')}
-            </Text>
+            </H2>
             <Pressable onPress={onClose} style={styles.closeButton}>
               <X size={24} color={colors.text} />
             </Pressable>
@@ -338,20 +338,19 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                   }}
                 >
                   <AlertTriangle size={18} color={warningColor} />
-                  <Text style={[styles.warningText, { color: warningColor }]}>
+                  <SmallText color={warningColor} style={{ flex: 1 }}>
                     {t('notificationPermissionWarning')}
-                  </Text>
+                  </SmallText>
                 </Pressable>
               )}
 
-              <Text
-                style={[
-                  styles.description,
-                  { color: colors.textSecondary },
-                ]}
+              <LabelText
+                textAlign="center"
+                color={colors.textSecondary}
+                style={{ marginBottom: tokens.space.sm }}
               >
                 {t('scheduleUpTo3Notifications')}
-              </Text>
+              </LabelText>
 
               {times.map((time, index) =>
                 renderTimePicker(time, index, getTimeLabels()[index])
@@ -369,28 +368,28 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                   ]}
                 >
                   <Plus size={20} color={colors.primary} />
-                  <Text style={[styles.addButtonText, { color: colors.primary }]}>
+                  <LabelText color={colors.primary}>
                     {t('addAnotherTime')}
-                  </Text>
+                  </LabelText>
                 </Pressable>
               )}
 
-              <Text
-                style={[
-                  styles.helperText,
-                  { color: colors.textSecondary },
-                ]}
+              <SmallText
+                textAlign="center"
+                color={colors.textSecondary}
+                fontFamily="Montserrat_600SemiBold"
+                style={{ marginTop: tokens.space.sm }}
               >
                 {t('multipleNotificationsPerDay').replace('{count}', times.length.toString())}
-              </Text>
-              <Text
-                style={[
-                  styles.respectText,
-                  { color: colors.textSecondary },
-                ]}
+              </SmallText>
+              <SmallText
+                textAlign="center"
+                color={colors.textSecondary}
+                fontStyle="italic"
+                style={{ marginTop: tokens.space.xs }}
               >
                 {t('notificationRespectMessage')}
-              </Text>
+              </SmallText>
             </View>
           </ScrollView>
 
@@ -430,11 +429,6 @@ const styles = StyleSheet.create({
     paddingVertical: tokens.space.lg,
     borderBottomWidth: 1,
   },
-  title: {
-    fontSize: tokens.fontSize.h2,
-    fontWeight: tokens.fontWeight.bold,
-    fontFamily: 'Montserrat_700Bold',
-  },
   closeButton: {
     padding: tokens.space.xs,
   },
@@ -446,13 +440,6 @@ const styles = StyleSheet.create({
     padding: tokens.space.lg,
     gap: tokens.space.md,
   },
-  description: {
-    fontSize: tokens.fontSize.body,
-    fontWeight: tokens.fontWeight.medium,
-    fontFamily: 'Montserrat_600SemiBold',
-    textAlign: 'center',
-    marginBottom: tokens.space.sm,
-  },
   warningContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -462,12 +449,6 @@ const styles = StyleSheet.create({
     gap: tokens.space.sm,
     marginBottom: tokens.space.sm,
   },
-  warningText: {
-    fontSize: tokens.fontSize.small,
-    fontWeight: tokens.fontWeight.medium,
-    fontFamily: 'Montserrat_500Medium',
-    flex: 1,
-  },
   timePickerItem: {
     marginBottom: tokens.space.sm,
   },
@@ -476,11 +457,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: tokens.space.xs,
-  },
-  timeLabel: {
-    fontSize: tokens.fontSize.body,
-    fontWeight: tokens.fontWeight.semibold,
-    fontFamily: 'Montserrat_600SemiBold',
   },
   removeButton: {
     padding: tokens.space.xs,
@@ -505,24 +481,6 @@ const styles = StyleSheet.create({
     gap: tokens.space.xs,
     marginTop: tokens.space.sm,
   },
-  addButtonText: {
-    fontSize: tokens.fontSize.body,
-    fontWeight: tokens.fontWeight.medium,
-    fontFamily: 'Montserrat_600SemiBold',
-  },
-  helperText: {
-    fontSize: tokens.fontSize.small,
-    fontFamily: 'Montserrat_600SemiBold',
-    textAlign: 'center',
-    marginTop: tokens.space.sm,
-  },
-  respectText: {
-    fontSize: tokens.fontSize.small,
-    fontFamily: 'Montserrat_400Regular',
-    textAlign: 'center',
-    marginTop: tokens.space.xs,
-    fontStyle: 'italic',
-  },
   footer: {
     padding: tokens.space.lg,
     paddingTop: 0,
@@ -534,11 +492,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 150,
-  },
-  androidTimeButtonText: {
-    color: '#FFFFFF',
-    fontSize: tokens.fontSize.body,
-    fontWeight: tokens.fontWeight.semibold,
-    fontFamily: 'Montserrat_600SemiBold',
   },
 });

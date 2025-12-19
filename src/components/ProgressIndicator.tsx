@@ -33,7 +33,7 @@ export function ProgressIndicator({ currentStep, totalSteps }: ProgressIndicator
 
   return (
     <Container>
-      <BodyText fontSize={tokens.fontSize.small} fontWeight={tokens.fontWeight.medium}>
+      <BodyText fontSize={tokens.fontSize.small} fontFamily="Montserrat_500Medium">
         {currentStep} of {totalSteps}
       </BodyText>
       <ProgressBarContainer>

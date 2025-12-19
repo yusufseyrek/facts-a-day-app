@@ -72,14 +72,14 @@ export function Button({
         pressStyle={disabled || loading ? {} : { opacity: 0.8 }}
       >
         {loading ? (
-          <XStack gap="$sm" alignItems="center">
+          <XStack gap={tokens.space.sm} alignItems="center">
             <ActivityIndicator size="small" color="#FFFFFF" />
-            <LabelText color="#FFFFFF" fontWeight={tokens.fontWeight.semibold} fontSize={16}>
+            <LabelText color="#FFFFFF" fontFamily="Montserrat_600SemiBold" fontSize={16}>
               {children}
             </LabelText>
           </XStack>
         ) : (
-          <LabelText color="#FFFFFF" fontWeight={tokens.fontWeight.semibold} fontSize={16}>
+          <LabelText color="#FFFFFF" fontFamily="Montserrat_600SemiBold" fontSize={16}>
             {children}
           </LabelText>
         )}

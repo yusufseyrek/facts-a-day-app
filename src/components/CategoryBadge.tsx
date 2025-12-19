@@ -9,7 +9,11 @@ import type { Category } from '../services/database';
 
 interface CategoryBadgeProps {
   category: string | Category;
-  fontWeight?: string;
+  /** 
+   * Font family to use for the badge text.
+   * Use specific Montserrat font variants (e.g., 'Montserrat_600SemiBold')
+   */
+  fontFamily?: string;
   fontSize?: number;
 }
 
@@ -20,7 +24,7 @@ const BadgeContainer = styled(XStack, {
   alignSelf: 'flex-start',
 });
 
-export function CategoryBadge({ category, fontWeight, fontSize }: CategoryBadgeProps) {
+export function CategoryBadge({ category, fontFamily, fontSize }: CategoryBadgeProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
 
@@ -48,7 +52,7 @@ export function CategoryBadge({ category, fontWeight, fontSize }: CategoryBadgeP
         <LabelText
           fontSize={fontSize || 12}
           color={contrastColor}
-          fontWeight={fontWeight || tokens.fontWeight.semibold}
+          fontFamily={fontFamily || 'Montserrat_600SemiBold'}
         >
           {displayName}
         </LabelText>

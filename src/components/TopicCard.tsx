@@ -87,7 +87,7 @@ export function TopicCard({ icon, label, selected, onPress }: TopicCardProps) {
           </IconContainer>
           <LabelContainer>
             <BodyText
-              fontWeight={tokens.fontWeight.medium}
+              fontFamily="Montserrat_500Medium"
               color={selected ? "$primary" : "$text"}
               textAlign="center"
               fontSize={tokens.fontSize.small}

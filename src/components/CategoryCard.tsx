@@ -100,7 +100,7 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
             </IconContainer>
             <LabelContainer>
               <LabelText
-                fontWeight={tokens.fontWeight.semibold}
+                fontFamily="Montserrat_600SemiBold"
                 color={selected ? contrastColor : '$text'}
                 textAlign="center"
                 fontSize={labelFontSize ?? (isTablet ? tokens.fontSize.body : fontSizes.small)}

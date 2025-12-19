@@ -1,8 +1,9 @@
 import React from 'react';
-import { Pressable, View, Text, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet } from 'react-native';
 import { ChevronRight, ExternalLink, AlertCircle } from '@tamagui/lucide-icons';
 import { useTheme } from '../theme';
 import { tokens } from '../theme/tokens';
+import { LabelText, BodyText } from './Typography';
 
 interface SettingsRowProps {
   label: string;
@@ -44,9 +45,9 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
     >
       <View style={styles.leftContent}>
         {icon && <View style={styles.iconContainer}>{icon}</View>}
-        <Text style={[styles.label, { color: labelColor }]}>
+        <LabelText color={labelColor}>
           {label}
-        </Text>
+        </LabelText>
         {showWarning && (
           <View style={styles.warningContainer}>
             <AlertCircle size={16} color={warningColor} />
@@ -55,9 +56,9 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
       </View>
       <View style={styles.rightContent}>
         {value && (
-          <Text style={[styles.value, { color: colors.textSecondary }]}>
+          <BodyText color={colors.textSecondary}>
             {value}
-          </Text>
+          </BodyText>
         )}
         {onPress && (
           showExternalLink 
@@ -105,11 +106,6 @@ const styles = StyleSheet.create({
   iconContainer: {
     marginRight: tokens.space.md,
   },
-  label: {
-    fontSize: tokens.fontSize.body,
-    fontWeight: tokens.fontWeight.medium,
-    fontFamily: 'Montserrat_600SemiBold',
-  },
   warningContainer: {
     marginLeft: tokens.space.sm,
   },
@@ -117,10 +113,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: tokens.space.sm,
-  },
-  value: {
-    fontSize: tokens.fontSize.body,
-    fontWeight: tokens.fontWeight.regular,
-    fontFamily: 'Montserrat_400Regular',
   },
 });

@@ -141,7 +141,7 @@ export default function Categories() {
     return (
       <Container>
         <StatusBar style={theme === "dark" ? "light" : "dark"} />
-        <ContentContainer justifyContent="center" alignItems="center" gap="$lg">
+        <ContentContainer justifyContent="center" alignItems="center" gap={tokens.space.lg}>
           <BodyText color="#FF6B6B" textAlign="center">
             {initializationError}
           </BodyText>

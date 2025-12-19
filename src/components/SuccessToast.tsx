@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, View, Text, Modal } from 'react-native';
+import { Animated, StyleSheet, View, Modal } from 'react-native';
 import { CheckCircle } from '@tamagui/lucide-icons';
 import { useTheme } from '../theme';
 import { tokens } from '../theme/tokens';
+import { LabelText } from './Typography';
 
 interface SuccessToastProps {
   visible: boolean;
@@ -111,7 +112,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
           <View style={[styles.iconContainer, { backgroundColor: `${successColor}20` }]}>
             <CheckCircle size={32} color={successColor} />
           </View>
-          <Text style={[styles.message, { color: textColor }]}>{message}</Text>
+          <LabelText textAlign="center" color={textColor}>{message}</LabelText>
         </Animated.View>
       </View>
     </Modal>
@@ -144,12 +145,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: tokens.space.md,
-  },
-  message: {
-    fontSize: tokens.fontSize.body,
-    fontWeight: tokens.fontWeight.semibold,
-    fontFamily: 'Montserrat_600SemiBold',
-    textAlign: 'center',
   },
 });
 

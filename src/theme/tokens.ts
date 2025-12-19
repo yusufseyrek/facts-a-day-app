@@ -131,12 +131,6 @@ export const tokens = {
     labelTablet: 17,
     smallTablet: 15,
   },
-  fontWeight: {
-    regular: "400" as const,
-    medium: "500" as const,
-    semibold: "600" as const,
-    bold: "700" as const,
-  },
 } as const;
 
 export type Tokens = typeof tokens;

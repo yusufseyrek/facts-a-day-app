@@ -5,6 +5,19 @@ import { tokens } from '../theme/tokens';
 import { getResponsiveFontSizes, isTabletDevice } from '../utils/responsive';
 
 /**
+ * Font family constants for Montserrat weights.
+ * Use these to set the correct font variant for the desired weight.
+ */
+export const FONT_FAMILIES = {
+  regular: 'Montserrat_400Regular',
+  medium: 'Montserrat_500Medium',
+  semibold: 'Montserrat_600SemiBold',
+  bold: 'Montserrat_700Bold',
+  extrabold: 'Montserrat_800ExtraBold',
+  black: 'Montserrat_900Black',
+} as const;
+
+/**
  * Get responsive font sizes based on current screen width
  * This is used by styled components that need dynamic sizing
  */
@@ -17,32 +30,39 @@ const useTypographySize = () => {
 
 // Base styled components with default sizes
 const BaseH1 = styled(Text, {
-  fontFamily: 'Montserrat_700Bold',
-  fontWeight: tokens.fontWeight.bold,
+  fontFamily: FONT_FAMILIES.bold,
+  fontWeight: "700",
   color: '$text',
 });
 
 const BaseH2 = styled(Text, {
-  fontFamily: 'Montserrat_700Bold',
-  fontWeight: tokens.fontWeight.bold,
+  fontFamily: FONT_FAMILIES.bold,
+  fontWeight: "700",
   color: '$text',
 });
 
 const BaseBodyText = styled(Text, {
-  fontFamily: 'Montserrat_400Regular',
-  fontWeight: tokens.fontWeight.regular,
+  fontFamily: FONT_FAMILIES.regular,
+  fontWeight: "400",
   color: '$textSecondary',
 });
 
 const BaseLabelText = styled(Text, {
-  fontFamily: 'Montserrat_600SemiBold',
-  fontWeight: tokens.fontWeight.medium,
+  fontFamily: FONT_FAMILIES.semibold,
+  fontWeight: "600",
   color: '$text',
 });
 
 const BaseSerifTitle = styled(Text, {
-  fontFamily: 'Montserrat_700Bold',
+  fontFamily: FONT_FAMILIES.bold,
+  fontWeight: "700",
   color: '$text',
+});
+
+const BaseSmallText = styled(Text, {
+  fontFamily: FONT_FAMILIES.regular,
+  fontWeight: "400",
+  color: '$textSecondary',
 });
 
 // Responsive wrapper components
@@ -56,7 +76,12 @@ interface TypographyProps {
   letterSpacing?: number;
   textAlign?: 'auto' | 'left' | 'right' | 'center' | 'justify';
   textDecorationLine?: 'none' | 'underline' | 'line-through' | 'underline line-through';
+  /**
+   * The font family to use. Use FONT_FAMILIES constants for consistency.
+   * Example: fontFamily={FONT_FAMILIES.semibold} or fontFamily="Montserrat_600SemiBold"
+   */
   fontFamily?: string;
+  fontStyle?: 'normal' | 'italic';
 }
 
 /**
@@ -68,6 +93,7 @@ export const H1 = React.memo(({
   fontSize: customFontSize, 
   lineHeight: customLineHeight,
   style,
+  fontFamily,
   ...props 
 }: TypographyProps) => {
   const { fontSizes } = useTypographySize();
@@ -79,6 +105,7 @@ export const H1 = React.memo(({
       fontSize={fontSize}
       lineHeight={lineHeight}
       style={style}
+      fontFamily={fontFamily}
       {...props}
     >
       {children}
@@ -97,6 +124,7 @@ export const H2 = React.memo(({
   fontSize: customFontSize, 
   lineHeight: customLineHeight,
   style,
+  fontFamily,
   ...props 
 }: TypographyProps) => {
   const { fontSizes } = useTypographySize();
@@ -108,6 +136,7 @@ export const H2 = React.memo(({
       fontSize={fontSize}
       lineHeight={lineHeight}
       style={style}
+      fontFamily={fontFamily}
       {...props}
     >
       {children}
@@ -126,6 +155,7 @@ export const BodyText = React.memo(({
   fontSize: customFontSize, 
   lineHeight: customLineHeight,
   style,
+  fontFamily,
   ...props 
 }: TypographyProps) => {
   const { fontSizes } = useTypographySize();
@@ -137,6 +167,7 @@ export const BodyText = React.memo(({
       fontSize={fontSize}
       lineHeight={lineHeight}
       style={style}
+      fontFamily={fontFamily}
       {...props}
     >
       {children}
@@ -155,6 +186,7 @@ export const LabelText = React.memo(({
   fontSize: customFontSize, 
   lineHeight: customLineHeight,
   style,
+  fontFamily,
   ...props 
 }: TypographyProps) => {
   const { fontSizes } = useTypographySize();
@@ -166,6 +198,7 @@ export const LabelText = React.memo(({
       fontSize={fontSize}
       lineHeight={lineHeight}
       style={style}
+      fontFamily={fontFamily}
       {...props}
     >
       {children}
@@ -178,14 +211,13 @@ LabelText.displayName = 'LabelText';
 /**
  * Responsive SerifTitle component
  * Automatically scales font size based on screen width
- * Note: fontWeight is omitted because the weight is already in the Montserrat_700Bold font file.
- * Setting fontWeight with a specific weight font file can cause issues on Android.
  */
 export const SerifTitle = React.memo(({ 
   children, 
   fontSize: customFontSize, 
   lineHeight: customLineHeight,
   style,
+  fontFamily,
   ...props 
 }: TypographyProps) => {
   const { fontSizes } = useTypographySize();
@@ -197,6 +229,7 @@ export const SerifTitle = React.memo(({
       fontSize={fontSize}
       lineHeight={lineHeight}
       style={style}
+      fontFamily={fontFamily}
       {...props}
     >
       {children}
@@ -205,3 +238,35 @@ export const SerifTitle = React.memo(({
 });
 
 SerifTitle.displayName = 'SerifTitle';
+
+/**
+ * Responsive SmallText component
+ * Automatically scales font size based on screen width
+ * Use for captions, footnotes, and small UI text
+ */
+export const SmallText = React.memo(({ 
+  children, 
+  fontSize: customFontSize, 
+  lineHeight: customLineHeight,
+  style,
+  fontFamily,
+  ...props 
+}: TypographyProps) => {
+  const { fontSizes } = useTypographySize();
+  const fontSize = customFontSize ?? fontSizes.small;
+  const lineHeight = customLineHeight ?? Math.round(fontSize * 1.4);
+  
+  return (
+    <BaseSmallText
+      fontSize={fontSize}
+      lineHeight={lineHeight}
+      style={style}
+      fontFamily={fontFamily}
+      {...props}
+    >
+      {children}
+    </BaseSmallText>
+  );
+});
+
+SmallText.displayName = 'SmallText';

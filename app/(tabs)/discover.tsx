@@ -386,7 +386,7 @@ function DiscoverScreen() {
                 color={contrastColor}
                 fontSize={tokens.fontSize.small}
                 numberOfLines={1}
-                style={{ fontWeight: "600" }}
+                style={{ fontFamily: "Montserrat_600SemiBold" }}
               >
                 {selectedCategory.name}
               </LabelText>
