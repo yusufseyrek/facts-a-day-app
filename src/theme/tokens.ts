@@ -46,7 +46,7 @@ export const tokens = {
     // Dark Mode Colors (Full neon experience)
     dark: {
       // Backgrounds
-      primary: "#00D4FF",
+      primary: "#00A3CC",
       primaryLight: "#1A3D5C",
       primaryGlow: "rgba(0, 212, 255, 0.4)",
       neutral: "#8CA3C0",

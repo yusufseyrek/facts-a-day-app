@@ -1,11 +1,12 @@
-const { withAndroidManifest } = require("expo/config-plugins");
+const { withAndroidManifest, withInfoPlist } = require("expo/config-plugins");
 
 /**
- * Custom Expo config plugin to disable Firebase automatic screen reporting on Android.
- * This prevents Firebase from sending automatic screen_view events.
+ * Custom Expo config plugin to disable Firebase automatic screen reporting.
+ * This prevents Firebase from sending automatic screen_view events on both iOS and Android.
  */
 function withDisableAutoScreenReporting(config) {
-  return withAndroidManifest(config, async (config) => {
+  // Handle Android
+  config = withAndroidManifest(config, async (config) => {
     const manifest = config.modResults;
     const application = manifest.manifest.application?.[0];
 
@@ -30,7 +31,7 @@ function withDisableAutoScreenReporting(config) {
 
     if (existingMetaData) {
       console.log(
-        "[withDisableAutoScreenReporting] google_analytics_automatic_screen_reporting_enabled already present"
+        "[withDisableAutoScreenReporting] google_analytics_automatic_screen_reporting_enabled already present in AndroidManifest.xml"
       );
       return config;
     }
@@ -49,7 +50,20 @@ function withDisableAutoScreenReporting(config) {
 
     return config;
   });
+
+  // Handle iOS
+  config = withInfoPlist(config, (config) => {
+    // Set FirebaseAutomaticScreenReportingEnabled to false
+    config.modResults.FirebaseAutomaticScreenReportingEnabled = false;
+
+    console.log(
+      "[withDisableAutoScreenReporting] Disabled automatic screen reporting in Info.plist"
+    );
+
+    return config;
+  });
+
+  return config;
 }
 
 module.exports = withDisableAutoScreenReporting;
-

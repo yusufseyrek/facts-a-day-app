@@ -20,6 +20,7 @@ const THEME_STORAGE_KEY = '@app_theme_mode';
 
 /**
  * Initialize analytics with device_key, device info, and settings as user properties
+ * Also sends the same info to Crashlytics for better crash debugging context
  * Call this on app startup after Firebase is initialized
  */
 export const initAnalytics = async (): Promise<void> => {
@@ -27,49 +28,78 @@ export const initAnalytics = async (): Promise<void> => {
     // Set device key - short key as userId, full key as user property
     const deviceKey = await getStoredDeviceKey();
     if (deviceKey) {
-      const shortKey = deviceKey.substring(0, 8);
-      await setFirebaseUser(shortKey, deviceKey); // shortKey as userId
+      await setFirebaseUser(deviceKey); // shortKey as userId
       await setAnalyticsUserProperty('device_key', deviceKey); // full key as property
+      await setCrashlyticsAttribute('device_key', deviceKey); // full key for crash reports
     }
 
+    // Device info values
+    const platform = Platform.OS;
+    const osVersion = Platform.Version?.toString() || 'unknown';
+    const deviceBrand = Device.brand || 'unknown';
+    const deviceModel = Device.modelName || 'unknown';
+    const appVersion = Application.nativeApplicationVersion || 'unknown';
+    const buildNumber = Application.nativeBuildVersion || 'unknown';
+    const locale = Localization.getLocales()[0]?.languageCode || 'unknown';
+    const isDevice = Device.isDevice ? 'true' : 'false';
+
     // Set device info as Analytics user properties
-    await setAnalyticsUserProperty('platform', Platform.OS);
-    await setAnalyticsUserProperty('os_version', Platform.Version?.toString() || 'unknown');
-    await setAnalyticsUserProperty('device_brand', Device.brand || 'unknown');
-    await setAnalyticsUserProperty('device_model', Device.modelName || 'unknown');
-    await setAnalyticsUserProperty('app_version', Application.nativeApplicationVersion || 'unknown');
-    await setAnalyticsUserProperty('build_number', Application.nativeBuildVersion || 'unknown');
-    await setAnalyticsUserProperty('locale', Localization.getLocales()[0]?.languageCode || 'unknown');
-    await setAnalyticsUserProperty('is_device', Device.isDevice ? 'true' : 'false');
+    await setAnalyticsUserProperty('platform', platform);
+    await setAnalyticsUserProperty('os_version', osVersion);
+    await setAnalyticsUserProperty('device_brand', deviceBrand);
+    await setAnalyticsUserProperty('device_model', deviceModel);
+    await setAnalyticsUserProperty('app_version', appVersion);
+    await setAnalyticsUserProperty('build_number', buildNumber);
+    await setAnalyticsUserProperty('locale', locale);
+    await setAnalyticsUserProperty('is_device', isDevice);
 
-    // Set user settings as Analytics user properties
+    // Set device info as Crashlytics attributes (for crash report context)
+    await setCrashlyticsAttribute('platform', platform);
+    await setCrashlyticsAttribute('os_version', osVersion);
+    await setCrashlyticsAttribute('device_brand', deviceBrand);
+    await setCrashlyticsAttribute('device_model', deviceModel);
+    await setCrashlyticsAttribute('app_version', appVersion);
+    await setCrashlyticsAttribute('build_number', buildNumber);
+    await setCrashlyticsAttribute('locale', locale);
+    await setCrashlyticsAttribute('is_device', isDevice);
+
+    // Get user settings
     const theme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-    await setAnalyticsUserProperty('theme', theme || 'system');
-
+    const themeValue = theme || 'system';
     const categories = await getSelectedCategories();
-    await setAnalyticsUserProperty('categories', categories.join(',') || 'none');
-
+    const categoriesValue = categories.join(',') || 'none';
     const notificationTimes = await getNotificationTimes();
     // Format times as HH:MM (e.g., "09:00,12:30,18:00")
     const formattedTimes = notificationTimes.map(t => {
       const date = new Date(t);
       return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
     }).join(',');
-    await setAnalyticsUserProperty('notif_times', formattedTimes || 'none');
+    const notifTimesValue = formattedTimes || 'none';
+
+    // Set user settings as Analytics user properties
+    await setAnalyticsUserProperty('theme', themeValue);
+    await setAnalyticsUserProperty('categories', categoriesValue);
+    await setAnalyticsUserProperty('notif_times', notifTimesValue);
+
+    // Set user settings as Crashlytics attributes
+    await setCrashlyticsAttribute('theme', themeValue);
+    await setCrashlyticsAttribute('categories', categoriesValue);
+    await setCrashlyticsAttribute('notif_times', notifTimesValue);
 
     if (__DEV__) {
-      console.log('📊 Analytics user properties set:', {
-        platform: Platform.OS,
-        os_version: Platform.Version,
-        device_brand: Device.brand,
-        device_model: Device.modelName,
-        app_version: Application.nativeApplicationVersion,
-        build_number: Application.nativeBuildVersion,
-        locale: Localization.getLocales()[0]?.languageCode,
-        is_device: Device.isDevice,
-        theme: theme || 'system',
-        categories: categories.join(','),
-        notif_times: formattedTimes,
+      console.log('📊 Analytics & Crashlytics properties set:', {
+        device_key: deviceKey || 'none',
+        platform,
+        os_version: osVersion,
+        device_brand: deviceBrand,
+        device_model: deviceModel,
+        app_version: appVersion,
+        build_number: buildNumber,
+        locale,
+        is_device: isDevice,
+        theme: themeValue,
+        categories: categoriesValue,
+        notif_times: notifTimesValue,
       });
     }
   } catch (error) {
@@ -79,26 +109,34 @@ export const initAnalytics = async (): Promise<void> => {
 
 /**
  * Update theme user property when theme changes
+ * Updates both Analytics and Crashlytics
  */
 export const updateThemeProperty = async (theme: string): Promise<void> => {
   await setAnalyticsUserProperty('theme', theme);
+  await setCrashlyticsAttribute('theme', theme);
 };
 
 /**
  * Update categories user property when categories change
+ * Updates both Analytics and Crashlytics
  */
 export const updateCategoriesProperty = async (categories: string[]): Promise<void> => {
-  await setAnalyticsUserProperty('categories', categories.join(',') || 'none');
+  const categoriesValue = categories.join(',') || 'none';
+  await setAnalyticsUserProperty('categories', categoriesValue);
+  await setCrashlyticsAttribute('categories', categoriesValue);
 };
 
 /**
  * Update notification times user property when times change
+ * Updates both Analytics and Crashlytics
  */
 export const updateNotificationProperty = async (times: Date[]): Promise<void> => {
   const formattedTimes = times.map(t => 
     `${t.getHours().toString().padStart(2, '0')}:${t.getMinutes().toString().padStart(2, '0')}`
   ).join(',');
-  await setAnalyticsUserProperty('notif_times', formattedTimes || 'none');
+  const notifTimesValue = formattedTimes || 'none';
+  await setAnalyticsUserProperty('notif_times', notifTimesValue);
+  await setCrashlyticsAttribute('notif_times', notifTimesValue);
 };
 
 // ============================================================================

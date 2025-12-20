@@ -570,7 +570,7 @@ function DiscoverScreen() {
                             <DiscoverCategoryTextContainer>
                               <LabelText
                                 color={contrastColor}
-                                fontSize={isTablet ? tokens.fontSize.body : tokens.fontSize.small}
+                                fontSize={isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body}
                                 numberOfLines={1}
                                 style={{ fontFamily: "Montserrat_600SemiBold" }}
                               >

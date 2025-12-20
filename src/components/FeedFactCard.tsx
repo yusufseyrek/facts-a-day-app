@@ -99,10 +99,10 @@ const FeedFactCardComponent = ({
             <TextContainer>
               <SerifTitle
                 fontSize={isTablet ? tokens.fontSize.h2Tablet : Math.round(fontSizes.body * 1.2)}
-                lineHeight={isTablet ? tokens.fontSize.h2Tablet * 1.35 : Math.round(fontSizes.body * 1.2 * 1.35)}
+                lineHeight={isTablet ? tokens.fontSize.h2Tablet * 1.35 : Math.round(fontSizes.body * 1.2 * 1.25)}
                 letterSpacing={0.3}
                 color="$text"
-                numberOfLines={isTablet ? 3 : 2}
+                numberOfLines={isTablet ? 4 : 3}
               >
                 {title}
               </SerifTitle>

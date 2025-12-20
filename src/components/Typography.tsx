@@ -106,6 +106,7 @@ export const H1 = React.memo(({
       lineHeight={lineHeight}
       style={style}
       fontFamily={fontFamily}
+      letterSpacing={0.2}
       {...props}
     >
       {children}

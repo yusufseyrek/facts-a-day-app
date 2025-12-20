@@ -178,23 +178,23 @@ const HeroFactCardComponent = ({
           <ContentRow style={{ position: "relative" }}>
             <TextContainer>
               <SerifTitle
-                fontSize={isTablet ? tokens.fontSize.h1Tablet : Math.round(fontSizes.h1 * 0.81)}
-                lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.35 : Math.round(fontSizes.h1 * 0.81 * 1.35)}
+                fontSize={isTablet ? tokens.fontSize.h1Tablet : Math.round(fontSizes.h1 * 0.9)}
+                lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.25 : Math.round(fontSizes.h1 * 0.81 * 1.25)}
                 letterSpacing={0.3}
                 color={
                   theme === "dark"
                     ? tokens.color.dark.text
                     : tokens.color.light.text
                 }
-                numberOfLines={isTablet ? 4 : 3}
+                numberOfLines={isTablet ? 5 : 4}
               >
                 {title}
               </SerifTitle>
               {summary && (
                 <BodyText
                   fontSize={isTablet ? tokens.fontSize.bodyTablet : fontSizes.body}
-                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.6 : Math.round(fontSizes.body * 1.6)}
-                  letterSpacing={0.3}
+                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.5 : Math.round(fontSizes.body * 1.5)}
+                  letterSpacing={0.2}
                   color={
                     theme === "dark"
                       ? "#B8C9DC" // Lighter than textSecondary for better contrast on gradient

@@ -31,7 +31,6 @@ import * as onboardingService from "../../src/services/onboarding";
 import * as database from "../../src/services/database";
 import { buildNotificationContent } from "../../src/services/notifications";
 import { useOnboarding } from "../../src/contexts";
-import { recordError, logMessage } from "../../src/config/firebase";
 import { openInAppBrowser } from "../../src/utils/browser";
 import { trackScreenView, Screens } from "../../src/services/analytics";
 
@@ -436,13 +435,6 @@ export default function SettingsPage() {
                   label={t("resetOnboarding")}
                   icon={<RotateCcw size={20} color={iconColor} />}
                   onPress={handleResetOnboarding}
-                />
-                <SettingsRow
-                  label={"Test Crashlytics"}
-                  onPress={() => {
-                    logMessage("Test crash button pressed");
-                    recordError(new Error("Test error from settings"));
-                  }}
                 />
               </SettingsGroup>
             </SectionContainer>

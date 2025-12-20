@@ -13,7 +13,7 @@ import { initializeAdsForReturningUser } from '../src/services/ads';
 import { ActivityIndicator, View, AppState, AppStateStatus } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Localization from 'expo-localization';
-import { initializeFirebase } from '../src/config/firebase';
+import { initializeFirebase, enableCrashlyticsConsoleLogging } from '../src/config/firebase';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initAnalytics } from '../src/services/analytics';
 import {
@@ -28,6 +28,10 @@ import {
 
 // Initialize Firebase Crashlytics and Analytics as early as possible
 initializeFirebase();
+
+// Forward console logs to Crashlytics in production
+// This captures console.log/warn/error as breadcrumbs for crash reports
+enableCrashlyticsConsoleLogging();
 
 // Initialize analytics with device_key user property
 initAnalytics();
