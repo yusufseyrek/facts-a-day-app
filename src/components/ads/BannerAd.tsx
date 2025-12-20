@@ -145,12 +145,14 @@ const BannerAdComponent: React.FC<BannerAdProps> = ({ position, onAdLoadChange }
       style={[
         styles.container,
         {
-          minHeight: adLoaded ? undefined : 0,
+          height: adLoaded ? undefined : 0,
           paddingVertical: adLoaded ? 8 : 0,
+          opacity: adLoaded ? 1 : 0,
         },
       ]}
       // Prevent view collapsing on Android which can cause scroll issues
       collapsable={false}
+      pointerEvents={adLoaded ? 'auto' : 'none'}
     >
       <View style={styles.adWrapper}>
         <GoogleBannerAd
