@@ -178,7 +178,7 @@ const HeroFactCardComponent = ({
           <ContentRow style={{ position: "relative" }}>
             <TextContainer>
               <SerifTitle
-                fontSize={isTablet ? tokens.fontSize.h1Tablet : Math.round(fontSizes.h1 * 0.9)}
+                fontSize={isTablet ? tokens.fontSize.h1Tablet : Math.round(fontSizes.h1 * 0.85)}
                 lineHeight={isTablet ? tokens.fontSize.h1Tablet * 1.25 : Math.round(fontSizes.h1 * 0.81 * 1.25)}
                 letterSpacing={0.3}
                 color={
