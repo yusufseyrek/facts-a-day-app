@@ -324,12 +324,14 @@ export async function refreshAppContent(): Promise<RefreshResult> {
 
     if (lastFactUpdatedAt) {
       // Fetch only new or updated facts using since_updated parameter
+      // Include questions for quiz feature
       const categoriesParam = categories.join(',');
       const response = await api.getFacts({
         language: currentLocale,
         categories: categoriesParam,
         since_updated: lastFactUpdatedAt,
-        limit: 1000, // Reasonable limit for incremental fetch
+        limit: 500, // Reasonable limit for incremental fetch
+        include_questions: true,
       });
 
       if (response.facts.length > 0) {
@@ -347,6 +349,25 @@ export async function refreshAppContent(): Promise<RefreshResult> {
           last_updated: fact.last_updated,
         }));
 
+        // Extract questions from facts for quiz feature
+        const dbQuestions: db.Question[] = [];
+        for (const fact of response.facts) {
+          if (fact.questions && fact.questions.length > 0) {
+            for (const question of fact.questions) {
+              dbQuestions.push({
+                id: question.id,
+                fact_id: fact.id,
+                question_type: question.question_type,
+                question_text: question.question_text,
+                correct_answer: question.correct_answer,
+                wrong_answers: question.wrong_answers ? JSON.stringify(question.wrong_answers) : null,
+                explanation: question.explanation,
+                difficulty: question.difficulty,
+              });
+            }
+          }
+        }
+
         // Check which facts already exist in database
         const factIds = dbFacts.map((f) => f.id);
         const existingFactIds = await getExistingFactIds(factIds);
@@ -359,6 +380,12 @@ export async function refreshAppContent(): Promise<RefreshResult> {
         // Insert new or updated facts (INSERT OR REPLACE handles duplicates)
         await db.insertFacts(dbFacts);
         result.updated.facts = dbFacts.length;
+
+        // Insert questions (INSERT OR REPLACE handles duplicates)
+        if (dbQuestions.length > 0) {
+          await db.insertQuestions(dbQuestions);
+          console.log(`🧠 Synced ${dbQuestions.length} questions for quiz`);
+        }
 
         // Log new and updated facts separately with IDs
         if (newFacts.length > 0) {

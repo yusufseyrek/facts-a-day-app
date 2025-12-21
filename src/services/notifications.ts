@@ -973,6 +973,54 @@ export async function getScheduledNotificationsCount(): Promise<number> {
 }
 
 /**
+ * Check if scheduled notifications need repair due to the bug where multiple notifications
+ * were scheduled per day. If repair is needed, clears and reschedules all notifications.
+ * @param locale The user's locale for filtering facts
+ * @param notificationTimes Array of notification times configured by the user
+ * @returns True if repair was performed, false otherwise
+ */
+export async function checkAndRepairNotificationSchedule(
+  locale: SupportedLocale,
+  notificationTimes: Date[]
+): Promise<{ repaired: boolean; count: number }> {
+  try {
+    const expectedPerDay = notificationTimes.length;
+    
+    if (expectedPerDay === 0) {
+      return { repaired: false, count: 0 };
+    }
+
+    // Check if there are any days with more notifications than expected
+    const needsRepair = await database.hasExcessNotificationsPerDay(expectedPerDay, locale);
+
+    if (!needsRepair) {
+      console.log('🔔 Notification schedule is healthy, no repair needed');
+      return { repaired: false, count: 0 };
+    }
+
+    console.log('🔧 Repairing notification schedule due to duplicate notifications per day...');
+
+    // Clear all future notifications and reschedule properly
+    await clearAllScheduledNotifications(false, locale);
+
+    // Reschedule with the correct distribution
+    let result;
+    if (notificationTimes.length > 1) {
+      result = await rescheduleNotificationsMultiple(notificationTimes, locale);
+    } else {
+      result = await scheduleInitialNotifications(notificationTimes[0], locale);
+    }
+
+    console.log(`🔧 Repair complete: rescheduled ${result.count} notifications`);
+    
+    return { repaired: true, count: result.count };
+  } catch (error) {
+    console.error('Error repairing notification schedule:', error);
+    return { repaired: false, count: 0 };
+  }
+}
+
+/**
  * Check if notifications are enabled and top up to 64 if needed
  * This should be called on app start after onboarding is complete
  * @param locale The user's locale for filtering facts
@@ -1073,17 +1121,9 @@ export async function checkAndTopUpNotifications(
       }
     }
 
-    // Step 6: If count is already 64 or more, no need to top up
-    if (currentCount >= MAX_SCHEDULED_NOTIFICATIONS) {
-      console.log('🔔 Notification schedule is full, no top-up needed');
-      return {
-        success: true,
-        count: 0,
-      };
-    }
-
-    // Step 7: Get notification times from preferences (supports multiple times for premium users)
+    // Step 6: Get notification times from preferences (supports multiple times for premium users)
     // Import dynamically to avoid circular dependency
+    // We need times early to check for repair before the "schedule is full" check
     const onboardingService = await import('./onboarding');
     const notificationTimes = await onboardingService.getNotificationTimes();
 
@@ -1099,6 +1139,30 @@ export async function checkAndTopUpNotifications(
     // Convert ISO strings to Date objects
     const times = notificationTimes.map(t => new Date(t));
     console.log(`🔔 Notification times configured: ${times.length} time slot(s)`);
+
+    // Step 6b: Check if scheduled notifications need repair (fixes bug where multiple notifications were scheduled per day)
+    // This MUST run before the "schedule is full" check to repair existing users' schedules
+    const repairResult = await checkAndRepairNotificationSchedule(locale, times);
+    if (repairResult.repaired) {
+      console.log(`🔧 Schedule repaired with ${repairResult.count} notifications`);
+      
+      // Preload images for upcoming notifications
+      await preloadUpcomingNotificationImages(locale);
+      
+      return {
+        success: true,
+        count: repairResult.count,
+      };
+    }
+
+    // Step 7: If count is already 64 or more, no need to top up
+    if (currentCount >= MAX_SCHEDULED_NOTIFICATIONS) {
+      console.log('🔔 Notification schedule is full, no top-up needed');
+      return {
+        success: true,
+        count: 0,
+      };
+    }
 
     // Step 8: Schedule notifications
     // If OS has 0, do a full initial schedule. Otherwise, just top up.

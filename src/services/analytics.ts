@@ -151,6 +151,7 @@ export const trackScreenView = (screenName: string, screenClass?: string): void 
 export const Screens = {
   HOME: 'Home',
   DISCOVER: 'Discover',
+  QUIZ: 'Quiz',
   FAVORITES: 'Favorites',
   SETTINGS: 'Settings',
   FACT_DETAIL: 'FactDetail',

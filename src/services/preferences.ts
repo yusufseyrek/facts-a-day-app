@@ -134,7 +134,9 @@ export async function handleLanguageChange(
           percentage: Math.round(progress),
           message: `Downloading facts (${downloaded}/${total})...`
         });
-      }
+      },
+      3, // maxRetries
+      true // includeQuestions
     );
 
     // Stage 4: Process facts - update preserved ones, insert new ones
@@ -197,6 +199,30 @@ export async function handleLanguageChange(
     });
 
     console.log(`Updated ${updatedCount} preserved facts, inserted ${insertedCount} new facts`);
+
+    // Extract and insert questions for quiz feature
+    const dbQuestions: database.Question[] = [];
+    for (const fact of allFacts) {
+      if (fact.questions && fact.questions.length > 0) {
+        for (const question of fact.questions) {
+          dbQuestions.push({
+            id: question.id,
+            fact_id: fact.id,
+            question_type: question.question_type,
+            question_text: question.question_text,
+            correct_answer: question.correct_answer,
+            wrong_answers: question.wrong_answers ? JSON.stringify(question.wrong_answers) : null,
+            explanation: question.explanation,
+            difficulty: question.difficulty,
+          });
+        }
+      }
+    }
+
+    if (dbQuestions.length > 0) {
+      await database.insertQuestions(dbQuestions);
+      console.log(`🧠 Synced ${dbQuestions.length} questions for quiz`);
+    }
 
     // Stage 5: Reschedule notifications with new language
     onProgress?.({
@@ -292,7 +318,9 @@ export async function handleCategoriesChange(
           percentage: Math.round(progress),
           message: `Downloading facts (${downloaded}/${total})...`
         });
-      }
+      },
+      3, // maxRetries
+      true // includeQuestions
     );
 
     // Stage 3: Process facts - update shown ones (keep shown_in_feed), insert new ones
@@ -358,6 +386,30 @@ export async function handleCategoriesChange(
     });
 
     console.log(`Updated ${updatedCount} shown facts, inserted ${insertedCount} new facts`);
+
+    // Extract and insert questions for quiz feature
+    const dbQuestions: database.Question[] = [];
+    for (const fact of newFacts) {
+      if (fact.questions && fact.questions.length > 0) {
+        for (const question of fact.questions) {
+          dbQuestions.push({
+            id: question.id,
+            fact_id: fact.id,
+            question_type: question.question_type,
+            question_text: question.question_text,
+            correct_answer: question.correct_answer,
+            wrong_answers: question.wrong_answers ? JSON.stringify(question.wrong_answers) : null,
+            explanation: question.explanation,
+            difficulty: question.difficulty,
+          });
+        }
+      }
+    }
+
+    if (dbQuestions.length > 0) {
+      await database.insertQuestions(dbQuestions);
+      console.log(`🧠 Synced ${dbQuestions.length} questions for quiz`);
+    }
 
     // Stage 4: Refresh notification schedule
     onProgress?.({

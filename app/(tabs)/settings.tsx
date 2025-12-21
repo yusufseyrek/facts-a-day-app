@@ -18,6 +18,7 @@ import {
   RotateCcw,
   FileText,
   Shield,
+  Bug,
 } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
 import { H1, H2, SmallText } from "../../src/components";
@@ -350,6 +351,122 @@ export default function SettingsPage() {
     }
   };
 
+  const handleScheduleDuplicateNotifications = async () => {
+    try {
+      console.log("🐛 Creating buggy notification schedule to test repair...");
+
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          t("notificationPermissionRequired"),
+          t("notificationPermissionMessage"),
+          [{ text: t("ok"), style: "default" }]
+        );
+        return;
+      }
+
+      // Step 1: Clear all existing notifications from OS and DB
+      console.log("🐛 Clearing existing notifications...");
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      await database.clearAllScheduledFactsCompletely();
+
+      // Step 2: Get enough facts to fill up to 64 notifications
+      const facts = await database.getRandomUnscheduledFacts(64, locale);
+      console.log("📚 Facts found:", facts.length);
+
+      if (facts.length < 64) {
+        Alert.alert("Not enough facts", `Need 64 unscheduled facts to test, found ${facts.length}`, [
+          { text: t("ok"), style: "default" },
+        ]);
+        return;
+      }
+
+      const now = new Date();
+      let scheduledCount = 0;
+      let factIndex = 0;
+      
+      // Step 3: Schedule notifications with duplicates (simulating the bug)
+      // For first 10 days, schedule 3 notifications per day (30 total - duplicates!)
+      // For next 34 days, schedule 1 notification per day (34 total)
+      // Total: 64 notifications
+      
+      console.log("🐛 Scheduling with duplicates for first 10 days...");
+      
+      // First 10 days: 3 notifications each (this is the bug scenario)
+      for (let day = 1; day <= 10; day++) {
+        for (let slot = 0; slot < 3; slot++) {
+          if (factIndex >= facts.length) break;
+          
+          const fact = facts[factIndex];
+          const scheduledDate = new Date(now);
+          scheduledDate.setDate(scheduledDate.getDate() + day);
+          scheduledDate.setHours(9 + slot * 2, 0, 0, 0); // 9:00, 11:00, 13:00
+
+          const content = await buildNotificationContent(fact, locale, scheduledDate);
+          const notificationId = await Notifications.scheduleNotificationAsync({
+            content,
+            trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.DATE,
+              date: scheduledDate,
+            },
+          });
+
+          if (notificationId) {
+            await database.markFactAsScheduled(fact.id, scheduledDate.toISOString(), notificationId);
+            scheduledCount++;
+            factIndex++;
+          }
+        }
+      }
+      
+      // Next 34 days: 1 notification each (normal)
+      console.log("🐛 Scheduling normal notifications for remaining days...");
+      for (let day = 11; day <= 44 && factIndex < facts.length; day++) {
+        const fact = facts[factIndex];
+        const scheduledDate = new Date(now);
+        scheduledDate.setDate(scheduledDate.getDate() + day);
+        scheduledDate.setHours(9, 0, 0, 0);
+
+        const content = await buildNotificationContent(fact, locale, scheduledDate);
+        const notificationId = await Notifications.scheduleNotificationAsync({
+          content,
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: scheduledDate,
+          },
+        });
+
+        if (notificationId) {
+          await database.markFactAsScheduled(fact.id, scheduledDate.toISOString(), notificationId);
+          scheduledCount++;
+          factIndex++;
+        }
+      }
+
+      // Verify
+      const osCount = await Notifications.getAllScheduledNotificationsAsync();
+      console.log(`🐛 Created buggy schedule: ${scheduledCount} notifications (OS: ${osCount.length})`);
+      console.log("🐛 Days 1-10 have 3 notifications each (bug), days 11-44 have 1 each (normal)");
+
+      Alert.alert(
+        "Buggy Schedule Created",
+        `Scheduled ${scheduledCount} notifications:\n` +
+        `• Days 1-10: 3 per day (bug!)\n` +
+        `• Days 11-44: 1 per day (normal)\n\n` +
+        `OS has ${osCount.length} notifications.\n\n` +
+        `Restart the app to trigger the repair check.`,
+        [{ text: t("ok"), style: "default" }]
+      );
+    } catch (error) {
+      console.error("❌ Error scheduling duplicate notifications:", error);
+      Alert.alert(
+        t("error"),
+        error instanceof Error ? error.message : "Unknown error",
+        [{ text: t("ok"), style: "default" }]
+      );
+    }
+  };
+
   return (
     <Container>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
@@ -394,10 +511,7 @@ export default function SettingsPage() {
                         minute: "2-digit",
                         hour12: false,
                       })
-                    : t("settingsNotificationTimesCount").replace(
-                        "{count}",
-                        notificationTimes.length.toString()
-                      )
+                    : t("settingsNotificationTimesCount", { count: notificationTimes.length })
                 }
                 icon={<Bell size={20} color={iconColor} />}
                 onPress={handleTimePress}
@@ -422,6 +536,12 @@ export default function SettingsPage() {
                   label={t("testNotification")}
                   icon={<TestTube size={20} color={iconColor} />}
                   onPress={handleTestNotification}
+                />
+
+                <SettingsRow
+                  label="Schedule Duplicate Notifications"
+                  icon={<Bug size={20} color={iconColor} />}
+                  onPress={handleScheduleDuplicateNotifications}
                 />
 
                 <SettingsRow

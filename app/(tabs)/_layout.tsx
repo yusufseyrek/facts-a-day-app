@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Lightbulb, Compass, Star, Settings } from "@tamagui/lucide-icons";
+import { Lightbulb, Compass, Brain, Star, Settings } from "@tamagui/lucide-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pressable, Animated } from "react-native";
 import { useRef, useCallback } from "react";
@@ -104,6 +104,14 @@ export default function TabLayout() {
         options={{
           title: t("discover"),
           tabBarIcon: ({ color }) => <Compass size={28} color={color} />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} />,
+        }}
+      />
+      <Tabs.Screen
+        name="quiz"
+        options={{
+          title: t("quiz"),
+          tabBarIcon: ({ color }) => <Brain size={28} color={color} />,
           tabBarButton: (props) => <AnimatedTabButton {...props} />,
         }}
       />

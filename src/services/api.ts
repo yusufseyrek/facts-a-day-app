@@ -42,6 +42,16 @@ export interface MetadataResponse {
   languages: Language[];
 }
 
+export interface QuestionResponse {
+  id: number;
+  question_type: 'multiple_choice' | 'true_false';
+  question_text: string;
+  correct_answer: string;
+  wrong_answers: string[] | null;
+  explanation: string | null;
+  difficulty: number;
+}
+
 export interface FactResponse {
   id: number;
   title?: string;
@@ -53,6 +63,7 @@ export interface FactResponse {
   language: string;
   created_at: string;
   last_updated?: string;
+  questions?: QuestionResponse[]; // Only present when include_questions=true
 }
 
 export interface FactsResponse {
@@ -72,6 +83,7 @@ export interface GetFactsParams {
   offset?: number;
   batch_size?: number;
   since_updated?: string;
+  include_questions?: boolean;
 }
 
 export interface FeedbackRequest {
@@ -333,6 +345,10 @@ export async function getFacts(params: GetFactsParams): Promise<FactsResponse> {
     queryParams.append('since_updated', params.since_updated);
   }
 
+  if (params.include_questions) {
+    queryParams.append('include_questions', 'true');
+  }
+
   const endpoint = `/api/facts?${queryParams.toString()}`;
   return makeAuthenticatedRequest<FactsResponse>(endpoint);
 }
@@ -345,12 +361,13 @@ export async function getFacts(params: GetFactsParams): Promise<FactsResponse> {
 export async function getAllFacts(
   language: string,
   categories?: string,
-  onProgress?: (downloaded: number, total: number) => void
+  onProgress?: (downloaded: number, total: number) => void,
+  includeQuestions?: boolean
 ): Promise<FactResponse[]> {
   const allFacts: FactResponse[] = [];
   let offset = 0;
   let hasMore = true;
-  const batchSize = 1000;
+  const batchSize = 500;
 
   while (hasMore) {
     const response = await getFacts({
@@ -358,6 +375,7 @@ export async function getAllFacts(
       categories,
       offset,
       batch_size: batchSize,
+      include_questions: includeQuestions,
     });
 
     allFacts.push(...response.facts);
@@ -381,14 +399,15 @@ export async function getAllFactsWithRetry(
   language: string,
   categories?: string,
   onProgress?: (downloaded: number, total: number) => void,
-  maxRetries = 3
+  maxRetries = 3,
+  includeQuestions?: boolean
 ): Promise<FactResponse[]> {
   let attempt = 0;
   let lastError: Error | null = null;
 
   while (attempt < maxRetries) {
     try {
-      return await getAllFacts(language, categories, onProgress);
+      return await getAllFacts(language, categories, onProgress, includeQuestions);
     } catch (error) {
       lastError = error as Error;
       attempt++;

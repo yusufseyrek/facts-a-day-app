@@ -151,6 +151,29 @@ export const translations = {
     // Category Facts Count
     factCountSingular: "%{count} Fakt",
     factCountPlural: "%{count} Fakten",
+
+    // Quiz
+    quiz: "Quiz",
+    dailyQuiz: "Tägliches Quiz",
+    categoryQuiz: "Kategorie-Quiz",
+    dailyQuizQuestions: "%{count} Fragen aus heutigen Fakten",
+    dailyQuizCompleted: "Heute abgeschlossen!",
+    noQuestionsYet: "Noch keine Fragen",
+    noQuestionsYetDescription: "Fragen erscheinen, nachdem Sie einige Fakten gelesen haben",
+    questionOf: "Frage %{current} von %{total}",
+    explanation: "Erklärung",
+    nextQuestion: "Nächste Frage",
+    seeResults: "Ergebnisse anzeigen",
+    quizComplete: "Quiz abgeschlossen!",
+    perfectScore: "Perfekte Punktzahl!",
+    youGotCorrect: "%{correct} von %{total} richtig",
+    accuracy: "Genauigkeit",
+    dayStreak: "Tage-Serie",
+    streak: "Serie",
+    answered: "Beantwortet",
+    reviewFacts: "Diese Fakten wiederholen",
+    continueQuiz: "Quiz fortsetzen",
+    backToQuiz: "Zurück zum Quiz",
   },
   en: {
     // Onboarding - Categories
@@ -302,6 +325,29 @@ export const translations = {
     // Category Facts Count
     factCountSingular: "%{count} fact",
     factCountPlural: "%{count} facts",
+
+    // Quiz
+    quiz: "Quiz",
+    dailyQuiz: "Daily Quiz",
+    categoryQuiz: "Category Quiz",
+    dailyQuizQuestions: "%{count} questions from today's facts",
+    dailyQuizCompleted: "Completed today!",
+    noQuestionsYet: "No questions yet",
+    noQuestionsYetDescription: "Questions will appear after you've seen some facts",
+    questionOf: "Question %{current} of %{total}",
+    explanation: "Explanation",
+    nextQuestion: "Next Question",
+    seeResults: "See Results",
+    quizComplete: "Quiz Complete!",
+    perfectScore: "Perfect Score!",
+    youGotCorrect: "%{correct} of %{total} correct",
+    accuracy: "Accuracy",
+    dayStreak: "Day Streak",
+    streak: "Streak",
+    answered: "Answered",
+    reviewFacts: "Review These Facts",
+    continueQuiz: "Continue Quiz",
+    backToQuiz: "Back to Quiz",
   },
   es: {
     // Onboarding - Categories
@@ -453,6 +499,29 @@ export const translations = {
     // Category Facts Count
     factCountSingular: "%{count} dato",
     factCountPlural: "%{count} datos",
+
+    // Quiz
+    quiz: "Quiz",
+    dailyQuiz: "Quiz Diario",
+    categoryQuiz: "Quiz por Categoría",
+    dailyQuizQuestions: "%{count} preguntas de los datos de hoy",
+    dailyQuizCompleted: "¡Completado hoy!",
+    noQuestionsYet: "Aún no hay preguntas",
+    noQuestionsYetDescription: "Las preguntas aparecerán después de ver algunos datos",
+    questionOf: "Pregunta %{current} de %{total}",
+    explanation: "Explicación",
+    nextQuestion: "Siguiente Pregunta",
+    seeResults: "Ver Resultados",
+    quizComplete: "¡Quiz Completo!",
+    perfectScore: "¡Puntuación Perfecta!",
+    youGotCorrect: "%{correct} de %{total} correctas",
+    accuracy: "Precisión",
+    dayStreak: "Racha de Días",
+    streak: "Racha",
+    answered: "Respondidas",
+    reviewFacts: "Revisar Estos Datos",
+    continueQuiz: "Continuar Quiz",
+    backToQuiz: "Volver al Quiz",
   },
   fr: {
     // Onboarding - Categories
@@ -604,6 +673,29 @@ export const translations = {
     // Category Facts Count
     factCountSingular: "%{count} fait",
     factCountPlural: "%{count} faits",
+
+    // Quiz
+    quiz: "Quiz",
+    dailyQuiz: "Quiz Quotidien",
+    categoryQuiz: "Quiz par Catégorie",
+    dailyQuizQuestions: "%{count} questions des faits d'aujourd'hui",
+    dailyQuizCompleted: "Terminé aujourd'hui !",
+    noQuestionsYet: "Pas encore de questions",
+    noQuestionsYetDescription: "Les questions apparaîtront après avoir vu quelques faits",
+    questionOf: "Question %{current} sur %{total}",
+    explanation: "Explication",
+    nextQuestion: "Question Suivante",
+    seeResults: "Voir les Résultats",
+    quizComplete: "Quiz Terminé !",
+    perfectScore: "Score Parfait !",
+    youGotCorrect: "%{correct} sur %{total} correctes",
+    accuracy: "Précision",
+    dayStreak: "Série de Jours",
+    streak: "Série",
+    answered: "Répondues",
+    reviewFacts: "Réviser Ces Faits",
+    continueQuiz: "Continuer le Quiz",
+    backToQuiz: "Retour au Quiz",
   },
   ja: {
     // Onboarding - Categories
@@ -754,6 +846,29 @@ export const translations = {
     // Category Facts Count
     factCountSingular: "%{count}件の豆知識",
     factCountPlural: "%{count}件の豆知識",
+
+    // Quiz
+    quiz: "クイズ",
+    dailyQuiz: "デイリークイズ",
+    categoryQuiz: "カテゴリークイズ",
+    dailyQuizQuestions: "今日の豆知識から%{count}問",
+    dailyQuizCompleted: "今日は完了しました！",
+    noQuestionsYet: "まだ問題がありません",
+    noQuestionsYetDescription: "豆知識を見ると問題が表示されます",
+    questionOf: "%{total}問中%{current}問目",
+    explanation: "解説",
+    nextQuestion: "次の問題",
+    seeResults: "結果を見る",
+    quizComplete: "クイズ完了！",
+    perfectScore: "満点！",
+    youGotCorrect: "%{total}問中%{correct}問正解",
+    accuracy: "正解率",
+    dayStreak: "連続日数",
+    streak: "連続",
+    answered: "回答済み",
+    reviewFacts: "これらの豆知識を復習",
+    continueQuiz: "クイズを続ける",
+    backToQuiz: "クイズに戻る",
   },
   ko: {
     // Onboarding - Categories
@@ -901,6 +1016,29 @@ export const translations = {
     // Category Facts Count
     factCountSingular: "%{count}개 정보",
     factCountPlural: "%{count}개 정보",
+
+    // Quiz
+    quiz: "퀴즈",
+    dailyQuiz: "오늘의 퀴즈",
+    categoryQuiz: "카테고리 퀴즈",
+    dailyQuizQuestions: "오늘의 정보에서 %{count}개 문제",
+    dailyQuizCompleted: "오늘 완료!",
+    noQuestionsYet: "아직 문제가 없습니다",
+    noQuestionsYetDescription: "정보를 본 후 문제가 나타납니다",
+    questionOf: "%{total}개 중 %{current}번째 문제",
+    explanation: "설명",
+    nextQuestion: "다음 문제",
+    seeResults: "결과 보기",
+    quizComplete: "퀴즈 완료!",
+    perfectScore: "만점!",
+    youGotCorrect: "%{total}개 중 %{correct}개 정답",
+    accuracy: "정확도",
+    dayStreak: "연속 일수",
+    streak: "연속",
+    answered: "응답",
+    reviewFacts: "이 정보들 복습하기",
+    continueQuiz: "퀴즈 계속하기",
+    backToQuiz: "퀴즈로 돌아가기",
   },
   tr: {
     // Onboarding - Categories
@@ -1051,6 +1189,29 @@ export const translations = {
     // Category Facts Count
     factCountSingular: "%{count} bilgi",
     factCountPlural: "%{count} bilgi",
+
+    // Quiz
+    quiz: "Quiz",
+    dailyQuiz: "Günlük Quiz",
+    categoryQuiz: "Kategori Quizi",
+    dailyQuizQuestions: "Bugünün bilgilerinden %{count} soru",
+    dailyQuizCompleted: "Bugün tamamlandı!",
+    noQuestionsYet: "Henüz soru yok",
+    noQuestionsYetDescription: "Bazı bilgileri gördükten sonra sorular görünecek",
+    questionOf: "%{total} sorudan %{current}. soru",
+    explanation: "Açıklama",
+    nextQuestion: "Sonraki Soru",
+    seeResults: "Sonuçları Gör",
+    quizComplete: "Quiz Tamamlandı!",
+    perfectScore: "Mükemmel Puan!",
+    youGotCorrect: "%{total} sorudan %{correct} doğru",
+    accuracy: "Doğruluk",
+    dayStreak: "Günlük Seri",
+    streak: "Seri",
+    answered: "Cevaplanan",
+    reviewFacts: "Bu Bilgileri Gözden Geçir",
+    continueQuiz: "Quize Devam Et",
+    backToQuiz: "Quize Dön",
   },
   zh: {
     // Onboarding - Categories
@@ -1197,6 +1358,29 @@ export const translations = {
     // Category Facts Count
     factCountSingular: "%{count}条知识",
     factCountPlural: "%{count}条知识",
+
+    // Quiz
+    quiz: "测验",
+    dailyQuiz: "每日测验",
+    categoryQuiz: "分类测验",
+    dailyQuizQuestions: "今天知识的%{count}个问题",
+    dailyQuizCompleted: "今天已完成！",
+    noQuestionsYet: "还没有问题",
+    noQuestionsYetDescription: "看过一些知识后会出现问题",
+    questionOf: "第%{current}题，共%{total}题",
+    explanation: "解释",
+    nextQuestion: "下一题",
+    seeResults: "查看结果",
+    quizComplete: "测验完成！",
+    perfectScore: "满分！",
+    youGotCorrect: "%{total}题中答对%{correct}题",
+    accuracy: "准确率",
+    dayStreak: "连续天数",
+    streak: "连续",
+    answered: "已回答",
+    reviewFacts: "复习这些知识",
+    continueQuiz: "继续测验",
+    backToQuiz: "返回测验",
   },
 };
 
