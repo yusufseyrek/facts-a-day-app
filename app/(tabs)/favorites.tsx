@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { FlatList, RefreshControl, ActivityIndicator } from 'react-native';
-import { styled } from '@tamagui/core';
-import { YStack, XStack } from 'tamagui';
+import { YStack } from 'tamagui';
 import { Star } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { tokens } from '../../src/theme/tokens';
-import { H1, FeedFactCard, EmptyState } from '../../src/components';
+import {
+  FeedFactCard,
+  EmptyState,
+  ScreenContainer,
+  ScreenHeader,
+  ContentContainer,
+  LoadingContainer,
+  useIconColor,
+} from '../../src/components';
 import { BannerAd } from '../../src/components/ads/BannerAd';
 import type { FactWithRelations } from '../../src/services/database';
 import { useTheme } from '../../src/theme';
@@ -16,33 +22,11 @@ import * as database from '../../src/services/database';
 import { useFocusEffect } from '@react-navigation/native';
 import { trackScreenView, Screens } from '../../src/services/analytics';
 
-const Container = styled(SafeAreaView, {
-  flex: 1,
-  backgroundColor: '$background',
-});
-
-const Header = styled(XStack, {
-  padding: tokens.space.xl,
-  paddingBottom: tokens.space.md,
-  alignItems: 'center',
-  gap: tokens.space.sm,
-});
-
-const ContentContainer = styled(YStack, {
-  paddingHorizontal: tokens.space.lg,
-});
-
-const LoadingContainer = styled(YStack, {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: tokens.space.md,
-});
-
 export default function FavoritesScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
+  const iconColor = useIconColor();
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -84,42 +68,39 @@ export default function FavoritesScreen() {
   // Only show loading spinner on initial load when there's no data yet
   if (initialLoading && favorites.length === 0) {
     return (
-      <Container edges={["top"]}>
+      <ScreenContainer edges={["top"]}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <LoadingContainer>
           <ActivityIndicator size="large" color={tokens.color.light.primary} />
         </LoadingContainer>
-      </Container>
+      </ScreenContainer>
     );
   }
 
   if (favorites.length === 0) {
     return (
-      <Container edges={["top"]}>
+      <ScreenContainer edges={["top"]}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <EmptyState
           title={t('noFavorites')}
           description={t('noFavoritesDescription')}
         />
-      </Container>
+      </ScreenContainer>
     );
   }
 
   return (
-    <Container edges={["top"]}>
+    <ScreenContainer edges={["top"]}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <YStack flex={1}>
         <FlatList
           data={favorites}
           keyExtractor={(item) => item.id.toString()}
           ListHeaderComponent={() => (
-            <Header>
-              <Star
-                size={28}
-                color={theme === 'dark' ? '#FFFFFF' : tokens.color.light.text}
-              />
-              <H1>{t('favorites')}</H1>
-            </Header>
+            <ScreenHeader
+              icon={<Star size={28} color={iconColor} />}
+              title={t('favorites')}
+            />
           )}
           renderItem={({ item }) => (
             <ContentContainer>
@@ -136,6 +117,6 @@ export default function FavoritesScreen() {
         />
         <BannerAd position="favorites" />
       </YStack>
-    </Container>
+    </ScreenContainer>
   );
 }

@@ -1,8 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { StatusBar } from "expo-status-bar";
-import { Alert, ScrollView, Linking, Platform, AppState } from "react-native";
-import { styled } from "@tamagui/core";
+import { Alert, SectionList, Linking, Platform, AppState, View } from "react-native";
 import { YStack } from "tamagui";
 import { useRouter, useFocusEffect } from "expo-router";
 import * as Notifications from "expo-notifications";
@@ -19,9 +17,18 @@ import {
   FileText,
   Shield,
   Bug,
+  Settings,
 } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
-import { H1, H2, SmallText } from "../../src/components";
+import {
+  H2,
+  SmallText,
+  ScreenContainer,
+  ScreenHeader,
+  SectionHeaderContainer,
+  ContentContainer,
+  useIconColor,
+} from "../../src/components";
 import { SettingsRow } from "../../src/components/SettingsRow";
 import { ThemePickerModal } from "../../src/components/settings/ThemePickerModal";
 import { TimePickerModal } from "../../src/components/settings/TimePickerModal";
@@ -34,33 +41,6 @@ import { buildNotificationContent } from "../../src/services/notifications";
 import { useOnboarding } from "../../src/contexts";
 import { openInAppBrowser } from "../../src/utils/browser";
 import { trackScreenView, Screens } from "../../src/services/analytics";
-
-const Container = styled(SafeAreaView, {
-  flex: 1,
-  backgroundColor: "$background",
-  edges: ["top"],
-});
-
-const ContentContainer = styled(YStack, {
-  paddingHorizontal: tokens.space.xl,
-  paddingTop: tokens.space.md,
-  gap: tokens.space.lg,
-  flex: 1,
-});
-
-const SectionContainer = styled(YStack, {
-  gap: tokens.space.md,
-  marginBottom: tokens.space.xl,
-});
-
-const SectionTitle = styled(H2, {
-  marginBottom: tokens.space.sm,
-});
-
-const SettingsGroup = styled(YStack, {
-  gap: tokens.space.md,
-});
-
 
 // Helper to get language display name
 const getLanguageName = (code: string): string => {
@@ -466,129 +446,187 @@ export default function SettingsPage() {
     }
   };
 
+  const headerIconColor = useIconColor();
+
+  // Define settings items for each section
+  type SettingsItem = {
+    id: string;
+    label: string;
+    value?: string;
+    icon: React.ReactNode;
+    onPress: () => void;
+    showExternalLink?: boolean;
+    showWarning?: boolean;
+  };
+
+  type SettingsSection = {
+    title: string;
+    data: SettingsItem[];
+  };
+
+  // Build sections dynamically
+  const sections = useMemo((): SettingsSection[] => {
+    const userPreferencesSection: SettingsSection = {
+      title: t("settingsUserPreferences"),
+      data: [
+        {
+          id: "language",
+          label: t("settingsLanguage"),
+          value: getLanguageName(locale),
+          icon: <Globe size={20} color={iconColor} />,
+          onPress: handleLanguagePress,
+          showExternalLink: true,
+        },
+        {
+          id: "theme",
+          label: t("settingsThemeTitle"),
+          value: getThemeName(themeMode, t),
+          icon: <Palette size={20} color={iconColor} />,
+          onPress: () => setShowThemeModal(true),
+        },
+        {
+          id: "categories",
+          label: t("settingsCategories"),
+          value: `${selectedCategories.length} ${t("settingsSelected")}`,
+          icon: <Grid size={20} color={iconColor} />,
+          onPress: handleCategoriesPress,
+        },
+        {
+          id: "notificationTime",
+          label: t("settingsNotificationTime"),
+          value:
+            notificationTimes.length === 1
+              ? notificationTimes[0].toLocaleTimeString(locale, {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                })
+              : t("settingsNotificationTimesCount", { count: notificationTimes.length }),
+          icon: <Bell size={20} color={iconColor} />,
+          onPress: handleTimePress,
+          showWarning: !notificationPermissionGranted,
+        },
+      ],
+    };
+
+    const developerSection: SettingsSection = {
+      title: t("developerSettings"),
+      data: [
+        {
+          id: "add10Facts",
+          label: t("add10RandomFacts"),
+          icon: <Plus size={20} color={iconColor} />,
+          onPress: handleAdd10RandomFacts,
+        },
+        {
+          id: "testNotification",
+          label: t("testNotification"),
+          icon: <TestTube size={20} color={iconColor} />,
+          onPress: handleTestNotification,
+        },
+        {
+          id: "duplicateNotifications",
+          label: "Schedule Duplicate Notifications",
+          icon: <Bug size={20} color={iconColor} />,
+          onPress: handleScheduleDuplicateNotifications,
+        },
+        {
+          id: "toggleTheme",
+          label: t("toggleTheme"),
+          value: theme,
+          icon: <Contrast size={20} color={iconColor} />,
+          onPress: toggleTheme,
+        },
+        {
+          id: "resetOnboarding",
+          label: t("resetOnboarding"),
+          icon: <RotateCcw size={20} color={iconColor} />,
+          onPress: handleResetOnboarding,
+        },
+      ],
+    };
+
+    const legalSection: SettingsSection = {
+      title: t("settingsLegal"),
+      data: [
+        {
+          id: "privacyPolicy",
+          label: t("settingsPrivacyPolicy"),
+          icon: <Shield size={20} color={iconColor} />,
+          onPress: handlePrivacyPolicyPress,
+        },
+        {
+          id: "termsOfService",
+          label: t("settingsTermsOfService"),
+          icon: <FileText size={20} color={iconColor} />,
+          onPress: handleTermsOfServicePress,
+        },
+      ],
+    };
+
+    const result: SettingsSection[] = [userPreferencesSection];
+    if (isDevelopment) {
+      result.push(developerSection);
+    }
+    result.push(legalSection);
+
+    return result;
+  }, [
+    t,
+    locale,
+    iconColor,
+    themeMode,
+    selectedCategories,
+    notificationTimes,
+    notificationPermissionGranted,
+    isDevelopment,
+    theme,
+  ]);
+
+  const renderFooter = () => (
+    <ContentContainer>
+      <YStack alignItems="center" marginVertical={tokens.space.lg}>
+        <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
+          Version {Constants.expoConfig?.version || "1.0.0"} ({Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber || 'N/A' : Constants.expoConfig?.android?.versionCode || 'N/A'})
+        </SmallText>
+        <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
+          {t("settingsCopyright").replace("{appName}", t("appName"))}
+        </SmallText>
+      </YStack>
+    </ContentContainer>
+  );
+
   return (
-    <Container>
+    <ScreenContainer edges={["top"]}>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <ContentContainer>
-          {/* Header */}
-          <H1>{t("settings")}</H1>
-
-          {/* User Preferences Section */}
-          <SectionContainer>
-            <SectionTitle>{t("settingsUserPreferences")}</SectionTitle>
-
-            <SettingsGroup>
-              <SettingsRow
-                label={t("settingsLanguage")}
-                value={getLanguageName(locale)}
-                icon={<Globe size={20} color={iconColor} />}
-                onPress={handleLanguagePress}
-                showExternalLink
-              />
-
-              <SettingsRow
-                label={t("settingsThemeTitle")}
-                value={getThemeName(themeMode, t)}
-                icon={<Palette size={20} color={iconColor} />}
-                onPress={() => setShowThemeModal(true)}
-              />
-
-              <SettingsRow
-                label={t("settingsCategories")}
-                value={`${selectedCategories.length} ${t("settingsSelected")}`}
-                icon={<Grid size={20} color={iconColor} />}
-                onPress={handleCategoriesPress}
-              />
-
-              <SettingsRow
-                label={t("settingsNotificationTime")}
-                value={
-                  notificationTimes.length === 1
-                    ? notificationTimes[0].toLocaleTimeString(locale, {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: false,
-                      })
-                    : t("settingsNotificationTimesCount", { count: notificationTimes.length })
-                }
-                icon={<Bell size={20} color={iconColor} />}
-                onPress={handleTimePress}
-                showWarning={!notificationPermissionGranted}
-              />
-            </SettingsGroup>
-          </SectionContainer>
-
-          {/* Developer Settings Section - Only visible in development */}
-          {isDevelopment && (
-            <SectionContainer>
-              <SectionTitle>{t("developerSettings")}</SectionTitle>
-
-              <SettingsGroup>
-                <SettingsRow
-                  label={t("add10RandomFacts")}
-                  icon={<Plus size={20} color={iconColor} />}
-                  onPress={handleAdd10RandomFacts}
-                />
-
-                <SettingsRow
-                  label={t("testNotification")}
-                  icon={<TestTube size={20} color={iconColor} />}
-                  onPress={handleTestNotification}
-                />
-
-                <SettingsRow
-                  label="Schedule Duplicate Notifications"
-                  icon={<Bug size={20} color={iconColor} />}
-                  onPress={handleScheduleDuplicateNotifications}
-                />
-
-                <SettingsRow
-                  label={t("toggleTheme")}
-                  value={theme}
-                  icon={<Contrast size={20} color={iconColor} />}
-                  onPress={toggleTheme}
-                />
-
-                <SettingsRow
-                  label={t("resetOnboarding")}
-                  icon={<RotateCcw size={20} color={iconColor} />}
-                  onPress={handleResetOnboarding}
-                />
-              </SettingsGroup>
-            </SectionContainer>
-          )}
-
-          {/* Legal Section */}
-          <SectionContainer marginBottom={tokens.space.md}>
-            <SectionTitle>{t("settingsLegal")}</SectionTitle>
-
-            <SettingsGroup>
-              <SettingsRow
-                label={t("settingsPrivacyPolicy")}
-                icon={<Shield size={20} color={iconColor} />}
-                onPress={handlePrivacyPolicyPress}
-              />
-
-              <SettingsRow
-                label={t("settingsTermsOfService")}
-                icon={<FileText size={20} color={iconColor} />}
-                onPress={handleTermsOfServicePress}
-              />
-            </SettingsGroup>
-          </SectionContainer>
-
-          {/* App Version */}
-          <YStack alignItems="center" marginBottom={tokens.space.lg}>
-            <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
-              Version {Constants.expoConfig?.version || "1.0.0"} ({Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber || 'N/A' : Constants.expoConfig?.android?.versionCode || 'N/A'})
-            </SmallText>
-            <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
-              {t("settingsCopyright").replace("{appName}", t("appName"))}
-            </SmallText>
-          </YStack>
-        </ContentContainer>
-      </ScrollView>
+      <ScreenHeader
+        icon={<Settings size={28} color={headerIconColor} />}
+        title={t("settings")}
+      />
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => item.id}
+        renderSectionHeader={({ section: { title } }) => (
+          <SectionHeaderContainer>
+            <H2>{title}</H2>
+          </SectionHeaderContainer>
+        )}
+        renderItem={({ item }) => (
+          <ContentContainer marginBottom={tokens.space.md}>
+            <SettingsRow
+              label={item.label}
+              value={item.value}
+              icon={item.icon}
+              onPress={item.onPress}
+              showExternalLink={item.showExternalLink}
+              showWarning={item.showWarning}
+            />
+          </ContentContainer>
+        )}
+        ListFooterComponent={renderFooter}
+        stickySectionHeadersEnabled={true}
+        showsVerticalScrollIndicator={false}
+      />
 
       {/* Modals */}
       <ThemePickerModal
@@ -613,6 +651,6 @@ export default function SettingsPage() {
         }}
         hasNotificationPermission={notificationPermissionGranted}
       />
-    </Container>
+    </ScreenContainer>
   );
 }

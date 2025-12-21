@@ -33,12 +33,18 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   // Warning indicator color - darker in light mode for better readability
   const warningColor = theme === 'dark' ? '#F59E0B' : '#B45309';
 
+  // Use white background in light mode, surface in dark mode
+  const backgroundColor =
+    theme === "dark"
+      ? tokens.color.dark.cardBackground
+      : tokens.color.light.cardBackground;
+
   const content = (
     <View
       style={[
         styles.container,
         {
-          backgroundColor: colors.surface,
+          backgroundColor,
           borderColor: showWarning ? warningColor : colors.border,
         },
       ]}

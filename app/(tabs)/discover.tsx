@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import {
   FlatList,
@@ -24,6 +23,10 @@ import {
   HeroFactCard,
   EmptyState,
   LabelText,
+  ScreenContainer,
+  ScreenHeaderContainer,
+  ContentContainer,
+  TabletWrapper,
 } from "../../src/components";
 import type { FactWithRelations, Category } from "../../src/services/database";
 import { useTheme } from "../../src/theme";
@@ -46,7 +49,6 @@ import { onPreferenceFeedRefresh } from "../../src/services/preferences";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
-const MAX_CONTENT_WIDTH = 800;
 
 // Track prefetched images to avoid redundant prefetching
 const prefetchedImages = new Set<string>();
@@ -64,43 +66,6 @@ const prefetchFactImages = (facts: FactWithRelations[]) => {
     newImageUrls.forEach((url) => prefetchedImages.add(url));
   }
 };
-
-const Container = styled(SafeAreaView, {
-  flex: 1,
-  backgroundColor: "$background",
-});
-
-const Header = styled(XStack, {
-  padding: tokens.space.xl,
-  paddingBottom: tokens.space.md,
-  alignItems: "center",
-  gap: tokens.space.sm,
-  variants: {
-    tablet: {
-      true: {
-        padding: tokens.space.xxl,
-        paddingBottom: tokens.space.lg,
-      },
-    },
-  } as const,
-});
-
-const ContentContainer = styled(YStack, {
-  paddingHorizontal: tokens.space.lg,
-  variants: {
-    tablet: {
-      true: {
-        paddingHorizontal: tokens.space.xl,
-      },
-    },
-  } as const,
-});
-
-const TabletWrapper = styled(YStack, {
-  width: "100%",
-  maxWidth: MAX_CONTENT_WIDTH,
-  alignSelf: "center",
-});
 
 const SearchInputContainer = styled(XStack, {
   flex: 1,
@@ -414,7 +379,7 @@ function DiscoverScreen() {
     const contrastColor = selectedCategory ? getContrastColor(categoryColor) : "#FFFFFF";
 
     return (
-      <Header tablet={isTablet}>
+      <ScreenHeaderContainer tablet={isTablet}>
         <SearchInputContainer>
           <Search
             size={20}
@@ -487,7 +452,7 @@ function DiscoverScreen() {
             </ClearButton>
           ) : null}
         </SearchInputContainer>
-      </Header>
+      </ScreenHeaderContainer>
     );
   };
 
@@ -743,7 +708,7 @@ function DiscoverScreen() {
   };
 
   return (
-    <Container edges={["top"]}>
+    <ScreenContainer edges={["top"]}>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       {renderHeader()}
       <YStack flex={1}>
@@ -760,7 +725,7 @@ function DiscoverScreen() {
           </YStack>
         )}
       </YStack>
-    </Container>
+    </ScreenContainer>
   );
 }
 

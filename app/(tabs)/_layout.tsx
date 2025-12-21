@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { Lightbulb, Compass, Brain, Star, Settings } from "@tamagui/lucide-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Pressable, Animated } from "react-native";
+import { Pressable, Animated, View, StyleSheet } from "react-native";
 import { useRef, useCallback } from "react";
 import type { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 import { tokens } from "../../src/theme/tokens";
@@ -53,6 +53,46 @@ function AnimatedTabButton({
     </Pressable>
   );
 }
+
+// Minimal quiz icon with solid background - uses app's primary cyan color
+function QuizTabIcon({ focused, isDark }: { focused: boolean; isDark: boolean }) {
+  // Use the app's primary color for consistency
+  const bgColor = isDark
+    ? tokens.color.dark.primary // #00A3CC - cyan
+    : tokens.color.light.primary; // #0077A8 - teal
+
+  const shadowColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
+
+  return (
+    <View
+      style={[
+        styles.quizIconContainer,
+        {
+          backgroundColor: bgColor,
+          shadowColor,
+          opacity: focused ? 1 : 0.85,
+        },
+      ]}
+    >
+      <Brain size={24} color="#FFFFFF" strokeWidth={2} />
+    </View>
+  );
+}
+
+
+const styles = StyleSheet.create({
+  quizIconContainer: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+});
 
 export default function TabLayout() {
   const { theme } = useTheme();
@@ -111,7 +151,7 @@ export default function TabLayout() {
         name="quiz"
         options={{
           title: t("quiz"),
-          tabBarIcon: ({ color }) => <Brain size={28} color={color} />,
+          tabBarIcon: ({ focused }) => <QuizTabIcon focused={focused} isDark={isDark} />,
           tabBarButton: (props) => <AnimatedTabButton {...props} />,
         }}
       />

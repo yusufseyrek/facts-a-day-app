@@ -1,20 +1,25 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { SectionList, RefreshControl, ActivityIndicator, useWindowDimensions } from "react-native";
 import { styled } from "@tamagui/core";
-import { YStack, XStack } from "tamagui";
+import { YStack } from "tamagui";
 import { Clock } from "@tamagui/lucide-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
 import { tokens } from "../../src/theme/tokens";
 import {
-  H1,
   H2,
   BodyText,
   FeedFactCard,
   HeroFactCard,
   EmptyState,
+  ScreenContainer,
+  ScreenHeader,
+  SectionHeaderContainer,
+  ContentContainer,
+  LoadingContainer,
+  TabletWrapper,
+  useIconColor,
 } from "../../src/components";
 import type { FactWithRelations } from "../../src/services/database";
 import { useTheme } from "../../src/theme";
@@ -31,7 +36,6 @@ import { trackFeedRefresh, trackScreenView, Screens } from "../../src/services/a
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
-const MAX_CONTENT_WIDTH = 800; // Optimal reading width for tablets
 
 // Track prefetched images to avoid redundant prefetching
 const prefetchedImages = new Set<string>();
@@ -51,64 +55,6 @@ const prefetchFactImages = (facts: FactWithRelations[]) => {
     newImageUrls.forEach((url) => prefetchedImages.add(url));
   }
 };
-
-const Container = styled(SafeAreaView, {
-  flex: 1,
-  backgroundColor: "$background",
-});
-
-const Header = styled(XStack, {
-  padding: tokens.space.xl,
-  paddingBottom: tokens.space.md,
-  alignItems: "center",
-  gap: tokens.space.sm,
-  variants: {
-    tablet: {
-      true: {
-        padding: tokens.space.xxl,
-        paddingBottom: tokens.space.lg,
-      },
-    },
-  } as const,
-});
-
-const SectionHeader = styled(YStack, {
-  paddingHorizontal: tokens.space.xl,
-  paddingVertical: tokens.space.md,
-  backgroundColor: "$background",
-  variants: {
-    tablet: {
-      true: {
-        paddingHorizontal: tokens.space.xxl,
-        paddingVertical: tokens.space.lg,
-      },
-    },
-  } as const,
-});
-
-const ContentContainer = styled(YStack, {
-  paddingHorizontal: tokens.space.lg,
-  variants: {
-    tablet: {
-      true: {
-        paddingHorizontal: tokens.space.xl,
-      },
-    },
-  } as const,
-});
-
-const TabletWrapper = styled(YStack, {
-  width: "100%",
-  maxWidth: MAX_CONTENT_WIDTH,
-  alignSelf: "center",
-});
-
-const LoadingContainer = styled(YStack, {
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  gap: tokens.space.md,
-});
 
 const LocaleChangeOverlay = styled(YStack, {
   position: "absolute",
@@ -328,27 +274,25 @@ function HomeScreen() {
     await loadFacts(false);
   };
 
+  const iconColor = useIconColor();
+
   const renderHeader = () => (
-    <Header tablet={isTablet}>
-      <Clock
-        size={isTablet ? 32 : 24}
-        color={theme === "dark" ? "#FFFFFF" : tokens.color.light.text}
-      />
-      <H1 fontSize={isTablet ? tokens.fontSize.h1Tablet : tokens.fontSize.h1}>
-        {t("recentFacts")}
-      </H1>
-    </Header>
+    <ScreenHeader
+      icon={<Clock size={isTablet ? 32 : 24} color={iconColor} />}
+      title={t("recentFacts")}
+      isTablet={isTablet}
+    />
   );
 
   // Only show loading spinner on initial load when there's no data yet
   if (initialLoading && sections.length === 0) {
     return (
-      <Container edges={["top"]}>
+      <ScreenContainer edges={["top"]}>
         <StatusBar style={theme === "dark" ? "light" : "dark"} />
         <LoadingContainer>
           <ActivityIndicator size="large" color={tokens.color.light.primary} />
         </LoadingContainer>
-      </Container>
+      </ScreenContainer>
     );
   }
 
@@ -368,11 +312,11 @@ function HomeScreen() {
         sections={sections}
         keyExtractor={(item) => item.id.toString()}
         renderSectionHeader={({ section: { title } }) => (
-          <SectionHeader tablet={isTablet}>
+          <SectionHeaderContainer tablet={isTablet}>
             <H2 fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}>
               {title}
             </H2>
-          </SectionHeader>
+          </SectionHeaderContainer>
         )}
         renderItem={({ item, section, index }) => {
           // Use HeroFactCard for the first item in the first section (Today)
@@ -423,7 +367,7 @@ function HomeScreen() {
   };
 
   return (
-    <Container edges={["top"]}>
+    <ScreenContainer edges={["top"]}>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       {renderHeader()}
       <YStack flex={1}>
@@ -443,7 +387,7 @@ function HomeScreen() {
         )}
         {renderLocaleChangeOverlay()}
       </YStack>
-    </Container>
+    </ScreenContainer>
   );
 }
 
