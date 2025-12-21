@@ -42,6 +42,7 @@ import {
   trackScreenView,
   Screens,
 } from "../../src/services/analytics";
+import { onPreferenceFeedRefresh } from "../../src/services/preferences";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -264,38 +265,55 @@ function DiscoverScreen() {
     }, [])
   );
 
+  // Load user's selected categories
+  const loadUserCategories = useCallback(async () => {
+    try {
+      setIsLoadingCategories(true);
+      const selectedSlugs = await getSelectedCategories();
+      const allCategories = await database.getAllCategories();
+      
+      // Filter to only include user's selected categories
+      const filteredCategories = allCategories.filter((cat) =>
+        selectedSlugs.includes(cat.slug)
+      );
+      setUserCategories(filteredCategories);
+
+      // Load facts counts for each category
+      const counts: Record<string, number> = {};
+      await Promise.all(
+        filteredCategories.map(async (cat) => {
+          const facts = await database.getFactsByCategory(cat.slug, locale);
+          counts[cat.slug] = facts.length;
+        })
+      );
+      setCategoryFactsCounts(counts);
+    } catch (error) {
+      console.error("Error loading user categories:", error);
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  }, [locale]);
+
   // Load user's selected categories on mount
   useEffect(() => {
-    const loadUserCategories = async () => {
-      try {
-        setIsLoadingCategories(true);
-        const selectedSlugs = await getSelectedCategories();
-        const allCategories = await database.getAllCategories();
-        
-        // Filter to only include user's selected categories
-        const filteredCategories = allCategories.filter((cat) =>
-          selectedSlugs.includes(cat.slug)
-        );
-        setUserCategories(filteredCategories);
-
-        // Load facts counts for each category
-        const counts: Record<string, number> = {};
-        await Promise.all(
-          filteredCategories.map(async (cat) => {
-            const facts = await database.getFactsByCategory(cat.slug, locale);
-            counts[cat.slug] = facts.length;
-          })
-        );
-        setCategoryFactsCounts(counts);
-      } catch (error) {
-        console.error("Error loading user categories:", error);
-      } finally {
-        setIsLoadingCategories(false);
-      }
-    };
-
     loadUserCategories();
-  }, [locale]);
+  }, [loadUserCategories]);
+
+  // Auto-refresh when categories or language change (from settings)
+  useEffect(() => {
+    const unsubscribe = onPreferenceFeedRefresh(() => {
+      console.log("🔄 Discover refresh triggered by preference change");
+      // Clear any selected category filter since categories may have changed
+      setSelectedCategorySlug(null);
+      setCategoryFacts([]);
+      setSearchQuery("");
+      setSearchResults([]);
+      // Reload categories
+      loadUserCategories();
+    });
+
+    return () => unsubscribe();
+  }, [loadUserCategories]);
 
   // Debounce search
   useEffect(() => {

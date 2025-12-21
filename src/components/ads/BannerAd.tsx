@@ -141,7 +141,6 @@ const BannerAdComponent: React.FC<BannerAdProps> = ({ position, onAdLoadChange }
         styles.container,
         {
           height: adLoaded ? undefined : 0,
-          paddingVertical: adLoaded ? 8 : 0,
           opacity: adLoaded ? 1 : 0,
         },
       ]}

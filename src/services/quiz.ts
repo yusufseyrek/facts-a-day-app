@@ -9,6 +9,7 @@
  */
 
 import * as database from './database';
+import * as onboardingService from './onboarding';
 import type { 
   Question, 
   QuestionWithFact, 
@@ -113,11 +114,14 @@ export async function getCategoryQuizQuestions(
 
 /**
  * Get all categories with their quiz progress
+ * Only returns categories that the user has selected in settings
  */
 export async function getCategoriesWithProgress(
   language: string
 ): Promise<CategoryWithProgress[]> {
-  const categories = await database.getCategoriesWithQuizProgress(language);
+  // Get user's selected categories to filter quiz results
+  const selectedCategories = await onboardingService.getSelectedCategories();
+  const categories = await database.getCategoriesWithQuizProgress(language, selectedCategories);
   
   return categories.map(cat => ({
     ...cat,

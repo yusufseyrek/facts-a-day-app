@@ -1607,15 +1607,18 @@ export async function getCategoryProgress(
 
 /**
  * Get all categories with quiz progress
+ * @param language - The language to filter facts by
+ * @param selectedCategories - Optional array of category slugs to filter by (user's selected categories)
  */
 export async function getCategoriesWithQuizProgress(
-  language: string
+  language: string,
+  selectedCategories?: string[]
 ): Promise<Array<Category & { mastered: number; total: number }>> {
   const database = await openDatabase();
   
-  // Get categories that have shown facts with questions
-  const result = await database.getAllAsync<any>(
-    `SELECT 
+  // Build query with optional category filter
+  let query = `
+    SELECT 
       c.*,
       COUNT(DISTINCT q.id) as total,
       COUNT(DISTINCT CASE WHEN qa.is_correct = 1 THEN q.id END) as mastered
@@ -1624,12 +1627,23 @@ export async function getCategoriesWithQuizProgress(
     INNER JOIN questions q ON q.fact_id = f.id
     LEFT JOIN question_attempts qa ON q.id = qa.question_id
     WHERE f.language = ?
-    AND f.shown_in_feed = 1
+    AND f.shown_in_feed = 1`;
+  
+  const params: any[] = [language];
+  
+  // Filter by user's selected categories if provided
+  if (selectedCategories && selectedCategories.length > 0) {
+    const placeholders = selectedCategories.map(() => '?').join(', ');
+    query += ` AND c.slug IN (${placeholders})`;
+    params.push(...selectedCategories);
+  }
+  
+  query += `
     GROUP BY c.id
     HAVING total > 0
-    ORDER BY c.name ASC`,
-    [language]
-  );
+    ORDER BY c.name ASC`;
+  
+  const result = await database.getAllAsync<any>(query, params);
 
   return result.map((row: any) => ({
     id: row.id,

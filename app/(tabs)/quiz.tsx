@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { 
@@ -19,6 +19,7 @@ import { BannerAd } from '../../src/components/ads/BannerAd';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import { trackScreenView, Screens } from '../../src/services/analytics';
+import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import * as quizService from '../../src/services/quiz';
 import type { QuestionWithFact, FactWithRelations } from '../../src/services/database';
 import { getLucideIcon } from '../../src/utils/iconMapper';
@@ -109,14 +110,8 @@ export default function QuizScreen() {
   // Results state
   const [wrongFacts, setWrongFacts] = useState<FactWithRelations[]>([]);
 
-  useFocusEffect(
-    useCallback(() => {
-      trackScreenView(Screens.QUIZ || 'Quiz');
-      loadQuizData();
-    }, [locale])
-  );
-
-  const loadQuizData = async (isRefresh = false) => {
+  // Memoized loadQuizData to ensure preference refresh gets the latest locale
+  const loadQuizData = useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true);
       
@@ -139,7 +134,35 @@ export default function QuizScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [locale]);
+
+  useFocusEffect(
+    useCallback(() => {
+      trackScreenView(Screens.QUIZ || 'Quiz');
+      loadQuizData();
+    }, [loadQuizData])
+  );
+
+  // Auto-refresh when categories or language change (from settings)
+  useEffect(() => {
+    const unsubscribe = onPreferenceFeedRefresh(() => {
+      console.log("🔄 Quiz refresh triggered by preference change");
+      // Reset quiz state and reload data
+      setQuizState({
+        view: 'hub',
+        questions: [],
+        currentQuestionIndex: 0,
+        correctAnswers: 0,
+        wrongQuestionIds: [],
+        selectedAnswer: null,
+        showResult: false,
+      });
+      setWrongFacts([]);
+      loadQuizData();
+    });
+
+    return () => unsubscribe();
+  }, [loadQuizData]);
 
   const startDailyQuiz = async () => {
     try {
