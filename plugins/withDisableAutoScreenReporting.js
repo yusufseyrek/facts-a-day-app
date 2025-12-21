@@ -37,10 +37,12 @@ function withDisableAutoScreenReporting(config) {
     }
 
     // Add the meta-data to disable automatic screen reporting
+    // Using tools:replace to override the value from react-native-firebase_analytics
     application["meta-data"].push({
       $: {
         "android:name": "google_analytics_automatic_screen_reporting_enabled",
         "android:value": "false",
+        "tools:replace": "android:value",
       },
     });
 
