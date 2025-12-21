@@ -94,6 +94,13 @@ export async function handleLanguageChange(
         AND (shown_in_feed IS NULL OR shown_in_feed = 0)
     `, [now]);
 
+    // Clean up orphaned questions (questions whose facts were deleted)
+    // This handles cases where foreign key cascade wasn't enabled
+    await db.runAsync(`
+      DELETE FROM questions
+      WHERE fact_id NOT IN (SELECT id FROM facts)
+    `);
+
     // Get IDs of facts to update (delivered, favorited, or shown facts)
     const factsToPreserve = await db.getAllAsync<{ id: number }>(
       `SELECT id FROM facts WHERE
@@ -231,9 +238,20 @@ export async function handleLanguageChange(
       message: 'Setting up notifications...'
     });
 
-    const notificationTime = await onboardingService.getNotificationTime();
-    if (notificationTime) {
-      await notificationService.rescheduleNotifications(notificationTime, newLanguage);
+    // Get notification times (supports multiple times for premium users)
+    const notificationTimes = await onboardingService.getNotificationTimes();
+    if (notificationTimes && notificationTimes.length > 0) {
+      const times = notificationTimes.map(t => new Date(t));
+      
+      // Clear all existing notifications and reschedule with new language
+      if (times.length > 1) {
+        await notificationService.rescheduleNotificationsMultiple(times, newLanguage);
+      } else {
+        await notificationService.rescheduleNotifications(times[0], newLanguage);
+      }
+      
+      // Verify DB matches OS after rescheduling
+      await notificationService.verifyDbMatchesOs(newLanguage);
     }
 
     onProgress?.({
@@ -292,6 +310,13 @@ export async function handleCategoriesChange(
         AND id NOT IN (SELECT fact_id FROM favorites)
         AND (shown_in_feed IS NULL OR shown_in_feed = 0)
     `, [now]);
+
+    // Clean up orphaned questions (questions whose facts were deleted)
+    // This handles cases where foreign key cascade wasn't enabled
+    await db.runAsync(`
+      DELETE FROM questions
+      WHERE fact_id NOT IN (SELECT id FROM facts)
+    `);
 
     // Get IDs of shown facts to preserve (keeps scheduling info intact)
     const shownFacts = await db.getAllAsync<{ id: number }>(
@@ -411,16 +436,28 @@ export async function handleCategoriesChange(
       console.log(`🧠 Synced ${dbQuestions.length} questions for quiz`);
     }
 
-    // Stage 4: Refresh notification schedule
+    // Stage 4: Reschedule notifications (clear and reschedule with new facts)
+    // After categories change, old scheduled facts were deleted, so we need a full reschedule
     onProgress?.({
       stage: 'scheduling',
       percentage: 95,
       message: 'Updating notifications...'
     });
 
-    const notificationTime = await onboardingService.getNotificationTime();
-    if (notificationTime) {
-      await notificationService.refreshNotificationSchedule(notificationTime, currentLanguage);
+    // Get notification times (supports multiple times for premium users)
+    const notificationTimes = await onboardingService.getNotificationTimes();
+    if (notificationTimes && notificationTimes.length > 0) {
+      const times = notificationTimes.map(t => new Date(t));
+      
+      // Clear all existing notifications and reschedule with new facts
+      if (times.length > 1) {
+        await notificationService.rescheduleNotificationsMultiple(times, currentLanguage);
+      } else {
+        await notificationService.rescheduleNotifications(times[0], currentLanguage);
+      }
+      
+      // Verify DB matches OS after rescheduling
+      await notificationService.verifyDbMatchesOs(currentLanguage);
     }
 
     onProgress?.({

@@ -973,16 +973,20 @@ export async function getScheduledNotificationsCount(): Promise<number> {
 }
 
 /**
- * Check if scheduled notifications need repair due to the bug where multiple notifications
- * were scheduled per day. If repair is needed, clears and reschedules all notifications.
+ * Check if scheduled notifications need repair due to incorrect notification counts per day.
+ * This detects both:
+ * 1. Days with MORE notifications than expected (duplicates)
+ * 2. Days with FEWER notifications than expected (missing - except the last day which can have fewer)
+ * 
+ * If repair is needed, clears and reschedules all notifications.
  * @param locale The user's locale for filtering facts
  * @param notificationTimes Array of notification times configured by the user
- * @returns True if repair was performed, false otherwise
+ * @returns Object with repaired flag, count, and details about issues found
  */
 export async function checkAndRepairNotificationSchedule(
   locale: SupportedLocale,
   notificationTimes: Date[]
-): Promise<{ repaired: boolean; count: number }> {
+): Promise<{ repaired: boolean; count: number; excessDays?: number; deficitDays?: number }> {
   try {
     const expectedPerDay = notificationTimes.length;
     
@@ -990,15 +994,15 @@ export async function checkAndRepairNotificationSchedule(
       return { repaired: false, count: 0 };
     }
 
-    // Check if there are any days with more notifications than expected
-    const needsRepair = await database.hasExcessNotificationsPerDay(expectedPerDay, locale);
+    // Check if there are any days with incorrect notification counts (excess OR deficit)
+    const checkResult = await database.hasIncorrectNotificationsPerDay(expectedPerDay, locale);
 
-    if (!needsRepair) {
+    if (!checkResult.needsRepair) {
       console.log('🔔 Notification schedule is healthy, no repair needed');
       return { repaired: false, count: 0 };
     }
 
-    console.log('🔧 Repairing notification schedule due to duplicate notifications per day...');
+    console.log(`🔧 Repairing notification schedule: ${checkResult.excessDays} days with excess, ${checkResult.deficitDays} days with deficit...`);
 
     // Clear all future notifications and reschedule properly
     await clearAllScheduledNotifications(false, locale);
@@ -1013,10 +1017,203 @@ export async function checkAndRepairNotificationSchedule(
 
     console.log(`🔧 Repair complete: rescheduled ${result.count} notifications`);
     
-    return { repaired: true, count: result.count };
+    // Verify DB matches OS after repair
+    await verifyDbMatchesOs(locale);
+    
+    return { 
+      repaired: true, 
+      count: result.count,
+      excessDays: checkResult.excessDays,
+      deficitDays: checkResult.deficitDays,
+    };
   } catch (error) {
     console.error('Error repairing notification schedule:', error);
     return { repaired: false, count: 0 };
+  }
+}
+
+/**
+ * Verify that OS notification trigger times match DB scheduled dates.
+ * If mismatches are found, triggers a full reschedule.
+ * 
+ * This checks for:
+ * 1. DB facts with notification_id that exist in OS but have wrong trigger time
+ * 2. Time tolerance of 60 seconds to account for scheduling delays
+ * 
+ * @param locale The user's locale for filtering facts
+ * @param notificationTimes Array of notification times configured by the user
+ * @returns True if repair was performed, false otherwise
+ */
+export async function verifyAndRepairNotificationTimes(
+  locale: SupportedLocale,
+  notificationTimes: Date[]
+): Promise<{ repaired: boolean; count: number; mismatchCount: number }> {
+  try {
+    if (notificationTimes.length === 0) {
+      return { repaired: false, count: 0, mismatchCount: 0 };
+    }
+
+    // Get all scheduled notifications from OS
+    const osNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    
+    if (osNotifications.length === 0) {
+      console.log('🔍 No OS notifications to verify');
+      return { repaired: false, count: 0, mismatchCount: 0 };
+    }
+
+    // Build a map of OS notification ID -> trigger date
+    const osNotificationMap = new Map<string, Date>();
+    for (const notification of osNotifications) {
+      const trigger = notification.trigger;
+      if (trigger && 'date' in trigger && trigger.date) {
+        const triggerDate = trigger.date instanceof Date ? trigger.date : new Date(trigger.date);
+        osNotificationMap.set(notification.identifier, triggerDate);
+      }
+    }
+
+    // Get all DB scheduled facts with notification_id
+    const dbFacts = await database.getFutureScheduledFactsWithNotificationIds(locale);
+    
+    if (dbFacts.length === 0) {
+      console.log('🔍 No DB scheduled facts to verify');
+      return { repaired: false, count: 0, mismatchCount: 0 };
+    }
+
+    // Compare trigger times - allow 60 second tolerance
+    const TIME_TOLERANCE_MS = 60 * 1000; // 60 seconds
+    let mismatchCount = 0;
+    const mismatches: Array<{ factId: number; dbTime: string; osTime: string }> = [];
+
+    for (const dbFact of dbFacts) {
+      const osDate = osNotificationMap.get(dbFact.notification_id);
+      
+      if (!osDate) {
+        // Notification doesn't exist in OS - this is handled by clearStaleScheduledFacts
+        continue;
+      }
+
+      const dbDate = new Date(dbFact.scheduled_date);
+      const timeDiff = Math.abs(osDate.getTime() - dbDate.getTime());
+
+      if (timeDiff > TIME_TOLERANCE_MS) {
+        mismatchCount++;
+        mismatches.push({
+          factId: dbFact.id,
+          dbTime: dbDate.toISOString(),
+          osTime: osDate.toISOString(),
+        });
+      }
+    }
+
+    if (mismatchCount === 0) {
+      console.log('🔍 All notification times verified - OS matches DB');
+      return { repaired: false, count: 0, mismatchCount: 0 };
+    }
+
+    // Log mismatches (limit to first 5 for readability)
+    console.log(`🔧 Found ${mismatchCount} notifications with time mismatches:`);
+    for (const mismatch of mismatches.slice(0, 5)) {
+      console.log(`   Fact ${mismatch.factId}: DB=${mismatch.dbTime}, OS=${mismatch.osTime}`);
+    }
+    if (mismatches.length > 5) {
+      console.log(`   ... and ${mismatches.length - 5} more`);
+    }
+
+    // Repair: clear all and reschedule
+    console.log('🔧 Repairing notification times - clearing and rescheduling...');
+    await clearAllScheduledNotifications(false, locale);
+
+    let result;
+    if (notificationTimes.length > 1) {
+      result = await rescheduleNotificationsMultiple(notificationTimes, locale);
+    } else {
+      result = await scheduleInitialNotifications(notificationTimes[0], locale);
+    }
+
+    console.log(`🔧 Time repair complete: rescheduled ${result.count} notifications`);
+    
+    // Verify DB matches OS after repair
+    await verifyDbMatchesOs(locale);
+    
+    return { repaired: true, count: result.count, mismatchCount };
+  } catch (error) {
+    console.error('Error verifying notification times:', error);
+    return { repaired: false, count: 0, mismatchCount: 0 };
+  }
+}
+
+/**
+ * Verify that DB scheduled facts match OS notifications after a repair.
+ * This ensures the repair was successful and DB is in sync with OS.
+ * 
+ * Checks:
+ * 1. Every DB fact with notification_id has a corresponding OS notification
+ * 2. Every OS notification has a corresponding DB fact
+ * 3. Cleans up any orphaned entries
+ * 
+ * @param locale The user's locale for filtering facts
+ * @returns Object with verification results
+ */
+export async function verifyDbMatchesOs(
+  locale: SupportedLocale
+): Promise<{ synced: boolean; dbOrphans: number; osOrphans: number }> {
+  try {
+    // Get all OS notifications
+    const osNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    const osNotificationIds = new Set(osNotifications.map(n => n.identifier));
+    
+    // Get all DB scheduled facts with notification_id
+    const dbFacts = await database.getFutureScheduledFactsWithNotificationIds(locale);
+    const dbNotificationIds = new Set(dbFacts.map(f => f.notification_id));
+    
+    console.log(`🔍 Verifying sync: OS has ${osNotificationIds.size} notifications, DB has ${dbNotificationIds.size} scheduled facts`);
+    
+    // Find DB facts whose notification_id doesn't exist in OS (DB orphans)
+    let dbOrphans = 0;
+    for (const dbFact of dbFacts) {
+      if (!osNotificationIds.has(dbFact.notification_id)) {
+        dbOrphans++;
+        console.log(`🔍 DB orphan found: fact ${dbFact.id} has notification_id ${dbFact.notification_id} but not in OS`);
+      }
+    }
+    
+    // Find OS notifications that don't have a corresponding DB entry (OS orphans)
+    let osOrphans = 0;
+    const orphanOsIds: string[] = [];
+    for (const osNotification of osNotifications) {
+      if (!dbNotificationIds.has(osNotification.identifier)) {
+        osOrphans++;
+        orphanOsIds.push(osNotification.identifier);
+        console.log(`🔍 OS orphan found: notification ${osNotification.identifier} not in DB`);
+      }
+    }
+    
+    // Clean up orphans if found
+    if (dbOrphans > 0) {
+      console.log(`🔧 Cleaning up ${dbOrphans} DB orphans...`);
+      const validIds = Array.from(osNotificationIds);
+      await database.clearStaleScheduledFacts(validIds);
+    }
+    
+    if (osOrphans > 0) {
+      console.log(`🔧 Cleaning up ${osOrphans} OS orphans...`);
+      for (const orphanId of orphanOsIds) {
+        await Notifications.cancelScheduledNotificationAsync(orphanId);
+      }
+    }
+    
+    const synced = dbOrphans === 0 && osOrphans === 0;
+    
+    if (synced) {
+      console.log('✅ DB and OS are in sync');
+    } else {
+      console.log(`🔧 Cleaned up ${dbOrphans} DB orphans and ${osOrphans} OS orphans`);
+    }
+    
+    return { synced, dbOrphans, osOrphans };
+  } catch (error) {
+    console.error('Error verifying DB matches OS:', error);
+    return { synced: false, dbOrphans: 0, osOrphans: 0 };
   }
 }
 
@@ -1140,11 +1337,12 @@ export async function checkAndTopUpNotifications(
     const times = notificationTimes.map(t => new Date(t));
     console.log(`🔔 Notification times configured: ${times.length} time slot(s)`);
 
-    // Step 6b: Check if scheduled notifications need repair (fixes bug where multiple notifications were scheduled per day)
+    // Step 6b: Check if scheduled notifications need repair (fixes incorrect notification counts per day)
+    // This checks for both excess AND deficit notifications per day based on user's configured times
     // This MUST run before the "schedule is full" check to repair existing users' schedules
     const repairResult = await checkAndRepairNotificationSchedule(locale, times);
     if (repairResult.repaired) {
-      console.log(`🔧 Schedule repaired with ${repairResult.count} notifications`);
+      console.log(`🔧 Schedule repaired: ${repairResult.excessDays || 0} excess days, ${repairResult.deficitDays || 0} deficit days → rescheduled ${repairResult.count} notifications`);
       
       // Preload images for upcoming notifications
       await preloadUpcomingNotificationImages(locale);
@@ -1152,6 +1350,21 @@ export async function checkAndTopUpNotifications(
       return {
         success: true,
         count: repairResult.count,
+      };
+    }
+
+    // Step 6c: Verify OS notification trigger times match DB scheduled dates
+    // This catches cases where OS and DB got out of sync (e.g., after app updates, OS changes)
+    const timeVerifyResult = await verifyAndRepairNotificationTimes(locale, times);
+    if (timeVerifyResult.repaired) {
+      console.log(`🔧 Time verification repaired ${timeVerifyResult.mismatchCount} mismatched notifications, rescheduled ${timeVerifyResult.count}`);
+      
+      // Preload images for upcoming notifications
+      await preloadUpcomingNotificationImages(locale);
+      
+      return {
+        success: true,
+        count: timeVerifyResult.count,
       };
     }
 

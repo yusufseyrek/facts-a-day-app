@@ -31,6 +31,9 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
       const dbPath = `${FileSystem.Paths.document.uri}SQLite/${DATABASE_NAME}`;
       console.log("📁 Database path:", dbPath);
 
+      // Enable foreign key constraints for CASCADE deletes to work
+      await database.execAsync("PRAGMA foreign_keys = ON;");
+
       // Set the db variable before running schema
       db = database;
 
@@ -927,6 +930,83 @@ export async function hasExcessNotificationsPerDay(
 }
 
 /**
+ * Check if there are any days with incorrect notification counts (either too many OR too few)
+ * This detects scheduling issues where days don't have the expected number of notifications.
+ * The last scheduled day is allowed to have fewer notifications (due to hitting the 64 limit).
+ * 
+ * @param expectedPerDay Number of notifications expected per day (based on user's configured times)
+ * @param language Optional language filter
+ * @returns Object with needsRepair flag and details about the issues found
+ */
+export async function hasIncorrectNotificationsPerDay(
+  expectedPerDay: number,
+  language?: string
+): Promise<{ needsRepair: boolean; excessDays: number; deficitDays: number }> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+
+  // Get all days with their notification counts, ordered by date
+  const query = language
+    ? `SELECT date(scheduled_date, 'localtime') as local_date, COUNT(*) as count 
+       FROM facts 
+       WHERE scheduled_date > ? 
+       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+       AND notification_id IS NOT NULL
+       AND language = ?
+       GROUP BY local_date
+       ORDER BY local_date ASC`
+    : `SELECT date(scheduled_date, 'localtime') as local_date, COUNT(*) as count 
+       FROM facts 
+       WHERE scheduled_date > ? 
+       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+       AND notification_id IS NOT NULL
+       GROUP BY local_date
+       ORDER BY local_date ASC`;
+
+  const params = language ? [now, language] : [now];
+  const result = await database.getAllAsync<{ local_date: string; count: number }>(query, params);
+
+  if (result.length === 0) {
+    return { needsRepair: false, excessDays: 0, deficitDays: 0 };
+  }
+
+  let excessDays = 0;
+  let deficitDays = 0;
+  const issues: string[] = [];
+
+  // Check all days except the last one (last day can have fewer due to hitting 64 limit)
+  for (let i = 0; i < result.length; i++) {
+    const day = result[i];
+    const isLastDay = i === result.length - 1;
+
+    if (day.count > expectedPerDay) {
+      // Too many notifications - always a problem (even on last day)
+      excessDays++;
+      issues.push(`${day.local_date}: ${day.count}/${expectedPerDay} (excess)`);
+    } else if (day.count < expectedPerDay && !isLastDay) {
+      // Too few notifications - problem only if NOT the last day
+      deficitDays++;
+      issues.push(`${day.local_date}: ${day.count}/${expectedPerDay} (deficit)`);
+    }
+  }
+
+  const needsRepair = excessDays > 0 || deficitDays > 0;
+
+  if (needsRepair) {
+    console.log(`🔔 Found ${excessDays} days with excess and ${deficitDays} days with deficit notifications:`);
+    // Log first 10 issues
+    for (const issue of issues.slice(0, 10)) {
+      console.log(`   ${issue}`);
+    }
+    if (issues.length > 10) {
+      console.log(`   ... and ${issues.length - 10} more`);
+    }
+  }
+
+  return { needsRepair, excessDays, deficitDays };
+}
+
+/**
  * Get all scheduled dates within a time range (used for multi-time scheduling with timezone support)
  * Returns an array of scheduled_date ISO strings within the given range
  * @param startIso The start of the range in ISO format (inclusive)
@@ -962,6 +1042,39 @@ export async function getScheduledTimesInRange(
     [startIso, endIso]
   );
   return result.map(r => r.scheduled_date);
+}
+
+/**
+ * Get all future scheduled facts with their notification_id and scheduled_date
+ * Used to verify OS notification times match DB records
+ * @param language Optional language filter
+ */
+export async function getFutureScheduledFactsWithNotificationIds(
+  language?: string
+): Promise<Array<{ id: number; notification_id: string; scheduled_date: string }>> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+
+  if (language) {
+    return await database.getAllAsync<{ id: number; notification_id: string; scheduled_date: string }>(
+      `SELECT id, notification_id, scheduled_date FROM facts 
+       WHERE scheduled_date > ? 
+       AND notification_id IS NOT NULL
+       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+       AND language = ?
+       ORDER BY scheduled_date ASC`,
+      [now, language]
+    );
+  }
+
+  return await database.getAllAsync<{ id: number; notification_id: string; scheduled_date: string }>(
+    `SELECT id, notification_id, scheduled_date FROM facts 
+     WHERE scheduled_date > ? 
+     AND notification_id IS NOT NULL
+     AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+     ORDER BY scheduled_date ASC`,
+    [now]
+  );
 }
 
 // ====== FAVORITES ======

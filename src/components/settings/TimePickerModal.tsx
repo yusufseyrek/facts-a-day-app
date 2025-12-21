@@ -385,7 +385,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                 fontFamily="Montserrat_600SemiBold"
                 style={{ marginTop: tokens.space.sm }}
               >
-                {t('multipleNotificationsPerDay').replace('{count}', times.length.toString())}
+                {t('multipleNotificationsPerDay', { count: times.length })}
               </SmallText>
               <SmallText
                 textAlign="center"

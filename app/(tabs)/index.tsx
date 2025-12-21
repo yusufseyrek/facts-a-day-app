@@ -139,7 +139,6 @@ function HomeScreen() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() => getRefreshStatus());
-  const [bannerAdLoaded, setBannerAdLoaded] = useState(false);
 
   // Reload facts when tab gains focus (e.g., after settings change)
   useFocusEffect(
@@ -368,9 +367,6 @@ function HomeScreen() {
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{
-          paddingBottom: bannerAdLoaded ? (isTablet ? 120 : 70) : 0,
-        }}
         renderSectionHeader={({ section: { title } }) => (
           <SectionHeader tablet={isTablet}>
             <H2 fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}>
@@ -431,22 +427,18 @@ function HomeScreen() {
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       {renderHeader()}
       <YStack flex={1}>
-        {isTablet ? (
-          <TabletWrapper flex={1}>
-            {renderContent()}
-          </TabletWrapper>
-        ) : (
-          renderContent()
-        )}
+        <YStack flex={1}>
+          {isTablet ? (
+            <TabletWrapper flex={1}>
+              {renderContent()}
+            </TabletWrapper>
+          ) : (
+            renderContent()
+          )}
+        </YStack>
         {ADS_ENABLED && (
-          <YStack
-            position="absolute"
-            bottom={0}
-            left={0}
-            right={0}
-            backgroundColor="$background"
-          >
-            <BannerAd position="home" onAdLoadChange={setBannerAdLoaded} />
+          <YStack backgroundColor="$background">
+            <BannerAd position="home" />
           </YStack>
         )}
         {renderLocaleChangeOverlay()}

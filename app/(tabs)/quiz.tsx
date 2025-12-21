@@ -297,7 +297,7 @@ export default function QuizScreen() {
       <Container edges={["top"]}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <ScrollView showsVerticalScrollIndicator={false}>
-          <ContentContainer style={{ paddingTop: tokens.space.xl, paddingBottom: 100 }}>
+          <ContentContainer style={{ paddingTop: tokens.space.xl }}>
             {/* Progress bar */}
             <YStack gap={tokens.space.sm}>
               <XStack justifyContent="space-between" alignItems="center">
@@ -462,7 +462,7 @@ export default function QuizScreen() {
       <Container edges={["top"]}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <ScrollView showsVerticalScrollIndicator={false}>
-          <ContentContainer style={{ paddingTop: tokens.space.xl, paddingBottom: 100 }}>
+          <ContentContainer style={{ paddingTop: tokens.space.xl }}>
             {/* Results card */}
             <YStack
               backgroundColor={isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground}
@@ -634,21 +634,22 @@ export default function QuizScreen() {
   return (
     <Container edges={["top"]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => loadQuizData(true)} />
-        }
-      >
-        <Header>
-          <Brain
-            size={28}
-            color={isDark ? '#FFFFFF' : tokens.color.light.text}
-          />
-          <H1>{t('quiz')}</H1>
-        </Header>
-        
-        <ContentContainer style={{ paddingBottom: 100 }}>
+      <YStack flex={1}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => loadQuizData(true)} />
+          }
+        >
+          <Header>
+            <Brain
+              size={28}
+              color={isDark ? '#FFFFFF' : tokens.color.light.text}
+            />
+            <H1>{t('quiz')}</H1>
+          </Header>
+          
+          <ContentContainer>
           {/* Stats overview */}
           {overallStats && overallStats.totalAnswered > 0 && (
             <XStack 
@@ -855,9 +856,10 @@ export default function QuizScreen() {
               </YStack>
             </YStack>
           )}
-        </ContentContainer>
-      </ScrollView>
-      <BannerAd position="quiz" />
+          </ContentContainer>
+        </ScrollView>
+        <BannerAd position="quiz" />
+      </YStack>
     </Container>
   );
 }

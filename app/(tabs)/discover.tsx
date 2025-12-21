@@ -203,7 +203,6 @@ function DiscoverScreen() {
   const [searchResults, setSearchResults] = useState<FactWithRelations[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [bannerAdLoaded, setBannerAdLoaded] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
 
   // Category filter state
@@ -623,9 +622,6 @@ function DiscoverScreen() {
         <FlatList
           data={searchResults}
           keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={{
-            paddingBottom: bannerAdLoaded ? (isTablet ? 120 : 70) : 0,
-          }}
           renderItem={({ item, index }) => {
             const categoryColor = item.categoryData?.color_hex || "#0066FF";
             const isFirstItem = index === 0;
@@ -686,9 +682,6 @@ function DiscoverScreen() {
         <FlatList
           data={categoryFacts}
           keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={{
-            paddingBottom: bannerAdLoaded ? (isTablet ? 120 : 70) : 0,
-          }}
           renderItem={({ item, index }) => {
             const isFirstItem = index === 0;
 
@@ -736,20 +729,16 @@ function DiscoverScreen() {
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       {renderHeader()}
       <YStack flex={1}>
-        {isTablet ? (
-          <TabletWrapper flex={1}>{renderContent()}</TabletWrapper>
-        ) : (
-          renderContent()
-        )}
+        <YStack flex={1}>
+          {isTablet ? (
+            <TabletWrapper flex={1}>{renderContent()}</TabletWrapper>
+          ) : (
+            renderContent()
+          )}
+        </YStack>
         {ADS_ENABLED && (
-          <YStack
-            position="absolute"
-            bottom={0}
-            left={0}
-            right={0}
-            backgroundColor="$background"
-          >
-            <BannerAd position="discover" onAdLoadChange={setBannerAdLoaded} />
+          <YStack backgroundColor="$background">
+            <BannerAd position="discover" />
           </YStack>
         )}
       </YStack>

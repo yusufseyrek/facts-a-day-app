@@ -102,7 +102,7 @@ export function MultiTimePicker({
     if (times.length >= maxTimes) {
       Alert.alert(
         t('maxTimesReached'),
-        t('maxTimesReachedMessage').replace('{max}', maxTimes.toString()),
+        t('maxTimesReachedMessage', { max: maxTimes }),
         [{ text: t('ok'), style: 'default' }]
       );
       return;
@@ -120,7 +120,7 @@ export function MultiTimePicker({
     if (times.length <= minTimes) {
       Alert.alert(
         t('minTimesRequired'),
-        t('minTimesRequiredMessage').replace('{min}', minTimes.toString()),
+        t('minTimesRequiredMessage', { min: minTimes }),
         [{ text: t('ok'), style: 'default' }]
       );
       return;
@@ -237,7 +237,7 @@ export function MultiTimePicker({
           lineHeight={20}
           fontFamily="Montserrat_600SemiBold"
         >
-          {t('multipleNotificationsPerDay').replace('{count}', times.length.toString())}
+          {t('multipleNotificationsPerDay', { count: times.length })}
         </BodyText>
         <BodyText
           fontSize={tokens.fontSize.small}

@@ -12,6 +12,7 @@ import { trackInterstitialShown } from './analytics';
 // AsyncStorage keys
 const LAST_CONTENT_REFRESH_KEY = '@last_content_refresh';
 const STORED_LOCALE_KEY = '@stored_locale';
+const QUESTIONS_MIGRATION_KEY = '@questions_migration_v1';
 
 // Minimum interval between refreshes (1 hour in milliseconds)
 // Note: No longer used - app now refreshes on every open
@@ -236,6 +237,113 @@ async function getExistingFactIds(factIds: number[]): Promise<number[]> {
 }
 
 /**
+ * Check if questions migration is needed
+ * Returns true if user has facts but no questions (existing user before quiz feature)
+ */
+async function needsQuestionsMigration(): Promise<boolean> {
+  try {
+    // Check if migration was already done
+    const migrationDone = await AsyncStorage.getItem(QUESTIONS_MIGRATION_KEY);
+    if (migrationDone === 'true') {
+      return false;
+    }
+
+    const database = await db.openDatabase();
+    
+    // Check if there are any facts
+    const factsResult = await database.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM facts'
+    );
+    const factsCount = factsResult?.count || 0;
+    
+    if (factsCount === 0) {
+      // No facts yet, no migration needed
+      // Mark as done so we don't check again
+      await AsyncStorage.setItem(QUESTIONS_MIGRATION_KEY, 'true');
+      return false;
+    }
+
+    // Check if there are any questions
+    const questionsResult = await database.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM questions'
+    );
+    const questionsCount = questionsResult?.count || 0;
+
+    // If we have facts but no questions, we need migration
+    if (questionsCount === 0) {
+      console.log(`📊 Migration needed: ${factsCount} facts, ${questionsCount} questions`);
+      return true;
+    }
+
+    // Already have questions, mark migration as done
+    await AsyncStorage.setItem(QUESTIONS_MIGRATION_KEY, 'true');
+    return false;
+  } catch (error) {
+    console.error('Error checking questions migration:', error);
+    return false;
+  }
+}
+
+/**
+ * Run questions migration for existing users
+ * Re-fetches all facts with questions included
+ */
+async function runQuestionsMigration(locale: SupportedLocale): Promise<void> {
+  try {
+    console.log('🔄 Running questions migration for existing facts...');
+    
+    const categories = await onboardingService.getSelectedCategories();
+    if (categories.length === 0) {
+      console.log('No categories selected, skipping migration');
+      await AsyncStorage.setItem(QUESTIONS_MIGRATION_KEY, 'true');
+      return;
+    }
+
+    // Fetch all facts with questions
+    const facts = await api.getAllFactsWithRetry(
+      locale,
+      categories.join(','),
+      undefined, // no progress callback
+      3, // maxRetries
+      true // includeQuestions
+    );
+
+    // Extract questions from facts
+    const dbQuestions: db.Question[] = [];
+    for (const fact of facts) {
+      if (fact.questions && fact.questions.length > 0) {
+        for (const question of fact.questions) {
+          dbQuestions.push({
+            id: question.id,
+            fact_id: fact.id,
+            question_type: question.question_type,
+            question_text: question.question_text,
+            correct_answer: question.correct_answer,
+            wrong_answers: question.wrong_answers ? JSON.stringify(question.wrong_answers) : null,
+            explanation: question.explanation,
+            difficulty: question.difficulty,
+          });
+        }
+      }
+    }
+
+    // Insert questions into database
+    if (dbQuestions.length > 0) {
+      await db.insertQuestions(dbQuestions);
+      console.log(`✅ Migration complete: Added ${dbQuestions.length} questions for quiz`);
+    } else {
+      console.log('No questions found in API response');
+    }
+
+    // Mark migration as complete
+    await AsyncStorage.setItem(QUESTIONS_MIGRATION_KEY, 'true');
+  } catch (error) {
+    console.error('❌ Questions migration failed:', error);
+    // Don't mark as complete so it can retry next time
+  }
+}
+
+/**
  * Refresh app content from API: metadata and new facts
  * This runs every time the app opens (no time interval restriction)
  * Runs in the background and doesn't block app startup
@@ -308,6 +416,12 @@ export async function refreshAppContent(): Promise<RefreshResult> {
     if (localeStatus.storedLocale === null) {
       await saveCurrentLocale(currentLocale);
       console.log(`📍 First app open - stored locale: ${currentLocale}`);
+    }
+
+    // Check if we need to run questions migration for existing users
+    // This is a one-time migration for users who had facts before quiz feature was added
+    if (await needsQuestionsMigration()) {
+      await runQuestionsMigration(currentLocale);
     }
 
     // Get current user preferences

@@ -108,32 +108,34 @@ export default function FavoritesScreen() {
   return (
     <Container edges={["top"]}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <FlatList
-        data={favorites}
-        keyExtractor={(item) => item.id.toString()}
-        ListHeaderComponent={() => (
-          <Header>
-            <Star
-              size={28}
-              color={theme === 'dark' ? '#FFFFFF' : tokens.color.light.text}
-            />
-            <H1>{t('favorites')}</H1>
-          </Header>
-        )}
-        renderItem={({ item }) => (
-          <ContentContainer>
-            <FeedFactCard
-              title={item.title || item.content.substring(0, 80) + '...'}
-              summary={item.summary}
-              onPress={() => handleFactPress(item)}
-            />
-          </ContentContainer>
-        )}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-      />
-      <BannerAd position="favorites" />
+      <YStack flex={1}>
+        <FlatList
+          data={favorites}
+          keyExtractor={(item) => item.id.toString()}
+          ListHeaderComponent={() => (
+            <Header>
+              <Star
+                size={28}
+                color={theme === 'dark' ? '#FFFFFF' : tokens.color.light.text}
+              />
+              <H1>{t('favorites')}</H1>
+            </Header>
+          )}
+          renderItem={({ item }) => (
+            <ContentContainer>
+              <FeedFactCard
+                title={item.title || item.content.substring(0, 80) + '...'}
+                summary={item.summary}
+                onPress={() => handleFactPress(item)}
+              />
+            </ContentContainer>
+          )}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+        />
+        <BannerAd position="favorites" />
+      </YStack>
     </Container>
   );
 }

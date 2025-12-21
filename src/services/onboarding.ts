@@ -113,8 +113,8 @@ export async function fetchAllFacts(
     // Convert categories array to comma-separated string
     const categoriesParam = categories.join(',');
 
-    // Fetch all facts with retry logic
-    console.log('Fetching facts...', { language, categories: categoriesParam });
+    // Fetch all facts with retry logic (include questions for quiz feature)
+    console.log('Fetching facts with questions...', { language, categories: categoriesParam });
 
     const facts = await api.getAllFactsWithRetry(
       language,
@@ -128,7 +128,8 @@ export async function fetchAllFacts(
           });
         }
       },
-      3 // max retries
+      3, // max retries
+      true // include questions for quiz feature
     );
 
     // Convert API facts to database facts format
@@ -145,9 +146,34 @@ export async function fetchAllFacts(
       last_updated: fact.last_updated,
     }));
 
+    // Extract questions from facts for quiz feature
+    const dbQuestions: db.Question[] = [];
+    for (const fact of facts) {
+      if (fact.questions && fact.questions.length > 0) {
+        for (const question of fact.questions) {
+          dbQuestions.push({
+            id: question.id,
+            fact_id: fact.id,
+            question_type: question.question_type,
+            question_text: question.question_text,
+            correct_answer: question.correct_answer,
+            wrong_answers: question.wrong_answers ? JSON.stringify(question.wrong_answers) : null,
+            explanation: question.explanation,
+            difficulty: question.difficulty,
+          });
+        }
+      }
+    }
+
     // Store facts in database
     console.log(`Storing ${dbFacts.length} facts in database...`);
     await db.insertFacts(dbFacts);
+
+    // Store questions in database for quiz feature
+    if (dbQuestions.length > 0) {
+      console.log(`Storing ${dbQuestions.length} questions in database...`);
+      await db.insertQuestions(dbQuestions);
+    }
 
     return { success: true, count: dbFacts.length };
   } catch (error) {

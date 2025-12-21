@@ -131,11 +131,13 @@ export default function SettingsPage() {
     checkNotificationPermission();
   }, []);
 
-  // Track screen view and re-check permission when screen is focused
+  // Track screen view, reload preferences, and re-check permission when screen is focused
   useFocusEffect(
     useCallback(() => {
       trackScreenView(Screens.SETTINGS);
       checkNotificationPermission();
+      // Reload preferences to get updated category count and notification times
+      loadPreferences();
     }, [])
   );
 
@@ -334,10 +336,7 @@ export default function SettingsPage() {
       }
 
       // Show success message
-      const message = t("factsAddedDescription").replace(
-        "{count}",
-        facts.length.toString()
-      );
+      const message = t("factsAddedDescription", { count: facts.length });
       Alert.alert(t("factsAdded"), message, [
         { text: t("ok"), style: "default" },
       ]);
