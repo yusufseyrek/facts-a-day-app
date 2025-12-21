@@ -581,7 +581,9 @@ function DiscoverScreen() {
                                 fontSize={tokens.fontSize.small}
                                 style={{ opacity: 0.85, fontFamily: "Montserrat_500Medium" }}
                               >
-                                {factsCount} {factsCount === 1 ? "fact" : "facts"}
+                                {factsCount === 1
+                                  ? t("factCountSingular", { count: factsCount })
+                                  : t("factCountPlural", { count: factsCount })}
                               </LabelText>
                             </DiscoverCategoryTextContainer>
                           </DiscoverCategoryCard>

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useMemo } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Pressable, Dimensions, Animated, View, StyleSheet, Platform, useWindowDimensions, PanResponder, ScrollView, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
@@ -131,59 +131,12 @@ function formatLastUpdated(dateString: string, locale: string): string {
   }
 }
 
-/**
- * Splits content by the last empty line (double newline or line with only whitespace).
- * Returns an object with the first part, second part (if exists), and whether a split occurred.
- */
-function splitContentByEmptyLine(content: string): {
-  firstPart: string;
-  secondPart: string | null;
-  hasSplit: boolean;
-} {
-  // Find all empty line matches (double newline with optional whitespace between)
-  const emptyLineRegex = /\n\s*\n/g;
-  let lastMatch: RegExpExecArray | null = null;
-  let match: RegExpExecArray | null;
-  
-  // Find the last match
-  while ((match = emptyLineRegex.exec(content)) !== null) {
-    lastMatch = match;
-  }
-  
-  if (lastMatch && lastMatch.index !== undefined) {
-    const splitIndex = lastMatch.index;
-    const matchLength = lastMatch[0].length;
-    
-    const firstPart = content.substring(0, splitIndex).trim();
-    const secondPart = content.substring(splitIndex + matchLength).trim();
-    
-    // Only split if both parts have content
-    if (firstPart && secondPart) {
-      return {
-        firstPart,
-        secondPart,
-        hasSplit: true,
-      };
-    }
-  }
-  
-  // No valid split found, return entire content as first part
-  return {
-    firstPart: content,
-    secondPart: null,
-    hasSplit: false,
-  };
-}
 
 export function FactModal({ fact, onClose }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const { fontSizes, isTablet, screenWidth: SCREEN_WIDTH, screenHeight: SCREEN_HEIGHT } = useResponsive();
 
-  // Split content by empty line for inline ad placement
-  const contentParts = useMemo(() => {
-    return splitContentByEmptyLine(fact.content);
-  }, [fact.content]);
   const insets = useSafeAreaInsets();
   const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -697,7 +650,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               {/* Banner between summary and content */}
               <BannerAd position="fact-modal-1" />
 
-              {/* Main Content - First Part */}
+              {/* Main Content */}
               <BodyText
                 fontSize={isTablet ? tokens.fontSize.bodyTablet : Math.round(fontSizes.body * 1.07)}
                 lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.85 : Math.round(fontSizes.body * 1.07 * 1.85)}
@@ -705,26 +658,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 color="$text"
                 fontFamily={FONT_FAMILIES.regular}
               >
-                {contentParts.firstPart}
+                {fact.content}
               </BodyText>
-
-              {/* Inline Ad - shown between content parts if there's a split */}
-              {contentParts.hasSplit && (
-                <BannerAd position="fact-modal-2" />
-              )}
-
-              {/* Main Content - Second Part */}
-              {contentParts.secondPart && (
-                <BodyText
-                  fontSize={isTablet ? tokens.fontSize.bodyTablet : Math.round(fontSizes.body * 1.07)}
-                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.85 : Math.round(fontSizes.body * 1.07 * 1.85)}
-                  letterSpacing={0.2}
-                  color="$text"
-                  fontFamily={FONT_FAMILIES.regular}
-                >
-                  {contentParts.secondPart}
-                </BodyText>
-              )}
 
               {/* Source Link */}
               {fact.source_url && (
@@ -858,7 +793,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               {/* Banner between summary and content */}
               <BannerAd position="fact-modal-1" />
 
-              {/* Main Content - First Part */}
+              {/* Main Content */}
               <BodyText
                 fontSize={Math.round(fontSizes.body * 1.07)}
                 lineHeight={Math.round(fontSizes.body * 1.07 * 1.85)}
@@ -866,26 +801,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 color="$text"
                 fontFamily={FONT_FAMILIES.regular}
               >
-                {contentParts.firstPart}
+                {fact.content}
               </BodyText>
-
-              {/* Inline Ad - shown between content parts if there's a split */}
-              {contentParts.hasSplit && (
-                <BannerAd position="fact-modal-2" />
-              )}
-
-              {/* Main Content - Second Part */}
-              {contentParts.secondPart && (
-                <BodyText
-                  fontSize={Math.round(fontSizes.body * 1.07)}
-                  lineHeight={Math.round(fontSizes.body * 1.07 * 1.85)}
-                  letterSpacing={0.2}
-                  color="$text"
-                  fontFamily={FONT_FAMILIES.regular}
-                >
-                  {contentParts.secondPart}
-                </BodyText>
-              )}
 
               {/* Source Link */}
               {fact.source_url && (

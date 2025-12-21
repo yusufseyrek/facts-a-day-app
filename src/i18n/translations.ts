@@ -22,12 +22,12 @@ export const translations = {
     notificationTimes: "Benachrichtigungszeiten",
     time: "Zeit",
     addAnotherTime: "Weitere Zeit hinzufügen",
-    multipleNotificationsPerDay: "Sie erhalten {count} Benachrichtigungen pro Tag",
+    multipleNotificationsPerDay: "Sie erhalten %{count} Benachrichtigungen pro Tag",
     notificationRespectMessage: "Wir respektieren Ihre Aufmerksamkeit und werden Sie nicht zuspammen.",
     maxTimesReached: "Maximale Zeiten erreicht",
-    maxTimesReachedMessage: "Sie können maximal {max} Benachrichtigungszeiten haben",
+    maxTimesReachedMessage: "Sie können maximal %{max} Benachrichtigungszeiten haben",
     minTimesRequired: "Mindestens eine Zeit erforderlich",
-    minTimesRequiredMessage: "Sie müssen mindestens {min} Benachrichtigungszeit haben",
+    minTimesRequiredMessage: "Sie müssen mindestens %{min} Benachrichtigungszeit haben",
     enableNotifications: "Benachrichtigungen aktivieren",
     gettingAppReady: "Ihre App wird vorbereitet...",
     notificationSchedulingFailed: "Benachrichtigungsplanung fehlgeschlagen",
@@ -83,7 +83,7 @@ export const translations = {
     add10RandomFacts: "10 Zufällige Fakten Hinzufügen",
     factsAdded: "Fakten Hinzugefügt",
     factsAddedDescription:
-      "{count} Fakten wurden zu Ihrem Zeitplan hinzugefügt!",
+      "%{count} Fakten wurden zu Ihrem Zeitplan hinzugefügt!",
     errorAddingFacts: "Fehler beim Hinzufügen von Fakten",
     save: "Speichern",
     settingsUserPreferences: "Benutzereinstellungen",
@@ -97,7 +97,7 @@ export const translations = {
     settingsThemeSystemDescription: "Systemeinstellungen folgen",
     settingsCategories: "Kategorien",
     settingsNotificationTime: "Benachrichtigungszeit",
-    settingsNotificationTimesCount: "{count} Zeiten",
+    settingsNotificationTimesCount: "%{count} Zeiten",
     settingsSelected: "ausgewählt",
     settingsLegal: "Rechtliches",
     settingsPrivacyPolicy: "Datenschutzrichtlinie",
@@ -147,6 +147,10 @@ export const translations = {
     // Success Messages
     categoriesUpdated: "Kategorien aktualisiert",
     notificationTimesUpdated: "Benachrichtigungszeiten aktualisiert",
+
+    // Category Facts Count
+    factCountSingular: "%{count} Fakt",
+    factCountPlural: "%{count} Fakten",
   },
   en: {
     // Onboarding - Categories
@@ -171,12 +175,12 @@ export const translations = {
     notificationTimes: "Notification Times",
     time: "Time",
     addAnotherTime: "Add Another Time",
-    multipleNotificationsPerDay: "You'll receive {count} notifications per day",
+    multipleNotificationsPerDay: "You'll receive %{count} notifications per day",
     notificationRespectMessage: "We respect your attention and won't spam you.",
     maxTimesReached: "Maximum Times Reached",
-    maxTimesReachedMessage: "You can have a maximum of {max} notification times",
+    maxTimesReachedMessage: "You can have a maximum of %{max} notification times",
     minTimesRequired: "Minimum Time Required",
-    minTimesRequiredMessage: "You must have at least {min} notification time",
+    minTimesRequiredMessage: "You must have at least %{min} notification time",
     enableNotifications: "Enable Notifications",
     gettingAppReady: "Getting your app ready...",
     notificationSchedulingFailed: "Notification Scheduling Failed",
@@ -230,7 +234,7 @@ export const translations = {
     reportPlaceholder: "Describe what's wrong with this fact...",
     add10RandomFacts: "Add 10 Random Facts",
     factsAdded: "Facts Added",
-    factsAddedDescription: "{count} facts have been added to your schedule!",
+    factsAddedDescription: "%{count} facts have been added to your schedule!",
     errorAddingFacts: "Error Adding Facts",
     save: "Save",
     settingsUserPreferences: "User Preferences",
@@ -244,7 +248,7 @@ export const translations = {
     settingsThemeSystemDescription: "Follow system settings",
     settingsCategories: "Categories",
     settingsNotificationTime: "Notification Time",
-    settingsNotificationTimesCount: "{count} times",
+    settingsNotificationTimesCount: "%{count} times",
     settingsSelected: "selected",
     settingsLegal: "Legal",
     settingsPrivacyPolicy: "Privacy Policy",
@@ -294,6 +298,10 @@ export const translations = {
     // Success Messages
     categoriesUpdated: "Categories updated",
     notificationTimesUpdated: "Notification times updated",
+
+    // Category Facts Count
+    factCountSingular: "%{count} fact",
+    factCountPlural: "%{count} facts",
   },
   es: {
     // Onboarding - Categories
@@ -318,12 +326,12 @@ export const translations = {
     notificationTimes: "Horarios de Notificación",
     time: "Hora",
     addAnotherTime: "Agregar Otra Hora",
-    multipleNotificationsPerDay: "Recibirás {count} notificaciones por día",
+    multipleNotificationsPerDay: "Recibirás %{count} notificaciones por día",
     notificationRespectMessage: "Respetamos tu atención y no te enviaremos spam.",
     maxTimesReached: "Máximo de Horarios Alcanzado",
-    maxTimesReachedMessage: "Puedes tener un máximo de {max} horarios de notificación",
+    maxTimesReachedMessage: "Puedes tener un máximo de %{max} horarios de notificación",
     minTimesRequired: "Mínimo de Horario Requerido",
-    minTimesRequiredMessage: "Debes tener al menos {min} horario de notificación",
+    minTimesRequiredMessage: "Debes tener al menos %{min} horario de notificación",
     enableNotifications: "Habilitar Notificaciones",
     gettingAppReady: "Preparando tu aplicación...",
     notificationSchedulingFailed: "Falló la Programación de Notificaciones",
@@ -377,7 +385,7 @@ export const translations = {
     reportPlaceholder: "Describe qué está mal con este dato...",
     add10RandomFacts: "Agregar 10 Datos Aleatorios",
     factsAdded: "Datos Agregados",
-    factsAddedDescription: "¡Se han agregado {count} datos a tu programación!",
+    factsAddedDescription: "¡Se han agregado %{count} datos a tu programación!",
     errorAddingFacts: "Error al Agregar Datos",
     save: "Guardar",
     settingsUserPreferences: "Preferencias de Usuario",
@@ -391,7 +399,7 @@ export const translations = {
     settingsThemeSystemDescription: "Seguir configuración del sistema",
     settingsCategories: "Categorías",
     settingsNotificationTime: "Hora de Notificación",
-    settingsNotificationTimesCount: "{count} veces",
+    settingsNotificationTimesCount: "%{count} veces",
     settingsSelected: "seleccionado",
     settingsLegal: "Legal",
     settingsPrivacyPolicy: "Política de Privacidad",
@@ -441,6 +449,10 @@ export const translations = {
     // Success Messages
     categoriesUpdated: "Categorías actualizadas",
     notificationTimesUpdated: "Horarios de notificación actualizados",
+
+    // Category Facts Count
+    factCountSingular: "%{count} dato",
+    factCountPlural: "%{count} datos",
   },
   fr: {
     // Onboarding - Categories
@@ -465,12 +477,12 @@ export const translations = {
     notificationTimes: "Heures de Notification",
     time: "Heure",
     addAnotherTime: "Ajouter une Autre Heure",
-    multipleNotificationsPerDay: "Vous recevrez {count} notifications par jour",
+    multipleNotificationsPerDay: "Vous recevrez %{count} notifications par jour",
     notificationRespectMessage: "Nous respectons votre attention et ne vous spammerons pas.",
     maxTimesReached: "Nombre Maximum d'Heures Atteint",
-    maxTimesReachedMessage: "Vous pouvez avoir un maximum de {max} heures de notification",
+    maxTimesReachedMessage: "Vous pouvez avoir un maximum de %{max} heures de notification",
     minTimesRequired: "Heure Minimum Requise",
-    minTimesRequiredMessage: "Vous devez avoir au moins {min} heure de notification",
+    minTimesRequiredMessage: "Vous devez avoir au moins %{min} heure de notification",
     enableNotifications: "Activer les Notifications",
     gettingAppReady: "Préparation de votre application...",
     notificationSchedulingFailed: "Échec de la Planification des Notifications",
@@ -524,7 +536,7 @@ export const translations = {
     reportPlaceholder: "Décrivez ce qui ne va pas avec ce fait...",
     add10RandomFacts: "Ajouter 10 Faits Aléatoires",
     factsAdded: "Faits Ajoutés",
-    factsAddedDescription: "{count} faits ont été ajoutés à votre calendrier !",
+    factsAddedDescription: "%{count} faits ont été ajoutés à votre calendrier !",
     errorAddingFacts: "Erreur lors de l'ajout des faits",
     save: "Enregistrer",
     settingsUserPreferences: "Préférences Utilisateur",
@@ -538,7 +550,7 @@ export const translations = {
     settingsThemeSystemDescription: "Suivre les paramètres du système",
     settingsCategories: "Catégories",
     settingsNotificationTime: "Heure de Notification",
-    settingsNotificationTimesCount: "{count} fois",
+    settingsNotificationTimesCount: "%{count} fois",
     settingsSelected: "sélectionné",
     settingsLegal: "Légal",
     settingsPrivacyPolicy: "Politique de Confidentialité",
@@ -588,6 +600,10 @@ export const translations = {
     // Success Messages
     categoriesUpdated: "Catégories mises à jour",
     notificationTimesUpdated: "Heures de notification mises à jour",
+
+    // Category Facts Count
+    factCountSingular: "%{count} fait",
+    factCountPlural: "%{count} faits",
   },
   ja: {
     // Onboarding - Categories
@@ -611,12 +627,12 @@ export const translations = {
     notificationTimes: "通知時刻",
     time: "時刻",
     addAnotherTime: "別の時刻を追加",
-    multipleNotificationsPerDay: "1日に{count}件の通知を受け取ります",
+    multipleNotificationsPerDay: "1日に%{count}件の通知を受け取ります",
     notificationRespectMessage: "あなたの時間を尊重し、スパムは送りません。",
     maxTimesReached: "最大時刻数に達しました",
-    maxTimesReachedMessage: "通知時刻は最大{max}件まで設定できます",
+    maxTimesReachedMessage: "通知時刻は最大%{max}件まで設定できます",
     minTimesRequired: "最小時刻数が必要です",
-    minTimesRequiredMessage: "少なくとも{min}件の通知時刻が必要です",
+    minTimesRequiredMessage: "少なくとも%{min}件の通知時刻が必要です",
     enableNotifications: "通知を有効にする",
     gettingAppReady: "アプリを準備中...",
     notificationSchedulingFailed: "通知のスケジューリングに失敗しました",
@@ -670,7 +686,7 @@ export const translations = {
     reportPlaceholder: "この豆知識の問題点を説明してください...",
     add10RandomFacts: "ランダムな豆知識を10個追加",
     factsAdded: "豆知識を追加しました",
-    factsAddedDescription: "{count}個の豆知識がスケジュールに追加されました！",
+    factsAddedDescription: "%{count}個の豆知識がスケジュールに追加されました！",
     errorAddingFacts: "豆知識の追加エラー",
     save: "保存",
     settingsUserPreferences: "ユーザー設定",
@@ -684,7 +700,7 @@ export const translations = {
     settingsThemeSystemDescription: "システム設定に従う",
     settingsCategories: "カテゴリー",
     settingsNotificationTime: "通知時刻",
-    settingsNotificationTimesCount: "{count}回",
+    settingsNotificationTimesCount: "%{count}回",
     settingsSelected: "選択済み",
     settingsLegal: "法的情報",
     settingsPrivacyPolicy: "プライバシーポリシー",
@@ -734,6 +750,10 @@ export const translations = {
     // Success Messages
     categoriesUpdated: "カテゴリーが更新されました",
     notificationTimesUpdated: "通知時刻が更新されました",
+
+    // Category Facts Count
+    factCountSingular: "%{count}件の豆知識",
+    factCountPlural: "%{count}件の豆知識",
   },
   ko: {
     // Onboarding - Categories
@@ -756,12 +776,12 @@ export const translations = {
     notificationTimes: "알림 시간",
     time: "시간",
     addAnotherTime: "다른 시간 추가",
-    multipleNotificationsPerDay: "하루에 {count}개의 알림을 받게 됩니다",
+    multipleNotificationsPerDay: "하루에 %{count}개의 알림을 받게 됩니다",
     notificationRespectMessage: "귀하의 시간을 존중하며 스팸을 보내지 않습니다.",
     maxTimesReached: "최대 시간 수에 도달했습니다",
-    maxTimesReachedMessage: "최대 {max}개의 알림 시간을 설정할 수 있습니다",
+    maxTimesReachedMessage: "최대 %{max}개의 알림 시간을 설정할 수 있습니다",
     minTimesRequired: "최소 시간이 필요합니다",
-    minTimesRequiredMessage: "최소 {min}개의 알림 시간이 필요합니다",
+    minTimesRequiredMessage: "최소 %{min}개의 알림 시간이 필요합니다",
     enableNotifications: "알림 활성화",
     gettingAppReady: "앱 준비 중...",
     notificationSchedulingFailed: "알림 예약 실패",
@@ -813,7 +833,7 @@ export const translations = {
     reportPlaceholder: "이 정보의 문제점을 설명해 주세요...",
     add10RandomFacts: "무작위 정보 10개 추가",
     factsAdded: "정보 추가됨",
-    factsAddedDescription: "{count}개의 정보가 일정에 추가되었습니다!",
+    factsAddedDescription: "%{count}개의 정보가 일정에 추가되었습니다!",
     errorAddingFacts: "정보 추가 오류",
     save: "저장",
     settingsUserPreferences: "사용자 설정",
@@ -827,7 +847,7 @@ export const translations = {
     settingsThemeSystemDescription: "시스템 설정 따르기",
     settingsCategories: "카테고리",
     settingsNotificationTime: "알림 시간",
-    settingsNotificationTimesCount: "{count}번",
+    settingsNotificationTimesCount: "%{count}번",
     settingsSelected: "선택됨",
     settingsLegal: "법적 정보",
     settingsPrivacyPolicy: "개인정보 처리방침",
@@ -877,6 +897,10 @@ export const translations = {
     // Success Messages
     categoriesUpdated: "카테고리가 업데이트되었습니다",
     notificationTimesUpdated: "알림 시간이 업데이트되었습니다",
+
+    // Category Facts Count
+    factCountSingular: "%{count}개 정보",
+    factCountPlural: "%{count}개 정보",
   },
   tr: {
     // Onboarding - Categories
@@ -900,12 +924,12 @@ export const translations = {
     notificationTimes: "Bildirim Saatleri",
     time: "Saat",
     addAnotherTime: "Başka Bir Saat Ekle",
-    multipleNotificationsPerDay: "Günde {count} bildirim alacaksınız",
+    multipleNotificationsPerDay: "Günde %{count} bildirim alacaksınız",
     notificationRespectMessage: "Dikkatinize saygı duyuyoruz ve spam göndermeyeceğiz.",
     maxTimesReached: "Maksimum Saat Sayısına Ulaşıldı",
-    maxTimesReachedMessage: "Maksimum {max} bildirim saati belirleyebilirsiniz",
+    maxTimesReachedMessage: "Maksimum %{max} bildirim saati belirleyebilirsiniz",
     minTimesRequired: "Minimum Saat Gerekli",
-    minTimesRequiredMessage: "En az {min} bildirim saati belirlemeniz gerekir",
+    minTimesRequiredMessage: "En az %{min} bildirim saati belirlemeniz gerekir",
     enableNotifications: "Bildirimleri Etkinleştir",
     gettingAppReady: "Uygulamanız hazırlanıyor...",
     notificationSchedulingFailed: "Bildirim Planlaması Başarısız",
@@ -959,7 +983,7 @@ export const translations = {
     reportPlaceholder: "Bu bilgiyle ilgili sorunu açıklayın...",
     add10RandomFacts: "10 Rastgele Bilgi Ekle",
     factsAdded: "Bilgiler Eklendi",
-    factsAddedDescription: "{count} bilgi programınıza eklendi!",
+    factsAddedDescription: "%{count} bilgi programınıza eklendi!",
     errorAddingFacts: "Bilgi Ekleme Hatası",
     save: "Kaydet",
     settingsUserPreferences: "Kullanıcı Tercihleri",
@@ -973,7 +997,7 @@ export const translations = {
     settingsThemeSystemDescription: "Sistem ayarlarını takip et",
     settingsCategories: "Kategoriler",
     settingsNotificationTime: "Bildirim Zamanı",
-    settingsNotificationTimesCount: "{count} kez",
+    settingsNotificationTimesCount: "%{count} kez",
     settingsSelected: "seçili",
     settingsLegal: "Yasal",
     settingsPrivacyPolicy: "Gizlilik Politikası",
@@ -1023,6 +1047,10 @@ export const translations = {
     // Success Messages
     categoriesUpdated: "Kategoriler güncellendi",
     notificationTimesUpdated: "Bildirim saatleri güncellendi",
+
+    // Category Facts Count
+    factCountSingular: "%{count} bilgi",
+    factCountPlural: "%{count} bilgi",
   },
   zh: {
     // Onboarding - Categories
@@ -1045,12 +1073,12 @@ export const translations = {
     notificationTimes: "通知时间",
     time: "时间",
     addAnotherTime: "添加其他时间",
-    multipleNotificationsPerDay: "您每天将收到{count}条通知",
+    multipleNotificationsPerDay: "您每天将收到%{count}条通知",
     notificationRespectMessage: "我们尊重您的时间，不会发送垃圾信息。",
     maxTimesReached: "已达到最大时间数",
-    maxTimesReachedMessage: "您最多可以设置{max}个通知时间",
+    maxTimesReachedMessage: "您最多可以设置%{max}个通知时间",
     minTimesRequired: "需要最少时间",
-    minTimesRequiredMessage: "您必须至少设置{min}个通知时间",
+    minTimesRequiredMessage: "您必须至少设置%{min}个通知时间",
     enableNotifications: "启用通知",
     gettingAppReady: "正在准备您的应用...",
     notificationSchedulingFailed: "通知计划失败",
@@ -1101,7 +1129,7 @@ export const translations = {
     reportPlaceholder: "描述这条知识有什么问题...",
     add10RandomFacts: "添加10个随机知识",
     factsAdded: "知识已添加",
-    factsAddedDescription: "{count}个知识已添加到您的日程！",
+    factsAddedDescription: "%{count}个知识已添加到您的日程！",
     errorAddingFacts: "添加知识时出错",
     save: "保存",
     settingsUserPreferences: "用户偏好",
@@ -1115,7 +1143,7 @@ export const translations = {
     settingsThemeSystemDescription: "跟随系统设置",
     settingsCategories: "类别",
     settingsNotificationTime: "通知时间",
-    settingsNotificationTimesCount: "{count}次",
+    settingsNotificationTimesCount: "%{count}次",
     settingsSelected: "已选",
     settingsLegal: "法律信息",
     settingsPrivacyPolicy: "隐私政策",
@@ -1165,6 +1193,10 @@ export const translations = {
     // Success Messages
     categoriesUpdated: "类别已更新",
     notificationTimesUpdated: "通知时间已更新",
+
+    // Category Facts Count
+    factCountSingular: "%{count}条知识",
+    factCountPlural: "%{count}条知识",
   },
 };
 
