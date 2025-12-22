@@ -279,7 +279,7 @@ function HomeScreen() {
   const renderHeader = () => (
     <ScreenHeader
       icon={<Clock size={isTablet ? 32 : 24} color={iconColor} />}
-      title={t("recentFacts")}
+      title={t("factsFeed")}
       isTablet={isTablet}
     />
   );

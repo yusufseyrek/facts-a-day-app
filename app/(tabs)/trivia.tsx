@@ -687,7 +687,7 @@ export default function TriviaScreen() {
                   color={textColor}
                   fontFamily={FONT_FAMILIES.semibold}
                   marginBottom={tokens.space.md}
-                  marginTop={tokens.space.md}
+                  marginTop={tokens.space.sm}
                 >
                   {t('triviaGameModes')}
                 </Text>
