@@ -2,10 +2,12 @@ import React from 'react';
 import { Pressable } from 'react-native';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
-import { Check, Zap, Shuffle } from '@tamagui/lucide-icons';
+import { Check, Zap, Shuffle, ChevronRight } from '@tamagui/lucide-icons';
 import { tokens } from '../../theme/tokens';
 import { FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
+import { hexToRgba } from '../../utils/colors';
+import { useTranslation } from '../../i18n';
 
 const Text = styled(TamaguiText, {
   fontFamily: FONT_FAMILIES.regular,
@@ -39,14 +41,14 @@ export function TriviaGridCard({
   isDark,
   onPress,
 }: TriviaGridCardProps) {
+  const { t } = useTranslation();
   const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
   const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
   const purpleColor = isDark ? tokens.color.dark.neonPurple : tokens.color.light.neonPurple;
   const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const borderColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
   const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
-  const surfaceBg = isDark ? tokens.color.dark.surface : tokens.color.light.surface;
+  const chevronColor = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)';
 
   // Determine the accent color based on type
   const getAccentColor = () => {
@@ -60,28 +62,35 @@ export function TriviaGridCard({
 
   // Render the icon based on type
   const renderIcon = () => {
-    const iconSize = 20;
+    const iconSize = 24;
     
     if (isCompleted && type === 'daily') {
-      return <Check size={iconSize} color="#FFFFFF" strokeWidth={2.5} />;
+      return <Check size={iconSize} color={accentColor} strokeWidth={2.5} />;
     }
     
     if (type === 'daily') {
-      return <Zap size={iconSize} color="#FFFFFF" strokeWidth={2} />;
+      return <Zap size={iconSize} color={accentColor} strokeWidth={2} />;
     }
     
     if (type === 'mixed') {
-      return <Shuffle size={iconSize} color="#FFFFFF" strokeWidth={2} />;
+      return <Shuffle size={iconSize} color={accentColor} strokeWidth={2} />;
     }
     
     // Category type - use the icon from props
-    return getLucideIcon(icon, iconSize, '#FFFFFF');
+    return getLucideIcon(icon, iconSize, accentColor);
   };
 
-  // Calculate progress percentage for categories
-  const progressPercent = progress && progress.total > 0
-    ? Math.round((progress.mastered / progress.total) * 100)
-    : 0;
+  // Get the subtitle text
+  const getSubtitle = () => {
+    if (subtitle) return subtitle;
+    if (type === 'category' && progress) {
+      return t('triviaQuestionsCount', { count: progress.total });
+    }
+    return '';
+  };
+
+  // Check if daily trivia is available (not completed and has questions)
+  const isDailyAvailable = type === 'daily' && !isCompleted && !isDisabled;
 
   return (
     <Pressable
@@ -89,74 +98,52 @@ export function TriviaGridCard({
       disabled={isDisabled || (isCompleted && type === 'daily')}
       style={({ pressed }) => ({
         flex: 1,
-        opacity: pressed && !isDisabled && !(isCompleted && type === 'daily') ? 0.8 : isDisabled ? 0.5 : 1,
+        opacity: pressed && !isDisabled && !(isCompleted && type === 'daily') ? 0.85 : isDisabled ? 0.5 : 1,
+        transform: [{ scale: pressed && !isDisabled && !(isCompleted && type === 'daily') ? 0.98 : 1 }],
       })}
     >
       <YStack
-        backgroundColor={cardBg}
-        borderRadius={tokens.radius.md}
-        borderWidth={1}
-        borderColor={isCompleted ? successColor : borderColor}
-        padding={tokens.space.md}
-        paddingVertical={tokens.space.lg}
-        gap={tokens.space.sm}
+        backgroundColor={isDailyAvailable ? hexToRgba(primaryColor, 0.08) : cardBg}
+        borderRadius={tokens.radius.lg}
+        padding={tokens.space.lg}
+        justifyContent="space-between"
+        borderWidth={isDailyAvailable ? 1.5 : 0}
+        borderColor={isDailyAvailable ? hexToRgba(primaryColor, 0.4) : 'transparent'}
       >
-        {/* Top row: Icon + Title + Progress */}
-        <XStack alignItems="center" gap={tokens.space.sm}>
+        {/* Top section: Icon + Chevron */}
+        <XStack justifyContent="space-between" alignItems="flex-start">
           <YStack
-            width={36}
-            height={36}
-            borderRadius={18}
-            backgroundColor={accentColor}
+            width={56}
+            height={56}
+            borderRadius={28}
+            backgroundColor={hexToRgba(accentColor, 0.1)}
             justifyContent="center"
             alignItems="center"
           >
             {renderIcon()}
           </YStack>
-          <YStack flex={1} gap={4}>
-            <Text
-              fontSize={13}
-              fontWeight="600"
-              color={textColor}
-              fontFamily={FONT_FAMILIES.semibold}
-              numberOfLines={1}
-            >
-              {title}
-            </Text>
-            {/* Subtitle for non-category types */}
-            {subtitle && type !== 'category' && (
-              <Text 
-                fontSize={11} 
-                color={secondaryTextColor}
-                numberOfLines={1}
-              >
-                {subtitle}
-              </Text>
-            )}
-            {/* Progress bar for categories - in place of subtitle */}
-            {type === 'category' && progress && (
-              <XStack alignItems="center" gap={tokens.space.xs} marginTop={5}>
-                <YStack 
-                  flex={1}
-                  height={6} 
-                  borderRadius={3} 
-                  backgroundColor={surfaceBg}
-                  overflow="hidden"
-                >
-                  <YStack 
-                    height={6} 
-                    borderRadius={3}
-                    backgroundColor={progress.mastered >= progress.total && progress.total > 0 ? successColor : accentColor}
-                    width={`${progressPercent}%`}
-                  />
-                </YStack>
-                {progress.mastered >= progress.total && progress.total > 0 && (
-                  <Check size={12} color={successColor} strokeWidth={3} />
-                )}
-              </XStack>
-            )}
-          </YStack>
+          <ChevronRight size={20} color={chevronColor} />
         </XStack>
+
+        {/* Bottom section: Title + Subtitle */}
+        <YStack gap={4} marginTop={tokens.space.md}>
+          <Text
+            fontSize={17}
+            fontWeight="700"
+            color={textColor}
+            fontFamily={FONT_FAMILIES.bold}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+          <Text 
+            fontSize={14} 
+            color={secondaryTextColor}
+            numberOfLines={1}
+          >
+            {getSubtitle()}
+          </Text>
+        </YStack>
       </YStack>
     </Pressable>
   );

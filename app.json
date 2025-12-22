@@ -218,7 +218,6 @@
       ],
       "expo-web-browser",
       "expo-tracking-transparency",
-      "expo-font",
       "expo-router",
       "expo-secure-store",
       "expo-sqlite"

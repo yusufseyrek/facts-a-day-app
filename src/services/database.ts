@@ -1715,7 +1715,7 @@ export async function getCategoryProgress(
 export async function getCategoriesWithTriviaProgress(
   language: string,
   selectedCategories?: string[]
-): Promise<Array<Category & { mastered: number; total: number }>> {
+): Promise<Array<Category & { mastered: number; total: number; answered: number; correct: number }>> {
   const database = await openDatabase();
   
   // If no selected categories provided, return empty array
@@ -1728,6 +1728,8 @@ export async function getCategoriesWithTriviaProgress(
   // Build query that returns ALL selected categories
   // Counts ALL questions from ALL facts in each category (not just shown facts)
   // Mastered = questions answered correctly 3 times in a row (last 3 attempts all correct)
+  // Answered = count of unique questions that have been attempted in this category
+  // Correct = count of correct answers in this category
   const query = `
     SELECT 
       c.*,
@@ -1757,12 +1759,29 @@ export async function getCategoriesWithTriviaProgress(
             SELECT COUNT(*) FROM question_attempts WHERE question_id = q2.id
           ) >= 3
         )
-      ), 0) as mastered
+      ), 0) as mastered,
+      COALESCE((
+        SELECT COUNT(*)
+        FROM question_attempts qa
+        INNER JOIN questions q ON qa.question_id = q.id
+        INNER JOIN facts f ON q.fact_id = f.id
+        WHERE f.category = c.slug 
+        AND f.language = ?
+      ), 0) as answered,
+      COALESCE((
+        SELECT COUNT(*)
+        FROM question_attempts qa
+        INNER JOIN questions q ON qa.question_id = q.id
+        INNER JOIN facts f ON q.fact_id = f.id
+        WHERE f.category = c.slug 
+        AND f.language = ?
+        AND qa.is_correct = 1
+      ), 0) as correct
     FROM categories c
     WHERE c.slug IN (${placeholders})
     ORDER BY c.name ASC`;
   
-  const params: any[] = [language, language, ...selectedCategories];
+  const params: any[] = [language, language, language, language, ...selectedCategories];
   
   const result = await database.getAllAsync<any>(query, params);
 
@@ -1775,6 +1794,8 @@ export async function getCategoriesWithTriviaProgress(
     color_hex: row.color_hex,
     mastered: row.mastered || 0,
     total: row.total || 0,
+    answered: row.answered || 0,
+    correct: row.correct || 0,
   }));
 }
 

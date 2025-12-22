@@ -612,7 +612,7 @@ export default function SettingsPage() {
           </SectionHeaderContainer>
         )}
         renderItem={({ item }) => (
-          <ContentContainer marginBottom={tokens.space.md}>
+          <ContentContainer marginBottom={tokens.space.sm}>
             <SettingsRow
               label={item.label}
               value={item.value}

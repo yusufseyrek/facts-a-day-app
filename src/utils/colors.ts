@@ -1,4 +1,30 @@
 /**
+ * Converts a hex color to rgba with the specified opacity.
+ * @param hexColor The hex color string (e.g. "#FFFFFF", "#000000", "FFF")
+ * @param opacity The opacity value between 0 and 1
+ * @returns rgba string (e.g. "rgba(255, 255, 255, 0.2)")
+ */
+export const hexToRgba = (hexColor: string, opacity: number): string => {
+  const hex = hexColor.replace('#', '');
+  
+  let r: number, g: number, b: number;
+  
+  if (hex.length === 3) {
+    r = parseInt(hex.charAt(0) + hex.charAt(0), 16);
+    g = parseInt(hex.charAt(1) + hex.charAt(1), 16);
+    b = parseInt(hex.charAt(2) + hex.charAt(2), 16);
+  } else if (hex.length === 6) {
+    r = parseInt(hex.substring(0, 2), 16);
+    g = parseInt(hex.substring(2, 4), 16);
+    b = parseInt(hex.substring(4, 6), 16);
+  } else {
+    return `rgba(128, 128, 128, ${opacity})`;
+  }
+
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
+
+/**
  * Calculates the luminance of a hex color and returns black or white for best contrast.
  * @param hexColor The hex color string (e.g. "#FFFFFF", "#000000", "FFF")
  * @returns "#000000" for dark text or "#FFFFFF" for light text

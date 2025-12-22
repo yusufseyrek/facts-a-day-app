@@ -19,9 +19,22 @@ import type {
 } from './database';
 
 // Constants
-export const QUESTIONS_PER_SESSION = 5;
+export const DAILY_TRIVIA_QUESTIONS = 10;
 export const MIXED_TRIVIA_QUESTIONS = 10;
 export const CATEGORY_TRIVIA_QUESTIONS = 10;
+
+// Time per question in seconds (used for estimating quiz duration)
+export const TIME_PER_QUESTION = {
+  multipleChoice: 60, // 45 seconds for multiple choice questions
+  trueFalse: 30,      // 30 seconds for true/false questions
+  average: 45,        // Average time used for estimation
+} as const;
+
+// Calculate estimated time for a quiz in minutes
+export function getEstimatedTimeMinutes(questionCount: number): number {
+  const totalSeconds = questionCount * TIME_PER_QUESTION.average;
+  return Math.ceil(totalSeconds / 60);
+}
 
 // Types
 export interface TriviaStats {
@@ -30,11 +43,15 @@ export interface TriviaStats {
   accuracy: number;
   currentStreak: number;
   totalMastered: number;
+  testsTaken: number;
 }
 
 export interface CategoryWithProgress extends Category {
   mastered: number;
   total: number;
+  answered: number;
+  correct: number;
+  accuracy: number;
   isComplete: boolean;
 }
 
@@ -149,6 +166,8 @@ export async function getCategoriesWithProgress(
   
   return categories.map(cat => ({
     ...cat,
+    // Accuracy is correct answers / unique questions answered (as percentage)
+    accuracy: cat.answered > 0 ? Math.round((cat.correct / cat.answered) * 100) : 0,
     isComplete: cat.total > 0 && cat.mastered >= cat.total,
   }));
 }
@@ -219,9 +238,12 @@ export async function getFactsForWrongAnswers(
 export async function getOverallStats(): Promise<TriviaStats> {
   const stats = await database.getOverallTriviaStats();
   const totalMastered = await database.getTotalMasteredCount();
+  // Calculate tests taken: each test has ~10 questions
+  const testsTaken = Math.ceil(stats.totalAnswered / MIXED_TRIVIA_QUESTIONS);
   return {
     ...stats,
     totalMastered,
+    testsTaken,
   };
 }
 

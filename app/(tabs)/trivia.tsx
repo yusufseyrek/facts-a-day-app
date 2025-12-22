@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { 
   ScrollView, 
@@ -26,6 +26,7 @@ import { BannerAd } from '../../src/components/ads/BannerAd';
 import {
   TriviaStatsHero,
   TriviaGridCard,
+  TriviaIntroModal,
 } from '../../src/components/trivia';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
@@ -94,6 +95,28 @@ export default function TriviaScreen() {
   
   // Results state
   const [wrongFacts, setWrongFacts] = useState<FactWithRelations[]>([]);
+  
+  // Pending trivia modal state
+  const [pendingTrivia, setPendingTrivia] = useState<{
+    type: 'daily' | 'mixed' | 'category';
+    categorySlug?: string;
+    categoryName?: string;
+    categoryDescription?: string;
+    categoryIcon?: string;
+    categoryColor?: string;
+    questionCount: number;
+    masteredCount: number;
+    totalQuestions: number;
+    answeredCount: number;
+    correctCount: number;
+  } | null>(null);
+  
+  // Keep last valid data for smooth close animation
+  const lastPendingTriviaRef = useRef(pendingTrivia);
+  if (pendingTrivia !== null) {
+    lastPendingTriviaRef.current = pendingTrivia;
+  }
+  const modalData = pendingTrivia ?? lastPendingTriviaRef.current;
 
   const loadTriviaData = useCallback(async (isRefresh = false) => {
     try {
@@ -146,6 +169,65 @@ export default function TriviaScreen() {
 
     return () => unsubscribe();
   }, [loadTriviaData]);
+
+  // Show intro modal before starting trivia
+  const showDailyTriviaIntro = () => {
+    setPendingTrivia({
+      type: 'daily',
+      questionCount: Math.min(dailyQuestionsCount, triviaService.DAILY_TRIVIA_QUESTIONS),
+      masteredCount: 0,
+      totalQuestions: dailyQuestionsCount,
+      answeredCount: 0,
+      correctCount: 0,
+    });
+  };
+
+  const showMixedTriviaIntro = () => {
+    setPendingTrivia({
+      type: 'mixed',
+      questionCount: Math.min(mixedQuestionsCount, triviaService.MIXED_TRIVIA_QUESTIONS),
+      masteredCount: overallStats?.totalMastered || 0,
+      totalQuestions: mixedQuestionsCount,
+      answeredCount: overallStats?.totalAnswered || 0,
+      correctCount: overallStats?.totalCorrect || 0,
+    });
+  };
+
+  const showCategoryTriviaIntro = (category: CategoryWithProgress) => {
+    // Each session uses category trivia questions limit
+    const remainingQuestions = Math.min(category.total - category.mastered, triviaService.CATEGORY_TRIVIA_QUESTIONS);
+    setPendingTrivia({
+      type: 'category',
+      categorySlug: category.slug,
+      categoryName: category.name,
+      categoryDescription: category.description || undefined,
+      categoryIcon: category.icon || undefined,
+      categoryColor: category.color_hex || undefined,
+      questionCount: remainingQuestions,
+      masteredCount: category.mastered,
+      totalQuestions: category.total,
+      answeredCount: category.answered,
+      correctCount: category.correct,
+    });
+  };
+
+  const handleCloseIntroModal = () => {
+    setPendingTrivia(null);
+  };
+
+  const handleStartFromIntroModal = async () => {
+    if (!pendingTrivia) return;
+    
+    setPendingTrivia(null);
+    
+    if (pendingTrivia.type === 'daily') {
+      await startDailyTrivia();
+    } else if (pendingTrivia.type === 'mixed') {
+      await startMixedTrivia();
+    } else if (pendingTrivia.type === 'category' && pendingTrivia.categorySlug) {
+      await startCategoryTrivia(pendingTrivia.categorySlug);
+    }
+  };
 
   const startDailyTrivia = async () => {
     try {
@@ -675,6 +757,7 @@ export default function TriviaScreen() {
             {/* Always show Stats */}
             <TriviaStatsHero
               stats={overallStats}
+              categories={categoriesWithProgress}
               isDark={isDark}
               t={t}
             />
@@ -700,13 +783,13 @@ export default function TriviaScreen() {
                       subtitle={isDailyCompleted 
                         ? t('dailyTriviaCompleted')
                         : dailyQuestionsCount > 0 
-                          ? t('dailyTriviaQuestions', { count: dailyQuestionsCount })
+                          ? t('triviaQuestionsCount', { count: Math.min(dailyQuestionsCount, triviaService.DAILY_TRIVIA_QUESTIONS) })
                           : t('noQuestionsYet')
                       }
                       isCompleted={isDailyCompleted}
                       isDisabled={dailyQuestionsCount === 0}
                       isDark={isDark}
-                      onPress={startDailyTrivia}
+                      onPress={showDailyTriviaIntro}
                     />
                     <TriviaGridCard
                       type="mixed"
@@ -714,7 +797,7 @@ export default function TriviaScreen() {
                       subtitle={t('mixedTriviaDescription')}
                       isDisabled={mixedQuestionsCount === 0}
                       isDark={isDark}
-                      onPress={startMixedTrivia}
+                      onPress={showMixedTriviaIntro}
                     />
                   </TriviaRow>
                   
@@ -731,7 +814,7 @@ export default function TriviaScreen() {
                           progress={{ mastered: category.mastered, total: category.total }}
                           isDisabled={category.isComplete || category.total === 0}
                           isDark={isDark}
-                          onPress={() => startCategoryTrivia(category.slug)}
+                          onPress={() => showCategoryTriviaIntro(category)}
                         />
                       ))}
                       {/* Add empty spacer if odd number of categories in last row */}
@@ -820,6 +903,23 @@ export default function TriviaScreen() {
         </ScrollView>
         <BannerAd position="trivia" />
       </YStack>
+
+      {/* Trivia Intro Modal */}
+      <TriviaIntroModal
+        visible={pendingTrivia !== null}
+        onStart={handleStartFromIntroModal}
+        onClose={handleCloseIntroModal}
+        type={modalData?.type || 'daily'}
+        categoryName={modalData?.categoryName}
+        categoryDescription={modalData?.categoryDescription}
+        categoryIcon={modalData?.categoryIcon}
+        categoryColor={modalData?.categoryColor}
+        questionCount={modalData?.questionCount || 0}
+        masteredCount={modalData?.masteredCount}
+        totalQuestions={modalData?.totalQuestions}
+        answeredCount={modalData?.answeredCount}
+        correctCount={modalData?.correctCount}
+      />
     </ScreenContainer>
   );
 }

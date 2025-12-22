@@ -1,6 +1,5 @@
 export { openInAppBrowser } from './browser';
-export { getContrastColor } from './colors';
-export { getCategoryIcon } from './iconMapper';
+export { getContrastColor, hexToRgba } from './colors';
 export {
   getResponsiveScale,
   getResponsiveFontSizes,

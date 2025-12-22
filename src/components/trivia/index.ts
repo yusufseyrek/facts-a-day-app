@@ -4,4 +4,5 @@ export { CategoryQuestCard } from './CategoryQuestCard';
 export { MixedTriviaCard } from './MixedTriviaCard';
 export { TriviaGridCard } from './TriviaGridCard';
 export type { TriviaGridCardType } from './TriviaGridCard';
+export { TriviaIntroModal } from './TriviaIntroModal';
 
