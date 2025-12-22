@@ -21,6 +21,7 @@ import type {
 // Constants
 export const QUESTIONS_PER_SESSION = 5;
 export const MIXED_TRIVIA_QUESTIONS = 10;
+export const CATEGORY_TRIVIA_QUESTIONS = 10;
 
 // Types
 export interface TriviaStats {
@@ -125,12 +126,12 @@ export async function getMixedTriviaQuestionsCount(
 
 /**
  * Get questions for a category trivia session
- * Returns N unmastered questions from the category
+ * Returns N unmastered questions from the category (default 10 questions)
  */
 export async function getCategoryTriviaQuestions(
   categorySlug: string,
   language: string,
-  limit: number = QUESTIONS_PER_SESSION
+  limit: number = CATEGORY_TRIVIA_QUESTIONS
 ): Promise<QuestionWithFact[]> {
   return database.getQuestionsForCategory(categorySlug, limit, language, true);
 }

@@ -1501,6 +1501,8 @@ export async function getQuestionsForCategory(
 ): Promise<QuestionWithFact[]> {
   const database = await openDatabase();
 
+  // Get questions from ALL facts in the category (not just shown ones)
+  // Questions become available as soon as facts are downloaded
   let query = `
     SELECT 
       q.*,
@@ -1519,15 +1521,26 @@ export async function getQuestionsForCategory(
     FROM questions q
     INNER JOIN facts f ON q.fact_id = f.id
     LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.shown_in_feed = 1
-    AND f.category = ?
+    WHERE f.category = ?
     AND f.language = ?`;
 
   if (excludeMastered) {
-    // Exclude questions that have at least one correct attempt
+    // Exclude questions that are mastered (3 correct answers in a row)
+    // A question is mastered if it has 3+ attempts and the last 3 are all correct
     query += `
     AND q.id NOT IN (
-      SELECT DISTINCT question_id FROM question_attempts WHERE is_correct = 1
+      SELECT q2.id FROM questions q2
+      WHERE (
+        SELECT COUNT(*) FROM (
+          SELECT is_correct FROM question_attempts 
+          WHERE question_id = q2.id 
+          ORDER BY answered_at DESC 
+          LIMIT 3
+        ) WHERE is_correct = 1
+      ) = 3
+      AND (
+        SELECT COUNT(*) FROM question_attempts WHERE question_id = q2.id
+      ) >= 3
     )`;
   }
 
@@ -1603,41 +1616,58 @@ export async function recordQuestionAttempt(
 }
 
 /**
- * Check if a question has been mastered (answered correctly at least twice)
+ * Check if a question has been mastered (answered correctly 3 times in a row)
  * Only returns true if the question still exists in the database
+ * Mastery requires the last 3 consecutive attempts to all be correct
  */
 export async function isQuestionMastered(questionId: number): Promise<boolean> {
   const database = await openDatabase();
+  // Get the last 3 attempts for this question, ordered by most recent first
   // Join with questions table to ensure the question still exists
-  const result = await database.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(*) as count FROM question_attempts qa
+  const attempts = await database.getAllAsync<{ is_correct: number }>(
+    `SELECT qa.is_correct 
+     FROM question_attempts qa
      INNER JOIN questions q ON qa.question_id = q.id
-     WHERE qa.question_id = ? AND qa.is_correct = 1`,
+     WHERE qa.question_id = ?
+     ORDER BY qa.answered_at DESC
+     LIMIT 3`,
     [questionId]
   );
-  return (result?.count || 0) >= 2;
+  
+  // Mastered if there are at least 3 attempts and all are correct
+  if (attempts.length < 3) return false;
+  return attempts.every(a => a.is_correct === 1);
 }
 
 /**
- * Get count of mastered questions for a category (answered correctly at least twice)
+ * Get count of mastered questions for a category (answered correctly 3 times in a row)
+ * A question is mastered if its last 3 consecutive attempts are all correct
+ * Counts ALL questions in the category (not just from shown facts)
  */
 export async function getMasteredCountForCategory(
   categorySlug: string,
   language: string
 ): Promise<number> {
   const database = await openDatabase();
+  // Count questions where the last 3 attempts are all correct
   const result = await database.getFirstAsync<{ count: number }>(
     `SELECT COUNT(*) as count FROM (
        SELECT q.id
        FROM questions q
        INNER JOIN facts f ON q.fact_id = f.id
-       INNER JOIN question_attempts qa ON q.id = qa.question_id
        WHERE f.category = ? 
        AND f.language = ?
-       AND f.shown_in_feed = 1
-       AND qa.is_correct = 1
-       GROUP BY q.id
-       HAVING COUNT(*) >= 2
+       AND (
+         SELECT COUNT(*) FROM (
+           SELECT is_correct FROM question_attempts 
+           WHERE question_id = q.id 
+           ORDER BY answered_at DESC 
+           LIMIT 3
+         ) WHERE is_correct = 1
+       ) = 3
+       AND (
+         SELECT COUNT(*) FROM question_attempts WHERE question_id = q.id
+       ) >= 3
      )`,
     [categorySlug, language]
   );
@@ -1645,7 +1675,7 @@ export async function getMasteredCountForCategory(
 }
 
 /**
- * Get total questions count for a category (only from shown facts)
+ * Get total questions count for a category (from ALL facts, not just shown ones)
  */
 export async function getTotalQuestionsForCategory(
   categorySlug: string,
@@ -1657,8 +1687,7 @@ export async function getTotalQuestionsForCategory(
      FROM questions q
      INNER JOIN facts f ON q.fact_id = f.id
      WHERE f.category = ? 
-     AND f.language = ?
-     AND f.shown_in_feed = 1`,
+     AND f.language = ?`,
     [categorySlug, language]
   );
   return result?.count || 0;
@@ -1680,6 +1709,8 @@ export async function getCategoryProgress(
  * Get all categories with trivia progress
  * @param language - The language to filter facts by
  * @param selectedCategories - Optional array of category slugs to filter by (user's selected categories)
+ * Returns ALL selected categories with their total questions and mastered count
+ * Questions are available from ALL facts (not just shown ones)
  */
 export async function getCategoriesWithTriviaProgress(
   language: string,
@@ -1687,45 +1718,51 @@ export async function getCategoriesWithTriviaProgress(
 ): Promise<Array<Category & { mastered: number; total: number }>> {
   const database = await openDatabase();
   
-  // Build query with optional category filter
-  // Mastered = questions answered correctly at least twice
-  let query = `
+  // If no selected categories provided, return empty array
+  if (!selectedCategories || selectedCategories.length === 0) {
+    return [];
+  }
+  
+  const placeholders = selectedCategories.map(() => '?').join(', ');
+  
+  // Build query that returns ALL selected categories
+  // Counts ALL questions from ALL facts in each category (not just shown facts)
+  // Mastered = questions answered correctly 3 times in a row (last 3 attempts all correct)
+  const query = `
     SELECT 
       c.*,
-      COUNT(DISTINCT q.id) as total,
-      (
+      COALESCE((
+        SELECT COUNT(DISTINCT q.id)
+        FROM questions q
+        INNER JOIN facts f ON q.fact_id = f.id
+        WHERE f.category = c.slug 
+        AND f.language = ?
+      ), 0) as total,
+      COALESCE((
         SELECT COUNT(*) FROM (
           SELECT q2.id
           FROM questions q2
           INNER JOIN facts f2 ON q2.fact_id = f2.id
-          INNER JOIN question_attempts qa2 ON q2.id = qa2.question_id
           WHERE f2.category = c.slug 
           AND f2.language = ?
-          AND f2.shown_in_feed = 1
-          AND qa2.is_correct = 1
-          GROUP BY q2.id
-          HAVING COUNT(*) >= 2
+          AND (
+            SELECT COUNT(*) FROM (
+              SELECT is_correct FROM question_attempts 
+              WHERE question_id = q2.id 
+              ORDER BY answered_at DESC 
+              LIMIT 3
+            ) WHERE is_correct = 1
+          ) = 3
+          AND (
+            SELECT COUNT(*) FROM question_attempts WHERE question_id = q2.id
+          ) >= 3
         )
-      ) as mastered
+      ), 0) as mastered
     FROM categories c
-    INNER JOIN facts f ON f.category = c.slug
-    INNER JOIN questions q ON q.fact_id = f.id
-    WHERE f.language = ?
-    AND f.shown_in_feed = 1`;
-  
-  const params: any[] = [language, language];
-  
-  // Filter by user's selected categories if provided
-  if (selectedCategories && selectedCategories.length > 0) {
-    const placeholders = selectedCategories.map(() => '?').join(', ');
-    query += ` AND c.slug IN (${placeholders})`;
-    params.push(...selectedCategories);
-  }
-  
-  query += `
-    GROUP BY c.id
-    HAVING total > 0
+    WHERE c.slug IN (${placeholders})
     ORDER BY c.name ASC`;
+  
+  const params: any[] = [language, language, ...selectedCategories];
   
   const result = await database.getAllAsync<any>(query, params);
 
@@ -1886,21 +1923,28 @@ export async function getOverallTriviaStats(): Promise<{
 }
 
 /**
- * Get total count of mastered questions (answered correctly at least twice)
+ * Get total count of mastered questions (answered correctly 3 times in a row)
  * Only counts questions that still exist in the database
- * (joins with questions table to filter out orphaned attempts)
+ * A question is mastered if its last 3 consecutive attempts are all correct
  */
 export async function getTotalMasteredCount(): Promise<number> {
   const database = await openDatabase();
-  // Join with questions table to only count attempts for questions that still exist
+  // Count questions where the last 3 attempts are all correct
   const result = await database.getFirstAsync<{ count: number }>(
     `SELECT COUNT(*) as count FROM (
-       SELECT qa.question_id
-       FROM question_attempts qa
-       INNER JOIN questions q ON qa.question_id = q.id
-       WHERE qa.is_correct = 1
-       GROUP BY qa.question_id
-       HAVING COUNT(*) >= 2
+       SELECT q.id
+       FROM questions q
+       WHERE (
+         SELECT COUNT(*) FROM (
+           SELECT is_correct FROM question_attempts 
+           WHERE question_id = q.id 
+           ORDER BY answered_at DESC 
+           LIMIT 3
+         ) WHERE is_correct = 1
+       ) = 3
+       AND (
+         SELECT COUNT(*) FROM question_attempts WHERE question_id = q.id
+       ) >= 3
      )`
   );
   return result?.count || 0;

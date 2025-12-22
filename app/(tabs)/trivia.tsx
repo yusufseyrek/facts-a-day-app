@@ -614,7 +614,11 @@ export default function TriviaScreen() {
   }
 
   // Hub view (main trivia screen)
-  const hasQuestions = dailyQuestionsCount > 0 || mixedQuestionsCount > 0 || categoriesWithProgress.length > 0;
+  // Check if there are any questions available (daily, mixed, or any category with questions)
+  const hasCategoryQuestions = categoriesWithProgress.some(cat => cat.total > 0);
+  const hasQuestions = dailyQuestionsCount > 0 || mixedQuestionsCount > 0 || hasCategoryQuestions;
+  // Show categories section if user has selected categories (even if no questions yet)
+  const hasCategories = categoriesWithProgress.length > 0;
   
   // Colors for empty state
   const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
@@ -675,7 +679,7 @@ export default function TriviaScreen() {
               t={t}
             />
             
-            {hasQuestions ? (
+            {(hasQuestions || hasCategories) ? (
               <Animated.View entering={FadeIn.duration(300)}>
                 {/* Section title */}
                 <Text
@@ -707,6 +711,7 @@ export default function TriviaScreen() {
                     <TriviaGridCard
                       type="mixed"
                       title={t('mixedTrivia')}
+                      subtitle={t('mixedTriviaDescription')}
                       isDisabled={mixedQuestionsCount === 0}
                       isDark={isDark}
                       onPress={startMixedTrivia}

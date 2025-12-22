@@ -101,7 +101,7 @@ export function TriviaGridCard({
         paddingVertical={tokens.space.lg}
         gap={tokens.space.sm}
       >
-        {/* Top row: Icon + Title */}
+        {/* Top row: Icon + Title + Progress */}
         <XStack alignItems="center" gap={tokens.space.sm}>
           <YStack
             width={36}
@@ -113,7 +113,7 @@ export function TriviaGridCard({
           >
             {renderIcon()}
           </YStack>
-          <YStack flex={1} gap={2}>
+          <YStack flex={1} gap={4}>
             <Text
               fontSize={13}
               fontWeight="600"
@@ -123,7 +123,8 @@ export function TriviaGridCard({
             >
               {title}
             </Text>
-            {subtitle && (
+            {/* Subtitle for non-category types */}
+            {subtitle && type !== 'category' && (
               <Text 
                 fontSize={11} 
                 color={secondaryTextColor}
@@ -132,31 +133,30 @@ export function TriviaGridCard({
                 {subtitle}
               </Text>
             )}
+            {/* Progress bar for categories - in place of subtitle */}
+            {type === 'category' && progress && (
+              <XStack alignItems="center" gap={tokens.space.xs} marginTop={5}>
+                <YStack 
+                  flex={1}
+                  height={6} 
+                  borderRadius={3} 
+                  backgroundColor={surfaceBg}
+                  overflow="hidden"
+                >
+                  <YStack 
+                    height={6} 
+                    borderRadius={3}
+                    backgroundColor={progress.mastered >= progress.total && progress.total > 0 ? successColor : accentColor}
+                    width={`${progressPercent}%`}
+                  />
+                </YStack>
+                {progress.mastered >= progress.total && progress.total > 0 && (
+                  <Check size={12} color={successColor} strokeWidth={3} />
+                )}
+              </XStack>
+            )}
           </YStack>
         </XStack>
-        
-        {/* Progress bar for categories */}
-        {type === 'category' && progress && (
-          <XStack alignItems="center" gap={tokens.space.sm}>
-            <YStack 
-              flex={1}
-              height={3} 
-              borderRadius={2} 
-              backgroundColor={surfaceBg}
-              overflow="hidden"
-            >
-              <YStack 
-                height={3} 
-                borderRadius={2} 
-                backgroundColor={progress.mastered >= progress.total ? successColor : accentColor}
-                width={`${progressPercent}%`}
-              />
-            </YStack>
-            {progress.mastered >= progress.total && progress.total > 0 && (
-              <Check size={12} color={successColor} strokeWidth={3} />
-            )}
-          </XStack>
-        )}
       </YStack>
     </Pressable>
   );
