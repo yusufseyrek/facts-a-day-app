@@ -126,7 +126,7 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_favorites_created_at ON favorites(created_at);
   `);
 
-  // ====== QUIZ TABLES ======
+  // ====== TRIVIA TABLES ======
 
   // Create questions table
   await db.execAsync(`
@@ -149,16 +149,18 @@ async function initializeSchema(): Promise<void> {
   `);
 
   // Create question_attempts table for tracking mastery
+  // NOTE: No CASCADE delete - we want to preserve attempts even when questions are deleted
+  // Statistics queries join with questions table to only count attempts for existing questions
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS question_attempts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       question_id INTEGER NOT NULL,
       is_correct INTEGER NOT NULL,
       answered_at TEXT NOT NULL,
-      quiz_mode TEXT NOT NULL,
-      FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+      trivia_mode TEXT NOT NULL
     );
   `);
+  
 
   // Create indexes on question_attempts
   await db.execAsync(`
@@ -169,9 +171,9 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_attempts_answered_at ON question_attempts(answered_at);
   `);
 
-  // Create daily_quiz_progress table
+  // Create daily_trivia_progress table
   await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS daily_quiz_progress (
+    CREATE TABLE IF NOT EXISTS daily_trivia_progress (
       date TEXT PRIMARY KEY,
       total_questions INTEGER NOT NULL,
       correct_answers INTEGER NOT NULL,
@@ -191,7 +193,7 @@ export async function clearDatabase(): Promise<void> {
     DELETE FROM favorites;
     DELETE FROM questions;
     DELETE FROM question_attempts;
-    DELETE FROM daily_quiz_progress;
+    DELETE FROM daily_trivia_progress;
   `);
 }
 
@@ -1318,7 +1320,7 @@ export async function searchFacts(
   return mapFactsWithRelations(result);
 }
 
-// ====== QUIZ QUESTIONS ======
+// ====== TRIVIA QUESTIONS ======
 
 export interface Question {
   id: number;
@@ -1340,10 +1342,10 @@ export interface QuestionAttempt {
   question_id: number;
   is_correct: number; // 0 or 1
   answered_at: string;
-  quiz_mode: 'daily' | 'category';
+  trivia_mode: 'daily' | 'category' | 'mixed';
 }
 
-export interface DailyQuizProgress {
+export interface DailyTriviaProgress {
   date: string;
   total_questions: number;
   correct_answers: number;
@@ -1382,11 +1384,11 @@ export async function insertQuestions(questions: Question[]): Promise<void> {
 }
 
 /**
- * Get questions for daily quiz - questions from facts shown today
+ * Get questions for daily trivia - questions from facts shown today
  * @param dateString Date in YYYY-MM-DD format
  * @param language Language filter
  */
-export async function getQuestionsForDailyQuiz(
+export async function getQuestionsForDailyTrivia(
   dateString: string,
   language: string
 ): Promise<QuestionWithFact[]> {
@@ -1422,7 +1424,69 @@ export async function getQuestionsForDailyQuiz(
 }
 
 /**
- * Get questions for category quiz
+ * Get random unanswered questions for mixed trivia
+ * Returns N random questions that the user hasn't answered yet
+ * @param limit Number of questions to return
+ * @param language Language filter
+ */
+export async function getRandomUnansweredQuestions(
+  limit: number,
+  language: string
+): Promise<QuestionWithFact[]> {
+  const database = await openDatabase();
+
+  const result = await database.getAllAsync<any>(
+    `SELECT 
+      q.*,
+      f.id as fact_id,
+      f.title as fact_title,
+      f.content as fact_content,
+      f.summary as fact_summary,
+      f.category as fact_category,
+      f.source_url as fact_source_url,
+      f.language as fact_language,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM questions q
+    INNER JOIN facts f ON q.fact_id = f.id
+    LEFT JOIN categories c ON f.category = c.slug
+    WHERE f.language = ?
+    AND q.id NOT IN (
+      SELECT DISTINCT question_id FROM question_attempts
+    )
+    ORDER BY RANDOM()
+    LIMIT ?`,
+    [language, limit]
+  );
+
+  return mapQuestionsWithFact(result);
+}
+
+/**
+ * Get count of unanswered questions available for mixed trivia
+ */
+export async function getUnansweredQuestionsCount(
+  language: string
+): Promise<number> {
+  const database = await openDatabase();
+  const result = await database.getFirstAsync<{ count: number }>(
+    `SELECT COUNT(*) as count 
+     FROM questions q
+     INNER JOIN facts f ON q.fact_id = f.id
+     WHERE f.language = ?
+     AND q.id NOT IN (
+       SELECT DISTINCT question_id FROM question_attempts
+     )`,
+    [language]
+  );
+  return result?.count || 0;
+}
+
+/**
+ * Get questions for category trivia
  * Returns N random questions from category that haven't been mastered yet
  * @param categorySlug Category to get questions for
  * @param limit Number of questions to return
@@ -1526,33 +1590,36 @@ function mapQuestionsWithFact(rows: any[]): QuestionWithFact[] {
 export async function recordQuestionAttempt(
   questionId: number,
   isCorrect: boolean,
-  quizMode: 'daily' | 'category'
+  triviaMode: 'daily' | 'category' | 'mixed'
 ): Promise<void> {
   const database = await openDatabase();
   const now = new Date().toISOString();
 
   await database.runAsync(
-    `INSERT INTO question_attempts (question_id, is_correct, answered_at, quiz_mode)
+    `INSERT INTO question_attempts (question_id, is_correct, answered_at, trivia_mode)
      VALUES (?, ?, ?, ?)`,
-    [questionId, isCorrect ? 1 : 0, now, quizMode]
+    [questionId, isCorrect ? 1 : 0, now, triviaMode]
   );
 }
 
 /**
- * Check if a question has been mastered (answered correctly at least once)
+ * Check if a question has been mastered (answered correctly at least twice)
+ * Only returns true if the question still exists in the database
  */
 export async function isQuestionMastered(questionId: number): Promise<boolean> {
   const database = await openDatabase();
+  // Join with questions table to ensure the question still exists
   const result = await database.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(*) as count FROM question_attempts 
-     WHERE question_id = ? AND is_correct = 1`,
+    `SELECT COUNT(*) as count FROM question_attempts qa
+     INNER JOIN questions q ON qa.question_id = q.id
+     WHERE qa.question_id = ? AND qa.is_correct = 1`,
     [questionId]
   );
-  return (result?.count || 0) > 0;
+  return (result?.count || 0) >= 2;
 }
 
 /**
- * Get count of mastered questions for a category
+ * Get count of mastered questions for a category (answered correctly at least twice)
  */
 export async function getMasteredCountForCategory(
   categorySlug: string,
@@ -1560,14 +1627,18 @@ export async function getMasteredCountForCategory(
 ): Promise<number> {
   const database = await openDatabase();
   const result = await database.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(DISTINCT q.id) as count 
-     FROM questions q
-     INNER JOIN facts f ON q.fact_id = f.id
-     INNER JOIN question_attempts qa ON q.id = qa.question_id
-     WHERE f.category = ? 
-     AND f.language = ?
-     AND f.shown_in_feed = 1
-     AND qa.is_correct = 1`,
+    `SELECT COUNT(*) as count FROM (
+       SELECT q.id
+       FROM questions q
+       INNER JOIN facts f ON q.fact_id = f.id
+       INNER JOIN question_attempts qa ON q.id = qa.question_id
+       WHERE f.category = ? 
+       AND f.language = ?
+       AND f.shown_in_feed = 1
+       AND qa.is_correct = 1
+       GROUP BY q.id
+       HAVING COUNT(*) >= 2
+     )`,
     [categorySlug, language]
   );
   return result?.count || 0;
@@ -1606,30 +1677,43 @@ export async function getCategoryProgress(
 }
 
 /**
- * Get all categories with quiz progress
+ * Get all categories with trivia progress
  * @param language - The language to filter facts by
  * @param selectedCategories - Optional array of category slugs to filter by (user's selected categories)
  */
-export async function getCategoriesWithQuizProgress(
+export async function getCategoriesWithTriviaProgress(
   language: string,
   selectedCategories?: string[]
 ): Promise<Array<Category & { mastered: number; total: number }>> {
   const database = await openDatabase();
   
   // Build query with optional category filter
+  // Mastered = questions answered correctly at least twice
   let query = `
     SELECT 
       c.*,
       COUNT(DISTINCT q.id) as total,
-      COUNT(DISTINCT CASE WHEN qa.is_correct = 1 THEN q.id END) as mastered
+      (
+        SELECT COUNT(*) FROM (
+          SELECT q2.id
+          FROM questions q2
+          INNER JOIN facts f2 ON q2.fact_id = f2.id
+          INNER JOIN question_attempts qa2 ON q2.id = qa2.question_id
+          WHERE f2.category = c.slug 
+          AND f2.language = ?
+          AND f2.shown_in_feed = 1
+          AND qa2.is_correct = 1
+          GROUP BY q2.id
+          HAVING COUNT(*) >= 2
+        )
+      ) as mastered
     FROM categories c
     INNER JOIN facts f ON f.category = c.slug
     INNER JOIN questions q ON q.fact_id = f.id
-    LEFT JOIN question_attempts qa ON q.id = qa.question_id
     WHERE f.language = ?
     AND f.shown_in_feed = 1`;
   
-  const params: any[] = [language];
+  const params: any[] = [language, language];
   
   // Filter by user's selected categories if provided
   if (selectedCategories && selectedCategories.length > 0) {
@@ -1657,26 +1741,26 @@ export async function getCategoriesWithQuizProgress(
   }));
 }
 
-// ====== DAILY QUIZ PROGRESS ======
+// ====== DAILY TRIVIA PROGRESS ======
 
 /**
- * Get daily quiz progress for a specific date
+ * Get daily trivia progress for a specific date
  */
-export async function getDailyQuizProgress(
+export async function getDailyTriviaProgress(
   dateString: string
-): Promise<DailyQuizProgress | null> {
+): Promise<DailyTriviaProgress | null> {
   const database = await openDatabase();
-  const result = await database.getFirstAsync<DailyQuizProgress>(
-    `SELECT * FROM daily_quiz_progress WHERE date = ?`,
+  const result = await database.getFirstAsync<DailyTriviaProgress>(
+    `SELECT * FROM daily_trivia_progress WHERE date = ?`,
     [dateString]
   );
   return result || null;
 }
 
 /**
- * Save daily quiz progress
+ * Save daily trivia progress
  */
-export async function saveDailyQuizProgress(
+export async function saveDailyTriviaProgress(
   dateString: string,
   totalQuestions: number,
   correctAnswers: number
@@ -1685,21 +1769,21 @@ export async function saveDailyQuizProgress(
   const now = new Date().toISOString();
 
   await database.runAsync(
-    `INSERT OR REPLACE INTO daily_quiz_progress (date, total_questions, correct_answers, completed_at)
+    `INSERT OR REPLACE INTO daily_trivia_progress (date, total_questions, correct_answers, completed_at)
      VALUES (?, ?, ?, ?)`,
     [dateString, totalQuestions, correctAnswers, now]
   );
 }
 
 /**
- * Get the current daily streak (consecutive days with completed daily quiz)
+ * Get the current daily streak (consecutive days with completed daily trivia)
  */
 export async function getDailyStreak(): Promise<number> {
   const database = await openDatabase();
   
   // Get all completed dates, ordered descending
   const result = await database.getAllAsync<{ date: string }>(
-    `SELECT date FROM daily_quiz_progress 
+    `SELECT date FROM daily_trivia_progress 
      WHERE completed_at IS NOT NULL
      ORDER BY date DESC`
   );
@@ -1740,9 +1824,9 @@ export async function getDailyStreak(): Promise<number> {
 }
 
 /**
- * Get count of questions available for daily quiz on a specific date
+ * Get count of questions available for daily trivia on a specific date
  */
-export async function getDailyQuizQuestionsCount(
+export async function getDailyTriviaQuestionsCount(
   dateString: string,
   language: string
 ): Promise<number> {
@@ -1763,9 +1847,11 @@ export async function getDailyQuizQuestionsCount(
 }
 
 /**
- * Get overall quiz statistics
+ * Get overall trivia statistics
+ * Only counts attempts for questions that still exist in the database
+ * (joins with questions table to filter out orphaned attempts)
  */
-export async function getOverallQuizStats(): Promise<{
+export async function getOverallTriviaStats(): Promise<{
   totalAnswered: number;
   totalCorrect: number;
   accuracy: number;
@@ -1773,14 +1859,16 @@ export async function getOverallQuizStats(): Promise<{
 }> {
   const database = await openDatabase();
 
+  // Join with questions table to only count attempts for questions that still exist
   const stats = await database.getFirstAsync<{
     total_answered: number;
     total_correct: number;
   }>(
     `SELECT 
       COUNT(*) as total_answered,
-      SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as total_correct
-     FROM question_attempts`
+      SUM(CASE WHEN qa.is_correct = 1 THEN 1 ELSE 0 END) as total_correct
+     FROM question_attempts qa
+     INNER JOIN questions q ON qa.question_id = q.id`
   );
 
   const currentStreak = await getDailyStreak();
@@ -1795,6 +1883,27 @@ export async function getOverallQuizStats(): Promise<{
     accuracy,
     currentStreak,
   };
+}
+
+/**
+ * Get total count of mastered questions (answered correctly at least twice)
+ * Only counts questions that still exist in the database
+ * (joins with questions table to filter out orphaned attempts)
+ */
+export async function getTotalMasteredCount(): Promise<number> {
+  const database = await openDatabase();
+  // Join with questions table to only count attempts for questions that still exist
+  const result = await database.getFirstAsync<{ count: number }>(
+    `SELECT COUNT(*) as count FROM (
+       SELECT qa.question_id
+       FROM question_attempts qa
+       INNER JOIN questions q ON qa.question_id = q.id
+       WHERE qa.is_correct = 1
+       GROUP BY qa.question_id
+       HAVING COUNT(*) >= 2
+     )`
+  );
+  return result?.count || 0;
 }
 
 /**

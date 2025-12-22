@@ -7,7 +7,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { tokens } from '../../theme/tokens';
 import { FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
-import type { CategoryWithProgress } from '../../services/quiz';
+import type { CategoryWithProgress } from '../../services/trivia';
 
 const Text = styled(TamaguiText, {
   fontFamily: FONT_FAMILIES.regular,
@@ -116,3 +116,4 @@ export function CategoryQuestCard({
     </Animated.View>
   );
 }
+

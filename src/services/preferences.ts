@@ -207,7 +207,7 @@ export async function handleLanguageChange(
 
     console.log(`Updated ${updatedCount} preserved facts, inserted ${insertedCount} new facts`);
 
-    // Extract and insert questions for quiz feature
+    // Extract and insert questions for trivia feature
     const dbQuestions: database.Question[] = [];
     for (const fact of allFacts) {
       if (fact.questions && fact.questions.length > 0) {
@@ -228,7 +228,7 @@ export async function handleLanguageChange(
 
     if (dbQuestions.length > 0) {
       await database.insertQuestions(dbQuestions);
-      console.log(`🧠 Synced ${dbQuestions.length} questions for quiz`);
+      console.log(`🧠 Synced ${dbQuestions.length} questions for trivia`);
     }
 
     // Stage 5: Reschedule notifications with new language
@@ -412,7 +412,7 @@ export async function handleCategoriesChange(
 
     console.log(`Updated ${updatedCount} shown facts, inserted ${insertedCount} new facts`);
 
-    // Extract and insert questions for quiz feature
+    // Extract and insert questions for trivia feature
     const dbQuestions: database.Question[] = [];
     for (const fact of newFacts) {
       if (fact.questions && fact.questions.length > 0) {
@@ -433,7 +433,7 @@ export async function handleCategoriesChange(
 
     if (dbQuestions.length > 0) {
       await database.insertQuestions(dbQuestions);
-      console.log(`🧠 Synced ${dbQuestions.length} questions for quiz`);
+      console.log(`🧠 Synced ${dbQuestions.length} questions for trivia`);
     }
 
     // Stage 4: Reschedule notifications (clear and reschedule with new facts)

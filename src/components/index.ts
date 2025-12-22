@@ -31,9 +31,9 @@ export {
   useIconColor,
 } from './ScreenLayout';
 
-// Quiz components
+// Trivia components
 export {
-  QuizStatsHero,
+  TriviaStatsHero,
   DailyChallengeCard,
   CategoryQuestCard,
-} from './quiz';
+} from './trivia';

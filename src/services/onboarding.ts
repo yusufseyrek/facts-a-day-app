@@ -113,7 +113,7 @@ export async function fetchAllFacts(
     // Convert categories array to comma-separated string
     const categoriesParam = categories.join(',');
 
-    // Fetch all facts with retry logic (include questions for quiz feature)
+    // Fetch all facts with retry logic (include questions for trivia feature)
     console.log('Fetching facts with questions...', { language, categories: categoriesParam });
 
     const facts = await api.getAllFactsWithRetry(
@@ -129,7 +129,7 @@ export async function fetchAllFacts(
         }
       },
       3, // max retries
-      true // include questions for quiz feature
+      true // include questions for trivia feature
     );
 
     // Convert API facts to database facts format
@@ -146,7 +146,7 @@ export async function fetchAllFacts(
       last_updated: fact.last_updated,
     }));
 
-    // Extract questions from facts for quiz feature
+    // Extract questions from facts for trivia feature
     const dbQuestions: db.Question[] = [];
     for (const fact of facts) {
       if (fact.questions && fact.questions.length > 0) {
@@ -169,7 +169,7 @@ export async function fetchAllFacts(
     console.log(`Storing ${dbFacts.length} facts in database...`);
     await db.insertFacts(dbFacts);
 
-    // Store questions in database for quiz feature
+    // Store questions in database for trivia feature
     if (dbQuestions.length > 0) {
       console.log(`Storing ${dbQuestions.length} questions in database...`);
       await db.insertQuestions(dbQuestions);

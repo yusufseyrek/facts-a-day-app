@@ -238,7 +238,7 @@ async function getExistingFactIds(factIds: number[]): Promise<number[]> {
 
 /**
  * Check if questions migration is needed
- * Returns true if user has facts but no questions (existing user before quiz feature)
+ * Returns true if user has facts but no questions (existing user before trivia feature)
  */
 async function needsQuestionsMigration(): Promise<boolean> {
   try {
@@ -330,7 +330,7 @@ async function runQuestionsMigration(locale: SupportedLocale): Promise<void> {
     // Insert questions into database
     if (dbQuestions.length > 0) {
       await db.insertQuestions(dbQuestions);
-      console.log(`✅ Migration complete: Added ${dbQuestions.length} questions for quiz`);
+      console.log(`✅ Migration complete: Added ${dbQuestions.length} questions for trivia`);
     } else {
       console.log('No questions found in API response');
     }
@@ -419,7 +419,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
     }
 
     // Check if we need to run questions migration for existing users
-    // This is a one-time migration for users who had facts before quiz feature was added
+    // This is a one-time migration for users who had facts before trivia feature was added
     if (await needsQuestionsMigration()) {
       await runQuestionsMigration(currentLocale);
     }
@@ -438,7 +438,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
 
     if (lastFactUpdatedAt) {
       // Fetch only new or updated facts using since_updated parameter
-      // Include questions for quiz feature
+      // Include questions for trivia feature
       const categoriesParam = categories.join(',');
       const response = await api.getFacts({
         language: currentLocale,
@@ -463,7 +463,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
           last_updated: fact.last_updated,
         }));
 
-        // Extract questions from facts for quiz feature
+        // Extract questions from facts for trivia feature
         const dbQuestions: db.Question[] = [];
         for (const fact of response.facts) {
           if (fact.questions && fact.questions.length > 0) {
@@ -498,7 +498,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
         // Insert questions (INSERT OR REPLACE handles duplicates)
         if (dbQuestions.length > 0) {
           await db.insertQuestions(dbQuestions);
-          console.log(`🧠 Synced ${dbQuestions.length} questions for quiz`);
+          console.log(`🧠 Synced ${dbQuestions.length} questions for trivia`);
         }
 
         // Log new and updated facts separately with IDs

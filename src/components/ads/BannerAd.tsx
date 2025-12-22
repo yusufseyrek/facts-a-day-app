@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 import { ADS_ENABLED } from '../../config/ads';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 
-type BannerAdPosition = 'home' | 'favorites' | 'discover' | 'quiz' | 'fact-modal-1';
+type BannerAdPosition = 'home' | 'favorites' | 'discover' | 'trivia' | 'fact-modal-1';
 
 interface BannerAdProps {
   position: BannerAdPosition;
@@ -38,8 +38,8 @@ const getAdUnitId = (position: BannerAdPosition): string => {
         return favoritesIOS || defaultTestId;
       case 'discover':
         return discoverIOS || defaultTestId;
-      case 'quiz':
-        return discoverIOS || defaultTestId; // Reuse discover ad unit for quiz
+      case 'trivia':
+        return discoverIOS || defaultTestId; // Reuse discover ad unit for trivia
       case 'fact-modal-1':
         return modal1IOS || defaultTestId;
     }
@@ -51,8 +51,8 @@ const getAdUnitId = (position: BannerAdPosition): string => {
         return favoritesAndroid || defaultTestId;
       case 'discover':
         return discoverAndroid || defaultTestId;
-      case 'quiz':
-        return discoverAndroid || defaultTestId; // Reuse discover ad unit for quiz
+      case 'trivia':
+        return discoverAndroid || defaultTestId; // Reuse discover ad unit for trivia
       case 'fact-modal-1':
         return modal1Android || defaultTestId;
     }

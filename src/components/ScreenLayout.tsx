@@ -41,18 +41,20 @@ interface ScreenHeaderProps {
   icon: React.ReactNode;
   title: string;
   isTablet?: boolean;
+  rightElement?: React.ReactNode;
 }
 
 /**
  * ScreenHeader - Composed header component with icon and title
  */
-export function ScreenHeader({ icon, title, isTablet = false }: ScreenHeaderProps) {
+export function ScreenHeader({ icon, title, isTablet = false, rightElement }: ScreenHeaderProps) {
   return (
     <ScreenHeaderContainer tablet={isTablet}>
       {icon}
-      <H1 fontSize={isTablet ? tokens.fontSize.h1Tablet : tokens.fontSize.h1}>
+      <H1 fontSize={isTablet ? tokens.fontSize.h1Tablet : tokens.fontSize.h1} flex={1}>
         {title}
       </H1>
+      {rightElement}
     </ScreenHeaderContainer>
   );
 }

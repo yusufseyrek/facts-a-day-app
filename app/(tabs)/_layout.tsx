@@ -2,11 +2,13 @@ import { Tabs } from "expo-router";
 import { Lightbulb, Compass, Brain, Star, Settings } from "@tamagui/lucide-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pressable, Animated, View, StyleSheet } from "react-native";
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import type { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 import { tokens } from "../../src/theme/tokens";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
+import * as triviaService from "../../src/services/trivia";
 
 function AnimatedTabButton({
   children,
@@ -54,8 +56,8 @@ function AnimatedTabButton({
   );
 }
 
-// Minimal quiz icon with solid background - uses app's primary cyan color
-function QuizTabIcon({ focused, isDark }: { focused: boolean; isDark: boolean }) {
+// Minimal trivia icon with solid background - uses app's primary cyan color
+function TriviaTabIcon({ focused, isDark, hasBadge }: { focused: boolean; isDark: boolean; hasBadge: boolean }) {
   // Use the app's primary color for consistency
   const bgColor = isDark
     ? tokens.color.dark.primary // #00A3CC - cyan
@@ -66,7 +68,7 @@ function QuizTabIcon({ focused, isDark }: { focused: boolean; isDark: boolean })
   return (
     <View
       style={[
-        styles.quizIconContainer,
+        styles.triviaIconContainer,
         {
           backgroundColor: bgColor,
           shadowColor,
@@ -75,13 +77,18 @@ function QuizTabIcon({ focused, isDark }: { focused: boolean; isDark: boolean })
       ]}
     >
       <Brain size={24} color="#FFFFFF" strokeWidth={2} />
+      {hasBadge && (
+        <View style={styles.triviaBadge}>
+          <View style={styles.triviaBadgeInner} />
+        </View>
+      )}
     </View>
   );
 }
 
 
 const styles = StyleSheet.create({
-  quizIconContainer: {
+  triviaIconContainer: {
     width: 42,
     height: 42,
     borderRadius: 21,
@@ -92,12 +99,58 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
+  triviaBadge: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  triviaBadgeInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#FF4757", // Attention-grabbing red
+  },
 });
 
 export default function TabLayout() {
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
+  const [hasDailyTrivia, setHasDailyTrivia] = useState(false);
+
+  // Check for daily trivia availability
+  const checkDailyTrivia = useCallback(async () => {
+    try {
+      const [questionsCount, isCompleted] = await Promise.all([
+        triviaService.getDailyTriviaQuestionsCount(locale),
+        triviaService.isDailyTriviaCompleted(),
+      ]);
+      setHasDailyTrivia(questionsCount > 0 && !isCompleted);
+    } catch (error) {
+      console.error("Error checking daily trivia:", error);
+    }
+  }, [locale]);
+
+  // Check on mount and periodically
+  useEffect(() => {
+    checkDailyTrivia();
+    // Check every 30 seconds in case new facts are shown
+    const interval = setInterval(checkDailyTrivia, 30000);
+    return () => clearInterval(interval);
+  }, [checkDailyTrivia]);
+
+  // Also check when tab is focused
+  useFocusEffect(
+    useCallback(() => {
+      checkDailyTrivia();
+    }, [checkDailyTrivia])
+  );
 
   const isDark = theme === "dark";
   // Use neon cyan for active tab - subtle but visible
@@ -148,10 +201,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="quiz"
+        name="trivia"
         options={{
-          title: t("quiz"),
-          tabBarIcon: ({ focused }) => <QuizTabIcon focused={focused} isDark={isDark} />,
+          title: t("trivia"),
+          tabBarIcon: ({ focused }) => <TriviaTabIcon focused={focused} isDark={isDark} hasBadge={hasDailyTrivia} />,
           tabBarButton: (props) => <AnimatedTabButton {...props} />,
         }}
       />

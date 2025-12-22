@@ -1,8 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable } from 'react-native';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
-import { Zap, Check, ChevronRight, Flame } from '@tamagui/lucide-icons';
+import { Shuffle, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { tokens } from '../../theme/tokens';
 import { FONT_FAMILIES } from '../Typography';
@@ -13,38 +13,34 @@ const Text = styled(TamaguiText, {
   color: '$text',
 });
 
-interface DailyChallengeCardProps {
+interface MixedTriviaCardProps {
   questionsCount: number;
-  isCompleted: boolean;
-  streak: number;
   isDark: boolean;
   onPress: () => void;
   t: (key: TranslationKeys, params?: Record<string, string | number>) => string;
 }
 
-export function DailyChallengeCard({
+export function MixedTriviaCard({
   questionsCount,
-  isCompleted,
-  streak,
   isDark,
   onPress,
   t,
-}: DailyChallengeCardProps) {
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
-  const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
-  const orangeColor = isDark ? tokens.color.dark.neonOrange : tokens.color.light.neonOrange;
+}: MixedTriviaCardProps) {
   const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
   const borderColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
   const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
+  const purpleColor = isDark ? tokens.color.dark.neonPurple : tokens.color.light.neonPurple;
+  
+  const isDisabled = questionsCount === 0;
   
   return (
-    <Animated.View entering={FadeIn.duration(300).delay(100)}>
+    <Animated.View entering={FadeIn.duration(300).delay(150)}>
       <Pressable
         onPress={onPress}
-        disabled={isCompleted}
+        disabled={isDisabled}
         style={({ pressed }) => ({
-          opacity: pressed && !isCompleted ? 0.7 : 1,
+          opacity: pressed && !isDisabled ? 0.8 : isDisabled ? 0.5 : 1,
         })}
       >
         <XStack
@@ -52,24 +48,20 @@ export function DailyChallengeCard({
           padding={tokens.space.lg}
           borderRadius={tokens.radius.md}
           borderWidth={1}
-          borderColor={isCompleted ? successColor : borderColor}
+          borderColor={borderColor}
           alignItems="center"
           gap={tokens.space.md}
         >
           {/* Icon */}
           <YStack
-            width={40}
-            height={40}
-            borderRadius={20}
-            backgroundColor={isCompleted ? successColor : primaryColor}
+            width={44}
+            height={44}
+            borderRadius={22}
+            backgroundColor={purpleColor}
             justifyContent="center"
             alignItems="center"
           >
-            {isCompleted ? (
-              <Check size={20} color="#FFFFFF" />
-            ) : (
-              <Zap size={20} color="#FFFFFF" />
-            )}
+            <Shuffle size={22} color="#FFFFFF" />
           </YStack>
           
           {/* Content */}
@@ -80,26 +72,16 @@ export function DailyChallengeCard({
               color={textColor}
               fontFamily={FONT_FAMILIES.semibold}
             >
-              {t('dailyQuiz')}
+              {t('mixedTrivia')}
             </Text>
             <Text fontSize={13} color={secondaryTextColor} marginTop={2}>
-              {isCompleted
-                ? t('dailyQuizCompleted')
-                : t('dailyQuizQuestions', { count: questionsCount })}
+              {isDisabled
+                ? t('noMixedQuestions')
+                : t('mixedTriviaQuestions', { count: Math.min(questionsCount, 10) })}
             </Text>
           </YStack>
           
-          {/* Right side */}
-          {streak > 0 && (
-            <XStack alignItems="center" gap={4}>
-              <Flame size={16} color={orangeColor} />
-              <Text fontSize={14} fontWeight="600" color={orangeColor}>
-                {streak}
-              </Text>
-            </XStack>
-          )}
-          
-          {!isCompleted && (
+          {!isDisabled && (
             <ChevronRight size={20} color={secondaryTextColor} />
           )}
         </XStack>
@@ -107,3 +89,4 @@ export function DailyChallengeCard({
     </Animated.View>
   );
 }
+

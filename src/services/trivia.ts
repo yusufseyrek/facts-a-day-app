@@ -1,9 +1,9 @@
 /**
- * Quiz Service
+ * Trivia Service
  * 
- * Handles quiz game logic including:
- * - Daily Quiz: Questions from facts shown today
- * - Category Quiz: Master all questions in a category
+ * Handles trivia game logic including:
+ * - Daily Trivia: Questions from facts shown today
+ * - Category Trivia: Master all questions in a category
  * - Progress tracking and statistics
  * - Gamification elements (streaks, mastery)
  */
@@ -13,20 +13,22 @@ import * as onboardingService from './onboarding';
 import type { 
   Question, 
   QuestionWithFact, 
-  DailyQuizProgress,
+  DailyTriviaProgress,
   FactWithRelations,
   Category
 } from './database';
 
 // Constants
 export const QUESTIONS_PER_SESSION = 5;
+export const MIXED_TRIVIA_QUESTIONS = 10;
 
 // Types
-export interface QuizStats {
+export interface TriviaStats {
   totalAnswered: number;
   totalCorrect: number;
   accuracy: number;
   currentStreak: number;
+  totalMastered: number;
 }
 
 export interface CategoryWithProgress extends Category {
@@ -35,60 +37,60 @@ export interface CategoryWithProgress extends Category {
   isComplete: boolean;
 }
 
-export interface QuizSessionResult {
+export interface TriviaSessionResult {
   totalQuestions: number;
   correctAnswers: number;
   wrongQuestionIds: number[];
 }
 
-// ====== DAILY QUIZ ======
+// ====== DAILY TRIVIA ======
 
 /**
- * Get questions for today's daily quiz
+ * Get questions for today's daily trivia
  * Returns questions from facts that were shown to user today
  */
-export async function getDailyQuizQuestions(
+export async function getDailyTriviaQuestions(
   language: string
 ): Promise<QuestionWithFact[]> {
   const today = new Date().toISOString().split('T')[0];
-  return database.getQuestionsForDailyQuiz(today, language);
+  return database.getQuestionsForDailyTrivia(today, language);
 }
 
 /**
- * Get the number of questions available for today's daily quiz
+ * Get the number of questions available for today's daily trivia
  */
-export async function getDailyQuizQuestionsCount(
+export async function getDailyTriviaQuestionsCount(
   language: string
 ): Promise<number> {
   const today = new Date().toISOString().split('T')[0];
-  return database.getDailyQuizQuestionsCount(today, language);
+  return database.getDailyTriviaQuestionsCount(today, language);
 }
 
 /**
- * Get today's daily quiz progress
+ * Get today's daily trivia progress
  */
-export async function getTodayProgress(): Promise<DailyQuizProgress | null> {
+export async function getTodayProgress(): Promise<DailyTriviaProgress | null> {
   const today = new Date().toISOString().split('T')[0];
-  return database.getDailyQuizProgress(today);
+  return database.getDailyTriviaProgress(today);
 }
 
 /**
- * Check if today's daily quiz is completed
+ * Check if today's daily trivia is completed
  */
-export async function isDailyQuizCompleted(): Promise<boolean> {
+export async function isDailyTriviaCompleted(): Promise<boolean> {
   const progress = await getTodayProgress();
   return progress !== null && progress.completed_at !== null;
 }
 
 /**
- * Save today's daily quiz progress
+ * Save today's daily trivia progress
  */
 export async function saveDailyProgress(
   totalQuestions: number,
   correctAnswers: number
 ): Promise<void> {
   const today = new Date().toISOString().split('T')[0];
-  await database.saveDailyQuizProgress(today, totalQuestions, correctAnswers);
+  await database.saveDailyTriviaProgress(today, totalQuestions, correctAnswers);
 }
 
 /**
@@ -98,13 +100,34 @@ export async function getDailyStreak(): Promise<number> {
   return database.getDailyStreak();
 }
 
-// ====== CATEGORY QUIZ ======
+// ====== MIXED TRIVIA ======
 
 /**
- * Get questions for a category quiz session
+ * Get questions for a mixed trivia session
+ * Returns N random unanswered questions from the entire database
+ */
+export async function getMixedTriviaQuestions(
+  language: string
+): Promise<QuestionWithFact[]> {
+  return database.getRandomUnansweredQuestions(MIXED_TRIVIA_QUESTIONS, language);
+}
+
+/**
+ * Get the number of unanswered questions available for mixed trivia
+ */
+export async function getMixedTriviaQuestionsCount(
+  language: string
+): Promise<number> {
+  return database.getUnansweredQuestionsCount(language);
+}
+
+// ====== CATEGORY TRIVIA ======
+
+/**
+ * Get questions for a category trivia session
  * Returns N unmastered questions from the category
  */
-export async function getCategoryQuizQuestions(
+export async function getCategoryTriviaQuestions(
   categorySlug: string,
   language: string,
   limit: number = QUESTIONS_PER_SESSION
@@ -113,15 +136,15 @@ export async function getCategoryQuizQuestions(
 }
 
 /**
- * Get all categories with their quiz progress
+ * Get all categories with their trivia progress
  * Only returns categories that the user has selected in settings
  */
 export async function getCategoriesWithProgress(
   language: string
 ): Promise<CategoryWithProgress[]> {
-  // Get user's selected categories to filter quiz results
+  // Get user's selected categories to filter trivia results
   const selectedCategories = await onboardingService.getSelectedCategories();
-  const categories = await database.getCategoriesWithQuizProgress(language, selectedCategories);
+  const categories = await database.getCategoriesWithTriviaProgress(language, selectedCategories);
   
   return categories.map(cat => ({
     ...cat,
@@ -162,9 +185,9 @@ export async function isCategoryComplete(
 export async function recordAnswer(
   questionId: number,
   isCorrect: boolean,
-  quizMode: 'daily' | 'category'
+  triviaMode: 'daily' | 'category' | 'mixed'
 ): Promise<void> {
-  await database.recordQuestionAttempt(questionId, isCorrect, quizMode);
+  await database.recordQuestionAttempt(questionId, isCorrect, triviaMode);
 }
 
 /**
@@ -178,7 +201,7 @@ export async function isQuestionMastered(questionId: number): Promise<boolean> {
 
 /**
  * Get facts for wrong answers in a session
- * Used to show "Review These Facts" at end of category quiz
+ * Used to show "Review These Facts" at end of category trivia
  */
 export async function getFactsForWrongAnswers(
   wrongQuestionIds: number[]
@@ -190,20 +213,25 @@ export async function getFactsForWrongAnswers(
 // ====== STATISTICS ======
 
 /**
- * Get overall quiz statistics
+ * Get overall trivia statistics
  */
-export async function getOverallStats(): Promise<QuizStats> {
-  return database.getOverallQuizStats();
+export async function getOverallStats(): Promise<TriviaStats> {
+  const stats = await database.getOverallTriviaStats();
+  const totalMastered = await database.getTotalMasteredCount();
+  return {
+    ...stats,
+    totalMastered,
+  };
 }
 
 /**
- * Get total number of questions available for quiz
+ * Get total number of questions available for trivia
  * (from facts that have been shown to user)
  */
 export async function getTotalAvailableQuestions(
   language: string
 ): Promise<number> {
-  const categories = await database.getCategoriesWithQuizProgress(language);
+  const categories = await database.getCategoriesWithTriviaProgress(language);
   return categories.reduce((sum, cat) => sum + cat.total, 0);
 }
 
@@ -213,7 +241,7 @@ export async function getTotalAvailableQuestions(
 export async function getTotalMasteredQuestions(
   language: string
 ): Promise<number> {
-  const categories = await database.getCategoriesWithQuizProgress(language);
+  const categories = await database.getCategoriesWithTriviaProgress(language);
   return categories.reduce((sum, cat) => sum + cat.mastered, 0);
 }
 
