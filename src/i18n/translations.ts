@@ -248,6 +248,20 @@ export const translations = {
     yourAnswer: "DEINE ANTWORT",
     correctAnswer: "RICHTIGE ANTWORT",
     insight: "Einblick",
+
+    // Performance Screen
+    performance: "Leistung",
+    coreMetrics: "Kernmetriken",
+    tests: "Tests",
+    categoryBreakdown: "Kategorieübersicht",
+    recentActivity: "Letzte Aktivität",
+    pastActivity: "Vergangene Aktivität",
+    viewAll: "Alle anzeigen",
+    goodEffort: "Gute Arbeit!",
+    thisWeek: "+%{count} diese Woche",
+    best: "Rekord: %{count}",
+    todayCount: "+%{count} heute",
+    daysAgo: "vor %{count} Tagen",
   },
   en: {
     // Onboarding - Categories
@@ -496,6 +510,20 @@ export const translations = {
     yourAnswer: "YOUR ANSWER",
     correctAnswer: "CORRECT ANSWER",
     insight: "Insight",
+
+    // Performance Screen
+    performance: "Performance",
+    coreMetrics: "Core Metrics",
+    tests: "Tests",
+    categoryBreakdown: "Category Breakdown",
+    recentActivity: "Recent Activity",
+    pastActivity: "Past Activity",
+    viewAll: "View All",
+    goodEffort: "Good Effort!",
+    thisWeek: "+%{count} this week",
+    best: "Best: %{count}",
+    todayCount: "+%{count} today",
+    daysAgo: "%{count} days ago",
   },
   es: {
     // Onboarding - Categories
@@ -744,6 +772,20 @@ export const translations = {
     yourAnswer: "TU RESPUESTA",
     correctAnswer: "RESPUESTA CORRECTA",
     insight: "Información",
+
+    // Performance Screen
+    performance: "Rendimiento",
+    coreMetrics: "Métricas Principales",
+    tests: "Tests",
+    categoryBreakdown: "Desglose por Categoría",
+    recentActivity: "Actividad Reciente",
+    pastActivity: "Actividad Pasada",
+    viewAll: "Ver Todo",
+    goodEffort: "¡Buen trabajo!",
+    thisWeek: "+%{count} esta semana",
+    best: "Récord: %{count}",
+    todayCount: "+%{count} hoy",
+    daysAgo: "hace %{count} días",
   },
   fr: {
     // Onboarding - Categories
@@ -992,6 +1034,20 @@ export const translations = {
     yourAnswer: "VOTRE RÉPONSE",
     correctAnswer: "BONNE RÉPONSE",
     insight: "Aperçu",
+
+    // Performance Screen
+    performance: "Performance",
+    coreMetrics: "Métriques Clés",
+    tests: "Tests",
+    categoryBreakdown: "Répartition par Catégorie",
+    recentActivity: "Activité Récente",
+    pastActivity: "Activité Passée",
+    viewAll: "Voir Tout",
+    goodEffort: "Bon effort !",
+    thisWeek: "+%{count} cette semaine",
+    best: "Record: %{count}",
+    todayCount: "+%{count} aujourd'hui",
+    daysAgo: "il y a %{count} jours",
   },
   ja: {
     // Onboarding - Categories
@@ -1239,6 +1295,20 @@ export const translations = {
     yourAnswer: "あなたの回答",
     correctAnswer: "正解",
     insight: "ヒント",
+
+    // Performance Screen
+    performance: "パフォーマンス",
+    coreMetrics: "主要指標",
+    tests: "テスト",
+    categoryBreakdown: "カテゴリ別内訳",
+    recentActivity: "最近のアクティビティ",
+    pastActivity: "過去のアクティビティ",
+    viewAll: "すべて見る",
+    goodEffort: "よく頑張った！",
+    thisWeek: "今週+%{count}",
+    best: "ベスト: %{count}",
+    todayCount: "今日+%{count}",
+    daysAgo: "%{count}日前",
   },
   ko: {
     // Onboarding - Categories
@@ -1483,6 +1553,20 @@ export const translations = {
     yourAnswer: "내 답변",
     correctAnswer: "정답",
     insight: "정보",
+
+    // Performance Screen
+    performance: "성적",
+    coreMetrics: "핵심 지표",
+    tests: "테스트",
+    categoryBreakdown: "카테고리 분석",
+    recentActivity: "최근 활동",
+    pastActivity: "지난 활동",
+    viewAll: "모두 보기",
+    goodEffort: "잘했어요!",
+    thisWeek: "이번 주 +%{count}",
+    best: "최고: %{count}",
+    todayCount: "오늘 +%{count}",
+    daysAgo: "%{count}일 전",
   },
   tr: {
     // Onboarding - Categories
@@ -1715,7 +1799,7 @@ export const translations = {
     // Trivia Results
     greatJob: "Harika!",
     wellDone: "Aferin!",
-    keepPracticing: "Pratik yapmaya devam et!",
+    keepPracticing: "Pratik yapman gerek!",
     answerReview: "Cevap İncelemesi",
     score: "Puan",
     youAnswered: "%{total} sorudan %{correct} tanesini doğru cevapladınız.",
@@ -1730,6 +1814,20 @@ export const translations = {
     yourAnswer: "SENİN CEVABIN",
     correctAnswer: "DOĞRU CEVAP",
     insight: "Bilgi",
+
+    // Performance Screen
+    performance: "Performans",
+    coreMetrics: "Temel Metrikler",
+    tests: "Testler",
+    categoryBreakdown: "Kategori Dağılımı",
+    recentActivity: "Son Aktivite",
+    pastActivity: "Geçmiş Aktivite",
+    viewAll: "Tümünü Gör",
+    goodEffort: "İyi iş!",
+    thisWeek: "Bu hafta +%{count}",
+    best: "En iyi: %{count}",
+    todayCount: "Bugün +%{count}",
+    daysAgo: "%{count} gün önce",
   },
   zh: {
     // Onboarding - Categories
@@ -1973,6 +2071,20 @@ export const translations = {
     yourAnswer: "你的答案",
     correctAnswer: "正确答案",
     insight: "知识点",
+
+    // Performance Screen
+    performance: "成绩",
+    coreMetrics: "核心指标",
+    tests: "测验",
+    categoryBreakdown: "类别分析",
+    recentActivity: "最近活动",
+    pastActivity: "过去活动",
+    viewAll: "查看全部",
+    goodEffort: "做得好！",
+    thisWeek: "本周+%{count}",
+    best: "最佳: %{count}",
+    todayCount: "今日+%{count}",
+    daysAgo: "%{count}天前",
   },
 };
 

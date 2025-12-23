@@ -196,12 +196,66 @@ export default function TriviaGameScreen() {
     await showTriviaResultsInterstitial();
     setShowingAd(false);
     
+    // Calculate results for session save including best streak
+    let correctCount = 0;
+    let currentStreak = 0;
+    let bestStreak = 0;
+    
+    for (const question of gameState.questions) {
+      const selectedAnswer = gameState.answers[question.id];
+      const isCorrect = question.question_type === 'true_false'
+        ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
+        : selectedAnswer === question.correct_answer;
+      if (isCorrect) {
+        correctCount++;
+        currentStreak++;
+        if (currentStreak > bestStreak) bestStreak = currentStreak;
+      } else {
+        currentStreak = 0;
+      }
+    }
+    
+    // Determine trivia mode for session saving
+    const triviaMode = params.type === 'daily' ? 'daily' : 
+                       params.type === 'category' ? 'category' : 'mixed';
+    
+    // Time expired means all time was used
+    const elapsedTime = gameState.totalTime;
+    
+    // Save session result first to get session ID
+    const sessionId = await triviaService.saveSessionResult(
+      triviaMode,
+      gameState.questions.length,
+      correctCount,
+      params.categorySlug || undefined,
+      elapsedTime,
+      bestStreak,
+      gameState.questions,
+      gameState.answers
+    );
+    
+    // Record each answer with session ID
+    for (const question of gameState.questions) {
+      const selectedAnswer = gameState.answers[question.id];
+      if (selectedAnswer) {
+        const isCorrect = question.question_type === 'true_false'
+          ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
+          : selectedAnswer === question.correct_answer;
+        await triviaService.recordAnswer(question.id, isCorrect, triviaMode, sessionId);
+      }
+    }
+    
+    // Save daily progress if applicable
+    if (params.type === 'daily') {
+      await triviaService.saveDailyProgress(gameState.questions.length, correctCount);
+    }
+    
     setGameState(prev => ({
       ...prev,
       isFinished: true,
       timeExpired: true,
     }));
-  }, []);
+  }, [gameState.questions, gameState.answers, gameState.totalTime, params.type, params.categorySlug]);
   
   const handleExitConfirm = () => {
     if (gameState.isFinished) {
@@ -285,8 +339,10 @@ export default function TriviaGameScreen() {
     await showTriviaResultsInterstitial();
     setShowingAd(false);
     
-    // Calculate results
+    // Calculate results including best streak
     let correctCount = 0;
+    let currentStreak = 0;
+    let bestStreak = 0;
     const wrongIds: number[] = [];
     
     for (const question of gameState.questions) {
@@ -298,16 +354,47 @@ export default function TriviaGameScreen() {
       
       if (isCorrect) {
         correctCount++;
+        currentStreak++;
+        if (currentStreak > bestStreak) {
+          bestStreak = currentStreak;
+        }
       } else {
         wrongIds.push(question.id);
+        currentStreak = 0;
       }
-      
-      // Record each answer
+    }
+    
+    // Determine trivia mode for session saving
+    const triviaMode = params.type === 'daily' ? 'daily' : 
+                       params.type === 'category' ? 'category' : 'mixed';
+    
+    // Calculate elapsed time
+    const elapsedTime = gameState.totalTime - timeRemaining;
+    
+    // Save session result first to get the session ID
+    const sessionId = await triviaService.saveSessionResult(
+      triviaMode,
+      gameState.questions.length,
+      correctCount,
+      params.categorySlug || undefined,
+      elapsedTime,
+      bestStreak,
+      gameState.questions,
+      gameState.answers
+    );
+    
+    // Record each answer with session ID
+    for (const question of gameState.questions) {
+      const selectedAnswer = gameState.answers[question.id];
       if (selectedAnswer) {
+        const isCorrect = question.question_type === 'true_false'
+          ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
+          : selectedAnswer === question.correct_answer;
         await triviaService.recordAnswer(
           question.id,
           isCorrect,
-          params.type === 'daily' ? 'daily' : 'mixed'
+          triviaMode,
+          sessionId
         );
       }
     }

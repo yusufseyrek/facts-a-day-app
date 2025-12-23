@@ -4,7 +4,7 @@ import { Pressable, View, ScrollView, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
-import { Timer, Flame, Check, X, ChevronRight, Star } from '@tamagui/lucide-icons';
+import { Timer, Flame, Check, X, ChevronRight, Star, ChevronLeft } from '@tamagui/lucide-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Animated, { 
@@ -16,6 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { tokens } from '../../theme/tokens';
 import { FONT_FAMILIES } from '../Typography';
+import { getLucideIcon } from '../../utils/iconMapper';
 import type { QuestionWithFact } from '../../services/database';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -44,6 +45,16 @@ export interface TriviaResultsProps {
   onClose: () => void;
   isDark: boolean;
   t: TranslationFunction;
+  // Optional customizations for viewing past results
+  customTitle?: string;
+  customSubtitle?: string;
+  triviaModeBadge?: {
+    label: string;
+    icon?: string;
+    color?: string;
+  };
+  showBackButton?: boolean;
+  showReturnButton?: boolean;
 }
 
 // Horizontal progress bar component
@@ -285,7 +296,7 @@ function AnswerReviewCard({
               numberOfLines={3}
               lineHeight={18}
             >
-              {t('insight') || 'Insight'}: {question.fact.content}
+              {t('explanation') || 'Explanation'}: {question.explanation}
             </Text>
           </YStack>
         )}
@@ -328,6 +339,11 @@ export function TriviaResults({
   onClose,
   isDark,
   t,
+  customTitle,
+  customSubtitle,
+  triviaModeBadge,
+  showBackButton = false,
+  showReturnButton = true,
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -383,6 +399,51 @@ export function TriviaResults({
     <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top, paddingBottom: insets.bottom }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       
+      {/* Screen Header (when viewing past results) */}
+      {showBackButton && (
+        <XStack
+          paddingTop={tokens.space.sm}
+          paddingBottom={tokens.space.md}
+          paddingHorizontal={tokens.space.lg}
+          alignItems="center"
+          justifyContent="space-between"
+          borderBottomWidth={1}
+          borderBottomColor={borderColor}
+        >
+          <Pressable
+            onPress={onClose}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={({ pressed }) => [
+              pressed && { opacity: 0.7 }
+            ]}
+          >
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: `${primaryColor}20`,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <ChevronLeft size={24} color={primaryColor} />
+            </View>
+          </Pressable>
+          
+          <Text
+            fontSize={20}
+            fontFamily={FONT_FAMILIES.bold}
+            color={textColor}
+          >
+            {customTitle || t('results') || 'Results'}
+          </Text>
+          
+          {/* Empty spacer to balance the header */}
+          <View style={{ width: 36, height: 36 }} />
+        </XStack>
+      )}
+      
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: tokens.space.xl }}
@@ -392,16 +453,30 @@ export function TriviaResults({
           <YStack paddingTop={tokens.space.lg} paddingHorizontal={tokens.space.xl} gap={tokens.space.lg}>
             {/* Title Row: Results + Score */}
             <XStack alignItems="center" justifyContent="space-between">
-              <Text 
-                fontSize={28} 
-                fontFamily={FONT_FAMILIES.bold} 
-                color={textColor}
-              >
-                {t('results') || 'Results'}
-              </Text>
+              <YStack gap={4} >
+                {/* Only show title here if not showing header bar */}
+                {!showBackButton && (
+                  <Text 
+                    fontSize={28} 
+                    fontFamily={FONT_FAMILIES.bold} 
+                    color={textColor}
+                  >
+                    {customTitle || t('results') || 'Results'}
+                  </Text>
+                )}
+                {customSubtitle && (
+                  <Text 
+                    fontSize={15} 
+                    fontFamily={FONT_FAMILIES.semibold} 
+                    color={secondaryTextColor}
+                  >
+                    {customSubtitle}
+                  </Text>
+                )}
+              </YStack>
               
               {/* Star + Score Label */}
-              <XStack alignItems="center" gap={tokens.space.xs} alignSelf="flex-end">
+              <XStack alignItems="center" gap={tokens.space.xs} alignSelf="center">
                 <Star size={14} color={primaryColor} fill={primaryColor} />
                 <Text 
                   fontSize={13} 
@@ -544,14 +619,40 @@ export function TriviaResults({
         {/* Question Insights Section */}
         <Animated.View entering={FadeInUp.delay(150).duration(400)}>
           <YStack paddingTop={tokens.space.xl} gap={tokens.space.md}>
-            <Text 
-              fontSize={18} 
-              fontFamily={FONT_FAMILIES.bold} 
-              color={textColor}
+            <XStack 
+              alignItems="center" 
+              justifyContent="space-between"
               paddingHorizontal={tokens.space.lg}
             >
-              {t('questionInsights') || 'Question Insights'}
-            </Text>
+              <Text 
+                fontSize={18} 
+                fontFamily={FONT_FAMILIES.bold} 
+                color={textColor}
+              >
+                {t('questionInsights') || 'Question Insights'}
+              </Text>
+              
+              {/* Trivia Mode/Category Badge */}
+              {triviaModeBadge && (
+                <XStack 
+                  alignItems="center" 
+                  gap={tokens.space.xs}
+                  backgroundColor={`${triviaModeBadge.color || primaryColor}15`}
+                  paddingHorizontal={tokens.space.sm}
+                  paddingVertical={4}
+                  borderRadius={tokens.radius.md}
+                >
+                  {triviaModeBadge.icon && getLucideIcon(triviaModeBadge.icon, 14, triviaModeBadge.color || primaryColor)}
+                  <Text 
+                    fontSize={13} 
+                    fontFamily={FONT_FAMILIES.semibold} 
+                    color={triviaModeBadge.color || primaryColor}
+                  >
+                    {triviaModeBadge.label}
+                  </Text>
+                </XStack>
+              )}
+            </XStack>
 
             {/* Horizontal scrolling cards */}
             <ScrollView
@@ -590,37 +691,39 @@ export function TriviaResults({
         </Animated.View>
       </ScrollView>
       
-      {/* Back button */}
-      <YStack 
-        paddingHorizontal={tokens.space.xl} 
-        paddingTop={tokens.space.md}
-        paddingBottom={tokens.space.md}
-        backgroundColor={bgColor as any}
-      >
-        <Pressable 
-          onPress={onClose}
-          style={({ pressed }) => [
-            pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
-          ]}
+      {/* Return button (shown for normal trivia flow) */}
+      {showReturnButton && (
+        <YStack 
+          paddingHorizontal={tokens.space.xl} 
+          paddingTop={tokens.space.md}
+          paddingBottom={tokens.space.md}
+          backgroundColor={bgColor as any}
         >
-          <XStack
-            backgroundColor={primaryColor}
-            paddingVertical={tokens.space.lg}
-            borderRadius={tokens.radius.lg}
-            justifyContent="center"
-            alignItems="center"
-            gap={tokens.space.sm}
+          <Pressable 
+            onPress={onClose}
+            style={({ pressed }) => [
+              pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
+            ]}
           >
-            <Text 
-              color="#FFFFFF" 
-              fontSize={17} 
-              fontFamily={FONT_FAMILIES.semibold}
+            <XStack
+              backgroundColor={primaryColor}
+              paddingVertical={tokens.space.lg}
+              borderRadius={tokens.radius.lg}
+              justifyContent="center"
+              alignItems="center"
+              gap={tokens.space.sm}
             >
-              {t('returnToTrivia') || 'Return to Trivia'}
-            </Text>
-          </XStack>
-        </Pressable>
-      </YStack>
+              <Text 
+                color="#FFFFFF" 
+                fontSize={17} 
+                fontFamily={FONT_FAMILIES.semibold}
+              >
+                {t('returnToTrivia') || 'Return to Trivia'}
+              </Text>
+            </XStack>
+          </Pressable>
+        </YStack>
+      )}
     </View>
   );
 }

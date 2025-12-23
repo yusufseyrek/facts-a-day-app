@@ -361,7 +361,6 @@ export function TriviaGameView({
                         flex={1}
                         fontSize={16}
                         color={textColor}
-                        numberOfLines={3}
                       >
                         {answer}
                       </Text>

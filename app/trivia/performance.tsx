@@ -1,0 +1,727 @@
+import React, { useState, useCallback, useRef } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { 
+  ScrollView, 
+  RefreshControl, 
+  ActivityIndicator,
+  Pressable,
+  View,
+  Animated as RNAnimated,
+} from 'react-native';
+import { styled, Text as TamaguiText } from '@tamagui/core';
+import { YStack, XStack } from 'tamagui';
+import { 
+  ChevronLeft, 
+  Gamepad2, 
+  Trophy, 
+  Flame, 
+  CheckCircle,
+  Calendar,
+  Shuffle,
+} from '@tamagui/lucide-icons';
+import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { tokens } from '../../src/theme/tokens';
+import { FONT_FAMILIES } from '../../src/components/Typography';
+import { useTheme } from '../../src/theme';
+import { useTranslation } from '../../src/i18n';
+import { getLucideIcon } from '../../src/utils/iconMapper';
+import * as triviaService from '../../src/services/trivia';
+import { TriviaResults } from '../../src/components/trivia/TriviaResults';
+import type { TriviaStats, CategoryWithProgress, TriviaSessionWithCategory } from '../../src/services/trivia';
+
+// Styled Text components
+const Text = styled(TamaguiText, {
+  fontFamily: FONT_FAMILIES.regular,
+  color: '$text',
+});
+
+// Back Button with press animation
+function BackButton({ 
+  onPress, 
+  primaryColor 
+}: { 
+  onPress: () => void; 
+  primaryColor: string;
+}) {
+  const scale = useRef(new RNAnimated.Value(1)).current;
+
+  const handlePressIn = () => {
+    RNAnimated.spring(scale, {
+      toValue: 0.9,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 10,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    RNAnimated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 8,
+    }).start();
+  };
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    >
+      <RNAnimated.View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: `${primaryColor}20`,
+          justifyContent: 'center',
+          alignItems: 'center',
+          transform: [{ scale }],
+        }}
+      >
+        <ChevronLeft size={24} color={primaryColor} />
+      </RNAnimated.View>
+    </Pressable>
+  );
+}
+
+// Metric Card Component
+function MetricCard({
+  icon,
+  iconColor,
+  iconBgColor,
+  label,
+  value,
+  subtitle,
+  isDark,
+}: {
+  icon: React.ReactNode;
+  iconColor: string;
+  iconBgColor: string;
+  label: string;
+  value: string | number;
+  subtitle?: string;
+  isDark: boolean;
+}) {
+  const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
+  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
+  const subtitleColor = isDark ? tokens.color.dark.neonGreen : tokens.color.light.success;
+
+  return (
+    <YStack
+      flex={1}
+      backgroundColor={cardBg}
+      borderRadius={tokens.radius.lg}
+      padding={tokens.space.lg}
+      gap={tokens.space.sm}
+    >
+      <XStack alignItems="center" gap={tokens.space.sm}>
+        <View
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 6,
+            backgroundColor: iconBgColor,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          {icon}
+        </View>
+        <Text
+          fontSize={14}
+          color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
+          fontFamily={FONT_FAMILIES.medium}
+        >
+          {label}
+        </Text>
+      </XStack>
+      <Text
+        fontSize={32}
+        fontFamily={FONT_FAMILIES.bold}
+        color={textColor}
+      >
+        {value}
+      </Text>
+      {subtitle && (
+        <Text
+          fontSize={13}
+          color={subtitleColor}
+          fontFamily={FONT_FAMILIES.medium}
+        >
+          {subtitle}
+        </Text>
+      )}
+    </YStack>
+  );
+}
+
+// Category Progress Bar - shows accuracy (correct answers percentage)
+function CategoryProgressBar({
+  category,
+  isDark,
+}: {
+  category: CategoryWithProgress;
+  isDark: boolean;
+}) {
+  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
+  const trackColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
+  const progressColor = category.color_hex || (isDark ? tokens.color.dark.primary : tokens.color.light.primary);
+  // Use accuracy (correct/answered) instead of mastered/total
+  const percentage = category.accuracy;
+
+  return (
+    <YStack gap={tokens.space.xs}>
+      <XStack alignItems="center" justifyContent="space-between">
+        <XStack alignItems="center" gap={tokens.space.sm}>
+          {getLucideIcon(category.icon, 18, progressColor)}
+          <Text
+            fontSize={15}
+            color={textColor}
+            fontFamily={FONT_FAMILIES.medium}
+          >
+            {category.name}
+          </Text>
+        </XStack>
+        <Text
+          fontSize={14}
+          color={textColor}
+          fontFamily={FONT_FAMILIES.semibold}
+        >
+          {percentage}%
+        </Text>
+      </XStack>
+      <View
+        style={{
+          width: '100%',
+          height: 8,
+          backgroundColor: trackColor,
+          borderRadius: 4,
+          overflow: 'hidden',
+        }}
+      >
+        <View
+          style={{
+            width: `${percentage}%`,
+            height: '100%',
+            backgroundColor: progressColor,
+            borderRadius: 4,
+          }}
+        />
+      </View>
+    </YStack>
+  );
+}
+
+// Recent Activity Card
+function ActivityCard({
+  session,
+  isDark,
+  t,
+  onPress,
+}: {
+  session: TriviaSessionWithCategory;
+  isDark: boolean;
+  t: (key: any, params?: any) => string;
+  onPress?: () => void;
+}) {
+  const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
+  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
+  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
+  const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
+  const warningColor = '#F59E0B'; // Amber for "Keep Practicing"
+  const errorColor = isDark ? tokens.color.dark.error : tokens.color.light.error;
+  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
+
+  // Calculate score percentage
+  const scorePercentage = session.total_questions > 0 
+    ? (session.correct_answers / session.total_questions) * 100 
+    : 0;
+
+  // Get feedback based on score
+  const getFeedback = () => {
+    if (scorePercentage >= 90) {
+      return { text: t('perfectScore'), color: successColor };
+    } else if (scorePercentage >= 70) {
+      return { text: t('greatJob'), color: successColor };
+    } else if (scorePercentage >= 50) {
+      return { text: t('goodEffort'), color: warningColor };
+    } else {
+      return { text: t('keepPracticing'), color: errorColor };
+    }
+  };
+
+  const feedback = getFeedback();
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return `${t('today')}, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } else if (diffDays === 1) {
+      return t('yesterday');
+    } else {
+      return t('daysAgo', { count: diffDays });
+    }
+  };
+
+  // Get display name for trivia mode
+  const getDisplayName = () => {
+    if (session.category) {
+      return session.category.name;
+    }
+    switch (session.trivia_mode) {
+      case 'daily':
+        return t('dailyTrivia');
+      case 'mixed':
+        return t('mixedTrivia');
+      default:
+        return t('trivia');
+    }
+  };
+
+  // Get icon for trivia mode
+  const getIcon = () => {
+    if (session.category) {
+      const iconColor = session.category.color_hex || primaryColor;
+      return (
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            backgroundColor: `${iconColor}20`,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          {getLucideIcon(session.category.icon, 22, iconColor)}
+        </View>
+      );
+    }
+    
+    // Use appropriate icon for mode
+    const IconComponent = session.trivia_mode === 'daily' ? Calendar : Shuffle;
+    const iconColor = primaryColor;
+    
+    return (
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 10,
+          backgroundColor: `${iconColor}20`,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <IconComponent size={22} color={iconColor} />
+      </View>
+    );
+  };
+
+  // Check if session has result data
+  const hasResultData = session.questions_json && session.answers_json;
+
+  return (
+    <Pressable 
+      onPress={hasResultData ? onPress : undefined}
+      style={({ pressed }) => [
+        pressed && hasResultData && { opacity: 0.8 }
+      ]}
+    >
+      <XStack
+        backgroundColor={cardBg}
+        borderRadius={tokens.radius.lg}
+        padding={tokens.space.lg}
+        alignItems="center"
+        gap={tokens.space.md}
+      >
+        {getIcon()}
+        <YStack flex={1} gap={2}>
+          <Text
+            fontSize={16}
+            fontFamily={FONT_FAMILIES.semibold}
+            color={textColor}
+          >
+            {getDisplayName()}
+          </Text>
+          <Text
+            fontSize={13}
+            color={secondaryTextColor}
+          >
+            {formatDate(session.completed_at)}
+          </Text>
+        </YStack>
+        <YStack alignItems="flex-end" gap={2}>
+          <Text
+            fontSize={14}
+            fontFamily={FONT_FAMILIES.semibold}
+            color={feedback.color}
+          >
+            {feedback.text}
+          </Text>
+          <Text
+            fontSize={13}
+            color={secondaryTextColor}
+          >
+            {t('score')}: {session.correct_answers}/{session.total_questions}
+          </Text>
+        </YStack>
+      </XStack>
+    </Pressable>
+  );
+}
+
+export default function PerformanceScreen() {
+  const { theme } = useTheme();
+  const { t, locale } = useTranslation();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const isDark = theme === 'dark';
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [stats, setStats] = useState<TriviaStats | null>(null);
+  const [categories, setCategories] = useState<CategoryWithProgress[]>([]);
+  const [recentSessions, setRecentSessions] = useState<TriviaSessionWithCategory[]>([]);
+  const [selectedSession, setSelectedSession] = useState<TriviaSessionWithCategory | null>(null);
+  const [loadingSession, setLoadingSession] = useState(false);
+
+  const loadData = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) setRefreshing(true);
+      
+      const [statsData, categoriesData, sessionsData] = await Promise.all([
+        triviaService.getOverallStats(),
+        triviaService.getCategoriesWithProgress(locale),
+        triviaService.getRecentSessions(5),
+      ]);
+      
+      setStats(statsData);
+      setCategories(categoriesData);
+      setRecentSessions(sessionsData);
+    } catch (error) {
+      console.error('Error loading performance data:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [locale]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  // Handle session click to show results
+  const handleSessionClick = useCallback(async (sessionId: number) => {
+    try {
+      setLoadingSession(true);
+      const fullSession = await triviaService.getSessionById(sessionId);
+      if (fullSession && fullSession.questions && fullSession.answers) {
+        setSelectedSession(fullSession);
+      }
+    } catch (error) {
+      console.error('Error loading session:', error);
+    } finally {
+      setLoadingSession(false);
+    }
+  }, []);
+
+  // Handle close results view
+  const handleCloseResults = useCallback(() => {
+    setSelectedSession(null);
+  }, []);
+
+  // Colors
+  const bgColor = isDark ? tokens.color.dark.background : tokens.color.light.background;
+  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
+  const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
+  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
+  const accentColor = isDark ? tokens.color.dark.accent : tokens.color.light.accent;
+  const purpleColor = isDark ? tokens.color.dark.neonPurple : tokens.color.light.neonPurple;
+  const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top }}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <YStack flex={1} justifyContent="center" alignItems="center">
+          <ActivityIndicator size="large" color={primaryColor} />
+        </YStack>
+      </View>
+    );
+  }
+
+  // Show results view for selected session
+  if (selectedSession && selectedSession.questions && selectedSession.answers) {
+    const wrongCount = selectedSession.total_questions - selectedSession.correct_answers;
+    
+    // Format date/time for subtitle
+    const formatSessionDateTime = (dateString: string) => {
+      const date = new Date(dateString);
+      const dateStr = date.toLocaleDateString(locale, { 
+        weekday: 'short',
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+      });
+      const timeStr = date.toLocaleTimeString(locale, { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      return `${dateStr} • ${timeStr}`;
+    };
+    
+    // Get trivia mode badge info
+    const getTriviaModesBadge = () => {
+      if (selectedSession.category) {
+        return {
+          label: selectedSession.category.name,
+          icon: selectedSession.category.icon,
+          color: selectedSession.category.color_hex || primaryColor,
+        };
+      }
+      switch (selectedSession.trivia_mode) {
+        case 'daily':
+          return {
+            label: t('dailyTrivia'),
+            icon: 'calendar',
+            color: primaryColor,
+          };
+        case 'mixed':
+          return {
+            label: t('mixedTrivia'),
+            icon: 'shuffle',
+            color: primaryColor,
+          };
+        default:
+          return {
+            label: t('trivia'),
+            icon: 'gamepad-2',
+            color: primaryColor,
+          };
+      }
+    };
+    
+    return (
+      <TriviaResults
+        correctAnswers={selectedSession.correct_answers}
+        totalQuestions={selectedSession.total_questions}
+        wrongCount={wrongCount}
+        unansweredCount={0}
+        timeExpired={false}
+        elapsedTime={selectedSession.elapsed_time || 0}
+        bestStreak={selectedSession.best_streak || 0}
+        questions={selectedSession.questions}
+        answers={selectedSession.answers}
+        onClose={handleCloseResults}
+        isDark={isDark}
+        t={t}
+        customTitle={t('pastActivity')}
+        customSubtitle={formatSessionDateTime(selectedSession.completed_at)}
+        triviaModeBadge={getTriviaModesBadge()}
+        showBackButton={true}
+        showReturnButton={false}
+      />
+    );
+  }
+
+  // Take top 4 categories for display
+  const displayCategories = categories
+    .filter(c => c.total > 0)
+    .slice(0, 4);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      
+      {/* Header */}
+      <XStack
+        paddingTop={insets.top + tokens.space.sm}
+        paddingBottom={tokens.space.md}
+        paddingHorizontal={tokens.space.lg}
+        alignItems="center"
+        justifyContent="space-between"
+        borderBottomWidth={1}
+        borderBottomColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
+      >
+        <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
+        
+        <Text
+          fontSize={20}
+          fontFamily={FONT_FAMILIES.bold}
+          color={textColor}
+        >
+          {t('performance')}
+        </Text>
+        
+        {/* Empty spacer to balance the header */}
+        <View style={{ width: 36, height: 36 }} />
+      </XStack>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
+        }
+        contentContainerStyle={{ paddingBottom: insets.bottom + tokens.space.xl }}
+      >
+        <YStack padding={tokens.space.lg} gap={tokens.space.xl}>
+          {/* Core Metrics */}
+          <Animated.View entering={FadeIn.duration(300)}>
+            <Text
+              fontSize={18}
+              fontFamily={FONT_FAMILIES.bold}
+              color={textColor}
+              marginBottom={tokens.space.md}
+            >
+              {t('coreMetrics')}
+            </Text>
+            
+            <YStack gap={tokens.space.md}>
+              {/* Row 1: Tests & Mastered */}
+              <XStack gap={tokens.space.md}>
+                <MetricCard
+                  icon={<Gamepad2 size={16} color={purpleColor} />}
+                  iconColor={purpleColor}
+                  iconBgColor={`${purpleColor}20`}
+                  label={t('tests')}
+                  value={stats?.testsTaken || 0}
+                  subtitle={stats?.testsThisWeek ? t('thisWeek', { count: stats.testsThisWeek }) : undefined}
+                  isDark={isDark}
+                />
+                <MetricCard
+                  icon={<Trophy size={16} color={accentColor} />}
+                  iconColor={accentColor}
+                  iconBgColor={`${accentColor}20`}
+                  label={t('mastered')}
+                  value={stats?.totalMastered || 0}
+                  subtitle={stats?.masteredToday ? t('todayCount', { count: stats.masteredToday }) : undefined}
+                  isDark={isDark}
+                />
+              </XStack>
+              
+              {/* Row 2: Streak & Correct */}
+              <XStack gap={tokens.space.md}>
+                <MetricCard
+                  icon={<Flame size={16} color={accentColor} />}
+                  iconColor={accentColor}
+                  iconBgColor={`${accentColor}20`}
+                  label={t('streak')}
+                  value={stats?.currentStreak || 0}
+                  subtitle={stats?.bestStreak ? t('best', { count: stats.bestStreak }) : undefined}
+                  isDark={isDark}
+                />
+                <MetricCard
+                  icon={<CheckCircle size={16} color={successColor} />}
+                  iconColor={successColor}
+                  iconBgColor={`${successColor}20`}
+                  label={t('correct')}
+                  value={stats?.totalCorrect || 0}
+                  subtitle={stats?.correctToday ? t('todayCount', { count: stats.correctToday }) : undefined}
+                  isDark={isDark}
+                />
+              </XStack>
+            </YStack>
+          </Animated.View>
+
+          {/* Category Breakdown */}
+          {displayCategories.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(100).duration(300)}>
+              <XStack alignItems="center" justifyContent="space-between" marginBottom={tokens.space.md}>
+                <Text
+                  fontSize={18}
+                  fontFamily={FONT_FAMILIES.bold}
+                  color={textColor}
+                >
+                  {t('categoryBreakdown')}
+                </Text>
+                <Pressable onPress={() => router.push('/settings/categories')}>
+                  <Text
+                    fontSize={14}
+                    fontFamily={FONT_FAMILIES.semibold}
+                    color={primaryColor}
+                  >
+                    {t('viewAll')}
+                  </Text>
+                </Pressable>
+              </XStack>
+              
+              <YStack
+                backgroundColor={cardBg}
+                borderRadius={tokens.radius.lg}
+                padding={tokens.space.lg}
+                gap={tokens.space.lg}
+              >
+                {displayCategories.map((category) => (
+                  <CategoryProgressBar
+                    key={category.slug}
+                    category={category}
+                    isDark={isDark}
+                  />
+                ))}
+              </YStack>
+            </Animated.View>
+          )}
+
+          {/* Recent Activity */}
+          {recentSessions.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(200).duration(300)}>
+              <Text
+                fontSize={18}
+                fontFamily={FONT_FAMILIES.bold}
+                color={textColor}
+                marginBottom={tokens.space.md}
+              >
+                {t('recentActivity')}
+              </Text>
+              
+              <YStack gap={tokens.space.md}>
+                {recentSessions.map((session) => (
+                  <ActivityCard
+                    key={session.id}
+                    session={session}
+                    isDark={isDark}
+                    t={t}
+                    onPress={() => handleSessionClick(session.id)}
+                  />
+                ))}
+              </YStack>
+            </Animated.View>
+          )}
+        </YStack>
+      </ScrollView>
+
+      {/* Loading overlay for session fetch */}
+      {loadingSession && (
+        <View 
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.7)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <ActivityIndicator size="large" color={primaryColor} />
+        </View>
+      )}
+    </View>
+  );
+}
+

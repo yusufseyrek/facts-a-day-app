@@ -273,6 +273,7 @@ export default function TriviaScreen() {
               categories={categoriesWithProgress}
               isDark={isDark}
               t={t}
+              onPress={() => router.push('/trivia/performance')}
             />
             
             {(hasQuestions || hasCategories) ? (

@@ -157,7 +157,8 @@ async function initializeSchema(): Promise<void> {
       question_id INTEGER NOT NULL,
       is_correct INTEGER NOT NULL,
       answered_at TEXT NOT NULL,
-      trivia_mode TEXT NOT NULL
+      trivia_mode TEXT NOT NULL,
+      trivia_session_id INTEGER
     );
   `);
   
@@ -171,6 +172,10 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_attempts_answered_at ON question_attempts(answered_at);
   `);
 
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_attempts_session_id ON question_attempts(trivia_session_id);
+  `);
+
   // Create daily_trivia_progress table
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS daily_trivia_progress (
@@ -179,6 +184,27 @@ async function initializeSchema(): Promise<void> {
       correct_answers INTEGER NOT NULL,
       completed_at TEXT
     );
+  `);
+
+  // Create trivia_sessions table for tracking individual test sessions
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS trivia_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      trivia_mode TEXT NOT NULL,
+      category_slug TEXT,
+      total_questions INTEGER NOT NULL,
+      correct_answers INTEGER NOT NULL,
+      completed_at TEXT NOT NULL,
+      elapsed_time INTEGER,
+      best_streak INTEGER,
+      questions_json TEXT,
+      answers_json TEXT
+    );
+  `);
+
+  // Create index on trivia_sessions completed_at for faster queries
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_trivia_sessions_completed_at ON trivia_sessions(completed_at);
   `);
 }
 
@@ -194,6 +220,7 @@ export async function clearDatabase(): Promise<void> {
     DELETE FROM questions;
     DELETE FROM question_attempts;
     DELETE FROM daily_trivia_progress;
+    DELETE FROM trivia_sessions;
   `);
 }
 
@@ -1614,15 +1641,16 @@ function mapQuestionsWithFact(rows: any[]): QuestionWithFact[] {
 export async function recordQuestionAttempt(
   questionId: number,
   isCorrect: boolean,
-  triviaMode: 'daily' | 'category' | 'mixed'
+  triviaMode: 'daily' | 'category' | 'mixed',
+  triviaSessionId?: number
 ): Promise<void> {
   const database = await openDatabase();
   const now = new Date().toISOString();
 
   await database.runAsync(
-    `INSERT INTO question_attempts (question_id, is_correct, answered_at, trivia_mode)
-     VALUES (?, ?, ?, ?)`,
-    [questionId, isCorrect ? 1 : 0, now, triviaMode]
+    `INSERT INTO question_attempts (question_id, is_correct, answered_at, trivia_mode, trivia_session_id)
+     VALUES (?, ?, ?, ?, ?)`,
+    [questionId, isCorrect ? 1 : 0, now, triviaMode, triviaSessionId || null]
   );
 }
 
@@ -2022,4 +2050,327 @@ export async function getFactsForQuestions(
   );
 
   return mapFactsWithRelations(result);
+}
+
+// ====== TRIVIA SESSIONS ======
+
+export interface TriviaSession {
+  id: number;
+  trivia_mode: 'daily' | 'category' | 'mixed';
+  category_slug: string | null;
+  total_questions: number;
+  correct_answers: number;
+  completed_at: string;
+  elapsed_time: number | null;
+  best_streak: number | null;
+  questions_json: string | null;
+  answers_json: string | null;
+}
+
+export interface TriviaSessionWithCategory extends TriviaSession {
+  category?: Category;
+  // Parsed data for result screen recreation
+  questions?: QuestionWithFact[];
+  answers?: Record<number, string>;
+}
+
+/**
+ * Save a trivia session result with full data for result screen recreation
+ */
+export async function saveTriviaSession(
+  triviaMode: 'daily' | 'category' | 'mixed',
+  totalQuestions: number,
+  correctAnswers: number,
+  categorySlug?: string,
+  elapsedTime?: number,
+  bestStreak?: number,
+  questions?: QuestionWithFact[],
+  answers?: Record<number, string>
+): Promise<number> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+  
+  // Serialize questions and answers for storage
+  const questionsJson = questions ? JSON.stringify(questions) : null;
+  const answersJson = answers ? JSON.stringify(answers) : null;
+
+  const result = await database.runAsync(
+    `INSERT INTO trivia_sessions (trivia_mode, category_slug, total_questions, correct_answers, completed_at, elapsed_time, best_streak, questions_json, answers_json)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [triviaMode, categorySlug || null, totalQuestions, correctAnswers, now, elapsedTime || null, bestStreak || null, questionsJson, answersJson]
+  );
+
+  return result.lastInsertRowId;
+}
+
+/**
+ * Get recent trivia sessions with category data
+ * @param limit Number of sessions to return (default 10)
+ * @param includeFullData Whether to parse and include questions/answers data
+ */
+export async function getRecentTriviaSessions(
+  limit: number = 10,
+  includeFullData: boolean = false
+): Promise<TriviaSessionWithCategory[]> {
+  const database = await openDatabase();
+
+  const result = await database.getAllAsync<any>(
+    `SELECT 
+      ts.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug_data,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM trivia_sessions ts
+    LEFT JOIN categories c ON ts.category_slug = c.slug
+    ORDER BY ts.completed_at DESC
+    LIMIT ?`,
+    [limit]
+  );
+
+  return result.map((row: any) => {
+    const session: TriviaSessionWithCategory = {
+      id: row.id,
+      trivia_mode: row.trivia_mode,
+      category_slug: row.category_slug,
+      total_questions: row.total_questions,
+      correct_answers: row.correct_answers,
+      completed_at: row.completed_at,
+      elapsed_time: row.elapsed_time,
+      best_streak: row.best_streak,
+      questions_json: row.questions_json,
+      answers_json: row.answers_json,
+    };
+
+    if (row.category_id) {
+      session.category = {
+        id: row.category_id,
+        name: row.category_name,
+        slug: row.category_slug_data,
+        description: row.category_description,
+        icon: row.category_icon,
+        color_hex: row.category_color_hex,
+      };
+    }
+
+    // Parse questions/answers if full data is requested
+    if (includeFullData) {
+      if (row.questions_json) {
+        try {
+          session.questions = JSON.parse(row.questions_json);
+        } catch (e) {
+          console.error('Error parsing questions_json:', e);
+        }
+      }
+      if (row.answers_json) {
+        try {
+          session.answers = JSON.parse(row.answers_json);
+        } catch (e) {
+          console.error('Error parsing answers_json:', e);
+        }
+      }
+    }
+
+    return session;
+  });
+}
+
+/**
+ * Get a single trivia session by ID with full data
+ */
+export async function getTriviaSessionById(
+  sessionId: number
+): Promise<TriviaSessionWithCategory | null> {
+  const database = await openDatabase();
+
+  const row = await database.getFirstAsync<any>(
+    `SELECT 
+      ts.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug_data,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM trivia_sessions ts
+    LEFT JOIN categories c ON ts.category_slug = c.slug
+    WHERE ts.id = ?`,
+    [sessionId]
+  );
+
+  if (!row) return null;
+
+  const session: TriviaSessionWithCategory = {
+    id: row.id,
+    trivia_mode: row.trivia_mode,
+    category_slug: row.category_slug,
+    total_questions: row.total_questions,
+    correct_answers: row.correct_answers,
+    completed_at: row.completed_at,
+    elapsed_time: row.elapsed_time,
+    best_streak: row.best_streak,
+    questions_json: row.questions_json,
+    answers_json: row.answers_json,
+  };
+
+  if (row.category_id) {
+    session.category = {
+      id: row.category_id,
+      name: row.category_name,
+      slug: row.category_slug_data,
+      description: row.category_description,
+      icon: row.category_icon,
+      color_hex: row.category_color_hex,
+    };
+  }
+
+  // Parse questions/answers
+  if (row.questions_json) {
+    try {
+      session.questions = JSON.parse(row.questions_json);
+    } catch (e) {
+      console.error('Error parsing questions_json:', e);
+    }
+  }
+  if (row.answers_json) {
+    try {
+      session.answers = JSON.parse(row.answers_json);
+    } catch (e) {
+      console.error('Error parsing answers_json:', e);
+    }
+  }
+
+  return session;
+}
+
+/**
+ * Get count of tests taken this week (Monday to Sunday)
+ */
+export async function getWeeklyTestsCount(): Promise<number> {
+  const database = await openDatabase();
+  
+  // Get the start of the current week (Monday)
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - daysToMonday);
+  monday.setHours(0, 0, 0, 0);
+  const weekStart = monday.toISOString();
+
+  const result = await database.getFirstAsync<{ count: number }>(
+    `SELECT COUNT(*) as count FROM trivia_sessions
+     WHERE completed_at >= ?`,
+    [weekStart]
+  );
+
+  return result?.count || 0;
+}
+
+/**
+ * Get stats for today (mastered today, correct today)
+ */
+export async function getTodayTriviaStats(): Promise<{
+  masteredToday: number;
+  correctToday: number;
+}> {
+  const database = await openDatabase();
+  
+  // Get start of today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStart = today.toISOString();
+
+  // Get correct answers today
+  const correctResult = await database.getFirstAsync<{ count: number }>(
+    `SELECT SUM(correct_answers) as count FROM trivia_sessions
+     WHERE completed_at >= ?`,
+    [todayStart]
+  );
+
+  // Get mastered today - questions that reached mastery status today
+  // A question is mastered when it gets its 3rd consecutive correct answer
+  // We check for questions where the 3rd correct attempt happened today
+  const masteredResult = await database.getFirstAsync<{ count: number }>(
+    `SELECT COUNT(*) as count FROM (
+       SELECT q.id
+       FROM questions q
+       WHERE (
+         SELECT COUNT(*) FROM (
+           SELECT is_correct FROM question_attempts 
+           WHERE question_id = q.id 
+           ORDER BY answered_at DESC 
+           LIMIT 3
+         ) WHERE is_correct = 1
+       ) = 3
+       AND (
+         SELECT COUNT(*) FROM question_attempts WHERE question_id = q.id
+       ) >= 3
+       AND (
+         SELECT answered_at FROM question_attempts 
+         WHERE question_id = q.id 
+         ORDER BY answered_at DESC 
+         LIMIT 1
+       ) >= ?
+     )`,
+    [todayStart]
+  );
+
+  return {
+    masteredToday: masteredResult?.count || 0,
+    correctToday: correctResult?.count || 0,
+  };
+}
+
+/**
+ * Get the best daily streak ever achieved
+ */
+export async function getBestDailyStreak(): Promise<number> {
+  const database = await openDatabase();
+  
+  // Get all completed dates, ordered ascending
+  const result = await database.getAllAsync<{ date: string }>(
+    `SELECT date FROM daily_trivia_progress 
+     WHERE completed_at IS NOT NULL
+     ORDER BY date ASC`
+  );
+
+  if (result.length === 0) return 0;
+
+  let bestStreak = 1;
+  let currentStreak = 1;
+  
+  for (let i = 1; i < result.length; i++) {
+    const prevDate = new Date(result[i - 1].date + 'T12:00:00');
+    const currDate = new Date(result[i].date + 'T12:00:00');
+    
+    // Check if dates are consecutive
+    const nextDay = new Date(prevDate);
+    nextDay.setDate(prevDate.getDate() + 1);
+    const nextDayStr = getLocalDateString(nextDay);
+    
+    if (result[i].date === nextDayStr) {
+      currentStreak++;
+      bestStreak = Math.max(bestStreak, currentStreak);
+    } else {
+      currentStreak = 1;
+    }
+  }
+
+  return bestStreak;
+}
+
+/**
+ * Get total number of trivia sessions taken
+ */
+export async function getTotalSessionsCount(): Promise<number> {
+  const database = await openDatabase();
+  
+  const result = await database.getFirstAsync<{ count: number }>(
+    `SELECT COUNT(*) as count FROM trivia_sessions`
+  );
+
+  return result?.count || 0;
 }

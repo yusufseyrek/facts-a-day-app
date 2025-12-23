@@ -15,8 +15,12 @@ import type {
   QuestionWithFact, 
   DailyTriviaProgress,
   FactWithRelations,
-  Category
+  Category,
+  TriviaSessionWithCategory,
 } from './database';
+
+// Re-export types
+export type { TriviaSession, TriviaSessionWithCategory } from './database';
 
 // Constants
 export const DAILY_TRIVIA_QUESTIONS = 10;
@@ -54,8 +58,12 @@ export interface TriviaStats {
   totalCorrect: number;
   accuracy: number;
   currentStreak: number;
+  bestStreak: number;
   totalMastered: number;
   testsTaken: number;
+  testsThisWeek: number;
+  masteredToday: number;
+  correctToday: number;
 }
 
 export interface CategoryWithProgress extends Category {
@@ -217,9 +225,10 @@ export async function isCategoryComplete(
 export async function recordAnswer(
   questionId: number,
   isCorrect: boolean,
-  triviaMode: 'daily' | 'category' | 'mixed'
+  triviaMode: 'daily' | 'category' | 'mixed',
+  triviaSessionId?: number
 ): Promise<void> {
-  await database.recordQuestionAttempt(questionId, isCorrect, triviaMode);
+  await database.recordQuestionAttempt(questionId, isCorrect, triviaMode, triviaSessionId);
 }
 
 /**
@@ -248,14 +257,23 @@ export async function getFactsForWrongAnswers(
  * Get overall trivia statistics
  */
 export async function getOverallStats(): Promise<TriviaStats> {
-  const stats = await database.getOverallTriviaStats();
-  const totalMastered = await database.getTotalMasteredCount();
-  // Calculate tests taken: each test has ~10 questions
-  const testsTaken = Math.ceil(stats.totalAnswered / MIXED_TRIVIA_QUESTIONS);
+  const [stats, totalMastered, testsTaken, testsThisWeek, todayStats, bestStreak] = await Promise.all([
+    database.getOverallTriviaStats(),
+    database.getTotalMasteredCount(),
+    database.getTotalSessionsCount(),
+    database.getWeeklyTestsCount(),
+    database.getTodayTriviaStats(),
+    database.getBestDailyStreak(),
+  ]);
+  
   return {
     ...stats,
+    bestStreak,
     totalMastered,
     testsTaken,
+    testsThisWeek,
+    masteredToday: todayStats.masteredToday,
+    correctToday: todayStats.correctToday,
   };
 }
 
@@ -331,5 +349,61 @@ export function formatAccuracy(totalAnswered: number, totalCorrect: number): str
 export function getStreakDisplay(streak: number): string {
   if (streak === 0) return '';
   return `🔥 ${streak}`;
+}
+
+// ====== SESSION TRACKING ======
+
+/**
+ * Save a trivia session result with full data for result screen recreation
+ * Called when a trivia session is completed
+ */
+export async function saveSessionResult(
+  triviaMode: 'daily' | 'category' | 'mixed',
+  totalQuestions: number,
+  correctAnswers: number,
+  categorySlug?: string,
+  elapsedTime?: number,
+  bestStreak?: number,
+  questions?: QuestionWithFact[],
+  answers?: Record<number, string>
+): Promise<number> {
+  return database.saveTriviaSession(
+    triviaMode,
+    totalQuestions,
+    correctAnswers,
+    categorySlug,
+    elapsedTime,
+    bestStreak,
+    questions,
+    answers
+  );
+}
+
+/**
+ * Get recent trivia sessions with category data
+ * @param limit Number of sessions to return (default 10)
+ * @param includeFullData Whether to include parsed questions/answers
+ */
+export async function getRecentSessions(
+  limit: number = 10,
+  includeFullData: boolean = false
+): Promise<TriviaSessionWithCategory[]> {
+  return database.getRecentTriviaSessions(limit, includeFullData);
+}
+
+/**
+ * Get a single trivia session by ID with full data
+ */
+export async function getSessionById(
+  sessionId: number
+): Promise<TriviaSessionWithCategory | null> {
+  return database.getTriviaSessionById(sessionId);
+}
+
+/**
+ * Get best daily streak ever achieved
+ */
+export async function getBestStreak(): Promise<number> {
+  return database.getBestDailyStreak();
 }
 
