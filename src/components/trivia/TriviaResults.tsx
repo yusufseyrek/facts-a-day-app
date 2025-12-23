@@ -451,32 +451,55 @@ export function TriviaResults({
         {/* Header Section */}
         <Animated.View entering={FadeInDown.duration(400)}>
           <YStack paddingTop={tokens.space.lg} paddingHorizontal={tokens.space.xl} gap={tokens.space.lg}>
-            {/* Title Row: Results + Score */}
-            <XStack alignItems="center" justifyContent="space-between">
-              <YStack gap={4} >
-                {/* Only show title here if not showing header bar */}
-                {!showBackButton && (
+            {/* Date/Time Subtitle */}
+            {customSubtitle && (
+              <Text 
+                fontSize={15} 
+                fontFamily={FONT_FAMILIES.semibold} 
+                color={secondaryTextColor}
+              >
+                {customSubtitle}
+              </Text>
+            )}
+            
+{/* Only show title here if not showing header bar */}
+            {!showBackButton && (
+              <Text 
+                fontSize={28} 
+                fontFamily={FONT_FAMILIES.bold} 
+                color={textColor}
+              >
+                {customTitle || t('results') || 'Results'}
+              </Text>
+            )}
+            
+            {/* Badge + Score Row */}
+            <XStack alignItems="center" justifyContent="space-between" >
+              {/* Trivia Mode/Category Badge */}
+              {triviaModeBadge ? (
+                <XStack 
+                  alignItems="center" 
+                  gap={tokens.space.xs}
+                  backgroundColor={`${triviaModeBadge.color || primaryColor}15`}
+                  paddingHorizontal={tokens.space.sm}
+                  paddingVertical={4}
+                  borderRadius={tokens.radius.md}
+                >
+                  {triviaModeBadge.icon && getLucideIcon(triviaModeBadge.icon, 14, triviaModeBadge.color || primaryColor)}
                   <Text 
-                    fontSize={28} 
-                    fontFamily={FONT_FAMILIES.bold} 
-                    color={textColor}
-                  >
-                    {customTitle || t('results') || 'Results'}
-                  </Text>
-                )}
-                {customSubtitle && (
-                  <Text 
-                    fontSize={15} 
+                    fontSize={13} 
                     fontFamily={FONT_FAMILIES.semibold} 
-                    color={secondaryTextColor}
+                    color={triviaModeBadge.color || primaryColor}
                   >
-                    {customSubtitle}
+                    {triviaModeBadge.label}
                   </Text>
-                )}
-              </YStack>
+                </XStack>
+              ) : (
+                <View />
+              )}
               
               {/* Star + Score Label */}
-              <XStack alignItems="center" gap={tokens.space.xs} alignSelf="center">
+              <XStack alignItems="center" gap={tokens.space.xs} >
                 <Star size={14} color={primaryColor} fill={primaryColor} />
                 <Text 
                   fontSize={13} 
@@ -619,40 +642,14 @@ export function TriviaResults({
         {/* Question Insights Section */}
         <Animated.View entering={FadeInUp.delay(150).duration(400)}>
           <YStack paddingTop={tokens.space.xl} gap={tokens.space.md}>
-            <XStack 
-              alignItems="center" 
-              justifyContent="space-between"
+            <Text 
+              fontSize={18} 
+              fontFamily={FONT_FAMILIES.bold} 
+              color={textColor}
               paddingHorizontal={tokens.space.lg}
             >
-              <Text 
-                fontSize={18} 
-                fontFamily={FONT_FAMILIES.bold} 
-                color={textColor}
-              >
-                {t('questionInsights') || 'Question Insights'}
-              </Text>
-              
-              {/* Trivia Mode/Category Badge */}
-              {triviaModeBadge && (
-                <XStack 
-                  alignItems="center" 
-                  gap={tokens.space.xs}
-                  backgroundColor={`${triviaModeBadge.color || primaryColor}15`}
-                  paddingHorizontal={tokens.space.sm}
-                  paddingVertical={4}
-                  borderRadius={tokens.radius.md}
-                >
-                  {triviaModeBadge.icon && getLucideIcon(triviaModeBadge.icon, 14, triviaModeBadge.color || primaryColor)}
-                  <Text 
-                    fontSize={13} 
-                    fontFamily={FONT_FAMILIES.semibold} 
-                    color={triviaModeBadge.color || primaryColor}
-                  >
-                    {triviaModeBadge.label}
-                  </Text>
-                </XStack>
-              )}
-            </XStack>
+              {t('questionInsights') || 'Question Insights'}
+            </Text>
 
             {/* Horizontal scrolling cards */}
             <ScrollView
