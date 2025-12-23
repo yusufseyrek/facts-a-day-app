@@ -1404,7 +1404,10 @@ export async function getQuestionsForDailyTrivia(
       f.summary as fact_summary,
       f.category as fact_category,
       f.source_url as fact_source_url,
+      f.image_url as fact_image_url,
       f.language as fact_language,
+      f.created_at as fact_created_at,
+      f.last_updated as fact_last_updated,
       c.id as category_id,
       c.name as category_name,
       c.slug as category_slug,
@@ -1444,7 +1447,10 @@ export async function getRandomUnansweredQuestions(
       f.summary as fact_summary,
       f.category as fact_category,
       f.source_url as fact_source_url,
+      f.image_url as fact_image_url,
       f.language as fact_language,
+      f.created_at as fact_created_at,
+      f.last_updated as fact_last_updated,
       c.id as category_id,
       c.name as category_name,
       c.slug as category_slug,
@@ -1512,7 +1518,10 @@ export async function getQuestionsForCategory(
       f.summary as fact_summary,
       f.category as fact_category,
       f.source_url as fact_source_url,
+      f.image_url as fact_image_url,
       f.language as fact_language,
+      f.created_at as fact_created_at,
+      f.last_updated as fact_last_updated,
       c.id as category_id,
       c.name as category_name,
       c.slug as category_slug,
@@ -1578,8 +1587,10 @@ function mapQuestionsWithFact(rows: any[]): QuestionWithFact[] {
         summary: row.fact_summary,
         category: row.fact_category,
         source_url: row.fact_source_url,
+        image_url: row.fact_image_url,
         language: row.fact_language,
-        created_at: '',
+        created_at: row.fact_created_at || '',
+        last_updated: row.fact_last_updated,
       };
 
       if (row.category_id) {
@@ -1834,6 +1845,18 @@ export async function saveDailyTriviaProgress(
 }
 
 /**
+ * Get local date in YYYY-MM-DD format
+ * Used for daily trivia to properly match the user's local day
+ * Note: toISOString() returns UTC date which causes issues in timezones ahead of UTC
+ */
+function getLocalDateString(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Get the current daily streak (consecutive days with completed daily trivia)
  */
 export async function getDailyStreak(): Promise<number> {
@@ -1850,10 +1873,10 @@ export async function getDailyStreak(): Promise<number> {
 
   // Check if today or yesterday is in the list to start counting
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = getLocalDateString(today);
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const yesterdayStr = getLocalDateString(yesterday);
 
   const dates = result.map(r => r.date);
   
@@ -1863,12 +1886,12 @@ export async function getDailyStreak(): Promise<number> {
   }
 
   let streak = 1;
-  let currentDate = new Date(dates[0]);
+  let currentDate = new Date(dates[0] + 'T12:00:00'); // Use noon to avoid DST issues
 
   for (let i = 1; i < dates.length; i++) {
     const prevDate = new Date(currentDate);
     prevDate.setDate(prevDate.getDate() - 1);
-    const prevDateStr = prevDate.toISOString().split('T')[0];
+    const prevDateStr = getLocalDateString(prevDate);
 
     if (dates[i] === prevDateStr) {
       streak++;

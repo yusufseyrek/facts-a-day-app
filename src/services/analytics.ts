@@ -248,7 +248,7 @@ export const trackOnboardingComplete = (params: {
 // Content Engagement Events
 // ============================================================================
 
-export type FactViewSource = 'feed' | 'discover' | 'favorites' | 'notification';
+export type FactViewSource = 'feed' | 'discover' | 'favorites' | 'notification' | 'trivia_review';
 
 /**
  * Track when user views a fact

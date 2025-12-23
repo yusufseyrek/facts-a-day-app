@@ -23,6 +23,18 @@ export const DAILY_TRIVIA_QUESTIONS = 10;
 export const MIXED_TRIVIA_QUESTIONS = 10;
 export const CATEGORY_TRIVIA_QUESTIONS = 10;
 
+/**
+ * Get local date in YYYY-MM-DD format
+ * Used for daily trivia to properly match the user's local day
+ * Note: toISOString() returns UTC date which causes issues in timezones ahead of UTC
+ */
+function getLocalDateString(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Time per question in seconds (used for estimating quiz duration)
 export const TIME_PER_QUESTION = {
   multipleChoice: 60, // 45 seconds for multiple choice questions
@@ -70,7 +82,7 @@ export interface TriviaSessionResult {
 export async function getDailyTriviaQuestions(
   language: string
 ): Promise<QuestionWithFact[]> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   return database.getQuestionsForDailyTrivia(today, language);
 }
 
@@ -80,7 +92,7 @@ export async function getDailyTriviaQuestions(
 export async function getDailyTriviaQuestionsCount(
   language: string
 ): Promise<number> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   return database.getDailyTriviaQuestionsCount(today, language);
 }
 
@@ -88,7 +100,7 @@ export async function getDailyTriviaQuestionsCount(
  * Get today's daily trivia progress
  */
 export async function getTodayProgress(): Promise<DailyTriviaProgress | null> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   return database.getDailyTriviaProgress(today);
 }
 
@@ -107,7 +119,7 @@ export async function saveDailyProgress(
   totalQuestions: number,
   correctAnswers: number
 ): Promise<void> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   await database.saveDailyTriviaProgress(today, totalQuestions, correctAnswers);
 }
 
@@ -284,8 +296,14 @@ export function parseWrongAnswers(wrongAnswersJson: string | null): string[] {
 
 /**
  * Get all answer options for a question (shuffled)
+ * For true/false questions, always returns ["True", "False"] (to be translated in UI)
  */
 export function getShuffledAnswers(question: Question): string[] {
+  // For true/false questions, always provide both options in consistent order
+  if (question.question_type === 'true_false') {
+    return ['True', 'False'];
+  }
+  
   const wrongAnswers = parseWrongAnswers(question.wrong_answers);
   const allAnswers = [question.correct_answer, ...wrongAnswers];
   

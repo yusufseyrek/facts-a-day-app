@@ -123,6 +123,7 @@ const EmptyDiscoverState = styled(YStack, {
 const CategoriesContainer = styled(YStack, {
   flex: 1,
   paddingHorizontal: tokens.space.lg,
+  paddingBottom: tokens.space.md,
   gap: tokens.space.lg,
 });
 

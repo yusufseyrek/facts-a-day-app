@@ -325,7 +325,7 @@ export function TriviaIntroModal({
                   <Trophy size={18} color={successColor} />
                   <YStack flex={1} gap={2}>
                     <Text fontSize={13} fontFamily={FONT_FAMILIES.medium} color={textColor}>
-                      {totalQuestions} {t('triviaTotal')}
+                      {t('triviaTotalQuestions', { count: totalQuestions })}
                     </Text>
                     <XStack alignItems="center" gap={tokens.space.sm}>
                       <Text fontSize={12} fontFamily={FONT_FAMILIES.medium} color={secondaryTextColor}>

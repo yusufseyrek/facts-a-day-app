@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
-import { Brain, Trophy, ChevronRight, Check, X, BookOpen, Flame, Sparkles, ArrowRight } from '@tamagui/lucide-icons';
+import { Brain, Flame, Sparkles, ArrowRight } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -33,7 +33,6 @@ import { useTranslation } from '../../src/i18n';
 import { trackScreenView, Screens } from '../../src/services/analytics';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import * as triviaService from '../../src/services/trivia';
-import type { QuestionWithFact, FactWithRelations } from '../../src/services/database';
 import type { CategoryWithProgress } from '../../src/services/trivia';
 
 // Styled Text components
@@ -51,18 +50,6 @@ const TriviaRow = styled(XStack, {
   gap: tokens.space.md,
 });
 
-// Trivia Hub View (main screen)
-type TriviaView = 'hub' | 'daily' | 'mixed' | 'results';
-
-interface TriviaState {
-  view: TriviaView;
-  questions: QuestionWithFact[];
-  currentQuestionIndex: number;
-  correctAnswers: number;
-  wrongQuestionIds: number[];
-  selectedAnswer: string | null;
-  showResult: boolean;
-}
 
 export default function TriviaScreen() {
   const { theme } = useTheme();
@@ -81,20 +68,6 @@ export default function TriviaScreen() {
   const [mixedQuestionsCount, setMixedQuestionsCount] = useState(0);
   const [overallStats, setOverallStats] = useState<triviaService.TriviaStats | null>(null);
   const [categoriesWithProgress, setCategoriesWithProgress] = useState<CategoryWithProgress[]>([]);
-  
-  // Trivia game state
-  const [triviaState, setTriviaState] = useState<TriviaState>({
-    view: 'hub',
-    questions: [],
-    currentQuestionIndex: 0,
-    correctAnswers: 0,
-    wrongQuestionIds: [],
-    selectedAnswer: null,
-    showResult: false,
-  });
-  
-  // Results state
-  const [wrongFacts, setWrongFacts] = useState<FactWithRelations[]>([]);
   
   // Pending trivia modal state
   const [pendingTrivia, setPendingTrivia] = useState<{
@@ -154,16 +127,6 @@ export default function TriviaScreen() {
 
   useEffect(() => {
     const unsubscribe = onPreferenceFeedRefresh(() => {
-      setTriviaState({
-        view: 'hub',
-        questions: [],
-        currentQuestionIndex: 0,
-        correctAnswers: 0,
-        wrongQuestionIds: [],
-        selectedAnswer: null,
-        showResult: false,
-      });
-      setWrongFacts([]);
       loadTriviaData();
     });
 
@@ -215,171 +178,25 @@ export default function TriviaScreen() {
     setPendingTrivia(null);
   };
 
-  const handleStartFromIntroModal = async () => {
+  const handleStartFromIntroModal = () => {
     if (!pendingTrivia) return;
     
+    const triviaInfo = pendingTrivia;
     setPendingTrivia(null);
     
-    if (pendingTrivia.type === 'daily') {
-      await startDailyTrivia();
-    } else if (pendingTrivia.type === 'mixed') {
-      await startMixedTrivia();
-    } else if (pendingTrivia.type === 'category' && pendingTrivia.categorySlug) {
-      await startCategoryTrivia(pendingTrivia.categorySlug);
+    // Navigate to the new trivia game screen
+    if (triviaInfo.type === 'daily') {
+      router.push('/trivia/game?type=daily');
+    } else if (triviaInfo.type === 'mixed') {
+      router.push('/trivia/game?type=mixed');
+    } else if (triviaInfo.type === 'category' && triviaInfo.categorySlug) {
+      router.push(`/trivia/game?type=category&categorySlug=${triviaInfo.categorySlug}&categoryName=${encodeURIComponent(triviaInfo.categoryName || '')}`);
     }
   };
 
-  const startDailyTrivia = async () => {
-    try {
-      setLoading(true);
-      const questions = await triviaService.getDailyTriviaQuestions(locale);
-      
-      if (questions.length === 0) {
-        setLoading(false);
-        return;
-      }
-      
-      setTriviaState({
-        view: 'daily',
-        questions,
-        currentQuestionIndex: 0,
-        correctAnswers: 0,
-        wrongQuestionIds: [],
-        selectedAnswer: null,
-        showResult: false,
-      });
-      setLoading(false);
-    } catch (error) {
-      console.error('Error starting daily trivia:', error);
-      setLoading(false);
-    }
-  };
-
-  const startMixedTrivia = async () => {
-    try {
-      setLoading(true);
-      const questions = await triviaService.getMixedTriviaQuestions(locale);
-      
-      if (questions.length === 0) {
-        setLoading(false);
-        return;
-      }
-      
-      setTriviaState({
-        view: 'mixed',
-        questions,
-        currentQuestionIndex: 0,
-        correctAnswers: 0,
-        wrongQuestionIds: [],
-        selectedAnswer: null,
-        showResult: false,
-      });
-      setLoading(false);
-    } catch (error) {
-      console.error('Error starting mixed trivia:', error);
-      setLoading(false);
-    }
-  };
-
-  const startCategoryTrivia = async (categorySlug: string) => {
-    try {
-      setLoading(true);
-      const questions = await triviaService.getCategoryTriviaQuestions(categorySlug, locale);
-      
-      if (questions.length === 0) {
-        setLoading(false);
-        return;
-      }
-      
-      setTriviaState({
-        view: 'mixed', // Use mixed view for category trivia (same UI)
-        questions,
-        currentQuestionIndex: 0,
-        correctAnswers: 0,
-        wrongQuestionIds: [],
-        selectedAnswer: null,
-        showResult: false,
-      });
-      setLoading(false);
-    } catch (error) {
-      console.error('Error starting category trivia:', error);
-      setLoading(false);
-    }
-  };
-
-  const handleAnswerSelect = async (answer: string) => {
-    if (triviaState.showResult) return;
-    
-    const currentQuestion = triviaState.questions[triviaState.currentQuestionIndex];
-    const isCorrect = answer === currentQuestion.correct_answer;
-    
-    await triviaService.recordAnswer(
-      currentQuestion.id,
-      isCorrect,
-      triviaState.view === 'daily' ? 'daily' : 'mixed'
-    );
-    
-    setTriviaState(prev => ({
-      ...prev,
-      selectedAnswer: answer,
-      showResult: true,
-      correctAnswers: isCorrect ? prev.correctAnswers + 1 : prev.correctAnswers,
-      wrongQuestionIds: isCorrect 
-        ? prev.wrongQuestionIds 
-        : [...prev.wrongQuestionIds, currentQuestion.id],
-    }));
-  };
-
-  const handleNextQuestion = async () => {
-    const nextIndex = triviaState.currentQuestionIndex + 1;
-    
-    if (nextIndex >= triviaState.questions.length) {
-      if (triviaState.view === 'daily') {
-        await triviaService.saveDailyProgress(
-          triviaState.questions.length,
-          triviaState.correctAnswers
-        );
-      }
-      
-      if (triviaState.wrongQuestionIds.length > 0) {
-        const facts = await triviaService.getFactsForWrongAnswers(triviaState.wrongQuestionIds);
-        setWrongFacts(facts);
-      } else {
-        setWrongFacts([]);
-      }
-      
-      setTriviaState(prev => ({ ...prev, view: 'results' }));
-      await loadTriviaData();
-    } else {
-      setTriviaState(prev => ({
-        ...prev,
-        currentQuestionIndex: nextIndex,
-        selectedAnswer: null,
-        showResult: false,
-      }));
-    }
-  };
-
-  const handleBackToHub = () => {
-    setTriviaState({
-      view: 'hub',
-      questions: [],
-      currentQuestionIndex: 0,
-      correctAnswers: 0,
-      wrongQuestionIds: [],
-      selectedAnswer: null,
-      showResult: false,
-    });
-    setWrongFacts([]);
-    loadTriviaData();
-  };
-
-  const navigateToFact = (factId: number) => {
-    router.push(`/fact/${factId}?source=trivia`);
-  };
 
   // Loading state
-  if (loading && triviaState.view === 'hub') {
+  if (loading) {
     return (
       <ScreenContainer edges={["top"]}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -390,310 +207,6 @@ export default function TriviaScreen() {
     );
   }
 
-  // Trivia game view
-  if (triviaState.view === 'daily' || triviaState.view === 'mixed') {
-    const currentQuestion = triviaState.questions[triviaState.currentQuestionIndex];
-    const answers = triviaService.getShuffledAnswers(currentQuestion);
-    const progress = ((triviaState.currentQuestionIndex + 1) / triviaState.questions.length) * 100;
-    
-    return (
-      <ScreenContainer edges={["top"]}>
-        <StatusBar style={isDark ? 'light' : 'dark'} />
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <ContentContainer style={{ paddingTop: tokens.space.xl }}>
-            {/* Progress bar */}
-            <YStack gap={tokens.space.sm}>
-              <XStack justifyContent="space-between" alignItems="center">
-                <Text 
-                  color={isDark ? '$textSecondary' : tokens.color.light.textSecondary}
-                  fontSize={14}
-                >
-                  {t('questionOf', { current: triviaState.currentQuestionIndex + 1, total: triviaState.questions.length })}
-                </Text>
-                <XStack alignItems="center" gap={tokens.space.xs}>
-                  <Check size={16} color={isDark ? tokens.color.dark.success : tokens.color.light.success} />
-                  <Text color={isDark ? tokens.color.dark.success : tokens.color.light.success} fontWeight="600">
-                    {triviaState.correctAnswers}
-                  </Text>
-                </XStack>
-              </XStack>
-              <YStack 
-                height={4} 
-                borderRadius={2} 
-                backgroundColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
-              >
-                <YStack 
-                  height={4} 
-                  borderRadius={2} 
-                  backgroundColor={isDark ? tokens.color.dark.primary : tokens.color.light.primary}
-                  width={`${progress}%`}
-                />
-              </YStack>
-            </YStack>
-            
-            {/* Question */}
-            <YStack 
-              backgroundColor={isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground}
-              padding={tokens.space.xl}
-              borderRadius={tokens.radius.md}
-              marginTop={tokens.space.lg}
-            >
-              <Text
-                color={isDark ? '$text' : tokens.color.light.text}
-                fontSize={17}
-                fontWeight="500"
-                lineHeight={24}
-              >
-                {currentQuestion.question_text}
-              </Text>
-            </YStack>
-            
-            {/* Answers */}
-            <YStack gap={tokens.space.sm} marginTop={tokens.space.lg}>
-              {answers.map((answer, index) => {
-                const isSelected = triviaState.selectedAnswer === answer;
-                const isCorrect = answer === currentQuestion.correct_answer;
-                const showCorrect = triviaState.showResult && isCorrect;
-                const showWrong = triviaState.showResult && isSelected && !isCorrect;
-                
-                let bgColor: string = isDark ? tokens.color.dark.surface : tokens.color.light.surface;
-                let borderColor: string = isDark ? tokens.color.dark.border : tokens.color.light.border;
-                
-                if (showCorrect) {
-                  bgColor = isDark ? 'rgba(0, 255, 136, 0.1)' : 'rgba(16, 185, 129, 0.1)';
-                  borderColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
-                } else if (showWrong) {
-                  bgColor = isDark ? 'rgba(255, 71, 87, 0.1)' : 'rgba(239, 68, 68, 0.1)';
-                  borderColor = isDark ? tokens.color.dark.error : tokens.color.light.error;
-                } else if (isSelected) {
-                  borderColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
-                }
-                
-                return (
-                  <Pressable
-                    key={index}
-                    onPress={() => handleAnswerSelect(answer)}
-                    disabled={triviaState.showResult}
-                  >
-                    <XStack
-                      backgroundColor={bgColor}
-                      borderWidth={1}
-                      borderColor={borderColor}
-                      padding={tokens.space.md}
-                      borderRadius={tokens.radius.md}
-                      alignItems="center"
-                      gap={tokens.space.sm}
-                    >
-                      {showCorrect && (
-                        <Check size={18} color={isDark ? tokens.color.dark.success : tokens.color.light.success} />
-                      )}
-                      {showWrong && (
-                        <X size={18} color={isDark ? tokens.color.dark.error : tokens.color.light.error} />
-                      )}
-                      <Text
-                        flex={1}
-                        color={isDark ? '$text' : tokens.color.light.text}
-                        fontSize={15}
-                      >
-                        {answer}
-                      </Text>
-                    </XStack>
-                  </Pressable>
-                );
-              })}
-            </YStack>
-            
-            {/* Explanation */}
-            {triviaState.showResult && currentQuestion.explanation && (
-              <YStack
-                backgroundColor={isDark ? tokens.color.dark.primaryLight : tokens.color.light.primaryLight}
-                padding={tokens.space.md}
-                borderRadius={tokens.radius.md}
-                marginTop={tokens.space.md}
-              >
-                <Text
-                  color={isDark ? '$textSecondary' : tokens.color.light.textSecondary}
-                  fontSize={12}
-                  fontWeight="600"
-                  marginBottom={4}
-                >
-                  {t('explanation')}
-                </Text>
-                <Text
-                  color={isDark ? '$text' : tokens.color.light.text}
-                  fontSize={14}
-                  lineHeight={20}
-                >
-                  {currentQuestion.explanation}
-                </Text>
-              </YStack>
-            )}
-            
-            {/* Next button */}
-            {triviaState.showResult && (
-              <Pressable onPress={handleNextQuestion}>
-                <XStack
-                  backgroundColor={isDark ? tokens.color.dark.primary : tokens.color.light.primary}
-                  padding={tokens.space.md}
-                  borderRadius={tokens.radius.md}
-                  justifyContent="center"
-                  alignItems="center"
-                  marginTop={tokens.space.lg}
-                >
-                  <Text color="#FFFFFF" fontSize={15} fontWeight="600">
-                    {triviaState.currentQuestionIndex + 1 >= triviaState.questions.length 
-                      ? t('seeResults') 
-                      : t('nextQuestion')}
-                  </Text>
-                </XStack>
-              </Pressable>
-            )}
-          </ContentContainer>
-        </ScrollView>
-      </ScreenContainer>
-    );
-  }
-
-  // Results view
-  if (triviaState.view === 'results') {
-    const accuracy = triviaState.questions.length > 0 
-      ? Math.round((triviaState.correctAnswers / triviaState.questions.length) * 100)
-      : 0;
-    const isPerfect = triviaState.correctAnswers === triviaState.questions.length;
-    
-    return (
-      <ScreenContainer edges={["top"]}>
-        <StatusBar style={isDark ? 'light' : 'dark'} />
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <ContentContainer style={{ paddingTop: tokens.space.xl }}>
-            {/* Results card */}
-            <YStack
-              backgroundColor={isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground}
-              padding={tokens.space.xl}
-              borderRadius={tokens.radius.md}
-              alignItems="center"
-            >
-              <Trophy 
-                size={40} 
-                color={isPerfect 
-                  ? (isDark ? tokens.color.dark.neonYellow : tokens.color.light.neonYellow)
-                  : (isDark ? tokens.color.dark.primary : tokens.color.light.primary)
-                } 
-              />
-              <Text
-                color={isDark ? '$text' : tokens.color.light.text}
-                fontSize={20}
-                fontWeight="600"
-                marginTop={tokens.space.md}
-              >
-                {isPerfect ? t('perfectScore') : t('triviaComplete')}
-              </Text>
-              <Text
-                color={isDark ? '$textSecondary' : tokens.color.light.textSecondary}
-                fontSize={15}
-                marginTop={tokens.space.xs}
-              >
-                {t('youGotCorrect', { correct: triviaState.correctAnswers, total: triviaState.questions.length })}
-              </Text>
-              <XStack marginTop={tokens.space.lg} gap={tokens.space.xxl}>
-                <YStack alignItems="center">
-                  <Text
-                    color={isDark ? tokens.color.dark.success : tokens.color.light.success}
-                    fontSize={28}
-                    fontWeight="bold"
-                  >
-                    {accuracy}%
-                  </Text>
-                  <Text
-                    color={isDark ? '$textSecondary' : tokens.color.light.textSecondary}
-                    fontSize={12}
-                  >
-                    {t('accuracy')}
-                  </Text>
-                </YStack>
-                {dailyStreak > 0 && (
-                  <YStack alignItems="center">
-                    <XStack alignItems="center" gap={4}>
-                      <Flame size={20} color={isDark ? tokens.color.dark.neonOrange : tokens.color.light.neonOrange} />
-                      <Text
-                        color={isDark ? tokens.color.dark.neonOrange : tokens.color.light.neonOrange}
-                        fontSize={28}
-                        fontWeight="bold"
-                      >
-                        {dailyStreak}
-                      </Text>
-                    </XStack>
-                    <Text
-                      color={isDark ? '$textSecondary' : tokens.color.light.textSecondary}
-                      fontSize={12}
-                    >
-                      {t('dayStreak')}
-                    </Text>
-                  </YStack>
-                )}
-              </XStack>
-            </YStack>
-            
-            {/* Wrong answers */}
-            {wrongFacts.length > 0 && (
-              <YStack marginTop={tokens.space.xl}>
-                <XStack alignItems="center" gap={tokens.space.sm} marginBottom={tokens.space.sm}>
-                  <BookOpen size={18} color={isDark ? '$textSecondary' : tokens.color.light.textSecondary} />
-                  <Text
-                    color={isDark ? '$text' : tokens.color.light.text}
-                    fontSize={15}
-                    fontWeight="600"
-                  >
-                    {t('reviewFacts')}
-                  </Text>
-                </XStack>
-                <YStack gap={tokens.space.xs}>
-                  {wrongFacts.map((fact) => (
-                    <Pressable key={fact.id} onPress={() => navigateToFact(fact.id)}>
-                      <XStack
-                        backgroundColor={isDark ? tokens.color.dark.surface : tokens.color.light.surface}
-                        padding={tokens.space.md}
-                        borderRadius={tokens.radius.md}
-                        alignItems="center"
-                        gap={tokens.space.sm}
-                      >
-                        <Text
-                          flex={1}
-                          color={isDark ? '$text' : tokens.color.light.text}
-                          fontSize={14}
-                          numberOfLines={2}
-                        >
-                          {fact.title || fact.content.substring(0, 80)}
-                        </Text>
-                        <ChevronRight size={18} color={isDark ? '$textSecondary' : tokens.color.light.textSecondary} />
-                      </XStack>
-                    </Pressable>
-                  ))}
-                </YStack>
-              </YStack>
-            )}
-            
-            {/* Action buttons */}
-            <YStack gap={tokens.space.sm} marginTop={tokens.space.xl}>
-              <Pressable onPress={handleBackToHub}>
-                <XStack
-                  backgroundColor={isDark ? tokens.color.dark.primary : tokens.color.light.primary}
-                  padding={tokens.space.md}
-                  borderRadius={tokens.radius.md}
-                  justifyContent="center"
-                  alignItems="center"
-                >
-                  <Text color="#FFFFFF" fontSize={15} fontWeight="600">
-                    {t('backToTrivia')}
-                  </Text>
-                </XStack>
-              </Pressable>
-            </YStack>
-          </ContentContainer>
-        </ScrollView>
-      </ScreenContainer>
-    );
-  }
 
   // Hub view (main trivia screen)
   // Check if there are any questions available (daily, mixed, or any category with questions)
@@ -753,7 +266,7 @@ export default function TriviaScreen() {
             rightElement={streakBadge}
           />
           
-          <ContentContainer gap={tokens.space.lg}>
+          <ContentContainer gap={tokens.space.lg} paddingBottom={tokens.space.md}>
             {/* Always show Stats */}
             <TriviaStatsHero
               stats={overallStats}
