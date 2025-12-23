@@ -1,17 +1,26 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, View, ScrollView } from 'react-native';
+import { Pressable, View, ScrollView, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
-import { Timer, Flame, Check, X, ChevronRight } from '@tamagui/lucide-icons';
+import { Timer, Flame, Check, X, ChevronRight, Star } from '@tamagui/lucide-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
+import Animated, { 
+  FadeInDown, 
+  FadeInUp, 
+  useAnimatedStyle, 
+  useSharedValue, 
+  withSpring 
+} from 'react-native-reanimated';
 import { tokens } from '../../theme/tokens';
 import { FONT_FAMILIES } from '../Typography';
 import type { QuestionWithFact } from '../../services/database';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = SCREEN_WIDTH * 0.85;
+const CARD_GAP = 12;
 
 // Styled Text components
 const Text = styled(TamaguiText, {
@@ -37,56 +46,63 @@ export interface TriviaResultsProps {
   t: TranslationFunction;
 }
 
-// Circular progress component
-function CircularProgress({ 
-  percentage, 
-  size = 180, 
-  strokeWidth = 12,
+// Horizontal progress bar component
+function ProgressBar({
+  percentage,
   primaryColor,
   trackColor,
-}: { 
-  percentage: number; 
-  size?: number; 
-  strokeWidth?: number;
+  height = 24,
+}: {
+  percentage: number;
   primaryColor: string;
   trackColor: string;
+  height?: number;
 }) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
   return (
-    <View style={{ width: size, height: size }}>
-      <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-        {/* Background circle */}
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={trackColor}
-          strokeWidth={strokeWidth}
-          fill="transparent"
-        />
-        {/* Progress circle */}
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={primaryColor}
-          strokeWidth={strokeWidth}
-          fill="transparent"
-          strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-        />
-      </Svg>
+    <View
+      style={{
+        width: '100%',
+        height,
+        backgroundColor: trackColor,
+        borderRadius: height / 2,
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <View
+        style={{
+          width: `${Math.max(percentage, 0)}%`,
+          height: '100%',
+          backgroundColor: primaryColor,
+          borderRadius: height / 2,
+        }}
+      />
+      {/* Percentage label inside the bar */}
+      <View
+        style={{
+          position: 'absolute',
+          right: 12,
+          top: 0,
+          bottom: 0,
+          justifyContent: 'center',
+        }}
+      >
+        <Text
+          fontSize={12}
+          fontFamily={FONT_FAMILIES.bold}
+          color={percentage > 85 ? '#FFFFFF' : primaryColor}
+        >
+          {percentage}%
+        </Text>
+      </View>
     </View>
   );
 }
 
-// Answer review item component
-function AnswerReviewItem({
+// Answer review card component for horizontal scroll
+function AnswerReviewCard({
   question,
+  questionIndex,
   selectedAnswer,
   isCorrect,
   isDark,
@@ -94,6 +110,7 @@ function AnswerReviewItem({
   t,
 }: {
   question: QuestionWithFact;
+  questionIndex: number;
   selectedAnswer: string | undefined;
   isCorrect: boolean;
   isDark: boolean;
@@ -107,150 +124,193 @@ function AnswerReviewItem({
   const errorColor = isDark ? tokens.color.dark.error : tokens.color.light.error;
   const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
   
+  const scale = useSharedValue(1);
+  
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+  };
+
   const handlePress = () => {
-    if (!isCorrect && onPress) {
+    if (onPress) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onPress();
     }
   };
 
   // Helper to translate True/False answers (handle both capitalized and lowercase)
-  const getDisplayAnswer = (answer: string): string => {
-    const lowerAnswer = answer?.toLowerCase();
-    if (lowerAnswer === 'true') return t('true') || 'True';
-    if (lowerAnswer === 'false') return t('false') || 'False';
+  const getDisplayAnswer = (answer: string | null | undefined): string => {
+    if (!answer) return '—';
+    const lowerAnswer = answer.toLowerCase().trim();
+    
+    // Get translated values for comparison
+    const translatedTrue = t('true');
+    const translatedFalse = t('false');
+    
+    // Check for English true/false or localized equivalents
+    if (lowerAnswer === 'true' || lowerAnswer === translatedTrue.toLowerCase()) {
+      return translatedTrue && translatedTrue !== 'true' ? translatedTrue : 'True';
+    }
+    if (lowerAnswer === 'false' || lowerAnswer === translatedFalse.toLowerCase()) {
+      return translatedFalse && translatedFalse !== 'false' ? translatedFalse : 'False';
+    }
     return answer;
   };
 
   return (
-    <Pressable 
+    <Pressable
       onPress={handlePress}
-      disabled={isCorrect}
-      style={({ pressed }) => [
-        { opacity: pressed && !isCorrect ? 0.7 : 1 }
-      ]}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={{ width: CARD_WIDTH }}
     >
+      <Animated.View style={animatedStyle}>
       <YStack
         backgroundColor={surfaceColor as any}
-        paddingVertical={tokens.space.md}
-        paddingHorizontal={tokens.space.md}
-        borderRadius={tokens.radius.lg}
-        gap={tokens.space.sm}
+        padding={tokens.space.lg}
+        marginVertical={4}
+        borderRadius={tokens.radius.xl}
+        gap={tokens.space.md}
+        minHeight={200}
+        shadowColor={isDark ? "#000000": "#dddddd"}
+        shadowOffset={{ width: 0, height: 2 }}
+        shadowOpacity={isDark ? 0.2 : 0.06}
+        shadowRadius={4}
+        elevation={1}
       >
-        <XStack gap={tokens.space.md} alignItems="flex-start">
-          {/* Status icon */}
+        {/* Card Header */}
+        <XStack alignItems="center" gap={tokens.space.sm}>
           <View
             style={{
-              width: 24,
-              height: 24,
-              borderRadius: 12,
+              width: 28,
+              height: 28,
+              borderRadius: 14,
               backgroundColor: isCorrect ? successColor : errorColor,
               justifyContent: 'center',
               alignItems: 'center',
-              marginTop: 2,
             }}
           >
             {isCorrect ? (
-              <Check size={14} color="#FFFFFF" strokeWidth={3} />
+              <Check size={16} color="#FFFFFF" strokeWidth={3} />
             ) : (
-              <X size={14} color="#FFFFFF" strokeWidth={3} />
+              <X size={16} color="#FFFFFF" strokeWidth={3} />
             )}
           </View>
+          <Text
+            fontSize={16}
+            fontFamily={FONT_FAMILIES.bold}
+            color={textColor}
+          >
+            {t('question') || 'Question'} {questionIndex + 1}: {isCorrect ? (t('correct') || 'Correct') + '!' : (t('wrong') || 'Wrong')}
+          </Text>
+        </XStack>
 
-          {/* Content */}
-          <YStack flex={1} gap={tokens.space.xs}>
-            {/* Question text */}
+        {/* Question text */}
+        <Text
+          fontSize={15}
+          fontFamily={FONT_FAMILIES.medium}
+          color={textColor}
+          lineHeight={22}
+        >
+          {question.question_text}
+        </Text>
+
+        {/* Answer comparison */}
+        <YStack 
+          gap={tokens.space.sm} 
+          backgroundColor={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}
+          padding={tokens.space.md}
+          borderRadius={tokens.radius.md}
+        >
+          <XStack gap={tokens.space.md} alignItems="center">
+            <View style={{ width: 70 }}>
+              <Text
+                fontSize={10}
+                fontFamily={FONT_FAMILIES.bold}
+                color={secondaryTextColor}
+                textTransform="uppercase"
+                letterSpacing={0.5}
+              >
+                {t('yourAnswer') || 'YOUR ANSWER'}
+              </Text>
+            </View>
             <Text
               fontSize={14}
-              fontFamily={FONT_FAMILIES.medium}
-              color={textColor}
-              numberOfLines={2}
-              lineHeight={20}
+              fontFamily={FONT_FAMILIES.semibold}
+              color={isCorrect ? successColor : errorColor}
+              flex={1}
             >
-              {question.question_text}
+              {selectedAnswer ? getDisplayAnswer(selectedAnswer) : '—'}
             </Text>
-
-            {isCorrect ? (
-              // Just show the correct answer for correct ones
+          </XStack>
+          {!isCorrect && (
+            <XStack gap={tokens.space.md} alignItems="center">
+              <View style={{ width: 70 }}>
+                <Text
+                  fontSize={10}
+                  fontFamily={FONT_FAMILIES.bold}
+                  color={secondaryTextColor}
+                  textTransform="uppercase"
+                  letterSpacing={0.5}
+                >
+                  {t('correctAnswer') || 'CORRECT ANSWER'}
+                </Text>
+              </View>
               <Text
-                fontSize={13}
-                fontFamily={FONT_FAMILIES.medium}
+                fontSize={14}
+                fontFamily={FONT_FAMILIES.semibold}
                 color={successColor}
+                flex={1}
               >
                 {getDisplayAnswer(question.correct_answer)}
               </Text>
-            ) : (
-              // Show user answer vs correct answer for wrong ones
-              <YStack gap={4}>
-                <XStack gap={tokens.space.sm} alignItems="center">
-                  <View style={{ width: 56 }}>
-                    <Text
-                      fontSize={11}
-                      fontFamily={FONT_FAMILIES.semibold}
-                      color={secondaryTextColor}
-                      textTransform="uppercase"
-                      letterSpacing={0.5}
-                    >
-                      {t('you') || 'YOU'}
-                    </Text>
-                  </View>
-                  <Text
-                    fontSize={13}
-                    fontFamily={FONT_FAMILIES.medium}
-                    color={errorColor}
-                    flex={1}
-                    numberOfLines={1}
-                  >
-                    {selectedAnswer ? getDisplayAnswer(selectedAnswer) : '—'}
-                  </Text>
-                </XStack>
-                <XStack gap={tokens.space.sm} alignItems="center">
-                  <View style={{ width: 56 }}>
-                    <Text
-                      fontSize={11}
-                      fontFamily={FONT_FAMILIES.semibold}
-                      color={secondaryTextColor}
-                      textTransform="uppercase"
-                      letterSpacing={0.5}
-                    >
-                      {t('correct') || 'CORRECT'}
-                    </Text>
-                  </View>
-                  <Text
-                    fontSize={13}
-                    fontFamily={FONT_FAMILIES.medium}
-                    color={successColor}
-                    flex={1}
-                    numberOfLines={1}
-                  >
-                    {getDisplayAnswer(question.correct_answer)}
-                  </Text>
-                </XStack>
-              </YStack>
-            )}
-          </YStack>
-        </XStack>
+            </XStack>
+          )}
+        </YStack>
 
-        {/* See Fact link for wrong answers */}
-        {!isCorrect && question.fact?.id && (
+        {/* Insight text from fact */}
+        {question.fact?.content && (
+          <YStack gap={tokens.space.xs} flex={1}>
+            <Text
+              fontSize={13}
+              fontFamily={FONT_FAMILIES.regular_italic}
+              color={secondaryTextColor}
+              numberOfLines={3}
+              lineHeight={18}
+            >
+              {t('insight') || 'Insight'}: {question.fact.content}
+            </Text>
+          </YStack>
+        )}
+
+        {/* See Fact link */}
+        {question.fact?.id && (
           <XStack 
             alignItems="center" 
             justifyContent="flex-end"
-            paddingTop={tokens.space.xs}
+            marginTop="auto"
           >
             <XStack alignItems="center" gap={2}>
               <Text
-                fontSize={12}
+                fontSize={13}
                 fontFamily={FONT_FAMILIES.semibold}
                 color={primaryColor}
               >
                 {t('seeFact', { id: question.fact.id }) || `Fact#${question.fact.id}`}
               </Text>
-              <ChevronRight size={14} color={primaryColor} />
+              <ChevronRight size={16} color={primaryColor} />
             </XStack>
           </XStack>
         )}
       </YStack>
+      </Animated.View>
     </Pressable>
   );
 }
@@ -293,8 +353,8 @@ export function TriviaResults({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Get title based on score
-  const getResultTitle = () => {
+  // Get feedback title based on score
+  const getFeedbackTitle = () => {
     if (timeExpired) return t('timeUp') || "Time's Up!";
     if (isPerfect) return t('perfectScore') || 'Perfect Score!';
     if (accuracy >= 80) return t('greatJob') || 'Great Job!';
@@ -303,8 +363,17 @@ export function TriviaResults({
     return t('tryAgain') || 'Try Again!';
   };
 
-  // Handle opening fact detail for wrong answers - use Expo Router like rest of app
-  const handleWrongAnswerPress = (question: QuestionWithFact) => {
+  // Get feedback emoji based on score
+  const getFeedbackEmoji = () => {
+    if (isPerfect) return '🎯';
+    if (accuracy >= 80) return '🔥';
+    if (accuracy >= 60) return '💪';
+    if (accuracy >= 40) return '📚';
+    return '🌱';
+  };
+
+  // Handle opening fact detail - use Expo Router like rest of app
+  const handleAnswerCardPress = (question: QuestionWithFact) => {
     if (question.fact?.id) {
       router.push(`/fact/${question.fact.id}?source=trivia_review`);
     }
@@ -320,57 +389,75 @@ export function TriviaResults({
       >
         {/* Header Section */}
         <Animated.View entering={FadeInDown.duration(400)}>
-          <YStack alignItems="center" paddingTop={tokens.space.xl} paddingHorizontal={tokens.space.xl} gap={tokens.space.lg}>
-            {/* Title */}
-            <Text 
-              fontSize={28} 
-              fontFamily={FONT_FAMILIES.bold} 
-              color={textColor}
-              textAlign="center"
-            >
-              {getResultTitle()}
-            </Text>
-
-            {/* Circular Progress */}
-            <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
-              <CircularProgress
-                percentage={accuracy}
-                size={180}
-                strokeWidth={12}
-                primaryColor={primaryColor}
-                trackColor={borderColor}
-              />
-              <View 
-                style={{ 
-                  position: 'absolute', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                }}
+          <YStack paddingTop={tokens.space.lg} paddingHorizontal={tokens.space.xl} gap={tokens.space.lg}>
+            {/* Title Row: Results + Score */}
+            <XStack alignItems="center" justifyContent="space-between">
+              <Text 
+                fontSize={28} 
+                fontFamily={FONT_FAMILIES.bold} 
+                color={textColor}
               >
+                {t('results') || 'Results'}
+              </Text>
+              
+              {/* Star + Score Label */}
+              <XStack alignItems="center" gap={tokens.space.xs} alignSelf="flex-end">
+                <Star size={14} color={primaryColor} fill={primaryColor} />
                 <Text 
-                  fontSize={48} 
-                  fontFamily={FONT_FAMILIES.bold} 
+                  fontSize={13} 
+                  fontFamily={FONT_FAMILIES.semibold} 
                   color={primaryColor}
                 >
-                  {accuracy}%
+                  {t('score') || 'Score'}: {correctAnswers}/{totalQuestions}
                 </Text>
-                <Text 
-                  fontSize={14} 
-                  fontFamily={FONT_FAMILIES.semibold} 
-                  color={secondaryTextColor}
-                  textTransform="uppercase"
-                  letterSpacing={1}
-                >
-                  {t('score') || 'SCORE'}
-                </Text>
-              </View>
-            </View>
+              </XStack>
+            </XStack>
 
-            {/* Score description */}
-            <Text fontSize={16} color={secondaryTextColor} textAlign="center">
-              {t('youAnswered', { correct: correctAnswers, total: totalQuestions }) ||
-                `You answered ${correctAnswers} out of ${totalQuestions} questions correctly.`}
-            </Text>
+            {/* Progress Bar */}
+            <ProgressBar
+              percentage={accuracy}
+              primaryColor={primaryColor}
+              trackColor={borderColor}
+              height={18}
+            />
+
+            {/* Feedback with emoji */}
+            <XStack alignItems="center" gap={tokens.space.sm} marginBottom={tokens.space.md}>
+              <Text fontSize={24}>
+                {getFeedbackEmoji()}
+              </Text>
+              <YStack flex={1}>
+                <Text 
+                  fontSize={18} 
+                  fontFamily={FONT_FAMILIES.bold} 
+                  color={textColor}
+                >
+                  {getFeedbackTitle()}
+                </Text>
+                <Text fontSize={14} color={secondaryTextColor}>
+                  {(t('youAnswered', { correct: correctAnswers, total: totalQuestions }) ||
+                    `You answered ${correctAnswers} out of ${totalQuestions} questions correctly.`)
+                    .split(/(%\{correct\}|%\{total\}|\d+)/)
+                    .map((part, i) => {
+                      if (part === '%{correct}' || part === String(correctAnswers)) {
+                        return (
+                          <Text key={i} fontSize={14} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
+                            {correctAnswers}
+                          </Text>
+                        );
+                      }
+                      if (part === '%{total}' || part === String(totalQuestions)) {
+                        return (
+                          <Text key={i} fontSize={14} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
+                            {totalQuestions}
+                          </Text>
+                        );
+                      }
+                      return part;
+                    })}
+                </Text>
+              </YStack>
+            </XStack>
           </YStack>
         </Animated.View>
 
@@ -378,7 +465,7 @@ export function TriviaResults({
         <Animated.View entering={FadeInDown.delay(100).duration(400)}>
           <XStack 
             paddingHorizontal={tokens.space.lg} 
-            paddingTop={tokens.space.xl}
+            paddingTop={tokens.space.lg}
             gap={tokens.space.md}
             justifyContent="center"
           >
@@ -394,20 +481,20 @@ export function TriviaResults({
             >
               <View
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
                   backgroundColor: isDark ? 'rgba(0, 163, 204, 0.15)' : 'rgba(0, 119, 168, 0.1)',
                   justifyContent: 'center',
                   alignItems: 'center',
                 }}
               >
-                <Timer size={18} color={primaryColor} />
+                <Timer size={22} color={primaryColor} />
               </View>
               <Text fontSize={12} color={secondaryTextColor} marginTop={tokens.space.xs}>
-                {t('duration') || 'Duration'}
+                {t('timeSpent') || 'Time Spent'}
               </Text>
-              <Text fontSize={22} fontFamily={FONT_FAMILIES.bold} color={textColor}>
+              <Text fontSize={24} fontFamily={FONT_FAMILIES.bold} color={textColor}>
                 {formatTime(elapsedTime)}
               </Text>
             </YStack>
@@ -424,20 +511,20 @@ export function TriviaResults({
             >
               <View
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
                   backgroundColor: isDark ? 'rgba(255, 140, 0, 0.15)' : 'rgba(204, 85, 0, 0.1)',
                   justifyContent: 'center',
                   alignItems: 'center',
                 }}
               >
-                <Flame size={18} color={accentColor} />
+                <Flame size={22} color={accentColor} />
               </View>
               <Text fontSize={12} color={secondaryTextColor} marginTop={tokens.space.xs}>
-                {t('bestStreak') || 'Best Streak'}
+                {t('currentStreak') || 'Current Streak'}
               </Text>
-              <Text fontSize={22} fontFamily={FONT_FAMILIES.bold} color={textColor}>
+              <Text fontSize={24} fontFamily={FONT_FAMILIES.bold} color={textColor}>
                 {bestStreak}x
               </Text>
             </YStack>
@@ -445,30 +532,39 @@ export function TriviaResults({
         </Animated.View>
 
         {/* Divider */}
-        <Animated.View entering={FadeInUp.delay(150).duration(400)}>
-          <View 
-            style={{ 
-              marginHorizontal: tokens.space.lg, 
-              marginTop: tokens.space.xl,
-              height: 1,
-              backgroundColor: borderColor,
-            }} 
-          />
-        </Animated.View>
+        <View 
+          style={{ 
+            marginHorizontal: tokens.space.lg, 
+            marginTop: tokens.space.xl,
+            height: 1,
+            backgroundColor: borderColor,
+          }} 
+        />
 
-        {/* Answer Review Section */}
-        <Animated.View entering={FadeInUp.delay(200).duration(400)}>
-          <YStack paddingHorizontal={tokens.space.lg} paddingTop={tokens.space.xl} gap={tokens.space.md}>
+        {/* Question Insights Section */}
+        <Animated.View entering={FadeInUp.delay(150).duration(400)}>
+          <YStack paddingTop={tokens.space.xl} gap={tokens.space.md}>
             <Text 
-              fontSize={16} 
-              fontFamily={FONT_FAMILIES.semibold} 
+              fontSize={18} 
+              fontFamily={FONT_FAMILIES.bold} 
               color={textColor}
-              letterSpacing={0.3}
+              paddingHorizontal={tokens.space.lg}
             >
-              {t('answerReview') || 'Answer Review'}
+              {t('questionInsights') || 'Question Insights'}
             </Text>
 
-            <YStack gap={tokens.space.sm}>
+            {/* Horizontal scrolling cards */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                paddingHorizontal: tokens.space.lg,
+                gap: CARD_GAP,
+              }}
+              decelerationRate="fast"
+              snapToInterval={CARD_WIDTH + CARD_GAP}
+              snapToAlignment="start"
+            >
               {questions.map((question, index) => {
                 const selectedAnswer = answers[question.id];
                 // Case-insensitive comparison for true/false questions
@@ -477,18 +573,19 @@ export function TriviaResults({
                   : selectedAnswer === question.correct_answer;
                 
                 return (
-                  <AnswerReviewItem
+                  <AnswerReviewCard
                     key={question.id}
                     question={question}
+                    questionIndex={index}
                     selectedAnswer={selectedAnswer}
                     isCorrect={isCorrect}
                     isDark={isDark}
-                    onPress={() => handleWrongAnswerPress(question)}
+                    onPress={() => handleAnswerCardPress(question)}
                     t={t}
                   />
                 );
               })}
-            </YStack>
+            </ScrollView>
           </YStack>
         </Animated.View>
       </ScrollView>

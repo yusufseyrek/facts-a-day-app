@@ -242,6 +242,12 @@ export const translations = {
     bestStreak: "Beste Serie",
     seeFact: "Fakt#%{id}",
     returnToTrivia: "Zurück zu Trivia",
+    timeSpent: "Zeit",
+    currentStreak: "Aktuelle Serie",
+    questionInsights: "Fragen-Einblicke",
+    yourAnswer: "DEINE ANTWORT",
+    correctAnswer: "RICHTIGE ANTWORT",
+    insight: "Einblick",
   },
   en: {
     // Onboarding - Categories
@@ -484,6 +490,12 @@ export const translations = {
     bestStreak: "Best Streak",
     seeFact: "Fact#%{id}",
     returnToTrivia: "Return to Trivia",
+    timeSpent: "Time Spent",
+    currentStreak: "Current Streak",
+    questionInsights: "Question Insights",
+    yourAnswer: "YOUR ANSWER",
+    correctAnswer: "CORRECT ANSWER",
+    insight: "Insight",
   },
   es: {
     // Onboarding - Categories
@@ -726,6 +738,12 @@ export const translations = {
     bestStreak: "Mejor racha",
     seeFact: "Dato#%{id}",
     returnToTrivia: "Volver a Trivia",
+    timeSpent: "Tiempo",
+    currentStreak: "Racha Actual",
+    questionInsights: "Análisis de Preguntas",
+    yourAnswer: "TU RESPUESTA",
+    correctAnswer: "RESPUESTA CORRECTA",
+    insight: "Información",
   },
   fr: {
     // Onboarding - Categories
@@ -968,6 +986,12 @@ export const translations = {
     bestStreak: "Meilleure série",
     seeFact: "Fait#%{id}",
     returnToTrivia: "Retour à Trivia",
+    timeSpent: "Temps passé",
+    currentStreak: "Série actuelle",
+    questionInsights: "Analyse des questions",
+    yourAnswer: "VOTRE RÉPONSE",
+    correctAnswer: "BONNE RÉPONSE",
+    insight: "Aperçu",
   },
   ja: {
     // Onboarding - Categories
@@ -1209,6 +1233,12 @@ export const translations = {
     bestStreak: "最高連続",
     seeFact: "豆知識#%{id}",
     returnToTrivia: "トリビアに戻る",
+    timeSpent: "経過時間",
+    currentStreak: "現在の連続",
+    questionInsights: "問題の分析",
+    yourAnswer: "あなたの回答",
+    correctAnswer: "正解",
+    insight: "ヒント",
   },
   ko: {
     // Onboarding - Categories
@@ -1447,6 +1477,12 @@ export const translations = {
     bestStreak: "최고 연속",
     seeFact: "정보#%{id}",
     returnToTrivia: "트리비아로 돌아가기",
+    timeSpent: "소요 시간",
+    currentStreak: "현재 연속",
+    questionInsights: "문제 분석",
+    yourAnswer: "내 답변",
+    correctAnswer: "정답",
+    insight: "정보",
   },
   tr: {
     // Onboarding - Categories
@@ -1688,6 +1724,12 @@ export const translations = {
     bestStreak: "En İyi Seri",
     seeFact: "Bilgi#%{id}",
     returnToTrivia: "Bilgi Testi'ne Dön",
+    timeSpent: "Geçen Süre",
+    currentStreak: "Mevcut Seri",
+    questionInsights: "Soru Analizi",
+    yourAnswer: "SENİN CEVABIN",
+    correctAnswer: "DOĞRU CEVAP",
+    insight: "Bilgi",
   },
   zh: {
     // Onboarding - Categories
@@ -1925,6 +1967,12 @@ export const translations = {
     bestStreak: "最佳连续",
     seeFact: "知识#%{id}",
     returnToTrivia: "返回知识测验",
+    timeSpent: "用时",
+    currentStreak: "当前连续",
+    questionInsights: "问题分析",
+    yourAnswer: "你的答案",
+    correctAnswer: "正确答案",
+    insight: "知识点",
   },
 };
 

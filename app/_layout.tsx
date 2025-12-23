@@ -19,6 +19,7 @@ import { initAnalytics } from '../src/services/analytics';
 import {
   useFonts,
   Montserrat_400Regular,
+  Montserrat_400Regular_Italic,
   Montserrat_500Medium,
   Montserrat_600SemiBold,
   Montserrat_700Bold,
@@ -139,6 +140,7 @@ export default function RootLayout() {
 
   const [fontsLoaded, fontError] = useFonts({
     Montserrat_400Regular,
+    Montserrat_400Regular_Italic,
     Montserrat_500Medium,
     Montserrat_600SemiBold,
     Montserrat_700Bold,

@@ -15,6 +15,7 @@ export const FONT_FAMILIES = {
   bold: 'Montserrat_700Bold',
   extrabold: 'Montserrat_800ExtraBold',
   black: 'Montserrat_900Black',
+  regular_italic: 'Montserrat_400Regular_Italic',
 } as const;
 
 /**
