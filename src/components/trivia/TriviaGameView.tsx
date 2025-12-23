@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, View } from 'react-native';
+import { Pressable, View, ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
@@ -35,6 +35,7 @@ export interface TriviaGameViewProps {
   questionKey: number;
   progressWidth: SharedValue<number>;
   triviaTitle: string;
+  isLoadingResults?: boolean;
   onAnswerSelect: (answer: string) => void;
   onNextQuestion: () => void;
   onPrevQuestion: () => void;
@@ -53,6 +54,7 @@ export function TriviaGameView({
   questionKey,
   progressWidth,
   triviaTitle,
+  isLoadingResults = false,
   onAnswerSelect,
   onNextQuestion,
   onPrevQuestion,
@@ -402,10 +404,11 @@ export function TriviaGameView({
         
         {/* Next button */}
         <Pressable 
-          onPress={() => handlePressWithHaptics(onNextQuestion)}
+          onPress={() => !isLoadingResults && handlePressWithHaptics(onNextQuestion)}
+          disabled={isLoadingResults}
           style={({ pressed }) => [
             { flex: 1 },
-            pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
+            pressed && !isLoadingResults && { opacity: 0.8, transform: [{ scale: 0.98 }] }
           ]}
         >
           <XStack
@@ -415,17 +418,24 @@ export function TriviaGameView({
             justifyContent="center"
             alignItems="center"
             gap={tokens.space.sm}
+            opacity={isLoadingResults ? 0.8 : 1}
           >
-            <Text 
-              color="#FFFFFF" 
-              fontSize={17} 
-              fontFamily={FONT_FAMILIES.semibold}
-            >
-              {currentQuestionIndex + 1 >= totalQuestions 
-                ? t('seeResults') 
-                : t('nextQuestion')}
-            </Text>
-            <ChevronRight size={20} color="#FFFFFF" />
+            {isLoadingResults ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <Text 
+                  color="#FFFFFF" 
+                  fontSize={17} 
+                  fontFamily={FONT_FAMILIES.semibold}
+                >
+                  {currentQuestionIndex + 1 >= totalQuestions 
+                    ? t('seeResults') 
+                    : t('nextQuestion')}
+                </Text>
+                <ChevronRight size={20} color="#FFFFFF" />
+              </>
+            )}
           </XStack>
         </Pressable>
       </XStack>

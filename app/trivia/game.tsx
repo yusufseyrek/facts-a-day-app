@@ -15,6 +15,7 @@ import { TriviaResults, TriviaGameView } from '../../src/components/trivia';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
 import type { QuestionWithFact } from '../../src/services/database';
+import { showTriviaResultsInterstitial } from '../../src/services/adManager';
 
 // Styled Text components
 const Text = styled(TamaguiText, {
@@ -44,6 +45,7 @@ export default function TriviaGameScreen() {
   const isDark = theme === 'dark';
   
   const [loading, setLoading] = useState(true);
+  const [showingAd, setShowingAd] = useState(false);
   const [gameState, setGameState] = useState<TriviaGameState>({
     questions: [],
     currentQuestionIndex: 0,
@@ -188,7 +190,12 @@ export default function TriviaGameScreen() {
     }
   };
   
-  const handleTimeExpired = useCallback(() => {
+  const handleTimeExpired = useCallback(async () => {
+    // Show interstitial ad before showing results
+    setShowingAd(true);
+    await showTriviaResultsInterstitial();
+    setShowingAd(false);
+    
     setGameState(prev => ({
       ...prev,
       isFinished: true,
@@ -273,6 +280,11 @@ export default function TriviaGameScreen() {
   };
   
   const finishQuiz = async () => {
+    // Show interstitial ad before showing results
+    setShowingAd(true);
+    await showTriviaResultsInterstitial();
+    setShowingAd(false);
+    
     // Calculate results
     let correctCount = 0;
     const wrongIds: number[] = [];
@@ -408,6 +420,7 @@ export default function TriviaGameScreen() {
       questionKey={questionKey.current}
       progressWidth={progressWidth}
       triviaTitle={getTriviaTitle()}
+      isLoadingResults={showingAd}
       onAnswerSelect={handleAnswerSelect}
       onNextQuestion={handleNextQuestion}
       onPrevQuestion={handlePrevQuestion}

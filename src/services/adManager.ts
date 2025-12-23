@@ -82,3 +82,20 @@ export const showSettingsInterstitial = async (): Promise<void> => {
     console.error('Error showing settings interstitial:', error);
   }
 };
+
+/**
+ * Show interstitial ad before trivia results
+ */
+export const showTriviaResultsInterstitial = async (): Promise<void> => {
+  // Don't show ads if globally disabled
+  if (!ADS_ENABLED) {
+    return;
+  }
+
+  try {
+    await showInterstitialAd();
+    trackInterstitialShown('trivia_results');
+  } catch (error) {
+    console.error('Error showing trivia results interstitial:', error);
+  }
+};
