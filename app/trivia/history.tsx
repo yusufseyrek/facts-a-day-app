@@ -448,7 +448,7 @@ export default function ActivityHistoryScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
           }
           contentContainerStyle={{ 
-            paddingBottom: insets.bottom + tokens.space.xl,
+            paddingBottom: tokens.space.sm,
           }}
           ListEmptyComponent={() => (
             <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
