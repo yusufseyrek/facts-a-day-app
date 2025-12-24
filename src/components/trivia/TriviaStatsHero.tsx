@@ -94,14 +94,11 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
   const accuracy = stats?.accuracy ?? 0;
   const testsTaken = stats?.testsTaken ?? 0;
   
-  // Find top category (by answered count, then by accuracy)
+  // Find top category by accuracy (only categories with answered questions)
   const topCategory = categories.length > 0 
-    ? categories.reduce((prev, current) => 
-        (current.answered > prev.answered) || 
-        (current.answered === prev.answered && current.accuracy > prev.accuracy)
-          ? current 
-          : prev
-      )
+    ? categories
+        .filter(c => c.answered > 0) // Only categories with answered questions
+        .sort((a, b) => b.accuracy - a.accuracy)[0] || null // Sort by accuracy descending, take first
     : null;
   
   const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;

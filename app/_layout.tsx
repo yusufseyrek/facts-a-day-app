@@ -122,14 +122,7 @@ function AppContent() {
           headerShown: false,
         }}
       />
-      <Stack.Screen
-        name="trivia/game"
-        options={{
-          presentation: 'fullScreenModal',
-          headerShown: false,
-          animation: 'slide_from_bottom',
-        }}
-      />
+      <Stack.Screen name="trivia" />
     </Stack>
   );
 }
