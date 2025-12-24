@@ -7,6 +7,8 @@ import {
   Pressable,
   View,
   Animated as RNAnimated,
+  Modal,
+  Platform,
 } from 'react-native';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
@@ -14,10 +16,11 @@ import {
   ChevronLeft, 
   Gamepad2, 
   Trophy, 
-  Flame, 
   CheckCircle,
   Calendar,
   Shuffle,
+  Hash,
+  X,
 } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -29,8 +32,11 @@ import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import * as triviaService from '../../src/services/trivia';
-import { TriviaResults } from '../../src/components/trivia/TriviaResults';
+import { TriviaResults, getTriviaModeBadge } from '../../src/components/trivia';
 import type { TriviaStats, CategoryWithProgress, TriviaSessionWithCategory } from '../../src/services/trivia';
+
+const MAX_DISPLAY_CATEGORIES = 3;
+const MAX_DISPLAY_ACTIVITIES = 3;
 
 // Styled Text components
 const Text = styled(TamaguiText, {
@@ -394,8 +400,10 @@ export default function PerformanceScreen() {
   const [stats, setStats] = useState<TriviaStats | null>(null);
   const [categories, setCategories] = useState<CategoryWithProgress[]>([]);
   const [recentSessions, setRecentSessions] = useState<TriviaSessionWithCategory[]>([]);
+  const [totalSessionsCount, setTotalSessionsCount] = useState(0);
   const [selectedSession, setSelectedSession] = useState<TriviaSessionWithCategory | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   const loadData = useCallback(async (isRefresh = false) => {
     try {
@@ -404,12 +412,13 @@ export default function PerformanceScreen() {
       const [statsData, categoriesData, sessionsData] = await Promise.all([
         triviaService.getOverallStats(),
         triviaService.getCategoriesWithProgress(locale),
-        triviaService.getRecentSessions(5),
+        triviaService.getRecentSessions(MAX_DISPLAY_ACTIVITIES),
       ]);
       
       setStats(statsData);
       setCategories(categoriesData);
       setRecentSessions(sessionsData);
+      setTotalSessionsCount(statsData.testsTaken);
     } catch (error) {
       console.error('Error loading performance data:', error);
     } finally {
@@ -484,37 +493,6 @@ export default function PerformanceScreen() {
       return `${dateStr} • ${timeStr}`;
     };
     
-    // Get trivia mode badge info
-    const getTriviaModesBadge = () => {
-      if (selectedSession.category) {
-        return {
-          label: selectedSession.category.name,
-          icon: selectedSession.category.icon,
-          color: selectedSession.category.color_hex || primaryColor,
-        };
-      }
-      switch (selectedSession.trivia_mode) {
-        case 'daily':
-          return {
-            label: t('dailyTrivia'),
-            icon: 'calendar',
-            color: primaryColor,
-          };
-        case 'mixed':
-          return {
-            label: t('mixedTrivia'),
-            icon: 'shuffle',
-            color: primaryColor,
-          };
-        default:
-          return {
-            label: t('trivia'),
-            icon: 'gamepad-2',
-            color: primaryColor,
-          };
-      }
-    };
-    
     return (
       <TriviaResults
         correctAnswers={selectedSession.correct_answers}
@@ -529,19 +507,32 @@ export default function PerformanceScreen() {
         onClose={handleCloseResults}
         isDark={isDark}
         t={t}
-        customTitle={t('pastActivity')}
+        customTitle={t('testResults')}
         customSubtitle={formatSessionDateTime(selectedSession.completed_at)}
-        triviaModeBadge={getTriviaModesBadge()}
+        triviaModeBadge={getTriviaModeBadge({
+          mode: selectedSession.trivia_mode,
+          categoryName: selectedSession.category?.name,
+          categoryIcon: selectedSession.category?.icon,
+          categoryColor: selectedSession.category?.color_hex,
+          isDark,
+          t,
+        })}
         showBackButton={true}
         showReturnButton={false}
       />
     );
   }
 
-  // Take top 4 categories for display
+  // Take top 4 categories for display, sorted by accuracy high to low
   const displayCategories = categories
-    .filter(c => c.total > 0)
-    .slice(0, 4);
+    .filter(c => c.total > 0 && c.accuracy > 0)
+    .sort((a, b) => b.accuracy - a.accuracy)
+    .slice(0, MAX_DISPLAY_CATEGORIES);
+  
+  // All categories with accuracy > 0, sorted high to low (for modal)
+  const allCategoriesWithAccuracy = categories
+    .filter(c => c.total > 0 && c.accuracy > 0)
+    .sort((a, b) => b.accuracy - a.accuracy);
 
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>
@@ -591,7 +582,7 @@ export default function PerformanceScreen() {
             </Text>
             
             <YStack gap={tokens.space.md}>
-              {/* Row 1: Tests & Mastered */}
+              {/* Row 1: Tests & Correct */}
               <XStack gap={tokens.space.md}>
                 <MetricCard
                   icon={<Gamepad2 size={16} color={purpleColor} />}
@@ -600,28 +591,6 @@ export default function PerformanceScreen() {
                   label={t('tests')}
                   value={stats?.testsTaken || 0}
                   subtitle={stats?.testsThisWeek ? t('thisWeek', { count: stats.testsThisWeek }) : undefined}
-                  isDark={isDark}
-                />
-                <MetricCard
-                  icon={<Trophy size={16} color={accentColor} />}
-                  iconColor={accentColor}
-                  iconBgColor={`${accentColor}20`}
-                  label={t('mastered')}
-                  value={stats?.totalMastered || 0}
-                  subtitle={stats?.masteredToday ? t('todayCount', { count: stats.masteredToday }) : undefined}
-                  isDark={isDark}
-                />
-              </XStack>
-              
-              {/* Row 2: Streak & Correct */}
-              <XStack gap={tokens.space.md}>
-                <MetricCard
-                  icon={<Flame size={16} color={accentColor} />}
-                  iconColor={accentColor}
-                  iconBgColor={`${accentColor}20`}
-                  label={t('streak')}
-                  value={stats?.currentStreak || 0}
-                  subtitle={stats?.bestStreak ? t('best', { count: stats.bestStreak }) : undefined}
                   isDark={isDark}
                 />
                 <MetricCard
@@ -634,10 +603,31 @@ export default function PerformanceScreen() {
                   isDark={isDark}
                 />
               </XStack>
+              
+              {/* Row 2: Answered & Mastered */}
+              <XStack gap={tokens.space.md}>
+                <MetricCard
+                  icon={<Hash size={16} color={primaryColor} />}
+                  iconColor={primaryColor}
+                  iconBgColor={`${primaryColor}20`}
+                  label={t('answered')}
+                  value={stats?.totalAnswered || 0}
+                  isDark={isDark}
+                />
+                <MetricCard
+                  icon={<Trophy size={16} color={accentColor} />}
+                  iconColor={accentColor}
+                  iconBgColor={`${accentColor}20`}
+                  label={t('mastered')}
+                  value={stats?.totalMastered || 0}
+                  subtitle={stats?.masteredToday ? t('todayCount', { count: stats.masteredToday }) : undefined}
+                  isDark={isDark}
+                />
+              </XStack>
             </YStack>
           </Animated.View>
 
-          {/* Category Breakdown */}
+          {/* Accuracy by Category */}
           {displayCategories.length > 0 && (
             <Animated.View entering={FadeInDown.delay(100).duration(300)}>
               <XStack alignItems="center" justifyContent="space-between" marginBottom={tokens.space.md}>
@@ -646,17 +636,19 @@ export default function PerformanceScreen() {
                   fontFamily={FONT_FAMILIES.bold}
                   color={textColor}
                 >
-                  {t('categoryBreakdown')}
+                  {t('accuracyByCategory')}
                 </Text>
-                <Pressable onPress={() => router.push('/settings/categories')}>
-                  <Text
-                    fontSize={14}
-                    fontFamily={FONT_FAMILIES.semibold}
-                    color={primaryColor}
-                  >
-                    {t('viewAll')}
-                  </Text>
-                </Pressable>
+                {allCategoriesWithAccuracy.length > MAX_DISPLAY_CATEGORIES && (
+                  <Pressable onPress={() => setShowCategoryModal(true)}>
+                    <Text
+                      fontSize={14}
+                      fontFamily={FONT_FAMILIES.semibold}
+                      color={primaryColor}
+                    >
+                      {t('viewAll')}
+                    </Text>
+                  </Pressable>
+                )}
               </XStack>
               
               <YStack
@@ -679,14 +671,26 @@ export default function PerformanceScreen() {
           {/* Recent Activity */}
           {recentSessions.length > 0 && (
             <Animated.View entering={FadeInDown.delay(200).duration(300)}>
-              <Text
-                fontSize={18}
-                fontFamily={FONT_FAMILIES.bold}
-                color={textColor}
-                marginBottom={tokens.space.md}
-              >
-                {t('recentActivity')}
-              </Text>
+              <XStack alignItems="center" justifyContent="space-between" marginBottom={tokens.space.md}>
+                <Text
+                  fontSize={18}
+                  fontFamily={FONT_FAMILIES.bold}
+                  color={textColor}
+                >
+                  {t('recentTests')}
+                </Text>
+                {totalSessionsCount > MAX_DISPLAY_ACTIVITIES && (
+                  <Pressable onPress={() => router.push('/trivia/history')}>
+                    <Text
+                      fontSize={14}
+                      fontFamily={FONT_FAMILIES.semibold}
+                      color={primaryColor}
+                    >
+                      {t('viewAll')}
+                    </Text>
+                  </Pressable>
+                )}
+              </XStack>
               
               <YStack gap={tokens.space.md}>
                 {recentSessions.map((session) => (
@@ -721,6 +725,76 @@ export default function PerformanceScreen() {
           <ActivityIndicator size="large" color={primaryColor} />
         </View>
       )}
+
+      {/* Category Accuracy Modal */}
+      <Modal
+        visible={showCategoryModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowCategoryModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: bgColor }}>
+          {/* Modal Header */}
+          <XStack
+            paddingTop={Platform.OS === 'android' ? insets.top + tokens.space.sm : tokens.space.lg}
+            paddingBottom={tokens.space.md}
+            paddingHorizontal={tokens.space.lg}
+            alignItems="center"
+            justifyContent="space-between"
+            borderBottomWidth={1}
+            borderBottomColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
+          >
+            <Text
+              fontSize={20}
+              fontFamily={FONT_FAMILIES.bold}
+              color={textColor}
+            >
+              {t('accuracyByCategory')}
+            </Text>
+            <Pressable
+              onPress={() => setShowCategoryModal(false)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: `${primaryColor}20`,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <X size={20} color={primaryColor} />
+              </View>
+            </Pressable>
+          </XStack>
+
+          {/* Modal Content */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ 
+              padding: tokens.space.lg,
+              paddingBottom: insets.bottom + tokens.space.xl,
+            }}
+          >
+            <YStack
+              backgroundColor={cardBg}
+              borderRadius={tokens.radius.lg}
+              padding={tokens.space.lg}
+              gap={tokens.space.lg}
+            >
+              {allCategoriesWithAccuracy.map((category) => (
+                <CategoryProgressBar
+                  key={category.slug}
+                  category={category}
+                  isDark={isDark}
+                />
+              ))}
+            </YStack>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }

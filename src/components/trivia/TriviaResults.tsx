@@ -183,85 +183,62 @@ function AnswerReviewCard({
       style={{ width: CARD_WIDTH }}
     >
       <Animated.View style={animatedStyle}>
-      <YStack
-        backgroundColor={surfaceColor as any}
-        padding={tokens.space.lg}
-        marginVertical={4}
-        borderRadius={tokens.radius.xl}
-        gap={tokens.space.md}
-        minHeight={200}
-        shadowColor={isDark ? "#000000": "#dddddd"}
-        shadowOffset={{ width: 0, height: 2 }}
-        shadowOpacity={isDark ? 0.2 : 0.06}
-        shadowRadius={4}
-        elevation={1}
-      >
-        {/* Card Header */}
-        <XStack alignItems="center" gap={tokens.space.sm}>
-          <View
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 14,
-              backgroundColor: isCorrect ? successColor : errorColor,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            {isCorrect ? (
-              <Check size={16} color="#FFFFFF" strokeWidth={3} />
-            ) : (
-              <X size={16} color="#FFFFFF" strokeWidth={3} />
-            )}
-          </View>
-          <Text
-            fontSize={16}
-            fontFamily={FONT_FAMILIES.bold}
-            color={textColor}
-          >
-            {t('question') || 'Question'} {questionIndex + 1}: {isCorrect ? (t('correct') || 'Correct') + '!' : (t('wrong') || 'Wrong')}
-          </Text>
-        </XStack>
-
-        {/* Question text */}
-        <Text
-          fontSize={15}
-          fontFamily={FONT_FAMILIES.medium}
-          color={textColor}
-          lineHeight={22}
+        <YStack
+          backgroundColor={surfaceColor as any}
+          padding={tokens.space.lg}
+          marginVertical={4}
+          borderRadius={tokens.radius.xl}
+          gap={tokens.space.md}
+          minHeight={200}
+          shadowColor={isDark ? "#000000": "#dddddd"}
+          shadowOffset={{ width: 0, height: 2 }}
+          shadowOpacity={isDark ? 0.2 : 0.06}
+          shadowRadius={4}
         >
-          {question.question_text}
-        </Text>
-
-        {/* Answer comparison */}
-        <YStack 
-          gap={tokens.space.sm} 
-          backgroundColor={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}
-          padding={tokens.space.md}
-          borderRadius={tokens.radius.md}
-        >
-          <XStack gap={tokens.space.md} alignItems="center">
-            <View style={{ width: 70 }}>
-              <Text
-                fontSize={10}
-                fontFamily={FONT_FAMILIES.bold}
-                color={secondaryTextColor}
-                textTransform="uppercase"
-                letterSpacing={0.5}
-              >
-                {t('yourAnswer') || 'YOUR ANSWER'}
-              </Text>
+          {/* Card Header */}
+          <XStack alignItems="center" gap={tokens.space.sm}>
+            <View
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                backgroundColor: isCorrect ? successColor : errorColor,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              {isCorrect ? (
+                <Check size={16} color="#FFFFFF" strokeWidth={3} />
+              ) : (
+                <X size={16} color="#FFFFFF" strokeWidth={3} />
+              )}
             </View>
             <Text
-              fontSize={14}
-              fontFamily={FONT_FAMILIES.semibold}
-              color={isCorrect ? successColor : errorColor}
-              flex={1}
+              fontSize={16}
+              fontFamily={FONT_FAMILIES.bold}
+              color={textColor}
             >
-              {selectedAnswer ? getDisplayAnswer(selectedAnswer) : '—'}
+              {t('question') || 'Question'} {questionIndex + 1}: {isCorrect ? (t('correct') || 'Correct') + '!' : (t('wrong') || 'Wrong')}
             </Text>
           </XStack>
-          {!isCorrect && (
+
+          {/* Question text */}
+          <Text
+            fontSize={15}
+            fontFamily={FONT_FAMILIES.medium}
+            color={textColor}
+            lineHeight={22}
+          >
+            {question.question_text}
+          </Text>
+
+          {/* Answer comparison */}
+          <YStack 
+            gap={tokens.space.sm} 
+            backgroundColor={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}
+            padding={tokens.space.md}
+            borderRadius={tokens.radius.md}
+          >
             <XStack gap={tokens.space.md} alignItems="center">
               <View style={{ width: 70 }}>
                 <Text
@@ -271,56 +248,78 @@ function AnswerReviewCard({
                   textTransform="uppercase"
                   letterSpacing={0.5}
                 >
-                  {t('correctAnswer') || 'CORRECT ANSWER'}
+                  {t('yourAnswer') || 'YOUR ANSWER'}
                 </Text>
               </View>
               <Text
                 fontSize={14}
                 fontFamily={FONT_FAMILIES.semibold}
-                color={successColor}
+                color={isCorrect ? successColor : errorColor}
                 flex={1}
               >
-                {getDisplayAnswer(question.correct_answer)}
+                {selectedAnswer ? getDisplayAnswer(selectedAnswer) : '—'}
               </Text>
+            </XStack>
+            {!isCorrect && (
+              <XStack gap={tokens.space.md} alignItems="center">
+                <View style={{ width: 70 }}>
+                  <Text
+                    fontSize={10}
+                    fontFamily={FONT_FAMILIES.bold}
+                    color={secondaryTextColor}
+                    textTransform="uppercase"
+                    letterSpacing={0.5}
+                  >
+                    {t('correctAnswer') || 'CORRECT ANSWER'}
+                  </Text>
+                </View>
+                <Text
+                  fontSize={14}
+                  fontFamily={FONT_FAMILIES.semibold}
+                  color={successColor}
+                  flex={1}
+                >
+                  {getDisplayAnswer(question.correct_answer)}
+                </Text>
+              </XStack>
+            )}
+          </YStack>
+
+          {/* Insight text from fact */}
+          {question.fact?.content && (
+            <YStack gap={tokens.space.xs} flex={1}>
+              <Text
+                fontSize={13}
+                fontFamily={FONT_FAMILIES.regular_italic}
+                color={secondaryTextColor}
+                numberOfLines={3}
+                lineHeight={18}
+              >
+                {t('explanation') || 'Explanation'}: {question.explanation}
+              </Text>
+            </YStack>
+          )}
+
+          {/* See Fact link */}
+          {question.fact?.id && (
+            <XStack 
+              alignItems="center" 
+              justifyContent="flex-end"
+              marginTop="auto"
+            >
+              <XStack alignItems="center" gap={2}>
+                <Text
+                  fontSize={13}
+                  fontFamily={FONT_FAMILIES.semibold}
+                  color={primaryColor}
+                >
+                  {t('seeFact', { id: question.fact.id }) || `Fact#${question.fact.id}`}
+                </Text>
+                <ChevronRight size={16} color={primaryColor} />
+              </XStack>
             </XStack>
           )}
         </YStack>
-
-        {/* Insight text from fact */}
-        {question.fact?.content && (
-          <YStack gap={tokens.space.xs} flex={1}>
-            <Text
-              fontSize={13}
-              fontFamily={FONT_FAMILIES.regular_italic}
-              color={secondaryTextColor}
-              numberOfLines={3}
-              lineHeight={18}
-            >
-              {t('explanation') || 'Explanation'}: {question.explanation}
-            </Text>
-          </YStack>
-        )}
-
-        {/* See Fact link */}
-        {question.fact?.id && (
-          <XStack 
-            alignItems="center" 
-            justifyContent="flex-end"
-            marginTop="auto"
-          >
-            <XStack alignItems="center" gap={2}>
-              <Text
-                fontSize={13}
-                fontFamily={FONT_FAMILIES.semibold}
-                color={primaryColor}
-              >
-                {t('seeFact', { id: question.fact.id }) || `Fact#${question.fact.id}`}
-              </Text>
-              <ChevronRight size={16} color={primaryColor} />
-            </XStack>
-          </XStack>
-        )}
-      </YStack>
       </Animated.View>
     </Pressable>
   );
@@ -436,7 +435,7 @@ export function TriviaResults({
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
           >
-            {customTitle || t('results') || 'Results'}
+            {customTitle || t('testResults') || 'Test Results'}
           </Text>
           
           {/* Empty spacer to balance the header */}
@@ -462,14 +461,14 @@ export function TriviaResults({
               </Text>
             )}
             
-{/* Only show title here if not showing header bar */}
+            {/* Only show title here if not showing header bar */}
             {!showBackButton && (
               <Text 
                 fontSize={28} 
                 fontFamily={FONT_FAMILIES.bold} 
                 color={textColor}
               >
-                {customTitle || t('results') || 'Results'}
+                {customTitle || t('testResults') || 'Test Results'}
               </Text>
             )}
             

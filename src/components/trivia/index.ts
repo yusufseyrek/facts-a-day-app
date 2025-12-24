@@ -9,4 +9,6 @@ export { TriviaResults } from './TriviaResults';
 export type { TriviaResultsProps } from './TriviaResults';
 export { TriviaGameView } from './TriviaGameView';
 export type { TriviaGameViewProps } from './TriviaGameView';
+export { getTriviaModeBadge } from './utils';
+export type { TriviaModeBadge, TriviaModeBadgeOptions } from './utils';
 

@@ -401,6 +401,15 @@ export async function getSessionById(
 }
 
 /**
+ * Get all trivia sessions for history view
+ * Returns all sessions ordered by completed_at DESC
+ */
+export async function getAllSessions(): Promise<TriviaSessionWithCategory[]> {
+  // Use a large limit to get all sessions
+  return database.getRecentTriviaSessions(1000, false);
+}
+
+/**
  * Get best daily streak ever achieved
  */
 export async function getBestStreak(): Promise<number> {

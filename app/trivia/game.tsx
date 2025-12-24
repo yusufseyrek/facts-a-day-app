@@ -11,7 +11,7 @@ import { FONT_FAMILIES } from '../../src/components/Typography';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import { trackScreenView, Screens } from '../../src/services/analytics';
-import { TriviaResults, TriviaGameView } from '../../src/components/trivia';
+import { TriviaResults, TriviaGameView, getTriviaModeBadge } from '../../src/components/trivia';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
 import type { QuestionWithFact } from '../../src/services/database';
@@ -470,6 +470,7 @@ export default function TriviaGameScreen() {
   // Results view
   if (gameState.isFinished) {
     const results = calculateResults();
+    
     return (
       <TriviaResults
         correctAnswers={results.correct}
@@ -484,6 +485,12 @@ export default function TriviaGameScreen() {
         onClose={handleClose}
         isDark={isDark}
         t={t}
+        triviaModeBadge={getTriviaModeBadge({
+          mode: params.type || 'mixed',
+          categoryName: params.categoryName,
+          isDark,
+          t,
+        })}
       />
     );
   }
