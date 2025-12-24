@@ -128,7 +128,7 @@ function AnswerReviewCard({
   onPress?: () => void;
   t: TranslationFunction;
 }) {
-  const surfaceColor = isDark ? tokens.color.dark.surface : tokens.color.light.surface;
+  const cardBackground = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
   const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
   const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
@@ -184,7 +184,7 @@ function AnswerReviewCard({
     >
       <Animated.View style={animatedStyle}>
         <YStack
-          backgroundColor={surfaceColor as any}
+          backgroundColor={cardBackground}
           padding={tokens.space.lg}
           marginVertical={4}
           borderRadius={tokens.radius.xl}
@@ -349,7 +349,7 @@ export function TriviaResults({
   
   // Colors
   const bgColor = isDark ? tokens.color.dark.background : tokens.color.light.background;
-  const surfaceColor = isDark ? tokens.color.dark.surface : tokens.color.light.surface;
+  const cardBackground = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
   const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
   const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
@@ -572,7 +572,7 @@ export function TriviaResults({
             {/* Duration Card */}
             <YStack
               flex={1}
-              backgroundColor={surfaceColor as any}
+              backgroundColor={cardBackground}
               paddingVertical={tokens.space.lg}
               paddingHorizontal={tokens.space.md}
               borderRadius={tokens.radius.lg}
@@ -602,7 +602,7 @@ export function TriviaResults({
             {/* Streak Card */}
             <YStack
               flex={1}
-              backgroundColor={surfaceColor as any}
+              backgroundColor={cardBackground}
               paddingVertical={tokens.space.lg}
               paddingHorizontal={tokens.space.md}
               borderRadius={tokens.radius.lg}

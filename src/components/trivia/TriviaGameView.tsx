@@ -390,7 +390,7 @@ export function TriviaGameView({
         >
           <XStack
             backgroundColor={primaryColor}
-            paddingVertical={tokens.space.lg}
+            height={tokens.size.buttonHeight}
             paddingHorizontal={tokens.space.lg}
             borderRadius={tokens.radius.lg}
             justifyContent="center"
@@ -412,7 +412,7 @@ export function TriviaGameView({
         >
           <XStack
             backgroundColor={primaryColor}
-            paddingVertical={tokens.space.lg}
+            height={tokens.size.buttonHeight}
             borderRadius={tokens.radius.lg}
             justifyContent="center"
             alignItems="center"
