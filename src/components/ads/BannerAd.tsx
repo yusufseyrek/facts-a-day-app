@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, memo } from 'react';
+import React, { useEffect, useState, useCallback, memo, useRef } from 'react';
 import { Platform, View, StyleSheet, LayoutAnimation } from 'react-native';
 import { BannerAd as GoogleBannerAd, BannerAdSize, TestIds, AdsConsent } from 'react-native-google-mobile-ads';
 import Constants from 'expo-constants';
@@ -11,6 +11,10 @@ interface BannerAdProps {
   position: BannerAdPosition;
   onAdLoadChange?: (loaded: boolean) => void;
 }
+
+// Retry configuration
+const RETRY_DELAYS = [30000, 60000, 120000, 240000, 480000]; // Retry after 30s, 1min, 2min, 4min, 8min
+const MAX_RETRIES = 5;
 
 // Get Ad Unit IDs based on position and platform
 const getAdUnitId = (position: BannerAdPosition): string => {
@@ -55,10 +59,18 @@ const getBannerSize = (position: BannerAdPosition): BannerAdSize => {
   }
 };
 
+type AdState = 'loading' | 'loaded' | 'error';
+
 const BannerAdComponent: React.FC<BannerAdProps> = ({ position, onAdLoadChange }) => {
   const [canRequestAds, setCanRequestAds] = useState<boolean | null>(null);
   const [requestNonPersonalized, setRequestNonPersonalized] = useState<boolean>(true);
-  const [adLoaded, setAdLoaded] = useState<boolean>(false);
+  const [adState, setAdState] = useState<AdState>('loading');
+  const [retryCount, setRetryCount] = useState(0);
+  
+  // Key to force remount the ad component for retry
+  const [adKey, setAdKey] = useState(0);
+  
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const checkConsent = async () => {
@@ -81,10 +93,19 @@ const BannerAdComponent: React.FC<BannerAdProps> = ({ position, onAdLoadChange }
     checkConsent();
   }, []);
 
+  // Cleanup retry timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Notify parent when ad load state changes
   useEffect(() => {
-    onAdLoadChange?.(adLoaded);
-  }, [adLoaded, onAdLoadChange]);
+    onAdLoadChange?.(adState === 'loaded');
+  }, [adState, onAdLoadChange]);
 
   // Memoized callbacks to prevent re-renders during scroll
   const handleAdLoaded = useCallback(() => {
@@ -95,13 +116,35 @@ const BannerAdComponent: React.FC<BannerAdProps> = ({ position, onAdLoadChange }
         type: LayoutAnimation.Types.easeInEaseOut,
       },
     });
-    setAdLoaded(true);
+    setAdState('loaded');
+    setRetryCount(0); // Reset retry count on success
   }, []);
 
   const handleAdFailedToLoad = useCallback((error: any) => {
-    console.error(`Banner ad (${position}) failed to load:`, error);
-    setAdLoaded(false);
-  }, [position]);
+    console.warn(`Banner ad (${position}) failed to load:`, error?.message || error);
+    
+    // Animate the collapse
+    LayoutAnimation.configureNext({
+      duration: 150,
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+      },
+    });
+    
+    setAdState('error');
+    
+    // Schedule a retry if we haven't exceeded max retries
+    if (retryCount < MAX_RETRIES) {
+      const delay = RETRY_DELAYS[retryCount] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
+      
+      retryTimeoutRef.current = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+        setAdState('loading');
+        // Change the key to force remount the GoogleBannerAd component
+        setAdKey(prev => prev + 1);
+      }, delay);
+    }
+  }, [position, retryCount]);
 
   // Don't show ads if globally disabled or consent not given
   if (!ADS_ENABLED || canRequestAds === false) {
@@ -116,30 +159,41 @@ const BannerAdComponent: React.FC<BannerAdProps> = ({ position, onAdLoadChange }
   const adUnitId = getAdUnitId(position);
   const adSize = getBannerSize(position);
 
+  // Key insight: Don't render the GoogleBannerAd at all when in error state
+  // This ensures no space is reserved by the native ad view
+  const shouldRenderAd = adState !== 'error';
+  const isVisible = adState === 'loaded';
+
   return (
     <View
       style={[
         styles.container,
         {
-          height: adLoaded ? undefined : 0,
-          opacity: adLoaded ? 1 : 0,
+          // Completely collapse when not visible
+          height: isVisible ? undefined : 0,
+          opacity: isVisible ? 1 : 0,
+          // Ensure no minimum height is applied
+          minHeight: 0,
         },
       ]}
-      // Prevent view collapsing on Android which can cause scroll issues
-      collapsable={false}
-      pointerEvents={adLoaded ? 'auto' : 'none'}
+      // Prevent view collapsing on Android which can cause scroll issues when ad IS visible
+      collapsable={!isVisible}
+      pointerEvents={isVisible ? 'auto' : 'none'}
     >
-      <View style={styles.adWrapper}>
-        <GoogleBannerAd
-          unitId={adUnitId}
-          size={adSize}
-          requestOptions={{
-            requestNonPersonalizedAdsOnly: requestNonPersonalized
-          }}
-          onAdLoaded={handleAdLoaded}
-          onAdFailedToLoad={handleAdFailedToLoad}
-        />
-      </View>
+      {shouldRenderAd && (
+        <View style={styles.adWrapper}>
+          <GoogleBannerAd
+            key={adKey}
+            unitId={adUnitId}
+            size={adSize}
+            requestOptions={{
+              requestNonPersonalizedAdsOnly: requestNonPersonalized
+            }}
+            onAdLoaded={handleAdLoaded}
+            onAdFailedToLoad={handleAdFailedToLoad}
+          />
+        </View>
+      )}
     </View>
   );
 };
