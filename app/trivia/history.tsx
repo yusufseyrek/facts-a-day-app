@@ -367,7 +367,7 @@ export default function ActivityHistoryScreen() {
         onClose={handleCloseResults}
         isDark={isDark}
         t={t}
-        customTitle={t('pastActivity')}
+        customTitle={t('testResults')}
         customSubtitle={formatSessionDateTime(selectedSession.completed_at)}
         triviaModeBadge={getTriviaModeBadge({
           mode: selectedSession.trivia_mode,

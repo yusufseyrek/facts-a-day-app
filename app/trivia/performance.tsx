@@ -663,7 +663,7 @@ export default function PerformanceScreen() {
             </Animated.View>
           )}
 
-          {/* Recent Activity */}
+          {/* Recent Tests */}
           {recentSessions.length > 0 && (
             <Animated.View entering={FadeInDown.delay(200).duration(300)}>
               <XStack alignItems="center" justifyContent="space-between" marginBottom={tokens.space.md}>
