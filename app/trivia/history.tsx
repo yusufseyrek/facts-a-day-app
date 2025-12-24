@@ -11,7 +11,8 @@ import {
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { 
-  ChevronLeft, 
+  ChevronLeft,
+  ChevronRight,
   Calendar,
   Shuffle,
 } from '@tamagui/lucide-icons';
@@ -20,7 +21,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { tokens } from '../../src/theme/tokens';
-import { FONT_FAMILIES } from '../../src/components/Typography';
+import { H2, FONT_FAMILIES } from '../../src/components/Typography';
+import { SectionHeaderContainer } from '../../src/components/ScreenLayout';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import { getLucideIcon } from '../../src/utils/iconMapper';
@@ -86,17 +88,19 @@ function BackButton({
   );
 }
 
-// Session Activity Card
+// Session Card Component (unified with performance view)
 function SessionCard({
   session,
   isDark,
   t,
   onPress,
+  dateFormat = 'time',
 }: {
   session: TriviaSessionWithCategory;
   isDark: boolean;
   t: (key: any, params?: any) => string;
   onPress?: () => void;
+  dateFormat?: 'time' | 'relative';
 }) {
   const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
@@ -124,9 +128,30 @@ function SessionCard({
 
   const feedback = getFeedback();
 
-  const formatTime = (dateString: string) => {
+  const formatTimeOnly = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatRelativeDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return `${t('today')}, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } else if (diffDays === 1) {
+      return t('yesterday');
+    } else {
+      return t('daysAgo', { count: diffDays });
+    }
+  };
+
+  const getDateDisplay = () => {
+    return dateFormat === 'relative' 
+      ? formatRelativeDate(session.completed_at) 
+      : formatTimeOnly(session.completed_at);
   };
 
   const getDisplayName = () => {
@@ -195,7 +220,7 @@ function SessionCard({
         borderRadius={tokens.radius.lg}
         padding={tokens.space.lg}
         alignItems="center"
-        gap={tokens.space.md}
+        gap={tokens.space.sm}
       >
         {getIcon()}
         <YStack flex={1} gap={2}>
@@ -210,7 +235,7 @@ function SessionCard({
             fontSize={13}
             color={secondaryTextColor}
           >
-            {formatTime(session.completed_at)}
+            {getDateDisplay()}
           </Text>
         </YStack>
         <YStack alignItems="flex-end" gap={2}>
@@ -228,6 +253,9 @@ function SessionCard({
             {t('score')}: {session.correct_answers}/{session.total_questions}
           </Text>
         </YStack>
+        {hasResultData && (
+          <ChevronRight size={20} color={secondaryTextColor} />
+        )}
       </XStack>
     </Pressable>
   );
@@ -321,7 +349,6 @@ export default function ActivityHistoryScreen() {
   const bgColor = isDark ? tokens.color.dark.background : tokens.color.light.background;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
   const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
-  const sectionBgColor = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
 
   if (loading) {
     return (
@@ -426,22 +453,9 @@ export default function ActivityHistoryScreen() {
             </View>
           )}
           renderSectionHeader={({ section: { title } }) => (
-            <View 
-              style={{ 
-                backgroundColor: bgColor,
-                paddingHorizontal: tokens.space.lg,
-                paddingTop: tokens.space.lg,
-                paddingBottom: tokens.space.sm,
-              }}
-            >
-              <Text
-                fontSize={14}
-                fontFamily={FONT_FAMILIES.semibold}
-                color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
-              >
-                {title}
-              </Text>
-            </View>
+            <SectionHeaderContainer paddingTop={tokens.space.md}>
+              <H2>{title}</H2>
+            </SectionHeaderContainer>
           )}
           stickySectionHeadersEnabled={true}
           refreshControl={
@@ -483,4 +497,3 @@ export default function ActivityHistoryScreen() {
     </View>
   );
 }
-

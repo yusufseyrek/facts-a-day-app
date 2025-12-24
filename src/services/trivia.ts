@@ -3,7 +3,7 @@
  * 
  * Handles trivia game logic including:
  * - Daily Trivia: Questions from facts shown today
- * - Category Trivia: Master all questions in a category
+ * - Category Mastery: Master all questions in a category
  * - Progress tracking and statistics
  * - Gamification elements (streaks, mastery)
  */

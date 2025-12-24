@@ -18,6 +18,7 @@ import {
   Shuffle,
   Hash,
   ChevronLeft,
+  ChevronRight,
 } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -221,32 +222,32 @@ function CategoryProgressBar({
   );
 }
 
-// Recent Activity Card
-function ActivityCard({
+// Session Card Component (unified with history view)
+function SessionCard({
   session,
   isDark,
   t,
   onPress,
+  dateFormat = 'time',
 }: {
   session: TriviaSessionWithCategory;
   isDark: boolean;
   t: (key: any, params?: any) => string;
   onPress?: () => void;
+  dateFormat?: 'time' | 'relative';
 }) {
   const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
   const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
   const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
-  const warningColor = '#F59E0B'; // Amber for "Keep Practicing"
+  const warningColor = '#F59E0B';
   const errorColor = isDark ? tokens.color.dark.error : tokens.color.light.error;
   const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
 
-  // Calculate score percentage
   const scorePercentage = session.total_questions > 0 
     ? (session.correct_answers / session.total_questions) * 100 
     : 0;
 
-  // Get feedback based on score
   const getFeedback = () => {
     if (scorePercentage >= 90) {
       return { text: t('perfectScore'), color: successColor };
@@ -261,8 +262,12 @@ function ActivityCard({
 
   const feedback = getFeedback();
 
-  // Format date
-  const formatDate = (dateString: string) => {
+  const formatTimeOnly = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatRelativeDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
@@ -277,7 +282,12 @@ function ActivityCard({
     }
   };
 
-  // Get display name for trivia mode
+  const getDateDisplay = () => {
+    return dateFormat === 'relative' 
+      ? formatRelativeDate(session.completed_at) 
+      : formatTimeOnly(session.completed_at);
+  };
+
   const getDisplayName = () => {
     if (session.category) {
       return session.category.name;
@@ -292,7 +302,6 @@ function ActivityCard({
     }
   };
 
-  // Get icon for trivia mode
   const getIcon = () => {
     if (session.category) {
       const iconColor = session.category.color_hex || primaryColor;
@@ -312,7 +321,6 @@ function ActivityCard({
       );
     }
     
-    // Use appropriate icon for mode
     const IconComponent = session.trivia_mode === 'daily' ? Calendar : Shuffle;
     const iconColor = primaryColor;
     
@@ -332,7 +340,6 @@ function ActivityCard({
     );
   };
 
-  // Check if session has result data
   const hasResultData = session.questions_json && session.answers_json;
 
   return (
@@ -347,7 +354,7 @@ function ActivityCard({
         borderRadius={tokens.radius.lg}
         padding={tokens.space.lg}
         alignItems="center"
-        gap={tokens.space.md}
+        gap={tokens.space.sm}
       >
         {getIcon()}
         <YStack flex={1} gap={2}>
@@ -362,7 +369,7 @@ function ActivityCard({
             fontSize={13}
             color={secondaryTextColor}
           >
-            {formatDate(session.completed_at)}
+            {getDateDisplay()}
           </Text>
         </YStack>
         <YStack alignItems="flex-end" gap={2}>
@@ -380,6 +387,9 @@ function ActivityCard({
             {t('score')}: {session.correct_answers}/{session.total_questions}
           </Text>
         </YStack>
+        {hasResultData && (
+          <ChevronRight size={20} color={secondaryTextColor} />
+        )}
       </XStack>
     </Pressable>
   );
@@ -689,11 +699,12 @@ export default function PerformanceScreen() {
               
               <YStack gap={tokens.space.md}>
                 {recentSessions.map((session) => (
-                  <ActivityCard
+                  <SessionCard
                     key={session.id}
                     session={session}
                     isDark={isDark}
                     t={t}
+                    dateFormat="relative"
                     onPress={() => handleSessionClick(session.id)}
                   />
                 ))}
@@ -723,4 +734,3 @@ export default function PerformanceScreen() {
     </View>
   );
 }
-
