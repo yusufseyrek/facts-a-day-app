@@ -6,6 +6,7 @@ import { YStack } from "tamagui";
 import { Clock } from "@tamagui/lucide-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { tokens } from "../../src/theme/tokens";
 import {
   H2,
@@ -275,11 +276,13 @@ function HomeScreen() {
   const iconColor = useIconColor();
 
   const renderHeader = () => (
-    <ScreenHeader
-      icon={<Clock size={isTablet ? 32 : 24} color={iconColor} />}
-      title={t("factsFeed")}
-      isTablet={isTablet}
-    />
+    <Animated.View entering={FadeIn.duration(300)}>
+      <ScreenHeader
+        icon={<Clock size={isTablet ? 32 : 24} color={iconColor} />}
+        title={t("factsFeed")}
+        isTablet={isTablet}
+      />
+    </Animated.View>
   );
 
   // Only show loading spinner on initial load when there's no data yet
@@ -309,37 +312,46 @@ function HomeScreen() {
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id.toString()}
-        renderSectionHeader={({ section: { title } }) => (
-          <SectionHeaderContainer tablet={isTablet}>
-            <H2 fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}>
-              {title}
-            </H2>
-          </SectionHeaderContainer>
-        )}
+        renderSectionHeader={({ section: { title }, section }) => {
+          const sectionIndex = sections.indexOf(section);
+          return (
+            <Animated.View entering={FadeInDown.delay(sectionIndex * 50).duration(300)}>
+              <SectionHeaderContainer tablet={isTablet}>
+                <H2 fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}>
+                  {title}
+                </H2>
+              </SectionHeaderContainer>
+            </Animated.View>
+          );
+        }}
         renderItem={({ item, section, index }) => {
           // Use HeroFactCard for the first item in the first section (Today)
           const isFirstItem = sections.indexOf(section) === 0 && index === 0;
           const categoryColor = item.categoryData?.color_hex || "#0066FF";
+          const sectionIndex = sections.indexOf(section);
+          const animationDelay = sectionIndex * 50 + (index + 1) * 50;
 
           return (
-            <ContentContainer tablet={isTablet}>
-              {isFirstItem ? (
-                <HeroFactCard
-                  title={item.title || item.content.substring(0, 80) + "..."}
-                  summary={item.summary}
-                  categoryColor={categoryColor}
-                  onPress={() => handleFactPress(item)}
-                  isTablet={isTablet}
-                />
-              ) : (
-                <FeedFactCard
-                  title={item.title || item.content.substring(0, 80) + "..."}
-                  summary={item.summary}
-                  onPress={() => handleFactPress(item)}
-                  isTablet={isTablet}
-                />
-              )}
-            </ContentContainer>
+            <Animated.View entering={FadeInDown.delay(animationDelay).duration(300)}>
+              <ContentContainer tablet={isTablet}>
+                {isFirstItem ? (
+                  <HeroFactCard
+                    title={item.title || item.content.substring(0, 80) + "..."}
+                    summary={item.summary}
+                    categoryColor={categoryColor}
+                    onPress={() => handleFactPress(item)}
+                    isTablet={isTablet}
+                  />
+                ) : (
+                  <FeedFactCard
+                    title={item.title || item.content.substring(0, 80) + "..."}
+                    summary={item.summary}
+                    onPress={() => handleFactPress(item)}
+                    isTablet={isTablet}
+                  />
+                )}
+              </ContentContainer>
+            </Animated.View>
           );
         }}
         refreshControl={

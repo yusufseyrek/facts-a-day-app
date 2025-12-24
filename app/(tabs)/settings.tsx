@@ -5,6 +5,7 @@ import { YStack } from "tamagui";
 import { useRouter, useFocusEffect } from "expo-router";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import {
   Globe,
   Palette,
@@ -584,45 +585,60 @@ export default function SettingsPage() {
   ]);
 
   const renderFooter = () => (
-    <ContentContainer>
-      <YStack alignItems="center" marginVertical={tokens.space.lg}>
-        <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
-          Version {Constants.expoConfig?.version || "1.0.0"} ({Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber || 'N/A' : Constants.expoConfig?.android?.versionCode || 'N/A'})
-        </SmallText>
-        <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
-          {t("settingsCopyright").replace("{appName}", t("appName"))}
-        </SmallText>
-      </YStack>
-    </ContentContainer>
+    <Animated.View entering={FadeInDown.delay(300).duration(300)}>
+      <ContentContainer>
+        <YStack alignItems="center" marginVertical={tokens.space.lg}>
+          <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
+            Version {Constants.expoConfig?.version || "1.0.0"} ({Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber || 'N/A' : Constants.expoConfig?.android?.versionCode || 'N/A'})
+          </SmallText>
+          <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
+            {t("settingsCopyright").replace("{appName}", t("appName"))}
+          </SmallText>
+        </YStack>
+      </ContentContainer>
+    </Animated.View>
   );
 
   return (
     <ScreenContainer edges={["top"]}>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
-      <ScreenHeader
-        icon={<Settings size={28} color={headerIconColor} />}
-        title={t("settings")}
-      />
+      <Animated.View entering={FadeIn.duration(300)}>
+        <ScreenHeader
+          icon={<Settings size={28} color={headerIconColor} />}
+          title={t("settings")}
+        />
+      </Animated.View>
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}
-        renderSectionHeader={({ section: { title } }) => (
-          <SectionHeaderContainer>
-            <H2>{title}</H2>
-          </SectionHeaderContainer>
-        )}
-        renderItem={({ item }) => (
-          <ContentContainer marginBottom={tokens.space.sm}>
-            <SettingsRow
-              label={item.label}
-              value={item.value}
-              icon={item.icon}
-              onPress={item.onPress}
-              showExternalLink={item.showExternalLink}
-              showWarning={item.showWarning}
-            />
-          </ContentContainer>
-        )}
+        renderSectionHeader={({ section: { title }, section }) => {
+          const sectionIndex = sections.indexOf(section);
+          return (
+            <Animated.View entering={FadeInDown.delay(sectionIndex * 50).duration(300)}>
+              <SectionHeaderContainer>
+                <H2>{title}</H2>
+              </SectionHeaderContainer>
+            </Animated.View>
+          );
+        }}
+        renderItem={({ item, section, index }) => {
+          const sectionIndex = sections.indexOf(section);
+          const animationDelay = sectionIndex * 50 + (index + 1) * 30;
+          return (
+            <Animated.View entering={FadeInDown.delay(animationDelay).duration(300)}>
+              <ContentContainer marginBottom={tokens.space.sm}>
+                <SettingsRow
+                  label={item.label}
+                  value={item.value}
+                  icon={item.icon}
+                  onPress={item.onPress}
+                  showExternalLink={item.showExternalLink}
+                  showWarning={item.showWarning}
+                />
+              </ContentContainer>
+            </Animated.View>
+          );
+        }}
         ListFooterComponent={renderFooter}
         stickySectionHeadersEnabled={true}
         showsVerticalScrollIndicator={false}

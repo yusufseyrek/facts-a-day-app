@@ -15,6 +15,7 @@ import { YStack, XStack } from "tamagui";
 import { Search, X } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { tokens } from "../../src/theme/tokens";
 import {
   H1,
@@ -378,8 +379,9 @@ function DiscoverScreen() {
     const contrastColor = selectedCategory ? getContrastColor(categoryColor) : "#FFFFFF";
 
     return (
-      <ScreenHeaderContainer tablet={isTablet}>
-        <SearchInputContainer>
+      <Animated.View entering={FadeIn.duration(300)}>
+        <ScreenHeaderContainer tablet={isTablet}>
+          <SearchInputContainer>
           <Search
             size={20}
             color={
@@ -452,6 +454,7 @@ function DiscoverScreen() {
           ) : null}
         </SearchInputContainer>
       </ScreenHeaderContainer>
+      </Animated.View>
     );
   };
 
@@ -504,83 +507,87 @@ function DiscoverScreen() {
       return (
         <ScrollView showsVerticalScrollIndicator={false}>
           <CategoriesContainer>
-            <YStack gap={tokens.space.sm}>
-              <H1
-                fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}
-                color="$text"
-              >
-                {t("discover")}
-              </H1>
-              <BodyText
-                fontSize={tokens.fontSize.body}
-                color="$textMuted"
-              >
-                {t("discoverDescription")}
-              </BodyText>
-            </YStack>
+            <Animated.View entering={FadeIn.duration(300)}>
+              <YStack gap={tokens.space.sm}>
+                <H1
+                  fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}
+                  color="$text"
+                >
+                  {t("discover")}
+                </H1>
+                <BodyText
+                  fontSize={tokens.fontSize.body}
+                  color="$textMuted"
+                >
+                  {t("discoverDescription")}
+                </BodyText>
+              </YStack>
+            </Animated.View>
 
             <CategoriesGrid>
               {rows.map((row, rowIndex) => (
-                <CategoryRow key={`row-${rowIndex}`}>
-                  {row.map((category) => {
-                    const categoryColor = category.color_hex || "#0066FF";
-                    const contrastColor = getContrastColor(categoryColor);
-                    const factsCount = categoryFactsCounts[category.slug] || 0;
+                <Animated.View key={`row-${rowIndex}`} entering={FadeInDown.delay(100 + rowIndex * 50).duration(300)}>
+                  <CategoryRow>
+                    {row.map((category) => {
+                      const categoryColor = category.color_hex || "#0066FF";
+                      const contrastColor = getContrastColor(categoryColor);
+                      const factsCount = categoryFactsCounts[category.slug] || 0;
 
-                    return (
-                      <Pressable
-                        key={category.slug}
-                        onPress={() => handleCategoryPress(category.slug)}
-                        style={{ flex: 1 }}
-                      >
-                        {({ pressed }) => (
-                          <DiscoverCategoryCard
-                            opacity={pressed ? 0.7 : 1}
-                            style={{ backgroundColor: categoryColor }}
-                          >
-                            <DiscoverCategoryIconContainer
-                              style={{
-                                backgroundColor:
-                                  contrastColor === "#000000"
-                                    ? "rgba(0,0,0,0.1)"
-                                    : "rgba(255,255,255,0.2)",
-                              }}
+                      return (
+                        <Pressable
+                          key={category.slug}
+                          onPress={() => handleCategoryPress(category.slug)}
+                          style={{ flex: 1 }}
+                        >
+                          {({ pressed }) => (
+                            <DiscoverCategoryCard
+                              opacity={pressed ? 0.7 : 1}
+                              style={{ backgroundColor: categoryColor }}
                             >
-                              {getLucideIcon(category.icon, iconSize, contrastColor)}
-                            </DiscoverCategoryIconContainer>
-                            <DiscoverCategoryTextContainer>
-                              <LabelText
-                                color={contrastColor}
-                                fontSize={isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body}
-                                numberOfLines={1}
-                                style={{ fontFamily: "Montserrat_600SemiBold" }}
+                              <DiscoverCategoryIconContainer
+                                style={{
+                                  backgroundColor:
+                                    contrastColor === "#000000"
+                                      ? "rgba(0,0,0,0.1)"
+                                      : "rgba(255,255,255,0.2)",
+                                }}
                               >
-                                {category.name}
-                              </LabelText>
-                              <LabelText
-                                color={contrastColor}
-                                fontSize={tokens.fontSize.small}
-                                style={{ opacity: 0.85, fontFamily: "Montserrat_500Medium" }}
-                              >
-                                {factsCount === 1
-                                  ? t("factCountSingular", { count: factsCount })
-                                  : t("factCountPlural", { count: factsCount })}
-                              </LabelText>
-                            </DiscoverCategoryTextContainer>
-                          </DiscoverCategoryCard>
-                        )}
-                      </Pressable>
-                    );
-                  })}
-                  {/* Add empty placeholders for the last row if needed */}
-                  {row.length < numColumns && (
-                    <>
-                      {Array.from({ length: numColumns - row.length }).map((_, idx) => (
-                        <View key={`placeholder-${idx}`} style={{ flex: 1 }} />
-                      ))}
-                    </>
-                  )}
-                </CategoryRow>
+                                {getLucideIcon(category.icon, iconSize, contrastColor)}
+                              </DiscoverCategoryIconContainer>
+                              <DiscoverCategoryTextContainer>
+                                <LabelText
+                                  color={contrastColor}
+                                  fontSize={isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body}
+                                  numberOfLines={1}
+                                  style={{ fontFamily: "Montserrat_600SemiBold" }}
+                                >
+                                  {category.name}
+                                </LabelText>
+                                <LabelText
+                                  color={contrastColor}
+                                  fontSize={tokens.fontSize.small}
+                                  style={{ opacity: 0.85, fontFamily: "Montserrat_500Medium" }}
+                                >
+                                  {factsCount === 1
+                                    ? t("factCountSingular", { count: factsCount })
+                                    : t("factCountPlural", { count: factsCount })}
+                                </LabelText>
+                              </DiscoverCategoryTextContainer>
+                            </DiscoverCategoryCard>
+                          )}
+                        </Pressable>
+                      );
+                    })}
+                    {/* Add empty placeholders for the last row if needed */}
+                    {row.length < numColumns && (
+                      <>
+                        {Array.from({ length: numColumns - row.length }).map((_, idx) => (
+                          <View key={`placeholder-${idx}`} style={{ flex: 1 }} />
+                        ))}
+                      </>
+                    )}
+                  </CategoryRow>
+                </Animated.View>
               ))}
             </CategoriesGrid>
           </CategoriesContainer>
@@ -609,24 +616,26 @@ function DiscoverScreen() {
             const isFirstItem = index === 0;
 
             return (
-              <ContentContainer tablet={isTablet}>
-                {isFirstItem ? (
-                  <HeroFactCard
-                    title={item.title || item.content.substring(0, 80) + "..."}
-                    summary={item.summary}
-                    categoryColor={categoryColor}
-                    onPress={() => handleFactPress(item)}
-                    isTablet={isTablet}
-                  />
-                ) : (
-                  <FeedFactCard
-                    title={item.title || item.content.substring(0, 80) + "..."}
-                    summary={item.summary}
-                    onPress={() => handleFactPress(item)}
-                    isTablet={isTablet}
-                  />
-                )}
-              </ContentContainer>
+              <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
+                <ContentContainer tablet={isTablet}>
+                  {isFirstItem ? (
+                    <HeroFactCard
+                      title={item.title || item.content.substring(0, 80) + "..."}
+                      summary={item.summary}
+                      categoryColor={categoryColor}
+                      onPress={() => handleFactPress(item)}
+                      isTablet={isTablet}
+                    />
+                  ) : (
+                    <FeedFactCard
+                      title={item.title || item.content.substring(0, 80) + "..."}
+                      summary={item.summary}
+                      onPress={() => handleFactPress(item)}
+                      isTablet={isTablet}
+                    />
+                  )}
+                </ContentContainer>
+              </Animated.View>
             );
           }}
           refreshControl={
@@ -668,24 +677,26 @@ function DiscoverScreen() {
             const isFirstItem = index === 0;
 
             return (
-              <ContentContainer tablet={isTablet}>
-                {isFirstItem ? (
-                  <HeroFactCard
-                    title={item.title || item.content.substring(0, 80) + "..."}
-                    summary={item.summary}
-                    categoryColor={categoryColor}
-                    onPress={() => handleFactPress(item)}
-                    isTablet={isTablet}
-                  />
-                ) : (
-                  <FeedFactCard
-                    title={item.title || item.content.substring(0, 80) + "..."}
-                    summary={item.summary}
-                    onPress={() => handleFactPress(item)}
-                    isTablet={isTablet}
-                  />
-                )}
-              </ContentContainer>
+              <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
+                <ContentContainer tablet={isTablet}>
+                  {isFirstItem ? (
+                    <HeroFactCard
+                      title={item.title || item.content.substring(0, 80) + "..."}
+                      summary={item.summary}
+                      categoryColor={categoryColor}
+                      onPress={() => handleFactPress(item)}
+                      isTablet={isTablet}
+                    />
+                  ) : (
+                    <FeedFactCard
+                      title={item.title || item.content.substring(0, 80) + "..."}
+                      summary={item.summary}
+                      onPress={() => handleFactPress(item)}
+                      isTablet={isTablet}
+                    />
+                  )}
+                </ContentContainer>
+              </Animated.View>
             );
           }}
           refreshControl={

@@ -259,85 +259,95 @@ export default function TriviaScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => loadTriviaData(true)} />
           }
         >
-          <ScreenHeader
-            icon={<Brain size={28} color={iconColor} />}
-            title={t('trivia')}
-            rightElement={streakBadge}
-          />
+          <Animated.View entering={FadeIn.duration(300)}>
+            <ScreenHeader
+              icon={<Brain size={28} color={iconColor} />}
+              title={t('trivia')}
+              rightElement={streakBadge}
+            />
+          </Animated.View>
           
           <ContentContainer gap={tokens.space.lg} paddingBottom={tokens.space.md}>
             {/* Always show Stats */}
-            <TriviaStatsHero
-              stats={overallStats}
-              categories={categoriesWithProgress}
-              isDark={isDark}
-              t={t}
-              onPress={() => router.push('/(tabs)/trivia/performance')}
-            />
+            <Animated.View entering={FadeInDown.delay(50).duration(300)}>
+              <TriviaStatsHero
+                stats={overallStats}
+                categories={categoriesWithProgress}
+                isDark={isDark}
+                t={t}
+                onPress={() => router.push('/(tabs)/trivia/performance')}
+              />
+            </Animated.View>
             
             {(hasQuestions || hasCategories) ? (
-              <Animated.View entering={FadeIn.duration(300)}>
+              <>
                 {/* Section title */}
-                <Text
-                  fontSize={17}
-                  color={textColor}
-                  fontFamily={FONT_FAMILIES.semibold}
-                  marginBottom={tokens.space.md}
-                  marginTop={tokens.space.sm}
-                >
-                  {t('triviaGameModes')}
-                </Text>
+                <Animated.View entering={FadeInDown.delay(100).duration(300)}>
+                  <Text
+                    fontSize={17}
+                    color={textColor}
+                    fontFamily={FONT_FAMILIES.semibold}
+                    marginBottom={tokens.space.md}
+                    marginTop={tokens.space.sm}
+                  >
+                    {t('triviaGameModes')}
+                  </Text>
+                </Animated.View>
                 <TriviaGrid>
                   {/* First row: Daily Trivia + Mixed Trivia */}
-                  <TriviaRow>
-                    <TriviaGridCard
-                      type="daily"
-                      title={t('dailyTrivia')}
-                      subtitle={isDailyCompleted 
-                        ? t('dailyTriviaCompleted')
-                        : dailyQuestionsCount > 0 
-                          ? t('triviaQuestionsCount', { count: Math.min(dailyQuestionsCount, triviaService.DAILY_TRIVIA_QUESTIONS) })
-                          : t('noQuestionsYet')
-                      }
-                      isCompleted={isDailyCompleted}
-                      isDisabled={dailyQuestionsCount === 0}
-                      isDark={isDark}
-                      onPress={showDailyTriviaIntro}
-                    />
-                    <TriviaGridCard
-                      type="mixed"
-                      title={t('mixedTrivia')}
-                      subtitle={t('mixedTriviaDescription')}
-                      isDisabled={mixedQuestionsCount === 0}
-                      isDark={isDark}
-                      onPress={showMixedTriviaIntro}
-                    />
-                  </TriviaRow>
+                  <Animated.View entering={FadeInDown.delay(150).duration(300)}>
+                    <TriviaRow>
+                      <TriviaGridCard
+                        type="daily"
+                        title={t('dailyTrivia')}
+                        subtitle={isDailyCompleted 
+                          ? t('dailyTriviaCompleted')
+                          : dailyQuestionsCount > 0 
+                            ? t('triviaQuestionsCount', { count: Math.min(dailyQuestionsCount, triviaService.DAILY_TRIVIA_QUESTIONS) })
+                            : t('noQuestionsYet')
+                        }
+                        isCompleted={isDailyCompleted}
+                        isDisabled={dailyQuestionsCount === 0}
+                        isDark={isDark}
+                        onPress={showDailyTriviaIntro}
+                      />
+                      <TriviaGridCard
+                        type="mixed"
+                        title={t('mixedTrivia')}
+                        subtitle={t('mixedTriviaDescription')}
+                        isDisabled={mixedQuestionsCount === 0}
+                        isDark={isDark}
+                        onPress={showMixedTriviaIntro}
+                      />
+                    </TriviaRow>
+                  </Animated.View>
                   
                   {/* Category rows */}
                   {categoryRows.map((row, rowIndex) => (
-                    <TriviaRow key={`row-${rowIndex}`}>
-                      {row.map((category) => (
-                        <TriviaGridCard
-                          key={category.slug}
-                          type="category"
-                          title={category.name}
-                          icon={category.icon || undefined}
-                          colorHex={category.color_hex || undefined}
-                          progress={{ mastered: category.mastered, total: category.total }}
-                          isDisabled={category.isComplete || category.total === 0}
-                          isDark={isDark}
-                          onPress={() => showCategoryTriviaIntro(category)}
-                        />
-                      ))}
-                      {/* Add empty spacer if odd number of categories in last row */}
-                      {row.length === 1 && (
-                        <View style={{ flex: 1 }} />
-                      )}
-                    </TriviaRow>
+                    <Animated.View key={`row-${rowIndex}`} entering={FadeInDown.delay(200 + rowIndex * 50).duration(300)}>
+                      <TriviaRow>
+                        {row.map((category) => (
+                          <TriviaGridCard
+                            key={category.slug}
+                            type="category"
+                            title={category.name}
+                            icon={category.icon || undefined}
+                            colorHex={category.color_hex || undefined}
+                            progress={{ mastered: category.mastered, total: category.total }}
+                            isDisabled={category.isComplete || category.total === 0}
+                            isDark={isDark}
+                            onPress={() => showCategoryTriviaIntro(category)}
+                          />
+                        ))}
+                        {/* Add empty spacer if odd number of categories in last row */}
+                        {row.length === 1 && (
+                          <View style={{ flex: 1 }} />
+                        )}
+                      </TriviaRow>
+                    </Animated.View>
                   ))}
                 </TriviaGrid>
-              </Animated.View>
+              </>
             ) : (
               /* Engaging Empty State */
               <Animated.View entering={FadeInDown.duration(400).delay(200)}>

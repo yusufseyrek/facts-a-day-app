@@ -4,6 +4,7 @@ import { FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { YStack } from 'tamagui';
 import { Star } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { tokens } from '../../src/theme/tokens';
 import {
   FeedFactCard,
@@ -96,19 +97,23 @@ export default function FavoritesScreen() {
           data={favorites}
           keyExtractor={(item) => item.id.toString()}
           ListHeaderComponent={() => (
-            <ScreenHeader
-              icon={<Star size={28} color={iconColor} />}
-              title={t('favorites')}
-            />
-          )}
-          renderItem={({ item }) => (
-            <ContentContainer>
-              <FeedFactCard
-                title={item.title || item.content.substring(0, 80) + '...'}
-                summary={item.summary}
-                onPress={() => handleFactPress(item)}
+            <Animated.View entering={FadeIn.duration(300)}>
+              <ScreenHeader
+                icon={<Star size={28} color={iconColor} />}
+                title={t('favorites')}
               />
-            </ContentContainer>
+            </Animated.View>
+          )}
+          renderItem={({ item, index }) => (
+            <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
+              <ContentContainer>
+                <FeedFactCard
+                  title={item.title || item.content.substring(0, 80) + '...'}
+                  summary={item.summary}
+                  onPress={() => handleFactPress(item)}
+                />
+              </ContentContainer>
+            </Animated.View>
           )}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
