@@ -648,7 +648,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               )}
 
               {/* Banner between summary and content */}
-              <BannerAd position="fact-modal-1" />
+              <BannerAd position="fact-modal" />
 
               {/* Main Content */}
               <BodyText
@@ -791,7 +791,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               )}
 
               {/* Banner between summary and content */}
-              <BannerAd position="fact-modal-1" />
+              <BannerAd position="fact-modal" />
 
               {/* Main Content */}
               <BodyText

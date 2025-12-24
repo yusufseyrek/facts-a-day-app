@@ -35,8 +35,6 @@ import * as database from "../../src/services/database";
 import { getSelectedCategories } from "../../src/services/onboarding";
 import { getLucideIcon } from "../../src/utils/iconMapper";
 import { getContrastColor } from "../../src/utils/colors";
-import { BannerAd } from "../../src/components/ads";
-import { ADS_ENABLED } from "../../src/config/ads";
 import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import {
@@ -720,11 +718,6 @@ function DiscoverScreen() {
             renderContent()
           )}
         </YStack>
-        {ADS_ENABLED && (
-          <YStack backgroundColor="$background">
-            <BannerAd position="discover" />
-          </YStack>
-        )}
       </YStack>
     </ScreenContainer>
   );

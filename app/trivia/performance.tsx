@@ -6,8 +6,6 @@ import {
   ActivityIndicator,
   Pressable,
   View,
-  Modal,
-  Platform,
   Animated as RNAnimated,
 } from 'react-native';
 import { styled, Text as TamaguiText } from '@tamagui/core';
@@ -19,7 +17,6 @@ import {
   Calendar,
   Shuffle,
   Hash,
-  X,
   ChevronLeft,
 } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
@@ -403,7 +400,6 @@ export default function PerformanceScreen() {
   const [totalSessionsCount, setTotalSessionsCount] = useState(0);
   const [selectedSession, setSelectedSession] = useState<TriviaSessionWithCategory | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   const loadData = useCallback(async (isRefresh = false) => {
     try {
@@ -638,7 +634,7 @@ export default function PerformanceScreen() {
                   {t('accuracyByCategory')}
                 </Text>
                 {allCategoriesWithAccuracy.length > MAX_DISPLAY_CATEGORIES && (
-                  <Pressable onPress={() => setShowCategoryModal(true)}>
+                  <Pressable onPress={() => router.push('/(tabs)/trivia/categories')}>
                     <Text
                       fontSize={14}
                       fontFamily={FONT_FAMILIES.semibold}
@@ -679,7 +675,7 @@ export default function PerformanceScreen() {
                   {t('recentTests')}
                 </Text>
                 {totalSessionsCount > MAX_DISPLAY_ACTIVITIES && (
-                  <Pressable onPress={() => router.push('/trivia/history')}>
+                  <Pressable onPress={() => router.push('/(tabs)/trivia/history')}>
                     <Text
                       fontSize={14}
                       fontFamily={FONT_FAMILIES.semibold}
@@ -724,76 +720,6 @@ export default function PerformanceScreen() {
           <ActivityIndicator size="large" color={primaryColor} />
         </View>
       )}
-
-      {/* Category Accuracy Modal */}
-      <Modal
-        visible={showCategoryModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowCategoryModal(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: bgColor }}>
-          {/* Modal Header */}
-          <XStack
-            paddingTop={Platform.OS === 'android' ? insets.top + tokens.space.sm : tokens.space.lg}
-            paddingBottom={tokens.space.md}
-            paddingHorizontal={tokens.space.lg}
-            alignItems="center"
-            justifyContent="space-between"
-            borderBottomWidth={1}
-            borderBottomColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
-          >
-            <Text
-              fontSize={20}
-              fontFamily={FONT_FAMILIES.bold}
-              color={textColor}
-            >
-              {t('accuracyByCategory')}
-            </Text>
-            <Pressable
-              onPress={() => setShowCategoryModal(false)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: `${primaryColor}20`,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <X size={20} color={primaryColor} />
-              </View>
-            </Pressable>
-          </XStack>
-
-          {/* Modal Content */}
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ 
-              padding: tokens.space.lg,
-              paddingBottom: insets.bottom + tokens.space.xl,
-            }}
-          >
-            <YStack
-              backgroundColor={cardBg}
-              borderRadius={tokens.radius.lg}
-              padding={tokens.space.lg}
-              gap={tokens.space.lg}
-            >
-              {allCategoriesWithAccuracy.map((category) => (
-                <CategoryProgressBar
-                  key={category.slug}
-                  category={category}
-                  isDark={isDark}
-                />
-              ))}
-            </YStack>
-          </ScrollView>
-        </View>
-      </Modal>
     </View>
   );
 }

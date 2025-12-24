@@ -22,7 +22,6 @@ import {
   useIconColor,
 } from '../../src/components';
 import { FONT_FAMILIES } from '../../src/components/Typography';
-import { BannerAd } from '../../src/components/ads/BannerAd';
 import {
   TriviaStatsHero,
   TriviaGridCard,
@@ -415,7 +414,6 @@ export default function TriviaScreen() {
             )}
           </ContentContainer>
         </ScrollView>
-        <BannerAd position="trivia" />
       </YStack>
 
       {/* Trivia Intro Modal */}

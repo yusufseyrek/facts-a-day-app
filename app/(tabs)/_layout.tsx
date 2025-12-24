@@ -4,11 +4,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pressable, Animated, View, StyleSheet } from "react-native";
 import { useRef, useCallback, useState, useEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import type { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
+import type { BottomTabBarButtonProps, BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { BottomTabBar } from "@react-navigation/bottom-tabs";
 import { tokens } from "../../src/theme/tokens";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import * as triviaService from "../../src/services/trivia";
+import { BannerAd } from "../../src/components/ads";
+import { ADS_ENABLED } from "../../src/config/ads";
 
 function AnimatedTabButton({
   children,
@@ -87,7 +90,32 @@ function TriviaTabIcon({ focused, isDark, hasBadge }: { focused: boolean; isDark
 }
 
 
+// Custom tab bar that includes banner ad above the tabs
+function CustomTabBar(props: BottomTabBarProps) {
+  const { theme } = useTheme();
+  const backgroundColor = theme === "dark"
+    ? tokens.color.dark.background
+    : tokens.color.light.background;
+
+  return (
+    <View style={[styles.tabBarContainer, { backgroundColor }]}>
+      {ADS_ENABLED && (
+        <View style={styles.adContainer}>
+          <BannerAd position="home" />
+        </View>
+      )}
+      <BottomTabBar {...props} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  tabBarContainer: {
+    // Container for both ad and tab bar
+  },
+  adContainer: {
+    alignItems: "center",
+  },
   triviaIconContainer: {
     width: 42,
     height: 42,
@@ -169,6 +197,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: activeTintColor,

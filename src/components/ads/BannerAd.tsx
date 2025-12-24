@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 import { ADS_ENABLED } from '../../config/ads';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 
-type BannerAdPosition = 'home' | 'favorites' | 'discover' | 'trivia' | 'fact-modal-1';
+type BannerAdPosition = 'home' | 'fact-modal';
 
 interface BannerAdProps {
   position: BannerAdPosition;
@@ -18,14 +18,10 @@ const getAdUnitId = (position: BannerAdPosition): string => {
 
   // Get configured Ad Unit IDs from app.json
   const homeIOS = Constants.expoConfig?.extra?.ADMOB_IOS_HOME_BANNER_ID;
-  const favoritesIOS = Constants.expoConfig?.extra?.ADMOB_IOS_FAVORITES_BANNER_ID;
-  const discoverIOS = Constants.expoConfig?.extra?.ADMOB_IOS_DISCOVER_BANNER_ID;
-  const modal1IOS = Constants.expoConfig?.extra?.ADMOB_IOS_MODAL_BANNER_ID;
+  const modalIOS = Constants.expoConfig?.extra?.ADMOB_IOS_MODAL_BANNER_ID;
   
   const homeAndroid = Constants.expoConfig?.extra?.ADMOB_ANDROID_HOME_BANNER_ID;
-  const favoritesAndroid = Constants.expoConfig?.extra?.ADMOB_ANDROID_FAVORITES_BANNER_ID;
-  const discoverAndroid = Constants.expoConfig?.extra?.ADMOB_ANDROID_DISCOVER_BANNER_ID;
-  const modal1Android = Constants.expoConfig?.extra?.ADMOB_ANDROID_MODAL_BANNER_ID;
+  const modalAndroid = Constants.expoConfig?.extra?.ADMOB_ANDROID_MODAL_BANNER_ID;
 
   // Use test IDs if real IDs not configured
   const defaultTestId = TestIds.BANNER;
@@ -34,40 +30,25 @@ const getAdUnitId = (position: BannerAdPosition): string => {
     switch (position) {
       case 'home':
         return homeIOS || defaultTestId;
-      case 'favorites':
-        return favoritesIOS || defaultTestId;
-      case 'discover':
-        return discoverIOS || defaultTestId;
-      case 'trivia':
-        return discoverIOS || defaultTestId; // Reuse discover ad unit for trivia
-      case 'fact-modal-1':
-        return modal1IOS || defaultTestId;
+      case 'fact-modal':
+        return modalIOS || defaultTestId;
     }
   } else {
     switch (position) {
       case 'home':
         return homeAndroid || defaultTestId;
-      case 'favorites':
-        return favoritesAndroid || defaultTestId;
-      case 'discover':
-        return discoverAndroid || defaultTestId;
-      case 'trivia':
-        return discoverAndroid || defaultTestId; // Reuse discover ad unit for trivia
-      case 'fact-modal-1':
-        return modal1Android || defaultTestId;
-    }
-  }
+      case 'fact-modal':
+        return modalAndroid || defaultTestId;
+  }}
 };
 
 // Get banner size based on position
 const getBannerSize = (position: BannerAdPosition): BannerAdSize => {
   switch (position) {
-    case 'fact-modal-1':
+    case 'fact-modal':
       // Inline adaptive banner - shown between content parts
       return BannerAdSize.INLINE_ADAPTIVE_BANNER;
     case 'home':
-    case 'favorites':
-    case 'discover':
     default:
       // Anchored adaptive banner for main screens
       return BannerAdSize.ANCHORED_ADAPTIVE_BANNER;

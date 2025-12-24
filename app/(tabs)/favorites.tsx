@@ -14,7 +14,6 @@ import {
   LoadingContainer,
   useIconColor,
 } from '../../src/components';
-import { BannerAd } from '../../src/components/ads/BannerAd';
 import type { FactWithRelations } from '../../src/services/database';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
@@ -115,7 +114,6 @@ export default function FavoritesScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
         />
-        <BannerAd position="favorites" />
       </YStack>
     </ScreenContainer>
   );

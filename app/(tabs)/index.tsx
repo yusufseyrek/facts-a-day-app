@@ -26,8 +26,6 @@ import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import * as database from "../../src/services/database";
 import * as Notifications from "expo-notifications";
-import { BannerAd } from "../../src/components/ads";
-import { ADS_ENABLED } from "../../src/config/ads";
 import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import { onFeedRefresh, forceRefreshContent, onRefreshStatusChange, getRefreshStatus, RefreshStatus } from "../../src/services/contentRefresh";
@@ -380,11 +378,6 @@ function HomeScreen() {
             renderContent()
           )}
         </YStack>
-        {ADS_ENABLED && (
-          <YStack backgroundColor="$background">
-            <BannerAd position="home" />
-          </YStack>
-        )}
         {renderLocaleChangeOverlay()}
       </YStack>
     </ScreenContainer>

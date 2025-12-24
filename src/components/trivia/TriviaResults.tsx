@@ -4,7 +4,7 @@ import { Pressable, View, ScrollView, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
-import { Timer, Flame, Check, X, ChevronRight, Star, ChevronLeft } from '@tamagui/lucide-icons';
+import { Timer, Flame, Check, X, ChevronRight, Star, ChevronLeft, Calendar } from '@tamagui/lucide-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Animated, { 
@@ -395,7 +395,7 @@ export function TriviaResults({
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top, paddingBottom: showReturnButton ? insets.bottom + tokens.space.md : 0 }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       
       {/* Screen Header (when viewing past results) */}
@@ -452,13 +452,16 @@ export function TriviaResults({
           <YStack paddingTop={tokens.space.lg} paddingHorizontal={tokens.space.xl} gap={tokens.space.lg}>
             {/* Date/Time Subtitle */}
             {customSubtitle && (
-              <Text 
-                fontSize={15} 
-                fontFamily={FONT_FAMILIES.semibold} 
-                color={secondaryTextColor}
-              >
-                {customSubtitle}
-              </Text>
+              <XStack alignSelf='center' alignItems="center" gap={tokens.space.sm}>
+                <Calendar size={16} color={secondaryTextColor} />
+                <Text 
+                  fontSize={15} 
+                  fontFamily={FONT_FAMILIES.semibold} 
+                  color={secondaryTextColor}
+                >
+                  {customSubtitle}
+                </Text>
+              </XStack>
             )}
             
             {/* Only show title here if not showing header bar */}
