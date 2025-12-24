@@ -33,6 +33,7 @@ import { trackScreenView, Screens } from '../../src/services/analytics';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import * as triviaService from '../../src/services/trivia';
 import type { CategoryWithProgress } from '../../src/services/trivia';
+import { useResponsive } from '../../src/utils/useResponsive';
 
 // Styled Text components
 const Text = styled(TamaguiText, {
@@ -56,6 +57,7 @@ export default function TriviaScreen() {
   const router = useRouter();
   const isDark = theme === 'dark';
   const iconColor = useIconColor();
+  const { isTablet } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -238,7 +240,7 @@ export default function TriviaScreen() {
     </XStack>
   ) : undefined;
 
-  // Helper to chunk categories into rows of 2
+  // Helper to chunk categories into rows
   const chunkCategories = (categories: CategoryWithProgress[], size: number) => {
     const chunks: CategoryWithProgress[][] = [];
     for (let i = 0; i < categories.length; i += size) {
@@ -247,7 +249,9 @@ export default function TriviaScreen() {
     return chunks;
   };
 
-  const categoryRows = chunkCategories(categoriesWithProgress, 2);
+  // On tablets, show 4 categories per row; on phones, show 2
+  const categoriesPerRow = isTablet ? 4 : 2;
+  const categoryRows = chunkCategories(categoriesWithProgress, categoriesPerRow);
 
   return (
     <ScreenContainer edges={["top"]}>
@@ -287,7 +291,6 @@ export default function TriviaScreen() {
                     fontSize={17}
                     color={textColor}
                     fontFamily={FONT_FAMILIES.semibold}
-                    marginBottom={tokens.space.md}
                     marginTop={tokens.space.sm}
                   >
                     {t('triviaGameModes')}
@@ -310,6 +313,7 @@ export default function TriviaScreen() {
                         isDisabled={dailyQuestionsCount === 0}
                         isDark={isDark}
                         onPress={showDailyTriviaIntro}
+                        centerContent={isTablet}
                       />
                       <TriviaGridCard
                         type="mixed"
@@ -318,6 +322,7 @@ export default function TriviaScreen() {
                         isDisabled={mixedQuestionsCount === 0}
                         isDark={isDark}
                         onPress={showMixedTriviaIntro}
+                        centerContent={isTablet}
                       />
                     </TriviaRow>
                   </Animated.View>
@@ -339,9 +344,11 @@ export default function TriviaScreen() {
                             onPress={() => showCategoryTriviaIntro(category)}
                           />
                         ))}
-                        {/* Add empty spacer if odd number of categories in last row */}
-                        {row.length === 1 && (
-                          <View style={{ flex: 1 }} />
+                        {/* Add empty spacers if the row is not full */}
+                        {row.length < categoriesPerRow && (
+                          Array.from({ length: categoriesPerRow - row.length }).map((_, i) => (
+                            <View key={`spacer-${i}`} style={{ flex: 1 }} />
+                          ))
                         )}
                       </TriviaRow>
                     </Animated.View>

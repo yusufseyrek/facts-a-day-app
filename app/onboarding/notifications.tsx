@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Platform, ScrollView, Alert, useWindowDimensions } from "react-native";
+import { Platform, ScrollView, Alert, useWindowDimensions, Animated, Easing } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { useRouter } from "expo-router";
@@ -71,9 +71,110 @@ export default function NotificationsScreen() {
   const isTablet = width >= TABLET_BREAKPOINT;
   const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
 
-  // Track screen view on mount
+  // Enter animations
+  const progressOpacity = useRef(new Animated.Value(0)).current;
+  const progressTranslateY = useRef(new Animated.Value(-20)).current;
+  const iconScale = useRef(new Animated.Value(0)).current;
+  const iconRotation = useRef(new Animated.Value(0)).current;
+  const titleOpacity = useRef(new Animated.Value(0)).current;
+  const titleTranslateY = useRef(new Animated.Value(20)).current;
+  const pickerOpacity = useRef(new Animated.Value(0)).current;
+  const pickerTranslateY = useRef(new Animated.Value(30)).current;
+  const buttonOpacity = useRef(new Animated.Value(0)).current;
+  const buttonTranslateY = useRef(new Animated.Value(30)).current;
+
+  // Track screen view on mount and run enter animations
   useEffect(() => {
     trackScreenView(Screens.ONBOARDING_NOTIFICATIONS);
+
+    // Start enter animations - run in parallel with staggered delays
+    // Progress indicator (immediate)
+    Animated.parallel([
+      Animated.timing(progressOpacity, {
+        toValue: 1,
+        duration: 200,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(progressTranslateY, {
+        toValue: 0,
+        duration: 200,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Icon with bounce (slight delay)
+    Animated.parallel([
+      Animated.spring(iconScale, {
+        toValue: 1,
+        tension: 80,
+        friction: 6,
+        delay: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(iconRotation, {
+        toValue: 1,
+        duration: 250,
+        delay: 200,
+        easing: Easing.out(Easing.back(1.5)),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Title and subtitle (overlapping with icon)
+    Animated.parallel([
+      Animated.timing(titleOpacity, {
+        toValue: 1,
+        duration: 200,
+        delay: 250,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(titleTranslateY, {
+        toValue: 0,
+        duration: 200,
+        delay: 250,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Time picker (overlapping with title)
+    Animated.parallel([
+      Animated.timing(pickerOpacity, {
+        toValue: 1,
+        duration: 250,
+        delay: 300,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(pickerTranslateY, {
+        toValue: 0,
+        tension: 80,
+        friction: 8,
+        delay: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Button animation
+    Animated.parallel([
+      Animated.timing(buttonOpacity, {
+        toValue: 1,
+        duration: 200,
+        delay: 200,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonTranslateY, {
+        toValue: 0,
+        duration: 200,
+        delay: 200,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
 
   const handleEnableNotifications = async () => {
@@ -205,46 +306,89 @@ export default function NotificationsScreen() {
     }
   };
 
+  // Bell icon shake animation
+  const bellRotate = iconRotation.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: ["0deg", "-15deg", "0deg", "15deg", "0deg"],
+  });
+
   return (
     <Container>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <ContentContainer>
         <ScrollView showsVerticalScrollIndicator={false}>
           <YStack gap={tokens.space.md} paddingBottom={tokens.space.xl}>
-            <ProgressIndicator currentStep={2} totalSteps={2} />
+            <Animated.View
+              style={{
+                opacity: progressOpacity,
+                transform: [{ translateY: progressTranslateY }],
+              }}
+            >
+              <ProgressIndicator currentStep={2} totalSteps={2} />
+            </Animated.View>
 
             <Header>
-              <IconContainer>
-                <Bell size={60} color={tokens.color.light.primary} />
-              </IconContainer>
+              <Animated.View
+                style={{
+                  transform: [
+                    { scale: iconScale },
+                    { rotate: bellRotate },
+                  ],
+                }}
+              >
+                <IconContainer>
+                  <Bell size={60} color={tokens.color.light.primary} />
+                </IconContainer>
+              </Animated.View>
 
-              <YStack gap={tokens.space.sm} alignItems="center">
-                <H1 textAlign="center">{t("stayInformed")}</H1>
-                <BodyText textAlign="center" color="$textSecondary" fontSize={secondaryFontSize}>
-                  {t("notificationRequired")}
-                </BodyText>
-              </YStack>
+              <Animated.View
+                style={{
+                  opacity: titleOpacity,
+                  transform: [{ translateY: titleTranslateY }],
+                }}
+              >
+                <YStack gap={tokens.space.sm} alignItems="center">
+                  <H1 textAlign="center">{t("stayInformed")}</H1>
+                  <BodyText textAlign="center" color="$textSecondary" fontSize={secondaryFontSize}>
+                    {t("notificationRequired")}
+                  </BodyText>
+                </YStack>
+              </Animated.View>
             </Header>
 
             {/* Multi-Time Picker */}
-            <TimePickerContainer>
-              <MultiTimePicker
-                times={notificationTimes}
-                onTimesChange={setNotificationTimes}
-                maxTimes={3}
-                minTimes={1}
-              />
-            </TimePickerContainer>
+            <Animated.View
+              style={{
+                opacity: pickerOpacity,
+                transform: [{ translateY: pickerTranslateY }],
+              }}
+            >
+              <TimePickerContainer>
+                <MultiTimePicker
+                  times={notificationTimes}
+                  onTimesChange={setNotificationTimes}
+                  maxTimes={3}
+                  minTimes={1}
+                />
+              </TimePickerContainer>
+            </Animated.View>
           </YStack>
         </ScrollView>
 
-        <Button
-          onPress={handleEnableNotifications}
-          loading={isScheduling}
-          disabled={isScheduling}
+        <Animated.View
+          style={{
+            opacity: buttonOpacity,
+            transform: [{ translateY: buttonTranslateY }],
+          }}
         >
-          {isScheduling ? t("gettingAppReady") : t("enableNotifications")}
-        </Button>
+          <Button
+            onPress={handleEnableNotifications}
+            loading={isScheduling}
+            disabled={isScheduling}
+          >
+            {isScheduling ? t("gettingAppReady") : t("enableNotifications")}
+          </Button>
+        </Animated.View>
       </ContentContainer>
     </Container>
   );

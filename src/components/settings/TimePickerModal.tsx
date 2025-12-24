@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Modal,
   View,
@@ -8,7 +8,11 @@ import {
   ScrollView,
   Alert,
   Linking,
+  Dimensions,
 } from 'react-native';
+import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
+
+const ANIMATION_DURATION = 150;
 import { X, Plus, Trash2, AlertTriangle } from '@tamagui/lucide-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../../theme';
@@ -45,12 +49,38 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   // Warning color - darker in light mode for better readability
   const warningColor = theme === 'dark' ? '#F59E0B' : '#B45309';
 
+  // Internal state to keep modal mounted during exit animation
+  const [showContent, setShowContent] = useState(false);
+  const closingRef = useRef(false);
+
   // Support multiple notification times (up to 3 per day)
   const [times, setTimes] = useState<Date[]>([currentTime]);
   const [originalTimes, setOriginalTimes] = useState<Date[]>([]);
   const [activePickerIndex, setActivePickerIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+
+  // Sync with external visible prop
+  useEffect(() => {
+    if (visible) {
+      setShowContent(true);
+      closingRef.current = false;
+    } else if (!closingRef.current) {
+      // External close (e.g., Android back button handled by parent)
+      setShowContent(false);
+    }
+  }, [visible]);
+
+  const handleClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setShowContent(false);
+    // Wait for animation to complete, then notify parent
+    setTimeout(() => {
+      onClose();
+      closingRef.current = false;
+    }, ANIMATION_DURATION);
+  }, [onClose]);
 
   // Load saved times on mount
   useEffect(() => {
@@ -146,7 +176,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   const handleSave = async () => {
     // If no changes, just close the modal without rescheduling
     if (!hasTimesChanged()) {
-      onClose();
+      handleClose();
       return;
     }
 
@@ -282,147 +312,179 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
   const handleSuccessToastHide = () => {
     setShowSuccessToast(false);
-    onClose();
+    handleClose();
   };
+
+  const screenWidth = Dimensions.get('window').width;
+  const modalWidth = screenWidth * 0.85;
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
-      onRequestClose={onClose}
+      animationType="none"
+      onRequestClose={handleClose}
     >
-      <View style={styles.overlay}>
+      <View style={styles.container}>
+        {showContent && (
+          <Animated.View 
+            entering={FadeIn.duration(ANIMATION_DURATION)}
+            exiting={FadeOut.duration(ANIMATION_DURATION)}
+            style={styles.overlay}
+          />
+        )}
         <SuccessToast
           visible={showSuccessToast}
           message={t('notificationTimesUpdated')}
           onHide={handleSuccessToastHide}
         />
-        <View
-          style={[
-            styles.modalContainer,
-            { backgroundColor: colors.background },
-          ]}
-        >
-          <View
-            style={[
-              styles.header,
-              { borderBottomColor: colors.border },
-            ]}
-          >
-            <H2 color={colors.text}>
-              {t('settingsNotificationTime')}
-            </H2>
-            <Pressable onPress={onClose} style={styles.closeButton}>
-              <X size={24} color={colors.text} />
-            </Pressable>
-          </View>
-
-          <ScrollView style={styles.scrollContent}>
-            <View style={styles.content}>
-              {!hasNotificationPermission && (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.warningContainer,
-                    { 
-                      backgroundColor: `${warningColor}20`, 
-                      borderColor: warningColor,
-                      opacity: pressed ? 0.7 : 1,
-                    }
-                  ]}
-                  onPress={async () => {
-                    try {
-                      if (Platform.OS === 'ios') {
-                        await Linking.openURL('app-settings:');
-                      } else {
-                        await Linking.openSettings();
-                      }
-                    } catch (error) {
-                      console.error('Error opening notification settings:', error);
-                    }
-                  }}
-                >
-                  <AlertTriangle size={18} color={warningColor} />
-                  <SmallText color={warningColor} style={{ flex: 1 }}>
-                    {t('notificationPermissionWarning')}
-                  </SmallText>
-                </Pressable>
-              )}
-
-              <LabelText
-                textAlign="center"
-                color={colors.textSecondary}
-                style={{ marginBottom: tokens.space.sm }}
-              >
-                {t('scheduleUpTo3Notifications')}
-              </LabelText>
-
-              {times.map((time, index) =>
-                renderTimePicker(time, index, getTimeLabels()[index])
-              )}
-
-              {times.length < 3 && (
-                <Pressable
-                  onPress={handleAddTime}
-                  style={[
-                    styles.addButton,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <Plus size={20} color={colors.primary} />
-                  <LabelText color={colors.primary}>
-                    {t('addAnotherTime')}
-                  </LabelText>
-                </Pressable>
-              )}
-
-              <SmallText
-                textAlign="center"
-                color={colors.textSecondary}
-                fontFamily="Montserrat_600SemiBold"
-                style={{ marginTop: tokens.space.sm }}
-              >
-                {t('multipleNotificationsPerDay', { count: times.length })}
-              </SmallText>
-              <SmallText
-                textAlign="center"
-                color={colors.textSecondary}
-                fontStyle="italic"
-                style={{ marginTop: tokens.space.xs }}
-              >
-                {t('notificationRespectMessage')}
-              </SmallText>
-            </View>
-          </ScrollView>
-
-          <View style={styles.footer}>
-            <Button
-              onPress={handleSave}
-              loading={isSaving}
-              disabled={isSaving}
+        <Pressable style={styles.overlayPressable} onPress={handleClose}>
+          {showContent && (
+            <Animated.View 
+              entering={ZoomIn.duration(ANIMATION_DURATION)}
+              exiting={ZoomOut.duration(ANIMATION_DURATION)}
+              style={styles.animatedContainer}
             >
-              {t('save')}
-            </Button>
-          </View>
-        </View>
+              <Pressable onPress={(e) => e.stopPropagation()}>
+                <View
+                  style={[
+                    styles.modalContainer,
+                    { backgroundColor: colors.background, width: modalWidth },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.header,
+                      { borderBottomColor: colors.border },
+                    ]}
+                  >
+                  <H2 color={colors.text}>
+                    {t('settingsNotificationTime')}
+                  </H2>
+                  <Pressable onPress={handleClose} style={styles.closeButton}>
+                    <X size={24} color={colors.text} />
+                  </Pressable>
+                </View>
+
+                <ScrollView style={styles.scrollContent}>
+                  <View style={styles.content}>
+                    {!hasNotificationPermission && (
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.warningContainer,
+                          { 
+                            backgroundColor: `${warningColor}20`, 
+                            borderColor: warningColor,
+                            opacity: pressed ? 0.7 : 1,
+                          }
+                        ]}
+                        onPress={async () => {
+                          try {
+                            if (Platform.OS === 'ios') {
+                              await Linking.openURL('app-settings:');
+                            } else {
+                              await Linking.openSettings();
+                            }
+                          } catch (error) {
+                            console.error('Error opening notification settings:', error);
+                          }
+                        }}
+                      >
+                        <AlertTriangle size={18} color={warningColor} />
+                        <SmallText color={warningColor} style={{ flex: 1 }}>
+                          {t('notificationPermissionWarning')}
+                        </SmallText>
+                      </Pressable>
+                    )}
+
+                    <LabelText
+                      textAlign="center"
+                      color={colors.textSecondary}
+                      style={{ marginBottom: tokens.space.sm }}
+                    >
+                      {t('scheduleUpTo3Notifications')}
+                    </LabelText>
+
+                    {times.map((time, index) =>
+                      renderTimePicker(time, index, getTimeLabels()[index])
+                    )}
+
+                    {times.length < 3 && (
+                      <Pressable
+                        onPress={handleAddTime}
+                        style={[
+                          styles.addButton,
+                          {
+                            backgroundColor: colors.surface,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <Plus size={20} color={colors.primary} />
+                        <LabelText color={colors.primary}>
+                          {t('addAnotherTime')}
+                        </LabelText>
+                      </Pressable>
+                    )}
+
+                    <SmallText
+                      textAlign="center"
+                      color={colors.textSecondary}
+                      fontFamily="Montserrat_600SemiBold"
+                      style={{ marginTop: tokens.space.sm }}
+                    >
+                      {t('multipleNotificationsPerDay', { count: times.length })}
+                    </SmallText>
+                    <SmallText
+                      textAlign="center"
+                      color={colors.textSecondary}
+                      fontStyle="italic"
+                      style={{ marginTop: tokens.space.xs }}
+                    >
+                      {t('notificationRespectMessage')}
+                    </SmallText>
+                  </View>
+                </ScrollView>
+
+                  <View style={styles.footer}>
+                    <Button
+                      onPress={handleSave}
+                      loading={isSaving}
+                      disabled={isSaving}
+                    >
+                      {t('save')}
+                    </Button>
+                  </View>
+                </View>
+              </Pressable>
+            </Animated.View>
+          )}
+        </Pressable>
       </View>
     </Modal>
   );
 };
 
+const { height: screenHeight } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  overlayPressable: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  animatedContainer: {
+    alignItems: 'center',
+  },
   modalContainer: {
-    width: '85%',
-    maxHeight: '80%',
+    maxHeight: screenHeight * 0.8,
     borderRadius: tokens.radius.lg,
     overflow: 'hidden',
   },

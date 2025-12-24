@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { Check, Zap, Shuffle, ChevronRight } from '@tamagui/lucide-icons';
@@ -27,6 +27,7 @@ interface TriviaGridCardProps {
   progress?: { mastered: number; total: number };
   isDark: boolean;
   onPress: () => void;
+  centerContent?: boolean;
 }
 
 export function TriviaGridCard({
@@ -40,6 +41,7 @@ export function TriviaGridCard({
   progress,
   isDark,
   onPress,
+  centerContent = false,
 }: TriviaGridCardProps) {
   const { t } = useTranslation();
   const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
@@ -107,11 +109,17 @@ export function TriviaGridCard({
         borderRadius={tokens.radius.lg}
         padding={tokens.space.lg}
         justifyContent="space-between"
+        alignItems={centerContent ? 'center' : 'stretch'}
         borderWidth={isDailyAvailable ? 1.5 : 0}
         borderColor={isDailyAvailable ? hexToRgba(primaryColor, 0.4) : 'transparent'}
       >
         {/* Top section: Icon + Chevron */}
-        <XStack justifyContent="space-between" alignItems="flex-start">
+        <XStack 
+          justifyContent="space-between" 
+          alignItems="flex-start"
+          width="100%"
+        >
+          {centerContent && <View style={{ width: 20 }} />}
           <YStack
             width={56}
             height={56}
@@ -126,13 +134,14 @@ export function TriviaGridCard({
         </XStack>
 
         {/* Bottom section: Title + Subtitle */}
-        <YStack gap={4} marginTop={tokens.space.md}>
+        <YStack gap={4} marginTop={tokens.space.md} alignItems={centerContent ? 'center' : 'flex-start'}>
           <Text
             fontSize={17}
             fontWeight="700"
             color={textColor}
             fontFamily={FONT_FAMILIES.bold}
             numberOfLines={1}
+            textAlign={centerContent ? 'center' : 'left'}
           >
             {title}
           </Text>
@@ -140,6 +149,7 @@ export function TriviaGridCard({
             fontSize={14} 
             color={secondaryTextColor}
             numberOfLines={1}
+            textAlign={centerContent ? 'center' : 'left'}
           >
             {getSubtitle()}
           </Text>

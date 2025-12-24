@@ -29,6 +29,7 @@ import { FONT_FAMILIES } from '../../src/components/Typography';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import { getLucideIcon } from '../../src/utils/iconMapper';
+import { useResponsive } from '../../src/utils/useResponsive';
 import * as triviaService from '../../src/services/trivia';
 import { TriviaResults, getTriviaModeBadge } from '../../src/components/trivia';
 import type { TriviaStats, CategoryWithProgress, TriviaSessionWithCategory } from '../../src/services/trivia';
@@ -401,6 +402,7 @@ export default function PerformanceScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
+  const { isTablet } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -588,8 +590,8 @@ export default function PerformanceScreen() {
               {t('coreMetrics')}
             </Text>
             
-            <YStack gap={tokens.space.md}>
-              {/* Row 1: Tests & Correct */}
+            {isTablet ? (
+              /* Tablet: All 4 metrics in a single row */
               <XStack gap={tokens.space.md}>
                 <MetricCard
                   icon={<Gamepad2 size={16} color={purpleColor} />}
@@ -609,10 +611,6 @@ export default function PerformanceScreen() {
                   subtitle={stats?.correctToday ? t('todayCount', { count: stats.correctToday }) : undefined}
                   isDark={isDark}
                 />
-              </XStack>
-              
-              {/* Row 2: Answered & Mastered */}
-              <XStack gap={tokens.space.md}>
                 <MetricCard
                   icon={<Hash size={16} color={primaryColor} />}
                   iconColor={primaryColor}
@@ -631,7 +629,53 @@ export default function PerformanceScreen() {
                   isDark={isDark}
                 />
               </XStack>
-            </YStack>
+            ) : (
+              /* Phone: 2 rows of 2 metrics */
+              <YStack gap={tokens.space.md}>
+                {/* Row 1: Tests & Correct */}
+                <XStack gap={tokens.space.md}>
+                  <MetricCard
+                    icon={<Gamepad2 size={16} color={purpleColor} />}
+                    iconColor={purpleColor}
+                    iconBgColor={`${purpleColor}20`}
+                    label={t('tests')}
+                    value={stats?.testsTaken || 0}
+                    subtitle={stats?.testsThisWeek ? t('thisWeek', { count: stats.testsThisWeek }) : undefined}
+                    isDark={isDark}
+                  />
+                  <MetricCard
+                    icon={<CheckCircle size={16} color={successColor} />}
+                    iconColor={successColor}
+                    iconBgColor={`${successColor}20`}
+                    label={t('correct')}
+                    value={stats?.totalCorrect || 0}
+                    subtitle={stats?.correctToday ? t('todayCount', { count: stats.correctToday }) : undefined}
+                    isDark={isDark}
+                  />
+                </XStack>
+                
+                {/* Row 2: Answered & Mastered */}
+                <XStack gap={tokens.space.md}>
+                  <MetricCard
+                    icon={<Hash size={16} color={primaryColor} />}
+                    iconColor={primaryColor}
+                    iconBgColor={`${primaryColor}20`}
+                    label={t('answered')}
+                    value={stats?.totalAnswered || 0}
+                    isDark={isDark}
+                  />
+                  <MetricCard
+                    icon={<Trophy size={16} color={accentColor} />}
+                    iconColor={accentColor}
+                    iconBgColor={`${accentColor}20`}
+                    label={t('mastered')}
+                    value={stats?.totalMastered || 0}
+                    subtitle={stats?.masteredToday ? t('todayCount', { count: stats.masteredToday }) : undefined}
+                    isDark={isDark}
+                  />
+                </XStack>
+              </YStack>
+            )}
           </Animated.View>
 
           {/* Accuracy by Category */}

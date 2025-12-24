@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ScrollView, ActivityIndicator, Alert, Pressable, useWindowDimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { ScrollView, ActivityIndicator, Alert, Pressable, useWindowDimensions, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { View, styled } from '@tamagui/core';
@@ -84,10 +84,83 @@ export default function CategoriesSettings() {
   const labelFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.small;
   const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
 
+  // Enter animations
+  const headerOpacity = useRef(new Animated.Value(0)).current;
+  const headerTranslateY = useRef(new Animated.Value(-30)).current;
+  const gridOpacity = useRef(new Animated.Value(0)).current;
+  const buttonOpacity = useRef(new Animated.Value(0)).current;
+  const buttonTranslateY = useRef(new Animated.Value(30)).current;
+  const categoryAnimations = useRef<Animated.Value[]>([]).current;
+
   useEffect(() => {
     loadData();
     trackScreenView(Screens.SETTINGS_CATEGORIES);
   }, []);
+
+  // Run enter animations when categories are loaded
+  useEffect(() => {
+    if (!isLoading && categories.length > 0) {
+      // Initialize category animations if not already done
+      while (categoryAnimations.length < categories.length) {
+        categoryAnimations.push(new Animated.Value(0));
+      }
+
+      // Start animations
+      Animated.sequence([
+        // Header animation
+        Animated.parallel([
+          Animated.timing(headerOpacity, {
+            toValue: 1,
+            duration: 260,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(headerTranslateY, {
+            toValue: 0,
+            duration: 260,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]),
+        // Grid fade in
+        Animated.timing(gridOpacity, {
+          toValue: 1,
+          duration: 130,
+          useNativeDriver: true,
+        }),
+        // Staggered category cards
+        Animated.stagger(
+          20,
+          categoryAnimations.slice(0, categories.length).map((anim) =>
+            Animated.spring(anim, {
+              toValue: 1,
+              tension: 60,
+              friction: 8,
+              useNativeDriver: true,
+            })
+          )
+        ),
+      ]).start();
+
+      // Button animation (parallel with grid)
+      Animated.parallel([
+        Animated.timing(buttonOpacity, {
+          toValue: 1,
+          duration: 260,
+          delay: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(buttonTranslateY, {
+          toValue: 0,
+          duration: 260,
+          delay: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [isLoading, categories.length]);
 
   const loadData = async () => {
     try {
@@ -199,6 +272,11 @@ export default function CategoriesSettings() {
     );
   }
 
+  // Get category index for animation
+  const getCategoryIndex = (rowIndex: number, colIndex: number) => {
+    return rowIndex * numColumns + colIndex;
+  };
+
   return (
     <Container>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
@@ -208,58 +286,104 @@ export default function CategoriesSettings() {
         onHide={handleSuccessToastHide}
       />
       <ContentContainer>
-        <HeaderContainer>
-          <HeaderRow>
-            <Pressable onPress={() => router.back()} style={{ padding: tokens.space.xs }}>
-              <ArrowLeft size={24} color={theme === 'dark' ? '#FFFFFF' : tokens.color.light.text} />
-            </Pressable>
-            <HeaderText>
-              <H1>{t('settingsCategories')}</H1>
-            </HeaderText>
-          </HeaderRow>
-          <BodyText color="$textSecondary" fontSize={secondaryFontSize}>
-            {t('selectCategoriesMinimum')}
-          </BodyText>
-        </HeaderContainer>
+        <Animated.View
+          style={{
+            opacity: headerOpacity,
+            transform: [{ translateY: headerTranslateY }],
+          }}
+        >
+          <HeaderContainer>
+            <HeaderRow>
+              <Pressable onPress={() => router.back()} style={{ padding: tokens.space.xs }}>
+                <ArrowLeft size={24} color={theme === 'dark' ? '#FFFFFF' : tokens.color.light.text} />
+              </Pressable>
+              <HeaderText>
+                <H1>{t('settingsCategories')}</H1>
+              </HeaderText>
+            </HeaderRow>
+            <BodyText color="$textSecondary" fontSize={secondaryFontSize}>
+              {t('selectCategoriesMinimum')}
+            </BodyText>
+          </HeaderContainer>
+        </Animated.View>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <CategoriesGrid>
-            {rows.map((row, rowIndex) => (
-              <CategoryRow key={`row-${rowIndex}`}>
-                {row.map((category) => (
-                  <CategoryCard
-                    key={category.slug}
-                    icon={getLucideIcon(category.icon, iconSize)}
-                    label={category.name}
-                    colorHex={category.color_hex}
-                    selected={selectedCategories.includes(category.slug)}
-                    onPress={() => toggleCategory(category.slug)}
-                    labelFontSize={labelFontSize}
-                  />
-                ))}
-                {/* Add empty placeholders for the last row if needed */}
-                {row.length < numColumns && (
-                  <>
-                    {Array.from({ length: numColumns - row.length }).map((_, idx) => (
-                      <View key={`placeholder-${idx}`} style={{ flex: 1 }} />
-                    ))}
-                  </>
-                )}
-              </CategoryRow>
-            ))}
-          </CategoriesGrid>
-          <View height={tokens.space.xl} />
-        </ScrollView>
+        <Animated.View style={{ flex: 1, opacity: gridOpacity }}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <CategoriesGrid>
+              {rows.map((row, rowIndex) => (
+                <CategoryRow key={`row-${rowIndex}`}>
+                  {row.map((category, colIndex) => {
+                    const catIndex = getCategoryIndex(rowIndex, colIndex);
+                    const animValue = categoryAnimations[catIndex];
+                    
+                    return (
+                      <Animated.View
+                        key={category.slug}
+                        style={{
+                          flex: 1,
+                          opacity: animValue || 1,
+                          transform: [
+                            {
+                              scale: animValue
+                                ? animValue.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [0.8, 1],
+                                  })
+                                : 1,
+                            },
+                            {
+                              translateY: animValue
+                                ? animValue.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [20, 0],
+                                  })
+                                : 0,
+                            },
+                          ],
+                        }}
+                      >
+                        <CategoryCard
+                          icon={getLucideIcon(category.icon, iconSize)}
+                          label={category.name}
+                          colorHex={category.color_hex}
+                          selected={selectedCategories.includes(category.slug)}
+                          onPress={() => toggleCategory(category.slug)}
+                          labelFontSize={labelFontSize}
+                        />
+                      </Animated.View>
+                    );
+                  })}
+                  {/* Add empty placeholders for the last row if needed */}
+                  {row.length < numColumns && (
+                    <>
+                      {Array.from({ length: numColumns - row.length }).map((_, idx) => (
+                        <View key={`placeholder-${idx}`} style={{ flex: 1 }} />
+                      ))}
+                    </>
+                  )}
+                </CategoryRow>
+              ))}
+            </CategoriesGrid>
+            <View height={tokens.space.xl} />
+          </ScrollView>
+        </Animated.View>
 
-        <ButtonContainer>
-          <Button
-            onPress={handleSave}
-            disabled={selectedCategories.length < 5 || isSaving}
-            loading={isSaving}
-          >
-            {t('save')}
-          </Button>
-        </ButtonContainer>
+        <Animated.View
+          style={{
+            opacity: buttonOpacity,
+            transform: [{ translateY: buttonTranslateY }],
+          }}
+        >
+          <ButtonContainer>
+            <Button
+              onPress={handleSave}
+              disabled={selectedCategories.length < 5 || isSaving}
+              loading={isSaving}
+            >
+              {t('save')}
+            </Button>
+          </ButtonContainer>
+        </Animated.View>
       </ContentContainer>
     </Container>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ScrollView, ActivityIndicator, useWindowDimensions } from "react-native";
+import { ScrollView, ActivityIndicator, useWindowDimensions, Animated, Easing } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { View, styled } from "@tamagui/core";
@@ -83,6 +83,79 @@ export default function Categories() {
 
   // Track if we've already logged the onboarding start event
   const hasLoggedStart = useRef(false);
+
+  // Enter animations
+  const headerOpacity = useRef(new Animated.Value(0)).current;
+  const headerTranslateY = useRef(new Animated.Value(-30)).current;
+  const gridOpacity = useRef(new Animated.Value(0)).current;
+  const buttonOpacity = useRef(new Animated.Value(0)).current;
+  const buttonTranslateY = useRef(new Animated.Value(30)).current;
+  const categoryAnimations = useRef<Animated.Value[]>([]).current;
+
+  // Run enter animations when categories are loaded
+  useEffect(() => {
+    if (!isLoading && categories.length > 0) {
+      // Initialize category animations if not already done
+      while (categoryAnimations.length < categories.length) {
+        categoryAnimations.push(new Animated.Value(0));
+      }
+
+      // Start animations
+      Animated.sequence([
+        // Header animation
+        Animated.parallel([
+          Animated.timing(headerOpacity, {
+            toValue: 1,
+            duration: 260,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(headerTranslateY, {
+            toValue: 0,
+            duration: 260,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]),
+        // Grid fade in
+        Animated.timing(gridOpacity, {
+          toValue: 1,
+          duration: 130,
+          useNativeDriver: true,
+        }),
+        // Staggered category cards
+        Animated.stagger(
+          20,
+          categoryAnimations.slice(0, categories.length).map((anim) =>
+            Animated.spring(anim, {
+              toValue: 1,
+              tension: 60,
+              friction: 8,
+              useNativeDriver: true,
+            })
+          )
+        ),
+      ]).start();
+
+      // Button animation (parallel with grid)
+      Animated.parallel([
+        Animated.timing(buttonOpacity, {
+          toValue: 1,
+          duration: 260,
+          delay: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(buttonTranslateY, {
+          toValue: 0,
+          duration: 260,
+          delay: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [isLoading, categories.length]);
 
   // Auto-initialize with device locale if not already initialized
   // Language selection has been removed - we use device language settings
@@ -177,56 +250,107 @@ export default function Categories() {
     );
   }
 
+  // Get category index for animation
+  const getCategoryIndex = (rowIndex: number, colIndex: number) => {
+    return rowIndex * numColumns + colIndex;
+  };
+
   return (
     <Container>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <ContentContainer>
-        <ProgressIndicator currentStep={1} totalSteps={2} />
+        <Animated.View
+          style={{
+            opacity: headerOpacity,
+            transform: [{ translateY: headerTranslateY }],
+          }}
+        >
+          <ProgressIndicator currentStep={1} totalSteps={2} />
 
-        <Header>
-          <H1>{t("whatInterestsYou")}</H1>
-          <BodyText color="$textSecondary" fontSize={secondaryFontSize}>
-            {t("selectCategoriesMinimum")}
-          </BodyText>
-        </Header>
+          <Header style={{ marginTop: tokens.space.xl }}>
+            <H1>{t("whatInterestsYou")}</H1>
+            <BodyText color="$textSecondary" fontSize={secondaryFontSize}>
+              {t("selectCategoriesMinimum")}
+            </BodyText>
+          </Header>
+        </Animated.View>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <CategoriesGrid>
-            {rows.map((row, rowIndex) => (
-              <CategoryRow key={`row-${rowIndex}`}>
-                {row.map((category) => (
-                  <CategoryCard
-                    key={category.slug}
-                    icon={getLucideIcon(category.icon, iconSize)}
-                    label={category.name}
-                    colorHex={category.color_hex}
-                    selected={selectedCategories.includes(category.slug)}
-                    onPress={() => toggleCategory(category.slug)}
-                    labelFontSize={labelFontSize}
-                  />
-                ))}
-                {/* Add empty placeholders for the last row if needed */}
-                {row.length < numColumns && (
-                  <>
-                    {Array.from({ length: numColumns - row.length }).map((_, idx) => (
-                      <View key={`placeholder-${idx}`} style={{ flex: 1 }} />
-                    ))}
-                  </>
-                )}
-              </CategoryRow>
-            ))}
-          </CategoriesGrid>
-          <View height={tokens.space.xl} />
-        </ScrollView>
+        <Animated.View style={{ flex: 1, opacity: gridOpacity }}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <CategoriesGrid>
+              {rows.map((row, rowIndex) => (
+                <CategoryRow key={`row-${rowIndex}`}>
+                  {row.map((category, colIndex) => {
+                    const catIndex = getCategoryIndex(rowIndex, colIndex);
+                    const animValue = categoryAnimations[catIndex];
+                    
+                    return (
+                      <Animated.View
+                        key={category.slug}
+                        style={{
+                          flex: 1,
+                          opacity: animValue || 1,
+                          transform: [
+                            {
+                              scale: animValue
+                                ? animValue.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [0.8, 1],
+                                  })
+                                : 1,
+                            },
+                            {
+                              translateY: animValue
+                                ? animValue.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [20, 0],
+                                  })
+                                : 0,
+                            },
+                          ],
+                        }}
+                      >
+                        <CategoryCard
+                          icon={getLucideIcon(category.icon, iconSize)}
+                          label={category.name}
+                          colorHex={category.color_hex}
+                          selected={selectedCategories.includes(category.slug)}
+                          onPress={() => toggleCategory(category.slug)}
+                          labelFontSize={labelFontSize}
+                        />
+                      </Animated.View>
+                    );
+                  })}
+                  {/* Add empty placeholders for the last row if needed */}
+                  {row.length < numColumns && (
+                    <>
+                      {Array.from({ length: numColumns - row.length }).map((_, idx) => (
+                        <View key={`placeholder-${idx}`} style={{ flex: 1 }} />
+                      ))}
+                    </>
+                  )}
+                </CategoryRow>
+              ))}
+            </CategoriesGrid>
+            <View height={tokens.space.xl} />
+          </ScrollView>
+        </Animated.View>
 
-        <ButtonContainer>
-          <Button
-            onPress={handleContinue}
-            disabled={selectedCategories.length < 5}
-          >
-            {t("continue")}
-          </Button>
-        </ButtonContainer>
+        <Animated.View
+          style={{
+            opacity: buttonOpacity,
+            transform: [{ translateY: buttonTranslateY }],
+          }}
+        >
+          <ButtonContainer>
+            <Button
+              onPress={handleContinue}
+              disabled={selectedCategories.length < 5}
+            >
+              {t("continue")}
+            </Button>
+          </ButtonContainer>
+        </Animated.View>
       </ContentContainer>
     </Container>
   );

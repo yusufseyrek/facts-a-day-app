@@ -19,6 +19,7 @@ import {
   Shield,
   Bug,
   Settings,
+  Star,
 } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
 import {
@@ -42,6 +43,7 @@ import { buildNotificationContent } from "../../src/services/notifications";
 import { useOnboarding } from "../../src/contexts";
 import { openInAppBrowser } from "../../src/utils/browser";
 import { trackScreenView, Screens } from "../../src/services/analytics";
+import { requestReview } from "../../src/services/appReview";
 
 // Helper to get language display name
 const getLanguageName = (code: string): string => {
@@ -273,6 +275,10 @@ export default function SettingsPage() {
         { text: t("ok"), style: "default" },
       ]);
     }
+  };
+
+  const handleReviewApp = async () => {
+    await requestReview();
   };
 
   const handleAdd10RandomFacts = async () => {
@@ -547,6 +553,18 @@ export default function SettingsPage() {
       ],
     };
 
+    const supportSection: SettingsSection = {
+      title: t("settingsSupport"),
+      data: [
+        {
+          id: "reviewApp",
+          label: t("settingsReviewApp", { appName: t("appName") }),
+          icon: <Star size={20} color={iconColor} />,
+          onPress: handleReviewApp,
+        },
+      ],
+    };
+
     const legalSection: SettingsSection = {
       title: t("settingsLegal"),
       data: [
@@ -569,6 +587,7 @@ export default function SettingsPage() {
     if (isDevelopment) {
       result.push(developerSection);
     }
+    result.push(supportSection);
     result.push(legalSection);
 
     return result;
