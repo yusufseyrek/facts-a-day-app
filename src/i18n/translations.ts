@@ -250,10 +250,12 @@ export const translations = {
     insight: "Einblick",
 
     // Performance Screen
+    triviaPerformance: "Trivia-Leistung",
     performance: "Leistung",
     coreMetrics: "Kernmetriken",
     tests: "Trivia",
     accuracyByCategory: "Genauigkeit nach Kategorie",
+    accuracyByCategorySubtitle: "Verfolge deine Trefferquote pro Kategorie",
     recentActivity: "Letzte Aktivität",
     recentTests: "Letzte Trivia",
     pastActivity: "Vergangene Aktivität",
@@ -516,10 +518,12 @@ export const translations = {
     insight: "Insight",
 
     // Performance Screen
+    triviaPerformance: "Trivia Performance",
     performance: "Performance",
     coreMetrics: "Core Metrics",
     tests: "Trivia",
     accuracyByCategory: "Accuracy by Category",
+    accuracyByCategorySubtitle: "Track your accuracy rate for each category",
     recentActivity: "Recent Activity",
     recentTests: "Recent Trivia",
     pastActivity: "Past Activity",
@@ -782,10 +786,12 @@ export const translations = {
     insight: "Información",
 
     // Performance Screen
+    triviaPerformance: "Rendimiento de Trivia",
     performance: "Rendimiento",
     coreMetrics: "Métricas Principales",
     tests: "Trivia",
     accuracyByCategory: "Precisión por Categoría",
+    accuracyByCategorySubtitle: "Rastrea tu tasa de precisión por categoría",
     recentActivity: "Actividad Reciente",
     recentTests: "Trivia Reciente",
     pastActivity: "Actividad Pasada",
@@ -1048,10 +1054,12 @@ export const translations = {
     insight: "Aperçu",
 
     // Performance Screen
+    triviaPerformance: "Performance Trivia",
     performance: "Performance",
     coreMetrics: "Métriques Clés",
     tests: "Trivia",
     accuracyByCategory: "Précision par Catégorie",
+    accuracyByCategorySubtitle: "Suivez votre taux de précision par catégorie",
     recentActivity: "Activité Récente",
     recentTests: "Trivia Récent",
     pastActivity: "Activité Passée",
@@ -1313,10 +1321,12 @@ export const translations = {
     insight: "ヒント",
 
     // Performance Screen
+    triviaPerformance: "トリビアパフォーマンス",
     performance: "パフォーマンス",
     coreMetrics: "主要指標",
     tests: "トリビア",
     accuracyByCategory: "カテゴリ別正解率",
+    accuracyByCategorySubtitle: "カテゴリごとの正解率を確認",
     recentActivity: "最近のアクティビティ",
     recentTests: "最近のトリビア",
     pastActivity: "過去のアクティビティ",
@@ -1575,10 +1585,12 @@ export const translations = {
     insight: "정보",
 
     // Performance Screen
+    triviaPerformance: "트리비아 성적",
     performance: "성적",
     coreMetrics: "핵심 지표",
     tests: "트리비아",
     accuracyByCategory: "카테고리별 정확도",
+    accuracyByCategorySubtitle: "카테고리별 정확도를 확인하세요",
     recentActivity: "최근 활동",
     recentTests: "최근 트리비아",
     pastActivity: "지난 활동",
@@ -1840,12 +1852,14 @@ export const translations = {
     insight: "Bilgi",
 
     // Performance Screen
+    triviaPerformance: "Trivia Performansı",
     performance: "Performans",
     coreMetrics: "Temel Metrikler",
     tests: "Trivia",
     accuracyByCategory: "Kategoriye Göre Doğruluk",
+    accuracyByCategorySubtitle: "Her kategori için doğruluk oranını takip et",
     recentActivity: "Son Aktivite",
-    recentTests: "Son Trivia",
+    recentTests: "Geçmiş Trivia",
     pastActivity: "Geçmiş Aktivite",
     testResults: "Trivia Sonuçları",
     viewAll: "Tümünü Gör",
@@ -2101,10 +2115,12 @@ export const translations = {
     insight: "知识点",
 
     // Performance Screen
+    triviaPerformance: "问答表现",
     performance: "成绩",
     coreMetrics: "核心指标",
     tests: "问答",
     accuracyByCategory: "各类别准确率",
+    accuracyByCategorySubtitle: "查看每个类别的正确率",
     recentActivity: "最近活动",
     recentTests: "最近问答",
     pastActivity: "过去活动",

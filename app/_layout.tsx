@@ -2,7 +2,9 @@ import { useEffect, useState, useRef } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppThemeProvider } from '../src/theme';
+import { AppThemeProvider, useTheme } from '../src/theme';
+import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
+import { tokens } from '../src/theme/tokens';
 import { I18nProvider, getLocaleFromCode } from '../src/i18n';
 import { OnboardingProvider, useOnboarding } from '../src/contexts';
 import * as onboardingService from '../src/services/onboarding';
@@ -38,6 +40,44 @@ enableCrashlyticsConsoleLogging();
 initAnalytics();
 
 const NOTIFICATION_TRACK_KEY = 'last_processed_notification_id';
+
+// Custom dark theme with our app's colors
+const CustomDarkTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: tokens.color.dark.background,
+    card: tokens.color.dark.surface,
+    border: tokens.color.dark.border,
+    primary: tokens.color.dark.primary,
+    text: tokens.color.dark.text,
+  },
+};
+
+// Custom light theme with our app's colors
+const CustomLightTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: tokens.color.light.background,
+    card: tokens.color.light.surface,
+    border: tokens.color.light.border,
+    primary: tokens.color.light.primary,
+    text: tokens.color.light.text,
+  },
+};
+
+// Component that wraps content with navigation ThemeProvider based on app theme
+function NavigationThemeWrapper({ children }: { children: React.ReactNode }) {
+  const { theme } = useTheme();
+  const navigationTheme = theme === 'dark' ? CustomDarkTheme : CustomLightTheme;
+  
+  return (
+    <ThemeProvider value={navigationTheme}>
+      {children}
+    </ThemeProvider>
+  );
+}
 
 // Inner component that uses OnboardingContext for routing logic
 function AppContent() {
@@ -235,10 +275,11 @@ export default function RootLayout() {
   };
 
   // Show loading while initializing app, loading fonts, and checking onboarding status
+  // Use dark background to match splash screen and native root view background
   if (!isDbReady || initialOnboardingStatus === null || !fontsLoaded) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: tokens.color.dark.background }}>
+        <ActivityIndicator size="large" color={tokens.color.dark.primary} />
       </View>
     );
   }
@@ -249,7 +290,9 @@ export default function RootLayout() {
         <I18nProvider>
           <OnboardingProvider initialComplete={initialOnboardingStatus}>
             <AppThemeProvider>
-              <AppContent />
+              <NavigationThemeWrapper>
+                <AppContent />
+              </NavigationThemeWrapper>
             </AppThemeProvider>
           </OnboardingProvider>
         </I18nProvider>

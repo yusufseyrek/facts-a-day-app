@@ -14,7 +14,7 @@ import { ChevronLeft } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { tokens } from '../../../src/theme/tokens';
 import { FONT_FAMILIES } from '../../../src/components/Typography';
 import { useTheme } from '../../../src/theme';
@@ -85,9 +85,11 @@ function BackButton({
 function CategoryProgressBar({
   category,
   isDark,
+  index,
 }: {
   category: CategoryWithProgress;
   isDark: boolean;
+  index: number;
 }) {
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
   const trackColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
@@ -95,45 +97,47 @@ function CategoryProgressBar({
   const percentage = category.accuracy;
 
   return (
-    <YStack gap={tokens.space.xs}>
-      <XStack alignItems="center" justifyContent="space-between">
-        <XStack alignItems="center" gap={tokens.space.sm}>
-          {getLucideIcon(category.icon, 18, progressColor)}
+    <Animated.View entering={FadeInDown.delay(index * 50).duration(400).springify()}>
+      <YStack gap={tokens.space.xs}>
+        <XStack alignItems="center" justifyContent="space-between">
+          <XStack alignItems="center" gap={tokens.space.sm}>
+            {getLucideIcon(category.icon, 18, progressColor)}
+            <Text
+              fontSize={15}
+              color={textColor}
+              fontFamily={FONT_FAMILIES.medium}
+            >
+              {category.name}
+            </Text>
+          </XStack>
           <Text
-            fontSize={15}
+            fontSize={14}
             color={textColor}
-            fontFamily={FONT_FAMILIES.medium}
+            fontFamily={FONT_FAMILIES.semibold}
           >
-            {category.name}
+            {percentage}%
           </Text>
         </XStack>
-        <Text
-          fontSize={14}
-          color={textColor}
-          fontFamily={FONT_FAMILIES.semibold}
-        >
-          {percentage}%
-        </Text>
-      </XStack>
-      <View
-        style={{
-          width: '100%',
-          height: 8,
-          backgroundColor: trackColor,
-          borderRadius: 4,
-          overflow: 'hidden',
-        }}
-      >
         <View
           style={{
-            width: `${percentage}%`,
-            height: '100%',
-            backgroundColor: progressColor,
+            width: '100%',
+            height: 8,
+            backgroundColor: trackColor,
             borderRadius: 4,
+            overflow: 'hidden',
           }}
-        />
-      </View>
-    </YStack>
+        >
+          <View
+            style={{
+              width: `${percentage}%`,
+              height: '100%',
+              backgroundColor: progressColor,
+              borderRadius: 4,
+            }}
+          />
+        </View>
+      </YStack>
+    </Animated.View>
   );
 }
 
@@ -196,28 +200,30 @@ export default function CategoriesAccuracyScreen() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
       
       {/* Header */}
-      <XStack
-        paddingTop={insets.top + tokens.space.sm}
-        paddingBottom={tokens.space.md}
-        paddingHorizontal={tokens.space.lg}
-        alignItems="center"
-        justifyContent="space-between"
-        borderBottomWidth={1}
-        borderBottomColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
-      >
-        <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
-        
-        <Text
-          fontSize={20}
-          fontFamily={FONT_FAMILIES.bold}
-          color={textColor}
+      <Animated.View entering={FadeInUp.duration(400).springify()}>
+        <XStack
+          paddingTop={insets.top + tokens.space.sm}
+          paddingBottom={tokens.space.md}
+          paddingHorizontal={tokens.space.lg}
+          alignItems="center"
+          justifyContent="space-between"
+          borderBottomWidth={1}
+          borderBottomColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
         >
-          {t('accuracyByCategory')}
-        </Text>
-        
-        {/* Empty spacer to balance the header */}
-        <View style={{ width: 36, height: 36 }} />
-      </XStack>
+          <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
+          
+          <Text
+            fontSize={20}
+            fontFamily={FONT_FAMILIES.bold}
+            color={textColor}
+          >
+            {t('accuracyByCategory')}
+          </Text>
+          
+          {/* Empty spacer to balance the header */}
+          <View style={{ width: 36, height: 36 }} />
+        </XStack>
+      </Animated.View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -230,18 +236,19 @@ export default function CategoriesAccuracyScreen() {
         }}
       >
         {categories.length > 0 ? (
-          <Animated.View entering={FadeIn.duration(300)}>
+          <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
             <YStack
               backgroundColor={cardBg}
               borderRadius={tokens.radius.lg}
               padding={tokens.space.lg}
               gap={tokens.space.lg}
             >
-              {categories.map((category) => (
+              {categories.map((category, index) => (
                 <CategoryProgressBar
                   key={category.slug}
                   category={category}
                   isDark={isDark}
+                  index={index}
                 />
               ))}
             </YStack>

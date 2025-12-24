@@ -23,7 +23,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
 import { tokens } from '../../src/theme/tokens';
 import { FONT_FAMILIES } from '../../src/components/Typography';
 import { useTheme } from '../../src/theme';
@@ -545,28 +545,30 @@ export default function PerformanceScreen() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
       
       {/* Header */}
-      <XStack
-        paddingTop={insets.top + tokens.space.sm}
-        paddingBottom={tokens.space.md}
-        paddingHorizontal={tokens.space.lg}
-        alignItems="center"
-        justifyContent="space-between"
-        borderBottomWidth={1}
-        borderBottomColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
-      >
-        <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
-        
-        <Text
-          fontSize={20}
-          fontFamily={FONT_FAMILIES.bold}
-          color={textColor}
+      <Animated.View entering={FadeInUp.duration(400).springify()}>
+        <XStack
+          paddingTop={insets.top + tokens.space.sm}
+          paddingBottom={tokens.space.md}
+          paddingHorizontal={tokens.space.lg}
+          alignItems="center"
+          justifyContent="space-between"
+          borderBottomWidth={1}
+          borderBottomColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
         >
-          {t('performance')}
-        </Text>
-        
-        {/* Empty spacer to balance the header */}
-        <View style={{ width: 36, height: 36 }} />
-      </XStack>
+          <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
+          
+          <Text
+            fontSize={20}
+            fontFamily={FONT_FAMILIES.bold}
+            color={textColor}
+          >
+            {t('triviaPerformance')}
+          </Text>
+          
+          {/* Empty spacer to balance the header */}
+          <View style={{ width: 36, height: 36 }} />
+        </XStack>
+      </Animated.View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -576,7 +578,7 @@ export default function PerformanceScreen() {
       >
         <YStack padding={tokens.space.lg} gap={tokens.space.xl}>
           {/* Core Metrics */}
-          <Animated.View entering={FadeIn.duration(300)}>
+          <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
             <Text
               fontSize={18}
               fontFamily={FONT_FAMILIES.bold}
@@ -634,27 +636,37 @@ export default function PerformanceScreen() {
 
           {/* Accuracy by Category */}
           {displayCategories.length > 0 && (
-            <Animated.View entering={FadeInDown.delay(100).duration(300)}>
-              <XStack alignItems="center" justifyContent="space-between" marginBottom={tokens.space.md}>
+            <Animated.View entering={SlideInRight.delay(75).duration(400).springify()}>
+              <YStack marginBottom={tokens.space.md} gap={tokens.space.xs}>
+                <XStack alignItems="center" justifyContent="space-between">
+                  <Text
+                    fontSize={18}
+                    fontFamily={FONT_FAMILIES.bold}
+                    color={textColor}
+                  >
+                    {t('accuracyByCategory')}
+                  </Text>
+                  {allCategoriesWithAccuracy.length > MAX_DISPLAY_CATEGORIES && (
+                    <Pressable onPress={() => router.push('/(tabs)/trivia/categories')}>
+                      <Text
+                        fontSize={14}
+                        fontFamily={FONT_FAMILIES.semibold}
+                        color={primaryColor}
+                      >
+                        {t('viewAll')}
+                      </Text>
+                    </Pressable>
+                  )}
+                </XStack>
                 <Text
-                  fontSize={18}
-                  fontFamily={FONT_FAMILIES.bold}
-                  color={textColor}
+                  fontSize={14}
+                  fontFamily={FONT_FAMILIES.regular}
+                  color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
+                  opacity={0.9}
                 >
-                  {t('accuracyByCategory')}
+                  {t('accuracyByCategorySubtitle')}
                 </Text>
-                {allCategoriesWithAccuracy.length > MAX_DISPLAY_CATEGORIES && (
-                  <Pressable onPress={() => router.push('/(tabs)/trivia/categories')}>
-                    <Text
-                      fontSize={14}
-                      fontFamily={FONT_FAMILIES.semibold}
-                      color={primaryColor}
-                    >
-                      {t('viewAll')}
-                    </Text>
-                  </Pressable>
-                )}
-              </XStack>
+              </YStack>
               
               <YStack
                 backgroundColor={cardBg}
@@ -673,9 +685,9 @@ export default function PerformanceScreen() {
             </Animated.View>
           )}
 
-          {/* Recent Tests */}
+          {/* Recent Trivia */}
           {recentSessions.length > 0 && (
-            <Animated.View entering={FadeInDown.delay(200).duration(300)}>
+            <Animated.View entering={SlideInRight.delay(100).duration(400).springify()}>
               <XStack alignItems="center" justifyContent="space-between" marginBottom={tokens.space.md}>
                 <Text
                   fontSize={18}

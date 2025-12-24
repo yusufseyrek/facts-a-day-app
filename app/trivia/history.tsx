@@ -19,7 +19,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { tokens } from '../../src/theme/tokens';
 import { H2, FONT_FAMILIES } from '../../src/components/Typography';
 import { SectionHeaderContainer } from '../../src/components/ScreenLayout';
@@ -415,42 +415,46 @@ export default function ActivityHistoryScreen() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
       
       {/* Header */}
-      <XStack
-        paddingTop={insets.top + tokens.space.sm}
-        paddingBottom={tokens.space.md}
-        paddingHorizontal={tokens.space.lg}
-        alignItems="center"
-        justifyContent="space-between"
-        borderBottomWidth={1}
-        borderBottomColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
-      >
-        <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
-        
-        <Text
-          fontSize={20}
-          fontFamily={FONT_FAMILIES.bold}
-          color={textColor}
+      <Animated.View entering={FadeInUp.duration(400).springify()}>
+        <XStack
+          paddingTop={insets.top + tokens.space.sm}
+          paddingBottom={tokens.space.md}
+          paddingHorizontal={tokens.space.lg}
+          alignItems="center"
+          justifyContent="space-between"
+          borderBottomWidth={1}
+          borderBottomColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
         >
-          {t('testHistory')}
-        </Text>
-        
-        {/* Empty spacer to balance the header */}
-        <View style={{ width: 36, height: 36 }} />
-      </XStack>
+          <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
+          
+          <Text
+            fontSize={20}
+            fontFamily={FONT_FAMILIES.bold}
+            color={textColor}
+          >
+            {t('testHistory')}
+          </Text>
+          
+          {/* Empty spacer to balance the header */}
+          <View style={{ width: 36, height: 36 }} />
+        </XStack>
+      </Animated.View>
 
-      <Animated.View entering={FadeIn.duration(300)} style={{ flex: 1 }}>
+      <Animated.View entering={FadeIn.delay(50).duration(400).springify()} style={{ flex: 1 }}>
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <View style={{ paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.xs }}>
-              <SessionCard
-                session={item}
-                isDark={isDark}
-                t={t}
-                onPress={() => handleSessionClick(item.id)}
-              />
-            </View>
+          renderItem={({ item, index }) => (
+            <Animated.View entering={FadeInDown.delay(index * 30).duration(350).springify()}>
+              <View style={{ paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.xs }}>
+                <SessionCard
+                  session={item}
+                  isDark={isDark}
+                  t={t}
+                  onPress={() => handleSessionClick(item.id)}
+                />
+              </View>
+            </Animated.View>
           )}
           renderSectionHeader={({ section: { title } }) => (
             <SectionHeaderContainer paddingTop={tokens.space.md}>
