@@ -13,27 +13,27 @@ import { Brain, Flame, Sparkles, ArrowRight } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { tokens } from '../../../src/theme/tokens';
+import { tokens } from '../../src/theme/tokens';
 import {
   ScreenContainer,
   ScreenHeader,
   ContentContainer,
   LoadingContainer,
   useIconColor,
-} from '../../../src/components';
-import { FONT_FAMILIES } from '../../../src/components/Typography';
-import { BannerAd } from '../../../src/components/ads/BannerAd';
+} from '../../src/components';
+import { FONT_FAMILIES } from '../../src/components/Typography';
+import { BannerAd } from '../../src/components/ads/BannerAd';
 import {
   TriviaStatsHero,
   TriviaGridCard,
   TriviaIntroModal,
-} from '../../../src/components/trivia';
-import { useTheme } from '../../../src/theme';
-import { useTranslation } from '../../../src/i18n';
-import { trackScreenView, Screens } from '../../../src/services/analytics';
-import { onPreferenceFeedRefresh } from '../../../src/services/preferences';
-import * as triviaService from '../../../src/services/trivia';
-import type { CategoryWithProgress } from '../../../src/services/trivia';
+} from '../../src/components/trivia';
+import { useTheme } from '../../src/theme';
+import { useTranslation } from '../../src/i18n';
+import { trackScreenView, Screens } from '../../src/services/analytics';
+import { onPreferenceFeedRefresh } from '../../src/services/preferences';
+import * as triviaService from '../../src/services/trivia';
+import type { CategoryWithProgress } from '../../src/services/trivia';
 
 // Styled Text components
 const Text = styled(TamaguiText, {
@@ -273,7 +273,7 @@ export default function TriviaScreen() {
               categories={categoriesWithProgress}
               isDark={isDark}
               t={t}
-              onPress={() => router.push('/trivia/performance')}
+              onPress={() => router.push('/(tabs)/trivia/performance')}
             />
             
             {(hasQuestions || hasCategories) ? (

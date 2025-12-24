@@ -6,14 +6,13 @@ import {
   ActivityIndicator,
   Pressable,
   View,
-  Animated as RNAnimated,
   Modal,
   Platform,
+  Animated as RNAnimated,
 } from 'react-native';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { 
-  ChevronLeft, 
   Gamepad2, 
   Trophy, 
   CheckCircle,
@@ -21,6 +20,7 @@ import {
   Shuffle,
   Hash,
   X,
+  ChevronLeft,
 } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -567,7 +567,6 @@ export default function PerformanceScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
         }
-        contentContainerStyle={{ paddingBottom: insets.bottom + tokens.space.xl }}
       >
         <YStack padding={tokens.space.lg} gap={tokens.space.xl}>
           {/* Core Metrics */}

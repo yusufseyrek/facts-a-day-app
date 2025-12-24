@@ -3,7 +3,8 @@ import { Stack } from "expo-router";
 export default function TriviaLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="index" />
+      <Stack.Screen name="performance" />
       <Stack.Screen
         name="game"
         options={{
@@ -12,7 +13,6 @@ export default function TriviaLayout() {
         }}
       />
       <Stack.Screen name="history" />
-      <Stack.Screen name="performance" />
     </Stack>
   );
 }

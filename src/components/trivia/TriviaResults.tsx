@@ -395,7 +395,7 @@ export function TriviaResults({
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top, paddingBottom: insets.bottom }}>
+    <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       
       {/* Screen Header (when viewing past results) */}
@@ -445,7 +445,7 @@ export function TriviaResults({
       
       <ScrollView 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: tokens.space.xl }}
+        style={{ marginBottom: tokens.space.sm }}
       >
         {/* Header Section */}
         <Animated.View entering={FadeInDown.duration(400)}>
