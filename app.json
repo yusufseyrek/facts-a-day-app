@@ -187,7 +187,6 @@
       "@react-native-firebase/crashlytics",
       "./plugins/withModularHeaders.js",
       "./plugins/withDisableAutoScreenReporting.js",
-      "./plugins/withAndroidWindowBackground.js",
       [
         "react-native-google-mobile-ads",
         {
@@ -222,7 +221,8 @@
       "expo-tracking-transparency",
       "expo-router",
       "expo-secure-store",
-      "expo-sqlite"
+      "expo-sqlite",
+      "./plugins/withAndroidWindowBackground.js"
     ]
   }
 }

@@ -16,6 +16,13 @@ import { ActivityIndicator, View, AppState, AppStateStatus } from 'react-native'
 import * as Notifications from 'expo-notifications';
 import * as Localization from 'expo-localization';
 import { initializeFirebase, enableCrashlyticsConsoleLogging } from '../src/config/firebase';
+// expo-system-ui requires native rebuild - import conditionally
+let SystemUI: typeof import('expo-system-ui') | null = null;
+try {
+  SystemUI = require('expo-system-ui');
+} catch {
+  // Native module not available (needs prebuild)
+}
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initAnalytics } from '../src/services/analytics';
 import {
@@ -68,9 +75,20 @@ const CustomLightTheme = {
 };
 
 // Component that wraps content with navigation ThemeProvider based on app theme
+// Also syncs the native root view background color with the app theme
 function NavigationThemeWrapper({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
   const navigationTheme = theme === 'dark' ? CustomDarkTheme : CustomLightTheme;
+  
+  // Sync native root view background with app theme (when native module is available)
+  useEffect(() => {
+    if (SystemUI) {
+      const backgroundColor = theme === 'dark' 
+        ? tokens.color.dark.background 
+        : tokens.color.light.background;
+      SystemUI.setBackgroundColorAsync(backgroundColor);
+    }
+  }, [theme]);
   
   return (
     <ThemeProvider value={navigationTheme}>
@@ -84,6 +102,12 @@ function AppContent() {
   const router = useRouter();
   const segments = useSegments();
   const { isOnboardingComplete, setIsOnboardingComplete } = useOnboarding();
+  const { theme } = useTheme();
+  
+  // Get theme-aware background color for screens and modals
+  const backgroundColor = theme === 'dark' 
+    ? tokens.color.dark.background 
+    : tokens.color.light.background;
 
   // Re-check onboarding status when navigating to onboarding paths
   // This ensures the reset onboarding button works correctly
@@ -149,6 +173,7 @@ function AppContent() {
 
   const screenOptions = {
     headerShown: false as const,
+    contentStyle: { backgroundColor },
   };
 
   return (
@@ -160,6 +185,7 @@ function AppContent() {
         options={{
           presentation: 'modal',
           headerShown: false,
+          contentStyle: { backgroundColor },
         }}
       />
       <Stack.Screen name="trivia" />

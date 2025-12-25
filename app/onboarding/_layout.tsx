@@ -1,11 +1,21 @@
 import { Stack } from "expo-router";
+import { useColorScheme } from "react-native";
+import { tokens } from "../../src/theme/tokens";
 
 export default function OnboardingLayout() {
+  const colorScheme = useColorScheme();
+  
+  // Use system color scheme for initial background
+  const backgroundColor = colorScheme === 'dark' 
+    ? tokens.color.dark.background 
+    : tokens.color.light.background;
+
   return (
     <Stack
       screenOptions={{
         headerShown: false,
         animation: "slide_from_right",
+        contentStyle: { backgroundColor },
       }}
     >
       {/* Language selection removed - now handled via device settings */}
