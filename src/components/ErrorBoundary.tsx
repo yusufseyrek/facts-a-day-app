@@ -1,8 +1,7 @@
 import React, { Component, ReactNode } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { recordError } from '../config/firebase';
 import { tokens } from '../theme/tokens';
-import { H1, BodyText, LabelText, SmallText } from './Typography';
 
 interface Props {
   children: ReactNode;
@@ -20,6 +19,10 @@ interface State {
  *
  * Catches JavaScript errors anywhere in the child component tree,
  * logs those errors to Firebase Crashlytics, and displays a fallback UI.
+ *
+ * NOTE: This component uses plain React Native Text components instead of
+ * Tamagui Typography because ErrorBoundary is rendered OUTSIDE the
+ * AppThemeProvider/TamaguiProvider, so Tamagui components would fail.
  *
  * Usage:
  * ```tsx
@@ -77,26 +80,23 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback(this.state.error, this.resetError);
       }
 
-      // Default fallback UI
+      // Default fallback UI using plain React Native components
+      // (Tamagui components can't be used here since we're outside AppThemeProvider)
       return (
         <View style={styles.container}>
           <View style={styles.content}>
-            <H1 style={styles.emoji}>😔</H1>
-            <H1 textAlign="center" color={tokens.color.light.text} style={{ marginBottom: tokens.space.md }}>
-              Oops! Something went wrong
-            </H1>
-            <BodyText textAlign="center" color={tokens.color.light.textSecondary} style={{ marginBottom: tokens.space.xl }}>
+            <Text style={styles.emoji}>😔</Text>
+            <Text style={styles.title}>Oops! Something went wrong</Text>
+            <Text style={styles.body}>
               We've been notified and will fix this soon.
-            </BodyText>
+            </Text>
 
             {__DEV__ && this.state.error && (
               <View style={styles.errorDetails}>
-                <LabelText color="#DC2626" style={{ marginBottom: tokens.space.sm }}>
-                  Error Details (Dev Only):
-                </LabelText>
-                <SmallText color="#991B1B" style={{ fontFamily: 'monospace' }}>
+                <Text style={styles.errorLabel}>Error Details (Dev Only):</Text>
+                <Text style={styles.errorText}>
                   {this.state.error.toString()}
-                </SmallText>
+                </Text>
               </View>
             )}
 
@@ -107,7 +107,7 @@ export class ErrorBoundary extends Component<Props, State> {
               ]}
               onPress={this.resetError}
             >
-              <LabelText textAlign="center" color="#FFFFFF">Try Again</LabelText>
+              <Text style={styles.buttonText}>Try Again</Text>
             </Pressable>
           </View>
         </View>
@@ -133,6 +133,23 @@ const styles = StyleSheet.create({
   emoji: {
     fontSize: 64,
     marginBottom: tokens.space.lg,
+    textAlign: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    fontFamily: 'Montserrat_700Bold',
+    color: tokens.color.light.text,
+    textAlign: 'center',
+    marginBottom: tokens.space.md,
+  },
+  body: {
+    fontSize: 16,
+    fontFamily: 'Montserrat_400Regular',
+    color: tokens.color.light.textSecondary,
+    textAlign: 'center',
+    marginBottom: tokens.space.xl,
+    lineHeight: 24,
   },
   errorDetails: {
     backgroundColor: '#FEF2F2',
@@ -140,6 +157,18 @@ const styles = StyleSheet.create({
     padding: tokens.space.md,
     marginBottom: tokens.space.xl,
     width: '100%',
+  },
+  errorLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Montserrat_600SemiBold',
+    color: '#DC2626',
+    marginBottom: tokens.space.sm,
+  },
+  errorText: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    color: '#991B1B',
   },
   button: {
     backgroundColor: tokens.color.light.primary,
@@ -150,5 +179,12 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     opacity: 0.8,
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Montserrat_600SemiBold',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
 });
