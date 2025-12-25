@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import * as database from './database';
 import { i18n } from '../i18n/config';
 import { SupportedLocale } from '../i18n/translations';
+import { downloadImageWithAppCheck } from './images';
 
 // iOS has a limit of 64 scheduled notifications
 const MAX_SCHEDULED_NOTIFICATIONS = 64;
@@ -75,7 +76,7 @@ async function convertToJpegIfNeeded(localUri: string, factId: number): Promise<
 }
 
 /**
- * Download an image for notification attachment
+ * Download an image for notification attachment with App Check authentication
  * Returns the local file URI or null if download fails
  */
 async function downloadImageForNotification(imageUrl: string, factId: number): Promise<string | null> {
@@ -90,37 +91,44 @@ async function downloadImageForNotification(imageUrl: string, factId: number): P
       return jpegUri;
     }
     
-    // Extract file extension from URL or default to jpg
-    const urlPath = imageUrl.split('?')[0]; // Remove query params
+    // Download image with App Check authentication
+    console.log(`🖼️ Downloading notification image with App Check for fact ${factId}: ${imageUrl}`);
+    const downloadedUri = await downloadImageWithAppCheck(imageUrl, factId);
+    
+    if (!downloadedUri) {
+      console.warn(`🖼️ Failed to download notification image for fact ${factId}`);
+      return null;
+    }
+    
+    console.log(`🖼️ Downloaded image for fact ${factId}: ${downloadedUri}`);
+    
+    // For iOS notification attachments, copy to notification images directory
+    // and convert to JPEG if needed (WebP not well supported by iOS notification attachments)
+    const urlPath = imageUrl.split('?')[0];
     const extension = urlPath.split('.').pop()?.toLowerCase() || 'jpg';
     const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
     const fileExtension = validExtensions.includes(extension) ? extension : 'jpg';
     
-    const localUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.${fileExtension}`;
+    const notificationUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.${fileExtension}`;
     
-    // Check if already downloaded (original format)
-    const fileInfo = await FileSystem.getInfoAsync(localUri);
-    let downloadedUri = localUri;
-    
-    if (fileInfo.exists) {
-      console.log(`🖼️ Using cached image for fact ${factId}: ${localUri}`);
-      downloadedUri = localUri;
-    } else {
-      // Download the image
-      console.log(`🖼️ Downloading image for fact ${factId}: ${imageUrl}`);
-      const downloadResult = await FileSystem.downloadAsync(imageUrl, localUri);
-      
-      if (downloadResult.status !== 200) {
-        console.warn(`🖼️ Failed to download notification image for fact ${factId}: status ${downloadResult.status}`);
-        return null;
+    // Copy from cache to notification images directory if different
+    if (downloadedUri !== notificationUri) {
+      try {
+        await FileSystem.copyAsync({
+          from: downloadedUri,
+          to: notificationUri,
+        });
+        console.log(`🖼️ Copied image to notification dir: ${notificationUri}`);
+      } catch (copyError) {
+        console.warn(`🖼️ Failed to copy image, using original: ${copyError}`);
+        // Convert original directly
+        const finalUri = await convertToJpegIfNeeded(downloadedUri, factId);
+        return finalUri;
       }
-      
-      console.log(`🖼️ Downloaded image for fact ${factId}: ${downloadResult.uri}`);
-      downloadedUri = downloadResult.uri;
     }
     
-    // Convert to JPEG if needed (WebP not well supported by iOS notification attachments)
-    const finalUri = await convertToJpegIfNeeded(downloadedUri, factId);
+    // Convert to JPEG if needed
+    const finalUri = await convertToJpegIfNeeded(notificationUri, factId);
     return finalUri;
   } catch (error) {
     console.warn(`🖼️ Error downloading notification image for fact ${factId}:`, error);

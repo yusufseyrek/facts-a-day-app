@@ -1,7 +1,6 @@
 import Constants from 'expo-constants';
-import { getApp } from '@react-native-firebase/app';
-import getAppCheck, { getToken } from '@react-native-firebase/app-check';
 import { Platform } from 'react-native';
+import { getCachedAppCheckToken } from './appCheckToken';
 
 /**
  * Get the API base URL, adjusting for Android emulator
@@ -20,28 +19,6 @@ function getApiBaseUrl(): string {
 }
 
 const API_BASE_URL = getApiBaseUrl();
-
-// ====== App Check ======
-
-/**
- * Get the current App Check token for API requests
- * Returns null if App Check is not initialized or token fetch fails
- * Uses the modular API (v22+)
- */
-async function getAppCheckToken(): Promise<string | null> {
-  try {
-    const appCheckInstance = getAppCheck(getApp());
-    const { token } = await getToken(appCheckInstance, true);
-    return token;
-  } catch (error) {
-    // Log but don't throw - App Check failures shouldn't block API requests
-    // The backend will handle missing/invalid tokens based on enforcement settings
-    if (__DEV__) {
-      console.warn('Failed to get App Check token:', error);
-    }
-    return null;
-  }
-}
 
 // ====== Types ======
 
@@ -218,8 +195,8 @@ async function makeRequest<T>(
   const url = `${API_BASE_URL}${endpoint}`;
 
   const executeRequest = async (): Promise<T> => {
-    // Get App Check token for protected endpoints
-    const appCheckToken = await getAppCheckToken();
+    // Get App Check token for protected endpoints (uses cache to prevent rate limiting)
+    const appCheckToken = await getCachedAppCheckToken();
     
     // Build headers with App Check token if available
     const headers: Record<string, string> = {

@@ -4,6 +4,7 @@ import { Image, ImageLoadEventData } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { tokens } from "../theme/tokens";
 import { useResponsive } from "../utils/useResponsive";
+import { useFactImage } from "../utils/useFactImage";
 import type { Category } from "../services/database";
 
 // Default blurhash for smooth loading experience
@@ -21,6 +22,8 @@ const RETRY_DELAY_BASE = 1000;
 interface ImageFactCardProps {
   title: string;
   imageUrl: string;
+  /** Fact ID used for image caching with App Check authentication */
+  factId: number;
   category?: string | Category;
   categorySlug?: string;
   onPress: () => void;
@@ -34,6 +37,7 @@ interface ImageFactCardProps {
 const ImageFactCardComponent = ({
   title,
   imageUrl,
+  factId,
   category,
   categorySlug,
   onPress,
@@ -45,10 +49,13 @@ const ImageFactCardComponent = ({
   const isTablet = isTabletProp || isTabletDevice;
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   
-  // Image retry state
+  // Use authenticated image with App Check - REQUIRED since remote URLs need App Check headers
+  const { imageUri: authenticatedImageUri, isLoading: isImageLoading, hasError: downloadError, retry: retryImage } = useFactImage(imageUrl, factId);
+  
+  // Image retry state for expo-image component errors (after successful download)
   const [retryCount, setRetryCount] = useState(0);
   const [imageKey, setImageKey] = useState(0);
-  const [hasError, setHasError] = useState(false);
+  const [hasRenderError, setHasRenderError] = useState(false);
 
   // Calculate card height based on aspect ratio
   const cardHeight = screenWidth * ASPECT_RATIO;
@@ -86,27 +93,33 @@ const ImageFactCardComponent = ({
     }).start();
   }, [scaleAnim]);
 
-  // Handle image load error with retry logic
+  // Handle image render error with retry logic (for local file issues after download)
   const handleImageError = useCallback(() => {
+    // Don't treat loading/null state as an error - wait for actual image to load
+    if (isImageLoading || !authenticatedImageUri) {
+      return;
+    }
+    
     if (retryCount < MAX_RETRY_ATTEMPTS) {
       const delay = RETRY_DELAY_BASE * Math.pow(2, retryCount);
-      console.log(`🔄 Image load failed, retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS})`);
+      console.log(`🔄 Image render failed, retrying download in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS})`);
       
       setTimeout(() => {
         setRetryCount((prev) => prev + 1);
         setImageKey((prev) => prev + 1); // Force re-render of Image component
+        retryImage(); // Re-download with App Check
       }, delay);
     } else {
-      console.log(`❌ Image load failed after ${MAX_RETRY_ATTEMPTS} attempts: ${imageUrl}`);
-      setHasError(true);
+      console.log(`❌ Image failed after ${MAX_RETRY_ATTEMPTS} attempts for fact ${factId}`);
+      setHasRenderError(true);
     }
-  }, [retryCount, imageUrl]);
+  }, [retryCount, factId, retryImage, isImageLoading, authenticatedImageUri]);
 
   // Reset retry state when imageUrl changes
   React.useEffect(() => {
     setRetryCount(0);
     setImageKey(0);
-    setHasError(false);
+    setHasRenderError(false);
   }, [imageUrl]);
 
   // Determine category info for badge
@@ -128,15 +141,16 @@ const ImageFactCardComponent = ({
 
   const categoryInfo = getCategoryInfo();
 
-  // Generate image URL with cache buster for retries
+  // Generate image source - ONLY use authenticated local URI
+  // Remote URLs require App Check headers which expo-image cannot provide
   const getImageSource = useCallback(() => {
-    if (retryCount === 0) {
-      return { uri: imageUrl };
+    // Only return authenticated (locally cached) image URI
+    // Never fall back to remote URL as it requires App Check headers
+    if (!authenticatedImageUri) {
+      return null;
     }
-    // Add cache buster for retries
-    const separator = imageUrl.includes("?") ? "&" : "?";
-    return { uri: `${imageUrl}${separator}_retry=${retryCount}` };
-  }, [imageUrl, retryCount]);
+    return { uri: authenticatedImageUri };
+  }, [authenticatedImageUri]);
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -171,9 +185,10 @@ const ImageFactCardComponent = ({
                 contentPosition="top"
                 cachePolicy="memory-disk"
                 transition={300}
+                // Show blurhash while image is loading/downloading with App Check
                 placeholder={{ blurhash: DEFAULT_BLURHASH }}
                 onError={handleImageError}
-                recyclingKey={`${imageUrl}-${imageKey}`}
+                recyclingKey={`${factId}-${authenticatedImageUri || 'loading'}-${imageKey}`}
               />
             </Animated.View>
 
@@ -288,6 +303,7 @@ export const ImageFactCard = React.memo(
     return (
       prevProps.title === nextProps.title &&
       prevProps.imageUrl === nextProps.imageUrl &&
+      prevProps.factId === nextProps.factId &&
       prevProps.categorySlug === nextProps.categorySlug &&
       prevProps.isTablet === nextProps.isTablet &&
       prevProps.cardIndex === nextProps.cardIndex

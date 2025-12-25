@@ -14,4 +14,7 @@ export {
   useResponsive,
   useResponsiveTypography,
 } from './useResponsive';
-
+export {
+  useFactImage,
+  usePrefetchFactImages,
+} from './useFactImage';

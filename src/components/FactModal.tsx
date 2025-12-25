@@ -18,6 +18,7 @@ import { openInAppBrowser } from "../utils/browser";
 import { getLocalNotificationImagePath, deleteNotificationImage } from "../services/notifications";
 import { useResponsive } from "../utils/useResponsive";
 import { trackSourceLinkClick } from "../services/analytics";
+import { useFactImage } from "../utils/useFactImage";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -146,8 +147,14 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const [headerShouldBlock, setHeaderShouldBlock] = useState(false);
   const [titleHeight, setTitleHeight] = useState(24); // Default to 1 line height
   
-  // Local notification image state - use cached image if available to avoid re-downloading
-  const [imageUri, setImageUri] = useState<string | null>(fact.image_url || null);
+  // Use authenticated image with App Check - downloads and caches locally
+  const { imageUri: authenticatedImageUri, isLoading: isImageLoading } = useFactImage(
+    fact.image_url,
+    fact.id
+  );
+  
+  // Local notification image state - prioritize notification image if available
+  const [notificationImageUri, setNotificationImageUri] = useState<string | null>(null);
   
   // Check for local notification image and use it if available, then delete it
   useEffect(() => {
@@ -162,7 +169,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         
         if (localImagePath && isMounted) {
           console.log(`🖼️ Using local notification image for fact ${fact.id}: ${localImagePath}`);
-          setImageUri(localImagePath);
+          setNotificationImageUri(localImagePath);
           
           // Delete the notification image after a short delay to ensure it's loaded
           // This prevents the image from being deleted before it's displayed
@@ -173,10 +180,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         }
       } catch (error) {
         console.warn(`🖼️ Error checking local notification image:`, error);
-        // Fall back to remote URL
-        if (isMounted) {
-          setImageUri(fact.image_url);
-        }
       }
     };
     
@@ -186,6 +189,10 @@ export function FactModal({ fact, onClose }: FactModalProps) {
       isMounted = false;
     };
   }, [fact.id, fact.image_url]);
+  
+  // Use notification image if available, otherwise use authenticated image
+  // IMPORTANT: Never use remote URL directly as it requires App Check headers
+  const imageUri = notificationImageUri || authenticatedImageUri;
   
   // For tablets: full width in portrait (square), full width with half height in landscape
   // For phones: square (full width)

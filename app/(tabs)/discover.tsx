@@ -1,16 +1,14 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import {
   FlatList,
-  FlatListProps,
   RefreshControl,
   ActivityIndicator,
   useWindowDimensions,
   TextInput,
   ScrollView,
   Pressable,
-  Animated as RNAnimated,
 } from "react-native";
 import { styled, View } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
@@ -38,6 +36,7 @@ import * as database from "../../src/services/database";
 import { getSelectedCategories } from "../../src/services/onboarding";
 import { getLucideIcon } from "../../src/utils/iconMapper";
 import { getContrastColor } from "../../src/utils/colors";
+import { FACT_FLAT_LIST_SETTINGS } from "../../src/config/factListSettings";
 import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import {
@@ -48,10 +47,6 @@ import {
 } from "../../src/services/analytics";
 import { onPreferenceFeedRefresh } from "../../src/services/preferences";
 
-// Create animated FlatList for native scroll events with parallax
-const AnimatedFlatList = RNAnimated.createAnimatedComponent(FlatList) as React.ComponentType<
-  FlatListProps<FactWithRelations> & { ref?: React.Ref<FlatList<FactWithRelations>> }
->;
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -185,14 +180,6 @@ function DiscoverScreen() {
   const [categoryFacts, setCategoryFacts] = useState<FactWithRelations[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [isLoadingCategoryFacts, setIsLoadingCategoryFacts] = useState(false);
-
-  // Scroll position for parallax effect on image cards
-  const scrollY = useRef(new RNAnimated.Value(0)).current;
-
-  const handleScroll = RNAnimated.event(
-    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    { useNativeDriver: true }
-  );
 
   const performSearch = useCallback(
     async (query: string, categorySlug: string | null) => {
@@ -623,49 +610,35 @@ function DiscoverScreen() {
       }
 
       return (
-        <AnimatedFlatList
+        <FlatList
           data={searchResults}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item, index }) => {
-            // Cap animation delay to prevent slow initial render
-            const animationDelay = Math.min(index * 30, 300);
-            return (
-              <Animated.View entering={FadeInDown.delay(animationDelay).duration(250)}>
-                <ContentContainer tablet={isTablet}>
-                  {item.image_url ? (
-                    <ImageFactCard
-                      title={item.title || item.content.substring(0, 80) + "..."}
-                      imageUrl={item.image_url}
-                      category={item.categoryData || item.category}
-                      categorySlug={item.categoryData?.slug || item.category}
-                      onPress={() => handleFactPress(item)}
-                      isTablet={isTablet}
-                      scrollY={scrollY}
-                      cardIndex={index}
-                    />
-                  ) : (
-                    <FeedFactCard
-                      title={item.title || item.content.substring(0, 80) + "..."}
-                      summary={item.summary}
-                      onPress={() => handleFactPress(item)}
-                      isTablet={isTablet}
-                    />
-                  )}
-                </ContentContainer>
-              </Animated.View>
-            );
-          }}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
+          renderItem={({ item }) => (
+            <ContentContainer tablet={isTablet}>
+              {item.image_url ? (
+                <ImageFactCard
+                  title={item.title || item.content.substring(0, 80) + "..."}
+                  imageUrl={item.image_url}
+                  factId={item.id}
+                  category={item.categoryData || item.category}
+                  categorySlug={item.categoryData?.slug || item.category}
+                  onPress={() => handleFactPress(item)}
+                  isTablet={isTablet}
+                />
+              ) : (
+                <FeedFactCard
+                  title={item.title || item.content.substring(0, 80) + "..."}
+                  summary={item.summary}
+                  onPress={() => handleFactPress(item)}
+                  isTablet={isTablet}
+                />
+              )}
+            </ContentContainer>
+          )}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
-          // Performance optimizations for smooth scrolling
-          initialNumToRender={5}
-          maxToRenderPerBatch={3}
-          windowSize={7}
-          removeClippedSubviews={true}
-          updateCellsBatchingPeriod={50}
+          {...FACT_FLAT_LIST_SETTINGS}
         />
       );
     }
@@ -694,40 +667,31 @@ function DiscoverScreen() {
       );
 
       return (
-        <AnimatedFlatList
+        <FlatList
           data={categoryFacts}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item, index }) => {
-            // Cap animation delay to prevent slow initial render
-            const animationDelay = Math.min(index * 30, 300);
-            return (
-              <Animated.View entering={FadeInDown.delay(animationDelay).duration(250)}>
-                <ContentContainer tablet={isTablet}>
-                  {item.image_url ? (
-                    <ImageFactCard
-                      title={item.title || item.content.substring(0, 80) + "..."}
-                      imageUrl={item.image_url}
-                      category={selectedCategory || item.category}
-                      categorySlug={selectedCategorySlug || item.category}
-                      onPress={() => handleFactPress(item)}
-                      isTablet={isTablet}
-                      scrollY={scrollY}
-                      cardIndex={index}
-                    />
-                  ) : (
-                    <FeedFactCard
-                      title={item.title || item.content.substring(0, 80) + "..."}
-                      summary={item.summary}
-                      onPress={() => handleFactPress(item)}
-                      isTablet={isTablet}
-                    />
-                  )}
-                </ContentContainer>
-              </Animated.View>
-            );
-          }}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
+          renderItem={({ item }) => (
+            <ContentContainer tablet={isTablet}>
+              {item.image_url ? (
+                <ImageFactCard
+                  title={item.title || item.content.substring(0, 80) + "..."}
+                  imageUrl={item.image_url}
+                  factId={item.id}
+                  category={selectedCategory || item.category}
+                  categorySlug={selectedCategorySlug || item.category}
+                  onPress={() => handleFactPress(item)}
+                  isTablet={isTablet}
+                />
+              ) : (
+                <FeedFactCard
+                  title={item.title || item.content.substring(0, 80) + "..."}
+                  summary={item.summary}
+                  onPress={() => handleFactPress(item)}
+                  isTablet={isTablet}
+                />
+              )}
+            </ContentContainer>
+          )}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -738,12 +702,7 @@ function DiscoverScreen() {
               }}
             />
           }
-          // Performance optimizations for smooth scrolling
-          initialNumToRender={5}
-          maxToRenderPerBatch={3}
-          windowSize={7}
-          removeClippedSubviews={true}
-          updateCellsBatchingPeriod={50}
+          {...FACT_FLAT_LIST_SETTINGS}
         />
       );
     }

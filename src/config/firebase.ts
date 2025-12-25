@@ -21,6 +21,8 @@ import getAppCheck, {
   ReactNativeFirebaseAppCheckProvider,
 } from "@react-native-firebase/app-check";
 import { getApp } from "@react-native-firebase/app";
+import { Platform } from "react-native";
+import * as Device from "expo-device";
 
 // Get Firebase instances using modular API
 const crashlyticsInstance = getCrashlytics();
@@ -28,6 +30,12 @@ const analyticsInstance = getAnalytics();
 
 // Track if App Check is initialized
 let appCheckInitialized = false;
+
+// Promise that resolves when App Check initialization is complete (or failed)
+let appCheckReadyResolve: () => void;
+export const appCheckReady = new Promise<void>((resolve) => {
+  appCheckReadyResolve = resolve;
+});
 
 // Track if JS error handler is already installed
 let jsErrorHandlerInstalled = false;
@@ -47,21 +55,43 @@ export async function initializeAppCheckService() {
     return;
   }
 
+  // Determine platform and device type for provider selection
+  const isIOS = Platform.OS === 'ios';
+  const isRealDevice = Device.isDevice;
+  
+  // Use debug provider if:
+  // 1. Running in development mode (__DEV__)
+  // 2. Running on emulator/simulator (Play Integrity and App Attest don't work on emulators)
+  const useDebugProvider = __DEV__ || !isRealDevice;
+  
+  // Determine provider names
+  const iosProvider = useDebugProvider ? 'debug' : 'appAttest';
+  const androidProvider = useDebugProvider ? 'debug' : 'playIntegrity';
+  const providerName = isIOS ? iosProvider : androidProvider;
+  
+  console.log(`🔒 App Check: Starting initialization...`);
+  console.log(`🔒 App Check: Platform=${Platform.OS}, isDevice=${isRealDevice}, __DEV__=${__DEV__}`);
+  console.log(`🔒 App Check: Using provider: ${providerName}`);
+
   try {
     const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
     
+    console.log('🔒 App Check: Configuring provider...');
+    
     await rnfbProvider.configure({
       apple: {
-        // In DEBUG builds, the native side uses AppCheckDebugProvider
-        // In Release builds, uses App Attest with DeviceCheck fallback
-        provider: __DEV__ ? 'debug' : 'appAttest',
+        // Use debug on simulators, appAttest on real devices
+        provider: iosProvider,
       },
       android: {
-        provider: __DEV__ ? 'debug' : 'playIntegrity',
+        // Use debug on emulators, playIntegrity on real devices
+        provider: androidProvider,
       },
       // Enable token auto-refresh
       isTokenAutoRefreshEnabled: true,
     });
+
+    console.log('🔒 App Check: Provider configured, calling initializeAppCheck...');
 
     await initializeAppCheck(getApp(), {
       provider: rnfbProvider,
@@ -70,14 +100,38 @@ export async function initializeAppCheckService() {
 
     appCheckInitialized = true;
     
-    if (__DEV__) {
-      console.log('🔒 Firebase App Check initialized with DEBUG provider');
-      console.log('📋 Check the native console logs for the debug token');
+    console.log(`🔒 App Check: Initialization SUCCESS with ${providerName} provider`);
+    
+    if (useDebugProvider) {
+      console.log('📋 Using DEBUG provider - check native logs for debug token');
       console.log('   Register it in Firebase Console → App Check → Apps → Manage debug tokens');
     }
   } catch (error) {
-    // Log error but don't crash - App Check is optional for app functionality
-    console.error('Failed to initialize App Check:', error);
+    // Log detailed error - this helps debug production issues
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : '';
+    
+    console.error(`❌ App Check: Initialization FAILED with ${providerName} provider`);
+    console.error(`❌ App Check Error: ${errorMessage}`);
+    if (errorStack) {
+      console.error(`❌ App Check Stack: ${errorStack}`);
+    }
+    
+    // Also log to Crashlytics for production debugging
+    if (!__DEV__) {
+      try {
+        log(crashlyticsInstance, `App Check init failed (${providerName}): ${errorMessage}`);
+        if (error instanceof Error) {
+          crashlyticsRecordError(crashlyticsInstance, error);
+        }
+      } catch (e) {
+        // Silently fail if Crashlytics isn't ready
+      }
+    }
+  } finally {
+    // Always resolve the ready promise, even on failure
+    // This prevents API calls from hanging forever
+    appCheckReadyResolve();
   }
 }
 
@@ -316,11 +370,21 @@ export function testCrashlytics() {
 }
 
 /**
+ * Check if App Check is initialized
+ */
+export function isAppCheckInitialized(): boolean {
+  return appCheckInitialized;
+}
+
+/**
  * Get the current App Check token (for debugging)
  * This can be used to verify App Check is working correctly
  * Uses the modular API (v22+)
  */
 export async function getAppCheckToken() {
+  // Wait for App Check initialization to complete
+  await appCheckReady;
+  
   if (!appCheckInitialized) {
     console.warn('App Check not initialized');
     return null;

@@ -1,12 +1,12 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { StatusBar } from "expo-status-bar";
-import { SectionList, SectionListProps, RefreshControl, ActivityIndicator, useWindowDimensions, Animated as RNAnimated } from "react-native";
+import { SectionList, RefreshControl, ActivityIndicator, useWindowDimensions } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack } from "tamagui";
 import { Lightbulb } from "@tamagui/lucide-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { tokens } from "../../src/theme/tokens";
 import {
   H2,
@@ -32,6 +32,7 @@ import { checkAndRequestReview } from "../../src/services/appReview";
 import { onFeedRefresh, forceRefreshContent, onRefreshStatusChange, getRefreshStatus, RefreshStatus } from "../../src/services/contentRefresh";
 import { onPreferenceFeedRefresh } from "../../src/services/preferences";
 import { trackFeedRefresh, trackScreenView, Screens } from "../../src/services/analytics";
+import { FACT_SECTION_LIST_FULL_SETTINGS } from "../../src/config/factListSettings";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -42,10 +43,6 @@ interface FactSection {
   data: FactWithRelations[];
 }
 
-// Create animated SectionList for native scroll events with parallax
-const AnimatedSectionList = RNAnimated.createAnimatedComponent(SectionList) as React.ComponentType<
-  SectionListProps<FactWithRelations, FactSection> & { ref?: React.Ref<SectionList<FactWithRelations, FactSection>> }
->;
 
 // Track prefetched images to avoid redundant prefetching
 const prefetchedImages = new Set<string>();
@@ -90,14 +87,6 @@ function HomeScreen() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() => getRefreshStatus());
-
-  // Scroll position for parallax effect on image cards
-  const scrollY = useRef(new RNAnimated.Value(0)).current;
-
-  const handleScroll = RNAnimated.event(
-    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    { useNativeDriver: true }
-  );
 
   // Reload facts when tab gains focus (e.g., after settings change)
   useFocusEffect(
@@ -323,73 +312,42 @@ function HomeScreen() {
     }
 
     return (
-      <AnimatedSectionList
+      <SectionList
         sections={sections}
         keyExtractor={(item) => item.id.toString()}
-        renderSectionHeader={({ section: { title }, section }) => {
-          const sectionIndex = sections.indexOf(section);
-          // Cap animation delay to prevent slow initial render
-          const headerDelay = Math.min(sectionIndex * 30, 150);
-          return (
-            <Animated.View entering={FadeInDown.delay(headerDelay).duration(250)}>
-              <SectionHeaderContainer tablet={isTablet}>
-                <H2 fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}>
-                  {title}
-                </H2>
-              </SectionHeaderContainer>
-            </Animated.View>
-          );
-        }}
-        renderItem={({ item, section, index }) => {
-          const sectionIndex = sections.indexOf(section);
-          // Cap animation delay to prevent slow initial render for long lists
-          const animationDelay = Math.min(sectionIndex * 30 + (index + 1) * 30, 300);
-          
-          // Calculate global card index for parallax
-          let globalIndex = 0;
-          for (let i = 0; i < sectionIndex; i++) {
-            globalIndex += sections[i].data.length;
-          }
-          globalIndex += index;
-
-          return (
-            <Animated.View entering={FadeInDown.delay(animationDelay).duration(250)}>
-              <ContentContainer tablet={isTablet}>
-                {item.image_url ? (
-                  <ImageFactCard
-                    title={item.title || item.content.substring(0, 80) + "..."}
-                    imageUrl={item.image_url}
-                    category={item.categoryData || item.category}
-                    categorySlug={item.categoryData?.slug || item.category}
-                    onPress={() => handleFactPress(item)}
-                    isTablet={isTablet}
-                    scrollY={scrollY}
-                    cardIndex={globalIndex}
-                  />
-                ) : (
-                  <FeedFactCard
-                    title={item.title || item.content.substring(0, 80) + "..."}
-                    summary={item.summary}
-                    onPress={() => handleFactPress(item)}
-                    isTablet={isTablet}
-                  />
-                )}
-              </ContentContainer>
-            </Animated.View>
-          );
-        }}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
+        renderSectionHeader={({ section: { title } }) => (
+          <SectionHeaderContainer tablet={isTablet}>
+            <H2 fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}>
+              {title}
+            </H2>
+          </SectionHeaderContainer>
+        )}
+        renderItem={({ item }) => (
+          <ContentContainer tablet={isTablet}>
+            {item.image_url ? (
+              <ImageFactCard
+                title={item.title || item.content.substring(0, 80) + "..."}
+                imageUrl={item.image_url}
+                factId={item.id}
+                category={item.categoryData || item.category}
+                categorySlug={item.categoryData?.slug || item.category}
+                onPress={() => handleFactPress(item)}
+                isTablet={isTablet}
+              />
+            ) : (
+              <FeedFactCard
+                title={item.title || item.content.substring(0, 80) + "..."}
+                summary={item.summary}
+                onPress={() => handleFactPress(item)}
+                isTablet={isTablet}
+              />
+            )}
+          </ContentContainer>
+        )}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-        stickySectionHeadersEnabled={true}
-        // Performance optimizations for smooth scrolling
-        initialNumToRender={5}
-        maxToRenderPerBatch={3}
-        windowSize={7}
-        removeClippedSubviews={true}
-        updateCellsBatchingPeriod={50}
+        {...FACT_SECTION_LIST_FULL_SETTINGS}
       />
     );
   };
