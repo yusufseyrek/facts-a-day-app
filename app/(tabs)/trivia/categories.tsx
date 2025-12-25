@@ -22,6 +22,7 @@ import { useTranslation } from '../../../src/i18n';
 import { getLucideIcon } from '../../../src/utils/iconMapper';
 import * as triviaService from '../../../src/services/trivia';
 import type { CategoryWithProgress } from '../../../src/services/trivia';
+import { trackScreenView, Screens } from '../../../src/services/analytics';
 
 // Styled Text components
 const Text = styled(TamaguiText, {
@@ -174,6 +175,7 @@ export default function CategoriesAccuracyScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      trackScreenView(Screens.TRIVIA_CATEGORIES);
       loadData();
     }, [loadData])
   );

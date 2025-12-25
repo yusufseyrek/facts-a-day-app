@@ -33,6 +33,7 @@ import { useResponsive } from '../../src/utils/useResponsive';
 import * as triviaService from '../../src/services/trivia';
 import { TriviaResults, getTriviaModeBadge } from '../../src/components/trivia';
 import type { TriviaStats, CategoryWithProgress, TriviaSessionWithCategory } from '../../src/services/trivia';
+import { trackScreenView, Screens, trackTriviaResultsView, TriviaMode } from '../../src/services/analytics';
 
 const MAX_DISPLAY_CATEGORIES = 3;
 const MAX_DISPLAY_ACTIVITIES = 3;
@@ -437,6 +438,7 @@ export default function PerformanceScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      trackScreenView(Screens.TRIVIA_PERFORMANCE);
       loadData();
     }, [loadData])
   );
@@ -448,6 +450,12 @@ export default function PerformanceScreen() {
       const fullSession = await triviaService.getSessionById(sessionId);
       if (fullSession && fullSession.questions && fullSession.answers) {
         setSelectedSession(fullSession);
+        // Track viewing results from history
+        trackTriviaResultsView({
+          mode: fullSession.trivia_mode as TriviaMode,
+          sessionId: fullSession.id,
+          categorySlug: fullSession.category_slug || undefined,
+        });
       }
     } catch (error) {
       console.error('Error loading session:', error);

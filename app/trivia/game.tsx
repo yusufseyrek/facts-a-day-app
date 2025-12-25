@@ -10,7 +10,14 @@ import { tokens } from '../../src/theme/tokens';
 import { FONT_FAMILIES } from '../../src/components/Typography';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
-import { trackScreenView, Screens } from '../../src/services/analytics';
+import { 
+  trackScreenView, 
+  Screens, 
+  trackTriviaStart, 
+  trackTriviaComplete, 
+  trackTriviaExit,
+  TriviaMode,
+} from '../../src/services/analytics';
 import { TriviaResults, TriviaGameView, getTriviaModeBadge } from '../../src/components/trivia';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
@@ -105,7 +112,7 @@ export default function TriviaGameScreen() {
   // Load questions on mount
   useEffect(() => {
     loadQuestions();
-    trackScreenView(Screens.TRIVIA || 'TriviaGame');
+    trackScreenView(Screens.TRIVIA_GAME);
   }, []);
   
   // Handle Android back button
@@ -184,6 +191,15 @@ export default function TriviaGameScreen() {
         totalTime,
       }));
       setLoading(false);
+      
+      // Track trivia start
+      const triviaMode: TriviaMode = params.type === 'daily' ? 'daily' : 
+                                      params.type === 'category' ? 'category' : 'mixed';
+      trackTriviaStart({
+        mode: triviaMode,
+        questionCount: questions.length,
+        categorySlug: params.categorySlug,
+      });
     } catch (error) {
       console.error('Error loading trivia questions:', error);
       router.back();
@@ -250,6 +266,17 @@ export default function TriviaGameScreen() {
       await triviaService.saveDailyProgress(gameState.questions.length, correctCount);
     }
     
+    // Track trivia completion
+    trackTriviaComplete({
+      mode: triviaMode,
+      questionCount: gameState.questions.length,
+      correctCount,
+      elapsedTime,
+      bestStreak,
+      timeExpired: true,
+      categorySlug: params.categorySlug,
+    });
+    
     setGameState(prev => ({
       ...prev,
       isFinished: true,
@@ -271,7 +298,19 @@ export default function TriviaGameScreen() {
         { 
           text: t('exit') || 'Exit', 
           style: 'destructive',
-          onPress: () => router.back()
+          onPress: () => {
+            // Track trivia exit
+            const triviaMode: TriviaMode = params.type === 'daily' ? 'daily' : 
+                                           params.type === 'category' ? 'category' : 'mixed';
+            const answeredCount = Object.keys(gameState.answers).length;
+            trackTriviaExit({
+              mode: triviaMode,
+              questionsAnswered: answeredCount,
+              totalQuestions: gameState.questions.length,
+              categorySlug: params.categorySlug,
+            });
+            router.back();
+          }
         },
       ]
     );
@@ -406,6 +445,17 @@ export default function TriviaGameScreen() {
         correctCount
       );
     }
+    
+    // Track trivia completion
+    trackTriviaComplete({
+      mode: triviaMode,
+      questionCount: gameState.questions.length,
+      correctCount,
+      elapsedTime,
+      bestStreak,
+      timeExpired: false,
+      categorySlug: params.categorySlug,
+    });
     
     setGameState(prev => ({ 
       ...prev, 

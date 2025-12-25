@@ -142,6 +142,11 @@ export const Screens = {
   HOME: 'Home',
   DISCOVER: 'Discover',
   TRIVIA: 'Trivia',
+  TRIVIA_GAME: 'TriviaGame',
+  TRIVIA_PERFORMANCE: 'TriviaPerformance',
+  TRIVIA_HISTORY: 'TriviaHistory',
+  TRIVIA_CATEGORIES: 'TriviaCategories',
+  TRIVIA_RESULTS: 'TriviaResults',
   FAVORITES: 'Favorites',
   SETTINGS: 'Settings',
   FACT_DETAIL: 'FactDetail',
@@ -405,4 +410,85 @@ export type InterstitialSource = 'fact_view' | 'settings' | 'content_refresh' | 
  */
 export const trackInterstitialShown = (source: InterstitialSource): void => {
   logEvent('app_interstitial_shown', { source });
+};
+
+// ============================================================================
+// Trivia Events
+// ============================================================================
+
+export type TriviaMode = 'daily' | 'mixed' | 'category';
+
+/**
+ * Track when user starts a trivia session
+ */
+export const trackTriviaStart = (params: {
+  mode: TriviaMode;
+  questionCount: number;
+  categorySlug?: string;
+}): void => {
+  logEvent('app_trivia_start', {
+    mode: params.mode,
+    question_count: params.questionCount,
+    category_slug: params.categorySlug || '',
+  });
+};
+
+/**
+ * Track when user completes a trivia session
+ */
+export const trackTriviaComplete = (params: {
+  mode: TriviaMode;
+  questionCount: number;
+  correctCount: number;
+  elapsedTime: number;
+  bestStreak: number;
+  timeExpired: boolean;
+  categorySlug?: string;
+}): void => {
+  const accuracy = params.questionCount > 0 
+    ? Math.round((params.correctCount / params.questionCount) * 100) 
+    : 0;
+  
+  logEvent('app_trivia_complete', {
+    mode: params.mode,
+    question_count: params.questionCount,
+    correct_count: params.correctCount,
+    accuracy,
+    elapsed_time: params.elapsedTime,
+    best_streak: params.bestStreak,
+    time_expired: params.timeExpired,
+    category_slug: params.categorySlug || '',
+  });
+};
+
+/**
+ * Track when user exits a trivia session early
+ */
+export const trackTriviaExit = (params: {
+  mode: TriviaMode;
+  questionsAnswered: number;
+  totalQuestions: number;
+  categorySlug?: string;
+}): void => {
+  logEvent('app_trivia_exit', {
+    mode: params.mode,
+    questions_answered: params.questionsAnswered,
+    total_questions: params.totalQuestions,
+    category_slug: params.categorySlug || '',
+  });
+};
+
+/**
+ * Track when user views trivia session results from history
+ */
+export const trackTriviaResultsView = (params: {
+  mode: TriviaMode;
+  sessionId: number;
+  categorySlug?: string;
+}): void => {
+  logEvent('app_trivia_results_view', {
+    mode: params.mode,
+    session_id: params.sessionId,
+    category_slug: params.categorySlug || '',
+  });
 };

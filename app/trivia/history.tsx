@@ -29,6 +29,7 @@ import { getLucideIcon } from '../../src/utils/iconMapper';
 import * as triviaService from '../../src/services/trivia';
 import { TriviaResults, getTriviaModeBadge } from '../../src/components/trivia';
 import type { TriviaSessionWithCategory } from '../../src/services/trivia';
+import { trackScreenView, Screens, trackTriviaResultsView, TriviaMode } from '../../src/services/analytics';
 
 // Styled Text components
 const Text = styled(TamaguiText, {
@@ -323,6 +324,7 @@ export default function ActivityHistoryScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      trackScreenView(Screens.TRIVIA_HISTORY);
       loadData();
     }, [loadData])
   );
@@ -333,6 +335,12 @@ export default function ActivityHistoryScreen() {
       const fullSession = await triviaService.getSessionById(sessionId);
       if (fullSession && fullSession.questions && fullSession.answers) {
         setSelectedSession(fullSession);
+        // Track viewing results from history
+        trackTriviaResultsView({
+          mode: fullSession.trivia_mode as TriviaMode,
+          sessionId: fullSession.id,
+          categorySlug: fullSession.category_slug || undefined,
+        });
       }
     } catch (error) {
       console.error('Error loading session:', error);
