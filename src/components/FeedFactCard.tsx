@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef } from "react";
-import { Pressable, Animated } from "react-native";
+import { Pressable, Animated, StyleSheet } from "react-native";
 import { styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
 import { ChevronRight } from "@tamagui/lucide-icons";
@@ -54,10 +54,10 @@ const FeedFactCardComponent = ({
 
   const handlePressIn = useCallback(() => {
     Animated.spring(scaleAnim, {
-      toValue: 0.97,
+      toValue: 0.96,
       useNativeDriver: true,
-      speed: 50,
-      bounciness: 4,
+      friction: 8,
+      tension: 100,
     }).start();
   }, [scaleAnim]);
 
@@ -65,8 +65,8 @@ const FeedFactCardComponent = ({
     Animated.spring(scaleAnim, {
       toValue: 1,
       useNativeDriver: true,
-      speed: 50,
-      bounciness: 4,
+      friction: 8,
+      tension: 40,
     }).start();
   }, [scaleAnim]);
 
@@ -114,13 +114,19 @@ const FeedFactCardComponent = ({
     borderless: false,
   }), [theme]);
 
+  // Animated style - transform array for scale animation
+  const animatedStyle = {
+    transform: [{ scale: scaleAnim }],
+  };
+
   return (
-    <Animated.View style={scaleStyle}>
+    <Animated.View style={animatedStyle}>
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         android_ripple={androidRipple}
+        style={styles.pressable}
       >
         <CardWrapper style={cardStyle} tablet={isTablet}>
           <ContentRow>
@@ -155,12 +161,15 @@ const FeedFactCardComponent = ({
       </Pressable>
     </Animated.View>
   );
-
-  // Helper for animated style - defined as a getter since we need scaleAnim
-  function scaleStyle() {
-    return { transform: [{ scale: scaleAnim }] };
-  }
 };
+
+const styles = StyleSheet.create({
+  pressable: {
+    // Ensures the ripple effect is contained
+    overflow: "hidden",
+    borderRadius: tokens.radius.lg,
+  },
+});
 
 // Memoize the component to prevent unnecessary re-renders
 // Only compare stable props - onPress is intentionally excluded

@@ -70,10 +70,10 @@ const ImageFactCardComponent = ({
 
   const handlePressIn = useCallback(() => {
     Animated.spring(scaleAnim, {
-      toValue: 0.97,
+      toValue: 0.96,
       useNativeDriver: true,
-      speed: 50,
-      bounciness: 4,
+      friction: 8,
+      tension: 100,
     }).start();
   }, [scaleAnim]);
 
@@ -81,8 +81,8 @@ const ImageFactCardComponent = ({
     Animated.spring(scaleAnim, {
       toValue: 1,
       useNativeDriver: true,
-      speed: 50,
-      bounciness: 4,
+      friction: 8,
+      tension: 40,
     }).start();
   }, [scaleAnim]);
 
@@ -179,13 +179,19 @@ const ImageFactCardComponent = ({
   // This prevents the Image component from being recreated unnecessarily
   const recyclingKey = useMemo(() => `fact-image-${factId}`, [factId]);
 
+  // Animated style - transform array for scale animation
+  const animatedStyle = {
+    transform: [{ scale: scaleAnim }],
+  };
+
   return (
-    <Animated.View style={scaleAnimStyle}>
+    <Animated.View style={animatedStyle}>
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         android_ripple={androidRipple}
+        style={styles.pressable}
       >
         <View style={[styles.cardWrapper, marginStyle]}>
           {/* Image Container */}
@@ -243,11 +249,6 @@ const ImageFactCardComponent = ({
       </Pressable>
     </Animated.View>
   );
-
-  // Getter for scale animation style
-  function scaleAnimStyle() {
-    return { transform: [{ scale: scaleAnim }] };
-  }
 };
 
 // Static values moved outside component to prevent recreation
@@ -261,6 +262,11 @@ const gradientColors = ["transparent", "rgba(0, 0, 0, 0.3)", "rgba(0, 0, 0, 0.75
 const gradientLocations = [0.3, 0.6, 1] as const;
 
 const styles = StyleSheet.create({
+  pressable: {
+    // Ensures the ripple effect is contained
+    overflow: "hidden",
+    borderRadius: tokens.radius.lg,
+  },
   cardWrapper: {
     borderRadius: tokens.radius.lg,
     overflow: "hidden",
