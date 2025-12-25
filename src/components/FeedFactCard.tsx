@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import { Pressable, Animated } from "react-native";
 import { styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
@@ -48,58 +48,86 @@ const FeedFactCardComponent = ({
   const { theme } = useTheme();
   const { fontSizes, isTablet: isTabletDevice } = useResponsive();
   const isTablet = isTabletProp || isTabletDevice;
-  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  
+  // Use ref for animation value - persists across renders
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  const handlePressIn = () => {
+  const handlePressIn = useCallback(() => {
     Animated.spring(scaleAnim, {
       toValue: 0.97,
       useNativeDriver: true,
       speed: 50,
       bounciness: 4,
     }).start();
-  };
+  }, [scaleAnim]);
 
-  const handlePressOut = () => {
+  const handlePressOut = useCallback(() => {
     Animated.spring(scaleAnim, {
       toValue: 1,
       useNativeDriver: true,
       speed: 50,
       bounciness: 4,
     }).start();
-  };
+  }, [scaleAnim]);
 
-  // Background colors using new neon theme
-  const backgroundColor =
-    theme === "dark"
+  // Memoize computed values
+  const titleFontSize = useMemo(() => 
+    isTablet ? tokens.fontSize.h2Tablet : Math.round(fontSizes.body * 1.2),
+    [isTablet, fontSizes.body]
+  );
+  
+  const titleLineHeight = useMemo(() => 
+    isTablet ? tokens.fontSize.h2Tablet * 1.35 : Math.round(fontSizes.body * 1.2 * 1.25),
+    [isTablet, fontSizes.body]
+  );
+
+  const summaryFontSize = useMemo(() => 
+    isTablet ? tokens.fontSize.bodyTablet : Math.round(fontSizes.body * 0.93),
+    [isTablet, fontSizes.body]
+  );
+
+  const summaryLineHeight = useMemo(() => 
+    isTablet ? tokens.fontSize.bodyTablet * 1.6 : Math.round(fontSizes.body * 0.93 * 1.6),
+    [isTablet, fontSizes.body]
+  );
+
+  // Memoize style object to prevent recreation
+  const cardStyle = useMemo(() => ({
+    backgroundColor: theme === "dark"
       ? tokens.color.dark.cardBackground
-      : tokens.color.light.cardBackground;
-
-  // Shadow and border styling
-  const cardStyle = {
-    backgroundColor,
+      : tokens.color.light.cardBackground,
     borderWidth: 1,
-    borderColor:
-      theme === "dark" ? tokens.color.dark.border : tokens.color.light.border,
-  };
+    borderColor: theme === "dark" 
+      ? tokens.color.dark.border 
+      : tokens.color.light.border,
+  }), [theme]);
+
+  const chevronColor = useMemo(() => 
+    theme === "dark"
+      ? tokens.color.dark.textSecondary
+      : tokens.color.light.textSecondary,
+    [theme]
+  );
+
+  const androidRipple = useMemo(() => ({
+    color: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+    borderless: false,
+  }), [theme]);
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+    <Animated.View style={scaleStyle}>
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        android_ripple={{
-          color:
-            theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
-          borderless: false,
-        }}
+        android_ripple={androidRipple}
       >
         <CardWrapper style={cardStyle} tablet={isTablet}>
           <ContentRow>
             <TextContainer>
               <SerifTitle
-                fontSize={isTablet ? tokens.fontSize.h2Tablet : Math.round(fontSizes.body * 1.2)}
-                lineHeight={isTablet ? tokens.fontSize.h2Tablet * 1.35 : Math.round(fontSizes.body * 1.2 * 1.25)}
+                fontSize={titleFontSize}
+                lineHeight={titleLineHeight}
                 letterSpacing={0.3}
                 color="$text"
                 numberOfLines={isTablet ? 4 : 3}
@@ -108,8 +136,8 @@ const FeedFactCardComponent = ({
               </SerifTitle>
               {summary && (
                 <BodyText
-                  fontSize={isTablet ? tokens.fontSize.bodyTablet : Math.round(fontSizes.body * 0.93)}
-                  lineHeight={isTablet ? tokens.fontSize.bodyTablet * 1.6 : Math.round(fontSizes.body * 0.93 * 1.6)}
+                  fontSize={summaryFontSize}
+                  lineHeight={summaryLineHeight}
                   letterSpacing={0.2}
                   color="$textSecondary"
                   numberOfLines={isTablet ? 4 : 3}
@@ -120,20 +148,22 @@ const FeedFactCardComponent = ({
             </TextContainer>
             <ChevronRight
               size={isTablet ? 24 : 18}
-              color={
-                theme === "dark"
-                  ? tokens.color.dark.textSecondary
-                  : tokens.color.light.textSecondary
-              }
+              color={chevronColor}
             />
           </ContentRow>
         </CardWrapper>
       </Pressable>
     </Animated.View>
   );
+
+  // Helper for animated style - defined as a getter since we need scaleAnim
+  function scaleStyle() {
+    return { transform: [{ scale: scaleAnim }] };
+  }
 };
 
 // Memoize the component to prevent unnecessary re-renders
+// Only compare stable props - onPress is intentionally excluded
 export const FeedFactCard = React.memo(
   FeedFactCardComponent,
   (prevProps, nextProps) => {
@@ -141,7 +171,6 @@ export const FeedFactCard = React.memo(
       prevProps.title === nextProps.title &&
       prevProps.summary === nextProps.summary &&
       prevProps.isTablet === nextProps.isTablet
-      // Don't compare onPress as it may be recreated but functionally equivalent
     );
   }
 );

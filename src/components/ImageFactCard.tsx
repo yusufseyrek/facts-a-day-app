@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from "react";
-import { Pressable, Animated, StyleSheet, View, Text } from "react-native";
-import { Image, ImageLoadEventData } from "expo-image";
+import React, { useState, useCallback, useMemo, useRef } from "react";
+import { Pressable, Animated, StyleSheet, View, Text, Platform } from "react-native";
+import { Image, ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { tokens } from "../theme/tokens";
 import { useResponsive } from "../utils/useResponsive";
@@ -28,10 +28,6 @@ interface ImageFactCardProps {
   categorySlug?: string;
   onPress: () => void;
   isTablet?: boolean;
-  /** Animated scroll Y value for parallax effect */
-  scrollY?: Animated.Value;
-  /** Card's position in viewport for parallax calculation */
-  cardIndex?: number;
 }
 
 const ImageFactCardComponent = ({
@@ -42,38 +38,35 @@ const ImageFactCardComponent = ({
   categorySlug,
   onPress,
   isTablet: isTabletProp = false,
-  scrollY,
-  cardIndex = 0,
 }: ImageFactCardProps) => {
   const { fontSizes, isTablet: isTabletDevice, screenWidth } = useResponsive();
   const isTablet = isTabletProp || isTabletDevice;
-  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  
+  // Use a ref for the scale animation - this persists across renders
+  const scaleAnim = useRef(new Animated.Value(1)).current;
   
   // Use authenticated image with App Check - REQUIRED since remote URLs need App Check headers
-  const { imageUri: authenticatedImageUri, isLoading: isImageLoading, hasError: downloadError, retry: retryImage } = useFactImage(imageUrl, factId);
+  const { imageUri: authenticatedImageUri, isLoading: isImageLoading, retry: retryImage } = useFactImage(imageUrl, factId);
+  
+  // Keep track of the last valid image URI to prevent flickering
+  const lastValidUriRef = useRef<string | null>(null);
+  
+  // Update last valid URI when we get a new one
+  if (authenticatedImageUri && authenticatedImageUri !== lastValidUriRef.current) {
+    lastValidUriRef.current = authenticatedImageUri;
+  }
+  
+  // Use the last valid URI if current is null (prevents flicker during re-render)
+  const displayUri = authenticatedImageUri || lastValidUriRef.current;
   
   // Image retry state for expo-image component errors (after successful download)
   const [retryCount, setRetryCount] = useState(0);
-  const [imageKey, setImageKey] = useState(0);
-  const [hasRenderError, setHasRenderError] = useState(false);
 
-  // Calculate card height based on aspect ratio
-  const cardHeight = screenWidth * ASPECT_RATIO;
+  // Calculate card height based on aspect ratio - memoize to prevent recalculation
+  const cardHeight = useMemo(() => screenWidth * ASPECT_RATIO, [screenWidth]);
 
-  // Parallax effect: subtle image movement based on scroll position
+  // Parallax amount
   const parallaxAmount = 8;
-  const imageTranslateY = scrollY
-    ? scrollY.interpolate({
-        inputRange: [
-          -cardHeight,
-          0,
-          cardHeight * (cardIndex + 1),
-          cardHeight * (cardIndex + 2),
-        ],
-        outputRange: [parallaxAmount, 0, -parallaxAmount, -parallaxAmount * 2],
-        extrapolate: "clamp",
-      })
-    : new Animated.Value(0);
 
   const handlePressIn = useCallback(() => {
     Animated.spring(scaleAnim, {
@@ -96,7 +89,7 @@ const ImageFactCardComponent = ({
   // Handle image render error with retry logic (for local file issues after download)
   const handleImageError = useCallback(() => {
     // Don't treat loading/null state as an error - wait for actual image to load
-    if (isImageLoading || !authenticatedImageUri) {
+    if (isImageLoading || !displayUri) {
       return;
     }
     
@@ -106,24 +99,20 @@ const ImageFactCardComponent = ({
       
       setTimeout(() => {
         setRetryCount((prev) => prev + 1);
-        setImageKey((prev) => prev + 1); // Force re-render of Image component
         retryImage(); // Re-download with App Check
       }, delay);
     } else {
       console.log(`❌ Image failed after ${MAX_RETRY_ATTEMPTS} attempts for fact ${factId}`);
-      setHasRenderError(true);
     }
-  }, [retryCount, factId, retryImage, isImageLoading, authenticatedImageUri]);
+  }, [retryCount, factId, retryImage, isImageLoading, displayUri]);
 
   // Reset retry state when imageUrl changes
   React.useEffect(() => {
     setRetryCount(0);
-    setImageKey(0);
-    setHasRenderError(false);
   }, [imageUrl]);
 
-  // Determine category info for badge
-  const getCategoryInfo = useCallback(() => {
+  // Determine category info for badge - memoized
+  const categoryInfo = useMemo(() => {
     if (typeof category === "object" && category !== null) {
       return {
         name: category.name,
@@ -139,80 +128,100 @@ const ImageFactCardComponent = ({
     return { name, color: "#0066FF" };
   }, [category, categorySlug]);
 
-  const categoryInfo = getCategoryInfo();
-
-  // Generate image source - ONLY use authenticated local URI
-  // Remote URLs require App Check headers which expo-image cannot provide
-  const getImageSource = useCallback(() => {
-    // Only return authenticated (locally cached) image URI
-    // Never fall back to remote URL as it requires App Check headers
-    if (!authenticatedImageUri) {
+  // Generate image source - use displayUri which never goes null unnecessarily
+  const imageSource = useMemo((): ImageSource | null => {
+    if (!displayUri) {
       return null;
     }
-    return { uri: authenticatedImageUri };
-  }, [authenticatedImageUri]);
+    return { uri: displayUri };
+  }, [displayUri]);
+
+  // Memoize style objects to prevent recreation
+  const marginStyle = useMemo(() => ({ 
+    marginBottom: isTablet ? tokens.space.lg : tokens.space.md 
+  }), [isTablet]);
+
+  const imageContainerStyle = useMemo(() => ({ 
+    height: cardHeight 
+  }), [cardHeight]);
+
+  const imageStyle = useMemo(() => ({
+    width: "100%" as const,
+    height: cardHeight + parallaxAmount * 2,
+    marginTop: -parallaxAmount,
+  }), [cardHeight]);
+
+  const badgePositionStyle = useMemo(() => ({
+    top: isTablet ? tokens.space.lg : tokens.space.md,
+    right: isTablet ? tokens.space.lg : tokens.space.md,
+  }), [isTablet]);
+
+  const contentOverlayStyle = useMemo(() => ({
+    paddingHorizontal: isTablet ? tokens.space.xl : tokens.space.lg,
+    paddingBottom: isTablet ? tokens.space.xl : tokens.space.lg,
+    paddingTop: isTablet ? tokens.space.xxl * 1.5 : tokens.space.xxl,
+  }), [isTablet]);
+
+  const titleStyle = useMemo(() => ({
+    fontSize: isTablet
+      ? tokens.fontSize.h1Tablet
+      : Math.round(fontSizes.h1 * 0.85),
+    lineHeight: isTablet
+      ? tokens.fontSize.h1Tablet * 1.25
+      : Math.round(fontSizes.h1 * 0.85 * 1.25),
+  }), [isTablet, fontSizes.h1]);
+
+  const badgeTextStyle = useMemo(() => ({ 
+    fontSize: isTablet ? 14 : 12 
+  }), [isTablet]);
+
+  // Stable recycling key - only changes with factId, not with retryCount
+  // This prevents the Image component from being recreated unnecessarily
+  const recyclingKey = useMemo(() => `fact-image-${factId}`, [factId]);
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+    <Animated.View style={scaleAnimStyle}>
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        android_ripple={{
-          color: "rgba(255, 255, 255, 0.15)",
-          borderless: false,
-        }}
+        android_ripple={androidRipple}
       >
-        <View style={[styles.cardWrapper, { marginBottom: isTablet ? tokens.space.lg : tokens.space.md }]}>
+        <View style={[styles.cardWrapper, marginStyle]}>
           {/* Image Container */}
-          <View style={[styles.imageContainer, { height: cardHeight }]}>
-            {/* Parallax Image */}
-            <Animated.View
-              style={[
-                StyleSheet.absoluteFill,
-                { transform: [{ translateY: imageTranslateY }] },
-              ]}
-            >
-              <Image
-                key={imageKey}
-                source={getImageSource()}
-                style={{
-                  width: "100%",
-                  height: cardHeight + parallaxAmount * 2,
-                  marginTop: -parallaxAmount,
-                }}
-                contentFit="cover"
-                contentPosition="top"
-                cachePolicy="memory-disk"
-                transition={300}
-                // Show blurhash while image is loading/downloading with App Check
-                placeholder={{ blurhash: DEFAULT_BLURHASH }}
-                onError={handleImageError}
-                recyclingKey={`${factId}-${authenticatedImageUri || 'loading'}-${imageKey}`}
-              />
-            </Animated.View>
+          <View style={[styles.imageContainer, imageContainerStyle]}>
+            {/* Image */}
+            <Image
+              source={imageSource}
+              style={imageStyle}
+              contentFit="cover"
+              contentPosition="top"
+              // Use disk-only on Android to avoid memory cache issues
+              cachePolicy={Platform.OS === "android" ? "disk" : "memory-disk"}
+              // Disable transition on Android to prevent flicker
+              transition={Platform.OS === "android" ? 0 : 300}
+              // Show blurhash while image is loading/downloading with App Check
+              placeholder={placeholder}
+              onError={handleImageError}
+              // Stable recyclingKey - doesn't change with retry
+              recyclingKey={recyclingKey}
+              // Priority hint for loading
+              priority="normal"
+            />
 
             {/* Dark gradient overlay for text legibility */}
             <LinearGradient
-              colors={["transparent", "rgba(0, 0, 0, 0.3)", "rgba(0, 0, 0, 0.75)"]}
-              locations={[0.3, 0.6, 1]}
+              colors={gradientColors}
+              locations={gradientLocations}
               style={StyleSheet.absoluteFill}
               pointerEvents="none"
             />
 
             {/* Category badge */}
             {categoryInfo.name && (
-              <View
-                style={[
-                  styles.badgeContainer,
-                  {
-                    top: isTablet ? tokens.space.lg : tokens.space.md,
-                    right: isTablet ? tokens.space.lg : tokens.space.md,
-                  },
-                ]}
-              >
+              <View style={[styles.badgeContainer, badgePositionStyle]}>
                 <View style={[styles.badge, { backgroundColor: categoryInfo.color }]}>
-                  <Text style={[styles.badgeText, { fontSize: isTablet ? 14 : 12 }]}>
+                  <Text style={[styles.badgeText, badgeTextStyle]}>
                     {categoryInfo.name}
                   </Text>
                 </View>
@@ -220,29 +229,10 @@ const ImageFactCardComponent = ({
             )}
 
             {/* Content overlay */}
-            <View
-              style={[
-                styles.contentOverlay,
-                {
-                  paddingHorizontal: isTablet ? tokens.space.xl : tokens.space.lg,
-                  paddingBottom: isTablet ? tokens.space.xl : tokens.space.lg,
-                  paddingTop: isTablet ? tokens.space.xxl * 1.5 : tokens.space.xxl,
-                },
-              ]}
-            >
+            <View style={[styles.contentOverlay, contentOverlayStyle]}>
               {/* Title */}
               <Text
-                style={[
-                  styles.title,
-                  {
-                    fontSize: isTablet
-                      ? tokens.fontSize.h1Tablet
-                      : Math.round(fontSizes.h1 * 0.85),
-                    lineHeight: isTablet
-                      ? tokens.fontSize.h1Tablet * 1.25
-                      : Math.round(fontSizes.h1 * 0.85 * 1.25),
-                  },
-                ]}
+                style={[styles.title, titleStyle]}
                 numberOfLines={isTablet ? 4 : 3}
               >
                 {title}
@@ -253,7 +243,22 @@ const ImageFactCardComponent = ({
       </Pressable>
     </Animated.View>
   );
+
+  // Getter for scale animation style
+  function scaleAnimStyle() {
+    return { transform: [{ scale: scaleAnim }] };
+  }
 };
+
+// Static values moved outside component to prevent recreation
+const androidRipple = {
+  color: "rgba(255, 255, 255, 0.15)",
+  borderless: false,
+};
+
+const placeholder = { blurhash: DEFAULT_BLURHASH };
+const gradientColors = ["transparent", "rgba(0, 0, 0, 0.3)", "rgba(0, 0, 0, 0.75)"] as const;
+const gradientLocations = [0.3, 0.6, 1] as const;
 
 const styles = StyleSheet.create({
   cardWrapper: {
@@ -297,6 +302,7 @@ const styles = StyleSheet.create({
 });
 
 // Memoize the component to prevent unnecessary re-renders
+// Only compare stable props - onPress is intentionally excluded as it's usually recreated
 export const ImageFactCard = React.memo(
   ImageFactCardComponent,
   (prevProps, nextProps) => {
@@ -305,8 +311,7 @@ export const ImageFactCard = React.memo(
       prevProps.imageUrl === nextProps.imageUrl &&
       prevProps.factId === nextProps.factId &&
       prevProps.categorySlug === nextProps.categorySlug &&
-      prevProps.isTablet === nextProps.isTablet &&
-      prevProps.cardIndex === nextProps.cardIndex
+      prevProps.isTablet === nextProps.isTablet
     );
   }
 );

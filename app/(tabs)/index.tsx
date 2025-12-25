@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { StatusBar } from "expo-status-bar";
 import { SectionList, RefreshControl, ActivityIndicator, useWindowDimensions } from "react-native";
 import { styled } from "@tamagui/core";
@@ -32,7 +32,7 @@ import { checkAndRequestReview } from "../../src/services/appReview";
 import { onFeedRefresh, forceRefreshContent, onRefreshStatusChange, getRefreshStatus, RefreshStatus } from "../../src/services/contentRefresh";
 import { onPreferenceFeedRefresh } from "../../src/services/preferences";
 import { trackFeedRefresh, trackScreenView, Screens } from "../../src/services/analytics";
-import { FACT_SECTION_LIST_FULL_SETTINGS } from "../../src/config/factListSettings";
+import { FACT_SECTION_LIST_FULL_SETTINGS, CARD_HEIGHTS, getEstimatedItemHeight } from "../../src/config/factListSettings";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -43,8 +43,8 @@ interface FactSection {
   data: FactWithRelations[];
 }
 
-
-// Track prefetched images to avoid redundant prefetching
+// Limit prefetch set size to prevent memory leaks
+const MAX_PREFETCH_CACHE_SIZE = 100;
 const prefetchedImages = new Set<string>();
 
 // Prefetch images for faster loading in modal
@@ -57,8 +57,11 @@ const prefetchFactImages = (facts: FactWithRelations[]) => {
   const newImageUrls = imageUrls.filter((url) => !prefetchedImages.has(url));
 
   if (newImageUrls.length > 0) {
+    // Clear old entries if cache is getting too large
+    if (prefetchedImages.size > MAX_PREFETCH_CACHE_SIZE) {
+      prefetchedImages.clear();
+    }
     Image.prefetch(newImageUrls);
-    // Track newly prefetched images
     newImageUrls.forEach((url) => prefetchedImages.add(url));
   }
 };
@@ -75,6 +78,68 @@ const LocaleChangeOverlay = styled(YStack, {
   zIndex: 100,
   gap: tokens.space.lg,
 });
+
+// Memoized list item component to prevent re-renders
+interface FactListItemProps {
+  item: FactWithRelations;
+  isTablet: boolean;
+  onPress: (fact: FactWithRelations) => void;
+}
+
+const FactListItem = React.memo(({ item, isTablet, onPress }: FactListItemProps) => {
+  // Create stable callback reference
+  const handlePress = useCallback(() => {
+    onPress(item);
+  }, [item, onPress]);
+
+  return (
+    <ContentContainer tablet={isTablet}>
+      {item.image_url ? (
+        <ImageFactCard
+          title={item.title || item.content.substring(0, 80) + "..."}
+          imageUrl={item.image_url}
+          factId={item.id}
+          category={item.categoryData || item.category}
+          categorySlug={item.categoryData?.slug || item.category}
+          onPress={handlePress}
+          isTablet={isTablet}
+        />
+      ) : (
+        <FeedFactCard
+          title={item.title || item.content.substring(0, 80) + "..."}
+          summary={item.summary}
+          onPress={handlePress}
+          isTablet={isTablet}
+        />
+      )}
+    </ContentContainer>
+  );
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.title === nextProps.item.title &&
+    prevProps.item.image_url === nextProps.item.image_url &&
+    prevProps.isTablet === nextProps.isTablet
+  );
+});
+
+FactListItem.displayName = 'FactListItem';
+
+// Memoized section header component
+interface SectionHeaderProps {
+  title: string;
+  isTablet: boolean;
+}
+
+const SectionHeader = React.memo(({ title, isTablet }: SectionHeaderProps) => (
+  <SectionHeaderContainer tablet={isTablet}>
+    <H2 fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}>
+      {title}
+    </H2>
+  </SectionHeaderContainer>
+));
+
+SectionHeader.displayName = 'SectionHeader';
 
 function HomeScreen() {
   const { theme } = useTheme();
@@ -110,7 +175,6 @@ function HomeScreen() {
             console.log(`✅ Marked fact ${factId} as shown in feed`);
             
             // Top up notifications since one was just delivered
-            // This ensures we always have 64 scheduled notifications
             console.log('🔔 Notification received, checking if top-up needed...');
             const { checkAndTopUpNotifications } = await import("../../src/services/notifications");
             const { getLocaleFromCode } = await import("../../src/i18n");
@@ -158,12 +222,11 @@ function HomeScreen() {
     return () => unsubscribe();
   }, []);
 
-  const loadFacts = async (isRefresh = false) => {
+  const loadFacts = useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
       }
-      // Only show loading spinner on initial load (no data yet)
 
       // Mark any delivered facts as shown (for facts delivered while app was closed)
       const markedCount = await database.markDeliveredFactsAsShown(locale);
@@ -178,7 +241,7 @@ function HomeScreen() {
       prefetchFactImages(facts);
 
       // Group facts by date
-      const groupedFacts = groupFactsByDate(facts);
+      const groupedFacts = groupFactsByDate(facts, t, locale);
       setSections(groupedFacts);
     } catch (error) {
       console.error("Error loading facts:", error);
@@ -186,70 +249,9 @@ function HomeScreen() {
       setInitialLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [locale, t]);
 
-  const groupFactsByDate = (facts: FactWithRelations[]): FactSection[] => {
-    const today = new Date();
-    const todayString = today.toISOString().split("T")[0];
-
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayString = yesterday.toISOString().split("T")[0];
-
-    // Group facts by date
-    const grouped: { [key: string]: FactWithRelations[] } = {};
-
-    facts.forEach((fact) => {
-      let dateKey: string;
-
-      // Facts marked as shown_in_feed (without scheduled_date) should appear under "Today"
-      if (fact.shown_in_feed === 1 && !fact.scheduled_date) {
-        dateKey = todayString;
-      } else if (fact.scheduled_date) {
-        dateKey = fact.scheduled_date.split("T")[0];
-      } else {
-        // Skip facts that are neither scheduled nor marked as shown
-        return;
-      }
-
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = [];
-      }
-      grouped[dateKey].push(fact);
-    });
-
-    // Convert to sections array with formatted titles
-    const sectionsArray: FactSection[] = [];
-
-    Object.keys(grouped)
-      .sort((a, b) => b.localeCompare(a)) // Sort descending (newest first)
-      .forEach((dateKey) => {
-        let title: string;
-
-        if (dateKey === todayString) {
-          title = t("today");
-        } else if (dateKey === yesterdayString) {
-          title = t("yesterday");
-        } else {
-          // Format date using user's locale (e.g., "October 24, 2023" for en-US)
-          const date = new Date(dateKey);
-          title = date.toLocaleDateString(locale, {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          });
-        }
-
-        sectionsArray.push({
-          title,
-          data: grouped[dateKey],
-        });
-      });
-
-    return sectionsArray;
-  };
-
-  const handleFactPress = async (fact: FactWithRelations) => {
+  const handleFactPress = useCallback(async (fact: FactWithRelations) => {
     // Track fact view and potentially show interstitial ad
     await trackFactView();
 
@@ -257,9 +259,9 @@ function HomeScreen() {
     checkAndRequestReview(); // Non-blocking call
 
     router.push(`/fact/${fact.id}?source=feed`);
-  };
+  }, [router]);
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     
     // Track pull-to-refresh
@@ -272,13 +274,54 @@ function HomeScreen() {
       console.error("Error refreshing content from API:", error);
     }
     // Then reload facts from database
-    // loadFacts will set refreshing to false in its finally block
     await loadFacts(false);
-  };
+  }, [loadFacts]);
 
   const iconColor = useIconColor();
 
-  const renderHeader = () => (
+  // Memoized keyExtractor
+  const keyExtractor = useCallback((item: FactWithRelations, index: number) => 
+    item?.id?.toString() ?? `fallback-${index}`, []);
+
+  // Memoized renderItem
+  const renderItem = useCallback(({ item }: { item: FactWithRelations }) => {
+    if (!item || !item.id) {
+      return null;
+    }
+    return (
+      <FactListItem
+        item={item}
+        isTablet={isTablet}
+        onPress={handleFactPress}
+      />
+    );
+  }, [isTablet, handleFactPress]);
+
+  // Memoized renderSectionHeader
+  const renderSectionHeader = useCallback(({ section: { title } }: { section: FactSection }) => (
+    <SectionHeader title={title} isTablet={isTablet} />
+  ), [isTablet]);
+
+  // Memoized refreshControl
+  const refreshControl = useMemo(() => (
+    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+  ), [refreshing, handleRefresh]);
+
+  // Memoized getItemLayout for better scroll performance
+  const getItemLayout = useCallback((
+    _data: FactSection[] | null,
+    index: number
+  ) => {
+    // Estimate average item height based on mix of image and text cards
+    const estimatedHeight = getEstimatedItemHeight(true, width, isTablet);
+    return {
+      length: estimatedHeight,
+      offset: estimatedHeight * index,
+      index,
+    };
+  }, [width, isTablet]);
+
+  const renderHeader = useCallback(() => (
     <Animated.View entering={FadeIn.duration(300)}>
       <ScreenHeader
         icon={<Lightbulb size={isTablet ? 32 : 24} color={iconColor} />}
@@ -286,7 +329,7 @@ function HomeScreen() {
         isTablet={isTablet}
       />
     </Animated.View>
-  );
+  ), [isTablet, iconColor, t]);
 
   // Only show loading spinner on initial load when there's no data yet
   if (initialLoading && sections.length === 0) {
@@ -314,39 +357,11 @@ function HomeScreen() {
     return (
       <SectionList
         sections={sections}
-        keyExtractor={(item) => item.id.toString()}
-        renderSectionHeader={({ section: { title } }) => (
-          <SectionHeaderContainer tablet={isTablet}>
-            <H2 fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}>
-              {title}
-            </H2>
-          </SectionHeaderContainer>
-        )}
-        renderItem={({ item }) => (
-          <ContentContainer tablet={isTablet}>
-            {item.image_url ? (
-              <ImageFactCard
-                title={item.title || item.content.substring(0, 80) + "..."}
-                imageUrl={item.image_url}
-                factId={item.id}
-                category={item.categoryData || item.category}
-                categorySlug={item.categoryData?.slug || item.category}
-                onPress={() => handleFactPress(item)}
-                isTablet={isTablet}
-              />
-            ) : (
-              <FeedFactCard
-                title={item.title || item.content.substring(0, 80) + "..."}
-                summary={item.summary}
-                onPress={() => handleFactPress(item)}
-                isTablet={isTablet}
-              />
-            )}
-          </ContentContainer>
-        )}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        keyExtractor={keyExtractor}
+        renderSectionHeader={renderSectionHeader}
+        renderItem={renderItem}
+        refreshControl={refreshControl}
+        getItemLayout={getItemLayout}
         {...FACT_SECTION_LIST_FULL_SETTINGS}
       />
     );
@@ -386,5 +401,74 @@ function HomeScreen() {
   );
 }
 
+// Helper function moved outside component to prevent recreation
+function groupFactsByDate(
+  facts: FactWithRelations[],
+  t: (key: "today" | "yesterday") => string,
+  locale: string
+): FactSection[] {
+  const today = new Date();
+  const todayString = today.toISOString().split("T")[0];
+
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayString = yesterday.toISOString().split("T")[0];
+
+  // Group facts by date
+  const grouped: { [key: string]: FactWithRelations[] } = {};
+
+  facts.forEach((fact) => {
+    let dateKey: string;
+
+    // Facts marked as shown_in_feed (without scheduled_date) should appear under "Today"
+    if (fact.shown_in_feed === 1 && !fact.scheduled_date) {
+      dateKey = todayString;
+    } else if (fact.scheduled_date) {
+      dateKey = fact.scheduled_date.split("T")[0];
+    } else {
+      // Skip facts that are neither scheduled nor marked as shown
+      return;
+    }
+
+    if (!grouped[dateKey]) {
+      grouped[dateKey] = [];
+    }
+    grouped[dateKey].push(fact);
+  });
+
+  // Convert to sections array with formatted titles
+  const sectionsArray: FactSection[] = [];
+
+  Object.keys(grouped)
+    .sort((a, b) => b.localeCompare(a)) // Sort descending (newest first)
+    .forEach((dateKey) => {
+      let title: string;
+
+      if (dateKey === todayString) {
+        title = t("today");
+      } else if (dateKey === yesterdayString) {
+        title = t("yesterday");
+      } else {
+        // Format date using user's locale (e.g., "October 24, 2023" for en-US)
+        const date = new Date(dateKey);
+        title = date.toLocaleDateString(locale, {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      }
+
+      // Filter out any undefined or invalid items
+      const validData = grouped[dateKey].filter(item => item && item.id);
+      if (validData.length > 0) {
+        sectionsArray.push({
+          title,
+          data: validData,
+        });
+      }
+    });
+
+  return sectionsArray;
+}
 
 export default HomeScreen;

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -36,7 +36,7 @@ import * as database from "../../src/services/database";
 import { getSelectedCategories } from "../../src/services/onboarding";
 import { getLucideIcon } from "../../src/utils/iconMapper";
 import { getContrastColor } from "../../src/utils/colors";
-import { FACT_FLAT_LIST_SETTINGS } from "../../src/config/factListSettings";
+import { FACT_FLAT_LIST_SETTINGS, getEstimatedItemHeight } from "../../src/config/factListSettings";
 import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import {
@@ -47,11 +47,11 @@ import {
 } from "../../src/services/analytics";
 import { onPreferenceFeedRefresh } from "../../src/services/preferences";
 
-
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
 
-// Track prefetched images to avoid redundant prefetching
+// Limit prefetch set size to prevent memory leaks
+const MAX_PREFETCH_CACHE_SIZE = 100;
 const prefetchedImages = new Set<string>();
 
 // Prefetch images for faster loading in modal
@@ -63,6 +63,9 @@ const prefetchFactImages = (facts: FactWithRelations[]) => {
   const newImageUrls = imageUrls.filter((url) => !prefetchedImages.has(url));
 
   if (newImageUrls.length > 0) {
+    if (prefetchedImages.size > MAX_PREFETCH_CACHE_SIZE) {
+      prefetchedImages.clear();
+    }
     Image.prefetch(newImageUrls);
     newImageUrls.forEach((url) => prefetchedImages.add(url));
   }
@@ -160,6 +163,53 @@ const DiscoverCategoryTextContainer = styled(YStack, {
   gap: 2,
 });
 
+// Memoized list item component to prevent re-renders
+interface FactListItemProps {
+  item: FactWithRelations;
+  isTablet: boolean;
+  onPress: (fact: FactWithRelations) => void;
+  selectedCategory?: Category | null;
+}
+
+const FactListItem = React.memo(({ item, isTablet, onPress, selectedCategory }: FactListItemProps) => {
+  const handlePress = useCallback(() => {
+    onPress(item);
+  }, [item, onPress]);
+
+  return (
+    <ContentContainer tablet={isTablet}>
+      {item.image_url ? (
+        <ImageFactCard
+          title={item.title || item.content.substring(0, 80) + "..."}
+          imageUrl={item.image_url}
+          factId={item.id}
+          category={selectedCategory || item.categoryData || item.category}
+          categorySlug={selectedCategory?.slug || item.categoryData?.slug || item.category}
+          onPress={handlePress}
+          isTablet={isTablet}
+        />
+      ) : (
+        <FeedFactCard
+          title={item.title || item.content.substring(0, 80) + "..."}
+          summary={item.summary}
+          onPress={handlePress}
+          isTablet={isTablet}
+        />
+      )}
+    </ContentContainer>
+  );
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.title === nextProps.item.title &&
+    prevProps.item.image_url === nextProps.item.image_url &&
+    prevProps.isTablet === nextProps.isTablet &&
+    prevProps.selectedCategory?.slug === nextProps.selectedCategory?.slug
+  );
+});
+
+FactListItem.displayName = 'FactListItem';
+
 function DiscoverScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
@@ -194,9 +244,9 @@ function DiscoverScreen() {
         
         if (categorySlug) {
           // Search within the selected category
-          const categoryFacts = await database.getFactsByCategory(categorySlug, locale);
+          const catFacts = await database.getFactsByCategory(categorySlug, locale);
           const searchTerm = query.trim().toLowerCase();
-          results = categoryFacts.filter((fact) =>
+          results = catFacts.filter((fact) =>
             (fact.title?.toLowerCase().includes(searchTerm)) ||
             fact.content.toLowerCase().includes(searchTerm) ||
             (fact.summary?.toLowerCase().includes(searchTerm))
@@ -296,13 +346,13 @@ function DiscoverScreen() {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, selectedCategorySlug, performSearch]);
 
-  const handleFactPress = async (fact: FactWithRelations) => {
+  const handleFactPress = useCallback(async (fact: FactWithRelations) => {
     await trackFactView();
     checkAndRequestReview();
     router.push(`/fact/${fact.id}?source=discover`);
-  };
+  }, [router]);
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     if (searchQuery.trim()) {
       await performSearch(searchQuery, selectedCategorySlug);
@@ -317,26 +367,26 @@ function DiscoverScreen() {
       }
     }
     setRefreshing(false);
-  };
+  }, [searchQuery, selectedCategorySlug, locale, performSearch]);
 
-  const handleSearchChange = (text: string) => {
+  const handleSearchChange = useCallback((text: string) => {
     setSearchQuery(text);
     if (text.trim().length > 0) {
       setIsSearching(true);
     } else {
       setIsSearching(false);
     }
-  };
+  }, []);
 
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchQuery("");
     setSearchResults([]);
     setIsSearching(false);
     searchInputRef.current?.focus();
-  };
+  }, []);
 
   // Handle category selection
-  const handleCategoryPress = async (categorySlug: string) => {
+  const handleCategoryPress = useCallback(async (categorySlug: string) => {
     // If tapping the same category, deselect it
     if (selectedCategorySlug === categorySlug) {
       setSelectedCategorySlug(null);
@@ -363,20 +413,79 @@ function DiscoverScreen() {
     } finally {
       setIsLoadingCategoryFacts(false);
     }
-  };
+  }, [selectedCategorySlug, locale]);
 
-  const clearCategoryFilter = () => {
+  const clearCategoryFilter = useCallback(() => {
     setSelectedCategorySlug(null);
     setCategoryFacts([]);
     setSearchQuery("");
     setSearchResults([]);
-  };
+  }, []);
 
-  const renderHeader = () => {
-    const selectedCategory = selectedCategorySlug
-      ? userCategories.find((cat) => cat.slug === selectedCategorySlug)
-      : null;
+  // Get selected category object
+  const selectedCategory = useMemo(() => 
+    selectedCategorySlug
+      ? userCategories.find((cat) => cat.slug === selectedCategorySlug) || null
+      : null,
+    [selectedCategorySlug, userCategories]
+  );
 
+  // Memoized keyExtractor
+  const keyExtractor = useCallback((item: FactWithRelations) => 
+    item.id.toString(), []);
+
+  // Memoized renderItem for search results
+  const renderSearchItem = useCallback(({ item }: { item: FactWithRelations }) => (
+    <FactListItem
+      item={item}
+      isTablet={isTablet}
+      onPress={handleFactPress}
+      selectedCategory={selectedCategory}
+    />
+  ), [isTablet, handleFactPress, selectedCategory]);
+
+  // Memoized renderItem for category facts
+  const renderCategoryItem = useCallback(({ item }: { item: FactWithRelations }) => (
+    <FactListItem
+      item={item}
+      isTablet={isTablet}
+      onPress={handleFactPress}
+      selectedCategory={selectedCategory}
+    />
+  ), [isTablet, handleFactPress, selectedCategory]);
+
+  // Memoized refresh controls
+  const searchRefreshControl = useMemo(() => (
+    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+  ), [refreshing, handleRefresh]);
+
+  const categoryRefreshControl = useMemo(() => (
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={async () => {
+        setRefreshing(true);
+        if (selectedCategorySlug) {
+          await handleCategoryPress(selectedCategorySlug);
+        }
+        setRefreshing(false);
+      }}
+    />
+  ), [refreshing, selectedCategorySlug, handleCategoryPress]);
+
+  // Memoized getItemLayout
+  const getItemLayout = useCallback((
+    _data: FactWithRelations[] | null,
+    index: number
+  ) => {
+    const estimatedHeight = getEstimatedItemHeight(true, width, isTablet);
+    return {
+      length: estimatedHeight,
+      offset: estimatedHeight * index,
+      index,
+    };
+  }, [width, isTablet]);
+
+  const renderHeader = useCallback(() => {
     const categoryColor = selectedCategory?.color_hex || "#0066FF";
     const contrastColor = selectedCategory ? getContrastColor(categoryColor) : "#FFFFFF";
 
@@ -384,83 +493,83 @@ function DiscoverScreen() {
       <Animated.View entering={FadeIn.duration(300)}>
         <ScreenHeaderContainer tablet={isTablet}>
           <SearchInputContainer>
-          <Search
-            size={20}
-            color={
-              theme === "dark"
-                ? tokens.color.dark.textSecondary
-                : tokens.color.light.textSecondary
-            }
-          />
-          {selectedCategory && (
-            <CategoryChip style={{ backgroundColor: categoryColor }}>
-              <LabelText
-                color={contrastColor}
-                fontSize={tokens.fontSize.small}
-                numberOfLines={1}
-                style={{ fontFamily: "Montserrat_600SemiBold" }}
-              >
-                {selectedCategory.name}
-              </LabelText>
-              <Pressable onPress={clearCategoryFilter}>
-                <CategoryChipClearButton
-                  style={{
-                    backgroundColor:
-                      contrastColor === "#000000"
-                        ? "rgba(0,0,0,0.2)"
-                        : "rgba(255,255,255,0.3)",
-                  }}
-                >
-                  <X size={12} color={contrastColor} />
-                </CategoryChipClearButton>
-              </Pressable>
-            </CategoryChip>
-          )}
-          <SearchInput
-            ref={searchInputRef}
-            value={searchQuery}
-            onChangeText={handleSearchChange}
-            placeholder={selectedCategory ? t("searchPlaceholder") : t("discoverPlaceholder")}
-            placeholderTextColor={
-              theme === "dark"
-                ? tokens.color.dark.textMuted
-                : tokens.color.light.textMuted
-            }
-            style={{
-              color:
+            <Search
+              size={20}
+              color={
                 theme === "dark"
-                  ? tokens.color.dark.text
-                  : tokens.color.light.text,
-              fontSize: tokens.fontSize.body,
-            }}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-          />
-          {isSearching ? (
-            <ActivityIndicator
-              size="small"
-              color={tokens.color[theme].textSecondary}
+                  ? tokens.color.dark.textSecondary
+                  : tokens.color.light.textSecondary
+              }
             />
-          ) : searchQuery.length > 0 ? (
-            <ClearButton onPress={clearSearch}>
-              <X
-                size={16}
-                color={
+            {selectedCategory && (
+              <CategoryChip style={{ backgroundColor: categoryColor }}>
+                <LabelText
+                  color={contrastColor}
+                  fontSize={tokens.fontSize.small}
+                  numberOfLines={1}
+                  style={{ fontFamily: "Montserrat_600SemiBold" }}
+                >
+                  {selectedCategory.name}
+                </LabelText>
+                <Pressable onPress={clearCategoryFilter}>
+                  <CategoryChipClearButton
+                    style={{
+                      backgroundColor:
+                        contrastColor === "#000000"
+                          ? "rgba(0,0,0,0.2)"
+                          : "rgba(255,255,255,0.3)",
+                    }}
+                  >
+                    <X size={12} color={contrastColor} />
+                  </CategoryChipClearButton>
+                </Pressable>
+              </CategoryChip>
+            )}
+            <SearchInput
+              ref={searchInputRef}
+              value={searchQuery}
+              onChangeText={handleSearchChange}
+              placeholder={selectedCategory ? t("searchPlaceholder") : t("discoverPlaceholder")}
+              placeholderTextColor={
+                theme === "dark"
+                  ? tokens.color.dark.textMuted
+                  : tokens.color.light.textMuted
+              }
+              style={{
+                color:
                   theme === "dark"
-                    ? tokens.color.dark.textSecondary
-                    : tokens.color.light.textSecondary
-                }
+                    ? tokens.color.dark.text
+                    : tokens.color.light.text,
+                fontSize: tokens.fontSize.body,
+              }}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+            />
+            {isSearching ? (
+              <ActivityIndicator
+                size="small"
+                color={tokens.color[theme].textSecondary}
               />
-            </ClearButton>
-          ) : null}
-        </SearchInputContainer>
-      </ScreenHeaderContainer>
+            ) : searchQuery.length > 0 ? (
+              <ClearButton onPress={clearSearch}>
+                <X
+                  size={16}
+                  color={
+                    theme === "dark"
+                      ? tokens.color.dark.textSecondary
+                      : tokens.color.light.textSecondary
+                  }
+                />
+              </ClearButton>
+            ) : null}
+          </SearchInputContainer>
+        </ScreenHeaderContainer>
       </Animated.View>
     );
-  };
+  }, [isTablet, selectedCategory, searchQuery, isSearching, theme, t, handleSearchChange, clearSearch, clearCategoryFilter]);
 
-  const renderEmptyState = () => {
+  const renderEmptyState = useCallback(() => {
     const hasQuery = searchQuery.trim().length > 0;
     const searchFinished = !isSearching;
 
@@ -598,9 +707,9 @@ function DiscoverScreen() {
     }
 
     return null;
-  };
+  }, [searchQuery, isSearching, searchResults.length, selectedCategorySlug, isTablet, userCategories, isLoadingCategories, categoryFactsCounts, theme, t, handleCategoryPress]);
 
-  const renderContent = () => {
+  const renderContent = useCallback(() => {
     const hasQuery = searchQuery.trim().length > 0;
 
     // Show search results if there's a search query
@@ -612,32 +721,10 @@ function DiscoverScreen() {
       return (
         <FlatList
           data={searchResults}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <ContentContainer tablet={isTablet}>
-              {item.image_url ? (
-                <ImageFactCard
-                  title={item.title || item.content.substring(0, 80) + "..."}
-                  imageUrl={item.image_url}
-                  factId={item.id}
-                  category={item.categoryData || item.category}
-                  categorySlug={item.categoryData?.slug || item.category}
-                  onPress={() => handleFactPress(item)}
-                  isTablet={isTablet}
-                />
-              ) : (
-                <FeedFactCard
-                  title={item.title || item.content.substring(0, 80) + "..."}
-                  summary={item.summary}
-                  onPress={() => handleFactPress(item)}
-                  isTablet={isTablet}
-                />
-              )}
-            </ContentContainer>
-          )}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
+          keyExtractor={keyExtractor}
+          renderItem={renderSearchItem}
+          refreshControl={searchRefreshControl}
+          getItemLayout={getItemLayout}
           {...FACT_FLAT_LIST_SETTINGS}
         />
       );
@@ -662,46 +749,13 @@ function DiscoverScreen() {
         );
       }
 
-      const selectedCategory = userCategories.find(
-        (cat) => cat.slug === selectedCategorySlug
-      );
-
       return (
         <FlatList
           data={categoryFacts}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <ContentContainer tablet={isTablet}>
-              {item.image_url ? (
-                <ImageFactCard
-                  title={item.title || item.content.substring(0, 80) + "..."}
-                  imageUrl={item.image_url}
-                  factId={item.id}
-                  category={selectedCategory || item.category}
-                  categorySlug={selectedCategorySlug || item.category}
-                  onPress={() => handleFactPress(item)}
-                  isTablet={isTablet}
-                />
-              ) : (
-                <FeedFactCard
-                  title={item.title || item.content.substring(0, 80) + "..."}
-                  summary={item.summary}
-                  onPress={() => handleFactPress(item)}
-                  isTablet={isTablet}
-                />
-              )}
-            </ContentContainer>
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={async () => {
-                setRefreshing(true);
-                await handleCategoryPress(selectedCategorySlug);
-                setRefreshing(false);
-              }}
-            />
-          }
+          keyExtractor={keyExtractor}
+          renderItem={renderCategoryItem}
+          refreshControl={categoryRefreshControl}
+          getItemLayout={getItemLayout}
           {...FACT_FLAT_LIST_SETTINGS}
         />
       );
@@ -709,7 +763,7 @@ function DiscoverScreen() {
 
     // Show category grid when no search and no category selected
     return renderEmptyState();
-  };
+  }, [searchQuery, searchResults, selectedCategorySlug, isLoadingCategoryFacts, categoryFacts, theme, t, keyExtractor, renderSearchItem, renderCategoryItem, searchRefreshControl, categoryRefreshControl, getItemLayout, renderEmptyState]);
 
   return (
     <ScreenContainer edges={["top"]}>
@@ -729,4 +783,3 @@ function DiscoverScreen() {
 }
 
 export default DiscoverScreen;
-
