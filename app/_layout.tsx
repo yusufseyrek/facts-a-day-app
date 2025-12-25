@@ -43,7 +43,7 @@ initializeFirebase();
 // This captures console.log/warn/error as breadcrumbs for crash reports
 enableCrashlyticsConsoleLogging();
 
-// Initialize analytics with device_key user property
+// Initialize analytics with device info and user properties
 initAnalytics();
 
 const NOTIFICATION_TRACK_KEY = 'last_processed_notification_id';

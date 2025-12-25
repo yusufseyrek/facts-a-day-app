@@ -3,8 +3,7 @@
  * Provides typed functions for all analytics events in the app
  */
 
-import { logEvent, logScreenView, setAnalyticsUserProperty, setCrashlyticsAttribute, setFirebaseUser } from '../config/firebase';
-import { getStoredDeviceKey } from './api';
+import { logEvent, logScreenView, setAnalyticsUserProperty, setCrashlyticsAttribute } from '../config/firebase';
 import { getSelectedCategories, getNotificationTimes } from './onboarding';
 import * as Device from 'expo-device';
 import * as Application from 'expo-application';
@@ -19,20 +18,12 @@ const THEME_STORAGE_KEY = '@app_theme_mode';
 // ============================================================================
 
 /**
- * Initialize analytics with device_key, device info, and settings as user properties
+ * Initialize analytics with device info and settings as user properties
  * Also sends the same info to Crashlytics for better crash debugging context
  * Call this on app startup after Firebase is initialized
  */
 export const initAnalytics = async (): Promise<void> => {
   try {
-    // Set device key - short key as userId, full key as user property
-    const deviceKey = await getStoredDeviceKey();
-    if (deviceKey) {
-      await setFirebaseUser(deviceKey); // shortKey as userId
-      await setAnalyticsUserProperty('device_key', deviceKey); // full key as property
-      await setCrashlyticsAttribute('device_key', deviceKey); // full key for crash reports
-    }
-
     // Device info values
     const platform = Platform.OS;
     const osVersion = Platform.Version?.toString() || 'unknown';
@@ -88,7 +79,6 @@ export const initAnalytics = async (): Promise<void> => {
 
     if (__DEV__) {
       console.log('📊 Analytics & Crashlytics properties set:', {
-        device_key: deviceKey || 'none',
         platform,
         os_version: osVersion,
         device_brand: deviceBrand,
@@ -416,4 +406,3 @@ export type InterstitialSource = 'fact_view' | 'settings' | 'content_refresh' | 
 export const trackInterstitialShown = (source: InterstitialSource): void => {
   logEvent('app_interstitial_shown', { source });
 };
-

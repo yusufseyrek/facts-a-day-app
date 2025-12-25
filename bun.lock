@@ -9,6 +9,7 @@
         "@react-native-community/datetimepicker": "8.4.4",
         "@react-native-firebase/analytics": "^23.7.0",
         "@react-native-firebase/app": "^23.7.0",
+        "@react-native-firebase/app-check": "^23.7.0",
         "@react-native-firebase/crashlytics": "^23.7.0",
         "@tamagui/config": "^1.136.2",
         "@tamagui/core": "^1.136.2",
@@ -528,6 +529,8 @@
     "@react-native-firebase/analytics": ["@react-native-firebase/analytics@23.7.0", "", { "dependencies": { "superstruct": "^2.0.2" }, "peerDependencies": { "@react-native-firebase/app": "23.7.0" } }, "sha512-5oEWNN7WLj2WHjG4wnwSda4GMM0gVfsKGbbUEX3vl4B4hxy/OEHDNWWVGj93qShHWlj8NApsIc6TzrVLhJbCGQ=="],
 
     "@react-native-firebase/app": ["@react-native-firebase/app@23.7.0", "", { "dependencies": { "firebase": "12.6.0" }, "peerDependencies": { "expo": ">=47.0.0", "react": "*", "react-native": "*" }, "optionalPeers": ["expo"] }, "sha512-sYVDkDxlOyQaDO/A0yVqbTha32dVapHlzS054RPY+RM5m0vARMsevJ9d543kH+Cdbp1RKMHIgDjhlB+APaNdhw=="],
+
+    "@react-native-firebase/app-check": ["@react-native-firebase/app-check@23.7.0", "", { "peerDependencies": { "@react-native-firebase/app": "23.7.0", "expo": ">=47.0.0" }, "optionalPeers": ["expo"] }, "sha512-bTaHZSgeB+dv8Q163KglIAR2d4FSfJOpdwpL6Yh+VIu5WhiCN59dq9wdGX+AhaFjn85CKnchQcuDg/F9uiZqYA=="],
 
     "@react-native-firebase/crashlytics": ["@react-native-firebase/crashlytics@23.7.0", "", { "dependencies": { "stacktrace-js": "^2.0.2" }, "peerDependencies": { "@react-native-firebase/app": "23.7.0", "expo": ">=47.0.0" }, "optionalPeers": ["expo"] }, "sha512-DidbIW2U5bYo7kkju/vMZyyDiSnG43rmr2xPA46jEWOYXgrtMJD6bxHeiN1rHkEfXgVy3KoWAwEcA+bHDA0IeQ=="],
 

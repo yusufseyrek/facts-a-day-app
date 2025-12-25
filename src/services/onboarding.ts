@@ -1,7 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Device from 'expo-device';
-import Constants from 'expo-constants';
-import { setFirebaseUser } from '../config/firebase';
 import * as api from './api';
 import * as db from './database';
 
@@ -38,7 +35,7 @@ async function setOnboardingComplete(): Promise<void> {
   }
 }
 
-// ====== Device Registration & Metadata ======
+// ====== Initialization ======
 
 export interface InitializationResult {
   success: boolean;
@@ -46,28 +43,12 @@ export interface InitializationResult {
 }
 
 /**
- * Initialize onboarding: register device and fetch metadata
+ * Initialize onboarding: fetch metadata from API
  */
 export async function initializeOnboarding(
   deviceLanguage: string
 ): Promise<InitializationResult> {
   try {
-    // Get device information
-    const deviceInfo: api.DeviceInfo = {
-      platform: Device.osName === 'iOS' ? 'ios' : 'android',
-      app_version: Constants.expoConfig?.version || '1.0.0',
-      device_model: Device.modelName || 'Unknown',
-      os_version: Device.osVersion || 'Unknown',
-      language_preference: deviceLanguage,
-    };
-
-    // Register device and get device_key
-    console.log('Registering device...');
-    const registration = await api.registerDevice(deviceInfo);
-    
-    // Set device key as Firebase user ID for crash tracking and analytics
-    await setFirebaseUser(registration.device_key);
-
     // Fetch metadata with device language for translations
     console.log('Fetching metadata...');
     const metadata = await api.getMetadata(deviceLanguage);
@@ -336,7 +317,7 @@ export async function resetOnboarding(): Promise<void> {
     await AsyncStorage.removeItem(ONBOARDING_COMPLETE_KEY);
     await AsyncStorage.removeItem(SELECTED_CATEGORIES_KEY);
     await AsyncStorage.removeItem(NOTIFICATION_TIME_KEY);
-    await api.clearDeviceKey();
+    await AsyncStorage.removeItem(NOTIFICATION_TIMES_KEY);
     await db.clearDatabase();
     console.log('Onboarding reset successfully');
   } catch (error) {

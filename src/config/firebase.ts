@@ -15,14 +15,71 @@ import {
   setUserId as setAnalyticsUserId,
   setUserProperty as analyticsSetUserProperty,
 } from "@react-native-firebase/analytics";
-import { getStoredDeviceKey } from "../services/api";
+import getAppCheck, {
+  getToken as getAppCheckTokenFn,
+  initializeAppCheck,
+  ReactNativeFirebaseAppCheckProvider,
+} from "@react-native-firebase/app-check";
+import { getApp } from "@react-native-firebase/app";
 
 // Get Firebase instances using modular API
 const crashlyticsInstance = getCrashlytics();
 const analyticsInstance = getAnalytics();
 
+// Track if App Check is initialized
+let appCheckInitialized = false;
+
 // Track if JS error handler is already installed
 let jsErrorHandlerInstalled = false;
+
+/**
+ * Initialize Firebase App Check
+ * 
+ * App Check helps protect your backend resources from abuse by ensuring
+ * requests come from genuine app instances running on genuine devices.
+ * 
+ * On iOS: Uses App Attest (iOS 14+) or DeviceCheck (fallback)
+ *         In DEBUG builds, uses Debug provider for simulator testing
+ * On Android: Uses Play Integrity
+ */
+export async function initializeAppCheckService() {
+  if (appCheckInitialized) {
+    return;
+  }
+
+  try {
+    const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
+    
+    await rnfbProvider.configure({
+      apple: {
+        // In DEBUG builds, the native side uses AppCheckDebugProvider
+        // In Release builds, uses App Attest with DeviceCheck fallback
+        provider: __DEV__ ? 'debug' : 'appAttest',
+      },
+      android: {
+        provider: __DEV__ ? 'debug' : 'playIntegrity',
+      },
+      // Enable token auto-refresh
+      isTokenAutoRefreshEnabled: true,
+    });
+
+    await initializeAppCheck(getApp(), {
+      provider: rnfbProvider,
+      isTokenAutoRefreshEnabled: true,
+    });
+
+    appCheckInitialized = true;
+    
+    if (__DEV__) {
+      console.log('🔒 Firebase App Check initialized with DEBUG provider');
+      console.log('📋 Check the native console logs for the debug token');
+      console.log('   Register it in Firebase Console → App Check → Apps → Manage debug tokens');
+    }
+  } catch (error) {
+    // Log error but don't crash - App Check is optional for app functionality
+    console.error('Failed to initialize App Check:', error);
+  }
+}
 
 /**
  * Initialize Firebase Crashlytics and Analytics
@@ -31,18 +88,15 @@ let jsErrorHandlerInstalled = false;
  * - @react-native-firebase/app (with google-services.json and GoogleService-Info.plist)
  * - @react-native-firebase/crashlytics
  * - @react-native-firebase/analytics
+ * - @react-native-firebase/app-check
  */
 export async function initializeFirebase() {
   try {
+    // Initialize App Check first (before other Firebase services)
+    await initializeAppCheckService();
+    
     // Enable crashlytics collection (disabled in dev mode)
     await setCrashlyticsCollectionEnabled(crashlyticsInstance, !__DEV__);
-
-    // Set user ID for crash reports if available
-    const deviceKey = await getStoredDeviceKey();
-    if (deviceKey) {
-      await setCrashlyticsUserId(crashlyticsInstance, deviceKey);
-      await setAnalyticsUserId(analyticsInstance, deviceKey);
-    }
 
     // Install global JS error handler
     installJSErrorHandler();
@@ -134,24 +188,6 @@ export function enableCrashlyticsConsoleLogging() {
       // Silently fail
     }
   };
-}
-
-/**
- * Set user context for Crashlytics and Analytics
- * Call this after user logs in or device is registered
- */
-export async function setFirebaseUser(deviceKey: string) {
-  try {
-    const shortKey = deviceKey.substring(0, 8);
-    await setCrashlyticsUserId(crashlyticsInstance, shortKey);
-    await setAnalyticsUserId(analyticsInstance, shortKey);
-
-    if (deviceKey) {
-      await setAttribute(crashlyticsInstance, "device_key", deviceKey);
-    }
-  } catch (error) {
-    console.error("Failed to set Firebase user:", error);
-  }
 }
 
 /**
@@ -277,6 +313,27 @@ export function testCrashlytics() {
   
   // Force crash the app (this will terminate the app)
   crash(crashlyticsInstance);
+}
+
+/**
+ * Get the current App Check token (for debugging)
+ * This can be used to verify App Check is working correctly
+ * Uses the modular API (v22+)
+ */
+export async function getAppCheckToken() {
+  if (!appCheckInitialized) {
+    console.warn('App Check not initialized');
+    return null;
+  }
+
+  try {
+    const appCheckInstance = getAppCheck(getApp());
+    const { token } = await getAppCheckTokenFn(appCheckInstance, true);
+    return token;
+  } catch (error) {
+    console.error('Failed to get App Check token:', error);
+    return null;
+  }
 }
 
 // Export instances for direct access if needed

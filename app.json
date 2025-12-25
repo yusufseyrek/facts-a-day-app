@@ -20,7 +20,7 @@
       "zh": "./src/i18n/locales/zh.json"
     },
     "extra": {
-      "API_BASE_URL": "https://factsaday.com",
+      "API_BASE_URL": "http://localhost:3000",
       "ADMOB_IOS_HOME_BANNER_ID": "ca-app-pub-7740246752776234/1196911062",
       "ADMOB_IOS_MODAL_BANNER_ID": "ca-app-pub-7740246752776234/8006410731",
       "ADMOB_IOS_INTERSTITIAL_ID": "ca-app-pub-7740246752776234/2739316775",
@@ -184,7 +184,9 @@
         }
       ],
       "@react-native-firebase/app",
+      "@react-native-firebase/app-check",
       "@react-native-firebase/crashlytics",
+      "./plugins/withAppCheckAppAttest.js",
       "./plugins/withModularHeaders.js",
       "./plugins/withDisableAutoScreenReporting.js",
       [
@@ -222,7 +224,8 @@
       "expo-router",
       "expo-secure-store",
       "expo-sqlite",
-      "./plugins/withAndroidWindowBackground.js"
+      "./plugins/withAndroidWindowBackground.js",
+      "./plugins/withAndroidCleartextTraffic.js"
     ]
   }
 }
