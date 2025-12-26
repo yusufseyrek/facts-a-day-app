@@ -1,13 +1,13 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { 
-  SectionList,
   RefreshControl, 
   ActivityIndicator,
   Pressable,
   View,
   Animated as RNAnimated,
 } from 'react-native';
+import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { 
@@ -30,6 +30,7 @@ import * as triviaService from '../../src/services/trivia';
 import { TriviaResults, getTriviaModeBadge } from '../../src/components/trivia';
 import type { TriviaSessionWithCategory } from '../../src/services/trivia';
 import { trackScreenView, Screens, trackTriviaResultsView, TriviaMode } from '../../src/services/analytics';
+import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
 
 // Styled Text components
 const Text = styled(TamaguiText, {
@@ -262,11 +263,30 @@ function SessionCard({
   );
 }
 
-// Type for section data
+// Type for section data (used internally for grouping)
 interface SessionSection {
   title: string;
   data: TriviaSessionWithCategory[];
 }
+
+// FlashList item types
+const ITEM_TYPES = {
+  SECTION_HEADER: 'sectionHeader',
+  SESSION_ITEM: 'sessionItem',
+} as const;
+
+interface SectionHeaderItem {
+  type: typeof ITEM_TYPES.SECTION_HEADER;
+  title: string;
+}
+
+interface SessionItem {
+  type: typeof ITEM_TYPES.SESSION_ITEM;
+  session: TriviaSessionWithCategory;
+  index: number;
+}
+
+type HistoryListItem = SectionHeaderItem | SessionItem;
 
 export default function ActivityHistoryScreen() {
   const { theme } = useTheme();
@@ -280,6 +300,33 @@ export default function ActivityHistoryScreen() {
   const [sections, setSections] = useState<SessionSection[]>([]);
   const [selectedSession, setSelectedSession] = useState<TriviaSessionWithCategory | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
+
+  // Flatten sections into a single array for FlashList
+  const { flattenedData, stickyHeaderIndices } = useMemo(() => {
+    const items: HistoryListItem[] = [];
+    const headerIndices: number[] = [];
+    let itemIndex = 0;
+
+    sections.forEach((section) => {
+      // Add section header
+      headerIndices.push(items.length);
+      items.push({
+        type: ITEM_TYPES.SECTION_HEADER,
+        title: section.title,
+      });
+
+      // Add session items
+      section.data.forEach((session) => {
+        items.push({
+          type: ITEM_TYPES.SESSION_ITEM,
+          session,
+          index: itemIndex++,
+        });
+      });
+    });
+
+    return { flattenedData: items, stickyHeaderIndices: headerIndices };
+  }, [sections]);
 
   // Group sessions by date
   const groupSessionsByDate = useCallback((sessions: TriviaSessionWithCategory[]): SessionSection[] => {
@@ -351,6 +398,43 @@ export default function ActivityHistoryScreen() {
 
   const handleCloseResults = useCallback(() => {
     setSelectedSession(null);
+  }, []);
+
+  // FlashList key extractor
+  const keyExtractor = useCallback((item: HistoryListItem, index: number) => {
+    if (item.type === ITEM_TYPES.SECTION_HEADER) {
+      return `header-${item.title}-${index}`;
+    }
+    return `session-${item.session.id}`;
+  }, []);
+
+  // FlashList renderItem
+  const renderItem = useCallback(({ item }: ListRenderItemInfo<HistoryListItem>) => {
+    if (item.type === ITEM_TYPES.SECTION_HEADER) {
+      return (
+        <SectionHeaderContainer paddingTop={tokens.space.md}>
+          <H2>{item.title}</H2>
+        </SectionHeaderContainer>
+      );
+    }
+    
+    return (
+      <Animated.View entering={FadeInDown.delay(item.index * 30).duration(350).springify()}>
+        <View style={{ paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.xs }}>
+          <SessionCard
+            session={item.session}
+            isDark={isDark}
+            t={t}
+            onPress={() => handleSessionClick(item.session.id)}
+          />
+        </View>
+      </Animated.View>
+    );
+  }, [isDark, t, handleSessionClick]);
+
+  // FlashList getItemType
+  const getItemType = useCallback((item: HistoryListItem) => {
+    return item.type;
   }, []);
 
   // Colors
@@ -449,44 +533,31 @@ export default function ActivityHistoryScreen() {
       </Animated.View>
 
       <Animated.View entering={FadeIn.delay(50).duration(400).springify()} style={{ flex: 1 }}>
-        <SectionList
-          sections={sections}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInDown.delay(index * 30).duration(350).springify()}>
-              <View style={{ paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.xs }}>
-                <SessionCard
-                  session={item}
-                  isDark={isDark}
-                  t={t}
-                  onPress={() => handleSessionClick(item.id)}
-                />
-              </View>
-            </Animated.View>
-          )}
-          renderSectionHeader={({ section: { title } }) => (
-            <SectionHeaderContainer paddingTop={tokens.space.md}>
-              <H2>{title}</H2>
-            </SectionHeaderContainer>
-          )}
-          stickySectionHeadersEnabled={true}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
-          }
-          contentContainerStyle={{ 
-            paddingBottom: tokens.space.sm,
-          }}
-          ListEmptyComponent={() => (
-            <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
-              <Text
-                fontSize={16}
-                color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
-              >
-                {t('noTestsYet')}
-              </Text>
-            </YStack>
-          )}
-        />
+        {flattenedData.length === 0 ? (
+          <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
+            <Text
+              fontSize={16}
+              color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
+            >
+              {t('noTestsYet')}
+            </Text>
+          </YStack>
+        ) : (
+          <FlashList
+            data={flattenedData}
+            keyExtractor={keyExtractor}
+            renderItem={renderItem}
+            getItemType={getItemType}
+            stickyHeaderIndices={stickyHeaderIndices}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
+            }
+            contentContainerStyle={{ 
+              paddingBottom: tokens.space.sm,
+            }}
+            {...FLASH_LIST_SETTINGS}
+          />
+        )}
       </Animated.View>
 
       {/* Loading overlay for session fetch */}

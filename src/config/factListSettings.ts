@@ -1,12 +1,7 @@
 /**
- * Centralized list performance settings for Fact FlatList and SectionList components
+ * Centralized list performance settings for FlashList and FlatList components
  * These settings are optimized for smooth scrolling with proper virtualization
  */
-
-import { Dimensions } from "react-native";
-
-const { width: screenWidth } = Dimensions.get("window");
-const isTablet = screenWidth >= 768;
 
 /**
  * Image prefetch cache size limit to prevent memory leaks
@@ -23,49 +18,49 @@ export const CARD_HEIGHTS = {
   cardMargin: 12,
   /** Margin between cards on tablet */
   cardMarginTablet: 16,
-  /** Section header height */
-  sectionHeader: 56,
-  /** Section header height on tablet */
-  sectionHeaderTablet: 64,
 } as const;
 
 /**
- * Performance settings for lists
+ * FlashList item types for heterogeneous lists with section headers
  */
-export const FACT_LIST_PERFORMANCE_SETTINGS = {
-  initialNumToRender:  6,
+export const FLASH_LIST_ITEM_TYPES = {
+  SECTION_HEADER: 'sectionHeader',
+  FACT_ITEM: 'factItem',
+} as const;
+
+/**
+ * FlashList-specific settings optimized for lists
+ * FlashList uses a recycler approach which is more performant than FlatList/SectionList
+ */
+export const FLASH_LIST_SETTINGS = {
+  /** Draw distance determines how far ahead FlashList renders items (in pixels) */
+  drawDistance: 500,
+  /** Show vertical scroll indicator */
+  showsVerticalScrollIndicator: false,
+  /** Bounces at the end of content */
+  bounces: true,
+} as const;
+
+/** @deprecated Use FLASH_LIST_SETTINGS instead */
+export const FACT_FLASH_LIST_SETTINGS = FLASH_LIST_SETTINGS;
+
+/**
+ * Settings for FlatList components (for screens not yet migrated to FlashList)
+ */
+export const FLAT_LIST_SETTINGS = {
+  initialNumToRender: 6,
   maxToRenderPerBatch: 4,
-  windowSize:  5,
+  windowSize: 5,
   removeClippedSubviews: true,
   updateCellsBatchingPeriod: 50,
-} as const;
-
-export const FACT_LIST_SCROLL_SETTINGS = {
   scrollEventThrottle: 16,
-} as const;
-
-export const FACT_SECTION_LIST_SETTINGS = {
-  stickySectionHeadersEnabled: false,
-} as const;
-
-/** Combined settings for FlatList components that display fact cards */
-export const FACT_FLAT_LIST_SETTINGS = {
-  ...FACT_LIST_PERFORMANCE_SETTINGS,
-  ...FACT_LIST_SCROLL_SETTINGS,
   bounces: true,
   decelerationRate: "fast" as const,
   showsVerticalScrollIndicator: false,
 } as const;
 
-/** Combined settings for SectionList components that display fact cards */
-export const FACT_SECTION_LIST_FULL_SETTINGS = {
-  ...FACT_LIST_PERFORMANCE_SETTINGS,
-  ...FACT_LIST_SCROLL_SETTINGS,
-  ...FACT_SECTION_LIST_SETTINGS,
-  bounces: true,
-  decelerationRate: "fast" as const,
-  showsVerticalScrollIndicator: false,
-} as const;
+/** @deprecated Use FLAT_LIST_SETTINGS instead */
+export const FACT_FLAT_LIST_SETTINGS = FLAT_LIST_SETTINGS;
 
 /**
  * Calculate ImageFactCard height based on screen width.

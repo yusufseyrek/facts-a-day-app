@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { StatusBar } from "expo-status-bar";
-import { SectionList, RefreshControl, ActivityIndicator } from "react-native";
+import { RefreshControl, ActivityIndicator } from "react-native";
+import { FlashList, ListRenderItemInfo } from "@shopify/flash-list";
 import { styled } from "@tamagui/core";
 import { YStack } from "tamagui";
 import { Lightbulb } from "@tamagui/lucide-icons";
@@ -30,13 +31,30 @@ import { checkAndRequestReview } from "../../src/services/appReview";
 import { onFeedRefresh, forceRefreshContent, onRefreshStatusChange, getRefreshStatus, RefreshStatus } from "../../src/services/contentRefresh";
 import { onPreferenceFeedRefresh } from "../../src/services/preferences";
 import { trackFeedRefresh, trackScreenView, Screens } from "../../src/services/analytics";
-import { FACT_SECTION_LIST_FULL_SETTINGS, MAX_PREFETCH_CACHE_SIZE } from "../../src/config/factListSettings";
+import { 
+  MAX_PREFETCH_CACHE_SIZE,
+  FLASH_LIST_ITEM_TYPES,
+  FACT_FLASH_LIST_SETTINGS,
+} from "../../src/config/factListSettings";
 
-// Interface for fact sections
+// Interface for fact sections (used internally for grouping)
 interface FactSection {
   title: string;
   data: FactWithRelations[];
 }
+
+// FlashList item types - either a section header or a fact item
+interface SectionHeaderItem {
+  type: typeof FLASH_LIST_ITEM_TYPES.SECTION_HEADER;
+  title: string;
+}
+
+interface FactItem {
+  type: typeof FLASH_LIST_ITEM_TYPES.FACT_ITEM;
+  fact: FactWithRelations;
+}
+
+type FeedListItem = SectionHeaderItem | FactItem;
 
 // Prefetch cache
 const prefetchedImages = new Set<string>();
@@ -112,6 +130,32 @@ function HomeScreen() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() => getRefreshStatus());
+
+  // Flatten sections into a single array for FlashList
+  // Each section becomes: [SectionHeader, FactItem, FactItem, ...]
+  const { flattenedData, stickyHeaderIndices } = useMemo(() => {
+    const items: FeedListItem[] = [];
+    const headerIndices: number[] = [];
+
+    sections.forEach((section) => {
+      // Add section header
+      headerIndices.push(items.length);
+      items.push({
+        type: FLASH_LIST_ITEM_TYPES.SECTION_HEADER,
+        title: section.title,
+      });
+
+      // Add fact items
+      section.data.forEach((fact) => {
+        items.push({
+          type: FLASH_LIST_ITEM_TYPES.FACT_ITEM,
+          fact,
+        });
+      });
+    });
+
+    return { flattenedData: items, stickyHeaderIndices: headerIndices };
+  }, [sections]);
 
   // Reload facts when tab gains focus
   useFocusEffect(
@@ -199,22 +243,34 @@ function HomeScreen() {
     await loadFacts(false);
   }, [loadFacts]);
 
-  const keyExtractor = useCallback((item: FactWithRelations, index: number) => 
-    item?.id?.toString() ?? `fallback-${index}`, []);
+  // FlashList key extractor
+  const keyExtractor = useCallback((item: FeedListItem, index: number) => {
+    if (item.type === FLASH_LIST_ITEM_TYPES.SECTION_HEADER) {
+      return `header-${item.title}-${index}`;
+    }
+    return `fact-${item.fact.id}`;
+  }, []);
 
-  const renderItem = useCallback(({ item }: { item: FactWithRelations }) => {
-    if (!item?.id) return null;
+  // FlashList renderItem - handles both section headers and fact items
+  const renderItem = useCallback(({ item }: ListRenderItemInfo<FeedListItem>) => {
+    if (item.type === FLASH_LIST_ITEM_TYPES.SECTION_HEADER) {
+      return <SectionHeader title={item.title} />;
+    }
+    
+    if (!item.fact?.id) return null;
     return (
       <FactListItem
-        item={item}
-        onPress={() => handleFactPress(item)}
+        item={item.fact}
+        onPress={() => handleFactPress(item.fact)}
       />
     );
   }, [handleFactPress]);
 
-  const renderSectionHeader = useCallback(({ section: { title } }: { section: FactSection }) => (
-    <SectionHeader title={title} />
-  ), []);
+  // FlashList getItemType - enables recycling optimization
+  // Items with different types are recycled in separate pools for better performance
+  const getItemType = useCallback((item: FeedListItem) => {
+    return item.type;
+  }, []);
 
   const refreshControl = useMemo(() => (
     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
@@ -244,19 +300,20 @@ function HomeScreen() {
       </Animated.View>
 
       <YStack flex={1}>
-        {sections.length === 0 ? (
+        {flattenedData.length === 0 ? (
           <EmptyState
             title={t("emptyStateTitle")}
             description={t("emptyStateDescription")}
           />
         ) : (
-          <SectionList
-            sections={sections}
+          <FlashList
+            data={flattenedData}
             keyExtractor={keyExtractor}
-            renderSectionHeader={renderSectionHeader}
             renderItem={renderItem}
+            getItemType={getItemType}
+            stickyHeaderIndices={stickyHeaderIndices}
             refreshControl={refreshControl}
-            {...FACT_SECTION_LIST_FULL_SETTINGS}
+            {...FACT_FLASH_LIST_SETTINGS}
           />
         )}
 
