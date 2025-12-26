@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { useFocusEffect } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import {
-  FlatList,
   RefreshControl,
   ActivityIndicator,
   useWindowDimensions,
@@ -10,6 +9,7 @@ import {
   ScrollView,
   Pressable,
 } from "react-native";
+import { FlashList, ListRenderItemInfo } from "@shopify/flash-list";
 import { styled, View } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { Search, X } from "@tamagui/lucide-icons";
@@ -34,7 +34,7 @@ import * as database from "../../src/services/database";
 import { getSelectedCategories } from "../../src/services/onboarding";
 import { getLucideIcon } from "../../src/utils/iconMapper";
 import { getContrastColor } from "../../src/utils/colors";
-import { FACT_FLAT_LIST_SETTINGS, createFlatListGetItemLayout } from "../../src/config/factListSettings";
+import { FACT_FLASH_LIST_SETTINGS } from "../../src/config/factListSettings";
 import { trackFactView } from "../../src/services/adManager";
 import { prefetchFactImagesWithLimit } from "../../src/services/images";
 import { checkAndRequestReview } from "../../src/services/appReview";
@@ -403,7 +403,7 @@ function DiscoverScreen() {
     item.id.toString(), []);
 
   // Memoized renderItem for search results
-  const renderSearchItem = useCallback(({ item }: { item: FactWithRelations }) => (
+  const renderSearchItem = useCallback(({ item }: ListRenderItemInfo<FactWithRelations>) => (
     <FactListItem
       item={item}
       isTablet={isTablet}
@@ -413,7 +413,7 @@ function DiscoverScreen() {
   ), [isTablet, handleFactPress, selectedCategory]);
 
   // Memoized renderItem for category facts
-  const renderCategoryItem = useCallback(({ item }: { item: FactWithRelations }) => (
+  const renderCategoryItem = useCallback(({ item }: ListRenderItemInfo<FactWithRelations>) => (
     <FactListItem
       item={item}
       isTablet={isTablet}
@@ -440,9 +440,11 @@ function DiscoverScreen() {
     />
   ), [refreshing, selectedCategorySlug, handleCategoryPress]);
 
-  // Memoized getItemLayout for better scroll performance (all items have same height now)
-  const getItemLayout = useMemo(() => 
-    createFlatListGetItemLayout(width, isTablet), [width, isTablet]);
+  // Estimated item size for FlashList (based on card aspect ratio)
+  const estimatedItemSize = useMemo(() => {
+    const cardWidth = isTablet ? Math.min(width, 600) : width;
+    return cardWidth * (9 / 16) + 12; // 9:16 aspect ratio + margin
+  }, [width, isTablet]);
 
   const renderHeader = useCallback(() => {
     const categoryColor = selectedCategory?.color_hex || "#0066FF";
@@ -678,13 +680,13 @@ function DiscoverScreen() {
       }
 
       return (
-        <FlatList
+        <FlashList
           data={searchResults}
           keyExtractor={keyExtractor}
           renderItem={renderSearchItem}
           refreshControl={searchRefreshControl}
-          getItemLayout={getItemLayout}
-          {...FACT_FLAT_LIST_SETTINGS}
+          estimatedItemSize={estimatedItemSize}
+          {...FACT_FLASH_LIST_SETTINGS}
         />
       );
     }
@@ -709,20 +711,20 @@ function DiscoverScreen() {
       }
 
       return (
-        <FlatList
+        <FlashList
           data={categoryFacts}
           keyExtractor={keyExtractor}
           renderItem={renderCategoryItem}
           refreshControl={categoryRefreshControl}
-          getItemLayout={getItemLayout}
-          {...FACT_FLAT_LIST_SETTINGS}
+          estimatedItemSize={estimatedItemSize}
+          {...FACT_FLASH_LIST_SETTINGS}
         />
       );
     }
 
     // Show category grid when no search and no category selected
     return renderEmptyState();
-  }, [searchQuery, searchResults, selectedCategorySlug, isLoadingCategoryFacts, categoryFacts, theme, t, keyExtractor, renderSearchItem, renderCategoryItem, searchRefreshControl, categoryRefreshControl, getItemLayout, renderEmptyState]);
+  }, [searchQuery, searchResults, selectedCategorySlug, isLoadingCategoryFacts, categoryFacts, theme, t, keyExtractor, renderSearchItem, renderCategoryItem, searchRefreshControl, categoryRefreshControl, estimatedItemSize, renderEmptyState]);
 
   return (
     <ScreenContainer edges={["top"]}>
