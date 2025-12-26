@@ -20,6 +20,7 @@
     "@react-native-firebase/app": "^23.7.0",
     "@react-native-firebase/app-check": "^23.7.0",
     "@react-native-firebase/crashlytics": "^23.7.0",
+    "@shopify/flash-list": "2.0.2",
     "@tamagui/config": "^1.136.2",
     "@tamagui/core": "^1.136.2",
     "@tamagui/lucide-icons": "^1.136.2",

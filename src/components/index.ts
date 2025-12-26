@@ -4,7 +4,6 @@ export { ProgressIndicator } from './ProgressIndicator';
 export { CategoryCard } from './CategoryCard';
 export type { CategoryCardProps } from './CategoryCard';
 export { CategoryBadge } from './CategoryBadge';
-export { FeedFactCard } from './FeedFactCard';
 // ImageFactCard is imported directly by screens to avoid hot-reload issues
 export { EmptyState } from './EmptyState';
 export { FactActions } from './FactActions';

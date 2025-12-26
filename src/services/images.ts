@@ -28,6 +28,17 @@ const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAY_BASE_MS = 1000;
 
+// In-memory cache for file existence to avoid repeated file system checks
+// Key: factId, Value: { uri: string, checkedAt: number }
+// This prevents multiple components from hitting the file system for the same fact
+const fileExistenceCache = new Map<number, { uri: string; checkedAt: number }>();
+
+// Maximum age for file existence cache (5 minutes - just needs to survive initial mount batch)
+const FILE_EXISTENCE_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
+
+// Track pending file existence checks to prevent duplicate async operations
+const pendingExistenceChecks = new Map<number, Promise<string | null>>();
+
 /**
  * Ensure the fact images directory exists
  */
@@ -103,10 +114,52 @@ async function getCachedImageUri(imageUrl: string, factId?: number): Promise<str
  * This function only checks the local cache without downloading.
  * Use this for quick cache checks before deciding to download.
  * 
+ * Optimized with in-memory existence cache to prevent redundant file system
+ * operations when multiple components mount simultaneously (common on tablets).
+ * 
  * @param factId The fact ID to check
  * @returns Local file URI if cached and valid, null otherwise
  */
 export async function getCachedFactImage(factId: number): Promise<string | null> {
+  const now = Date.now();
+  
+  // Check in-memory existence cache first (fast path for tablets with many cards)
+  const existenceEntry = fileExistenceCache.get(factId);
+  if (existenceEntry && (now - existenceEntry.checkedAt) < FILE_EXISTENCE_CACHE_MAX_AGE_MS) {
+    // Return cached result without hitting file system
+    return existenceEntry.uri;
+  }
+  
+  // Check if there's already a pending existence check for this fact
+  const pendingCheck = pendingExistenceChecks.get(factId);
+  if (pendingCheck) {
+    // Wait for the existing check to complete
+    return pendingCheck;
+  }
+  
+  // Start a new existence check and track it
+  const checkPromise = performFileExistenceCheck(factId);
+  pendingExistenceChecks.set(factId, checkPromise);
+  
+  try {
+    const result = await checkPromise;
+    
+    // Cache the result for future calls
+    if (result) {
+      fileExistenceCache.set(factId, { uri: result, checkedAt: now });
+    }
+    
+    return result;
+  } finally {
+    // Clean up pending check
+    pendingExistenceChecks.delete(factId);
+  }
+}
+
+/**
+ * Internal: Actually performs the file system check for cached image
+ */
+async function performFileExistenceCheck(factId: number): Promise<string | null> {
   try {
     await ensureImagesDirExists();
     
@@ -238,6 +291,12 @@ export async function downloadImageWithAppCheck(
         
         if (downloadResult.status === 200) {
           console.log(`✅ Downloaded and cached image for fact ${factId} at: ${downloadResult.uri}`);
+          
+          // Update file existence cache so subsequent calls don't hit file system
+          if (factId !== undefined) {
+            fileExistenceCache.set(factId, { uri: downloadResult.uri, checkedAt: Date.now() });
+          }
+          
           return downloadResult.uri;
         }
         
@@ -348,6 +407,13 @@ export async function cleanupOldCachedImages(maxAgeDays: number = 7): Promise<nu
             await FileSystem.deleteAsync(filePath, { idempotent: true });
             console.log(`🗑️ Cleaned up old cached image: ${file} (${Math.round(fileAgeMs / (24 * 60 * 60 * 1000))} days old)`);
             deletedCount++;
+            
+            // Extract factId from filename (format: fact-{id}.{ext})
+            const match = file.match(/^fact-(\d+)\./);
+            if (match) {
+              const factId = parseInt(match[1], 10);
+              fileExistenceCache.delete(factId);
+            }
           }
         }
       } catch (fileError) {
@@ -367,12 +433,26 @@ export async function cleanupOldCachedImages(maxAgeDays: number = 7): Promise<nu
 }
 
 /**
+ * Clear all in-memory caches (file existence cache and pending checks)
+ * Useful when needing to force a fresh check, e.g., after app update
+ */
+export function clearImageMemoryCaches(): void {
+  fileExistenceCache.clear();
+  pendingExistenceChecks.clear();
+  console.log('🗑️ Image memory caches cleared');
+}
+
+/**
  * Delete a specific cached image for a fact
  * 
  * @param factId The fact ID
  */
 export async function deleteCachedFactImage(factId: number): Promise<void> {
   try {
+    // Clear from existence cache first
+    fileExistenceCache.delete(factId);
+    pendingExistenceChecks.delete(factId);
+    
     const extensions = ['jpg', 'jpeg', 'webp', 'png', 'gif'];
     
     for (const ext of extensions) {

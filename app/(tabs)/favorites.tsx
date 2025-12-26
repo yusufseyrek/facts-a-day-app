@@ -6,7 +6,6 @@ import { Star } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { tokens } from '../../src/theme/tokens';
 import {
-  FeedFactCard,
   EmptyState,
   ScreenContainer,
   ScreenHeader,
@@ -21,7 +20,7 @@ import { useTranslation } from '../../src/i18n';
 import * as database from '../../src/services/database';
 import { useFocusEffect } from '@react-navigation/native';
 import { trackScreenView, Screens } from '../../src/services/analytics';
-import { FACT_FLAT_LIST_SETTINGS, getEstimatedItemHeight } from '../../src/config/factListSettings';
+import { FACT_FLAT_LIST_SETTINGS, createFlatListGetItemLayout } from '../../src/config/factListSettings';
 
 // Memoized list item component to prevent re-renders
 interface FactListItemProps {
@@ -36,22 +35,14 @@ const FactListItem = React.memo(({ item, onPress }: FactListItemProps) => {
 
   return (
     <ContentContainer>
-      {item.image_url ? (
-        <ImageFactCard
-          title={item.title || item.content.substring(0, 80) + '...'}
-          imageUrl={item.image_url}
-          factId={item.id}
-          category={item.categoryData || item.category}
-          categorySlug={item.categoryData?.slug || item.category}
-          onPress={handlePress}
-        />
-      ) : (
-        <FeedFactCard
-          title={item.title || item.content.substring(0, 80) + '...'}
-          summary={item.summary}
-          onPress={handlePress}
-        />
-      )}
+      <ImageFactCard
+        title={item.title || item.content.substring(0, 80) + '...'}
+        imageUrl={item.image_url!}
+        factId={item.id}
+        category={item.categoryData || item.category}
+        categorySlug={item.categoryData?.slug || item.category}
+        onPress={handlePress}
+      />
     </ContentContainer>
   );
 }, (prevProps, nextProps) => {
@@ -129,20 +120,9 @@ export default function FavoritesScreen() {
     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
   ), [refreshing, handleRefresh]);
 
-  // Memoized getItemLayout for better scroll performance
-  const getItemLayout = useCallback((
-    _data: FactWithRelations[] | null,
-    index: number
-  ) => {
-    // Use isTablet to get correct height for tablet layouts
-    const isTabletLayout = width >= 768;
-    const estimatedHeight = getEstimatedItemHeight(true, width, isTabletLayout);
-    return {
-      length: estimatedHeight,
-      offset: estimatedHeight * index,
-      index,
-    };
-  }, [width]);
+  // Memoized getItemLayout for better scroll performance (all items have same height now)
+  const getItemLayout = useMemo(() => 
+    createFlatListGetItemLayout(width, false), [width]);
 
   // Only show loading spinner on initial load when there's no data yet
   if (initialLoading && favorites.length === 0) {

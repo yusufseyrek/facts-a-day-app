@@ -1,9 +1,8 @@
 import React, { useState, useCallback, useMemo, useRef } from "react";
-import { Pressable, Animated, StyleSheet, View, Text, Platform } from "react-native";
+import { Pressable, Animated, StyleSheet, View, Text, Platform, useWindowDimensions } from "react-native";
 import { Image, ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { tokens } from "../theme/tokens";
-import { useResponsive } from "../utils/useResponsive";
 import { useFactImage } from "../utils/useFactImage";
 import type { Category } from "../services/database";
 
@@ -13,11 +12,15 @@ const DEFAULT_BLURHASH = "L6PZfSi_.AyE_3t7t7R**0o#DgR4";
 // Aspect ratio for immersive cards (16:9)
 const ASPECT_RATIO = 9 / 16;
 
-// Maximum retry attempts for image loading
-const MAX_RETRY_ATTEMPTS = 3;
+// Maximum retry attempts for re-rendering (without re-downloading)
+const MAX_RENDER_RETRY_ATTEMPTS = 2;
 
-// Retry delay in milliseconds (exponential backoff)
-const RETRY_DELAY_BASE = 1000;
+// Maximum retry attempts for re-downloading (after render retries fail)
+const MAX_DOWNLOAD_RETRY_ATTEMPTS = 2;
+
+// Retry delay in milliseconds
+const RENDER_RETRY_DELAY = 300;
+const DOWNLOAD_RETRY_DELAY = 1000;
 
 interface ImageFactCardProps {
   title: string;
@@ -39,8 +42,8 @@ const ImageFactCardComponent = ({
   onPress,
   isTablet: isTabletProp = false,
 }: ImageFactCardProps) => {
-  const { fontSizes, isTablet: isTabletDevice, screenWidth } = useResponsive();
-  const isTablet = isTabletProp || isTabletDevice;
+  const { width: screenWidth } = useWindowDimensions();
+  const isTablet = isTabletProp || screenWidth >= 768;
   
   // Use a ref for the scale animation - this persists across renders
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -59,11 +62,17 @@ const ImageFactCardComponent = ({
   // Use the last valid URI if current is null (prevents flicker during re-render)
   const displayUri = authenticatedImageUri || lastValidUriRef.current;
   
-  // Image retry state for expo-image component errors (after successful download)
-  const [retryCount, setRetryCount] = useState(0);
+  // Retry state: first try re-rendering, then try re-downloading
+  // renderRetryCount: triggers re-render without downloading (for Android timing issues)
+  // downloadRetryCount: triggers actual re-download (for corrupted files)
+  const [renderRetryCount, setRenderRetryCount] = useState(0);
+  const [downloadRetryCount, setDownloadRetryCount] = useState(0);
+  
+  // Track if we're currently waiting for a retry (prevent duplicate error handling)
+  const retryPendingRef = useRef(false);
 
-  // Calculate card height based on aspect ratio - memoize to prevent recalculation
-  const cardHeight = useMemo(() => screenWidth * ASPECT_RATIO, [screenWidth]);
+  // Calculate card height based on aspect ratio
+  const cardHeight = screenWidth * ASPECT_RATIO;
 
   // Parallax amount
   const parallaxAmount = 8;
@@ -86,32 +95,62 @@ const ImageFactCardComponent = ({
     }).start();
   }, [scaleAnim]);
 
-  // Handle image render error with retry logic (for local file issues after download)
+  // Handle image render error with smart retry logic
+  // On Android, expo-image often fails to render local files due to timing issues
+  // Strategy: First try re-rendering (cheap), then try re-downloading (expensive)
   const handleImageError = useCallback(() => {
     // Don't treat loading/null state as an error - wait for actual image to load
     if (isImageLoading || !displayUri) {
       return;
     }
     
-    if (retryCount < MAX_RETRY_ATTEMPTS) {
-      const delay = RETRY_DELAY_BASE * Math.pow(2, retryCount);
-      console.log(`🔄 Image render failed, retrying download in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS})`);
+    // Prevent duplicate error handling while retry is pending
+    if (retryPendingRef.current) {
+      return;
+    }
+    
+    // Phase 1: Try re-rendering without downloading (fixes Android timing issues)
+    if (renderRetryCount < MAX_RENDER_RETRY_ATTEMPTS) {
+      retryPendingRef.current = true;
+      
+      if (__DEV__) {
+        console.log(`🔄 Image render failed for fact ${factId}, re-rendering in ${RENDER_RETRY_DELAY}ms (attempt ${renderRetryCount + 1}/${MAX_RENDER_RETRY_ATTEMPTS})`);
+      }
       
       setTimeout(() => {
-        setRetryCount((prev) => prev + 1);
-        retryImage(); // Re-download with App Check
-      }, delay);
-    } else {
-      console.log(`❌ Image failed after ${MAX_RETRY_ATTEMPTS} attempts for fact ${factId}`);
+        retryPendingRef.current = false;
+        setRenderRetryCount((prev) => prev + 1);
+        // Just increment state to trigger re-render, no download
+      }, RENDER_RETRY_DELAY);
+      return;
     }
-  }, [retryCount, factId, retryImage, isImageLoading, displayUri]);
+    
+    // Phase 2: Re-rendering didn't help, try re-downloading
+    if (downloadRetryCount < MAX_DOWNLOAD_RETRY_ATTEMPTS) {
+      retryPendingRef.current = true;
+      
+      console.log(`🔄 Image still failing after re-renders, re-downloading in ${DOWNLOAD_RETRY_DELAY}ms (download attempt ${downloadRetryCount + 1}/${MAX_DOWNLOAD_RETRY_ATTEMPTS})`);
+      
+      setTimeout(() => {
+        retryPendingRef.current = false;
+        setDownloadRetryCount((prev) => prev + 1);
+        setRenderRetryCount(0); // Reset render retries for the new download
+        retryImage(); // Actually re-download with App Check
+      }, DOWNLOAD_RETRY_DELAY);
+      return;
+    }
+    
+    console.log(`❌ Image failed after all retry attempts for fact ${factId}`);
+  }, [renderRetryCount, downloadRetryCount, factId, retryImage, isImageLoading, displayUri]);
 
   // Reset retry state when imageUrl changes
   React.useEffect(() => {
-    setRetryCount(0);
+    setRenderRetryCount(0);
+    setDownloadRetryCount(0);
+    retryPendingRef.current = false;
   }, [imageUrl]);
 
-  // Determine category info for badge - memoized
+  // Determine category info for badge
   const categoryInfo = useMemo(() => {
     if (typeof category === "object" && category !== null) {
       return {
@@ -120,7 +159,6 @@ const ImageFactCardComponent = ({
       };
     }
     const slug = (category as string) || categorySlug || "";
-    // Simple category name from slug
     const name = slug
       .split("-")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -128,64 +166,40 @@ const ImageFactCardComponent = ({
     return { name, color: "#0066FF" };
   }, [category, categorySlug]);
 
-  // Generate image source - use displayUri which never goes null unnecessarily
-  const imageSource = useMemo((): ImageSource | null => {
-    if (!displayUri) {
-      return null;
-    }
-    return { uri: displayUri };
-  }, [displayUri]);
+  // Generate image source
+  const imageSource: ImageSource | null = displayUri ? { uri: displayUri } : null;
 
-  // Memoize style objects to prevent recreation
-  const marginStyle = useMemo(() => ({ 
-    marginBottom: isTablet ? tokens.space.lg : tokens.space.md 
-  }), [isTablet]);
-
-  const imageContainerStyle = useMemo(() => ({ 
-    height: cardHeight 
-  }), [cardHeight]);
-
-  const imageStyle = useMemo(() => ({
+  // Style objects
+  const marginStyle = { marginBottom: isTablet ? tokens.space.lg : tokens.space.md };
+  const imageContainerStyle = { height: cardHeight };
+  const imageStyle = {
     width: "100%" as const,
     height: cardHeight + parallaxAmount * 2,
     marginTop: -parallaxAmount,
-  }), [cardHeight]);
-
-  const badgePositionStyle = useMemo(() => ({
+  };
+  const badgePositionStyle = {
     top: isTablet ? tokens.space.lg : tokens.space.md,
     right: isTablet ? tokens.space.lg : tokens.space.md,
-  }), [isTablet]);
-
-  const contentOverlayStyle = useMemo(() => ({
+  };
+  const contentOverlayStyle = {
     paddingHorizontal: isTablet ? tokens.space.xl : tokens.space.lg,
     paddingBottom: isTablet ? tokens.space.xl : tokens.space.lg,
     paddingTop: isTablet ? tokens.space.xxl * 1.5 : tokens.space.xxl,
-  }), [isTablet]);
-
-  const titleStyle = useMemo(() => ({
-    fontSize: isTablet
-      ? tokens.fontSize.h1Tablet
-      : Math.round(fontSizes.h1 * 0.85),
-    lineHeight: isTablet
-      ? tokens.fontSize.h1Tablet * 1.25
-      : Math.round(fontSizes.h1 * 0.85 * 1.25),
-  }), [isTablet, fontSizes.h1]);
-
-  const badgeTextStyle = useMemo(() => ({ 
-    fontSize: isTablet ? 14 : 12 
-  }), [isTablet]);
-
-  // Stable recycling key - only changes with factId, not with retryCount
-  // This prevents the Image component from being recreated unnecessarily
-  const recyclingKey = useMemo(() => `fact-image-${factId}`, [factId]);
-
-  // Animated style - transform array for scale animation
-  const animatedStyle = {
-    transform: [{ scale: scaleAnim }],
   };
+  
+  const baseFontSize = isTablet ? tokens.fontSize.h1Tablet : tokens.fontSize.h1 * 0.85;
+  const titleStyle = {
+    fontSize: Math.round(baseFontSize),
+    lineHeight: Math.round(baseFontSize * 1.25),
+  };
+  const badgeTextStyle = { fontSize: isTablet ? 14 : 12 };
+
+  // Recycling key that includes retry count to force expo-image to re-attempt loading
+  // This is important for Android where timing issues cause initial render failures
+  const recyclingKey = `fact-image-${factId}-${renderRetryCount}-${downloadRetryCount}`;
 
   return (
-    <Animated.View style={animatedStyle}>
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
@@ -202,16 +216,11 @@ const ImageFactCardComponent = ({
               style={imageStyle}
               contentFit="cover"
               contentPosition="top"
-              // Use disk-only on Android to avoid memory cache issues
               cachePolicy={Platform.OS === "android" ? "disk" : "memory-disk"}
-              // Disable transition on Android to prevent flicker
               transition={Platform.OS === "android" ? 0 : 300}
-              // Show blurhash while image is loading/downloading with App Check
               placeholder={placeholder}
               onError={handleImageError}
-              // Stable recyclingKey - doesn't change with retry
               recyclingKey={recyclingKey}
-              // Priority hint for loading
               priority="normal"
             />
 
@@ -263,7 +272,6 @@ const gradientLocations = [0.3, 0.6, 1] as const;
 
 const styles = StyleSheet.create({
   pressable: {
-    // Ensures the ripple effect is contained
     overflow: "hidden",
     borderRadius: tokens.radius.lg,
   },
@@ -308,7 +316,6 @@ const styles = StyleSheet.create({
 });
 
 // Memoize the component to prevent unnecessary re-renders
-// Only compare stable props - onPress is intentionally excluded as it's usually recreated
 export const ImageFactCard = React.memo(
   ImageFactCardComponent,
   (prevProps, nextProps) => {

@@ -20,7 +20,6 @@ import { tokens } from "../../src/theme/tokens";
 import {
   H1,
   BodyText,
-  FeedFactCard,
   EmptyState,
   LabelText,
   ScreenContainer,
@@ -36,7 +35,7 @@ import * as database from "../../src/services/database";
 import { getSelectedCategories } from "../../src/services/onboarding";
 import { getLucideIcon } from "../../src/utils/iconMapper";
 import { getContrastColor } from "../../src/utils/colors";
-import { FACT_FLAT_LIST_SETTINGS, getEstimatedItemHeight } from "../../src/config/factListSettings";
+import { FACT_FLAT_LIST_SETTINGS, createFlatListGetItemLayout } from "../../src/config/factListSettings";
 import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import {
@@ -178,24 +177,15 @@ const FactListItem = React.memo(({ item, isTablet, onPress, selectedCategory }: 
 
   return (
     <ContentContainer tablet={isTablet}>
-      {item.image_url ? (
-        <ImageFactCard
-          title={item.title || item.content.substring(0, 80) + "..."}
-          imageUrl={item.image_url}
-          factId={item.id}
-          category={selectedCategory || item.categoryData || item.category}
-          categorySlug={selectedCategory?.slug || item.categoryData?.slug || item.category}
-          onPress={handlePress}
-          isTablet={isTablet}
-        />
-      ) : (
-        <FeedFactCard
-          title={item.title || item.content.substring(0, 80) + "..."}
-          summary={item.summary}
-          onPress={handlePress}
-          isTablet={isTablet}
-        />
-      )}
+      <ImageFactCard
+        title={item.title || item.content.substring(0, 80) + "..."}
+        imageUrl={item.image_url!}
+        factId={item.id}
+        category={selectedCategory || item.categoryData || item.category}
+        categorySlug={selectedCategory?.slug || item.categoryData?.slug || item.category}
+        onPress={handlePress}
+        isTablet={isTablet}
+      />
     </ContentContainer>
   );
 }, (prevProps, nextProps) => {
@@ -472,18 +462,9 @@ function DiscoverScreen() {
     />
   ), [refreshing, selectedCategorySlug, handleCategoryPress]);
 
-  // Memoized getItemLayout
-  const getItemLayout = useCallback((
-    _data: FactWithRelations[] | null,
-    index: number
-  ) => {
-    const estimatedHeight = getEstimatedItemHeight(true, width, isTablet);
-    return {
-      length: estimatedHeight,
-      offset: estimatedHeight * index,
-      index,
-    };
-  }, [width, isTablet]);
+  // Memoized getItemLayout for better scroll performance (all items have same height now)
+  const getItemLayout = useMemo(() => 
+    createFlatListGetItemLayout(width, isTablet), [width, isTablet]);
 
   const renderHeader = useCallback(() => {
     const categoryColor = selectedCategory?.color_hex || "#0066FF";
