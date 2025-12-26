@@ -35,7 +35,6 @@ import { getSelectedCategories } from "../../src/services/onboarding";
 import { getLucideIcon } from "../../src/utils/iconMapper";
 import { getContrastColor } from "../../src/utils/colors";
 import { FACT_FLASH_LIST_SETTINGS } from "../../src/config/factListSettings";
-import { trackFactView } from "../../src/services/adManager";
 import { prefetchFactImagesWithLimit } from "../../src/services/images";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import {
@@ -314,8 +313,7 @@ function DiscoverScreen() {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, selectedCategorySlug, performSearch]);
 
-  const handleFactPress = useCallback(async (fact: FactWithRelations) => {
-    await trackFactView();
+  const handleFactPress = useCallback((fact: FactWithRelations) => {
     checkAndRequestReview();
     router.push(`/fact/${fact.id}?source=discover`);
   }, [router]);

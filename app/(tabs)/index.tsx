@@ -25,7 +25,6 @@ import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import * as database from "../../src/services/database";
 import * as Notifications from "expo-notifications";
-import { trackFactView } from "../../src/services/adManager";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import { onFeedRefresh, forceRefreshContent, onRefreshStatusChange, getRefreshStatus, RefreshStatus } from "../../src/services/contentRefresh";
 import { onPreferenceFeedRefresh } from "../../src/services/preferences";
@@ -202,8 +201,7 @@ function HomeScreen() {
     }
   }, [locale, t]);
 
-  const handleFactPress = useCallback(async (fact: FactWithRelations) => {
-    await trackFactView();
+  const handleFactPress = useCallback((fact: FactWithRelations) => {
     checkAndRequestReview();
     router.push(`/fact/${fact.id}?source=feed`);
   }, [router]);

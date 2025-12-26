@@ -22,7 +22,6 @@ import { Button } from '../Button';
 import { SuccessToast } from '../SuccessToast';
 import * as onboardingService from '../../services/onboarding';
 import * as notificationService from '../../services/notifications';
-import { showSettingsInterstitial } from '../../services/adManager';
 import { H2, LabelText, BodyText, SmallText } from '../Typography';
 import { trackNotificationTimeChange, updateNotificationProperty } from '../../services/analytics';
 
@@ -214,10 +213,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       trackNotificationTimeChange(times.length);
       updateNotificationProperty(times);
 
-      // Show interstitial ad after successful notification time update
-      await showSettingsInterstitial();
-
-      // Show success toast after ad closes (small delay to ensure proper render after ad)
+      // Show success toast
       setTimeout(() => {
         setShowSuccessToast(true);
       }, 100);

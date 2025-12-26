@@ -5,9 +5,6 @@ import * as onboardingService from './onboarding';
 import * as preferencesService from './preferences';
 import { getLocaleFromCode, SupportedLocale } from '../i18n';
 import * as Localization from 'expo-localization';
-import { showInterstitialAd } from '../components/ads/InterstitialAd';
-import { ADS_ENABLED } from '../config/ads';
-import { trackInterstitialShown } from './analytics';
 
 // AsyncStorage keys
 const LAST_CONTENT_REFRESH_KEY = '@last_content_refresh';
@@ -375,17 +372,6 @@ export async function refreshAppContent(): Promise<RefreshResult> {
       
       // Emit locale-change status for UI loading indicator
       emitRefreshStatus('locale-change');
-      
-      // Show interstitial ad in parallel with language update (don't block the refresh)
-      if (ADS_ENABLED) {
-        console.log('📺 Showing interstitial ad for locale change (in parallel)...');
-        // Fire and forget - don't await, let it run in parallel
-        showInterstitialAd().then(() => {
-          trackInterstitialShown('content_refresh');
-        }).catch((error) => {
-          console.error('Error showing interstitial ad:', error);
-        });
-      }
       
       const languageChangeResult = await preferencesService.handleLanguageChange(currentLocale);
       

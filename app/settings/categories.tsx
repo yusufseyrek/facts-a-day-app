@@ -20,7 +20,6 @@ import * as db from '../../src/services/database';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import * as onboardingService from '../../src/services/onboarding';
 import * as preferencesService from '../../src/services/preferences';
-import { showSettingsInterstitial } from '../../src/services/adManager';
 import { trackCategoriesUpdate, trackScreenView, Screens, updateCategoriesProperty } from '../../src/services/analytics';
 
 const Container = styled(SafeAreaView, {
@@ -231,10 +230,7 @@ export default function CategoriesSettings() {
         });
         updateCategoriesProperty(selectedCategories);
 
-        // Show interstitial ad after successful category update
-        await showSettingsInterstitial();
-        
-        // Show success toast after ad closes (small delay to ensure proper render after ad)
+        // Show success toast
         setTimeout(() => {
           setShowSuccessToast(true);
         }, 100);
