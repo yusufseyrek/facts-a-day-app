@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Pressable, Animated, StyleSheet, View, Text, Platform, useWindowDimensions } from "react-native";
 import { Image, ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -6,8 +6,8 @@ import { tokens } from "../theme/tokens";
 import { useFactImage } from "../utils/useFactImage";
 import type { Category } from "../services/database";
 
-// Default blurhash for smooth loading experience
-const DEFAULT_BLURHASH = "L6PZfSi_.AyE_3t7t7R**0o#DgR4";
+// Dark blurhash that matches the card's dark theme for cohesive loading
+const DEFAULT_BLURHASH = "L03[%0IU00~q00xu00Rj00%M00M{";
 
 // Aspect ratio for immersive cards (16:9)
 const ASPECT_RATIO = 9 / 16;
@@ -48,8 +48,41 @@ const ImageFactCardComponent = ({
   // Use a ref for the scale animation - this persists across renders
   const scaleAnim = useRef(new Animated.Value(1)).current;
   
+  // Shimmer animation for loading state
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  
   // Use authenticated image with App Check - REQUIRED since remote URLs need App Check headers
   const { imageUri: authenticatedImageUri, isLoading: isImageLoading, retry: retryImage } = useFactImage(imageUrl, factId);
+  
+  // Track if image has loaded successfully
+  const [imageLoaded, setImageLoaded] = useState(false);
+  
+  // Show loading shimmer when image is loading or hasn't loaded yet
+  const showLoadingState = isImageLoading || !imageLoaded;
+  
+  // Run shimmer animation when loading
+  useEffect(() => {
+    if (showLoadingState) {
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(shimmerAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shimmerAnim, {
+            toValue: 0,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animation.start();
+      return () => animation.stop();
+    } else {
+      shimmerAnim.setValue(0);
+    }
+  }, [showLoadingState, shimmerAnim]);
   
   // Keep track of the last valid image URI to prevent flickering
   const lastValidUriRef = useRef<string | null>(null);
@@ -143,12 +176,18 @@ const ImageFactCardComponent = ({
     console.log(`❌ Image failed after all retry attempts for fact ${factId}`);
   }, [renderRetryCount, downloadRetryCount, factId, retryImage, isImageLoading, displayUri]);
 
-  // Reset retry state when imageUrl changes
+  // Reset retry state and loaded state when imageUrl changes
   React.useEffect(() => {
     setRenderRetryCount(0);
     setDownloadRetryCount(0);
     retryPendingRef.current = false;
+    setImageLoaded(false);
   }, [imageUrl]);
+  
+  // Handle image load success
+  const handleImageLoad = useCallback(() => {
+    setImageLoaded(true);
+  }, []);
 
   // Determine category info for badge
   const categoryInfo = useMemo(() => {
@@ -220,9 +259,27 @@ const ImageFactCardComponent = ({
               transition={Platform.OS === "android" ? 0 : 300}
               placeholder={placeholder}
               onError={handleImageError}
+              onLoad={handleImageLoad}
               recyclingKey={recyclingKey}
               priority="normal"
             />
+            
+            {/* Loading shimmer overlay */}
+            {showLoadingState && (
+              <Animated.View
+                style={[
+                  StyleSheet.absoluteFill,
+                  styles.shimmerOverlay,
+                  {
+                    opacity: shimmerAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.3, 0.6],
+                    }),
+                  },
+                ]}
+                pointerEvents="none"
+              />
+            )}
 
             {/* Dark gradient overlay for text legibility */}
             <LinearGradient
@@ -283,6 +340,10 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     overflow: "hidden",
+    backgroundColor: "#1a1a2e", // Dark base that matches the shimmer
+  },
+  shimmerOverlay: {
+    backgroundColor: "#2d2d44", // Subtle shimmer color
   },
   badgeContainer: {
     position: "absolute",
