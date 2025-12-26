@@ -6,7 +6,6 @@ import { styled } from "@tamagui/core";
 import { YStack } from "tamagui";
 import { Lightbulb } from "@tamagui/lucide-icons";
 import { useRouter, useFocusEffect } from "expo-router";
-import { Image } from "expo-image";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { tokens } from "../../src/theme/tokens";
 import {
@@ -36,6 +35,7 @@ import {
   FLASH_LIST_ITEM_TYPES,
   FACT_FLASH_LIST_SETTINGS,
 } from "../../src/config/factListSettings";
+import { prefetchFactImage } from "../../src/services/images";
 
 // Interface for fact sections (used internally for grouping)
 interface FactSection {
@@ -56,23 +56,29 @@ interface FactItem {
 
 type FeedListItem = SectionHeaderItem | FactItem;
 
-// Prefetch cache
-const prefetchedImages = new Set<string>();
+// Prefetch cache - tracks by fact ID instead of URL
+const prefetchedFactIds = new Set<number>();
 
 // Prefetch images for faster loading in modal
+// Uses App Check authenticated downloads instead of direct Image.prefetch
 const prefetchFactImages = (facts: FactWithRelations[]) => {
-  const imageUrls = facts
-    .filter((fact) => fact.image_url)
-    .map((fact) => fact.image_url!);
+  const factsWithImages = facts.filter((fact) => fact.image_url);
+  const newFacts = factsWithImages.filter((fact) => !prefetchedFactIds.has(fact.id));
 
-  const newImageUrls = imageUrls.filter((url) => !prefetchedImages.has(url));
-
-  if (newImageUrls.length > 0) {
-    if (prefetchedImages.size > MAX_PREFETCH_CACHE_SIZE) {
-      prefetchedImages.clear();
+  if (newFacts.length > 0) {
+    if (prefetchedFactIds.size > MAX_PREFETCH_CACHE_SIZE) {
+      prefetchedFactIds.clear();
     }
-    Image.prefetch(newImageUrls);
-    newImageUrls.forEach((url) => prefetchedImages.add(url));
+    
+    // Prefetch in background with App Check authentication
+    newFacts.forEach((fact) => {
+      prefetchedFactIds.add(fact.id);
+      // Fire and forget - prefetchFactImage handles caching internally
+      prefetchFactImage(fact.image_url!, fact.id).catch(() => {
+        // Remove from set if prefetch failed so it can be retried
+        prefetchedFactIds.delete(fact.id);
+      });
+    });
   }
 };
 

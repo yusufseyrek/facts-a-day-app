@@ -40,6 +40,10 @@ export const appCheckReady = new Promise<void>((resolve) => {
 // Track if JS error handler is already installed
 let jsErrorHandlerInstalled = false;
 
+// Maximum retry attempts for App Check initialization
+const APP_CHECK_INIT_MAX_RETRIES = 2;
+const APP_CHECK_INIT_RETRY_DELAY_MS = 1000;
+
 /**
  * Initialize Firebase App Check
  * 
@@ -73,66 +77,88 @@ export async function initializeAppCheckService() {
   console.log(`🔒 App Check: Platform=${Platform.OS}, isDevice=${isRealDevice}, __DEV__=${__DEV__}`);
   console.log(`🔒 App Check: Using provider: ${providerName}`);
 
-  try {
-    const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
-    
-    console.log('🔒 App Check: Configuring provider...');
-    
-    await rnfbProvider.configure({
-      apple: {
-        // Use debug on simulators, appAttest on real devices
-        provider: iosProvider,
-      },
-      android: {
-        // Use debug on emulators, playIntegrity on real devices
-        provider: androidProvider,
-      },
-      // Enable token auto-refresh
-      isTokenAutoRefreshEnabled: true,
-    });
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= APP_CHECK_INIT_MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        console.log(`🔒 App Check: Retry attempt ${attempt}/${APP_CHECK_INIT_MAX_RETRIES}...`);
+        await new Promise(resolve => setTimeout(resolve, APP_CHECK_INIT_RETRY_DELAY_MS));
+      }
+      
+      const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
+      
+      if (attempt === 0) {
+        console.log('🔒 App Check: Configuring provider...');
+      }
+      
+      await rnfbProvider.configure({
+        apple: {
+          // Use debug on simulators, appAttest on real devices
+          provider: iosProvider,
+        },
+        android: {
+          // Use debug on emulators, playIntegrity on real devices
+          provider: androidProvider,
+        },
+        // Enable token auto-refresh
+        isTokenAutoRefreshEnabled: true,
+      });
 
-    console.log('🔒 App Check: Provider configured, calling initializeAppCheck...');
+      if (attempt === 0) {
+        console.log('🔒 App Check: Provider configured, calling initializeAppCheck...');
+      }
 
-    await initializeAppCheck(getApp(), {
-      provider: rnfbProvider,
-      isTokenAutoRefreshEnabled: true,
-    });
+      await initializeAppCheck(getApp(), {
+        provider: rnfbProvider,
+        isTokenAutoRefreshEnabled: true,
+      });
 
-    appCheckInitialized = true;
-    
-    console.log(`🔒 App Check: Initialization SUCCESS with ${providerName} provider`);
-    
-    if (useDebugProvider) {
-      console.log('📋 Using DEBUG provider - check native logs for debug token');
-      console.log('   Register it in Firebase Console → App Check → Apps → Manage debug tokens');
-    }
-  } catch (error) {
-    // Log detailed error - this helps debug production issues
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : '';
-    
-    console.error(`❌ App Check: Initialization FAILED with ${providerName} provider`);
-    console.error(`❌ App Check Error: ${errorMessage}`);
-    if (errorStack) {
-      console.error(`❌ App Check Stack: ${errorStack}`);
-    }
-    
-    // Also log to Crashlytics for production debugging
-    if (!__DEV__) {
-      try {
-        log(crashlyticsInstance, `App Check init failed (${providerName}): ${errorMessage}`);
-        if (error instanceof Error) {
-          crashlyticsRecordError(crashlyticsInstance, error);
+      appCheckInitialized = true;
+      
+      console.log(`🔒 App Check: Initialization SUCCESS with ${providerName} provider${attempt > 0 ? ` (after ${attempt} retries)` : ''}`);
+      
+      if (useDebugProvider) {
+        console.log('📋 Using DEBUG provider - check native logs for debug token');
+        console.log('   Register it in Firebase Console → App Check → Apps → Manage debug tokens');
+      }
+      
+      // Success - exit the retry loop
+      break;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      // Log error on each attempt
+      const errorMessage = lastError.message;
+      
+      if (attempt < APP_CHECK_INIT_MAX_RETRIES) {
+        console.warn(`⚠️ App Check: Initialization attempt ${attempt + 1} failed: ${errorMessage}`);
+      } else {
+        // Final attempt failed - log detailed error
+        const errorStack = lastError.stack || '';
+        
+        console.error(`❌ App Check: Initialization FAILED with ${providerName} provider after ${APP_CHECK_INIT_MAX_RETRIES + 1} attempts`);
+        console.error(`❌ App Check Error: ${errorMessage}`);
+        if (errorStack && __DEV__) {
+          console.error(`❌ App Check Stack: ${errorStack}`);
         }
-      } catch (e) {
-        // Silently fail if Crashlytics isn't ready
+        
+        // Also log to Crashlytics for production debugging
+        if (!__DEV__) {
+          try {
+            log(crashlyticsInstance, `App Check init failed (${providerName}): ${errorMessage}`);
+            crashlyticsRecordError(crashlyticsInstance, lastError);
+          } catch (e) {
+            // Silently fail if Crashlytics isn't ready
+          }
+        }
       }
     }
-  } finally {
-    // Always resolve the ready promise, even on failure
-    // This prevents API calls from hanging forever
-    appCheckReadyResolve();
   }
+  
+  // Always resolve the ready promise, even on failure
+  // This prevents API calls from hanging forever
+  appCheckReadyResolve();
 }
 
 /**

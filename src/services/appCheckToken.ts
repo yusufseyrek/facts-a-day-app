@@ -85,7 +85,8 @@ async function fetchNewToken(): Promise<string | null> {
     
     // Check if initialization was successful
     if (!isAppCheckInitialized()) {
-      console.warn('⚠️ App Check: Initialization failed, skipping token retrieval');
+      console.warn('⚠️ App Check: Initialization failed or not complete, skipping token retrieval');
+      console.warn('⚠️ App Check: Check logs for "❌ App Check: Initialization FAILED" to see the cause');
       return null;
     }
     
@@ -99,12 +100,27 @@ async function fetchNewToken(): Promise<string | null> {
     // The SDK will return a cached token if available and valid
     const { token } = await getToken(appCheckInstance, false);
     
+    // Validate that token is a non-empty string
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
+      console.warn('⚠️ App Check: getToken returned invalid/empty token');
+      // Return cached token if available as fallback
+      if (cachedToken && tokenFetchTime) {
+        const elapsed = Date.now() - tokenFetchTime;
+        const maxFallbackAge = 60 * 60 * 1000; // 1 hour
+        if (elapsed < maxFallbackAge) {
+          console.log('🔒 App Check: Using cached token as fallback');
+          return cachedToken;
+        }
+      }
+      return null;
+    }
+    
     // Cache the token
     cachedToken = token;
     tokenFetchTime = Date.now();
     
     if (__DEV__) {
-      const tokenPreview = token ? `${token.substring(0, 20)}...` : 'null';
+      const tokenPreview = `${token.substring(0, 20)}...`;
       console.log(`🔒 App Check: New token cached successfully (${tokenPreview})`);
     }
     
@@ -161,8 +177,19 @@ export async function forceRefreshAppCheckToken(): Promise<string | null> {
     // Force refresh with true
     const { token } = await getToken(appCheckInstance, true);
     
+    // Validate that token is a non-empty string
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
+      console.warn('⚠️ App Check: Force refresh returned invalid/empty token');
+      return null;
+    }
+    
     cachedToken = token;
     tokenFetchTime = Date.now();
+    
+    if (__DEV__) {
+      const tokenPreview = `${token.substring(0, 20)}...`;
+      console.log(`🔒 App Check: Token force refreshed successfully (${tokenPreview})`);
+    }
     
     return token;
   } catch (error) {

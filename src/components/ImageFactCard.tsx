@@ -201,8 +201,11 @@ const ImageFactCardComponent = ({
     return { name, color: "#0066FF" };
   }, [category, categorySlug]);
 
-  // Generate image source
-  const imageSource: ImageSource | null = displayUri ? { uri: displayUri } : null;
+  // Generate image source - memoized to prevent unnecessary re-renders
+  const imageSource: ImageSource | null = useMemo(
+    () => displayUri ? { uri: displayUri } : null,
+    [displayUri]
+  );
 
   // Style objects
   const marginStyle = { marginBottom: isTablet ? tokens.space.lg : tokens.space.md };
@@ -252,12 +255,12 @@ const ImageFactCardComponent = ({
               contentFit="cover"
               contentPosition="top"
               cachePolicy={Platform.OS === "android" ? "disk" : "memory-disk"}
-              transition={Platform.OS === "android" ? 0 : 300}
+              transition={0}
               placeholder={placeholder}
               onError={handleImageError}
               onLoad={handleImageLoad}
               recyclingKey={recyclingKey}
-              priority="normal"
+              priority="high"
             />
             
             {/* Loading shimmer overlay */}

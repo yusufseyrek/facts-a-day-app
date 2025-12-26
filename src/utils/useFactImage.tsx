@@ -35,7 +35,8 @@ interface UseFactImageOptions {
 }
 
 // Maximum size of in-memory cache to prevent memory issues on tablets
-const MAX_MEMORY_CACHE_SIZE = 100;
+// Increased to 200 for better performance on tablets with many facts visible
+const MAX_MEMORY_CACHE_SIZE = 200;
 
 // Maximum time to wait for a pending fetch before starting a new one
 const PENDING_FETCH_TIMEOUT_MS = 30000; // 30 seconds
