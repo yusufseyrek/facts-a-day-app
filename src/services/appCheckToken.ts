@@ -110,13 +110,12 @@ async function fetchNewToken(): Promise<string | null> {
     
     return token;
   } catch (error) {
-    // Log detailed error for debugging
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorCode = (error as any)?.code || 'unknown';
     
-    console.error(`❌ App Check: Token retrieval FAILED`);
-    console.error(`❌ App Check Error Code: ${errorCode}`);
-    console.error(`❌ App Check Error Message: ${errorMessage}`);
+    if (__DEV__) {
+      const errorCode = (error as any)?.code || 'unknown';
+      console.error(`❌ App Check: Token retrieval FAILED (${errorCode}): ${errorMessage}`);
+    }
     
     // If we have a previously cached token that's not too old, return it as fallback
     // This handles temporary network issues gracefully
@@ -125,7 +124,6 @@ async function fetchNewToken(): Promise<string | null> {
       const maxFallbackAge = 60 * 60 * 1000; // 1 hour (full validity period)
       
       if (elapsed < maxFallbackAge) {
-        console.warn(`⚠️ App Check: Using fallback cached token (${Math.round(elapsed / 60000)} min old)`);
         return cachedToken;
       }
     }
@@ -168,8 +166,10 @@ export async function forceRefreshAppCheckToken(): Promise<string | null> {
     
     return token;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`❌ App Check: Force refresh failed: ${errorMessage}`);
+    if (__DEV__) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ App Check: Force refresh failed: ${errorMessage}`);
+    }
     return null;
   }
 }

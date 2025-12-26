@@ -46,7 +46,6 @@ async function ensureImagesDirExists(): Promise<void> {
   const dirInfo = await FileSystem.getInfoAsync(FACT_IMAGES_DIR);
   if (!dirInfo.exists) {
     await FileSystem.makeDirectoryAsync(FACT_IMAGES_DIR, { intermediates: true });
-    console.log(`📁 Created fact images directory: ${FACT_IMAGES_DIR}`);
   }
 }
 
@@ -94,7 +93,6 @@ async function getCachedImageUri(imageUrl: string, factId?: number): Promise<str
     if (fileInfo.modificationTime) {
       const ageMs = Date.now() - fileInfo.modificationTime * 1000;
       if (ageMs > MAX_CACHE_AGE_MS) {
-        console.log(`🖼️ Cached image expired for ${factId ? `fact ${factId}` : 'url'}: ${Math.round(ageMs / (24 * 60 * 60 * 1000))} days old`);
         // Delete expired file
         await FileSystem.deleteAsync(localUri, { idempotent: true });
         return null;
@@ -102,8 +100,7 @@ async function getCachedImageUri(imageUrl: string, factId?: number): Promise<str
     }
     
     return localUri;
-  } catch (error) {
-    console.warn('🖼️ Error checking cached image:', error);
+  } catch {
     return null;
   }
 }
@@ -166,10 +163,6 @@ async function performFileExistenceCheck(factId: number): Promise<string | null>
     // Check for common image extensions
     const extensions = ['jpg', 'jpeg', 'webp', 'png', 'gif'];
     
-    if (__DEV__) {
-      console.log(`🔍 Checking cache for fact ${factId} in ${FACT_IMAGES_DIR}`);
-    }
-    
     for (const ext of extensions) {
       const localUri = `${FACT_IMAGES_DIR}fact-${factId}.${ext}`;
       const fileInfo = await FileSystem.getInfoAsync(localUri);
@@ -181,15 +174,8 @@ async function performFileExistenceCheck(factId: number): Promise<string | null>
           const ageDays = Math.round(ageMs / (24 * 60 * 60 * 1000) * 10) / 10;
           
           if (ageMs > MAX_CACHE_AGE_MS) {
-            if (__DEV__) {
-              console.log(`🗑️ Expired cache for fact ${factId}: ${ageDays} days old`);
-            }
             await FileSystem.deleteAsync(localUri, { idempotent: true });
             continue;
-          }
-          
-          if (__DEV__) {
-            console.log(`✅ Found valid cache for fact ${factId}: ${localUri} (${ageDays} days old)`);
           }
         }
         
@@ -198,13 +184,8 @@ async function performFileExistenceCheck(factId: number): Promise<string | null>
       }
     }
     
-    if (__DEV__) {
-      console.log(`❌ No cache found for fact ${factId}`);
-    }
-    
     return null;
-  } catch (error) {
-    console.warn(`🖼️ Error checking cache for fact ${factId}:`, error);
+  } catch {
     return null;
   }
 }
@@ -236,15 +217,7 @@ export async function downloadImageWithAppCheck(
       // This is more reliable than URL-based extension detection
       const cachedUri = await getCachedFactImage(factId);
       if (cachedUri) {
-        // File cache hit
-        if (__DEV__) {
-          console.log(`📦 File cache HIT for fact ${factId}: ${cachedUri}`);
-        }
         return cachedUri;
-      }
-      // File cache miss
-      if (__DEV__) {
-        console.log(`📦 File cache MISS for fact ${factId} - downloading...`);
       }
     } else if (!forceRefresh && factId === undefined) {
       // Fallback for non-fact images (use URL-based lookup)
@@ -258,9 +231,6 @@ export async function downloadImageWithAppCheck(
     // Get App Check token (uses cache to prevent rate limiting)
     const appCheckToken = await getCachedAppCheckToken();
     
-    if (!appCheckToken) {
-      console.warn(`⚠️ No App Check token available for image download (fact ${factId})`);
-    }
     
     // Prepare download destination
     const filename = getCacheFilename(imageUrl, factId);
@@ -271,11 +241,6 @@ export async function downloadImageWithAppCheck(
     
     for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
       try {
-        if (attempt === 0) {
-          console.log(`🖼️ Downloading image for fact ${factId}...`);
-        } else {
-          console.log(`🖼️ Retry ${attempt + 1}/${MAX_RETRY_ATTEMPTS} for fact ${factId}`);
-        }
         
         // Build headers with App Check token
         const headers: Record<string, string> = {};
@@ -290,8 +255,6 @@ export async function downloadImageWithAppCheck(
         );
         
         if (downloadResult.status === 200) {
-          console.log(`✅ Downloaded and cached image for fact ${factId} at: ${downloadResult.uri}`);
-          
           // Update file existence cache so subsequent calls don't hit file system
           if (factId !== undefined) {
             fileExistenceCache.set(factId, { uri: downloadResult.uri, checkedAt: Date.now() });
@@ -301,7 +264,6 @@ export async function downloadImageWithAppCheck(
         }
         
         // Handle non-200 status codes
-        console.warn(`🖼️ Download failed (HTTP ${downloadResult.status}) for fact ${factId}`);
         
         // Don't retry on client errors (4xx) except 429 (rate limit)
         if (downloadResult.status >= 400 && downloadResult.status < 500 && downloadResult.status !== 429) {
@@ -311,7 +273,6 @@ export async function downloadImageWithAppCheck(
         lastError = new Error(`HTTP ${downloadResult.status}`);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        console.warn(`🖼️ Download error for fact ${factId}:`, lastError.message);
       }
       
       // Wait before retrying (exponential backoff)
@@ -320,11 +281,8 @@ export async function downloadImageWithAppCheck(
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
-    
-    console.error(`❌ Failed to download image for fact ${factId} after ${MAX_RETRY_ATTEMPTS} attempts`);
     return null;
-  } catch (error) {
-    console.error(`❌ Error downloading image for fact ${factId}:`, error);
+  } catch {
     return null;
   }
 }
@@ -372,9 +330,8 @@ export async function prefetchFactImage(
     
     // Download in background
     await downloadImageWithAppCheck(imageUrl, factId);
-  } catch (error) {
+  } catch {
     // Silently fail for prefetch
-    console.warn(`🖼️ Prefetch failed for fact ${factId}:`, error);
   }
 }
 
@@ -405,7 +362,6 @@ export async function cleanupOldCachedImages(maxAgeDays: number = 7): Promise<nu
           
           if (fileAgeMs > maxAgeMs) {
             await FileSystem.deleteAsync(filePath, { idempotent: true });
-            console.log(`🗑️ Cleaned up old cached image: ${file} (${Math.round(fileAgeMs / (24 * 60 * 60 * 1000))} days old)`);
             deletedCount++;
             
             // Extract factId from filename (format: fact-{id}.{ext})
@@ -416,18 +372,13 @@ export async function cleanupOldCachedImages(maxAgeDays: number = 7): Promise<nu
             }
           }
         }
-      } catch (fileError) {
-        console.warn(`🗑️ Error processing cached image file ${file}:`, fileError);
+      } catch {
+        // Ignore individual file errors
       }
     }
     
-    if (deletedCount > 0) {
-      console.log(`🗑️ Cleaned up ${deletedCount} old cached images`);
-    }
-    
     return deletedCount;
-  } catch (error) {
-    console.warn('🗑️ Error cleaning up cached images:', error);
+  } catch {
     return 0;
   }
 }
@@ -439,7 +390,6 @@ export async function cleanupOldCachedImages(maxAgeDays: number = 7): Promise<nu
 export function clearImageMemoryCaches(): void {
   fileExistenceCache.clear();
   pendingExistenceChecks.clear();
-  console.log('🗑️ Image memory caches cleared');
 }
 
 /**
@@ -461,11 +411,10 @@ export async function deleteCachedFactImage(factId: number): Promise<void> {
       
       if (fileInfo.exists) {
         await FileSystem.deleteAsync(uri, { idempotent: true });
-        console.log(`🗑️ Deleted cached image for fact ${factId}: ${uri}`);
       }
     }
-  } catch (error) {
-    console.warn(`🗑️ Error deleting cached image for fact ${factId}:`, error);
+  } catch {
+    // Ignore deletion errors
   }
 }
 

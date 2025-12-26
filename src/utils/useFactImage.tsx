@@ -80,8 +80,6 @@ function cleanupMemoryCacheIfNeeded(): void {
     resolvedImages.delete(key);
     resolvedImagesTimestamps.delete(key);
   }
-  
-  console.log(`🗑️ Cleaned up ${toRemove} old entries from memory cache`);
 }
 
 /**
@@ -99,7 +97,6 @@ function cleanupStalePendingFetches(): void {
   
   staleKeys.forEach(key => {
     pendingFetches.delete(key);
-    console.log(`🗑️ Cleaned up stale pending fetch: ${key}`);
   });
 }
 
@@ -253,18 +250,16 @@ export function useFactImage(
           }
           setHasError(false);
         } else {
-          console.error(`❌ Failed to get image for fact ${factId}`);
           // Don't clear existing URI on error - keep showing cached/previous image
           if (!lastUriRef.current) {
             setHasError(true);
           }
         }
-      } catch (error) {
+      } catch {
         pendingFetches.delete(cacheKey);
         
         if (!isMounted.current) return;
         
-        console.error(`❌ Error getting image for fact ${factId}:`, error);
         // Don't clear existing URI on error
         if (!lastUriRef.current) {
           setHasError(true);
@@ -354,5 +349,4 @@ export function clearImageCache(): void {
   resolvedImages.clear();
   resolvedImagesTimestamps.clear();
   pendingFetches.clear();
-  console.log('🗑️ In-memory image cache cleared');
 }

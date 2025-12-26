@@ -168,18 +168,16 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         const localImagePath = await getLocalNotificationImagePath(fact.id);
         
         if (localImagePath && isMounted) {
-          console.log(`🖼️ Using local notification image for fact ${fact.id}: ${localImagePath}`);
           setNotificationImageUri(localImagePath);
           
           // Delete the notification image after a short delay to ensure it's loaded
           // This prevents the image from being deleted before it's displayed
           setTimeout(async () => {
             await deleteNotificationImage(fact.id);
-            console.log(`🗑️ Deleted notification image for fact ${fact.id} after viewing`);
           }, 1000);
         }
-      } catch (error) {
-        console.warn(`🖼️ Error checking local notification image:`, error);
+      } catch {
+        // Ignore errors checking local notification image
       }
     };
     
@@ -218,8 +216,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         theme,
         // Translate the source URL if user's locale is not English
         translateTo: locale !== 'en' ? locale : undefined,
-      }).catch((err) => {
-        console.error("Failed to open URL:", err);
+      }).catch(() => {
+        // Ignore URL open errors
       });
     }
   };

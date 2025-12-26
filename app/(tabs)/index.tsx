@@ -178,8 +178,8 @@ function HomeScreen() {
             const Localization = await import("expo-localization");
             const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
             await checkAndTopUpNotifications(getLocaleFromCode(deviceLocale));
-          } catch (error) {
-            console.error("Error marking fact as shown or topping up:", error);
+          } catch {
+            // Ignore notification setup errors
           }
           loadFacts();
         }
@@ -210,16 +210,13 @@ function HomeScreen() {
     try {
       if (isRefresh) setRefreshing(true);
 
-      const markedCount = await database.markDeliveredFactsAsShown(locale);
-      if (markedCount > 0) {
-        console.log(`✅ Marked ${markedCount} delivered facts as shown`);
-      }
+      await database.markDeliveredFactsAsShown(locale);
 
       const facts = await database.getFactsGroupedByDate(locale);
       prefetchFactImages(facts);
       setSections(groupFactsByDate(facts, t, locale));
-    } catch (error) {
-      console.error("Error loading facts:", error);
+    } catch {
+      // Ignore fact loading errors
     } finally {
       setInitialLoading(false);
       setRefreshing(false);
@@ -237,8 +234,8 @@ function HomeScreen() {
     trackFeedRefresh('pull');
     try {
       await forceRefreshContent();
-    } catch (error) {
-      console.error("Error refreshing content:", error);
+    } catch {
+      // Ignore refresh errors
     }
     await loadFacts(false);
   }, [loadFacts]);

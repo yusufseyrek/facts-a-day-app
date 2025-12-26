@@ -162,8 +162,6 @@ const ImageFactCardComponent = ({
     if (downloadRetryCount < MAX_DOWNLOAD_RETRY_ATTEMPTS) {
       retryPendingRef.current = true;
       
-      console.log(`🔄 Image still failing after re-renders, re-downloading in ${DOWNLOAD_RETRY_DELAY}ms (download attempt ${downloadRetryCount + 1}/${MAX_DOWNLOAD_RETRY_ATTEMPTS})`);
-      
       setTimeout(() => {
         retryPendingRef.current = false;
         setDownloadRetryCount((prev) => prev + 1);
@@ -172,8 +170,6 @@ const ImageFactCardComponent = ({
       }, DOWNLOAD_RETRY_DELAY);
       return;
     }
-    
-    console.log(`❌ Image failed after all retry attempts for fact ${factId}`);
   }, [renderRetryCount, downloadRetryCount, factId, retryImage, isImageLoading, displayUri]);
 
   // Reset retry state and loaded state when imageUrl changes

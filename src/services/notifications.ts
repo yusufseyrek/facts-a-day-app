@@ -25,7 +25,6 @@ async function ensureNotificationImagesDirExists(): Promise<void> {
   const dirInfo = await FileSystem.getInfoAsync(NOTIFICATION_IMAGES_DIR);
   if (!dirInfo.exists) {
     await FileSystem.makeDirectoryAsync(NOTIFICATION_IMAGES_DIR, { intermediates: true });
-    console.log(`📁 Created notification images directory: ${NOTIFICATION_IMAGES_DIR}`);
   }
 }
 
@@ -40,16 +39,12 @@ async function convertToJpegIfNeeded(localUri: string, factId: number): Promise<
     return localUri;
   }
   
-  // Convert WebP and other formats to JPEG
-  console.log(`🖼️ Converting ${extension} to JPEG for fact ${factId}...`);
-  
   try {
     const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
     
     // Check if converted version already exists
     const existingJpeg = await FileSystem.getInfoAsync(jpegUri);
     if (existingJpeg.exists) {
-      console.log(`🖼️ Using existing JPEG conversion for fact ${factId}`);
       return jpegUri;
     }
     
@@ -66,10 +61,8 @@ async function convertToJpegIfNeeded(localUri: string, factId: number): Promise<
       to: jpegUri,
     });
     
-    console.log(`🖼️ Converted to JPEG for fact ${factId}: ${jpegUri}`);
     return jpegUri;
-  } catch (error) {
-    console.warn(`🖼️ Failed to convert image for fact ${factId}:`, error);
+  } catch {
     // Return original if conversion fails
     return localUri;
   }
@@ -87,20 +80,15 @@ async function downloadImageForNotification(imageUrl: string, factId: number): P
     const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
     const jpegInfo = await FileSystem.getInfoAsync(jpegUri);
     if (jpegInfo.exists) {
-      console.log(`🖼️ Using cached JPEG image for fact ${factId}: ${jpegUri}`);
       return jpegUri;
     }
     
     // Download image with App Check authentication
-    console.log(`🖼️ Downloading notification image with App Check for fact ${factId}: ${imageUrl}`);
     const downloadedUri = await downloadImageWithAppCheck(imageUrl, factId);
     
     if (!downloadedUri) {
-      console.warn(`🖼️ Failed to download notification image for fact ${factId}`);
       return null;
     }
-    
-    console.log(`🖼️ Downloaded image for fact ${factId}: ${downloadedUri}`);
     
     // For iOS notification attachments, copy to notification images directory
     // and convert to JPEG if needed (WebP not well supported by iOS notification attachments)
@@ -118,9 +106,7 @@ async function downloadImageForNotification(imageUrl: string, factId: number): P
           from: downloadedUri,
           to: notificationUri,
         });
-        console.log(`🖼️ Copied image to notification dir: ${notificationUri}`);
-      } catch (copyError) {
-        console.warn(`🖼️ Failed to copy image, using original: ${copyError}`);
+      } catch {
         // Convert original directly
         const finalUri = await convertToJpegIfNeeded(downloadedUri, factId);
         return finalUri;
@@ -130,8 +116,7 @@ async function downloadImageForNotification(imageUrl: string, factId: number): P
     // Convert to JPEG if needed
     const finalUri = await convertToJpegIfNeeded(notificationUri, factId);
     return finalUri;
-  } catch (error) {
-    console.warn(`🖼️ Error downloading notification image for fact ${factId}:`, error);
+  } catch {
     return null;
   }
 }
@@ -185,8 +170,7 @@ export async function getLocalNotificationImagePath(factId: number): Promise<str
     }
     
     return null;
-  } catch (error) {
-    console.warn(`🖼️ Error checking local notification image for fact ${factId}:`, error);
+  } catch {
     return null;
   }
 }
@@ -206,11 +190,10 @@ export async function deleteNotificationImage(factId: number): Promise<void> {
       
       if (fileInfo.exists) {
         await FileSystem.deleteAsync(uri, { idempotent: true });
-        console.log(`🗑️ Deleted notification image: ${uri}`);
       }
     }
-  } catch (error) {
-    console.warn(`🗑️ Error deleting notification image for fact ${factId}:`, error);
+  } catch {
+    // Ignore deletion errors
   }
 }
 
@@ -244,22 +227,16 @@ export async function cleanupOldNotificationImages(maxAgeDays: number = 7): Prom
           
           if (fileAgeMs > maxAgeMs) {
             await FileSystem.deleteAsync(filePath, { idempotent: true });
-            console.log(`🗑️ Cleaned up old notification image: ${file} (${Math.round(fileAgeMs / (24 * 60 * 60 * 1000))} days old)`);
             deletedCount++;
           }
         }
-      } catch (fileError) {
-        console.warn(`🗑️ Error processing file ${file}:`, fileError);
+      } catch {
+        // Ignore individual file errors
       }
     }
     
-    if (deletedCount > 0) {
-      console.log(`🗑️ Cleaned up ${deletedCount} old notification images`);
-    }
-    
     return deletedCount;
-  } catch (error) {
-    console.warn('🗑️ Error cleaning up old notification images:', error);
+  } catch {
     return 0;
   }
 }
@@ -325,7 +302,6 @@ export async function preloadUpcomingNotificationImages(locale: SupportedLocale)
             const fact = await database.getFactById(factId);
             
             if (fact?.image_url) {
-              console.log(`🖼️ Preloading image for upcoming notification (fact ${factId}, fires in ${daysUntil} days)`);
               const localUri = await downloadImageForNotification(fact.image_url, factId);
               
               if (localUri) {
@@ -337,13 +313,8 @@ export async function preloadUpcomingNotificationImages(locale: SupportedLocale)
       }
     }
 
-    if (preloadedCount > 0) {
-      console.log(`🖼️ Preloaded ${preloadedCount} images for upcoming notifications`);
-    }
-
     return preloadedCount;
-  } catch (error) {
-    console.warn('🖼️ Error preloading notification images:', error);
+  } catch {
     return 0;
   }
 }
@@ -377,14 +348,11 @@ export async function buildNotificationContent(
   const shouldDownloadImage = scheduledDate ? shouldPreloadImage(scheduledDate) : true;
   
   if (fact.image_url && Platform.OS === 'ios' && shouldDownloadImage) {
-    console.log(`🖼️ Preparing image attachment for fact ${fact.id}, image_url: ${fact.image_url}`);
-    
     // Download image to local storage - iOS requires local file URLs for attachments
     const localImageUri = await downloadImageForNotification(fact.image_url, fact.id);
     
     if (localImageUri) {
       const typeHint = getTypeHintForExtension(localImageUri);
-      console.log(`🖼️ Creating attachment with uri: ${localImageUri}, typeHint: ${typeHint}`);
       
       // IMPORTANT: expo-notifications native iOS code (Records.swift line 408) expects 'uri' key, not 'url'
       // This is a mismatch with the TypeScript types which define 'url'
@@ -398,14 +366,7 @@ export async function buildNotificationContent(
       
       // Cast to any to bypass TypeScript's type checking since native code expects different keys
       content.attachments = [attachment] as any;
-      console.log(`🖼️ Attachment created:`, JSON.stringify(content.attachments));
-    } else {
-      console.warn(`🖼️ No local image available for fact ${fact.id}, skipping attachment`);
     }
-  } else if (fact.image_url && Platform.OS === 'ios' && !shouldDownloadImage) {
-    // Log that we're skipping image download for distant notifications
-    const daysUntil = scheduledDate ? Math.ceil((scheduledDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
-    console.log(`🖼️ Skipping image download for fact ${fact.id} (scheduled in ${daysUntil} days, preload window is ${DAYS_TO_PRELOAD_IMAGES} days)`);
   }
 
   // For Android, store image URL in data for potential future use
@@ -494,9 +455,8 @@ export async function scheduleInitialNotifications(
           );
           successCount++;
         }
-      } catch (error) {
+      } catch {
         // If scheduling fails, do NOT mark as scheduled in database
-        console.error(`Failed to schedule notification for fact ${fact.id}:`, error);
       }
     }
 
@@ -505,7 +465,9 @@ export async function scheduleInitialNotifications(
       count: successCount,
     };
   } catch (error) {
-    console.error('Error scheduling initial notifications:', error);
+    if (__DEV__) {
+      console.error('Error scheduling initial notifications:', error);
+    }
     return {
       success: false,
       count: 0,
@@ -539,14 +501,14 @@ export async function showImmediateFact(
     // This ensures the fact is properly grouped by date in the feed
     await database.markFactAsShownWithDate(fact.id, new Date().toISOString());
 
-    console.log(`Marked fact ${fact.id} as shown in feed for immediate display`);
-
     return {
       success: true,
       fact,
     };
   } catch (error) {
-    console.error('Error showing immediate fact:', error);
+    if (__DEV__) {
+      console.error('Error showing immediate fact:', error);
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -611,19 +573,14 @@ export async function refreshNotificationSchedule(
       
       const daysToLastScheduled = Math.round((lastScheduledMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
       
-      console.log(`🔔 Latest scheduled notification in DB is on ${latestScheduledDate.toISOString()}, ${daysToLastScheduled} days from today`);
-      
       // Start from the day AFTER the last scheduled notification
       startDayOffset = daysToLastScheduled + 1;
     } else {
       // No existing scheduled notifications - start today if time hasn't passed, else tomorrow
-      console.log('🔔 No scheduled notifications in DB, starting fresh');
       const selectedTimeToday = new Date(now);
       selectedTimeToday.setHours(hour, minute, 0, 0);
       startDayOffset = selectedTimeToday > now ? 0 : 1;
     }
-
-    console.log(`🔔 Topping up: scheduling ${facts.length} new notifications starting from day +${startDayOffset}`);
     
     let successCount = 0;
     
@@ -653,12 +610,10 @@ export async function refreshNotificationSchedule(
             scheduledDate.toISOString(),
             notificationId
           );
-          console.log(`🔔 Scheduled fact ${fact.id} for ${scheduledDate.toISOString()}`);
           successCount++;
         }
-      } catch (error) {
+      } catch {
         // If scheduling fails, do NOT mark as scheduled in database
-        console.error(`Failed to schedule notification for fact ${fact.id}:`, error);
       }
     }
 
@@ -667,7 +622,9 @@ export async function refreshNotificationSchedule(
       count: successCount,
     };
   } catch (error) {
-    console.error('Error refreshing notification schedule:', error);
+    if (__DEV__) {
+      console.error('Error refreshing notification schedule:', error);
+    }
     return {
       success: false,
       count: 0,
@@ -748,15 +705,6 @@ export async function refreshNotificationScheduleMultiple(
       // Calculate days from today to the last scheduled day (using LOCAL dates)
       const daysToLastScheduled = Math.round((lastScheduledMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
       
-      console.log(`🔔 Latest scheduled notification in DB is on ${latestScheduledDate.toISOString()}, ${daysToLastScheduled} days from today`);
-      
-      // Get the LOCAL date string for the last scheduled day
-      // We need to use LOCAL date because that's how we compare with user's notification times
-      const year = lastScheduledMidnight.getFullYear();
-      const month = String(lastScheduledMidnight.getMonth() + 1).padStart(2, '0');
-      const day = String(lastScheduledMidnight.getDate()).padStart(2, '0');
-      const lastScheduledDayLocalStr = `${year}-${month}-${day}`;
-      
       // Query database using UTC date (since that's how dates are stored)
       // But we need to find all notifications for this LOCAL day
       // A local day spans from local midnight to local midnight, which in UTC is:
@@ -772,8 +720,6 @@ export async function refreshNotificationScheduleMultiple(
         locale
       );
       
-      console.log(`🔔 Last scheduled day (${lastScheduledDayLocalStr}) has ${existingTimesOnLastDay.length}/${timeSlotsPerDay} time slots filled`);
-      
       // Find which time slots are still available on the last scheduled day
       // Use LOCAL hours since user's notification times are in local time
       const filledTimeSlots = new Set<string>();
@@ -782,7 +728,6 @@ export async function refreshNotificationScheduleMultiple(
         // getHours() returns LOCAL hours, which matches how user selected times
         const slotKey = `${existingDate.getHours()}:${existingDate.getMinutes()}`;
         filledTimeSlots.add(slotKey);
-        console.log(`🔔 Found filled slot: ${slotKey} (${existingTime})`);
       }
       
       // First, add remaining slots from the last scheduled day (if any)
@@ -792,7 +737,6 @@ export async function refreshNotificationScheduleMultiple(
         
         if (!filledTimeSlots.has(slotKey)) {
           // This slot is not filled on the last scheduled day
-          console.log(`🔔 Slot ${slotKey} is available on day ${daysToLastScheduled}`);
           slotsToFill.push({ dayOffset: daysToLastScheduled, timeIndex });
         }
       }
@@ -807,8 +751,6 @@ export async function refreshNotificationScheduleMultiple(
       }
     } else {
       // No existing scheduled notifications - start from today/tomorrow based on time
-      console.log('🔔 No scheduled notifications in DB, starting fresh');
-      
       // Determine starting day
       let startDayOffset = 1; // Default to starting tomorrow
       for (const time of sortedTimes) {
@@ -830,8 +772,6 @@ export async function refreshNotificationScheduleMultiple(
       }
     }
 
-    console.log(`🔔 Topping up: scheduling ${facts.length} new notifications across ${timeSlotsPerDay} time slots`);
-
     let successCount = 0;
 
     // Schedule facts using the pre-calculated slots
@@ -849,7 +789,6 @@ export async function refreshNotificationScheduleMultiple(
 
       // Skip if this specific time slot is in the past
       if (scheduledDate <= now) {
-        console.log(`🔔 Skipping past time slot: ${scheduledDate.toISOString()}`);
         continue;
       }
 
@@ -871,11 +810,10 @@ export async function refreshNotificationScheduleMultiple(
             scheduledDate.toISOString(),
             notificationId
           );
-          console.log(`🔔 Scheduled fact ${fact.id} for ${scheduledDate.toISOString()}`);
           successCount++;
         }
-      } catch (error) {
-        console.error(`Failed to schedule notification for fact ${fact.id}:`, error);
+      } catch {
+        // Ignore individual scheduling errors
       }
     }
 
@@ -884,7 +822,9 @@ export async function refreshNotificationScheduleMultiple(
       count: successCount,
     };
   } catch (error) {
-    console.error('Error refreshing notification schedule (multiple times):', error);
+    if (__DEV__) {
+      console.error('Error refreshing notification schedule (multiple times):', error);
+    }
     return {
       success: false,
       count: 0,
@@ -909,24 +849,21 @@ export async function clearAllScheduledNotifications(
     // IMPORTANT: Before clearing DB, mark delivered facts as shown so they're preserved in feed
     // This ensures facts that were delivered but not yet viewed don't get lost
     if (!clearPastScheduledDates) {
-      const markedCount = await database.markDeliveredFactsAsShown(locale);
-      if (markedCount > 0) {
-        console.log(`🔔 Marked ${markedCount} delivered facts as shown before clearing`);
-      }
+      await database.markDeliveredFactsAsShown(locale);
     }
 
     // Clear scheduling data from database
     if (clearPastScheduledDates) {
       // Clear ALL scheduled facts (including past ones) - used when permissions are revoked
       await database.clearAllScheduledFactsCompletely();
-      console.log('🔔 All scheduled notifications cleared (including past scheduled_dates)');
     } else {
       // Only clear future scheduled facts (preserve past for feed grouping)
       await database.clearAllScheduledFacts();
-      console.log('🔔 Future scheduled notifications cleared (past scheduled_dates preserved for feed)');
     }
   } catch (error) {
-    console.error('Error clearing scheduled notifications:', error);
+    if (__DEV__) {
+      console.error('Error clearing scheduled notifications:', error);
+    }
     throw error;
   }
 }
@@ -958,7 +895,9 @@ export async function rescheduleNotifications(
     // Schedule new notifications with the new time
     return await scheduleInitialNotifications(newTime, locale);
   } catch (error) {
-    console.error('Error rescheduling notifications:', error);
+    if (__DEV__) {
+      console.error('Error rescheduling notifications:', error);
+    }
     return {
       success: false,
       count: 0,
@@ -974,8 +913,7 @@ export async function getScheduledNotificationsCount(): Promise<number> {
   try {
     const notifications = await Notifications.getAllScheduledNotificationsAsync();
     return notifications.length;
-  } catch (error) {
-    console.error('Error getting scheduled notifications count:', error);
+  } catch {
     return 0;
   }
 }
@@ -1006,11 +944,8 @@ export async function checkAndRepairNotificationSchedule(
     const checkResult = await database.hasIncorrectNotificationsPerDay(expectedPerDay, locale);
 
     if (!checkResult.needsRepair) {
-      console.log('🔔 Notification schedule is healthy, no repair needed');
       return { repaired: false, count: 0 };
     }
-
-    console.log(`🔧 Repairing notification schedule: ${checkResult.excessDays} days with excess, ${checkResult.deficitDays} days with deficit...`);
 
     // Clear all future notifications and reschedule properly
     await clearAllScheduledNotifications(false, locale);
@@ -1022,8 +957,6 @@ export async function checkAndRepairNotificationSchedule(
     } else {
       result = await scheduleInitialNotifications(notificationTimes[0], locale);
     }
-
-    console.log(`🔧 Repair complete: rescheduled ${result.count} notifications`);
     
     // Verify DB matches OS after repair
     await verifyDbMatchesOs(locale);
@@ -1034,8 +967,7 @@ export async function checkAndRepairNotificationSchedule(
       excessDays: checkResult.excessDays,
       deficitDays: checkResult.deficitDays,
     };
-  } catch (error) {
-    console.error('Error repairing notification schedule:', error);
+  } catch {
     return { repaired: false, count: 0 };
   }
 }
@@ -1065,7 +997,6 @@ export async function verifyAndRepairNotificationTimes(
     const osNotifications = await Notifications.getAllScheduledNotificationsAsync();
     
     if (osNotifications.length === 0) {
-      console.log('🔍 No OS notifications to verify');
       return { repaired: false, count: 0, mismatchCount: 0 };
     }
 
@@ -1083,7 +1014,6 @@ export async function verifyAndRepairNotificationTimes(
     const dbFacts = await database.getFutureScheduledFactsWithNotificationIds(locale);
     
     if (dbFacts.length === 0) {
-      console.log('🔍 No DB scheduled facts to verify');
       return { repaired: false, count: 0, mismatchCount: 0 };
     }
 
@@ -1114,21 +1044,10 @@ export async function verifyAndRepairNotificationTimes(
     }
 
     if (mismatchCount === 0) {
-      console.log('🔍 All notification times verified - OS matches DB');
       return { repaired: false, count: 0, mismatchCount: 0 };
     }
 
-    // Log mismatches (limit to first 5 for readability)
-    console.log(`🔧 Found ${mismatchCount} notifications with time mismatches:`);
-    for (const mismatch of mismatches.slice(0, 5)) {
-      console.log(`   Fact ${mismatch.factId}: DB=${mismatch.dbTime}, OS=${mismatch.osTime}`);
-    }
-    if (mismatches.length > 5) {
-      console.log(`   ... and ${mismatches.length - 5} more`);
-    }
-
     // Repair: clear all and reschedule
-    console.log('🔧 Repairing notification times - clearing and rescheduling...');
     await clearAllScheduledNotifications(false, locale);
 
     let result;
@@ -1137,15 +1056,12 @@ export async function verifyAndRepairNotificationTimes(
     } else {
       result = await scheduleInitialNotifications(notificationTimes[0], locale);
     }
-
-    console.log(`🔧 Time repair complete: rescheduled ${result.count} notifications`);
     
     // Verify DB matches OS after repair
     await verifyDbMatchesOs(locale);
     
     return { repaired: true, count: result.count, mismatchCount };
-  } catch (error) {
-    console.error('Error verifying notification times:', error);
+  } catch {
     return { repaired: false, count: 0, mismatchCount: 0 };
   }
 }
@@ -1174,14 +1090,11 @@ export async function verifyDbMatchesOs(
     const dbFacts = await database.getFutureScheduledFactsWithNotificationIds(locale);
     const dbNotificationIds = new Set(dbFacts.map(f => f.notification_id));
     
-    console.log(`🔍 Verifying sync: OS has ${osNotificationIds.size} notifications, DB has ${dbNotificationIds.size} scheduled facts`);
-    
     // Find DB facts whose notification_id doesn't exist in OS (DB orphans)
     let dbOrphans = 0;
     for (const dbFact of dbFacts) {
       if (!osNotificationIds.has(dbFact.notification_id)) {
         dbOrphans++;
-        console.log(`🔍 DB orphan found: fact ${dbFact.id} has notification_id ${dbFact.notification_id} but not in OS`);
       }
     }
     
@@ -1192,19 +1105,16 @@ export async function verifyDbMatchesOs(
       if (!dbNotificationIds.has(osNotification.identifier)) {
         osOrphans++;
         orphanOsIds.push(osNotification.identifier);
-        console.log(`🔍 OS orphan found: notification ${osNotification.identifier} not in DB`);
       }
     }
     
     // Clean up orphans if found
     if (dbOrphans > 0) {
-      console.log(`🔧 Cleaning up ${dbOrphans} DB orphans...`);
       const validIds = Array.from(osNotificationIds);
       await database.clearStaleScheduledFacts(validIds);
     }
     
     if (osOrphans > 0) {
-      console.log(`🔧 Cleaning up ${osOrphans} OS orphans...`);
       for (const orphanId of orphanOsIds) {
         await Notifications.cancelScheduledNotificationAsync(orphanId);
       }
@@ -1212,15 +1122,8 @@ export async function verifyDbMatchesOs(
     
     const synced = dbOrphans === 0 && osOrphans === 0;
     
-    if (synced) {
-      console.log('✅ DB and OS are in sync');
-    } else {
-      console.log(`🔧 Cleaned up ${dbOrphans} DB orphans and ${osOrphans} OS orphans`);
-    }
-    
     return { synced, dbOrphans, osOrphans };
-  } catch (error) {
-    console.error('Error verifying DB matches OS:', error);
+  } catch {
     return { synced: false, dbOrphans: 0, osOrphans: 0 };
   }
 }
@@ -1238,29 +1141,18 @@ export async function checkAndTopUpNotifications(
     // Step 1: ALWAYS mark delivered facts as shown first
     // This ensures facts that were delivered (scheduled_date <= now) are preserved in feed
     // even if we need to clear stale data or if permissions were revoked
-    const markedCount = await database.markDeliveredFactsAsShown(locale);
-    if (markedCount > 0) {
-      console.log(`🔔 Marked ${markedCount} delivered facts as shown in feed`);
-    }
+    await database.markDeliveredFactsAsShown(locale);
 
     // Step 2: Check notification permissions
     const { status } = await Notifications.getPermissionsAsync();
-    console.log(`🔔 Notification permission status: ${status}`);
     
     if (status !== 'granted') {
-      console.log('🔔 Notifications not enabled, clearing scheduled notifications...');
-      
       // Explicitly cancel all scheduled notifications from the OS
       await Notifications.cancelAllScheduledNotificationsAsync();
-      
-      // Verify cancellation worked
-      const remainingNotifications = await Notifications.getAllScheduledNotificationsAsync();
-      console.log(`🔔 Cancelled notifications. Remaining in OS: ${remainingNotifications.length}`);
       
       // Sync DB state: clear ALL scheduled facts so they can be re-scheduled later
       // Note: delivered facts were already marked as shown in Step 1, so they won't be affected
       await database.clearAllScheduledFactsCompletely();
-      console.log('🔔 Cleared scheduled data from DB (permissions not granted)');
       
       return {
         success: true,
@@ -1272,31 +1164,21 @@ export async function checkAndTopUpNotifications(
     // Step 3: Get current scheduled notifications from OS
     const allScheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
     const currentCount = allScheduledNotifications.length;
-    console.log(`🔔 Current scheduled notifications in OS: ${currentCount}/${MAX_SCHEDULED_NOTIFICATIONS}`);
 
     // Step 4: Check DB scheduled count for comparison (future pending facts only)
     const dbScheduledCount = await database.getFutureScheduledFactsCount(locale);
-    console.log(`🔔 Future pending scheduled facts in DB (shown_in_feed=0): ${dbScheduledCount}`);
 
     // Step 5: Sync DB with OS state
     if (currentCount === 0 && dbScheduledCount > 0) {
       // OS has 0 notifications but DB thinks there are scheduled facts - clear DB
-      console.log('🔔 Mismatch detected: OS has 0 notifications but DB has scheduled facts. Clearing DB...');
       await database.clearAllScheduledFactsCompletely();
-      console.log('🔔 Cleared all scheduled facts from DB to sync with OS');
     } else if (currentCount > 0 && dbScheduledCount === 0) {
       // OS has notifications but DB doesn't have scheduled facts
       // This means DB was cleared but OS wasn't (native module issue)
       // Solution: Clear OS notifications and reschedule fresh with user's current time preference
-      console.log('🔔 Mismatch detected: OS has notifications but DB has 0 scheduled facts.');
-      console.log('🔔 Clearing stale OS notifications and will reschedule with user time preference...');
       
       // Clear all stale notifications from OS
       await Notifications.cancelAllScheduledNotificationsAsync();
-      
-      // Verify cleared
-      const afterClear = await Notifications.getAllScheduledNotificationsAsync();
-      console.log(`🔔 Cleared stale notifications. OS now has: ${afterClear.length}`);
       
       // Get user's notification time preference
       const onboardingService = await import('./onboarding');
@@ -1304,26 +1186,20 @@ export async function checkAndTopUpNotifications(
       
       if (notificationTimes && notificationTimes.length > 0) {
         const times = notificationTimes.map(t => new Date(t));
-        console.log(`🔔 Rescheduling with user's time preference: ${times.map(t => t.toLocaleTimeString()).join(', ')}`);
         
         // Schedule fresh notifications with user's time preference
         const result = times.length > 1
           ? await rescheduleNotificationsMultiple(times, locale)
           : await scheduleInitialNotifications(times[0], locale);
         
-        console.log(`🔔 Rescheduled ${result.count} notifications with user's time preference`);
         return result;
       } else {
-        console.log('🔔 No notification times set, skipping reschedule');
         return { success: true, count: 0, skipped: true };
       }
     } else if (currentCount > 0) {
       // Both have data - clear any facts that are marked as scheduled in DB but don't have a corresponding notification in the OS
       const validNotificationIds = allScheduledNotifications.map(n => n.identifier);
-      const clearedCount = await database.clearStaleScheduledFacts(validNotificationIds);
-      if (clearedCount > 0) {
-        console.log(`🔔 Cleared ${clearedCount} stale scheduled facts from DB (not in OS)`);
-      }
+      await database.clearStaleScheduledFacts(validNotificationIds);
     }
 
     // Step 6: Get notification times from preferences (supports multiple times for premium users)
@@ -1333,7 +1209,6 @@ export async function checkAndTopUpNotifications(
     const notificationTimes = await onboardingService.getNotificationTimes();
 
     if (!notificationTimes || notificationTimes.length === 0) {
-      console.log('🔔 No notification times set, skipping top-up');
       return {
         success: true,
         count: 0,
@@ -1343,15 +1218,12 @@ export async function checkAndTopUpNotifications(
 
     // Convert ISO strings to Date objects
     const times = notificationTimes.map(t => new Date(t));
-    console.log(`🔔 Notification times configured: ${times.length} time slot(s)`);
 
     // Step 6b: Check if scheduled notifications need repair (fixes incorrect notification counts per day)
     // This checks for both excess AND deficit notifications per day based on user's configured times
     // This MUST run before the "schedule is full" check to repair existing users' schedules
     const repairResult = await checkAndRepairNotificationSchedule(locale, times);
     if (repairResult.repaired) {
-      console.log(`🔧 Schedule repaired: ${repairResult.excessDays || 0} excess days, ${repairResult.deficitDays || 0} deficit days → rescheduled ${repairResult.count} notifications`);
-      
       // Preload images for upcoming notifications
       await preloadUpcomingNotificationImages(locale);
       
@@ -1365,8 +1237,6 @@ export async function checkAndTopUpNotifications(
     // This catches cases where OS and DB got out of sync (e.g., after app updates, OS changes)
     const timeVerifyResult = await verifyAndRepairNotificationTimes(locale, times);
     if (timeVerifyResult.repaired) {
-      console.log(`🔧 Time verification repaired ${timeVerifyResult.mismatchCount} mismatched notifications, rescheduled ${timeVerifyResult.count}`);
-      
       // Preload images for upcoming notifications
       await preloadUpcomingNotificationImages(locale);
       
@@ -1378,7 +1248,6 @@ export async function checkAndTopUpNotifications(
 
     // Step 7: If count is already 64 or more, no need to top up
     if (currentCount >= MAX_SCHEDULED_NOTIFICATIONS) {
-      console.log('🔔 Notification schedule is full, no top-up needed');
       return {
         success: true,
         count: 0,
@@ -1387,12 +1256,9 @@ export async function checkAndTopUpNotifications(
 
     // Step 8: Schedule notifications
     // If OS has 0, do a full initial schedule. Otherwise, just top up.
-    console.log(`🔔 Scheduling notifications (current: ${currentCount}, need: ${MAX_SCHEDULED_NOTIFICATIONS - currentCount})...`);
-    
     let result;
     if (currentCount === 0) {
       // Full schedule - use initial schedule functions
-      console.log('🔔 Performing full schedule (0 notifications in OS)...');
       if (times.length > 1) {
         result = await rescheduleNotificationsMultiple(times, locale);
       } else {
@@ -1405,23 +1271,15 @@ export async function checkAndTopUpNotifications(
         : await refreshNotificationSchedule(times[0], locale);
     }
 
-    if (result.success) {
-      console.log(`🔔 Successfully scheduled ${result.count} notifications`);
-      
-      // Verify scheduling worked
-      const finalCount = await getScheduledNotificationsCount();
-      console.log(`🔔 Final notification count in OS: ${finalCount}`);
-    } else {
-      console.error('🔔 Failed to schedule notifications:', result.error);
-    }
-
     // Step 9: Preload images for upcoming notifications that may have been scheduled without images
     // This ensures notifications entering the preload window get their images downloaded
     await preloadUpcomingNotificationImages(locale);
 
     return result;
   } catch (error) {
-    console.error('Error checking and topping up notifications:', error);
+    if (__DEV__) {
+      console.error('Error checking and topping up notifications:', error);
+    }
     return {
       success: false,
       count: 0,
@@ -1444,7 +1302,6 @@ export async function rescheduleNotificationsMultiple(
     // Check if notifications are permitted first
     const { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted') {
-      console.log('🔔 Notification permission not granted, skipping reschedule');
       return {
         success: false,
         count: 0,
@@ -1487,8 +1344,6 @@ export async function rescheduleNotificationsMultiple(
     // Calculate how many days we'll need to cover all facts
     const timeSlotsPerDay = sortedTimes.length;
     const totalDays = Math.ceil(facts.length / timeSlotsPerDay);
-
-    console.log(`🔔 Scheduling ${facts.length} notifications across ${timeSlotsPerDay} time slots over ${totalDays} days`);
 
     // Determine starting day offset: start today only if any time slot is still in the future
     const todayDate = new Date(now);
@@ -1545,26 +1400,24 @@ export async function rescheduleNotificationsMultiple(
               scheduledDate.toISOString(),
               notificationId
             );
-            console.log(`🔔 Scheduled fact ${fact.id} for ${scheduledDate.toISOString()}`);
             successCount++;
           }
           factIndex++;
-        } catch (error) {
+        } catch {
           // If scheduling fails, do NOT mark as scheduled in database
-          console.error(`Failed to schedule notification for fact ${fact.id}:`, error);
           factIndex++;
         }
       }
     }
-
-    console.log(`🔔 Successfully scheduled ${successCount} notifications across ${times.length} time slots`);
 
     return {
       success: successCount > 0,
       count: successCount,
     };
   } catch (error) {
-    console.error('Error rescheduling notifications with multiple times:', error);
+    if (__DEV__) {
+      console.error('Error rescheduling notifications with multiple times:', error);
+    }
     return {
       success: false,
       count: 0,

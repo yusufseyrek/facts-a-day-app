@@ -75,7 +75,7 @@ export default function FavoritesScreen() {
       const favoritedFacts = await database.getFavorites(locale);
       setFavorites(favoritedFacts);
     } catch (error) {
-      console.error('Error loading favorites:', error);
+      // Ignore favorites loading errors
     } finally {
       setInitialLoading(false);
       setRefreshing(false);

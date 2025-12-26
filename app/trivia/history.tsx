@@ -362,7 +362,7 @@ export default function ActivityHistoryScreen() {
       const groupedSections = groupSessionsByDate(allSessions);
       setSections(groupedSections);
     } catch (error) {
-      console.error('Error loading activity history:', error);
+      // Ignore history loading errors
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -390,7 +390,7 @@ export default function ActivityHistoryScreen() {
         });
       }
     } catch (error) {
-      console.error('Error loading session:', error);
+      // Ignore session loading errors
     } finally {
       setLoadingSession(false);
     }

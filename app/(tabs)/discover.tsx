@@ -256,7 +256,7 @@ function DiscoverScreen() {
           categoryFilter: categorySlug || undefined,
         });
       } catch (error) {
-        console.error("Error searching facts:", error);
+        // Ignore search errors
         setSearchResults([]);
       } finally {
         setIsSearching(false);
@@ -295,7 +295,7 @@ function DiscoverScreen() {
       );
       setCategoryFactsCounts(counts);
     } catch (error) {
-      console.error("Error loading user categories:", error);
+      // Ignore category loading errors
     } finally {
       setIsLoadingCategories(false);
     }
@@ -309,7 +309,6 @@ function DiscoverScreen() {
   // Auto-refresh when categories or language change (from settings)
   useEffect(() => {
     const unsubscribe = onPreferenceFeedRefresh(() => {
-      console.log("🔄 Discover refresh triggered by preference change");
       // Clear any selected category filter since categories may have changed
       setSelectedCategorySlug(null);
       setCategoryFacts([]);
@@ -353,7 +352,7 @@ function DiscoverScreen() {
         setCategoryFacts(facts);
         prefetchFactImages(facts);
       } catch (error) {
-        console.error("Error refreshing category facts:", error);
+        // Ignore refresh errors
       }
     }
     setRefreshing(false);
@@ -398,7 +397,7 @@ function DiscoverScreen() {
         factsCount: facts.length,
       });
     } catch (error) {
-      console.error("Error loading category facts:", error);
+      // Ignore fact loading errors
       setCategoryFacts([]);
     } finally {
       setIsLoadingCategoryFacts(false);
