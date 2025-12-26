@@ -4,9 +4,22 @@
  */
 
 /**
- * Image prefetch cache size limit to prevent memory leaks
+ * Image prefetch settings to prevent network saturation and memory leaks
  */
-export const MAX_PREFETCH_CACHE_SIZE = 10;
+export const PREFETCH_SETTINGS = {
+  /** Maximum size of prefetch tracking set before clearing (prevents memory leaks) */
+  maxCacheSize: 100,
+  /** Maximum concurrent image downloads (prevents network saturation) */
+  maxConcurrent: 3,
+  /** Maximum images to prefetch initially when loading a list (first visible items) */
+  maxInitialPrefetch: 3,
+} as const;
+
+/**
+ * Image prefetch cache size limit to prevent memory leaks
+ * @deprecated Use PREFETCH_SETTINGS.maxCacheSize instead
+ */
+export const MAX_PREFETCH_CACHE_SIZE = PREFETCH_SETTINGS.maxCacheSize;
 
 /**
  * Card height constants for ImageFactCard.

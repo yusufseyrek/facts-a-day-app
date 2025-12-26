@@ -20,6 +20,7 @@ import {
   Bug,
   Settings,
   Star,
+  Trash2,
 } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
 import {
@@ -44,6 +45,7 @@ import { useOnboarding } from "../../src/contexts";
 import { openInAppBrowser } from "../../src/utils/browser";
 import { trackScreenView, Screens } from "../../src/services/analytics";
 import { requestReview } from "../../src/services/appReview";
+import { clearAllCachedImages, getCachedImagesSize } from "../../src/services/images";
 
 // Helper to get language display name
 const getLanguageName = (code: string): string => {
@@ -97,6 +99,9 @@ export default function SettingsPage() {
   
   // Notification permission state
   const [notificationPermissionGranted, setNotificationPermissionGranted] = useState(true);
+  
+  // Image cache size state
+  const [imageCacheSize, setImageCacheSize] = useState<number>(0);
 
   // Check notification permission status
   const checkNotificationPermission = async () => {
@@ -108,10 +113,30 @@ export default function SettingsPage() {
     }
   };
 
+  // Load image cache size
+  const loadImageCacheSize = async () => {
+    try {
+      const size = await getCachedImagesSize();
+      setImageCacheSize(size);
+    } catch (error) {
+      console.error("Error loading image cache size:", error);
+    }
+  };
+
+  // Format bytes to human-readable size
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
   // Load preferences on mount
   useEffect(() => {
     loadPreferences();
     checkNotificationPermission();
+    loadImageCacheSize();
   }, []);
 
   // Track screen view, reload preferences, and re-check permission when screen is focused
@@ -121,6 +146,8 @@ export default function SettingsPage() {
       checkNotificationPermission();
       // Reload preferences to get updated category count and notification times
       loadPreferences();
+      // Reload image cache size
+      loadImageCacheSize();
     }, [])
   );
 
@@ -279,6 +306,39 @@ export default function SettingsPage() {
 
   const handleReviewApp = async () => {
     await requestReview();
+  };
+
+  const handleClearImageCache = async () => {
+    Alert.alert(
+      t("settingsClearImageCache"),
+      t("settingsClearImageCacheConfirm"),
+      [
+        { text: t("cancel"), style: "cancel" },
+        {
+          text: t("ok"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const result = await clearAllCachedImages();
+              setImageCacheSize(0);
+              Alert.alert(
+                t("success"),
+                t("settingsClearImageCacheSuccess", {
+                  count: result.deletedCount,
+                  size: formatBytes(result.freedBytes),
+                }),
+                [{ text: t("ok"), style: "default" }]
+              );
+            } catch (error) {
+              console.error("Error clearing image cache:", error);
+              Alert.alert(t("error"), t("error"), [
+                { text: t("ok"), style: "default" },
+              ]);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleAdd10RandomFacts = async () => {
@@ -516,6 +576,19 @@ export default function SettingsPage() {
       ],
     };
 
+    const storageSection: SettingsSection = {
+      title: t("settingsStorage"),
+      data: [
+        {
+          id: "clearImageCache",
+          label: t("settingsClearImageCache"),
+          value: imageCacheSize > 0 ? t("settingsImageCacheSize", { size: formatBytes(imageCacheSize) }) : undefined,
+          icon: <Trash2 size={20} color={iconColor} />,
+          onPress: handleClearImageCache,
+        },
+      ],
+    };
+
     const developerSection: SettingsSection = {
       title: t("developerSettings"),
       data: [
@@ -584,6 +657,7 @@ export default function SettingsPage() {
     };
 
     const result: SettingsSection[] = [userPreferencesSection];
+    result.push(storageSection);
     if (isDevelopment) {
       result.push(developerSection);
     }
@@ -601,6 +675,7 @@ export default function SettingsPage() {
     notificationPermissionGranted,
     isDevelopment,
     theme,
+    imageCacheSize,
   ]);
 
   const renderFooter = () => (

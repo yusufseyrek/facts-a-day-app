@@ -16,6 +16,7 @@
 
 import * as FileSystem from 'expo-file-system/legacy';
 import { getCachedAppCheckToken, forceRefreshAppCheckToken } from './appCheckToken';
+import { PREFETCH_SETTINGS } from '../config/factListSettings';
 
 // Directory for cached fact images - uses documentDirectory for persistence
 // cacheDirectory is NOT reliable for multi-day caching as it can be cleared by OS
@@ -521,6 +522,102 @@ export async function prefetchFactImage(
   }
 }
 
+// Track prefetched fact IDs to prevent duplicate prefetch requests
+const prefetchedFactIds = new Set<number>();
+
+// Track active prefetch count
+let activePrefetchCount = 0;
+const prefetchQueue: Array<{ imageUrl: string; factId: number }> = [];
+
+/**
+ * Process the next item in the prefetch queue
+ */
+async function processPrefetchQueue(): Promise<void> {
+  // Check if we can start another download
+  if (activePrefetchCount >= PREFETCH_SETTINGS.maxConcurrent || prefetchQueue.length === 0) {
+    return;
+  }
+  
+  // Get next item from queue
+  const item = prefetchQueue.shift();
+  if (!item) return;
+  
+  activePrefetchCount++;
+  
+  try {
+    await prefetchFactImage(item.imageUrl, item.factId);
+  } catch {
+    // Silently fail for prefetch, but remove from tracking set on failure
+    prefetchedFactIds.delete(item.factId);
+  } finally {
+    activePrefetchCount--;
+    // Process next item in queue
+    processPrefetchQueue();
+  }
+}
+
+/**
+ * Prefetch images for a list of facts with rate limiting
+ * 
+ * This function:
+ * 1. Only prefetches the first N images initially (for visible items)
+ * 2. Limits concurrent downloads to prevent network saturation
+ * 3. Uses a queue system to process downloads sequentially in batches
+ * 
+ * @param facts Array of facts with image_url and id properties
+ * @param maxInitialPrefetch Maximum number of images to prefetch initially (default: 6)
+ */
+export function prefetchFactImagesWithLimit(
+  facts: Array<{ id: number; image_url?: string | null }>,
+  maxInitialPrefetch: number = PREFETCH_SETTINGS.maxInitialPrefetch
+): void {
+  // Filter to only facts with images that haven't been prefetched yet
+  const factsWithImages = facts.filter(
+    (fact) => fact.image_url && !prefetchedFactIds.has(fact.id)
+  );
+  
+  if (factsWithImages.length === 0) {
+    return;
+  }
+  
+  // Clear prefetch set if it gets too large to prevent memory leaks
+  if (prefetchedFactIds.size > PREFETCH_SETTINGS.maxCacheSize) {
+    prefetchedFactIds.clear();
+    prefetchQueue.length = 0; // Clear queue too
+  }
+  
+  // Only prefetch the first N items initially (most likely to be visible)
+  const factsToQueue = factsWithImages.slice(0, maxInitialPrefetch);
+  
+  if (__DEV__) {
+    console.log(`📷 Prefetch: Queueing ${factsToQueue.length} of ${factsWithImages.length} images (limit: ${maxInitialPrefetch})`);
+  }
+  
+  // Add to tracking set and queue
+  factsToQueue.forEach((fact) => {
+    prefetchedFactIds.add(fact.id);
+    prefetchQueue.push({
+      imageUrl: fact.image_url!,
+      factId: fact.id,
+    });
+  });
+  
+  // Start processing queue (will respect concurrent limit)
+  for (let i = 0; i < PREFETCH_SETTINGS.maxConcurrent; i++) {
+    processPrefetchQueue();
+  }
+}
+
+/**
+ * Clear the prefetch tracking state
+ * Useful when navigating away or resetting the app state
+ */
+export function clearPrefetchState(): void {
+  prefetchedFactIds.clear();
+  prefetchQueue.length = 0;
+  activePrefetchCount = 0;
+}
+
 /**
  * Clean up old cached images to free up disk space
  * Called periodically to prevent cache from growing indefinitely
@@ -612,5 +709,82 @@ export async function deleteCachedFactImage(factId: number): Promise<void> {
  */
 export function getCacheDirectory(): string {
   return FACT_IMAGES_DIR;
+}
+
+/**
+ * Clear all cached images to free up disk space
+ * 
+ * @returns Object with count of deleted files and freed space estimate
+ */
+export async function clearAllCachedImages(): Promise<{ deletedCount: number; freedBytes: number }> {
+  try {
+    // Clear in-memory caches first
+    clearImageMemoryCaches();
+    
+    // Check if directory exists
+    const dirInfo = await FileSystem.getInfoAsync(FACT_IMAGES_DIR);
+    if (!dirInfo.exists) {
+      return { deletedCount: 0, freedBytes: 0 };
+    }
+    
+    const files = await FileSystem.readDirectoryAsync(FACT_IMAGES_DIR);
+    let deletedCount = 0;
+    let freedBytes = 0;
+    
+    for (const file of files) {
+      const filePath = `${FACT_IMAGES_DIR}${file}`;
+      
+      try {
+        // Get file size before deleting
+        const fileInfo = await FileSystem.getInfoAsync(filePath);
+        if (fileInfo.exists && fileInfo.size) {
+          freedBytes += fileInfo.size;
+        }
+        
+        await FileSystem.deleteAsync(filePath, { idempotent: true });
+        deletedCount++;
+      } catch {
+        // Ignore individual file errors
+      }
+    }
+    
+    return { deletedCount, freedBytes };
+  } catch {
+    return { deletedCount: 0, freedBytes: 0 };
+  }
+}
+
+/**
+ * Get the total size of cached images
+ * 
+ * @returns Total size in bytes
+ */
+export async function getCachedImagesSize(): Promise<number> {
+  try {
+    const dirInfo = await FileSystem.getInfoAsync(FACT_IMAGES_DIR);
+    if (!dirInfo.exists) {
+      return 0;
+    }
+    
+    const files = await FileSystem.readDirectoryAsync(FACT_IMAGES_DIR);
+    let totalSize = 0;
+    
+    for (const file of files) {
+      const filePath = `${FACT_IMAGES_DIR}${file}`;
+      
+      try {
+        const fileInfo = await FileSystem.getInfoAsync(filePath);
+        if (fileInfo.exists && fileInfo.size) {
+          totalSize += fileInfo.size;
+        }
+      } catch {
+        // Ignore individual file errors
+      }
+    }
+    
+    return totalSize;
+  } catch {
+    return 0;
+  }
 }
 

@@ -2,8 +2,8 @@
  * App Check Token Cache
  * 
  * Centralized token caching to prevent rate limiting from Firebase.
- * App Check tokens are valid for ~1 hour, so we cache them and only
- * refresh when they're about to expire.
+ * App Check tokens are JWTs with an expiration time. We decode the token
+ * to get the actual expiration time and refresh before it expires.
  */
 
 import { getApp } from '@react-native-firebase/app';
@@ -12,33 +12,72 @@ import { appCheckReady, isAppCheckInitialized } from '../config/firebase';
 
 // Token cache
 let cachedToken: string | null = null;
-let tokenFetchTime: number = 0;
+let tokenExpirationMs: number = 0; // Actual token expiration time in milliseconds
 
-// Token is valid for ~1 hour (3600 seconds), but we refresh 5 minutes early
-// to avoid using an about-to-expire token
-const TOKEN_VALIDITY_MS = 25 * 60 * 1000; // 25 minutes
+// Refresh the token 5 minutes before it expires to avoid edge cases
+const EXPIRATION_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
 
 // Prevent concurrent token fetches
 let tokenFetchPromise: Promise<string | null> | null = null;
 
 /**
- * Check if the cached token is still valid
+ * Decode JWT payload to extract expiration time
+ * App Check tokens are JWTs with an 'exp' claim (seconds since epoch)
+ */
+function getTokenExpirationMs(token: string): number | null {
+  try {
+    // JWT format: header.payload.signature
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      console.warn('⚠️ App Check: Token is not a valid JWT format');
+      return null;
+    }
+    
+    // Decode the payload (base64url encoded)
+    const payload = parts[1];
+    // Handle base64url (replace - with +, _ with /)
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    // Add padding if necessary
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    
+    // Decode and parse
+    const decoded = atob(padded);
+    const parsed = JSON.parse(decoded);
+    
+    if (typeof parsed.exp !== 'number') {
+      console.warn('⚠️ App Check: Token does not contain exp claim');
+      return null;
+    }
+    
+    // exp is in seconds, convert to milliseconds
+    return parsed.exp * 1000;
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('⚠️ App Check: Failed to decode token expiration:', error);
+    }
+    return null;
+  }
+}
+
+/**
+ * Check if the cached token is still valid (not expired + buffer)
  */
 function isCachedTokenValid(): boolean {
-  if (!cachedToken || !tokenFetchTime) {
+  if (!cachedToken || !tokenExpirationMs) {
     return false;
   }
   
-  const elapsed = Date.now() - tokenFetchTime;
-  return elapsed < TOKEN_VALIDITY_MS;
+  const now = Date.now();
+  // Token is valid if current time is before (expiration - buffer)
+  return now < (tokenExpirationMs - EXPIRATION_BUFFER_MS);
 }
 
 /**
  * Get a cached App Check token, fetching a new one only if necessary
  * 
  * This function:
- * 1. Returns the cached token if still valid
- * 2. Fetches a new token if cache is expired or empty
+ * 1. Returns the cached token if still valid (not expired)
+ * 2. Fetches a new token if cache is expired or will expire soon
  * 3. Prevents concurrent token fetches (deduplication)
  * 
  * @returns App Check token or null if unavailable
@@ -47,7 +86,8 @@ export async function getCachedAppCheckToken(): Promise<string | null> {
   // Return cached token if still valid
   if (isCachedTokenValid()) {
     if (__DEV__) {
-      const remainingMinutes = Math.round((TOKEN_VALIDITY_MS - (Date.now() - tokenFetchTime)) / 60000);
+      const remainingMs = tokenExpirationMs - EXPIRATION_BUFFER_MS - Date.now();
+      const remainingMinutes = Math.round(remainingMs / 60000);
       console.log(`🔒 App Check: Using cached token (valid for ~${remainingMinutes} more minutes)`);
     }
     return cachedToken;
@@ -103,25 +143,31 @@ async function fetchNewToken(): Promise<string | null> {
     // Validate that token is a non-empty string
     if (!token || typeof token !== 'string' || token.trim().length === 0) {
       console.warn('⚠️ App Check: getToken returned invalid/empty token');
-      // Return cached token if available as fallback
-      if (cachedToken && tokenFetchTime) {
-        const elapsed = Date.now() - tokenFetchTime;
-        const maxFallbackAge = 60 * 60 * 1000; // 1 hour
-        if (elapsed < maxFallbackAge) {
-          console.log('🔒 App Check: Using cached token as fallback');
-          return cachedToken;
-        }
+      // Return cached token if available and not actually expired
+      if (cachedToken && tokenExpirationMs && Date.now() < tokenExpirationMs) {
+        console.log('🔒 App Check: Using cached token as fallback');
+        return cachedToken;
       }
       return null;
     }
     
+    // Extract expiration time from JWT token
+    const expiration = getTokenExpirationMs(token);
+    if (!expiration) {
+      // If we can't decode the token, use a conservative fallback (25 minutes from now)
+      console.warn('⚠️ App Check: Could not decode token expiration, using fallback');
+      tokenExpirationMs = Date.now() + 25 * 60 * 1000;
+    } else {
+      tokenExpirationMs = expiration;
+    }
+    
     // Cache the token
     cachedToken = token;
-    tokenFetchTime = Date.now();
     
     if (__DEV__) {
       const tokenPreview = `${token.substring(0, 20)}...`;
-      console.log(`🔒 App Check: New token cached successfully (${tokenPreview})`);
+      const expiresIn = Math.round((tokenExpirationMs - Date.now()) / 60000);
+      console.log(`🔒 App Check: New token cached successfully (${tokenPreview}), expires in ~${expiresIn} min`);
     }
     
     return token;
@@ -133,15 +179,13 @@ async function fetchNewToken(): Promise<string | null> {
       console.error(`❌ App Check: Token retrieval FAILED (${errorCode}): ${errorMessage}`);
     }
     
-    // If we have a previously cached token that's not too old, return it as fallback
+    // If we have a previously cached token that's not actually expired, return it as fallback
     // This handles temporary network issues gracefully
-    if (cachedToken && tokenFetchTime) {
-      const elapsed = Date.now() - tokenFetchTime;
-      const maxFallbackAge = 60 * 60 * 1000; // 1 hour (full validity period)
-      
-      if (elapsed < maxFallbackAge) {
-        return cachedToken;
+    if (cachedToken && tokenExpirationMs && Date.now() < tokenExpirationMs) {
+      if (__DEV__) {
+        console.log('🔒 App Check: Using cached token as fallback after fetch error');
       }
+      return cachedToken;
     }
     
     return null;
@@ -155,7 +199,7 @@ async function fetchNewToken(): Promise<string | null> {
 export async function forceRefreshAppCheckToken(): Promise<string | null> {
   // Clear the cache
   cachedToken = null;
-  tokenFetchTime = 0;
+  tokenExpirationMs = 0;
   
   // Wait for any in-flight request
   if (tokenFetchPromise) {
@@ -183,12 +227,21 @@ export async function forceRefreshAppCheckToken(): Promise<string | null> {
       return null;
     }
     
+    // Extract expiration time from JWT token
+    const expiration = getTokenExpirationMs(token);
+    if (!expiration) {
+      // If we can't decode the token, use a conservative fallback (25 minutes from now)
+      tokenExpirationMs = Date.now() + 25 * 60 * 1000;
+    } else {
+      tokenExpirationMs = expiration;
+    }
+    
     cachedToken = token;
-    tokenFetchTime = Date.now();
     
     if (__DEV__) {
       const tokenPreview = `${token.substring(0, 20)}...`;
-      console.log(`🔒 App Check: Token force refreshed successfully (${tokenPreview})`);
+      const expiresIn = Math.round((tokenExpirationMs - Date.now()) / 60000);
+      console.log(`🔒 App Check: Token force refreshed successfully (${tokenPreview}), expires in ~${expiresIn} min`);
     }
     
     return token;
@@ -206,7 +259,7 @@ export async function forceRefreshAppCheckToken(): Promise<string | null> {
  */
 export function clearAppCheckTokenCache(): void {
   cachedToken = null;
-  tokenFetchTime = 0;
+  tokenExpirationMs = 0;
   tokenFetchPromise = null;
   
   if (__DEV__) {
@@ -219,14 +272,17 @@ export function clearAppCheckTokenCache(): void {
  */
 export function getAppCheckCacheStatus(): {
   hasCachedToken: boolean;
-  tokenAge: number | null;
+  expiresAt: number | null;
+  expiresInMs: number | null;
   isValid: boolean;
 } {
-  const tokenAge = tokenFetchTime ? Date.now() - tokenFetchTime : null;
+  const now = Date.now();
+  const expiresInMs = tokenExpirationMs ? tokenExpirationMs - now : null;
   
   return {
     hasCachedToken: !!cachedToken,
-    tokenAge,
+    expiresAt: tokenExpirationMs || null,
+    expiresInMs,
     isValid: isCachedTokenValid(),
   };
 }

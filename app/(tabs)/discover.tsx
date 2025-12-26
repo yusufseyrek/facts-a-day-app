@@ -36,7 +36,7 @@ import { getLucideIcon } from "../../src/utils/iconMapper";
 import { getContrastColor } from "../../src/utils/colors";
 import { FACT_FLAT_LIST_SETTINGS, createFlatListGetItemLayout } from "../../src/config/factListSettings";
 import { trackFactView } from "../../src/services/adManager";
-import { prefetchFactImage } from "../../src/services/images";
+import { prefetchFactImagesWithLimit } from "../../src/services/images";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import {
   trackSearch,
@@ -48,33 +48,6 @@ import { onPreferenceFeedRefresh } from "../../src/services/preferences";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
-
-// Limit prefetch set size to prevent memory leaks
-const MAX_PREFETCH_CACHE_SIZE = 100;
-const prefetchedFactIds = new Set<number>();
-
-// Prefetch images for faster loading in modal
-// Uses App Check authenticated downloads instead of direct Image.prefetch
-const prefetchFactImages = (facts: FactWithRelations[]) => {
-  const factsWithImages = facts.filter((fact) => fact.image_url);
-  const newFacts = factsWithImages.filter((fact) => !prefetchedFactIds.has(fact.id));
-
-  if (newFacts.length > 0) {
-    if (prefetchedFactIds.size > MAX_PREFETCH_CACHE_SIZE) {
-      prefetchedFactIds.clear();
-    }
-    
-    // Prefetch in background with App Check authentication
-    newFacts.forEach((fact) => {
-      prefetchedFactIds.add(fact.id);
-      // Fire and forget - prefetchFactImage handles caching internally
-      prefetchFactImage(fact.image_url!, fact.id).catch(() => {
-        // Remove from set if prefetch failed so it can be retried
-        prefetchedFactIds.delete(fact.id);
-      });
-    });
-  }
-};
 
 const SearchInputContainer = styled(XStack, {
   flex: 1,
@@ -253,7 +226,7 @@ function DiscoverScreen() {
         }
         
         setSearchResults(results);
-        prefetchFactImages(results);
+        prefetchFactImagesWithLimit(results);
 
         // Track search event
         trackSearch({
@@ -356,7 +329,7 @@ function DiscoverScreen() {
       try {
         const facts = await database.getFactsByCategory(selectedCategorySlug, locale);
         setCategoryFacts(facts);
-        prefetchFactImages(facts);
+        prefetchFactImagesWithLimit(facts);
       } catch (error) {
         // Ignore refresh errors
       }
@@ -395,7 +368,7 @@ function DiscoverScreen() {
     try {
       const facts = await database.getFactsByCategory(categorySlug, locale);
       setCategoryFacts(facts);
-      prefetchFactImages(facts);
+      prefetchFactImagesWithLimit(facts);
 
       // Track category browse event
       trackCategoryBrowse({

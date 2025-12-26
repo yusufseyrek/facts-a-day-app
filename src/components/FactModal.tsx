@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Pressable, Dimensions, Animated, View, StyleSheet, Platform, useWindowDimensions, PanResponder, ScrollView, TouchableOpacity } from "react-native";
+import { ImagePlus } from "@tamagui/lucide-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
@@ -21,8 +22,6 @@ import { trackSourceLinkClick } from "../services/analytics";
 import { useFactImage } from "../utils/useFactImage";
 import { addCategoryKeyword } from "../services/adKeywords";
 
-// Device breakpoints
-const TABLET_BREAKPOINT = 768;
 
 interface FactModalProps {
   fact: FactWithRelations;
@@ -153,6 +152,36 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     fact.image_url,
     fact.id
   );
+
+  // Shimmer animation for loading placeholder
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  
+  // Show loading placeholder when we have a URL but image is still loading
+  const showImagePlaceholder = !!fact.image_url && isImageLoading && !authenticatedImageUri;
+  
+  // Run shimmer animation when loading
+  useEffect(() => {
+    if (showImagePlaceholder) {
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(shimmerAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shimmerAnim, {
+            toValue: 0,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animation.start();
+      return () => animation.stop();
+    } else {
+      shimmerAnim.setValue(0);
+    }
+  }, [showImagePlaceholder, shimmerAnim]);
 
   // Add fact category to ad keywords for better ad targeting
   useEffect(() => {
@@ -601,6 +630,38 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 />
               </Animated.View>
             )}
+            
+            {/* Image Loading Placeholder */}
+            {showImagePlaceholder && (
+              <View
+                style={{
+                  width: IMAGE_WIDTH,
+                  height: IMAGE_HEIGHT,
+                  backgroundColor: theme === "dark" ? "#1a1a2e" : "#e8e8f0",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Animated.View
+                  style={[
+                    StyleSheet.absoluteFill,
+                    {
+                      backgroundColor: theme === "dark" ? "#2d2d44" : "#d0d0e0",
+                      opacity: shimmerAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.3, 0.6],
+                      }),
+                    },
+                  ]}
+                />
+                <View style={{ alignItems: "center", gap: tokens.space.sm }}>
+                  <ImagePlus
+                    size={isTablet ? 48 : 36}
+                    color={theme === "dark" ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.2)"}
+                  />
+                </View>
+              </View>
+            )}
 
             <TabletWrapper>
               {/* Content Section */}
@@ -744,6 +805,38 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   pointerEvents="none"
                 />
               </Animated.View>
+            )}
+            
+            {/* Image Loading Placeholder */}
+            {showImagePlaceholder && (
+              <View
+                style={{
+                  width: SCREEN_WIDTH,
+                  height: SCREEN_WIDTH,
+                  backgroundColor: theme === "dark" ? "#1a1a2e" : "#e8e8f0",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Animated.View
+                  style={[
+                    StyleSheet.absoluteFill,
+                    {
+                      backgroundColor: theme === "dark" ? "#2d2d44" : "#d0d0e0",
+                      opacity: shimmerAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.3, 0.6],
+                      }),
+                    },
+                  ]}
+                />
+                <View style={{ alignItems: "center", gap: tokens.space.sm }}>
+                  <ImagePlus
+                    size={36}
+                    color={theme === "dark" ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.2)"}
+                  />
+                </View>
+              </View>
             )}
 
             {/* Content Section */}

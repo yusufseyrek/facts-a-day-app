@@ -31,11 +31,10 @@ import { onFeedRefresh, forceRefreshContent, onRefreshStatusChange, getRefreshSt
 import { onPreferenceFeedRefresh } from "../../src/services/preferences";
 import { trackFeedRefresh, trackScreenView, Screens } from "../../src/services/analytics";
 import { 
-  MAX_PREFETCH_CACHE_SIZE,
   FLASH_LIST_ITEM_TYPES,
   FACT_FLASH_LIST_SETTINGS,
 } from "../../src/config/factListSettings";
-import { prefetchFactImage } from "../../src/services/images";
+import { prefetchFactImagesWithLimit } from "../../src/services/images";
 
 // Interface for fact sections (used internally for grouping)
 interface FactSection {
@@ -55,32 +54,6 @@ interface FactItem {
 }
 
 type FeedListItem = SectionHeaderItem | FactItem;
-
-// Prefetch cache - tracks by fact ID instead of URL
-const prefetchedFactIds = new Set<number>();
-
-// Prefetch images for faster loading in modal
-// Uses App Check authenticated downloads instead of direct Image.prefetch
-const prefetchFactImages = (facts: FactWithRelations[]) => {
-  const factsWithImages = facts.filter((fact) => fact.image_url);
-  const newFacts = factsWithImages.filter((fact) => !prefetchedFactIds.has(fact.id));
-
-  if (newFacts.length > 0) {
-    if (prefetchedFactIds.size > MAX_PREFETCH_CACHE_SIZE) {
-      prefetchedFactIds.clear();
-    }
-    
-    // Prefetch in background with App Check authentication
-    newFacts.forEach((fact) => {
-      prefetchedFactIds.add(fact.id);
-      // Fire and forget - prefetchFactImage handles caching internally
-      prefetchFactImage(fact.image_url!, fact.id).catch(() => {
-        // Remove from set if prefetch failed so it can be retried
-        prefetchedFactIds.delete(fact.id);
-      });
-    });
-  }
-};
 
 const LocaleChangeOverlay = styled(YStack, {
   position: "absolute",
@@ -219,7 +192,7 @@ function HomeScreen() {
       await database.markDeliveredFactsAsShown(locale);
 
       const facts = await database.getFactsGroupedByDate(locale);
-      prefetchFactImages(facts);
+      prefetchFactImagesWithLimit(facts);
       setSections(groupFactsByDate(facts, t, locale));
     } catch {
       // Ignore fact loading errors

@@ -105,6 +105,11 @@ export const translations = {
     settingsSupport: "Unterstützung",
     settingsReviewApp: "%{appName} bewerten",
     settingsCopyright: "© 2025 {appName}. Alle Rechte vorbehalten.",
+    settingsStorage: "Speicher",
+    settingsClearImageCache: "Bilder-Cache löschen",
+    settingsClearImageCacheConfirm: "Möchten Sie alle zwischengespeicherten Bilder löschen? Die Bilder werden bei Bedarf erneut heruntergeladen.",
+    settingsClearImageCacheSuccess: "%{count} Bilder gelöscht (%{size})",
+    settingsImageCacheSize: "%{size}",
     cannotOpenUrl: "Link konnte nicht geöffnet werden",
 
     // Error messages
@@ -375,6 +380,11 @@ export const translations = {
     settingsSupport: "Support",
     settingsReviewApp: "Review %{appName}",
     settingsCopyright: "© 2025 {appName}. All rights reserved.",
+    settingsStorage: "Storage",
+    settingsClearImageCache: "Clear Image Cache",
+    settingsClearImageCacheConfirm: "Are you sure you want to clear all cached images? Images will be re-downloaded when needed.",
+    settingsClearImageCacheSuccess: "%{count} images cleared (%{size})",
+    settingsImageCacheSize: "%{size}",
     cannotOpenUrl: "Cannot open URL",
 
     // Error messages
@@ -645,6 +655,11 @@ export const translations = {
     settingsSupport: "Soporte",
     settingsReviewApp: "Calificar %{appName}",
     settingsCopyright: "© 2025 {appName}. Todos los derechos reservados.",
+    settingsStorage: "Almacenamiento",
+    settingsClearImageCache: "Borrar caché de imágenes",
+    settingsClearImageCacheConfirm: "¿Está seguro de que desea borrar todas las imágenes en caché? Las imágenes se volverán a descargar cuando sea necesario.",
+    settingsClearImageCacheSuccess: "%{count} imágenes borradas (%{size})",
+    settingsImageCacheSize: "%{size}",
     cannotOpenUrl: "No se puede abrir la URL",
 
     // Error messages
@@ -915,6 +930,11 @@ export const translations = {
     settingsSupport: "Assistance",
     settingsReviewApp: "Évaluer %{appName}",
     settingsCopyright: "© 2025 {appName}. Tous droits réservés.",
+    settingsStorage: "Stockage",
+    settingsClearImageCache: "Vider le cache des images",
+    settingsClearImageCacheConfirm: "Êtes-vous sûr de vouloir supprimer toutes les images en cache ? Les images seront téléchargées à nouveau si nécessaire.",
+    settingsClearImageCacheSuccess: "%{count} images supprimées (%{size})",
+    settingsImageCacheSize: "%{size}",
     cannotOpenUrl: "Impossible d'ouvrir l'URL",
 
     // Error messages
@@ -1184,6 +1204,11 @@ export const translations = {
     settingsSupport: "サポート",
     settingsReviewApp: "%{appName}を評価",
     settingsCopyright: "© 2025 {appName}. 全著作権所有。",
+    settingsStorage: "ストレージ",
+    settingsClearImageCache: "画像キャッシュをクリア",
+    settingsClearImageCacheConfirm: "キャッシュされたすべての画像を削除してもよろしいですか？必要に応じて画像は再ダウンロードされます。",
+    settingsClearImageCacheSuccess: "%{count}枚の画像を削除しました（%{size}）",
+    settingsImageCacheSize: "%{size}",
     cannotOpenUrl: "URLを開けません",
 
     // Error messages
@@ -1450,6 +1475,11 @@ export const translations = {
     settingsSupport: "지원",
     settingsReviewApp: "%{appName} 평가하기",
     settingsCopyright: "© 2025 {appName}. 모든 권리 보유.",
+    settingsStorage: "저장공간",
+    settingsClearImageCache: "이미지 캐시 지우기",
+    settingsClearImageCacheConfirm: "캐시된 모든 이미지를 삭제하시겠습니까? 필요할 때 이미지가 다시 다운로드됩니다.",
+    settingsClearImageCacheSuccess: "%{count}개 이미지 삭제됨 (%{size})",
+    settingsImageCacheSize: "%{size}",
     cannotOpenUrl: "URL을 열 수 없습니다",
 
     // Error messages
@@ -1719,6 +1749,11 @@ export const translations = {
     settingsSupport: "Destek",
     settingsReviewApp: "%{appName}'yi Değerlendir",
     settingsCopyright: "© 2025 {appName}. Tüm hakları saklıdır.",
+    settingsStorage: "Depolama",
+    settingsClearImageCache: "Resim Önbelleğini Temizle",
+    settingsClearImageCacheConfirm: "Önbellekteki tüm resimleri silmek istediğinizden emin misiniz? Resimler gerektiğinde yeniden indirilecektir.",
+    settingsClearImageCacheSuccess: "%{count} resim silindi (%{size})",
+    settingsImageCacheSize: "%{size}",
     cannotOpenUrl: "URL açılamadı",
 
     // Error messages
@@ -1984,6 +2019,11 @@ export const translations = {
     settingsSupport: "支持",
     settingsReviewApp: "评价%{appName}",
     settingsCopyright: "© 2025 {appName}. 版权所有。",
+    settingsStorage: "存储",
+    settingsClearImageCache: "清除图片缓存",
+    settingsClearImageCacheConfirm: "确定要清除所有缓存的图片吗？需要时图片将重新下载。",
+    settingsClearImageCacheSuccess: "已清除%{count}张图片（%{size}）",
+    settingsImageCacheSize: "%{size}",
     cannotOpenUrl: "无法打开链接",
 
     // Error messages
