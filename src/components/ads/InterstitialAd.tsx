@@ -9,6 +9,7 @@ import {
 import Constants from 'expo-constants';
 import { ADS_ENABLED } from '../../config/ads';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
+import { getAdKeywords } from '../../services/adKeywords';
 
 // Get Interstitial Ad Unit ID based on platform
 const getInterstitialAdUnitId = (): string => {
@@ -36,29 +37,36 @@ const loadInterstitialAd = async () => {
   
   // Check consent status to determine if we should request non-personalized ads
   const nonPersonalized = await shouldRequestNonPersonalizedAdsOnly();
+  
+  // Get current keywords for ad targeting (fresh keywords each load)
+  const keywords = getAdKeywords();
+  
+  // TODO: Remove after testing
+  console.log('[InterstitialAd] Loading with keywords:', keywords);
 
-  if (!interstitial) {
-    interstitial = InterstitialAd.createForAdRequest(adUnitId, {
-      requestNonPersonalizedAdsOnly: nonPersonalized,
-    });
+  // Always recreate the interstitial to use fresh keywords
+  // The previous instance will be garbage collected
+  interstitial = InterstitialAd.createForAdRequest(adUnitId, {
+    requestNonPersonalizedAdsOnly: nonPersonalized,
+    keywords,
+  });
 
-    // Set up event listeners
-    interstitial.addAdEventListener(AdEventType.LOADED, () => {
-      console.log('Interstitial ad loaded');
-      adLoadFailed = false;
-    });
+  // Set up event listeners
+  interstitial.addAdEventListener(AdEventType.LOADED, () => {
+    console.log('Interstitial ad loaded');
+    adLoadFailed = false;
+  });
 
-    interstitial.addAdEventListener(AdEventType.ERROR, (error) => {
-      console.error('Interstitial ad error:', error);
-      adLoadFailed = true;
-    });
+  interstitial.addAdEventListener(AdEventType.ERROR, (error) => {
+    console.error('Interstitial ad error:', error);
+    adLoadFailed = true;
+  });
 
-    interstitial.addAdEventListener(AdEventType.CLOSED, () => {
-      console.log('Interstitial ad closed');
-      // Preload next ad
-      loadInterstitialAd();
-    });
-  }
+  interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+    console.log('Interstitial ad closed');
+    // Preload next ad (will get fresh keywords)
+    loadInterstitialAd();
+  });
 
   // Load the ad
   interstitial.load();

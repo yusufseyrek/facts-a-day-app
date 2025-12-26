@@ -19,6 +19,7 @@ import { getLocalNotificationImagePath, deleteNotificationImage } from "../servi
 import { useResponsive } from "../utils/useResponsive";
 import { trackSourceLinkClick } from "../services/analytics";
 import { useFactImage } from "../utils/useFactImage";
+import { addCategoryKeyword } from "../services/adKeywords";
 
 // Device breakpoints
 const TABLET_BREAKPOINT = 768;
@@ -152,6 +153,14 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     fact.image_url,
     fact.id
   );
+
+  // Add fact category to ad keywords for better ad targeting
+  useEffect(() => {
+    const categorySlug = fact.categoryData?.slug || fact.category;
+    if (categorySlug) {
+      addCategoryKeyword(categorySlug);
+    }
+  }, [fact.id, fact.categoryData?.slug, fact.category]);
   
   // Local notification image state - prioritize notification image if available
   const [notificationImageUri, setNotificationImageUri] = useState<string | null>(null);

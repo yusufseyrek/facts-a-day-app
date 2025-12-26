@@ -4,6 +4,7 @@ import { BannerAd as GoogleBannerAd, BannerAdSize, TestIds, AdsConsent } from 'r
 import Constants from 'expo-constants';
 import { ADS_ENABLED, BANNER_REFRESH_INTERVAL } from '../../config/ads';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
+import { getAdKeywords, subscribeToKeywords } from '../../services/adKeywords';
 
 type BannerAdPosition = 'home' | 'fact-modal';
 
@@ -55,10 +56,27 @@ const BannerAdComponent = forwardRef<BannerAdRef, BannerAdProps>(({
   const [adState, setAdState] = useState<AdState>('loading');
   const [retryCount, setRetryCount] = useState(0);
   const [adKey, setAdKey] = useState(0);
+  const [keywords, setKeywords] = useState<string[]>(getAdKeywords);
   
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const googleAdRef = useRef<GoogleBannerAd>(null);
+
+  // Subscribe to keyword changes
+  useEffect(() => {
+    const unsubscribe = subscribeToKeywords((newKeywords) => {
+      setKeywords(newKeywords);
+      // TODO: Remove after testing
+      console.log('[BannerAd] Keywords updated:', newKeywords);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Log keywords on mount and when they change
+  // TODO: Remove after testing
+  useEffect(() => {
+    console.log(`[BannerAd:${position}] Current keywords:`, keywords);
+  }, [keywords, position]);
 
   const refreshAd = useCallback(() => {
     googleAdRef.current?.load();
@@ -158,7 +176,10 @@ const BannerAdComponent = forwardRef<BannerAdRef, BannerAdProps>(({
             key={adKey}
             unitId={getAdUnitId(position)}
             size={getBannerSize(position)}
-            requestOptions={{ requestNonPersonalizedAdsOnly: requestNonPersonalized}}
+            requestOptions={{ 
+              requestNonPersonalizedAdsOnly: requestNonPersonalized,
+              keywords,
+            }}
             onAdLoaded={handleAdLoaded}
             onAdFailedToLoad={handleAdFailedToLoad}
           />
