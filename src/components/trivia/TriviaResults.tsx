@@ -445,7 +445,6 @@ export function TriviaResults({
       
       <ScrollView 
         showsVerticalScrollIndicator={false}
-        style={{ marginBottom: tokens.space.sm }}
       >
         {/* Header Section */}
         <Animated.View entering={FadeInDown.duration(400)}>
@@ -643,7 +642,7 @@ export function TriviaResults({
 
         {/* Question Insights Section */}
         <Animated.View entering={FadeInUp.delay(150).duration(400)}>
-          <YStack paddingTop={tokens.space.xl} gap={tokens.space.md}>
+          <YStack paddingTop={tokens.space.xl} paddingBottom={tokens.space.sm} gap={tokens.space.md}>
             <Text 
               fontSize={18} 
               fontFamily={FONT_FAMILIES.bold} 
