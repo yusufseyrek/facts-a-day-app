@@ -2,7 +2,7 @@
   "ios": {
     "CFBundleDisplayName": "Savoir Quotidien",
     "CFBundleName": "Savoir Quotidien",
-    "NSHumanReadableCopyright": "Un fait nouveau chaque jour"
+    "NSHumanReadableCopyright": "Apprends · Joue · Progresse"
   },
   "android": {
     "app_name": "Savoir Quotidien"

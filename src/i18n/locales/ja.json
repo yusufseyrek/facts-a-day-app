@@ -2,7 +2,7 @@
   "ios": {
     "CFBundleDisplayName": "毎日の知識",
     "CFBundleName": "毎日の知識",
-    "NSHumanReadableCopyright": "毎日新しいことを学ぼう"
+    "NSHumanReadableCopyright": "学ぶ · クイズ · 賢くなる"
   },
   "android": {
     "app_name": "毎日の知識"

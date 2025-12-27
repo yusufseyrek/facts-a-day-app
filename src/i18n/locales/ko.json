@@ -2,7 +2,7 @@
   "ios": {
     "CFBundleDisplayName": "매일 지식",
     "CFBundleName": "매일 지식",
-    "NSHumanReadableCopyright": "매일 새로운 것을 배우세요"
+    "NSHumanReadableCopyright": "배우고 · 퀴즈하고 · 똑똑해지세요"
   },
   "android": {
     "app_name": "매일 지식"
