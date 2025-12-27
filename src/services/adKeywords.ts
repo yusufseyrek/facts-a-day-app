@@ -23,7 +23,7 @@ const listeners = new Set<KeywordListener>();
  * Returns: 4 core + 1 category (if set) = max 5 keywords
  */
 export function getAdKeywords(): string[] {
-  const keywords = [...CORE_KEYWORDS];
+  const keywords: string[] = [...CORE_KEYWORDS];
   
   if (currentCategoryKeyword) {
     keywords.push(currentCategoryKeyword);

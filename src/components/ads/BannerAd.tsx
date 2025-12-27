@@ -57,17 +57,9 @@ function BannerAdComponent({
   useEffect(() => {
     const unsubscribe = subscribeToKeywords((newKeywords) => {
       setKeywords(newKeywords);
-      // TODO: Remove after testing
-      console.log('[BannerAd] Keywords updated:', newKeywords);
     });
     return unsubscribe;
   }, []);
-
-  // Log keywords on mount and when they change
-  // TODO: Remove after testing
-  useEffect(() => {
-    console.log(`[BannerAd:${position}] Current keywords:`, keywords);
-  }, [keywords, position]);
 
   // Check consent on mount
   useEffect(() => {
@@ -144,7 +136,7 @@ function BannerAdComponent({
             key={adKey}
             unitId={getAdUnitId(position)}
             size={getBannerSize(position)}
-            requestOptions={{ 
+            requestOptions={{
               requestNonPersonalizedAdsOnly: requestNonPersonalized,
               keywords,
             }}
