@@ -2393,3 +2393,29 @@ export async function getTotalSessionsCount(): Promise<number> {
 
   return result?.count || 0;
 }
+
+// ====== DEV TOOLS ======
+
+/**
+ * Update a fact's title (DEV tool for screenshots)
+ * @param factId The ID of the fact to update
+ * @param newTitle The new title to set
+ */
+export async function updateFactTitle(factId: number, newTitle: string): Promise<void> {
+  const database = await openDatabase();
+  await database.runAsync(
+    "UPDATE facts SET title = ? WHERE id = ?",
+    [newTitle, factId]
+  );
+}
+
+/**
+ * Clear all shown_in_feed flags and scheduled dates (DEV tool for screenshots)
+ * This effectively clears the feed for fresh screenshot manipulation
+ */
+export async function clearAllShownInFeed(): Promise<void> {
+  const database = await openDatabase();
+  await database.runAsync(
+    "UPDATE facts SET shown_in_feed = 0, scheduled_date = NULL, notification_id = NULL"
+  );
+}

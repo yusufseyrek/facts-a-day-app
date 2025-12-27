@@ -21,6 +21,7 @@ import {
   Settings,
   Star,
   Trash2,
+  Camera,
 } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
 import {
@@ -35,6 +36,7 @@ import {
 import { SettingsRow } from "../../src/components/SettingsRow";
 import { ThemePickerModal } from "../../src/components/settings/ThemePickerModal";
 import { TimePickerModal } from "../../src/components/settings/TimePickerModal";
+import { FeedManagementModal } from "../../src/components/settings/FeedManagementModal";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import { TranslationKeys } from "../../src/i18n/translations";
@@ -90,6 +92,7 @@ export default function SettingsPage() {
   // Modal visibility state
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
+  const [showFeedManagementModal, setShowFeedManagementModal] = useState(false);
 
   // Preferences state
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -593,6 +596,12 @@ export default function SettingsPage() {
       title: t("developerSettings"),
       data: [
         {
+          id: "manageFeed",
+          label: "Manage Feed (Screenshots)",
+          icon: <Camera size={20} color={iconColor} />,
+          onPress: () => setShowFeedManagementModal(true),
+        },
+        {
           id: "add10Facts",
           label: t("add10RandomFacts"),
           icon: <Plus size={20} color={iconColor} />,
@@ -761,6 +770,14 @@ export default function SettingsPage() {
         }}
         hasNotificationPermission={notificationPermissionGranted}
       />
+
+      {/* DEV: Feed Management Modal for screenshots */}
+      {isDevelopment && (
+        <FeedManagementModal
+          visible={showFeedManagementModal}
+          onClose={() => setShowFeedManagementModal(false)}
+        />
+      )}
     </ScreenContainer>
   );
 }

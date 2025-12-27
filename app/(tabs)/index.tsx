@@ -304,6 +304,15 @@ function HomeScreen() {
   );
 }
 
+// Helper to get local date string in YYYY-MM-DD format
+// Using local date instead of UTC to properly match user's timezone
+function getLocalDateString(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Helper function to group facts by date
 function groupFactsByDate(
   facts: FactWithRelations[],
@@ -311,10 +320,10 @@ function groupFactsByDate(
   locale: string
 ): FactSection[] {
   const today = new Date();
-  const todayString = today.toISOString().split("T")[0];
+  const todayString = getLocalDateString(today);
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayString = yesterday.toISOString().split("T")[0];
+  const yesterdayString = getLocalDateString(yesterday);
 
   const grouped: { [key: string]: FactWithRelations[] } = {};
 
@@ -323,7 +332,9 @@ function groupFactsByDate(
     if (fact.shown_in_feed === 1 && !fact.scheduled_date) {
       dateKey = todayString;
     } else if (fact.scheduled_date) {
-      dateKey = fact.scheduled_date.split("T")[0];
+      // Parse the scheduled_date as local date for comparison
+      const scheduledDate = new Date(fact.scheduled_date);
+      dateKey = getLocalDateString(scheduledDate);
     } else {
       return;
     }
@@ -341,7 +352,8 @@ function groupFactsByDate(
       } else if (dateKey === yesterdayString) {
         title = t("yesterday");
       } else {
-        title = new Date(dateKey).toLocaleDateString(locale, {
+        // Parse as local date for display (add T12:00:00 to avoid timezone edge cases)
+        title = new Date(dateKey + 'T12:00:00').toLocaleDateString(locale, {
           year: "numeric",
           month: "long",
           day: "numeric",

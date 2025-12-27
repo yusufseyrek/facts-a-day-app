@@ -8,7 +8,7 @@ const LAST_REVIEW_PROMPT_KEY = '@last_review_prompt';
 
 // Configuration
 const FACTS_THRESHOLD_FOR_REVIEW = 10; // Ask for review after 10 facts viewed
-const MIN_DAYS_BETWEEN_PROMPTS = 30; // Don't ask again for 30 days
+const MIN_DAYS_BETWEEN_PROMPTS = 15; // Don't ask again for 15 days
 
 /**
  * Track that a fact has been viewed

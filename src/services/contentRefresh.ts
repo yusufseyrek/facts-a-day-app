@@ -96,6 +96,14 @@ function emitFeedRefresh(): void {
   });
 }
 
+/**
+ * Trigger a feed refresh manually
+ * Used by DEV tools to refresh the feed after manipulation
+ */
+export function triggerFeedRefresh(): void {
+  emitFeedRefresh();
+}
+
 export interface RefreshResult {
   success: boolean;
   updated: {
