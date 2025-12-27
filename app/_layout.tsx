@@ -156,14 +156,13 @@ function AppContent() {
             await AsyncStorage.setItem(NOTIFICATION_TRACK_KEY, notificationId);
             router.push(`/fact/${factId}?source=notification`);
             
-            // Top up notifications since one was just consumed
-            // This ensures we always have 64 scheduled notifications
+            // Sync notification schedule (check/repair/top-up)
             const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
-            console.log('🔔 Notification opened, checking if top-up needed...');
-            notificationService.checkAndTopUpNotifications(
+            console.log('🔔 Notification opened, syncing schedule...');
+            notificationService.syncNotificationSchedule(
               getLocaleFromCode(deviceLocale)
             ).catch((error) => {
-              console.error('Notification top-up after open failed:', error);
+              console.error('Notification sync after open failed:', error);
             });
           }
         });
@@ -229,12 +228,12 @@ export default function RootLayout() {
         nextAppState === 'active' &&
         initialOnboardingStatus === true
       ) {
-        console.log('📱 App entered foreground, checking notifications...');
+        console.log('📱 App entered foreground, syncing notifications...');
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
-        notificationService.checkAndTopUpNotifications(
+        notificationService.syncNotificationSchedule(
           getLocaleFromCode(deviceLocale)
         ).catch((error) => {
-          console.error('Notification top-up failed:', error);
+          console.error('Notification sync failed:', error);
         });
       }
       appStateRef.current = nextAppState;
@@ -282,14 +281,14 @@ export default function RootLayout() {
           console.error('Background refresh failed:', error);
         });
 
-        // Check and top up notifications to 64 if enabled
+        // Sync notification schedule (check/repair/top-up)
         // This runs asynchronously and doesn't block app startup
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
-        notificationService.checkAndTopUpNotifications(
+        notificationService.syncNotificationSchedule(
           getLocaleFromCode(deviceLocale)
         ).catch((error) => {
           // Silently handle errors - notifications continue with existing schedule
-          console.error('Notification top-up failed:', error);
+          console.error('Notification sync failed:', error);
         });
       }
     } catch (error) {

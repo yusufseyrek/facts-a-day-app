@@ -151,11 +151,11 @@ function HomeScreen() {
         if (factId) {
           try {
             await database.markFactAsShown(factId as number);
-            const { checkAndTopUpNotifications } = await import("../../src/services/notifications");
+            const { syncNotificationSchedule } = await import("../../src/services/notifications");
             const { getLocaleFromCode } = await import("../../src/i18n");
             const Localization = await import("expo-localization");
             const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
-            await checkAndTopUpNotifications(getLocaleFromCode(deviceLocale));
+            await syncNotificationSchedule(getLocaleFromCode(deviceLocale));
           } catch {
             // Ignore notification setup errors
           }

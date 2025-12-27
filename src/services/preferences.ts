@@ -244,14 +244,7 @@ export async function handleLanguageChange(
       const times = notificationTimes.map(t => new Date(t));
       
       // Clear all existing notifications and reschedule with new language
-      if (times.length > 1) {
-        await notificationService.rescheduleNotificationsMultiple(times, newLanguage);
-      } else {
-        await notificationService.rescheduleNotifications(times[0], newLanguage);
-      }
-      
-      // Verify DB matches OS after rescheduling
-      await notificationService.verifyDbMatchesOs(newLanguage);
+      await notificationService.scheduleNotifications(times, newLanguage);
     }
 
     onProgress?.({
@@ -450,14 +443,7 @@ export async function handleCategoriesChange(
       const times = notificationTimes.map(t => new Date(t));
       
       // Clear all existing notifications and reschedule with new facts
-      if (times.length > 1) {
-        await notificationService.rescheduleNotificationsMultiple(times, currentLanguage);
-      } else {
-        await notificationService.rescheduleNotifications(times[0], currentLanguage);
-      }
-      
-      // Verify DB matches OS after rescheduling
-      await notificationService.verifyDbMatchesOs(currentLanguage);
+      await notificationService.scheduleNotifications(times, currentLanguage);
     }
 
     onProgress?.({

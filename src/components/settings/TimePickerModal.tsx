@@ -186,15 +186,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       await onboardingService.setNotificationTimes(timeStrings);
 
       // Reschedule notifications with the new times
-      // Use the appropriate function based on number of times
-      let result;
-      if (times.length > 1) {
-        // Premium users with multiple times
-        result = await notificationService.rescheduleNotificationsMultiple(times, locale);
-      } else {
-        // Free users with single time
-        result = await notificationService.rescheduleNotifications(times[0], locale);
-      }
+      const result = await notificationService.scheduleNotifications(times, locale);
 
       // Update parent component with the first time (for backward compatibility)
       if (onTimeChange) {
@@ -255,6 +247,8 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
             {
               backgroundColor: colors.surface,
               borderColor: colors.border,
+              // Use smaller height when compact mode is used (multiple times)
+              minHeight: Platform.OS === 'ios' ? (times.length > 1 ? 60 : 200) : 60,
             },
           ]}
         >
@@ -263,7 +257,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
               value={time}
               mode="time"
               is24Hour={true}
-              display="spinner"
+              // Use compact display when there are multiple pickers to allow scrolling
+              // Spinner mode blocks scroll gestures
+              display={times.length > 1 ? 'compact' : 'spinner'}
               onChange={(event, date) => handleTimeChange(index, event, date)}
               textColor={theme === 'dark' ? '#FFFFFF' : '#1A1D2E'}
               themeVariant={theme}
@@ -362,7 +358,13 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                   </Pressable>
                 </View>
 
-                <ScrollView style={styles.scrollContent}>
+                <ScrollView 
+                  style={styles.scrollContent}
+                  contentContainerStyle={styles.scrollContentContainer}
+                  showsVerticalScrollIndicator={true}
+                  nestedScrollEnabled={true}
+                  keyboardShouldPersistTaps="handled"
+                >
                   <View style={styles.content}>
                     {!hasNotificationPermission && (
                       <Pressable
@@ -499,6 +501,9 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     flexShrink: 1,
   },
+  scrollContentContainer: {
+    flexGrow: 1,
+  },
   content: {
     padding: tokens.space.lg,
     gap: tokens.space.md,
@@ -531,7 +536,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: Platform.OS === 'ios' ? 200 : 60, // iOS needs space for spinner, Android only shows button
+    // minHeight is set dynamically in the component based on display mode
   },
   addButton: {
     flexDirection: 'row',

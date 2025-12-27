@@ -85,19 +85,11 @@ function isCachedTokenValid(): boolean {
 export async function getCachedAppCheckToken(): Promise<string | null> {
   // Return cached token if still valid
   if (isCachedTokenValid()) {
-    if (__DEV__) {
-      const remainingMs = tokenExpirationMs - EXPIRATION_BUFFER_MS - Date.now();
-      const remainingMinutes = Math.round(remainingMs / 60000);
-      console.log(`🔒 App Check: Using cached token (valid for ~${remainingMinutes} more minutes)`);
-    }
     return cachedToken;
   }
   
   // If a fetch is already in progress, wait for it
   if (tokenFetchPromise) {
-    if (__DEV__) {
-      console.log('🔒 App Check: Waiting for in-flight token request...');
-    }
     return tokenFetchPromise;
   }
   
@@ -118,20 +110,12 @@ export async function getCachedAppCheckToken(): Promise<string | null> {
 async function fetchNewToken(): Promise<string | null> {
   try {
     // Wait for App Check initialization to complete first
-    if (__DEV__) {
-      console.log('🔒 App Check: Waiting for initialization...');
-    }
     await appCheckReady;
     
     // Check if initialization was successful
     if (!isAppCheckInitialized()) {
       console.warn('⚠️ App Check: Initialization failed or not complete, skipping token retrieval');
-      console.warn('⚠️ App Check: Check logs for "❌ App Check: Initialization FAILED" to see the cause');
       return null;
-    }
-    
-    if (__DEV__) {
-      console.log('🔒 App Check: Fetching new token...');
     }
     
     const appCheckInstance = getAppCheck(getApp());
@@ -164,17 +148,10 @@ async function fetchNewToken(): Promise<string | null> {
     // Cache the token
     cachedToken = token;
     
-    if (__DEV__) {
-      const tokenPreview = `${token.substring(0, 20)}...`;
-      const expiresIn = Math.round((tokenExpirationMs - Date.now()) / 60000);
-      console.log(`🔒 App Check: New token cached successfully (${tokenPreview}), expires in ~${expiresIn} min`);
-    }
-    
     return token;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    
     if (__DEV__) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       const errorCode = (error as any)?.code || 'unknown';
       console.error(`❌ App Check: Token retrieval FAILED (${errorCode}): ${errorMessage}`);
     }
@@ -182,9 +159,6 @@ async function fetchNewToken(): Promise<string | null> {
     // If we have a previously cached token that's not actually expired, return it as fallback
     // This handles temporary network issues gracefully
     if (cachedToken && tokenExpirationMs && Date.now() < tokenExpirationMs) {
-      if (__DEV__) {
-        console.log('🔒 App Check: Using cached token as fallback after fetch error');
-      }
       return cachedToken;
     }
     
@@ -207,10 +181,6 @@ export async function forceRefreshAppCheckToken(): Promise<string | null> {
   }
   
   try {
-    if (__DEV__) {
-      console.log('🔒 App Check: Force refreshing token...');
-    }
-    
     await appCheckReady;
     
     if (!isAppCheckInitialized()) {
@@ -238,12 +208,6 @@ export async function forceRefreshAppCheckToken(): Promise<string | null> {
     
     cachedToken = token;
     
-    if (__DEV__) {
-      const tokenPreview = `${token.substring(0, 20)}...`;
-      const expiresIn = Math.round((tokenExpirationMs - Date.now()) / 60000);
-      console.log(`🔒 App Check: Token force refreshed successfully (${tokenPreview}), expires in ~${expiresIn} min`);
-    }
-    
     return token;
   } catch (error) {
     if (__DEV__) {
@@ -261,10 +225,6 @@ export function clearAppCheckTokenCache(): void {
   cachedToken = null;
   tokenExpirationMs = 0;
   tokenFetchPromise = null;
-  
-  if (__DEV__) {
-    console.log('🔒 App Check: Token cache cleared');
-  }
 }
 
 /**

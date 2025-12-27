@@ -73,24 +73,15 @@ export async function initializeAppCheckService() {
   const androidProvider = useDebugProvider ? 'debug' : 'playIntegrity';
   const providerName = isIOS ? iosProvider : androidProvider;
   
-  console.log(`🔒 App Check: Starting initialization...`);
-  console.log(`🔒 App Check: Platform=${Platform.OS}, isDevice=${isRealDevice}, __DEV__=${__DEV__}`);
-  console.log(`🔒 App Check: Using provider: ${providerName}`);
-
   let lastError: Error | null = null;
   
   for (let attempt = 0; attempt <= APP_CHECK_INIT_MAX_RETRIES; attempt++) {
     try {
       if (attempt > 0) {
-        console.log(`🔒 App Check: Retry attempt ${attempt}/${APP_CHECK_INIT_MAX_RETRIES}...`);
         await new Promise(resolve => setTimeout(resolve, APP_CHECK_INIT_RETRY_DELAY_MS));
       }
       
       const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
-      
-      if (attempt === 0) {
-        console.log('🔒 App Check: Configuring provider...');
-      }
       
       await rnfbProvider.configure({
         apple: {
@@ -105,10 +96,6 @@ export async function initializeAppCheckService() {
         isTokenAutoRefreshEnabled: true,
       });
 
-      if (attempt === 0) {
-        console.log('🔒 App Check: Provider configured, calling initializeAppCheck...');
-      }
-
       await initializeAppCheck(getApp(), {
         provider: rnfbProvider,
         isTokenAutoRefreshEnabled: true,
@@ -116,11 +103,8 @@ export async function initializeAppCheckService() {
 
       appCheckInitialized = true;
       
-      console.log(`🔒 App Check: Initialization SUCCESS with ${providerName} provider${attempt > 0 ? ` (after ${attempt} retries)` : ''}`);
-      
-      if (useDebugProvider) {
-        console.log('📋 Using DEBUG provider - check native logs for debug token');
-        console.log('   Register it in Firebase Console → App Check → Apps → Manage debug tokens');
+      if (__DEV__) {
+        console.log(`🔒 App Check: Initialized (${providerName})`);
       }
       
       // Success - exit the retry loop

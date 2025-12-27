@@ -267,16 +267,10 @@ export default function NotificationsScreen() {
       }
 
       // Schedule notifications (will exclude the fact marked as shown)
-      // Use multiple times if more than 1, otherwise use single time for backward compatibility
-      const result = notificationTimes.length > 1
-        ? await notificationService.rescheduleNotificationsMultiple(
-            notificationTimes,
-            locale
-          )
-        : await notificationService.scheduleInitialNotifications(
-            notificationTimes[0],
-            locale
-          );
+      const result = await notificationService.scheduleNotifications(
+        notificationTimes,
+        locale
+      );
 
       if (result.success) {
         // Successfully scheduled notifications - navigate to success screen

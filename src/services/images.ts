@@ -255,9 +255,6 @@ export async function downloadImageWithAppCheck(
       // request the same image simultaneously
       const pendingDownload = pendingDownloads.get(factId);
       if (pendingDownload && !forceRefresh) {
-        if (__DEV__) {
-          console.log(`🔄 Image Download: Waiting for pending download of factId=${factId}`);
-        }
         return pendingDownload;
       }
     } else if (!forceRefresh && factId === undefined) {
@@ -307,14 +304,10 @@ async function performImageDownload(
     
     // REQUIRED: Do not make image requests without a valid App Check token
     if (!appCheckToken) {
-      console.error(`❌ Image Download: No App Check token available for factId=${factId} - aborting request`);
-      console.error('❌ Image Download: Check App Check initialization logs for the root cause');
+      if (__DEV__) {
+        console.error(`❌ Image Download: No App Check token available for factId=${factId}`);
+      }
       return null;
-    }
-    
-    if (__DEV__) {
-      const tokenPreview = appCheckToken.substring(0, 30);
-      console.log(`🔒 Image Download: Token obtained for factId=${factId} (${tokenPreview}...)`);
     }
     
     // Prepare download destination
@@ -333,11 +326,6 @@ async function performImageDownload(
         const headers: Record<string, string> = {
           'X-Firebase-AppCheck': appCheckToken,
         };
-        
-        // Log headers being sent (helps debug missing header issues)
-        if (__DEV__ && attempt === 0) {
-          console.log(`🔒 Image Download: Sending request with X-Firebase-AppCheck header for factId=${factId}`);
-        }
         
         // Use FileSystem.downloadAsync FIRST - it's much faster because it streams
         // directly to disk instead of loading into memory and converting to base64
@@ -359,19 +347,11 @@ async function performImageDownload(
               fileExistenceCache.set(factId, { uri: downloadResult.uri, checkedAt: Date.now() });
             }
             
-            if (__DEV__) {
-              console.log(`✅ Image Download: Success for factId=${factId} using downloadAsync`);
-            }
-            
             return downloadResult.uri;
           }
         } catch (downloadError) {
           // If downloadAsync fails (e.g., headers not supported in some versions),
           // fall back to fetch + streaming write
-          if (__DEV__) {
-            console.log(`⚠️ Image Download: downloadAsync failed for factId=${factId}, trying fetch...`, downloadError);
-          }
-          
           try {
             const response = await fetch(imageUrl, { 
               method: 'GET',
@@ -404,16 +384,9 @@ async function performImageDownload(
                 fileExistenceCache.set(factId, { uri: localUri, checkedAt: Date.now() });
               }
               
-              if (__DEV__) {
-                console.log(`✅ Image Download: Success for factId=${factId} using fetch`);
-              }
-              
               return localUri;
             }
-          } catch (fetchError) {
-            if (__DEV__) {
-              console.log(`⚠️ Image Download: fetch also failed for factId=${factId}`, fetchError);
-            }
+          } catch {
             // Continue to retry logic
           }
         }
@@ -422,10 +395,6 @@ async function performImageDownload(
         // Try refreshing the token once before giving up
         if ((downloadStatus === 401 || downloadStatus === 403) && !hasRetriedWithFreshToken) {
           hasRetriedWithFreshToken = true;
-          
-          if (__DEV__) {
-            console.log(`🔄 Image Download: Got ${downloadStatus}, refreshing App Check token...`);
-          }
           
           const freshToken = await forceRefreshAppCheckToken();
           if (freshToken) {
@@ -436,7 +405,9 @@ async function performImageDownload(
             continue;
           } else {
             // Cannot proceed without a valid token
-            console.error('❌ Image Download: Failed to refresh App Check token - aborting');
+            if (__DEV__) {
+              console.error('❌ Image Download: Failed to refresh App Check token');
+            }
             return null;
           }
         }
@@ -444,9 +415,6 @@ async function performImageDownload(
         // Handle non-200 status codes
         // Don't retry on client errors (4xx) except 429 (rate limit) and already handled 401/403
         if (downloadStatus >= 400 && downloadStatus < 500 && downloadStatus !== 429) {
-          if (__DEV__) {
-            console.warn(`⚠️ Image Download: Failed with status ${downloadStatus} for factId=${factId}`);
-          }
           return null;
         }
         
@@ -460,10 +428,6 @@ async function performImageDownload(
         const delay = RETRY_DELAY_BASE_MS * Math.pow(2, attempt);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
-    }
-    
-    if (__DEV__ && lastError) {
-      console.warn(`⚠️ Image Download: All retries failed for factId=${factId}:`, lastError.message);
     }
     
     return null;
@@ -588,10 +552,6 @@ export function prefetchFactImagesWithLimit(
   
   // Only prefetch the first N items initially (most likely to be visible)
   const factsToQueue = factsWithImages.slice(0, maxInitialPrefetch);
-  
-  if (__DEV__) {
-    console.log(`📷 Prefetch: Queueing ${factsToQueue.length} of ${factsWithImages.length} images (limit: ${maxInitialPrefetch})`);
-  }
   
   // Add to tracking set and queue
   factsToQueue.forEach((fact) => {

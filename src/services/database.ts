@@ -649,11 +649,14 @@ export async function getRandomUnscheduledFacts(
 
 /**
  * Mark a fact as scheduled with notification details
+ * @param factId The ID of the fact
+ * @param scheduledDate The scheduled date in ISO format
+ * @param notificationId The OS notification identifier (null if pending OS scheduling)
  */
 export async function markFactAsScheduled(
   factId: number,
   scheduledDate: string,
-  notificationId: string
+  notificationId: string | null
 ): Promise<void> {
   const database = await openDatabase();
   await database.runAsync(
@@ -1075,7 +1078,8 @@ export async function getScheduledTimesInRange(
 
 /**
  * Get all future scheduled facts with their notification_id and scheduled_date
- * Used to verify OS notification times match DB records
+ * Used to sync OS notification queue with DB records
+ * Includes facts with null notification_id (pending OS scheduling)
  * @param language Optional language filter
  */
 export async function getFutureScheduledFactsWithNotificationIds(
@@ -1088,7 +1092,6 @@ export async function getFutureScheduledFactsWithNotificationIds(
     return await database.getAllAsync<{ id: number; notification_id: string; scheduled_date: string }>(
       `SELECT id, notification_id, scheduled_date FROM facts 
        WHERE scheduled_date > ? 
-       AND notification_id IS NOT NULL
        AND (shown_in_feed IS NULL OR shown_in_feed = 0)
        AND language = ?
        ORDER BY scheduled_date ASC`,
@@ -1099,10 +1102,26 @@ export async function getFutureScheduledFactsWithNotificationIds(
   return await database.getAllAsync<{ id: number; notification_id: string; scheduled_date: string }>(
     `SELECT id, notification_id, scheduled_date FROM facts 
      WHERE scheduled_date > ? 
-     AND notification_id IS NOT NULL
      AND (shown_in_feed IS NULL OR shown_in_feed = 0)
      ORDER BY scheduled_date ASC`,
     [now]
+  );
+}
+
+/**
+ * Update the notification_id for a scheduled fact
+ * Called after successfully scheduling a notification in the OS
+ * @param factId The ID of the fact
+ * @param notificationId The OS notification identifier
+ */
+export async function updateNotificationId(
+  factId: number,
+  notificationId: string
+): Promise<void> {
+  const database = await openDatabase();
+  await database.runAsync(
+    "UPDATE facts SET notification_id = ? WHERE id = ?",
+    [notificationId, factId]
   );
 }
 

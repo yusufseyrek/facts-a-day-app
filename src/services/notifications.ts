@@ -7,20 +7,50 @@ import { i18n } from '../i18n/config';
 import { SupportedLocale } from '../i18n/translations';
 import { downloadImageWithAppCheck } from './images';
 
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
 // iOS has a limit of 64 scheduled notifications
 const MAX_SCHEDULED_NOTIFICATIONS = 64;
 
 // Only download images for notifications within this many days
-// This avoids downloading all 64 images upfront
 const DAYS_TO_PRELOAD_IMAGES = 7;
 
-// Directory for notification images - use documentDirectory instead of cacheDirectory
-// because cache can be cleared by iOS before scheduled notifications fire
+// Directory for notification images - use documentDirectory (persists unlike cache)
 const NOTIFICATION_IMAGES_DIR = `${FileSystem.documentDirectory}notification-images/`;
 
-/**
- * Ensure the notification images directory exists
- */
+// Time tolerance for comparing OS and DB times (60 seconds)
+const TIME_TOLERANCE_MS = 60 * 1000;
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export interface SyncResult {
+  success: boolean;
+  count: number;
+  skipped?: boolean;
+  repaired?: boolean;
+  error?: string;
+}
+
+export interface ScheduleResult {
+  success: boolean;
+  count: number;
+  error?: string;
+}
+
+interface TimeSlot {
+  date: Date;
+  hour: number;
+  minute: number;
+}
+
+// ============================================================================
+// IMAGE HANDLING (unchanged from original)
+// ============================================================================
+
 async function ensureNotificationImagesDirExists(): Promise<void> {
   const dirInfo = await FileSystem.getInfoAsync(NOTIFICATION_IMAGES_DIR);
   if (!dirInfo.exists) {
@@ -28,13 +58,9 @@ async function ensureNotificationImagesDirExists(): Promise<void> {
   }
 }
 
-/**
- * Convert an image to JPEG format if needed (iOS notification attachments don't support WebP well)
- */
 async function convertToJpegIfNeeded(localUri: string, factId: number): Promise<string> {
   const extension = localUri.split('.').pop()?.toLowerCase();
   
-  // If already JPEG or PNG, no conversion needed
   if (extension === 'jpg' || extension === 'jpeg' || extension === 'png') {
     return localUri;
   }
@@ -42,20 +68,17 @@ async function convertToJpegIfNeeded(localUri: string, factId: number): Promise<
   try {
     const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
     
-    // Check if converted version already exists
     const existingJpeg = await FileSystem.getInfoAsync(jpegUri);
     if (existingJpeg.exists) {
       return jpegUri;
     }
     
-    // Convert to JPEG using ImageManipulator
     const result = await ImageManipulator.manipulateAsync(
       localUri,
-      [], // No transformations
+      [],
       { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
     );
     
-    // Move the result to our notification images directory with proper name
     await FileSystem.moveAsync({
       from: result.uri,
       to: jpegUri,
@@ -63,35 +86,26 @@ async function convertToJpegIfNeeded(localUri: string, factId: number): Promise<
     
     return jpegUri;
   } catch {
-    // Return original if conversion fails
     return localUri;
   }
 }
 
-/**
- * Download an image for notification attachment with App Check authentication
- * Returns the local file URI or null if download fails
- */
 async function downloadImageForNotification(imageUrl: string, factId: number): Promise<string | null> {
   try {
     await ensureNotificationImagesDirExists();
     
-    // First check if we already have a JPEG version (converted previously)
     const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
     const jpegInfo = await FileSystem.getInfoAsync(jpegUri);
     if (jpegInfo.exists) {
       return jpegUri;
     }
     
-    // Download image with App Check authentication
     const downloadedUri = await downloadImageWithAppCheck(imageUrl, factId);
     
     if (!downloadedUri) {
       return null;
     }
     
-    // For iOS notification attachments, copy to notification images directory
-    // and convert to JPEG if needed (WebP not well supported by iOS notification attachments)
     const urlPath = imageUrl.split('?')[0];
     const extension = urlPath.split('.').pop()?.toLowerCase() || 'jpg';
     const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
@@ -99,7 +113,6 @@ async function downloadImageForNotification(imageUrl: string, factId: number): P
     
     const notificationUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.${fileExtension}`;
     
-    // Copy from cache to notification images directory if different
     if (downloadedUri !== notificationUri) {
       try {
         await FileSystem.copyAsync({
@@ -107,13 +120,11 @@ async function downloadImageForNotification(imageUrl: string, factId: number): P
           to: notificationUri,
         });
       } catch {
-        // Convert original directly
         const finalUri = await convertToJpegIfNeeded(downloadedUri, factId);
         return finalUri;
       }
     }
     
-    // Convert to JPEG if needed
     const finalUri = await convertToJpegIfNeeded(notificationUri, factId);
     return finalUri;
   } catch {
@@ -121,10 +132,6 @@ async function downloadImageForNotification(imageUrl: string, factId: number): P
   }
 }
 
-/**
- * Get the type hint for iOS notification attachment based on file extension
- * Note: We convert most images to JPEG for better iOS notification compatibility
- */
 function getTypeHintForExtension(uri: string): string {
   const extension = uri.split('.').pop()?.toLowerCase();
   switch (extension) {
@@ -135,34 +142,24 @@ function getTypeHintForExtension(uri: string): string {
     case 'jpg':
     case 'jpeg':
     default:
-      // WebP and other formats should have been converted to JPEG
       return 'public.jpeg';
   }
 }
 
-/**
- * Get the local notification image path for a fact if it exists
- * Returns the JPEG path (converted for iOS notification compatibility)
- * @param factId The ID of the fact
- * @returns The local file URI or null if not found
- */
 export async function getLocalNotificationImagePath(factId: number): Promise<string | null> {
   try {
-    // Check for JPEG version first (most common - converted for iOS)
     const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
     const jpegInfo = await FileSystem.getInfoAsync(jpegUri);
     if (jpegInfo.exists) {
       return jpegUri;
     }
     
-    // Check for WebP version (original download before conversion)
     const webpUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.webp`;
     const webpInfo = await FileSystem.getInfoAsync(webpUri);
     if (webpInfo.exists) {
       return webpUri;
     }
     
-    // Check for PNG version
     const pngUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.png`;
     const pngInfo = await FileSystem.getInfoAsync(pngUri);
     if (pngInfo.exists) {
@@ -175,11 +172,6 @@ export async function getLocalNotificationImagePath(factId: number): Promise<str
   }
 }
 
-/**
- * Delete notification image(s) for a specific fact
- * Removes both the original and any converted versions
- * @param factId The ID of the fact
- */
 export async function deleteNotificationImage(factId: number): Promise<void> {
   try {
     const extensions = ['jpg', 'jpeg', 'webp', 'png', 'gif'];
@@ -197,11 +189,6 @@ export async function deleteNotificationImage(factId: number): Promise<void> {
   }
 }
 
-/**
- * Clean up old notification images that are older than the specified days
- * This should be called on app start to prevent disk space buildup
- * @param maxAgeDays Maximum age in days before images are deleted (default: 7)
- */
 export async function cleanupOldNotificationImages(maxAgeDays: number = 7): Promise<number> {
   try {
     await ensureNotificationImagesDirExists();
@@ -241,9 +228,6 @@ export async function cleanupOldNotificationImages(maxAgeDays: number = 7): Prom
   }
 }
 
-/**
- * Check if a scheduled date is within the image preload window
- */
 function shouldPreloadImage(scheduledDate: Date): boolean {
   const now = new Date();
   const daysUntilNotification = Math.ceil(
@@ -252,19 +236,12 @@ function shouldPreloadImage(scheduledDate: Date): boolean {
   return daysUntilNotification <= DAYS_TO_PRELOAD_IMAGES;
 }
 
-/**
- * Preload images for upcoming scheduled notifications
- * This is called when the app opens to download images for notifications
- * that are now within the preload window
- */
 export async function preloadUpcomingNotificationImages(locale: SupportedLocale): Promise<number> {
   if (Platform.OS !== 'ios') {
-    // Only iOS needs image preloading for notification attachments
     return 0;
   }
 
   try {
-    // Get all scheduled notifications from the OS
     const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
     
     if (scheduledNotifications.length === 0) {
@@ -277,7 +254,6 @@ export async function preloadUpcomingNotificationImages(locale: SupportedLocale)
     for (const notification of scheduledNotifications) {
       const trigger = notification.trigger;
       
-      // Get the trigger date
       let triggerDate: Date | null = null;
       if (trigger && 'date' in trigger && trigger.date) {
         triggerDate = trigger.date instanceof Date ? trigger.date : new Date(trigger.date);
@@ -285,20 +261,16 @@ export async function preloadUpcomingNotificationImages(locale: SupportedLocale)
 
       if (!triggerDate) continue;
 
-      // Check if this notification is within the preload window
       const daysUntil = Math.ceil((triggerDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       
       if (daysUntil <= DAYS_TO_PRELOAD_IMAGES && daysUntil > 0) {
-        // Get fact ID from notification data
         const factId = notification.content.data?.factId as number | undefined;
         
         if (factId) {
-          // Check if image already exists
           const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
           const jpegInfo = await FileSystem.getInfoAsync(jpegUri);
           
           if (!jpegInfo.exists) {
-            // Get the fact from database to get the image URL
             const fact = await database.getFactById(factId);
             
             if (fact?.image_url) {
@@ -319,19 +291,15 @@ export async function preloadUpcomingNotificationImages(locale: SupportedLocale)
   }
 }
 
-/**
- * Build notification content for a fact
- * Downloads image to local storage for iOS attachments (only for upcoming notifications)
- * @param fact The fact to build content for
- * @param locale The locale to use for the notification
- * @param scheduledDate The date the notification will fire (used to decide if we should download image)
- */
+// ============================================================================
+// NOTIFICATION CONTENT BUILDING
+// ============================================================================
+
 export async function buildNotificationContent(
   fact: database.FactWithRelations,
   locale: SupportedLocale = 'en',
   scheduledDate?: Date
 ): Promise<Notifications.NotificationContentInput> {
-  // Set locale temporarily to get the correct app name
   const previousLocale = i18n.locale;
   i18n.locale = locale;
   const appName = i18n.t('appName');
@@ -343,33 +311,25 @@ export async function buildNotificationContent(
     data: { factId: fact.id },
   };
 
-  // Add image attachment if available (iOS only - Android local notifications don't support images)
-  // Only download images for notifications within the preload window to avoid downloading all 64 upfront
   const shouldDownloadImage = scheduledDate ? shouldPreloadImage(scheduledDate) : true;
   
   if (fact.image_url && Platform.OS === 'ios' && shouldDownloadImage) {
-    // Download image to local storage - iOS requires local file URLs for attachments
     const localImageUri = await downloadImageForNotification(fact.image_url, fact.id);
     
     if (localImageUri) {
       const typeHint = getTypeHintForExtension(localImageUri);
       
-      // IMPORTANT: expo-notifications native iOS code (Records.swift line 408) expects 'uri' key, not 'url'
-      // This is a mismatch with the TypeScript types which define 'url'
-      // We create the object with both keys to ensure compatibility
       const attachment = {
         identifier: `fact-${fact.id}`,
-        uri: localImageUri,  // This is what native iOS code actually looks for
-        url: localImageUri,  // TypeScript types expect this
-        typeHint: typeHint,  // Native code uses typeHint for UNNotificationAttachmentOptionsTypeHintKey
+        uri: localImageUri,
+        url: localImageUri,
+        typeHint: typeHint,
       };
       
-      // Cast to any to bypass TypeScript's type checking since native code expects different keys
       content.attachments = [attachment] as any;
     }
   }
 
-  // For Android, store image URL in data for potential future use
   if (fact.image_url && Platform.OS === 'android') {
     content.data = { ...content.data, imageUrl: fact.image_url };
   }
@@ -377,9 +337,10 @@ export async function buildNotificationContent(
   return content;
 }
 
-/**
- * Configure notification behavior
- */
+// ============================================================================
+// NOTIFICATION CONFIGURATION
+// ============================================================================
+
 export function configureNotifications() {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -391,82 +352,433 @@ export function configureNotifications() {
   });
 }
 
-/**
- * Schedule initial notifications for onboarding
- * @param notificationTime The time of day to send notifications
- * @param locale The user's locale for filtering facts
- * @returns Success status and count of scheduled notifications
- */
-export async function scheduleInitialNotifications(
-  notificationTime: Date,
-  locale: SupportedLocale
-): Promise<{ success: boolean; count: number; error?: string }> {
+export async function getScheduledNotificationsCount(): Promise<number> {
   try {
-    // Get 64 random unscheduled facts
-    const facts = await database.getRandomUnscheduledFacts(
-      MAX_SCHEDULED_NOTIFICATIONS,
-      locale
-    );
+    const notifications = await Notifications.getAllScheduledNotificationsAsync();
+    return notifications.length;
+  } catch {
+    return 0;
+  }
+}
 
-    if (facts.length === 0) {
-      return {
-        success: false,
-        count: 0,
-        error: 'No facts available for scheduling',
-      };
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Sort times by hour:minute in chronological order
+ */
+function sortTimesByTimeOfDay(times: Date[]): Date[] {
+  return [...times].sort((a, b) => {
+    const aMinutes = a.getHours() * 60 + a.getMinutes();
+    const bMinutes = b.getHours() * 60 + b.getMinutes();
+    return aMinutes - bMinutes;
+  });
+}
+
+/**
+ * Generate time slots for scheduling notifications
+ * @param preferredTimes User's preferred notification times
+ * @param count Number of slots to generate
+ * @param startAfterDate Optional date to start after (for top-up)
+ */
+function generateTimeSlots(
+  preferredTimes: Date[],
+  count: number,
+  startAfterDate?: Date
+): TimeSlot[] {
+  const sortedTimes = sortTimesByTimeOfDay(preferredTimes);
+  const slots: TimeSlot[] = [];
+  const now = new Date();
+  
+  let dayOffset = 0;
+  let startTimeIndex = 0;
+  
+  // If we have a startAfterDate, calculate the appropriate day offset
+  if (startAfterDate) {
+    const startDate = new Date(startAfterDate);
+    const todayMidnight = new Date(now);
+    todayMidnight.setHours(0, 0, 0, 0);
+    const startMidnight = new Date(startDate);
+    startMidnight.setHours(0, 0, 0, 0);
+    
+    dayOffset = Math.round((startMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Find the next time slot after the start date's time
+    const startHour = startDate.getHours();
+    const startMinute = startDate.getMinutes();
+    const startTotalMinutes = startHour * 60 + startMinute;
+    
+    let foundNextSlot = false;
+    for (let i = 0; i < sortedTimes.length; i++) {
+      const time = sortedTimes[i];
+      const timeTotalMinutes = time.getHours() * 60 + time.getMinutes();
+      if (timeTotalMinutes > startTotalMinutes) {
+        startTimeIndex = i;
+        foundNextSlot = true;
+        break;
+      }
     }
+    
+    // If no slot found on the same day, move to next day
+    if (!foundNextSlot) {
+      dayOffset++;
+      startTimeIndex = 0;
+    }
+  } else {
+    // No startAfterDate - find first valid slot (today if any time is still in future)
+    let hasValidSlotToday = false;
+    for (let i = 0; i < sortedTimes.length; i++) {
+      const time = sortedTimes[i];
+      const timeToday = new Date(now);
+      timeToday.setHours(time.getHours(), time.getMinutes(), 0, 0);
+      
+      if (timeToday > now) {
+        startTimeIndex = i;
+        hasValidSlotToday = true;
+        break;
+      }
+    }
+    
+    if (!hasValidSlotToday) {
+      dayOffset = 1;
+      startTimeIndex = 0;
+    }
+  }
+  
+  // Generate slots
+  let timeIndex = startTimeIndex;
+  let currentDayOffset = dayOffset;
+  
+  while (slots.length < count) {
+    const time = sortedTimes[timeIndex];
+    const slotDate = new Date(now);
+    slotDate.setDate(slotDate.getDate() + currentDayOffset);
+    slotDate.setHours(time.getHours(), time.getMinutes(), 0, 0);
+    
+    // Skip if slot is in the past
+    if (slotDate > now) {
+      slots.push({
+        date: slotDate,
+        hour: time.getHours(),
+        minute: time.getMinutes(),
+      });
+    }
+    
+    timeIndex++;
+    if (timeIndex >= sortedTimes.length) {
+      timeIndex = 0;
+      currentDayOffset++;
+    }
+  }
+  
+  return slots;
+}
 
-    // Schedule notifications for each fact
-    let successCount = 0;
-    const now = new Date();
-    const hour = notificationTime.getHours();
-    const minute = notificationTime.getMinutes();
+/**
+ * Check if the DB schedule is valid according to user's preferred times
+ */
+function isScheduleValid(
+  dbScheduled: Array<{ id: number; scheduled_date: string; notification_id: string }>,
+  preferredTimes: Date[]
+): boolean {
+  if (dbScheduled.length === 0) {
+    return true; // Empty schedule is valid (will be topped up)
+  }
+  
+  const expectedPerDay = preferredTimes.length;
+  const sortedTimes = sortTimesByTimeOfDay(preferredTimes);
+  
+  // Create a set of valid time strings (HH:MM)
+  const validTimeSlots = new Set(
+    sortedTimes.map(t => `${t.getHours().toString().padStart(2, '0')}:${t.getMinutes().toString().padStart(2, '0')}`)
+  );
+  
+  // Group scheduled facts by local date
+  const byDay = new Map<string, Array<{ scheduled_date: string }>>();
+  
+  for (const fact of dbScheduled) {
+    const date = new Date(fact.scheduled_date);
+    const dateKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+    
+    if (!byDay.has(dateKey)) {
+      byDay.set(dateKey, []);
+    }
+    byDay.get(dateKey)!.push(fact);
+  }
+  
+  // Get sorted date keys
+  const sortedDays = Array.from(byDay.keys()).sort();
+  
+  for (let i = 0; i < sortedDays.length; i++) {
+    const dayKey = sortedDays[i];
+    const facts = byDay.get(dayKey)!;
+    const isFirstDay = i === 0;
+    const isLastDay = i === sortedDays.length - 1;
+    
+    // Check count per day
+    if (facts.length > expectedPerDay) {
+      return false; // Too many notifications (even on first/last day)
+    }
+    
+    // First day can have fewer (some time slots may have passed)
+    // Last day can have fewer (may not fill all slots due to 64 limit)
+    // Middle days must have exactly expectedPerDay
+    if (facts.length < expectedPerDay && !isFirstDay && !isLastDay) {
+      return false; // Too few notifications (not allowed for middle days)
+    }
+    
+    // Check if time slots match preferred times
+    for (const fact of facts) {
+      const date = new Date(fact.scheduled_date);
+      const timeKey = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+      
+      if (!validTimeSlots.has(timeKey)) {
+        return false; // Time slot doesn't match user's preferences
+      }
+    }
+  }
+  
+  return true;
+}
 
-    // Check if notification time is later today
-    const selectedTimeToday = new Date(now);
-    selectedTimeToday.setHours(hour, minute, 0, 0);
-    const startOffset = selectedTimeToday > now ? 0 : 1; // Start today if time hasn't passed, else tomorrow
+// ============================================================================
+// CLEAR NOTIFICATION SCHEDULE
+// ============================================================================
 
-    for (let i = 0; i < facts.length; i++) {
-      const fact = facts[i];
-      const scheduledDate = new Date(now);
-      scheduledDate.setDate(scheduledDate.getDate() + i + startOffset); // Start today or tomorrow
-      scheduledDate.setHours(hour, minute, 0, 0);
+/**
+ * Clear notification schedule from both DB and OS
+ * @param locale User's locale for marking delivered facts
+ * @param options.completely If true, clears ALL scheduling data (for permission revoke)
+ */
+export async function clearNotificationSchedule(
+  locale: SupportedLocale,
+  options: { completely: boolean } = { completely: false }
+): Promise<void> {
+  // Cancel all from OS
+  await Notifications.cancelAllScheduledNotificationsAsync();
 
+  if (options.completely) {
+    // Clear ALL scheduling data (used when permissions revoked)
+    await database.clearAllScheduledFactsCompletely();
+  } else {
+    // Mark delivered facts as shown first (preserve for feed)
+    await database.markDeliveredFactsAsShown(locale);
+    // Clear only future scheduled facts
+    await database.clearAllScheduledFacts();
+  }
+}
+
+// ============================================================================
+// SYNC OS WITH DB
+// ============================================================================
+
+/**
+ * Sync OS notification queue to match DB records
+ * - Cancels OS notifications not in DB
+ * - Schedules missing DB facts in OS
+ * - Re-schedules if time mismatch detected
+ */
+async function syncOsWithDb(locale: SupportedLocale): Promise<{ synced: number; cancelled: number }> {
+  const dbFacts = await database.getFutureScheduledFactsWithNotificationIds(locale);
+  const osNotifications = await Notifications.getAllScheduledNotificationsAsync();
+  
+  // Build maps for efficient lookup
+  const osMap = new Map<string, { identifier: string; triggerDate: Date | null }>();
+  for (const notif of osNotifications) {
+    let triggerDate: Date | null = null;
+    if (notif.trigger && 'date' in notif.trigger && notif.trigger.date) {
+      triggerDate = notif.trigger.date instanceof Date ? notif.trigger.date : new Date(notif.trigger.date);
+    }
+    osMap.set(notif.identifier, { identifier: notif.identifier, triggerDate });
+  }
+  
+  const dbNotificationIds = new Set(dbFacts.map(f => f.notification_id).filter(Boolean));
+  
+  let cancelledCount = 0;
+  let syncedCount = 0;
+  
+  // Cancel OS notifications that are not in DB
+  for (const [osId] of osMap) {
+    if (!dbNotificationIds.has(osId)) {
+      await Notifications.cancelScheduledNotificationAsync(osId);
+      cancelledCount++;
+    }
+  }
+  
+  // Schedule or re-schedule DB facts in OS
+  for (const dbFact of dbFacts) {
+    const osNotif = dbFact.notification_id ? osMap.get(dbFact.notification_id) : null;
+    const dbDate = new Date(dbFact.scheduled_date);
+    
+    // Check if we need to (re-)schedule
+    let needsSchedule = false;
+    
+    if (!osNotif) {
+      // Not in OS - needs scheduling
+      needsSchedule = true;
+    } else if (osNotif.triggerDate) {
+      // Check for time mismatch
+      const timeDiff = Math.abs(osNotif.triggerDate.getTime() - dbDate.getTime());
+      if (timeDiff > TIME_TOLERANCE_MS) {
+        // Time mismatch - cancel old and reschedule
+        await Notifications.cancelScheduledNotificationAsync(dbFact.notification_id);
+        needsSchedule = true;
+      }
+    }
+    
+    if (needsSchedule) {
       try {
-        // Build notification content (downloads image only for upcoming notifications)
-        const notificationContent = await buildNotificationContent(fact, locale, scheduledDate);
+        // Get full fact data
+        const fact = await database.getFactById(dbFact.id);
+        if (!fact) continue;
         
-        // Schedule the notification FIRST - this must succeed before marking in DB
-        const notificationId = await Notifications.scheduleNotificationAsync({
-          content: notificationContent,
+        // Build notification content
+        const content = await buildNotificationContent(fact, locale, dbDate);
+        
+        // Schedule in OS
+        const newNotificationId = await Notifications.scheduleNotificationAsync({
+          content,
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: scheduledDate,
+            date: dbDate,
           },
         });
-
-        // Only mark fact as scheduled in database AFTER notification is confirmed scheduled
-        if (notificationId) {
-          await database.markFactAsScheduled(
-            fact.id,
-            scheduledDate.toISOString(),
-            notificationId
-          );
-          successCount++;
-        }
+        
+        // Update DB with new notification_id
+        await database.updateNotificationId(dbFact.id, newNotificationId);
+        syncedCount++;
       } catch {
-        // If scheduling fails, do NOT mark as scheduled in database
+        // Skip this fact if scheduling fails
+      }
+    }
+  }
+  
+  return { synced: syncedCount, cancelled: cancelledCount };
+}
+
+// ============================================================================
+// TOP UP FROM DB
+// ============================================================================
+
+/**
+ * Top up notifications by adding more facts to empty future slots
+ */
+async function topUpFromDb(
+  preferredTimes: Date[],
+  locale: SupportedLocale,
+  existingCount: number
+): Promise<number> {
+  const needed = MAX_SCHEDULED_NOTIFICATIONS - existingCount;
+  if (needed <= 0) return 0;
+  
+  // Get the latest scheduled date to continue from
+  const latestScheduledDateStr = await database.getLatestScheduledDate(locale);
+  const startAfterDate = latestScheduledDateStr ? new Date(latestScheduledDateStr) : undefined;
+  
+  // Get new facts to schedule
+  const facts = await database.getRandomUnscheduledFacts(needed, locale);
+  if (facts.length === 0) return 0;
+  
+  // Generate time slots for new facts
+  const slots = generateTimeSlots(preferredTimes, facts.length, startAfterDate);
+  
+  let scheduledCount = 0;
+  
+  // Assign facts to slots in DB (OS sync happens after)
+  for (let i = 0; i < Math.min(facts.length, slots.length); i++) {
+    try {
+      await database.markFactAsScheduled(
+        facts[i].id,
+        slots[i].date.toISOString(),
+        null // notification_id will be set by syncOsWithDb
+      );
+      scheduledCount++;
+    } catch {
+      // Skip on error
+    }
+  }
+  
+  return scheduledCount;
+}
+
+// ============================================================================
+// METHOD A: SYNC NOTIFICATION SCHEDULE
+// ============================================================================
+
+/**
+ * Sync notification schedule - called on app open, foreground, notification received
+ * 
+ * Flow:
+ * 1. Mark delivered facts as shown (preserve for feed)
+ * 2. Check permissions - if not granted, clear and return
+ * 3. Get user's preferred times
+ * 4. Get DB's future scheduled facts
+ * 5. Validate schedule against preferred times - if invalid, full reschedule
+ * 6. Top up if count < 64
+ * 7. Sync OS to match DB
+ */
+export async function syncNotificationSchedule(
+  locale: SupportedLocale
+): Promise<SyncResult> {
+  try {
+    // Step 1: Always mark delivered facts as shown first
+    await database.markDeliveredFactsAsShown(locale);
+
+    // Step 2: Check permissions
+    const { status } = await Notifications.getPermissionsAsync();
+    
+    if (status !== 'granted') {
+      // Cancel all from OS and clear DB
+      await clearNotificationSchedule(locale, { completely: true });
+      return { success: true, count: 0, skipped: true };
+    }
+
+    // Step 3: Get user's preferred times
+    const onboardingService = await import('./onboarding');
+    const notificationTimeStrings = await onboardingService.getNotificationTimes();
+    
+    if (!notificationTimeStrings || notificationTimeStrings.length === 0) {
+      return { success: true, count: 0, skipped: true };
+    }
+    
+    const preferredTimes = notificationTimeStrings.map(t => new Date(t));
+
+    // Step 4: Get DB's future scheduled facts
+    const dbScheduled = await database.getFutureScheduledFactsWithNotificationIds(locale);
+
+    // Step 5: Check if schedule is valid according to preferred times
+    if (!isScheduleValid(dbScheduled, preferredTimes)) {
+      // Schedule is invalid - full reschedule needed
+      if (__DEV__) {
+        console.log('🔔 Schedule invalid - triggering full reschedule');
+      }
+      const result = await scheduleNotifications(preferredTimes, locale);
+      return { ...result, repaired: true };
+    }
+
+    // Step 6: Top up if needed
+    if (dbScheduled.length < MAX_SCHEDULED_NOTIFICATIONS) {
+      const addedCount = await topUpFromDb(preferredTimes, locale, dbScheduled.length);
+      if (__DEV__ && addedCount > 0) {
+        console.log(`🔔 Topped up ${addedCount} notifications`);
       }
     }
 
-    return {
-      success: successCount > 0,
-      count: successCount,
-    };
+    // Step 7: Sync OS to match DB
+    const syncResult = await syncOsWithDb(locale);
+    if (__DEV__ && (syncResult.synced > 0 || syncResult.cancelled > 0)) {
+      console.log(`🔔 OS sync: ${syncResult.synced} scheduled, ${syncResult.cancelled} cancelled`);
+    }
+
+    // Preload images for upcoming notifications
+    await preloadUpcomingNotificationImages(locale);
+
+    const finalCount = await getScheduledNotificationsCount();
+    return { success: true, count: finalCount };
   } catch (error) {
     if (__DEV__) {
-      console.error('Error scheduling initial notifications:', error);
+      console.error('Error syncing notification schedule:', error);
     }
     return {
       success: false,
@@ -476,16 +788,197 @@ export async function scheduleInitialNotifications(
   }
 }
 
+// ============================================================================
+// METHOD B: SCHEDULE NOTIFICATIONS
+// ============================================================================
+
+/**
+ * Schedule notifications - called on onboarding or when user changes notification times
+ * 
+ * Flow:
+ * 1. Clear future schedules from both DB and OS
+ * 2. Get unscheduled facts (up to 64)
+ * 3. Generate time slots based on preferred times
+ * 4. Assign facts to slots in DB
+ * 5. Sync OS to match DB
+ */
+export async function scheduleNotifications(
+  times: Date[],
+  locale: SupportedLocale
+): Promise<ScheduleResult> {
+  try {
+    // Check permissions first
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') {
+      return {
+        success: false,
+        count: 0,
+        error: 'Notification permission not granted',
+      };
+    }
+
+    if (times.length === 0) {
+      return {
+        success: false,
+        count: 0,
+        error: 'No notification times provided',
+      };
+    }
+
+    // Step 1: Clear future schedules from both DB and OS
+    await clearNotificationSchedule(locale, { completely: false });
+
+    // Step 2: Get unscheduled facts (up to 64)
+    const facts = await database.getRandomUnscheduledFacts(MAX_SCHEDULED_NOTIFICATIONS, locale);
+    
+    if (facts.length === 0) {
+      return {
+        success: false,
+        count: 0,
+        error: 'No facts available for scheduling',
+      };
+    }
+
+    // Step 3: Generate time slots for all facts
+    const slots = generateTimeSlots(times, facts.length);
+
+    // Step 4: Assign facts to slots in DB
+    let assignedCount = 0;
+    for (let i = 0; i < facts.length && i < slots.length; i++) {
+      try {
+        await database.markFactAsScheduled(
+          facts[i].id,
+          slots[i].date.toISOString(),
+          null // notification_id will be set by syncOsWithDb
+        );
+        assignedCount++;
+      } catch {
+        // Skip on error
+      }
+    }
+
+    // Step 5: Sync OS to match DB
+    await syncOsWithDb(locale);
+
+    // Preload images for upcoming notifications
+    await preloadUpcomingNotificationImages(locale);
+
+    const finalCount = await getScheduledNotificationsCount();
+    
+    if (__DEV__) {
+      console.log(`🔔 Scheduled ${finalCount} notifications`);
+    }
+
+    return {
+      success: finalCount > 0,
+      count: finalCount,
+    };
+  } catch (error) {
+    if (__DEV__) {
+      console.error('Error scheduling notifications:', error);
+    }
+    return {
+      success: false,
+      count: 0,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+// ============================================================================
+// CONVENIENCE FUNCTIONS (for backward compatibility)
+// ============================================================================
+
+/**
+ * Schedule initial notifications (for onboarding with single time)
+ * @deprecated Use scheduleNotifications instead
+ */
+export async function scheduleInitialNotifications(
+  notificationTime: Date,
+  locale: SupportedLocale
+): Promise<ScheduleResult> {
+  return scheduleNotifications([notificationTime], locale);
+}
+
+/**
+ * Reschedule all notifications with a new time
+ * @deprecated Use scheduleNotifications instead
+ */
+export async function rescheduleNotifications(
+  newTime: Date,
+  locale: SupportedLocale
+): Promise<ScheduleResult> {
+  return scheduleNotifications([newTime], locale);
+}
+
+/**
+ * Reschedule all notifications with multiple times per day
+ * @deprecated Use scheduleNotifications instead
+ */
+export async function rescheduleNotificationsMultiple(
+  times: Date[],
+  locale: SupportedLocale
+): Promise<ScheduleResult> {
+  return scheduleNotifications(times, locale);
+}
+
+/**
+ * Check and top up notifications
+ * @deprecated Use syncNotificationSchedule instead
+ */
+export async function checkAndTopUpNotifications(
+  locale: SupportedLocale
+): Promise<SyncResult> {
+  return syncNotificationSchedule(locale);
+}
+
+/**
+ * Refresh notification schedule (single time)
+ * @deprecated Use syncNotificationSchedule instead
+ */
+export async function refreshNotificationSchedule(
+  notificationTime: Date,
+  locale: SupportedLocale
+): Promise<ScheduleResult> {
+  return syncNotificationSchedule(locale);
+}
+
+/**
+ * Refresh notification schedule (multiple times)
+ * @deprecated Use syncNotificationSchedule instead
+ */
+export async function refreshNotificationScheduleMultiple(
+  times: Date[],
+  locale: SupportedLocale
+): Promise<ScheduleResult> {
+  return syncNotificationSchedule(locale);
+}
+
+/**
+ * Clear all scheduled notifications
+ * @deprecated Use clearNotificationSchedule instead
+ */
+export async function clearAllScheduledNotifications(
+  clearPastScheduledDates: boolean = false,
+  locale?: SupportedLocale
+): Promise<void> {
+  await clearNotificationSchedule(
+    locale || 'en',
+    { completely: clearPastScheduledDates }
+  );
+}
+
+// ============================================================================
+// IMMEDIATE FACT (for onboarding)
+// ============================================================================
+
 /**
  * Mark one random fact as shown immediately in feed for new users
- * @param locale The user's locale for filtering facts
- * @returns Success status and the fact that was marked
  */
 export async function showImmediateFact(
   locale: SupportedLocale
 ): Promise<{ success: boolean; fact?: database.FactWithRelations; error?: string }> {
   try {
-    // Get 1 random unscheduled fact (excluding already scheduled and shown facts)
     const facts = await database.getRandomUnscheduledFacts(1, locale);
 
     if (facts.length === 0) {
@@ -496,9 +989,6 @@ export async function showImmediateFact(
     }
 
     const fact = facts[0];
-
-    // Mark the fact as shown in feed with scheduled_date set to now
-    // This ensures the fact is properly grouped by date in the feed
     await database.markFactAsShownWithDate(fact.id, new Date().toISOString());
 
     return {
@@ -511,916 +1001,6 @@ export async function showImmediateFact(
     }
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-/**
- * Refresh notification schedule by topping up to 64 notifications
- * @param notificationTime The time of day to send notifications
- * @param locale The user's locale for filtering facts
- * @returns Success status and count of newly scheduled notifications
- */
-export async function refreshNotificationSchedule(
-  notificationTime: Date,
-  locale: SupportedLocale
-): Promise<{ success: boolean; count: number; error?: string }> {
-  try {
-    // Get current scheduled count from OS (actual pending notifications, not database)
-    const scheduledCount = await getScheduledNotificationsCount();
-
-    // Only refresh if below max
-    if (scheduledCount >= MAX_SCHEDULED_NOTIFICATIONS) {
-      return {
-        success: true,
-        count: 0,
-      };
-    }
-
-    // Calculate how many more we need
-    const needed = MAX_SCHEDULED_NOTIFICATIONS - scheduledCount;
-
-    // Get random unscheduled facts
-    const facts = await database.getRandomUnscheduledFacts(needed, locale);
-
-    if (facts.length === 0) {
-      return {
-        success: true,
-        count: 0,
-      };
-    }
-
-    // Find the last scheduled date from the database (more reliable than parsing OS notification triggers)
-    const now = new Date();
-    const hour = notificationTime.getHours();
-    const minute = notificationTime.getMinutes();
-
-    // Determine the starting day offset
-    let startDayOffset: number;
-    
-    // Get the latest scheduled date from the database
-    const latestScheduledDateStr = await database.getLatestScheduledDate(locale);
-    
-    if (latestScheduledDateStr) {
-      const latestScheduledDate = new Date(latestScheduledDateStr);
-      
-      // Calculate days from today to the last scheduled date
-      const todayMidnight = new Date(now);
-      todayMidnight.setHours(0, 0, 0, 0);
-      const lastScheduledMidnight = new Date(latestScheduledDate);
-      lastScheduledMidnight.setHours(0, 0, 0, 0);
-      
-      const daysToLastScheduled = Math.round((lastScheduledMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
-      
-      // Start from the day AFTER the last scheduled notification
-      startDayOffset = daysToLastScheduled + 1;
-    } else {
-      // No existing scheduled notifications - start today if time hasn't passed, else tomorrow
-      const selectedTimeToday = new Date(now);
-      selectedTimeToday.setHours(hour, minute, 0, 0);
-      startDayOffset = selectedTimeToday > now ? 0 : 1;
-    }
-    
-    let successCount = 0;
-    
-    for (let i = 0; i < facts.length; i++) {
-      const fact = facts[i];
-      const scheduledDate = new Date(now);
-      scheduledDate.setDate(scheduledDate.getDate() + startDayOffset + i);
-      scheduledDate.setHours(hour, minute, 0, 0);
-
-      try {
-        // Build notification content (downloads image only for upcoming notifications)
-        const notificationContent = await buildNotificationContent(fact, locale, scheduledDate);
-        
-        // Schedule the notification FIRST - this must succeed before marking in DB
-        const notificationId = await Notifications.scheduleNotificationAsync({
-          content: notificationContent,
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: scheduledDate,
-          },
-        });
-
-        // Only mark fact as scheduled in database AFTER notification is confirmed scheduled
-        if (notificationId) {
-          await database.markFactAsScheduled(
-            fact.id,
-            scheduledDate.toISOString(),
-            notificationId
-          );
-          successCount++;
-        }
-      } catch {
-        // If scheduling fails, do NOT mark as scheduled in database
-      }
-    }
-
-    return {
-      success: successCount > 0,
-      count: successCount,
-    };
-  } catch (error) {
-    if (__DEV__) {
-      console.error('Error refreshing notification schedule:', error);
-    }
-    return {
-      success: false,
-      count: 0,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-/**
- * Refresh notification schedule with multiple times per day (premium feature)
- * Tops up to 64 notifications distributed across time slots
- * Properly tracks the last scheduled date for EACH time slot to avoid duplicates
- * @param times Array of times to send notifications
- * @param locale The user's locale for filtering facts
- * @returns Success status and count of newly scheduled notifications
- */
-export async function refreshNotificationScheduleMultiple(
-  times: Date[],
-  locale: SupportedLocale
-): Promise<{ success: boolean; count: number; error?: string }> {
-  try {
-    if (times.length === 0) {
-      return {
-        success: false,
-        count: 0,
-        error: 'No notification times provided',
-      };
-    }
-
-    // Get current scheduled count from OS (actual pending notifications, not database)
-    const scheduledCount = await getScheduledNotificationsCount();
-
-    // Only refresh if below max
-    if (scheduledCount >= MAX_SCHEDULED_NOTIFICATIONS) {
-      return {
-        success: true,
-        count: 0,
-      };
-    }
-
-    // Calculate how many more we need
-    const needed = MAX_SCHEDULED_NOTIFICATIONS - scheduledCount;
-
-    // Get random unscheduled facts
-    const facts = await database.getRandomUnscheduledFacts(needed, locale);
-
-    if (facts.length === 0) {
-      return {
-        success: true,
-        count: 0,
-      };
-    }
-
-    // Sort times by hour to ensure chronological order
-    const sortedTimes = [...times].sort((a, b) => {
-      const aMinutes = a.getHours() * 60 + a.getMinutes();
-      const bMinutes = b.getHours() * 60 + b.getMinutes();
-      return aMinutes - bMinutes;
-    });
-
-    const now = new Date();
-    const timeSlotsPerDay = sortedTimes.length;
-
-    // Get the latest scheduled date from the database
-    const latestScheduledDateStr = await database.getLatestScheduledDate(locale);
-    const todayMidnight = new Date(now);
-    todayMidnight.setHours(0, 0, 0, 0);
-
-    // Build a list of time slots to fill
-    // Each slot is { dayOffset: number, timeIndex: number }
-    const slotsToFill: Array<{ dayOffset: number; timeIndex: number }> = [];
-    
-    if (latestScheduledDateStr) {
-      const latestScheduledDate = new Date(latestScheduledDateStr);
-      const lastScheduledMidnight = new Date(latestScheduledDate);
-      lastScheduledMidnight.setHours(0, 0, 0, 0);
-      
-      // Calculate days from today to the last scheduled day (using LOCAL dates)
-      const daysToLastScheduled = Math.round((lastScheduledMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
-      
-      // Query database using UTC date (since that's how dates are stored)
-      // But we need to find all notifications for this LOCAL day
-      // A local day spans from local midnight to local midnight, which in UTC is:
-      // startUTC = localMidnight.toISOString()
-      // endUTC = (localMidnight + 24h).toISOString()
-      const localDayStart = new Date(lastScheduledMidnight);
-      const localDayEnd = new Date(lastScheduledMidnight);
-      localDayEnd.setDate(localDayEnd.getDate() + 1);
-      
-      const existingTimesOnLastDay = await database.getScheduledTimesInRange(
-        localDayStart.toISOString(),
-        localDayEnd.toISOString(),
-        locale
-      );
-      
-      // Find which time slots are still available on the last scheduled day
-      // Use LOCAL hours since user's notification times are in local time
-      const filledTimeSlots = new Set<string>();
-      for (const existingTime of existingTimesOnLastDay) {
-        const existingDate = new Date(existingTime);
-        // getHours() returns LOCAL hours, which matches how user selected times
-        const slotKey = `${existingDate.getHours()}:${existingDate.getMinutes()}`;
-        filledTimeSlots.add(slotKey);
-      }
-      
-      // First, add remaining slots from the last scheduled day (if any)
-      for (let timeIndex = 0; timeIndex < timeSlotsPerDay; timeIndex++) {
-        const time = sortedTimes[timeIndex];
-        const slotKey = `${time.getHours()}:${time.getMinutes()}`;
-        
-        if (!filledTimeSlots.has(slotKey)) {
-          // This slot is not filled on the last scheduled day
-          slotsToFill.push({ dayOffset: daysToLastScheduled, timeIndex });
-        }
-      }
-      
-      // Then add slots for subsequent days
-      let dayOffset = daysToLastScheduled + 1;
-      while (slotsToFill.length < facts.length) {
-        for (let timeIndex = 0; timeIndex < timeSlotsPerDay && slotsToFill.length < facts.length; timeIndex++) {
-          slotsToFill.push({ dayOffset, timeIndex });
-        }
-        dayOffset++;
-      }
-    } else {
-      // No existing scheduled notifications - start from today/tomorrow based on time
-      // Determine starting day
-      let startDayOffset = 1; // Default to starting tomorrow
-      for (const time of sortedTimes) {
-        const timeToday = new Date(now);
-        timeToday.setHours(time.getHours(), time.getMinutes(), 0, 0);
-        if (timeToday > now) {
-          startDayOffset = 0;
-          break;
-        }
-      }
-      
-      // Build slots starting from startDayOffset
-      let dayOffset = startDayOffset;
-      while (slotsToFill.length < facts.length) {
-        for (let timeIndex = 0; timeIndex < timeSlotsPerDay && slotsToFill.length < facts.length; timeIndex++) {
-          slotsToFill.push({ dayOffset, timeIndex });
-        }
-        dayOffset++;
-      }
-    }
-
-    let successCount = 0;
-
-    // Schedule facts using the pre-calculated slots
-    for (let i = 0; i < facts.length && i < slotsToFill.length; i++) {
-      const fact = facts[i];
-      const slot = slotsToFill[i];
-      const time = sortedTimes[slot.timeIndex];
-      const hour = time.getHours();
-      const minute = time.getMinutes();
-
-      // Calculate the scheduled date
-      const scheduledDate = new Date(now);
-      scheduledDate.setDate(scheduledDate.getDate() + slot.dayOffset);
-      scheduledDate.setHours(hour, minute, 0, 0);
-
-      // Skip if this specific time slot is in the past
-      if (scheduledDate <= now) {
-        continue;
-      }
-
-      try {
-        // Build notification content (downloads image only for upcoming notifications)
-        const notificationContent = await buildNotificationContent(fact, locale, scheduledDate);
-        
-        const notificationId = await Notifications.scheduleNotificationAsync({
-          content: notificationContent,
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: scheduledDate,
-          },
-        });
-
-        if (notificationId) {
-          await database.markFactAsScheduled(
-            fact.id,
-            scheduledDate.toISOString(),
-            notificationId
-          );
-          successCount++;
-        }
-      } catch {
-        // Ignore individual scheduling errors
-      }
-    }
-
-    return {
-      success: successCount > 0,
-      count: successCount,
-    };
-  } catch (error) {
-    if (__DEV__) {
-      console.error('Error refreshing notification schedule (multiple times):', error);
-    }
-    return {
-      success: false,
-      count: 0,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-/**
- * Clear all scheduled notifications
- * @param clearPastScheduledDates If true, also clears past scheduled_dates (used when permissions are revoked)
- * @param locale Optional locale for marking delivered facts (required if not clearing past dates)
- */
-export async function clearAllScheduledNotifications(
-  clearPastScheduledDates: boolean = false,
-  locale?: SupportedLocale
-): Promise<void> {
-  try {
-    // Cancel all scheduled notifications from the OS
-    await Notifications.cancelAllScheduledNotificationsAsync();
-
-    // IMPORTANT: Before clearing DB, mark delivered facts as shown so they're preserved in feed
-    // This ensures facts that were delivered but not yet viewed don't get lost
-    if (!clearPastScheduledDates) {
-      await database.markDeliveredFactsAsShown(locale);
-    }
-
-    // Clear scheduling data from database
-    if (clearPastScheduledDates) {
-      // Clear ALL scheduled facts (including past ones) - used when permissions are revoked
-      await database.clearAllScheduledFactsCompletely();
-    } else {
-      // Only clear future scheduled facts (preserve past for feed grouping)
-      await database.clearAllScheduledFacts();
-    }
-  } catch (error) {
-    if (__DEV__) {
-      console.error('Error clearing scheduled notifications:', error);
-    }
-    throw error;
-  }
-}
-
-/**
- * Reschedule all notifications with a new time
- * @param newTime The new time of day to send notifications
- * @param locale The user's locale for filtering facts
- */
-export async function rescheduleNotifications(
-  newTime: Date,
-  locale: SupportedLocale
-): Promise<{ success: boolean; count: number; error?: string }> {
-  try {
-    // Check if notifications are permitted first
-    const { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') {
-      console.log('🔔 Notification permission not granted, skipping reschedule');
-      return {
-        success: false,
-        count: 0,
-        error: 'Notification permission not granted',
-      };
-    }
-
-    // Clear all existing notifications (this will mark delivered facts as shown first)
-    await clearAllScheduledNotifications(false, locale);
-
-    // Schedule new notifications with the new time
-    return await scheduleInitialNotifications(newTime, locale);
-  } catch (error) {
-    if (__DEV__) {
-      console.error('Error rescheduling notifications:', error);
-    }
-    return {
-      success: false,
-      count: 0,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-/**
- * Get count of currently scheduled notifications
- */
-export async function getScheduledNotificationsCount(): Promise<number> {
-  try {
-    const notifications = await Notifications.getAllScheduledNotificationsAsync();
-    return notifications.length;
-  } catch {
-    return 0;
-  }
-}
-
-/**
- * Check if scheduled notifications need repair due to incorrect notification counts per day.
- * This detects both:
- * 1. Days with MORE notifications than expected (duplicates)
- * 2. Days with FEWER notifications than expected (missing - except the last day which can have fewer)
- * 
- * If repair is needed, clears and reschedules all notifications.
- * @param locale The user's locale for filtering facts
- * @param notificationTimes Array of notification times configured by the user
- * @returns Object with repaired flag, count, and details about issues found
- */
-export async function checkAndRepairNotificationSchedule(
-  locale: SupportedLocale,
-  notificationTimes: Date[]
-): Promise<{ repaired: boolean; count: number; excessDays?: number; deficitDays?: number }> {
-  try {
-    const expectedPerDay = notificationTimes.length;
-    
-    if (expectedPerDay === 0) {
-      return { repaired: false, count: 0 };
-    }
-
-    // Check if there are any days with incorrect notification counts (excess OR deficit)
-    const checkResult = await database.hasIncorrectNotificationsPerDay(expectedPerDay, locale);
-
-    if (!checkResult.needsRepair) {
-      return { repaired: false, count: 0 };
-    }
-
-    // Clear all future notifications and reschedule properly
-    await clearAllScheduledNotifications(false, locale);
-
-    // Reschedule with the correct distribution
-    let result;
-    if (notificationTimes.length > 1) {
-      result = await rescheduleNotificationsMultiple(notificationTimes, locale);
-    } else {
-      result = await scheduleInitialNotifications(notificationTimes[0], locale);
-    }
-    
-    // Verify DB matches OS after repair
-    await verifyDbMatchesOs(locale);
-    
-    return { 
-      repaired: true, 
-      count: result.count,
-      excessDays: checkResult.excessDays,
-      deficitDays: checkResult.deficitDays,
-    };
-  } catch {
-    return { repaired: false, count: 0 };
-  }
-}
-
-/**
- * Verify that OS notification trigger times match DB scheduled dates.
- * If mismatches are found, triggers a full reschedule.
- * 
- * This checks for:
- * 1. DB facts with notification_id that exist in OS but have wrong trigger time
- * 2. Time tolerance of 60 seconds to account for scheduling delays
- * 
- * @param locale The user's locale for filtering facts
- * @param notificationTimes Array of notification times configured by the user
- * @returns True if repair was performed, false otherwise
- */
-export async function verifyAndRepairNotificationTimes(
-  locale: SupportedLocale,
-  notificationTimes: Date[]
-): Promise<{ repaired: boolean; count: number; mismatchCount: number }> {
-  try {
-    if (notificationTimes.length === 0) {
-      return { repaired: false, count: 0, mismatchCount: 0 };
-    }
-
-    // Get all scheduled notifications from OS
-    const osNotifications = await Notifications.getAllScheduledNotificationsAsync();
-    
-    if (osNotifications.length === 0) {
-      return { repaired: false, count: 0, mismatchCount: 0 };
-    }
-
-    // Build a map of OS notification ID -> trigger date
-    const osNotificationMap = new Map<string, Date>();
-    for (const notification of osNotifications) {
-      const trigger = notification.trigger;
-      if (trigger && 'date' in trigger && trigger.date) {
-        const triggerDate = trigger.date instanceof Date ? trigger.date : new Date(trigger.date);
-        osNotificationMap.set(notification.identifier, triggerDate);
-      }
-    }
-
-    // Get all DB scheduled facts with notification_id
-    const dbFacts = await database.getFutureScheduledFactsWithNotificationIds(locale);
-    
-    if (dbFacts.length === 0) {
-      return { repaired: false, count: 0, mismatchCount: 0 };
-    }
-
-    // Compare trigger times - allow 60 second tolerance
-    const TIME_TOLERANCE_MS = 60 * 1000; // 60 seconds
-    let mismatchCount = 0;
-    const mismatches: Array<{ factId: number; dbTime: string; osTime: string }> = [];
-
-    for (const dbFact of dbFacts) {
-      const osDate = osNotificationMap.get(dbFact.notification_id);
-      
-      if (!osDate) {
-        // Notification doesn't exist in OS - this is handled by clearStaleScheduledFacts
-        continue;
-      }
-
-      const dbDate = new Date(dbFact.scheduled_date);
-      const timeDiff = Math.abs(osDate.getTime() - dbDate.getTime());
-
-      if (timeDiff > TIME_TOLERANCE_MS) {
-        mismatchCount++;
-        mismatches.push({
-          factId: dbFact.id,
-          dbTime: dbDate.toISOString(),
-          osTime: osDate.toISOString(),
-        });
-      }
-    }
-
-    if (mismatchCount === 0) {
-      return { repaired: false, count: 0, mismatchCount: 0 };
-    }
-
-    // Repair: clear all and reschedule
-    await clearAllScheduledNotifications(false, locale);
-
-    let result;
-    if (notificationTimes.length > 1) {
-      result = await rescheduleNotificationsMultiple(notificationTimes, locale);
-    } else {
-      result = await scheduleInitialNotifications(notificationTimes[0], locale);
-    }
-    
-    // Verify DB matches OS after repair
-    await verifyDbMatchesOs(locale);
-    
-    return { repaired: true, count: result.count, mismatchCount };
-  } catch {
-    return { repaired: false, count: 0, mismatchCount: 0 };
-  }
-}
-
-/**
- * Verify that DB scheduled facts match OS notifications after a repair.
- * This ensures the repair was successful and DB is in sync with OS.
- * 
- * Checks:
- * 1. Every DB fact with notification_id has a corresponding OS notification
- * 2. Every OS notification has a corresponding DB fact
- * 3. Cleans up any orphaned entries
- * 
- * @param locale The user's locale for filtering facts
- * @returns Object with verification results
- */
-export async function verifyDbMatchesOs(
-  locale: SupportedLocale
-): Promise<{ synced: boolean; dbOrphans: number; osOrphans: number }> {
-  try {
-    // Get all OS notifications
-    const osNotifications = await Notifications.getAllScheduledNotificationsAsync();
-    const osNotificationIds = new Set(osNotifications.map(n => n.identifier));
-    
-    // Get all DB scheduled facts with notification_id
-    const dbFacts = await database.getFutureScheduledFactsWithNotificationIds(locale);
-    const dbNotificationIds = new Set(dbFacts.map(f => f.notification_id));
-    
-    // Find DB facts whose notification_id doesn't exist in OS (DB orphans)
-    let dbOrphans = 0;
-    for (const dbFact of dbFacts) {
-      if (!osNotificationIds.has(dbFact.notification_id)) {
-        dbOrphans++;
-      }
-    }
-    
-    // Find OS notifications that don't have a corresponding DB entry (OS orphans)
-    let osOrphans = 0;
-    const orphanOsIds: string[] = [];
-    for (const osNotification of osNotifications) {
-      if (!dbNotificationIds.has(osNotification.identifier)) {
-        osOrphans++;
-        orphanOsIds.push(osNotification.identifier);
-      }
-    }
-    
-    // Clean up orphans if found
-    if (dbOrphans > 0) {
-      const validIds = Array.from(osNotificationIds);
-      await database.clearStaleScheduledFacts(validIds);
-    }
-    
-    if (osOrphans > 0) {
-      for (const orphanId of orphanOsIds) {
-        await Notifications.cancelScheduledNotificationAsync(orphanId);
-      }
-    }
-    
-    const synced = dbOrphans === 0 && osOrphans === 0;
-    
-    return { synced, dbOrphans, osOrphans };
-  } catch {
-    return { synced: false, dbOrphans: 0, osOrphans: 0 };
-  }
-}
-
-/**
- * Check if notifications are enabled and top up to 64 if needed
- * This should be called on app start after onboarding is complete
- * @param locale The user's locale for filtering facts
- * @returns Success status and count of newly scheduled notifications
- */
-export async function checkAndTopUpNotifications(
-  locale: SupportedLocale
-): Promise<{ success: boolean; count: number; skipped?: boolean; error?: string }> {
-  try {
-    // Step 1: ALWAYS mark delivered facts as shown first
-    // This ensures facts that were delivered (scheduled_date <= now) are preserved in feed
-    // even if we need to clear stale data or if permissions were revoked
-    await database.markDeliveredFactsAsShown(locale);
-
-    // Step 2: Check notification permissions
-    const { status } = await Notifications.getPermissionsAsync();
-    
-    if (status !== 'granted') {
-      // Explicitly cancel all scheduled notifications from the OS
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      
-      // Sync DB state: clear ALL scheduled facts so they can be re-scheduled later
-      // Note: delivered facts were already marked as shown in Step 1, so they won't be affected
-      await database.clearAllScheduledFactsCompletely();
-      
-      return {
-        success: true,
-        count: 0,
-        skipped: true,
-      };
-    }
-
-    // Step 3: Get current scheduled notifications from OS
-    const allScheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-    const currentCount = allScheduledNotifications.length;
-
-    // Step 4: Check DB scheduled count for comparison (future pending facts only)
-    const dbScheduledCount = await database.getFutureScheduledFactsCount(locale);
-
-    // Step 5: Sync DB with OS state
-    if (currentCount === 0 && dbScheduledCount > 0) {
-      // OS has 0 notifications but DB thinks there are scheduled facts - clear DB
-      await database.clearAllScheduledFactsCompletely();
-    } else if (currentCount > 0 && dbScheduledCount === 0) {
-      // OS has notifications but DB doesn't have scheduled facts
-      // This means DB was cleared but OS wasn't (native module issue)
-      // Solution: Clear OS notifications and reschedule fresh with user's current time preference
-      
-      // Clear all stale notifications from OS
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      
-      // Get user's notification time preference
-      const onboardingService = await import('./onboarding');
-      const notificationTimes = await onboardingService.getNotificationTimes();
-      
-      if (notificationTimes && notificationTimes.length > 0) {
-        const times = notificationTimes.map(t => new Date(t));
-        
-        // Schedule fresh notifications with user's time preference
-        const result = times.length > 1
-          ? await rescheduleNotificationsMultiple(times, locale)
-          : await scheduleInitialNotifications(times[0], locale);
-        
-        return result;
-      } else {
-        return { success: true, count: 0, skipped: true };
-      }
-    } else if (currentCount > 0) {
-      // Both have data - clear any facts that are marked as scheduled in DB but don't have a corresponding notification in the OS
-      const validNotificationIds = allScheduledNotifications.map(n => n.identifier);
-      await database.clearStaleScheduledFacts(validNotificationIds);
-    }
-
-    // Step 6: Get notification times from preferences (supports multiple times for premium users)
-    // Import dynamically to avoid circular dependency
-    // We need times early to check for repair before the "schedule is full" check
-    const onboardingService = await import('./onboarding');
-    const notificationTimes = await onboardingService.getNotificationTimes();
-
-    if (!notificationTimes || notificationTimes.length === 0) {
-      return {
-        success: true,
-        count: 0,
-        skipped: true,
-      };
-    }
-
-    // Convert ISO strings to Date objects
-    const times = notificationTimes.map(t => new Date(t));
-
-    // Step 6b: Check if scheduled notifications need repair (fixes incorrect notification counts per day)
-    // This checks for both excess AND deficit notifications per day based on user's configured times
-    // This MUST run before the "schedule is full" check to repair existing users' schedules
-    const repairResult = await checkAndRepairNotificationSchedule(locale, times);
-    if (repairResult.repaired) {
-      // Preload images for upcoming notifications
-      await preloadUpcomingNotificationImages(locale);
-      
-      return {
-        success: true,
-        count: repairResult.count,
-      };
-    }
-
-    // Step 6c: Verify OS notification trigger times match DB scheduled dates
-    // This catches cases where OS and DB got out of sync (e.g., after app updates, OS changes)
-    const timeVerifyResult = await verifyAndRepairNotificationTimes(locale, times);
-    if (timeVerifyResult.repaired) {
-      // Preload images for upcoming notifications
-      await preloadUpcomingNotificationImages(locale);
-      
-      return {
-        success: true,
-        count: timeVerifyResult.count,
-      };
-    }
-
-    // Step 7: If count is already 64 or more, no need to top up
-    if (currentCount >= MAX_SCHEDULED_NOTIFICATIONS) {
-      return {
-        success: true,
-        count: 0,
-      };
-    }
-
-    // Step 8: Schedule notifications
-    // If OS has 0, do a full initial schedule. Otherwise, just top up.
-    let result;
-    if (currentCount === 0) {
-      // Full schedule - use initial schedule functions
-      if (times.length > 1) {
-        result = await rescheduleNotificationsMultiple(times, locale);
-      } else {
-        result = await scheduleInitialNotifications(times[0], locale);
-      }
-    } else {
-      // Top up existing schedule
-      result = times.length > 1
-        ? await refreshNotificationScheduleMultiple(times, locale)
-        : await refreshNotificationSchedule(times[0], locale);
-    }
-
-    // Step 9: Preload images for upcoming notifications that may have been scheduled without images
-    // This ensures notifications entering the preload window get their images downloaded
-    await preloadUpcomingNotificationImages(locale);
-
-    return result;
-  } catch (error) {
-    if (__DEV__) {
-      console.error('Error checking and topping up notifications:', error);
-    }
-    return {
-      success: false,
-      count: 0,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-/**
- * Reschedule all notifications with multiple times per day (premium feature)
- * Distributes notifications evenly: Day 1 gets time1/time2/time3, Day 2 gets time1/time2/time3, etc.
- * @param times Array of times to send notifications
- * @param locale The user's locale for filtering facts
- */
-export async function rescheduleNotificationsMultiple(
-  times: Date[],
-  locale: SupportedLocale
-): Promise<{ success: boolean; count: number; error?: string }> {
-  try {
-    // Check if notifications are permitted first
-    const { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') {
-      return {
-        success: false,
-        count: 0,
-        error: 'Notification permission not granted',
-      };
-    }
-
-    // Clear all existing notifications (this will mark delivered facts as shown first)
-    await clearAllScheduledNotifications(false, locale);
-
-    if (times.length === 0) {
-      return {
-        success: false,
-        count: 0,
-        error: 'No notification times provided',
-      };
-    }
-
-    // Get facts to schedule (up to max limit)
-    const facts = await database.getRandomUnscheduledFacts(MAX_SCHEDULED_NOTIFICATIONS, locale);
-
-    if (facts.length === 0) {
-      return {
-        success: false,
-        count: 0,
-        error: 'No facts available for scheduling',
-      };
-    }
-
-    let successCount = 0;
-    const now = new Date();
-
-    // Sort times by hour to ensure chronological order within each day
-    const sortedTimes = [...times].sort((a, b) => {
-      const aMinutes = a.getHours() * 60 + a.getMinutes();
-      const bMinutes = b.getHours() * 60 + b.getMinutes();
-      return aMinutes - bMinutes;
-    });
-
-    // Calculate how many days we'll need to cover all facts
-    const timeSlotsPerDay = sortedTimes.length;
-    const totalDays = Math.ceil(facts.length / timeSlotsPerDay);
-
-    // Determine starting day offset: start today only if any time slot is still in the future
-    const todayDate = new Date(now);
-    todayDate.setSeconds(0, 0);
-    
-    // Check if any time slot is still available today
-    let startDayOffset = 1; // Default to starting tomorrow
-    for (const time of sortedTimes) {
-      const timeToday = new Date(now);
-      timeToday.setHours(time.getHours(), time.getMinutes(), 0, 0);
-      if (timeToday > now) {
-        startDayOffset = 0; // At least one time is still in the future today
-        break;
-      }
-    }
-
-    // Schedule facts by iterating through days, then time slots within each day
-    let factIndex = 0;
-    for (let dayOffset = 0; dayOffset < totalDays && factIndex < facts.length; dayOffset++) {
-      for (let timeIndex = 0; timeIndex < timeSlotsPerDay && factIndex < facts.length; timeIndex++) {
-        const time = sortedTimes[timeIndex];
-        const hour = time.getHours();
-        const minute = time.getMinutes();
-
-        // Calculate the scheduled date
-        const scheduledDate = new Date(now);
-        scheduledDate.setDate(scheduledDate.getDate() + dayOffset + startDayOffset);
-        scheduledDate.setHours(hour, minute, 0, 0);
-
-        // Skip if this specific time slot is in the past (only matters for day 0)
-        if (scheduledDate <= now) {
-          continue; // Skip this time slot, don't consume a fact
-        }
-
-        const fact = facts[factIndex];
-
-        try {
-          // Build notification content (downloads image only for upcoming notifications)
-          const notificationContent = await buildNotificationContent(fact, locale, scheduledDate);
-          
-          // Schedule the notification FIRST - this must succeed before marking in DB
-          const notificationId = await Notifications.scheduleNotificationAsync({
-            content: notificationContent,
-            trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.DATE,
-              date: scheduledDate,
-            },
-          });
-
-          // Only mark fact as scheduled in database AFTER notification is confirmed scheduled
-          if (notificationId) {
-            await database.markFactAsScheduled(
-              fact.id,
-              scheduledDate.toISOString(),
-              notificationId
-            );
-            successCount++;
-          }
-          factIndex++;
-        } catch {
-          // If scheduling fails, do NOT mark as scheduled in database
-          factIndex++;
-        }
-      }
-    }
-
-    return {
-      success: successCount > 0,
-      count: successCount,
-    };
-  } catch (error) {
-    if (__DEV__) {
-      console.error('Error rescheduling notifications with multiple times:', error);
-    }
-    return {
-      success: false,
-      count: 0,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
