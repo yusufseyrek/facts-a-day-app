@@ -308,7 +308,7 @@ function DiscoverScreen() {
         setSearchResults([]);
         setIsSearching(false);
       }
-    }, 500);
+    }, 1000);
 
     return () => clearTimeout(timeoutId);
   }, [searchQuery, selectedCategorySlug, performSearch]);
@@ -438,11 +438,6 @@ function DiscoverScreen() {
     />
   ), [refreshing, selectedCategorySlug, handleCategoryPress]);
 
-  // Estimated item size for FlashList (based on card aspect ratio)
-  const estimatedItemSize = useMemo(() => {
-    const cardWidth = isTablet ? Math.min(width, 600) : width;
-    return cardWidth * (9 / 16) + 12; // 9:16 aspect ratio + margin
-  }, [width, isTablet]);
 
   const renderHeader = useCallback(() => {
     const categoryColor = selectedCategory?.color_hex || "#0066FF";
@@ -683,7 +678,6 @@ function DiscoverScreen() {
           keyExtractor={keyExtractor}
           renderItem={renderSearchItem}
           refreshControl={searchRefreshControl}
-          estimatedItemSize={estimatedItemSize}
           {...FACT_FLASH_LIST_SETTINGS}
         />
       );
@@ -714,7 +708,6 @@ function DiscoverScreen() {
           keyExtractor={keyExtractor}
           renderItem={renderCategoryItem}
           refreshControl={categoryRefreshControl}
-          estimatedItemSize={estimatedItemSize}
           {...FACT_FLASH_LIST_SETTINGS}
         />
       );
@@ -722,7 +715,7 @@ function DiscoverScreen() {
 
     // Show category grid when no search and no category selected
     return renderEmptyState();
-  }, [searchQuery, searchResults, selectedCategorySlug, isLoadingCategoryFacts, categoryFacts, theme, t, keyExtractor, renderSearchItem, renderCategoryItem, searchRefreshControl, categoryRefreshControl, estimatedItemSize, renderEmptyState]);
+  }, [searchQuery, searchResults, selectedCategorySlug, isLoadingCategoryFacts, categoryFacts, theme, t, keyExtractor, renderSearchItem, renderCategoryItem, searchRefreshControl, categoryRefreshControl, renderEmptyState]);
 
   return (
     <ScreenContainer edges={["top"]}>

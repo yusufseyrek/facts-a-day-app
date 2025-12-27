@@ -450,7 +450,8 @@ export default function PerformanceScreen() {
       const fullSession = await triviaService.getSessionById(sessionId);
       if (fullSession && fullSession.questions && fullSession.answers) {
         setSelectedSession(fullSession);
-        // Track viewing results from history
+        // Track viewing results from performance
+        trackScreenView(Screens.TRIVIA_RESULTS);
         trackTriviaResultsView({
           mode: fullSession.trivia_mode as TriviaMode,
           sessionId: fullSession.id,

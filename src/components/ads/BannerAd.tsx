@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback, memo, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useState, useCallback, memo, useRef } from 'react';
 import { Platform, View, StyleSheet, LayoutAnimation } from 'react-native';
 import { BannerAd as GoogleBannerAd, BannerAdSize, TestIds, AdsConsent } from 'react-native-google-mobile-ads';
 import Constants from 'expo-constants';
-import { ADS_ENABLED, BANNER_REFRESH_INTERVAL } from '../../config/ads';
+import { ADS_ENABLED } from '../../config/ads';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { getAdKeywords, subscribeToKeywords } from '../../services/adKeywords';
 
@@ -11,12 +11,6 @@ type BannerAdPosition = 'home' | 'fact-modal';
 interface BannerAdProps {
   position: BannerAdPosition;
   onAdLoadChange?: (loaded: boolean) => void;
-  /** Enable timer-based auto refresh (default: true) */
-  autoRefresh?: boolean;
-}
-
-export interface BannerAdRef {
-  refresh: () => void;
 }
 
 // Retry configuration
@@ -46,11 +40,10 @@ const getBannerSize = (position: BannerAdPosition): BannerAdSize => {
 
 type AdState = 'loading' | 'loaded' | 'error';
 
-const BannerAdComponent = forwardRef<BannerAdRef, BannerAdProps>(({ 
+function BannerAdComponent({ 
   position, 
   onAdLoadChange,
-  autoRefresh = true,
-}, ref) => {
+}: BannerAdProps) {
   const [canRequestAds, setCanRequestAds] = useState<boolean | null>(null);
   const [requestNonPersonalized, setRequestNonPersonalized] = useState(true);
   const [adState, setAdState] = useState<AdState>('loading');
@@ -59,8 +52,6 @@ const BannerAdComponent = forwardRef<BannerAdRef, BannerAdProps>(({
   const [keywords, setKeywords] = useState<string[]>(getAdKeywords);
   
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const googleAdRef = useRef<GoogleBannerAd>(null);
 
   // Subscribe to keyword changes
   useEffect(() => {
@@ -78,12 +69,6 @@ const BannerAdComponent = forwardRef<BannerAdRef, BannerAdProps>(({
     console.log(`[BannerAd:${position}] Current keywords:`, keywords);
   }, [keywords, position]);
 
-  const refreshAd = useCallback(() => {
-    googleAdRef.current?.load();
-  }, []);
-
-  useImperativeHandle(ref, () => ({ refresh: refreshAd }), [refreshAd]);
-
   // Check consent on mount
   useEffect(() => {
     const checkConsent = async () => {
@@ -100,26 +85,10 @@ const BannerAdComponent = forwardRef<BannerAdRef, BannerAdProps>(({
     checkConsent();
   }, []);
 
-  // Timer-based auto refresh
-  useEffect(() => {
-    if (!autoRefresh || adState !== 'loaded') return;
-
-    refreshTimerRef.current = setInterval(() => {
-      refreshAd();
-    }, BANNER_REFRESH_INTERVAL);
-
-    return () => {
-      if (refreshTimerRef.current) {
-        clearInterval(refreshTimerRef.current);
-      }
-    };
-  }, [autoRefresh, adState, refreshAd]);
-
-  // Cleanup on unmount
+  // Cleanup retry timeout on unmount
   useEffect(() => {
     return () => {
       if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-      if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
     };
   }, []);
 
@@ -172,7 +141,6 @@ const BannerAdComponent = forwardRef<BannerAdRef, BannerAdProps>(({
       {adState !== 'error' && (
         <View style={styles.adWrapper}>
           <GoogleBannerAd
-            ref={googleAdRef}
             key={adKey}
             unitId={getAdUnitId(position)}
             size={getBannerSize(position)}
@@ -187,7 +155,7 @@ const BannerAdComponent = forwardRef<BannerAdRef, BannerAdProps>(({
       )}
     </View>
   );
-});
+}
 
 const styles = StyleSheet.create({
   container: {

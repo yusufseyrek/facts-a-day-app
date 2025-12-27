@@ -266,7 +266,7 @@ export default function TriviaGameScreen() {
       await triviaService.saveDailyProgress(gameState.questions.length, correctCount);
     }
     
-    // Track trivia completion
+    // Track trivia completion and results screen
     trackTriviaComplete({
       mode: triviaMode,
       questionCount: gameState.questions.length,
@@ -276,6 +276,7 @@ export default function TriviaGameScreen() {
       timeExpired: true,
       categorySlug: params.categorySlug,
     });
+    trackScreenView(Screens.TRIVIA_RESULTS);
     
     setGameState(prev => ({
       ...prev,
@@ -446,7 +447,7 @@ export default function TriviaGameScreen() {
       );
     }
     
-    // Track trivia completion
+    // Track trivia completion and results screen
     trackTriviaComplete({
       mode: triviaMode,
       questionCount: gameState.questions.length,
@@ -456,6 +457,7 @@ export default function TriviaGameScreen() {
       timeExpired: false,
       categorySlug: params.categorySlug,
     });
+    trackScreenView(Screens.TRIVIA_RESULTS);
     
     setGameState(prev => ({ 
       ...prev, 

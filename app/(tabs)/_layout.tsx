@@ -10,7 +10,7 @@ import { tokens } from "../../src/theme/tokens";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import * as triviaService from "../../src/services/trivia";
-import { BannerAd, BannerAdRef } from "../../src/components/ads";
+import { BannerAd } from "../../src/components/ads";
 import { ADS_ENABLED } from "../../src/config/ads";
 
 function AnimatedTabButton({
@@ -90,42 +90,19 @@ function TriviaTabIcon({ focused, isDark, hasBadge }: { focused: boolean; isDark
 }
 
 
-// Get current route key from navigation state (including nested stacks)
-function getCurrentRouteKey(state: BottomTabBarProps['state']): string {
-  const currentTab = state.routes[state.index];
-  const nestedState = currentTab.state;
-  
-  if (nestedState && 'index' in nestedState && 'routes' in nestedState && nestedState.index !== undefined) {
-    const nestedRoute = nestedState.routes[nestedState.index];
-    return `${currentTab.key}-${nestedRoute?.key ?? ''}`;
-  }
-  return currentTab.key;
-}
-
 // Custom tab bar that includes banner ad above the tabs
 function CustomTabBar(props: BottomTabBarProps) {
   const { theme } = useTheme();
-  const bannerAdRef = useRef<BannerAdRef>(null);
-  const prevRouteKey = useRef(getCurrentRouteKey(props.state));
   
   const backgroundColor = theme === "dark"
     ? tokens.color.dark.background
     : tokens.color.light.background;
 
-  // Refresh banner ad when any navigation occurs (tab switch or stack navigation)
-  useEffect(() => {
-    const currentRouteKey = getCurrentRouteKey(props.state);
-    if (prevRouteKey.current !== currentRouteKey) {
-      bannerAdRef.current?.refresh();
-      prevRouteKey.current = currentRouteKey;
-    }
-  }, [props.state]);
-
   return (
     <View style={[styles.tabBarContainer, { backgroundColor }]}>
       {ADS_ENABLED && (
         <View style={styles.adContainer}>
-          <BannerAd ref={bannerAdRef} position="home" />
+          <BannerAd position="home" />
         </View>
       )}
       <BottomTabBar {...props} />

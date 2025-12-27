@@ -1,4 +1,4 @@
-export { BannerAd, BannerAdRef } from './BannerAd';
+export { BannerAd } from './BannerAd';
 export { useInterstitialAd, showInterstitialAd, preloadInterstitialAd } from './InterstitialAd';
 
 // Re-export keyword management functions for convenience

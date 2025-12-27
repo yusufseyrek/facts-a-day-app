@@ -383,6 +383,7 @@ export default function ActivityHistoryScreen() {
       if (fullSession && fullSession.questions && fullSession.answers) {
         setSelectedSession(fullSession);
         // Track viewing results from history
+        trackScreenView(Screens.TRIVIA_RESULTS);
         trackTriviaResultsView({
           mode: fullSession.trivia_mode as TriviaMode,
           sessionId: fullSession.id,
