@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { BackHandler, Alert, View } from 'react-native';
+import { BackHandler, View } from 'react-native';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -18,7 +18,7 @@ import {
   trackTriviaExit,
   TriviaMode,
 } from '../../src/services/analytics';
-import { TriviaResults, TriviaGameView, getTriviaModeBadge } from '../../src/components/trivia';
+import { TriviaResults, TriviaGameView, TriviaExitModal, getTriviaModeBadge } from '../../src/components/trivia';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
 import type { QuestionWithFact } from '../../src/services/database';
@@ -53,6 +53,9 @@ export default function TriviaGameScreen() {
   
   const [loading, setLoading] = useState(true);
   const [showingAd, setShowingAd] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [showUnansweredModal, setShowUnansweredModal] = useState(false);
+  const [unansweredCount, setUnansweredCount] = useState(0);
   const [gameState, setGameState] = useState<TriviaGameState>({
     questions: [],
     currentQuestionIndex: 0,
@@ -291,30 +294,36 @@ export default function TriviaGameScreen() {
       return;
     }
     
-    Alert.alert(
-      t('exitTrivia') || 'Exit Quiz',
-      t('exitTriviaConfirm') || 'Are you sure you want to exit? Your progress will be lost.',
-      [
-        { text: t('cancel'), style: 'cancel' },
-        { 
-          text: t('exit') || 'Exit', 
-          style: 'destructive',
-          onPress: () => {
-            // Track trivia exit
-            const triviaMode: TriviaMode = params.type === 'daily' ? 'daily' : 
-                                           params.type === 'category' ? 'category' : 'mixed';
-            const answeredCount = Object.keys(gameState.answers).length;
-            trackTriviaExit({
-              mode: triviaMode,
-              questionsAnswered: answeredCount,
-              totalQuestions: gameState.questions.length,
-              categorySlug: params.categorySlug,
-            });
-            router.back();
-          }
-        },
-      ]
-    );
+    // Show custom exit modal instead of native Alert for better testability
+    setShowExitModal(true);
+  };
+  
+  const handleExitCancel = () => {
+    setShowExitModal(false);
+  };
+  
+  const handleExitConfirmed = () => {
+    setShowExitModal(false);
+    // Track trivia exit
+    const triviaMode: TriviaMode = params.type === 'daily' ? 'daily' : 
+                                   params.type === 'category' ? 'category' : 'mixed';
+    const answeredCount = Object.keys(gameState.answers).length;
+    trackTriviaExit({
+      mode: triviaMode,
+      questionsAnswered: answeredCount,
+      totalQuestions: gameState.questions.length,
+      categorySlug: params.categorySlug,
+    });
+    router.back();
+  };
+  
+  const handleUnansweredCancel = () => {
+    setShowUnansweredModal(false);
+  };
+  
+  const handleUnansweredContinue = () => {
+    setShowUnansweredModal(false);
+    finishQuiz();
   };
   
   const handleAnswerSelect = (answer: string) => {
@@ -338,19 +347,9 @@ export default function TriviaGameScreen() {
       ).length;
       
       if (unansweredCount > 0) {
-        // Show warning about unanswered questions
-        Alert.alert(
-          t('unansweredQuestions') || 'Unanswered Questions',
-          t('unansweredQuestionsMessage', { count: unansweredCount }) || 
-            `You haven't answered ${unansweredCount} question(s). Continue anyway?`,
-          [
-            { text: t('cancel'), style: 'cancel' },
-            { 
-              text: t('continueAnyway') || 'Continue Anyway',
-              onPress: () => finishQuiz()
-            },
-          ]
-        );
+        // Show custom unanswered modal
+        setUnansweredCount(unansweredCount);
+        setShowUnansweredModal(true);
       } else {
         // All questions answered - finish quiz
         finishQuiz();
@@ -556,23 +555,45 @@ export default function TriviaGameScreen() {
   const selectedAnswer = currentQuestion ? gameState.answers[currentQuestion.id] || null : null;
   
   return (
-    <TriviaGameView
-      currentQuestion={currentQuestion}
-      currentQuestionIndex={gameState.currentQuestionIndex}
-      totalQuestions={gameState.questions.length}
-      shuffledAnswers={shuffledAnswers}
-      selectedAnswer={selectedAnswer}
-      timeRemaining={timeRemaining}
-      questionKey={questionKey.current}
-      progressWidth={progressWidth}
-      triviaTitle={getTriviaTitle()}
-      isLoadingResults={showingAd}
-      onAnswerSelect={handleAnswerSelect}
-      onNextQuestion={handleNextQuestion}
-      onPrevQuestion={handlePrevQuestion}
-      onExit={handleExitConfirm}
-      isDark={isDark}
-      t={t}
-    />
+    <>
+      <TriviaGameView
+        currentQuestion={currentQuestion}
+        currentQuestionIndex={gameState.currentQuestionIndex}
+        totalQuestions={gameState.questions.length}
+        shuffledAnswers={shuffledAnswers}
+        selectedAnswer={selectedAnswer}
+        timeRemaining={timeRemaining}
+        questionKey={questionKey.current}
+        progressWidth={progressWidth}
+        triviaTitle={getTriviaTitle()}
+        isLoadingResults={showingAd}
+        onAnswerSelect={handleAnswerSelect}
+        onNextQuestion={handleNextQuestion}
+        onPrevQuestion={handlePrevQuestion}
+        onExit={handleExitConfirm}
+        isDark={isDark}
+        t={t}
+      />
+      <TriviaExitModal
+        visible={showExitModal}
+        onCancel={handleExitCancel}
+        onExit={handleExitConfirmed}
+        isDark={isDark}
+        title={t('exitTrivia') || 'Exit Quiz'}
+        message={t('exitTriviaConfirm') || 'Are you sure you want to exit? Your progress will be lost.'}
+        cancelText={t('cancel') || 'Cancel'}
+        exitText={t('exit') || 'Exit'}
+      />
+      <TriviaExitModal
+        visible={showUnansweredModal}
+        onCancel={handleUnansweredCancel}
+        onExit={handleUnansweredContinue}
+        isDark={isDark}
+        title={t('unansweredQuestions') || 'Unanswered Questions'}
+        message={t('unansweredQuestionsMessage', { count: unansweredCount }) || `You haven't answered ${unansweredCount} question(s). Continue anyway?`}
+        cancelText={t('goBack') || 'Go Back'}
+        exitText={t('continueAnyway') || 'Continue'}
+      />
+    </>
   );
 }

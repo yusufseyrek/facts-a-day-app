@@ -387,6 +387,8 @@ export function TriviaIntroModal({
                   opacity: pressed ? 0.9 : 1,
                   transform: [{ scale: pressed ? 0.98 : 1 }],
                 })}
+                testID="trivia-start-button"
+                accessibilityLabel={t('triviaStartTest')}
               >
                 <XStack
                   backgroundColor={accentColor}

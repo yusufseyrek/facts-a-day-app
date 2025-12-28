@@ -957,6 +957,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             onPress={onClose}
             activeOpacity={0.7}
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            testID="fact-modal-close-button"
+            accessibilityLabel="Close"
             style={{
               width: 36,
               height: 36,
@@ -991,6 +993,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             onPress={onClose}
             activeOpacity={0.7}
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            testID="fact-modal-close-button"
+            accessibilityLabel="Close"
             style={{
               width: 36,
               height: 36,

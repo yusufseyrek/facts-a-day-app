@@ -318,6 +318,8 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
           style={({ pressed }) => ({
             opacity: pressed ? 0.8 : 1,
           })}
+          testID="trivia-stats-hero"
+          accessibilityLabel={t('yourPerformance')}
         >
           {cardContent}
         </Pressable>

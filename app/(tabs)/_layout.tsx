@@ -219,7 +219,7 @@ export default function TabLayout() {
         options={{
           title: t("home"),
           tabBarIcon: ({ color }) => <Lightbulb size={28} color={color} />,
-          tabBarButton: (props) => <AnimatedTabButton {...props} />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-home" />,
         }}
       />
       <Tabs.Screen
@@ -227,7 +227,7 @@ export default function TabLayout() {
         options={{
           title: t("discover"),
           tabBarIcon: ({ color }) => <Compass size={28} color={color} />,
-          tabBarButton: (props) => <AnimatedTabButton {...props} />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-discover" />,
         }}
       />
       <Tabs.Screen
@@ -235,7 +235,7 @@ export default function TabLayout() {
         options={{
           title: t("trivia"),
           tabBarIcon: ({ focused }) => <TriviaTabIcon focused={focused} isDark={isDark} hasBadge={hasDailyTrivia} />,
-          tabBarButton: (props) => <AnimatedTabButton {...props} />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-trivia" />,
         }}
       />
       <Tabs.Screen
@@ -243,7 +243,7 @@ export default function TabLayout() {
         options={{
           title: t("favorites"),
           tabBarIcon: ({ color }) => <Star size={28} color={color} />,
-          tabBarButton: (props) => <AnimatedTabButton {...props} />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-favorites" />,
         }}
       />
       <Tabs.Screen
@@ -251,7 +251,7 @@ export default function TabLayout() {
         options={{
           title: t("settings"),
           tabBarIcon: ({ color }) => <Settings size={28} color={color} />,
-          tabBarButton: (props) => <AnimatedTabButton {...props} />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-settings" />,
         }}
       />
     </Tabs>

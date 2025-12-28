@@ -1,0 +1,22 @@
+# Home Screen (Facts Feed) Screenshot Flow
+# Captures the main home screen with daily facts
+
+appId: dev.seyrek.factsaday
+
+---
+# Navigate to home tab
+- tapOn:
+    id: "tab-home"
+
+# Wait for content to load
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 5000
+
+# Allow time for images to load
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Take screenshot
+- takeScreenshot: ${OUTPUT_DIR}/01_home

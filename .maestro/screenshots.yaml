@@ -1,0 +1,78 @@
+# Main Screenshot Orchestration Flow
+# Runs all screen flows in sequence to capture promotional screenshots
+#
+# IMPORTANT: Use the screenshots.sh script for proper folder structure!
+#   ./scripts/screenshots.sh --ios --locale en
+#
+# The OUTPUT_DIR env var MUST be passed via -e flag
+
+appId: dev.seyrek.factsaday
+
+---
+# Launch the app
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+# Wait for app to fully load past splash screen
+# Looking for the tab bar home button to confirm main UI is ready
+- extendedWaitUntil:
+    visible:
+      id: "tab-home"
+    timeout: 15000
+
+# Extra wait for initial animations to settle
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Run all screen flows in sequence
+# Each flow captures one or more screenshots
+
+# 1. Home Screen
+- runFlow: flows/home.yaml
+
+# Stabilization pause
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# 2. Fact Detail
+- runFlow: flows/fact-detail.yaml
+
+# Stabilization pause
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# 3. Discover Screen
+- runFlow: flows/discover.yaml
+
+# Stabilization pause
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# 4. Trivia Hub
+- runFlow: flows/trivia.yaml
+
+# Stabilization pause - extra time before complex trivia-game flow
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# 5. Trivia Game (skip if causing issues - can be run separately)
+- runFlow: flows/trivia-game.yaml
+
+# Stabilization pause
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# 6. Trivia Performance
+- runFlow: flows/trivia-performance.yaml
+
+# Stabilization pause
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# 7. Favorites Screen
+- runFlow: flows/favorites.yaml
+
+# Return to home at the end
+- tapOn:
+    id: "tab-home"

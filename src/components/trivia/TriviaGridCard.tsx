@@ -94,6 +94,13 @@ export function TriviaGridCard({
   // Check if daily trivia is available (not completed and has questions)
   const isDailyAvailable = type === 'daily' && !isCompleted && !isDisabled;
 
+  // Generate testID based on type and icon
+  const getTestId = () => {
+    if (type === 'daily') return 'trivia-card-daily';
+    if (type === 'mixed') return 'trivia-card-mixed';
+    return `trivia-card-category-${icon || 'unknown'}`;
+  };
+
   return (
     <Pressable
       onPress={onPress}
@@ -103,6 +110,8 @@ export function TriviaGridCard({
         opacity: pressed && !isDisabled && !(isCompleted && type === 'daily') ? 0.85 : isDisabled ? 0.5 : 1,
         transform: [{ scale: pressed && !isDisabled && !(isCompleted && type === 'daily') ? 0.98 : 1 }],
       })}
+      testID={getTestId()}
+      accessibilityLabel={title}
     >
       <YStack
         backgroundColor={isDailyAvailable ? hexToRgba(primaryColor, 0.08) : cardBg}

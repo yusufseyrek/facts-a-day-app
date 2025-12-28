@@ -1,0 +1,15 @@
+# Maestro Configuration for Facts a Day
+# https://maestro.mobile.dev/
+
+appId: dev.seyrek.factsaday
+
+# Don't clear app state - preserve existing data for authentic screenshots
+clearState: false
+
+# Default timeout for element visibility
+waitTimeout: 10000
+
+# Screenshot output settings
+output:
+  format: png
+

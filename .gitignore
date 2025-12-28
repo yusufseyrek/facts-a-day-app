@@ -50,3 +50,5 @@ android/app/release.keystore
 /build
 
 .env.local
+
+/screenshots

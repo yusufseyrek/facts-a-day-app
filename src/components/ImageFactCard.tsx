@@ -31,6 +31,8 @@ interface ImageFactCardProps {
   categorySlug?: string;
   onPress: () => void;
   isTablet?: boolean;
+  /** Optional testID for automated testing with Maestro */
+  testID?: string;
 }
 
 const ImageFactCardComponent = ({
@@ -41,6 +43,7 @@ const ImageFactCardComponent = ({
   categorySlug,
   onPress,
   isTablet: isTabletProp = false,
+  testID,
 }: ImageFactCardProps) => {
   const { width: screenWidth } = useWindowDimensions();
   const isTablet = isTabletProp || screenWidth >= 768;
@@ -244,6 +247,8 @@ const ImageFactCardComponent = ({
         onPressOut={handlePressOut}
         android_ripple={androidRipple}
         style={styles.pressable}
+        testID={testID || `fact-card-${factId}`}
+        accessibilityLabel={title}
       >
         <View style={[styles.cardWrapper, marginStyle]}>
           {/* Image Container */}
