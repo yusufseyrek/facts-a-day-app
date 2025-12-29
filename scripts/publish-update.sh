@@ -98,6 +98,27 @@ get_api_base_url() {
     echo "$url"
 }
 
+# Get expoClient config from app.json (for manifest)
+get_expo_client_config() {
+    local platform="$1"
+    # Extract the expo config and add extra fields required by expo-updates
+    cat "$PROJECT_ROOT/app.json" | jq --arg platform "$platform" '.expo | {
+        name: .name,
+        slug: .slug,
+        version: .version,
+        orientation: .orientation,
+        icon: .icon,
+        userInterfaceStyle: .userInterfaceStyle,
+        backgroundColor: .backgroundColor,
+        scheme: .scheme,
+        ios: .ios,
+        android: .android,
+        extra: .extra,
+        runtimeVersion: .version,
+        platforms: ["ios", "android"]
+    }'
+}
+
 # Get git commit hash
 get_git_commit() {
     if command -v git &> /dev/null && [ -d "$PROJECT_ROOT/.git" ]; then
@@ -153,22 +174,26 @@ upload_update() {
     local git_commit="$4"
     local bundle_file="$5"
     local upload_endpoint="$6"
+    local expo_client_config="$7"
     
     print_step "Uploading $platform update..."
     
-    # Build metadata JSON
+    # Build metadata JSON with expoClient config
     local metadata=$(jq -n \
         --arg rv "$runtime_version" \
         --arg p "$platform" \
         --arg gc "$git_commit" \
         --arg msg "$message" \
+        --argjson expoClient "$expo_client_config" \
         '{
             runtimeVersion: $rv,
             platform: $p,
             gitCommitHash: $gc,
             message: $msg,
             metadata: {},
-            extra: {}
+            extra: {
+                expoClient: $expoClient
+            }
         }')
     
     # Determine content-type based on file extension
@@ -183,6 +208,7 @@ upload_update() {
     print_info "Platform: $platform"
     print_info "Git Commit: $git_commit"
     print_info "Bundle: $bundle_filename ($content_type)"
+    print_info "ExpoClient: $(echo "$expo_client_config" | jq -r '.slug') v$(echo "$expo_client_config" | jq -r '.version')"
     
     # Find and add asset files
     local assets_dir="$DIST_DIR/assets"
@@ -243,8 +269,11 @@ publish_platform() {
         exit 1
     fi
     
+    # Get expoClient config for the manifest
+    local expo_client_config=$(get_expo_client_config "$platform")
+    
     # Upload the update
-    upload_update "$platform" "$message" "$runtime_version" "$git_commit" "$bundle_file" "$upload_endpoint"
+    upload_update "$platform" "$message" "$runtime_version" "$git_commit" "$bundle_file" "$upload_endpoint" "$expo_client_config"
 }
 
 # Main script

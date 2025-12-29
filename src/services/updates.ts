@@ -44,9 +44,17 @@ export function getRuntimeVersion(): string {
  * This function manually checks for updates using a custom fetch with App Check headers.
  * Returns the check result without downloading.
  */
+// Store last check reason for debugging
+let lastCheckReason: string | null = null;
+
+export function getLastCheckReason(): string | null {
+  return lastCheckReason;
+}
+
 export async function checkForUpdates(): Promise<UpdateCheckResult> {
   // Skip in development mode - expo-updates doesn't work in dev
   if (__DEV__) {
+    lastCheckReason = 'development_mode';
     return { 
       type: 'development', 
       message: 'OTA updates are not available in development mode' 
@@ -58,10 +66,19 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
     console.log('📦 Runtime Version:', getRuntimeVersion());
     console.log('📦 Platform:', Platform.OS);
     console.log('📦 Update URL:', Constants.expoConfig?.updates?.url);
+    console.log('📦 Current Update ID:', Updates.updateId);
+    console.log('📦 Is Embedded:', Updates.isEmbeddedLaunch);
+    console.log('📦 Is Enabled:', Updates.isEnabled);
     
     const update = await Updates.checkForUpdateAsync();
     
-    console.log('📦 Check result:', JSON.stringify(update, null, 2));
+    console.log('📦 Check result - isAvailable:', update.isAvailable);
+    console.log('📦 Check result - manifest:', update.manifest ? JSON.stringify(update.manifest, null, 2) : 'null');
+    console.log('📦 Check result - reason:', (update as any).reason || 'none');
+    console.log('📦 Check result - isRollBackToEmbedded:', (update as any).isRollBackToEmbedded);
+    
+    // Store the reason for debugging
+    lastCheckReason = (update as any).reason || (update.isAvailable ? 'update_available' : 'unknown');
     
     if (update.isAvailable) {
       console.log('📦 Update available!');
@@ -71,10 +88,12 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
       };
     }
     
-    console.log('📦 No update available');
+    console.log('📦 No update available, reason:', lastCheckReason);
     return { type: 'no-update' };
   } catch (error) {
     console.error('📦 Failed to check for updates:', error);
+    console.error('📦 Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    lastCheckReason = error instanceof Error ? error.message : String(error);
     return { 
       type: 'error', 
       error: error instanceof Error ? error : new Error(String(error)) 
@@ -227,5 +246,42 @@ export function logUpdateStatus(): void {
   console.log(`  Platform: ${Platform.OS}`);
   console.log(`  Update URL: ${Constants.expoConfig?.updates?.url || 'not set'}`);
   console.log(`  Updates Enabled: ${Updates.isEnabled}`);
+}
+
+/**
+ * Read native log entries from expo-updates
+ * Useful for debugging update issues in release builds
+ */
+export async function getNativeLogEntries(maxAge: number = 3600000): Promise<Updates.UpdatesLogEntry[]> {
+  if (__DEV__) {
+    return [];
+  }
+  
+  try {
+    const logs = await Updates.readLogEntriesAsync(maxAge);
+    return logs;
+  } catch (error) {
+    console.error('Failed to read native update logs:', error);
+    return [];
+  }
+}
+
+/**
+ * Get native logs as a formatted string for debugging
+ */
+export async function getFormattedNativeLogs(): Promise<string> {
+  const logs = await getNativeLogEntries();
+  
+  if (logs.length === 0) {
+    return 'No native logs available';
+  }
+  
+  return logs
+    .slice(-10) // Last 10 entries
+    .map(log => {
+      const time = new Date(log.timestamp).toISOString().slice(11, 19);
+      return `[${time}] ${log.level}: ${log.code} - ${log.message}`;
+    })
+    .join('\n');
 }
 

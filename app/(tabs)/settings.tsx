@@ -4,6 +4,7 @@ import { Alert, SectionList, Linking, Platform, AppState, View } from "react-nat
 import { YStack } from "tamagui";
 import { useRouter, useFocusEffect } from "expo-router";
 import * as Notifications from "expo-notifications";
+import * as Updates from "expo-updates";
 import Constants from "expo-constants";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import {
@@ -145,26 +146,69 @@ export default function SettingsPage() {
   // Get debug info string for OTA updates
   const getUpdateDebugInfo = (): string => {
     const info = updates.getUpdateInfo();
+    const reason = updates.getLastCheckReason();
+    // Try to get createdAt from manifest
+    const manifest = (Updates as any).manifest;
+    const createdAt = manifest?.createdAt || 'unknown';
     return [
       `Runtime: ${info.runtimeVersion}`,
       `Update ID: ${info.updateId || 'embedded'}`,
+      `Created At: ${createdAt}`,
       `Is Embedded: ${info.isEmbedded}`,
       `Channel: ${info.channel || 'default'}`,
       `Platform: ${Platform.OS}`,
       `URL: ${Constants.expoConfig?.updates?.url || 'not set'}`,
+      `Last Check Reason: ${reason || 'not checked yet'}`,
     ].join('\n');
+  };
+
+  // Manually fetch manifest to debug
+  const fetchManifestDirectly = async (): Promise<string> => {
+    try {
+      const url = Constants.expoConfig?.updates?.url;
+      if (!url) return 'No update URL configured';
+      
+      const response = await fetch(url, {
+        headers: {
+          'expo-protocol-version': '1',
+          'expo-platform': Platform.OS,
+          'expo-runtime-version': updates.getRuntimeVersion(),
+          'Accept': 'multipart/mixed',
+        },
+      });
+      
+      const status = response.status;
+      const text = await response.text();
+      
+      // Extract manifest ID from response
+      const idMatch = text.match(/"id"\s*:\s*"([^"]+)"/);
+      const manifestId = idMatch ? idMatch[1] : 'not found';
+      
+      return `Status: ${status}\nManifest ID: ${manifestId}\nCurrent ID: ${updates.getUpdateInfo().updateId || 'none'}`;
+    } catch (error) {
+      return `Fetch error: ${error instanceof Error ? error.message : 'unknown'}`;
+    }
   };
 
   // Manually check for OTA updates
   const handleCheckForUpdates = async () => {
-    // First show current status
+    // First fetch manifest directly to compare
+    const manifestInfo = await fetchManifestDirectly();
     const debugInfo = getUpdateDebugInfo();
+    const nativeLogs = await updates.getFormattedNativeLogs();
     
     Alert.alert(
       "OTA Update Status",
-      debugInfo,
+      `${debugInfo}\n\n--- Server Check ---\n${manifestInfo}`,
       [
         { text: "Close", style: "cancel" },
+        {
+          text: "Native Logs",
+          style: "default",
+          onPress: () => {
+            Alert.alert("Native Expo-Updates Logs", nativeLogs, [{ text: "OK", style: "default" }]);
+          },
+        },
         {
           text: "Check Now",
           style: "default",
@@ -204,9 +248,11 @@ export default function SettingsPage() {
                   [{ text: t("ok"), style: "default" }]
                 );
               } else {
+                // Show native logs for debugging
+                const logsAfterCheck = await updates.getFormattedNativeLogs();
                 Alert.alert(
-                  "No Update", 
-                  `You're running the latest version.\n\n${newDebugInfo}`, 
+                  "No Update Found", 
+                  `expo-updates says no update.\n\n${newDebugInfo}\n\n--- Native Logs ---\n${logsAfterCheck}`, 
                   [{ text: t("ok"), style: "default" }]
                 );
               }
@@ -826,7 +872,7 @@ export default function SettingsPage() {
             </SmallText>
           )}
           <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
-            {t("settingsCopyright").replace("{appName}", t("appName"))} hello
+            {t("settingsCopyright").replace("{appName}", t("appName"))}
           </SmallText>
         </YStack>
       </ContentContainer>
