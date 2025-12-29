@@ -22,6 +22,7 @@ import {
   Star,
   Trash2,
   Camera,
+  Download,
 } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
 import {
@@ -48,6 +49,7 @@ import { openInAppBrowser } from "../../src/utils/browser";
 import { trackScreenView, Screens } from "../../src/services/analytics";
 import { requestReview } from "../../src/services/appReview";
 import { clearAllCachedImages, getCachedImagesSize } from "../../src/services/images";
+import * as updates from "../../src/services/updates";
 
 // Helper to get language display name
 const getLanguageName = (code: string): string => {
@@ -105,6 +107,14 @@ export default function SettingsPage() {
   
   // Image cache size state
   const [imageCacheSize, setImageCacheSize] = useState<number>(0);
+  
+  // OTA update info state
+  const [updateInfo, setUpdateInfo] = useState<{
+    updateId: string | null;
+    runtimeVersion: string;
+    isEmbedded: boolean;
+  } | null>(null);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
 
   // Check notification permission status
   const checkNotificationPermission = async () => {
@@ -126,6 +136,95 @@ export default function SettingsPage() {
     }
   };
 
+  // Load OTA update info
+  const loadUpdateInfo = () => {
+    const info = updates.getUpdateInfo();
+    setUpdateInfo(info);
+  };
+
+  // Get debug info string for OTA updates
+  const getUpdateDebugInfo = (): string => {
+    const info = updates.getUpdateInfo();
+    return [
+      `Runtime: ${info.runtimeVersion}`,
+      `Update ID: ${info.updateId || 'embedded'}`,
+      `Is Embedded: ${info.isEmbedded}`,
+      `Channel: ${info.channel || 'default'}`,
+      `Platform: ${Platform.OS}`,
+      `URL: ${Constants.expoConfig?.updates?.url || 'not set'}`,
+    ].join('\n');
+  };
+
+  // Manually check for OTA updates
+  const handleCheckForUpdates = async () => {
+    // First show current status
+    const debugInfo = getUpdateDebugInfo();
+    
+    Alert.alert(
+      "OTA Update Status",
+      debugInfo,
+      [
+        { text: "Close", style: "cancel" },
+        {
+          text: "Check Now",
+          style: "default",
+          onPress: async () => {
+            setIsCheckingUpdate(true);
+            try {
+              const result = await updates.checkAndDownloadUpdate();
+              loadUpdateInfo(); // Refresh info after check
+              
+              const newDebugInfo = getUpdateDebugInfo();
+              
+              if (result.error) {
+                Alert.alert(
+                  "Update Check Failed", 
+                  `${result.error.message}\n\n${newDebugInfo}`, 
+                  [{ text: t("ok"), style: "default" }]
+                );
+              } else if (result.downloaded) {
+                Alert.alert(
+                  "Update Downloaded",
+                  `A new update has been downloaded.\n\n${newDebugInfo}`,
+                  [
+                    { text: "Later", style: "cancel" },
+                    {
+                      text: "Restart Now",
+                      style: "default",
+                      onPress: async () => {
+                        await updates.reloadApp();
+                      },
+                    },
+                  ]
+                );
+              } else if (result.updateAvailable) {
+                Alert.alert(
+                  "Update Available", 
+                  `An update is available but failed to download.\n\n${newDebugInfo}`, 
+                  [{ text: t("ok"), style: "default" }]
+                );
+              } else {
+                Alert.alert(
+                  "No Update", 
+                  `You're running the latest version.\n\n${newDebugInfo}`, 
+                  [{ text: t("ok"), style: "default" }]
+                );
+              }
+            } catch (error) {
+              Alert.alert(
+                "Error", 
+                `${error instanceof Error ? error.message : "Unknown error"}\n\n${getUpdateDebugInfo()}`, 
+                [{ text: t("ok"), style: "default" }]
+              );
+            } finally {
+              setIsCheckingUpdate(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Format bytes to human-readable size
   const formatBytes = (bytes: number): string => {
     if (bytes === 0) return "0 B";
@@ -140,6 +239,7 @@ export default function SettingsPage() {
     loadPreferences();
     checkNotificationPermission();
     loadImageCacheSize();
+    loadUpdateInfo();
   }, []);
 
   // Track screen view, reload preferences, and re-check permission when screen is focused
@@ -589,12 +689,34 @@ export default function SettingsPage() {
           icon: <Trash2 size={20} color={iconColor} />,
           onPress: handleClearImageCache,
         },
+        {
+          id: "otaUpdatePublic",
+          label: isCheckingUpdate ? "Checking..." : "Check for Updates",
+          value: updateInfo
+            ? updateInfo.isEmbedded
+              ? `Embedded (v${updateInfo.runtimeVersion})`
+              : `${updateInfo.updateId?.slice(0, 8)}... (v${updateInfo.runtimeVersion})`
+            : "Loading...",
+          icon: <Download size={20} color={iconColor} />,
+          onPress: handleCheckForUpdates,
+        },
       ],
     };
 
     const developerSection: SettingsSection = {
       title: t("developerSettings"),
       data: [
+        {
+          id: "otaUpdate",
+          label: isCheckingUpdate ? "Checking for updates..." : "OTA Update",
+          value: updateInfo
+            ? updateInfo.isEmbedded
+              ? `Embedded (v${updateInfo.runtimeVersion})`
+              : `${updateInfo.updateId?.slice(0, 8)}... (v${updateInfo.runtimeVersion})`
+            : "Loading...",
+          icon: <Download size={20} color={iconColor} />,
+          onPress: handleCheckForUpdates,
+        },
         {
           id: "manageFeed",
           label: "Manage Feed (Screenshots)",
@@ -685,6 +807,8 @@ export default function SettingsPage() {
     isDevelopment,
     theme,
     imageCacheSize,
+    updateInfo,
+    isCheckingUpdate,
   ]);
 
   const renderFooter = () => (
@@ -694,8 +818,15 @@ export default function SettingsPage() {
           <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
             Version {Constants.expoConfig?.version || "1.0.0"} ({Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber || 'N/A' : Constants.expoConfig?.android?.versionCode || 'N/A'})
           </SmallText>
+          {updateInfo && (
+            <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.5, marginBottom: tokens.space.xs }}>
+              {updateInfo.isEmbedded 
+                ? `Bundle: Embedded` 
+                : `Bundle: ${updateInfo.updateId?.slice(0, 8)}...`}
+            </SmallText>
+          )}
           <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
-            {t("settingsCopyright").replace("{appName}", t("appName"))}
+            {t("settingsCopyright").replace("{appName}", t("appName"))} hello
           </SmallText>
         </YStack>
       </ContentContainer>

@@ -9,6 +9,15 @@
     "backgroundColor": "#0A1628",
     "scheme": "factsaday",
     "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "url": "http://localhost:3000/api/updates/manifest"
+    },
     "locales": {
       "en": "./src/i18n/locales/en.json",
       "de": "./src/i18n/locales/de.json",
@@ -20,7 +29,7 @@
       "zh": "./src/i18n/locales/zh.json"
     },
     "extra": {
-      "API_BASE_URL": "https://factsaday.com",
+      "API_BASE_URL": "http://localhost:3000",
       "ADMOB_IOS_HOME_BANNER_ID": "ca-app-pub-7740246752776234/1196911062",
       "ADMOB_IOS_MODAL_BANNER_ID": "ca-app-pub-7740246752776234/8006410731",
       "ADMOB_IOS_INTERSTITIAL_ID": "ca-app-pub-7740246752776234/2739316775",
@@ -224,8 +233,9 @@
       "expo-router",
       "expo-secure-store",
       "expo-sqlite",
+      "expo-updates",
       "./plugins/withAndroidWindowBackground.js",
-      // "./plugins/withAndroidCleartextTraffic.js"
+      "./plugins/withAndroidCleartextTraffic.js"
     ]
   }
 }

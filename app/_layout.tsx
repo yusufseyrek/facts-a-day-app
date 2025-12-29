@@ -12,6 +12,7 @@ import * as notificationService from '../src/services/notifications';
 import * as database from '../src/services/database';
 import * as contentRefresh from '../src/services/contentRefresh';
 import { initializeAdsForReturningUser } from '../src/services/ads';
+import * as updates from '../src/services/updates';
 import { ActivityIndicator, View, AppState, AppStateStatus } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Localization from 'expo-localization';
@@ -290,6 +291,23 @@ export default function RootLayout() {
           // Silently handle errors - notifications continue with existing schedule
           console.error('Notification sync failed:', error);
         });
+
+        // Check for OTA updates in the background
+        // This runs asynchronously and doesn't block app startup
+        updates.checkAndDownloadUpdate().then((result) => {
+          if (result.updateAvailable && result.downloaded) {
+            console.log('📦 OTA update downloaded, will apply on next restart');
+          } else if (result.error) {
+            console.error('OTA update check failed:', result.error);
+          }
+        }).catch((error) => {
+          console.error('OTA update check failed:', error);
+        });
+      }
+
+      // Log update status in development for debugging
+      if (__DEV__) {
+        updates.logUpdateStatus();
       }
     } catch (error) {
       console.error('Failed to initialize app:', error);

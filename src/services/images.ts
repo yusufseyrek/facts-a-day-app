@@ -5,10 +5,15 @@
  * to authenticate requests to protected image endpoints.
  * 
  * The service:
- * 1. Gets an App Check token before downloading
+ * 1. Gets an App Check token before downloading (if available)
  * 2. Downloads images with the token in the X-Firebase-AppCheck header
- * 3. Caches images locally for offline access and performance (7-day TTL)
- * 4. Provides both hooks for React components and utility functions for services
+ * 3. Falls back to direct URL access if App Check token is unavailable
+ * 4. Caches images locally for offline access and performance (7-day TTL)
+ * 5. Provides both hooks for React components and utility functions for services
+ * 
+ * FALLBACK BEHAVIOR: If App Check token is not available (e.g., initialization
+ * failed, emulator, etc.), the service will attempt to download images without
+ * the token. If the server requires App Check (returns 401/403), it fails fast.
  * 
  * IMPORTANT: Uses documentDirectory (persistent) instead of cacheDirectory
  * because cacheDirectory can be cleared by the OS at any time.
@@ -302,12 +307,11 @@ async function performImageDownload(
     // Get App Check token (uses cache to prevent rate limiting)
     let appCheckToken = await getCachedAppCheckToken();
     
-    // REQUIRED: Do not make image requests without a valid App Check token
-    if (!appCheckToken) {
-      if (__DEV__) {
-        console.error(`❌ Image Download: No App Check token available for factId=${factId}`);
-      }
-      return null;
+    // Track if we're using fallback mode (no App Check token)
+    const usingFallback = !appCheckToken;
+    
+    if (usingFallback && __DEV__) {
+      console.warn(`⚠️ Image Download: No App Check token available for factId=${factId}, attempting fallback without token`);
     }
     
     // Prepare download destination
@@ -322,10 +326,11 @@ async function performImageDownload(
     
     for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
       try {
-        // Build headers with App Check token (token is guaranteed to be non-null at this point)
-        const headers: Record<string, string> = {
-          'X-Firebase-AppCheck': appCheckToken,
-        };
+        // Build headers - include App Check token if available
+        const headers: Record<string, string> = {};
+        if (appCheckToken) {
+          headers['X-Firebase-AppCheck'] = appCheckToken;
+        }
         
         // Use FileSystem.downloadAsync FIRST - it's much faster because it streams
         // directly to disk instead of loading into memory and converting to base64
@@ -392,8 +397,8 @@ async function performImageDownload(
         }
         
         // Handle 401/403 - likely App Check token issue
-        // Try refreshing the token once before giving up
-        if ((downloadStatus === 401 || downloadStatus === 403) && !hasRetriedWithFreshToken) {
+        // Try refreshing the token once before giving up (only if we had a token to begin with)
+        if ((downloadStatus === 401 || downloadStatus === 403) && !hasRetriedWithFreshToken && !usingFallback) {
           hasRetriedWithFreshToken = true;
           
           const freshToken = await forceRefreshAppCheckToken();
@@ -404,12 +409,20 @@ async function performImageDownload(
             attempt--;
             continue;
           } else {
-            // Cannot proceed without a valid token
+            // Token refresh failed - continue with remaining retries
+            // The server might still accept the request in some cases
             if (__DEV__) {
-              console.error('❌ Image Download: Failed to refresh App Check token');
+              console.warn('⚠️ Image Download: Failed to refresh App Check token, continuing with retries');
             }
-            return null;
           }
+        }
+        
+        // In fallback mode, 401/403 means the server requires App Check - fail fast
+        if ((downloadStatus === 401 || downloadStatus === 403) && usingFallback) {
+          if (__DEV__) {
+            console.warn(`⚠️ Image Download: Server rejected request without App Check token (${downloadStatus})`);
+          }
+          return null;
         }
         
         // Handle non-200 status codes
