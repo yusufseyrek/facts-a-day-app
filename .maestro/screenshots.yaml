@@ -22,7 +22,7 @@ appId: dev.seyrek.factsaday
 
 # Initial load wait
 - waitForAnimationToEnd:
-    timeout: 3000
+    timeout: 2000
 
 # Run all screen flows in sequence
 # Flows assume state from previous flow for efficiency

@@ -78,6 +78,7 @@ function BackButton({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      testID="trivia-performance-back-button"
     >
       <RNAnimated.View
         style={{

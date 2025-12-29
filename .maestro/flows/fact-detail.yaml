@@ -18,5 +18,20 @@ appId: dev.seyrek.factsaday
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/02_fact_detail
 
-# Close modal
-- pressKey: back
+# Close modal - iOS uses X button, Android uses back key
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: "fact-modal-close-button"
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - pressKey: back
+      - waitForAnimationToEnd:
+          timeout: 1000

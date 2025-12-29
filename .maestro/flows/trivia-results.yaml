@@ -17,5 +17,21 @@ appId: dev.seyrek.factsaday
 - takeScreenshot: ${OUTPUT_DIR}/08_trivia_results
 
 # Go back to trivia hub (2 backs: results -> performance -> hub)
-- pressKey: back
-- pressKey: back
+# iOS: tap back buttons, Android: use hardware back key
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: "trivia-results-back-button"
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - tapOn:
+          id: "trivia-performance-back-button"
+
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - pressKey: back
+      - pressKey: back

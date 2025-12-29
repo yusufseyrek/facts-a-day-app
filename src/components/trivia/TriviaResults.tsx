@@ -415,6 +415,7 @@ export function TriviaResults({
             style={({ pressed }) => [
               pressed && { opacity: 0.7 }
             ]}
+            testID="trivia-results-back-button"
           >
             <View
               style={{
