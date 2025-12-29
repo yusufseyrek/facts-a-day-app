@@ -86,6 +86,34 @@ check_api_key() {
     fi
 }
 
+# Increment iOS buildNumber in app.json
+increment_ios_build_number() {
+    print_step "Incrementing iOS buildNumber..."
+    
+    local app_json="$PROJECT_ROOT/app.json"
+    local current_build=$(jq -r '.expo.ios.buildNumber' "$app_json")
+    local new_build=$((current_build + 1))
+    
+    # Update app.json with new buildNumber (keeping it as a string)
+    jq --arg newBuild "$new_build" '.expo.ios.buildNumber = $newBuild' "$app_json" > "$app_json.tmp" && mv "$app_json.tmp" "$app_json"
+    
+    print_success "iOS buildNumber incremented: $current_build → $new_build"
+}
+
+# Increment Android versionCode in app.json
+increment_android_version_code() {
+    print_step "Incrementing Android versionCode..."
+    
+    local app_json="$PROJECT_ROOT/app.json"
+    local current_code=$(jq -r '.expo.android.versionCode' "$app_json")
+    local new_code=$((current_code + 1))
+    
+    # Update app.json with new versionCode (as a number)
+    jq --argjson newCode "$new_code" '.expo.android.versionCode = $newCode' "$app_json" > "$app_json.tmp" && mv "$app_json.tmp" "$app_json"
+    
+    print_success "Android versionCode incremented: $current_code → $new_code"
+}
+
 # Get runtime version from app.json
 get_runtime_version() {
     local version=$(cat "$PROJECT_ROOT/app.json" | jq -r '.expo.version')
@@ -249,6 +277,13 @@ publish_platform() {
     local message="$2"
     
     print_info "Publishing $platform update..."
+    
+    # Increment version number based on platform
+    if [ "$platform" = "ios" ]; then
+        increment_ios_build_number
+    elif [ "$platform" = "android" ]; then
+        increment_android_version_code
+    fi
     
     local runtime_version=$(get_runtime_version)
     local git_commit=$(get_git_commit)
