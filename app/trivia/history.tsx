@@ -208,7 +208,7 @@ function SessionCard({
     );
   };
 
-  const hasResultData = session.questions_json && session.answers_json;
+  const hasResultData = session.question_ids && session.selected_answers;
 
   return (
     <Pressable 
@@ -499,6 +499,7 @@ export default function ActivityHistoryScreen() {
         })}
         showBackButton={true}
         showReturnButton={false}
+        unavailableQuestionIds={selectedSession.unavailableQuestionIds}
       />
     );
   }

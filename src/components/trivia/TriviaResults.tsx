@@ -17,7 +17,8 @@ import Animated, {
 import { tokens } from '../../theme/tokens';
 import { FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
-import type { QuestionWithFact } from '../../services/database';
+import type { QuestionWithFact, StoredAnswer } from '../../services/database';
+import { indexToAnswer } from '../../services/trivia';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH * 0.85;
@@ -41,7 +42,10 @@ export interface TriviaResultsProps {
   elapsedTime: number; // Time in seconds
   bestStreak: number; // Best consecutive correct streak
   questions: QuestionWithFact[];
-  answers: Record<number, string>; // questionId -> selected answer
+  // Support both formats:
+  // - Live game: Record<number, string> (answer text)
+  // - Historical: Record<number, StoredAnswer> (answer index + correctness)
+  answers: Record<number, string | StoredAnswer>;
   onClose: () => void;
   isDark: boolean;
   t: TranslationFunction;
@@ -55,6 +59,8 @@ export interface TriviaResultsProps {
   };
   showBackButton?: boolean;
   showReturnButton?: boolean;
+  // IDs of questions that are no longer in the database
+  unavailableQuestionIds?: number[];
 }
 
 // Horizontal progress bar component
@@ -106,6 +112,82 @@ function ProgressBar({
           {percentage}%
         </Text>
       </View>
+    </View>
+  );
+}
+
+// Card for questions that are no longer available (deleted from database)
+function UnavailableQuestionCard({
+  questionIndex,
+  isCorrect,
+  isDark,
+  t,
+}: {
+  questionIndex: number;
+  isCorrect: boolean;
+  isDark: boolean;
+  t: TranslationFunction;
+}) {
+  const cardBackground = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
+  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
+  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
+  const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
+  const errorColor = isDark ? tokens.color.dark.error : tokens.color.light.error;
+
+  return (
+    <View style={{ width: CARD_WIDTH }}>
+      <YStack
+        backgroundColor={cardBackground}
+        padding={tokens.space.lg}
+        marginVertical={4}
+        borderRadius={tokens.radius.xl}
+        gap={tokens.space.md}
+        minHeight={150}
+        justifyContent="center"
+        alignItems="center"
+        opacity={0.7}
+        shadowColor={isDark ? "#000000": "#dddddd"}
+        shadowOffset={{ width: 0, height: 2 }}
+        shadowOpacity={isDark ? 0.2 : 0.06}
+        shadowRadius={4}
+      >
+        {/* Card Header */}
+        <XStack alignItems="center" gap={tokens.space.sm}>
+          <View
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              backgroundColor: isCorrect ? successColor : errorColor,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            {isCorrect ? (
+              <Check size={16} color="#FFFFFF" strokeWidth={3} />
+            ) : (
+              <X size={16} color="#FFFFFF" strokeWidth={3} />
+            )}
+          </View>
+          <Text
+            fontSize={16}
+            fontFamily={FONT_FAMILIES.bold}
+            color={textColor}
+          >
+            {t('question') || 'Question'} {questionIndex + 1}: {isCorrect ? (t('correct') || 'Correct') + '!' : (t('wrong') || 'Wrong')}
+          </Text>
+        </XStack>
+
+        {/* Unavailable message */}
+        <Text
+          fontSize={14}
+          fontFamily={FONT_FAMILIES.medium}
+          color={secondaryTextColor}
+          textAlign="center"
+        >
+          {t('questionUnavailable') || 'This question is no longer available'}
+        </Text>
+      </YStack>
     </View>
   );
 }
@@ -325,6 +407,13 @@ function AnswerReviewCard({
   );
 }
 
+/**
+ * Helper to check if an answer is a StoredAnswer object or a string
+ */
+function isStoredAnswer(answer: string | StoredAnswer | undefined): answer is StoredAnswer {
+  return answer !== undefined && typeof answer === 'object' && 'index' in answer;
+}
+
 export function TriviaResults({
   correctAnswers,
   totalQuestions,
@@ -343,6 +432,7 @@ export function TriviaResults({
   triviaModeBadge,
   showBackButton = false,
   showReturnButton = true,
+  unavailableQuestionIds = [],
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -360,6 +450,41 @@ export function TriviaResults({
     ? Math.round((correctAnswers / totalQuestions) * 100)
     : 0;
   const isPerfect = correctAnswers === totalQuestions;
+
+  /**
+   * Get the selected answer text for a question
+   * Handles both string answers (live game) and StoredAnswer (historical)
+   */
+  const getSelectedAnswerText = (question: QuestionWithFact, answer: string | StoredAnswer | undefined): string | undefined => {
+    if (answer === undefined) return undefined;
+    
+    if (isStoredAnswer(answer)) {
+      // Historical session: convert index back to text
+      return indexToAnswer(question, answer.index);
+    }
+    
+    // Live game: answer is already a string
+    return answer;
+  };
+
+  /**
+   * Check if an answer is correct
+   * Handles both string answers (live game) and StoredAnswer (historical)
+   */
+  const checkIsCorrect = (question: QuestionWithFact, answer: string | StoredAnswer | undefined): boolean => {
+    if (answer === undefined) return false;
+    
+    if (isStoredAnswer(answer)) {
+      // Historical session: use stored correctness
+      return answer.correct;
+    }
+    
+    // Live game: compare answer text
+    if (question.question_type === 'true_false') {
+      return answer.toLowerCase() === question.correct_answer?.toLowerCase();
+    }
+    return answer === question.correct_answer;
+  };
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -665,22 +790,37 @@ export function TriviaResults({
               snapToInterval={CARD_WIDTH + CARD_GAP}
               snapToAlignment="start"
             >
+              {/* Available questions */}
               {questions.map((question, index) => {
-                const selectedAnswer = answers[question.id];
-                // Case-insensitive comparison for true/false questions
-                const isCorrect = question.question_type === 'true_false'
-                  ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
-                  : selectedAnswer === question.correct_answer;
+                const answer = answers[question.id];
+                const selectedAnswerText = getSelectedAnswerText(question, answer);
+                const isCorrect = checkIsCorrect(question, answer);
                 
                 return (
                   <AnswerReviewCard
                     key={question.id}
                     question={question}
                     questionIndex={index}
-                    selectedAnswer={selectedAnswer}
+                    selectedAnswer={selectedAnswerText}
                     isCorrect={isCorrect}
                     isDark={isDark}
                     onPress={() => handleAnswerCardPress(question)}
+                    t={t}
+                  />
+                );
+              })}
+              {/* Unavailable questions (deleted from database) */}
+              {unavailableQuestionIds.map((questionId, idx) => {
+                const answer = answers[questionId];
+                // For unavailable questions, we can only determine correctness from StoredAnswer
+                const isCorrect = isStoredAnswer(answer) ? answer.correct : false;
+                
+                return (
+                  <UnavailableQuestionCard
+                    key={`unavailable-${questionId}`}
+                    questionIndex={questions.length + idx}
+                    isCorrect={isCorrect}
+                    isDark={isDark}
                     t={t}
                   />
                 );

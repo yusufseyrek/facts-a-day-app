@@ -255,6 +255,7 @@ export const translations = {
     yourAnswer: "DEINE ANTWORT",
     correctAnswer: "RICHTIGE ANTWORT",
     insight: "Einblick",
+    questionUnavailable: "Diese Frage ist nicht mehr verfügbar",
 
     // Performance Screen
     triviaPerformance: "Trivia-Leistung",
@@ -530,6 +531,7 @@ export const translations = {
     yourAnswer: "YOUR ANSWER",
     correctAnswer: "CORRECT ANSWER",
     insight: "Insight",
+    questionUnavailable: "This question is no longer available",
 
     // Performance Screen
     triviaPerformance: "Trivia Performance",
@@ -805,6 +807,7 @@ export const translations = {
     yourAnswer: "TU RESPUESTA",
     correctAnswer: "RESPUESTA CORRECTA",
     insight: "Información",
+    questionUnavailable: "Esta pregunta ya no está disponible",
 
     // Performance Screen
     triviaPerformance: "Rendimiento de Trivia",
@@ -1080,6 +1083,7 @@ export const translations = {
     yourAnswer: "VOTRE RÉPONSE",
     correctAnswer: "BONNE RÉPONSE",
     insight: "Aperçu",
+    questionUnavailable: "Cette question n'est plus disponible",
 
     // Performance Screen
     triviaPerformance: "Performance Trivia",
@@ -1354,6 +1358,7 @@ export const translations = {
     yourAnswer: "あなたの回答",
     correctAnswer: "正解",
     insight: "ヒント",
+    questionUnavailable: "この質問は利用できなくなりました",
 
     // Performance Screen
     triviaPerformance: "トリビアパフォーマンス",
@@ -1625,6 +1630,7 @@ export const translations = {
     yourAnswer: "내 답변",
     correctAnswer: "정답",
     insight: "정보",
+    questionUnavailable: "이 질문은 더 이상 사용할 수 없습니다",
 
     // Performance Screen
     triviaPerformance: "트리비아 성적",
@@ -1899,6 +1905,7 @@ export const translations = {
     yourAnswer: "SENİN CEVABIN",
     correctAnswer: "DOĞRU CEVAP",
     insight: "Bilgi",
+    questionUnavailable: "Bu soru artık mevcut değil",
 
     // Performance Screen
     triviaPerformance: "Trivia Performansı",
@@ -2169,6 +2176,7 @@ export const translations = {
     yourAnswer: "你的答案",
     correctAnswer: "正确答案",
     insight: "知识点",
+    questionUnavailable: "此问题已不可用",
 
     // Performance Screen
     triviaPerformance: "问答表现",

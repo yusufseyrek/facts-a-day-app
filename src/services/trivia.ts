@@ -17,10 +17,11 @@ import type {
   FactWithRelations,
   Category,
   TriviaSessionWithCategory,
+  StoredAnswer,
 } from './database';
 
 // Re-export types
-export type { TriviaSession, TriviaSessionWithCategory } from './database';
+export type { TriviaSession, TriviaSessionWithCategory, StoredAnswer } from './database';
 
 // Constants
 export const DAILY_TRIVIA_QUESTIONS = 10;
@@ -351,11 +352,81 @@ export function getStreakDisplay(streak: number): string {
   return `🔥 ${streak}`;
 }
 
+// ====== ANSWER INDEX HELPERS ======
+
+/**
+ * Convert a selected answer text to its storage index
+ * Used when saving session results
+ * 
+ * @param question The question object
+ * @param selectedAnswer The selected answer text
+ * @returns Answer index: 0 = correct, 1-3 = wrong_answers[0-2], for true/false: 0=True, 1=False
+ */
+export function answerToIndex(question: Question, selectedAnswer: string): number {
+  // For true/false questions
+  if (question.question_type === 'true_false') {
+    return selectedAnswer.toLowerCase() === 'true' ? 0 : 1;
+  }
+  
+  // For multiple choice: 0 = correct answer
+  if (selectedAnswer === question.correct_answer) {
+    return 0;
+  }
+  
+  // Find index in wrong answers (1-indexed in our storage)
+  const wrongAnswers = parseWrongAnswers(question.wrong_answers);
+  const wrongIndex = wrongAnswers.indexOf(selectedAnswer);
+  return wrongIndex >= 0 ? wrongIndex + 1 : 0; // Fallback to 0 if not found
+}
+
+/**
+ * Convert a stored answer index back to the answer text
+ * Used when reconstructing session results for display
+ * 
+ * @param question The question object
+ * @param index Answer index: 0 = correct, 1-3 = wrong_answers[0-2], for true/false: 0=True, 1=False
+ * @returns The answer text (in current language for true/false when translated)
+ */
+export function indexToAnswer(question: Question, index: number): string {
+  // For true/false questions
+  if (question.question_type === 'true_false') {
+    return index === 0 ? 'True' : 'False';
+  }
+  
+  // For multiple choice
+  if (index === 0) {
+    return question.correct_answer;
+  }
+  
+  // Get wrong answer by index (1-indexed)
+  const wrongAnswers = parseWrongAnswers(question.wrong_answers);
+  return wrongAnswers[index - 1] || question.correct_answer;
+}
+
+/**
+ * Check if an answer index represents the correct answer
+ * @param question The question object
+ * @param answerIndex The stored answer index
+ */
+export function isAnswerCorrect(question: Question, answerIndex: number): boolean {
+  if (question.question_type === 'true_false') {
+    // For true/false: correct_answer is stored as "True" or "False"
+    const isCorrectTrue = question.correct_answer.toLowerCase() === 'true';
+    return answerIndex === (isCorrectTrue ? 0 : 1);
+  }
+  // For multiple choice: 0 = correct answer
+  return answerIndex === 0;
+}
+
 // ====== SESSION TRACKING ======
 
 /**
- * Save a trivia session result with full data for result screen recreation
+ * Save a trivia session result with question IDs and answer data
  * Called when a trivia session is completed
+ * 
+ * @param questions Array of questions from the session
+ * @param answers Record mapping questionId to selected answer TEXT
+ *   This will be converted to answer indexes with correctness info for storage
  */
 export async function saveSessionResult(
   triviaMode: 'daily' | 'category' | 'mixed',
@@ -367,6 +438,26 @@ export async function saveSessionResult(
   questions?: QuestionWithFact[],
   answers?: Record<number, string>
 ): Promise<number> {
+  // Extract question IDs
+  const questionIds = questions?.map(q => q.id);
+  
+  // Convert answer texts to StoredAnswer objects with index and correctness
+  let selectedAnswers: Record<number, StoredAnswer> | undefined;
+  if (questions && answers) {
+    selectedAnswers = {};
+    for (const question of questions) {
+      const answerText = answers[question.id];
+      if (answerText !== undefined) {
+        const answerIndex = answerToIndex(question, answerText);
+        const isCorrect = isAnswerCorrect(question, answerIndex);
+        selectedAnswers[question.id] = {
+          index: answerIndex,
+          correct: isCorrect,
+        };
+      }
+    }
+  }
+  
   return database.saveTriviaSession(
     triviaMode,
     totalQuestions,
@@ -374,21 +465,20 @@ export async function saveSessionResult(
     categorySlug,
     elapsedTime,
     bestStreak,
-    questions,
-    answers
+    questionIds,
+    selectedAnswers
   );
 }
 
 /**
  * Get recent trivia sessions with category data
+ * Note: This returns basic session info. Use getSessionById for full question data.
  * @param limit Number of sessions to return (default 10)
- * @param includeFullData Whether to include parsed questions/answers
  */
 export async function getRecentSessions(
-  limit: number = 10,
-  includeFullData: boolean = false
+  limit: number = 10
 ): Promise<TriviaSessionWithCategory[]> {
-  return database.getRecentTriviaSessions(limit, includeFullData);
+  return database.getRecentTriviaSessions(limit);
 }
 
 /**

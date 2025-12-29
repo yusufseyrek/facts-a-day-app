@@ -187,6 +187,9 @@ async function initializeSchema(): Promise<void> {
   `);
 
   // Create trivia_sessions table for tracking individual test sessions
+  // Stores question IDs and answer indexes instead of full JSON for:
+  // - Language-independent storage (content fetched fresh on display)
+  // - Reduced database size (~200 bytes vs ~8KB per session)
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS trivia_sessions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -197,8 +200,10 @@ async function initializeSchema(): Promise<void> {
       completed_at TEXT NOT NULL,
       elapsed_time INTEGER,
       best_streak INTEGER,
-      questions_json TEXT,
-      answers_json TEXT
+      question_ids TEXT,      -- JSON array of question IDs: [123, 456, ...]
+      selected_answers TEXT   -- JSON object: {"questionId": answerIndex, ...}
+                              -- answerIndex: 0=correct, 1-3=wrong_answers[0-2]
+                              -- For true/false: 0=True, 1=False
     );
   `);
 
@@ -2082,19 +2087,36 @@ export interface TriviaSession {
   completed_at: string;
   elapsed_time: number | null;
   best_streak: number | null;
-  questions_json: string | null;
-  answers_json: string | null;
+  question_ids: string | null;      // JSON array of question IDs
+  selected_answers: string | null;  // JSON object: {questionId: answerIndex}
+}
+
+/**
+ * Answer data stored for each question in a session
+ */
+export interface StoredAnswer {
+  index: number;   // 0 = correct, 1-3 = wrong_answers[0-2], for true/false: 0=True, 1=False
+  correct: boolean; // Whether this answer was correct
 }
 
 export interface TriviaSessionWithCategory extends TriviaSession {
   category?: Category;
-  // Parsed data for result screen recreation
+  // Reconstructed data for result screen display
   questions?: QuestionWithFact[];
-  answers?: Record<number, string>;
+  // Stored answer data for each question
+  answers?: Record<number, StoredAnswer>;
+  // Track which questions are no longer available (deleted)
+  unavailableQuestionIds?: number[];
 }
 
 /**
- * Save a trivia session result with full data for result screen recreation
+ * Save a trivia session result with question IDs and answer data
+ * This is language-independent and much smaller than storing full JSON
+ * 
+ * @param questionIds Array of question IDs used in this session
+ * @param selectedAnswers Record mapping questionId to StoredAnswer:
+ *   - index: 0 = correct answer (or True for T/F), 1-3 = wrong_answers[0-2] (or False for T/F)
+ *   - correct: boolean indicating if this answer was correct
  */
 export async function saveTriviaSession(
   triviaMode: 'daily' | 'category' | 'mixed',
@@ -2103,20 +2125,20 @@ export async function saveTriviaSession(
   categorySlug?: string,
   elapsedTime?: number,
   bestStreak?: number,
-  questions?: QuestionWithFact[],
-  answers?: Record<number, string>
+  questionIds?: number[],
+  selectedAnswers?: Record<number, StoredAnswer>
 ): Promise<number> {
   const database = await openDatabase();
   const now = new Date().toISOString();
   
-  // Serialize questions and answers for storage
-  const questionsJson = questions ? JSON.stringify(questions) : null;
-  const answersJson = answers ? JSON.stringify(answers) : null;
+  // Serialize question IDs and answer data for storage
+  const questionIdsJson = questionIds ? JSON.stringify(questionIds) : null;
+  const selectedAnswersJson = selectedAnswers ? JSON.stringify(selectedAnswers) : null;
 
   const result = await database.runAsync(
-    `INSERT INTO trivia_sessions (trivia_mode, category_slug, total_questions, correct_answers, completed_at, elapsed_time, best_streak, questions_json, answers_json)
+    `INSERT INTO trivia_sessions (trivia_mode, category_slug, total_questions, correct_answers, completed_at, elapsed_time, best_streak, question_ids, selected_answers)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [triviaMode, categorySlug || null, totalQuestions, correctAnswers, now, elapsedTime || null, bestStreak || null, questionsJson, answersJson]
+    [triviaMode, categorySlug || null, totalQuestions, correctAnswers, now, elapsedTime || null, bestStreak || null, questionIdsJson, selectedAnswersJson]
   );
 
   return result.lastInsertRowId;
@@ -2124,12 +2146,12 @@ export async function saveTriviaSession(
 
 /**
  * Get recent trivia sessions with category data
+ * Note: This returns basic session info only. Use getTriviaSessionById to get
+ * full reconstructed question data for displaying results.
  * @param limit Number of sessions to return (default 10)
- * @param includeFullData Whether to parse and include questions/answers data
  */
 export async function getRecentTriviaSessions(
-  limit: number = 10,
-  includeFullData: boolean = false
+  limit: number = 10
 ): Promise<TriviaSessionWithCategory[]> {
   const database = await openDatabase();
 
@@ -2159,8 +2181,8 @@ export async function getRecentTriviaSessions(
       completed_at: row.completed_at,
       elapsed_time: row.elapsed_time,
       best_streak: row.best_streak,
-      questions_json: row.questions_json,
-      answers_json: row.answers_json,
+      question_ids: row.question_ids,
+      selected_answers: row.selected_answers,
     };
 
     if (row.category_id) {
@@ -2174,30 +2196,107 @@ export async function getRecentTriviaSessions(
       };
     }
 
-    // Parse questions/answers if full data is requested
-    if (includeFullData) {
-      if (row.questions_json) {
-        try {
-          session.questions = JSON.parse(row.questions_json);
-        } catch (e) {
-          console.error('Error parsing questions_json:', e);
-        }
-      }
-      if (row.answers_json) {
-        try {
-          session.answers = JSON.parse(row.answers_json);
-        } catch (e) {
-          console.error('Error parsing answers_json:', e);
-        }
-      }
-    }
-
     return session;
   });
 }
 
 /**
- * Get a single trivia session by ID with full data
+ * Get questions by their IDs with full fact data
+ * Used to reconstruct session data for display
+ * Returns questions in the order of the provided IDs
+ */
+export async function getQuestionsByIds(
+  questionIds: number[]
+): Promise<QuestionWithFact[]> {
+  if (questionIds.length === 0) return [];
+
+  const database = await openDatabase();
+  const placeholders = questionIds.map(() => '?').join(',');
+
+  const result = await database.getAllAsync<any>(
+    `SELECT 
+      q.*,
+      f.id as fact_id,
+      f.title as fact_title,
+      f.content as fact_content,
+      f.summary as fact_summary,
+      f.category as fact_category,
+      f.source_url as fact_source_url,
+      f.image_url as fact_image_url,
+      f.language as fact_language,
+      f.created_at as fact_created_at,
+      f.last_updated as fact_last_updated,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM questions q
+    INNER JOIN facts f ON q.fact_id = f.id
+    LEFT JOIN categories c ON f.category = c.slug
+    WHERE q.id IN (${placeholders})`,
+    questionIds
+  );
+
+  // Map results and preserve order from questionIds
+  const questionsMap = new Map<number, QuestionWithFact>();
+  for (const row of result) {
+    questionsMap.set(row.id, mapQuestionWithFact(row));
+  }
+
+  // Return in original order, filtering out any that weren't found
+  return questionIds
+    .map(id => questionsMap.get(id))
+    .filter((q): q is QuestionWithFact => q !== undefined);
+}
+
+/**
+ * Helper to map a single row to QuestionWithFact
+ */
+function mapQuestionWithFact(row: any): QuestionWithFact {
+  const question: QuestionWithFact = {
+    id: row.id,
+    fact_id: row.fact_id,
+    question_type: row.question_type,
+    question_text: row.question_text,
+    correct_answer: row.correct_answer,
+    wrong_answers: row.wrong_answers,
+    explanation: row.explanation,
+    difficulty: row.difficulty,
+  };
+
+  if (row.fact_title || row.fact_content) {
+    question.fact = {
+      id: row.fact_id,
+      title: row.fact_title,
+      content: row.fact_content,
+      summary: row.fact_summary,
+      category: row.fact_category,
+      source_url: row.fact_source_url,
+      image_url: row.fact_image_url,
+      language: row.fact_language,
+      created_at: row.fact_created_at || '',
+      last_updated: row.fact_last_updated,
+    };
+
+    if (row.category_id) {
+      question.fact.categoryData = {
+        id: row.category_id,
+        name: row.category_name,
+        slug: row.category_slug,
+        icon: row.category_icon,
+        color_hex: row.category_color_hex,
+      };
+    }
+  }
+
+  return question;
+}
+
+/**
+ * Get a single trivia session by ID with reconstructed question data
+ * Fetches questions fresh from the database using stored IDs
+ * This ensures content is always in the current app language
  */
 export async function getTriviaSessionById(
   sessionId: number
@@ -2230,8 +2329,8 @@ export async function getTriviaSessionById(
     completed_at: row.completed_at,
     elapsed_time: row.elapsed_time,
     best_streak: row.best_streak,
-    questions_json: row.questions_json,
-    answers_json: row.answers_json,
+    question_ids: row.question_ids,
+    selected_answers: row.selected_answers,
   };
 
   if (row.category_id) {
@@ -2245,19 +2344,27 @@ export async function getTriviaSessionById(
     };
   }
 
-  // Parse questions/answers
-  if (row.questions_json) {
+  // Reconstruct questions from stored IDs
+  if (row.question_ids) {
     try {
-      session.questions = JSON.parse(row.questions_json);
+      const questionIds: number[] = JSON.parse(row.question_ids);
+      const questions = await getQuestionsByIds(questionIds);
+      session.questions = questions;
+      
+      // Track unavailable questions (deleted from DB)
+      const foundIds = new Set(questions.map(q => q.id));
+      session.unavailableQuestionIds = questionIds.filter(id => !foundIds.has(id));
     } catch (e) {
-      console.error('Error parsing questions_json:', e);
+      console.error('Error reconstructing questions:', e);
     }
   }
-  if (row.answers_json) {
+
+  // Parse answer indexes
+  if (row.selected_answers) {
     try {
-      session.answers = JSON.parse(row.answers_json);
+      session.answers = JSON.parse(row.selected_answers);
     } catch (e) {
-      console.error('Error parsing answers_json:', e);
+      console.error('Error parsing selected_answers:', e);
     }
   }
 
