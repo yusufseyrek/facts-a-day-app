@@ -218,32 +218,3 @@ export async function forceRefreshAppCheckToken(): Promise<string | null> {
   }
 }
 
-/**
- * Clear the token cache (useful for testing or logout)
- */
-export function clearAppCheckTokenCache(): void {
-  cachedToken = null;
-  tokenExpirationMs = 0;
-  tokenFetchPromise = null;
-}
-
-/**
- * Get cache status for debugging
- */
-export function getAppCheckCacheStatus(): {
-  hasCachedToken: boolean;
-  expiresAt: number | null;
-  expiresInMs: number | null;
-  isValid: boolean;
-} {
-  const now = Date.now();
-  const expiresInMs = tokenExpirationMs ? tokenExpirationMs - now : null;
-  
-  return {
-    hasCachedToken: !!cachedToken,
-    expiresAt: tokenExpirationMs || null,
-    expiresInMs,
-    isValid: isCachedTokenValid(),
-  };
-}
-

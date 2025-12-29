@@ -16,12 +16,6 @@ export const PREFETCH_SETTINGS = {
 } as const;
 
 /**
- * Image prefetch cache size limit to prevent memory leaks
- * @deprecated Use PREFETCH_SETTINGS.maxCacheSize instead
- */
-export const MAX_PREFETCH_CACHE_SIZE = PREFETCH_SETTINGS.maxCacheSize;
-
-/**
  * Card height constants for ImageFactCard.
  */
 export const CARD_HEIGHTS = {

@@ -1,7 +1,5 @@
-import { Platform, ViewStyle } from "react-native";
 import { tokens } from "./tokens";
 
-export type GlowIntensity = "subtle" | "medium" | "strong";
 export type NeonColor =
   | "cyan"
   | "orange"
@@ -44,90 +42,6 @@ const neonColorMap = {
   },
 };
 
-// Intensity settings for glow effects
-const intensitySettings = {
-  subtle: { opacity: 0.15, radius: 8, elevation: 4 },
-  medium: { opacity: 0.3, radius: 16, elevation: 8 },
-  strong: { opacity: 0.5, radius: 24, elevation: 12 },
-};
-
-/**
- * Creates a glow style for a component
- * Works cross-platform with iOS shadows and Android elevation
- */
-export const createGlowStyle = (
-  color: NeonColor | string,
-  intensity: GlowIntensity,
-  theme: ThemeMode
-): ViewStyle => {
-  const settings = intensitySettings[intensity];
-
-  // Get the actual color value
-  let colorValue: string;
-  if (color in neonColorMap) {
-    colorValue = neonColorMap[color as NeonColor][theme];
-  } else {
-    colorValue = color; // Allow custom hex colors
-  }
-
-  // Reduce glow intensity in light mode for subtlety
-  const opacityMultiplier = theme === "light" ? 0.6 : 1;
-
-  if (Platform.OS === "ios") {
-    return {
-      shadowColor: colorValue,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: settings.opacity * opacityMultiplier,
-      shadowRadius: settings.radius,
-    };
-  }
-
-  // Android: Use elevation (shadow color works on API 28+)
-  return {
-    elevation: settings.elevation,
-    shadowColor: colorValue,
-  };
-};
-
-/**
- * Creates a multi-layer glow for stronger effect (iOS only)
- * Returns an array of styles to apply to nested views
- */
-export const createMultiLayerGlowStyles = (
-  color: NeonColor | string,
-  theme: ThemeMode
-): ViewStyle[] => {
-  // Get the actual color value
-  let colorValue: string;
-  if (color in neonColorMap) {
-    colorValue = neonColorMap[color as NeonColor][theme];
-  } else {
-    colorValue = color;
-  }
-
-  const opacityMultiplier = theme === "light" ? 0.5 : 1;
-
-  if (Platform.OS !== "ios") {
-    return [{ elevation: 12, shadowColor: colorValue }];
-  }
-
-  // Return multiple shadow layers for iOS
-  return [
-    {
-      shadowColor: colorValue,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.4 * opacityMultiplier,
-      shadowRadius: 8,
-    },
-    {
-      shadowColor: colorValue,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.2 * opacityMultiplier,
-      shadowRadius: 20,
-    },
-  ];
-};
-
 /**
  * Get neon color value by name and theme
  */
@@ -151,10 +65,10 @@ export const getNeonColors = (theme: ThemeMode) => {
 };
 
 /**
- * Category to neon color mapping
+ * Category to neon color mapping (internal)
  * Maps category slugs to their assigned neon colors
  */
-export const categoryNeonColors: Record<string, NeonColor> = {
+const categoryNeonColors: Record<string, NeonColor> = {
   // Primary categories
   science: "cyan",
   history: "orange",
@@ -188,30 +102,4 @@ export const getCategoryNeonColor = (
 ): string => {
   const neonColor = categoryNeonColors[categorySlug.toLowerCase()] || "cyan";
   return getNeonColor(neonColor, theme);
-};
-
-/**
- * Get neon color name for a category
- * Falls back to cyan if category not found
- */
-export const getCategoryNeonColorName = (categorySlug: string): NeonColor => {
-  return categoryNeonColors[categorySlug.toLowerCase()] || "cyan";
-};
-
-/**
- * Cycle through neon colors for categories without predefined colors
- * Useful for dynamically assigning colors to new categories
- */
-const neonColorCycle: NeonColor[] = [
-  "cyan",
-  "orange",
-  "magenta",
-  "green",
-  "purple",
-  "yellow",
-];
-
-export const getColorForIndex = (index: number, theme: ThemeMode): string => {
-  const colorName = neonColorCycle[index % neonColorCycle.length];
-  return getNeonColor(colorName, theme);
 };

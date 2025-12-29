@@ -298,51 +298,6 @@ export function useFactImage(
 }
 
 /**
- * Hook to prefetch multiple fact images in the background
- * Useful for prefetching images in a list before they're displayed
- * 
- * @param facts Array of objects with image_url and id properties
- */
-export function usePrefetchFactImages(
-  facts: Array<{ id: number; image_url?: string | null }>
-): void {
-  useEffect(() => {
-    if (facts.length === 0) return;
-    
-    // Prefetch images in the background
-    const prefetch = async () => {
-      for (const fact of facts) {
-        if (fact.image_url) {
-          const cacheKey = getCacheKey(fact.id);
-          
-          // Skip if already resolved in this session
-          if (resolvedImages.has(cacheKey)) {
-            continue;
-          }
-          
-          try {
-            // downloadImageWithAppCheck checks file cache first
-            const uri = await downloadImageWithAppCheck(fact.image_url, fact.id);
-            if (uri) {
-              cleanupMemoryCacheIfNeeded();
-              resolvedImages.set(cacheKey, uri);
-              resolvedImagesTimestamps.set(cacheKey, Date.now());
-            }
-          } catch {
-            // Silently fail for prefetch
-          }
-        }
-      }
-    };
-    
-    // Start prefetch after a short delay to prioritize visible content
-    const timeoutId = setTimeout(prefetch, 500);
-    
-    return () => clearTimeout(timeoutId);
-  }, [facts]);
-}
-
-/**
  * Clear the in-memory image cache (session cache only)
  * File cache persists until 7-day TTL expires
  */

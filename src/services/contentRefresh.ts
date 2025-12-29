@@ -11,10 +11,6 @@ const LAST_CONTENT_REFRESH_KEY = '@last_content_refresh';
 const STORED_LOCALE_KEY = '@stored_locale';
 const QUESTIONS_MIGRATION_KEY = '@questions_migration_v1';
 
-// Minimum interval between refreshes (1 hour in milliseconds)
-// Note: No longer used - app now refreshes on every open
-const REFRESH_INTERVAL = 60 * 60 * 1000; // 1 hour
-
 // Event listeners for feed refresh
 type FeedRefreshListener = () => void;
 const feedRefreshListeners: Set<FeedRefreshListener> = new Set();
@@ -111,33 +107,6 @@ export interface RefreshResult {
     facts: number;
   };
   error?: string;
-}
-
-/**
- * Check if content should be refreshed based on last refresh time
- * Returns true if more than 1 hour has passed since last refresh
- * Note: This function is kept for potential future use but is no longer
- * called by refreshAppContent() - app now refreshes on every open
- */
-export async function shouldRefreshContent(): Promise<boolean> {
-  try {
-    const lastRefreshStr = await AsyncStorage.getItem(LAST_CONTENT_REFRESH_KEY);
-
-    if (!lastRefreshStr) {
-      // Never refreshed before
-      return true;
-    }
-
-    const lastRefresh = new Date(lastRefreshStr);
-    const now = new Date();
-    const timeSinceRefresh = now.getTime() - lastRefresh.getTime();
-
-    return timeSinceRefresh >= REFRESH_INTERVAL;
-  } catch (error) {
-    console.error('Error checking refresh status:', error);
-    // If we can't check, assume we should refresh
-    return true;
-  }
 }
 
 /**
