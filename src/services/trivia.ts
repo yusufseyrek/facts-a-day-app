@@ -496,7 +496,7 @@ export async function getSessionById(
  */
 export async function getAllSessions(): Promise<TriviaSessionWithCategory[]> {
   // Use a large limit to get all sessions
-  return database.getRecentTriviaSessions(1000, false);
+  return database.getRecentTriviaSessions(1000);
 }
 
 /**
