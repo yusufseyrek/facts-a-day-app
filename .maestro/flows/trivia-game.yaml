@@ -37,16 +37,34 @@ appId: dev.seyrek.factsaday
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/06_trivia_game
 
-# Exit the game
+# Wait for screen to be fully stable before exit (prevents stale element issues)
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# First verify exit button is visible
+- extendedWaitUntil:
+    visible:
+      id: "trivia-game-exit-button"
+    timeout: 5000
+
+# Exit the game - tap and wait for modal animation
 - tapOn:
     id: "trivia-game-exit-button"
     retryTapIfNoChange: true
 
-# Wait for exit modal
+# Wait for modal animation to start (fade + spring animation)
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Wait for exit modal confirm button to be visible
 - extendedWaitUntil:
     visible:
       id: "trivia-exit-confirm"
-    timeout: 5000
+    timeout: 8000
+
+# Extra wait for modal animation to fully complete (springify)
+- waitForAnimationToEnd:
+    timeout: 500
 
 # Confirm exit
 - tapOn:

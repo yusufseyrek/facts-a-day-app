@@ -117,6 +117,8 @@ export function TriviaGameView({
             pressed && { opacity: 0.6 }
           ]}
           testID="trivia-game-exit-button"
+          accessible={true}
+          accessibilityRole="button"
           accessibilityLabel="Exit"
         >
           <X size={24} color={textColor} />

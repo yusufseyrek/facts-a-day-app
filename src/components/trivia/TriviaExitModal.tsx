@@ -242,6 +242,8 @@ export function TriviaExitModal({
               <Pressable 
                 onPress={onExit}
                 testID="trivia-exit-confirm"
+                accessible={true}
+                accessibilityRole="button"
                 accessibilityLabel={exitText}
                 style={({ pressed }) => ({
                   flex: 1,
