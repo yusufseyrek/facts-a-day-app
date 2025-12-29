@@ -545,6 +545,19 @@ export function prefetchFactImagesWithLimit(
 }
 
 /**
+ * Clear all in-memory caches
+ * Called when clearing disk cache or when memory pressure is detected
+ */
+function clearImageMemoryCaches(): void {
+  fileExistenceCache.clear();
+  pendingExistenceChecks.clear();
+  pendingDownloads.clear();
+  prefetchedFactIds.clear();
+  prefetchQueue.length = 0;
+  imagesDirExists = false;
+}
+
+/**
  * Clear all cached images to free up disk space
  * 
  * @returns Object with count of deleted files and freed space estimate
