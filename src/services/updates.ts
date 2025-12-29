@@ -6,9 +6,37 @@
  */
 
 import * as Updates from 'expo-updates';
-import { Platform } from 'react-native';
+import { Platform, Appearance } from 'react-native';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCachedAppCheckToken } from './appCheckToken';
+import { tokens } from '../theme/tokens';
+
+const THEME_STORAGE_KEY = '@app_theme_mode';
+
+/**
+ * Get the current theme background color based on user preference
+ */
+async function getThemeBackgroundColor(): Promise<string> {
+  try {
+    const savedMode = await AsyncStorage.getItem(THEME_STORAGE_KEY);
+    
+    if (savedMode === 'light') {
+      return tokens.color.light.background;
+    } else if (savedMode === 'dark') {
+      return tokens.color.dark.background;
+    } else {
+      // 'system' or not set - use system theme
+      const systemTheme = Appearance.getColorScheme() || 'dark';
+      return systemTheme === 'light' 
+        ? tokens.color.light.background 
+        : tokens.color.dark.background;
+    }
+  } catch {
+    // Fallback to dark theme on error
+    return tokens.color.dark.background;
+  }
+}
 
 // Update check result types
 export type UpdateCheckResult = 
@@ -62,35 +90,57 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
   }
 
   try {
-    console.log('📦 Checking for updates...');
+    console.log('📦 ========== UPDATE CHECK START ==========');
     console.log('📦 Runtime Version:', getRuntimeVersion());
     console.log('📦 Platform:', Platform.OS);
     console.log('📦 Update URL:', Constants.expoConfig?.updates?.url);
     console.log('📦 Current Update ID:', Updates.updateId);
-    console.log('📦 Is Embedded:', Updates.isEmbeddedLaunch);
+    console.log('📦 Is Embedded Launch:', Updates.isEmbeddedLaunch);
     console.log('📦 Is Enabled:', Updates.isEnabled);
+    console.log('📦 Channel:', Updates.channel);
+    
+    // Log the current manifest if available
+    const currentManifest = (Updates as any).manifest;
+    if (currentManifest) {
+      console.log('📦 Current manifest ID:', currentManifest.id);
+      console.log('📦 Current manifest createdAt:', currentManifest.createdAt);
+    }
     
     const update = await Updates.checkForUpdateAsync();
     
-    console.log('📦 Check result - isAvailable:', update.isAvailable);
-    console.log('📦 Check result - manifest:', update.manifest ? JSON.stringify(update.manifest, null, 2) : 'null');
-    console.log('📦 Check result - reason:', (update as any).reason || 'none');
-    console.log('📦 Check result - isRollBackToEmbedded:', (update as any).isRollBackToEmbedded);
+    console.log('📦 ========== CHECK RESULT ==========');
+    console.log('📦 isAvailable:', update.isAvailable);
+    console.log('📦 reason:', (update as any).reason || 'none');
+    console.log('📦 isRollBackToEmbedded:', (update as any).isRollBackToEmbedded);
+    
+    if (update.manifest) {
+      const manifest = update.manifest as any;
+      console.log('📦 Server manifest ID:', manifest.id);
+      console.log('📦 Server manifest createdAt:', manifest.createdAt);
+      console.log('📦 Server manifest runtimeVersion:', manifest.runtimeVersion);
+      // Log launchAsset info which is critical for the bundle URL
+      if (manifest.launchAsset) {
+        console.log('📦 Server launchAsset URL:', manifest.launchAsset.url);
+        console.log('📦 Server launchAsset key:', manifest.launchAsset.key);
+      }
+    }
     
     // Store the reason for debugging
     lastCheckReason = (update as any).reason || (update.isAvailable ? 'update_available' : 'unknown');
     
     if (update.isAvailable) {
-      console.log('📦 Update available!');
+      console.log('📦 ✓ Update available!');
       return { 
         type: 'update-available', 
         manifest: update.manifest as Updates.Manifest 
       };
     }
     
-    console.log('📦 No update available, reason:', lastCheckReason);
+    console.log('📦 ✗ No update available, reason:', lastCheckReason);
+    console.log('📦 ========== UPDATE CHECK END ==========');
     return { type: 'no-update' };
   } catch (error) {
+    console.error('📦 ========== UPDATE CHECK ERROR ==========');
     console.error('📦 Failed to check for updates:', error);
     console.error('📦 Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     lastCheckReason = error instanceof Error ? error.message : String(error);
@@ -109,21 +159,38 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
  */
 export async function downloadAndApplyUpdate(): Promise<UpdateDownloadResult> {
   try {
+    console.log('📦 Starting update download...');
+    console.log('📦 Before fetch - Update ID:', Updates.updateId);
+    console.log('📦 Before fetch - Is Embedded:', Updates.isEmbeddedLaunch);
+    
     const result = await Updates.fetchUpdateAsync();
     
+    console.log('📦 Fetch completed');
+    console.log('📦 Fetch result isNew:', result.isNew);
+    console.log('📦 Fetch result manifest:', JSON.stringify(result.manifest, null, 2));
+    
     if (result.isNew) {
+      // Add a small delay to ensure the update is fully persisted to disk
+      // This helps prevent race conditions where reloadAsync is called before
+      // the native module has finished writing the update
+      console.log('📦 Update is new, waiting for persistence...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('📦 Update ready to apply');
       return { 
         type: 'success', 
         manifest: result.manifest as Updates.Manifest 
       };
     }
     
+    console.log('📦 Update was not new');
     return { 
       type: 'error', 
       error: new Error('No new update was downloaded') 
     };
   } catch (error) {
-    console.error('Failed to download update:', error);
+    console.error('📦 Failed to download update:', error);
+    console.error('📦 Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     return { 
       type: 'error', 
       error: error instanceof Error ? error : new Error(String(error)) 
@@ -133,9 +200,88 @@ export async function downloadAndApplyUpdate(): Promise<UpdateDownloadResult> {
 
 /**
  * Reload the app to apply the downloaded update
+ * 
+ * Note: After reload, the app should start with the newly downloaded bundle.
+ * If this doesn't happen, check:
+ * 1. The update manifest ID matches what was downloaded
+ * 2. The native expo-updates module properly persisted the update
+ * 3. The runtime version matches between embedded and downloaded update
  */
 export async function reloadApp(): Promise<void> {
-  await Updates.reloadAsync();
+  console.log('📦 ========== RELOAD START ==========');
+  console.log('📦 Current Update ID before reload:', Updates.updateId);
+  console.log('📦 Is Embedded before reload:', Updates.isEmbeddedLaunch);
+  
+  // Log native state before reload
+  try {
+    const logs = await getNativeLogEntries(60000); // Last minute
+    console.log('📦 Recent native logs:');
+    logs.slice(-5).forEach(l => console.log(`📦   ${l.code}: ${l.message}`));
+  } catch (logError) {
+    console.log('📦 Could not read native logs:', logError);
+  }
+  
+  // Add a longer delay to ensure the update is fully written to disk
+  // This is important because fetchUpdateAsync might return before
+  // the native module has completely finished persisting the update
+  console.log('📦 Waiting for update to be fully persisted...');
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Get the correct background color based on user's theme preference
+  const backgroundColor = await getThemeBackgroundColor();
+  
+  console.log('📦 Calling reloadAsync...');
+  console.log('📦 ========== RELOAD EXECUTING ==========');
+  await Updates.reloadAsync({
+    reloadScreenOptions: {
+      backgroundColor,
+      fade: true,
+    }
+  });
+}
+
+/**
+ * Force reload with verification
+ * This provides an alternative reload method that waits longer
+ * and logs more details for debugging persistent update issues
+ */
+export async function forceReloadWithVerification(): Promise<void> {
+  console.log('📦 ========== FORCE RELOAD WITH VERIFICATION ==========');
+  
+  // Log current state
+  const currentId = Updates.updateId;
+  const isEmbedded = Updates.isEmbeddedLaunch;
+  const manifest = (Updates as any).manifest;
+  
+  console.log('📦 Current state:');
+  console.log('📦   Update ID:', currentId);
+  console.log('📦   Is Embedded:', isEmbedded);
+  console.log('📦   Manifest ID:', manifest?.id);
+  console.log('📦   Manifest createdAt:', manifest?.createdAt);
+  
+  // Wait longer for any async operations to complete
+  console.log('📦 Extended wait for persistence (2s)...');
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Read native logs
+  try {
+    const logs = await getNativeLogEntries(120000); // Last 2 minutes
+    console.log('📦 Native logs before reload:');
+    logs.forEach(l => console.log(`📦   [${l.level}] ${l.code}: ${l.message}`));
+  } catch (e) {
+    console.log('📦 Could not read native logs');
+  }
+  
+  // Get the correct background color based on user's theme preference
+  const backgroundColor = await getThemeBackgroundColor();
+  
+  console.log('📦 Executing reload...');
+  await Updates.reloadAsync({
+    reloadScreenOptions: {
+      backgroundColor,
+      fade: true,
+    }
+  });
 }
 
 /**
@@ -224,13 +370,13 @@ export async function performUpdateCycle(autoReload: boolean = false): Promise<{
 }
 
 /**
- * Add update event listener
+ * Add update state change listener
  * Useful for tracking update download progress or errors
  */
-export function addUpdateEventListener(
-  listener: (event: Updates.UpdateEvent) => void
-): Updates.Subscription {
-  return Updates.addListener(listener);
+export function addUpdateStateChangeListener(
+  listener: (event: Updates.UpdatesNativeStateChangeEvent) => void
+): { remove: () => void } {
+  return Updates.addUpdatesStateChangeListener(listener);
 }
 
 /**
@@ -238,14 +384,49 @@ export function addUpdateEventListener(
  */
 export function logUpdateStatus(): void {
   const info = getUpdateInfo();
-  console.log('📦 OTA Update Status:');
-  console.log(`  Runtime Version: ${info.runtimeVersion}`);
-  console.log(`  Update ID: ${info.updateId || 'none (embedded)'}`);
-  console.log(`  Channel: ${info.channel || 'default'}`);
-  console.log(`  Is Embedded: ${info.isEmbedded}`);
-  console.log(`  Platform: ${Platform.OS}`);
-  console.log(`  Update URL: ${Constants.expoConfig?.updates?.url || 'not set'}`);
-  console.log(`  Updates Enabled: ${Updates.isEnabled}`);
+  console.log('📦 ========== CURRENT UPDATE STATUS ==========');
+  console.log(`📦 Runtime Version: ${info.runtimeVersion}`);
+  console.log(`📦 Update ID: ${info.updateId || 'none (embedded)'}`);
+  console.log(`📦 Channel: ${info.channel || 'default'}`);
+  console.log(`📦 Is Embedded Launch: ${info.isEmbedded}`);
+  console.log(`📦 Platform: ${Platform.OS}`);
+  console.log(`📦 Update URL: ${Constants.expoConfig?.updates?.url || 'not set'}`);
+  console.log(`📦 Updates Enabled: ${Updates.isEnabled}`);
+  
+  // Log manifest details if available
+  const manifest = (Updates as any).manifest;
+  if (manifest) {
+    console.log(`📦 Manifest ID: ${manifest.id}`);
+    console.log(`📦 Manifest Created At: ${manifest.createdAt}`);
+  }
+  console.log('📦 =============================================');
+}
+
+/**
+ * Get detailed current update info including manifest data
+ * Useful for verifying which update is currently running
+ */
+export function getDetailedUpdateInfo(): {
+  updateId: string | null;
+  channel: string | null;
+  runtimeVersion: string;
+  isEmbedded: boolean;
+  manifestId: string | null;
+  manifestCreatedAt: string | null;
+  isEnabled: boolean;
+  updateUrl: string | null;
+} {
+  const manifest = (Updates as any).manifest;
+  return {
+    updateId: Updates.updateId,
+    channel: Updates.channel,
+    runtimeVersion: getRuntimeVersion(),
+    isEmbedded: Updates.isEmbeddedLaunch,
+    manifestId: manifest?.id || null,
+    manifestCreatedAt: manifest?.createdAt || null,
+    isEnabled: Updates.isEnabled,
+    updateUrl: Constants.expoConfig?.updates?.url || null,
+  };
 }
 
 /**

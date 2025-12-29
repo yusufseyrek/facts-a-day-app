@@ -147,18 +147,27 @@ export default function SettingsPage() {
   const getUpdateDebugInfo = (): string => {
     const info = updates.getUpdateInfo();
     const reason = updates.getLastCheckReason();
-    // Try to get createdAt from manifest
+    // Try to get full manifest details
     const manifest = (Updates as any).manifest;
     const createdAt = manifest?.createdAt || 'unknown';
+    const manifestId = manifest?.id || 'none';
+    const launchAssetUrl = manifest?.launchAsset?.url || 'none';
+    
     return [
+      `--- Current Running Update ---`,
       `Runtime: ${info.runtimeVersion}`,
-      `Update ID: ${info.updateId || 'embedded'}`,
+      `Update ID: ${info.updateId || 'null (embedded)'}`,
+      `Manifest ID: ${manifestId}`,
       `Created At: ${createdAt}`,
       `Is Embedded: ${info.isEmbedded}`,
       `Channel: ${info.channel || 'default'}`,
       `Platform: ${Platform.OS}`,
+      `--- Configuration ---`,
       `URL: ${Constants.expoConfig?.updates?.url || 'not set'}`,
+      `Updates Enabled: ${Updates.isEnabled}`,
+      `--- Debug ---`,
       `Last Check Reason: ${reason || 'not checked yet'}`,
+      `LaunchAsset URL: ${launchAssetUrl}`,
     ].join('\n');
   };
 
@@ -173,20 +182,77 @@ export default function SettingsPage() {
           'expo-protocol-version': '1',
           'expo-platform': Platform.OS,
           'expo-runtime-version': updates.getRuntimeVersion(),
+          'expo-current-update-id': updates.getUpdateInfo().updateId || '',
           'Accept': 'multipart/mixed',
         },
       });
       
       const status = response.status;
+      const contentType = response.headers.get('content-type') || 'unknown';
       const text = await response.text();
       
-      // Extract manifest ID from response
+      // Extract key fields from response
       const idMatch = text.match(/"id"\s*:\s*"([^"]+)"/);
       const manifestId = idMatch ? idMatch[1] : 'not found';
       
-      return `Status: ${status}\nManifest ID: ${manifestId}\nCurrent ID: ${updates.getUpdateInfo().updateId || 'none'}`;
+      const createdAtMatch = text.match(/"createdAt"\s*:\s*"([^"]+)"/);
+      const createdAt = createdAtMatch ? createdAtMatch[1] : 'not found';
+      
+      const launchAssetMatch = text.match(/"launchAsset"\s*:\s*\{[^}]*"url"\s*:\s*"([^"]+)"/);
+      const launchAssetUrl = launchAssetMatch ? launchAssetMatch[1] : 'not found';
+      
+      const runtimeMatch = text.match(/"runtimeVersion"\s*:\s*"([^"]+)"/);
+      const serverRuntime = runtimeMatch ? runtimeMatch[1] : 'not found';
+      
+      const currentInfo = updates.getUpdateInfo();
+      
+      return [
+        `--- Server Response ---`,
+        `HTTP Status: ${status}`,
+        `Content-Type: ${contentType}`,
+        `Server Manifest ID: ${manifestId}`,
+        `Server Created At: ${createdAt}`,
+        `Server Runtime: ${serverRuntime}`,
+        `Server Bundle URL: ${launchAssetUrl.substring(0, 50)}...`,
+        `--- Comparison ---`,
+        `Current ID: ${currentInfo.updateId || 'null (embedded)'}`,
+        `Current Runtime: ${currentInfo.runtimeVersion}`,
+        `IDs Match: ${manifestId === currentInfo.updateId ? 'YES (no update needed)' : 'NO (update available)'}`,
+      ].join('\n');
     } catch (error) {
       return `Fetch error: ${error instanceof Error ? error.message : 'unknown'}`;
+    }
+  };
+
+  // Fetch raw manifest for debugging
+  const fetchRawManifest = async (): Promise<string> => {
+    try {
+      const url = Constants.expoConfig?.updates?.url;
+      if (!url) return 'No update URL configured';
+      
+      const response = await fetch(url, {
+        headers: {
+          'expo-protocol-version': '1',
+          'expo-platform': Platform.OS,
+          'expo-runtime-version': updates.getRuntimeVersion(),
+          'Accept': 'multipart/mixed',
+        },
+      });
+      
+      const text = await response.text();
+      // Try to extract and format the JSON manifest from multipart response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          return JSON.stringify(parsed, null, 2);
+        } catch {
+          return text.substring(0, 2000) + '...';
+        }
+      }
+      return text.substring(0, 2000) + '...';
+    } catch (error) {
+      return `Error: ${error instanceof Error ? error.message : 'unknown'}`;
     }
   };
 
@@ -202,6 +268,14 @@ export default function SettingsPage() {
       `${debugInfo}\n\n--- Server Check ---\n${manifestInfo}`,
       [
         { text: "Close", style: "cancel" },
+        {
+          text: "Raw Manifest",
+          style: "default",
+          onPress: async () => {
+            const rawManifest = await fetchRawManifest();
+            Alert.alert("Raw Server Manifest", rawManifest, [{ text: "OK", style: "default" }]);
+          },
+        },
         {
           text: "Native Logs",
           style: "default",
@@ -236,7 +310,8 @@ export default function SettingsPage() {
                       text: "Restart Now",
                       style: "default",
                       onPress: async () => {
-                        await updates.reloadApp();
+                        // Use the more robust reload with verification
+                        await updates.forceReloadWithVerification();
                       },
                     },
                   ]

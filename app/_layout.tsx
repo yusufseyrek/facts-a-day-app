@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,17 +13,11 @@ import * as database from '../src/services/database';
 import * as contentRefresh from '../src/services/contentRefresh';
 import { initializeAdsForReturningUser } from '../src/services/ads';
 import * as updates from '../src/services/updates';
-import { ActivityIndicator, View, AppState, AppStateStatus } from 'react-native';
+import { View, AppState, AppStateStatus } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Localization from 'expo-localization';
+import * as SplashScreen from 'expo-splash-screen';
 import { initializeFirebase, enableCrashlyticsConsoleLogging } from '../src/config/firebase';
-// expo-system-ui requires native rebuild - import conditionally
-let SystemUI: typeof import('expo-system-ui') | null = null;
-try {
-  SystemUI = require('expo-system-ui');
-} catch {
-  // Native module not available (needs prebuild)
-}
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initAnalytics } from '../src/services/analytics';
 import {
@@ -46,6 +40,17 @@ enableCrashlyticsConsoleLogging();
 
 // Initialize analytics with device info and user properties
 initAnalytics();
+
+// Log update status immediately on app start (before any async operations)
+// This helps debug whether the correct bundle was loaded after an update
+if (!__DEV__) {
+  updates.logUpdateStatus();
+  console.log('📦 APP START - Update state snapshot:');
+  const startupInfo = updates.getUpdateInfo();
+  console.log('📦 APP START - Update ID:', startupInfo.updateId);
+  console.log('📦 APP START - Is Embedded:', startupInfo.isEmbedded);
+  console.log('📦 APP START - Runtime Version:', startupInfo.runtimeVersion);
+}
 
 const NOTIFICATION_TRACK_KEY = 'last_processed_notification_id';
 
@@ -76,20 +81,9 @@ const CustomLightTheme = {
 };
 
 // Component that wraps content with navigation ThemeProvider based on app theme
-// Also syncs the native root view background color with the app theme
 function NavigationThemeWrapper({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
   const navigationTheme = theme === 'dark' ? CustomDarkTheme : CustomLightTheme;
-  
-  // Sync native root view background with app theme (when native module is available)
-  useEffect(() => {
-    if (SystemUI) {
-      const backgroundColor = theme === 'dark' 
-        ? tokens.color.dark.background 
-        : tokens.color.light.background;
-      SystemUI.setBackgroundColorAsync(backgroundColor);
-    }
-  }, [theme]);
   
   return (
     <ThemeProvider value={navigationTheme}>
@@ -215,26 +209,55 @@ export default function RootLayout() {
 
   // Track previous app state to detect foreground transitions
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  
+  // Track when an OTA update has been downloaded and is ready to apply
+  const pendingUpdateRef = useRef<boolean>(false);
+  
+  // Interval for periodic OTA update checks (30 minutes)
+  const UPDATE_CHECK_INTERVAL = 30 * 60 * 1000;
 
   useEffect(() => {
     initializeApp();
   }, []);
 
-  // Listen for app state changes to top up notifications when app enters foreground
+  // Listen for app state changes to sync notifications and check for OTA updates when app enters foreground
   useEffect(() => {
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       // Only run when app transitions from background/inactive to active (foreground)
       if (
         appStateRef.current.match(/inactive|background/) &&
         nextAppState === 'active' &&
         initialOnboardingStatus === true
       ) {
+        // If an update was downloaded previously, reload the app immediately
+        if (pendingUpdateRef.current) {
+          console.log('📦 Pending OTA update detected on foreground, reloading app...');
+          pendingUpdateRef.current = false;
+          try {
+            await updates.reloadApp();
+            return; // App will reload, no need to continue
+          } catch (error) {
+            console.error('Failed to reload app for OTA update:', error);
+          }
+        }
+
         console.log('📱 App entered foreground, syncing notifications...');
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
         notificationService.syncNotificationSchedule(
           getLocaleFromCode(deviceLocale)
         ).catch((error) => {
           console.error('Notification sync failed:', error);
+        });
+
+        // Check for OTA updates when app enters foreground
+        console.log('📦 Checking for OTA updates on foreground...');
+        updates.checkAndDownloadUpdate().then((result) => {
+          if (result.updateAvailable && result.downloaded) {
+            console.log('📦 OTA update downloaded, marking as pending for next foreground');
+            pendingUpdateRef.current = true;
+          }
+        }).catch((error) => {
+          console.error('OTA update check on foreground failed:', error);
         });
       }
       appStateRef.current = nextAppState;
@@ -244,6 +267,33 @@ export default function RootLayout() {
 
     return () => {
       subscription.remove();
+    };
+  }, [initialOnboardingStatus]);
+
+  // Periodically check for OTA updates
+  // This helps users who keep the app open for long periods get updates
+  useEffect(() => {
+    if (!initialOnboardingStatus) return;
+
+    const checkForUpdates = () => {
+      // Only check when app is in foreground
+      if (AppState.currentState === 'active') {
+        console.log('📦 Periodic OTA update check...');
+        updates.checkAndDownloadUpdate().then((result) => {
+          if (result.updateAvailable && result.downloaded) {
+            console.log('📦 OTA update downloaded, marking as pending for next foreground');
+            pendingUpdateRef.current = true;
+          }
+        }).catch((error) => {
+          console.error('Periodic OTA update check failed:', error);
+        });
+      }
+    };
+
+    const intervalId = setInterval(checkForUpdates, UPDATE_CHECK_INTERVAL);
+
+    return () => {
+      clearInterval(intervalId);
     };
   }, [initialOnboardingStatus]);
 
@@ -296,7 +346,8 @@ export default function RootLayout() {
         // This runs asynchronously and doesn't block app startup
         updates.checkAndDownloadUpdate().then((result) => {
           if (result.updateAvailable && result.downloaded) {
-            console.log('📦 OTA update downloaded, will apply on next restart');
+            console.log('📦 OTA update downloaded on cold start, marking as pending for next foreground');
+            pendingUpdateRef.current = true;
           } else if (result.error) {
             console.error('OTA update check failed:', result.error);
           }
@@ -317,29 +368,34 @@ export default function RootLayout() {
     }
   };
 
-  // Show loading while initializing app, loading fonts, and checking onboarding status
-  // Use dark background to match splash screen and native root view background
+  // Hide splash screen once app is fully loaded
+  const onLayoutRootView = useCallback(async () => {
+    if (isDbReady && initialOnboardingStatus !== null && fontsLoaded) {
+      // Hide splash screen with a slight delay to ensure smooth transition
+      await SplashScreen.hideAsync();
+    }
+  }, [isDbReady, initialOnboardingStatus, fontsLoaded]);
+
+  // Keep splash screen visible while loading
   if (!isDbReady || initialOnboardingStatus === null || !fontsLoaded) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: tokens.color.dark.background }}>
-        <ActivityIndicator size="large" color={tokens.color.dark.primary} />
-      </View>
-    );
+    return null;
   }
 
   return (
-    <ErrorBoundary>
-      <SafeAreaProvider>
-        <I18nProvider>
-          <OnboardingProvider initialComplete={initialOnboardingStatus}>
-            <AppThemeProvider>
-              <NavigationThemeWrapper>
-                <AppContent />
-              </NavigationThemeWrapper>
-            </AppThemeProvider>
-          </OnboardingProvider>
-        </I18nProvider>
-      </SafeAreaProvider>
-    </ErrorBoundary>
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <ErrorBoundary>
+        <SafeAreaProvider>
+          <I18nProvider>
+            <OnboardingProvider initialComplete={initialOnboardingStatus}>
+              <AppThemeProvider>
+                <NavigationThemeWrapper>
+                  <AppContent />
+                </NavigationThemeWrapper>
+              </AppThemeProvider>
+            </OnboardingProvider>
+          </I18nProvider>
+        </SafeAreaProvider>
+      </ErrorBoundary>
+    </View>
   );
 }
