@@ -7,12 +7,17 @@ appId: dev.seyrek.factsaday
 # Navigate to discover tab
 - tapOn:
     id: "tab-discover"
+    retryTapIfNoChange: true
 
 # Wait for categories to load
 - extendedWaitUntil:
     visible:
       id: "discover-category-0"
-    timeout: 5000
+    timeout: 8000
+
+# Wait for animations to settle
+- waitForAnimationToEnd:
+    timeout: 2000
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/03_discover

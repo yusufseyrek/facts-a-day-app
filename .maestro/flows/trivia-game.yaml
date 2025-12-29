@@ -4,28 +4,35 @@
 appId: dev.seyrek.factsaday
 
 ---
+# Wait for screen to stabilize
+- waitForAnimationToEnd:
+    timeout: 1000
+
 # Tap on Mixed Trivia card (or Daily if mixed unavailable)
 - tapOn:
     id: "trivia-card-mixed"
     optional: true
+    retryTapIfNoChange: true
 
 - tapOn:
     id: "trivia-card-daily"
     optional: true
+    retryTapIfNoChange: true
 
 # Wait for intro modal
 - extendedWaitUntil:
     visible:
       id: "trivia-start-button"
-    timeout: 5000
+    timeout: 8000
 
 # Tap Start button
 - tapOn:
     id: "trivia-start-button"
+    retryTapIfNoChange: true
 
-# Wait for game to load
+# Wait for game to load (question animations)
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 3000
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/06_trivia_game
@@ -33,17 +40,19 @@ appId: dev.seyrek.factsaday
 # Exit the game
 - tapOn:
     id: "trivia-game-exit-button"
+    retryTapIfNoChange: true
 
 # Wait for exit modal
 - extendedWaitUntil:
     visible:
       id: "trivia-exit-confirm"
-    timeout: 3000
+    timeout: 5000
 
 # Confirm exit
 - tapOn:
     id: "trivia-exit-confirm"
+    retryTapIfNoChange: true
 
 # Wait to return to trivia hub
 - waitForAnimationToEnd:
-    timeout: 1000
+    timeout: 2000

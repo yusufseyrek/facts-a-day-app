@@ -6,8 +6,11 @@ appId: dev.seyrek.factsaday
 # Don't clear app state - preserve existing data for authentic screenshots
 clearState: false
 
-# Default timeout for element visibility
-waitTimeout: 10000
+# Default timeout for element visibility (increased for slow devices/simulators)
+waitTimeout: 15000
+
+# Retry configuration for flaky elements (helps with FlashList recycling)
+retryCount: 3
 
 # Screenshot output settings
 output:

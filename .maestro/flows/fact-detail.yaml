@@ -4,10 +4,25 @@
 appId: dev.seyrek.factsaday
 
 ---
-# Tap on the first fact card
+# Wait for any loading/animations to settle before interacting with list
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Wait for first fact card to be visible and stable
+- extendedWaitUntil:
+    visible:
+      id: "fact-card-.*"
+    timeout: 10000
+
+# Extra settle time for FlashList recycling to complete
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Tap on the first fact card with retry logic
 - tapOn:
     id: "fact-card-.*"
     index: 0
+    retryTapIfNoChange: true
 
 # Wait for fact detail modal
 - extendedWaitUntil:
@@ -25,6 +40,7 @@ appId: dev.seyrek.factsaday
     commands:
       - tapOn:
           id: "fact-modal-close-button"
+          retryTapIfNoChange: true
       - waitForAnimationToEnd:
           timeout: 1000
 

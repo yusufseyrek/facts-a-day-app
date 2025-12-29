@@ -4,10 +4,15 @@
 appId: dev.seyrek.factsaday
 
 ---
+# Wait for screen to stabilize
+- waitForAnimationToEnd:
+    timeout: 1000
+
 # Tap on the first session card (already on performance from previous flow)
 - tapOn:
     id: "trivia-session-0"
     optional: true
+    retryTapIfNoChange: true
 
 # Wait for results view to load
 - waitForAnimationToEnd:
@@ -24,14 +29,18 @@ appId: dev.seyrek.factsaday
     commands:
       - tapOn:
           id: "trivia-results-back-button"
+          retryTapIfNoChange: true
       - waitForAnimationToEnd:
           timeout: 1000
       - tapOn:
           id: "trivia-performance-back-button"
+          retryTapIfNoChange: true
 
 - runFlow:
     when:
       platform: Android
     commands:
       - pressKey: back
+      - waitForAnimationToEnd:
+          timeout: 500
       - pressKey: back

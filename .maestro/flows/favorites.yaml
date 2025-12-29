@@ -7,10 +7,11 @@ appId: dev.seyrek.factsaday
 # Navigate to favorites tab
 - tapOn:
     id: "tab-favorites"
+    retryTapIfNoChange: true
 
-# Wait for content to load
+# Wait for content to load (favorites list or empty state)
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 3000
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/09_favorites

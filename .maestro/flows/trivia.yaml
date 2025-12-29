@@ -7,12 +7,17 @@ appId: dev.seyrek.factsaday
 # Navigate to trivia tab
 - tapOn:
     id: "tab-trivia"
+    retryTapIfNoChange: true
 
 # Wait for trivia hub to load
 - extendedWaitUntil:
     visible:
       id: "trivia-stats-hero"
-    timeout: 5000
+    timeout: 8000
+
+# Wait for animations
+- waitForAnimationToEnd:
+    timeout: 2000
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/05_trivia

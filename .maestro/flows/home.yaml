@@ -4,9 +4,15 @@
 appId: dev.seyrek.factsaday
 
 ---
-# Wait for images to load
+# Wait for the feed to fully load and render
+- extendedWaitUntil:
+    visible:
+      id: "fact-card-.*"
+    timeout: 10000
+
+# Wait for images and animations to settle
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 3000
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/01_home

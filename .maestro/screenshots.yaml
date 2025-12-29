@@ -20,9 +20,16 @@ appId: dev.seyrek.factsaday
       id: "tab-home"
     timeout: 15000
 
-# Initial load wait
+# Wait for initial content to load (facts should appear)
+- extendedWaitUntil:
+    visible:
+      id: "fact-card-.*"
+    timeout: 15000
+
+# Extended wait for all animations, image loading, and list settling
+# This prevents kAXErrorInvalidUIElement errors from FlashList recycling
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 4000
 
 # Run all screen flows in sequence
 # Flows assume state from previous flow for efficiency

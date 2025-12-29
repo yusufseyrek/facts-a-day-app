@@ -4,20 +4,25 @@
 appId: dev.seyrek.factsaday
 
 ---
+# Wait for screen to stabilize
+- waitForAnimationToEnd:
+    timeout: 1000
+
 # Tap on the stats hero card
 - tapOn:
     id: "trivia-stats-hero"
+    retryTapIfNoChange: true
 
 # Wait for performance screen to load
 - extendedWaitUntil:
     visible:
       id: "trivia-session-0"
-    timeout: 5000
+    timeout: 8000
     optional: true
 
-# Small wait for animations
+# Wait for animations
 - waitForAnimationToEnd:
-    timeout: 1000
+    timeout: 2000
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/07_trivia_performance
