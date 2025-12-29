@@ -23,6 +23,39 @@ import getAppCheck, {
 import { getApp } from "@react-native-firebase/app";
 import { Platform } from "react-native";
 import * as Device from "expo-device";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// Key for storing the debug token
+const APP_CHECK_DEBUG_TOKEN_KEY = 'appcheck_debug_token';
+
+/**
+ * Generate a UUID v4 for debug token
+ */
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16).toUpperCase();
+  });
+}
+
+/**
+ * Get or create a persistent debug token for App Check
+ */
+async function getOrCreateDebugToken(): Promise<string> {
+  try {
+    const existingToken = await AsyncStorage.getItem(APP_CHECK_DEBUG_TOKEN_KEY);
+    if (existingToken) {
+      return existingToken;
+    }
+    
+    const newToken = generateUUID();
+    await AsyncStorage.setItem(APP_CHECK_DEBUG_TOKEN_KEY, newToken);
+    return newToken;
+  } catch {
+    return generateUUID();
+  }
+}
 
 // Get Firebase instances using modular API
 const crashlyticsInstance = getCrashlytics();
@@ -73,6 +106,13 @@ export async function initializeAppCheckService() {
   const androidProvider = useDebugProvider ? 'debug' : 'playIntegrity';
   const providerName = isIOS ? iosProvider : androidProvider;
   
+  // Get or create debug token for development
+  let debugToken: string | undefined;
+  if (useDebugProvider) {
+    debugToken = await getOrCreateDebugToken();
+    console.log(`🔑 App Check Debug Token: ${debugToken}`);
+  }
+  
   let lastError: Error | null = null;
   
   for (let attempt = 0; attempt <= APP_CHECK_INIT_MAX_RETRIES; attempt++) {
@@ -87,10 +127,14 @@ export async function initializeAppCheckService() {
         apple: {
           // Use debug on simulators, appAttest on real devices
           provider: iosProvider,
+          // Pass debug token for debug provider
+          ...(useDebugProvider && debugToken ? { debugToken } : {}),
         },
         android: {
           // Use debug on emulators, playIntegrity on real devices
           provider: androidProvider,
+          // Pass debug token for debug provider
+          ...(useDebugProvider && debugToken ? { debugToken } : {}),
         },
         // Enable token auto-refresh
         isTokenAutoRefreshEnabled: true,

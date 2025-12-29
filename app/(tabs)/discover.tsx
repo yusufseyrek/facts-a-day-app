@@ -456,16 +456,16 @@ function DiscoverScreen() {
               }
             />
             {selectedCategory && (
-              <CategoryChip style={{ backgroundColor: categoryColor }}>
-                <LabelText
-                  color={contrastColor}
-                  fontSize={tokens.fontSize.small}
-                  numberOfLines={1}
-                  style={{ fontFamily: "Montserrat_600SemiBold" }}
-                >
-                  {selectedCategory.name}
-                </LabelText>
-                <Pressable onPress={clearCategoryFilter}>
+              <Pressable onPress={clearCategoryFilter}>
+                <CategoryChip style={{ backgroundColor: categoryColor }}>
+                  <LabelText
+                    color={contrastColor}
+                    fontSize={tokens.fontSize.small}
+                    numberOfLines={1}
+                    style={{ fontFamily: "Montserrat_600SemiBold" }}
+                  >
+                    {selectedCategory.name}
+                  </LabelText>
                   <CategoryChipClearButton
                     style={{
                       backgroundColor:
@@ -476,8 +476,8 @@ function DiscoverScreen() {
                   >
                     <X size={12} color={contrastColor} />
                   </CategoryChipClearButton>
-                </Pressable>
-              </CategoryChip>
+                </CategoryChip>
+              </Pressable>
             )}
             <SearchInput
               ref={searchInputRef}
