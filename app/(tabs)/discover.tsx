@@ -603,6 +603,7 @@ function DiscoverScreen() {
                           key={category.slug}
                           onPress={() => handleCategoryPress(category.slug)}
                           style={{ flex: 1 }}
+                          testID={`discover-category-${rowIndex * numColumns + row.indexOf(category)}`}
                         >
                           {({ pressed }) => (
                             <DiscoverCategoryCard

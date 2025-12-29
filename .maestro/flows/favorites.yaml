@@ -9,14 +9,8 @@ appId: dev.seyrek.factsaday
     id: "tab-favorites"
 
 # Wait for content to load
-- extendedWaitUntil:
-    visible:
-      text: ".*"
-    timeout: 5000
-
-# Allow time for images to load
 - waitForAnimationToEnd:
-    timeout: 3000
+    timeout: 2000
 
 # Take screenshot
-- takeScreenshot: ${OUTPUT_DIR}/07_favorites
+- takeScreenshot: ${OUTPUT_DIR}/09_favorites

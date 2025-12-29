@@ -231,12 +231,14 @@ function SessionCard({
   t,
   onPress,
   dateFormat = 'time',
+  testID,
 }: {
   session: TriviaSessionWithCategory;
   isDark: boolean;
   t: (key: any, params?: any) => string;
   onPress?: () => void;
   dateFormat?: 'time' | 'relative';
+  testID?: string;
 }) {
   const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
@@ -350,6 +352,7 @@ function SessionCard({
       style={({ pressed }) => [
         pressed && hasResultData && { opacity: 0.8 }
       ]}
+      testID={testID}
     >
       <XStack
         backgroundColor={cardBg}
@@ -763,7 +766,7 @@ export default function PerformanceScreen() {
               </XStack>
               
               <YStack gap={tokens.space.md}>
-                {recentSessions.map((session) => (
+                {recentSessions.map((session, index) => (
                   <SessionCard
                     key={session.id}
                     session={session}
@@ -771,6 +774,7 @@ export default function PerformanceScreen() {
                     t={t}
                     dateFormat="relative"
                     onPress={() => handleSessionClick(session.id)}
+                    testID={`trivia-session-${index}`}
                   />
                 ))}
               </YStack>

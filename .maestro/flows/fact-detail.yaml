@@ -1,45 +1,22 @@
 # Fact Detail Screen Screenshot Flow
-# Captures an individual fact detail view
+# Assumes we're on home screen from previous flow
 
 appId: dev.seyrek.factsaday
 
 ---
-# First ensure we're on the home tab
-- tapOn:
-    id: "tab-home"
-
-# Wait for home content with fact cards
-- extendedWaitUntil:
-    visible:
-      id: "fact-card-.*"
-    timeout: 8000
-
-# Extra wait for all cards to be fully loaded and interactive
-- waitForAnimationToEnd:
-    timeout: 3000
-
 # Tap on the first fact card
-# pointerEvents="box-none" on Animated.View allows touch to pass through
 - tapOn:
     id: "fact-card-.*"
     index: 0
 
-# Wait for fact detail modal to load (close button indicates modal is open)
+# Wait for fact detail modal
 - extendedWaitUntil:
     visible:
       id: "fact-modal-close-button"
-    timeout: 8000
-
-# Wait for modal animation to complete
-- waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 5000
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/02_fact_detail
 
-# Go back (Android back button closes modal)
+# Close modal
 - pressKey: back
-
-# Wait for home screen
-- waitForAnimationToEnd:
-    timeout: 2000

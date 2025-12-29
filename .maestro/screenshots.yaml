@@ -14,65 +14,46 @@ appId: dev.seyrek.factsaday
     clearState: false
     clearKeychain: false
 
-# Wait for app to fully load past splash screen
-# Looking for the tab bar home button to confirm main UI is ready
+# Wait for app to fully load (tab bar visible)
 - extendedWaitUntil:
     visible:
       id: "tab-home"
     timeout: 15000
 
-# Extra wait for initial animations to settle
-- waitForAnimationToEnd:
-    timeout: 5000
-
-# Run all screen flows in sequence
-# Each flow captures one or more screenshots
-
-# 1. Home Screen
-- runFlow: flows/home.yaml
-
-# Stabilization pause
-- waitForAnimationToEnd:
-    timeout: 2000
-
-# 2. Fact Detail
-- runFlow: flows/fact-detail.yaml
-
-# Stabilization pause
-- waitForAnimationToEnd:
-    timeout: 2000
-
-# 3. Discover Screen
-- runFlow: flows/discover.yaml
-
-# Stabilization pause
-- waitForAnimationToEnd:
-    timeout: 2000
-
-# 4. Trivia Hub
-- runFlow: flows/trivia.yaml
-
-# Stabilization pause - extra time before complex trivia-game flow
+# Initial load wait
 - waitForAnimationToEnd:
     timeout: 3000
 
-# 5. Trivia Game (skip if causing issues - can be run separately)
+# Run all screen flows in sequence
+# Flows assume state from previous flow for efficiency
+
+# 1. Home Screen (already on home after launch)
+- runFlow: flows/home.yaml
+
+# 2. Fact Detail (opens modal from home)
+- runFlow: flows/fact-detail.yaml
+
+# 3. Discover Screen (navigates to discover tab)
+- runFlow: flows/discover.yaml
+
+# 4. Category Browse (taps category, already on discover)
+- runFlow: flows/category-browse.yaml
+
+# 5. Trivia Hub (navigates to trivia tab)
+- runFlow: flows/trivia.yaml
+
+# 6. Trivia Game (starts game, already on trivia hub)
 - runFlow: flows/trivia-game.yaml
 
-# Stabilization pause
-- waitForAnimationToEnd:
-    timeout: 2000
-
-# 6. Trivia Performance
+# 7. Trivia Performance (opens from trivia hub)
 - runFlow: flows/trivia-performance.yaml
 
-# Stabilization pause
-- waitForAnimationToEnd:
-    timeout: 2000
+# 8. Trivia Results (taps session, already on performance)
+- runFlow: flows/trivia-results.yaml
 
-# 7. Favorites Screen
+# 9. Favorites Screen (navigates to favorites tab)
 - runFlow: flows/favorites.yaml
 
-# Return to home at the end
+# Return to home
 - tapOn:
     id: "tab-home"

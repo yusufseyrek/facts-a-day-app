@@ -1,0 +1,21 @@
+# Trivia Results Screen Screenshot Flow
+# Assumes we're on performance screen from previous flow
+
+appId: dev.seyrek.factsaday
+
+---
+# Tap on the first session card (already on performance from previous flow)
+- tapOn:
+    id: "trivia-session-0"
+    optional: true
+
+# Wait for results view to load
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Take screenshot
+- takeScreenshot: ${OUTPUT_DIR}/08_trivia_results
+
+# Go back to trivia hub (2 backs: results -> performance -> hub)
+- pressKey: back
+- pressKey: back

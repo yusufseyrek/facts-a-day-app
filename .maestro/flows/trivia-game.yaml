@@ -1,72 +1,49 @@
 # Trivia Game Screen Screenshot Flow
-# Captures an active trivia game in progress
+# Assumes we're on trivia hub from previous flow
 
 appId: dev.seyrek.factsaday
 
 ---
-# Wait for UI to stabilize first
-- waitForAnimationToEnd:
-    timeout: 2000
-
-# Navigate to trivia tab first
-- tapOn:
-    id: "tab-trivia"
-
-# Wait for trivia hub to load
-- waitForAnimationToEnd:
-    timeout: 3000
-
-# Tap on Mixed Trivia card using testID
+# Tap on Mixed Trivia card (or Daily if mixed unavailable)
 - tapOn:
     id: "trivia-card-mixed"
     optional: true
 
-# If mixed not available, try Daily Trivia using testID
 - tapOn:
     id: "trivia-card-daily"
     optional: true
 
 # Wait for intro modal
-- waitForAnimationToEnd:
-    timeout: 3000
+- extendedWaitUntil:
+    visible:
+      id: "trivia-start-button"
+    timeout: 5000
 
-# Tap Start button using testID
+# Tap Start button
 - tapOn:
     id: "trivia-start-button"
-    optional: true
 
 # Wait for game to load
 - waitForAnimationToEnd:
-    timeout: 3000
+    timeout: 2000
 
-# Take screenshot of the game in progress
-- takeScreenshot: ${OUTPUT_DIR}/05_trivia_game
+# Take screenshot
+- takeScreenshot: ${OUTPUT_DIR}/06_trivia_game
 
-# Wait before exit to stabilize
-- waitForAnimationToEnd:
-    timeout: 1000
-
-# Exit the game by tapping the X button
+# Exit the game
 - tapOn:
     id: "trivia-game-exit-button"
 
-# Wait for custom exit modal to appear
-- waitForAnimationToEnd:
-    timeout: 2000
+# Wait for exit modal
+- extendedWaitUntil:
+    visible:
+      id: "trivia-exit-confirm"
+    timeout: 3000
 
-# Tap Exit button on the custom modal using testID
+# Confirm exit
 - tapOn:
     id: "trivia-exit-confirm"
 
-# Wait for navigation back to trivia hub
-- waitForAnimationToEnd:
-    timeout: 2000
-
-# Ensure we're on trivia tab
-- tapOn:
-    id: "tab-trivia"
-    optional: true
-
-# Final stabilization
+# Wait to return to trivia hub
 - waitForAnimationToEnd:
     timeout: 1000

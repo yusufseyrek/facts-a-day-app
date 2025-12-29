@@ -1,0 +1,16 @@
+# Category Browse Screen Screenshot Flow
+# Assumes we're already on discover screen from previous flow
+
+appId: dev.seyrek.factsaday
+
+---
+# Tap on the first category (already on discover from previous flow)
+- tapOn:
+    id: "discover-category-0"
+
+# Wait for category facts to load
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Take screenshot
+- takeScreenshot: ${OUTPUT_DIR}/04_category_browse

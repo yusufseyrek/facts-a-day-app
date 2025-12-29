@@ -1,40 +1,23 @@
 # Trivia Performance Screen Screenshot Flow
-# Captures the trivia stats and performance view
+# Assumes we're on trivia hub from previous flow
 
 appId: dev.seyrek.factsaday
 
 ---
-# Navigate to trivia tab first
-- tapOn:
-    id: "tab-trivia"
-
-# Wait for trivia hub to load
-- extendedWaitUntil:
-    visible:
-      text: ".*"
-    timeout: 5000
-
-# Tap on the stats hero card using testID
+# Tap on the stats hero card
 - tapOn:
     id: "trivia-stats-hero"
-    optional: true
 
 # Wait for performance screen to load
 - extendedWaitUntil:
     visible:
-      text: ".*"
+      id: "trivia-session-0"
     timeout: 5000
+    optional: true
 
-# Wait for animations
-- waitForAnimationToEnd:
-    timeout: 2000
-
-# Take screenshot
-- takeScreenshot: ${OUTPUT_DIR}/06_trivia_performance
-
-# Go back to trivia hub
-- pressKey: back
-
-# Wait for navigation
+# Small wait for animations
 - waitForAnimationToEnd:
     timeout: 1000
+
+# Take screenshot
+- takeScreenshot: ${OUTPUT_DIR}/07_trivia_performance
