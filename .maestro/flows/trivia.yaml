@@ -13,7 +13,7 @@ appId: dev.seyrek.factsaday
 - extendedWaitUntil:
     visible:
       id: "trivia-stats-hero"
-    timeout: 8000
+    timeout: 3000
 
 # Wait for animations
 - waitForAnimationToEnd:

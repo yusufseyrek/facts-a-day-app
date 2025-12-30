@@ -14,16 +14,11 @@ appId: dev.seyrek.factsaday
     optional: true
     retryTapIfNoChange: true
 
-- tapOn:
-    id: "trivia-card-daily"
-    optional: true
-    retryTapIfNoChange: true
-
 # Wait for intro modal
 - extendedWaitUntil:
     visible:
       id: "trivia-start-button"
-    timeout: 8000
+    timeout: 2000
 
 # Tap Start button
 - tapOn:
@@ -32,7 +27,7 @@ appId: dev.seyrek.factsaday
 
 # Wait for game to load (question animations)
 - waitForAnimationToEnd:
-    timeout: 3000
+    timeout: 2000
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/06_trivia_game
@@ -45,7 +40,7 @@ appId: dev.seyrek.factsaday
 - extendedWaitUntil:
     visible:
       id: "trivia-game-exit-button"
-    timeout: 5000
+    timeout: 2000
 
 # Exit the game - tap and wait for modal animation
 - tapOn:
@@ -60,7 +55,7 @@ appId: dev.seyrek.factsaday
 - extendedWaitUntil:
     visible:
       id: "trivia-exit-confirm"
-    timeout: 8000
+    timeout: 2000
 
 # Extra wait for modal animation to fully complete (springify)
 - waitForAnimationToEnd:

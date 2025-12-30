@@ -243,7 +243,22 @@ set_android_locale() {
         *)  android_locale="$locale" ;;
     esac
     
-    adb -s "$device_id" shell settings put system system_locales "$android_locale" 2>/dev/null || true
+    info "Setting Android locale to $android_locale..."
+    
+    # Method 1: Set persist.sys.locale (most reliable for emulators)
+    adb -s "$device_id" shell "setprop persist.sys.locale $android_locale" </dev/null 2>/dev/null || true
+    
+    # Method 2: Set system_locales setting (Android 7+)
+    adb -s "$device_id" shell "settings put system system_locales $android_locale" </dev/null 2>/dev/null || true
+    
+    # Method 3: Set global setting (fallback for some devices)
+    adb -s "$device_id" shell "settings put global system_locales $android_locale" </dev/null 2>/dev/null || true
+    
+    # Broadcast locale change intent to notify the system
+    adb -s "$device_id" shell "am broadcast -a android.intent.action.LOCALE_CHANGED" </dev/null 2>/dev/null || true
+    
+    # Give the system time to apply the locale change
+    sleep 2
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -257,7 +272,8 @@ restart_app() {
     if [ "$platform" = "ios" ]; then
         xcrun simctl terminate "$device_id" "$APP_ID" 2>/dev/null || true
     else
-        adb -s "$device_id" shell am force-stop "$APP_ID" 2>/dev/null || true
+        # Force stop the app
+        adb -s "$device_id" shell am force-stop "$APP_ID" </dev/null 2>/dev/null || true
     fi
     sleep 1
 }

@@ -8,11 +8,11 @@ appId: dev.seyrek.factsaday
 - extendedWaitUntil:
     visible:
       id: "fact-card-.*"
-    timeout: 10000
+    timeout: 5000
 
 # Wait for images and animations to settle
 - waitForAnimationToEnd:
-    timeout: 3000
+    timeout: 2000
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/01_home

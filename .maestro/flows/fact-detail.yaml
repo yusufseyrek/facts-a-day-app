@@ -12,7 +12,7 @@ appId: dev.seyrek.factsaday
 - extendedWaitUntil:
     visible:
       id: "fact-card-.*"
-    timeout: 10000
+    timeout: 5000
 
 # Extra settle time for FlashList recycling to complete
 - waitForAnimationToEnd:

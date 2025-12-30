@@ -11,7 +11,7 @@ appId: dev.seyrek.factsaday
 
 # Wait for content to load (favorites list or empty state)
 - waitForAnimationToEnd:
-    timeout: 3000
+    timeout: 1000
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/09_favorites

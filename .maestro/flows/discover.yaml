@@ -13,11 +13,11 @@ appId: dev.seyrek.factsaday
 - extendedWaitUntil:
     visible:
       id: "discover-category-0"
-    timeout: 8000
+    timeout: 1000
 
 # Wait for animations to settle
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 1000
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/03_discover
