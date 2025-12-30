@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { tokens } from '../../theme/tokens';
 import { FONT_FAMILIES } from '../Typography';
+import { useResponsive } from '../../utils/useResponsive';
 import type { QuestionWithFact } from '../../services/database';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,6 +64,7 @@ export function TriviaGameView({
   t,
 }: TriviaGameViewProps) {
   const insets = useSafeAreaInsets();
+  const { isTablet } = useResponsive();
   
   // Colors
   const bgColor = isDark ? tokens.color.dark.background : tokens.color.light.background;
@@ -219,11 +221,11 @@ export function TriviaGameView({
           entering={SlideInRight.duration(300)}
         >
           <Text
-            fontSize={26}
+            fontSize={isTablet ? 40 : 26}
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
             textAlign="center"
-            lineHeight={36}
+            lineHeight={isTablet ? 54 : 36}
           >
             {currentQuestion.question_text}
           </Text>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, View, ScrollView, Dimensions } from 'react-native';
+import { Pressable, View, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
@@ -16,12 +16,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { tokens } from '../../theme/tokens';
 import { FONT_FAMILIES } from '../Typography';
+import { useResponsive } from '../../utils/useResponsive';
 import { getLucideIcon } from '../../utils/iconMapper';
 import type { QuestionWithFact, StoredAnswer } from '../../services/database';
 import { indexToAnswer } from '../../services/trivia';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH * 0.85;
 const CARD_GAP = 12;
 
 // Styled Text components
@@ -122,11 +121,13 @@ function UnavailableQuestionCard({
   isCorrect,
   isDark,
   t,
+  cardWidth,
 }: {
   questionIndex: number;
   isCorrect: boolean;
   isDark: boolean;
   t: TranslationFunction;
+  cardWidth: number;
 }) {
   const cardBackground = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
@@ -135,7 +136,7 @@ function UnavailableQuestionCard({
   const errorColor = isDark ? tokens.color.dark.error : tokens.color.light.error;
 
   return (
-    <View style={{ width: CARD_WIDTH }}>
+    <View style={{ width: cardWidth }}>
       <YStack
         backgroundColor={cardBackground}
         padding={tokens.space.lg}
@@ -201,6 +202,7 @@ function AnswerReviewCard({
   isDark,
   onPress,
   t,
+  cardWidth,
 }: {
   question: QuestionWithFact;
   questionIndex: number;
@@ -209,6 +211,7 @@ function AnswerReviewCard({
   isDark: boolean;
   onPress?: () => void;
   t: TranslationFunction;
+  cardWidth: number;
 }) {
   const cardBackground = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
@@ -262,7 +265,7 @@ function AnswerReviewCard({
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={{ width: CARD_WIDTH }}
+      style={{ width: cardWidth }}
     >
       <Animated.View style={animatedStyle}>
         <YStack
@@ -436,6 +439,10 @@ export function TriviaResults({
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { isTablet, screenWidth } = useResponsive();
+  
+  // Calculate card width: 45% for tablets (two cards side by side), 85% for phones
+  const cardWidth = isTablet ? screenWidth * 0.45 : screenWidth * 0.85;
   
   // Colors
   const bgColor = isDark ? tokens.color.dark.background : tokens.color.light.background;
@@ -787,7 +794,7 @@ export function TriviaResults({
                 gap: CARD_GAP,
               }}
               decelerationRate="fast"
-              snapToInterval={CARD_WIDTH + CARD_GAP}
+              snapToInterval={cardWidth + CARD_GAP}
               snapToAlignment="start"
             >
               {/* Available questions */}
@@ -806,6 +813,7 @@ export function TriviaResults({
                     isDark={isDark}
                     onPress={() => handleAnswerCardPress(question)}
                     t={t}
+                    cardWidth={cardWidth}
                   />
                 );
               })}
@@ -822,6 +830,7 @@ export function TriviaResults({
                     isCorrect={isCorrect}
                     isDark={isDark}
                     t={t}
+                    cardWidth={cardWidth}
                   />
                 );
               })}

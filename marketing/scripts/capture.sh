@@ -230,35 +230,21 @@ set_android_locale() {
     local device_id="$1"
     local locale="$2"
     
-    local android_locale
-    case "$locale" in
-        en) android_locale="en-US" ;;
-        de) android_locale="de-DE" ;;
-        es) android_locale="es-ES" ;;
-        fr) android_locale="fr-FR" ;;
-        ja) android_locale="ja-JP" ;;
-        ko) android_locale="ko-KR" ;;
-        tr) android_locale="tr-TR" ;;
-        zh) android_locale="zh-CN" ;;
-        *)  android_locale="$locale" ;;
-    esac
+    info "Setting Android locale to: $locale"
     
-    info "Setting Android locale to $android_locale..."
-    
-    # Method 1: Set persist.sys.locale (most reliable for emulators)
-    adb -s "$device_id" shell "setprop persist.sys.locale $android_locale" </dev/null 2>/dev/null || true
-    
-    # Method 2: Set system_locales setting (Android 7+)
-    adb -s "$device_id" shell "settings put system system_locales $android_locale" </dev/null 2>/dev/null || true
-    
-    # Method 3: Set global setting (fallback for some devices)
-    adb -s "$device_id" shell "settings put global system_locales $android_locale" </dev/null 2>/dev/null || true
-    
-    # Broadcast locale change intent to notify the system
-    adb -s "$device_id" shell "am broadcast -a android.intent.action.LOCALE_CHANGED" </dev/null 2>/dev/null || true
-    
-    # Give the system time to apply the locale change
-    sleep 2
+    # Use Android 13+ per-app locale API (app has localeConfig in manifest)
+    # This requires the app to be installed and have locales_config.xml
+    if ! adb -s "$device_id" shell cmd locale set-app-locales "$APP_ID" --locales "$locale" </dev/null 2>/dev/null; then
+        warn "Per-app locale failed, trying system locale change..."
+        
+        # Fallback: Try to change system locale (requires root on emulator)
+        local full_locale=$(get_full_locale "$locale")
+        local locale_prop="${full_locale/_/-}"  # Convert de_DE to de-DE
+        
+        # Try setting system property (works on rooted emulators)
+        adb -s "$device_id" shell "su 0 setprop persist.sys.locale $locale_prop" </dev/null 2>/dev/null || \
+        adb -s "$device_id" shell "setprop persist.sys.locale $locale_prop" </dev/null 2>/dev/null || true
+    fi
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -271,11 +257,12 @@ restart_app() {
     
     if [ "$platform" = "ios" ]; then
         xcrun simctl terminate "$device_id" "$APP_ID" 2>/dev/null || true
+        sleep 1
     else
-        # Force stop the app
+        # Force stop Android app to ensure locale change is applied on next launch
         adb -s "$device_id" shell am force-stop "$APP_ID" </dev/null 2>/dev/null || true
+        sleep 1
     fi
-    sleep 1
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -285,6 +272,7 @@ restart_app() {
 run_maestro() {
     local device_id="$1"
     local output_dir="$2"
+    local locale="$3"
     
     # Create and get absolute path
     mkdir -p "$output_dir"
@@ -293,12 +281,14 @@ run_maestro() {
     
     info "Running Maestro..."
     info "  Device: $device_id"
+    info "  Locale: $locale"
     info "  Output: $abs_output_dir"
     
     # Run Maestro from project directory
     cd "$PROJECT_DIR"
     maestro --device "$device_id" test ".maestro/screenshots.yaml" \
         -e "OUTPUT_DIR=$abs_output_dir" \
+        -e "LOCALE=$locale" \
         --no-ansi
 }
 
@@ -315,18 +305,18 @@ capture_locale() {
     info "Locale: $locale"
     info "Target: $platform/$device_type/$locale/"
     
-    # Set locale
+    # Set locale based on platform
     if [ "$platform" = "ios" ]; then
         set_ios_locale "$device_id" "$locale"
     else
         set_android_locale "$device_id" "$locale"
     fi
     
-    # Restart app to apply locale
+    # Restart app to apply locale change
     restart_app "$device_id" "$platform"
     
     # Run Maestro
-    if run_maestro "$device_id" "$output_dir"; then
+    if run_maestro "$device_id" "$output_dir" "$locale"; then
         local count=$(find "$output_dir" -name "*.png" -type f 2>/dev/null | wc -l | tr -d ' ')
         success "$locale complete → $count screenshots"
         return 0
