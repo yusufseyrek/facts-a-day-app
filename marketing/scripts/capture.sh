@@ -4,10 +4,10 @@
 # Captures marketing screenshots using Maestro
 #
 # Usage:
-#   ./scripts/screenshots.sh --ios                    # Select iOS device interactively
-#   ./scripts/screenshots.sh --android                # Select Android device interactively
-#   ./scripts/screenshots.sh --ios --all-locales      # iOS device, all locales
-#   ./scripts/screenshots.sh --android --locale de    # Android device, German only
+#   ./marketing/scripts/capture.sh --ios                    # Select iOS device interactively
+#   ./marketing/scripts/capture.sh --android                # Select Android device interactively
+#   ./marketing/scripts/capture.sh --ios --all-locales      # iOS device, all locales
+#   ./marketing/scripts/capture.sh --android --locale de    # Android device, German only
 #
 # Output Structure:
 #   screenshots/
@@ -26,7 +26,8 @@ set -e
 
 APP_ID="dev.seyrek.factsaday"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+MARKETING_DIR="$(dirname "$SCRIPT_DIR")"
+PROJECT_DIR="$(dirname "$MARKETING_DIR")"
 MAESTRO_DIR="$PROJECT_DIR/.maestro"
 SCREENSHOTS_DIR="$PROJECT_DIR/screenshots"
 
@@ -328,8 +329,8 @@ show_help() {
 Screenshots - Marketing screenshot automation for Facts a Day
 
 USAGE:
-    ./scripts/screenshots.sh --ios [OPTIONS]
-    ./scripts/screenshots.sh --android [OPTIONS]
+    ./marketing/scripts/capture.sh --ios [OPTIONS]
+    ./marketing/scripts/capture.sh --android [OPTIONS]
 
 PLATFORM (required):
     --ios               Use iOS Simulator (interactive device selection)
@@ -342,24 +343,24 @@ OPTIONS:
 
 EXAMPLES:
     # iOS phone, English only
-    ./scripts/screenshots.sh --ios
+    ./marketing/scripts/capture.sh --ios
 
     # iOS, all languages
-    ./scripts/screenshots.sh --ios --all-locales
+    ./marketing/scripts/capture.sh --ios --all-locales
 
     # Android, German only
-    ./scripts/screenshots.sh --android --locale de
+    ./marketing/scripts/capture.sh --android --locale de
 
     # Android, all languages
-    ./scripts/screenshots.sh --android --all-locales
+    ./marketing/scripts/capture.sh --android --all-locales
 
 PARALLEL EXECUTION:
     Run 4 terminals simultaneously with different devices booted:
     
-    Terminal 1: Boot iPhone  → ./scripts/screenshots.sh --ios --all-locales
-    Terminal 2: Boot iPad    → ./scripts/screenshots.sh --ios --all-locales
-    Terminal 3: Start phone emulator  → ./scripts/screenshots.sh --android --all-locales
-    Terminal 4: Start tablet emulator → ./scripts/screenshots.sh --android --all-locales
+    Terminal 1: Boot iPhone  → ./marketing/scripts/capture.sh --ios --all-locales
+    Terminal 2: Boot iPad    → ./marketing/scripts/capture.sh --ios --all-locales
+    Terminal 3: Start phone emulator  → ./marketing/scripts/capture.sh --android --all-locales
+    Terminal 4: Start tablet emulator → ./marketing/scripts/capture.sh --android --all-locales
 
 OUTPUT:
     screenshots/
@@ -415,8 +416,8 @@ main() {
         error "Platform required: --ios or --android"
         echo "" >&2
         echo "Usage:" >&2
-        echo "  ./scripts/screenshots.sh --ios" >&2
-        echo "  ./scripts/screenshots.sh --android" >&2
+        echo "  ./marketing/scripts/capture.sh --ios" >&2
+        echo "  ./marketing/scripts/capture.sh --android" >&2
         echo "" >&2
         echo "Use --help for more options" >&2
         exit 1

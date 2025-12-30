@@ -28,7 +28,7 @@ SCHEME="FactsaDay"
 WORKSPACE="$IOS_DIR/FactsaDay.xcworkspace"
 ARCHIVE_PATH="$PROJECT_ROOT/build/ios/FactsaDay.xcarchive"
 EXPORT_PATH="$PROJECT_ROOT/build/ios/export"
-EXPORT_OPTIONS_PLIST="$PROJECT_ROOT/scripts/ExportOptions.plist"
+EXPORT_OPTIONS_PLIST="$PROJECT_ROOT/scripts/assets/ExportOptions.plist"
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}   Facts a Day - iOS Build Script${NC}"

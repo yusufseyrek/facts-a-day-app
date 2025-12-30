@@ -44,7 +44,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.seyrek.factsaday",
-      "buildNumber": "26",
+      "buildNumber": "28",
       "googleServicesFile": "./google/GoogleService-Info.plist",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -165,7 +165,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "dev.seyrek.factsaday",
-      "versionCode": 9,
+      "versionCode": 10,
       "permissions": [
         "INTERNET",
         "RECEIVE_BOOT_COMPLETED",

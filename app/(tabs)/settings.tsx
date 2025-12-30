@@ -87,7 +87,8 @@ export default function SettingsPage() {
   const { resetOnboarding } = useOnboarding();
 
   // Check if running in development mode
-  const isDevelopment = __DEV__;
+  // const isDevelopment = __DEV__;
+  const isDevelopment = true
 
   // Use white icons in dark mode for better contrast
   const iconColor = theme === "dark" ? "#FFFFFF" : tokens.color[theme].text;
@@ -809,18 +810,7 @@ export default function SettingsPage() {
           value: imageCacheSize > 0 ? t("settingsImageCacheSize", { size: formatBytes(imageCacheSize) }) : undefined,
           icon: <Trash2 size={20} color={iconColor} />,
           onPress: handleClearImageCache,
-        },
-        {
-          id: "otaUpdatePublic",
-          label: isCheckingUpdate ? "Checking..." : "Check for Updates",
-          value: updateInfo
-            ? updateInfo.isEmbedded
-              ? `Embedded (v${updateInfo.runtimeVersion})`
-              : `${updateInfo.updateId?.slice(0, 8)}... (v${updateInfo.runtimeVersion})`
-            : "Loading...",
-          icon: <Download size={20} color={iconColor} />,
-          onPress: handleCheckForUpdates,
-        },
+        }
       ],
     };
 

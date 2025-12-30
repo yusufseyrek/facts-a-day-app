@@ -1,0 +1,131 @@
+{
+  "screenshots": {
+    "01_home": {
+      "en": "Learn Something\nNew Every Day",
+      "de": "Jeden Tag etwas\nNeues lernen",
+      "es": "Aprende algo nuevo\ncada día",
+      "fr": "Apprenez quelque chose\nde nouveau chaque jour",
+      "ja": "毎日なにか\n新しいことを学ぼう",
+      "ko": "매일 새로운 것을\n배워보세요",
+      "tr": "Her gün yeni\nbir şey öğren",
+      "zh": "每天学点\n新知识"
+    },
+    "02_fact_detail": {
+      "en": "Rich Stories Behind\nEvery Fact",
+      "de": "Spannende Geschichten\nhinter jedem Fakt",
+      "es": "Historias fascinantes\ndetrás de cada dato",
+      "fr": "Des histoires riches\nderrière chaque fait",
+      "ja": "すべての事実に\n隠された物語",
+      "ko": "모든 사실 뒤에\n숨겨진 이야기",
+      "tr": "Her bilginin\nardındaki hikaye",
+      "zh": "每个事实背后\n的精彩故事"
+    },
+    "03_discover": {
+      "en": "Dive Deep Into\nAny Topic",
+      "de": "Tauche tief in\njedes Thema ein",
+      "es": "Profundiza en\ncualquier tema",
+      "fr": "Plongez dans\nn'importe quel sujet",
+      "ja": "あらゆるテーマを\n深く探求",
+      "ko": "어떤 주제든\n깊이 탐구하세요",
+      "tr": "Her konuyu\nderinlemesine keşfet",
+      "zh": "深入探索\n任何主题"
+    },
+    "04_category_browse": {
+      "en": "Learn What\nYou Love",
+      "de": "Lerne was\ndich begeistert",
+      "es": "Aprende lo que\nte apasiona",
+      "fr": "Apprenez ce qui\nvous passionne",
+      "ja": "好きなことを\n学ぼう",
+      "ko": "좋아하는 것을\n배우세요",
+      "tr": "Sevdiğin konuları\nöğren",
+      "zh": "学你所爱"
+    },
+    "05_trivia": {
+      "en": "Challenge Your\nMind Daily",
+      "de": "Fordere deinen\nGeist täglich heraus",
+      "es": "Desafía tu mente\ncada día",
+      "fr": "Défiez votre esprit\nchaque jour",
+      "ja": "毎日の\n頭脳チャレンジ",
+      "ko": "매일 두뇌에\n도전하세요",
+      "tr": "Her gün zihnini\nzorlayarak geliştir",
+      "zh": "每日挑战\n你的大脑"
+    },
+    "06_trivia_game": {
+      "en": "Quick & Fun\nKnowledge Tests",
+      "de": "Schnelle & spaßige\nWissenstests",
+      "es": "Tests de conocimiento\nrápidos y divertidos",
+      "fr": "Quiz rapides\net amusants",
+      "ja": "楽しくて\n手軽なクイズ",
+      "ko": "빠르고 재미있는\n지식 테스트",
+      "tr": "Hızlı ve eğlenceli\nbilgi testleri",
+      "zh": "快速有趣的\n知识测试"
+    },
+    "07_trivia_performance": {
+      "en": "Watch Yourself\nGrow Smarter",
+      "de": "Sieh zu wie du\nklüger wirst",
+      "es": "Observa cómo\nte vuelves más sabio",
+      "fr": "Regardez-vous\ndevenir plus savant",
+      "ja": "成長する\n自分を見守ろう",
+      "ko": "점점 똑똑해지는\n나를 지켜보세요",
+      "tr": "Gelişimini\nizle",
+      "zh": "见证自己\n变得更聪明"
+    },
+    "08_trivia_results": {
+      "en": "Celebrate\nEvery Win",
+      "de": "Feiere jeden\nErfolg",
+      "es": "Celebra cada\nvictoria",
+      "fr": "Célébrez chaque\nvictoire",
+      "ja": "すべての勝利を\n祝おう",
+      "ko": "모든 승리를\n축하하세요",
+      "tr": "Her başarını\nkutla",
+      "zh": "庆祝每一次\n胜利"
+    },
+    "09_favorites": {
+      "en": "Build Your\nKnowledge Library",
+      "de": "Baue deine\nWissensbibliothek auf",
+      "es": "Construye tu\nbiblioteca de saber",
+      "fr": "Construisez votre\nbibliothèque de savoir",
+      "ja": "あなただけの\n知識ライブラリ",
+      "ko": "나만의 지식\n라이브러리를 만드세요",
+      "tr": "Kendi bilgi\nkütüphaneni oluştur",
+      "zh": "建立你的\n知识库"
+    }
+  },
+  "screenshot_gradients": {
+    "01_home": "indigo",
+    "02_fact_detail": "ocean",
+    "03_discover": "sunset",
+    "04_category_browse": "aurora",
+    "05_trivia": "candy",
+    "06_trivia_game": "royal",
+    "07_trivia_performance": "emerald",
+    "08_trivia_results": "flame",
+    "09_favorites": "berry"
+  },
+  "gradients": {
+    "default": ["#6366f1", "#8b5cf6", "#d946ef"],
+    "indigo": ["#6366f1", "#8b5cf6", "#d946ef"],
+    "ocean": ["#0ea5e9", "#3b82f6", "#6366f1"],
+    "sunset": ["#f97316", "#ef4444", "#dc2626"],
+    "aurora": ["#10b981", "#14b8a6", "#06b6d4"],
+    "candy": ["#ec4899", "#f43f5e", "#fb7185"],
+    "royal": ["#7c3aed", "#8b5cf6", "#a78bfa"],
+    "emerald": ["#059669", "#10b981", "#34d399"],
+    "flame": ["#ea580c", "#f97316", "#fb923c"],
+    "berry": ["#be185d", "#db2777", "#ec4899"],
+    "midnight": ["#1e1b4b", "#312e81", "#4c1d95"],
+    "forest": ["#065f46", "#047857", "#059669"]
+  },
+  "output_sizes": {
+    "ios_phone": "1284x2778",
+    "ios_tablet": "2064x2752",
+    "android_phone": "1440x2560",
+    "android_tablet": "2160x3840"
+  },
+  "frames": {
+    "ios_phone": "iphone.png",
+    "ios_tablet": "ipad.png",
+    "android_phone": "pixel-phone.png",
+    "android_tablet": "pixel-tablet.png"
+  }
+}

@@ -52,3 +52,4 @@ android/app/release.keystore
 .env.local
 
 /screenshots
+/marketing/output
