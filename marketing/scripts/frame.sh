@@ -34,6 +34,13 @@ ALL_PLATFORMS=("ios" "android")
 ALL_DEVICES=("phone" "tablet")
 ALL_SCREENSHOTS=("01_home" "02_fact_detail" "03_discover" "04_category_browse" "05_trivia" "06_trivia_game" "07_trivia_performance" "08_trivia_results" "09_favorites")
 
+# Parallel execution settings
+MAX_JOBS="${MAX_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)}"
+
+# Output format settings
+DEFAULT_OUTPUT_FORMAT="jpg"
+DEFAULT_JPEG_QUALITY="100"
+
 # Screen areas within device frames (x, y, width, height)
 # Measured from actual frame images by finding transparent regions
 # Use: magick frame.png -alpha extract -negate -threshold 50% -format "%@" info:
@@ -98,9 +105,9 @@ get_font_config() {
     local key="$1"
     case "$key" in
         ios_phone)     echo "120,140" ;;
-        ios_tablet)    echo "180,200" ;;
+        ios_tablet)    echo "150,170" ;;
         android_phone) echo "120,140" ;;
-        android_tablet) echo "180,200" ;;
+        android_tablet) echo "200,220" ;;
         *)             echo "120,140" ;;
     esac
 }
@@ -389,11 +396,12 @@ add_title_to_canvas() {
             font_size=$((font_size * 85 / 100))
             line_height=$((line_height * 85 / 100))
             # Use system fonts that support CJK on macOS
+            # Font names must match ImageMagick's font list: magick -list font | grep "Font:"
             if [[ "$OSTYPE" == "darwin"* ]]; then
                 case "$locale" in
-                    ja) font="Hiragino-Sans-W7" ;;
-                    ko) font=".Apple-SD-Gothic-NeoI-ExtraBold" ;;
-                    zh) font="PingFang-SC-Semibold" ;;
+                    ja) font=".Hiragino-Kaku-Gothic-Interface-W7" ;;
+                    ko) font="Apple-SD-Gothic-Neo-ExtraBold" ;;
+                    zh) font="Heiti-SC-Medium" ;;
                 esac
             fi
             ;;
@@ -494,6 +502,8 @@ process_screenshot() {
     local locale="$3"
     local screenshot_name="$4"
     local default_gradient="$5"
+    local output_format="${6:-jpg}"
+    local jpeg_quality="${7:-90}"
     
     # Get screenshot-specific gradient (or use default)
     local gradient_name
@@ -540,14 +550,15 @@ process_screenshot() {
     # Create output directory
     local output_subdir="$OUTPUT_DIR/$platform/$device/$locale"
     mkdir -p "$output_subdir"
-    local final_output="$output_subdir/${screenshot_name}.png"
+    local final_output="$output_subdir/${screenshot_name}.${output_format}"
     
     # Create temp files (without extension - ImageMagick will handle format)
-    local tmp_gradient tmp_framed tmp_scaled tmp_canvas
+    local tmp_gradient tmp_framed tmp_scaled tmp_canvas tmp_titled
     tmp_gradient=$(mktemp)
     tmp_framed=$(mktemp)
     tmp_scaled=$(mktemp)
     tmp_canvas=$(mktemp)
+    tmp_titled=$(mktemp)
     
     local cmd
     cmd=$(get_magick_cmd)
@@ -588,13 +599,20 @@ process_screenshot() {
     
     # Step 5: Add title
     if [ -n "$title" ]; then
-        add_title_to_canvas "$tmp_canvas" "$title" "$final_output" "$locale" "$title_area_height" "$platform" "$device"
+        add_title_to_canvas "$tmp_canvas" "$title" "PNG:$tmp_titled" "$locale" "$title_area_height" "$platform" "$device"
     else
-        $cmd PNG:"$tmp_canvas" "$final_output"
+        cp "$tmp_canvas" "$tmp_titled"
+    fi
+    
+    # Step 6: Convert to final output format
+    if [ "$output_format" = "jpg" ]; then
+        $cmd PNG:"$tmp_titled" -quality "$jpeg_quality" -background white -flatten "$final_output"
+    else
+        $cmd PNG:"$tmp_titled" "$final_output"
     fi
     
     # Cleanup temp files
-    rm -f "$tmp_gradient" "$tmp_framed" "$tmp_scaled" "$tmp_canvas"
+    rm -f "$tmp_gradient" "$tmp_framed" "$tmp_scaled" "$tmp_canvas" "$tmp_titled"
     
     return 0
 }
@@ -616,10 +634,14 @@ OPTIONS:
     --device <type>       Process specific device (phone, tablet)
     --screenshot <name>   Process specific screenshot (01_home, 02_fact_detail, etc.)
     --gradient <name>     Use specific gradient (default, sunset, ocean, aurora, candy)
+    --format <type>       Output format: jpg or png (default: jpg)
+    --quality <n>         JPEG quality 1-100 (default: 90)
+    --jobs <n>            Number of parallel jobs (default: CPU cores)
+    --no-parallel         Disable parallel processing
     --help                Show this help
 
 EXAMPLES:
-    # Process all screenshots
+    # Process all screenshots (parallel by default)
     ./marketing/scripts/frame.sh
 
     # Process only English screenshots
@@ -633,6 +655,18 @@ EXAMPLES:
 
     # Use ocean gradient
     ./marketing/scripts/frame.sh --gradient ocean
+
+    # Run with 8 parallel jobs
+    ./marketing/scripts/frame.sh --jobs 8
+
+    # Output as PNG instead of JPEG
+    ./marketing/scripts/frame.sh --format png
+
+    # High quality JPEG output
+    ./marketing/scripts/frame.sh --format jpg --quality 95
+
+    # Disable parallel processing
+    ./marketing/scripts/frame.sh --no-parallel
 
 PREREQUISITES:
     brew install imagemagick jq
@@ -654,6 +688,10 @@ main() {
     local filter_device=""
     local filter_screenshot=""
     local gradient_name="default"
+    local parallel_jobs="$MAX_JOBS"
+    local parallel_enabled=true
+    local output_format="$DEFAULT_OUTPUT_FORMAT"
+    local jpeg_quality="$DEFAULT_JPEG_QUALITY"
     
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -677,6 +715,31 @@ main() {
             --gradient)
                 gradient_name="$2"
                 shift 2
+                ;;
+            --format)
+                output_format="$2"
+                if [[ "$output_format" != "jpg" && "$output_format" != "png" ]]; then
+                    error "Invalid format: $output_format (use jpg or png)"
+                    exit 1
+                fi
+                shift 2
+                ;;
+            --quality)
+                jpeg_quality="$2"
+                if [[ ! "$jpeg_quality" =~ ^[0-9]+$ ]] || [ "$jpeg_quality" -lt 1 ] || [ "$jpeg_quality" -gt 100 ]; then
+                    error "Invalid quality: $jpeg_quality (use 1-100)"
+                    exit 1
+                fi
+                shift 2
+                ;;
+            --jobs)
+                parallel_jobs="$2"
+                shift 2
+                ;;
+            --no-parallel)
+                parallel_enabled=false
+                parallel_jobs=1
+                shift
                 ;;
             --help|-h)
                 show_help
@@ -717,6 +780,16 @@ main() {
     info "Locales:      ${locales[*]}"
     info "Screenshots:  ${#screenshots[@]} items"
     info "Gradient:     $gradient_name"
+    if [ "$output_format" = "jpg" ]; then
+        info "Format:       $output_format (quality: $jpeg_quality)"
+    else
+        info "Format:       $output_format"
+    fi
+    if $parallel_enabled; then
+        info "Parallel:     $parallel_jobs jobs"
+    else
+        info "Parallel:     disabled"
+    fi
     info "Output:       $OUTPUT_DIR/"
     
     # Calculate total
@@ -735,31 +808,145 @@ main() {
     info "Processing $total screenshots..."
     echo ""
     
+    # Start timer
+    local start_time
+    start_time=$(date +%s)
+    
+    # Create temp directory for job results
+    local results_dir
+    results_dir=$(mktemp -d)
+    trap "rm -rf '$results_dir'" EXIT
+    
+    # Track running jobs
+    local running_jobs=0
+    local job_pids=()
+    local queued=0
+    
+    # Function to wait for a job slot
+    wait_for_slot() {
+        while [ "$running_jobs" -ge "$parallel_jobs" ]; do
+            # Wait for any job to finish
+            for i in "${!job_pids[@]}"; do
+                if ! kill -0 "${job_pids[$i]}" 2>/dev/null; then
+                    unset 'job_pids[i]'
+                    ((running_jobs--))
+                    break
+                fi
+            done
+            # Small sleep to prevent busy-waiting
+            [ "$running_jobs" -ge "$parallel_jobs" ] && sleep 0.1
+        done
+        # Reindex array
+        job_pids=("${job_pids[@]}")
+    }
+    
+    # Progress display pid (declared outside condition for scope)
+    local progress_pid=""
+    
+    # Start progress display in background
+    if $parallel_enabled && [ -t 1 ]; then
+        (
+            while [ ! -f "$results_dir/.done" ]; do
+                local completed
+                completed=$(find "$results_dir" -type f ! -name ".done" 2>/dev/null | wc -l | tr -d ' ')
+                printf "\r  ${BLUE}▸${NC} Progress: %d/%d (%.0f%%)  " \
+                    "$completed" "$total" "$(echo "scale=0; $completed * 100 / $total" | bc)"
+                sleep 0.3
+            done
+        ) &
+        progress_pid=$!
+    fi
+    
+    # Process screenshots in parallel
+    for platform in "${platforms[@]}"; do
+        for device in "${devices[@]}"; do
+            for locale in "${locales[@]}"; do
+                for screenshot in "${screenshots[@]}"; do
+                    local screenshot_path="$SCREENSHOTS_DIR/$platform/$device/$locale/${screenshot}.png"
+                    local result_file="$results_dir/${platform}_${device}_${locale}_${screenshot}"
+                    
+                    # Wait for available job slot
+                    wait_for_slot
+                    
+                    # Run job in background
+                    (
+                        if [ ! -f "$screenshot_path" ]; then
+                            echo "skipped" > "$result_file"
+                            exit 0
+                        fi
+                        
+                        if process_screenshot "$platform" "$device" "$locale" "$screenshot" "$gradient_name" "$output_format" "$jpeg_quality" 2>/dev/null; then
+                            echo "success" > "$result_file"
+                        else
+                            echo "failed" > "$result_file"
+                        fi
+                    ) &
+                    
+                    job_pids+=($!)
+                    ((running_jobs++))
+                    ((queued++))
+                done
+            done
+        done
+    done
+    
+    # Wait for all job pids (not progress display)
+    for pid in "${job_pids[@]}"; do
+        wait "$pid" 2>/dev/null || true
+    done
+    
+    # Stop progress display
+    if [ -n "$progress_pid" ]; then
+        touch "$results_dir/.done"
+        sleep 0.4
+        kill "$progress_pid" 2>/dev/null || true
+        wait "$progress_pid" 2>/dev/null || true
+        printf "\r%-60s\r" " "  # Clear progress line
+    fi
+    
+    # Count and display results
     local processed=0
     local failed=0
     local skipped=0
     
+    echo ""
+    echo -e "${CYAN}━━━ Results ━━━${NC}"
+    
     for platform in "${platforms[@]}"; do
         for device in "${devices[@]}"; do
-            echo -e "${CYAN}━━━ $platform / $device ━━━${NC}"
-            
             for locale in "${locales[@]}"; do
                 for screenshot in "${screenshots[@]}"; do
-                    if process_screenshot "$platform" "$device" "$locale" "$screenshot" "$gradient_name"; then
-                        ((processed++))
-                        echo -e "  ${GREEN}✓${NC} $locale/$screenshot"
-                    else
-                        if [ -f "$SCREENSHOTS_DIR/$platform/$device/$locale/${screenshot}.png" ]; then
-                            ((failed++))
-                        else
-                            ((skipped++))
-                        fi
+                    local result_file="$results_dir/${platform}_${device}_${locale}_${screenshot}"
+                    if [ -f "$result_file" ]; then
+                        local result
+                        result=$(cat "$result_file")
+                        case "$result" in
+                            success)
+                                ((processed++))
+                                echo -e "  ${GREEN}✓${NC} $platform/$device/$locale/$screenshot"
+                                ;;
+                            failed)
+                                ((failed++))
+                                echo -e "  ${RED}✗${NC} $platform/$device/$locale/$screenshot"
+                                ;;
+                            skipped)
+                                ((skipped++))
+                                ;;
+                        esac
                     fi
                 done
             done
-            echo ""
         done
     done
+    
+    # Calculate elapsed time
+    local end_time elapsed_time
+    end_time=$(date +%s)
+    elapsed_time=$((end_time - start_time))
+    
+    local minutes seconds
+    minutes=$((elapsed_time / 60))
+    seconds=$((elapsed_time % 60))
     
     # Summary
     header "Complete"
@@ -768,12 +955,27 @@ main() {
     [ $skipped -gt 0 ] && warn "Skipped:   $skipped (source not found)"
     [ $failed -gt 0 ] && error "Failed:    $failed"
     echo ""
-    info "Output: $OUTPUT_DIR/"
+    
+    if [ $minutes -gt 0 ]; then
+        info "Duration:     ${minutes}m ${seconds}s"
+    else
+        info "Duration:     ${seconds}s"
+    fi
+    
+    if [ $processed -gt 0 ] && [ $elapsed_time -gt 0 ]; then
+        local rate
+        rate=$(echo "scale=2; $processed / $elapsed_time" | bc)
+        info "Speed:        ${rate} screenshots/sec"
+    elif [ $processed -gt 0 ]; then
+        info "Speed:        ${processed} screenshots/sec"
+    fi
+    
+    info "Output:       $OUTPUT_DIR/"
     
     if [ -d "$OUTPUT_DIR" ]; then
         local count
-        count=$(find "$OUTPUT_DIR" -name "*.png" -type f 2>/dev/null | wc -l | tr -d ' ')
-        info "Total files: $count"
+        count=$(find "$OUTPUT_DIR" \( -name "*.png" -o -name "*.jpg" \) -type f 2>/dev/null | wc -l | tr -d ' ')
+        info "Total files:  $count"
     fi
 }
 
