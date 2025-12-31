@@ -410,54 +410,60 @@ export default function TriviaGameScreen() {
     // Calculate elapsed time
     const elapsedTime = gameState.totalTime - timeRemaining;
     
-    // Save session result first to get the session ID
-    const sessionId = await triviaService.saveSessionResult(
-      triviaMode,
-      gameState.questions.length,
-      correctCount,
-      params.categorySlug || undefined,
-      elapsedTime,
-      bestStreak,
-      gameState.questions,
-      gameState.answers
-    );
-    
-    // Record each answer with session ID
-    for (const question of gameState.questions) {
-      const selectedAnswer = gameState.answers[question.id];
-      if (selectedAnswer) {
-        const isCorrect = question.question_type === 'true_false'
-          ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
-          : selectedAnswer === question.correct_answer;
-        await triviaService.recordAnswer(
-          question.id,
-          isCorrect,
-          triviaMode,
-          sessionId
+    try {
+      // Save session result first to get the session ID
+      const sessionId = await triviaService.saveSessionResult(
+        triviaMode,
+        gameState.questions.length,
+        correctCount,
+        params.categorySlug || undefined,
+        elapsedTime,
+        bestStreak,
+        gameState.questions,
+        gameState.answers
+      );
+      
+      // Record each answer with session ID
+      for (const question of gameState.questions) {
+        const selectedAnswer = gameState.answers[question.id];
+        if (selectedAnswer) {
+          const isCorrect = question.question_type === 'true_false'
+            ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
+            : selectedAnswer === question.correct_answer;
+          await triviaService.recordAnswer(
+            question.id,
+            isCorrect,
+            triviaMode,
+            sessionId
+          );
+        }
+      }
+      
+      // Save daily progress if applicable
+      if (params.type === 'daily') {
+        await triviaService.saveDailyProgress(
+          gameState.questions.length,
+          correctCount
         );
       }
+      
+      // Track trivia completion and results screen
+      trackTriviaComplete({
+        mode: triviaMode,
+        questionCount: gameState.questions.length,
+        correctCount,
+        elapsedTime,
+        bestStreak,
+        timeExpired: false,
+        categorySlug: params.categorySlug,
+      });
+      trackScreenView(Screens.TRIVIA_RESULTS);
+    } catch (error) {
+      console.error('Error saving trivia results:', error);
+      // Still show results even if saving fails
     }
     
-    // Save daily progress if applicable
-    if (params.type === 'daily') {
-      await triviaService.saveDailyProgress(
-        gameState.questions.length,
-        correctCount
-      );
-    }
-    
-    // Track trivia completion and results screen
-    trackTriviaComplete({
-      mode: triviaMode,
-      questionCount: gameState.questions.length,
-      correctCount,
-      elapsedTime,
-      bestStreak,
-      timeExpired: false,
-      categorySlug: params.categorySlug,
-    });
-    trackScreenView(Screens.TRIVIA_RESULTS);
-    
+    // Always set isFinished to true to show results
     setGameState(prev => ({ 
       ...prev, 
       isFinished: true,

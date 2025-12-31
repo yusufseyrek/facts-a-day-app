@@ -234,7 +234,8 @@ export const translations = {
     false: "Falsch",
     unansweredQuestions: "Unbeantwortete Fragen",
     unansweredQuestionsMessage: "Du hast %{count} Frage(n) nicht beantwortet. Trotzdem fortfahren?",
-    continueAnyway: "Trotzdem fortfahren",
+    goBack: "Zurück",
+    continueAnyway: "Weiter",
     unanswered: "Unbeantwortet",
 
     // Trivia Results
@@ -510,7 +511,8 @@ export const translations = {
     false: "False",
     unansweredQuestions: "Unanswered Questions",
     unansweredQuestionsMessage: "You haven't answered %{count} question(s). Continue anyway?",
-    continueAnyway: "Continue Anyway",
+    goBack: "Go Back",
+    continueAnyway: "Continue",
     unanswered: "Unanswered",
 
     // Trivia Results
@@ -786,7 +788,8 @@ export const translations = {
     false: "Falso",
     unansweredQuestions: "Preguntas sin responder",
     unansweredQuestionsMessage: "No has respondido %{count} pregunta(s). ¿Continuar de todos modos?",
-    continueAnyway: "Continuar de todos modos",
+    goBack: "Volver",
+    continueAnyway: "Continuar",
     unanswered: "Sin responder",
 
     // Trivia Results
@@ -1062,7 +1065,8 @@ export const translations = {
     false: "Faux",
     unansweredQuestions: "Questions sans réponse",
     unansweredQuestionsMessage: "Vous n'avez pas répondu à %{count} question(s). Continuer quand même ?",
-    continueAnyway: "Continuer quand même",
+    goBack: "Retour",
+    continueAnyway: "Continuer",
     unanswered: "Sans réponse",
 
     // Trivia Results
@@ -1337,7 +1341,8 @@ export const translations = {
     false: "誤り",
     unansweredQuestions: "未回答の問題",
     unansweredQuestionsMessage: "%{count}問の問題に回答していません。続行しますか？",
-    continueAnyway: "続行する",
+    goBack: "戻る",
+    continueAnyway: "続行",
     unanswered: "未回答",
 
     // Trivia Results
@@ -1609,7 +1614,8 @@ export const translations = {
     false: "거짓",
     unansweredQuestions: "미답변 문제",
     unansweredQuestionsMessage: "%{count}개의 문제에 답변하지 않았습니다. 계속하시겠습니까?",
-    continueAnyway: "그래도 계속",
+    goBack: "돌아가기",
+    continueAnyway: "계속",
     unanswered: "미답변",
 
     // Trivia Results
@@ -1884,7 +1890,8 @@ export const translations = {
     false: "Yanlış",
     unansweredQuestions: "Cevaplanmamış Sorular",
     unansweredQuestionsMessage: "%{count} soruyu cevaplamadınız. Yine de devam edilsin mi?",
-    continueAnyway: "Yine de Devam Et",
+    goBack: "Geri Dön",
+    continueAnyway: "Devam",
     unanswered: "Cevaplanmamış",
 
     // Trivia Results
@@ -2155,7 +2162,8 @@ export const translations = {
     false: "错误",
     unansweredQuestions: "未回答的问题",
     unansweredQuestionsMessage: "您有%{count}个问题尚未回答。仍然继续吗？",
-    continueAnyway: "仍然继续",
+    goBack: "返回",
+    continueAnyway: "继续",
     unanswered: "未回答",
 
     // Trivia Results

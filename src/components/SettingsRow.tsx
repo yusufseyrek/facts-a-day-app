@@ -36,8 +36,8 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   // Use white background in light mode, surface in dark mode
   const backgroundColor =
     theme === "dark"
-      ? tokens.color.dark.cardBackground
-      : tokens.color.light.cardBackground;
+      ? tokens.color.dark.surface
+      : tokens.color.light.surface;
 
   const content = (
     <View
