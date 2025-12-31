@@ -86,6 +86,7 @@ export const translations = {
       "%{count} Fakten wurden zu Ihrem Zeitplan hinzugefügt!",
     errorAddingFacts: "Fehler beim Hinzufügen von Fakten",
     save: "Speichern",
+    saving: "Speichern...",
     settingsUserPreferences: "Benutzereinstellungen",
     settingsLanguage: "Sprache",
     settingsThemeTitle: "Design",
@@ -153,6 +154,7 @@ export const translations = {
 
     // Success Messages
     categoriesUpdated: "Kategorien aktualisiert",
+    notificationTimeUpdated: "Benachrichtigungszeit aktualisiert",
     notificationTimesUpdated: "Benachrichtigungszeiten aktualisiert",
 
     // Category Facts Count
@@ -363,6 +365,7 @@ export const translations = {
     factsAddedDescription: "%{count} facts have been added to your schedule!",
     errorAddingFacts: "Error Adding Facts",
     save: "Save",
+    saving: "Saving...",
     settingsUserPreferences: "User Preferences",
     settingsLanguage: "Language",
     settingsThemeTitle: "Theme",
@@ -430,6 +433,7 @@ export const translations = {
 
     // Success Messages
     categoriesUpdated: "Categories updated",
+    notificationTimeUpdated: "Notification time updated",
     notificationTimesUpdated: "Notification times updated",
 
     // Category Facts Count
@@ -640,6 +644,7 @@ export const translations = {
     factsAddedDescription: "¡Se han agregado %{count} datos a tu programación!",
     errorAddingFacts: "Error al Agregar Datos",
     save: "Guardar",
+    saving: "Guardando...",
     settingsUserPreferences: "Preferencias de Usuario",
     settingsLanguage: "Idioma",
     settingsThemeTitle: "Tema",
@@ -707,6 +712,7 @@ export const translations = {
 
     // Success Messages
     categoriesUpdated: "Categorías actualizadas",
+    notificationTimeUpdated: "Horario de notificación actualizado",
     notificationTimesUpdated: "Horarios de notificación actualizados",
 
     // Category Facts Count
@@ -917,6 +923,7 @@ export const translations = {
     factsAddedDescription: "%{count} faits ont été ajoutés à votre calendrier !",
     errorAddingFacts: "Erreur lors de l'ajout des faits",
     save: "Enregistrer",
+    saving: "Enregistrement...",
     settingsUserPreferences: "Préférences Utilisateur",
     settingsLanguage: "Langue",
     settingsThemeTitle: "Thème",
@@ -984,6 +991,7 @@ export const translations = {
 
     // Success Messages
     categoriesUpdated: "Catégories mises à jour",
+    notificationTimeUpdated: "Heure de notification mise à jour",
     notificationTimesUpdated: "Heures de notification mises à jour",
 
     // Category Facts Count
@@ -1193,6 +1201,7 @@ export const translations = {
     factsAddedDescription: "%{count}個の豆知識がスケジュールに追加されました！",
     errorAddingFacts: "豆知識の追加エラー",
     save: "保存",
+    saving: "保存中...",
     settingsUserPreferences: "ユーザー設定",
     settingsLanguage: "言語",
     settingsThemeTitle: "テーマ",
@@ -1260,6 +1269,7 @@ export const translations = {
 
     // Success Messages
     categoriesUpdated: "カテゴリーが更新されました",
+    notificationTimeUpdated: "通知時刻が更新されました",
     notificationTimesUpdated: "通知時刻が更新されました",
 
     // Category Facts Count
@@ -1466,6 +1476,7 @@ export const translations = {
     factsAddedDescription: "%{count}개의 정보가 일정에 추가되었습니다!",
     errorAddingFacts: "정보 추가 오류",
     save: "저장",
+    saving: "저장 중...",
     settingsUserPreferences: "사용자 설정",
     settingsLanguage: "언어",
     settingsThemeTitle: "테마",
@@ -1533,6 +1544,7 @@ export const translations = {
 
     // Success Messages
     categoriesUpdated: "카테고리가 업데이트되었습니다",
+    notificationTimeUpdated: "알림 시간이 업데이트되었습니다",
     notificationTimesUpdated: "알림 시간이 업데이트되었습니다",
 
     // Category Facts Count
@@ -1742,6 +1754,7 @@ export const translations = {
     factsAddedDescription: "%{count} bilgi programınıza eklendi!",
     errorAddingFacts: "Bilgi Ekleme Hatası",
     save: "Kaydet",
+    saving: "Kaydediliyor...",
     settingsUserPreferences: "Kullanıcı Tercihleri",
     settingsLanguage: "Dil",
     settingsThemeTitle: "Tema",
@@ -1809,6 +1822,7 @@ export const translations = {
 
     // Success Messages
     categoriesUpdated: "Kategoriler güncellendi",
+    notificationTimeUpdated: "Bildirim saati güncellendi",
     notificationTimesUpdated: "Bildirim saatleri güncellendi",
 
     // Category Facts Count
@@ -2014,6 +2028,7 @@ export const translations = {
     factsAddedDescription: "%{count}个知识已添加到您的日程！",
     errorAddingFacts: "添加知识时出错",
     save: "保存",
+    saving: "保存中...",
     settingsUserPreferences: "用户偏好",
     settingsLanguage: "语言",
     settingsThemeTitle: "主题",
@@ -2081,6 +2096,7 @@ export const translations = {
 
     // Success Messages
     categoriesUpdated: "类别已更新",
+    notificationTimeUpdated: "通知时间已更新",
     notificationTimesUpdated: "通知时间已更新",
 
     // Category Facts Count

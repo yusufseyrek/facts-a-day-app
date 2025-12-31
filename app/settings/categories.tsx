@@ -376,7 +376,7 @@ export default function CategoriesSettings() {
               disabled={selectedCategories.length < 5 || isSaving}
               loading={isSaving}
             >
-              {t('save')}
+              {isSaving ? t('saving') : t('save')}
             </Button>
           </ButtonContainer>
         </Animated.View>

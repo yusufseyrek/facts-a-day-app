@@ -327,7 +327,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
         )}
         <SuccessToast
           visible={showSuccessToast}
-          message={t('notificationTimesUpdated')}
+          message={times.length === 1 ? t('notificationTimeUpdated') : t('notificationTimesUpdated')}
           onHide={handleSuccessToastHide}
         />
         <Pressable style={styles.overlayPressable} onPress={handleClose}>
@@ -450,7 +450,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                       loading={isSaving}
                       disabled={isSaving}
                     >
-                      {t('save')}
+                      {isSaving ? t('saving') : t('save')}
                     </Button>
                   </View>
                 </View>
