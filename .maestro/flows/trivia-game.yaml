@@ -26,8 +26,14 @@ appId: dev.seyrek.factsaday
     retryTapIfNoChange: true
 
 # Wait for game to load (question animations)
+# Workaround for keyboard change toast
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 5000
+
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/06_trivia_game

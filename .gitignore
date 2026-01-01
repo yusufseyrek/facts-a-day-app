@@ -53,3 +53,6 @@ android/app/release.keystore
 
 /screenshots
 /marketing/output
+
+# Maestro temp files
+.maestro/.temp-*

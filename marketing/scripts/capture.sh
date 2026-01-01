@@ -8,6 +8,8 @@
 #   ./marketing/scripts/capture.sh --android                # Select Android device interactively
 #   ./marketing/scripts/capture.sh --ios --all-locales      # iOS device, all locales
 #   ./marketing/scripts/capture.sh --android --locale de    # Android device, German only
+#   ./marketing/scripts/capture.sh --ios --flow 6           # Capture only trivia game screen
+#   ./marketing/scripts/capture.sh --ios --flow 1 --all-locales  # Home screen in all locales
 #
 # Output Structure:
 #   screenshots/
@@ -32,6 +34,48 @@ MAESTRO_DIR="$PROJECT_DIR/.maestro"
 SCREENSHOTS_DIR="$PROJECT_DIR/screenshots"
 
 ALL_LOCALES=("en" "de" "es" "fr" "ja" "ko" "tr" "zh")
+
+# Flow configuration (index 0 unused, 1-9 are valid flows)
+FLOW_FILES=(
+    ""                      # 0: unused
+    "home.yaml"             # 1
+    "fact-detail.yaml"      # 2
+    "discover.yaml"         # 3
+    "category-browse.yaml"  # 4
+    "trivia.yaml"           # 5
+    "trivia-game.yaml"      # 6
+    "trivia-performance.yaml" # 7
+    "trivia-results.yaml"   # 8
+    "favorites.yaml"        # 9
+)
+
+FLOW_NAMES=(
+    ""                      # 0: unused
+    "Home Screen"           # 1
+    "Fact Detail"           # 2
+    "Discover Screen"       # 3
+    "Category Browse"       # 4
+    "Trivia Hub"            # 5
+    "Trivia Game"           # 6
+    "Trivia Performance"    # 7
+    "Trivia Results"        # 8
+    "Favorites Screen"      # 9
+)
+
+# Flow prerequisites (which flows need to run first to set up state)
+# Format: space-separated list of prerequisite flow numbers
+FLOW_PREREQS=(
+    ""      # 0: unused
+    ""      # 1: Home - just needs app launched
+    ""      # 2: Fact Detail - starts from home
+    ""      # 3: Discover - navigates to tab itself
+    "3"     # 4: Category Browse - needs discover screen first
+    ""      # 5: Trivia Hub - navigates to tab itself
+    "5"     # 6: Trivia Game - needs trivia hub first
+    "5"     # 7: Trivia Performance - needs trivia hub first
+    "5 7"   # 8: Trivia Results - needs trivia hub, then performance
+    ""      # 9: Favorites - navigates to tab itself
+)
 
 # Colors
 RED='\033[0;31m'
@@ -273,23 +317,101 @@ run_maestro() {
     local device_id="$1"
     local output_dir="$2"
     local locale="$3"
+    local flow_num="$4"  # Optional: specific flow number
     
     # Create and get absolute path
     mkdir -p "$output_dir"
     local abs_output_dir
     abs_output_dir="$(cd "$output_dir" && pwd)"
     
-    info "Running Maestro..."
+    cd "$PROJECT_DIR"
+    
+    # Determine which flow file to run
+    local flow_file=".maestro/screenshots.yaml"
+    
+    if [ -n "$flow_num" ]; then
+        # Running a single flow - generate temp file with prerequisites
+        local prereqs="${FLOW_PREREQS[$flow_num]}"
+        local temp_flow="$MAESTRO_DIR/.temp-single-flow.yaml"
+        
+        info "Running single flow: ${FLOW_NAMES[$flow_num]}"
+        if [ -n "$prereqs" ]; then
+            info "  Prerequisites: $prereqs"
+        fi
+        
+        # Generate temporary Maestro file
+        cat > "$temp_flow" << EOF
+# Auto-generated single flow runner
+appId: $APP_ID
+
+---
+# Launch the app
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible:
+      id: "tab-home"
+    timeout: 15000
+
+# Wait for initial content
+- extendedWaitUntil:
+    visible:
+      id: "fact-card-.*"
+    timeout: 15000
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+EOF
+        
+        # Add prerequisite flows (they set up state but we skip their screenshots)
+        for prereq in $prereqs; do
+            local prereq_file="${FLOW_FILES[$prereq]}"
+            info "  Adding prereq: ${FLOW_NAMES[$prereq]}"
+            
+            # Run the prereq flow but redirect its screenshot to /dev/null
+            cat >> "$temp_flow" << EOF
+# Prerequisite: ${FLOW_NAMES[$prereq]} (setup only, no screenshot)
+- runFlow:
+    file: flows/$prereq_file
+    env:
+      OUTPUT_DIR: /tmp/maestro-prereq-ignored
+
+EOF
+        done
+        
+        # Add the target flow
+        cat >> "$temp_flow" << EOF
+# Target flow: ${FLOW_NAMES[$flow_num]}
+- runFlow:
+    file: flows/${FLOW_FILES[$flow_num]}
+    env:
+      OUTPUT_DIR: \${OUTPUT_DIR}
+EOF
+        
+        flow_file="$temp_flow"
+    else
+        info "Running full screenshot flow..."
+    fi
+    
     info "  Device: $device_id"
     info "  Locale: $locale"
     info "  Output: $abs_output_dir"
     
     # Run Maestro from project directory
-    cd "$PROJECT_DIR"
-    maestro --device "$device_id" test ".maestro/screenshots.yaml" \
+    local result=0
+    maestro --device "$device_id" test "$flow_file" \
         -e "OUTPUT_DIR=$abs_output_dir" \
         -e "LOCALE=$locale" \
-        --no-ansi
+        --no-ansi || result=$?
+    
+    # Clean up temp file
+    [ -f "$MAESTRO_DIR/.temp-single-flow.yaml" ] && rm -f "$MAESTRO_DIR/.temp-single-flow.yaml"
+    
+    return $result
 }
 
 capture_locale() {
@@ -297,6 +419,7 @@ capture_locale() {
     local platform="$2"
     local device_type="$3"
     local locale="$4"
+    local flow_num="$5"  # Optional: specific flow number
     
     # Build absolute output path
     local output_dir="$SCREENSHOTS_DIR/$platform/$device_type/$locale"
@@ -316,7 +439,7 @@ capture_locale() {
     restart_app "$device_id" "$platform"
     
     # Run Maestro
-    if run_maestro "$device_id" "$output_dir" "$locale"; then
+    if run_maestro "$device_id" "$output_dir" "$locale" "$flow_num"; then
         local count=$(find "$output_dir" -name "*.png" -type f 2>/dev/null | wc -l | tr -d ' ')
         success "$locale complete → $count screenshots"
         return 0
@@ -345,10 +468,24 @@ PLATFORM (required):
 OPTIONS:
     --locale <code>     Capture specific locale (en, de, es, fr, ja, ko, tr, zh)
     --all-locales       Capture all 8 supported locales
+    --flow <number>     Capture only a specific screen (1-9, see list below)
     --help              Show this help
 
+FLOWS:
+    1  Home Screen         - Facts feed
+    2  Fact Detail         - Modal detail view
+    3  Discover Screen     - Category discovery
+    4  Category Browse     - Category facts list (auto-runs: 3)
+    5  Trivia Hub          - Trivia main screen
+    6  Trivia Game         - Active trivia question (auto-runs: 5)
+    7  Trivia Performance  - Stats overview (auto-runs: 5)
+    8  Trivia Results      - Session results (auto-runs: 5, 7)
+    9  Favorites Screen    - Saved facts
+
+    Note: Prerequisites are automatically run to reach the correct app state.
+
 EXAMPLES:
-    # iOS phone, English only
+    # iOS phone, English only (all screens)
     ./marketing/scripts/capture.sh --ios
 
     # iOS, all languages
@@ -357,8 +494,11 @@ EXAMPLES:
     # Android, German only
     ./marketing/scripts/capture.sh --android --locale de
 
-    # Android, all languages
-    ./marketing/scripts/capture.sh --android --all-locales
+    # Just capture the trivia game screen (flow 6)
+    ./marketing/scripts/capture.sh --ios --flow 6
+
+    # Capture home screen in all locales
+    ./marketing/scripts/capture.sh --ios --flow 1 --all-locales
 
 PARALLEL EXECUTION:
     Run 4 terminals simultaneously with different devices booted:
@@ -385,6 +525,7 @@ main() {
     local platform=""
     local locale=""
     local all_locales=false
+    local flow_num=""
     
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -404,6 +545,19 @@ main() {
             --all-locales)
                 all_locales=true
                 shift
+                ;;
+            --flow)
+                flow_num="$2"
+                if [[ ! "$flow_num" =~ ^[1-9]$ ]]; then
+                    error "Invalid flow number: $flow_num (must be 1-9)"
+                    echo "" >&2
+                    echo "Available flows:" >&2
+                    for i in {1..9}; do
+                        echo "  $i: ${FLOW_NAMES[$i]}" >&2
+                    done
+                    exit 1
+                fi
+                shift 2
                 ;;
             --help|-h)
                 show_help
@@ -465,6 +619,11 @@ main() {
     info "Device:      $device_name ($device_type)"
     info "Device ID:   $device_id"
     info "Locales:     ${locales[*]}"
+    if [ -n "$flow_num" ]; then
+        info "Flow:        $flow_num (${FLOW_NAMES[$flow_num]})"
+    else
+        info "Flow:        All screens (1-9)"
+    fi
     info "Output:      screenshots/$platform/$device_type/"
     
     # Capture screenshots
@@ -476,7 +635,7 @@ main() {
         ((current++))
         echo ""
         echo -e "${CYAN}━━━ [$current/$total] $loc ━━━${NC}"
-        capture_locale "$device_id" "$platform" "$device_type" "$loc" || ((failed++))
+        capture_locale "$device_id" "$platform" "$device_type" "$loc" "$flow_num" || ((failed++))
     done
     
     # Summary
