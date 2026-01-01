@@ -1,5 +1,56 @@
 # Facts a Day - App Store Marketing
 
+## 📦 Config Files & Upload Scripts
+
+### Metadata Config
+All app store metadata is stored in `marketing/config/metadata.json` for easy management and automated uploads.
+
+### Upload Scripts
+
+**Screenshots:**
+```bash
+# Upload screenshots to App Store Connect
+./marketing/scripts/upload.sh --ios
+
+# Upload screenshots to Google Play
+./marketing/scripts/upload.sh --android
+
+# Preview without uploading
+./marketing/scripts/upload.sh --ios --dry-run
+```
+
+**Metadata (titles, descriptions, keywords):**
+```bash
+# Upload metadata to App Store Connect
+./marketing/scripts/upload-metadata.sh --ios
+
+# Upload metadata to Google Play
+./marketing/scripts/upload-metadata.sh --android
+
+# Upload to both stores
+./marketing/scripts/upload-metadata.sh --all
+
+# Upload specific locale only
+./marketing/scripts/upload-metadata.sh --ios --locale de
+
+# Preview without uploading
+./marketing/scripts/upload-metadata.sh --ios --dry-run
+```
+
+### Authentication Setup
+
+**App Store Connect (iOS):**
+```bash
+export ASC_KEY_ID="YOUR_KEY_ID"
+export ASC_ISSUER_ID="YOUR_ISSUER_ID"
+export ASC_KEY_PATH="/path/to/AuthKey_XXXXX.p8"
+```
+
+**Google Play (Android):**
+```bash
+export GOOGLE_PLAY_JSON_KEY="/path/to/service-account.json"
+```
+
 ---
 
 ## 🇺🇸 English (en)

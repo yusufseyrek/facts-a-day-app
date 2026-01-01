@@ -73,7 +73,7 @@ get_android_locale() {
     case "$1" in
         en) echo "en-US" ;;
         de) echo "de-DE" ;;
-        es) echo "es-ES" ;;
+        es) echo "es-419" ;;
         fr) echo "fr-FR" ;;
         ja) echo "ja-JP" ;;
         ko) echo "ko-KR" ;;
@@ -109,11 +109,11 @@ get_ios_screenshot_type() {
 }
 
 # Google Play screenshot types by device
-get_android_screenshot_type() {
+get_android_screenshot_types() {
     local device="$1"
     case "$device" in
         phone)  echo "phoneScreenshots" ;;
-        tablet) echo "tenInchScreenshots" ;;
+        tablet) echo "sevenInchScreenshots tenInchScreenshots" ;;  # Upload to both 7" and 10" tablet slots
         *)      echo "" ;;
     esac
 }
@@ -719,49 +719,9 @@ upload_screenshot_to_asc() {
 # Google Play API - Authentication
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Generate OAuth2 access token for Google Play API
+# Generate OAuth2 access token for Google Play API using Node.js helper
 generate_google_token() {
-    local json_key="$GOOGLE_PLAY_JSON_KEY"
-    
-    # Extract service account email and private key
-    local client_email
-    client_email=$(jq -r '.client_email' "$json_key")
-    local private_key
-    private_key=$(jq -r '.private_key' "$json_key")
-    
-    # JWT Header
-    local header='{"alg":"RS256","typ":"JWT"}'
-    local header_b64
-    header_b64=$(echo -n "$header" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
-    
-    # JWT Payload
-    local now
-    now=$(date +%s)
-    local exp=$((now + 3600))
-    local payload='{
-        "iss": "'"$client_email"'",
-        "scope": "https://www.googleapis.com/auth/androidpublisher",
-        "aud": "https://oauth2.googleapis.com/token",
-        "iat": '"$now"',
-        "exp": '"$exp"'
-    }'
-    local payload_b64
-    payload_b64=$(echo -n "$payload" | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
-    
-    # Sign with RS256
-    local unsigned="$header_b64.$payload_b64"
-    local signature
-    signature=$(echo -n "$unsigned" | openssl dgst -sha256 -sign <(echo "$private_key") | openssl base64 -e -A | tr '+/' '-_' | tr -d '=')
-    
-    local jwt="$unsigned.$signature"
-    
-    # Exchange JWT for access token
-    local response
-    response=$(curl -s -X POST "https://oauth2.googleapis.com/token" \
-        -H "Content-Type: application/x-www-form-urlencoded" \
-        -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$jwt")
-    
-    echo "$response" | jq -r '.access_token // empty'
+    "$SCRIPT_DIR/google-token.js"
 }
 
 # Make authenticated API call to Google Play
@@ -1034,15 +994,17 @@ upload_android() {
         for device in $(get_device_list); do
             local dir="$INPUT_DIR/android/$device/$locale"
             if [ -d "$dir" ]; then
-                local image_type
-                image_type=$(get_android_screenshot_type "$device")
-                find "$dir" -maxdepth 1 \( -name "*.jpg" -o -name "*.png" \) -type f | head -3 | while read -r f; do
-                    echo "  $store_locale/$image_type/$(basename "$f")"
+                local image_types
+                image_types=$(get_android_screenshot_types "$device")
+                for image_type in $image_types; do
+                    find "$dir" -maxdepth 1 \( -name "*.jpg" -o -name "*.png" \) -type f | sort | head -3 | while read -r f; do
+                        echo "  $store_locale/$image_type/$(basename "$f")"
+                    done
                 done
             fi
         done
     done | head -10
-    [ "$total_count" -gt 10 ] && echo "  ... and $((total_count - 10)) more"
+    [ "$total_count" -gt 10 ] && echo "  ... and more (max 8 per type)"
     echo ""
     
     if $dry_run; then
@@ -1083,32 +1045,38 @@ upload_android() {
             local dir="$INPUT_DIR/android/$device/$locale"
             [ -d "$dir" ] || continue
             
-            local image_type
-            image_type=$(get_android_screenshot_type "$device")
+            local image_types
+            image_types=$(get_android_screenshot_types "$device")
             
-            info "  $image_type..."
-            
-            # Delete existing screenshots
-            google_api DELETE "/applications/$ANDROID_PACKAGE_NAME/edits/$edit_id/listings/$store_locale/$image_type" >/dev/null 2>&1 || true
-            
-            # Upload new screenshots
-            while IFS= read -r -d '' img; do
-                local filename
-                filename=$(basename "$img")
-                local upload_response
-                upload_response=$(google_upload_image "/applications/$ANDROID_PACKAGE_NAME/edits/$edit_id/listings/$store_locale/$image_type" "$img")
+            for image_type in $image_types; do
+                info "  $image_type..."
                 
-                local image_id
-                image_id=$(echo "$upload_response" | jq -r '.image.id // empty')
+                # Delete existing screenshots
+                google_api DELETE "/applications/$ANDROID_PACKAGE_NAME/edits/$edit_id/listings/$store_locale/$image_type" >/dev/null 2>&1 || true
                 
-                if [ -n "$image_id" ]; then
-                    success "    $filename"
-                    ((uploaded++))
-                else
-                    error "    $filename"
-                    ((failed++))
-                fi
-            done < <(find "$dir" -maxdepth 1 \( -name "*.jpg" -o -name "*.png" \) -type f -print0 | sort -z)
+                # Upload new screenshots (max 8 per type)
+                local count=0
+                while IFS= read -r -d '' img; do
+                    [ $count -ge 8 ] && break
+                    
+                    local filename
+                    filename=$(basename "$img")
+                    local upload_response
+                    upload_response=$(google_upload_image "/applications/$ANDROID_PACKAGE_NAME/edits/$edit_id/listings/$store_locale/$image_type" "$img")
+                    
+                    local image_id
+                    image_id=$(echo "$upload_response" | jq -r '.image.id // empty')
+                    
+                    if [ -n "$image_id" ]; then
+                        success "    $filename"
+                        ((uploaded++))
+                        ((count++))
+                    else
+                        error "    $filename"
+                        ((failed++))
+                    fi
+                done < <(find "$dir" -maxdepth 1 \( -name "*.jpg" -o -name "*.png" \) -type f -print0 | sort -z)
+            done
         done
     done
     
@@ -1116,7 +1084,7 @@ upload_android() {
     echo ""
     info "Committing changes..."
     local commit_response
-    commit_response=$(google_api POST "/applications/$ANDROID_PACKAGE_NAME/edits/$edit_id:commit" '{}')
+    commit_response=$(google_api POST "/applications/$ANDROID_PACKAGE_NAME/edits/$edit_id:commit?changesNotSentForReview=true" '{}')
     
     if echo "$commit_response" | jq -e '.id' >/dev/null 2>&1; then
         success "Changes committed successfully"
