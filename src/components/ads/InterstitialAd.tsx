@@ -211,21 +211,37 @@ export const showInterstitialAd = async (): Promise<void> => {
     try {
       console.log('🎬 Showing interstitial ad...');
       
-      // Create a promise that resolves when the ad is closed
+      // Create a promise that resolves when the ad is closed OR errors
+      // This prevents hanging if the ad fails to display (e.g., view controller conflict)
       const adClosedPromise = new Promise<void>((resolve) => {
+        let resolved = false;
+        
+        const cleanup = () => {
+          if (!resolved) {
+            resolved = true;
+            closeListener();
+            errorListener();
+            resolve();
+          }
+        };
+        
         const closeListener = interstitial!.addAdEventListener(AdEventType.CLOSED, () => {
-          closeListener(); // Remove listener
-          resolve();
+          console.log('✅ Interstitial ad closed');
+          cleanup();
+        });
+        
+        // Also listen for errors during ad display
+        const errorListener = interstitial!.addAdEventListener(AdEventType.ERROR, (error) => {
+          console.error('⚠️ Interstitial ad error during display:', error);
+          cleanup();
         });
       });
 
       // Show the ad
       await interstitial.show();
 
-      // Wait for the ad to be closed
+      // Wait for the ad to be closed or error out
       await adClosedPromise;
-
-      console.log('✅ Interstitial ad closed');
 
       // Add a small delay on iOS to ensure the view hierarchy is fully restored
       // This prevents the settings screen from becoming unclickable

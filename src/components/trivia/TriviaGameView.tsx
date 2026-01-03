@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, View, ActivityIndicator } from 'react-native';
+import { Pressable, View, ActivityIndicator, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
@@ -214,11 +214,22 @@ export function TriviaGameView({
         </View>
       </YStack>
       
-      {/* Question */}
-      <YStack flex={1} justifyContent="center" alignItems="center" paddingHorizontal={tokens.space.xl} gap={tokens.space.lg}>
+      {/* Question - scrollable for long content */}
+      <ScrollView 
+        style={{ flex: 1 }}
+        contentContainerStyle={{ 
+          flexGrow: 1,
+          justifyContent: 'center',
+          paddingHorizontal: tokens.space.xl,
+          paddingVertical: tokens.space.lg,
+        }}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
         <Animated.View 
           key={questionKey}
           entering={SlideInRight.duration(300)}
+          style={{ alignItems: 'center' }}
         >
           <Text
             fontSize={isTablet ? 40 : 26}
@@ -230,154 +241,154 @@ export function TriviaGameView({
             {currentQuestion.question_text}
           </Text>
         </Animated.View>
-      </YStack>
+      </ScrollView>
       
       {/* Answers */}
-      <YStack paddingHorizontal={tokens.space.lg} gap={tokens.space.md}>
-        {isTrueFalse ? (
-          // True/False - side by side radio style
-          <XStack gap={tokens.space.md}>
-            {shuffledAnswers.map((answer, index) => {
-              const isSelected = selectedAnswer === answer;
-              
-              let optionBg: string = surfaceColor;
-              let optionBorder: string = borderColor;
-              
-              if (isSelected) {
-                optionBg = isDark ? 'rgba(0, 163, 204, 0.2)' : 'rgba(0, 119, 168, 0.15)';
-                optionBorder = primaryColor;
-              }
-              
-              return (
-                <Pressable
-                  key={answer}
-                  style={({ pressed }) => [
-                    { flex: 1 },
-                    pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
-                  ]}
-                  onPress={() => handlePressWithHaptics(() => onAnswerSelect(answer))}
-                >
-                  <Animated.View entering={FadeInUp.delay(index * 50).duration(200)}>
-                    <YStack
-                      backgroundColor={optionBg as any}
-                      borderWidth={2}
-                      borderColor={optionBorder as any}
-                      paddingVertical={tokens.space.lg}
-                      borderRadius={tokens.radius.lg}
-                      alignItems="center"
-                      justifyContent="center"
-                      gap={tokens.space.sm}
-                    >
-                      {/* Radio circle */}
-                      <View
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: 12,
-                          borderWidth: 2,
-                          borderColor: isSelected ? primaryColor : borderColor,
-                          backgroundColor: isSelected ? primaryColor : 'transparent',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}
+        <YStack paddingHorizontal={tokens.space.lg} gap={tokens.space.md}>
+          {isTrueFalse ? (
+            // True/False - side by side radio style
+            <XStack gap={tokens.space.md}>
+              {shuffledAnswers.map((answer, index) => {
+                const isSelected = selectedAnswer === answer;
+                
+                let optionBg: string = surfaceColor;
+                let optionBorder: string = borderColor;
+                
+                if (isSelected) {
+                  optionBg = isDark ? 'rgba(0, 163, 204, 0.2)' : 'rgba(0, 119, 168, 0.15)';
+                  optionBorder = primaryColor;
+                }
+                
+                return (
+                  <Pressable
+                    key={answer}
+                    style={({ pressed }) => [
+                      { flex: 1 },
+                      pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
+                    ]}
+                    onPress={() => handlePressWithHaptics(() => onAnswerSelect(answer))}
+                  >
+                    <Animated.View entering={FadeInUp.delay(index * 50).duration(200)}>
+                      <YStack
+                        backgroundColor={optionBg as any}
+                        borderWidth={2}
+                        borderColor={optionBorder as any}
+                        paddingVertical={tokens.space.lg}
+                        borderRadius={tokens.radius.lg}
+                        alignItems="center"
+                        justifyContent="center"
+                        gap={tokens.space.sm}
                       >
-                        {isSelected && (
-                          <View
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: 4,
-                              backgroundColor: '#FFFFFF',
-                            }}
-                          />
-                        )}
-                      </View>
-                      <Text
-                        fontSize={17}
-                        fontFamily={FONT_FAMILIES.semibold}
-                        color={textColor}
-                      >
-                        {getDisplayAnswer(answer)}
-                      </Text>
-                    </YStack>
-                  </Animated.View>
-                </Pressable>
-              );
-            })}
-          </XStack>
-        ) : (
-          // Multiple choice - list with letter badges
-          <YStack gap={tokens.space.sm}>
-            {shuffledAnswers.map((answer, index) => {
-              const isSelected = selectedAnswer === answer;
-              
-              let optionBg: string = surfaceColor;
-              let optionBorder: string = borderColor;
-              let badgeBg: string = isDark ? tokens.color.dark.border : tokens.color.light.border;
-              let badgeText: string = secondaryTextColor;
-              
-              if (isSelected) {
-                optionBg = isDark ? 'rgba(0, 163, 204, 0.2)' : 'rgba(0, 119, 168, 0.15)';
-                optionBorder = primaryColor;
-                badgeBg = primaryColor;
-                badgeText = '#FFFFFF';
-              }
-              
-              return (
-                <Pressable
-                  key={answer}
-                  style={({ pressed }) => [
-                    pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
-                  ]}
-                  onPress={() => handlePressWithHaptics(() => onAnswerSelect(answer))}
-                >
-                  <Animated.View entering={FadeInUp.delay(index * 50).duration(200)}>
-                    <XStack
-                      backgroundColor={optionBg as any}
-                      borderWidth={1.5}
-                      borderColor={optionBorder as any}
-                      paddingVertical={tokens.space.md}
-                      paddingHorizontal={tokens.space.md}
-                      borderRadius={tokens.radius.lg}
-                      alignItems="center"
-                      gap={tokens.space.md}
-                    >
-                      {/* Letter badge */}
-                      <View
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          backgroundColor: badgeBg,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <Text
-                          fontSize={16}
-                          fontFamily={FONT_FAMILIES.bold}
-                          color={badgeText}
+                        {/* Radio circle */}
+                        <View
+                          style={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: 12,
+                            borderWidth: 2,
+                            borderColor: isSelected ? primaryColor : borderColor,
+                            backgroundColor: isSelected ? primaryColor : 'transparent',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
                         >
-                          {letterLabels[index]}
+                          {isSelected && (
+                            <View
+                              style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: 4,
+                                backgroundColor: '#FFFFFF',
+                              }}
+                            />
+                          )}
+                        </View>
+                        <Text
+                          fontSize={17}
+                          fontFamily={FONT_FAMILIES.semibold}
+                          color={textColor}
+                        >
+                          {getDisplayAnswer(answer)}
                         </Text>
-                      </View>
-                      
-                      {/* Answer text */}
-                      <Text
-                        flex={1}
-                        fontSize={16}
-                        color={textColor}
+                      </YStack>
+                    </Animated.View>
+                  </Pressable>
+                );
+              })}
+            </XStack>
+          ) : (
+            // Multiple choice - list with letter badges
+            <YStack gap={tokens.space.sm}>
+              {shuffledAnswers.map((answer, index) => {
+                const isSelected = selectedAnswer === answer;
+                
+                let optionBg: string = surfaceColor;
+                let optionBorder: string = borderColor;
+                let badgeBg: string = isDark ? tokens.color.dark.border : tokens.color.light.border;
+                let badgeText: string = secondaryTextColor;
+                
+                if (isSelected) {
+                  optionBg = isDark ? 'rgba(0, 163, 204, 0.2)' : 'rgba(0, 119, 168, 0.15)';
+                  optionBorder = primaryColor;
+                  badgeBg = primaryColor;
+                  badgeText = '#FFFFFF';
+                }
+                
+                return (
+                  <Pressable
+                    key={answer}
+                    style={({ pressed }) => [
+                      pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
+                    ]}
+                    onPress={() => handlePressWithHaptics(() => onAnswerSelect(answer))}
+                  >
+                    <Animated.View entering={FadeInUp.delay(index * 50).duration(200)}>
+                      <XStack
+                        backgroundColor={optionBg as any}
+                        borderWidth={1.5}
+                        borderColor={optionBorder as any}
+                        paddingVertical={tokens.space.md}
+                        paddingHorizontal={tokens.space.md}
+                        borderRadius={tokens.radius.lg}
+                        alignItems="center"
+                        gap={tokens.space.md}
                       >
-                        {answer}
-                      </Text>
-                    </XStack>
-                  </Animated.View>
-                </Pressable>
-              );
-            })}
-          </YStack>
-        )}
-      </YStack>
+                        {/* Letter badge */}
+                        <View
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            backgroundColor: badgeBg,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text
+                            fontSize={16}
+                            fontFamily={FONT_FAMILIES.bold}
+                            color={badgeText}
+                          >
+                            {letterLabels[index]}
+                          </Text>
+                        </View>
+                        
+                        {/* Answer text */}
+                        <Text
+                          flex={1}
+                          fontSize={16}
+                          color={textColor}
+                        >
+                          {answer}
+                        </Text>
+                      </XStack>
+                    </Animated.View>
+                  </Pressable>
+                );
+              })}
+            </YStack>
+          )}
+        </YStack>
       
       {/* Navigation buttons */}
       <XStack 
