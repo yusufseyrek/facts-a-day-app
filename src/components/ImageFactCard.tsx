@@ -3,6 +3,7 @@ import { Pressable, Animated, StyleSheet, View, Text, Platform, useWindowDimensi
 import { Image, ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { tokens } from "../theme/tokens";
+import { FONT_FAMILIES } from "./Typography";
 import { useFactImage } from "../utils/useFactImage";
 import type { Category } from "../services/database";
 
@@ -360,7 +361,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: "#FFFFFF",
-    fontFamily: "Montserrat_600SemiBold",
+    fontFamily: FONT_FAMILIES.semibold,
     fontWeight: "600",
   },
   contentOverlay: {
@@ -371,7 +372,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#FFFFFF",
-    fontFamily: "Montserrat_700Bold",
+    fontFamily: FONT_FAMILIES.bold,
     fontWeight: "700",
     letterSpacing: 0.3,
     textShadowColor: "rgba(0, 0, 0, 0.6)",

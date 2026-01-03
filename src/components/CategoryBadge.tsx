@@ -2,7 +2,7 @@ import React from 'react';
 import { styled } from '@tamagui/core';
 import { XStack } from 'tamagui';
 import { tokens, useTheme, getCategoryNeonColor } from '../theme';
-import { LabelText } from './Typography';
+import { LabelText, FONT_FAMILIES } from './Typography';
 import { useTranslation, translateCategory } from '../i18n';
 import { getContrastColor } from '../utils/colors';
 import type { Category } from '../services/database';
@@ -11,7 +11,7 @@ interface CategoryBadgeProps {
   category: string | Category;
   /** 
    * Font family to use for the badge text.
-   * Use specific Montserrat font variants (e.g., 'Montserrat_600SemiBold')
+   * Use FONT_FAMILIES constants (e.g., FONT_FAMILIES.semibold)
    */
   fontFamily?: string;
   fontSize?: number;
@@ -52,7 +52,7 @@ export function CategoryBadge({ category, fontFamily, fontSize }: CategoryBadgeP
         <LabelText
           fontSize={fontSize || 12}
           color={contrastColor}
-          fontFamily={fontFamily || 'Montserrat_600SemiBold'}
+          fontFamily={fontFamily || FONT_FAMILIES.semibold}
         >
           {displayName}
         </LabelText>

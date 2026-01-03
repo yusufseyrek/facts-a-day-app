@@ -22,7 +22,7 @@ import { Button } from '../Button';
 import { SuccessToast } from '../SuccessToast';
 import * as onboardingService from '../../services/onboarding';
 import * as notificationService from '../../services/notifications';
-import { H2, LabelText, BodyText, SmallText } from '../Typography';
+import { H2, LabelText, BodyText, SmallText, FONT_FAMILIES } from '../Typography';
 import { trackNotificationTimeChange, updateNotificationProperty } from '../../services/analytics';
 
 interface TimePickerModalProps {
@@ -428,7 +428,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                     <SmallText
                       textAlign="center"
                       color={colors.textSecondary}
-                      fontFamily="Montserrat_600SemiBold"
+                      fontFamily={FONT_FAMILIES.semibold}
                       style={{ marginTop: tokens.space.sm }}
                     >
                       {t('multipleNotificationsPerDay', { count: times.length })}

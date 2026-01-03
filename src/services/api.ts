@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { getCachedAppCheckToken, forceRefreshAppCheckToken } from './appCheckToken';
+import { getCachedAppCheckToken } from './appCheckToken';
+import { appCheckReady } from '../config/firebase';
 
 /**
  * Get the API base URL, adjusting for Android emulator
@@ -193,9 +194,12 @@ async function makeRequest<T>(
   skipRetry: boolean = false
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  let hasRetriedWithFreshToken = false;
 
   const executeRequest = async (): Promise<T> => {
+    // Wait for App Check initialization to complete before making any API request
+    // This prevents race conditions where API calls happen before App Check is ready
+    await appCheckReady;
+    
     // Get App Check token for protected endpoints (uses cache to prevent rate limiting)
     const appCheckToken = await getCachedAppCheckToken();
     
@@ -207,6 +211,10 @@ async function makeRequest<T>(
     
     if (appCheckToken) {
       headers['X-Firebase-AppCheck'] = appCheckToken;
+    } else if (!__DEV__) {
+      // Log when making API requests without App Check token in production
+      // This helps track potential security/initialization issues
+      console.warn(`⚠️ API request without App Check token: ${endpoint}`);
     }
 
     const response = await fetchWithTimeout(url, {
@@ -216,44 +224,9 @@ async function makeRequest<T>(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.message || `API Error: ${response.status} ${response.statusText}`;
-      
-      // Check if this is an App Check token expiration error
-      const isAppCheckExpired = 
-        errorMessage.toLowerCase().includes('app check') && 
-        (errorMessage.toLowerCase().includes('expired') || 
-         errorMessage.toLowerCase().includes('invalid') ||
-         response.status === 401);
-      
-      // If App Check token is expired and we haven't retried yet, force refresh and retry
-      if (isAppCheckExpired && !hasRetriedWithFreshToken) {
-        hasRetriedWithFreshToken = true;
-        if (__DEV__) {
-          console.log('🔄 App Check token expired, refreshing and retrying...');
-        }
-        
-        const freshToken = await forceRefreshAppCheckToken();
-        if (freshToken) {
-          headers['X-Firebase-AppCheck'] = freshToken;
-          
-          // Retry the request with the fresh token
-          const retryResponse = await fetchWithTimeout(url, {
-            ...options,
-            headers,
-          });
-          
-          if (!retryResponse.ok) {
-            const retryErrorData = await retryResponse.json().catch(() => ({}));
-            throw new Error(
-              retryErrorData.message || `API Error: ${retryResponse.status} ${retryResponse.statusText}`
-            );
-          }
-          
-          return await retryResponse.json();
-        }
-      }
-      
-      const error = new Error(errorMessage);
+      const error = new Error(
+        errorData.message || `API Error: ${response.status} ${response.statusText}`
+      );
 
       // Add rate limit info to error if available
       if (response.status === 429) {

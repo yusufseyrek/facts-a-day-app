@@ -1,7 +1,6 @@
 import React from 'react';
 import { Text, styled } from '@tamagui/core';
 import { useWindowDimensions, TextStyle } from 'react-native';
-import { tokens } from '../theme/tokens';
 import { getResponsiveFontSizes, isTabletDevice } from '../utils/responsive';
 
 /**
@@ -10,12 +9,10 @@ import { getResponsiveFontSizes, isTabletDevice } from '../utils/responsive';
  */
 export const FONT_FAMILIES = {
   regular: 'Montserrat_400Regular',
+  regular_italic: 'Montserrat_400Regular_Italic',
   medium: 'Montserrat_500Medium',
   semibold: 'Montserrat_600SemiBold',
   bold: 'Montserrat_700Bold',
-  extrabold: 'Montserrat_800ExtraBold',
-  black: 'Montserrat_900Black',
-  regular_italic: 'Montserrat_400Regular_Italic',
 } as const;
 
 /**
@@ -91,7 +88,7 @@ interface TypographyProps {
  */
 export const H1 = React.memo(({ 
   children, 
-  fontSize: customFontSize, 
+  fontSize: customFontSize,
   lineHeight: customLineHeight,
   style,
   fontFamily,

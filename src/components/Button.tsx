@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { styled, View } from '@tamagui/core';
 import { XStack } from 'tamagui';
 import { tokens, useTheme } from '../theme';
-import { LabelText } from './Typography';
+import { LabelText, FONT_FAMILIES } from './Typography';
 
 interface ButtonProps {
   children: string;
@@ -74,12 +74,12 @@ export function Button({
         {loading ? (
           <XStack gap={tokens.space.sm} alignItems="center">
             <ActivityIndicator size="small" color="#FFFFFF" />
-            <LabelText color="#FFFFFF" fontFamily="Montserrat_600SemiBold" fontSize={16}>
+            <LabelText color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold} fontSize={16}>
               {children}
             </LabelText>
           </XStack>
         ) : (
-          <LabelText color="#FFFFFF" fontFamily="Montserrat_600SemiBold" fontSize={16}>
+          <LabelText color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold} fontSize={16}>
             {children}
           </LabelText>
         )}

@@ -5,7 +5,7 @@ import { YStack, XStack } from 'tamagui';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Plus, Trash2 } from '@tamagui/lucide-icons';
 import { tokens } from '../theme/tokens';
-import { BodyText } from './Typography';
+import { BodyText, FONT_FAMILIES } from './Typography';
 import { Button } from './Button';
 import { useTheme } from '../theme';
 import { useTranslation } from '../i18n';
@@ -152,7 +152,7 @@ export function MultiTimePicker({
   return (
     <TimeSlotContainer>
       <BodyText
-        fontFamily="Montserrat_700Bold"
+        fontFamily={FONT_FAMILIES.bold}
         textAlign="center"
         fontSize={tokens.fontSize.body}
         style={{ marginBottom: tokens.space.xs }}
@@ -165,7 +165,7 @@ export function MultiTimePicker({
           <BodyText
             fontSize={tokens.fontSize.small}
             color="$textSecondary"
-            fontFamily="Montserrat_500Medium"
+            fontFamily={FONT_FAMILIES.medium}
             style={{ minWidth: 60 }}
           >
             {t('time')} {index + 1}
@@ -221,7 +221,7 @@ export function MultiTimePicker({
           <Plus size={24} color={tokens.color.light.primary} />
           <BodyText
             color="$primary"
-            fontFamily="Montserrat_700Bold"
+            fontFamily={FONT_FAMILIES.bold}
             fontSize={tokens.fontSize.body}
           >
             {t('addAnotherTime')}
@@ -235,7 +235,7 @@ export function MultiTimePicker({
           color="$textSecondary"
           textAlign="center"
           lineHeight={20}
-          fontFamily="Montserrat_600SemiBold"
+          fontFamily={FONT_FAMILIES.semibold}
         >
           {t('multipleNotificationsPerDay', { count: times.length })}
         </BodyText>

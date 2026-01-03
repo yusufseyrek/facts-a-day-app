@@ -145,6 +145,11 @@ async function fetchNewToken(): Promise<string | null> {
       tokenExpirationMs = expiration;
     }
     
+    // Log token expiration info
+    const expiresIn = Math.round((tokenExpirationMs - Date.now()) / 1000 / 60);
+    const expirationDate = new Date(tokenExpirationMs).toISOString();
+    console.log(`🔒 App Check: Token obtained, expires in ${expiresIn} min (${expirationDate})`);
+    
     // Cache the token
     cachedToken = token;
     
@@ -205,6 +210,11 @@ export async function forceRefreshAppCheckToken(): Promise<string | null> {
     } else {
       tokenExpirationMs = expiration;
     }
+    
+    // Log token expiration info
+    const expiresIn = Math.round((tokenExpirationMs - Date.now()) / 1000 / 60);
+    const expirationDate = new Date(tokenExpirationMs).toISOString();
+    console.log(`🔒 App Check: Token refreshed, expires in ${expiresIn} min (${expirationDate})`);
     
     cachedToken = token;
     

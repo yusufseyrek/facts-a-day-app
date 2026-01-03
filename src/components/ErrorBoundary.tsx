@@ -2,6 +2,7 @@ import React, { Component, ReactNode } from 'react';
 import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { recordError } from '../config/firebase';
 import { tokens } from '../theme/tokens';
+import { FONT_FAMILIES } from './Typography';
 
 interface Props {
   children: ReactNode;
@@ -138,14 +139,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    fontFamily: 'Montserrat_700Bold',
+    fontFamily: FONT_FAMILIES.bold,
     color: tokens.color.light.text,
     textAlign: 'center',
     marginBottom: tokens.space.md,
   },
   body: {
     fontSize: 16,
-    fontFamily: 'Montserrat_400Regular',
+    fontFamily: FONT_FAMILIES.regular,
     color: tokens.color.light.textSecondary,
     textAlign: 'center',
     marginBottom: tokens.space.xl,
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
   errorLabel: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Montserrat_600SemiBold',
+    fontFamily: FONT_FAMILIES.semibold,
     color: '#DC2626',
     marginBottom: tokens.space.sm,
   },
@@ -183,7 +184,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Montserrat_600SemiBold',
+    fontFamily: FONT_FAMILIES.semibold,
     color: '#FFFFFF',
     textAlign: 'center',
   },

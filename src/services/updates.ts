@@ -9,7 +9,6 @@ import * as Updates from 'expo-updates';
 import { Platform, Appearance } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getCachedAppCheckToken } from './appCheckToken';
 import { tokens } from '../theme/tokens';
 
 const THEME_STORAGE_KEY = '@app_theme_mode';

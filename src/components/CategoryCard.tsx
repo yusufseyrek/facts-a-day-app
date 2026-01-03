@@ -3,7 +3,7 @@ import { Pressable } from 'react-native';
 import { View, styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Check } from '@tamagui/lucide-icons';
-import { LabelText } from './Typography';
+import { LabelText, FONT_FAMILIES } from './Typography';
 import { tokens, useTheme, getCategoryNeonColor } from '../theme';
 import { getContrastColor } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
@@ -100,7 +100,7 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
             </IconContainer>
             <LabelContainer>
               <LabelText
-                fontFamily="Montserrat_600SemiBold"
+                fontFamily={FONT_FAMILIES.semibold}
                 color={selected ? contrastColor : '$text'}
                 textAlign="center"
                 fontSize={labelFontSize ?? (isTablet ? tokens.fontSize.body : fontSizes.small)}

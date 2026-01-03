@@ -23,6 +23,7 @@ import {
   LabelText,
   ScreenContainer,
   ScreenHeaderContainer,
+  FONT_FAMILIES,
   ContentContainer,
   TabletWrapper,
 } from "../../src/components";
@@ -462,7 +463,7 @@ function DiscoverScreen() {
                     color={contrastColor}
                     fontSize={tokens.fontSize.small}
                     numberOfLines={1}
-                    style={{ fontFamily: "Montserrat_600SemiBold" }}
+                    style={{ fontFamily: FONT_FAMILIES.semibold }}
                   >
                     {selectedCategory.name}
                   </LabelText>
@@ -625,14 +626,14 @@ function DiscoverScreen() {
                                   color={contrastColor}
                                   fontSize={isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body}
                                   numberOfLines={1}
-                                  style={{ fontFamily: "Montserrat_600SemiBold" }}
+                                  style={{ fontFamily: FONT_FAMILIES.semibold }}
                                 >
                                   {category.name}
                                 </LabelText>
                                 <LabelText
                                   color={contrastColor}
                                   fontSize={tokens.fontSize.small}
-                                  style={{ opacity: 0.85, fontFamily: "Montserrat_500Medium" }}
+                                  style={{ opacity: 0.85, fontFamily: FONT_FAMILIES.medium }}
                                 >
                                   {factsCount === 1
                                     ? t("factCountSingular", { count: factsCount })

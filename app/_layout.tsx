@@ -20,16 +20,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { initializeFirebase, enableCrashlyticsConsoleLogging } from '../src/config/firebase';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initAnalytics } from '../src/services/analytics';
-import {
-  useFonts,
-  Montserrat_400Regular,
-  Montserrat_400Regular_Italic,
-  Montserrat_500Medium,
-  Montserrat_600SemiBold,
-  Montserrat_700Bold,
-  Montserrat_800ExtraBold,
-  Montserrat_900Black,
-} from '@expo-google-fonts/montserrat';
+import { useFonts } from 'expo-font';
+
 
 // Initialize Firebase Crashlytics and Analytics as early as possible
 initializeFirebase();
@@ -192,13 +184,11 @@ export default function RootLayout() {
   const [isDbReady, setIsDbReady] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
-    Montserrat_400Regular,
-    Montserrat_400Regular_Italic,
-    Montserrat_500Medium,
-    Montserrat_600SemiBold,
-    Montserrat_700Bold,
-    Montserrat_800ExtraBold,
-    Montserrat_900Black,
+    Montserrat_400Regular: require('../assets/fonts/Montserrat_400Regular.ttf'),
+    Montserrat_400Regular_Italic: require('../assets/fonts/Montserrat_400Regular_Italic.ttf'),
+    Montserrat_500Medium: require('../assets/fonts/Montserrat_500Medium.ttf'),
+    Montserrat_600SemiBold: require('../assets/fonts/Montserrat_600SemiBold.ttf'),
+    Montserrat_700Bold: require('../assets/fonts/Montserrat_700Bold.ttf'),
   });
 
   useEffect(() => {
