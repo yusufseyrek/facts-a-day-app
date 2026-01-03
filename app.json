@@ -44,7 +44,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.seyrek.factsaday",
-      "buildNumber": "33",
+      "buildNumber": "34",
       "googleServicesFile": "./google/GoogleService-Info.plist",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -165,7 +165,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "dev.seyrek.factsaday",
-      "versionCode": 14,
+      "versionCode": 15,
       "permissions": [
         "INTERNET",
         "RECEIVE_BOOT_COMPLETED",
@@ -233,8 +233,7 @@
       "expo-router",
       "expo-sqlite",
       "expo-updates",
-      "./plugins/withAndroidWindowBackground.js",
-      "./plugins/withAndroidCleartextTraffic.js"
+      "./plugins/withAndroidWindowBackground.js"
     ]
   }
 }
