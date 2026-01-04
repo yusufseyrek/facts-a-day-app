@@ -20,7 +20,14 @@ import * as SplashScreen from 'expo-splash-screen';
 import { initializeFirebase, enableCrashlyticsConsoleLogging } from '../src/config/firebase';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initAnalytics } from '../src/services/analytics';
-import { useFonts } from 'expo-font';
+import {
+  useFonts,
+  Montserrat_400Regular,
+  Montserrat_400Regular_Italic,
+  Montserrat_500Medium,
+  Montserrat_600SemiBold,
+  Montserrat_700Bold,
+} from '@expo-google-fonts/montserrat';
 
 
 // Initialize Firebase Crashlytics and Analytics as early as possible
@@ -33,15 +40,9 @@ enableCrashlyticsConsoleLogging();
 // Initialize analytics with device info and user properties
 initAnalytics();
 
-// Log update status immediately on app start (before any async operations)
-// This helps debug whether the correct bundle was loaded after an update
+// Log update status on app start for debugging OTA issues
 if (!__DEV__) {
   updates.logUpdateStatus();
-  console.log('📦 APP START - Update state snapshot:');
-  const startupInfo = updates.getUpdateInfo();
-  console.log('📦 APP START - Update ID:', startupInfo.updateId);
-  console.log('📦 APP START - Is Embedded:', startupInfo.isEmbedded);
-  console.log('📦 APP START - Runtime Version:', startupInfo.runtimeVersion);
 }
 
 const NOTIFICATION_TRACK_KEY = 'last_processed_notification_id';
@@ -184,11 +185,11 @@ export default function RootLayout() {
   const [isDbReady, setIsDbReady] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
-    Montserrat_400Regular: require('../assets/fonts/Montserrat_400Regular.ttf'),
-    Montserrat_400Regular_Italic: require('../assets/fonts/Montserrat_400Regular_Italic.ttf'),
-    Montserrat_500Medium: require('../assets/fonts/Montserrat_500Medium.ttf'),
-    Montserrat_600SemiBold: require('../assets/fonts/Montserrat_600SemiBold.ttf'),
-    Montserrat_700Bold: require('../assets/fonts/Montserrat_700Bold.ttf'),
+    Montserrat_400Regular,
+    Montserrat_400Regular_Italic,
+    Montserrat_500Medium,
+    Montserrat_600SemiBold,
+    Montserrat_700Bold,
   });
 
   useEffect(() => {
@@ -196,6 +197,20 @@ export default function RootLayout() {
       console.error('Font loading error:', fontError);
     }
   }, [fontError]);
+
+  // Safety timeout: If the app is still showing blank screen after 15 seconds,
+  // force initialization to complete to prevent infinite blank screen
+  useEffect(() => {
+    const safetyTimeout = setTimeout(() => {
+      if (!isDbReady || initialOnboardingStatus === null) {
+        console.error('App initialization timeout - forcing completion');
+        if (!isDbReady) setIsDbReady(true);
+        if (initialOnboardingStatus === null) setInitialOnboardingStatus(false);
+      }
+    }, 15000);
+
+    return () => clearTimeout(safetyTimeout);
+  }, [isDbReady, initialOnboardingStatus, fontsLoaded]);
 
   // Track previous app state to detect foreground transitions
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -289,21 +304,28 @@ export default function RootLayout() {
 
   const initializeApp = async () => {
     try {
-      // Initialize database first
-      await database.openDatabase();
+      // Initialize database first with timeout (10 seconds)
+      const dbPromise = database.openDatabase();
+      const dbTimeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database initialization timed out')), 10000)
+      );
+      
+      await Promise.race([dbPromise, dbTimeoutPromise]);
       setIsDbReady(true);
 
       // Configure notifications on app start
       notificationService.configureNotifications();
       
       // Clean up old notification images (older than 7 days)
-      // This runs asynchronously and doesn't block app startup
-      notificationService.cleanupOldNotificationImages(7).catch((error) => {
-        console.error('Notification image cleanup failed:', error);
-      });
+      notificationService.cleanupOldNotificationImages(7).catch(() => {});
 
-      // Check onboarding status
-      const isComplete = await onboardingService.isOnboardingComplete();
+      // Check onboarding status with timeout (5 seconds)
+      const onboardingPromise = onboardingService.isOnboardingComplete();
+      const onboardingTimeoutPromise = new Promise<boolean>((_, reject) => 
+        setTimeout(() => reject(new Error('Onboarding status check timed out')), 5000)
+      );
+      
+      const isComplete = await Promise.race([onboardingPromise, onboardingTimeoutPromise]);
       setInitialOnboardingStatus(isComplete);
 
       // Only initialize ads for returning users (those who already completed onboarding)
@@ -352,8 +374,8 @@ export default function RootLayout() {
       }
     } catch (error) {
       console.error('Failed to initialize app:', error);
-      // Still set db ready to true to allow app to continue
-      setIsDbReady(true);
+      // Recover from error to prevent blank screen
+      if (!isDbReady) setIsDbReady(true);
       setInitialOnboardingStatus(false);
     }
   };

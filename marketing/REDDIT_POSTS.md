@@ -1,6 +1,7 @@
 # Reddit Posts for Facts a Day
 
 App Store Link: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+Google Play Link: https://play.google.com/store/apps/details?id=dev.seyrek.factsaday
 
 ---
 
@@ -24,7 +25,32 @@ What's in it:
 
 Free with no subscription. Would love feedback!
 
-👉 https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+👉 iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+👉 Android: https://play.google.com/store/apps/details?id=dev.seyrek.factsaday
+
+---
+
+## r/androidapps
+
+> **Rules to know:** Self-promotion allowed in moderation. Be transparent about being the developer. Engage with the community.
+
+**Title:** Facts a Day - daily facts app with trivia to test yourself (free, no subscription)
+
+**Post:**
+
+Hey everyone! Just released **Facts a Day** on Android.
+
+Simple concept: pick topics you're into, get daily facts with nice visuals, and quiz yourself to see if you actually remember anything.
+
+What's in it:
+- Offline reading (facts download in background)
+- 3 trivia modes including one based on facts you've seen
+- 8 languages
+- Dark mode, Material You support, clean UI
+
+Free with no subscription. Would love feedback from the community!
+
+👉 https://play.google.com/store/apps/details?id=dev.seyrek.factsaday
 
 ---
 
@@ -49,9 +75,10 @@ I'm that person who reads random facts at night and forgets everything by mornin
 - Multilingual from day one (8 languages) opened up way more users than expected
 - Simple > feature-packed
 
-iOS only for now, Android coming soon. It's free!
+It's free on both iOS and Android!
 
-👉 https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+👉 iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+👉 Android: https://play.google.com/store/apps/details?id=dev.seyrek.factsaday
 
 Happy to answer any questions about the build!
 
@@ -123,7 +150,9 @@ The trivia component changed everything for me. Having to actually recall inform
 
 Works offline too, so I use it on my commute.
 
-iOS only for now, free: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+Free on iOS and Android:
+- iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+- Android: https://play.google.com/store/apps/details?id=dev.seyrek.factsaday
 
 Curious if anyone else uses active recall for casual learning?
 
@@ -143,7 +172,9 @@ Built **Facts a Day** which gives you daily facts on topics you pick (science, h
 
 Not meant to replace Anki or anything serious, but it's a nice way to learn something new each day without it going in one ear and out the other.
 
-Free, iOS only for now: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+Free on iOS and Android:
+- iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+- Android: https://play.google.com/store/apps/details?id=dev.seyrek.factsaday
 
 Anyone else use recall-based apps for non-academic learning?
 
@@ -163,7 +194,9 @@ Yeah, I got tired of that.
 
 So I made **Facts a Day** - daily random facts + trivia to quiz yourself. Now I can actually remember useless knowledge when I need it at parties.
 
-Free, iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+Free on iOS and Android:
+- iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+- Android: https://play.google.com/store/apps/details?id=dev.seyrek.factsaday
 
 What's the most useless fact you know?
 
@@ -188,7 +221,9 @@ Also has:
 - Category trivia (focus on what you like)
 - Progress tracking with accuracy stats
 
-Free on iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+Free on iOS and Android:
+- iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+- Android: https://play.google.com/store/apps/details?id=dev.seyrek.factsaday
 
 What trivia categories would you want to see?
 
@@ -222,7 +257,9 @@ Hey RN community! Just shipped **Facts a Day** to the App Store and wanted to sh
 
 It's a daily facts app with trivia games. Nothing revolutionary but happy to have shipped something!
 
-App Store: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+Download:
+- iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+- Android: https://play.google.com/store/apps/details?id=dev.seyrek.factsaday
 
 Happy to answer any technical questions.
 
@@ -247,9 +284,10 @@ It's a simple concept: daily facts on topics you choose + trivia to test yoursel
 - Launching is scary but waiting for "perfect" is worse
 - Offline support was way more work than expected but users love it
 
-iOS only for now. Android is next.
+Now live on both iOS and Android!
 
-👉 https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+👉 iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+👉 Android: https://play.google.com/store/apps/details?id=dev.seyrek.factsaday
 
 Would love to connect with other solo devs. What are you working on?
 
@@ -259,7 +297,7 @@ Would love to connect with other solo devs. What are you working on?
 
 > **Rules to know:** Literally made for self-promotion. No karma needed. Keep it short.
 
-**Title:** Facts a Day - daily facts app with trivia quizzes (free, iOS)
+**Title:** Facts a Day - daily facts app with trivia quizzes (free, iOS & Android)
 
 **Post:**
 
@@ -267,7 +305,9 @@ Just launched my app **Facts a Day**.
 
 Pick topics you like, get daily facts, quiz yourself to see if you remember anything. Works offline.
 
-Free on iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+Free on iOS and Android:
+- iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+- Android: https://play.google.com/store/apps/details?id=dev.seyrek.factsaday
 
 ---
 
@@ -275,7 +315,7 @@ Free on iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
 
 > **Rules to know:** No karma requirement. Anything goes. Don't expect much engagement but good for visibility.
 
-**Title:** Facts a Day - free iOS app for daily learning + trivia
+**Title:** Facts a Day - free app for daily learning + trivia (iOS & Android)
 
 **Post:**
 
@@ -286,7 +326,9 @@ Free on iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
 - Track your progress
 - Free, no subscription
 
-iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+Download:
+- iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+- Android: https://play.google.com/store/apps/details?id=dev.seyrek.factsaday
 
 ---
 
@@ -294,7 +336,7 @@ iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
 
 > **Rules to know:** Small subreddit for new app launches. No karma needed. Low traffic but targeted.
 
-**Title:** [iOS] Facts a Day - daily facts with trivia to test your knowledge
+**Title:** [iOS/Android] Facts a Day - daily facts with trivia to test your knowledge
 
 **Post:**
 
@@ -304,7 +346,8 @@ Daily facts on topics you pick (science, history, nature, etc.) + trivia games t
 
 Works offline, free, no subscription.
 
-https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+- iOS: https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
+- Android: https://play.google.com/store/apps/details?id=dev.seyrek.factsaday
 
 ---
 
@@ -313,6 +356,7 @@ https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394
 | Subreddit | Karma Needed | Account Age | Notes |
 |-----------|--------------|-------------|-------|
 | r/iOSapps | ~10-50 | Few days | Low barrier, good starting point |
+| r/androidapps | ~10-50 | Few days | Android equivalent, good reach |
 | r/sideproject | None/Low | None | Very welcoming to new accounts |
 | r/AppHookup | ~100+ | 7+ days | Moderate |
 | r/apple | ~100+ | 7+ days | Strict, Saturday only |
@@ -334,6 +378,7 @@ If your account is new, start here:
 | **r/sideproject** | No karma requirement, loves indie devs |
 | **r/IndieDev** | Supportive community, no strict rules |
 | **r/iOSapps** | Low barrier, people actively looking for apps |
+| **r/androidapps** | Low barrier, Android users looking for apps |
 | **r/reactnative** | Dev community, focused on tech not karma |
 | **r/shamelessplug** | Literally made for self-promotion |
 | **r/promote** | No karma needed |
@@ -360,6 +405,7 @@ If you need karma before posting to bigger subs:
 | Start here | r/sideproject | No karma needed |
 | Start here | r/IndieDev | No karma needed |
 | Day 2 | r/iOSapps | ~10+ karma |
+| Day 2 | r/androidapps | ~10+ karma |
 | Day 3 | r/reactnative | Low karma ok |
 | Day 4 | r/shamelessplug | No karma needed |
 | Later | r/AppHookup | Need ~100+ |
