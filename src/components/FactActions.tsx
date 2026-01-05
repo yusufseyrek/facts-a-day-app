@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Share, Alert, Pressable } from "react-native";
+import { Share, Alert, Pressable, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 
 import { styled } from "@tamagui/core";
-import { XStack, YStack } from "tamagui";
+import { XStack, YStack, View } from "tamagui";
 import { Heart, Share as ShareIcon, Flag } from "@tamagui/lucide-icons";
 import * as database from "../services/database";
 import * as api from "../services/api";
@@ -36,6 +44,70 @@ const ActionsRow = styled(XStack, {
   alignItems: "center",
 });
 
+// Particle burst component for the favorite animation
+const PARTICLE_COUNT = 6;
+const ParticleBurst = ({ 
+  color, 
+  isActive 
+}: { 
+  color: string; 
+  isActive: boolean;
+}) => {
+  const particles = Array.from({ length: PARTICLE_COUNT }, (_, i) => {
+    const angle = (i / PARTICLE_COUNT) * 2 * Math.PI;
+    const scale = useSharedValue(0);
+    const translateX = useSharedValue(0);
+    const translateY = useSharedValue(0);
+    const opacity = useSharedValue(0);
+
+    useEffect(() => {
+      if (isActive) {
+        const distance = 28 + Math.random() * 12;
+        const targetX = Math.cos(angle) * distance;
+        const targetY = Math.sin(angle) * distance;
+
+        scale.value = withSequence(
+          withTiming(1, { duration: 150, easing: Easing.out(Easing.cubic) }),
+          withTiming(0, { duration: 250, easing: Easing.in(Easing.cubic) })
+        );
+        opacity.value = withSequence(
+          withTiming(1, { duration: 100 }),
+          withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) })
+        );
+        translateX.value = withTiming(targetX, { duration: 400, easing: Easing.out(Easing.cubic) });
+        translateY.value = withTiming(targetY, { duration: 400, easing: Easing.out(Easing.cubic) });
+      } else {
+        scale.value = 0;
+        opacity.value = 0;
+        translateX.value = 0;
+        translateY.value = 0;
+      }
+    }, [isActive]);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+      transform: [
+        { translateX: translateX.value },
+        { translateY: translateY.value },
+        { scale: scale.value },
+      ],
+      opacity: opacity.value,
+    }));
+
+    return (
+      <Animated.View
+        key={i}
+        style={[
+          styles.particle,
+          { backgroundColor: color },
+          animatedStyle,
+        ]}
+      />
+    );
+  });
+
+  return <>{particles}</>;
+};
+
 export function FactActions({
   factId,
   factTitle,
@@ -54,6 +126,18 @@ export function FactActions({
   const [isFavorited, setIsFavorited] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showParticles, setShowParticles] = useState(false);
+
+  // Animation values for heart
+  const heartScale = useSharedValue(1);
+  const heartRotation = useSharedValue(0);
+
+  const heartAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: heartScale.value },
+      { rotate: `${heartRotation.value}deg` },
+    ],
+  }));
 
   // Check if fact is favorited on mount
   useEffect(() => {
@@ -69,11 +153,42 @@ export function FactActions({
     }
   };
 
+  const triggerFavoriteAnimation = (isFavoriting: boolean) => {
+    if (isFavoriting) {
+      // Satisfying bounce animation when favoriting
+      heartScale.value = withSequence(
+        withTiming(0.7, { duration: 80, easing: Easing.in(Easing.cubic) }),
+        withSpring(1.3, { damping: 15, stiffness: 300, mass: 0.5 }),
+        withSpring(1, { damping: 15, stiffness: 100 })
+      );
+      // Subtle rotation wiggle
+      heartRotation.value = withSequence(
+        withTiming(-12, { duration: 80 }),
+        withTiming(12, { duration: 100 }),
+        withTiming(-6, { duration: 80 }),
+        withTiming(0, { duration: 100 })
+      );
+      // Trigger particles
+      setShowParticles(true);
+      setTimeout(() => setShowParticles(false), 500);
+    } else {
+      // Subtle shrink when unfavoriting
+      heartScale.value = withSequence(
+        withTiming(0.8, { duration: 100, easing: Easing.in(Easing.cubic) }),
+        withSpring(1, { damping: 20, stiffness: 100 })
+      );
+    }
+  };
+
   const handleLike = async () => {
     try {
       // Provide immediate haptic feedback
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const newFavoriteStatus = await database.toggleFavorite(factId);
+      
+      // Trigger animation
+      triggerFavoriteAnimation(newFavoriteStatus);
+      
       setIsFavorited(newFavoriteStatus);
 
       // Track favorite add/remove
@@ -151,21 +266,26 @@ export function FactActions({
         }}
       >
         <ActionsRow>
-          {/* Like Button - Neon Red/Magenta */}
+          {/* Like Button - Neon Red/Magenta with Animation */}
           <Pressable
             onPress={handleLike}
             style={({ pressed }) => ({
               alignItems: "center",
               justifyContent: "center",
-              opacity: pressed ? 0.6 : 1,
+              opacity: pressed ? 0.8 : 1,
               padding: 12,
             })}
           >
-            <Heart
-              size={26}
-              color={heartColor}
-              fill={isFavorited ? heartColor : "none"}
-            />
+            <View style={styles.heartContainer}>
+              <ParticleBurst color={heartColor} isActive={showParticles} />
+              <Animated.View style={[styles.heartIcon, heartAnimatedStyle]}>
+                <Heart
+                  size={26}
+                  color={heartColor}
+                  fill={isFavorited ? heartColor : "none"}
+                />
+              </Animated.View>
+            </View>
           </Pressable>
 
           {/* Share Button - Neon Green */}
@@ -206,3 +326,21 @@ export function FactActions({
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  heartContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 26,
+    height: 26,
+  },
+  heartIcon: {
+    position: "absolute",
+  },
+  particle: {
+    position: "absolute",
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+});
