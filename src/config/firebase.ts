@@ -222,6 +222,7 @@ export async function initializeFirebase() {
 /**
  * Install a global JavaScript error handler to capture unhandled errors
  * This catches errors that escape React error boundaries
+ * Only sends to Crashlytics in production
  */
 function installJSErrorHandler() {
   if (jsErrorHandlerInstalled) return;
@@ -232,12 +233,14 @@ function installJSErrorHandler() {
 
   // Install our custom handler
   ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
-    // Log to Crashlytics
-    try {
-      log(crashlyticsInstance, `[JS ${isFatal ? 'FATAL' : 'ERROR'}] ${error.message}`);
-      crashlyticsRecordError(crashlyticsInstance, error);
-    } catch (e) {
-      // Silently fail if Crashlytics fails
+    // Log to Crashlytics (only in production)
+    if (!__DEV__) {
+      try {
+        log(crashlyticsInstance, `[JS ${isFatal ? 'FATAL' : 'ERROR'}] ${error.message}`);
+        crashlyticsRecordError(crashlyticsInstance, error);
+      } catch (e) {
+        // Silently fail if Crashlytics fails
+      }
     }
 
     // Call the previous handler (React Native's default)
@@ -247,7 +250,7 @@ function installJSErrorHandler() {
   });
 
   if (__DEV__) {
-    console.log("📱 JS error handler installed for Crashlytics");
+    console.log("📱 JS error handler installed for Crashlytics (disabled in dev)");
   }
 }
 
@@ -300,8 +303,12 @@ export function enableCrashlyticsConsoleLogging() {
 
 /**
  * Clear user context (e.g., on logout)
+ * Disabled in dev mode since analytics/crashlytics collection is disabled
  */
 export async function clearFirebaseUser() {
+  if (__DEV__) {
+    return;
+  }
   try {
     await setCrashlyticsUserId(crashlyticsInstance, "");
     await setAnalyticsUserId(analyticsInstance, null);
@@ -312,8 +319,12 @@ export async function clearFirebaseUser() {
 
 /**
  * Add custom attributes to crash reports (Crashlytics)
+ * Disabled in dev mode since crashlytics collection is disabled
  */
 export async function setCrashlyticsAttribute(key: string, value: string) {
+  if (__DEV__) {
+    return;
+  }
   try {
     await setAttribute(crashlyticsInstance, key, value);
   } catch (error) {
@@ -324,8 +335,12 @@ export async function setCrashlyticsAttribute(key: string, value: string) {
 /**
  * Set user property for Analytics
  * User properties are attached to all subsequent events
+ * Disabled in dev mode to prevent polluting analytics data
  */
 export async function setAnalyticsUserProperty(name: string, value: string | null) {
+  if (__DEV__) {
+    return;
+  }
   try {
     await analyticsSetUserProperty(analyticsInstance, name, value);
   } catch (error) {
@@ -375,6 +390,7 @@ export function logMessage(message: string) {
 
 /**
  * Log an analytics event
+ * Disabled in dev mode to prevent polluting analytics data
  */
 export async function logEvent(
   name: string,
@@ -382,6 +398,7 @@ export async function logEvent(
 ) {
   if (__DEV__) {
     console.log(`📊 Analytics Event: ${name}`, params);
+    return;
   }
   try {
     await analyticsLogEvent(analyticsInstance, name, params);
@@ -393,10 +410,12 @@ export async function logEvent(
 /**
  * Log screen view for analytics
  * Uses custom 'app_screen_view' event to avoid confusion with Firebase's automatic screen_view
+ * Disabled in dev mode to prevent polluting analytics data
  */
 export async function logScreenView(screenName: string, screenClass?: string) {
   if (__DEV__) {
     console.log(`📊 Analytics Screen: ${screenName}`);
+    return;
   }
   try {
     await analyticsLogEvent(analyticsInstance, 'app_screen_view', {
