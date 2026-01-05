@@ -132,10 +132,34 @@ export function FactActions({
   const heartScale = useSharedValue(1);
   const heartRotation = useSharedValue(0);
 
+  // Animation values for share
+  const shareScale = useSharedValue(1);
+  const shareRotation = useSharedValue(0);
+  const shareTranslateY = useSharedValue(0);
+
+  // Animation values for report
+  const reportScale = useSharedValue(1);
+  const reportRotation = useSharedValue(0);
+
   const heartAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
       { scale: heartScale.value },
       { rotate: `${heartRotation.value}deg` },
+    ],
+  }));
+
+  const shareAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: shareScale.value },
+      { rotate: `${shareRotation.value}deg` },
+      { translateY: shareTranslateY.value },
+    ],
+  }));
+
+  const reportAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: reportScale.value },
+      { rotate: `${reportRotation.value}deg` },
     ],
   }));
 
@@ -205,10 +229,45 @@ export function FactActions({
     }
   };
 
+  const triggerShareAnimation = () => {
+    // "Send out" animation - tilt and lift up
+    shareScale.value = withSequence(
+      withTiming(0.85, { duration: 80, easing: Easing.in(Easing.cubic) }),
+      withSpring(1.15, { damping: 15, stiffness: 300 }),
+      withSpring(1, { damping: 20, stiffness: 150 })
+    );
+    shareRotation.value = withSequence(
+      withTiming(-15, { duration: 100 }),
+      withTiming(0, { duration: 150, easing: Easing.out(Easing.cubic) })
+    );
+    shareTranslateY.value = withSequence(
+      withTiming(-4, { duration: 100, easing: Easing.out(Easing.cubic) }),
+      withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) })
+    );
+  };
+
+  const triggerReportAnimation = () => {
+    // Subtle shake animation
+    reportScale.value = withSequence(
+      withTiming(0.9, { duration: 60, easing: Easing.in(Easing.cubic) }),
+      withSpring(1.1, { damping: 15, stiffness: 300 }),
+      withSpring(1, { damping: 20, stiffness: 150 })
+    );
+    reportRotation.value = withSequence(
+      withTiming(-8, { duration: 50 }),
+      withTiming(8, { duration: 70 }),
+      withTiming(-4, { duration: 50 }),
+      withTiming(0, { duration: 70 })
+    );
+  };
+
   const handleShare = async () => {
     try {
       // Light haptic feedback for share action
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      
+      // Trigger animation immediately
+      triggerShareAnimation();
 
       const shareContent = factTitle
         ? `${factTitle}\n\n${factContent}\n\n${t("sharedFromApp")}`
@@ -232,6 +291,10 @@ export function FactActions({
   const handleReport = () => {
     // Light haptic feedback for opening report modal
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Trigger animation
+    triggerReportAnimation();
+    
     setShowReportModal(true);
   };
 
@@ -288,31 +351,35 @@ export function FactActions({
             </View>
           </Pressable>
 
-          {/* Share Button - Neon Green */}
+          {/* Share Button - Neon Green with Animation */}
           <Pressable
             onPress={handleShare}
             style={({ pressed }) => ({
               alignItems: "center",
               justifyContent: "center",
-              opacity: pressed ? 0.6 : 1,
+              opacity: pressed ? 0.8 : 1,
               padding: 12,
             })}
           >
-            <ShareIcon size={26} color={shareColor} />
+            <Animated.View style={shareAnimatedStyle}>
+              <ShareIcon size={26} color={shareColor} />
+            </Animated.View>
           </Pressable>
 
-          {/* Report Button - Subtle */}
+          {/* Report Button - Subtle with Animation */}
           <Pressable
             onPress={handleReport}
             disabled={isSubmittingReport}
             style={({ pressed }) => ({
               alignItems: "center",
               justifyContent: "center",
-              opacity: pressed ? 0.6 : isSubmittingReport ? 0.5 : 1,
+              opacity: pressed ? 0.8 : isSubmittingReport ? 0.5 : 1,
               padding: 12,
             })}
           >
-            <Flag size={26} color={flagColor} />
+            <Animated.View style={reportAnimatedStyle}>
+              <Flag size={26} color={flagColor} />
+            </Animated.View>
           </Pressable>
         </ActionsRow>
       </Container>
