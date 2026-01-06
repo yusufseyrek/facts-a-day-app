@@ -114,6 +114,7 @@ export async function fetchAllFacts(
     );
 
     // Convert API facts to database facts format
+    // Note: API returns `updated_at`, we map it to `last_updated` in DB
     const dbFacts: db.Fact[] = facts.map((fact) => ({
       id: fact.id,
       title: fact.title,
@@ -124,7 +125,7 @@ export async function fetchAllFacts(
       image_url: fact.image_url,
       language: fact.language,
       created_at: fact.created_at,
-      last_updated: fact.last_updated,
+      last_updated: fact.updated_at,
     }));
 
     // Extract questions from facts for trivia feature

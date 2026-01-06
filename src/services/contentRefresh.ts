@@ -407,12 +407,13 @@ export async function refreshAppContent(): Promise<RefreshResult> {
         language: currentLocale,
         categories: categoriesParam,
         since_updated: lastFactUpdatedAt,
-        limit: 500, // Reasonable limit for incremental fetch
+        limit: 500,
         include_questions: true,
       });
 
       if (response.facts.length > 0) {
         // Convert API facts to database format
+        // Note: API returns `updated_at`, we map it to `last_updated` in DB
         const dbFacts: db.Fact[] = response.facts.map((fact) => ({
           id: fact.id,
           title: fact.title,
@@ -423,7 +424,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
           image_url: fact.image_url,
           language: fact.language,
           created_at: fact.created_at,
-          last_updated: fact.last_updated,
+          last_updated: fact.updated_at,
         }));
 
         // Extract questions from facts for trivia feature

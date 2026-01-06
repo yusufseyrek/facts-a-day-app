@@ -63,7 +63,7 @@ export interface FactResponse {
   image_url?: string;
   language: string;
   created_at: string;
-  last_updated?: string;
+  updated_at?: string; // API returns updated_at (mapped to last_updated in DB)
   questions?: QuestionResponse[]; // Only present when include_questions=true
 }
 

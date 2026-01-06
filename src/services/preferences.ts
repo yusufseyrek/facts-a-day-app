@@ -198,7 +198,7 @@ export async function handleLanguageChange(
             fact.image_url || null,
             fact.language,
             fact.created_at,
-            fact.last_updated || fact.created_at
+            fact.updated_at || fact.created_at
           ]);
           insertedCount++;
         }
@@ -363,7 +363,7 @@ export async function handleCategoriesChange(
             fact.category || null,
             fact.source_url || null,
             fact.image_url || null,
-            fact.last_updated || fact.created_at,
+            fact.updated_at || fact.created_at,
             fact.id
           ]);
           updatedCount++;
@@ -396,7 +396,7 @@ export async function handleCategoriesChange(
             fact.image_url || null,
             fact.language,
             fact.created_at,
-            fact.last_updated || fact.created_at
+            fact.updated_at || fact.created_at
           ]);
           insertedCount++;
         }
