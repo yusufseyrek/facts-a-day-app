@@ -6,10 +6,9 @@ import { View, styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
 import { useRouter } from "expo-router";
 import { tokens } from "../../src/theme/tokens";
-import { typography } from "../../src/utils/responsive";
+import { typography, RESPONSIVE_CONSTANTS } from "../../src/utils/responsive";
 import {
-  H1,
-  BodyText,
+  Text,
   Button,
   ProgressIndicator,
   CategoryCard,
@@ -55,9 +54,6 @@ const ButtonContainer = styled(View, {
   paddingTop: tokens.space.md,
 });
 
-// Tablet breakpoint (iPad mini is 768px wide)
-const TABLET_BREAKPOINT = 768;
-
 export default function Categories() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
@@ -76,7 +72,7 @@ export default function Categories() {
   const { width } = useWindowDimensions();
 
   // Responsive sizing for tablets
-  const isTablet = width >= TABLET_BREAKPOINT;
+  const isTablet = width >= RESPONSIVE_CONSTANTS.TABLET_BREAKPOINT;
   const numColumns = isTablet ? 4 : 3;
   const iconSize = isTablet ? 48 : 32;
   const typo = isTablet ? typography.tablet : typography.phone;
@@ -225,7 +221,7 @@ export default function Categories() {
         <StatusBar style={theme === "dark" ? "light" : "dark"} />
         <ContentContainer justifyContent="center" alignItems="center">
           <ActivityIndicator size="large" color={tokens.color.light.primary} />
-          <BodyText>{isInitializing ? t("settingUpApp") : t("loadingCategories")}</BodyText>
+          <Text.Body>{isInitializing ? t("settingUpApp") : t("loadingCategories")}</Text.Body>
         </ContentContainer>
       </Container>
     );
@@ -237,12 +233,12 @@ export default function Categories() {
       <Container>
         <StatusBar style={theme === "dark" ? "light" : "dark"} />
         <ContentContainer justifyContent="center" alignItems="center" gap={tokens.space.lg}>
-          <BodyText color="#FF6B6B" textAlign="center">
+          <Text.Body color="#FF6B6B" textAlign="center">
             {initializationError}
-          </BodyText>
-          <BodyText color="$textSecondary" textAlign="center">
+          </Text.Body>
+          <Text.Body color="$textSecondary" textAlign="center">
             {t("checkInternetConnection")}
-          </BodyText>
+          </Text.Body>
           <Button onPress={() => initializeOnboarding(locale as SupportedLocale)}>
             {t("tryAgain")}
           </Button>
@@ -269,10 +265,10 @@ export default function Categories() {
           <ProgressIndicator currentStep={1} totalSteps={2} />
 
           <Header style={{ marginTop: tokens.space.xl }}>
-            <H1>{t("whatInterestsYou")}</H1>
-            <BodyText color="$textSecondary">
+            <Text.Headline>{t("whatInterestsYou")}</Text.Headline>
+            <Text.Body color="$textSecondary">
               {t("selectCategoriesMinimum")}
-            </BodyText>
+            </Text.Body>
           </Header>
         </Animated.View>
 

@@ -3,9 +3,8 @@ import { styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Lightbulb } from '@tamagui/lucide-icons';
 import { tokens } from '../theme/tokens';
-import { H1, BodyText } from './Typography';
+import { Text } from './Typography';
 import { useTheme } from '../theme';
-import { useResponsive } from '../utils/useResponsive';
 
 interface EmptyStateProps {
   title: string;
@@ -38,7 +37,6 @@ const TextContainer = styled(YStack, {
 
 export function EmptyState({ title, description }: EmptyStateProps) {
   const { theme } = useTheme();
-  const { typography: typo } = useResponsive();
 
   return (
     <Container>
@@ -49,15 +47,13 @@ export function EmptyState({ title, description }: EmptyStateProps) {
         />
       </IconContainer>
       <TextContainer>
-        <H1 textAlign="center">{title}</H1>
-        <BodyText
+        <Text.Headline textAlign="center">{title}</Text.Headline>
+        <Text.Body
           textAlign="center"
           color="$textSecondary"
-          fontSize={typo.fontSize.body}
-          lineHeight={typo.lineHeight.subtitle}
         >
           {description}
-        </BodyText>
+        </Text.Body>
       </TextContainer>
     </Container>
   );

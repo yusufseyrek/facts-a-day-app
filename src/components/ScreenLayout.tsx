@@ -3,12 +3,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { tokens } from "../theme/tokens";
-import { H1, H2 } from "./Typography";
+import { Text } from "./Typography";
 import { useTheme } from "../theme";
-import { useResponsive } from "../utils/useResponsive";
-
-// Constants
-const MAX_CONTENT_WIDTH = 800;
+import { LAYOUT } from "../config/app";
 
 /**
  * ScreenContainer - Main container for all screens
@@ -49,13 +46,12 @@ interface ScreenHeaderProps {
  * ScreenHeader - Composed header component with icon and title
  */
 export function ScreenHeader({ icon, title, isTablet = false, rightElement }: ScreenHeaderProps) {
-  const { typography } = useResponsive();
   return (
     <ScreenHeaderContainer tablet={isTablet}>
       {icon}
-      <H1 fontSize={typography.fontSize.h1} flex={1}>
+      <Text.Headline flex={1}>
         {title}
-      </H1>
+      </Text.Headline>
       {rightElement}
     </ScreenHeaderContainer>
   );
@@ -87,12 +83,11 @@ interface SectionHeaderProps {
  * SectionHeader - Composed section header with H2 title
  */
 export function SectionHeader({ title, isTablet = false }: SectionHeaderProps) {
-  const { typography } = useResponsive();
   return (
     <SectionHeaderContainer tablet={isTablet}>
-      <H2 fontSize={typography.fontSize.h2}>
+      <Text.Title>
         {title}
-      </H2>
+      </Text.Title>
     </SectionHeaderContainer>
   );
 }
@@ -137,7 +132,7 @@ export const LoadingContainer = styled(YStack, {
  */
 export const TabletWrapper = styled(YStack, {
   width: "100%",
-  maxWidth: MAX_CONTENT_WIDTH,
+  maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
   alignSelf: "center",
 });
 
@@ -152,7 +147,7 @@ export const SectionContainer = styled(YStack, {
 /**
  * SectionTitle - Styled H2 for section titles
  */
-export const SectionTitle = styled(H2, {
+export const SectionTitle = styled(Text.Title, {
   marginBottom: tokens.space.sm,
 });
 

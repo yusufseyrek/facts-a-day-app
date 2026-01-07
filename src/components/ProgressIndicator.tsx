@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
-import { SmallText, FONT_FAMILIES } from './Typography';
+import { Text, FONT_FAMILIES } from './Typography';
 import { tokens } from '../theme/tokens';
 
 const Container = styled(YStack, {
@@ -32,9 +32,9 @@ export function ProgressIndicator({ currentStep, totalSteps }: ProgressIndicator
 
   return (
     <Container>
-      <SmallText fontFamily={FONT_FAMILIES.medium}>
+      <Text.Caption fontFamily={FONT_FAMILIES.medium}>
         {currentStep} of {totalSteps}
-      </SmallText>
+      </Text.Caption>
       <ProgressBarContainer>
         <ProgressBarFill style={{ width: `${progress}%` }} />
       </ProgressBarContainer>

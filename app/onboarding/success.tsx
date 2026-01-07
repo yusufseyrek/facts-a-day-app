@@ -8,7 +8,7 @@ import { useRouter } from "expo-router";
 import { CheckCircle, Sparkle, Star, Gift } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { tokens, getNeonColors } from "../../src/theme";
-import { BodyText, Button, H1, H2, FONT_FAMILIES } from "../../src/components";
+import { Text, Button, FONT_FAMILIES } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
@@ -518,22 +518,22 @@ export default function OnboardingSuccessScreen() {
           </ConsentIconContainer>
 
           {/* Title */}
-          <H2
+          <Text.Title
             fontSize={typo.fontSize.headline}
             textAlign="center"
             color="$text"
             letterSpacing={-0.5}
           >
             {t("adsConsentTitle")}
-          </H2>
+          </Text.Title>
 
           {/* Message */}
-          <BodyText
+          <Text.Body
             textAlign="center"
             color="$textSecondary"
           >
             {t("adsConsentMessage")}
-          </BodyText>
+          </Text.Body>
 
           {/* Button */}
           <YStack width="100%" paddingTop={tokens.space.lg}>
@@ -560,12 +560,12 @@ export default function OnboardingSuccessScreen() {
     <ContentContainer>
       <YStack alignItems="center" gap={tokens.space.lg}>
         <ActivityIndicator size="large" color={theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan} />
-        <BodyText
+        <Text.Body
           textAlign="center"
           color="$textSecondary"
         >
           {t("oneMoment")}
-        </BodyText>
+        </Text.Body>
       </YStack>
     </ContentContainer>
   );
@@ -629,7 +629,7 @@ export default function OnboardingSuccessScreen() {
                 ],
               }}
             >
-              <H1
+              <Text.Headline
                 fontSize={typo.fontSize.display}
                 fontFamily={FONT_FAMILIES.extrabold}
                 textAlign="center"
@@ -638,7 +638,7 @@ export default function OnboardingSuccessScreen() {
                 lineHeight={typo.lineHeight.display}
               >
                 {word}
-              </H1>
+              </Text.Headline>
             </Animated.View>
           ))}
         </XStack>
@@ -651,14 +651,14 @@ export default function OnboardingSuccessScreen() {
             maxWidth: "90%",
           }}
         >
-          <BodyText
+          <Text.Body
             fontSize={typo.fontSize.title}
             textAlign="center"
             color="$textSecondary"
             lineHeight={typo.lineHeight.title}
           >
             {t("welcomeToApp")}
-          </BodyText>
+          </Text.Body>
         </Animated.View>
 
         {/* Progress bar */}

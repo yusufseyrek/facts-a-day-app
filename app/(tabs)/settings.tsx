@@ -27,8 +27,7 @@ import {
 } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
 import {
-  H2,
-  SmallText,
+  Text,
   ScreenContainer,
   ScreenHeader,
   SectionHeaderContainer,
@@ -939,19 +938,19 @@ export default function SettingsPage() {
     <Animated.View entering={shouldAnimate ? FadeInDown.delay(300).duration(300) : undefined}>
       <ContentContainer>
         <YStack alignItems="center" marginVertical={tokens.space.lg}>
-          <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
+          <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
             Version {Constants.expoConfig?.version || "1.0.0"} ({Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber || 'N/A' : Constants.expoConfig?.android?.versionCode || 'N/A'})
-          </SmallText>
+          </Text.Caption>
           {updateInfo && (
-            <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.5, marginBottom: tokens.space.xs }}>
+            <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.5, marginBottom: tokens.space.xs }}>
               {updateInfo.isEmbedded 
                 ? `Bundle: Embedded` 
                 : `Bundle: ${updateInfo.updateId?.slice(0, 8)}...`}
-            </SmallText>
+            </Text.Caption>
           )}
-          <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
+          <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
             {t("settingsCopyright").replace("{appName}", t("appName"))}
-          </SmallText>
+          </Text.Caption>
         </YStack>
       </ContentContainer>
     </Animated.View>
@@ -974,7 +973,7 @@ export default function SettingsPage() {
           return (
             <Animated.View entering={shouldAnimate ? FadeInDown.delay(sectionIndex * 50).duration(300) : undefined}>
               <SectionHeaderContainer>
-                <H2>{title}</H2>
+                <Text.Title>{title}</Text.Title>
               </SectionHeaderContainer>
             </Animated.View>
           );

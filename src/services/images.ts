@@ -22,25 +22,16 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { getCachedAppCheckToken, forceRefreshAppCheckToken } from './appCheckToken';
 import { PREFETCH_SETTINGS } from '../config/factListSettings';
+import { IMAGE_CACHE, IMAGE_DOWNLOAD_RETRY } from '../config/images';
 
 // Directory for cached fact images - uses documentDirectory for persistence
 // cacheDirectory is NOT reliable for multi-day caching as it can be cleared by OS
-const FACT_IMAGES_DIR = `${FileSystem.documentDirectory}fact-images/`;
-
-// Maximum cache age in milliseconds (7 days)
-const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-
-// Retry configuration
-const MAX_RETRY_ATTEMPTS = 3;
-const RETRY_DELAY_BASE_MS = 1000;
+const FACT_IMAGES_DIR = `${FileSystem.documentDirectory}${IMAGE_CACHE.FACT_IMAGES_DIR_NAME}`;
 
 // In-memory cache for file existence to avoid repeated file system checks
 // Key: factId, Value: { uri: string, checkedAt: number }
 // This prevents multiple components from hitting the file system for the same fact
 const fileExistenceCache = new Map<number, { uri: string; checkedAt: number }>();
-
-// Maximum age for file existence cache (30 minutes - long enough for typical session)
-const FILE_EXISTENCE_CACHE_MAX_AGE_MS = 30 * 60 * 1000;
 
 // Track pending file existence checks to prevent duplicate async operations
 const pendingExistenceChecks = new Map<number, Promise<string | null>>();
@@ -126,7 +117,7 @@ async function getCachedImageUri(imageUrl: string, factId?: number): Promise<str
     // Check if cache is still valid
     if (fileInfo.modificationTime) {
       const ageMs = Date.now() - fileInfo.modificationTime * 1000;
-      if (ageMs > MAX_CACHE_AGE_MS) {
+      if (ageMs > IMAGE_CACHE.MAX_AGE_MS) {
         // Delete expired file
         await FileSystem.deleteAsync(localUri, { idempotent: true });
         return null;
@@ -156,7 +147,7 @@ export async function getCachedFactImage(factId: number): Promise<string | null>
   
   // Check in-memory existence cache first (fast path for tablets with many cards)
   const existenceEntry = fileExistenceCache.get(factId);
-  if (existenceEntry && (now - existenceEntry.checkedAt) < FILE_EXISTENCE_CACHE_MAX_AGE_MS) {
+  if (existenceEntry && (now - existenceEntry.checkedAt) < IMAGE_CACHE.FILE_EXISTENCE_CACHE_MAX_AGE_MS) {
     // Return cached result without hitting file system
     return existenceEntry.uri;
   }
@@ -208,7 +199,7 @@ async function performFileExistenceCheck(factId: number): Promise<string | null>
         if (fileInfo.modificationTime) {
           const ageMs = Date.now() - fileInfo.modificationTime * 1000;
           
-          if (ageMs > MAX_CACHE_AGE_MS) {
+          if (ageMs > IMAGE_CACHE.MAX_AGE_MS) {
             // Delete expired file in background, don't wait
             FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
             continue;
@@ -324,7 +315,7 @@ async function performImageDownload(
     // Download with retries
     let lastError: Error | null = null;
     
-    for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
+    for (let attempt = 0; attempt < IMAGE_DOWNLOAD_RETRY.MAX_ATTEMPTS; attempt++) {
       try {
         // Build headers - include App Check token if available
         const headers: Record<string, string> = {};
@@ -437,8 +428,8 @@ async function performImageDownload(
       }
       
       // Wait before retrying (exponential backoff)
-      if (attempt < MAX_RETRY_ATTEMPTS - 1) {
-        const delay = RETRY_DELAY_BASE_MS * Math.pow(2, attempt);
+      if (attempt < IMAGE_DOWNLOAD_RETRY.MAX_ATTEMPTS - 1) {
+        const delay = IMAGE_DOWNLOAD_RETRY.DELAY_BASE_MS * Math.pow(2, attempt);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

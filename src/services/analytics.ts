@@ -492,3 +492,27 @@ export const trackTriviaResultsView = (params: {
     category_slug: params.categorySlug || '',
   });
 };
+
+// ============================================================================
+// App Update Events
+// ============================================================================
+
+/**
+ * Track when an OTA bundle update is applied
+ * Sends composite platform + version/build identifier
+ */
+export const trackAppUpdate = (): void => {
+  const platform = Platform.OS;
+  const appVersion = Application.nativeApplicationVersion || 'unknown';
+  const buildNumber = Application.nativeBuildVersion || 'unknown';
+  
+  // Composite identifier: platform_version_build (e.g., "ios_1.2.3_45")
+  const platformBuildId = `${platform}_${appVersion}_${buildNumber}`;
+  
+  logEvent('app_update', {
+    platform,
+    app_version: appVersion,
+    build_number: buildNumber,
+    platform_build_id: platformBuildId,
+  });
+};

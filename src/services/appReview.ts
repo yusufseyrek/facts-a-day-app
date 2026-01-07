@@ -1,14 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as StoreReview from 'expo-store-review';
-
-// Storage keys
-const FACTS_VIEWED_COUNT_KEY = '@facts_viewed_count';
-const REVIEW_REQUESTED_KEY = '@review_requested';
-const LAST_REVIEW_PROMPT_KEY = '@last_review_prompt';
-
-// Configuration
-const FACTS_THRESHOLD_FOR_REVIEW = 10; // Ask for review after 10 facts viewed
-const MIN_DAYS_BETWEEN_PROMPTS = 15; // Don't ask again for 15 days
+import { STORAGE_KEYS, APP_REVIEW } from '../config/app';
 
 /**
  * Track that a fact has been viewed
@@ -17,17 +9,17 @@ const MIN_DAYS_BETWEEN_PROMPTS = 15; // Don't ask again for 15 days
 export async function trackFactView(): Promise<boolean> {
   try {
     // Check if review has already been requested
-    const reviewRequested = await AsyncStorage.getItem(REVIEW_REQUESTED_KEY);
+    const reviewRequested = await AsyncStorage.getItem(STORAGE_KEYS.REVIEW_REQUESTED);
     if (reviewRequested === 'true') {
       return false; // Don't show again if already requested once
     }
 
     // Check if we've prompted recently
-    const lastPromptDate = await AsyncStorage.getItem(LAST_REVIEW_PROMPT_KEY);
+    const lastPromptDate = await AsyncStorage.getItem(STORAGE_KEYS.LAST_REVIEW_PROMPT);
     if (lastPromptDate) {
       const daysSinceLastPrompt =
         (Date.now() - parseInt(lastPromptDate, 10)) / (1000 * 60 * 60 * 24);
-      if (daysSinceLastPrompt < MIN_DAYS_BETWEEN_PROMPTS) {
+      if (daysSinceLastPrompt < APP_REVIEW.MIN_DAYS_BETWEEN_PROMPTS) {
         return false; // Too soon to prompt again
       }
     }
@@ -35,10 +27,10 @@ export async function trackFactView(): Promise<boolean> {
     // Increment view count
     const currentCount = await getFactsViewedCount();
     const newCount = currentCount + 1;
-    await AsyncStorage.setItem(FACTS_VIEWED_COUNT_KEY, newCount.toString());
+    await AsyncStorage.setItem(STORAGE_KEYS.FACTS_VIEWED_COUNT, newCount.toString());
 
     // Check if threshold reached
-    if (newCount >= FACTS_THRESHOLD_FOR_REVIEW) {
+    if (newCount >= APP_REVIEW.FACTS_THRESHOLD) {
       return true;
     }
 
@@ -56,7 +48,7 @@ export async function trackFactView(): Promise<boolean> {
  */
 export async function getFactsViewedCount(): Promise<number> {
   try {
-    const count = await AsyncStorage.getItem(FACTS_VIEWED_COUNT_KEY);
+    const count = await AsyncStorage.getItem(STORAGE_KEYS.FACTS_VIEWED_COUNT);
     return count ? parseInt(count, 10) : 0;
   } catch (error) {
     if (__DEV__) {
@@ -94,8 +86,8 @@ export async function requestReview(): Promise<boolean> {
     await StoreReview.requestReview();
 
     // Mark as requested and update last prompt date
-    await AsyncStorage.setItem(REVIEW_REQUESTED_KEY, 'true');
-    await AsyncStorage.setItem(LAST_REVIEW_PROMPT_KEY, Date.now().toString());
+    await AsyncStorage.setItem(STORAGE_KEYS.REVIEW_REQUESTED, 'true');
+    await AsyncStorage.setItem(STORAGE_KEYS.LAST_REVIEW_PROMPT, Date.now().toString());
 
     if (__DEV__) {
       console.log('Review prompt shown successfully');
@@ -116,9 +108,9 @@ export async function requestReview(): Promise<boolean> {
 export async function resetReviewTracking(): Promise<void> {
   try {
     await AsyncStorage.multiRemove([
-      FACTS_VIEWED_COUNT_KEY,
-      REVIEW_REQUESTED_KEY,
-      LAST_REVIEW_PROMPT_KEY,
+      STORAGE_KEYS.FACTS_VIEWED_COUNT,
+      STORAGE_KEYS.REVIEW_REQUESTED,
+      STORAGE_KEYS.LAST_REVIEW_PROMPT,
     ]);
     if (__DEV__) {
       console.log('Review tracking reset');

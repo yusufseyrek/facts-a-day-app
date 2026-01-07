@@ -15,7 +15,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { tokens } from '../../../src/theme/tokens';
-import { H2, LabelText, SmallText, BodyText, FONT_FAMILIES } from '../../../src/components/Typography';
+import { Text, FONT_FAMILIES } from '../../../src/components/Typography';
 import { useTheme } from '../../../src/theme';
 import { useTranslation } from '../../../src/i18n';
 import { getLucideIcon } from '../../../src/utils/iconMapper';
@@ -95,23 +95,23 @@ function CategoryProgressBar({
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).duration(400).springify()}>
       <YStack gap={tokens.space.xs}>
-        <XStack alignItems="center" justifyContent="space-between">
-          <XStack alignItems="center" gap={tokens.space.sm}>
-            {getLucideIcon(category.icon, typo.fontSize.title, progressColor)}
-            <LabelText
-              color={textColor}
-              fontFamily={FONT_FAMILIES.medium}
-            >
-              {category.name}
-            </LabelText>
-          </XStack>
-          <SmallText
+      <XStack alignItems="center" justifyContent="space-between">
+        <XStack alignItems="center" gap={tokens.space.sm}>
+          {getLucideIcon(category.icon, typo.fontSize.title, progressColor)}
+          <Text.Label
             color={textColor}
-            fontFamily={FONT_FAMILIES.semibold}
+            fontFamily={FONT_FAMILIES.medium}
           >
-            {percentage}%
-          </SmallText>
+            {category.name}
+          </Text.Label>
         </XStack>
+        <Text.Caption
+          color={textColor}
+          fontFamily={FONT_FAMILIES.semibold}
+        >
+          {percentage}%
+        </Text.Caption>
+      </XStack>
         <View
           style={{
             width: '100%',
@@ -208,11 +208,11 @@ export default function CategoriesAccuracyScreen() {
         >
           <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
           
-          <H2
+          <Text.Title
             color={textColor}
           >
             {t('accuracyByCategory')}
-          </H2>
+          </Text.Title>
           
           {/* Empty spacer to balance the header */}
           <View style={{ width: 36, height: 36 }} />
@@ -249,11 +249,11 @@ export default function CategoriesAccuracyScreen() {
           </Animated.View>
         ) : (
           <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
-            <BodyText
+            <Text.Body
               color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
             >
               {t('noDataYet')}
-            </BodyText>
+            </Text.Body>
           </YStack>
         )}
       </ScrollView>

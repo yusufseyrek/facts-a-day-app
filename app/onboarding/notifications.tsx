@@ -8,8 +8,8 @@ import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { Bell } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
-import { typography } from "../../src/utils/responsive";
-import { H1, BodyText, Button, ProgressIndicator, MultiTimePicker } from "../../src/components";
+import { typography, RESPONSIVE_CONSTANTS } from "../../src/utils/responsive";
+import { Text, Button, ProgressIndicator, MultiTimePicker } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
@@ -57,9 +57,6 @@ const TimePickerContainer = styled(YStack, {
   borderColor: "$border",
 });
 
-// Tablet breakpoint (iPad mini is 768px wide)
-const TABLET_BREAKPOINT = 768;
-
 export default function NotificationsScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
@@ -69,7 +66,7 @@ export default function NotificationsScreen() {
   const { width } = useWindowDimensions();
 
   // Responsive sizing for tablets
-  const isTablet = width >= TABLET_BREAKPOINT;
+  const isTablet = width >= RESPONSIVE_CONSTANTS.TABLET_BREAKPOINT;
   const typo = isTablet ? typography.tablet : typography.phone;
 
   // Enter animations
@@ -343,10 +340,10 @@ export default function NotificationsScreen() {
                 }}
               >
                 <YStack gap={tokens.space.sm} alignItems="center">
-                  <H1 textAlign="center">{t("stayInformed")}</H1>
-                  <BodyText textAlign="center" color="$textSecondary">
+                  <Text.Headline textAlign="center">{t("stayInformed")}</Text.Headline>
+                  <Text.Body textAlign="center" color="$textSecondary">
                     {t("notificationRequired")}
-                  </BodyText>
+                  </Text.Body>
                 </YStack>
               </Animated.View>
             </Header>

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, memo, useRef } from 'react';
 import { Platform, View, StyleSheet, LayoutAnimation } from 'react-native';
 import { BannerAd as GoogleBannerAd, BannerAdSize, TestIds, AdsConsent } from 'react-native-google-mobile-ads';
 import Constants from 'expo-constants';
-import { ADS_ENABLED } from '../../config/ads';
+import { ADS_ENABLED, AD_RETRY } from '../../config/ads';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { getAdKeywords, subscribeToKeywords } from '../../services/adKeywords';
 
@@ -12,10 +12,6 @@ interface BannerAdProps {
   position: BannerAdPosition;
   onAdLoadChange?: (loaded: boolean) => void;
 }
-
-// Retry configuration
-const RETRY_DELAYS = [30000, 60000, 120000, 240000, 480000];
-const MAX_RETRIES = 5;
 
 const getAdUnitId = (position: BannerAdPosition): string => {
   const isIOS = Platform.OS === 'ios';
@@ -105,8 +101,8 @@ function BannerAdComponent({
     });
     setAdState('error');
     
-    if (retryCount < MAX_RETRIES) {
-      const delay = RETRY_DELAYS[retryCount] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
+    if (retryCount < AD_RETRY.MAX_RETRIES) {
+      const delay = AD_RETRY.DELAYS[retryCount] || AD_RETRY.DELAYS[AD_RETRY.DELAYS.length - 1];
       retryTimeoutRef.current = setTimeout(() => {
         setRetryCount(prev => prev + 1);
         setAdState('loading');

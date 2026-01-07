@@ -13,7 +13,7 @@ import { useTheme } from '../../theme';
 import { tokens } from '../../theme/tokens';
 import { useTranslation, type TranslationKeys } from '../../i18n';
 import type { ThemeMode } from '../../theme/ThemeProvider';
-import { H2, LabelText, SmallText } from '../Typography';
+import { Text } from '../Typography';
 import { trackThemeChange, updateThemeProperty } from '../../services/analytics';
 
 const ANIMATION_DURATION = 200;
@@ -137,9 +137,9 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
                     { borderBottomColor: colors.border },
                   ]}
                 >
-                  <H2 color={colors.text}>
+                  <Text.Title color={colors.text}>
                     {t('settingsThemeTitle')}
-                  </H2>
+                  </Text.Title>
                   <Pressable onPress={handleClose} style={styles.closeButton}>
                     <X size={24} color={colors.text} />
                   </Pressable>
@@ -183,16 +183,16 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
                                   {option.icon(isSelected ? '#FFFFFF' : colors.text)}
                                 </View>
                                 <View style={styles.optionTextContainer}>
-                                  <LabelText
+                                  <Text.Label
                                     color={isSelected ? '#FFFFFF' : colors.text}
                                   >
                                     {t(option.titleKey)}
-                                  </LabelText>
-                                  <SmallText
+                                  </Text.Label>
+                                  <Text.Caption
                                     color={isSelected ? 'rgba(255, 255, 255, 0.9)' : colors.textSecondary}
                                   >
                                     {t(option.descriptionKey)}
-                                  </SmallText>
+                                  </Text.Caption>
                                 </View>
                               </View>
                             </View>

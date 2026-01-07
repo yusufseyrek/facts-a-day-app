@@ -4,7 +4,7 @@ import { YStack, XStack } from 'tamagui';
 import { Check, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { tokens } from '../../theme/tokens';
-import { LabelText, SmallText, FONT_FAMILIES } from '../Typography';
+import { Text, FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
 import type { CategoryWithProgress } from '../../services/trivia';
@@ -70,12 +70,12 @@ export function CategoryQuestCard({
           {/* Content */}
           <YStack flex={1}>
             <XStack alignItems="center" gap={tokens.space.sm}>
-              <LabelText
+              <Text.Label
                 fontFamily={FONT_FAMILIES.semibold}
                 color={textColor}
               >
                 {category.name}
-              </LabelText>
+              </Text.Label>
               {isComplete && (
                 <Check size={typo.fontSize.caption} color={successColor} />
               )}
@@ -96,9 +96,9 @@ export function CategoryQuestCard({
                   width={`${progress}%`}
                 />
               </YStack>
-              <SmallText color={secondaryTextColor}>
+              <Text.Caption color={secondaryTextColor}>
                 {category.mastered}/{category.total}
-              </SmallText>
+              </Text.Caption>
             </XStack>
           </YStack>
           

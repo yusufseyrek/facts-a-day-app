@@ -5,7 +5,7 @@ import { YStack, XStack } from 'tamagui';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Plus, Trash2 } from '@tamagui/lucide-icons';
 import { tokens } from '../theme/tokens';
-import { BodyText, SmallText, FONT_FAMILIES } from './Typography';
+import { Text, FONT_FAMILIES } from './Typography';
 import { Button } from './Button';
 import { useTheme } from '../theme';
 import { useTranslation } from '../i18n';
@@ -151,23 +151,23 @@ export function MultiTimePicker({
 
   return (
     <TimeSlotContainer>
-      <BodyText
+      <Text.Body
         fontFamily={FONT_FAMILIES.bold}
         textAlign="center"
         style={{ marginBottom: tokens.space.xs }}
       >
         {t('notificationTimes')}
-      </BodyText>
+      </Text.Body>
 
       {times.map((time, index) => (
         <TimeSlot key={index}>
-          <SmallText
+          <Text.Caption
             color="$textSecondary"
             fontFamily={FONT_FAMILIES.medium}
             style={{ minWidth: 60 }}
           >
             {t('time')} {index + 1}
-          </SmallText>
+          </Text.Caption>
 
           <TimeDisplay>
             {Platform.OS === 'ios' ? (
@@ -217,32 +217,32 @@ export function MultiTimePicker({
       {times.length < maxTimes && (
         <AddTimeButton onPress={handleAddTime}>
           <Plus size={24} color={tokens.color.light.primary} />
-          <BodyText
+          <Text.Body
             color="$primary"
             fontFamily={FONT_FAMILIES.bold}
           >
             {t('addAnotherTime')}
-          </BodyText>
+          </Text.Body>
         </AddTimeButton>
       )}
 
       <YStack gap={tokens.space.xs} marginTop={tokens.space.md}>
-        <SmallText
+        <Text.Caption
           color="$textSecondary"
           textAlign="center"
           lineHeight={20}
           fontFamily={FONT_FAMILIES.semibold}
         >
           {t('multipleNotificationsPerDay', { count: times.length })}
-        </SmallText>
-        <SmallText
+        </Text.Caption>
+        <Text.Caption
           color="$textSecondary"
           textAlign="center"
           lineHeight={18}
           fontStyle="italic"
         >
           {t('notificationRespectMessage')}
-        </SmallText>
+        </Text.Caption>
       </YStack>
     </TimeSlotContainer>
   );

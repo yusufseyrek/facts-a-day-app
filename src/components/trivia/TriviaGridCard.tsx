@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { Check, Zap, Shuffle, ChevronRight } from '@tamagui/lucide-icons';
 import { tokens } from '../../theme/tokens';
-import { LabelText, SmallText, FONT_FAMILIES } from '../Typography';
+import { Text, FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { hexToRgba } from '../../utils/colors';
 import { useTranslation } from '../../i18n';
@@ -140,21 +140,21 @@ export function TriviaGridCard({
 
         {/* Bottom section: Title + Subtitle */}
         <YStack gap={4} marginTop={tokens.space.md} alignItems={centerContent ? 'center' : 'flex-start'}>
-          <LabelText
+          <Text.Label
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
             numberOfLines={1}
             textAlign={centerContent ? 'center' : 'left'}
           >
             {title}
-          </LabelText>
-          <SmallText 
+          </Text.Label>
+          <Text.Caption 
             color={secondaryTextColor}
             numberOfLines={1}
             textAlign={centerContent ? 'center' : 'left'}
           >
             {getSubtitle()}
-          </SmallText>
+          </Text.Caption>
         </YStack>
       </YStack>
     </Pressable>

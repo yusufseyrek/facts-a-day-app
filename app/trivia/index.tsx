@@ -20,7 +20,7 @@ import {
   LoadingContainer,
   useIconColor,
 } from '../../src/components';
-import { LabelText, H2, BodyText, FONT_FAMILIES } from '../../src/components/Typography';
+import { Text, FONT_FAMILIES } from '../../src/components/Typography';
 import {
   TriviaStatsHero,
   TriviaGridCard,
@@ -222,12 +222,12 @@ export default function TriviaScreen() {
   const streakBadge = dailyStreak > 0 ? (
     <XStack alignItems="center" gap={4}>
       <Flame size={typo.fontSize.title} color={orangeColor} />
-      <LabelText 
+      <Text.Label 
         color={orangeColor}
         fontFamily={FONT_FAMILIES.semibold}
       >
         {dailyStreak}
-      </LabelText>
+      </Text.Label>
     </XStack>
   ) : undefined;
 
@@ -278,13 +278,13 @@ export default function TriviaScreen() {
               <>
                 {/* Section title */}
                 <Animated.View entering={FadeInDown.delay(100).duration(300)}>
-                  <LabelText
+                  <Text.Label
                     color={textColor}
                     fontFamily={FONT_FAMILIES.semibold}
                     marginTop={tokens.space.sm}
                   >
                     {t('triviaGameModes')}
-                  </LabelText>
+                  </Text.Label>
                 </Animated.View>
                 <TriviaGrid>
                   {/* First row: Daily Trivia + Mixed Trivia */}
@@ -369,18 +369,18 @@ export default function TriviaScreen() {
                   
                   {/* Title & Description */}
                   <YStack alignItems="center" gap={tokens.space.sm}>
-                    <H2
+                    <Text.Title
                       color={textColor}
                       textAlign="center"
                     >
                       {t('triviaEmptyTitle')}
-                    </H2>
-                    <BodyText
+                    </Text.Title>
+                    <Text.Body
                       color={secondaryTextColor}
                       textAlign="center"
                     >
                       {t('triviaEmptyDescription')}
-                    </BodyText>
+                    </Text.Body>
                   </YStack>
                   
                   {/* CTA Button */}
@@ -400,12 +400,12 @@ export default function TriviaScreen() {
                       alignItems="center"
                       gap={tokens.space.sm}
                     >
-                      <LabelText
+                      <Text.Label
                         color="#FFFFFF"
                         fontFamily={FONT_FAMILIES.semibold}
                       >
                         {t('startExploring')}
-                      </LabelText>
+                      </Text.Label>
                       <ArrowRight size={typo.fontSize.title} color="#FFFFFF" />
                     </XStack>
                   </Pressable>

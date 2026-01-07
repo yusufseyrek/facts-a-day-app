@@ -7,22 +7,7 @@ import { FONT_FAMILIES } from "./Typography";
 import { useFactImage } from "../utils/useFactImage";
 import { typography, spacing, componentSizes, isTabletDevice } from "../utils/responsive";
 import type { Category } from "../services/database";
-
-// Dark blurhash that matches the card's dark theme for cohesive loading
-const DEFAULT_BLURHASH = "L03[%0IU00~q00xu00Rj00%M00M{";
-
-// Aspect ratio for immersive cards (16:9)
-const ASPECT_RATIO = 9 / 16;
-
-// Maximum retry attempts for re-rendering (without re-downloading)
-const MAX_RENDER_RETRY_ATTEMPTS = 2;
-
-// Maximum retry attempts for re-downloading (after render retries fail)
-const MAX_DOWNLOAD_RETRY_ATTEMPTS = 2;
-
-// Retry delay in milliseconds
-const RENDER_RETRY_DELAY = 300;
-const DOWNLOAD_RETRY_DELAY = 1000;
+import { IMAGE_PLACEHOLDER, IMAGE_DIMENSIONS, IMAGE_RETRY } from "../config/images";
 
 interface ImageFactCardProps {
   title: string;
@@ -110,7 +95,7 @@ const ImageFactCardComponent = ({
   const retryPendingRef = useRef(false);
 
   // Calculate card height based on aspect ratio
-  const cardHeight = screenWidth * ASPECT_RATIO;
+  const cardHeight = screenWidth * IMAGE_DIMENSIONS.CARD_ASPECT_RATIO;
 
   const handlePressIn = useCallback(() => {
     Animated.spring(scaleAnim, {
@@ -145,23 +130,23 @@ const ImageFactCardComponent = ({
     }
     
     // Phase 1: Try re-rendering without downloading (fixes Android timing issues)
-    if (renderRetryCount < MAX_RENDER_RETRY_ATTEMPTS) {
+    if (renderRetryCount < IMAGE_RETRY.MAX_RENDER_ATTEMPTS) {
       retryPendingRef.current = true;
       
       if (__DEV__) {
-        console.log(`🔄 Image render failed for fact ${factId}, re-rendering in ${RENDER_RETRY_DELAY}ms (attempt ${renderRetryCount + 1}/${MAX_RENDER_RETRY_ATTEMPTS})`);
+        console.log(`🔄 Image render failed for fact ${factId}, re-rendering in ${IMAGE_RETRY.RENDER_DELAY}ms (attempt ${renderRetryCount + 1}/${IMAGE_RETRY.MAX_RENDER_ATTEMPTS})`);
       }
       
       setTimeout(() => {
         retryPendingRef.current = false;
         setRenderRetryCount((prev) => prev + 1);
         // Just increment state to trigger re-render, no download
-      }, RENDER_RETRY_DELAY);
+      }, IMAGE_RETRY.RENDER_DELAY);
       return;
     }
     
     // Phase 2: Re-rendering didn't help, try re-downloading
-    if (downloadRetryCount < MAX_DOWNLOAD_RETRY_ATTEMPTS) {
+    if (downloadRetryCount < IMAGE_RETRY.MAX_DOWNLOAD_ATTEMPTS) {
       retryPendingRef.current = true;
       
       setTimeout(() => {
@@ -169,7 +154,7 @@ const ImageFactCardComponent = ({
         setDownloadRetryCount((prev) => prev + 1);
         setRenderRetryCount(0); // Reset render retries for the new download
         retryImage(); // Actually re-download with App Check
-      }, DOWNLOAD_RETRY_DELAY);
+      }, IMAGE_RETRY.DOWNLOAD_DELAY);
       return;
     }
   }, [renderRetryCount, downloadRetryCount, factId, retryImage, isImageLoading, displayUri]);
@@ -232,10 +217,9 @@ const ImageFactCardComponent = ({
     paddingTop: space.sectionGap * 1.5,
   };
   
-  const baseFontSize = typo.fontSize.title;
   const titleStyle = {
-    fontSize: baseFontSize,
-    lineHeight: typo.lineHeight.headline,
+    fontSize: typo.fontSize.title,
+    lineHeight: typo.lineHeight.title,
   };
   const badgeTextStyle = { fontSize: sizes.badgeFontSize };
 
@@ -332,7 +316,7 @@ const androidRipple = {
   borderless: false,
 };
 
-const placeholder = { blurhash: DEFAULT_BLURHASH };
+const placeholder = { blurhash: IMAGE_PLACEHOLDER.DEFAULT_BLURHASH };
 const gradientColors = ["transparent", "rgba(0, 0, 0, 0.3)", "rgba(0, 0, 0, 0.75)"] as const;
 const gradientLocations = [0.3, 0.6, 1] as const;
 

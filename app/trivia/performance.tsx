@@ -24,7 +24,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
 import { tokens } from '../../src/theme/tokens';
-import { H2, LabelText, SmallText, DisplayText, FONT_FAMILIES } from '../../src/components/Typography';
+import { Text, FONT_FAMILIES } from '../../src/components/Typography';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import { getLucideIcon } from '../../src/utils/iconMapper';
@@ -33,9 +33,7 @@ import * as triviaService from '../../src/services/trivia';
 import { TriviaResults, getTriviaModeBadge } from '../../src/components/trivia';
 import type { TriviaStats, CategoryWithProgress, TriviaSessionWithCategory } from '../../src/services/trivia';
 import { trackScreenView, Screens, trackTriviaResultsView, TriviaMode } from '../../src/services/analytics';
-
-const MAX_DISPLAY_CATEGORIES = 3;
-const MAX_DISPLAY_ACTIVITIES = 3;
+import { DISPLAY_LIMITS } from '../../src/config/app';
 
 // Back Button with press animation
 function BackButton({ 
@@ -134,25 +132,25 @@ function MetricCard({
         >
           {icon}
         </View>
-        <SmallText
+        <Text.Caption
           color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
           fontFamily={FONT_FAMILIES.medium}
         >
           {label}
-        </SmallText>
+        </Text.Caption>
       </XStack>
-      <DisplayText
+      <Text.Display
         color={textColor}
       >
         {value}
-      </DisplayText>
+      </Text.Display>
       {subtitle && (
-        <SmallText
+        <Text.Caption
           color={subtitleColor}
           fontFamily={FONT_FAMILIES.medium}
         >
           {subtitle}
-        </SmallText>
+        </Text.Caption>
       )}
     </YStack>
   );
@@ -178,19 +176,19 @@ function CategoryProgressBar({
       <XStack alignItems="center" justifyContent="space-between">
         <XStack alignItems="center" gap={tokens.space.sm}>
           {getLucideIcon(category.icon, typo.fontSize.title, progressColor)}
-          <LabelText
+          <Text.Label
             color={textColor}
             fontFamily={FONT_FAMILIES.medium}
           >
             {category.name}
-          </LabelText>
+          </Text.Label>
         </XStack>
-        <SmallText
+        <Text.Caption
           color={textColor}
           fontFamily={FONT_FAMILIES.semibold}
         >
           {percentage}%
-        </SmallText>
+        </Text.Caption>
       </XStack>
       <View
         style={{
@@ -354,30 +352,30 @@ function SessionCard({
       >
         {getIcon()}
         <YStack flex={1} gap={2}>
-          <LabelText
+          <Text.Label
             fontFamily={FONT_FAMILIES.semibold}
             color={textColor}
           >
             {getDisplayName()}
-          </LabelText>
-          <SmallText
+          </Text.Label>
+          <Text.Caption
             color={secondaryTextColor}
           >
             {getDateDisplay()}
-          </SmallText>
+          </Text.Caption>
         </YStack>
         <YStack alignItems="flex-end" gap={2}>
-          <SmallText
+          <Text.Caption
             fontFamily={FONT_FAMILIES.semibold}
             color={feedback.color}
           >
             {feedback.text}
-          </SmallText>
-          <SmallText
+          </Text.Caption>
+          <Text.Caption
             color={secondaryTextColor}
           >
             {t('score')}: {session.correct_answers}/{session.total_questions}
-          </SmallText>
+          </Text.Caption>
         </YStack>
         {hasResultData && (
           <ChevronRight size={20} color={secondaryTextColor} />
@@ -411,7 +409,7 @@ export default function PerformanceScreen() {
       const [statsData, categoriesData, sessionsData] = await Promise.all([
         triviaService.getOverallStats(),
         triviaService.getCategoriesWithProgress(locale),
-        triviaService.getRecentSessions(MAX_DISPLAY_ACTIVITIES),
+        triviaService.getRecentSessions(DISPLAY_LIMITS.MAX_ACTIVITIES),
       ]);
       
       setStats(statsData);
@@ -535,7 +533,7 @@ export default function PerformanceScreen() {
   const displayCategories = categories
     .filter(c => c.total > 0 && c.accuracy > 0)
     .sort((a, b) => b.accuracy - a.accuracy)
-    .slice(0, MAX_DISPLAY_CATEGORIES);
+    .slice(0, DISPLAY_LIMITS.MAX_CATEGORIES);
   
   // All categories with accuracy > 0, sorted high to low (for modal)
   const allCategoriesWithAccuracy = categories
@@ -559,11 +557,11 @@ export default function PerformanceScreen() {
         >
           <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
           
-          <H2
+          <Text.Title
             color={textColor}
           >
             {t('triviaPerformance')}
-          </H2>
+          </Text.Title>
           
           {/* Empty spacer to balance the header */}
           <View style={{ width: 36, height: 36 }} />
@@ -579,12 +577,12 @@ export default function PerformanceScreen() {
         <YStack padding={tokens.space.lg} gap={tokens.space.xl}>
           {/* Core Metrics */}
           <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
-            <H2
+            <Text.Title
               color={textColor}
               marginBottom={tokens.space.md}
             >
               {t('coreMetrics')}
-            </H2>
+            </Text.Title>
             
             {isTablet ? (
               /* Tablet: All 4 metrics in a single row */
@@ -679,28 +677,28 @@ export default function PerformanceScreen() {
             <Animated.View entering={SlideInRight.delay(75).duration(400).springify()}>
               <YStack marginBottom={tokens.space.md} gap={tokens.space.xs}>
                 <XStack alignItems="center" justifyContent="space-between">
-                  <H2
+                  <Text.Title
                     color={textColor}
                   >
                     {t('accuracyByCategory')}
-                  </H2>
-                  {allCategoriesWithAccuracy.length > MAX_DISPLAY_CATEGORIES && (
+                  </Text.Title>
+                  {allCategoriesWithAccuracy.length > DISPLAY_LIMITS.MAX_CATEGORIES && (
                     <Pressable onPress={() => router.push('/(tabs)/trivia/categories')}>
-                      <SmallText
+                      <Text.Caption
                         fontFamily={FONT_FAMILIES.semibold}
                         color={primaryColor}
                       >
                         {t('viewAll')}
-                      </SmallText>
+                      </Text.Caption>
                     </Pressable>
                   )}
                 </XStack>
-                <SmallText
+                <Text.Caption
                   color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
                   opacity={0.9}
                 >
                   {t('accuracyByCategorySubtitle')}
-                </SmallText>
+                </Text.Caption>
               </YStack>
               
               <YStack
@@ -724,19 +722,19 @@ export default function PerformanceScreen() {
           {recentSessions.length > 0 && (
             <Animated.View entering={SlideInRight.delay(100).duration(400).springify()}>
               <XStack alignItems="center" justifyContent="space-between" marginBottom={tokens.space.md}>
-                <H2
+                <Text.Title
                   color={textColor}
                 >
                   {t('recentTests')}
-                </H2>
-                {totalSessionsCount > MAX_DISPLAY_ACTIVITIES && (
+                </Text.Title>
+                {totalSessionsCount > DISPLAY_LIMITS.MAX_ACTIVITIES && (
                   <Pressable onPress={() => router.push('/(tabs)/trivia/history')}>
-                    <SmallText
+                    <Text.Caption
                       fontFamily={FONT_FAMILIES.semibold}
                       color={primaryColor}
                     >
                       {t('viewAll')}
-                    </SmallText>
+                    </Text.Caption>
                   </Pressable>
                 )}
               </XStack>

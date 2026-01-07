@@ -4,7 +4,7 @@ import { YStack, XStack } from 'tamagui';
 import { Zap, Check, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { tokens } from '../../theme/tokens';
-import { LabelText, SmallText, FONT_FAMILIES } from '../Typography';
+import { Text, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
 import type { TranslationKeys } from '../../i18n/translations';
 
@@ -68,17 +68,17 @@ export function DailyChallengeCard({
           
           {/* Content */}
           <YStack flex={1}>
-            <LabelText
+            <Text.Label
               fontFamily={FONT_FAMILIES.semibold}
               color={textColor}
             >
               {t('dailyTrivia')}
-            </LabelText>
-            <SmallText color={secondaryTextColor} marginTop={2}>
+            </Text.Label>
+            <Text.Caption color={secondaryTextColor} marginTop={2}>
               {isCompleted
                 ? t('dailyTriviaCompleted')
                 : t('dailyTriviaQuestions', { count: questionsCount })}
-            </SmallText>
+            </Text.Caption>
           </YStack>
           
           {!isCompleted && (

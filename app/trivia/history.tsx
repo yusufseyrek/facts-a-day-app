@@ -20,7 +20,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { tokens } from '../../src/theme/tokens';
-import { H2, LabelText, SmallText, BodyText, FONT_FAMILIES } from '../../src/components/Typography';
+import { Text, FONT_FAMILIES } from '../../src/components/Typography';
 import { SectionHeaderContainer } from '../../src/components/ScreenLayout';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
@@ -221,30 +221,30 @@ function SessionCard({
       >
         {getIcon()}
         <YStack flex={1} gap={2}>
-          <LabelText
+          <Text.Label
             fontFamily={FONT_FAMILIES.semibold}
             color={textColor}
           >
             {getDisplayName()}
-          </LabelText>
-          <SmallText
+          </Text.Label>
+          <Text.Caption
             color={secondaryTextColor}
           >
             {getDateDisplay()}
-          </SmallText>
+          </Text.Caption>
         </YStack>
         <YStack alignItems="flex-end" gap={2}>
-          <SmallText
+          <Text.Caption
             fontFamily={FONT_FAMILIES.semibold}
             color={feedback.color}
           >
             {feedback.text}
-          </SmallText>
-          <SmallText
+          </Text.Caption>
+          <Text.Caption
             color={secondaryTextColor}
           >
             {t('score')}: {session.correct_answers}/{session.total_questions}
-          </SmallText>
+          </Text.Caption>
         </YStack>
         {hasResultData && (
           <ChevronRight size={20} color={secondaryTextColor} />
@@ -406,7 +406,7 @@ export default function ActivityHistoryScreen() {
     if (item.type === ITEM_TYPES.SECTION_HEADER) {
       return (
         <SectionHeaderContainer paddingTop={tokens.space.md}>
-          <H2>{item.title}</H2>
+          <Text.Title>{item.title}</Text.Title>
         </SectionHeaderContainer>
       );
     }
@@ -513,11 +513,11 @@ export default function ActivityHistoryScreen() {
         >
           <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
           
-          <H2
+          <Text.Title
             color={textColor}
           >
             {t('testHistory')}
-          </H2>
+          </Text.Title>
           
           {/* Empty spacer to balance the header */}
           <View style={{ width: 36, height: 36 }} />
@@ -527,11 +527,11 @@ export default function ActivityHistoryScreen() {
       <Animated.View entering={FadeIn.delay(50).duration(400).springify()} style={{ flex: 1 }}>
         {flattenedData.length === 0 ? (
           <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
-            <BodyText
+            <Text.Body
               color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
             >
               {t('noTestsYet')}
-            </BodyText>
+            </Text.Body>
           </YStack>
         ) : (
           <FlashList

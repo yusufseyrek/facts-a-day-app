@@ -4,7 +4,7 @@ import { styled } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { X } from '@tamagui/lucide-icons';
 import { tokens, useTheme } from '../theme';
-import { H2, BodyText, LabelText } from './Typography';
+import { Text } from './Typography';
 import { Button } from './Button';
 import { useTranslation } from '../i18n';
 import { useResponsive } from '../utils/useResponsive';
@@ -150,7 +150,7 @@ export function ReportFactModal({
               >
                 <ModalContainer>
                   <Header>
-                    <H2>{t('reportFact')}</H2>
+                    <Text.Title>{t('reportFact')}</Text.Title>
                     <TouchableWithoutFeedback onPress={handleClose}>
                       <CloseButton>
                         <X size={20} color={tokens.color[theme].text} />
@@ -158,9 +158,9 @@ export function ReportFactModal({
                     </TouchableWithoutFeedback>
                   </Header>
 
-                  <BodyText color="$text" fontSize={typo.fontSize.caption}>
+                  <Text.Body color="$text" fontSize={typo.fontSize.caption}>
                     {t('whatIsWrong')}
-                  </BodyText>
+                  </Text.Body>
 
                   <View 
                     style={{ width: '100%', flexShrink: 0 }}
@@ -193,13 +193,13 @@ export function ReportFactModal({
 
                   <XStack justifyContent="space-between" alignItems="center">
                     {error ? (
-                      <LabelText color="#EF4444" fontSize={typo.fontSize.caption}>
+                      <Text.Label color="#EF4444" fontSize={typo.fontSize.caption}>
                         {error}
-                      </LabelText>
+                      </Text.Label>
                     ) : (
-                      <LabelText color="$text" fontSize={typo.fontSize.caption}>
+                      <Text.Label color="$text" fontSize={typo.fontSize.caption}>
                         {feedback.length}/1000
-                      </LabelText>
+                      </Text.Label>
                     )}
                   </XStack>
 

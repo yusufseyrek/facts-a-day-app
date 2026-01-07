@@ -18,11 +18,8 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated"
 import { tokens } from "../../src/theme/tokens";
 import { useResponsive } from "../../src/utils/useResponsive";
 import {
-  H1,
-  BodyText,
+  Text,
   EmptyState,
-  LabelText,
-  SmallText,
   ScreenContainer,
   ScreenHeaderContainer,
   FONT_FAMILIES,
@@ -467,13 +464,13 @@ function DiscoverScreen() {
             {selectedCategory && (
               <Pressable onPress={clearCategoryFilter}>
                 <CategoryChip style={{ backgroundColor: categoryColor }}>
-                  <SmallText
+                  <Text.Caption
                     color={contrastColor}
                     numberOfLines={1}
                     fontFamily={FONT_FAMILIES.semibold}
                   >
                     {selectedCategory.name}
-                  </SmallText>
+                  </Text.Caption>
                   <CategoryChipClearButton
                     style={{
                       backgroundColor:
@@ -566,12 +563,12 @@ function DiscoverScreen() {
       if (userCategories.length === 0) {
         return (
           <EmptyDiscoverState>
-            <BodyText
+            <Text.Body
               textAlign="center"
               color="$textMuted"
             >
               {t("discoverDescription")}
-            </BodyText>
+            </Text.Body>
           </EmptyDiscoverState>
         );
       }
@@ -581,16 +578,16 @@ function DiscoverScreen() {
           <CategoriesContainer>
             <Animated.View entering={FadeIn.duration(300)}>
               <YStack gap={tokens.space.sm}>
-                <H1
+                <Text.Headline
                   color="$text"
                 >
                   {t("discover")}
-                </H1>
-                <BodyText
+                </Text.Headline>
+                <Text.Body
                   color="$textMuted"
                 >
                   {t("discoverDescription")}
-                </BodyText>
+                </Text.Body>
               </YStack>
             </Animated.View>
 
@@ -626,14 +623,14 @@ function DiscoverScreen() {
                                 {getLucideIcon(category.icon, iconSize, contrastColor)}
                               </DiscoverCategoryIconContainer>
                               <DiscoverCategoryTextContainer>
-                                <LabelText
+                                <Text.Label
                                   color={contrastColor}
                                   numberOfLines={1}
                                   fontFamily={FONT_FAMILIES.semibold}
                                 >
                                   {category.name}
-                                </LabelText>
-                                <SmallText
+                                </Text.Label>
+                                <Text.Caption
                                   color={contrastColor}
                                   style={{ opacity: 0.85 }}
                                   fontFamily={FONT_FAMILIES.medium}
@@ -641,7 +638,7 @@ function DiscoverScreen() {
                                   {factsCount === 1
                                     ? t("factCountSingular", { count: factsCount })
                                     : t("factCountPlural", { count: factsCount })}
-                                </SmallText>
+                                </Text.Caption>
                               </DiscoverCategoryTextContainer>
                             </DiscoverCategoryCard>
                           )}

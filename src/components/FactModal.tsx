@@ -10,7 +10,7 @@ import { Image } from "expo-image";
 import { tokens } from "../theme/tokens";
 import { FactActions } from "./FactActions";
 import { CategoryBadge } from "./CategoryBadge";
-import { BodyText, SerifTitle, FONT_FAMILIES } from "./Typography";
+import { Text, FONT_FAMILIES } from "./Typography";
 import { useTheme } from "../theme";
 import { useTranslation } from "../i18n";
 import type { FactWithRelations, Category } from "../services/database";
@@ -283,11 +283,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   // Header background appears when image starts to be covered (for images) or early for no image
   const HEADER_BG_TRANSITION = hasImage ? IMAGE_HEIGHT - headerHeight : 100;
   
-  // Title animation starts when scroll position reaches headerHeight + contentPaddingTop
-  const contentPaddingTop = spacing.modalPadding;
-  const TRANSITION_START = headerHeight + contentPaddingTop;
-  const TRANSITION_END = TRANSITION_START + 10; // Small buffer for smooth transition
-  
   // Track scroll position for gesture handling
   React.useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -437,14 +432,14 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           }
         }}
       >
-        <SerifTitle
+        <Text.Headline
           fontSize={typography.fontSize.headline}
           lineHeight={typography.lineHeight.headline}
           letterSpacing={-0.2}
           fontFamily={FONT_FAMILIES.bold}
         >
           {factTitle}
-        </SerifTitle>
+        </Text.Headline>
       </View>
       {/* Sticky Header with Faded Image Background */}
       <Animated.View
@@ -564,14 +559,14 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   transform: [{ translateY: headerTitleTranslateY }],
                 }}
               >
-                <SerifTitle
+                <Text.Headline
                   fontSize={typography.fontSize.headline}
                   lineHeight={typography.lineHeight.headline}
                   letterSpacing={-0.2}
                   fontFamily={FONT_FAMILIES.bold}
                 >
                   {factTitle}
-                </SerifTitle>
+                </Text.Headline>
               </Animated.View>
             </HeaderTitleContainer>
           </HeaderContainer>
@@ -676,14 +671,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               minHeight: componentSizes.titleMinHeight,
             }}
           >
-            <SerifTitle 
-              fontSize={typography.fontSize.headline} 
-              lineHeight={typography.lineHeight.headline} 
-              letterSpacing={-0.2}
-              fontFamily={FONT_FAMILIES.bold}
-            >
+            <Text.Headline>
               {factTitle}
-            </SerifTitle>
+            </Text.Headline>
           </Animated.View>
 
           {/* Category Badge & Date */}
@@ -692,21 +682,17 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               {categoryForBadge && (
                 <CategoryBadge 
                   category={categoryForBadge} 
-                  fontFamily={FONT_FAMILIES.semibold}
-                  fontSize={typography.fontSize.body}
                 />
               )}
               {(fact.last_updated || fact.created_at) && (
                 <XStack alignItems="center" gap={tokens.space.xs}>
-                  <BodyText
-                    fontSize={typography.fontSize.body}
-                    lineHeight={typography.lineHeight.body}
-                    letterSpacing={0.3}
+                  <Text.Body
+                    fontSize={typography.fontSize.label}
                     color="$textSecondary"
                     fontFamily={FONT_FAMILIES.semibold}
                   >
                     {formatLastUpdated(fact.last_updated || fact.created_at, locale)}
-                  </BodyText>
+                  </Text.Body>
                   <Calendar size={iconSizes.small} color="$textSecondary" />
                 </XStack>
               )}
@@ -715,34 +701,30 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
           {/* Summary */}
           {fact.summary && (
-            <BodyText
-              fontSize={typography.fontSize.body}
-              lineHeight={typography.lineHeight.body}
+            <Text.Body
               color="$text"
-              fontFamily={FONT_FAMILIES.medium}
+              fontFamily={FONT_FAMILIES.semibold}
             >
               {fact.summary}
-            </BodyText>
+            </Text.Body>
           )}
 
           {/* Banner between summary and content */}
           <BannerAd position="fact-modal" />
 
           {/* Main Content */}
-          <BodyText
+          <Text.Body
             color="$text"
             fontFamily={FONT_FAMILIES.regular}
           >
             {fact.content}
-          </BodyText>
+          </Text.Body>
 
           {/* Source Link */}
           {fact.source_url && (
             <SourceLink>
               <Pressable onPress={handleSourcePress}>
-                <BodyText
-                  fontSize={typography.fontSize.body}
-                  lineHeight={typography.lineHeight.body}
+                <Text.Body
                   letterSpacing={0.2}
                   color="$primary"
                   textDecorationLine="underline"
@@ -750,7 +732,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 >
                   {t("sourcePrefix")}
                   {extractDomain(fact.source_url)}
-                </BodyText>
+                </Text.Body>
               </Pressable>
             </SourceLink>
           )}

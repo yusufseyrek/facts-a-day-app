@@ -5,7 +5,7 @@ import { ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import { tokens } from '../../theme/tokens';
-import { H1, H2, LabelText, SmallText, TinyText, FONT_FAMILIES } from '../Typography';
+import { Text, FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
 import type { TriviaStats, CategoryWithProgress } from '../../services/trivia';
@@ -74,12 +74,12 @@ function CircularProgress({
         alignItems="center" 
         justifyContent="center"
       >
-        <LabelText
+        <Text.Label
           fontFamily={FONT_FAMILIES.bold}
           color={textColor}
         >
           {percentage}%
-        </LabelText>
+        </Text.Label>
       </YStack>
     </YStack>
   );
@@ -122,19 +122,19 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
     >
       {/* Header */}
       <XStack justifyContent="space-between" alignItems="center">
-        <H2
+        <Text.Title
           color={textColor}
         >
           {t('yourPerformance')}
-        </H2>
+        </Text.Title>
         {hasData && (
           <XStack alignItems="center" gap={2}>
-            <SmallText
+            <Text.Caption
               fontFamily={FONT_FAMILIES.medium}
               color={primaryColor}
             >
               {t('details')}
-            </SmallText>
+            </Text.Caption>
             <ChevronRight size={typo.fontSize.title} color={primaryColor} />
           </XStack>
         )}
@@ -161,7 +161,7 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
               trackColor={trackColor}
               textColor={textColor}
             />
-            <TinyText 
+            <Text.Tiny 
               color={secondaryTextColor} 
               textTransform="uppercase"
               letterSpacing={0.5}
@@ -169,7 +169,7 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
               fontFamily={FONT_FAMILIES.medium}
             >
               {t('accuracy')}
-            </TinyText>
+            </Text.Tiny>
           </YStack>
           
           {/* Vertical Divider */}
@@ -185,19 +185,19 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
             alignItems="center"
             gap={tokens.space.xs}
           >
-            <H1
+            <Text.Headline
               color={textColor}
             >
               {testsTaken}
-            </H1>
-            <TinyText 
+            </Text.Headline>
+            <Text.Tiny 
               color={secondaryTextColor} 
               textTransform="uppercase"
               letterSpacing={0.5}
               fontFamily={FONT_FAMILIES.medium}
             >
               {t('quizzes')}
-            </TinyText>
+            </Text.Tiny>
           </YStack>
           
           {/* Vertical Divider */}
@@ -225,22 +225,22 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
                 >
                   {getLucideIcon(topCategory.icon, typo.fontSize.title, categoryColor)}
                 </YStack>
-                <SmallText
+                <Text.Caption
                   fontFamily={FONT_FAMILIES.semibold}
                   color={textColor}
                   numberOfLines={1}
                   textAlign="center"
                 >
                   {topCategory.name}
-                </SmallText>
-                <TinyText 
+                </Text.Caption>
+                <Text.Tiny 
                   color={secondaryTextColor} 
                   textTransform="uppercase"
                   letterSpacing={0.5}
                   fontFamily={FONT_FAMILIES.medium}
                 >
                   {t('topCat')}
-                </TinyText>
+                </Text.Tiny>
               </>
             ) : (
               <>
@@ -254,15 +254,15 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
                 >
                   {getLucideIcon('help-circle', typo.fontSize.title, isDark ? tokens.color.dark.textMuted : tokens.color.light.textMuted)}
                 </YStack>
-                <SmallText
+                <Text.Caption
                   fontFamily={FONT_FAMILIES.semibold}
                   color={isDark ? tokens.color.dark.textMuted : tokens.color.light.textMuted}
                   numberOfLines={1}
                   textAlign="center"
                 >
                   —
-                </SmallText>
-                <TinyText 
+                </Text.Caption>
+                <Text.Tiny 
                   color={secondaryTextColor} 
                   textTransform="uppercase"
                   letterSpacing={0.5}
@@ -270,7 +270,7 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
                   marginTop={-4}
                 >
                   {t('topCat')}
-                </TinyText>
+                </Text.Tiny>
               </>
             )}
           </YStack>
@@ -281,13 +281,13 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
           justifyContent="center"
           paddingVertical={tokens.space.sm}
         >
-          <LabelText
+          <Text.Label
             color={secondaryTextColor}
             textAlign="center"
             fontFamily={FONT_FAMILIES.semibold}
           >
             {t('noTestsYet')}
-          </LabelText>
+          </Text.Label>
         </YStack>
       )}
     </YStack>

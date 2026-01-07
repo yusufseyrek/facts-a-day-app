@@ -22,7 +22,7 @@ import { Button } from '../Button';
 import { SuccessToast } from '../SuccessToast';
 import * as onboardingService from '../../services/onboarding';
 import * as notificationService from '../../services/notifications';
-import { H2, LabelText, BodyText, SmallText, FONT_FAMILIES } from '../Typography';
+import { Text, FONT_FAMILIES } from '../Typography';
 import { trackNotificationTimeChange, updateNotificationProperty } from '../../services/analytics';
 
 interface TimePickerModalProps {
@@ -224,9 +224,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       <View key={index} style={styles.timePickerItem}>
         <View style={styles.timePickerHeader}>
           {label && (
-            <LabelText color={colors.text}>
+            <Text.Label color={colors.text}>
               {label}
-            </LabelText>
+            </Text.Label>
           )}
           {times.length > 1 && (
             <Pressable
@@ -273,13 +273,13 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                   { backgroundColor: colors.primary }
                 ]}
               >
-                <LabelText color="#FFFFFF">
+                <Text.Label color="#FFFFFF">
                   {time.toLocaleTimeString(locale, {
                     hour: '2-digit',
                     minute: '2-digit',
                     hour12: false,
                   })}
-                </LabelText>
+                </Text.Label>
               </Pressable>
               {isActive && (
                 <DateTimePicker
@@ -350,9 +350,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                       { borderBottomColor: colors.border },
                     ]}
                   >
-                  <H2 color={colors.text}>
+                  <Text.Title color={colors.text}>
                     {t('settingsNotificationTime')}
-                  </H2>
+                  </Text.Title>
                   <Pressable onPress={handleClose} style={styles.closeButton}>
                     <X size={24} color={colors.text} />
                   </Pressable>
@@ -389,19 +389,19 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                         }}
                       >
                         <AlertTriangle size={18} color={warningColor} />
-                        <SmallText color={warningColor} style={{ flex: 1 }}>
+                        <Text.Caption color={warningColor} style={{ flex: 1 }}>
                           {t('notificationPermissionWarning')}
-                        </SmallText>
+                        </Text.Caption>
                       </Pressable>
                     )}
 
-                    <LabelText
+                    <Text.Label
                       textAlign="center"
                       color={colors.textSecondary}
                       style={{ marginBottom: tokens.space.sm }}
                     >
                       {t('scheduleUpTo3Notifications')}
-                    </LabelText>
+                    </Text.Label>
 
                     {times.map((time, index) =>
                       renderTimePicker(time, index, getTimeLabels()[index])
@@ -419,28 +419,28 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                         ]}
                       >
                         <Plus size={20} color={colors.primary} />
-                        <LabelText color={colors.primary}>
+                        <Text.Label color={colors.primary}>
                           {t('addAnotherTime')}
-                        </LabelText>
+                        </Text.Label>
                       </Pressable>
                     )}
 
-                    <SmallText
+                    <Text.Caption
                       textAlign="center"
                       color={colors.textSecondary}
                       fontFamily={FONT_FAMILIES.semibold}
                       style={{ marginTop: tokens.space.sm }}
                     >
                       {t('multipleNotificationsPerDay', { count: times.length })}
-                    </SmallText>
-                    <SmallText
+                    </Text.Caption>
+                    <Text.Caption
                       textAlign="center"
                       color={colors.textSecondary}
                       fontStyle="italic"
                       style={{ marginTop: tokens.space.xs }}
                     >
                       {t('notificationRespectMessage')}
-                    </SmallText>
+                    </Text.Caption>
                   </View>
                 </ScrollView>
 

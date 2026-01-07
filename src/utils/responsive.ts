@@ -1,10 +1,9 @@
 import { Dimensions } from 'react-native';
+import { LAYOUT } from '../config/app';
 
-// Tablet threshold
-const TABLET_BREAKPOINT = 768;
-
-// Tablet multiplier - scales phone values to tablet
-const TABLET_MULTIPLIER = 1.5;
+// Use centralized layout constants
+const TABLET_BREAKPOINT = LAYOUT.TABLET_BREAKPOINT;
+const TABLET_MULTIPLIER = LAYOUT.TABLET_MULTIPLIER;
 
 /**
  * Scale a value for tablet by applying the multiplier and rounding
@@ -54,6 +53,7 @@ const phoneTypography = {
   fontSize: {
     tiny: 11,
     caption: 12,
+    label: 14,
     body: 17,
     title: 20,
     headline: 24,
@@ -63,11 +63,22 @@ const phoneTypography = {
   lineHeight: {
     tiny: 15,
     caption: 17,
-    body: 24,
-    title: 28,
-    headline: 32,
-    display: 40,
-    hero: 56,
+    label: 19,
+    body: 28,
+    title: 32,
+    headline: 40,
+    display: 56,
+    hero: 72,
+  },
+  letterSpacing: {
+    tiny: 0.1,
+    caption: 0.2,
+    label: 0.25,
+    body: 0.3,
+    title: 0.4,
+    headline: 0.5,
+    display: 0.6,
+    hero: 0.7,
   },
 } as const;
 
@@ -76,6 +87,7 @@ export const typography = {
   tablet: {
     fontSize: scaleObject(phoneTypography.fontSize),
     lineHeight: scaleObject(phoneTypography.lineHeight),
+    letterSpacing: scaleObject(phoneTypography.letterSpacing),
   },
 } as const;
 

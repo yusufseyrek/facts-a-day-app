@@ -4,8 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { styled, View } from '@tamagui/core';
 import { XStack } from 'tamagui';
 import { tokens, useTheme } from '../theme';
-import { LabelText, FONT_FAMILIES } from './Typography';
-import { useResponsive } from '../utils/useResponsive';
+import { Text, FONT_FAMILIES } from './Typography';
 
 interface ButtonProps {
   children: string;
@@ -56,7 +55,6 @@ export function Button({
   loading = false,
 }: ButtonProps) {
   const { theme } = useTheme();
-  const { typography: typo } = useResponsive();
 
   const handlePress = () => {
     if (!disabled && !loading && onPress) {
@@ -76,14 +74,14 @@ export function Button({
         {loading ? (
           <XStack gap={tokens.space.sm} alignItems="center">
             <ActivityIndicator size="small" color="#FFFFFF" />
-            <LabelText color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold} fontSize={typo.fontSize.body}>
+            <Text.Label color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
               {children}
-            </LabelText>
+            </Text.Label>
           </XStack>
         ) : (
-          <LabelText color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold} fontSize={typo.fontSize.body}>
+          <Text.Label color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
             {children}
-          </LabelText>
+          </Text.Label>
         )}
       </ButtonContainer>
   );

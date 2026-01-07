@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FactModal } from '../../src/components/FactModal';
 import type { FactWithRelations } from '../../src/services/database';
 import * as database from '../../src/services/database';
-import { BodyText } from '../../src/components';
+import { Text } from '../../src/components';
 import { tokens } from '../../src/theme/tokens';
 import { useTranslation } from '../../src/i18n';
 import { trackFactView, trackScreenView, Screens, type FactViewSource } from '../../src/services/analytics';
@@ -89,7 +89,7 @@ export default function FactDetailModal() {
           backgroundColor: tokens.color.dark.background,
         }}
       >
-        <BodyText color="$textSecondary">{error || t('factNotFound')}</BodyText>
+        <Text.Body color="$textSecondary">{error || t('factNotFound')}</Text.Body>
       </View>
     );
   }

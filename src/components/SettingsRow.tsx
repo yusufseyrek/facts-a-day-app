@@ -3,7 +3,7 @@ import { Pressable, View, StyleSheet } from 'react-native';
 import { ChevronRight, ExternalLink, AlertCircle } from '@tamagui/lucide-icons';
 import { useTheme } from '../theme';
 import { tokens } from '../theme/tokens';
-import { LabelText, BodyText } from './Typography';
+import { Text } from './Typography';
 
 interface SettingsRowProps {
   label: string;
@@ -51,9 +51,9 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
     >
       <View style={styles.leftContent}>
         {icon && <View style={styles.iconContainer}>{icon}</View>}
-        <LabelText color={labelColor}>
+        <Text.Label color={labelColor}>
           {label}
-        </LabelText>
+        </Text.Label>
         {showWarning && (
           <View style={styles.warningContainer}>
             <AlertCircle size={16} color={warningColor} />
@@ -62,9 +62,9 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
       </View>
       <View style={styles.rightContent}>
         {value && (
-          <BodyText color={colors.textSecondary}>
+          <Text.Body color={colors.textSecondary}>
             {value}
-          </BodyText>
+          </Text.Body>
         )}
         {onPress && (
           showExternalLink 

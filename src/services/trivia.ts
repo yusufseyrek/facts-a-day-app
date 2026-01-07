@@ -19,14 +19,15 @@ import type {
   TriviaSessionWithCategory,
   StoredAnswer,
 } from './database';
+import { TRIVIA_QUESTIONS, TIME_PER_QUESTION } from '../config/trivia';
 
 // Re-export types
 export type { TriviaSession, TriviaSessionWithCategory, StoredAnswer } from './database';
 
-// Constants
-export const DAILY_TRIVIA_QUESTIONS = 10;
-export const MIXED_TRIVIA_QUESTIONS = 10;
-export const CATEGORY_TRIVIA_QUESTIONS = 10;
+// Re-export constants for backwards compatibility
+export const DAILY_TRIVIA_QUESTIONS = TRIVIA_QUESTIONS.DAILY;
+export const MIXED_TRIVIA_QUESTIONS = TRIVIA_QUESTIONS.MIXED;
+export const CATEGORY_TRIVIA_QUESTIONS = TRIVIA_QUESTIONS.CATEGORY;
 
 /**
  * Get local date in YYYY-MM-DD format
@@ -40,12 +41,8 @@ function getLocalDateString(date: Date = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
-// Time per question in seconds (used for estimating quiz duration)
-export const TIME_PER_QUESTION = {
-  multipleChoice: 60, // 45 seconds for multiple choice questions
-  trueFalse: 30,      // 30 seconds for true/false questions
-  average: 45,        // Average time used for estimation
-} as const;
+// Re-export TIME_PER_QUESTION for backwards compatibility
+export { TIME_PER_QUESTION } from '../config/trivia';
 
 // Calculate estimated time for a quiz in minutes
 export function getEstimatedTimeMinutes(questionCount: number): number {

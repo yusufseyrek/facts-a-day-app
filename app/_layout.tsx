@@ -27,7 +27,9 @@ import {
   Montserrat_500Medium,
   Montserrat_600SemiBold,
   Montserrat_700Bold,
+  Montserrat_800ExtraBold,
 } from '@expo-google-fonts/montserrat';
+import { STORAGE_KEYS, TIMING, NOTIFICATION_SETTINGS } from '../src/config/app';
 
 // Prevent "multiple linking listeners" error during Fast Refresh
 // This tells expo-router the initial route, helping it manage navigation state properly
@@ -49,8 +51,6 @@ initAnalytics();
 if (!__DEV__) {
   updates.logUpdateStatus();
 }
-
-const NOTIFICATION_TRACK_KEY = 'last_processed_notification_id';
 
 // Custom dark theme with our app's colors
 const CustomDarkTheme = {
@@ -143,10 +143,10 @@ function AppContent() {
       // 2. We have a valid fact ID
       // 3. We haven't already processed this notification (check persistent storage)
       if (factId && isOnboardingComplete) {
-        AsyncStorage.getItem(NOTIFICATION_TRACK_KEY).then(async (lastId) => {
+        AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATION_TRACK).then(async (lastId) => {
           if (lastId !== notificationId) {
             // New notification - mark as processed and navigate
-            await AsyncStorage.setItem(NOTIFICATION_TRACK_KEY, notificationId);
+            await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_TRACK, notificationId);
             router.push(`/fact/${factId}?source=notification`);
             
             // Sync notification schedule (check/repair/top-up)
@@ -195,6 +195,7 @@ export default function RootLayout() {
     Montserrat_500Medium,
     Montserrat_600SemiBold,
     Montserrat_700Bold,
+    Montserrat_800ExtraBold,
   });
 
   useEffect(() => {
@@ -223,8 +224,6 @@ export default function RootLayout() {
   // Track when an OTA update has been downloaded and is ready to apply
   const pendingUpdateRef = useRef<boolean>(false);
   
-  // Interval for periodic OTA update checks (30 minutes)
-  const UPDATE_CHECK_INTERVAL = 30 * 60 * 1000;
 
   useEffect(() => {
     initializeApp();
@@ -300,7 +299,7 @@ export default function RootLayout() {
       }
     };
 
-    const intervalId = setInterval(checkForUpdates, UPDATE_CHECK_INTERVAL);
+    const intervalId = setInterval(checkForUpdates, TIMING.UPDATE_CHECK_INTERVAL);
 
     return () => {
       clearInterval(intervalId);
@@ -321,8 +320,8 @@ export default function RootLayout() {
       // Configure notifications on app start
       notificationService.configureNotifications();
       
-      // Clean up old notification images (older than 7 days)
-      notificationService.cleanupOldNotificationImages(7).catch(() => {});
+      // Clean up old notification images
+      notificationService.cleanupOldNotificationImages(NOTIFICATION_SETTINGS.IMAGE_CLEANUP_DAYS).catch(() => {});
 
       // Check onboarding status with timeout (5 seconds)
       const onboardingPromise = onboardingService.isOnboardingComplete();

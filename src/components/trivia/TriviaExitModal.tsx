@@ -6,7 +6,7 @@ import { AlertTriangle, X, DoorOpen } from '@tamagui/lucide-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { tokens } from '../../theme/tokens';
-import { H2, SmallText, LabelText, FONT_FAMILIES } from '../Typography';
+import { Text, FONT_FAMILIES } from '../Typography';
 import { isTabletDevice, typography, spacing, iconSizes, componentSizes } from '../../utils/responsive';
 
 const ModalOverlay = styled(YStack, {
@@ -167,13 +167,13 @@ export function TriviaExitModal({
               </YStack>
 
               {/* Title */}
-              <H2
+              <Text.Title
                 fontSize={titleFontSize}
                 color={textColor}
                 textAlign="center"
               >
                 {title}
-              </H2>
+              </Text.Title>
             </YStack>
 
             {/* Divider */}
@@ -192,14 +192,14 @@ export function TriviaExitModal({
                 gap={tokens.space.sm}
               >
                 <DoorOpen size={messageIconSize} color={errorColor} />
-                <SmallText
+                <Text.Caption
                   flex={1}
                   fontSize={messageFontSize}
                   color={secondaryTextColor}
                   lineHeight={messageLineHeight}
                 >
                   {message}
-                </SmallText>
+                </Text.Caption>
               </XStack>
             </YStack>
 
@@ -229,13 +229,13 @@ export function TriviaExitModal({
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <LabelText
+                  <Text.Label
                     fontSize={buttonFontSize}
                     fontFamily={FONT_FAMILIES.semibold}
                     color={textColor}
                   >
                     {cancelText}
-                  </LabelText>
+                  </Text.Label>
                 </XStack>
               </Pressable>
 
@@ -261,13 +261,13 @@ export function TriviaExitModal({
                   gap={tokens.space.xs}
                 >
                   <DoorOpen size={buttonIconSize} color="#FFFFFF" />
-                  <LabelText
+                  <Text.Label
                     fontSize={buttonFontSize}
                     fontFamily={FONT_FAMILIES.semibold}
                     color="#FFFFFF"
                   >
                     {exitText}
-                  </LabelText>
+                  </Text.Label>
                 </XStack>
               </Pressable>
             </XStack>

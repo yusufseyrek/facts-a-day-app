@@ -12,7 +12,7 @@ import Animated, {
   useAnimatedStyle,
 } from 'react-native-reanimated';
 import { tokens } from '../../theme/tokens';
-import { BodyText, SmallText, LabelText, H2, FONT_FAMILIES } from '../Typography';
+import { Text, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
 import type { QuestionWithFact } from '../../services/database';
 
@@ -130,13 +130,13 @@ export function TriviaGameView({
             justifyContent: 'center',
           }}
         >
-          <LabelText 
+          <Text.Label 
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
             numberOfLines={1}
           >
             {triviaTitle}
-          </LabelText>
+          </Text.Label>
         </View>
         
         {/* Timer */}
@@ -150,12 +150,12 @@ export function TriviaGameView({
           zIndex={1}
         >
           <Timer size={typo.fontSize.title} color={timeRemaining < 30 ? errorColor : primaryColor} />
-          <LabelText 
+          <Text.Label 
             fontFamily={FONT_FAMILIES.bold}
             color={timeRemaining < 30 ? errorColor : textColor}
           >
             {formatTime(timeRemaining)}
-          </LabelText>
+          </Text.Label>
         </XStack>
       </XStack>
       
@@ -166,19 +166,19 @@ export function TriviaGameView({
         gap={tokens.space.sm}
       >
         <XStack justifyContent="space-between" alignItems="center">
-          <BodyText color={secondaryTextColor}>
-            <LabelText fontFamily={FONT_FAMILIES.bold} color={textColor}>
+          <Text.Body color={secondaryTextColor}>
+            <Text.Label fontFamily={FONT_FAMILIES.bold} color={textColor}>
               {t('question') || 'Question'} {currentQuestionIndex + 1}
-            </LabelText>
+            </Text.Label>
             /{totalQuestions}
-          </BodyText>
+          </Text.Body>
           {currentQuestion.fact?.categoryData && (
-            <SmallText 
+            <Text.Caption 
               fontFamily={FONT_FAMILIES.semibold}
               color={currentQuestion.fact.categoryData.color_hex}
             >
               {currentQuestion.fact.categoryData.name}
-            </SmallText>
+            </Text.Caption>
           )}
         </XStack>
         
@@ -221,7 +221,7 @@ export function TriviaGameView({
           entering={SlideInRight.duration(300)}
           style={{ alignItems: 'center' }}
         >
-          <H2
+          <Text.Title
             fontSize={componentSizes.timerFontSize}
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
@@ -229,7 +229,7 @@ export function TriviaGameView({
             lineHeight={componentSizes.timerLineHeight}
           >
             {currentQuestion.question_text}
-          </H2>
+          </Text.Title>
         </Animated.View>
       </ScrollView>
       
@@ -293,12 +293,12 @@ export function TriviaGameView({
                             />
                           )}
                         </View>
-                        <LabelText
+                        <Text.Label
                           fontFamily={FONT_FAMILIES.semibold}
                           color={textColor}
                         >
                           {getDisplayAnswer(answer)}
-                        </LabelText>
+                        </Text.Label>
                       </YStack>
                     </Animated.View>
                   </Pressable>
@@ -353,21 +353,21 @@ export function TriviaGameView({
                             alignItems: 'center',
                           }}
                         >
-                          <LabelText
+                          <Text.Label
                             fontFamily={FONT_FAMILIES.bold}
                             color={badgeText}
                           >
                             {letterLabels[index]}
-                          </LabelText>
+                          </Text.Label>
                         </View>
                         
                         {/* Answer text */}
-                        <BodyText
+                        <Text.Body
                           flex={1}
                           color={textColor}
                         >
                           {answer}
-                        </BodyText>
+                        </Text.Body>
                       </XStack>
                     </Animated.View>
                   </Pressable>
@@ -427,14 +427,14 @@ export function TriviaGameView({
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <>
-                <LabelText 
+                <Text.Label 
                   color="#FFFFFF" 
                   fontFamily={FONT_FAMILIES.semibold}
                 >
                   {currentQuestionIndex + 1 >= totalQuestions 
                     ? t('seeResults') 
                     : t('nextQuestion')}
-                </LabelText>
+                </Text.Label>
                 <ChevronRight size={typo.fontSize.title} color="#FFFFFF" />
               </>
             )}

@@ -10,6 +10,7 @@ import { Platform, Appearance } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { tokens } from '../theme/tokens';
+import { trackAppUpdate } from './analytics';
 
 const THEME_STORAGE_KEY = '@app_theme_mode';
 
@@ -229,6 +230,9 @@ export async function reloadApp(): Promise<void> {
   // Get the correct background color based on user's theme preference
   const backgroundColor = await getThemeBackgroundColor();
   
+  // Track the app update before reload
+  trackAppUpdate();
+  
   console.log('📦 Calling reloadAsync...');
   console.log('📦 ========== RELOAD EXECUTING ==========');
   await Updates.reloadAsync({
@@ -273,6 +277,9 @@ export async function forceReloadWithVerification(): Promise<void> {
   
   // Get the correct background color based on user's theme preference
   const backgroundColor = await getThemeBackgroundColor();
+  
+  // Track the app update before reload
+  trackAppUpdate();
   
   console.log('📦 Executing reload...');
   await Updates.reloadAsync({

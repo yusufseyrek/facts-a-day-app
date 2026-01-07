@@ -7,10 +7,9 @@ import { XStack, YStack } from 'tamagui';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from '@tamagui/lucide-icons';
 import { tokens } from '../../src/theme/tokens';
-import { typography } from '../../src/utils/responsive';
+import { typography, RESPONSIVE_CONSTANTS } from '../../src/utils/responsive';
 import {
-  H1,
-  BodyText,
+  Text,
   Button,
   CategoryCard,
   SuccessToast,
@@ -62,9 +61,6 @@ const ButtonContainer = styled(View, {
   paddingTop: tokens.space.md,
 });
 
-// Tablet breakpoint (iPad mini is 768px wide)
-const TABLET_BREAKPOINT = 768;
-
 export default function CategoriesSettings() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
@@ -78,7 +74,7 @@ export default function CategoriesSettings() {
   const { width } = useWindowDimensions();
 
   // Responsive sizing for tablets
-  const isTablet = width >= TABLET_BREAKPOINT;
+  const isTablet = width >= RESPONSIVE_CONSTANTS.TABLET_BREAKPOINT;
   const numColumns = isTablet ? 4 : 3;
   const iconSize = isTablet ? 48 : 32;
   const typo = isTablet ? typography.tablet : typography.phone;
@@ -264,7 +260,7 @@ export default function CategoriesSettings() {
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <ContentContainer justifyContent="center" alignItems="center">
           <ActivityIndicator size="large" color={tokens.color.light.primary} />
-          <BodyText>{t('loadingCategories')}</BodyText>
+          <Text.Body>{t('loadingCategories')}</Text.Body>
         </ContentContainer>
       </Container>
     );
@@ -296,12 +292,12 @@ export default function CategoriesSettings() {
                 <ArrowLeft size={24} color={theme === 'dark' ? '#FFFFFF' : tokens.color.light.text} />
               </Pressable>
               <HeaderText>
-                <H1>{t('settingsCategories')}</H1>
+                <Text.Headline>{t('settingsCategories')}</Text.Headline>
               </HeaderText>
             </HeaderRow>
-            <BodyText color="$textSecondary" fontSize={secondaryFontSize}>
+            <Text.Body color="$textSecondary" fontSize={secondaryFontSize}>
               {t('selectCategoriesMinimum')}
-            </BodyText>
+            </Text.Body>
           </HeaderContainer>
         </Animated.View>
 

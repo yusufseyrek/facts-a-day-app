@@ -1,4 +1,5 @@
-export { H1, H2, BodyText, LabelText, SerifTitle, SmallText, TinyText, DisplayText, HeroText, FONT_FAMILIES } from './Typography';
+export { Text, FONT_FAMILIES } from './Typography';
+export type { TextProps, TextPreset, TextComponent } from './Typography';
 export { Button } from './Button';
 export { ProgressIndicator } from './ProgressIndicator';
 export { CategoryCard } from './CategoryCard';

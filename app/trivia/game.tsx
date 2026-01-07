@@ -6,7 +6,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { tokens } from '../../src/theme/tokens';
-import { BodyText } from '../../src/components/Typography';
+import { Text } from '../../src/components/Typography';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import { 
@@ -475,9 +475,9 @@ export default function TriviaGameScreen() {
       <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top, paddingBottom: insets.bottom }}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <YStack flex={1} justifyContent="center" alignItems="center">
-          <BodyText color={secondaryTextColor}>
+          <Text.Body color={secondaryTextColor}>
             {t('loading') || 'Loading...'}
-          </BodyText>
+          </Text.Body>
         </YStack>
       </View>
     );

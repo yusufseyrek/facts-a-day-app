@@ -15,6 +15,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { downloadImageWithAppCheck } from '../services/images';
+import { IMAGE_MEMORY_CACHE } from '../config/images';
 
 interface UseFactImageResult {
   /** The local image URI (null if not yet downloaded or download failed) */
@@ -33,13 +34,6 @@ interface UseFactImageOptions {
   /** If true, forces a fresh download bypassing cache */
   forceRefresh?: boolean;
 }
-
-// Maximum size of in-memory cache to prevent memory issues on tablets
-// Increased to 200 for better performance on tablets with many facts visible
-const MAX_MEMORY_CACHE_SIZE = 200;
-
-// Maximum time to wait for a pending fetch before starting a new one
-const PENDING_FETCH_TIMEOUT_MS = 30000; // 30 seconds
 
 // In-memory cache of resolved image URIs (session-only, cleared on app restart)
 // This prevents duplicate async calls within a session
@@ -66,7 +60,7 @@ function getCacheKey(factId: number): string {
  * Clean up old entries from memory cache using LRU strategy
  */
 function cleanupMemoryCacheIfNeeded(): void {
-  if (resolvedImages.size <= MAX_MEMORY_CACHE_SIZE) {
+  if (resolvedImages.size <= IMAGE_MEMORY_CACHE.MAX_SIZE) {
     return;
   }
   
@@ -91,7 +85,7 @@ function cleanupStalePendingFetches(): void {
   const staleKeys: string[] = [];
   
   pendingFetches.forEach((fetch, key) => {
-    if (now - fetch.startTime > PENDING_FETCH_TIMEOUT_MS) {
+    if (now - fetch.startTime > IMAGE_MEMORY_CACHE.PENDING_FETCH_TIMEOUT_MS) {
       staleKeys.push(key);
     }
   });
@@ -203,7 +197,7 @@ export function useFactImage(
           !pendingFetch || 
           forceRefresh || 
           retryCount > 0 ||
-          (now - pendingFetch.startTime > PENDING_FETCH_TIMEOUT_MS);
+          (now - pendingFetch.startTime > IMAGE_MEMORY_CACHE.PENDING_FETCH_TIMEOUT_MS);
         
         let fetchPromise: Promise<string | null>;
         

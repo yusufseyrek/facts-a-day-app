@@ -6,22 +6,14 @@ import * as database from './database';
 import { i18n } from '../i18n/config';
 import { SupportedLocale } from '../i18n/translations';
 import { downloadImageWithAppCheck } from './images';
+import { NOTIFICATION_SETTINGS } from '../config/app';
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
-// iOS has a limit of 64 scheduled notifications
-const MAX_SCHEDULED_NOTIFICATIONS = 64;
-
-// Only download images for notifications within this many days
-const DAYS_TO_PRELOAD_IMAGES = 7;
-
 // Directory for notification images - use documentDirectory (persists unlike cache)
-const NOTIFICATION_IMAGES_DIR = `${FileSystem.documentDirectory}notification-images/`;
-
-// Time tolerance for comparing OS and DB times (60 seconds)
-const TIME_TOLERANCE_MS = 60 * 1000;
+const NOTIFICATION_IMAGES_DIR = `${FileSystem.documentDirectory}${NOTIFICATION_SETTINGS.IMAGES_DIR_NAME}`;
 
 // ============================================================================
 // TYPES
@@ -233,7 +225,7 @@ function shouldPreloadImage(scheduledDate: Date): boolean {
   const daysUntilNotification = Math.ceil(
     (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
   );
-  return daysUntilNotification <= DAYS_TO_PRELOAD_IMAGES;
+  return daysUntilNotification <= NOTIFICATION_SETTINGS.DAYS_TO_PRELOAD_IMAGES;
 }
 
 export async function preloadUpcomingNotificationImages(locale: SupportedLocale): Promise<number> {
@@ -263,7 +255,7 @@ export async function preloadUpcomingNotificationImages(locale: SupportedLocale)
 
       const daysUntil = Math.ceil((triggerDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       
-      if (daysUntil <= DAYS_TO_PRELOAD_IMAGES && daysUntil > 0) {
+      if (daysUntil <= NOTIFICATION_SETTINGS.DAYS_TO_PRELOAD_IMAGES && daysUntil > 0) {
         const factId = notification.content.data?.factId as number | undefined;
         
         if (factId) {
@@ -620,7 +612,7 @@ async function syncOsWithDb(locale: SupportedLocale): Promise<{ synced: number; 
     } else if (osNotif.triggerDate) {
       // Check for time mismatch
       const timeDiff = Math.abs(osNotif.triggerDate.getTime() - dbDate.getTime());
-      if (timeDiff > TIME_TOLERANCE_MS) {
+      if (timeDiff > NOTIFICATION_SETTINGS.TIME_TOLERANCE_MS) {
         // Time mismatch - cancel old and reschedule
         await Notifications.cancelScheduledNotificationAsync(dbFact.notification_id);
         needsSchedule = true;
@@ -669,7 +661,7 @@ async function topUpFromDb(
   locale: SupportedLocale,
   existingCount: number
 ): Promise<number> {
-  const needed = MAX_SCHEDULED_NOTIFICATIONS - existingCount;
+  const needed = NOTIFICATION_SETTINGS.MAX_SCHEDULED - existingCount;
   if (needed <= 0) return 0;
   
   // Get the latest scheduled date to continue from
@@ -758,7 +750,7 @@ export async function syncNotificationSchedule(
     }
 
     // Step 6: Top up if needed
-    if (dbScheduled.length < MAX_SCHEDULED_NOTIFICATIONS) {
+    if (dbScheduled.length < NOTIFICATION_SETTINGS.MAX_SCHEDULED) {
       const addedCount = await topUpFromDb(preferredTimes, locale, dbScheduled.length);
       if (__DEV__ && addedCount > 0) {
         console.log(`🔔 Topped up ${addedCount} notifications`);
@@ -829,7 +821,7 @@ export async function scheduleNotifications(
     await clearNotificationSchedule(locale, { completely: false });
 
     // Step 2: Get unscheduled facts (up to 64)
-    const facts = await database.getRandomUnscheduledFacts(MAX_SCHEDULED_NOTIFICATIONS, locale);
+    const facts = await database.getRandomUnscheduledFacts(NOTIFICATION_SETTINGS.MAX_SCHEDULED, locale);
     
     if (facts.length === 0) {
       return {

@@ -9,8 +9,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { tokens } from "../../src/theme/tokens";
 import {
-  H2,
-  BodyText,
+  Text,
   EmptyState,
   ScreenContainer,
   ScreenHeader,
@@ -36,8 +35,7 @@ import {
 } from "../../src/config/factListSettings";
 import { prefetchFactImagesWithLimit } from "../../src/services/images";
 
-// Device breakpoints
-const TABLET_BREAKPOINT = 768;
+import { RESPONSIVE_CONSTANTS } from '../../src/utils/responsive';
 
 // Interface for fact sections (used internally for grouping)
 interface FactSection {
@@ -96,7 +94,7 @@ FactListItem.displayName = 'FactListItem';
 // Simple section header
 const SectionHeader = React.memo(({ title }: { title: string }) => (
   <SectionHeaderContainer>
-    <H2>{title}</H2>
+    <Text.Title>{title}</Text.Title>
   </SectionHeaderContainer>
 ));
 
@@ -108,7 +106,7 @@ function HomeScreen() {
   const router = useRouter();
   const iconColor = useIconColor();
   const { width } = useWindowDimensions();
-  const isTablet = width >= TABLET_BREAKPOINT;
+  const isTablet = width >= RESPONSIVE_CONSTANTS.TABLET_BREAKPOINT;
 
   const [sections, setSections] = useState<FactSection[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -308,9 +306,9 @@ function HomeScreen() {
         {backgroundRefreshStatus === 'locale-change' && (
           <LocaleChangeOverlay>
             <ActivityIndicator size="large" color={tokens.color[theme].primary} />
-            <BodyText color="$textSecondary">
+            <Text.Body color="$textSecondary">
               {t("updatingLanguage")}
-            </BodyText>
+            </Text.Body>
           </LocaleChangeOverlay>
         )}
       </YStack>

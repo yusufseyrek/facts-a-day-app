@@ -14,7 +14,7 @@ import Animated, {
   withSpring 
 } from 'react-native-reanimated';
 import { tokens } from '../../theme/tokens';
-import { H2, BodyText, SmallText, TinyText, DisplayText, FONT_FAMILIES } from '../Typography';
+import { Text, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
 import { getLucideIcon } from '../../utils/iconMapper';
 import type { QuestionWithFact, StoredAnswer } from '../../services/database';
@@ -97,12 +97,12 @@ function ProgressBar({
           justifyContent: 'center',
         }}
       >
-        <SmallText
+        <Text.Caption
           fontFamily={FONT_FAMILIES.bold}
           color={percentage > 85 ? '#FFFFFF' : primaryColor}
         >
           {percentage}%
-        </SmallText>
+        </Text.Caption>
       </View>
     </View>
   );
@@ -164,22 +164,22 @@ function UnavailableQuestionCard({
               <X size={typo.fontSize.body} color="#FFFFFF" strokeWidth={3} />
             )}
           </View>
-          <BodyText
+          <Text.Body
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
           >
             {t('question') || 'Question'} {questionIndex + 1}: {isCorrect ? (t('correct') || 'Correct') + '!' : (t('wrong') || 'Wrong')}
-          </BodyText>
+          </Text.Body>
         </XStack>
 
         {/* Unavailable message */}
-        <SmallText
+        <Text.Caption
           fontFamily={FONT_FAMILIES.medium}
           color={secondaryTextColor}
           textAlign="center"
         >
           {t('questionUnavailable') || 'This question is no longer available'}
-        </SmallText>
+        </Text.Caption>
       </YStack>
     </View>
   );
@@ -291,22 +291,22 @@ function AnswerReviewCard({
               <X size={typo.fontSize.body} color="#FFFFFF" strokeWidth={3} />
             )}
           </View>
-          <BodyText
+          <Text.Body
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
           >
             {t('question') || 'Question'} {questionIndex + 1}: {isCorrect ? (t('correct') || 'Correct') + '!' : (t('wrong') || 'Wrong')}
-          </BodyText>
+          </Text.Body>
         </XStack>
 
         {/* Question text */}
-        <BodyText
+        <Text.Body
           fontFamily={FONT_FAMILIES.medium}
           color={textColor}
           lineHeight={typo.lineHeight.title}
         >
           {question.question_text}
-        </BodyText>
+        </Text.Body>
 
         {/* Answer comparison */}
         <YStack 
@@ -317,42 +317,42 @@ function AnswerReviewCard({
         >
           <XStack gap={tokens.space.md} alignItems="center">
             <View style={{ width: 70 }}>
-              <TinyText
+              <Text.Tiny
                 fontFamily={FONT_FAMILIES.bold}
                 color={secondaryTextColor}
                 textTransform="uppercase"
                 letterSpacing={0.5}
               >
                 {t('yourAnswer') || 'YOUR ANSWER'}
-              </TinyText>
+              </Text.Tiny>
             </View>
-            <SmallText
+            <Text.Caption
               fontFamily={FONT_FAMILIES.semibold}
               color={isCorrect ? successColor : errorColor}
               flex={1}
             >
               {selectedAnswer ? getDisplayAnswer(selectedAnswer) : '—'}
-            </SmallText>
+            </Text.Caption>
           </XStack>
           {!isCorrect && (
             <XStack gap={tokens.space.md} alignItems="center">
               <View style={{ width: 70 }}>
-                <TinyText
+                <Text.Tiny
                   fontFamily={FONT_FAMILIES.bold}
                   color={secondaryTextColor}
                   textTransform="uppercase"
                   letterSpacing={0.5}
                 >
                   {t('correctAnswer') || 'CORRECT ANSWER'}
-                </TinyText>
+                </Text.Tiny>
               </View>
-              <SmallText
+              <Text.Caption
                 fontFamily={FONT_FAMILIES.semibold}
                 color={successColor}
                 flex={1}
               >
                 {getDisplayAnswer(question.correct_answer)}
-              </SmallText>
+              </Text.Caption>
             </XStack>
           )}
         </YStack>
@@ -360,14 +360,14 @@ function AnswerReviewCard({
         {/* Insight text from fact */}
         {question.fact?.content && (
           <YStack gap={tokens.space.xs} flex={1}>
-            <SmallText
+            <Text.Caption
               fontFamily={FONT_FAMILIES.regular_italic}
               color={secondaryTextColor}
               numberOfLines={3}
               lineHeight={typo.lineHeight.caption}
             >
               {t('explanation') || 'Explanation'}: {question.explanation}
-            </SmallText>
+            </Text.Caption>
           </YStack>
         )}
 
@@ -379,12 +379,12 @@ function AnswerReviewCard({
             marginTop="auto"
           >
             <XStack alignItems="center" gap={2}>
-              <SmallText
+              <Text.Caption
                 fontFamily={FONT_FAMILIES.semibold}
                 color={primaryColor}
               >
                 {t('seeFact', { id: question.fact.id }) || `Fact#${question.fact.id}`}
-              </SmallText>
+              </Text.Caption>
               <ChevronRight size={typo.fontSize.body} color={primaryColor} />
             </XStack>
           </XStack>
@@ -548,12 +548,12 @@ export function TriviaResults({
             </View>
           </Pressable>
           
-          <H2
+          <Text.Title
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
           >
             {customTitle || t('testResults') || 'Test Results'}
-          </H2>
+          </Text.Title>
           
           {/* Empty spacer to balance the header */}
           <View style={{ width: 36, height: 36 }} />
@@ -570,23 +570,23 @@ export function TriviaResults({
             {customSubtitle && (
               <XStack alignSelf='center' alignItems="center" gap={tokens.space.sm}>
                 <Calendar size={typo.fontSize.body} color={secondaryTextColor} />
-                <BodyText 
+                <Text.Body 
                   fontFamily={FONT_FAMILIES.semibold} 
                   color={secondaryTextColor}
                 >
                   {customSubtitle}
-                </BodyText>
+                </Text.Body>
               </XStack>
             )}
             
             {/* Only show title here if not showing header bar */}
             {!showBackButton && (
-              <DisplayText 
+              <Text.Display 
                 fontFamily={FONT_FAMILIES.bold} 
                 color={textColor}
               >
                 {customTitle || t('testResults') || 'Test Results'}
-              </DisplayText>
+              </Text.Display>
             )}
             
             {/* Badge + Score Row */}
@@ -602,12 +602,12 @@ export function TriviaResults({
                   borderRadius={tokens.radius.md}
                 >
                   {triviaModeBadge.icon && getLucideIcon(triviaModeBadge.icon, typo.fontSize.caption, triviaModeBadge.color || primaryColor)}
-                  <SmallText 
+                  <Text.Caption 
                     fontFamily={FONT_FAMILIES.semibold} 
                     color={triviaModeBadge.color || primaryColor}
                   >
                     {triviaModeBadge.label}
-                  </SmallText>
+                  </Text.Caption>
                 </XStack>
               ) : (
                 <View />
@@ -616,12 +616,12 @@ export function TriviaResults({
               {/* Star + Score Label */}
               <XStack alignItems="center" gap={tokens.space.xs} >
                 <Star size={typo.fontSize.caption} color={primaryColor} fill={primaryColor} />
-                <SmallText 
+                <Text.Caption 
                   fontFamily={FONT_FAMILIES.semibold} 
                   color={primaryColor}
                 >
                   {t('score') || 'Score'}: {correctAnswers}/{totalQuestions}
-                </SmallText>
+                </Text.Caption>
               </XStack>
             </XStack>
 
@@ -635,38 +635,38 @@ export function TriviaResults({
 
             {/* Feedback with emoji */}
             <XStack alignItems="center" gap={tokens.space.sm} marginBottom={tokens.space.md}>
-              <H2>
+              <Text.Title>
                 {getFeedbackEmoji()}
-              </H2>
+              </Text.Title>
               <YStack flex={1}>
-                <H2 
+                <Text.Title 
                   fontFamily={FONT_FAMILIES.bold} 
                   color={textColor}
                 >
                   {getFeedbackTitle()}
-                </H2>
-                <SmallText color={secondaryTextColor}>
+                </Text.Title>
+                <Text.Caption color={secondaryTextColor}>
                   {(t('youAnswered', { correct: correctAnswers, total: totalQuestions }) ||
                     `You answered ${correctAnswers} out of ${totalQuestions} questions correctly.`)
                     .split(/(%\{correct\}|%\{total\}|\d+)/)
                     .map((part, i) => {
                       if (part === '%{correct}' || part === String(correctAnswers)) {
                         return (
-                          <SmallText key={i} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
+                          <Text.Caption key={i} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
                             {correctAnswers}
-                          </SmallText>
+                          </Text.Caption>
                         );
                       }
                       if (part === '%{total}' || part === String(totalQuestions)) {
                         return (
-                          <SmallText key={i} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
+                          <Text.Caption key={i} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
                             {totalQuestions}
-                          </SmallText>
+                          </Text.Caption>
                         );
                       }
                       return part;
                     })}
-                </SmallText>
+                </Text.Caption>
               </YStack>
             </XStack>
           </YStack>
@@ -702,12 +702,12 @@ export function TriviaResults({
               >
                 <Timer size={22} color={primaryColor} />
               </View>
-              <SmallText color={secondaryTextColor} marginTop={tokens.space.xs}>
+              <Text.Caption color={secondaryTextColor} marginTop={tokens.space.xs}>
                 {t('timeSpent') || 'Time Spent'}
-              </SmallText>
-              <H2 fontFamily={FONT_FAMILIES.bold} color={textColor}>
+              </Text.Caption>
+              <Text.Title fontFamily={FONT_FAMILIES.bold} color={textColor}>
                 {formatTime(elapsedTime)}
-              </H2>
+              </Text.Title>
             </YStack>
 
             {/* Streak Card */}
@@ -732,12 +732,12 @@ export function TriviaResults({
               >
                 <Flame size={typo.fontSize.title} color={accentColor} />
               </View>
-              <SmallText color={secondaryTextColor} marginTop={tokens.space.xs}>
+              <Text.Caption color={secondaryTextColor} marginTop={tokens.space.xs}>
                 {t('currentStreak') || 'Current Streak'}
-              </SmallText>
-              <H2 fontFamily={FONT_FAMILIES.bold} color={textColor}>
+              </Text.Caption>
+              <Text.Title fontFamily={FONT_FAMILIES.bold} color={textColor}>
                 {bestStreak}x
-              </H2>
+              </Text.Title>
             </YStack>
           </XStack>
         </Animated.View>
@@ -755,13 +755,13 @@ export function TriviaResults({
         {/* Question Insights Section */}
         <Animated.View entering={FadeInUp.delay(150).duration(400)}>
           <YStack paddingTop={tokens.space.xl} paddingBottom={tokens.space.sm} gap={tokens.space.md}>
-            <H2 
+            <Text.Title 
               fontFamily={FONT_FAMILIES.bold} 
               color={textColor}
               paddingHorizontal={tokens.space.lg}
             >
               {t('questionInsights') || 'Question Insights'}
-            </H2>
+            </Text.Title>
 
             {/* Horizontal scrolling cards */}
             <ScrollView
@@ -839,12 +839,12 @@ export function TriviaResults({
               alignItems="center"
               gap={tokens.space.sm}
             >
-              <BodyText 
+              <Text.Body 
                 color="#FFFFFF" 
                 fontFamily={FONT_FAMILIES.semibold}
               >
                 {t('returnToTrivia') || 'Return to Trivia'}
-              </BodyText>
+              </Text.Body>
             </XStack>
           </Pressable>
         </YStack>

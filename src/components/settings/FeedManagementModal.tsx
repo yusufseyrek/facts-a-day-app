@@ -16,7 +16,7 @@ import { useTheme } from '../../theme';
 import { tokens } from '../../theme/tokens';
 import { typography } from '../../utils/responsive';
 import { useTranslation } from '../../i18n';
-import { H2, LabelText, SmallText, BodyText, FONT_FAMILIES } from '../Typography';
+import { Text, FONT_FAMILIES } from '../Typography';
 import * as database from '../../services/database';
 import type { FactWithRelations } from '../../services/database';
 import { triggerFeedRefresh } from '../../services/contentRefresh';
@@ -45,22 +45,22 @@ const FactItem = React.memo(({ fact, isSelected, onToggle, onEditTitle, colors }
         {isSelected && <Check size={16} color="#FFFFFF" />}
       </View>
       <View style={styles.factContent}>
-        <LabelText numberOfLines={2} color={colors.text}>
+        <Text.Label numberOfLines={2} color={colors.text}>
           {fact.title || fact.content.substring(0, 60) + '...'}
-        </LabelText>
+        </Text.Label>
         <View style={styles.factMeta}>
-          <SmallText color={colors.textSecondary}>
+          <Text.Caption color={colors.textSecondary}>
             {fact.categoryData?.name || fact.category || 'Unknown'}
-          </SmallText>
+          </Text.Caption>
           {isInFeed && (
             <View style={[styles.inFeedBadge, { backgroundColor: colors.primary + '20' }]}>
-              <SmallText color={colors.primary}>In Feed</SmallText>
+              <Text.Caption color={colors.primary}>In Feed</Text.Caption>
             </View>
           )}
           {fact.scheduled_date && (
-            <SmallText color={colors.textSecondary}>
+            <Text.Caption color={colors.textSecondary}>
               {new Date(fact.scheduled_date).toLocaleDateString()}
-            </SmallText>
+            </Text.Caption>
           )}
         </View>
       </View>
@@ -305,7 +305,7 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
           >
             {/* Header */}
             <View style={[styles.header, { borderBottomColor: colors.border }]}>
-              <H2 color={colors.text}>Manage Feed (DEV)</H2>
+              <Text.Title color={colors.text}>Manage Feed (DEV)</Text.Title>
               <Pressable onPress={handleClose} style={styles.closeButton}>
                 <X size={24} color={colors.text} />
               </Pressable>
@@ -325,15 +325,15 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
 
             {/* Selection info */}
             <View style={styles.selectionInfo}>
-              <SmallText color={colors.textSecondary}>
+              <Text.Caption color={colors.textSecondary}>
                 {selectedFactIds.size} selected • {filteredFacts.length} facts
-              </SmallText>
+              </Text.Caption>
               <View style={styles.selectionActions}>
                 <Pressable onPress={selectAll} style={styles.selectionButton}>
-                  <SmallText color={colors.primary}>Select All</SmallText>
+                  <Text.Caption color={colors.primary}>Select All</Text.Caption>
                 </Pressable>
                 <Pressable onPress={clearSelection} style={styles.selectionButton}>
-                  <SmallText color={colors.primary}>Clear</SmallText>
+                  <Text.Caption color={colors.primary}>Clear</Text.Caption>
                 </Pressable>
               </View>
             </View>
@@ -362,21 +362,21 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
                   style={[styles.actionButton, { backgroundColor: colors.primary }]}
                 >
                   <Calendar size={16} color="#FFFFFF" />
-                  <SmallText color="#FFFFFF">Today</SmallText>
+                  <Text.Caption color="#FFFFFF">Today</Text.Caption>
                 </Pressable>
                 <Pressable
                   onPress={() => addToFeedWithDate(1)}
                   style={[styles.actionButton, { backgroundColor: colors.primary }]}
                 >
                   <Calendar size={16} color="#FFFFFF" />
-                  <SmallText color="#FFFFFF">Yesterday</SmallText>
+                  <Text.Caption color="#FFFFFF">Yesterday</Text.Caption>
                 </Pressable>
                 <Pressable
                   onPress={() => addToFeedWithDate(2)}
                   style={[styles.actionButton, { backgroundColor: colors.primary }]}
                 >
                   <Calendar size={16} color="#FFFFFF" />
-                  <SmallText color="#FFFFFF">2 Days</SmallText>
+                  <Text.Caption color="#FFFFFF">2 Days</Text.Caption>
                 </Pressable>
               </View>
               <View style={styles.actionRow}>
@@ -385,14 +385,14 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
                   style={[styles.actionButton, styles.dangerButton]}
                 >
                   <Trash2 size={16} color="#FFFFFF" />
-                  <SmallText color="#FFFFFF">Clear Feed</SmallText>
+                  <Text.Caption color="#FFFFFF">Clear Feed</Text.Caption>
                 </Pressable>
                 <Pressable
                   onPress={loadFacts}
                   style={[styles.actionButton, { backgroundColor: colors.textSecondary }]}
                 >
                   <RefreshCw size={16} color="#FFFFFF" />
-                  <SmallText color="#FFFFFF">Refresh</SmallText>
+                  <Text.Caption color="#FFFFFF">Refresh</Text.Caption>
                 </Pressable>
               </View>
             </View>
@@ -404,10 +404,10 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
           <Modal visible transparent animationType="fade">
             <View style={styles.editModalOverlay}>
               <View style={[styles.editModalContent, { backgroundColor: colors.background }]}>
-                <H2 color={colors.text}>Edit Title</H2>
-                <SmallText color={colors.textSecondary} style={{ marginBottom: tokens.space.md }}>
+                <Text.Title color={colors.text}>Edit Title</Text.Title>
+                <Text.Caption color={colors.textSecondary} style={{ marginBottom: tokens.space.md }}>
                   Edit the title for screenshots
-                </SmallText>
+                </Text.Caption>
                 <TextInput
                   style={[
                     styles.titleInput,
@@ -425,13 +425,13 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
                     onPress={() => setEditingFact(null)}
                     style={[styles.modalButton, { backgroundColor: colors.surface }]}
                   >
-                    <BodyText color={colors.text}>Cancel</BodyText>
+                    <Text.Body color={colors.text}>Cancel</Text.Body>
                   </Pressable>
                   <Pressable
                     onPress={saveEditedTitle}
                     style={[styles.modalButton, { backgroundColor: colors.primary }]}
                   >
-                    <BodyText color="#FFFFFF">Save</BodyText>
+                    <Text.Body color="#FFFFFF">Save</Text.Body>
                   </Pressable>
                 </View>
               </View>

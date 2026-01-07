@@ -3,7 +3,7 @@ import { Pressable, Animated, Easing } from 'react-native';
 import { View, styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Check } from '@tamagui/lucide-icons';
-import { LabelText, FONT_FAMILIES } from './Typography';
+import { Text, FONT_FAMILIES } from './Typography';
 import { tokens, useTheme, getCategoryNeonColor } from '../theme';
 import { getContrastColor } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
@@ -168,7 +168,7 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
                 : icon}
             </IconContainer>
             <LabelContainer>
-              <LabelText
+              <Text.Label
                 fontFamily={FONT_FAMILIES.semibold}
                 color={selected ? contrastColor : '$text'}
                 textAlign="center"
@@ -176,7 +176,7 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
                 numberOfLines={2}
               >
                 {label}
-              </LabelText>
+              </Text.Label>
             </LabelContainer>
           </Card>
         </Animated.View>
