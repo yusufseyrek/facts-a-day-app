@@ -24,7 +24,7 @@ const BadgeContainer = styled(XStack, {
   alignSelf: 'flex-start',
 });
 
-export function CategoryBadge({ category, fontFamily }: CategoryBadgeProps) {
+export function CategoryBadge({ category, fontFamily, fontSize }: CategoryBadgeProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
 
@@ -52,6 +52,7 @@ export function CategoryBadge({ category, fontFamily }: CategoryBadgeProps) {
         <Text.Label
           color={contrastColor}
           fontFamily={fontFamily || FONT_FAMILIES.semibold}
+          fontSize={fontSize}
         >
           {displayName}
         </Text.Label>

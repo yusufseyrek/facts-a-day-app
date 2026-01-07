@@ -518,14 +518,13 @@ export default function OnboardingSuccessScreen() {
           </ConsentIconContainer>
 
           {/* Title */}
-          <Text.Title
-            fontSize={typo.fontSize.headline}
+          <Text.Headline
             textAlign="center"
             color="$text"
             letterSpacing={-0.5}
           >
             {t("adsConsentTitle")}
-          </Text.Title>
+          </Text.Headline>
 
           {/* Message */}
           <Text.Body

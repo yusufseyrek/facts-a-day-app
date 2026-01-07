@@ -132,7 +132,7 @@ function formatLastUpdated(dateString: string, locale: string): string {
 export function FactModal({ fact, onClose }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, spacing, iconSizes, componentSizes, isTablet, screenWidth: SCREEN_WIDTH, screenHeight: SCREEN_HEIGHT } = useResponsive();
+  const { typography, spacing, iconSizes, isTablet, screenWidth: SCREEN_WIDTH, screenHeight: SCREEN_HEIGHT } = useResponsive();
 
   const insets = useSafeAreaInsets();
   const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
@@ -276,7 +276,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   // Calculate dynamic header height first (needed for transition calculations)
   const basePaddingTop = Platform.OS === "ios" ? tokens.space.lg : insets.top + tokens.space.sm;
   const basePaddingBottom = Platform.OS === "ios" ? tokens.space.lg : tokens.space.md;
-  const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight + 8;
+  const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight + (isTablet ? 4 : 8);
   const minHeaderHeight = Platform.OS === "ios" ? 100 : 70 + insets.top;
   const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
 
@@ -362,9 +362,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const iosShadowOffset = Platform.OS === "ios" ? 4 : 0;
   const tabletMagicNumber = isTablet ? spacing.itemGap : 0
 
-  // Header title opacity - fades in with overlay for smooth appearance
-  const headerTitleOpacity = fadeOpacity;
-
   // Header title translateY - slides up from bottom of header as scrollY increases
   // Animation starts when header becomes visible (at HEADER_BG_TRANSITION)
   const headerTitleStartY = headerHeight - basePaddingTop + basePaddingBottom - iosShadowOffset + tabletMagicNumber; // Start from bottom of header
@@ -432,12 +429,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           }
         }}
       >
-        <Text.Headline
-          fontSize={typography.fontSize.headline}
-          lineHeight={typography.lineHeight.headline}
-          letterSpacing={-0.2}
-          fontFamily={FONT_FAMILIES.bold}
-        >
+        <Text.Headline>
           {factTitle}
         </Text.Headline>
       </View>
@@ -554,17 +546,12 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             <HeaderTitleContainer pointerEvents="none">
               <Animated.View
                 style={{
-                  opacity: headerTitleOpacity,
+                  // opacity: headerTitleOpacity,
                   flex: 1,
                   transform: [{ translateY: headerTitleTranslateY }],
                 }}
               >
-                <Text.Headline
-                  fontSize={typography.fontSize.headline}
-                  lineHeight={typography.lineHeight.headline}
-                  letterSpacing={-0.2}
-                  fontFamily={FONT_FAMILIES.bold}
-                >
+                <Text.Headline>
                   {factTitle}
                 </Text.Headline>
               </Animated.View>
@@ -667,8 +654,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           {/* Title - shown in content when header is not visible */}
           <Animated.View
             style={{
-              opacity: contentTitleOpacity,
-              minHeight: componentSizes.titleMinHeight,
+              opacity: contentTitleOpacity
             }}
           >
             <Text.Headline>

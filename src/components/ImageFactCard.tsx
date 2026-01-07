@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { Pressable, Animated, StyleSheet, View, Text, Platform, useWindowDimensions } from "react-native";
+import { Pressable, Animated, StyleSheet, View, Platform, useWindowDimensions } from "react-native";
 import { Image, ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { tokens } from "../theme/tokens";
-import { FONT_FAMILIES } from "./Typography";
+import { Text, FONT_FAMILIES } from "./Typography";
+import { CategoryBadge } from "./CategoryBadge";
 import { useFactImage } from "../utils/useFactImage";
 import { typography, spacing, componentSizes, isTabletDevice } from "../utils/responsive";
 import type { Category } from "../services/database";
@@ -172,22 +173,6 @@ const ImageFactCardComponent = ({
     setImageLoaded(true);
   }, []);
 
-  // Determine category info for badge
-  const categoryInfo = useMemo(() => {
-    if (typeof category === "object" && category !== null) {
-      return {
-        name: category.name,
-        color: category.color_hex || "#0066FF",
-      };
-    }
-    const slug = (category as string) || categorySlug || "";
-    const name = slug
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-    return { name, color: "#0066FF" };
-  }, [category, categorySlug]);
-
   // Generate image source - memoized to prevent unnecessary re-renders
   const imageSource: ImageSource | null = useMemo(
     () => displayUri ? { uri: displayUri } : null,
@@ -217,11 +202,6 @@ const ImageFactCardComponent = ({
     paddingTop: space.sectionGap * 1.5,
   };
   
-  const titleStyle = {
-    fontSize: typo.fontSize.title,
-    lineHeight: typo.lineHeight.title,
-  };
-  const badgeTextStyle = { fontSize: sizes.badgeFontSize };
 
   // Recycling key that includes retry count to force expo-image to re-attempt loading
   // This is important for Android where timing issues cause initial render failures
@@ -283,25 +263,25 @@ const ImageFactCardComponent = ({
             />
 
             {/* Category badge */}
-            {categoryInfo.name && (
+            {category && (
               <View style={[styles.badgeContainer, badgePositionStyle]}>
-                <View style={[styles.badge, { backgroundColor: categoryInfo.color }]}>
-                  <Text style={[styles.badgeText, badgeTextStyle]}>
-                    {categoryInfo.name}
-                  </Text>
-                </View>
+                <CategoryBadge 
+                  category={category} 
+                  fontSize={sizes.badgeFontSize}
+                />
               </View>
             )}
 
             {/* Content overlay */}
             <View style={[styles.contentOverlay, contentOverlayStyle]}>
               {/* Title */}
-              <Text
-                style={[styles.title, titleStyle]}
+              <Text.Title
+                color="#FFFFFF"
                 numberOfLines={sizes.maxLines}
+                style={styles.titleShadow}
               >
                 {title}
-              </Text>
+              </Text.Title>
             </View>
           </View>
         </View>
@@ -342,27 +322,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     zIndex: 10,
   },
-  badge: {
-    paddingHorizontal: tokens.space.md,
-    paddingVertical: tokens.space.sm,
-    borderRadius: tokens.radius.full,
-  },
-  badgeText: {
-    color: "#FFFFFF",
-    fontFamily: FONT_FAMILIES.semibold,
-    fontWeight: "600",
-  },
   contentOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
   },
-  title: {
-    color: "#FFFFFF",
-    fontFamily: FONT_FAMILIES.bold,
-    fontWeight: "700",
-    letterSpacing: 0.3,
+  titleShadow: {
     textShadowColor: "rgba(0, 0, 0, 0.6)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
