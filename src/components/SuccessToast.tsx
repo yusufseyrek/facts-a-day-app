@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View, Modal } from 'react-native';
 import { CheckCircle } from '@tamagui/lucide-icons';
 import { useTheme } from '../theme';
-import { tokens } from '../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../theme';
 import { Text } from './Typography';
 
 interface SuccessToastProps {
@@ -33,7 +33,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
   }, [onHide]);
 
   // Theme-aware colors
-  const colors = tokens.color[theme];
+  const colors = hexColors[theme];
   const successColor = colors.success;
   const backgroundColor = colors.cardBackground;
   const textColor = colors.text;
@@ -128,9 +128,9 @@ const styles = StyleSheet.create({
   },
   container: {
     alignItems: 'center',
-    paddingVertical: tokens.space.xl,
-    paddingHorizontal: tokens.space.xxl,
-    borderRadius: tokens.radius.lg,
+    paddingVertical: spacing.phone.xl,
+    paddingHorizontal: spacing.phone.xxl,
+    borderRadius: radius.phone.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: tokens.space.md,
+    marginBottom: spacing.phone.md,
   },
 });
 

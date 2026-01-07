@@ -16,7 +16,7 @@ const ANIMATION_DURATION = 150;
 import { X, Plus, Trash2, AlertTriangle } from '@tamagui/lucide-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../../theme';
-import { tokens } from '../../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../theme';
 import { useTranslation } from '../../i18n/useTranslation';
 import { Button } from '../Button';
 import { SuccessToast } from '../SuccessToast';
@@ -42,7 +42,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   hasNotificationPermission = true,
 }) => {
   const { theme } = useTheme();
-  const colors = tokens.color[theme];
+  const colors = hexColors[theme];
   const { t, locale } = useTranslation();
   
   // Warning color - darker in light mode for better readability
@@ -398,7 +398,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                     <Text.Label
                       textAlign="center"
                       color={colors.textSecondary}
-                      style={{ marginBottom: tokens.space.sm }}
+                      style={{ marginBottom: spacing.phone.sm }}
                     >
                       {t('scheduleUpTo3Notifications')}
                     </Text.Label>
@@ -429,7 +429,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                       textAlign="center"
                       color={colors.textSecondary}
                       fontFamily={FONT_FAMILIES.semibold}
-                      style={{ marginTop: tokens.space.sm }}
+                      style={{ marginTop: spacing.phone.sm }}
                     >
                       {t('multipleNotificationsPerDay', { count: times.length })}
                     </Text.Caption>
@@ -437,7 +437,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                       textAlign="center"
                       color={colors.textSecondary}
                       fontStyle="italic"
-                      style={{ marginTop: tokens.space.xs }}
+                      style={{ marginTop: spacing.phone.xs }}
                     >
                       {t('notificationRespectMessage')}
                     </Text.Caption>
@@ -483,19 +483,19 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     maxHeight: screenHeight * 0.8,
-    borderRadius: tokens.radius.lg,
+    borderRadius: radius.phone.lg,
     overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: tokens.space.lg,
-    paddingVertical: tokens.space.lg,
+    paddingHorizontal: spacing.phone.lg,
+    paddingVertical: spacing.phone.lg,
     borderBottomWidth: 1,
   },
   closeButton: {
-    padding: tokens.space.xs,
+    padding: spacing.phone.xs,
   },
   scrollContent: {
     flexGrow: 0,
@@ -505,34 +505,34 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   content: {
-    padding: tokens.space.lg,
-    gap: tokens.space.md,
+    padding: spacing.phone.lg,
+    gap: spacing.phone.md,
   },
   warningContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: tokens.space.md,
-    borderRadius: tokens.radius.md,
+    padding: spacing.phone.md,
+    borderRadius: radius.phone.md,
     borderWidth: 1,
-    gap: tokens.space.sm,
-    marginBottom: tokens.space.sm,
+    gap: spacing.phone.sm,
+    marginBottom: spacing.phone.sm,
   },
   timePickerItem: {
-    marginBottom: tokens.space.sm,
+    marginBottom: spacing.phone.sm,
   },
   timePickerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: tokens.space.xs,
+    marginBottom: spacing.phone.xs,
   },
   removeButton: {
-    padding: tokens.space.xs,
-    borderRadius: tokens.radius.sm,
+    padding: spacing.phone.xs,
+    borderRadius: radius.phone.sm,
   },
   timePickerContainer: {
-    padding: Platform.OS === 'ios' ? tokens.space.lg : tokens.space.md,
-    borderRadius: tokens.radius.md,
+    padding: Platform.OS === 'ios' ? spacing.phone.lg : spacing.phone.md,
+    borderRadius: radius.phone.md,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -542,21 +542,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: tokens.space.md,
-    borderRadius: tokens.radius.md,
+    padding: spacing.phone.md,
+    borderRadius: radius.phone.md,
     borderWidth: 1,
     borderStyle: 'dashed',
-    gap: tokens.space.xs,
-    marginTop: tokens.space.sm,
+    gap: spacing.phone.xs,
+    marginTop: spacing.phone.sm,
   },
   footer: {
-    padding: tokens.space.lg,
+    padding: spacing.phone.lg,
     paddingTop: 0,
   },
   androidTimeButton: {
-    paddingVertical: tokens.space.md,
-    paddingHorizontal: tokens.space.xl,
-    borderRadius: tokens.radius.full,
+    paddingVertical: spacing.phone.md,
+    paddingHorizontal: spacing.phone.xl,
+    borderRadius: radius.phone.full,
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 150,

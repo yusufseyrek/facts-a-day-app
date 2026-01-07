@@ -13,7 +13,7 @@ import {
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { X, Search, Check, Calendar, Trash2, Edit3, RefreshCw } from '@tamagui/lucide-icons';
 import { useTheme } from '../../theme';
-import { tokens } from '../../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../theme';
 import { typography } from '../../utils/responsive';
 import { useTranslation } from '../../i18n';
 import { Text, FONT_FAMILIES } from '../Typography';
@@ -78,7 +78,7 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
   onClose,
 }) => {
   const { theme } = useTheme();
-  const colors = tokens.color[theme];
+  const colors = hexColors[theme];
   const { t, locale } = useTranslation();
 
   const [showContent, setShowContent] = useState(false);
@@ -405,7 +405,7 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
             <View style={styles.editModalOverlay}>
               <View style={[styles.editModalContent, { backgroundColor: colors.background }]}>
                 <Text.Title color={colors.text}>Edit Title</Text.Title>
-                <Text.Caption color={colors.textSecondary} style={{ marginBottom: tokens.space.md }}>
+                <Text.Caption color={colors.textSecondary} style={{ marginBottom: spacing.phone.md }}>
                   Edit the title for screenshots
                 </Text.Caption>
                 <TextInput
@@ -454,30 +454,30 @@ const styles = StyleSheet.create({
   modalContainer: {
     position: 'absolute',
     bottom: 0,
-    borderTopLeftRadius: tokens.radius.xl,
-    borderTopRightRadius: tokens.radius.xl,
+    borderTopLeftRadius: radius.phone.xl,
+    borderTopRightRadius: radius.phone.xl,
     overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: tokens.space.lg,
-    paddingVertical: tokens.space.lg,
+    paddingHorizontal: spacing.phone.lg,
+    paddingVertical: spacing.phone.lg,
     borderBottomWidth: 1,
   },
   closeButton: {
-    padding: tokens.space.xs,
+    padding: spacing.phone.xs,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: tokens.space.lg,
-    marginVertical: tokens.space.md,
-    paddingHorizontal: tokens.space.md,
-    paddingVertical: tokens.space.sm,
-    borderRadius: tokens.radius.md,
-    gap: tokens.space.sm,
+    marginHorizontal: spacing.phone.lg,
+    marginVertical: spacing.phone.md,
+    paddingHorizontal: spacing.phone.md,
+    paddingVertical: spacing.phone.sm,
+    borderRadius: radius.phone.md,
+    gap: spacing.phone.sm,
   },
   searchInput: {
     flex: 1,
@@ -488,28 +488,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: tokens.space.lg,
-    paddingBottom: tokens.space.sm,
+    paddingHorizontal: spacing.phone.lg,
+    paddingBottom: spacing.phone.sm,
   },
   selectionActions: {
     flexDirection: 'row',
-    gap: tokens.space.md,
+    gap: spacing.phone.md,
   },
   selectionButton: {
-    padding: tokens.space.xs,
+    padding: spacing.phone.xs,
   },
   list: {
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: tokens.space.lg,
-    paddingBottom: tokens.space.lg,
+    paddingHorizontal: spacing.phone.lg,
+    paddingBottom: spacing.phone.lg,
   },
   factItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: tokens.space.md,
-    gap: tokens.space.md,
+    paddingVertical: spacing.phone.md,
+    gap: spacing.phone.md,
   },
   checkbox: {
     width: 24,
@@ -521,21 +521,21 @@ const styles = StyleSheet.create({
   },
   factContent: {
     flex: 1,
-    gap: tokens.space.xs,
+    gap: spacing.phone.xs,
   },
   factMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: tokens.space.sm,
+    gap: spacing.phone.sm,
     flexWrap: 'wrap',
   },
   inFeedBadge: {
-    paddingHorizontal: tokens.space.sm,
+    paddingHorizontal: spacing.phone.sm,
     paddingVertical: 2,
-    borderRadius: tokens.radius.sm,
+    borderRadius: radius.phone.sm,
   },
   editButton: {
-    padding: tokens.space.sm,
+    padding: spacing.phone.sm,
   },
   loadingContainer: {
     flex: 1,
@@ -543,22 +543,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionBar: {
-    padding: tokens.space.lg,
+    padding: spacing.phone.lg,
     borderTopWidth: 1,
-    gap: tokens.space.sm,
+    gap: spacing.phone.sm,
   },
   actionRow: {
     flexDirection: 'row',
-    gap: tokens.space.sm,
+    gap: spacing.phone.sm,
   },
   actionButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: tokens.space.md,
-    borderRadius: tokens.radius.md,
-    gap: tokens.space.xs,
+    paddingVertical: spacing.phone.md,
+    borderRadius: radius.phone.md,
+    gap: spacing.phone.xs,
   },
   dangerButton: {
     backgroundColor: '#E53935',
@@ -568,19 +568,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: tokens.space.lg,
+    padding: spacing.phone.lg,
   },
   editModalContent: {
     width: '100%',
     maxWidth: 400,
-    padding: tokens.space.lg,
-    borderRadius: tokens.radius.lg,
-    gap: tokens.space.sm,
+    padding: spacing.phone.lg,
+    borderRadius: radius.phone.lg,
+    gap: spacing.phone.sm,
   },
   titleInput: {
     borderWidth: 1,
-    borderRadius: tokens.radius.md,
-    padding: tokens.space.md,
+    borderRadius: radius.phone.md,
+    padding: spacing.phone.md,
     fontSize: typography.phone.fontSize.body,
     fontFamily: FONT_FAMILIES.regular,
     minHeight: 100,
@@ -588,14 +588,14 @@ const styles = StyleSheet.create({
   },
   editModalActions: {
     flexDirection: 'row',
-    gap: tokens.space.md,
-    marginTop: tokens.space.md,
+    gap: spacing.phone.md,
+    marginTop: spacing.phone.md,
   },
   modalButton: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: tokens.space.md,
-    borderRadius: tokens.radius.md,
+    paddingVertical: spacing.phone.md,
+    borderRadius: radius.phone.md,
   },
 });
 

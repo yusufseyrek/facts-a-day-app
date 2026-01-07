@@ -14,7 +14,7 @@ import { YStack, XStack } from "tamagui";
 import { Search, X } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
-import { tokens } from "../../src/theme/tokens";
+import { hexColors, spacing, radius, sizes } from "../../src/theme";
 import { useResponsive } from "../../src/utils/useResponsive";
 import {
   Text,
@@ -51,11 +51,11 @@ const SearchInputContainer = styled(XStack, {
   height: 44,
   alignItems: "center",
   backgroundColor: "$surface",
-  borderRadius: tokens.radius.md,
-  paddingHorizontal: tokens.space.md,
+  borderRadius: radius.phone.md,
+  paddingHorizontal: spacing.phone.md,
   borderWidth: 1,
   borderColor: "$border",
-  gap: tokens.space.sm,
+  gap: spacing.phone.sm,
 });
 
 const SearchInput = styled(TextInput, {
@@ -66,7 +66,7 @@ const SearchInput = styled(TextInput, {
 const ClearButton = styled(YStack, {
   width: 28,
   height: 28,
-  borderRadius: tokens.radius.full,
+  borderRadius: radius.phone.full,
   alignItems: "center",
   justifyContent: "center",
   backgroundColor: "$border",
@@ -75,17 +75,17 @@ const ClearButton = styled(YStack, {
 // Category chip in search input
 const CategoryChip = styled(XStack, {
   height: 28,
-  borderRadius: tokens.radius.full,
-  paddingLeft: tokens.space.sm,
-  paddingRight: tokens.space.xs,
+  borderRadius: radius.phone.full,
+  paddingLeft: spacing.phone.sm,
+  paddingRight: spacing.phone.xs,
   alignItems: "center",
-  gap: tokens.space.xs,
+  gap: spacing.phone.xs,
 });
 
 const CategoryChipClearButton = styled(YStack, {
   width: 20,
   height: 20,
-  borderRadius: tokens.radius.full,
+  borderRadius: radius.phone.full,
   alignItems: "center",
   justifyContent: "center",
 });
@@ -94,23 +94,23 @@ const EmptyDiscoverState = styled(YStack, {
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  paddingHorizontal: tokens.space.xl,
-  gap: tokens.space.md,
+  paddingHorizontal: spacing.phone.xl,
+  gap: spacing.phone.md,
 });
 
 const CategoriesContainer = styled(YStack, {
   flex: 1,
-  paddingHorizontal: tokens.space.lg,
-  paddingBottom: tokens.space.md,
-  gap: tokens.space.lg,
+  paddingHorizontal: spacing.phone.lg,
+  paddingBottom: spacing.phone.md,
+  gap: spacing.phone.lg,
 });
 
 const CategoriesGrid = styled(View, {
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
 });
 
 const CategoryRow = styled(XStack, {
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
   justifyContent: "space-between",
 });
 
@@ -118,16 +118,16 @@ const CategoryRow = styled(XStack, {
 const DiscoverCategoryCard = styled(XStack, {
   flex: 1,
   height: 80,
-  borderRadius: tokens.radius.lg,
-  paddingHorizontal: tokens.space.md,
+  borderRadius: radius.phone.lg,
+  paddingHorizontal: spacing.phone.md,
   alignItems: "center",
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
 });
 
 const DiscoverCategoryIconContainer = styled(YStack, {
   width: 48,
   height: 48,
-  borderRadius: tokens.radius.md,
+  borderRadius: radius.phone.md,
   alignItems: "center",
   justifyContent: "center",
 });
@@ -179,7 +179,7 @@ function DiscoverScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const { isTablet, screenWidth: width, typography: typo, iconSizes } = useResponsive();
+  const { isTablet, screenWidth: width, typography: typo, iconSizes, gridLayout } = useResponsive();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<FactWithRelations[]>([]);
@@ -455,8 +455,8 @@ function DiscoverScreen() {
               size={iconSizes.medium}
               color={
                 theme === "dark"
-                  ? tokens.color.dark.textSecondary
-                  : tokens.color.light.textSecondary
+                  ? hexColors.dark.textSecondary
+                  : hexColors.light.textSecondary
               }
             />
             {selectedCategory && (
@@ -489,16 +489,16 @@ function DiscoverScreen() {
               placeholder={selectedCategory ? t("searchPlaceholder") : t("discoverPlaceholder")}
               placeholderTextColor={
                 theme === "dark"
-                  ? tokens.color.dark.textMuted
-                  : tokens.color.light.textMuted
+                  ? hexColors.dark.textMuted
+                  : hexColors.light.textMuted
               }
               style={{
                 color:
                   theme === "dark"
-                    ? tokens.color.dark.text
-                    : tokens.color.light.text,
+                    ? hexColors.dark.text
+                    : hexColors.light.text,
                 fontSize: typo.fontSize.body,
-                paddingVertical: tokens.space.xs,
+                paddingVertical: spacing.phone.xs,
               }}
               autoCapitalize="none"
               autoCorrect={false}
@@ -507,7 +507,7 @@ function DiscoverScreen() {
             {isSearching ? (
               <ActivityIndicator
                 size="small"
-                color={tokens.color[theme].textSecondary}
+                color={hexColors[theme].textSecondary}
               />
             ) : searchQuery.length > 0 ? (
               <ClearButton onPress={clearSearch}>
@@ -515,8 +515,8 @@ function DiscoverScreen() {
                   size={16}
                   color={
                     theme === "dark"
-                      ? tokens.color.dark.textSecondary
-                      : tokens.color.light.textSecondary
+                      ? hexColors.dark.textSecondary
+                      : hexColors.light.textSecondary
                   }
                 />
               </ClearButton>
@@ -542,8 +542,8 @@ function DiscoverScreen() {
 
     // Show category grid when no search has been performed and no category is selected
     if (!hasQuery && !selectedCategorySlug) {
-      const numColumns = isTablet ? 3 : 2;
-      const iconSize = isTablet ? 28 : 24;
+      const numColumns = gridLayout.discoverColumns;
+      const iconSize = gridLayout.discoverIconSize;
 
       // Split categories into rows of 2 (or 3 on tablet)
       const rows: Category[][] = [];
@@ -554,7 +554,7 @@ function DiscoverScreen() {
       if (isLoadingCategories) {
         return (
           <EmptyDiscoverState>
-            <ActivityIndicator size="large" color={tokens.color[theme].primary} />
+            <ActivityIndicator size="large" color={hexColors[theme].primary} />
           </EmptyDiscoverState>
         );
       }
@@ -576,7 +576,7 @@ function DiscoverScreen() {
         <ScrollView showsVerticalScrollIndicator={false}>
           <CategoriesContainer>
             <Animated.View entering={FadeIn.duration(300)}>
-              <YStack gap={tokens.space.sm}>
+              <YStack gap={spacing.phone.sm}>
                 <Text.Headline
                   color="$text"
                 >
@@ -701,7 +701,7 @@ function DiscoverScreen() {
             style={{ flex: 1 }}
           >
             <EmptyDiscoverState>
-              <ActivityIndicator size="large" color={tokens.color[theme].primary} />
+              <ActivityIndicator size="large" color={hexColors[theme].primary} />
             </EmptyDiscoverState>
           </Animated.View>
         );

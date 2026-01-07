@@ -3,7 +3,7 @@ import { Modal, TextInput, Keyboard, Platform, TouchableWithoutFeedback, Keyboar
 import { styled } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { X } from '@tamagui/lucide-icons';
-import { tokens, useTheme } from '../theme';
+import { hexColors, spacing, radius, sizes, useTheme } from '../theme';
 import { Text } from './Typography';
 import { Button } from './Button';
 import { useTranslation } from '../i18n';
@@ -21,16 +21,16 @@ const Overlay = styled(YStack, {
   backgroundColor: 'rgba(0, 0, 0, 0.5)',
   justifyContent: 'center',
   alignItems: 'center',
-  padding: tokens.space.lg,
+  padding: spacing.phone.lg,
 });
 
 const ModalContainer = styled(YStack, {
   backgroundColor: '$background',
-  borderRadius: tokens.radius.lg,
+  borderRadius: radius.phone.lg,
   width: '100%',
   maxWidth: 500,
-  padding: tokens.space.lg,
-  gap: tokens.space.md,
+  padding: spacing.phone.lg,
+  gap: spacing.phone.md,
   flexShrink: 0,
   alignSelf: 'center',
   ...Platform.select({
@@ -49,13 +49,13 @@ const ModalContainer = styled(YStack, {
 const Header = styled(XStack, {
   justifyContent: 'space-between',
   alignItems: 'center',
-  marginBottom: tokens.space.sm,
+  marginBottom: spacing.phone.sm,
 });
 
 const CloseButton = styled(YStack, {
   width: 32,
   height: 32,
-  borderRadius: tokens.radius.full,
+  borderRadius: radius.phone.full,
   backgroundColor: '$surface',
   alignItems: 'center',
   justifyContent: 'center',
@@ -63,8 +63,8 @@ const CloseButton = styled(YStack, {
 
 const StyledTextInput = styled(TextInput, {
   backgroundColor: '$surface',
-  borderRadius: tokens.radius.md,
-  padding: tokens.space.md,
+  borderRadius: radius.phone.md,
+  padding: spacing.phone.md,
   minHeight: 120,
   maxHeight: 200,
   textAlignVertical: 'top',
@@ -74,8 +74,8 @@ const StyledTextInput = styled(TextInput, {
 });
 
 const ButtonRow = styled(XStack, {
-  gap: tokens.space.md,
-  marginTop: tokens.space.sm,
+  gap: spacing.phone.md,
+  marginTop: spacing.phone.sm,
 });
 
 export function ReportFactModal({
@@ -142,7 +142,7 @@ export function ReportFactModal({
                   flexGrow: 1,
                   justifyContent: 'center',
                   alignItems: 'center',
-                  paddingVertical: tokens.space.lg,
+                  paddingVertical: spacing.phone.lg,
                 }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
@@ -153,7 +153,7 @@ export function ReportFactModal({
                     <Text.Title>{t('reportFact')}</Text.Title>
                     <TouchableWithoutFeedback onPress={handleClose}>
                       <CloseButton>
-                        <X size={20} color={tokens.color[theme].text} />
+                        <X size={20} color={hexColors[theme].text} />
                       </CloseButton>
                     </TouchableWithoutFeedback>
                   </Header>
@@ -178,14 +178,14 @@ export function ReportFactModal({
                         setError('');
                       }}
                       placeholder={t('reportPlaceholder') || 'Enter your feedback...'}
-                      placeholderTextColor={tokens.color[theme].textMuted}
+                      placeholderTextColor={hexColors[theme].textMuted}
                       multiline
                       maxLength={1000}
                       editable={!isSubmitting}
                       autoFocus
                       style={{ 
                         fontSize: typo.fontSize.body, 
-                        color: tokens.color[theme].text,
+                        color: hexColors[theme].text,
                         width: inputWidth || '100%',
                       }}
                     />

@@ -19,7 +19,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
-import { tokens } from '../../src/theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../src/theme';
 import { Text, FONT_FAMILIES } from '../../src/components/Typography';
 import { SectionHeaderContainer } from '../../src/components/ScreenLayout';
 import { useTheme } from '../../src/theme';
@@ -99,13 +99,13 @@ function SessionCard({
   dateFormat?: 'time' | 'relative';
 }) {
   const { typography: typo } = useResponsive();
-  const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
-  const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
+  const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+  const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
   const warningColor = '#F59E0B';
-  const errorColor = isDark ? tokens.color.dark.error : tokens.color.light.error;
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
+  const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
 
   const scorePercentage = session.total_questions > 0 
     ? (session.correct_answers / session.total_questions) * 100 
@@ -214,10 +214,10 @@ function SessionCard({
     >
       <XStack
         backgroundColor={cardBg}
-        borderRadius={tokens.radius.lg}
-        padding={tokens.space.lg}
+        borderRadius={radius.phone.lg}
+        padding={spacing.phone.lg}
         alignItems="center"
-        gap={tokens.space.sm}
+        gap={spacing.phone.sm}
       >
         {getIcon()}
         <YStack flex={1} gap={2}>
@@ -405,7 +405,7 @@ export default function ActivityHistoryScreen() {
   const renderItem = useCallback(({ item }: ListRenderItemInfo<HistoryListItem>) => {
     if (item.type === ITEM_TYPES.SECTION_HEADER) {
       return (
-        <SectionHeaderContainer paddingTop={tokens.space.md}>
+        <SectionHeaderContainer paddingTop={spacing.phone.md}>
           <Text.Title>{item.title}</Text.Title>
         </SectionHeaderContainer>
       );
@@ -413,7 +413,7 @@ export default function ActivityHistoryScreen() {
     
     return (
       <Animated.View entering={FadeInDown.delay(item.index * 30).duration(350).springify()}>
-        <View style={{ paddingHorizontal: tokens.space.lg, paddingVertical: tokens.space.xs }}>
+        <View style={{ paddingHorizontal: spacing.phone.lg, paddingVertical: spacing.phone.xs }}>
           <SessionCard
             session={item.session}
             isDark={isDark}
@@ -431,9 +431,9 @@ export default function ActivityHistoryScreen() {
   }, []);
 
   // Colors
-  const bgColor = isDark ? tokens.color.dark.background : tokens.color.light.background;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
+  const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
 
   if (loading) {
     return (
@@ -503,13 +503,13 @@ export default function ActivityHistoryScreen() {
       {/* Header */}
       <Animated.View entering={FadeInUp.duration(400).springify()}>
         <XStack
-          paddingTop={insets.top + tokens.space.sm}
-          paddingBottom={tokens.space.md}
-          paddingHorizontal={tokens.space.lg}
+          paddingTop={insets.top + spacing.phone.sm}
+          paddingBottom={spacing.phone.md}
+          paddingHorizontal={spacing.phone.lg}
           alignItems="center"
           justifyContent="space-between"
           borderBottomWidth={1}
-          borderBottomColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
+          borderBottomColor={isDark ? hexColors.dark.border : hexColors.light.border}
         >
           <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
           
@@ -528,7 +528,7 @@ export default function ActivityHistoryScreen() {
         {flattenedData.length === 0 ? (
           <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
             <Text.Body
-              color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
+              color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
             >
               {t('noTestsYet')}
             </Text.Body>
@@ -544,7 +544,7 @@ export default function ActivityHistoryScreen() {
               <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
             }
             contentContainerStyle={{ 
-              paddingBottom: tokens.space.sm,
+              paddingBottom: spacing.phone.sm,
             }}
             {...FLASH_LIST_SETTINGS}
           />

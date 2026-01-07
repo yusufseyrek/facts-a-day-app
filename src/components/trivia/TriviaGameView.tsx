@@ -11,7 +11,7 @@ import Animated, {
   SharedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
-import { tokens } from '../../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
 import type { QuestionWithFact } from '../../services/database';
@@ -60,13 +60,13 @@ export function TriviaGameView({
   const { isTablet, componentSizes, typography: typo } = useResponsive();
   
   // Colors
-  const bgColor = isDark ? tokens.color.dark.background : tokens.color.light.background;
-  const surfaceColor = isDark ? tokens.color.dark.surface : tokens.color.light.surface;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
-  const borderColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
-  const errorColor = isDark ? tokens.color.dark.error : tokens.color.light.error;
+  const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
+  const surfaceColor = isDark ? hexColors.dark.surface : hexColors.light.surface;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
+  const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
+  const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
 
   const isTrueFalse = currentQuestion.question_type === 'true_false';
   const letterLabels = ['A', 'B', 'C', 'D'];
@@ -99,7 +99,7 @@ export function TriviaGameView({
       
       {/* Header */}
       <XStack 
-        paddingHorizontal={tokens.space.lg}
+        paddingHorizontal={spacing.phone.lg}
         alignItems="center"
         justifyContent="space-between"
         position="relative"
@@ -125,7 +125,7 @@ export function TriviaGameView({
             position: 'absolute',
             left: 0,
             right: 0,
-            paddingBottom: tokens.space.xs,
+            paddingBottom: spacing.phone.xs,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -142,11 +142,11 @@ export function TriviaGameView({
         {/* Timer */}
         <XStack 
           backgroundColor={surfaceColor}
-          paddingHorizontal={tokens.space.md}
-          paddingVertical={tokens.space.sm}
-          borderRadius={tokens.radius.full}
+          paddingHorizontal={spacing.phone.md}
+          paddingVertical={spacing.phone.sm}
+          borderRadius={radius.phone.full}
           alignItems="center"
-          gap={tokens.space.sm}
+          gap={spacing.phone.sm}
           zIndex={1}
         >
           <Timer size={typo.fontSize.title} color={timeRemaining < 30 ? errorColor : primaryColor} />
@@ -161,9 +161,9 @@ export function TriviaGameView({
       
       {/* Progress section */}
       <YStack 
-        paddingHorizontal={tokens.space.lg} 
-        paddingTop={tokens.space.lg}
-        gap={tokens.space.sm}
+        paddingHorizontal={spacing.phone.lg} 
+        paddingTop={spacing.phone.lg}
+        gap={spacing.phone.sm}
       >
         <XStack justifyContent="space-between" alignItems="center">
           <Text.Body color={secondaryTextColor}>
@@ -210,8 +210,8 @@ export function TriviaGameView({
         contentContainerStyle={{ 
           flexGrow: 1,
           justifyContent: 'center',
-          paddingHorizontal: tokens.space.xl,
-          paddingVertical: tokens.space.lg,
+          paddingHorizontal: spacing.phone.xl,
+          paddingVertical: spacing.phone.lg,
         }}
         showsVerticalScrollIndicator={false}
         bounces={true}
@@ -234,10 +234,10 @@ export function TriviaGameView({
       </ScrollView>
       
       {/* Answers */}
-        <YStack paddingHorizontal={tokens.space.lg} gap={tokens.space.md}>
+        <YStack paddingHorizontal={spacing.phone.lg} gap={spacing.phone.md}>
           {isTrueFalse ? (
             // True/False - side by side radio style
-            <XStack gap={tokens.space.md}>
+            <XStack gap={spacing.phone.md}>
               {shuffledAnswers.map((answer, index) => {
                 const isSelected = selectedAnswer === answer;
                 
@@ -263,11 +263,11 @@ export function TriviaGameView({
                         backgroundColor={optionBg as any}
                         borderWidth={2}
                         borderColor={optionBorder as any}
-                        paddingVertical={tokens.space.lg}
-                        borderRadius={tokens.radius.lg}
+                        paddingVertical={spacing.phone.lg}
+                        borderRadius={radius.phone.lg}
                         alignItems="center"
                         justifyContent="center"
-                        gap={tokens.space.sm}
+                        gap={spacing.phone.sm}
                       >
                         {/* Radio circle */}
                         <View
@@ -307,13 +307,13 @@ export function TriviaGameView({
             </XStack>
           ) : (
             // Multiple choice - list with letter badges
-            <YStack gap={tokens.space.sm}>
+            <YStack gap={spacing.phone.sm}>
               {shuffledAnswers.map((answer, index) => {
                 const isSelected = selectedAnswer === answer;
                 
                 let optionBg: string = surfaceColor;
                 let optionBorder: string = borderColor;
-                let badgeBg: string = isDark ? tokens.color.dark.border : tokens.color.light.border;
+                let badgeBg: string = isDark ? hexColors.dark.border : hexColors.light.border;
                 let badgeText: string = secondaryTextColor;
                 
                 if (isSelected) {
@@ -336,11 +336,11 @@ export function TriviaGameView({
                         backgroundColor={optionBg as any}
                         borderWidth={1.5}
                         borderColor={optionBorder as any}
-                        paddingVertical={tokens.space.md}
-                        paddingHorizontal={tokens.space.md}
-                        borderRadius={tokens.radius.lg}
+                        paddingVertical={spacing.phone.md}
+                        paddingHorizontal={spacing.phone.md}
+                        borderRadius={radius.phone.lg}
                         alignItems="center"
-                        gap={tokens.space.md}
+                        gap={spacing.phone.md}
                       >
                         {/* Letter badge */}
                         <View
@@ -379,10 +379,10 @@ export function TriviaGameView({
       
       {/* Navigation buttons */}
       <XStack 
-        paddingHorizontal={tokens.space.lg} 
-        paddingTop={tokens.space.xl}
-        paddingBottom={tokens.space.xl}
-        gap={tokens.space.md}
+        paddingHorizontal={spacing.phone.lg} 
+        paddingTop={spacing.phone.xl}
+        paddingBottom={spacing.phone.xl}
+        gap={spacing.phone.md}
       >
         {/* Previous button */}
         <Pressable 
@@ -394,9 +394,9 @@ export function TriviaGameView({
         >
           <XStack
             backgroundColor={primaryColor}
-            height={tokens.size.buttonHeight}
-            paddingHorizontal={tokens.space.lg}
-            borderRadius={tokens.radius.lg}
+            height={sizes.phone.buttonHeight}
+            paddingHorizontal={spacing.phone.lg}
+            borderRadius={radius.phone.lg}
             justifyContent="center"
             alignItems="center"
             opacity={currentQuestionIndex > 0 ? 1 : 0.4}
@@ -416,11 +416,11 @@ export function TriviaGameView({
         >
           <XStack
             backgroundColor={primaryColor}
-            height={tokens.size.buttonHeight}
-            borderRadius={tokens.radius.lg}
+            height={sizes.phone.buttonHeight}
+            borderRadius={radius.phone.lg}
             justifyContent="center"
             alignItems="center"
-            gap={tokens.space.sm}
+            gap={spacing.phone.sm}
             opacity={isLoadingResults ? 0.8 : 1}
           >
             {isLoadingResults ? (

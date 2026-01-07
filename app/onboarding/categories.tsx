@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ScrollView, ActivityIndicator, useWindowDimensions, Animated, Easing } from "react-native";
+import { ScrollView, ActivityIndicator, Animated, Easing } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { View, styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
 import { useRouter } from "expo-router";
-import { tokens } from "../../src/theme/tokens";
-import { typography, RESPONSIVE_CONSTANTS } from "../../src/utils/responsive";
+import { hexColors, spacing, radius, sizes } from "../../src/theme";
+import { useResponsive } from "../../src/utils/useResponsive";
 import {
   Text,
   Button,
@@ -31,27 +31,27 @@ const Container = styled(SafeAreaView, {
 });
 
 const ContentContainer = styled(YStack, {
-  padding: tokens.space.xl,
-  gap: tokens.space.xl,
+  padding: spacing.phone.xl,
+  gap: spacing.phone.xl,
   flex: 1,
 });
 
 const Header = styled(YStack, {
-  gap: tokens.space.sm,
+  gap: spacing.phone.sm,
 });
 
 const CategoriesGrid = styled(View, {
   flex: 1,
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
 });
 
 const CategoryRow = styled(XStack, {
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
   justifyContent: "space-between",
 });
 
 const ButtonContainer = styled(View, {
-  paddingTop: tokens.space.md,
+  paddingTop: spacing.phone.md,
 });
 
 export default function Categories() {
@@ -69,13 +69,11 @@ export default function Categories() {
   } = useOnboarding();
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { width } = useWindowDimensions();
+  const { typography: typo, gridLayout } = useResponsive();
 
   // Responsive sizing for tablets
-  const isTablet = width >= RESPONSIVE_CONSTANTS.TABLET_BREAKPOINT;
-  const numColumns = isTablet ? 4 : 3;
-  const iconSize = isTablet ? 48 : 32;
-  const typo = isTablet ? typography.tablet : typography.phone;
+  const numColumns = gridLayout.categoryColumns;
+  const iconSize = gridLayout.categoryIconSize;
   const labelFontSize = typo.fontSize.caption;
 
   // Track if we've already logged the onboarding start event
@@ -220,7 +218,7 @@ export default function Categories() {
       <Container>
         <StatusBar style={theme === "dark" ? "light" : "dark"} />
         <ContentContainer justifyContent="center" alignItems="center">
-          <ActivityIndicator size="large" color={tokens.color.light.primary} />
+          <ActivityIndicator size="large" color={hexColors.light.primary} />
           <Text.Body>{isInitializing ? t("settingUpApp") : t("loadingCategories")}</Text.Body>
         </ContentContainer>
       </Container>
@@ -232,7 +230,7 @@ export default function Categories() {
     return (
       <Container>
         <StatusBar style={theme === "dark" ? "light" : "dark"} />
-        <ContentContainer justifyContent="center" alignItems="center" gap={tokens.space.lg}>
+        <ContentContainer justifyContent="center" alignItems="center" gap={spacing.phone.lg}>
           <Text.Body color="#FF6B6B" textAlign="center">
             {initializationError}
           </Text.Body>
@@ -264,7 +262,7 @@ export default function Categories() {
         >
           <ProgressIndicator currentStep={1} totalSteps={2} />
 
-          <Header style={{ marginTop: tokens.space.xl }}>
+          <Header style={{ marginTop: spacing.phone.xl }}>
             <Text.Headline>{t("whatInterestsYou")}</Text.Headline>
             <Text.Body color="$textSecondary">
               {t("selectCategoriesMinimum")}
@@ -329,7 +327,7 @@ export default function Categories() {
                 </CategoryRow>
               ))}
             </CategoriesGrid>
-            <View height={tokens.space.xl} />
+            <View height={spacing.phone.xl} />
           </ScrollView>
         </Animated.View>
 

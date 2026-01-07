@@ -19,6 +19,8 @@ export const IMAGE_PLACEHOLDER = {
 export const IMAGE_DIMENSIONS = {
   /** Aspect ratio for immersive cards (16:9 portrait) */
   CARD_ASPECT_RATIO: 9 / 16,
+  /** Reduced aspect ratio for tablet cards */
+  TABLET_CARD_ASPECT_RATIO: 0.38,
 } as const;
 
 /**

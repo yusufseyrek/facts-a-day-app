@@ -3,7 +3,7 @@ import { ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { styled, View } from '@tamagui/core';
 import { XStack } from 'tamagui';
-import { tokens, useTheme } from '../theme';
+import { hexColors, spacing, radius, sizes, useTheme } from '../theme';
 import { Text, FONT_FAMILIES } from './Typography';
 
 interface ButtonProps {
@@ -15,11 +15,11 @@ interface ButtonProps {
 }
 
 const ButtonContainer = styled(View, {
-  height: tokens.size.buttonHeight,
-  borderRadius: tokens.radius.full,
+  height: sizes.phone.buttonHeight,
+  borderRadius: radius.phone.full,
   alignItems: 'center',
   justifyContent: 'center',
-  paddingHorizontal: tokens.space.xl,
+  paddingHorizontal: spacing.phone.xl,
   width: '100%',
 
   variants: {
@@ -72,7 +72,7 @@ export function Button({
         pressStyle={disabled || loading ? {} : { opacity: 0.8 }}
       >
         {loading ? (
-          <XStack gap={tokens.space.sm} alignItems="center">
+          <XStack gap={spacing.phone.sm} alignItems="center">
             <ActivityIndicator size="small" color="#FFFFFF" />
             <Text.Label color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
               {children}

@@ -4,31 +4,31 @@ import { styled } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Plus, Trash2 } from '@tamagui/lucide-icons';
-import { tokens } from '../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../theme';
 import { Text, FONT_FAMILIES } from './Typography';
 import { Button } from './Button';
 import { useTheme } from '../theme';
 import { useTranslation } from '../i18n';
 
 const TimeSlotContainer = styled(YStack, {
-  gap: tokens.space.lg,
+  gap: spacing.phone.lg,
 });
 
 const TimeSlot = styled(XStack, {
   backgroundColor: '$surface',
-  padding: tokens.space.md,
-  borderRadius: tokens.radius.lg,
+  padding: spacing.phone.md,
+  borderRadius: radius.phone.lg,
   borderWidth: 1,
   borderColor: '$border',
   alignItems: 'center',
   justifyContent: 'space-between',
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
   minHeight: 56,
 });
 
 const TimeDisplay = styled(XStack, {
   flex: 1,
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
   alignItems: 'center',
 });
 
@@ -44,7 +44,7 @@ const TimeButtonWrapper = styled(YStack, {
 const DeleteButton = styled(XStack, {
   width: 36,
   height: 36,
-  borderRadius: tokens.radius.sm,
+  borderRadius: radius.phone.sm,
   backgroundColor: '$errorLight',
   alignItems: 'center',
   justifyContent: 'center',
@@ -56,14 +56,14 @@ const DeleteButton = styled(XStack, {
 
 const AddTimeButton = styled(XStack, {
   backgroundColor: 'transparent',
-  padding: tokens.space.lg,
-  borderRadius: tokens.radius.lg,
+  padding: spacing.phone.lg,
+  borderRadius: radius.phone.lg,
   borderWidth: 2,
   borderColor: '$primary',
   borderStyle: 'dashed',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: tokens.space.sm,
+  gap: spacing.phone.sm,
   minHeight: 60,
   pressStyle: {
     opacity: 0.7,
@@ -154,7 +154,7 @@ export function MultiTimePicker({
       <Text.Body
         fontFamily={FONT_FAMILIES.bold}
         textAlign="center"
-        style={{ marginBottom: tokens.space.xs }}
+        style={{ marginBottom: spacing.phone.xs }}
       >
         {t('notificationTimes')}
       </Text.Body>
@@ -196,7 +196,7 @@ export function MultiTimePicker({
 
           {times.length > minTimes && (
             <DeleteButton onPress={() => handleRemoveTime(index)}>
-              <Trash2 size={20} color={tokens.color.light.error} />
+              <Trash2 size={20} color={hexColors.light.error} />
             </DeleteButton>
           )}
         </TimeSlot>
@@ -216,7 +216,7 @@ export function MultiTimePicker({
 
       {times.length < maxTimes && (
         <AddTimeButton onPress={handleAddTime}>
-          <Plus size={24} color={tokens.color.light.primary} />
+          <Plus size={24} color={hexColors.light.primary} />
           <Text.Body
             color="$primary"
             fontFamily={FONT_FAMILIES.bold}
@@ -226,7 +226,7 @@ export function MultiTimePicker({
         </AddTimeButton>
       )}
 
-      <YStack gap={tokens.space.xs} marginTop={tokens.space.md}>
+      <YStack gap={spacing.phone.xs} marginTop={spacing.phone.md}>
         <Text.Caption
           color="$textSecondary"
           textAlign="center"

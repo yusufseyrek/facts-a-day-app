@@ -16,7 +16,7 @@ import {
 } from '@tamagui/lucide-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
-import { tokens } from '../../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
@@ -48,12 +48,12 @@ const ModalOverlay = styled(YStack, {
   flex: 1,
   justifyContent: 'center',
   alignItems: 'center',
-  padding: tokens.space.md,
+  padding: spacing.phone.md,
 });
 
 const ModalContent = styled(YStack, {
   width: '100%',
-  borderRadius: tokens.radius.xl,
+  borderRadius: radius.phone.xl,
   overflow: 'hidden',
 });
 
@@ -78,14 +78,14 @@ export function TriviaIntroModal({
   const isDark = theme === 'dark';
 
   // Colors
-  const bgColor = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
-  const surfaceColor = isDark ? tokens.color.dark.surface : tokens.color.light.surface;
-  const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
-  const purpleColor = isDark ? tokens.color.dark.neonPurple : tokens.color.light.neonPurple;
-  const borderColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
+  const bgColor = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+  const surfaceColor = isDark ? hexColors.dark.surface : hexColors.light.surface;
+  const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
+  const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
+  const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
 
   // Determine accent color based on type
   const getAccentColor = () => {
@@ -164,7 +164,7 @@ export function TriviaIntroModal({
         <Animated.View 
           entering={FadeInUp.duration(300).springify()}
           style={{ 
-            width: SCREEN_WIDTH - tokens.space.md * 2, 
+            width: SCREEN_WIDTH - spacing.phone.md * 2, 
             maxWidth: 400,
             // Shadow for iOS
             shadowColor: '#000',
@@ -181,10 +181,10 @@ export function TriviaIntroModal({
               onPress={onClose}
               style={{
                 position: 'absolute',
-                top: tokens.space.md,
-                right: tokens.space.md,
+                top: spacing.phone.md,
+                right: spacing.phone.md,
                 zIndex: 10,
-                padding: tokens.space.xs,
+                padding: spacing.phone.xs,
               }}
             >
               <X size={20} color={secondaryTextColor} />
@@ -192,18 +192,18 @@ export function TriviaIntroModal({
 
             {/* Header */}
             <YStack 
-              paddingTop={tokens.space.xl} 
-              paddingHorizontal={tokens.space.lg}
-              paddingBottom={tokens.space.md}
-              gap={tokens.space.sm}
+              paddingTop={spacing.phone.xl} 
+              paddingHorizontal={spacing.phone.lg}
+              paddingBottom={spacing.phone.md}
+              gap={spacing.phone.sm}
               alignItems="center"
             >
               {/* Icon + Title Row */}
-              <XStack alignItems="center" justifyContent="center" gap={tokens.space.md}>
+              <XStack alignItems="center" justifyContent="center" gap={spacing.phone.md}>
                 <YStack
                   width={44}
                   height={44}
-                  borderRadius={tokens.radius.md}
+                  borderRadius={radius.phone.md}
                   backgroundColor={accentColor}
                   justifyContent="center"
                   alignItems="center"
@@ -231,29 +231,29 @@ export function TriviaIntroModal({
             </YStack>
 
             {/* Divider */}
-            <YStack height={1} backgroundColor={borderColor} marginHorizontal={tokens.space.lg} />
+            <YStack height={1} backgroundColor={borderColor} marginHorizontal={spacing.phone.lg} />
 
             {/* Stats Grid - Redesigned */}
             <XStack 
-              paddingHorizontal={tokens.space.lg}
-              paddingVertical={tokens.space.md}
-              gap={tokens.space.md}
+              paddingHorizontal={spacing.phone.lg}
+              paddingVertical={spacing.phone.md}
+              gap={spacing.phone.md}
             >
               {/* Questions Box */}
               <YStack 
                 flex={1}
                 backgroundColor={`${accentColor}15`}
-                borderRadius={tokens.radius.lg}
-                padding={tokens.space.md}
+                borderRadius={radius.phone.lg}
+                padding={spacing.phone.md}
                 borderWidth={1}
                 borderColor={`${accentColor}30`}
                 alignItems="center"
               >
-                <XStack alignItems="center" gap={tokens.space.sm} marginBottom={tokens.space.xs}>
+                <XStack alignItems="center" gap={spacing.phone.sm} marginBottom={spacing.phone.xs}>
                   <YStack
                     width={32}
                     height={32}
-                    borderRadius={tokens.radius.sm}
+                    borderRadius={radius.phone.sm}
                     backgroundColor={accentColor}
                     justifyContent="center"
                     alignItems="center"
@@ -273,17 +273,17 @@ export function TriviaIntroModal({
               <YStack 
                 flex={1}
                 backgroundColor={isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)'}
-                borderRadius={tokens.radius.lg}
-                padding={tokens.space.md}
+                borderRadius={radius.phone.lg}
+                padding={spacing.phone.md}
                 borderWidth={1}
                 borderColor={isDark ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.2)'}
                 alignItems="center"
               >
-                <XStack alignItems="center" gap={tokens.space.sm} marginBottom={tokens.space.xs}>
+                <XStack alignItems="center" gap={spacing.phone.sm} marginBottom={spacing.phone.xs}>
                   <YStack
                     width={32}
                     height={32}
-                    borderRadius={tokens.radius.sm}
+                    borderRadius={radius.phone.sm}
                     backgroundColor={isDark ? '#818CF8' : '#6366F1'}
                     justifyContent="center"
                     alignItems="center"
@@ -302,25 +302,25 @@ export function TriviaIntroModal({
 
             {/* Info Cards */}
             <YStack 
-              paddingHorizontal={tokens.space.lg}
-              gap={tokens.space.xs}
-              marginBottom={tokens.space.md}
+              paddingHorizontal={spacing.phone.lg}
+              gap={spacing.phone.xs}
+              marginBottom={spacing.phone.md}
             >
               {/* Progress Card (for categories and mixed) */}
               {(type === 'category' || type === 'mixed') && totalQuestions > 0 && (
                 <XStack 
                   backgroundColor={surfaceColor}
-                  borderRadius={tokens.radius.md}
-                  padding={tokens.space.md}
+                  borderRadius={radius.phone.md}
+                  padding={spacing.phone.md}
                   alignItems="center"
-                  gap={tokens.space.sm}
+                  gap={spacing.phone.sm}
                 >
                   <Trophy size={typo.fontSize.title} color={successColor} />
                   <YStack flex={1} gap={2}>
                     <Text.Caption fontFamily={FONT_FAMILIES.medium} color={textColor}>
                       {t('triviaTotalQuestions', { count: totalQuestions })}
                     </Text.Caption>
-                    <XStack alignItems="center" gap={tokens.space.sm}>
+                    <XStack alignItems="center" gap={spacing.phone.sm}>
                       <Text.Caption fontFamily={FONT_FAMILIES.medium} color={secondaryTextColor}>
                         {answeredCount} {t('triviaAnswered')}
                       </Text.Caption>
@@ -336,10 +336,10 @@ export function TriviaIntroModal({
               {/* How to Master */}
               <XStack 
                 backgroundColor={surfaceColor}
-                borderRadius={tokens.radius.md}
-                padding={tokens.space.md}
+                borderRadius={radius.phone.md}
+                padding={spacing.phone.md}
                 alignItems="center"
-                gap={tokens.space.sm}
+                gap={spacing.phone.sm}
               >
                 <Target size={typo.fontSize.title} color={isDark ? '#818CF8' : '#6366F1'} />
                 <YStack flex={1}>
@@ -355,10 +355,10 @@ export function TriviaIntroModal({
               {/* Question Types */}
               <XStack 
                 backgroundColor={surfaceColor}
-                borderRadius={tokens.radius.md}
-                padding={tokens.space.md}
+                borderRadius={radius.phone.md}
+                padding={spacing.phone.md}
                 alignItems="center"
-                gap={tokens.space.sm}
+                gap={spacing.phone.sm}
               >
                 <CheckCircle size={typo.fontSize.title} color={isDark ? '#FBBF24' : '#F59E0B'} />
                 <YStack flex={1}>
@@ -373,7 +373,7 @@ export function TriviaIntroModal({
             </YStack>
 
             {/* Start Button */}
-            <YStack paddingHorizontal={tokens.space.lg} paddingBottom={tokens.space.lg}>
+            <YStack paddingHorizontal={spacing.phone.lg} paddingBottom={spacing.phone.lg}>
               <Pressable 
                 onPress={onStart}
                 style={({ pressed }) => ({
@@ -385,12 +385,12 @@ export function TriviaIntroModal({
               >
                 <XStack
                   backgroundColor={accentColor}
-                  paddingVertical={tokens.space.md}
-                  paddingHorizontal={tokens.space.xl}
-                  borderRadius={tokens.radius.md}
+                  paddingVertical={spacing.phone.md}
+                  paddingHorizontal={spacing.phone.xl}
+                  borderRadius={radius.phone.md}
                   alignItems="center"
                   justifyContent="center"
-                  gap={tokens.space.sm}
+                  gap={spacing.phone.sm}
                 >
                   <Play size={typo.fontSize.title} color="#FFFFFF" fill="#FFFFFF" />
                   <Text.Body

@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { Pressable, Animated, StyleSheet, View, Platform, useWindowDimensions } from "react-native";
+import { Pressable, Animated, StyleSheet, View, Platform } from "react-native";
 import { Image, ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { tokens } from "../theme/tokens";
+import { hexColors, spacing, radius, sizes } from "../theme";
 import { Text, FONT_FAMILIES } from "./Typography";
 import { CategoryBadge } from "./CategoryBadge";
 import { useFactImage } from "../utils/useFactImage";
-import { typography, spacing, componentSizes, isTabletDevice } from "../utils/responsive";
+import { useResponsive } from "../utils/useResponsive";
 import type { Category } from "../services/database";
 import { IMAGE_PLACEHOLDER, IMAGE_DIMENSIONS, IMAGE_RETRY } from "../config/images";
 
@@ -33,8 +33,8 @@ const ImageFactCardComponent = ({
   isTablet: isTabletProp = false,
   testID,
 }: ImageFactCardProps) => {
-  const { width: screenWidth } = useWindowDimensions();
-  const isTablet = isTabletProp || screenWidth >= 768;
+  const { screenWidth, isTablet: isTabletHook, spacing, componentSizes } = useResponsive();
+  const isTablet = isTabletProp || isTabletHook;
   
   // Use a ref for the scale animation - this persists across renders
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -96,7 +96,9 @@ const ImageFactCardComponent = ({
   const retryPendingRef = useRef(false);
 
   // Calculate card height based on aspect ratio
-  const cardHeight = screenWidth * IMAGE_DIMENSIONS.CARD_ASPECT_RATIO;
+  // Use a smaller aspect ratio for tablets so cards aren't too tall
+  const aspectRatio = isTablet ? IMAGE_DIMENSIONS.TABLET_CARD_ASPECT_RATIO : IMAGE_DIMENSIONS.CARD_ASPECT_RATIO;
+  const cardHeight = screenWidth * aspectRatio;
 
   const handlePressIn = useCallback(() => {
     Animated.spring(scaleAnim, {
@@ -179,13 +181,8 @@ const ImageFactCardComponent = ({
     [displayUri]
   );
 
-  // Get responsive values based on isTablet
-  const typo = isTablet ? typography.tablet : typography.phone;
-  const space = isTablet ? spacing.tablet : spacing.phone;
-  const sizes = isTablet ? componentSizes.tablet : componentSizes.phone;
-  
   // Style objects
-  const marginStyle = { marginBottom: space.md };
+  const marginStyle = { marginBottom: spacing.md };
   const imageContainerStyle = { height: cardHeight };
   // Simple image style - fill the container completely
   const imageStyle = {
@@ -193,13 +190,13 @@ const ImageFactCardComponent = ({
     height: "100%" as const,
   };
   const badgePositionStyle = {
-    top: space.md,
-    right: space.md,
+    top: spacing.md,
+    right: spacing.md,
   };
   const contentOverlayStyle = {
-    paddingHorizontal: space.lg,
-    paddingBottom: space.lg,
-    paddingTop: space.xl * 1.5,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingTop: spacing.xl * 1.5,
   };
   
 
@@ -265,9 +262,8 @@ const ImageFactCardComponent = ({
             {/* Category badge */}
             {category && (
               <View style={[styles.badgeContainer, badgePositionStyle]}>
-                <CategoryBadge 
-                  category={category} 
-                  fontSize={sizes.badgeFontSize}
+                <CategoryBadge
+                  category={category}
                 />
               </View>
             )}
@@ -277,7 +273,7 @@ const ImageFactCardComponent = ({
               {/* Title */}
               <Text.Title
                 color="#FFFFFF"
-                numberOfLines={sizes.maxLines}
+                numberOfLines={componentSizes.maxLines}
                 style={styles.titleShadow}
               >
                 {title}
@@ -303,10 +299,10 @@ const gradientLocations = [0.3, 0.6, 1] as const;
 const styles = StyleSheet.create({
   pressable: {
     overflow: "hidden",
-    borderRadius: tokens.radius.lg,
+    borderRadius: radius.phone.lg,
   },
   cardWrapper: {
-    borderRadius: tokens.radius.lg,
+    borderRadius: radius.phone.lg,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.1)",

@@ -12,7 +12,7 @@ import { Brain, Flame, Sparkles, ArrowRight } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { tokens } from '../../src/theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../src/theme';
 import {
   ScreenContainer,
   ScreenHeader,
@@ -36,11 +36,11 @@ import { useResponsive } from '../../src/utils/useResponsive';
 
 // Grid styled components
 const TriviaGrid = styled(View, {
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
 });
 
 const TriviaRow = styled(XStack, {
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
 });
 
 
@@ -50,7 +50,7 @@ export default function TriviaScreen() {
   const router = useRouter();
   const isDark = theme === 'dark';
   const iconColor = useIconColor();
-  const { isTablet, typography: typo } = useResponsive();
+  const { isTablet, typography: typo, gridLayout } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -195,7 +195,7 @@ export default function TriviaScreen() {
       <ScreenContainer edges={["top"]}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <LoadingContainer>
-          <ActivityIndicator size="large" color={tokens.color.light.primary} />
+          <ActivityIndicator size="large" color={hexColors.light.primary} />
         </LoadingContainer>
       </ScreenContainer>
     );
@@ -210,13 +210,13 @@ export default function TriviaScreen() {
   const hasCategories = categoriesWithProgress.length > 0;
   
   // Colors for empty state
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
-  const primaryLightColor = isDark ? tokens.color.dark.primaryLight : tokens.color.light.primaryLight;
-  const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
-  const purpleColor = isDark ? tokens.color.dark.neonPurple : tokens.color.light.neonPurple;
-  const orangeColor = isDark ? tokens.color.dark.neonOrange : tokens.color.light.neonOrange;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
+  const primaryLightColor = isDark ? hexColors.dark.primaryLight : hexColors.light.primaryLight;
+  const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+  const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
+  const orangeColor = isDark ? hexColors.dark.neonOrange : hexColors.light.neonOrange;
 
   // Streak badge for header (only show when streak > 0)
   const streakBadge = dailyStreak > 0 ? (
@@ -241,7 +241,7 @@ export default function TriviaScreen() {
   };
 
   // On tablets, show 4 categories per row; on phones, show 2
-  const categoriesPerRow = isTablet ? 4 : 2;
+  const categoriesPerRow = gridLayout.triviaCategoriesPerRow;
   const categoryRows = chunkCategories(categoriesWithProgress, categoriesPerRow);
 
   return (
@@ -262,7 +262,7 @@ export default function TriviaScreen() {
             />
           </Animated.View>
           
-          <ContentContainer gap={tokens.space.lg} paddingBottom={tokens.space.md}>
+          <ContentContainer gap={spacing.phone.lg} paddingBottom={spacing.phone.md}>
             {/* Always show Stats */}
             <Animated.View entering={FadeInDown.delay(50).duration(300)}>
               <TriviaStatsHero
@@ -281,7 +281,7 @@ export default function TriviaScreen() {
                   <Text.Label
                     color={textColor}
                     fontFamily={FONT_FAMILIES.semibold}
-                    marginTop={tokens.space.sm}
+                    marginTop={spacing.phone.sm}
                   >
                     {t('triviaGameModes')}
                   </Text.Label>
@@ -350,10 +350,10 @@ export default function TriviaScreen() {
               <Animated.View entering={FadeInDown.duration(400).delay(200)}>
                 <YStack
                   backgroundColor={cardBg}
-                  borderRadius={tokens.radius.lg}
-                  padding={tokens.space.xl}
+                  borderRadius={radius.phone.lg}
+                  padding={spacing.phone.xl}
                   alignItems="center"
-                  gap={tokens.space.lg}
+                  gap={spacing.phone.lg}
                 >
                   {/* Animated Icon */}
                   <YStack
@@ -368,7 +368,7 @@ export default function TriviaScreen() {
                   </YStack>
                   
                   {/* Title & Description */}
-                  <YStack alignItems="center" gap={tokens.space.sm}>
+                  <YStack alignItems="center" gap={spacing.phone.sm}>
                     <Text.Title
                       color={textColor}
                       textAlign="center"
@@ -393,12 +393,12 @@ export default function TriviaScreen() {
                   >
                     <XStack
                       backgroundColor={primaryColor}
-                      paddingVertical={tokens.space.md}
-                      paddingHorizontal={tokens.space.xl}
-                      borderRadius={tokens.radius.md}
+                      paddingVertical={spacing.phone.md}
+                      paddingHorizontal={spacing.phone.xl}
+                      borderRadius={radius.phone.md}
                       justifyContent="center"
                       alignItems="center"
-                      gap={tokens.space.sm}
+                      gap={spacing.phone.sm}
                     >
                       <Text.Label
                         color="#FFFFFF"

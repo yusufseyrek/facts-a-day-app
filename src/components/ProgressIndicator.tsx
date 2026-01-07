@@ -2,24 +2,24 @@ import React from 'react';
 import { View, styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Text, FONT_FAMILIES } from './Typography';
-import { tokens } from '../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../theme';
 
 const Container = styled(YStack, {
-  gap: tokens.space.sm,
+  gap: spacing.phone.sm,
 });
 
 const ProgressBarContainer = styled(View, {
   width: '100%',
   height: 6,
   backgroundColor: '$neutralLight',
-  borderRadius: tokens.radius.full,
+  borderRadius: radius.phone.full,
   overflow: 'hidden',
 });
 
 const ProgressBarFill = styled(View, {
   height: '100%',
   backgroundColor: '$primary',
-  borderRadius: tokens.radius.full,
+  borderRadius: radius.phone.full,
 });
 
 interface ProgressIndicatorProps {

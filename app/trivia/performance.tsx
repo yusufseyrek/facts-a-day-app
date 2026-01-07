@@ -23,7 +23,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
-import { tokens } from '../../src/theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../src/theme';
 import { Text, FONT_FAMILIES } from '../../src/components/Typography';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
@@ -107,19 +107,19 @@ function MetricCard({
   isDark: boolean;
 }) {
   const { typography: typo } = useResponsive();
-  const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const subtitleColor = isDark ? tokens.color.dark.neonGreen : tokens.color.light.success;
+  const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const subtitleColor = isDark ? hexColors.dark.neonGreen : hexColors.light.success;
 
   return (
     <YStack
       flex={1}
       backgroundColor={cardBg}
-      borderRadius={tokens.radius.lg}
-      padding={tokens.space.lg}
-      gap={tokens.space.sm}
+      borderRadius={radius.phone.lg}
+      padding={spacing.phone.lg}
+      gap={spacing.phone.sm}
     >
-      <XStack alignItems="center" gap={tokens.space.sm}>
+      <XStack alignItems="center" gap={spacing.phone.sm}>
         <View
           style={{
             width: 28,
@@ -133,7 +133,7 @@ function MetricCard({
           {icon}
         </View>
         <Text.Caption
-          color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
+          color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
           fontFamily={FONT_FAMILIES.medium}
         >
           {label}
@@ -165,16 +165,16 @@ function CategoryProgressBar({
   isDark: boolean;
 }) {
   const { typography: typo } = useResponsive();
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const trackColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
-  const progressColor = category.color_hex || (isDark ? tokens.color.dark.primary : tokens.color.light.primary);
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const trackColor = isDark ? hexColors.dark.border : hexColors.light.border;
+  const progressColor = category.color_hex || (isDark ? hexColors.dark.primary : hexColors.light.primary);
   // Use accuracy (correct/answered) instead of mastered/total
   const percentage = category.accuracy;
 
   return (
-    <YStack gap={tokens.space.xs}>
+    <YStack gap={spacing.phone.xs}>
       <XStack alignItems="center" justifyContent="space-between">
-        <XStack alignItems="center" gap={tokens.space.sm}>
+        <XStack alignItems="center" gap={spacing.phone.sm}>
           {getLucideIcon(category.icon, typo.fontSize.title, progressColor)}
           <Text.Label
             color={textColor}
@@ -229,13 +229,13 @@ function SessionCard({
   testID?: string;
 }) {
   const { typography: typo } = useResponsive();
-  const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
-  const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
+  const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+  const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
   const warningColor = '#F59E0B';
-  const errorColor = isDark ? tokens.color.dark.error : tokens.color.light.error;
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
+  const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
 
   const scorePercentage = session.total_questions > 0 
     ? (session.correct_answers / session.total_questions) * 100 
@@ -345,10 +345,10 @@ function SessionCard({
     >
       <XStack
         backgroundColor={cardBg}
-        borderRadius={tokens.radius.lg}
-        padding={tokens.space.lg}
+        borderRadius={radius.phone.lg}
+        padding={spacing.phone.lg}
         alignItems="center"
-        gap={tokens.space.sm}
+        gap={spacing.phone.sm}
       >
         {getIcon()}
         <YStack flex={1} gap={2}>
@@ -459,13 +459,13 @@ export default function PerformanceScreen() {
   }, []);
 
   // Colors
-  const bgColor = isDark ? tokens.color.dark.background : tokens.color.light.background;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
-  const accentColor = isDark ? tokens.color.dark.accent : tokens.color.light.accent;
-  const purpleColor = isDark ? tokens.color.dark.neonPurple : tokens.color.light.neonPurple;
-  const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
+  const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
+  const accentColor = isDark ? hexColors.dark.accent : hexColors.light.accent;
+  const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
+  const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
 
   if (loading) {
     return (
@@ -547,13 +547,13 @@ export default function PerformanceScreen() {
       {/* Header */}
       <Animated.View entering={FadeInUp.duration(400).springify()}>
         <XStack
-          paddingTop={insets.top + tokens.space.sm}
-          paddingBottom={tokens.space.md}
-          paddingHorizontal={tokens.space.lg}
+          paddingTop={insets.top + spacing.phone.sm}
+          paddingBottom={spacing.phone.md}
+          paddingHorizontal={spacing.phone.lg}
           alignItems="center"
           justifyContent="space-between"
           borderBottomWidth={1}
-          borderBottomColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
+          borderBottomColor={isDark ? hexColors.dark.border : hexColors.light.border}
         >
           <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
           
@@ -574,19 +574,19 @@ export default function PerformanceScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
         }
       >
-        <YStack padding={tokens.space.lg} gap={tokens.space.xl}>
+        <YStack padding={spacing.phone.lg} gap={spacing.phone.xl}>
           {/* Core Metrics */}
           <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
             <Text.Title
               color={textColor}
-              marginBottom={tokens.space.md}
+              marginBottom={spacing.phone.md}
             >
               {t('coreMetrics')}
             </Text.Title>
             
             {isTablet ? (
               /* Tablet: All 4 metrics in a single row */
-              <XStack gap={tokens.space.md}>
+              <XStack gap={spacing.phone.md}>
                 <MetricCard
                   icon={<Gamepad2 size={16} color={purpleColor} />}
                   iconColor={purpleColor}
@@ -625,9 +625,9 @@ export default function PerformanceScreen() {
               </XStack>
             ) : (
               /* Phone: 2 rows of 2 metrics */
-              <YStack gap={tokens.space.md}>
+              <YStack gap={spacing.phone.md}>
                 {/* Row 1: Tests & Correct */}
-                <XStack gap={tokens.space.md}>
+                <XStack gap={spacing.phone.md}>
                   <MetricCard
                     icon={<Gamepad2 size={16} color={purpleColor} />}
                     iconColor={purpleColor}
@@ -649,7 +649,7 @@ export default function PerformanceScreen() {
                 </XStack>
                 
                 {/* Row 2: Answered & Mastered */}
-                <XStack gap={tokens.space.md}>
+                <XStack gap={spacing.phone.md}>
                   <MetricCard
                     icon={<Hash size={16} color={primaryColor} />}
                     iconColor={primaryColor}
@@ -675,7 +675,7 @@ export default function PerformanceScreen() {
           {/* Accuracy by Category */}
           {displayCategories.length > 0 && (
             <Animated.View entering={SlideInRight.delay(75).duration(400).springify()}>
-              <YStack marginBottom={tokens.space.md} gap={tokens.space.xs}>
+              <YStack marginBottom={spacing.phone.md} gap={spacing.phone.xs}>
                 <XStack alignItems="center" justifyContent="space-between">
                   <Text.Title
                     color={textColor}
@@ -694,7 +694,7 @@ export default function PerformanceScreen() {
                   )}
                 </XStack>
                 <Text.Caption
-                  color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
+                  color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
                   opacity={0.9}
                 >
                   {t('accuracyByCategorySubtitle')}
@@ -703,9 +703,9 @@ export default function PerformanceScreen() {
               
               <YStack
                 backgroundColor={cardBg}
-                borderRadius={tokens.radius.lg}
-                padding={tokens.space.lg}
-                gap={tokens.space.lg}
+                borderRadius={radius.phone.lg}
+                padding={spacing.phone.lg}
+                gap={spacing.phone.lg}
               >
                 {displayCategories.map((category) => (
                   <CategoryProgressBar
@@ -721,7 +721,7 @@ export default function PerformanceScreen() {
           {/* Recent Trivia */}
           {recentSessions.length > 0 && (
             <Animated.View entering={SlideInRight.delay(100).duration(400).springify()}>
-              <XStack alignItems="center" justifyContent="space-between" marginBottom={tokens.space.md}>
+              <XStack alignItems="center" justifyContent="space-between" marginBottom={spacing.phone.md}>
                 <Text.Title
                   color={textColor}
                 >
@@ -739,7 +739,7 @@ export default function PerformanceScreen() {
                 )}
               </XStack>
               
-              <YStack gap={tokens.space.md}>
+              <YStack gap={spacing.phone.md}>
                 {recentSessions.map((session, index) => (
                   <SessionCard
                     key={session.id}

@@ -1,5 +1,5 @@
 import * as WebBrowser from "expo-web-browser";
-import { tokens } from "../theme/tokens";
+import { hexColors, spacing, radius, sizes } from "../theme";
 
 export interface OpenBrowserOptions {
   /** Theme mode for styling the browser controls */
@@ -31,7 +31,7 @@ export async function openInAppBrowser(
   options: OpenBrowserOptions = {}
 ): Promise<WebBrowser.WebBrowserResult> {
   const { theme = "dark", translateTo } = options;
-  const colors = tokens.color[theme];
+  const colors = hexColors[theme];
 
   // If translation is requested, wrap the URL with Google Translate
   const finalUrl = translateTo ? getTranslatedUrl(url, translateTo) : url;

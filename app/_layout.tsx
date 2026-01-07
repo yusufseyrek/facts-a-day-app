@@ -4,7 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppThemeProvider, useTheme } from '../src/theme';
 import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
-import { tokens } from '../src/theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../src/theme';
 import { I18nProvider, getLocaleFromCode } from '../src/i18n';
 import { OnboardingProvider, useOnboarding } from '../src/contexts';
 import * as onboardingService from '../src/services/onboarding';
@@ -57,11 +57,11 @@ const CustomDarkTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: tokens.color.dark.background,
-    card: tokens.color.dark.surface,
-    border: tokens.color.dark.border,
-    primary: tokens.color.dark.primary,
-    text: tokens.color.dark.text,
+    background: hexColors.dark.background,
+    card: hexColors.dark.surface,
+    border: hexColors.dark.border,
+    primary: hexColors.dark.primary,
+    text: hexColors.dark.text,
   },
 };
 
@@ -70,11 +70,11 @@ const CustomLightTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: tokens.color.light.background,
-    card: tokens.color.light.surface,
-    border: tokens.color.light.border,
-    primary: tokens.color.light.primary,
-    text: tokens.color.light.text,
+    background: hexColors.light.background,
+    card: hexColors.light.surface,
+    border: hexColors.light.border,
+    primary: hexColors.light.primary,
+    text: hexColors.light.text,
   },
 };
 
@@ -99,8 +99,8 @@ function AppContent() {
   
   // Get theme-aware background color for screens and modals
   const backgroundColor = theme === 'dark' 
-    ? tokens.color.dark.background 
-    : tokens.color.light.background;
+    ? hexColors.dark.background 
+    : hexColors.light.background;
 
   // Re-check onboarding status when navigating to onboarding paths
   // This ensures the reset onboarding button works correctly

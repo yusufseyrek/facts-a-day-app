@@ -7,7 +7,7 @@ import { YStack, XStack } from "tamagui";
 import { X, Calendar } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
-import { tokens } from "../theme/tokens";
+import { hexColors, spacing, radius, sizes } from "../theme";
 import { FactActions } from "./FactActions";
 import { CategoryBadge } from "./CategoryBadge";
 import { Text, FONT_FAMILIES } from "./Typography";
@@ -36,7 +36,7 @@ const Container = styled(YStack, {
 const CloseButton = styled(YStack, {
   width: 36,
   height: 36,
-  borderRadius: tokens.radius.full,
+  borderRadius: radius.phone.full,
   backgroundColor: "rgba(0, 0, 0, 0.4)",
   alignItems: "center",
   justifyContent: "center",
@@ -50,11 +50,11 @@ const HeaderContainer = styled(XStack, {
   zIndex: 100,
   alignItems: "center",
   justifyContent: "space-between",
-  paddingHorizontal: tokens.space.lg,
+  paddingHorizontal: spacing.phone.lg,
   variants: {
     tablet: {
       true: {
-        paddingHorizontal: tokens.space.xxl,
+        paddingHorizontal: spacing.phone.xxl,
       },
     },
   } as const,
@@ -67,24 +67,24 @@ const HeaderTitleContainer = styled(XStack, {
 });
 
 const ContentSection = styled(YStack, {
-  paddingHorizontal: tokens.space.lg,
-  paddingTop: tokens.space.lg,
-  paddingBottom: tokens.space.md,
-  gap: tokens.space.md,
+  paddingHorizontal: spacing.phone.lg,
+  paddingTop: spacing.phone.lg,
+  paddingBottom: spacing.phone.md,
+  gap: spacing.phone.md,
   variants: {
     tablet: {
       true: {
-        paddingHorizontal: tokens.space.xxl,
-        paddingTop: tokens.space.xxl,
-        paddingBottom: tokens.space.xl,
-        gap: tokens.space.xl,
+        paddingHorizontal: spacing.phone.xxl,
+        paddingTop: spacing.phone.xxl,
+        paddingBottom: spacing.phone.xl,
+        gap: spacing.phone.xl,
       },
     },
   } as const,
 });
 
 const BadgesRow = styled(XStack, {
-  gap: tokens.space.sm,
+  gap: spacing.phone.sm,
   flexWrap: "wrap",
   alignItems: "center",
   justifyContent: "space-between",
@@ -92,7 +92,7 @@ const BadgesRow = styled(XStack, {
 });
 
 const SourceLink = styled(YStack, {
-  paddingTop: tokens.space.md,
+  paddingTop: spacing.phone.md,
   borderTopWidth: 1,
   borderTopColor: "$border",
 });
@@ -132,7 +132,7 @@ function formatLastUpdated(dateString: string, locale: string): string {
 export function FactModal({ fact, onClose }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, spacing, iconSizes, isTablet, screenWidth: SCREEN_WIDTH, screenHeight: SCREEN_HEIGHT } = useResponsive();
+  const { typography, spacing, iconSizes, isTablet, screenWidth: SCREEN_WIDTH, screenHeight: SCREEN_HEIGHT, gridLayout } = useResponsive();
 
   const insets = useSafeAreaInsets();
   const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
@@ -274,9 +274,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const hasImage = !!imageUri;
   
   // Calculate dynamic header height first (needed for transition calculations)
-  const basePaddingTop = Platform.OS === "ios" ? tokens.space.lg : insets.top + tokens.space.sm;
-  const basePaddingBottom = Platform.OS === "ios" ? tokens.space.lg : tokens.space.md;
-  const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight + (isTablet ? 4 : 8);
+  const basePaddingTop = Platform.OS === "ios" ? spacing.lg : insets.top + spacing.sm;
+  const basePaddingBottom = Platform.OS === "ios" ? spacing.lg : spacing.md;
+  const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight + gridLayout.headerPaddingAdjustment;
   const minHeaderHeight = Platform.OS === "ios" ? 100 : 70 + insets.top;
   const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
 
@@ -360,7 +360,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   });
 
   const iosShadowOffset = Platform.OS === "ios" ? 4 : 0;
-  const tabletMagicNumber = isTablet ? spacing.md : 0
+  const tabletMagicNumber = isTablet ? 10 : 0;
 
   // Header title translateY - slides up from bottom of header as scrollY increases
   // Animation starts when header becomes visible (at HEADER_BG_TRANSITION)
@@ -419,8 +419,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           pointerEvents: "none",
           zIndex: -1,
           width: isTablet 
-            ? containerWidth - tokens.space.xxl * 2
-            : containerWidth - tokens.space.lg * 2,
+            ? containerWidth - spacing.xxl * 2
+            : containerWidth - spacing.lg * 2,
         }}
         onLayout={(event) => {
           const { height } = event.nativeEvent.layout;
@@ -536,9 +536,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             tablet={isTablet}
             pointerEvents="box-none"
               style={{
-                paddingTop: Platform.OS === "ios" ? tokens.space.lg : insets.top + tokens.space.sm,
+                paddingTop: Platform.OS === "ios" ? spacing.lg : insets.top + spacing.sm,
                 minHeight: headerHeight,
-                paddingBottom: Platform.OS === "ios" ? tokens.space.lg : tokens.space.md,
+                paddingBottom: Platform.OS === "ios" ? spacing.lg : spacing.md,
                 zIndex: 101,
                 alignItems: "center",
               }}
@@ -640,7 +640,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 },
               ]}
             />
-            <View style={{ alignItems: "center", gap: tokens.space.sm }}>
+            <View style={{ alignItems: "center", gap: spacing.sm }}>
               <ImagePlus
                 size={iconSizes.xxlarge}
                 color={theme === "dark" ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.2)"}
@@ -671,7 +671,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 />
               )}
               {(fact.last_updated || fact.created_at) && (
-                <XStack alignItems="center" gap={tokens.space.xs}>
+                <XStack alignItems="center" gap={spacing.xs}>
                   <Text.Body
                     fontSize={typography.fontSize.label}
                     color="$textSecondary"
@@ -752,7 +752,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             style={{
               width: 36,
               height: 36,
-              borderRadius: tokens.radius.full,
+              borderRadius: radius.phone.full,
               backgroundColor: "rgba(0, 0, 0, 0.4)",
               alignItems: "center",
               justifyContent: "center",
@@ -788,7 +788,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             style={{
               width: 36,
               height: 36,
-              borderRadius: tokens.radius.full,
+              borderRadius: radius.phone.full,
               backgroundColor: theme === "dark"
                 ? "rgba(255,255,255,0.1)"
                 : "rgba(0,0,0,0.08)",
@@ -801,7 +801,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               color={
                 theme === "dark"
                   ? "#FFFFFF"
-                  : tokens.color.light.text
+                  : hexColors.light.text
               }
             />
           </TouchableOpacity>

@@ -18,7 +18,7 @@ import * as database from "../services/database";
 import * as api from "../services/api";
 import { useTranslation } from "../i18n";
 import { ReportFactModal } from "./ReportFactModal";
-import { tokens, useTheme } from "../theme";
+import { hexColors, spacing, radius, sizes, useTheme } from "../theme";
 import {
   trackFactShare,
   trackFactFavoriteAdd,
@@ -121,9 +121,9 @@ export function FactActions({
   const insets = useSafeAreaInsets();
 
   // Neon colors for actions
-  const heartColor = theme === "dark" ? tokens.color.dark.neonRed : tokens.color.light.neonRed;
-  const shareColor = theme === "dark" ? tokens.color.dark.neonGreen : tokens.color.light.neonGreen;
-  const flagColor = theme === "dark" ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
+  const heartColor = theme === "dark" ? hexColors.dark.neonRed : hexColors.light.neonRed;
+  const shareColor = theme === "dark" ? hexColors.dark.neonGreen : hexColors.light.neonGreen;
+  const flagColor = theme === "dark" ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);

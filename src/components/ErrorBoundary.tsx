@@ -1,7 +1,7 @@
 import React, { Component, ReactNode } from 'react';
 import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { recordError } from '../config/firebase';
-import { tokens } from '../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../theme';
 import { FONT_FAMILIES } from './Typography';
 
 interface Props {
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: tokens.space.xl,
+    padding: spacing.phone.xl,
   },
   content: {
     alignItems: 'center',
@@ -133,30 +133,30 @@ const styles = StyleSheet.create({
   },
   emoji: {
     fontSize: 64,
-    marginBottom: tokens.space.lg,
+    marginBottom: spacing.phone.lg,
     textAlign: 'center',
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
     fontFamily: FONT_FAMILIES.bold,
-    color: tokens.color.light.text,
+    color: hexColors.light.text,
     textAlign: 'center',
-    marginBottom: tokens.space.md,
+    marginBottom: spacing.phone.md,
   },
   body: {
     fontSize: 16,
     fontFamily: FONT_FAMILIES.regular,
-    color: tokens.color.light.textSecondary,
+    color: hexColors.light.textSecondary,
     textAlign: 'center',
-    marginBottom: tokens.space.xl,
+    marginBottom: spacing.phone.xl,
     lineHeight: 24,
   },
   errorDetails: {
     backgroundColor: '#FEF2F2',
-    borderRadius: tokens.radius.md,
-    padding: tokens.space.md,
-    marginBottom: tokens.space.xl,
+    borderRadius: radius.phone.md,
+    padding: spacing.phone.md,
+    marginBottom: spacing.phone.xl,
     width: '100%',
   },
   errorLabel: {
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: FONT_FAMILIES.semibold,
     color: '#DC2626',
-    marginBottom: tokens.space.sm,
+    marginBottom: spacing.phone.sm,
   },
   errorText: {
     fontSize: 12,
@@ -172,10 +172,10 @@ const styles = StyleSheet.create({
     color: '#991B1B',
   },
   button: {
-    backgroundColor: tokens.color.light.primary,
-    paddingHorizontal: tokens.space.xl,
-    paddingVertical: tokens.space.md,
-    borderRadius: tokens.radius.lg,
+    backgroundColor: hexColors.light.primary,
+    paddingHorizontal: spacing.phone.xl,
+    paddingVertical: spacing.phone.md,
+    borderRadius: radius.phone.lg,
     minWidth: 200,
   },
   buttonPressed: {

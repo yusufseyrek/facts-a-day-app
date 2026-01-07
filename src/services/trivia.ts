@@ -46,7 +46,7 @@ export { TIME_PER_QUESTION } from '../config/trivia';
 
 // Calculate estimated time for a quiz in minutes
 export function getEstimatedTimeMinutes(questionCount: number): number {
-  const totalSeconds = questionCount * TIME_PER_QUESTION.average;
+  const totalSeconds = questionCount * TIME_PER_QUESTION.AVERAGE;
   return Math.ceil(totalSeconds / 60);
 }
 

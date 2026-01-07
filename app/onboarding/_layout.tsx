@@ -1,14 +1,14 @@
 import { Stack } from "expo-router";
 import { useColorScheme } from "react-native";
-import { tokens } from "../../src/theme/tokens";
+import { hexColors, spacing, radius, sizes } from "../../src/theme";
 
 export default function OnboardingLayout() {
   const colorScheme = useColorScheme();
   
   // Use system color scheme for initial background
   const backgroundColor = colorScheme === 'dark' 
-    ? tokens.color.dark.background 
-    : tokens.color.light.background;
+    ? hexColors.dark.background 
+    : hexColors.light.background;
 
   return (
     <Stack

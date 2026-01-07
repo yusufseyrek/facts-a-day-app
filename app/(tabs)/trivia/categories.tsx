@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
-import { tokens } from '../../../src/theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../../src/theme';
 import { Text, FONT_FAMILIES } from '../../../src/components/Typography';
 import { useTheme } from '../../../src/theme';
 import { useTranslation } from '../../../src/i18n';
@@ -87,16 +87,16 @@ function CategoryProgressBar({
   index: number;
 }) {
   const { typography: typo } = useResponsive();
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const trackColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
-  const progressColor = category.color_hex || (isDark ? tokens.color.dark.primary : tokens.color.light.primary);
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const trackColor = isDark ? hexColors.dark.border : hexColors.light.border;
+  const progressColor = category.color_hex || (isDark ? hexColors.dark.primary : hexColors.light.primary);
   const percentage = category.accuracy;
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).duration(400).springify()}>
-      <YStack gap={tokens.space.xs}>
+      <YStack gap={spacing.phone.xs}>
       <XStack alignItems="center" justifyContent="space-between">
-        <XStack alignItems="center" gap={tokens.space.sm}>
+        <XStack alignItems="center" gap={spacing.phone.sm}>
           {getLucideIcon(category.icon, typo.fontSize.title, progressColor)}
           <Text.Label
             color={textColor}
@@ -175,10 +175,10 @@ export default function CategoriesAccuracyScreen() {
   );
 
   // Colors
-  const bgColor = isDark ? tokens.color.dark.background : tokens.color.light.background;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
+  const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
 
   if (loading) {
     return (
@@ -198,13 +198,13 @@ export default function CategoriesAccuracyScreen() {
       {/* Header */}
       <Animated.View entering={FadeInUp.duration(400).springify()}>
         <XStack
-          paddingTop={insets.top + tokens.space.sm}
-          paddingBottom={tokens.space.md}
-          paddingHorizontal={tokens.space.lg}
+          paddingTop={insets.top + spacing.phone.sm}
+          paddingBottom={spacing.phone.md}
+          paddingHorizontal={spacing.phone.lg}
           alignItems="center"
           justifyContent="space-between"
           borderBottomWidth={1}
-          borderBottomColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
+          borderBottomColor={isDark ? hexColors.dark.border : hexColors.light.border}
         >
           <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
           
@@ -225,17 +225,17 @@ export default function CategoriesAccuracyScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
         }
         contentContainerStyle={{ 
-          padding: tokens.space.lg,
-          paddingBottom: insets.bottom + tokens.space.xl,
+          padding: spacing.phone.lg,
+          paddingBottom: insets.bottom + spacing.phone.xl,
         }}
       >
         {categories.length > 0 ? (
           <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
             <YStack
               backgroundColor={cardBg}
-              borderRadius={tokens.radius.lg}
-              padding={tokens.space.lg}
-              gap={tokens.space.lg}
+              borderRadius={radius.phone.lg}
+              padding={spacing.phone.lg}
+              gap={spacing.phone.lg}
             >
               {categories.map((category, index) => (
                 <CategoryProgressBar
@@ -250,7 +250,7 @@ export default function CategoriesAccuracyScreen() {
         ) : (
           <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
             <Text.Body
-              color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
+              color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
             >
               {t('noDataYet')}
             </Text.Body>

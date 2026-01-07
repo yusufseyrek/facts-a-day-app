@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { Check, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { tokens } from '../../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
@@ -29,12 +29,12 @@ export function CategoryQuestCard({
   
   const isComplete = category.isComplete;
   
-  const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const borderColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
-  const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
+  const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
+  const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
   
   // Use category color or fallback
   const categoryColor = category.color_hex || primaryColor;
@@ -50,10 +50,10 @@ export function CategoryQuestCard({
       >
         <XStack
           backgroundColor={cardBg}
-          padding={tokens.space.lg}
-          borderRadius={tokens.radius.md}
+          padding={spacing.phone.lg}
+          borderRadius={radius.phone.md}
           alignItems="center"
-          gap={tokens.space.md}
+          gap={spacing.phone.md}
         >
           {/* Category icon */}
           <YStack
@@ -69,7 +69,7 @@ export function CategoryQuestCard({
           
           {/* Content */}
           <YStack flex={1}>
-            <XStack alignItems="center" gap={tokens.space.sm}>
+            <XStack alignItems="center" gap={spacing.phone.sm}>
               <Text.Label
                 fontFamily={FONT_FAMILIES.semibold}
                 color={textColor}
@@ -82,12 +82,12 @@ export function CategoryQuestCard({
             </XStack>
             
             {/* Progress bar */}
-            <XStack alignItems="center" gap={tokens.space.sm} marginTop={tokens.space.xs}>
+            <XStack alignItems="center" gap={spacing.phone.sm} marginTop={spacing.phone.xs}>
               <YStack 
                 flex={1} 
                 height={3} 
                 borderRadius={2} 
-                backgroundColor={isDark ? tokens.color.dark.border : tokens.color.light.border}
+                backgroundColor={isDark ? hexColors.dark.border : hexColors.light.border}
               >
                 <YStack 
                   height={3} 

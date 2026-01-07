@@ -3,7 +3,7 @@ import { Pressable } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { Zap, Check, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { tokens } from '../../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
 import type { TranslationKeys } from '../../i18n/translations';
@@ -25,12 +25,12 @@ export function DailyChallengeCard({
   t,
 }: DailyChallengeCardProps) {
   const { typography: typo } = useResponsive();
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
-  const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
-  const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const borderColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
+  const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
+  const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
   
   return (
     <Animated.View entering={FadeIn.duration(300).delay(100)}>
@@ -43,12 +43,12 @@ export function DailyChallengeCard({
       >
         <XStack
           backgroundColor={cardBg}
-          padding={tokens.space.lg}
-          borderRadius={tokens.radius.md}
+          padding={spacing.phone.lg}
+          borderRadius={radius.phone.md}
           borderWidth={1}
           borderColor={isCompleted ? successColor : borderColor}
           alignItems="center"
-          gap={tokens.space.md}
+          gap={spacing.phone.md}
         >
           {/* Icon */}
           <YStack

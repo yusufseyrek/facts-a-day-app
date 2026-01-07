@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, View, StyleSheet } from 'react-native';
 import { ChevronRight, ExternalLink, AlertCircle } from '@tamagui/lucide-icons';
 import { useTheme } from '../theme';
-import { tokens } from '../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../theme';
 import { Text } from './Typography';
 
 interface SettingsRowProps {
@@ -25,7 +25,7 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   showWarning = false,
 }) => {
   const { theme } = useTheme();
-  const colors = tokens.color[theme];
+  const colors = hexColors[theme];
 
   // Use pure white in dark mode for better contrast
   const labelColor = theme === 'dark' ? '#FFFFFF' : colors.text;
@@ -36,8 +36,8 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   // Use white background in light mode, surface in dark mode
   const backgroundColor =
     theme === "dark"
-      ? tokens.color.dark.surface
-      : tokens.color.light.surface;
+      ? hexColors.dark.surface
+      : hexColors.light.surface;
 
   const content = (
     <View
@@ -98,9 +98,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: tokens.space.lg,
-    paddingVertical: tokens.space.md,
-    borderRadius: tokens.radius.md,
+    paddingHorizontal: spacing.phone.lg,
+    paddingVertical: spacing.phone.md,
+    borderRadius: radius.phone.md,
     borderWidth: 1,
     minHeight: 56,
   },
@@ -110,14 +110,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconContainer: {
-    marginRight: tokens.space.md,
+    marginRight: spacing.phone.md,
   },
   warningContainer: {
-    marginLeft: tokens.space.sm,
+    marginLeft: spacing.phone.sm,
   },
   rightContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: tokens.space.sm,
+    gap: spacing.phone.sm,
   },
 });

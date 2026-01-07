@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Platform, ScrollView, Alert, useWindowDimensions, Animated, Easing } from "react-native";
+import { Platform, ScrollView, Alert, Animated, Easing } from "react-native";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { Bell } from "@tamagui/lucide-icons";
-import { tokens } from "../../src/theme/tokens";
-import { typography, RESPONSIVE_CONSTANTS } from "../../src/utils/responsive";
+import { hexColors, spacing, radius, sizes } from "../../src/theme";
+import { useResponsive } from "../../src/utils/useResponsive";
 import { Text, Button, ProgressIndicator, MultiTimePicker } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
@@ -27,22 +27,22 @@ const Container = styled(SafeAreaView, {
 });
 
 const ContentContainer = styled(YStack, {
-  padding: tokens.space.xl,
-  gap: tokens.space.xl,
+  padding: spacing.phone.xl,
+  gap: spacing.phone.xl,
   flex: 1,
   justifyContent: "space-between",
 });
 
 const Header = styled(YStack, {
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
   alignItems: "center",
-  paddingVertical: tokens.space.xxl,
+  paddingVertical: spacing.phone.xxl,
 });
 
 const IconContainer = styled(XStack, {
   width: 120,
   height: 120,
-  borderRadius: tokens.radius.full,
+  borderRadius: radius.phone.full,
   backgroundColor: "$primaryLight",
   alignItems: "center",
   justifyContent: "center",
@@ -50,9 +50,9 @@ const IconContainer = styled(XStack, {
 
 const TimePickerContainer = styled(YStack, {
   backgroundColor: "$surface",
-  padding: tokens.space.xl,
-  borderRadius: tokens.radius.lg,
-  gap: tokens.space.md,
+  padding: spacing.phone.xl,
+  borderRadius: radius.phone.lg,
+  gap: spacing.phone.md,
   borderWidth: 1,
   borderColor: "$border",
 });
@@ -63,11 +63,9 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const { notificationTimes, setNotificationTimes, isDownloadingFacts, waitForDownloadComplete } = useOnboarding();
   const [isScheduling, setIsScheduling] = useState(false);
-  const { width } = useWindowDimensions();
 
-  // Responsive sizing for tablets
-  const isTablet = width >= RESPONSIVE_CONSTANTS.TABLET_BREAKPOINT;
-  const typo = isTablet ? typography.tablet : typography.phone;
+  // Responsive sizing - hook handles tablet detection
+  const { typography: typo } = useResponsive();
 
   // Enter animations
   const progressOpacity = useRef(new Animated.Value(0)).current;
@@ -309,7 +307,7 @@ export default function NotificationsScreen() {
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <ContentContainer>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <YStack gap={tokens.space.md} paddingBottom={tokens.space.xl}>
+          <YStack gap={spacing.phone.md} paddingBottom={spacing.phone.xl}>
             <Animated.View
               style={{
                 opacity: progressOpacity,
@@ -329,7 +327,7 @@ export default function NotificationsScreen() {
                 }}
               >
                 <IconContainer>
-                  <Bell size={60} color={tokens.color.light.primary} />
+                  <Bell size={60} color={hexColors.light.primary} />
                 </IconContainer>
               </Animated.View>
 
@@ -339,7 +337,7 @@ export default function NotificationsScreen() {
                   transform: [{ translateY: titleTranslateY }],
                 }}
               >
-                <YStack gap={tokens.space.sm} alignItems="center">
+                <YStack gap={spacing.phone.sm} alignItems="center">
                   <Text.Headline textAlign="center">{t("stayInformed")}</Text.Headline>
                   <Text.Body textAlign="center" color="$textSecondary">
                     {t("notificationRequired")}

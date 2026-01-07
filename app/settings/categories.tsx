@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ScrollView, ActivityIndicator, Alert, Pressable, useWindowDimensions, Animated, Easing } from 'react-native';
+import { ScrollView, ActivityIndicator, Alert, Pressable, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { View, styled } from '@tamagui/core';
 import { XStack, YStack } from 'tamagui';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from '@tamagui/lucide-icons';
-import { tokens } from '../../src/theme/tokens';
-import { typography, RESPONSIVE_CONSTANTS } from '../../src/utils/responsive';
+import { hexColors, spacing, radius, sizes } from '../../src/theme';
+import { useResponsive } from '../../src/utils/useResponsive';
 import {
   Text,
   Button,
@@ -28,37 +28,37 @@ const Container = styled(SafeAreaView, {
 });
 
 const ContentContainer = styled(YStack, {
-  padding: tokens.space.xl,
-  gap: tokens.space.xl,
+  padding: spacing.phone.xl,
+  gap: spacing.phone.xl,
   flex: 1,
 });
 
 const HeaderContainer = styled(YStack, {
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
 });
 
 const HeaderRow = styled(XStack, {
   alignItems: 'center',
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
 });
 
 const HeaderText = styled(YStack, {
-  gap: tokens.space.sm,
+  gap: spacing.phone.sm,
   flex: 1,
 });
 
 const CategoriesGrid = styled(View, {
   flex: 1,
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
 });
 
 const CategoryRow = styled(XStack, {
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
   justifyContent: 'space-between',
 });
 
 const ButtonContainer = styled(View, {
-  paddingTop: tokens.space.md,
+  paddingTop: spacing.phone.md,
 });
 
 export default function CategoriesSettings() {
@@ -71,13 +71,11 @@ export default function CategoriesSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const { width } = useWindowDimensions();
+  const { typography: typo, gridLayout } = useResponsive();
 
   // Responsive sizing for tablets
-  const isTablet = width >= RESPONSIVE_CONSTANTS.TABLET_BREAKPOINT;
-  const numColumns = isTablet ? 4 : 3;
-  const iconSize = isTablet ? 48 : 32;
-  const typo = isTablet ? typography.tablet : typography.phone;
+  const numColumns = gridLayout.categoryColumns;
+  const iconSize = gridLayout.categoryIconSize;
   const labelFontSize = typo.fontSize.caption;
   const secondaryFontSize = typo.fontSize.body;
 
@@ -259,7 +257,7 @@ export default function CategoriesSettings() {
       <Container>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <ContentContainer justifyContent="center" alignItems="center">
-          <ActivityIndicator size="large" color={tokens.color.light.primary} />
+          <ActivityIndicator size="large" color={hexColors.light.primary} />
           <Text.Body>{t('loadingCategories')}</Text.Body>
         </ContentContainer>
       </Container>
@@ -288,8 +286,8 @@ export default function CategoriesSettings() {
         >
           <HeaderContainer>
             <HeaderRow>
-              <Pressable onPress={() => router.back()} style={{ padding: tokens.space.xs }}>
-                <ArrowLeft size={24} color={theme === 'dark' ? '#FFFFFF' : tokens.color.light.text} />
+              <Pressable onPress={() => router.back()} style={{ padding: spacing.phone.xs }}>
+                <ArrowLeft size={24} color={theme === 'dark' ? '#FFFFFF' : hexColors.light.text} />
               </Pressable>
               <HeaderText>
                 <Text.Headline>{t('settingsCategories')}</Text.Headline>
@@ -358,7 +356,7 @@ export default function CategoriesSettings() {
                 </CategoryRow>
               ))}
             </CategoriesGrid>
-            <View height={tokens.space.xl} />
+            <View height={spacing.phone.xl} />
           </ScrollView>
         </Animated.View>
 

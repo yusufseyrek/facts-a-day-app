@@ -5,7 +5,7 @@ import { FactModal } from '../../src/components/FactModal';
 import type { FactWithRelations } from '../../src/services/database';
 import * as database from '../../src/services/database';
 import { Text } from '../../src/components';
-import { tokens } from '../../src/theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import { trackFactView, trackScreenView, Screens, type FactViewSource } from '../../src/services/analytics';
 
@@ -70,10 +70,10 @@ export default function FactDetailModal() {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          backgroundColor: tokens.color.dark.background,
+          backgroundColor: hexColors.dark.background,
         }}
       >
-        <ActivityIndicator size="large" color={tokens.color.light.primary} />
+        <ActivityIndicator size="large" color={hexColors.light.primary} />
       </View>
     );
   }
@@ -85,8 +85,8 @@ export default function FactDetailModal() {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          padding: tokens.space.lg,
-          backgroundColor: tokens.color.dark.background,
+          padding: spacing.phone.lg,
+          backgroundColor: hexColors.dark.background,
         }}
       >
         <Text.Body color="$textSecondary">{error || t('factNotFound')}</Text.Body>

@@ -7,7 +7,7 @@ import { YStack, XStack } from "tamagui";
 import { useRouter } from "expo-router";
 import { CheckCircle, Sparkle, Star, Gift } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { tokens, getNeonColors } from "../../src/theme";
+import { hexColors, spacing, radius, sizes, getNeonColors } from "../../src/theme";
 import { Text, Button, FONT_FAMILIES } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
@@ -29,8 +29,8 @@ const Container = styled(SafeAreaView, {
 });
 
 const ContentContainer = styled(YStack, {
-  padding: tokens.space.xl,
-  gap: tokens.space.lg,
+  padding: spacing.phone.xl,
+  gap: spacing.phone.lg,
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
@@ -39,21 +39,21 @@ const ContentContainer = styled(YStack, {
 const IconContainer = styled(YStack, {
   width: 140,
   height: 140,
-  borderRadius: tokens.radius.full,
+  borderRadius: radius.phone.full,
   backgroundColor: "$primaryLight",
   alignItems: "center",
   justifyContent: "center",
-  marginBottom: tokens.space.lg,
+  marginBottom: spacing.phone.lg,
 });
 
 const ConsentIconContainer = styled(YStack, {
   width: 100,
   height: 100,
-  borderRadius: tokens.radius.full,
+  borderRadius: radius.phone.full,
   backgroundColor: "$primaryLight",
   alignItems: "center",
   justifyContent: "center",
-  marginBottom: tokens.space.md,
+  marginBottom: spacing.phone.md,
 });
 
 // Particle component for confetti effect
@@ -142,7 +142,7 @@ const PulseRing = ({ delay, theme }: { delay: number; theme: "light" | "dark" })
   const opacityAnim = useRef(new Animated.Value(1)).current;
 
   // Use neon cyan for pulse ring
-  const ringColor = theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan;
+  const ringColor = theme === "dark" ? hexColors.dark.neonCyan : hexColors.light.neonCyan;
 
   useEffect(() => {
     Animated.loop(
@@ -197,7 +197,7 @@ const ProgressBar = ({ duration, theme }: { duration: number; theme: "light" | "
   const widthAnim = useRef(new Animated.Value(0)).current;
 
   // Use neon cyan for progress bar
-  const barColor = theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan;
+  const barColor = theme === "dark" ? hexColors.dark.neonCyan : hexColors.light.neonCyan;
   const bgColor = theme === "dark" ? "rgba(0, 212, 255, 0.1)" : "rgba(0, 153, 204, 0.1)";
 
   useEffect(() => {
@@ -494,8 +494,8 @@ export default function OnboardingSuccessScreen() {
   );
 
   // Gradient colors based on theme - using neon palette
-  const darkColors = [tokens.color.dark.background, "#0F1E36", "#1A3D5C"] as const;
-  const lightColors = [tokens.color.light.background, "#E0F7FF", "#D0EFFF"] as const;
+  const darkColors = [hexColors.dark.background, "#0F1E36", "#1A3D5C"] as const;
+  const lightColors = [hexColors.light.background, "#E0F7FF", "#D0EFFF"] as const;
   const gradientColors = theme === "dark" ? darkColors : lightColors;
 
   // Render consent screen
@@ -507,12 +507,12 @@ export default function OnboardingSuccessScreen() {
       }}
     >
       <ContentContainer>
-        <YStack alignItems="center" gap={tokens.space.lg} paddingHorizontal={tokens.space.md}>
+        <YStack alignItems="center" gap={spacing.phone.lg} paddingHorizontal={spacing.phone.md}>
           {/* Icon */}
           <ConsentIconContainer>
             <Gift
               size={50}
-              color={theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan}
+              color={theme === "dark" ? hexColors.dark.neonCyan : hexColors.light.neonCyan}
               strokeWidth={2}
             />
           </ConsentIconContainer>
@@ -535,7 +535,7 @@ export default function OnboardingSuccessScreen() {
           </Text.Body>
 
           {/* Button */}
-          <YStack width="100%" paddingTop={tokens.space.lg}>
+          <YStack width="100%" paddingTop={spacing.phone.lg}>
             <Button onPress={handleConsentContinue}>
               {t("adsConsentButton")}
             </Button>
@@ -548,8 +548,8 @@ export default function OnboardingSuccessScreen() {
   // Render loading screen (checking consent requirement)
   const renderLoadingScreen = () => (
     <ContentContainer>
-      <YStack alignItems="center" gap={tokens.space.lg}>
-        <ActivityIndicator size="large" color={theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan} />
+      <YStack alignItems="center" gap={spacing.phone.lg}>
+        <ActivityIndicator size="large" color={theme === "dark" ? hexColors.dark.neonCyan : hexColors.light.neonCyan} />
       </YStack>
     </ContentContainer>
   );
@@ -557,8 +557,8 @@ export default function OnboardingSuccessScreen() {
   // Render processing screen
   const renderProcessingScreen = () => (
     <ContentContainer>
-      <YStack alignItems="center" gap={tokens.space.lg}>
-        <ActivityIndicator size="large" color={theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan} />
+      <YStack alignItems="center" gap={spacing.phone.lg}>
+        <ActivityIndicator size="large" color={theme === "dark" ? hexColors.dark.neonCyan : hexColors.light.neonCyan} />
         <Text.Body
           textAlign="center"
           color="$textSecondary"
@@ -572,7 +572,7 @@ export default function OnboardingSuccessScreen() {
   // Render success animation screen
   const renderAnimationScreen = () => (
     <ContentContainer>
-      <YStack alignItems="center" gap={tokens.space.xl}>
+      <YStack alignItems="center" gap={spacing.phone.xl}>
         {/* Icon with particles and pulse rings */}
         <View style={{ width: 200, height: 200, alignItems: "center", justifyContent: "center" }}>
           {/* Pulse rings */}
@@ -592,7 +592,7 @@ export default function OnboardingSuccessScreen() {
                 { scale: iconDropScale },
                 { rotate: iconRotate },
               ],
-              shadowColor: theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan,
+              shadowColor: theme === "dark" ? hexColors.dark.neonCyan : hexColors.light.neonCyan,
               shadowOffset: { width: 0, height: 10 },
               shadowOpacity: theme === "dark" ? 0.4 : 0.2,
               shadowRadius: 20,
@@ -607,7 +607,7 @@ export default function OnboardingSuccessScreen() {
               <IconContainer>
                 <CheckCircle
                   size={70}
-                  color={theme === "dark" ? tokens.color.dark.neonGreen : tokens.color.light.neonGreen}
+                  color={theme === "dark" ? hexColors.dark.neonGreen : hexColors.light.neonGreen}
                   strokeWidth={2.5}
                 />
               </IconContainer>
@@ -616,7 +616,7 @@ export default function OnboardingSuccessScreen() {
         </View>
 
         {/* Animated title - word by word */}
-        <XStack gap={tokens.space.sm} alignItems="center">
+        <XStack gap={spacing.phone.sm} alignItems="center">
           {titleWords.map((word, index) => (
             <Animated.View
               key={index}

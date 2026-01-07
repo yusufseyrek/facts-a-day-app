@@ -6,7 +6,7 @@ import { useRef, useCallback, useState, useEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import type { BottomTabBarButtonProps, BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BottomTabBar } from "@react-navigation/bottom-tabs";
-import { tokens } from "../../src/theme/tokens";
+import { hexColors, spacing, radius, sizes } from "../../src/theme";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import * as triviaService from "../../src/services/trivia";
@@ -63,10 +63,10 @@ function AnimatedTabButton({
 function TriviaTabIcon({ focused, isDark, hasBadge }: { focused: boolean; isDark: boolean; hasBadge: boolean }) {
   // Use the app's primary color for consistency
   const bgColor = isDark
-    ? tokens.color.dark.primary // #00A3CC - cyan
-    : tokens.color.light.primary; // #0077A8 - teal
+    ? hexColors.dark.primary // #00A3CC - cyan
+    : hexColors.light.primary; // #0077A8 - teal
 
-  const shadowColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
+  const shadowColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
 
   return (
     <View
@@ -95,8 +95,8 @@ function CustomTabBar(props: BottomTabBarProps) {
   const { theme } = useTheme();
   
   const backgroundColor = theme === "dark"
-    ? tokens.color.dark.background
-    : tokens.color.light.background;
+    ? hexColors.dark.background
+    : hexColors.light.background;
 
   return (
     <View style={[styles.tabBarContainer, { backgroundColor }]}>
@@ -184,17 +184,17 @@ export default function TabLayout() {
   const isDark = theme === "dark";
   // Use neon cyan for active tab - subtle but visible
   const activeTintColor = isDark
-    ? tokens.color.dark.primary // Neon cyan in dark mode
-    : tokens.color.light.primary; // Toned cyan in light mode
+    ? hexColors.dark.primary // Neon cyan in dark mode
+    : hexColors.light.primary; // Toned cyan in light mode
   const inactiveTintColor = isDark
-    ? tokens.color.dark.textSecondary
-    : tokens.color.light.textSecondary;
+    ? hexColors.dark.textSecondary
+    : hexColors.light.textSecondary;
   const backgroundColor = isDark
-    ? tokens.color.dark.surface
-    : tokens.color.light.surface;
+    ? hexColors.dark.surface
+    : hexColors.light.surface;
   const borderColor = isDark
-    ? tokens.color.dark.border
-    : tokens.color.light.border;
+    ? hexColors.dark.border
+    : hexColors.light.border;
 
   return (
     <Tabs

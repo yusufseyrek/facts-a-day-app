@@ -9,7 +9,7 @@ import * as Updates from 'expo-updates';
 import { Platform, Appearance } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { tokens } from '../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../theme';
 import { trackAppUpdate } from './analytics';
 
 const THEME_STORAGE_KEY = '@app_theme_mode';
@@ -22,19 +22,19 @@ async function getThemeBackgroundColor(): Promise<string> {
     const savedMode = await AsyncStorage.getItem(THEME_STORAGE_KEY);
     
     if (savedMode === 'light') {
-      return tokens.color.light.background;
+      return hexColors.light.background;
     } else if (savedMode === 'dark') {
-      return tokens.color.dark.background;
+      return hexColors.dark.background;
     } else {
       // 'system' or not set - use system theme
       const systemTheme = Appearance.getColorScheme() || 'dark';
       return systemTheme === 'light' 
-        ? tokens.color.light.background 
-        : tokens.color.dark.background;
+        ? hexColors.light.background 
+        : hexColors.dark.background;
     }
   } catch {
     // Fallback to dark theme on error
-    return tokens.color.dark.background;
+    return hexColors.dark.background;
   }
 }
 

@@ -7,7 +7,7 @@ import { YStack } from "tamagui";
 import { Lightbulb } from "@tamagui/lucide-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { tokens } from "../../src/theme/tokens";
+import { hexColors, spacing, radius, sizes } from "../../src/theme";
 import {
   Text,
   EmptyState,
@@ -66,7 +66,7 @@ const LocaleChangeOverlay = styled(YStack, {
   alignItems: "center",
   backgroundColor: "$background",
   zIndex: 100,
-  gap: tokens.space.lg,
+  gap: spacing.phone.lg,
 });
 
 // Simple list item component
@@ -260,7 +260,7 @@ function HomeScreen() {
       <ScreenContainer edges={["top"]}>
         <StatusBar style={theme === "dark" ? "light" : "dark"} />
         <LoadingContainer>
-          <ActivityIndicator size="large" color={tokens.color.light.primary} />
+          <ActivityIndicator size="large" color={hexColors.light.primary} />
         </LoadingContainer>
       </ScreenContainer>
     );
@@ -305,7 +305,7 @@ function HomeScreen() {
 
         {backgroundRefreshStatus === 'locale-change' && (
           <LocaleChangeOverlay>
-            <ActivityIndicator size="large" color={tokens.color[theme].primary} />
+            <ActivityIndicator size="large" color={hexColors[theme].primary} />
             <Text.Body color="$textSecondary">
               {t("updatingLanguage")}
             </Text.Body>

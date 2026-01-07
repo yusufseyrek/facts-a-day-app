@@ -4,7 +4,7 @@ import { View, styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Check } from '@tamagui/lucide-icons';
 import { Text, FONT_FAMILIES } from './Typography';
-import { tokens, useTheme, getCategoryNeonColor } from '../theme';
+import { hexColors, spacing, radius, sizes, useTheme, getCategoryNeonColor } from '../theme';
 import { getContrastColor } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -12,11 +12,11 @@ const Card = styled(YStack, {
   position: 'relative',
   width: '100%',
   aspectRatio: 1,
-  borderRadius: tokens.radius.lg,
+  borderRadius: radius.phone.lg,
   borderWidth: 2,
   alignItems: 'center',
   justifyContent: 'center',
-  gap: tokens.space.sm,
+  gap: spacing.phone.sm,
 });
 
 const IconContainer = styled(YStack, {
@@ -27,7 +27,7 @@ const IconContainer = styled(YStack, {
 const LabelContainer = styled(YStack, {
   alignItems: 'center',
   justifyContent: 'center',
-  paddingHorizontal: tokens.space.xs,
+  paddingHorizontal: spacing.phone.xs,
 });
 
 // Animated wrapper for the checkmark
@@ -96,15 +96,15 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
   // Colors based on selection state
   const iconColor = selected
     ? contrastColor
-    : theme === 'dark' ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
+    : theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
 
   const backgroundColor = selected
     ? neonColor
-    : theme === 'dark' ? tokens.color.dark.surface : tokens.color.light.surface;
+    : theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface;
 
   const borderColor = selected
     ? neonColor
-    : theme === 'dark' ? tokens.color.dark.border : tokens.color.light.border;
+    : theme === 'dark' ? hexColors.dark.border : hexColors.light.border;
 
   // Checkmark transform styles
   const checkmarkStyle = {
@@ -145,11 +145,11 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
               style={[
                 {
                   position: 'absolute',
-                  top: tokens.space.sm,
-                  right: tokens.space.sm,
+                  top: spacing.phone.sm,
+                  right: spacing.phone.sm,
                   width: 24,
                   height: 24,
-                  borderRadius: tokens.radius.full,
+                  borderRadius: radius.phone.full,
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: contrastColor === '#000000' ? '#00000020' : '#FFFFFF30',

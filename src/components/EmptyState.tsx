@@ -2,7 +2,7 @@ import React from 'react';
 import { styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Lightbulb } from '@tamagui/lucide-icons';
-import { tokens } from '../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../theme';
 import { Text } from './Typography';
 import { useTheme } from '../theme';
 
@@ -15,23 +15,23 @@ const Container = styled(YStack, {
   flex: 1,
   justifyContent: 'center',
   alignItems: 'center',
-  padding: tokens.space.xl,
-  gap: tokens.space.lg,
+  padding: spacing.phone.xl,
+  gap: spacing.phone.lg,
 });
 
 const IconContainer = styled(YStack, {
   width: 120,
   height: 120,
-  borderRadius: tokens.radius.full,
+  borderRadius: radius.phone.full,
   backgroundColor: '$primaryLight',
   alignItems: 'center',
   justifyContent: 'center',
-  marginBottom: tokens.space.md,
+  marginBottom: spacing.phone.md,
 });
 
 const TextContainer = styled(YStack, {
   alignItems: 'center',
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
   maxWidth: 300,
 });
 
@@ -43,7 +43,7 @@ export function EmptyState({ title, description }: EmptyStateProps) {
       <IconContainer>
         <Lightbulb
           size={56}
-          color={theme === 'dark' ? '#0066FF' : tokens.color.light.primary}
+          color={theme === 'dark' ? '#0066FF' : hexColors.light.primary}
         />
       </IconContainer>
       <TextContainer>

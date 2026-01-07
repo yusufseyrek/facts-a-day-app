@@ -9,6 +9,7 @@
     "android": "expo run:android",
     "android:release": "expo run:android --variant release",
     "clean": "npx expo prebuild --clean",
+    "lint": "tsc --noEmit",
     "build:ios": "./scripts/build-ios.sh",
     "build:android": "./scripts/build-android.sh",
     "update:ios": "./scripts/publish-update.sh ios",

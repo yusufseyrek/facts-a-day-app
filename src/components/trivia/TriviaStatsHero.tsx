@@ -4,7 +4,7 @@ import { YStack, XStack } from 'tamagui';
 import { ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
-import { tokens } from '../../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
@@ -97,26 +97,26 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
         .sort((a, b) => b.accuracy - a.accuracy)[0] || null // Sort by accuracy descending, take first
     : null;
   
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
-  const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const borderColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+  const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const trackColor = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)';
   
   // Show muted colors when no data
   const hasData = testsTaken > 0;
-  const progressColor = hasData ? primaryColor : (isDark ? tokens.color.dark.textMuted : tokens.color.light.textMuted);
+  const progressColor = hasData ? primaryColor : (isDark ? hexColors.dark.textMuted : hexColors.light.textMuted);
   
   // Category icon color
-  const categoryColor = topCategory?.color_hex || (isDark ? tokens.color.dark.neonPurple : tokens.color.light.neonPurple);
+  const categoryColor = topCategory?.color_hex || (isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple);
   
   const cardContent = (
     <YStack
       backgroundColor={cardBg}
-      borderRadius={tokens.radius.lg}
-      padding={tokens.space.lg}
-      gap={tokens.space.md}
+      borderRadius={radius.phone.lg}
+      padding={spacing.phone.lg}
+      gap={spacing.phone.md}
       borderWidth={1}
       borderColor={borderColor}
     >
@@ -145,13 +145,13 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
         <XStack 
           alignItems="center" 
           justifyContent="space-between"
-          paddingTop={tokens.space.sm}
+          paddingTop={spacing.phone.sm}
         >
           {/* Accuracy with circular progress */}
           <YStack 
             flex={1}
             alignItems="center"
-            gap={tokens.space.xs}
+            gap={spacing.phone.xs}
           >
             <CircularProgress
               percentage={accuracy}
@@ -165,7 +165,7 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
               color={secondaryTextColor} 
               textTransform="uppercase"
               letterSpacing={0.5}
-              marginTop={tokens.space.xs}
+              marginTop={spacing.phone.xs}
               fontFamily={FONT_FAMILIES.medium}
             >
               {t('accuracy')}
@@ -183,7 +183,7 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
           <YStack 
             flex={1}
             alignItems="center"
-            gap={tokens.space.xs}
+            gap={spacing.phone.xs}
           >
             <Text.Headline
               color={textColor}
@@ -211,7 +211,7 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
           <YStack 
             flex={1}
             alignItems="center"
-            gap={tokens.space.xs}
+            gap={spacing.phone.xs}
           >
             {topCategory ? (
               <>
@@ -252,11 +252,11 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
                   justifyContent="center"
                   alignItems="center"
                 >
-                  {getLucideIcon('help-circle', typo.fontSize.title, isDark ? tokens.color.dark.textMuted : tokens.color.light.textMuted)}
+                  {getLucideIcon('help-circle', typo.fontSize.title, isDark ? hexColors.dark.textMuted : hexColors.light.textMuted)}
                 </YStack>
                 <Text.Caption
                   fontFamily={FONT_FAMILIES.semibold}
-                  color={isDark ? tokens.color.dark.textMuted : tokens.color.light.textMuted}
+                  color={isDark ? hexColors.dark.textMuted : hexColors.light.textMuted}
                   numberOfLines={1}
                   textAlign="center"
                 >
@@ -279,7 +279,7 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
         <YStack 
           alignItems="center" 
           justifyContent="center"
-          paddingVertical={tokens.space.sm}
+          paddingVertical={spacing.phone.sm}
         >
           <Text.Label
             color={secondaryTextColor}

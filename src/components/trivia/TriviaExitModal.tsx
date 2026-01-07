@@ -1,24 +1,24 @@
 import React from 'react';
-import { Modal, Pressable, Platform, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, Platform } from 'react-native';
 import { styled } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { AlertTriangle, X, DoorOpen } from '@tamagui/lucide-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
-import { tokens } from '../../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
-import { isTabletDevice, typography, spacing, iconSizes, componentSizes } from '../../utils/responsive';
+import { useResponsive } from '../../utils/useResponsive';
 
 const ModalOverlay = styled(YStack, {
   flex: 1,
   justifyContent: 'center',
   alignItems: 'center',
-  padding: tokens.space.md,
+  padding: spacing.phone.md,
 });
 
 const ModalContent = styled(YStack, {
   width: '100%',
-  borderRadius: tokens.radius.xl,
+  borderRadius: radius.phone.xl,
   overflow: 'hidden',
 });
 
@@ -43,14 +43,8 @@ export function TriviaExitModal({
   cancelText,
   exitText,
 }: TriviaExitModalProps) {
-  const { width: screenWidth } = useWindowDimensions();
-  const isTablet = isTabletDevice(screenWidth);
-  
   // Get responsive values for device type
-  const typo = isTablet ? typography.tablet : typography.phone;
-  const space = isTablet ? spacing.tablet : spacing.phone;
-  const icons = isTablet ? iconSizes.tablet : iconSizes.phone;
-  const sizes = isTablet ? componentSizes.tablet : componentSizes.phone;
+  const { screenWidth, typography: typo, spacing: space, iconSizes: icons, componentSizes: sizes } = useResponsive();
   
   // Responsive sizing
   const modalMaxWidth = sizes.modalMaxWidth;
@@ -63,16 +57,16 @@ export function TriviaExitModal({
   const closeIconSize = icons.action;
   const messageIconSize = icons.action;
   const buttonIconSize = icons.button;
-  const padding = space.screenPadding;
-  const buttonPadding = space.itemGap;
+  const padding = space.lg;
+  const buttonPadding = space.md;
   
   // Colors matching the app's design system
-  const bgColor = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
-  const borderColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
-  const errorColor = isDark ? tokens.color.dark.error : tokens.color.light.error;
-  const surfaceColor = isDark ? tokens.color.dark.surface : tokens.color.light.surface;
+  const bgColor = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+  const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
+  const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
+  const surfaceColor = isDark ? hexColors.dark.surface : hexColors.light.surface;
   
   // Warning colors - amber/orange tones
   const warningColor = isDark ? '#FBBF24' : '#F59E0B';
@@ -121,7 +115,7 @@ export function TriviaExitModal({
         <Animated.View 
           entering={FadeInUp.duration(300).springify()}
           style={{ 
-            width: screenWidth - tokens.space.md * 2, 
+            width: screenWidth - spacing.phone.md * 2, 
             maxWidth: modalMaxWidth,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 12 },
@@ -137,10 +131,10 @@ export function TriviaExitModal({
               testID="trivia-exit-cancel-x"
               style={{
                 position: 'absolute',
-                top: tokens.space.md,
-                right: tokens.space.md,
+                top: spacing.phone.md,
+                right: spacing.phone.md,
                 zIndex: 10,
-                padding: tokens.space.xs,
+                padding: spacing.phone.xs,
               }}
             >
               <X size={closeIconSize} color={secondaryTextColor} />
@@ -148,11 +142,11 @@ export function TriviaExitModal({
 
             {/* Header with Icon */}
             <YStack 
-              paddingTop={space.sectionGap} 
+              paddingTop={space.xl} 
               paddingHorizontal={padding}
-              paddingBottom={tokens.space.md}
+              paddingBottom={spacing.phone.md}
               alignItems="center"
-              gap={space.itemGap}
+              gap={space.md}
             >
               {/* Warning Icon */}
               <YStack
@@ -186,10 +180,10 @@ export function TriviaExitModal({
             >
               <XStack 
                 backgroundColor={surfaceColor}
-                borderRadius={tokens.radius.md}
-                padding={space.itemGap}
+                borderRadius={radius.phone.md}
+                padding={space.md}
                 alignItems="center"
-                gap={tokens.space.sm}
+                gap={spacing.phone.sm}
               >
                 <DoorOpen size={messageIconSize} color={errorColor} />
                 <Text.Caption
@@ -207,7 +201,7 @@ export function TriviaExitModal({
             <XStack 
               paddingHorizontal={padding} 
               paddingBottom={padding}
-              gap={tokens.space.md}
+              gap={spacing.phone.md}
             >
               {/* Cancel Button - Outlined */}
               <Pressable 
@@ -225,7 +219,7 @@ export function TriviaExitModal({
                   borderWidth={1.5}
                   borderColor={borderColor}
                   paddingVertical={buttonPadding}
-                  borderRadius={tokens.radius.md}
+                  borderRadius={radius.phone.md}
                   alignItems="center"
                   justifyContent="center"
                 >
@@ -255,10 +249,10 @@ export function TriviaExitModal({
                 <XStack
                   backgroundColor={errorColor}
                   paddingVertical={buttonPadding}
-                  borderRadius={tokens.radius.md}
+                  borderRadius={radius.phone.md}
                   alignItems="center"
                   justifyContent="center"
-                  gap={tokens.space.xs}
+                  gap={spacing.phone.xs}
                 >
                   <DoorOpen size={buttonIconSize} color="#FFFFFF" />
                   <Text.Label

@@ -1,4 +1,4 @@
-import { tokens } from '../../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../theme';
 import type { TranslationKeys } from '../../i18n/translations';
 
 export interface TriviaModeBadge {
@@ -24,7 +24,7 @@ export interface TriviaModeBadgeOptions {
  */
 export function getTriviaModeBadge(options: TriviaModeBadgeOptions): TriviaModeBadge {
   const { mode, categoryName, categoryIcon, categoryColor, isDark, t } = options;
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
 
   // Category mode with category data
   if (mode === 'category' && categoryName) {

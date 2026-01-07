@@ -10,7 +10,7 @@ import {
 import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import { X, Sun, Moon, Smartphone } from '@tamagui/lucide-icons';
 import { useTheme } from '../../theme';
-import { tokens } from '../../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../theme';
 import { useTranslation, type TranslationKeys } from '../../i18n';
 import type { ThemeMode } from '../../theme/ThemeProvider';
 import { Text } from '../Typography';
@@ -35,7 +35,7 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
   onClose,
 }) => {
   const { theme, themeMode, setThemeMode } = useTheme();
-  const colors = tokens.color[theme];
+  const colors = hexColors[theme];
   const { t } = useTranslation();
 
   // Internal state to keep modal mounted during exit animation
@@ -230,41 +230,41 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     maxHeight: Dimensions.get('window').height * 0.7,
-    borderRadius: tokens.radius.lg,
+    borderRadius: radius.phone.lg,
     overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: tokens.space.lg,
-    paddingVertical: tokens.space.lg,
+    paddingHorizontal: spacing.phone.lg,
+    paddingVertical: spacing.phone.lg,
     borderBottomWidth: 1,
   },
   closeButton: {
-    padding: tokens.space.xs,
+    padding: spacing.phone.xs,
   },
   scrollView: {
     maxHeight: 500,
   },
   optionsContainer: {
-    padding: tokens.space.lg,
-    gap: tokens.space.md,
+    padding: spacing.phone.lg,
+    gap: spacing.phone.md,
   },
   optionCard: {
-    borderRadius: tokens.radius.lg,
+    borderRadius: radius.phone.lg,
     borderWidth: 2,
-    padding: tokens.space.lg,
+    padding: spacing.phone.lg,
   },
   optionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: tokens.space.md,
+    gap: spacing.phone.md,
   },
   iconContainer: {
     width: 48,
     height: 48,
-    borderRadius: tokens.radius.md,
+    borderRadius: radius.phone.md,
     alignItems: 'center',
     justifyContent: 'center',
   },

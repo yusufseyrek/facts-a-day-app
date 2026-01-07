@@ -4,7 +4,7 @@ import { FlatList, RefreshControl, ActivityIndicator, useWindowDimensions } from
 import { YStack } from 'tamagui';
 import { Star } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
-import { tokens } from '../../src/theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../src/theme';
 import {
   EmptyState,
   ScreenContainer,
@@ -130,7 +130,7 @@ export default function FavoritesScreen() {
       <ScreenContainer edges={["top"]}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <LoadingContainer>
-          <ActivityIndicator size="large" color={tokens.color.light.primary} />
+          <ActivityIndicator size="large" color={hexColors.light.primary} />
         </LoadingContainer>
       </ScreenContainer>
     );

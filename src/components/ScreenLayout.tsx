@@ -2,7 +2,7 @@ import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
-import { tokens } from "../theme/tokens";
+import { hexColors, spacing, radius, sizes } from "../theme";
 import { Text } from "./Typography";
 import { useTheme } from "../theme";
 import { LAYOUT } from "../config/app";
@@ -21,15 +21,15 @@ export const ScreenContainer = styled(SafeAreaView, {
  * Used at the top of tab screens
  */
 export const ScreenHeaderContainer = styled(XStack, {
-  padding: tokens.space.xl,
-  paddingBottom: tokens.space.md,
+  padding: spacing.phone.xl,
+  paddingBottom: spacing.phone.md,
   alignItems: "center",
-  gap: tokens.space.sm,
+  gap: spacing.phone.sm,
   variants: {
     tablet: {
       true: {
-        padding: tokens.space.xxl,
-        paddingBottom: tokens.space.lg,
+        padding: spacing.phone.xxl,
+        paddingBottom: spacing.phone.lg,
       },
     },
   } as const,
@@ -61,14 +61,14 @@ export function ScreenHeader({ icon, title, isTablet = false, rightElement }: Sc
  * SectionHeader - Header for content sections (e.g., date groups in feed)
  */
 export const SectionHeaderContainer = styled(YStack, {
-  paddingHorizontal: tokens.space.xl,
-  paddingVertical: tokens.space.md,
+  paddingHorizontal: spacing.phone.xl,
+  paddingVertical: spacing.phone.md,
   backgroundColor: "$background",
   variants: {
     tablet: {
       true: {
-        paddingHorizontal: tokens.space.xxl,
-        paddingVertical: tokens.space.lg,
+        paddingHorizontal: spacing.phone.xxl,
+        paddingVertical: spacing.phone.lg,
       },
     },
   } as const,
@@ -96,11 +96,11 @@ export function SectionHeader({ title, isTablet = false }: SectionHeaderProps) {
  * ContentContainer - Container for main content with consistent padding
  */
 export const ContentContainer = styled(YStack, {
-  paddingHorizontal: tokens.space.lg,
+  paddingHorizontal: spacing.phone.lg,
   variants: {
     tablet: {
       true: {
-        paddingHorizontal: tokens.space.xl,
+        paddingHorizontal: spacing.phone.xl,
       },
     },
   } as const,
@@ -111,8 +111,8 @@ export const ContentContainer = styled(YStack, {
  * Use inside ScrollView for settings-like screens
  */
 export const ScrollContentContainer = styled(YStack, {
-  paddingHorizontal: tokens.space.xl,
-  gap: tokens.space.lg,
+  paddingHorizontal: spacing.phone.xl,
+  gap: spacing.phone.lg,
   flex: 1,
 });
 
@@ -123,7 +123,7 @@ export const LoadingContainer = styled(YStack, {
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
 });
 
 /**
@@ -140,22 +140,22 @@ export const TabletWrapper = styled(YStack, {
  * SectionContainer - Container for grouped settings/content sections
  */
 export const SectionContainer = styled(YStack, {
-  gap: tokens.space.md,
-  marginBottom: tokens.space.xl,
+  gap: spacing.phone.md,
+  marginBottom: spacing.phone.xl,
 });
 
 /**
  * SectionTitle - Styled H2 for section titles
  */
 export const SectionTitle = styled(Text.Title, {
-  marginBottom: tokens.space.sm,
+  marginBottom: spacing.phone.sm,
 });
 
 /**
  * ItemGroup - Container for grouped items (e.g., settings rows)
  */
 export const ItemGroup = styled(YStack, {
-  gap: tokens.space.md,
+  gap: spacing.phone.md,
 });
 
 /**
@@ -163,6 +163,6 @@ export const ItemGroup = styled(YStack, {
  */
 export function useIconColor() {
   const { theme } = useTheme();
-  return theme === "dark" ? "#FFFFFF" : tokens.color.light.text;
+  return theme === "dark" ? "#FFFFFF" : hexColors.light.text;
 }
 

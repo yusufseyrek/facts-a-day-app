@@ -71,14 +71,14 @@ const phoneTypography = {
     hero: 72,
   },
   letterSpacing: {
-    tiny: 0.1,
-    caption: 0.2,
-    label: 0.25,
-    body: 0.3,
-    title: 0.4,
-    headline: 0.5,
-    display: 0.6,
-    hero: 0.7,
+    tiny: 0.05,
+    caption: 0.1,
+    label: 0.15,
+    body: 0.2,
+    title: 0.15,
+    headline: 0.2,
+    display: 0.3,
+    hero: 0.4,
   },
 } as const;
 
@@ -150,6 +150,71 @@ export const componentSizes = {
 } as const;
 
 /**
+ * Grid layout configuration for different screen sizes.
+ * These values control how many columns/items are displayed in grids.
+ */
+const phoneGridLayout = {
+  categoryColumns: 3,           // Categories grid (onboarding, settings)
+  discoverColumns: 2,           // Discover category grid
+  triviaCategoriesPerRow: 2,    // Trivia categories per row
+  categoryIconSize: 32,         // Icon size in category cards
+  discoverIconSize: 24,         // Icon size in discover category cards
+  cardWidthMultiplier: 0.85,    // Card width as percentage of screen width
+  headerPaddingAdjustment: 8,   // Small padding adjustment for headers
+} as const;
+
+const tabletGridLayout = {
+  categoryColumns: 5,
+  discoverColumns: 3,
+  triviaCategoriesPerRow: 4,
+  categoryIconSize: 48,
+  discoverIconSize: 28,
+  cardWidthMultiplier: 0.45,
+  headerPaddingAdjustment: 4,
+} as const;
+
+export const gridLayout = {
+  phone: phoneGridLayout,
+  tablet: tabletGridLayout,
+} as const;
+
+/**
+ * Base radius values for phones.
+ * Tablet values are automatically scaled by 1.5x.
+ */
+const phoneRadius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  full: 9999,
+} as const;
+
+export const radius = {
+  phone: phoneRadius,
+  tablet: {
+    ...scaleObject({ sm: phoneRadius.sm, md: phoneRadius.md, lg: phoneRadius.lg, xl: phoneRadius.xl }),
+    full: phoneRadius.full, // Keep full as-is (already very large)
+  },
+} as const;
+
+/**
+ * Base size values for phones.
+ * Tablet values are automatically scaled by 1.5x.
+ */
+const phoneSizes = {
+  buttonHeight: 56,
+  topicCardSize: 80,
+  colorSwatchSize: 72,
+  toggleSize: 24,
+} as const;
+
+export const sizes = {
+  phone: phoneSizes,
+  tablet: scaleObject(phoneSizes),
+} as const;
+
+/**
  * Get typography values for the current screen width.
  * @param screenWidth - Current screen width
  */
@@ -181,6 +246,30 @@ export const getComponentSizes = (screenWidth: number) => {
   return isTabletDevice(screenWidth) ? componentSizes.tablet : componentSizes.phone;
 };
 
+/**
+ * Get grid layout values for the current screen width.
+ * @param screenWidth - Current screen width
+ */
+export const getGridLayout = (screenWidth: number) => {
+  return isTabletDevice(screenWidth) ? gridLayout.tablet : gridLayout.phone;
+};
+
+/**
+ * Get radius values for the current screen width.
+ * @param screenWidth - Current screen width
+ */
+export const getRadius = (screenWidth: number) => {
+  return isTabletDevice(screenWidth) ? radius.tablet : radius.phone;
+};
+
+/**
+ * Get sizes for the current screen width.
+ * @param screenWidth - Current screen width
+ */
+export const getSizes = (screenWidth: number) => {
+  return isTabletDevice(screenWidth) ? sizes.tablet : sizes.phone;
+};
+
 // Export constants for external use
 export const RESPONSIVE_CONSTANTS = {
   TABLET_BREAKPOINT,
@@ -192,3 +281,6 @@ export type Typography = typeof typography.phone;
 export type Spacing = typeof spacing.phone;
 export type IconSizes = typeof iconSizes.phone;
 export type ComponentSizes = typeof componentSizes.phone;
+export type GridLayout = typeof gridLayout.phone;
+export type Radius = typeof radius.phone;
+export type Sizes = typeof sizes.phone;

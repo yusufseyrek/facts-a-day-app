@@ -25,7 +25,7 @@ import {
   Camera,
   Download,
 } from "@tamagui/lucide-icons";
-import { tokens } from "../../src/theme/tokens";
+import { hexColors, spacing, radius, sizes } from "../../src/theme";
 import {
   Text,
   ScreenContainer,
@@ -103,7 +103,7 @@ export default function SettingsPage() {
   const isDevelopment = __DEV__;
 
   // Use white icons in dark mode for better contrast
-  const iconColor = theme === "dark" ? "#FFFFFF" : tokens.color[theme].text;
+  const iconColor = theme === "dark" ? "#FFFFFF" : hexColors[theme].text;
 
   // Modal visibility state
   const [showThemeModal, setShowThemeModal] = useState(false);
@@ -937,18 +937,18 @@ export default function SettingsPage() {
   const renderFooter = () => (
     <Animated.View entering={shouldAnimate ? FadeInDown.delay(300).duration(300) : undefined}>
       <ContentContainer>
-        <YStack alignItems="center" marginVertical={tokens.space.lg}>
-          <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
+        <YStack alignItems="center" marginVertical={spacing.phone.lg}>
+          <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: spacing.phone.xs }}>
             Version {Constants.expoConfig?.version || "1.0.0"} ({Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber || 'N/A' : Constants.expoConfig?.android?.versionCode || 'N/A'})
           </Text.Caption>
           {updateInfo && (
-            <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.5, marginBottom: tokens.space.xs }}>
+            <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.5, marginBottom: spacing.phone.xs }}>
               {updateInfo.isEmbedded 
                 ? `Bundle: Embedded` 
                 : `Bundle: ${updateInfo.updateId?.slice(0, 8)}...`}
             </Text.Caption>
           )}
-          <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
+          <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: spacing.phone.xs }}>
             {t("settingsCopyright").replace("{appName}", t("appName"))}
           </Text.Caption>
         </YStack>
@@ -983,7 +983,7 @@ export default function SettingsPage() {
           const animationDelay = sectionIndex * 50 + (index + 1) * 30;
           return (
             <Animated.View entering={shouldAnimate ? FadeInDown.delay(animationDelay).duration(300) : undefined}>
-              <ContentContainer marginBottom={tokens.space.sm}>
+              <ContentContainer marginBottom={spacing.phone.sm}>
                 <SettingsRow
                   label={item.label}
                   value={item.value}

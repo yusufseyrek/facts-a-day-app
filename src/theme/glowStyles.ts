@@ -1,4 +1,4 @@
-import { tokens } from "./tokens";
+import { hexColors } from "./hexColors";
 
 export type NeonColor =
   | "cyan"
@@ -13,32 +13,32 @@ export type ThemeMode = "light" | "dark";
 // Neon color mappings
 const neonColorMap = {
   cyan: {
-    light: tokens.color.light.neonCyan,
-    dark: tokens.color.dark.neonCyan,
+    light: hexColors.light.neonCyan,
+    dark: hexColors.dark.neonCyan,
   },
   orange: {
-    light: tokens.color.light.neonOrange,
-    dark: tokens.color.dark.neonOrange,
+    light: hexColors.light.neonOrange,
+    dark: hexColors.dark.neonOrange,
   },
   magenta: {
-    light: tokens.color.light.neonMagenta,
-    dark: tokens.color.dark.neonMagenta,
+    light: hexColors.light.neonMagenta,
+    dark: hexColors.dark.neonMagenta,
   },
   green: {
-    light: tokens.color.light.neonGreen,
-    dark: tokens.color.dark.neonGreen,
+    light: hexColors.light.neonGreen,
+    dark: hexColors.dark.neonGreen,
   },
   purple: {
-    light: tokens.color.light.neonPurple,
-    dark: tokens.color.dark.neonPurple,
+    light: hexColors.light.neonPurple,
+    dark: hexColors.dark.neonPurple,
   },
   yellow: {
-    light: tokens.color.light.neonYellow,
-    dark: tokens.color.dark.neonYellow,
+    light: hexColors.light.neonYellow,
+    dark: hexColors.dark.neonYellow,
   },
   red: {
-    light: tokens.color.light.neonRed,
-    dark: tokens.color.dark.neonRed,
+    light: hexColors.light.neonRed,
+    dark: hexColors.dark.neonRed,
   },
 };
 

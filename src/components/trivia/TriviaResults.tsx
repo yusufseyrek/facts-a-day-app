@@ -13,7 +13,7 @@ import Animated, {
   useSharedValue, 
   withSpring 
 } from 'react-native-reanimated';
-import { tokens } from '../../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
 import { getLucideIcon } from '../../utils/iconMapper';
@@ -123,20 +123,20 @@ function UnavailableQuestionCard({
   cardWidth: number;
 }) {
   const { typography: typo } = useResponsive();
-  const cardBackground = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
-  const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
-  const errorColor = isDark ? tokens.color.dark.error : tokens.color.light.error;
+  const cardBackground = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+  const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
+  const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
 
   return (
     <View style={{ width: cardWidth }}>
       <YStack
         backgroundColor={cardBackground}
-        padding={tokens.space.lg}
+        padding={spacing.phone.lg}
         marginVertical={4}
-        borderRadius={tokens.radius.xl}
-        gap={tokens.space.md}
+        borderRadius={radius.phone.xl}
+        gap={spacing.phone.md}
         minHeight={150}
         justifyContent="center"
         alignItems="center"
@@ -147,7 +147,7 @@ function UnavailableQuestionCard({
         shadowRadius={4}
       >
         {/* Card Header */}
-        <XStack alignItems="center" gap={tokens.space.sm}>
+        <XStack alignItems="center" gap={spacing.phone.sm}>
           <View
             style={{
               width: 28,
@@ -206,12 +206,12 @@ function AnswerReviewCard({
   cardWidth: number;
 }) {
   const { typography: typo } = useResponsive();
-  const cardBackground = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
-  const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
-  const errorColor = isDark ? tokens.color.dark.error : tokens.color.light.error;
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
+  const cardBackground = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+  const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
+  const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   
   const scale = useSharedValue(1);
   
@@ -263,10 +263,10 @@ function AnswerReviewCard({
       <Animated.View style={animatedStyle}>
         <YStack
           backgroundColor={cardBackground}
-          padding={tokens.space.lg}
+          padding={spacing.phone.lg}
           marginVertical={4}
-          borderRadius={tokens.radius.xl}
-          gap={tokens.space.md}
+          borderRadius={radius.phone.xl}
+          gap={spacing.phone.md}
           minHeight={200}
           shadowColor={isDark ? "#000000": "#dddddd"}
           shadowOffset={{ width: 0, height: 2 }}
@@ -274,7 +274,7 @@ function AnswerReviewCard({
           shadowRadius={4}
         >
           {/* Card Header */}
-          <XStack alignItems="center" gap={tokens.space.sm}>
+          <XStack alignItems="center" gap={spacing.phone.sm}>
             <View
               style={{
                 width: 28,
@@ -310,12 +310,12 @@ function AnswerReviewCard({
 
         {/* Answer comparison */}
         <YStack 
-          gap={tokens.space.sm} 
+          gap={spacing.phone.sm} 
           backgroundColor={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}
-          padding={tokens.space.md}
-          borderRadius={tokens.radius.md}
+          padding={spacing.phone.md}
+          borderRadius={radius.phone.md}
         >
-          <XStack gap={tokens.space.md} alignItems="center">
+          <XStack gap={spacing.phone.md} alignItems="center">
             <View style={{ width: 70 }}>
               <Text.Tiny
                 fontFamily={FONT_FAMILIES.bold}
@@ -335,7 +335,7 @@ function AnswerReviewCard({
             </Text.Caption>
           </XStack>
           {!isCorrect && (
-            <XStack gap={tokens.space.md} alignItems="center">
+            <XStack gap={spacing.phone.md} alignItems="center">
               <View style={{ width: 70 }}>
                 <Text.Tiny
                   fontFamily={FONT_FAMILIES.bold}
@@ -359,7 +359,7 @@ function AnswerReviewCard({
 
         {/* Insight text from fact */}
         {question.fact?.content && (
-          <YStack gap={tokens.space.xs} flex={1}>
+          <YStack gap={spacing.phone.xs} flex={1}>
             <Text.Caption
               fontFamily={FONT_FAMILIES.regular_italic}
               color={secondaryTextColor}
@@ -424,19 +424,19 @@ export function TriviaResults({
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { isTablet, screenWidth, typography: typo } = useResponsive();
+  const { screenWidth, typography: typo, gridLayout } = useResponsive();
   
   // Calculate card width: 45% for tablets (two cards side by side), 85% for phones
-  const cardWidth = isTablet ? screenWidth * 0.45 : screenWidth * 0.85;
+  const cardWidth = screenWidth * gridLayout.cardWidthMultiplier;
   
   // Colors
-  const bgColor = isDark ? tokens.color.dark.background : tokens.color.light.background;
-  const cardBackground = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
-  const accentColor = isDark ? tokens.color.dark.accent : tokens.color.light.accent;
-  const borderColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
+  const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
+  const cardBackground = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
+  const accentColor = isDark ? hexColors.dark.accent : hexColors.light.accent;
+  const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
 
   const accuracy = totalQuestions > 0 
     ? Math.round((correctAnswers / totalQuestions) * 100)
@@ -512,15 +512,15 @@ export function TriviaResults({
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top, paddingBottom: showReturnButton ? insets.bottom + tokens.space.md : 0 }}>
+    <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top, paddingBottom: showReturnButton ? insets.bottom + spacing.phone.md : 0 }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       
       {/* Screen Header (when viewing past results) */}
       {showBackButton && (
         <XStack
-          paddingTop={tokens.space.sm}
-          paddingBottom={tokens.space.md}
-          paddingHorizontal={tokens.space.lg}
+          paddingTop={spacing.phone.sm}
+          paddingBottom={spacing.phone.md}
+          paddingHorizontal={spacing.phone.lg}
           alignItems="center"
           justifyContent="space-between"
           borderBottomWidth={1}
@@ -565,10 +565,10 @@ export function TriviaResults({
       >
         {/* Header Section */}
         <Animated.View entering={FadeInDown.duration(400)}>
-          <YStack paddingTop={tokens.space.lg} paddingHorizontal={tokens.space.xl} gap={tokens.space.lg}>
+          <YStack paddingTop={spacing.phone.lg} paddingHorizontal={spacing.phone.xl} gap={spacing.phone.lg}>
             {/* Date/Time Subtitle */}
             {customSubtitle && (
-              <XStack alignSelf='center' alignItems="center" gap={tokens.space.sm}>
+              <XStack alignSelf='center' alignItems="center" gap={spacing.phone.sm}>
                 <Calendar size={typo.fontSize.body} color={secondaryTextColor} />
                 <Text.Body 
                   fontFamily={FONT_FAMILIES.semibold} 
@@ -595,11 +595,11 @@ export function TriviaResults({
               {triviaModeBadge ? (
                 <XStack 
                   alignItems="center" 
-                  gap={tokens.space.xs}
+                  gap={spacing.phone.xs}
                   backgroundColor={`${triviaModeBadge.color || primaryColor}15`}
-                  paddingHorizontal={tokens.space.sm}
+                  paddingHorizontal={spacing.phone.sm}
                   paddingVertical={4}
-                  borderRadius={tokens.radius.md}
+                  borderRadius={radius.phone.md}
                 >
                   {triviaModeBadge.icon && getLucideIcon(triviaModeBadge.icon, typo.fontSize.caption, triviaModeBadge.color || primaryColor)}
                   <Text.Caption 
@@ -614,7 +614,7 @@ export function TriviaResults({
               )}
               
               {/* Star + Score Label */}
-              <XStack alignItems="center" gap={tokens.space.xs} >
+              <XStack alignItems="center" gap={spacing.phone.xs} >
                 <Star size={typo.fontSize.caption} color={primaryColor} fill={primaryColor} />
                 <Text.Caption 
                   fontFamily={FONT_FAMILIES.semibold} 
@@ -634,7 +634,7 @@ export function TriviaResults({
             />
 
             {/* Feedback with emoji */}
-            <XStack alignItems="center" gap={tokens.space.sm} marginBottom={tokens.space.md}>
+            <XStack alignItems="center" gap={spacing.phone.sm} marginBottom={spacing.phone.md}>
               <Text.Title>
                 {getFeedbackEmoji()}
               </Text.Title>
@@ -675,20 +675,20 @@ export function TriviaResults({
         {/* Stats Cards */}
         <Animated.View entering={FadeInDown.delay(100).duration(400)}>
           <XStack 
-            paddingHorizontal={tokens.space.lg} 
-            paddingTop={tokens.space.lg}
-            gap={tokens.space.md}
+            paddingHorizontal={spacing.phone.lg} 
+            paddingTop={spacing.phone.lg}
+            gap={spacing.phone.md}
             justifyContent="center"
           >
             {/* Duration Card */}
             <YStack
               flex={1}
               backgroundColor={cardBackground}
-              paddingVertical={tokens.space.lg}
-              paddingHorizontal={tokens.space.md}
-              borderRadius={tokens.radius.lg}
+              paddingVertical={spacing.phone.lg}
+              paddingHorizontal={spacing.phone.md}
+              borderRadius={radius.phone.lg}
               alignItems="center"
-              gap={tokens.space.xs}
+              gap={spacing.phone.xs}
             >
               <View
                 style={{
@@ -702,7 +702,7 @@ export function TriviaResults({
               >
                 <Timer size={22} color={primaryColor} />
               </View>
-              <Text.Caption color={secondaryTextColor} marginTop={tokens.space.xs}>
+              <Text.Caption color={secondaryTextColor} marginTop={spacing.phone.xs}>
                 {t('timeSpent') || 'Time Spent'}
               </Text.Caption>
               <Text.Title fontFamily={FONT_FAMILIES.bold} color={textColor}>
@@ -714,11 +714,11 @@ export function TriviaResults({
             <YStack
               flex={1}
               backgroundColor={cardBackground}
-              paddingVertical={tokens.space.lg}
-              paddingHorizontal={tokens.space.md}
-              borderRadius={tokens.radius.lg}
+              paddingVertical={spacing.phone.lg}
+              paddingHorizontal={spacing.phone.md}
+              borderRadius={radius.phone.lg}
               alignItems="center"
-              gap={tokens.space.xs}
+              gap={spacing.phone.xs}
             >
               <View
                 style={{
@@ -732,7 +732,7 @@ export function TriviaResults({
               >
                 <Flame size={typo.fontSize.title} color={accentColor} />
               </View>
-              <Text.Caption color={secondaryTextColor} marginTop={tokens.space.xs}>
+              <Text.Caption color={secondaryTextColor} marginTop={spacing.phone.xs}>
                 {t('currentStreak') || 'Current Streak'}
               </Text.Caption>
               <Text.Title fontFamily={FONT_FAMILIES.bold} color={textColor}>
@@ -745,8 +745,8 @@ export function TriviaResults({
         {/* Divider */}
         <View 
           style={{ 
-            marginHorizontal: tokens.space.lg, 
-            marginTop: tokens.space.xl,
+            marginHorizontal: spacing.phone.lg, 
+            marginTop: spacing.phone.xl,
             height: 1,
             backgroundColor: borderColor,
           }} 
@@ -754,11 +754,11 @@ export function TriviaResults({
 
         {/* Question Insights Section */}
         <Animated.View entering={FadeInUp.delay(150).duration(400)}>
-          <YStack paddingTop={tokens.space.xl} paddingBottom={tokens.space.sm} gap={tokens.space.md}>
+          <YStack paddingTop={spacing.phone.xl} paddingBottom={spacing.phone.sm} gap={spacing.phone.md}>
             <Text.Title 
               fontFamily={FONT_FAMILIES.bold} 
               color={textColor}
-              paddingHorizontal={tokens.space.lg}
+              paddingHorizontal={spacing.phone.lg}
             >
               {t('questionInsights') || 'Question Insights'}
             </Text.Title>
@@ -768,7 +768,7 @@ export function TriviaResults({
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{
-                paddingHorizontal: tokens.space.lg,
+                paddingHorizontal: spacing.phone.lg,
                 gap: CARD_GAP,
               }}
               decelerationRate="fast"
@@ -820,9 +820,9 @@ export function TriviaResults({
       {/* Return button (shown for normal trivia flow) */}
       {showReturnButton && (
         <YStack 
-          paddingHorizontal={tokens.space.xl} 
-          paddingTop={tokens.space.md}
-          paddingBottom={tokens.space.md}
+          paddingHorizontal={spacing.phone.xl} 
+          paddingTop={spacing.phone.md}
+          paddingBottom={spacing.phone.md}
           backgroundColor={bgColor as any}
         >
           <Pressable 
@@ -833,11 +833,11 @@ export function TriviaResults({
           >
             <XStack
               backgroundColor={primaryColor}
-              paddingVertical={tokens.space.lg}
-              borderRadius={tokens.radius.lg}
+              paddingVertical={spacing.phone.lg}
+              borderRadius={radius.phone.lg}
               justifyContent="center"
               alignItems="center"
-              gap={tokens.space.sm}
+              gap={spacing.phone.sm}
             >
               <Text.Body 
                 color="#FFFFFF" 

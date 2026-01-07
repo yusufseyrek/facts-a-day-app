@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { Check, Zap, Shuffle, ChevronRight } from '@tamagui/lucide-icons';
-import { tokens } from '../../theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { hexToRgba } from '../../utils/colors';
@@ -40,12 +40,12 @@ export function TriviaGridCard({
 }: TriviaGridCardProps) {
   const { t } = useTranslation();
   const { typography: typo } = useResponsive();
-  const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
-  const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
-  const purpleColor = isDark ? tokens.color.dark.neonPurple : tokens.color.light.neonPurple;
-  const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
-  const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
+  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
+  const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
+  const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
+  const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
   const chevronColor = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)';
 
   // Determine the accent color based on type
@@ -111,8 +111,8 @@ export function TriviaGridCard({
     >
       <YStack
         backgroundColor={isDailyAvailable ? hexToRgba(primaryColor, 0.08) : cardBg}
-        borderRadius={tokens.radius.lg}
-        padding={tokens.space.lg}
+        borderRadius={radius.phone.lg}
+        padding={spacing.phone.lg}
         justifyContent="space-between"
         alignItems={centerContent ? 'center' : 'stretch'}
         borderWidth={isDailyAvailable ? 1.5 : 0}
@@ -139,7 +139,7 @@ export function TriviaGridCard({
         </XStack>
 
         {/* Bottom section: Title + Subtitle */}
-        <YStack gap={4} marginTop={tokens.space.md} alignItems={centerContent ? 'center' : 'flex-start'}>
+        <YStack gap={4} marginTop={spacing.phone.md} alignItems={centerContent ? 'center' : 'flex-start'}>
           <Text.Label
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}

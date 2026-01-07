@@ -6,10 +6,12 @@ import {
   getSpacing,
   getIconSizes,
   getComponentSizes,
+  getGridLayout,
   typography as responsiveTypography,
   spacing as responsiveSpacing,
   iconSizes as responsiveIconSizes,
   componentSizes as responsiveComponentSizes,
+  gridLayout as responsiveGridLayout,
   RESPONSIVE_CONSTANTS,
 } from './responsive';
 
@@ -18,6 +20,7 @@ export type ResponsiveTypography = typeof responsiveTypography.phone | typeof re
 export type ResponsiveSpacing = typeof responsiveSpacing.phone | typeof responsiveSpacing.tablet;
 export type ResponsiveIconSizes = typeof responsiveIconSizes.phone | typeof responsiveIconSizes.tablet;
 export type ResponsiveComponentSizes = typeof responsiveComponentSizes.phone | typeof responsiveComponentSizes.tablet;
+export type ResponsiveGridLayout = typeof responsiveGridLayout.phone | typeof responsiveGridLayout.tablet;
 
 export interface ResponsiveValues {
   /** Current screen width */
@@ -36,6 +39,8 @@ export interface ResponsiveValues {
   iconSizes: ResponsiveIconSizes;
   /** Component-specific sizes (titleMinHeight, etc.) */
   componentSizes: ResponsiveComponentSizes;
+  /** Grid layout values (columns, icon sizes in grids, etc.) */
+  gridLayout: ResponsiveGridLayout;
 }
 
 /**
@@ -58,6 +63,7 @@ export const useResponsive = (): ResponsiveValues => {
       spacing: getSpacing(width),
       iconSizes: getIconSizes(width),
       componentSizes: getComponentSizes(width),
+      gridLayout: getGridLayout(width),
     };
   }, [width, height]);
 };

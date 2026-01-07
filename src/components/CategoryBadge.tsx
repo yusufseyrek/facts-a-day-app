@@ -1,7 +1,7 @@
 import React from 'react';
 import { styled } from '@tamagui/core';
 import { XStack } from 'tamagui';
-import { tokens, useTheme, getCategoryNeonColor } from '../theme';
+import { hexColors, spacing, radius, sizes, useTheme, getCategoryNeonColor } from '../theme';
 import { Text, FONT_FAMILIES } from './Typography';
 import { useTranslation, translateCategory } from '../i18n';
 import { getContrastColor } from '../utils/colors';
@@ -18,9 +18,9 @@ interface CategoryBadgeProps {
 }
 
 const BadgeContainer = styled(XStack, {
-  paddingHorizontal: tokens.space.md,
-  paddingVertical: tokens.space.sm,
-  borderRadius: tokens.radius.full,
+  paddingHorizontal: spacing.phone.md,
+  paddingVertical: spacing.phone.sm,
+  borderRadius: radius.phone.full,
   alignSelf: 'flex-start',
 });
 
@@ -49,13 +49,13 @@ export function CategoryBadge({ category, fontFamily, fontSize }: CategoryBadgeP
 
   return (
     <BadgeContainer style={{ backgroundColor }}>
-        <Text.Label
+        <Text.Caption
           color={contrastColor}
           fontFamily={fontFamily || FONT_FAMILIES.semibold}
           fontSize={fontSize}
         >
           {displayName}
-        </Text.Label>
+        </Text.Caption>
       </BadgeContainer>
   );
 }

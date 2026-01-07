@@ -5,7 +5,7 @@ import { YStack } from 'tamagui';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
-import { tokens } from '../../src/theme/tokens';
+import { hexColors, spacing, radius, sizes } from '../../src/theme';
 import { Text } from '../../src/components/Typography';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
@@ -90,8 +90,8 @@ export default function TriviaGameScreen() {
   }, [currentQuestion?.id]);
   
   // Colors
-  const bgColor = isDark ? tokens.color.dark.background : tokens.color.light.background;
-  const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
+  const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
+  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
   
   // Get trivia title based on type
   const getTriviaTitle = useCallback(() => {
@@ -180,7 +180,7 @@ export default function TriviaGameScreen() {
       }
       
       // Calculate total time based on question count (using average time per question)
-      const totalTime = questions.length * TIME_PER_QUESTION.average;
+      const totalTime = questions.length * TIME_PER_QUESTION.AVERAGE;
       setTimeRemaining(totalTime);
       
       setGameState(prev => ({
