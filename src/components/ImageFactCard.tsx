@@ -185,7 +185,7 @@ const ImageFactCardComponent = ({
   const sizes = isTablet ? componentSizes.tablet : componentSizes.phone;
   
   // Style objects
-  const marginStyle = { marginBottom: space.itemGap };
+  const marginStyle = { marginBottom: space.md };
   const imageContainerStyle = { height: cardHeight };
   // Simple image style - fill the container completely
   const imageStyle = {
@@ -193,13 +193,13 @@ const ImageFactCardComponent = ({
     height: "100%" as const,
   };
   const badgePositionStyle = {
-    top: space.itemGap,
-    right: space.itemGap,
+    top: space.md,
+    right: space.md,
   };
   const contentOverlayStyle = {
-    paddingHorizontal: space.screenPadding,
-    paddingBottom: space.screenPadding,
-    paddingTop: space.sectionGap * 1.5,
+    paddingHorizontal: space.lg,
+    paddingBottom: space.lg,
+    paddingTop: space.xl * 1.5,
   };
   
 

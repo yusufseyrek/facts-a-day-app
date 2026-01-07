@@ -360,7 +360,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   });
 
   const iosShadowOffset = Platform.OS === "ios" ? 4 : 0;
-  const tabletMagicNumber = isTablet ? spacing.itemGap : 0
+  const tabletMagicNumber = isTablet ? spacing.md : 0
 
   // Header title translateY - slides up from bottom of header as scrollY increases
   // Animation starts when header becomes visible (at HEADER_BG_TRANSITION)
@@ -730,8 +730,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         <Animated.View
           style={{
             position: "absolute",
-            top: (Platform.OS === "ios" ? 0 : insets.top) + spacing.sectionGap,
-            right: spacing.sectionGap,
+            top: (Platform.OS === "ios" ? 0 : insets.top) + spacing.xl,
+            right: spacing.xl,
             opacity: closeButtonOpacity,
             zIndex: 9999,
             ...Platform.select({
@@ -768,8 +768,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         <Animated.View
           style={{
             position: "absolute",
-            top: insets.top + spacing.sectionGap,
-            right: spacing.sectionGap,
+            top: insets.top + spacing.xl,
+            right: spacing.xl,
             zIndex: 9999,
             ...Platform.select({
               android: {

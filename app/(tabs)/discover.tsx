@@ -4,7 +4,6 @@ import { StatusBar } from "expo-status-bar";
 import {
   RefreshControl,
   ActivityIndicator,
-  useWindowDimensions,
   TextInput,
   ScrollView,
   Pressable,
@@ -62,7 +61,6 @@ const SearchInputContainer = styled(XStack, {
 const SearchInput = styled(TextInput, {
   flex: 1,
   height: "100%",
-  paddingVertical: 0,
 });
 
 const ClearButton = styled(YStack, {
@@ -181,7 +179,7 @@ function DiscoverScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const { isTablet, screenWidth: width, typography: typo } = useResponsive();
+  const { isTablet, screenWidth: width, typography: typo, iconSizes } = useResponsive();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<FactWithRelations[]>([]);
@@ -454,7 +452,7 @@ function DiscoverScreen() {
         <ScreenHeaderContainer tablet={isTablet}>
           <SearchInputContainer>
             <Search
-              size={20}
+              size={iconSizes.medium}
               color={
                 theme === "dark"
                   ? tokens.color.dark.textSecondary
@@ -500,6 +498,7 @@ function DiscoverScreen() {
                     ? tokens.color.dark.text
                     : tokens.color.light.text,
                 fontSize: typo.fontSize.body,
+                paddingVertical: tokens.space.xs,
               }}
               autoCapitalize="none"
               autoCorrect={false}
