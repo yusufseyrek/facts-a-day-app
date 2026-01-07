@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Pressable, Animated, Easing } from 'react-native';
 import { View, styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Check } from '@tamagui/lucide-icons';
@@ -19,17 +19,6 @@ const Card = styled(YStack, {
   gap: tokens.space.sm,
 });
 
-const CheckmarkContainer = styled(View, {
-  position: 'absolute',
-  top: tokens.space.sm,
-  right: tokens.space.sm,
-  width: 24,
-  height: 24,
-  borderRadius: tokens.radius.full,
-  alignItems: 'center',
-  justifyContent: 'center',
-});
-
 const IconContainer = styled(YStack, {
   alignItems: 'center',
   justifyContent: 'center',
@@ -40,6 +29,9 @@ const LabelContainer = styled(YStack, {
   justifyContent: 'center',
   paddingHorizontal: tokens.space.xs,
 });
+
+// Animated wrapper for the checkmark
+const AnimatedCheckmarkContainer = Animated.createAnimatedComponent(View);
 
 export interface CategoryCardProps {
   icon: React.ReactNode;
@@ -53,7 +45,46 @@ export interface CategoryCardProps {
 
 const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress, labelFontSize }: CategoryCardProps) => {
   const { theme } = useTheme();
-  const { isTablet, fontSizes } = useResponsive();
+  const { isTablet, typography: typo, iconSizes } = useResponsive();
+
+  // Animation values
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const checkmarkAnim = useRef(new Animated.Value(selected ? 1 : 0)).current;
+  const isFirstRender = useRef(true);
+
+  // Animate on selection change
+  useEffect(() => {
+    // Skip animation on first render
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      checkmarkAnim.setValue(selected ? 1 : 0);
+      return;
+    }
+
+    // Scale bounce animation
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.92,
+        duration: 80,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 300,
+        friction: 10,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Checkmark animation - fast and snappy
+    Animated.timing(checkmarkAnim, {
+      toValue: selected ? 1 : 0,
+      duration: 80,
+      easing: Easing.out(Easing.back(1.5)),
+      useNativeDriver: true,
+    }).start();
+  }, [selected]);
 
   // Get neon color for this category - prefer colorHex from DB, fallback to theme-based
   const categorySlug = slug || label.toLowerCase().replace(/\s+/g, '-');
@@ -75,26 +106,64 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
     ? neonColor
     : theme === 'dark' ? tokens.color.dark.border : tokens.color.light.border;
 
+  // Checkmark transform styles
+  const checkmarkStyle = {
+    opacity: checkmarkAnim,
+    transform: [
+      {
+        scale: checkmarkAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.5, 1],
+        }),
+      },
+      {
+        rotate: checkmarkAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['-45deg', '0deg'],
+        }),
+      },
+    ],
+  };
+
   return (
     <Pressable onPress={onPress} style={{ flex: 1 }}>
       {({ pressed }) => (
-        <Card
-            opacity={pressed ? 0.7 : 1}
+        <Animated.View
+          style={{
+            flex: 1,
+            transform: [{ scale: scaleAnim }],
+          }}
+        >
+          <Card
+            opacity={pressed ? 0.85 : 1}
             style={{
               backgroundColor,
               borderColor,
             }}
           >
-            {selected && (
-              <CheckmarkContainer style={{ backgroundColor: contrastColor === '#000000' ? '#00000020' : '#FFFFFF30' }}>
-                <Check size={16} color={contrastColor} strokeWidth={3} />
-              </CheckmarkContainer>
-            )}
+            <AnimatedCheckmarkContainer
+              style={[
+                {
+                  position: 'absolute',
+                  top: tokens.space.sm,
+                  right: tokens.space.sm,
+                  width: 24,
+                  height: 24,
+                  borderRadius: tokens.radius.full,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: contrastColor === '#000000' ? '#00000020' : '#FFFFFF30',
+                },
+                checkmarkStyle,
+              ]}
+            >
+              <Check size={16} color={contrastColor} strokeWidth={3} />
+            </AnimatedCheckmarkContainer>
             <IconContainer>
               {React.isValidElement(icon)
                 ? React.cloneElement(icon as React.ReactElement<any>, {
                     color: iconColor,
-                    size: isTablet ? 32 : 24,
+                    size: iconSizes.large,
                   })
                 : icon}
             </IconContainer>
@@ -103,13 +172,14 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
                 fontFamily={FONT_FAMILIES.semibold}
                 color={selected ? contrastColor : '$text'}
                 textAlign="center"
-                fontSize={labelFontSize ?? (isTablet ? tokens.fontSize.body : fontSizes.small)}
+                fontSize={labelFontSize ?? typo.fontSize.small}
                 numberOfLines={2}
               >
                 {label}
               </LabelText>
             </LabelContainer>
           </Card>
+        </Animated.View>
       )}
     </Pressable>
   );

@@ -1,5 +1,6 @@
 import { createTamagui, createTokens } from "@tamagui/core";
 import { tokens } from "./tokens";
+import { typography } from "../utils/responsive";
 
 const tamaguiTokens = createTokens({
   color: {
@@ -108,18 +109,18 @@ const tamaguiTokens = createTokens({
     6: tokens.fontSize[6],
     7: tokens.fontSize[7],
     8: tokens.fontSize[8],
-    // Named tokens
-    h1: tokens.fontSize.h1,
-    h2: tokens.fontSize.h2,
-    body: tokens.fontSize.body,
-    label: tokens.fontSize.label,
-    small: tokens.fontSize.small,
+    // Named tokens (default to phone sizes - use useResponsive() hook for device-specific sizes)
+    h1: typography.phone.fontSize.h1,
+    h2: typography.phone.fontSize.h2,
+    body: typography.phone.fontSize.body,
+    label: typography.phone.fontSize.label,
+    small: typography.phone.fontSize.small,
     // Tablet-specific sizes
-    h1Tablet: tokens.fontSize.h1Tablet,
-    h2Tablet: tokens.fontSize.h2Tablet,
-    bodyTablet: tokens.fontSize.bodyTablet,
-    labelTablet: tokens.fontSize.labelTablet,
-    smallTablet: tokens.fontSize.smallTablet,
+    h1Tablet: typography.tablet.fontSize.h1,
+    h2Tablet: typography.tablet.fontSize.h2,
+    bodyTablet: typography.tablet.fontSize.body,
+    labelTablet: typography.tablet.fontSize.label,
+    smallTablet: typography.tablet.fontSize.small,
   },
   zIndex: {
     0: 0,

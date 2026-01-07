@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { Bell } from "@tamagui/lucide-icons";
 import { tokens } from "../../src/theme/tokens";
+import { typography } from "../../src/utils/responsive";
 import { H1, BodyText, Button, ProgressIndicator, MultiTimePicker } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
@@ -69,7 +70,8 @@ export default function NotificationsScreen() {
 
   // Responsive sizing for tablets
   const isTablet = width >= TABLET_BREAKPOINT;
-  const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
+  const typo = isTablet ? typography.tablet : typography.phone;
+  const secondaryFontSize = typo.fontSize.body;
 
   // Enter animations
   const progressOpacity = useRef(new Animated.Value(0)).current;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Share, Alert, Pressable, StyleSheet } from "react-native";
+import { Share, Alert, Pressable, StyleSheet, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
@@ -30,6 +30,7 @@ interface FactActionsProps {
   factId: number;
   factTitle?: string;
   factContent: string;
+  imageUrl?: string;
   category?: string;
 }
 
@@ -112,6 +113,7 @@ export function FactActions({
   factId,
   factTitle,
   factContent,
+  imageUrl,
   category = 'unknown',
 }: FactActionsProps) {
   const { t } = useTranslation();
@@ -269,13 +271,27 @@ export function FactActions({
       // Trigger animation immediately
       triggerShareAnimation();
 
-      const shareContent = factTitle
-        ? `${factTitle}\n\n${factContent}\n\n${t("sharedFromApp")}`
-        : `${factContent}\n\n${t("sharedFromApp")}`;
+      // App store links
+      const appStoreUrl = Platform.OS === 'ios'
+        ? 'https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394'
+        : 'https://play.google.com/store/apps/details?id=dev.seyrek.factsaday';
 
-      const result = await Share.share({
-        message: shareContent,
-      });
+      // Build share content: Title + App attribution + Store link
+      const title = factTitle || factContent.substring(0, 60) + "...";
+      const shareText = `${title}\n\n${t("sharedFromApp")}\n${appStoreUrl}`;
+
+      const shareOptions: { message: string; url?: string; title?: string } = {
+        message: shareText,
+        title: title,
+      };
+
+      // On iOS, we can also share the image file URL
+      if (Platform.OS === 'ios' && imageUrl) {
+        const fileUrl = imageUrl.startsWith('file://') ? imageUrl : `file://${imageUrl}`;
+        shareOptions.url = fileUrl;
+      }
+
+      const result = await Share.share(shareOptions);
 
       // Track share action (only if actually shared, not cancelled)
       if (result.action === Share.sharedAction) {

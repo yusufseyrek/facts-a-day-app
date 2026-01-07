@@ -14,6 +14,7 @@ import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-nati
 import { X, Search, Check, Calendar, Trash2, Edit3, RefreshCw } from '@tamagui/lucide-icons';
 import { useTheme } from '../../theme';
 import { tokens } from '../../theme/tokens';
+import { typography } from '../../utils/responsive';
 import { useTranslation } from '../../i18n';
 import { H2, LabelText, SmallText, BodyText, FONT_FAMILIES } from '../Typography';
 import * as database from '../../services/database';
@@ -480,7 +481,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: tokens.fontSize.body,
+    fontSize: typography.phone.fontSize.body,
     fontFamily: FONT_FAMILIES.regular,
   },
   selectionInfo: {
@@ -580,7 +581,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: tokens.radius.md,
     padding: tokens.space.md,
-    fontSize: tokens.fontSize.body,
+    fontSize: typography.phone.fontSize.body,
     fontFamily: FONT_FAMILIES.regular,
     minHeight: 100,
     textAlignVertical: 'top',

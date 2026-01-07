@@ -7,6 +7,7 @@ import { XStack, YStack } from 'tamagui';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from '@tamagui/lucide-icons';
 import { tokens } from '../../src/theme/tokens';
+import { typography } from '../../src/utils/responsive';
 import {
   H1,
   BodyText,
@@ -80,8 +81,9 @@ export default function CategoriesSettings() {
   const isTablet = width >= TABLET_BREAKPOINT;
   const numColumns = isTablet ? 4 : 3;
   const iconSize = isTablet ? 48 : 32;
-  const labelFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.small;
-  const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
+  const typo = isTablet ? typography.tablet : typography.phone;
+  const labelFontSize = isTablet ? typo.fontSize.body : typo.fontSize.small;
+  const secondaryFontSize = typo.fontSize.body;
 
   // Enter animations
   const headerOpacity = useRef(new Animated.Value(0)).current;

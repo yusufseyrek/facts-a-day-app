@@ -5,7 +5,7 @@ import { YStack, XStack } from 'tamagui';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Plus, Trash2 } from '@tamagui/lucide-icons';
 import { tokens } from '../theme/tokens';
-import { BodyText, FONT_FAMILIES } from './Typography';
+import { BodyText, SmallText, FONT_FAMILIES } from './Typography';
 import { Button } from './Button';
 import { useTheme } from '../theme';
 import { useTranslation } from '../i18n';
@@ -154,7 +154,6 @@ export function MultiTimePicker({
       <BodyText
         fontFamily={FONT_FAMILIES.bold}
         textAlign="center"
-        fontSize={tokens.fontSize.body}
         style={{ marginBottom: tokens.space.xs }}
       >
         {t('notificationTimes')}
@@ -162,14 +161,13 @@ export function MultiTimePicker({
 
       {times.map((time, index) => (
         <TimeSlot key={index}>
-          <BodyText
-            fontSize={tokens.fontSize.small}
+          <SmallText
             color="$textSecondary"
             fontFamily={FONT_FAMILIES.medium}
             style={{ minWidth: 60 }}
           >
             {t('time')} {index + 1}
-          </BodyText>
+          </SmallText>
 
           <TimeDisplay>
             {Platform.OS === 'ios' ? (
@@ -222,7 +220,6 @@ export function MultiTimePicker({
           <BodyText
             color="$primary"
             fontFamily={FONT_FAMILIES.bold}
-            fontSize={tokens.fontSize.body}
           >
             {t('addAnotherTime')}
           </BodyText>
@@ -230,24 +227,22 @@ export function MultiTimePicker({
       )}
 
       <YStack gap={tokens.space.xs} marginTop={tokens.space.md}>
-        <BodyText
-          fontSize={tokens.fontSize.small}
+        <SmallText
           color="$textSecondary"
           textAlign="center"
           lineHeight={20}
           fontFamily={FONT_FAMILIES.semibold}
         >
           {t('multipleNotificationsPerDay', { count: times.length })}
-        </BodyText>
-        <BodyText
-          fontSize={tokens.fontSize.small}
+        </SmallText>
+        <SmallText
           color="$textSecondary"
           textAlign="center"
           lineHeight={18}
           fontStyle="italic"
         >
           {t('notificationRespectMessage')}
-        </BodyText>
+        </SmallText>
       </YStack>
     </TimeSlotContainer>
   );

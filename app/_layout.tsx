@@ -29,6 +29,11 @@ import {
   Montserrat_700Bold,
 } from '@expo-google-fonts/montserrat';
 
+// Prevent "multiple linking listeners" error during Fast Refresh
+// This tells expo-router the initial route, helping it manage navigation state properly
+export const unstable_settings = {
+  initialRouteName: '(tabs)',
+};
 
 // Initialize Firebase Crashlytics and Analytics as early as possible
 initializeFirebase();

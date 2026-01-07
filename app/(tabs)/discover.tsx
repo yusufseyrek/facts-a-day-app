@@ -14,13 +14,15 @@ import { styled, View } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
 import { Search, X } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 import { tokens } from "../../src/theme/tokens";
+import { typography } from "../../src/utils/responsive";
 import {
   H1,
   BodyText,
   EmptyState,
   LabelText,
+  SmallText,
   ScreenContainer,
   ScreenHeaderContainer,
   FONT_FAMILIES,
@@ -35,7 +37,7 @@ import * as database from "../../src/services/database";
 import { getSelectedCategories } from "../../src/services/onboarding";
 import { getLucideIcon } from "../../src/utils/iconMapper";
 import { getContrastColor } from "../../src/utils/colors";
-import { FACT_FLASH_LIST_SETTINGS } from "../../src/config/factListSettings";
+import { FACT_FLASH_LIST_SETTINGS, getImageCardHeight } from "../../src/config/factListSettings";
 import { prefetchFactImagesWithLimit } from "../../src/services/images";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import {
@@ -401,6 +403,14 @@ function DiscoverScreen() {
   const keyExtractor = useCallback((item: FactWithRelations) => 
     item.id.toString(), []);
 
+  // Calculate exact item height for FlashList layout
+  const itemHeight = useMemo(() => getImageCardHeight(width, isTablet), [width, isTablet]);
+  
+  // Override item layout to give FlashList exact dimensions (helps with recycling issues)
+  const overrideItemLayout = useCallback((layout: { span?: number; size?: number }) => {
+    layout.size = itemHeight;
+  }, [itemHeight]);
+
   // Memoized renderItem for search results
   const renderSearchItem = useCallback(({ item }: ListRenderItemInfo<FactWithRelations>) => (
     <FactListItem
@@ -459,14 +469,13 @@ function DiscoverScreen() {
             {selectedCategory && (
               <Pressable onPress={clearCategoryFilter}>
                 <CategoryChip style={{ backgroundColor: categoryColor }}>
-                  <LabelText
+                  <SmallText
                     color={contrastColor}
-                    fontSize={tokens.fontSize.small}
                     numberOfLines={1}
-                    style={{ fontFamily: FONT_FAMILIES.semibold }}
+                    fontFamily={FONT_FAMILIES.semibold}
                   >
                     {selectedCategory.name}
-                  </LabelText>
+                  </SmallText>
                   <CategoryChipClearButton
                     style={{
                       backgroundColor:
@@ -495,7 +504,7 @@ function DiscoverScreen() {
                   theme === "dark"
                     ? tokens.color.dark.text
                     : tokens.color.light.text,
-                fontSize: tokens.fontSize.body,
+                fontSize: isTablet ? typography.tablet.fontSize.body : typography.phone.fontSize.body,
               }}
               autoCapitalize="none"
               autoCorrect={false}
@@ -560,7 +569,6 @@ function DiscoverScreen() {
         return (
           <EmptyDiscoverState>
             <BodyText
-              fontSize={tokens.fontSize.body}
               textAlign="center"
               color="$textMuted"
             >
@@ -576,13 +584,11 @@ function DiscoverScreen() {
             <Animated.View entering={FadeIn.duration(300)}>
               <YStack gap={tokens.space.sm}>
                 <H1
-                  fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}
                   color="$text"
                 >
                   {t("discover")}
                 </H1>
                 <BodyText
-                  fontSize={tokens.fontSize.body}
                   color="$textMuted"
                 >
                   {t("discoverDescription")}
@@ -624,21 +630,20 @@ function DiscoverScreen() {
                               <DiscoverCategoryTextContainer>
                                 <LabelText
                                   color={contrastColor}
-                                  fontSize={isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body}
                                   numberOfLines={1}
-                                  style={{ fontFamily: FONT_FAMILIES.semibold }}
+                                  fontFamily={FONT_FAMILIES.semibold}
                                 >
                                   {category.name}
                                 </LabelText>
-                                <LabelText
+                                <SmallText
                                   color={contrastColor}
-                                  fontSize={tokens.fontSize.small}
-                                  style={{ opacity: 0.85, fontFamily: FONT_FAMILIES.medium }}
+                                  style={{ opacity: 0.85 }}
+                                  fontFamily={FONT_FAMILIES.medium}
                                 >
                                   {factsCount === 1
                                     ? t("factCountSingular", { count: factsCount })
                                     : t("factCountPlural", { count: factsCount })}
-                                </LabelText>
+                                </SmallText>
                               </DiscoverCategoryTextContainer>
                             </DiscoverCategoryCard>
                           )}
@@ -675,13 +680,20 @@ function DiscoverScreen() {
       }
 
       return (
-        <FlashList
-          data={searchResults}
-          keyExtractor={keyExtractor}
-          renderItem={renderSearchItem}
-          refreshControl={searchRefreshControl}
-          {...FACT_FLASH_LIST_SETTINGS}
-        />
+        <Animated.View 
+          key="search-results"
+          entering={FadeInUp.duration(350).springify()}
+          style={{ flex: 1 }}
+        >
+          <FlashList
+            data={searchResults}
+            keyExtractor={keyExtractor}
+            renderItem={renderSearchItem}
+            refreshControl={searchRefreshControl}
+            overrideItemLayout={overrideItemLayout}
+            {...FACT_FLASH_LIST_SETTINGS}
+          />
+        </Animated.View>
       );
     }
 
@@ -689,35 +701,62 @@ function DiscoverScreen() {
     if (selectedCategorySlug) {
       if (isLoadingCategoryFacts) {
         return (
-          <EmptyDiscoverState>
-            <ActivityIndicator size="large" color={tokens.color[theme].primary} />
-          </EmptyDiscoverState>
+          <Animated.View 
+            key="loading" 
+            entering={FadeIn.duration(200)} 
+            style={{ flex: 1 }}
+          >
+            <EmptyDiscoverState>
+              <ActivityIndicator size="large" color={tokens.color[theme].primary} />
+            </EmptyDiscoverState>
+          </Animated.View>
         );
       }
 
       if (categoryFacts.length === 0) {
         return (
-          <EmptyState
-            title={t("noDiscoverResults")}
-            description={t("noDiscoverResultsDescription")}
-          />
+          <Animated.View 
+            key="empty" 
+            entering={FadeInUp.duration(350).springify()} 
+            style={{ flex: 1 }}
+          >
+            <EmptyState
+              title={t("noDiscoverResults")}
+              description={t("noDiscoverResultsDescription")}
+            />
+          </Animated.View>
         );
       }
 
       return (
-        <FlashList
-          data={categoryFacts}
-          keyExtractor={keyExtractor}
-          renderItem={renderCategoryItem}
-          refreshControl={categoryRefreshControl}
-          {...FACT_FLASH_LIST_SETTINGS}
-        />
+        <Animated.View 
+          key={`category-${selectedCategorySlug}`}
+          entering={FadeInUp.duration(400).springify()}
+          style={{ flex: 1 }}
+        >
+          <FlashList
+            data={categoryFacts}
+            keyExtractor={keyExtractor}
+            renderItem={renderCategoryItem}
+            refreshControl={categoryRefreshControl}
+            overrideItemLayout={overrideItemLayout}
+            {...FACT_FLASH_LIST_SETTINGS}
+          />
+        </Animated.View>
       );
     }
 
     // Show category grid when no search and no category selected
-    return renderEmptyState();
-  }, [searchQuery, searchResults, selectedCategorySlug, isLoadingCategoryFacts, categoryFacts, theme, t, keyExtractor, renderSearchItem, renderCategoryItem, searchRefreshControl, categoryRefreshControl, renderEmptyState]);
+    return (
+      <Animated.View 
+        key="category-grid"
+        entering={FadeIn.duration(300)}
+        style={{ flex: 1 }}
+      >
+        {renderEmptyState()}
+      </Animated.View>
+    );
+  }, [searchQuery, searchResults, selectedCategorySlug, isLoadingCategoryFacts, categoryFacts, theme, t, keyExtractor, renderSearchItem, renderCategoryItem, searchRefreshControl, categoryRefreshControl, renderEmptyState, overrideItemLayout]);
 
   return (
     <ScreenContainer edges={["top"]}>

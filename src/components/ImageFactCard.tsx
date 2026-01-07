@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { tokens } from "../theme/tokens";
 import { FONT_FAMILIES } from "./Typography";
 import { useFactImage } from "../utils/useFactImage";
+import { typography, spacing, componentSizes, isTabletDevice } from "../utils/responsive";
 import type { Category } from "../services/database";
 
 // Dark blurhash that matches the card's dark theme for cohesive loading
@@ -111,9 +112,6 @@ const ImageFactCardComponent = ({
   // Calculate card height based on aspect ratio
   const cardHeight = screenWidth * ASPECT_RATIO;
 
-  // Parallax amount
-  const parallaxAmount = 8;
-
   const handlePressIn = useCallback(() => {
     Animated.spring(scaleAnim, {
       toValue: 0.96,
@@ -211,34 +209,41 @@ const ImageFactCardComponent = ({
     [displayUri]
   );
 
+  // Get responsive values based on isTablet
+  const typo = isTablet ? typography.tablet : typography.phone;
+  const space = isTablet ? spacing.tablet : spacing.phone;
+  const sizes = isTablet ? componentSizes.tablet : componentSizes.phone;
+  
   // Style objects
-  const marginStyle = { marginBottom: isTablet ? tokens.space.lg : tokens.space.md };
+  const marginStyle = { marginBottom: space.itemGap };
   const imageContainerStyle = { height: cardHeight };
+  // Simple image style - fill the container completely
   const imageStyle = {
     width: "100%" as const,
-    height: cardHeight + parallaxAmount * 2,
-    marginTop: -parallaxAmount,
+    height: "100%" as const,
   };
   const badgePositionStyle = {
-    top: isTablet ? tokens.space.lg : tokens.space.md,
-    right: isTablet ? tokens.space.lg : tokens.space.md,
+    top: space.itemGap,
+    right: space.itemGap,
   };
   const contentOverlayStyle = {
-    paddingHorizontal: isTablet ? tokens.space.xl : tokens.space.lg,
-    paddingBottom: isTablet ? tokens.space.xl : tokens.space.lg,
-    paddingTop: isTablet ? tokens.space.xxl * 1.5 : tokens.space.xxl,
+    paddingHorizontal: space.screenPadding,
+    paddingBottom: space.screenPadding,
+    paddingTop: space.sectionGap * 1.5,
   };
   
-  const baseFontSize = isTablet ? tokens.fontSize.h1Tablet : tokens.fontSize.h1 * 0.85;
+  const baseFontSize = isTablet ? typo.fontSize.h1 : Math.round(typo.fontSize.h1 * 0.85);
   const titleStyle = {
-    fontSize: Math.round(baseFontSize),
-    lineHeight: Math.round(baseFontSize * 1.25),
+    fontSize: baseFontSize,
+    lineHeight: typo.lineHeight.h1,
   };
-  const badgeTextStyle = { fontSize: isTablet ? 14 : 12 };
+  const badgeTextStyle = { fontSize: sizes.badgeFontSize };
 
   // Recycling key that includes retry count to force expo-image to re-attempt loading
   // This is important for Android where timing issues cause initial render failures
-  const recyclingKey = `fact-image-${factId}-${renderRetryCount}-${downloadRetryCount}`;
+  // Also includes a mount timestamp to prevent stale layout from recycled views
+  const mountTimestamp = useRef(Date.now()).current;
+  const recyclingKey = `fact-image-${factId}-${mountTimestamp}-${renderRetryCount}-${downloadRetryCount}`;
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -259,7 +264,6 @@ const ImageFactCardComponent = ({
               source={imageSource}
               style={imageStyle}
               contentFit="cover"
-              contentPosition="top"
               cachePolicy={Platform.OS === "android" ? "disk" : "memory-disk"}
               transition={0}
               placeholder={placeholder}
@@ -310,7 +314,7 @@ const ImageFactCardComponent = ({
               {/* Title */}
               <Text
                 style={[styles.title, titleStyle]}
-                numberOfLines={isTablet ? 4 : 3}
+                numberOfLines={sizes.maxLines}
               >
                 {title}
               </Text>

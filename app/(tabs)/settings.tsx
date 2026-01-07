@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { StatusBar } from "expo-status-bar";
 import { Alert, SectionList, Linking, Platform, AppState, View } from "react-native";
 import { YStack } from "tamagui";
@@ -85,6 +85,20 @@ export default function SettingsPage() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { resetOnboarding } = useOnboarding();
+
+  // Track if this is the initial mount to prevent re-animation on tab focus
+  // We delay setting the flag to allow lazy-rendered items to also animate
+  const hasAnimatedRef = useRef(false);
+  const shouldAnimate = !hasAnimatedRef.current;
+  
+  useEffect(() => {
+    // Wait for all initial animations to complete before disabling future animations
+    // Max delay (~400ms) + duration (300ms) + buffer
+    const timer = setTimeout(() => {
+      hasAnimatedRef.current = true;
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Check if running in development mode
   const isDevelopment = __DEV__;
@@ -922,7 +936,7 @@ export default function SettingsPage() {
   ]);
 
   const renderFooter = () => (
-    <Animated.View entering={FadeInDown.delay(300).duration(300)}>
+    <Animated.View entering={shouldAnimate ? FadeInDown.delay(300).duration(300) : undefined}>
       <ContentContainer>
         <YStack alignItems="center" marginVertical={tokens.space.lg}>
           <SmallText textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: tokens.space.xs }}>
@@ -946,7 +960,7 @@ export default function SettingsPage() {
   return (
     <ScreenContainer edges={["top"]}>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
-      <Animated.View entering={FadeIn.duration(300)}>
+      <Animated.View entering={shouldAnimate ? FadeIn.duration(300) : undefined}>
         <ScreenHeader
           icon={<Settings size={28} color={headerIconColor} />}
           title={t("settings")}
@@ -958,7 +972,7 @@ export default function SettingsPage() {
         renderSectionHeader={({ section: { title }, section }) => {
           const sectionIndex = sections.indexOf(section);
           return (
-            <Animated.View entering={FadeInDown.delay(sectionIndex * 50).duration(300)}>
+            <Animated.View entering={shouldAnimate ? FadeInDown.delay(sectionIndex * 50).duration(300) : undefined}>
               <SectionHeaderContainer>
                 <H2>{title}</H2>
               </SectionHeaderContainer>
@@ -969,7 +983,7 @@ export default function SettingsPage() {
           const sectionIndex = sections.indexOf(section);
           const animationDelay = sectionIndex * 50 + (index + 1) * 30;
           return (
-            <Animated.View entering={FadeInDown.delay(animationDelay).duration(300)}>
+            <Animated.View entering={shouldAnimate ? FadeInDown.delay(animationDelay).duration(300) : undefined}>
               <ContentContainer marginBottom={tokens.space.sm}>
                 <SettingsRow
                   label={item.label}

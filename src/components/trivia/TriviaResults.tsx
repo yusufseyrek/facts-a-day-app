@@ -74,6 +74,7 @@ function ProgressBar({
   trackColor: string;
   height?: number;
 }) {
+  const { typography: typo } = useResponsive();
   return (
     <View
       style={{
@@ -104,7 +105,7 @@ function ProgressBar({
         }}
       >
         <Text
-          fontSize={12}
+          fontSize={typo.fontSize.caption}
           fontFamily={FONT_FAMILIES.bold}
           color={percentage > 85 ? '#FFFFFF' : primaryColor}
         >
@@ -129,6 +130,7 @@ function UnavailableQuestionCard({
   t: TranslationFunction;
   cardWidth: number;
 }) {
+  const { typography: typo } = useResponsive();
   const cardBackground = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
   const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
@@ -165,13 +167,13 @@ function UnavailableQuestionCard({
             }}
           >
             {isCorrect ? (
-              <Check size={16} color="#FFFFFF" strokeWidth={3} />
+              <Check size={typo.fontSize.subtitle} color="#FFFFFF" strokeWidth={3} />
             ) : (
-              <X size={16} color="#FFFFFF" strokeWidth={3} />
+              <X size={typo.fontSize.subtitle} color="#FFFFFF" strokeWidth={3} />
             )}
           </View>
           <Text
-            fontSize={16}
+            fontSize={typo.fontSize.subtitle}
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
           >
@@ -181,7 +183,7 @@ function UnavailableQuestionCard({
 
         {/* Unavailable message */}
         <Text
-          fontSize={14}
+          fontSize={typo.fontSize.subtext}
           fontFamily={FONT_FAMILIES.medium}
           color={secondaryTextColor}
           textAlign="center"
@@ -213,6 +215,7 @@ function AnswerReviewCard({
   t: TranslationFunction;
   cardWidth: number;
 }) {
+  const { typography: typo } = useResponsive();
   const cardBackground = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
   const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
@@ -293,13 +296,13 @@ function AnswerReviewCard({
               }}
             >
               {isCorrect ? (
-                <Check size={16} color="#FFFFFF" strokeWidth={3} />
+                <Check size={typo.fontSize.subtitle} color="#FFFFFF" strokeWidth={3} />
               ) : (
-                <X size={16} color="#FFFFFF" strokeWidth={3} />
+                <X size={typo.fontSize.subtitle} color="#FFFFFF" strokeWidth={3} />
               )}
             </View>
             <Text
-              fontSize={16}
+              fontSize={typo.fontSize.subtitle}
               fontFamily={FONT_FAMILIES.bold}
               color={textColor}
             >
@@ -309,10 +312,10 @@ function AnswerReviewCard({
 
           {/* Question text */}
           <Text
-            fontSize={15}
+            fontSize={typo.fontSize.label}
             fontFamily={FONT_FAMILIES.medium}
             color={textColor}
-            lineHeight={22}
+            lineHeight={typo.lineHeight.subtitle}
           >
             {question.question_text}
           </Text>
@@ -327,7 +330,7 @@ function AnswerReviewCard({
             <XStack gap={tokens.space.md} alignItems="center">
               <View style={{ width: 70 }}>
                 <Text
-                  fontSize={10}
+                  fontSize={typo.fontSize.tiny}
                   fontFamily={FONT_FAMILIES.bold}
                   color={secondaryTextColor}
                   textTransform="uppercase"
@@ -337,7 +340,7 @@ function AnswerReviewCard({
                 </Text>
               </View>
               <Text
-                fontSize={14}
+                fontSize={typo.fontSize.subtext}
                 fontFamily={FONT_FAMILIES.semibold}
                 color={isCorrect ? successColor : errorColor}
                 flex={1}
@@ -349,7 +352,7 @@ function AnswerReviewCard({
               <XStack gap={tokens.space.md} alignItems="center">
                 <View style={{ width: 70 }}>
                   <Text
-                    fontSize={10}
+                    fontSize={typo.fontSize.tiny}
                     fontFamily={FONT_FAMILIES.bold}
                     color={secondaryTextColor}
                     textTransform="uppercase"
@@ -359,7 +362,7 @@ function AnswerReviewCard({
                   </Text>
                 </View>
                 <Text
-                  fontSize={14}
+                  fontSize={typo.fontSize.subtext}
                   fontFamily={FONT_FAMILIES.semibold}
                   color={successColor}
                   flex={1}
@@ -374,11 +377,11 @@ function AnswerReviewCard({
           {question.fact?.content && (
             <YStack gap={tokens.space.xs} flex={1}>
               <Text
-                fontSize={13}
+                fontSize={typo.fontSize.small}
                 fontFamily={FONT_FAMILIES.regular_italic}
                 color={secondaryTextColor}
                 numberOfLines={3}
-                lineHeight={18}
+                lineHeight={typo.lineHeight.small}
               >
                 {t('explanation') || 'Explanation'}: {question.explanation}
               </Text>
@@ -394,13 +397,13 @@ function AnswerReviewCard({
             >
               <XStack alignItems="center" gap={2}>
                 <Text
-                  fontSize={13}
+                  fontSize={typo.fontSize.small}
                   fontFamily={FONT_FAMILIES.semibold}
                   color={primaryColor}
                 >
                   {t('seeFact', { id: question.fact.id }) || `Fact#${question.fact.id}`}
                 </Text>
-                <ChevronRight size={16} color={primaryColor} />
+                <ChevronRight size={typo.fontSize.subtitle} color={primaryColor} />
               </XStack>
             </XStack>
           )}
@@ -439,7 +442,7 @@ export function TriviaResults({
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { isTablet, screenWidth } = useResponsive();
+  const { isTablet, screenWidth, typography: typo } = useResponsive();
   
   // Calculate card width: 45% for tablets (two cards side by side), 85% for phones
   const cardWidth = isTablet ? screenWidth * 0.45 : screenWidth * 0.85;
@@ -564,7 +567,7 @@ export function TriviaResults({
           </Pressable>
           
           <Text
-            fontSize={20}
+            fontSize={typo.fontSize.h2}
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
           >
@@ -585,9 +588,9 @@ export function TriviaResults({
             {/* Date/Time Subtitle */}
             {customSubtitle && (
               <XStack alignSelf='center' alignItems="center" gap={tokens.space.sm}>
-                <Calendar size={16} color={secondaryTextColor} />
+                <Calendar size={typo.fontSize.subtitle} color={secondaryTextColor} />
                 <Text 
-                  fontSize={15} 
+                  fontSize={typo.fontSize.label} 
                   fontFamily={FONT_FAMILIES.semibold} 
                   color={secondaryTextColor}
                 >
@@ -599,7 +602,7 @@ export function TriviaResults({
             {/* Only show title here if not showing header bar */}
             {!showBackButton && (
               <Text 
-                fontSize={28} 
+                fontSize={typo.fontSize.display} 
                 fontFamily={FONT_FAMILIES.bold} 
                 color={textColor}
               >
@@ -619,9 +622,9 @@ export function TriviaResults({
                   paddingVertical={4}
                   borderRadius={tokens.radius.md}
                 >
-                  {triviaModeBadge.icon && getLucideIcon(triviaModeBadge.icon, 14, triviaModeBadge.color || primaryColor)}
+                  {triviaModeBadge.icon && getLucideIcon(triviaModeBadge.icon, typo.fontSize.subtext, triviaModeBadge.color || primaryColor)}
                   <Text 
-                    fontSize={13} 
+                    fontSize={typo.fontSize.small} 
                     fontFamily={FONT_FAMILIES.semibold} 
                     color={triviaModeBadge.color || primaryColor}
                   >
@@ -634,9 +637,9 @@ export function TriviaResults({
               
               {/* Star + Score Label */}
               <XStack alignItems="center" gap={tokens.space.xs} >
-                <Star size={14} color={primaryColor} fill={primaryColor} />
+                <Star size={typo.fontSize.subtext} color={primaryColor} fill={primaryColor} />
                 <Text 
-                  fontSize={13} 
+                  fontSize={typo.fontSize.small} 
                   fontFamily={FONT_FAMILIES.semibold} 
                   color={primaryColor}
                 >
@@ -655,32 +658,32 @@ export function TriviaResults({
 
             {/* Feedback with emoji */}
             <XStack alignItems="center" gap={tokens.space.sm} marginBottom={tokens.space.md}>
-              <Text fontSize={24}>
+              <Text fontSize={typo.fontSize.h2}>
                 {getFeedbackEmoji()}
               </Text>
               <YStack flex={1}>
                 <Text 
-                  fontSize={18} 
+                  fontSize={typo.fontSize.large} 
                   fontFamily={FONT_FAMILIES.bold} 
                   color={textColor}
                 >
                   {getFeedbackTitle()}
                 </Text>
-                <Text fontSize={14} color={secondaryTextColor}>
+                <Text fontSize={typo.fontSize.subtext} color={secondaryTextColor}>
                   {(t('youAnswered', { correct: correctAnswers, total: totalQuestions }) ||
                     `You answered ${correctAnswers} out of ${totalQuestions} questions correctly.`)
                     .split(/(%\{correct\}|%\{total\}|\d+)/)
                     .map((part, i) => {
                       if (part === '%{correct}' || part === String(correctAnswers)) {
                         return (
-                          <Text key={i} fontSize={14} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
+                          <Text key={i} fontSize={typo.fontSize.subtext} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
                             {correctAnswers}
                           </Text>
                         );
                       }
                       if (part === '%{total}' || part === String(totalQuestions)) {
                         return (
-                          <Text key={i} fontSize={14} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
+                          <Text key={i} fontSize={typo.fontSize.subtext} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
                             {totalQuestions}
                           </Text>
                         );
@@ -723,10 +726,10 @@ export function TriviaResults({
               >
                 <Timer size={22} color={primaryColor} />
               </View>
-              <Text fontSize={12} color={secondaryTextColor} marginTop={tokens.space.xs}>
+              <Text fontSize={typo.fontSize.caption} color={secondaryTextColor} marginTop={tokens.space.xs}>
                 {t('timeSpent') || 'Time Spent'}
               </Text>
-              <Text fontSize={24} fontFamily={FONT_FAMILIES.bold} color={textColor}>
+              <Text fontSize={typo.fontSize.h2} fontFamily={FONT_FAMILIES.bold} color={textColor}>
                 {formatTime(elapsedTime)}
               </Text>
             </YStack>
@@ -751,12 +754,12 @@ export function TriviaResults({
                   alignItems: 'center',
                 }}
               >
-                <Flame size={22} color={accentColor} />
+                <Flame size={typo.fontSize.large} color={accentColor} />
               </View>
-              <Text fontSize={12} color={secondaryTextColor} marginTop={tokens.space.xs}>
+              <Text fontSize={typo.fontSize.caption} color={secondaryTextColor} marginTop={tokens.space.xs}>
                 {t('currentStreak') || 'Current Streak'}
               </Text>
-              <Text fontSize={24} fontFamily={FONT_FAMILIES.bold} color={textColor}>
+              <Text fontSize={typo.fontSize.h2} fontFamily={FONT_FAMILIES.bold} color={textColor}>
                 {bestStreak}x
               </Text>
             </YStack>
@@ -777,7 +780,7 @@ export function TriviaResults({
         <Animated.View entering={FadeInUp.delay(150).duration(400)}>
           <YStack paddingTop={tokens.space.xl} paddingBottom={tokens.space.sm} gap={tokens.space.md}>
             <Text 
-              fontSize={18} 
+              fontSize={typo.fontSize.large} 
               fontFamily={FONT_FAMILIES.bold} 
               color={textColor}
               paddingHorizontal={tokens.space.lg}
@@ -863,7 +866,7 @@ export function TriviaResults({
             >
               <Text 
                 color="#FFFFFF" 
-                fontSize={17} 
+                fontSize={typo.fontSize.body} 
                 fontFamily={FONT_FAMILIES.semibold}
               >
                 {t('returnToTrivia') || 'Return to Trivia'}

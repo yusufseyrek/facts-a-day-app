@@ -118,18 +118,8 @@ export const tokens = {
     6: 26,
     7: 30,
     8: 34,
-    // Named tokens (semantic usage)
-    h1: 26,
-    h2: 20,
-    body: 15,
-    label: 15,
-    small: 13,
-    // Tablet-specific sizes (for responsive scaling)
-    h1Tablet: 32,
-    h2Tablet: 24,
-    bodyTablet: 17,
-    labelTablet: 17,
-    smallTablet: 15,
+    // Note: For semantic font sizes, use typography from src/utils/responsive.ts
+    // which provides device-specific values (phone/tablet)
   },
 } as const;
 

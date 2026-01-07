@@ -5,6 +5,7 @@ import { YStack, XStack } from "tamagui";
 import { tokens } from "../theme/tokens";
 import { H1, H2 } from "./Typography";
 import { useTheme } from "../theme";
+import { useResponsive } from "../utils/useResponsive";
 
 // Constants
 const MAX_CONTENT_WIDTH = 800;
@@ -48,10 +49,11 @@ interface ScreenHeaderProps {
  * ScreenHeader - Composed header component with icon and title
  */
 export function ScreenHeader({ icon, title, isTablet = false, rightElement }: ScreenHeaderProps) {
+  const { typography } = useResponsive();
   return (
     <ScreenHeaderContainer tablet={isTablet}>
       {icon}
-      <H1 fontSize={isTablet ? tokens.fontSize.h1Tablet : tokens.fontSize.h1} flex={1}>
+      <H1 fontSize={typography.fontSize.h1} flex={1}>
         {title}
       </H1>
       {rightElement}
@@ -85,9 +87,10 @@ interface SectionHeaderProps {
  * SectionHeader - Composed section header with H2 title
  */
 export function SectionHeader({ title, isTablet = false }: SectionHeaderProps) {
+  const { typography } = useResponsive();
   return (
     <SectionHeaderContainer tablet={isTablet}>
-      <H2 fontSize={isTablet ? tokens.fontSize.h2Tablet : tokens.fontSize.h2}>
+      <H2 fontSize={typography.fontSize.h2}>
         {title}
       </H2>
     </SectionHeaderContainer>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { StatusBar } from "expo-status-bar";
-import { RefreshControl, ActivityIndicator } from "react-native";
+import { RefreshControl, ActivityIndicator, useWindowDimensions } from "react-native";
 import { FlashList, ListRenderItemInfo } from "@shopify/flash-list";
 import { styled } from "@tamagui/core";
 import { YStack } from "tamagui";
@@ -17,6 +17,7 @@ import {
   SectionHeaderContainer,
   ContentContainer,
   LoadingContainer,
+  TabletWrapper,
   useIconColor,
 } from "../../src/components";
 import { ImageFactCard } from "../../src/components/ImageFactCard";
@@ -34,6 +35,9 @@ import {
   FACT_FLASH_LIST_SETTINGS,
 } from "../../src/config/factListSettings";
 import { prefetchFactImagesWithLimit } from "../../src/services/images";
+
+// Device breakpoints
+const TABLET_BREAKPOINT = 768;
 
 // Interface for fact sections (used internally for grouping)
 interface FactSection {
@@ -103,6 +107,8 @@ function HomeScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const iconColor = useIconColor();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= TABLET_BREAKPOINT;
 
   const [sections, setSections] = useState<FactSection[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -274,27 +280,35 @@ function HomeScreen() {
       </Animated.View>
 
       <YStack flex={1}>
-        {flattenedData.length === 0 ? (
-          <EmptyState
-            title={t("emptyStateTitle")}
-            description={t("emptyStateDescription")}
-          />
-        ) : (
-          <FlashList
-            data={flattenedData}
-            keyExtractor={keyExtractor}
-            renderItem={renderItem}
-            getItemType={getItemType}
-            stickyHeaderIndices={stickyHeaderIndices}
-            refreshControl={refreshControl}
-            {...FACT_FLASH_LIST_SETTINGS}
-          />
-        )}
+        {(() => {
+          const feedContent = flattenedData.length === 0 ? (
+            <EmptyState
+              title={t("emptyStateTitle")}
+              description={t("emptyStateDescription")}
+            />
+          ) : (
+            <FlashList
+              data={flattenedData}
+              keyExtractor={keyExtractor}
+              renderItem={renderItem}
+              getItemType={getItemType}
+              stickyHeaderIndices={stickyHeaderIndices}
+              refreshControl={refreshControl}
+              {...FACT_FLASH_LIST_SETTINGS}
+            />
+          );
+
+          return isTablet ? (
+            <TabletWrapper flex={1}>{feedContent}</TabletWrapper>
+          ) : (
+            feedContent
+          );
+        })()}
 
         {backgroundRefreshStatus === 'locale-change' && (
           <LocaleChangeOverlay>
             <ActivityIndicator size="large" color={tokens.color[theme].primary} />
-            <BodyText fontSize={tokens.fontSize.body} color="$textSecondary">
+            <BodyText color="$textSecondary">
               {t("updatingLanguage")}
             </BodyText>
           </LocaleChangeOverlay>

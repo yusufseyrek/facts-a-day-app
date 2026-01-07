@@ -40,6 +40,8 @@ export const FLASH_LIST_ITEM_TYPES = {
  * FlashList uses a recycler approach which is more performant than FlatList/SectionList
  */
 export const FLASH_LIST_SETTINGS = {
+  /** Estimated item size for FlashList layout calculations (average card height ~220px) */
+  estimatedItemSize: 220,
   /** Draw distance determines how far ahead FlashList renders items (in pixels) */
   drawDistance: 500,
   /** Show vertical scroll indicator */

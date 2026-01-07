@@ -6,6 +6,7 @@ import { View, styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
 import { useRouter } from "expo-router";
 import { tokens } from "../../src/theme/tokens";
+import { typography } from "../../src/utils/responsive";
 import {
   H1,
   BodyText,
@@ -78,8 +79,9 @@ export default function Categories() {
   const isTablet = width >= TABLET_BREAKPOINT;
   const numColumns = isTablet ? 4 : 3;
   const iconSize = isTablet ? 48 : 32;
-  const labelFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.small;
-  const secondaryFontSize = isTablet ? tokens.fontSize.bodyTablet : tokens.fontSize.body;
+  const typo = isTablet ? typography.tablet : typography.phone;
+  const labelFontSize = isTablet ? typo.fontSize.body : typo.fontSize.small;
+  const secondaryFontSize = typo.fontSize.body;
 
   // Track if we've already logged the onboarding start event
   const hasLoggedStart = useRef(false);

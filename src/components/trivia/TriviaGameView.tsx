@@ -64,7 +64,7 @@ export function TriviaGameView({
   t,
 }: TriviaGameViewProps) {
   const insets = useSafeAreaInsets();
-  const { isTablet } = useResponsive();
+  const { isTablet, componentSizes, typography: typo } = useResponsive();
   
   // Colors
   const bgColor = isDark ? tokens.color.dark.background : tokens.color.light.background;
@@ -138,7 +138,7 @@ export function TriviaGameView({
           }}
         >
           <Text 
-            fontSize={16} 
+            fontSize={typo.fontSize.subtitle} 
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
             numberOfLines={1}
@@ -157,9 +157,9 @@ export function TriviaGameView({
           gap={tokens.space.sm}
           zIndex={1}
         >
-          <Timer size={18} color={timeRemaining < 30 ? errorColor : primaryColor} />
+          <Timer size={typo.fontSize.large} color={timeRemaining < 30 ? errorColor : primaryColor} />
           <Text 
-            fontSize={16} 
+            fontSize={typo.fontSize.subtitle} 
             fontFamily={FONT_FAMILIES.bold}
             color={timeRemaining < 30 ? errorColor : textColor}
           >
@@ -175,7 +175,7 @@ export function TriviaGameView({
         gap={tokens.space.sm}
       >
         <XStack justifyContent="space-between" alignItems="center">
-          <Text fontSize={15} color={secondaryTextColor}>
+          <Text fontSize={typo.fontSize.label} color={secondaryTextColor}>
             <Text fontFamily={FONT_FAMILIES.bold} color={textColor}>
               {t('question') || 'Question'} {currentQuestionIndex + 1}
             </Text>
@@ -183,7 +183,7 @@ export function TriviaGameView({
           </Text>
           {currentQuestion.fact?.categoryData && (
             <Text 
-              fontSize={14} 
+              fontSize={typo.fontSize.subtext} 
               fontFamily={FONT_FAMILIES.semibold}
               color={currentQuestion.fact.categoryData.color_hex}
             >
@@ -232,11 +232,11 @@ export function TriviaGameView({
           style={{ alignItems: 'center' }}
         >
           <Text
-            fontSize={isTablet ? 40 : 26}
+            fontSize={componentSizes.timerFontSize}
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
             textAlign="center"
-            lineHeight={isTablet ? 54 : 36}
+            lineHeight={componentSizes.timerLineHeight}
           >
             {currentQuestion.question_text}
           </Text>
@@ -304,7 +304,7 @@ export function TriviaGameView({
                           )}
                         </View>
                         <Text
-                          fontSize={17}
+                          fontSize={typo.fontSize.body}
                           fontFamily={FONT_FAMILIES.semibold}
                           color={textColor}
                         >
@@ -365,7 +365,7 @@ export function TriviaGameView({
                           }}
                         >
                           <Text
-                            fontSize={16}
+                            fontSize={typo.fontSize.subtitle}
                             fontFamily={FONT_FAMILIES.bold}
                             color={badgeText}
                           >
@@ -376,7 +376,7 @@ export function TriviaGameView({
                         {/* Answer text */}
                         <Text
                           flex={1}
-                          fontSize={16}
+                          fontSize={typo.fontSize.subtitle}
                           color={textColor}
                         >
                           {answer}
@@ -442,14 +442,14 @@ export function TriviaGameView({
               <>
                 <Text 
                   color="#FFFFFF" 
-                  fontSize={17} 
+                  fontSize={typo.fontSize.body} 
                   fontFamily={FONT_FAMILIES.semibold}
                 >
                   {currentQuestionIndex + 1 >= totalQuestions 
                     ? t('seeResults') 
                     : t('nextQuestion')}
                 </Text>
-                <ChevronRight size={20} color="#FFFFFF" />
+                <ChevronRight size={typo.fontSize.h2} color="#FFFFFF" />
               </>
             )}
           </XStack>

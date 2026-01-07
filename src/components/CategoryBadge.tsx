@@ -50,7 +50,6 @@ export function CategoryBadge({ category, fontFamily, fontSize }: CategoryBadgeP
   return (
     <BadgeContainer style={{ backgroundColor }}>
         <LabelText
-          fontSize={fontSize || 12}
           color={contrastColor}
           fontFamily={fontFamily || FONT_FAMILIES.semibold}
         >

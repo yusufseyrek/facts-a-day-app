@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, styled } from '@tamagui/core';
-import { useWindowDimensions, TextStyle } from 'react-native';
-import { getResponsiveFontSizes, isTabletDevice } from '../utils/responsive';
+import { TextStyle } from 'react-native';
+import { useResponsive } from '../utils/useResponsive';
 
 /**
  * Font family constants for Montserrat weights.
@@ -14,17 +14,6 @@ export const FONT_FAMILIES = {
   semibold: 'Montserrat_600SemiBold',
   bold: 'Montserrat_700Bold',
 } as const;
-
-/**
- * Get responsive font sizes based on current screen width
- * This is used by styled components that need dynamic sizing
- */
-const useTypographySize = () => {
-  const { width } = useWindowDimensions();
-  const isTablet = isTabletDevice(width);
-  const fontSizes = getResponsiveFontSizes(width);
-  return { fontSizes, isTablet, width };
-};
 
 // Base styled components with default sizes
 const BaseH1 = styled(Text, {
@@ -84,7 +73,7 @@ interface TypographyProps {
 
 /**
  * Responsive H1 component
- * Automatically scales font size based on screen width
+ * Uses fixed font sizes for phone/tablet
  */
 export const H1 = React.memo(({ 
   children, 
@@ -94,9 +83,9 @@ export const H1 = React.memo(({
   fontFamily,
   ...props 
 }: TypographyProps) => {
-  const { fontSizes } = useTypographySize();
-  const fontSize = customFontSize ?? fontSizes.h1;
-  const lineHeight = customLineHeight ?? Math.round(fontSize * 1.25);
+  const { typography } = useResponsive();
+  const fontSize = customFontSize ?? typography.fontSize.h1;
+  const lineHeight = customLineHeight ?? typography.lineHeight.h1;
   
   return (
     <BaseH1
@@ -116,7 +105,7 @@ H1.displayName = 'H1';
 
 /**
  * Responsive H2 component
- * Automatically scales font size based on screen width
+ * Uses fixed font sizes for phone/tablet
  */
 export const H2 = React.memo(({ 
   children, 
@@ -126,9 +115,9 @@ export const H2 = React.memo(({
   fontFamily,
   ...props 
 }: TypographyProps) => {
-  const { fontSizes } = useTypographySize();
-  const fontSize = customFontSize ?? fontSizes.h2;
-  const lineHeight = customLineHeight ?? Math.round(fontSize * 1.25);
+  const { typography } = useResponsive();
+  const fontSize = customFontSize ?? typography.fontSize.h2;
+  const lineHeight = customLineHeight ?? typography.lineHeight.h2;
   
   return (
     <BaseH2
@@ -147,7 +136,7 @@ H2.displayName = 'H2';
 
 /**
  * Responsive BodyText component
- * Automatically scales font size based on screen width
+ * Uses fixed font sizes for phone/tablet
  */
 export const BodyText = React.memo(({ 
   children, 
@@ -157,9 +146,9 @@ export const BodyText = React.memo(({
   fontFamily,
   ...props 
 }: TypographyProps) => {
-  const { fontSizes } = useTypographySize();
-  const fontSize = customFontSize ?? fontSizes.body;
-  const lineHeight = customLineHeight ?? Math.round(fontSize * 1.6);
+  const { typography } = useResponsive();
+  const fontSize = customFontSize ?? typography.fontSize.body;
+  const lineHeight = customLineHeight ?? typography.lineHeight.body;
   
   return (
     <BaseBodyText
@@ -178,7 +167,7 @@ BodyText.displayName = 'BodyText';
 
 /**
  * Responsive LabelText component
- * Automatically scales font size based on screen width
+ * Uses fixed font sizes for phone/tablet
  */
 export const LabelText = React.memo(({ 
   children, 
@@ -188,9 +177,9 @@ export const LabelText = React.memo(({
   fontFamily,
   ...props 
 }: TypographyProps) => {
-  const { fontSizes } = useTypographySize();
-  const fontSize = customFontSize ?? fontSizes.label;
-  const lineHeight = customLineHeight ?? Math.round(fontSize * 1.4);
+  const { typography } = useResponsive();
+  const fontSize = customFontSize ?? typography.fontSize.label;
+  const lineHeight = customLineHeight ?? typography.lineHeight.label;
   
   return (
     <BaseLabelText
@@ -209,7 +198,7 @@ LabelText.displayName = 'LabelText';
 
 /**
  * Responsive SerifTitle component
- * Automatically scales font size based on screen width
+ * Uses fixed font sizes for phone/tablet
  */
 export const SerifTitle = React.memo(({ 
   children, 
@@ -219,9 +208,9 @@ export const SerifTitle = React.memo(({
   fontFamily,
   ...props 
 }: TypographyProps) => {
-  const { fontSizes } = useTypographySize();
-  const fontSize = customFontSize ?? fontSizes.h2;
-  const lineHeight = customLineHeight ?? Math.round(fontSize * 1.35);
+  const { typography } = useResponsive();
+  const fontSize = customFontSize ?? typography.fontSize.h2;
+  const lineHeight = customLineHeight ?? typography.lineHeight.h2;
   
   return (
     <BaseSerifTitle
@@ -240,7 +229,7 @@ SerifTitle.displayName = 'SerifTitle';
 
 /**
  * Responsive SmallText component
- * Automatically scales font size based on screen width
+ * Uses fixed font sizes for phone/tablet
  * Use for captions, footnotes, and small UI text
  */
 export const SmallText = React.memo(({ 
@@ -251,9 +240,9 @@ export const SmallText = React.memo(({
   fontFamily,
   ...props 
 }: TypographyProps) => {
-  const { fontSizes } = useTypographySize();
-  const fontSize = customFontSize ?? fontSizes.small;
-  const lineHeight = customLineHeight ?? Math.round(fontSize * 1.4);
+  const { typography } = useResponsive();
+  const fontSize = customFontSize ?? typography.fontSize.small;
+  const lineHeight = customLineHeight ?? typography.lineHeight.small;
   
   return (
     <BaseSmallText

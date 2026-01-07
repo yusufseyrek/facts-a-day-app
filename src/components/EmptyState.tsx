@@ -5,6 +5,7 @@ import { Lightbulb } from '@tamagui/lucide-icons';
 import { tokens } from '../theme/tokens';
 import { H1, BodyText } from './Typography';
 import { useTheme } from '../theme';
+import { useResponsive } from '../utils/useResponsive';
 
 interface EmptyStateProps {
   title: string;
@@ -37,6 +38,7 @@ const TextContainer = styled(YStack, {
 
 export function EmptyState({ title, description }: EmptyStateProps) {
   const { theme } = useTheme();
+  const { typography: typo } = useResponsive();
 
   return (
     <Container>
@@ -51,8 +53,8 @@ export function EmptyState({ title, description }: EmptyStateProps) {
         <BodyText
           textAlign="center"
           color="$textSecondary"
-          fontSize={16}
-          lineHeight={24}
+          fontSize={typo.fontSize.subtitle}
+          lineHeight={typo.lineHeight.subtitle}
         >
           {description}
         </BodyText>

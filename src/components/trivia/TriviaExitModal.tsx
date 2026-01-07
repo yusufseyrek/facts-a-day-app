@@ -7,7 +7,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { tokens } from '../../theme/tokens';
 import { FONT_FAMILIES } from '../Typography';
-import { isTabletDevice } from '../../utils/responsive';
+import { isTabletDevice, typography, spacing, iconSizes, componentSizes } from '../../utils/responsive';
 
 const Text = styled(TamaguiText, {
   fontFamily: FONT_FAMILIES.regular,
@@ -51,18 +51,25 @@ export function TriviaExitModal({
   const { width: screenWidth } = useWindowDimensions();
   const isTablet = isTabletDevice(screenWidth);
   
+  // Get responsive values for device type
+  const typo = isTablet ? typography.tablet : typography.phone;
+  const space = isTablet ? spacing.tablet : spacing.phone;
+  const icons = isTablet ? iconSizes.tablet : iconSizes.phone;
+  const sizes = isTablet ? componentSizes.tablet : componentSizes.phone;
+  
   // Responsive sizing
-  const modalMaxWidth = isTablet ? 420 : 340;
-  const iconSize = isTablet ? 72 : 64;
-  const iconInnerSize = isTablet ? 36 : 32;
-  const titleFontSize = isTablet ? 24 : 20;
-  const messageFontSize = isTablet ? 16 : 14;
-  const buttonFontSize = isTablet ? 17 : 15;
-  const closeIconSize = isTablet ? 24 : 20;
-  const messageIconSize = isTablet ? 24 : 20;
-  const buttonIconSize = isTablet ? 20 : 18;
-  const padding = isTablet ? tokens.space.xl : tokens.space.lg;
-  const buttonPadding = isTablet ? tokens.space.lg : tokens.space.md;
+  const modalMaxWidth = sizes.modalMaxWidth;
+  const iconSize = icons.container;
+  const iconInnerSize = icons.inner;
+  const titleFontSize = typo.fontSize.h2;
+  const messageFontSize = isTablet ? typo.fontSize.body : typo.fontSize.small;
+  const messageLineHeight = isTablet ? typo.lineHeight.body : typo.lineHeight.small;
+  const buttonFontSize = typo.fontSize.body;
+  const closeIconSize = icons.action;
+  const messageIconSize = icons.action;
+  const buttonIconSize = icons.button;
+  const padding = space.screenPadding;
+  const buttonPadding = space.itemGap;
   
   // Colors matching the app's design system
   const bgColor = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
@@ -146,11 +153,11 @@ export function TriviaExitModal({
 
             {/* Header with Icon */}
             <YStack 
-              paddingTop={isTablet ? tokens.space.xxl : tokens.space.xl} 
+              paddingTop={space.sectionGap} 
               paddingHorizontal={padding}
               paddingBottom={tokens.space.md}
               alignItems="center"
-              gap={isTablet ? tokens.space.lg : tokens.space.md}
+              gap={space.itemGap}
             >
               {/* Warning Icon */}
               <YStack
@@ -186,7 +193,7 @@ export function TriviaExitModal({
               <XStack 
                 backgroundColor={surfaceColor}
                 borderRadius={tokens.radius.md}
-                padding={isTablet ? tokens.space.lg : tokens.space.md}
+                padding={space.itemGap}
                 alignItems="center"
                 gap={tokens.space.sm}
               >
@@ -195,7 +202,7 @@ export function TriviaExitModal({
                   flex={1}
                   fontSize={messageFontSize}
                   color={secondaryTextColor}
-                  lineHeight={messageFontSize * 1.5}
+                  lineHeight={messageLineHeight}
                 >
                   {message}
                 </Text>
