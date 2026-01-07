@@ -1,17 +1,12 @@
 import React from 'react';
 import { Pressable } from 'react-native';
-import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { Zap, Check, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { tokens } from '../../theme/tokens';
-import { FONT_FAMILIES } from '../Typography';
+import { LabelText, SmallText, FONT_FAMILIES } from '../Typography';
+import { useResponsive } from '../../utils/useResponsive';
 import type { TranslationKeys } from '../../i18n/translations';
-
-const Text = styled(TamaguiText, {
-  fontFamily: FONT_FAMILIES.regular,
-  color: '$text',
-});
 
 interface DailyChallengeCardProps {
   questionsCount: number;
@@ -29,6 +24,7 @@ export function DailyChallengeCard({
   onPress,
   t,
 }: DailyChallengeCardProps) {
+  const { typography: typo } = useResponsive();
   const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
   const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
   const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
@@ -72,19 +68,17 @@ export function DailyChallengeCard({
           
           {/* Content */}
           <YStack flex={1}>
-            <Text
-              fontSize={16}
-              fontWeight="600"
-              color={textColor}
+            <LabelText
               fontFamily={FONT_FAMILIES.semibold}
+              color={textColor}
             >
               {t('dailyTrivia')}
-            </Text>
-            <Text fontSize={13} color={secondaryTextColor} marginTop={2}>
+            </LabelText>
+            <SmallText color={secondaryTextColor} marginTop={2}>
               {isCompleted
                 ? t('dailyTriviaCompleted')
                 : t('dailyTriviaQuestions', { count: questionsCount })}
-            </Text>
+            </SmallText>
           </YStack>
           
           {!isCompleted && (

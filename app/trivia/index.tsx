@@ -7,8 +7,7 @@ import {
   Pressable,
   View,
 } from 'react-native';
-import { styled, Text as TamaguiText } from '@tamagui/core';
-import { YStack, XStack } from 'tamagui';
+import { YStack, XStack, styled } from 'tamagui';
 import { Brain, Flame, Sparkles, ArrowRight } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -21,7 +20,7 @@ import {
   LoadingContainer,
   useIconColor,
 } from '../../src/components';
-import { FONT_FAMILIES } from '../../src/components/Typography';
+import { LabelText, H2, BodyText, FONT_FAMILIES } from '../../src/components/Typography';
 import {
   TriviaStatsHero,
   TriviaGridCard,
@@ -34,12 +33,6 @@ import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import * as triviaService from '../../src/services/trivia';
 import type { CategoryWithProgress } from '../../src/services/trivia';
 import { useResponsive } from '../../src/utils/useResponsive';
-
-// Styled Text components
-const Text = styled(TamaguiText, {
-  fontFamily: FONT_FAMILIES.regular,
-  color: '$text',
-});
 
 // Grid styled components
 const TriviaGrid = styled(View, {
@@ -57,7 +50,7 @@ export default function TriviaScreen() {
   const router = useRouter();
   const isDark = theme === 'dark';
   const iconColor = useIconColor();
-  const { isTablet } = useResponsive();
+  const { isTablet, typography: typo } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -228,15 +221,13 @@ export default function TriviaScreen() {
   // Streak badge for header (only show when streak > 0)
   const streakBadge = dailyStreak > 0 ? (
     <XStack alignItems="center" gap={4}>
-      <Flame size={18} color={orangeColor} />
-      <Text 
-        fontSize={16} 
-        fontWeight="600" 
+      <Flame size={typo.fontSize.title} color={orangeColor} />
+      <LabelText 
         color={orangeColor}
         fontFamily={FONT_FAMILIES.semibold}
       >
         {dailyStreak}
-      </Text>
+      </LabelText>
     </XStack>
   ) : undefined;
 
@@ -287,14 +278,13 @@ export default function TriviaScreen() {
               <>
                 {/* Section title */}
                 <Animated.View entering={FadeInDown.delay(100).duration(300)}>
-                  <Text
-                    fontSize={17}
+                  <LabelText
                     color={textColor}
                     fontFamily={FONT_FAMILIES.semibold}
                     marginTop={tokens.space.sm}
                   >
                     {t('triviaGameModes')}
-                  </Text>
+                  </LabelText>
                 </Animated.View>
                 <TriviaGrid>
                   {/* First row: Daily Trivia + Mixed Trivia */}
@@ -379,23 +369,18 @@ export default function TriviaScreen() {
                   
                   {/* Title & Description */}
                   <YStack alignItems="center" gap={tokens.space.sm}>
-                    <Text
-                      fontSize={20}
-                      fontWeight="700"
+                    <H2
                       color={textColor}
                       textAlign="center"
-                      fontFamily={FONT_FAMILIES.bold}
                     >
                       {t('triviaEmptyTitle')}
-                    </Text>
-                    <Text
-                      fontSize={15}
+                    </H2>
+                    <BodyText
                       color={secondaryTextColor}
                       textAlign="center"
-                      lineHeight={22}
                     >
                       {t('triviaEmptyDescription')}
-                    </Text>
+                    </BodyText>
                   </YStack>
                   
                   {/* CTA Button */}
@@ -415,15 +400,13 @@ export default function TriviaScreen() {
                       alignItems="center"
                       gap={tokens.space.sm}
                     >
-                      <Text
+                      <LabelText
                         color="#FFFFFF"
-                        fontSize={15}
-                        fontWeight="600"
                         fontFamily={FONT_FAMILIES.semibold}
                       >
                         {t('startExploring')}
-                      </Text>
-                      <ArrowRight size={18} color="#FFFFFF" />
+                      </LabelText>
+                      <ArrowRight size={typo.fontSize.title} color="#FFFFFF" />
                     </XStack>
                   </Pressable>
                 </YStack>

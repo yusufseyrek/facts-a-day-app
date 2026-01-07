@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { BackHandler, View } from 'react-native';
-import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { tokens } from '../../src/theme/tokens';
-import { FONT_FAMILIES } from '../../src/components/Typography';
+import { BodyText } from '../../src/components/Typography';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import { 
@@ -20,15 +19,10 @@ import {
 } from '../../src/services/analytics';
 import { TriviaResults, TriviaGameView, TriviaExitModal, getTriviaModeBadge } from '../../src/components/trivia';
 import * as triviaService from '../../src/services/trivia';
+import { useResponsive } from '../../src/utils/useResponsive';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
 import type { QuestionWithFact } from '../../src/services/database';
 import { showTriviaResultsInterstitial } from '../../src/services/adManager';
-
-// Styled Text components
-const Text = styled(TamaguiText, {
-  fontFamily: FONT_FAMILIES.regular,
-  color: '$text',
-});
 
 interface TriviaGameState {
   questions: QuestionWithFact[];
@@ -42,6 +36,7 @@ interface TriviaGameState {
 export default function TriviaGameScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
+  const { typography: typo } = useResponsive();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ 
@@ -480,9 +475,9 @@ export default function TriviaGameScreen() {
       <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top, paddingBottom: insets.bottom }}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <YStack flex={1} justifyContent="center" alignItems="center">
-          <Text color={secondaryTextColor} fontSize={16}>
+          <BodyText color={secondaryTextColor}>
             {t('loading') || 'Loading...'}
-          </Text>
+          </BodyText>
         </YStack>
       </View>
     );

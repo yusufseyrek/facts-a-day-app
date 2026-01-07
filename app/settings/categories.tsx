@@ -82,7 +82,7 @@ export default function CategoriesSettings() {
   const numColumns = isTablet ? 4 : 3;
   const iconSize = isTablet ? 48 : 32;
   const typo = isTablet ? typography.tablet : typography.phone;
-  const labelFontSize = isTablet ? typo.fontSize.body : typo.fontSize.small;
+  const labelFontSize = typo.fontSize.caption;
   const secondaryFontSize = typo.fontSize.body;
 
   // Enter animations

@@ -7,6 +7,7 @@ import { tokens, useTheme } from '../theme';
 import { H2, BodyText, LabelText } from './Typography';
 import { Button } from './Button';
 import { useTranslation } from '../i18n';
+import { useResponsive } from '../utils/useResponsive';
 
 interface ReportFactModalProps {
   visible: boolean;
@@ -85,6 +86,7 @@ export function ReportFactModal({
 }: ReportFactModalProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const { typography: typo } = useResponsive();
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
   const [inputWidth, setInputWidth] = useState<number | undefined>(undefined);
@@ -156,7 +158,7 @@ export function ReportFactModal({
                     </TouchableWithoutFeedback>
                   </Header>
 
-                  <BodyText color="$text" fontSize={14}>
+                  <BodyText color="$text" fontSize={typo.fontSize.caption}>
                     {t('whatIsWrong')}
                   </BodyText>
 
@@ -182,7 +184,7 @@ export function ReportFactModal({
                       editable={!isSubmitting}
                       autoFocus
                       style={{ 
-                        fontSize: 16, 
+                        fontSize: typo.fontSize.body, 
                         color: tokens.color[theme].text,
                         width: inputWidth || '100%',
                       }}
@@ -191,11 +193,11 @@ export function ReportFactModal({
 
                   <XStack justifyContent="space-between" alignItems="center">
                     {error ? (
-                      <LabelText color="#EF4444" fontSize={12}>
+                      <LabelText color="#EF4444" fontSize={typo.fontSize.caption}>
                         {error}
                       </LabelText>
                     ) : (
-                      <LabelText color="$text" fontSize={12}>
+                      <LabelText color="$text" fontSize={typo.fontSize.caption}>
                         {feedback.length}/1000
                       </LabelText>
                     )}

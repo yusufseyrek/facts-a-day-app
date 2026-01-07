@@ -172,7 +172,7 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
                 fontFamily={FONT_FAMILIES.semibold}
                 color={selected ? contrastColor : '$text'}
                 textAlign="center"
-                fontSize={labelFontSize ?? typo.fontSize.small}
+                fontSize={labelFontSize ?? typo.fontSize.caption}
                 numberOfLines={2}
               >
                 {label}

@@ -1,4 +1,4 @@
-export { H1, H2, BodyText, LabelText, SerifTitle, SmallText, FONT_FAMILIES } from './Typography';
+export { H1, H2, BodyText, LabelText, SerifTitle, SmallText, TinyText, DisplayText, HeroText, FONT_FAMILIES } from './Typography';
 export { Button } from './Button';
 export { ProgressIndicator } from './ProgressIndicator';
 export { CategoryCard } from './CategoryCard';

@@ -80,8 +80,7 @@ export default function Categories() {
   const numColumns = isTablet ? 4 : 3;
   const iconSize = isTablet ? 48 : 32;
   const typo = isTablet ? typography.tablet : typography.phone;
-  const labelFontSize = isTablet ? typo.fontSize.body : typo.fontSize.small;
-  const secondaryFontSize = typo.fontSize.body;
+  const labelFontSize = typo.fontSize.caption;
 
   // Track if we've already logged the onboarding start event
   const hasLoggedStart = useRef(false);
@@ -271,7 +270,7 @@ export default function Categories() {
 
           <Header style={{ marginTop: tokens.space.xl }}>
             <H1>{t("whatInterestsYou")}</H1>
-            <BodyText color="$textSecondary" fontSize={secondaryFontSize}>
+            <BodyText color="$textSecondary">
               {t("selectCategoriesMinimum")}
             </BodyText>
           </Header>

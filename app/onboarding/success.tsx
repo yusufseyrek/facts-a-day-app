@@ -16,6 +16,7 @@ import { completeConsentFlow, isConsentRequired, initializeAdsSDK } from "../../
 import { ADS_ENABLED } from "../../src/config/ads";
 import { trackOnboardingComplete, trackScreenView, Screens } from "../../src/services/analytics";
 import { getNotificationTimes } from "../../src/services/onboarding";
+import { useResponsive } from "../../src/utils/useResponsive";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -239,6 +240,7 @@ const ProgressBar = ({ duration, theme }: { duration: number; theme: "light" | "
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
+  const { typography: typo } = useResponsive();
   const router = useRouter();
   const { completeOnboarding, selectedCategories } = useOnboarding();
 
@@ -517,7 +519,7 @@ export default function OnboardingSuccessScreen() {
 
           {/* Title */}
           <H2
-            fontSize={28}
+            fontSize={typo.fontSize.headline}
             textAlign="center"
             color="$text"
             letterSpacing={-0.5}
@@ -527,10 +529,8 @@ export default function OnboardingSuccessScreen() {
 
           {/* Message */}
           <BodyText
-            fontSize={16}
             textAlign="center"
             color="$textSecondary"
-            lineHeight={24}
           >
             {t("adsConsentMessage")}
           </BodyText>
@@ -561,7 +561,6 @@ export default function OnboardingSuccessScreen() {
       <YStack alignItems="center" gap={tokens.space.lg}>
         <ActivityIndicator size="large" color={theme === "dark" ? tokens.color.dark.neonCyan : tokens.color.light.neonCyan} />
         <BodyText
-          fontSize={16}
           textAlign="center"
           color="$textSecondary"
         >
@@ -631,12 +630,12 @@ export default function OnboardingSuccessScreen() {
               }}
             >
               <H1
-                fontSize={48}
+                fontSize={typo.fontSize.display}
                 fontFamily={FONT_FAMILIES.extrabold}
                 textAlign="center"
                 color="$text"
                 letterSpacing={-1}
-                lineHeight={56}
+                lineHeight={typo.lineHeight.display}
               >
                 {word}
               </H1>
@@ -653,10 +652,10 @@ export default function OnboardingSuccessScreen() {
           }}
         >
           <BodyText
-            fontSize={18}
+            fontSize={typo.fontSize.title}
             textAlign="center"
             color="$textSecondary"
-            lineHeight={26}
+            lineHeight={typo.lineHeight.title}
           >
             {t("welcomeToApp")}
           </BodyText>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, Pressable, Dimensions, Platform } from 'react-native';
-import { styled, Text as TamaguiText } from '@tamagui/core';
+import { styled } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { 
   Zap, 
@@ -17,7 +17,7 @@ import {
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { tokens } from '../../theme/tokens';
-import { FONT_FAMILIES } from '../Typography';
+import { H1, H2, BodyText, SmallText, TinyText, FONT_FAMILIES } from '../Typography';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { getLucideIcon } from '../../utils/iconMapper';
@@ -43,11 +43,6 @@ interface TriviaIntroModalProps {
   answeredCount?: number;
   correctCount?: number;
 }
-
-const Text = styled(TamaguiText, {
-  fontFamily: FONT_FAMILIES.regular,
-  color: '$text',
-});
 
 const ModalOverlay = styled(YStack, {
   flex: 1,
@@ -215,27 +210,24 @@ export function TriviaIntroModal({
                 >
                   {renderIcon()}
                 </YStack>
-                <Text
-                  fontSize={typo.fontSize.h2}
-                  fontFamily={FONT_FAMILIES.bold}
+                <H2
                   color={textColor}
                   numberOfLines={2}
                   textAlign="center"
                 >
                   {getTitle()}
-                </Text>
+                </H2>
               </XStack>
               
               {/* Description */}
               {getDescription() && (
-                <Text
-                  fontSize={typo.fontSize.subtext}
+                <SmallText
                   color={secondaryTextColor}
                   lineHeight={typo.lineHeight.subtext}
                   textAlign="center"
                 >
                   {getDescription()}
-                </Text>
+                </SmallText>
               )}
             </YStack>
 
@@ -267,15 +259,15 @@ export function TriviaIntroModal({
                     justifyContent="center"
                     alignItems="center"
                   >
-                    <HelpCircle size={typo.fontSize.large} color="#FFFFFF" strokeWidth={2.5} />
+                    <HelpCircle size={typo.fontSize.title} color="#FFFFFF" strokeWidth={2.5} />
                   </YStack>
-                  <Text fontSize={typo.fontSize.h1} fontFamily={FONT_FAMILIES.bold} color={textColor}>
+                  <H1 color={textColor}>
                     {questionCount}
-                  </Text>
+                  </H1>
                 </XStack>
-                <Text fontSize={typo.fontSize.subtext} color={secondaryTextColor} fontFamily={FONT_FAMILIES.medium} textAlign="center">
+                <SmallText color={secondaryTextColor} fontFamily={FONT_FAMILIES.medium} textAlign="center">
                   {t('triviaQuestions')}
-                </Text>
+                </SmallText>
               </YStack>
 
               {/* Time Box */}
@@ -297,15 +289,15 @@ export function TriviaIntroModal({
                     justifyContent="center"
                     alignItems="center"
                   >
-                    <Clock size={typo.fontSize.large} color="#FFFFFF" strokeWidth={2.5} />
+                    <Clock size={typo.fontSize.title} color="#FFFFFF" strokeWidth={2.5} />
                   </YStack>
-                  <Text fontSize={typo.fontSize.h1} fontFamily={FONT_FAMILIES.bold} color={textColor}>
+                  <H1 color={textColor}>
                     ~{getEstimatedTimeMinutes(questionCount)}
-                  </Text>
+                  </H1>
                 </XStack>
-                <Text fontSize={typo.fontSize.subtext} color={secondaryTextColor} fontFamily={FONT_FAMILIES.medium} textAlign="center">
+                <SmallText color={secondaryTextColor} fontFamily={FONT_FAMILIES.medium} textAlign="center">
                   {t('triviaMinutes')}
-                </Text>
+                </SmallText>
               </YStack>
             </XStack>
 
@@ -324,19 +316,19 @@ export function TriviaIntroModal({
                   alignItems="center"
                   gap={tokens.space.sm}
                 >
-                  <Trophy size={typo.fontSize.large} color={successColor} />
+                  <Trophy size={typo.fontSize.title} color={successColor} />
                   <YStack flex={1} gap={2}>
-                    <Text fontSize={typo.fontSize.small} fontFamily={FONT_FAMILIES.medium} color={textColor}>
+                    <SmallText fontFamily={FONT_FAMILIES.medium} color={textColor}>
                       {t('triviaTotalQuestions', { count: totalQuestions })}
-                    </Text>
+                    </SmallText>
                     <XStack alignItems="center" gap={tokens.space.sm}>
-                      <Text fontSize={typo.fontSize.caption} fontFamily={FONT_FAMILIES.medium} color={secondaryTextColor}>
+                      <SmallText fontFamily={FONT_FAMILIES.medium} color={secondaryTextColor}>
                         {answeredCount} {t('triviaAnswered')}
-                      </Text>
-                      <Text fontSize={typo.fontSize.caption} color={secondaryTextColor}>•</Text>
-                      <Text fontSize={typo.fontSize.caption} fontFamily={FONT_FAMILIES.medium} color={successColor}>
+                      </SmallText>
+                      <SmallText color={secondaryTextColor}>•</SmallText>
+                      <SmallText fontFamily={FONT_FAMILIES.medium} color={successColor}>
                         {masteredCount} {t('triviaMastered')}
-                      </Text>
+                      </SmallText>
                     </XStack>
                   </YStack>
                 </XStack>
@@ -350,14 +342,14 @@ export function TriviaIntroModal({
                 alignItems="center"
                 gap={tokens.space.sm}
               >
-                <Target size={typo.fontSize.large} color={isDark ? '#818CF8' : '#6366F1'} />
+                <Target size={typo.fontSize.title} color={isDark ? '#818CF8' : '#6366F1'} />
                 <YStack flex={1}>
-                  <Text fontSize={typo.fontSize.small} fontFamily={FONT_FAMILIES.medium} color={textColor}>
+                  <SmallText fontFamily={FONT_FAMILIES.medium} color={textColor}>
                     {t('triviaHowToMaster')}
-                  </Text>
-                  <Text fontSize={typo.fontSize.tiny} color={secondaryTextColor}>
+                  </SmallText>
+                  <TinyText color={secondaryTextColor}>
                     {t('triviaHowToMasterDesc')}
-                  </Text>
+                  </TinyText>
                 </YStack>
               </XStack>
 
@@ -369,14 +361,14 @@ export function TriviaIntroModal({
                 alignItems="center"
                 gap={tokens.space.sm}
               >
-                <CheckCircle size={typo.fontSize.large} color={isDark ? '#FBBF24' : '#F59E0B'} />
+                <CheckCircle size={typo.fontSize.title} color={isDark ? '#FBBF24' : '#F59E0B'} />
                 <YStack flex={1}>
-                  <Text fontSize={typo.fontSize.small} fontFamily={FONT_FAMILIES.medium} color={textColor}>
+                  <SmallText fontFamily={FONT_FAMILIES.medium} color={textColor}>
                     {t('triviaQuestionType')}
-                  </Text>
-                  <Text fontSize={typo.fontSize.tiny} color={secondaryTextColor}>
+                  </SmallText>
+                  <TinyText color={secondaryTextColor}>
                     {t('triviaQuestionTypeDesc')}
-                  </Text>
+                  </TinyText>
                 </YStack>
               </XStack>
             </YStack>
@@ -401,14 +393,13 @@ export function TriviaIntroModal({
                   justifyContent="center"
                   gap={tokens.space.sm}
                 >
-                  <Play size={typo.fontSize.h2} color="#FFFFFF" fill="#FFFFFF" />
-                  <Text
-                    fontSize={typo.fontSize.subtitle}
+                  <Play size={typo.fontSize.title} color="#FFFFFF" fill="#FFFFFF" />
+                  <BodyText
                     fontFamily={FONT_FAMILIES.semibold}
                     color="#FFFFFF"
                   >
                     {t('triviaStartTest')}
-                  </Text>
+                  </BodyText>
                 </XStack>
               </Pressable>
             </YStack>

@@ -232,10 +232,10 @@ const ImageFactCardComponent = ({
     paddingTop: space.sectionGap * 1.5,
   };
   
-  const baseFontSize = isTablet ? typo.fontSize.h1 : Math.round(typo.fontSize.h1 * 0.85);
+  const baseFontSize = typo.fontSize.title;
   const titleStyle = {
     fontSize: baseFontSize,
-    lineHeight: typo.lineHeight.h1,
+    lineHeight: typo.lineHeight.headline,
   };
   const badgeTextStyle = { fontSize: sizes.badgeFontSize };
 

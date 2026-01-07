@@ -76,12 +76,12 @@ export function Button({
         {loading ? (
           <XStack gap={tokens.space.sm} alignItems="center">
             <ActivityIndicator size="small" color="#FFFFFF" />
-            <LabelText color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold} fontSize={typo.fontSize.subtitle}>
+            <LabelText color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold} fontSize={typo.fontSize.body}>
               {children}
             </LabelText>
           </XStack>
         ) : (
-          <LabelText color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold} fontSize={typo.fontSize.subtitle}>
+          <LabelText color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold} fontSize={typo.fontSize.body}>
             {children}
           </LabelText>
         )}

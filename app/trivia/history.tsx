@@ -8,7 +8,6 @@ import {
   Animated as RNAnimated,
 } from 'react-native';
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
-import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { 
   ChevronLeft,
@@ -21,7 +20,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { tokens } from '../../src/theme/tokens';
-import { H2, FONT_FAMILIES } from '../../src/components/Typography';
+import { H2, LabelText, SmallText, BodyText, FONT_FAMILIES } from '../../src/components/Typography';
 import { SectionHeaderContainer } from '../../src/components/ScreenLayout';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
@@ -31,12 +30,7 @@ import { TriviaResults, getTriviaModeBadge } from '../../src/components/trivia';
 import type { TriviaSessionWithCategory } from '../../src/services/trivia';
 import { trackScreenView, Screens, trackTriviaResultsView, TriviaMode } from '../../src/services/analytics';
 import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
-
-// Styled Text components
-const Text = styled(TamaguiText, {
-  fontFamily: FONT_FAMILIES.regular,
-  color: '$text',
-});
+import { useResponsive } from '../../src/utils/useResponsive';
 
 // Back Button with press animation
 function BackButton({ 
@@ -104,6 +98,7 @@ function SessionCard({
   onPress?: () => void;
   dateFormat?: 'time' | 'relative';
 }) {
+  const { typography: typo } = useResponsive();
   const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
   const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
@@ -226,34 +221,30 @@ function SessionCard({
       >
         {getIcon()}
         <YStack flex={1} gap={2}>
-          <Text
-            fontSize={16}
+          <LabelText
             fontFamily={FONT_FAMILIES.semibold}
             color={textColor}
           >
             {getDisplayName()}
-          </Text>
-          <Text
-            fontSize={13}
+          </LabelText>
+          <SmallText
             color={secondaryTextColor}
           >
             {getDateDisplay()}
-          </Text>
+          </SmallText>
         </YStack>
         <YStack alignItems="flex-end" gap={2}>
-          <Text
-            fontSize={14}
+          <SmallText
             fontFamily={FONT_FAMILIES.semibold}
             color={feedback.color}
           >
             {feedback.text}
-          </Text>
-          <Text
-            fontSize={13}
+          </SmallText>
+          <SmallText
             color={secondaryTextColor}
           >
             {t('score')}: {session.correct_answers}/{session.total_questions}
-          </Text>
+          </SmallText>
         </YStack>
         {hasResultData && (
           <ChevronRight size={20} color={secondaryTextColor} />
@@ -291,6 +282,7 @@ type HistoryListItem = SectionHeaderItem | SessionItem;
 export default function ActivityHistoryScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
+  const { typography: typo } = useResponsive();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
@@ -521,13 +513,11 @@ export default function ActivityHistoryScreen() {
         >
           <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
           
-          <Text
-            fontSize={20}
-            fontFamily={FONT_FAMILIES.bold}
+          <H2
             color={textColor}
           >
             {t('testHistory')}
-          </Text>
+          </H2>
           
           {/* Empty spacer to balance the header */}
           <View style={{ width: 36, height: 36 }} />
@@ -537,12 +527,11 @@ export default function ActivityHistoryScreen() {
       <Animated.View entering={FadeIn.delay(50).duration(400).springify()} style={{ flex: 1 }}>
         {flattenedData.length === 0 ? (
           <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
-            <Text
-              fontSize={16}
+            <BodyText
               color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
             >
               {t('noTestsYet')}
-            </Text>
+            </BodyText>
           </YStack>
         ) : (
           <FlashList

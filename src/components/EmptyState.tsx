@@ -53,7 +53,7 @@ export function EmptyState({ title, description }: EmptyStateProps) {
         <BodyText
           textAlign="center"
           color="$textSecondary"
-          fontSize={typo.fontSize.subtitle}
+          fontSize={typo.fontSize.body}
           lineHeight={typo.lineHeight.subtitle}
         >
           {description}

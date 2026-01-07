@@ -16,7 +16,7 @@ import { Search, X } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 import { tokens } from "../../src/theme/tokens";
-import { typography } from "../../src/utils/responsive";
+import { useResponsive } from "../../src/utils/useResponsive";
 import {
   H1,
   BodyText,
@@ -49,7 +49,6 @@ import {
 import { onPreferenceFeedRefresh } from "../../src/services/preferences";
 
 // Device breakpoints
-const TABLET_BREAKPOINT = 768;
 
 const SearchInputContainer = styled(XStack, {
   flex: 1,
@@ -185,8 +184,7 @@ function DiscoverScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isTablet = width >= TABLET_BREAKPOINT;
+  const { isTablet, screenWidth: width, typography: typo } = useResponsive();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<FactWithRelations[]>([]);
@@ -504,7 +502,7 @@ function DiscoverScreen() {
                   theme === "dark"
                     ? tokens.color.dark.text
                     : tokens.color.light.text,
-                fontSize: isTablet ? typography.tablet.fontSize.body : typography.phone.fontSize.body,
+                fontSize: typo.fontSize.body,
               }}
               autoCapitalize="none"
               autoCorrect={false}

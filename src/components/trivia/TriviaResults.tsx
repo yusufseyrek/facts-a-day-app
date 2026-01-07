@@ -2,7 +2,6 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, View, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { Timer, Flame, Check, X, ChevronRight, Star, ChevronLeft, Calendar } from '@tamagui/lucide-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,19 +14,13 @@ import Animated, {
   withSpring 
 } from 'react-native-reanimated';
 import { tokens } from '../../theme/tokens';
-import { FONT_FAMILIES } from '../Typography';
+import { H2, BodyText, SmallText, TinyText, DisplayText, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
 import { getLucideIcon } from '../../utils/iconMapper';
 import type { QuestionWithFact, StoredAnswer } from '../../services/database';
 import { indexToAnswer } from '../../services/trivia';
 
 const CARD_GAP = 12;
-
-// Styled Text components
-const Text = styled(TamaguiText, {
-  fontFamily: FONT_FAMILIES.regular,
-  color: '$text',
-});
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TranslationFunction = (key: any, params?: any) => string;
@@ -104,13 +97,12 @@ function ProgressBar({
           justifyContent: 'center',
         }}
       >
-        <Text
-          fontSize={typo.fontSize.caption}
+        <SmallText
           fontFamily={FONT_FAMILIES.bold}
           color={percentage > 85 ? '#FFFFFF' : primaryColor}
         >
           {percentage}%
-        </Text>
+        </SmallText>
       </View>
     </View>
   );
@@ -167,29 +159,27 @@ function UnavailableQuestionCard({
             }}
           >
             {isCorrect ? (
-              <Check size={typo.fontSize.subtitle} color="#FFFFFF" strokeWidth={3} />
+              <Check size={typo.fontSize.body} color="#FFFFFF" strokeWidth={3} />
             ) : (
-              <X size={typo.fontSize.subtitle} color="#FFFFFF" strokeWidth={3} />
+              <X size={typo.fontSize.body} color="#FFFFFF" strokeWidth={3} />
             )}
           </View>
-          <Text
-            fontSize={typo.fontSize.subtitle}
+          <BodyText
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
           >
             {t('question') || 'Question'} {questionIndex + 1}: {isCorrect ? (t('correct') || 'Correct') + '!' : (t('wrong') || 'Wrong')}
-          </Text>
+          </BodyText>
         </XStack>
 
         {/* Unavailable message */}
-        <Text
-          fontSize={typo.fontSize.subtext}
+        <SmallText
           fontFamily={FONT_FAMILIES.medium}
           color={secondaryTextColor}
           textAlign="center"
         >
           {t('questionUnavailable') || 'This question is no longer available'}
-        </Text>
+        </SmallText>
       </YStack>
     </View>
   );
@@ -295,118 +285,110 @@ function AnswerReviewCard({
                 alignItems: 'center',
               }}
             >
-              {isCorrect ? (
-                <Check size={typo.fontSize.subtitle} color="#FFFFFF" strokeWidth={3} />
-              ) : (
-                <X size={typo.fontSize.subtitle} color="#FFFFFF" strokeWidth={3} />
-              )}
-            </View>
-            <Text
-              fontSize={typo.fontSize.subtitle}
-              fontFamily={FONT_FAMILIES.bold}
-              color={textColor}
-            >
-              {t('question') || 'Question'} {questionIndex + 1}: {isCorrect ? (t('correct') || 'Correct') + '!' : (t('wrong') || 'Wrong')}
-            </Text>
-          </XStack>
-
-          {/* Question text */}
-          <Text
-            fontSize={typo.fontSize.label}
-            fontFamily={FONT_FAMILIES.medium}
+            {isCorrect ? (
+              <Check size={typo.fontSize.body} color="#FFFFFF" strokeWidth={3} />
+            ) : (
+              <X size={typo.fontSize.body} color="#FFFFFF" strokeWidth={3} />
+            )}
+          </View>
+          <BodyText
+            fontFamily={FONT_FAMILIES.bold}
             color={textColor}
-            lineHeight={typo.lineHeight.subtitle}
           >
-            {question.question_text}
-          </Text>
+            {t('question') || 'Question'} {questionIndex + 1}: {isCorrect ? (t('correct') || 'Correct') + '!' : (t('wrong') || 'Wrong')}
+          </BodyText>
+        </XStack>
 
-          {/* Answer comparison */}
-          <YStack 
-            gap={tokens.space.sm} 
-            backgroundColor={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}
-            padding={tokens.space.md}
-            borderRadius={tokens.radius.md}
-          >
+        {/* Question text */}
+        <BodyText
+          fontFamily={FONT_FAMILIES.medium}
+          color={textColor}
+          lineHeight={typo.lineHeight.title}
+        >
+          {question.question_text}
+        </BodyText>
+
+        {/* Answer comparison */}
+        <YStack 
+          gap={tokens.space.sm} 
+          backgroundColor={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}
+          padding={tokens.space.md}
+          borderRadius={tokens.radius.md}
+        >
+          <XStack gap={tokens.space.md} alignItems="center">
+            <View style={{ width: 70 }}>
+              <TinyText
+                fontFamily={FONT_FAMILIES.bold}
+                color={secondaryTextColor}
+                textTransform="uppercase"
+                letterSpacing={0.5}
+              >
+                {t('yourAnswer') || 'YOUR ANSWER'}
+              </TinyText>
+            </View>
+            <SmallText
+              fontFamily={FONT_FAMILIES.semibold}
+              color={isCorrect ? successColor : errorColor}
+              flex={1}
+            >
+              {selectedAnswer ? getDisplayAnswer(selectedAnswer) : '—'}
+            </SmallText>
+          </XStack>
+          {!isCorrect && (
             <XStack gap={tokens.space.md} alignItems="center">
               <View style={{ width: 70 }}>
-                <Text
-                  fontSize={typo.fontSize.tiny}
+                <TinyText
                   fontFamily={FONT_FAMILIES.bold}
                   color={secondaryTextColor}
                   textTransform="uppercase"
                   letterSpacing={0.5}
                 >
-                  {t('yourAnswer') || 'YOUR ANSWER'}
-                </Text>
+                  {t('correctAnswer') || 'CORRECT ANSWER'}
+                </TinyText>
               </View>
-              <Text
-                fontSize={typo.fontSize.subtext}
+              <SmallText
                 fontFamily={FONT_FAMILIES.semibold}
-                color={isCorrect ? successColor : errorColor}
+                color={successColor}
                 flex={1}
               >
-                {selectedAnswer ? getDisplayAnswer(selectedAnswer) : '—'}
-              </Text>
+                {getDisplayAnswer(question.correct_answer)}
+              </SmallText>
             </XStack>
-            {!isCorrect && (
-              <XStack gap={tokens.space.md} alignItems="center">
-                <View style={{ width: 70 }}>
-                  <Text
-                    fontSize={typo.fontSize.tiny}
-                    fontFamily={FONT_FAMILIES.bold}
-                    color={secondaryTextColor}
-                    textTransform="uppercase"
-                    letterSpacing={0.5}
-                  >
-                    {t('correctAnswer') || 'CORRECT ANSWER'}
-                  </Text>
-                </View>
-                <Text
-                  fontSize={typo.fontSize.subtext}
-                  fontFamily={FONT_FAMILIES.semibold}
-                  color={successColor}
-                  flex={1}
-                >
-                  {getDisplayAnswer(question.correct_answer)}
-                </Text>
-              </XStack>
-            )}
-          </YStack>
-
-          {/* Insight text from fact */}
-          {question.fact?.content && (
-            <YStack gap={tokens.space.xs} flex={1}>
-              <Text
-                fontSize={typo.fontSize.small}
-                fontFamily={FONT_FAMILIES.regular_italic}
-                color={secondaryTextColor}
-                numberOfLines={3}
-                lineHeight={typo.lineHeight.small}
-              >
-                {t('explanation') || 'Explanation'}: {question.explanation}
-              </Text>
-            </YStack>
           )}
+        </YStack>
 
-          {/* See Fact link */}
-          {question.fact?.id && (
-            <XStack 
-              alignItems="center" 
-              justifyContent="flex-end"
-              marginTop="auto"
+        {/* Insight text from fact */}
+        {question.fact?.content && (
+          <YStack gap={tokens.space.xs} flex={1}>
+            <SmallText
+              fontFamily={FONT_FAMILIES.regular_italic}
+              color={secondaryTextColor}
+              numberOfLines={3}
+              lineHeight={typo.lineHeight.caption}
             >
-              <XStack alignItems="center" gap={2}>
-                <Text
-                  fontSize={typo.fontSize.small}
-                  fontFamily={FONT_FAMILIES.semibold}
-                  color={primaryColor}
-                >
-                  {t('seeFact', { id: question.fact.id }) || `Fact#${question.fact.id}`}
-                </Text>
-                <ChevronRight size={typo.fontSize.subtitle} color={primaryColor} />
-              </XStack>
+              {t('explanation') || 'Explanation'}: {question.explanation}
+            </SmallText>
+          </YStack>
+        )}
+
+        {/* See Fact link */}
+        {question.fact?.id && (
+          <XStack 
+            alignItems="center" 
+            justifyContent="flex-end"
+            marginTop="auto"
+          >
+            <XStack alignItems="center" gap={2}>
+              <SmallText
+                fontFamily={FONT_FAMILIES.semibold}
+                color={primaryColor}
+              >
+                {t('seeFact', { id: question.fact.id }) || `Fact#${question.fact.id}`}
+              </SmallText>
+              <ChevronRight size={typo.fontSize.body} color={primaryColor} />
             </XStack>
-          )}
+          </XStack>
+        )}
         </YStack>
       </Animated.View>
     </Pressable>
@@ -566,13 +548,12 @@ export function TriviaResults({
             </View>
           </Pressable>
           
-          <Text
-            fontSize={typo.fontSize.h2}
+          <H2
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
           >
             {customTitle || t('testResults') || 'Test Results'}
-          </Text>
+          </H2>
           
           {/* Empty spacer to balance the header */}
           <View style={{ width: 36, height: 36 }} />
@@ -588,26 +569,24 @@ export function TriviaResults({
             {/* Date/Time Subtitle */}
             {customSubtitle && (
               <XStack alignSelf='center' alignItems="center" gap={tokens.space.sm}>
-                <Calendar size={typo.fontSize.subtitle} color={secondaryTextColor} />
-                <Text 
-                  fontSize={typo.fontSize.label} 
+                <Calendar size={typo.fontSize.body} color={secondaryTextColor} />
+                <BodyText 
                   fontFamily={FONT_FAMILIES.semibold} 
                   color={secondaryTextColor}
                 >
                   {customSubtitle}
-                </Text>
+                </BodyText>
               </XStack>
             )}
             
             {/* Only show title here if not showing header bar */}
             {!showBackButton && (
-              <Text 
-                fontSize={typo.fontSize.display} 
+              <DisplayText 
                 fontFamily={FONT_FAMILIES.bold} 
                 color={textColor}
               >
                 {customTitle || t('testResults') || 'Test Results'}
-              </Text>
+              </DisplayText>
             )}
             
             {/* Badge + Score Row */}
@@ -622,14 +601,13 @@ export function TriviaResults({
                   paddingVertical={4}
                   borderRadius={tokens.radius.md}
                 >
-                  {triviaModeBadge.icon && getLucideIcon(triviaModeBadge.icon, typo.fontSize.subtext, triviaModeBadge.color || primaryColor)}
-                  <Text 
-                    fontSize={typo.fontSize.small} 
+                  {triviaModeBadge.icon && getLucideIcon(triviaModeBadge.icon, typo.fontSize.caption, triviaModeBadge.color || primaryColor)}
+                  <SmallText 
                     fontFamily={FONT_FAMILIES.semibold} 
                     color={triviaModeBadge.color || primaryColor}
                   >
                     {triviaModeBadge.label}
-                  </Text>
+                  </SmallText>
                 </XStack>
               ) : (
                 <View />
@@ -637,14 +615,13 @@ export function TriviaResults({
               
               {/* Star + Score Label */}
               <XStack alignItems="center" gap={tokens.space.xs} >
-                <Star size={typo.fontSize.subtext} color={primaryColor} fill={primaryColor} />
-                <Text 
-                  fontSize={typo.fontSize.small} 
+                <Star size={typo.fontSize.caption} color={primaryColor} fill={primaryColor} />
+                <SmallText 
                   fontFamily={FONT_FAMILIES.semibold} 
                   color={primaryColor}
                 >
                   {t('score') || 'Score'}: {correctAnswers}/{totalQuestions}
-                </Text>
+                </SmallText>
               </XStack>
             </XStack>
 
@@ -658,39 +635,38 @@ export function TriviaResults({
 
             {/* Feedback with emoji */}
             <XStack alignItems="center" gap={tokens.space.sm} marginBottom={tokens.space.md}>
-              <Text fontSize={typo.fontSize.h2}>
+              <H2>
                 {getFeedbackEmoji()}
-              </Text>
+              </H2>
               <YStack flex={1}>
-                <Text 
-                  fontSize={typo.fontSize.large} 
+                <H2 
                   fontFamily={FONT_FAMILIES.bold} 
                   color={textColor}
                 >
                   {getFeedbackTitle()}
-                </Text>
-                <Text fontSize={typo.fontSize.subtext} color={secondaryTextColor}>
+                </H2>
+                <SmallText color={secondaryTextColor}>
                   {(t('youAnswered', { correct: correctAnswers, total: totalQuestions }) ||
                     `You answered ${correctAnswers} out of ${totalQuestions} questions correctly.`)
                     .split(/(%\{correct\}|%\{total\}|\d+)/)
                     .map((part, i) => {
                       if (part === '%{correct}' || part === String(correctAnswers)) {
                         return (
-                          <Text key={i} fontSize={typo.fontSize.subtext} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
+                          <SmallText key={i} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
                             {correctAnswers}
-                          </Text>
+                          </SmallText>
                         );
                       }
                       if (part === '%{total}' || part === String(totalQuestions)) {
                         return (
-                          <Text key={i} fontSize={typo.fontSize.subtext} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
+                          <SmallText key={i} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
                             {totalQuestions}
-                          </Text>
+                          </SmallText>
                         );
                       }
                       return part;
                     })}
-                </Text>
+                </SmallText>
               </YStack>
             </XStack>
           </YStack>
@@ -726,12 +702,12 @@ export function TriviaResults({
               >
                 <Timer size={22} color={primaryColor} />
               </View>
-              <Text fontSize={typo.fontSize.caption} color={secondaryTextColor} marginTop={tokens.space.xs}>
+              <SmallText color={secondaryTextColor} marginTop={tokens.space.xs}>
                 {t('timeSpent') || 'Time Spent'}
-              </Text>
-              <Text fontSize={typo.fontSize.h2} fontFamily={FONT_FAMILIES.bold} color={textColor}>
+              </SmallText>
+              <H2 fontFamily={FONT_FAMILIES.bold} color={textColor}>
                 {formatTime(elapsedTime)}
-              </Text>
+              </H2>
             </YStack>
 
             {/* Streak Card */}
@@ -754,14 +730,14 @@ export function TriviaResults({
                   alignItems: 'center',
                 }}
               >
-                <Flame size={typo.fontSize.large} color={accentColor} />
+                <Flame size={typo.fontSize.title} color={accentColor} />
               </View>
-              <Text fontSize={typo.fontSize.caption} color={secondaryTextColor} marginTop={tokens.space.xs}>
+              <SmallText color={secondaryTextColor} marginTop={tokens.space.xs}>
                 {t('currentStreak') || 'Current Streak'}
-              </Text>
-              <Text fontSize={typo.fontSize.h2} fontFamily={FONT_FAMILIES.bold} color={textColor}>
+              </SmallText>
+              <H2 fontFamily={FONT_FAMILIES.bold} color={textColor}>
                 {bestStreak}x
-              </Text>
+              </H2>
             </YStack>
           </XStack>
         </Animated.View>
@@ -779,14 +755,13 @@ export function TriviaResults({
         {/* Question Insights Section */}
         <Animated.View entering={FadeInUp.delay(150).duration(400)}>
           <YStack paddingTop={tokens.space.xl} paddingBottom={tokens.space.sm} gap={tokens.space.md}>
-            <Text 
-              fontSize={typo.fontSize.large} 
+            <H2 
               fontFamily={FONT_FAMILIES.bold} 
               color={textColor}
               paddingHorizontal={tokens.space.lg}
             >
               {t('questionInsights') || 'Question Insights'}
-            </Text>
+            </H2>
 
             {/* Horizontal scrolling cards */}
             <ScrollView
@@ -864,13 +839,12 @@ export function TriviaResults({
               alignItems="center"
               gap={tokens.space.sm}
             >
-              <Text 
+              <BodyText 
                 color="#FFFFFF" 
-                fontSize={typo.fontSize.body} 
                 fontFamily={FONT_FAMILIES.semibold}
               >
                 {t('returnToTrivia') || 'Return to Trivia'}
-              </Text>
+              </BodyText>
             </XStack>
           </Pressable>
         </YStack>

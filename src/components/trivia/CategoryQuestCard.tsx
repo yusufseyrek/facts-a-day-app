@@ -1,18 +1,13 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { Check, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { tokens } from '../../theme/tokens';
-import { FONT_FAMILIES } from '../Typography';
+import { LabelText, SmallText, FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
+import { useResponsive } from '../../utils/useResponsive';
 import type { CategoryWithProgress } from '../../services/trivia';
-
-const Text = styled(TamaguiText, {
-  fontFamily: FONT_FAMILIES.regular,
-  color: '$text',
-});
 
 interface CategoryQuestCardProps {
   category: CategoryWithProgress;
@@ -27,6 +22,7 @@ export function CategoryQuestCard({
   onPress,
   index,
 }: CategoryQuestCardProps) {
+  const { typography: typo } = useResponsive();
   const progress = category.total > 0
     ? Math.round((category.mastered / category.total) * 100)
     : 0;
@@ -74,16 +70,14 @@ export function CategoryQuestCard({
           {/* Content */}
           <YStack flex={1}>
             <XStack alignItems="center" gap={tokens.space.sm}>
-              <Text
-                fontSize={15}
-                fontWeight="600"
-                color={textColor}
+              <LabelText
                 fontFamily={FONT_FAMILIES.semibold}
+                color={textColor}
               >
                 {category.name}
-              </Text>
+              </LabelText>
               {isComplete && (
-                <Check size={14} color={successColor} />
+                <Check size={typo.fontSize.caption} color={successColor} />
               )}
             </XStack>
             
@@ -102,9 +96,9 @@ export function CategoryQuestCard({
                   width={`${progress}%`}
                 />
               </YStack>
-              <Text fontSize={12} color={secondaryTextColor}>
+              <SmallText color={secondaryTextColor}>
                 {category.mastered}/{category.total}
-              </Text>
+              </SmallText>
             </XStack>
           </YStack>
           

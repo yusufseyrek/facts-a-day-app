@@ -1,18 +1,13 @@
 import React from 'react';
 import { Modal, Pressable, Platform, useWindowDimensions } from 'react-native';
-import { styled, Text as TamaguiText } from '@tamagui/core';
+import { styled } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { AlertTriangle, X, DoorOpen } from '@tamagui/lucide-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { tokens } from '../../theme/tokens';
-import { FONT_FAMILIES } from '../Typography';
+import { H2, SmallText, LabelText, FONT_FAMILIES } from '../Typography';
 import { isTabletDevice, typography, spacing, iconSizes, componentSizes } from '../../utils/responsive';
-
-const Text = styled(TamaguiText, {
-  fontFamily: FONT_FAMILIES.regular,
-  color: '$text',
-});
 
 const ModalOverlay = styled(YStack, {
   flex: 1,
@@ -61,9 +56,9 @@ export function TriviaExitModal({
   const modalMaxWidth = sizes.modalMaxWidth;
   const iconSize = icons.container;
   const iconInnerSize = icons.inner;
-  const titleFontSize = typo.fontSize.h2;
-  const messageFontSize = isTablet ? typo.fontSize.body : typo.fontSize.small;
-  const messageLineHeight = isTablet ? typo.lineHeight.body : typo.lineHeight.small;
+  const titleFontSize = typo.fontSize.title;
+  const messageFontSize = typo.fontSize.caption;
+  const messageLineHeight = typo.lineHeight.caption;
   const buttonFontSize = typo.fontSize.body;
   const closeIconSize = icons.action;
   const messageIconSize = icons.action;
@@ -172,14 +167,13 @@ export function TriviaExitModal({
               </YStack>
 
               {/* Title */}
-              <Text
+              <H2
                 fontSize={titleFontSize}
-                fontFamily={FONT_FAMILIES.bold}
                 color={textColor}
                 textAlign="center"
               >
                 {title}
-              </Text>
+              </H2>
             </YStack>
 
             {/* Divider */}
@@ -198,14 +192,14 @@ export function TriviaExitModal({
                 gap={tokens.space.sm}
               >
                 <DoorOpen size={messageIconSize} color={errorColor} />
-                <Text
+                <SmallText
                   flex={1}
                   fontSize={messageFontSize}
                   color={secondaryTextColor}
                   lineHeight={messageLineHeight}
                 >
                   {message}
-                </Text>
+                </SmallText>
               </XStack>
             </YStack>
 
@@ -235,13 +229,13 @@ export function TriviaExitModal({
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <Text
+                  <LabelText
                     fontSize={buttonFontSize}
                     fontFamily={FONT_FAMILIES.semibold}
                     color={textColor}
                   >
                     {cancelText}
-                  </Text>
+                  </LabelText>
                 </XStack>
               </Pressable>
 
@@ -267,13 +261,13 @@ export function TriviaExitModal({
                   gap={tokens.space.xs}
                 >
                   <DoorOpen size={buttonIconSize} color="#FFFFFF" />
-                  <Text
+                  <LabelText
                     fontSize={buttonFontSize}
                     fontFamily={FONT_FAMILIES.semibold}
                     color="#FFFFFF"
                   >
                     {exitText}
-                  </Text>
+                  </LabelText>
                 </XStack>
               </Pressable>
             </XStack>

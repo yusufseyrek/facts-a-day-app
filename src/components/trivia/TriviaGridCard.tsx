@@ -1,18 +1,13 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
-import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { Check, Zap, Shuffle, ChevronRight } from '@tamagui/lucide-icons';
 import { tokens } from '../../theme/tokens';
-import { FONT_FAMILIES } from '../Typography';
+import { LabelText, SmallText, FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { hexToRgba } from '../../utils/colors';
 import { useTranslation } from '../../i18n';
-
-const Text = styled(TamaguiText, {
-  fontFamily: FONT_FAMILIES.regular,
-  color: '$text',
-});
+import { useResponsive } from '../../utils/useResponsive';
 
 export type TriviaGridCardType = 'daily' | 'mixed' | 'category';
 
@@ -44,6 +39,7 @@ export function TriviaGridCard({
   centerContent = false,
 }: TriviaGridCardProps) {
   const { t } = useTranslation();
+  const { typography: typo } = useResponsive();
   const primaryColor = isDark ? tokens.color.dark.primary : tokens.color.light.primary;
   const successColor = isDark ? tokens.color.dark.success : tokens.color.light.success;
   const purpleColor = isDark ? tokens.color.dark.neonPurple : tokens.color.light.neonPurple;
@@ -144,24 +140,21 @@ export function TriviaGridCard({
 
         {/* Bottom section: Title + Subtitle */}
         <YStack gap={4} marginTop={tokens.space.md} alignItems={centerContent ? 'center' : 'flex-start'}>
-          <Text
-            fontSize={17}
-            fontWeight="700"
-            color={textColor}
+          <LabelText
             fontFamily={FONT_FAMILIES.bold}
+            color={textColor}
             numberOfLines={1}
             textAlign={centerContent ? 'center' : 'left'}
           >
             {title}
-          </Text>
-          <Text 
-            fontSize={14} 
+          </LabelText>
+          <SmallText 
             color={secondaryTextColor}
             numberOfLines={1}
             textAlign={centerContent ? 'center' : 'left'}
           >
             {getSubtitle()}
-          </Text>
+          </SmallText>
         </YStack>
       </YStack>
     </Pressable>

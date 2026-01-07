@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, styled } from '@tamagui/core';
+import { Text, styled, GetProps } from '@tamagui/core';
 import { TextStyle } from 'react-native';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -52,23 +52,31 @@ const BaseSmallText = styled(Text, {
   color: '$textSecondary',
 });
 
-// Responsive wrapper components
-interface TypographyProps {
+const BaseTinyText = styled(Text, {
+  fontFamily: FONT_FAMILIES.regular,
+  fontWeight: "400",
+  color: '$textSecondary',
+});
+
+const BaseDisplayText = styled(Text, {
+  fontFamily: FONT_FAMILIES.bold,
+  fontWeight: "700",
+  color: '$text',
+});
+
+const BaseHeroText = styled(Text, {
+  fontFamily: FONT_FAMILIES.bold,
+  fontWeight: "700",
+  color: '$text',
+});
+
+// Get the base props from Tamagui Text and extend with our custom props
+type BaseTextProps = GetProps<typeof Text>;
+
+// Responsive wrapper components - extends all Tamagui Text props
+export interface TypographyProps extends Omit<BaseTextProps, 'style'> {
   children: React.ReactNode;
-  fontSize?: number;
-  lineHeight?: number;
-  color?: string;
   style?: TextStyle;
-  numberOfLines?: number;
-  letterSpacing?: number;
-  textAlign?: 'auto' | 'left' | 'right' | 'center' | 'justify';
-  textDecorationLine?: 'none' | 'underline' | 'line-through' | 'underline line-through';
-  /**
-   * The font family to use. Use FONT_FAMILIES constants for consistency.
-   * Example: fontFamily={FONT_FAMILIES.semibold} or fontFamily="Montserrat_600SemiBold"
-   */
-  fontFamily?: string;
-  fontStyle?: 'normal' | 'italic';
 }
 
 /**
@@ -84,8 +92,8 @@ export const H1 = React.memo(({
   ...props 
 }: TypographyProps) => {
   const { typography } = useResponsive();
-  const fontSize = customFontSize ?? typography.fontSize.h1;
-  const lineHeight = customLineHeight ?? typography.lineHeight.h1;
+  const fontSize = customFontSize ?? typography.fontSize.headline;
+  const lineHeight = customLineHeight ?? typography.lineHeight.headline;
   
   return (
     <BaseH1
@@ -116,8 +124,8 @@ export const H2 = React.memo(({
   ...props 
 }: TypographyProps) => {
   const { typography } = useResponsive();
-  const fontSize = customFontSize ?? typography.fontSize.h2;
-  const lineHeight = customLineHeight ?? typography.lineHeight.h2;
+  const fontSize = customFontSize ?? typography.fontSize.title;
+  const lineHeight = customLineHeight ?? typography.lineHeight.title;
   
   return (
     <BaseH2
@@ -178,8 +186,8 @@ export const LabelText = React.memo(({
   ...props 
 }: TypographyProps) => {
   const { typography } = useResponsive();
-  const fontSize = customFontSize ?? typography.fontSize.label;
-  const lineHeight = customLineHeight ?? typography.lineHeight.label;
+  const fontSize = customFontSize ?? typography.fontSize.body;
+  const lineHeight = customLineHeight ?? typography.lineHeight.body;
   
   return (
     <BaseLabelText
@@ -209,8 +217,8 @@ export const SerifTitle = React.memo(({
   ...props 
 }: TypographyProps) => {
   const { typography } = useResponsive();
-  const fontSize = customFontSize ?? typography.fontSize.h2;
-  const lineHeight = customLineHeight ?? typography.lineHeight.h2;
+  const fontSize = customFontSize ?? typography.fontSize.title;
+  const lineHeight = customLineHeight ?? typography.lineHeight.title;
   
   return (
     <BaseSerifTitle
@@ -241,8 +249,8 @@ export const SmallText = React.memo(({
   ...props 
 }: TypographyProps) => {
   const { typography } = useResponsive();
-  const fontSize = customFontSize ?? typography.fontSize.small;
-  const lineHeight = customLineHeight ?? typography.lineHeight.small;
+  const fontSize = customFontSize ?? typography.fontSize.caption;
+  const lineHeight = customLineHeight ?? typography.lineHeight.caption;
   
   return (
     <BaseSmallText
@@ -258,3 +266,99 @@ export const SmallText = React.memo(({
 });
 
 SmallText.displayName = 'SmallText';
+
+/**
+ * Responsive TinyText component
+ * Uses fixed font sizes for phone/tablet
+ * Use for very small labels, footnotes, and micro UI text
+ */
+export const TinyText = React.memo(({ 
+  children, 
+  fontSize: customFontSize, 
+  lineHeight: customLineHeight,
+  style,
+  fontFamily,
+  ...props 
+}: TypographyProps) => {
+  const { typography } = useResponsive();
+  const fontSize = customFontSize ?? typography.fontSize.tiny;
+  const lineHeight = customLineHeight ?? typography.lineHeight.tiny;
+  
+  return (
+    <BaseTinyText
+      fontSize={fontSize}
+      lineHeight={lineHeight}
+      style={style}
+      fontFamily={fontFamily}
+      {...props}
+    >
+      {children}
+    </BaseTinyText>
+  );
+});
+
+TinyText.displayName = 'TinyText';
+
+/**
+ * Responsive DisplayText component
+ * Uses fixed font sizes for phone/tablet
+ * Use for large display numbers and prominent text
+ */
+export const DisplayText = React.memo(({ 
+  children, 
+  fontSize: customFontSize, 
+  lineHeight: customLineHeight,
+  style,
+  fontFamily,
+  ...props 
+}: TypographyProps) => {
+  const { typography } = useResponsive();
+  const fontSize = customFontSize ?? typography.fontSize.display;
+  const lineHeight = customLineHeight ?? typography.lineHeight.display;
+  
+  return (
+    <BaseDisplayText
+      fontSize={fontSize}
+      lineHeight={lineHeight}
+      style={style}
+      fontFamily={fontFamily}
+      {...props}
+    >
+      {children}
+    </BaseDisplayText>
+  );
+});
+
+DisplayText.displayName = 'DisplayText';
+
+/**
+ * Responsive HeroText component
+ * Uses fixed font sizes for phone/tablet
+ * Use for hero sections, splash screens, and very large headings
+ */
+export const HeroText = React.memo(({ 
+  children, 
+  fontSize: customFontSize, 
+  lineHeight: customLineHeight,
+  style,
+  fontFamily,
+  ...props 
+}: TypographyProps) => {
+  const { typography } = useResponsive();
+  const fontSize = customFontSize ?? typography.fontSize.hero;
+  const lineHeight = customLineHeight ?? typography.lineHeight.hero;
+  
+  return (
+    <BaseHeroText
+      fontSize={fontSize}
+      lineHeight={lineHeight}
+      style={style}
+      fontFamily={fontFamily}
+      {...props}
+    >
+      {children}
+    </BaseHeroText>
+  );
+});
+
+HeroText.displayName = 'HeroText';

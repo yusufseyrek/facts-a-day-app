@@ -8,7 +8,6 @@ import {
   View,
   Animated as RNAnimated,
 } from 'react-native';
-import { styled, Text as TamaguiText } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { 
   Gamepad2, 
@@ -25,7 +24,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
 import { tokens } from '../../src/theme/tokens';
-import { FONT_FAMILIES } from '../../src/components/Typography';
+import { H2, LabelText, SmallText, DisplayText, FONT_FAMILIES } from '../../src/components/Typography';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import { getLucideIcon } from '../../src/utils/iconMapper';
@@ -37,12 +36,6 @@ import { trackScreenView, Screens, trackTriviaResultsView, TriviaMode } from '..
 
 const MAX_DISPLAY_CATEGORIES = 3;
 const MAX_DISPLAY_ACTIVITIES = 3;
-
-// Styled Text components
-const Text = styled(TamaguiText, {
-  fontFamily: FONT_FAMILIES.regular,
-  color: '$text',
-});
 
 // Back Button with press animation
 function BackButton({ 
@@ -115,6 +108,7 @@ function MetricCard({
   subtitle?: string;
   isDark: boolean;
 }) {
+  const { typography: typo } = useResponsive();
   const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
   const subtitleColor = isDark ? tokens.color.dark.neonGreen : tokens.color.light.success;
@@ -140,29 +134,25 @@ function MetricCard({
         >
           {icon}
         </View>
-        <Text
-          fontSize={14}
+        <SmallText
           color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
           fontFamily={FONT_FAMILIES.medium}
         >
           {label}
-        </Text>
+        </SmallText>
       </XStack>
-      <Text
-        fontSize={32}
-        fontFamily={FONT_FAMILIES.bold}
+      <DisplayText
         color={textColor}
       >
         {value}
-      </Text>
+      </DisplayText>
       {subtitle && (
-        <Text
-          fontSize={13}
+        <SmallText
           color={subtitleColor}
           fontFamily={FONT_FAMILIES.medium}
         >
           {subtitle}
-        </Text>
+        </SmallText>
       )}
     </YStack>
   );
@@ -176,6 +166,7 @@ function CategoryProgressBar({
   category: CategoryWithProgress;
   isDark: boolean;
 }) {
+  const { typography: typo } = useResponsive();
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
   const trackColor = isDark ? tokens.color.dark.border : tokens.color.light.border;
   const progressColor = category.color_hex || (isDark ? tokens.color.dark.primary : tokens.color.light.primary);
@@ -186,22 +177,20 @@ function CategoryProgressBar({
     <YStack gap={tokens.space.xs}>
       <XStack alignItems="center" justifyContent="space-between">
         <XStack alignItems="center" gap={tokens.space.sm}>
-          {getLucideIcon(category.icon, 18, progressColor)}
-          <Text
-            fontSize={15}
+          {getLucideIcon(category.icon, typo.fontSize.title, progressColor)}
+          <LabelText
             color={textColor}
             fontFamily={FONT_FAMILIES.medium}
           >
             {category.name}
-          </Text>
+          </LabelText>
         </XStack>
-        <Text
-          fontSize={14}
+        <SmallText
           color={textColor}
           fontFamily={FONT_FAMILIES.semibold}
         >
           {percentage}%
-        </Text>
+        </SmallText>
       </XStack>
       <View
         style={{
@@ -241,6 +230,7 @@ function SessionCard({
   dateFormat?: 'time' | 'relative';
   testID?: string;
 }) {
+  const { typography: typo } = useResponsive();
   const cardBg = isDark ? tokens.color.dark.cardBackground : tokens.color.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : tokens.color.light.text;
   const secondaryTextColor = isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary;
@@ -364,34 +354,30 @@ function SessionCard({
       >
         {getIcon()}
         <YStack flex={1} gap={2}>
-          <Text
-            fontSize={16}
+          <LabelText
             fontFamily={FONT_FAMILIES.semibold}
             color={textColor}
           >
             {getDisplayName()}
-          </Text>
-          <Text
-            fontSize={13}
+          </LabelText>
+          <SmallText
             color={secondaryTextColor}
           >
             {getDateDisplay()}
-          </Text>
+          </SmallText>
         </YStack>
         <YStack alignItems="flex-end" gap={2}>
-          <Text
-            fontSize={14}
+          <SmallText
             fontFamily={FONT_FAMILIES.semibold}
             color={feedback.color}
           >
             {feedback.text}
-          </Text>
-          <Text
-            fontSize={13}
+          </SmallText>
+          <SmallText
             color={secondaryTextColor}
           >
             {t('score')}: {session.correct_answers}/{session.total_questions}
-          </Text>
+          </SmallText>
         </YStack>
         {hasResultData && (
           <ChevronRight size={20} color={secondaryTextColor} />
@@ -407,7 +393,7 @@ export default function PerformanceScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
-  const { isTablet } = useResponsive();
+  const { isTablet, typography: typo } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -573,13 +559,11 @@ export default function PerformanceScreen() {
         >
           <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
           
-          <Text
-            fontSize={20}
-            fontFamily={FONT_FAMILIES.bold}
+          <H2
             color={textColor}
           >
             {t('triviaPerformance')}
-          </Text>
+          </H2>
           
           {/* Empty spacer to balance the header */}
           <View style={{ width: 36, height: 36 }} />
@@ -595,14 +579,12 @@ export default function PerformanceScreen() {
         <YStack padding={tokens.space.lg} gap={tokens.space.xl}>
           {/* Core Metrics */}
           <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
-            <Text
-              fontSize={18}
-              fontFamily={FONT_FAMILIES.bold}
+            <H2
               color={textColor}
               marginBottom={tokens.space.md}
             >
               {t('coreMetrics')}
-            </Text>
+            </H2>
             
             {isTablet ? (
               /* Tablet: All 4 metrics in a single row */
@@ -697,33 +679,28 @@ export default function PerformanceScreen() {
             <Animated.View entering={SlideInRight.delay(75).duration(400).springify()}>
               <YStack marginBottom={tokens.space.md} gap={tokens.space.xs}>
                 <XStack alignItems="center" justifyContent="space-between">
-                  <Text
-                    fontSize={18}
-                    fontFamily={FONT_FAMILIES.bold}
+                  <H2
                     color={textColor}
                   >
                     {t('accuracyByCategory')}
-                  </Text>
+                  </H2>
                   {allCategoriesWithAccuracy.length > MAX_DISPLAY_CATEGORIES && (
                     <Pressable onPress={() => router.push('/(tabs)/trivia/categories')}>
-                      <Text
-                        fontSize={14}
+                      <SmallText
                         fontFamily={FONT_FAMILIES.semibold}
                         color={primaryColor}
                       >
                         {t('viewAll')}
-                      </Text>
+                      </SmallText>
                     </Pressable>
                   )}
                 </XStack>
-                <Text
-                  fontSize={14}
-                  fontFamily={FONT_FAMILIES.regular}
+                <SmallText
                   color={isDark ? tokens.color.dark.textSecondary : tokens.color.light.textSecondary}
                   opacity={0.9}
                 >
                   {t('accuracyByCategorySubtitle')}
-                </Text>
+                </SmallText>
               </YStack>
               
               <YStack
@@ -747,22 +724,19 @@ export default function PerformanceScreen() {
           {recentSessions.length > 0 && (
             <Animated.View entering={SlideInRight.delay(100).duration(400).springify()}>
               <XStack alignItems="center" justifyContent="space-between" marginBottom={tokens.space.md}>
-                <Text
-                  fontSize={18}
-                  fontFamily={FONT_FAMILIES.bold}
+                <H2
                   color={textColor}
                 >
                   {t('recentTests')}
-                </Text>
+                </H2>
                 {totalSessionsCount > MAX_DISPLAY_ACTIVITIES && (
                   <Pressable onPress={() => router.push('/(tabs)/trivia/history')}>
-                    <Text
-                      fontSize={14}
+                    <SmallText
                       fontFamily={FONT_FAMILIES.semibold}
                       color={primaryColor}
                     >
                       {t('viewAll')}
-                    </Text>
+                    </SmallText>
                   </Pressable>
                 )}
               </XStack>

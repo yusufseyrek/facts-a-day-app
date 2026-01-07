@@ -438,8 +438,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         }}
       >
         <SerifTitle
-          fontSize={typography.fontSize.h1}
-          lineHeight={typography.lineHeight.h1}
+          fontSize={typography.fontSize.headline}
+          lineHeight={typography.lineHeight.headline}
           letterSpacing={-0.2}
           fontFamily={FONT_FAMILIES.bold}
         >
@@ -565,8 +565,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 }}
               >
                 <SerifTitle
-                  fontSize={typography.fontSize.h1}
-                  lineHeight={typography.lineHeight.h1}
+                  fontSize={typography.fontSize.headline}
+                  lineHeight={typography.lineHeight.headline}
                   letterSpacing={-0.2}
                   fontFamily={FONT_FAMILIES.bold}
                 >
@@ -677,8 +677,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             }}
           >
             <SerifTitle 
-              fontSize={typography.fontSize.h1} 
-              lineHeight={typography.lineHeight.h1} 
+              fontSize={typography.fontSize.headline} 
+              lineHeight={typography.lineHeight.headline} 
               letterSpacing={-0.2}
               fontFamily={FONT_FAMILIES.bold}
             >
@@ -693,14 +693,14 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 <CategoryBadge 
                   category={categoryForBadge} 
                   fontFamily={FONT_FAMILIES.semibold}
-                  fontSize={typography.fontSize.label}
+                  fontSize={typography.fontSize.body}
                 />
               )}
               {(fact.last_updated || fact.created_at) && (
                 <XStack alignItems="center" gap={tokens.space.xs}>
                   <BodyText
-                    fontSize={typography.fontSize.label}
-                    lineHeight={typography.lineHeight.label}
+                    fontSize={typography.fontSize.body}
+                    lineHeight={typography.lineHeight.body}
                     letterSpacing={0.3}
                     color="$textSecondary"
                     fontFamily={FONT_FAMILIES.semibold}
@@ -730,9 +730,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
           {/* Main Content */}
           <BodyText
-            fontSize={typography.fontSize.body}
-            lineHeight={typography.lineHeight.body}
-            letterSpacing={0.2}
             color="$text"
             fontFamily={FONT_FAMILIES.regular}
           >

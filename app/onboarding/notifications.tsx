@@ -71,7 +71,6 @@ export default function NotificationsScreen() {
   // Responsive sizing for tablets
   const isTablet = width >= TABLET_BREAKPOINT;
   const typo = isTablet ? typography.tablet : typography.phone;
-  const secondaryFontSize = typo.fontSize.body;
 
   // Enter animations
   const progressOpacity = useRef(new Animated.Value(0)).current;
@@ -345,7 +344,7 @@ export default function NotificationsScreen() {
               >
                 <YStack gap={tokens.space.sm} alignItems="center">
                   <H1 textAlign="center">{t("stayInformed")}</H1>
-                  <BodyText textAlign="center" color="$textSecondary" fontSize={secondaryFontSize}>
+                  <BodyText textAlign="center" color="$textSecondary">
                     {t("notificationRequired")}
                   </BodyText>
                 </YStack>
