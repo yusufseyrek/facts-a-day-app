@@ -33,6 +33,7 @@ import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import * as triviaService from '../../src/services/trivia';
 import type { CategoryWithProgress } from '../../src/services/trivia';
 import { useResponsive } from '../../src/utils/useResponsive';
+import { useScrollToTopHandler } from '../../src/contexts';
 
 export default function TriviaScreen() {
   const { theme } = useTheme();
@@ -44,6 +45,13 @@ export default function TriviaScreen() {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Scroll to top handler
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollToTop = useCallback(() => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
+  useScrollToTopHandler("trivia", scrollToTop);
   
   // Trivia stats
   const [dailyStreak, setDailyStreak] = useState(0);
@@ -238,20 +246,21 @@ export default function TriviaScreen() {
     <ScreenContainer edges={["top"]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <YStack flex={1}>
+        <Animated.View entering={FadeIn.duration(300)}>
+          <ScreenHeader
+            icon={<Brain size={iconSizes.lg} color={iconColor} />}
+            title={t('trivia')}
+            rightElement={streakBadge}
+          />
+        </Animated.View>
+        
         <ScrollView
+          ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => loadTriviaData(true)} />
           }
         >
-          <Animated.View entering={FadeIn.duration(300)}>
-            <ScreenHeader
-              icon={<Brain size={iconSizes.lg} color={iconColor} />}
-              title={t('trivia')}
-              rightElement={streakBadge}
-            />
-          </Animated.View>
-          
           <ContentContainer  paddingBottom={spacing.md}>
             {/* Always show Stats */}
             <Animated.View entering={FadeInDown.delay(50).duration(300)}>

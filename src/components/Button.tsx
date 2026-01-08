@@ -5,6 +5,7 @@ import { styled, View } from '@tamagui/core';
 import { XStack } from 'tamagui';
 import { hexColors, spacing, radius, media, useTheme } from '../theme';
 import { Text, FONT_FAMILIES } from './Typography';
+import { useResponsive } from '../utils';
 
 interface ButtonProps {
   children: string;
@@ -15,11 +16,9 @@ interface ButtonProps {
 }
 
 const ButtonContainer = styled(View, {
-  height: media.phone.buttonHeight,
   borderRadius: radius.phone.full,
   alignItems: 'center',
   justifyContent: 'center',
-  paddingHorizontal: spacing.phone.xl,
   width: '100%',
 
   variants: {
@@ -54,7 +53,7 @@ export function Button({
   disabled = false,
   loading = false,
 }: ButtonProps) {
-  const { theme } = useTheme();
+  const { media, spacing } = useResponsive();
 
   const handlePress = () => {
     if (!disabled && !loading && onPress) {
@@ -66,22 +65,24 @@ export function Button({
 
   return (
     <ButtonContainer
+        paddingHorizontal={spacing.xl}
+        height={media.buttonHeight}
         variant={variant}
         disabled={disabled || loading}
         onPress={handlePress}
         pressStyle={disabled || loading ? {} : { opacity: 0.8 }}
       >
         {loading ? (
-          <XStack gap={spacing.phone.sm} alignItems="center">
+          <XStack gap={spacing.sm} alignItems="center">
             <ActivityIndicator size="small" color="#FFFFFF" />
             <Text.Label color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
               {children}
             </Text.Label>
           </XStack>
         ) : (
-          <Text.Label color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+          <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
             {children}
-          </Text.Label>
+          </Text.Body>
         )}
       </ButtonContainer>
   );

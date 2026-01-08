@@ -7,7 +7,7 @@ import { YStack, XStack } from "tamagui";
 import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { Bell } from "@tamagui/lucide-icons";
-import { hexColors, spacing, radius } from "../../src/theme";
+import { hexColors } from "../../src/theme";
 import { useResponsive } from "../../src/utils/useResponsive";
 import { Text, Button, ProgressIndicator, MultiTimePicker } from "../../src/components";
 import { useTheme } from "../../src/theme";
@@ -27,22 +27,18 @@ const Container = styled(SafeAreaView, {
 });
 
 const ContentContainer = styled(YStack, {
-  padding: spacing.phone.xl,
-  gap: spacing.phone.xl,
   flex: 1,
   justifyContent: "space-between",
 });
 
 const Header = styled(YStack, {
-  gap: spacing.phone.md,
   alignItems: "center",
-  paddingVertical: spacing.phone.xxl,
 });
 
 const IconContainer = styled(XStack, {
   width: 120,
   height: 120,
-  borderRadius: radius.phone.full,
+  borderRadius: 9999,
   backgroundColor: "$primaryLight",
   alignItems: "center",
   justifyContent: "center",
@@ -50,9 +46,6 @@ const IconContainer = styled(XStack, {
 
 const TimePickerContainer = styled(YStack, {
   backgroundColor: "$surface",
-  padding: spacing.phone.xl,
-  borderRadius: radius.phone.lg,
-  gap: spacing.phone.md,
   borderWidth: 1,
   borderColor: "$border",
 });
@@ -65,7 +58,7 @@ export default function NotificationsScreen() {
   const [isScheduling, setIsScheduling] = useState(false);
 
   // Responsive sizing - hook handles tablet detection
-  const { typography, iconSizes } = useResponsive();
+  const { typography, iconSizes, spacing, radius } = useResponsive();
 
   // Enter animations
   const progressOpacity = useRef(new Animated.Value(0)).current;
@@ -179,18 +172,8 @@ export default function NotificationsScreen() {
       const { status } = await Notifications.requestPermissionsAsync();
 
       if (status !== "granted") {
-        // Permission denied - show friendly message and allow continuing
-        Alert.alert(
-          t("notificationPermissionSkipped"),
-          t("notificationPermissionSkippedMessage"),
-          [
-            {
-              text: t("ok"),
-              style: "default",
-              onPress: () => proceedWithoutNotifications(),
-            },
-          ]
-        );
+        // Permission denied - proceed without notifications
+        await proceedWithoutNotifications();
         return;
       }
 
@@ -199,17 +182,7 @@ export default function NotificationsScreen() {
     } catch (error) {
       console.error("Error requesting notification permissions:", error);
       // On error, still allow continuing without notifications
-      Alert.alert(
-        t("notificationPermissionSkipped"),
-        t("notificationPermissionSkippedMessage"),
-        [
-          {
-            text: t("ok"),
-            style: "default",
-            onPress: () => proceedWithoutNotifications(),
-          },
-        ]
-      );
+      await proceedWithoutNotifications();
     }
   };
 
@@ -305,9 +278,9 @@ export default function NotificationsScreen() {
   return (
     <Container>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
-      <ContentContainer>
+      <ContentContainer padding={spacing.xl} gap={spacing.xl}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <YStack gap={spacing.phone.md} paddingBottom={spacing.phone.xl}>
+          <YStack gap={spacing.md} paddingBottom={spacing.xl}>
             <Animated.View
               style={{
                 opacity: progressOpacity,
@@ -317,7 +290,7 @@ export default function NotificationsScreen() {
               <ProgressIndicator currentStep={2} totalSteps={2} />
             </Animated.View>
 
-            <Header>
+            <Header gap={spacing.md} paddingVertical={spacing.xxl}>
               <Animated.View
                 style={{
                   transform: [
@@ -337,7 +310,7 @@ export default function NotificationsScreen() {
                   transform: [{ translateY: titleTranslateY }],
                 }}
               >
-                <YStack gap={spacing.phone.sm} alignItems="center">
+                <YStack gap={spacing.sm} alignItems="center">
                   <Text.Headline textAlign="center">{t("stayInformed")}</Text.Headline>
                   <Text.Body textAlign="center" color="$textSecondary">
                     {t("notificationRequired")}
@@ -353,7 +326,7 @@ export default function NotificationsScreen() {
                 transform: [{ translateY: pickerTranslateY }],
               }}
             >
-              <TimePickerContainer>
+              <TimePickerContainer padding={spacing.xl} borderRadius={radius.lg} gap={spacing.md}>
                 <MultiTimePicker
                   times={notificationTimes}
                   onTimesChange={setNotificationTimes}

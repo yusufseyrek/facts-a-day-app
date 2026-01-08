@@ -42,6 +42,7 @@ import {
   Screens,
 } from "../../src/services/analytics";
 import { onPreferenceFeedRefresh } from "../../src/services/preferences";
+import { useScrollToTopHandler } from "../../src/contexts";
 
 // Device breakpoints
 
@@ -162,6 +163,26 @@ function DiscoverScreen() {
   const [categoryFacts, setCategoryFacts] = useState<FactWithRelations[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [isLoadingCategoryFacts, setIsLoadingCategoryFacts] = useState(false);
+
+  // Scroll to top refs
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const searchListRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const categoryListRef = useRef<any>(null);
+  const categoryGridRef = useRef<ScrollView>(null);
+
+  // Scroll to top handler - scrolls whichever list is currently visible
+  const scrollToTop = useCallback(() => {
+    const hasQuery = searchQuery.trim().length > 0;
+    if (hasQuery && searchResults.length > 0) {
+      searchListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    } else if (selectedCategorySlug && categoryFacts.length > 0) {
+      categoryListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    } else {
+      categoryGridRef.current?.scrollTo({ y: 0, animated: true });
+    }
+  }, [searchQuery, searchResults.length, selectedCategorySlug, categoryFacts.length]);
+  useScrollToTopHandler("discover", scrollToTop);
 
   const performSearch = useCallback(
     async (query: string, categorySlug: string | null) => {
@@ -566,7 +587,7 @@ function DiscoverScreen() {
       }
 
       return (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView ref={categoryGridRef} showsVerticalScrollIndicator={false}>
           <CategoriesContainer
             paddingHorizontal={spacing.lg}
             paddingBottom={spacing.md}
@@ -684,6 +705,7 @@ function DiscoverScreen() {
           style={{ flex: 1 }}
         >
           <FlashList
+            ref={searchListRef}
             data={searchResults}
             keyExtractor={keyExtractor}
             renderItem={renderSearchItem}
@@ -733,6 +755,7 @@ function DiscoverScreen() {
           style={{ flex: 1 }}
         >
           <FlashList
+            ref={categoryListRef}
             data={categoryFacts}
             keyExtractor={keyExtractor}
             renderItem={renderCategoryItem}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { StatusBar } from "expo-status-bar";
 import { RefreshControl, ActivityIndicator, useWindowDimensions } from "react-native";
 import { FlashList, ListRenderItemInfo } from "@shopify/flash-list";
@@ -33,6 +33,7 @@ import {
   FACT_FLASH_LIST_SETTINGS,
 } from "../../src/config/factListSettings";
 import { prefetchFactImagesWithLimit } from "../../src/services/images";
+import { useScrollToTopHandler } from "../../src/contexts";
 
 import { RESPONSIVE_CONSTANTS } from '../../src/utils/responsive';
 import { useResponsive } from '../../src/utils/useResponsive';
@@ -120,6 +121,14 @@ function HomeScreen() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() => getRefreshStatus());
+
+  // Scroll to top handler
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const listRef = useRef<any>(null);
+  const scrollToTop = useCallback(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }, []);
+  useScrollToTopHandler("index", scrollToTop);
 
   // Flatten sections into a single array for FlashList
   // Each section becomes: [SectionHeader, FactItem, FactItem, ...]
@@ -294,6 +303,7 @@ function HomeScreen() {
             />
           ) : (
             <FlashList
+              ref={listRef}
               data={flattenedData}
               keyExtractor={keyExtractor}
               renderItem={renderItem}

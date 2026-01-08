@@ -1,4 +1,4 @@
-import { Tabs } from "expo-router";
+import { Tabs, usePathname } from "expo-router";
 import { Lightbulb, Compass, Brain, Star, Settings } from "@tamagui/lucide-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pressable, Animated, View, StyleSheet } from "react-native";
@@ -13,6 +13,11 @@ import * as triviaService from "../../src/services/trivia";
 import { BannerAd } from "../../src/components/ads";
 import { ADS_ENABLED } from "../../src/config/ads";
 import { useResponsive } from "../../src/utils/useResponsive";
+import { ScrollToTopProvider, useScrollToTop } from "../../src/contexts";
+
+interface AnimatedTabButtonProps extends BottomTabBarButtonProps {
+  tabName?: string;
+}
 
 function AnimatedTabButton({
   children,
@@ -22,8 +27,10 @@ function AnimatedTabButton({
   accessibilityRole,
   accessibilityState,
   testID,
-}: BottomTabBarButtonProps) {
+  tabName,
+}: AnimatedTabButtonProps) {
   const scale = useRef(new Animated.Value(1)).current;
+  const { scrollToTop } = useScrollToTop();
 
   const handlePressIn = useCallback(() => {
     Animated.spring(scale, {
@@ -43,9 +50,18 @@ function AnimatedTabButton({
     }).start();
   }, [scale]);
 
+  const handlePress = useCallback((e: any) => {
+    // If tab is already selected, scroll to top
+    if (accessibilityState?.selected && tabName) {
+      scrollToTop(tabName);
+    }
+    // Always call original onPress to handle navigation
+    onPress?.(e);
+  }, [accessibilityState?.selected, tabName, scrollToTop, onPress]);
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       onLongPress={onLongPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
@@ -158,7 +174,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function TabLayout() {
+function TabLayoutContent() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -231,7 +247,7 @@ export default function TabLayout() {
         options={{
           title: t("home"),
           tabBarIcon: ({ color }) => <Lightbulb size={iconSizes.lg} color={color} />,
-          tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-home" />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} tabName="index" testID="tab-home" />,
         }}
       />
       <Tabs.Screen
@@ -239,7 +255,7 @@ export default function TabLayout() {
         options={{
           title: t("discover"),
           tabBarIcon: ({ color }) => <Compass size={iconSizes.lg} color={color} />,
-          tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-discover" />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} tabName="discover" testID="tab-discover" />,
         }}
       />
       <Tabs.Screen
@@ -247,7 +263,7 @@ export default function TabLayout() {
         options={{
           title: t("trivia"),
           tabBarIcon: ({ focused }) => <TriviaTabIcon focused={focused} isDark={isDark} hasBadge={hasDailyTrivia} />,
-          tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-trivia" />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} tabName="trivia" testID="tab-trivia" />,
         }}
       />
       <Tabs.Screen
@@ -255,7 +271,7 @@ export default function TabLayout() {
         options={{
           title: t("favorites"),
           tabBarIcon: ({ color }) => <Star size={iconSizes.lg} color={color} />,
-          tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-favorites" />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} tabName="favorites" testID="tab-favorites" />,
         }}
       />
       <Tabs.Screen
@@ -263,9 +279,17 @@ export default function TabLayout() {
         options={{
           title: t("settings"),
           tabBarIcon: ({ color }) => <Settings size={iconSizes.lg} color={color} />,
-          tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-settings" />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} tabName="settings" testID="tab-settings" />,
         }}
       />
     </Tabs>
+  );
+}
+
+export default function TabLayout() {
+  return (
+    <ScrollToTopProvider>
+      <TabLayoutContent />
+    </ScrollToTopProvider>
   );
 }

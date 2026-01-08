@@ -228,6 +228,28 @@ function shouldPreloadImage(scheduledDate: Date): boolean {
   return daysUntilNotification <= NOTIFICATION_SETTINGS.DAYS_TO_PRELOAD_IMAGES;
 }
 
+// Concurrency limit for image downloads
+const IMAGE_DOWNLOAD_CONCURRENCY = 5;
+
+/**
+ * Process items in parallel with concurrency limit
+ */
+async function processInBatches<T, R>(
+  items: T[],
+  processor: (item: T) => Promise<R>,
+  concurrency: number
+): Promise<R[]> {
+  const results: R[] = [];
+  
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    const batchResults = await Promise.all(batch.map(processor));
+    results.push(...batchResults);
+  }
+  
+  return results;
+}
+
 export async function preloadUpcomingNotificationImages(locale: SupportedLocale): Promise<number> {
   if (Platform.OS !== 'ios') {
     return 0;
@@ -241,8 +263,10 @@ export async function preloadUpcomingNotificationImages(locale: SupportedLocale)
     }
 
     const now = new Date();
-    let preloadedCount = 0;
-
+    
+    // Collect all facts that need image preloading
+    const factsToPreload: Array<{ factId: number; imageUrl: string }> = [];
+    
     for (const notification of scheduledNotifications) {
       const trigger = notification.trigger;
       
@@ -266,18 +290,28 @@ export async function preloadUpcomingNotificationImages(locale: SupportedLocale)
             const fact = await database.getFactById(factId);
             
             if (fact?.image_url) {
-              const localUri = await downloadImageForNotification(fact.image_url, factId);
-              
-              if (localUri) {
-                preloadedCount++;
-              }
+              factsToPreload.push({ factId: fact.id, imageUrl: fact.image_url });
             }
           }
         }
       }
     }
 
-    return preloadedCount;
+    if (factsToPreload.length === 0) {
+      return 0;
+    }
+
+    // Download images concurrently
+    const results = await processInBatches(
+      factsToPreload,
+      async ({ factId, imageUrl }) => {
+        const localUri = await downloadImageForNotification(imageUrl, factId);
+        return localUri ? 1 : 0;
+      },
+      IMAGE_DOWNLOAD_CONCURRENCY
+    );
+
+    return results.reduce((sum, count) => sum + count, 0);
   } catch {
     return 0;
   }
@@ -598,7 +632,15 @@ async function syncOsWithDb(locale: SupportedLocale): Promise<{ synced: number; 
     }
   }
   
-  // Schedule or re-schedule DB facts in OS
+  // Collect facts that need scheduling
+  interface FactToSchedule {
+    dbFact: typeof dbFacts[0];
+    fact: database.FactWithRelations;
+    dbDate: Date;
+  }
+  
+  const factsToSchedule: FactToSchedule[] = [];
+  
   for (const dbFact of dbFacts) {
     const osNotif = dbFact.notification_id ? osMap.get(dbFact.notification_id) : null;
     const dbDate = new Date(dbFact.scheduled_date);
@@ -620,29 +662,56 @@ async function syncOsWithDb(locale: SupportedLocale): Promise<{ synced: number; 
     }
     
     if (needsSchedule) {
-      try {
-        // Get full fact data
-        const fact = await database.getFactById(dbFact.id);
-        if (!fact) continue;
-        
-        // Build notification content
-        const content = await buildNotificationContent(fact, locale, dbDate);
-        
-        // Schedule in OS
-        const newNotificationId = await Notifications.scheduleNotificationAsync({
-          content,
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: dbDate,
-          },
-        });
-        
-        // Update DB with new notification_id
-        await database.updateNotificationId(dbFact.id, newNotificationId);
-        syncedCount++;
-      } catch {
-        // Skip this fact if scheduling fails
+      const fact = await database.getFactById(dbFact.id);
+      if (fact) {
+        factsToSchedule.push({ dbFact, fact, dbDate });
       }
+    }
+  }
+  
+  if (factsToSchedule.length === 0) {
+    return { synced: 0, cancelled: cancelledCount };
+  }
+  
+  // Pre-download images concurrently for iOS (only for facts within preload window)
+  if (Platform.OS === 'ios') {
+    const factsNeedingImages = factsToSchedule.filter(
+      ({ fact, dbDate }) => fact.image_url && shouldPreloadImage(dbDate)
+    );
+    
+    if (factsNeedingImages.length > 0) {
+      await processInBatches(
+        factsNeedingImages,
+        async ({ fact }) => {
+          if (fact.image_url) {
+            await downloadImageForNotification(fact.image_url, fact.id);
+          }
+        },
+        IMAGE_DOWNLOAD_CONCURRENCY
+      );
+    }
+  }
+  
+  // Now schedule notifications (images are already downloaded)
+  for (const { dbFact, fact, dbDate } of factsToSchedule) {
+    try {
+      // Build notification content (will use cached images)
+      const content = await buildNotificationContent(fact, locale, dbDate);
+      
+      // Schedule in OS
+      const newNotificationId = await Notifications.scheduleNotificationAsync({
+        content,
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: dbDate,
+        },
+      });
+      
+      // Update DB with new notification_id
+      await database.updateNotificationId(dbFact.id, newNotificationId);
+      syncedCount++;
+    } catch {
+      // Skip this fact if scheduling fails
     }
   }
   

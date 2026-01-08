@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { FlatList, RefreshControl, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { YStack } from 'tamagui';
@@ -24,6 +24,7 @@ import { trackScreenView, Screens } from '../../src/services/analytics';
 import { FACT_FLAT_LIST_SETTINGS, createFlatListGetItemLayout } from '../../src/config/factListSettings';
 import { RESPONSIVE_CONSTANTS } from '../../src/utils/responsive';
 import { useResponsive } from '../../src/utils/useResponsive';
+import { useScrollToTopHandler } from '../../src/contexts';
 
 // Memoized list item component to prevent re-renders
 interface FactListItemProps {
@@ -70,6 +71,13 @@ export default function FavoritesScreen() {
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Scroll to top handler
+  const listRef = useRef<FlatList<FactWithRelations>>(null);
+  const scrollToTop = useCallback(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }, []);
+  useScrollToTopHandler("favorites", scrollToTop);
 
   const loadFavorites = useCallback(async (isRefresh = false) => {
     try {
@@ -147,6 +155,7 @@ export default function FavoritesScreen() {
 
   const feedContent = (
     <FlatList
+      ref={listRef}
       data={favorites}
       keyExtractor={keyExtractor}
       renderItem={renderItem}

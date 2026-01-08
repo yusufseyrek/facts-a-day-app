@@ -43,7 +43,7 @@ import { TranslationKeys } from "../../src/i18n/translations";
 import * as onboardingService from "../../src/services/onboarding";
 import * as database from "../../src/services/database";
 import { buildNotificationContent } from "../../src/services/notifications";
-import { useOnboarding } from "../../src/contexts";
+import { useOnboarding, useScrollToTopHandler } from "../../src/contexts";
 import { openInAppBrowser } from "../../src/utils/browser";
 import { trackScreenView, Screens } from "../../src/services/analytics";
 import { requestReview } from "../../src/services/appReview";
@@ -99,6 +99,13 @@ export default function SettingsPage() {
     }, 800);
     return () => clearTimeout(timer);
   }, []);
+
+  // Scroll to top handler
+  const listRef = useRef<SectionList>(null);
+  const scrollToTop = useCallback(() => {
+    listRef.current?.scrollToLocation({ sectionIndex: 0, itemIndex: 0, animated: true });
+  }, []);
+  useScrollToTopHandler("settings", scrollToTop);
 
   // Check if running in development mode
   const isDevelopment = __DEV__;
@@ -967,6 +974,7 @@ export default function SettingsPage() {
         />
       </Animated.View>
       <SectionList
+        ref={listRef}
         sections={sections}
         keyExtractor={(item) => item.id}
         renderSectionHeader={({ section: { title }, section }) => {
