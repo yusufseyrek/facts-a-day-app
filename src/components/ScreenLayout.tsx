@@ -1,11 +1,12 @@
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
-import { YStack, XStack } from "tamagui";
+import { YStack, XStack, YStackProps } from "tamagui";
 import { hexColors, spacing, radius } from "../theme";
 import { Text } from "./Typography";
 import { useTheme } from "../theme";
 import { LAYOUT } from "../config/app";
+import { useResponsive } from "../utils/useResponsive";
 
 /**
  * ScreenContainer - Main container for all screens
@@ -16,95 +17,76 @@ export const ScreenContainer = styled(SafeAreaView, {
   backgroundColor: "$background",
 });
 
-/**
- * ScreenHeader - Header container with icon + title
- * Used at the top of tab screens
- */
-export const ScreenHeaderContainer = styled(XStack, {
-  padding: spacing.phone.xl,
-  paddingBottom: spacing.phone.md,
-  alignItems: "center",
-  gap: spacing.phone.sm,
-  variants: {
-    tablet: {
-      true: {
-        padding: spacing.phone.xxl,
-        paddingBottom: spacing.phone.lg,
-      },
-    },
-  } as const,
-});
-
 interface ScreenHeaderProps {
   icon: React.ReactNode;
   title: string;
-  isTablet?: boolean;
   rightElement?: React.ReactNode;
 }
 
 /**
  * ScreenHeader - Composed header component with icon and title
+ * Uses responsive hook for tablet/phone spacing
  */
-export function ScreenHeader({ icon, title, isTablet = false, rightElement }: ScreenHeaderProps) {
+export function ScreenHeader({ icon, title, rightElement }: ScreenHeaderProps) {
+  const { spacing } = useResponsive();
+  
   return (
-    <ScreenHeaderContainer tablet={isTablet}>
+    <XStack
+      padding={spacing.lg}
+      paddingBottom={spacing.md}
+      alignItems="center"
+      gap={spacing.sm}
+    >
       {icon}
       <Text.Headline flex={1}>
         {title}
       </Text.Headline>
       {rightElement}
-    </ScreenHeaderContainer>
+    </XStack>
   );
 }
 
-/**
- * SectionHeader - Header for content sections (e.g., date groups in feed)
- */
-export const SectionHeaderContainer = styled(YStack, {
-  paddingHorizontal: spacing.phone.xl,
-  paddingVertical: spacing.phone.md,
-  backgroundColor: "$background",
-  variants: {
-    tablet: {
-      true: {
-        paddingHorizontal: spacing.phone.xxl,
-        paddingVertical: spacing.phone.lg,
-      },
-    },
-  } as const,
-});
-
 interface SectionHeaderProps {
   title: string;
-  isTablet?: boolean;
 }
 
 /**
  * SectionHeader - Composed section header with H2 title
+ * Uses responsive hook for tablet/phone spacing
  */
-export function SectionHeader({ title, isTablet = false }: SectionHeaderProps) {
+export function SectionHeader({ title }: SectionHeaderProps) {
+  const { spacing } = useResponsive();
+  
   return (
-    <SectionHeaderContainer tablet={isTablet}>
+    <YStack
+      paddingHorizontal={spacing.xl}
+      paddingVertical={spacing.md}
+      backgroundColor="$background"
+    >
       <Text.Title>
         {title}
       </Text.Title>
-    </SectionHeaderContainer>
+    </YStack>
   );
+}
+
+interface ContentContainerProps extends YStackProps {
+  children: React.ReactNode;
 }
 
 /**
  * ContentContainer - Container for main content with consistent padding
+ * Uses responsive hook for tablet/phone spacing
  */
-export const ContentContainer = styled(YStack, {
-  paddingHorizontal: spacing.phone.lg,
-  variants: {
-    tablet: {
-      true: {
-        paddingHorizontal: spacing.phone.xl,
-      },
-    },
-  } as const,
-});
+export function ContentContainer({ children, ...props }: ContentContainerProps) {
+  const { spacing } = useResponsive();
+  
+  return (
+    <YStack paddingHorizontal={spacing.md} {...props}>
+      {children}
+    </YStack>
+  );
+}
 
 /**
  * ScrollContentContainer - Content container with vertical gap for scrollable content

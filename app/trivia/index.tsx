@@ -252,7 +252,7 @@ export default function TriviaScreen() {
             />
           </Animated.View>
           
-          <ContentContainer gap={spacing.lg} paddingBottom={spacing.md}>
+          <ContentContainer  paddingBottom={spacing.md}>
             {/* Always show Stats */}
             <Animated.View entering={FadeInDown.delay(50).duration(300)}>
               <TriviaStatsHero
@@ -271,7 +271,9 @@ export default function TriviaScreen() {
                   <Text.Body
                     color={textColor}
                     fontFamily={FONT_FAMILIES.semibold}
-                    marginTop={spacing.md}
+                    marginTop={spacing.xl}
+                    marginBottom={spacing.sm}
+                    marginLeft={spacing.sm}
                   >
                     {t('triviaGameModes')}
                   </Text.Body>

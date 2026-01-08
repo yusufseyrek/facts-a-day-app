@@ -2396,6 +2396,30 @@ export async function getWeeklyTestsCount(): Promise<number> {
 }
 
 /**
+ * Get count of questions answered this week (Monday to Sunday)
+ */
+export async function getWeeklyAnsweredCount(): Promise<number> {
+  const database = await openDatabase();
+  
+  // Get the start of the current week (Monday)
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - daysToMonday);
+  monday.setHours(0, 0, 0, 0);
+  const weekStart = monday.toISOString();
+
+  const result = await database.getFirstAsync<{ count: number }>(
+    `SELECT SUM(total_questions) as count FROM trivia_sessions
+     WHERE completed_at >= ?`,
+    [weekStart]
+  );
+
+  return result?.count || 0;
+}
+
+/**
  * Get stats for today (mastered today, correct today)
  */
 export async function getTodayTriviaStats(): Promise<{

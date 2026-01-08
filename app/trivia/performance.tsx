@@ -35,6 +35,57 @@ import type { TriviaStats, CategoryWithProgress, TriviaSessionWithCategory } fro
 import { trackScreenView, Screens, trackTriviaResultsView, TriviaMode } from '../../src/services/analytics';
 import { DISPLAY_LIMITS } from '../../src/config/app';
 
+// View All Button with press animation
+function ViewAllButton({
+  onPress,
+  label,
+  color,
+}: {
+  onPress: () => void;
+  label: string;
+  color: string;
+}) {
+  const { iconSizes, spacing } = useResponsive();
+  const scale = useRef(new RNAnimated.Value(1)).current;
+
+  const handlePressIn = () => {
+    RNAnimated.spring(scale, {
+      toValue: 0.95,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 10,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    RNAnimated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 8,
+    }).start();
+  };
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <RNAnimated.View style={{ transform: [{ scale }], flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+        <Text.Label
+          fontFamily={FONT_FAMILIES.semibold}
+          color={color}
+        >
+          {label}
+        </Text.Label>
+        <ChevronRight size={iconSizes.sm} color={color} />
+      </RNAnimated.View>
+    </Pressable>
+  );
+}
+
 // Back Button with press animation
 function BackButton({ 
   onPress, 
@@ -108,7 +159,7 @@ function MetricCard({
   subtitle?: string;
   isDark: boolean;
 }) {
-  const { typography, spacing, radius, iconSizes } = useResponsive();
+  const { spacing, radius, iconSizes } = useResponsive();
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const subtitleColor = isDark ? hexColors.dark.neonGreen : hexColors.light.success;
@@ -135,12 +186,12 @@ function MetricCard({
         >
           {icon}
         </View>
-        <Text.Caption
+        <Text.Body
           color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
           fontFamily={FONT_FAMILIES.medium}
         >
           {label}
-        </Text.Caption>
+        </Text.Body>
       </XStack>
       <Text.Display
         color={textColor}
@@ -155,6 +206,94 @@ function MetricCard({
           {subtitle}
         </Text.Caption>
       )}
+    </YStack>
+  );
+}
+
+// Helper to chunk array into rows
+const chunkArray = <T,>(arr: T[], size: number): T[][] => {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+};
+
+// Metrics Grid Component - responsive grid layout for metrics
+function MetricsGrid({
+  stats,
+  isDark,
+  t,
+  iconSizes,
+  spacing,
+  primaryColor,
+  accentColor,
+  purpleColor,
+  successColor,
+  columnsPerRow,
+}: {
+  stats: TriviaStats | null;
+  isDark: boolean;
+  t: (key: any, params?: any) => string;
+  iconSizes: { sm: number };
+  spacing: { md: number };
+  primaryColor: string;
+  accentColor: string;
+  purpleColor: string;
+  successColor: string;
+  columnsPerRow: number;
+}) {
+  const metricsData = [
+    {
+      Icon: Gamepad2,
+      color: purpleColor,
+      label: t('tests'),
+      value: stats?.testsTaken || 0,
+      subtitle: stats?.testsThisWeek ? t('thisWeek', { count: stats.testsThisWeek }) : undefined,
+    },
+    {
+      Icon: CheckCircle,
+      color: successColor,
+      label: t('correct'),
+      value: stats?.totalCorrect || 0,
+      subtitle: stats?.correctToday ? t('todayCount', { count: stats.correctToday }) : undefined,
+    },
+    {
+      Icon: Hash,
+      color: primaryColor,
+      label: t('answered'),
+      value: stats?.totalAnswered || 0,
+      subtitle: stats?.answeredThisWeek ? t('thisWeek', { count: stats.answeredThisWeek }) : undefined,
+    },
+    {
+      Icon: Trophy,
+      color: accentColor,
+      label: t('mastered'),
+      value: stats?.totalMastered || 0,
+      subtitle: stats?.masteredToday ? t('todayCount', { count: stats.masteredToday }) : undefined,
+    },
+  ];
+
+  const metricRows = chunkArray(metricsData, columnsPerRow);
+
+  return (
+    <YStack gap={spacing.md}>
+      {metricRows.map((row, rowIndex) => (
+        <XStack key={rowIndex} gap={spacing.md}>
+          {row.map((metric, index) => (
+            <MetricCard
+              key={index}
+              icon={<metric.Icon size={iconSizes.sm} color={metric.color} />}
+              iconColor={metric.color}
+              iconBgColor={`${metric.color}20`}
+              label={metric.label}
+              value={metric.value}
+              subtitle={metric.subtitle}
+              isDark={isDark}
+            />
+          ))}
+        </XStack>
+      ))}
     </YStack>
   );
 }
@@ -395,7 +534,7 @@ export default function PerformanceScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
-  const { isTablet, typography, iconSizes, spacing, radius, media } = useResponsive();
+  const { typography, config, iconSizes, spacing, radius, media } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -588,92 +727,18 @@ export default function PerformanceScreen() {
               {t('coreMetrics')}
             </Text.Title>
             
-            {isTablet ? (
-              /* Tablet: All 4 metrics in a single row */
-              <XStack gap={spacing.md}>
-                <MetricCard
-                  icon={<Gamepad2 size={iconSizes.sm} color={purpleColor} />}
-                  iconColor={purpleColor}
-                  iconBgColor={`${purpleColor}20`}
-                  label={t('tests')}
-                  value={stats?.testsTaken || 0}
-                  subtitle={stats?.testsThisWeek ? t('thisWeek', { count: stats.testsThisWeek }) : undefined}
-                  isDark={isDark}
-                />
-                <MetricCard
-                  icon={<CheckCircle size={iconSizes.sm} color={successColor} />}
-                  iconColor={successColor}
-                  iconBgColor={`${successColor}20`}
-                  label={t('correct')}
-                  value={stats?.totalCorrect || 0}
-                  subtitle={stats?.correctToday ? t('todayCount', { count: stats.correctToday }) : undefined}
-                  isDark={isDark}
-                />
-                <MetricCard
-                  icon={<Hash size={iconSizes.sm} color={primaryColor} />}
-                  iconColor={primaryColor}
-                  iconBgColor={`${primaryColor}20`}
-                  label={t('answered')}
-                  value={stats?.totalAnswered || 0}
-                  isDark={isDark}
-                />
-                <MetricCard
-                  icon={<Trophy size={iconSizes.sm} color={accentColor} />}
-                  iconColor={accentColor}
-                  iconBgColor={`${accentColor}20`}
-                  label={t('mastered')}
-                  value={stats?.totalMastered || 0}
-                  subtitle={stats?.masteredToday ? t('todayCount', { count: stats.masteredToday }) : undefined}
-                  isDark={isDark}
-                />
-              </XStack>
-            ) : (
-              /* Phone: 2 rows of 2 metrics */
-              <YStack gap={spacing.md}>
-                {/* Row 1: Tests & Correct */}
-                <XStack gap={spacing.md}>
-                  <MetricCard
-                    icon={<Gamepad2 size={iconSizes.sm} color={purpleColor} />}
-                    iconColor={purpleColor}
-                    iconBgColor={`${purpleColor}20`}
-                    label={t('tests')}
-                    value={stats?.testsTaken || 0}
-                    subtitle={stats?.testsThisWeek ? t('thisWeek', { count: stats.testsThisWeek }) : undefined}
-                    isDark={isDark}
-                  />
-                  <MetricCard
-                    icon={<CheckCircle size={iconSizes.sm} color={successColor} />}
-                    iconColor={successColor}
-                    iconBgColor={`${successColor}20`}
-                    label={t('correct')}
-                    value={stats?.totalCorrect || 0}
-                    subtitle={stats?.correctToday ? t('todayCount', { count: stats.correctToday }) : undefined}
-                    isDark={isDark}
-                  />
-                </XStack>
-                
-                {/* Row 2: Answered & Mastered */}
-                <XStack gap={spacing.md}>
-                  <MetricCard
-                    icon={<Hash size={iconSizes.sm} color={primaryColor} />}
-                    iconColor={primaryColor}
-                    iconBgColor={`${primaryColor}20`}
-                    label={t('answered')}
-                    value={stats?.totalAnswered || 0}
-                    isDark={isDark}
-                  />
-                  <MetricCard
-                    icon={<Trophy size={iconSizes.sm} color={accentColor} />}
-                    iconColor={accentColor}
-                    iconBgColor={`${accentColor}20`}
-                    label={t('mastered')}
-                    value={stats?.totalMastered || 0}
-                    subtitle={stats?.masteredToday ? t('todayCount', { count: stats.masteredToday }) : undefined}
-                    isDark={isDark}
-                  />
-                </XStack>
-              </YStack>
-            )}
+            <MetricsGrid
+              stats={stats}
+              isDark={isDark}
+              t={t}
+              iconSizes={iconSizes}
+              spacing={spacing}
+              primaryColor={primaryColor}
+              accentColor={accentColor}
+              purpleColor={purpleColor}
+              successColor={successColor}
+              columnsPerRow={config.triviaCategoriesPerRow}
+            />
           </Animated.View>
 
           {/* Accuracy by Category */}
@@ -686,16 +751,6 @@ export default function PerformanceScreen() {
                   >
                     {t('accuracyByCategory')}
                   </Text.Title>
-                  {allCategoriesWithAccuracy.length > DISPLAY_LIMITS.MAX_CATEGORIES && (
-                    <Pressable onPress={() => router.push('/(tabs)/trivia/categories')}>
-                      <Text.Caption
-                        fontFamily={FONT_FAMILIES.semibold}
-                        color={primaryColor}
-                      >
-                        {t('viewAll')}
-                      </Text.Caption>
-                    </Pressable>
-                  )}
                 </XStack>
                 <Text.Caption
                   color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
@@ -705,20 +760,25 @@ export default function PerformanceScreen() {
                 </Text.Caption>
               </YStack>
               
-              <YStack
-                backgroundColor={cardBg}
-                borderRadius={radius.lg}
-                padding={spacing.lg}
-                gap={spacing.lg}
+              <Pressable
+                onPress={() => router.push('/(tabs)/trivia/categories')}
+                style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
               >
-                {displayCategories.map((category) => (
-                  <CategoryProgressBar
-                    key={category.slug}
-                    category={category}
-                    isDark={isDark}
-                  />
-                ))}
-              </YStack>
+                <YStack
+                  backgroundColor={cardBg}
+                  borderRadius={radius.lg}
+                  padding={spacing.lg}
+                  gap={spacing.lg}
+                >
+                  {displayCategories.map((category) => (
+                    <CategoryProgressBar
+                      key={category.slug}
+                      category={category}
+                      isDark={isDark}
+                    />
+                  ))}
+                </YStack>
+              </Pressable>
             </Animated.View>
           )}
 
@@ -732,14 +792,11 @@ export default function PerformanceScreen() {
                   {t('recentTests')}
                 </Text.Title>
                 {totalSessionsCount > DISPLAY_LIMITS.MAX_ACTIVITIES && (
-                  <Pressable onPress={() => router.push('/(tabs)/trivia/history')}>
-                    <Text.Caption
-                      fontFamily={FONT_FAMILIES.semibold}
-                      color={primaryColor}
-                    >
-                      {t('viewAll')}
-                    </Text.Caption>
-                  </Pressable>
+                  <ViewAllButton
+                    onPress={() => router.push('/(tabs)/trivia/history')}
+                    label={t('viewAll')}
+                    color={primaryColor}
+                  />
                 )}
               </XStack>
               

@@ -13,7 +13,6 @@ import {
   EmptyState,
   ScreenContainer,
   ScreenHeader,
-  SectionHeaderContainer,
   ContentContainer,
   LoadingContainer,
   TabletWrapper,
@@ -92,12 +91,19 @@ const FactListItem = React.memo(({
 
 FactListItem.displayName = 'FactListItem';
 
-// Simple section header
-const SectionHeader = React.memo(({ title }: { title: string }) => (
-  <SectionHeaderContainer>
-    <Text.Title>{title}</Text.Title>
-  </SectionHeaderContainer>
-));
+// Simple section header using responsive hook
+const SectionHeader = React.memo(({ title }: { title: string }) => {
+  const { spacing } = useResponsive();
+  return (
+    <YStack
+      paddingHorizontal={spacing.xl}
+      paddingVertical={spacing.md}
+      backgroundColor="$background"
+    >
+      <Text.Title>{title}</Text.Title>
+    </YStack>
+  );
+});
 
 SectionHeader.displayName = 'SectionHeader';
 

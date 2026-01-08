@@ -18,9 +18,7 @@ export { SuccessToast } from './SuccessToast';
 export {
   ScreenContainer,
   ScreenHeader,
-  ScreenHeaderContainer,
   SectionHeader,
-  SectionHeaderContainer,
   ContentContainer,
   ScrollContentContainer,
   LoadingContainer,

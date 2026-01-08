@@ -30,7 +30,6 @@ import {
   Text,
   ScreenContainer,
   ScreenHeader,
-  SectionHeaderContainer,
   ContentContainer,
   useIconColor,
 } from "../../src/components";
@@ -85,7 +84,7 @@ export default function SettingsPage() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { resetOnboarding } = useOnboarding();
-  const { iconSizes } = useResponsive();
+  const { iconSizes, spacing: responsiveSpacing } = useResponsive();
 
   // Track if this is the initial mount to prevent re-animation on tab focus
   // We delay setting the flag to allow lazy-rendered items to also animate
@@ -974,9 +973,13 @@ export default function SettingsPage() {
           const sectionIndex = sections.indexOf(section);
           return (
             <Animated.View entering={shouldAnimate ? FadeInDown.delay(sectionIndex * 50).duration(300) : undefined}>
-              <SectionHeaderContainer>
+              <YStack
+                paddingHorizontal={responsiveSpacing.xl}
+                paddingVertical={responsiveSpacing.md}
+                backgroundColor="$background"
+              >
                 <Text.Title>{title}</Text.Title>
-              </SectionHeaderContainer>
+              </YStack>
             </Animated.View>
           );
         }}

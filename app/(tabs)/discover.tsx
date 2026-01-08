@@ -20,7 +20,6 @@ import {
   Text,
   EmptyState,
   ScreenContainer,
-  ScreenHeaderContainer,
   FONT_FAMILIES,
   ContentContainer,
   TabletWrapper,
@@ -120,7 +119,7 @@ const FactListItem = React.memo(({ item, isTablet, onPress, selectedCategory }: 
   }, [item, onPress]);
 
   return (
-    <ContentContainer tablet={isTablet}>
+    <ContentContainer>
       <ImageFactCard
         title={item.title || item.content.substring(0, 80) + "..."}
         imageUrl={item.image_url!}
@@ -418,7 +417,11 @@ function DiscoverScreen() {
 
     return (
       <Animated.View entering={FadeIn.duration(300)}>
-        <ScreenHeaderContainer tablet={isTablet}>
+        <XStack
+          padding={spacing.lg}
+          alignItems="center"
+          gap={spacing.sm}
+        >
           <SearchInputContainer
             height={media.searchInputHeight}
             borderRadius={radius.md}
@@ -512,10 +515,10 @@ function DiscoverScreen() {
               </ClearButton>
             ) : null}
           </SearchInputContainer>
-        </ScreenHeaderContainer>
+        </XStack>
       </Animated.View>
     );
-  }, [isTablet, selectedCategory, searchQuery, isSearching, theme, t, handleSearchChange, clearSearch, clearCategoryFilter, spacing, radius, iconSizes, typography, media]);
+  }, [selectedCategory, searchQuery, isSearching, theme, t, handleSearchChange, clearSearch, clearCategoryFilter, spacing, radius, iconSizes, typography, media]);
 
   const renderEmptyState = useCallback(() => {
     const hasQuery = searchQuery.trim().length > 0;

@@ -21,7 +21,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { hexColors } from '../../src/theme';
 import { Text, FONT_FAMILIES } from '../../src/components/Typography';
-import { SectionHeaderContainer } from '../../src/components/ScreenLayout';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import { getLucideIcon } from '../../src/utils/iconMapper';
@@ -408,9 +407,14 @@ export default function ActivityHistoryScreen() {
   const renderItem = useCallback(({ item }: ListRenderItemInfo<HistoryListItem>) => {
     if (item.type === ITEM_TYPES.SECTION_HEADER) {
       return (
-        <SectionHeaderContainer paddingTop={spacing.md}>
+        <YStack
+          paddingHorizontal={spacing.xl}
+          paddingVertical={spacing.md}
+          paddingTop={spacing.md}
+          backgroundColor="$background"
+        >
           <Text.Title>{item.title}</Text.Title>
-        </SectionHeaderContainer>
+        </YStack>
       );
     }
     

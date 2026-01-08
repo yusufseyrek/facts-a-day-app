@@ -60,6 +60,7 @@ export interface TriviaStats {
   totalMastered: number;
   testsTaken: number;
   testsThisWeek: number;
+  answeredThisWeek: number;
   masteredToday: number;
   correctToday: number;
 }
@@ -255,11 +256,12 @@ export async function getFactsForWrongAnswers(
  * Get overall trivia statistics
  */
 export async function getOverallStats(): Promise<TriviaStats> {
-  const [stats, totalMastered, testsTaken, testsThisWeek, todayStats, bestStreak] = await Promise.all([
+  const [stats, totalMastered, testsTaken, testsThisWeek, answeredThisWeek, todayStats, bestStreak] = await Promise.all([
     database.getOverallTriviaStats(),
     database.getTotalMasteredCount(),
     database.getTotalSessionsCount(),
     database.getWeeklyTestsCount(),
+    database.getWeeklyAnsweredCount(),
     database.getTodayTriviaStats(),
     database.getBestDailyStreak(),
   ]);
@@ -270,6 +272,7 @@ export async function getOverallStats(): Promise<TriviaStats> {
     totalMastered,
     testsTaken,
     testsThisWeek,
+    answeredThisWeek,
     masteredToday: todayStats.masteredToday,
     correctToday: todayStats.correctToday,
   };
