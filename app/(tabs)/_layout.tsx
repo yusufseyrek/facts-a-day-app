@@ -6,7 +6,7 @@ import { useRef, useCallback, useState, useEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import type { BottomTabBarButtonProps, BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BottomTabBar } from "@react-navigation/bottom-tabs";
-import { hexColors, spacing, radius, sizes } from "../../src/theme";
+import { hexColors, spacing, radius } from "../../src/theme";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import * as triviaService from "../../src/services/trivia";
@@ -154,7 +154,7 @@ export default function TabLayout() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { iconSizes } = useResponsive();
+  const { iconSizes,componentSizes } = useResponsive();
   const [hasDailyTrivia, setHasDailyTrivia] = useState(false);
 
   // Check for daily trivia availability
@@ -212,7 +212,7 @@ export default function TabLayout() {
           backgroundColor,
           borderTopColor: borderColor,
           borderTopWidth: 1,
-          height: 56 + insets.bottom,
+          height: componentSizes.tabBarHeight + insets.bottom,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 10,
         },

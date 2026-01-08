@@ -16,7 +16,7 @@ import {
 } from '@tamagui/lucide-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
-import { hexColors, spacing, radius, sizes } from '../../theme';
+import { hexColors, spacing, radius } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';

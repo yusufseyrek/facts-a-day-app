@@ -122,9 +122,10 @@ export const spacing = {
  * - heroLg: 64 → 96 - Large hero icons, containers
  */
 const phoneIconSizes = {
-  sm: 16,
-  md: 20,
-  lg: 24,
+  xs: 16,
+  sm: 20,
+  md: 24,
+  lg: 28,
   xl: 32,
   hero: 48,
   heroLg: 64,
@@ -140,12 +141,12 @@ export const iconSizes = {
  * Tablet values are automatically scaled by 1.5x.
  */
 const phoneComponentSizes = {
-  titleMinHeight: 30,
   modalMaxWidth: 340,
-  badgeFontSize: 12,
   maxLines: 3,
-  timerFontSize: 26,
-  timerLineHeight: 36,
+  buttonHeight: 56,
+  topicCardSize: 80,
+  colorSwatchSize: 72,
+  tabBarHeight: 56,
 } as const;
 
 export const componentSizes = {
@@ -203,22 +204,6 @@ export const radius = {
 } as const;
 
 /**
- * Base size values for phones.
- * Tablet values are automatically scaled by 1.5x.
- */
-const phoneSizes = {
-  buttonHeight: 56,
-  topicCardSize: 80,
-  colorSwatchSize: 72,
-  toggleSize: 24,
-} as const;
-
-export const sizes = {
-  phone: phoneSizes,
-  tablet: scaleObject(phoneSizes),
-} as const;
-
-/**
  * Get typography values for the current screen width.
  * @param screenWidth - Current screen width
  */
@@ -266,14 +251,6 @@ export const getRadius = (screenWidth: number) => {
   return isTabletDevice(screenWidth) ? radius.tablet : radius.phone;
 };
 
-/**
- * Get sizes for the current screen width.
- * @param screenWidth - Current screen width
- */
-export const getSizes = (screenWidth: number) => {
-  return isTabletDevice(screenWidth) ? sizes.tablet : sizes.phone;
-};
-
 // Export constants for external use
 export const RESPONSIVE_CONSTANTS = {
   TABLET_BREAKPOINT,
@@ -287,4 +264,3 @@ export type IconSizes = typeof iconSizes.phone;
 export type ComponentSizes = typeof componentSizes.phone;
 export type GridLayout = typeof gridLayout.phone;
 export type Radius = typeof radius.phone;
-export type Sizes = typeof sizes.phone;

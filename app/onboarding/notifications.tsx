@@ -7,7 +7,7 @@ import { YStack, XStack } from "tamagui";
 import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { Bell } from "@tamagui/lucide-icons";
-import { hexColors, spacing, radius, sizes } from "../../src/theme";
+import { hexColors, spacing, radius } from "../../src/theme";
 import { useResponsive } from "../../src/utils/useResponsive";
 import { Text, Button, ProgressIndicator, MultiTimePicker } from "../../src/components";
 import { useTheme } from "../../src/theme";

@@ -1,5 +1,5 @@
 import * as WebBrowser from "expo-web-browser";
-import { hexColors, spacing, radius, sizes } from "../theme";
+import { hexColors, spacing, radius } from "../theme";
 
 export interface OpenBrowserOptions {
   /** Theme mode for styling the browser controls */

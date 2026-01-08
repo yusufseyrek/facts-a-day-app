@@ -3,7 +3,7 @@ import { Pressable } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { Zap, Check, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { hexColors, spacing, radius, sizes } from '../../theme';
+import { hexColors, spacing, radius } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
 import type { TranslationKeys } from '../../i18n/translations';

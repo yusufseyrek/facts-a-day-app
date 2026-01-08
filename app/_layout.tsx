@@ -4,7 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppThemeProvider, useTheme } from '../src/theme';
 import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
-import { hexColors, spacing, radius, sizes } from '../src/theme';
+import { hexColors } from '../src/theme';
 import { I18nProvider, getLocaleFromCode } from '../src/i18n';
 import { OnboardingProvider, useOnboarding } from '../src/contexts';
 import * as onboardingService from '../src/services/onboarding';

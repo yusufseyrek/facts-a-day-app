@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { View, styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
 import { useRouter } from "expo-router";
-import { hexColors, spacing, radius, sizes } from "../../src/theme";
+import { hexColors, spacing, radius } from "../../src/theme";
 import { useResponsive } from "../../src/utils/useResponsive";
 import {
   Text,

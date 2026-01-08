@@ -16,7 +16,7 @@ const ANIMATION_DURATION = 150;
 import { X, Plus, Trash2, AlertTriangle } from '@tamagui/lucide-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../../theme';
-import { hexColors, spacing, radius, sizes } from '../../theme';
+import { hexColors, spacing, radius } from '../../theme';
 import { useTranslation } from '../../i18n/useTranslation';
 import { Button } from '../Button';
 import { SuccessToast } from '../SuccessToast';

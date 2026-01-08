@@ -14,7 +14,7 @@ import { YStack, XStack } from "tamagui";
 import { Search, X } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
-import { hexColors, spacing, radius, sizes } from "../../src/theme";
+import { hexColors, spacing, radius } from "../../src/theme";
 import { useResponsive } from "../../src/utils/useResponsive";
 import {
   Text,
@@ -176,10 +176,10 @@ const FactListItem = React.memo(({ item, isTablet, onPress, selectedCategory }: 
 FactListItem.displayName = 'FactListItem';
 
 function DiscoverScreen() {
+  const router = useRouter();
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const router = useRouter();
-  const { isTablet, screenWidth: width, typography: typo, iconSizes, gridLayout } = useResponsive();
+  const { isTablet, screenWidth, typography, spacing, iconSizes, gridLayout } = useResponsive();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<FactWithRelations[]>([]);
@@ -397,7 +397,7 @@ function DiscoverScreen() {
     item.id.toString(), []);
 
   // Calculate exact item height for FlashList layout
-  const itemHeight = useMemo(() => getImageCardHeight(width, isTablet), [width, isTablet]);
+  const itemHeight = useMemo(() => getImageCardHeight(screenWidth, isTablet), [screenWidth, isTablet]);
   
   // Override item layout to give FlashList exact dimensions (helps with recycling issues)
   const overrideItemLayout = useCallback((layout: { span?: number; size?: number }) => {
@@ -471,6 +471,7 @@ function DiscoverScreen() {
                   </Text.Caption>
                   <CategoryChipClearButton
                     style={{
+                      padding: spacing.xs,
                       backgroundColor:
                         contrastColor === "#000000"
                           ? "rgba(0,0,0,0.2)"
@@ -497,8 +498,8 @@ function DiscoverScreen() {
                   theme === "dark"
                     ? hexColors.dark.text
                     : hexColors.light.text,
-                fontSize: typo.fontSize.body,
-                paddingVertical: spacing.phone.xs,
+                fontSize: typography.fontSize.body,
+                paddingVertical: spacing.xs,
               }}
               autoCapitalize="none"
               autoCorrect={false}
@@ -576,7 +577,7 @@ function DiscoverScreen() {
         <ScrollView showsVerticalScrollIndicator={false}>
           <CategoriesContainer>
             <Animated.View entering={FadeIn.duration(300)}>
-              <YStack gap={spacing.phone.sm}>
+              <YStack gap={spacing.sm}>
                 <Text.Headline
                   color="$text"
                 >

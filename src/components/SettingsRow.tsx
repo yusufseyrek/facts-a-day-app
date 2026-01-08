@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, View, StyleSheet } from 'react-native';
 import { ChevronRight, ExternalLink, AlertCircle } from '@tamagui/lucide-icons';
 import { useTheme } from '../theme';
-import { hexColors, spacing, radius, sizes } from '../theme';
+import { hexColors, spacing, radius } from '../theme';
 import { Text } from './Typography';
 import { useResponsive } from '../utils/useResponsive';
 

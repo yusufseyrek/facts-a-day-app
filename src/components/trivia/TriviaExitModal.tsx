@@ -5,7 +5,7 @@ import { YStack, XStack } from 'tamagui';
 import { AlertTriangle, X, DoorOpen } from '@tamagui/lucide-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
-import { hexColors, spacing, radius, sizes } from '../../theme';
+import { hexColors, spacing, radius } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
 
@@ -44,21 +44,21 @@ export function TriviaExitModal({
   exitText,
 }: TriviaExitModalProps) {
   // Get responsive values for device type
-  const { screenWidth, typography: typo, spacing: space, iconSizes: icons, componentSizes: sizes } = useResponsive();
+  const { screenWidth, typography, spacing, iconSizes, componentSizes } = useResponsive();
   
   // Responsive sizing
-  const modalMaxWidth = sizes.modalMaxWidth;
-  const iconSize = icons.container;
-  const iconInnerSize = icons.inner;
-  const titleFontSize = typo.fontSize.title;
-  const messageFontSize = typo.fontSize.caption;
-  const messageLineHeight = typo.lineHeight.caption;
-  const buttonFontSize = typo.fontSize.body;
-  const closeIconSize = icons.action;
-  const messageIconSize = icons.action;
-  const buttonIconSize = icons.button;
-  const padding = space.lg;
-  const buttonPadding = space.md;
+  const modalMaxWidth = componentSizes.modalMaxWidth;
+  const iconSize = iconSizes.heroLg;
+  const iconInnerSize = iconSizes.xl;
+  const titleFontSize = typography.fontSize.title;
+  const messageFontSize = typography.fontSize.caption;
+  const messageLineHeight = typography.lineHeight.caption;
+  const buttonFontSize = typography.fontSize.body;
+  const closeIconSize = iconSizes.md;
+  const messageIconSize = iconSizes.md;
+  const buttonIconSize = iconSizes.sm;
+  const padding = spacing.lg;
+  const buttonPadding = spacing.md;
   
   // Colors matching the app's design system
   const bgColor = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
@@ -115,7 +115,7 @@ export function TriviaExitModal({
         <Animated.View 
           entering={FadeInUp.duration(300).springify()}
           style={{ 
-            width: screenWidth - spacing.phone.md * 2, 
+            width: screenWidth - spacing.md * 2, 
             maxWidth: modalMaxWidth,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 12 },
@@ -131,10 +131,10 @@ export function TriviaExitModal({
               testID="trivia-exit-cancel-x"
               style={{
                 position: 'absolute',
-                top: spacing.phone.md,
-                right: spacing.phone.md,
+                top: spacing.md,
+                right: spacing.md,
                 zIndex: 10,
-                padding: spacing.phone.xs,
+                padding: spacing.xs,
               }}
             >
               <X size={closeIconSize} color={secondaryTextColor} />
@@ -142,11 +142,11 @@ export function TriviaExitModal({
 
             {/* Header with Icon */}
             <YStack 
-              paddingTop={space.xl} 
+              paddingTop={spacing.xl} 
               paddingHorizontal={padding}
-              paddingBottom={spacing.phone.md}
+              paddingBottom={spacing.md}
               alignItems="center"
-              gap={space.md}
+              gap={spacing.md}
             >
               {/* Warning Icon */}
               <YStack
@@ -181,9 +181,9 @@ export function TriviaExitModal({
               <XStack 
                 backgroundColor={surfaceColor}
                 borderRadius={radius.phone.md}
-                padding={space.md}
+                padding={spacing.md}
                 alignItems="center"
-                gap={spacing.phone.sm}
+                gap={spacing.sm}
               >
                 <DoorOpen size={messageIconSize} color={errorColor} />
                 <Text.Caption
@@ -201,7 +201,7 @@ export function TriviaExitModal({
             <XStack 
               paddingHorizontal={padding} 
               paddingBottom={padding}
-              gap={spacing.phone.md}
+              gap={spacing.md}
             >
               {/* Cancel Button - Outlined */}
               <Pressable 
@@ -252,7 +252,7 @@ export function TriviaExitModal({
                   borderRadius={radius.phone.md}
                   alignItems="center"
                   justifyContent="center"
-                  gap={spacing.phone.xs}
+                  gap={spacing.xs}
                 >
                   <DoorOpen size={buttonIconSize} color="#FFFFFF" />
                   <Text.Label

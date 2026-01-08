@@ -5,7 +5,7 @@ import { FactModal } from '../../src/components/FactModal';
 import type { FactWithRelations } from '../../src/services/database';
 import * as database from '../../src/services/database';
 import { Text } from '../../src/components';
-import { hexColors, spacing, radius, sizes } from '../../src/theme';
+import { hexColors, spacing, radius } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import { trackFactView, trackScreenView, Screens, type FactViewSource } from '../../src/services/analytics';
 

@@ -12,7 +12,7 @@ import { Brain, Flame, Sparkles, ArrowRight } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { hexColors, spacing, radius, sizes } from '../../src/theme';
+import { hexColors, spacing, radius } from '../../src/theme';
 import {
   ScreenContainer,
   ScreenHeader,

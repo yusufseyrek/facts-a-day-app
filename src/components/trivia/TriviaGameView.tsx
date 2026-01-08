@@ -11,7 +11,7 @@ import Animated, {
   SharedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
-import { hexColors, spacing, radius, sizes } from '../../theme';
+import { hexColors, spacing, radius, componentSizes } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
 import type { QuestionWithFact } from '../../services/database';
@@ -222,11 +222,11 @@ export function TriviaGameView({
           style={{ alignItems: 'center' }}
         >
           <Text.Title
-            fontSize={componentSizes.timerFontSize}
+            fontSize={typo.fontSize.display}
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
             textAlign="center"
-            lineHeight={componentSizes.timerLineHeight}
+            lineHeight={typo.lineHeight.display}
           >
             {currentQuestion.question_text}
           </Text.Title>
@@ -394,7 +394,7 @@ export function TriviaGameView({
         >
           <XStack
             backgroundColor={primaryColor}
-            height={sizes.phone.buttonHeight}
+            height={componentSizes.buttonHeight}
             paddingHorizontal={spacing.phone.lg}
             borderRadius={radius.phone.lg}
             justifyContent="center"
@@ -416,7 +416,7 @@ export function TriviaGameView({
         >
           <XStack
             backgroundColor={primaryColor}
-            height={sizes.phone.buttonHeight}
+            height={componentSizes.buttonHeight}
             borderRadius={radius.phone.lg}
             justifyContent="center"
             alignItems="center"

@@ -7,7 +7,7 @@ import { YStack, XStack } from "tamagui";
 import { X, Calendar } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
-import { hexColors, spacing, radius, sizes, getCategoryNeonColor } from "../theme";
+import { hexColors, spacing, radius, getCategoryNeonColor } from "../theme";
 import { FactActions } from "./FactActions";
 import { CategoryBadge } from "./CategoryBadge";
 import { Text, FONT_FAMILIES } from "./Typography";
@@ -728,7 +728,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   >
                     {formatLastUpdated(fact.last_updated || fact.created_at, locale)}
                   </Text.Body>
-                  <Calendar size={iconSizes.sm} color="$textSecondary" />
+                  <Calendar size={iconSizes.xs} color="$textSecondary" />
                 </XStack>
               )}
             </BadgesRow>
@@ -799,8 +799,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             testID="fact-modal-close-button"
             accessibilityLabel="Close"
             style={{
-              width: 36,
-              height: 36,
+              width: iconSizes.xl,
+              height: iconSizes.xl,
               borderRadius: radius.phone.full,
               backgroundColor: "rgba(0, 0, 0, 0.4)",
               alignItems: "center",

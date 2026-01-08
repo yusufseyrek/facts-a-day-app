@@ -4,7 +4,7 @@ import { View, styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Check } from '@tamagui/lucide-icons';
 import { Text, FONT_FAMILIES } from './Typography';
-import { hexColors, spacing, radius, sizes, useTheme, getCategoryNeonColor } from '../theme';
+import { hexColors, spacing, radius, useTheme, getCategoryNeonColor } from '../theme';
 import { getContrastColor } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
 

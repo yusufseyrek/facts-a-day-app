@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { Pressable, Animated, StyleSheet, View, Platform } from "react-native";
 import { Image, ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { hexColors, spacing, radius, sizes } from "../theme";
+import { hexColors, spacing, radius } from "../theme";
 import { Text, FONT_FAMILIES } from "./Typography";
 import { CategoryBadge } from "./CategoryBadge";
 import { useFactImage } from "../utils/useFactImage";

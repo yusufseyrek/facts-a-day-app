@@ -23,7 +23,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
-import { hexColors, spacing, radius, sizes } from '../../src/theme';
+import { hexColors, spacing, radius } from '../../src/theme';
 import { Text, FONT_FAMILIES } from '../../src/components/Typography';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
@@ -43,6 +43,7 @@ function BackButton({
   onPress: () => void; 
   primaryColor: string;
 }) {
+  const { iconSizes } = useResponsive();
   const scale = useRef(new RNAnimated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -164,7 +165,7 @@ function CategoryProgressBar({
   category: CategoryWithProgress;
   isDark: boolean;
 }) {
-  const { typography: typo } = useResponsive();
+  const { typography } = useResponsive();
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const trackColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const progressColor = category.color_hex || (isDark ? hexColors.dark.primary : hexColors.light.primary);
@@ -175,7 +176,7 @@ function CategoryProgressBar({
     <YStack gap={spacing.phone.xs}>
       <XStack alignItems="center" justifyContent="space-between">
         <XStack alignItems="center" gap={spacing.phone.sm}>
-          {getLucideIcon(category.icon, typo.fontSize.title, progressColor)}
+          {getLucideIcon(category.icon, typography.fontSize.title, progressColor)}
           <Text.Label
             color={textColor}
             fontFamily={FONT_FAMILIES.medium}
@@ -228,7 +229,7 @@ function SessionCard({
   dateFormat?: 'time' | 'relative';
   testID?: string;
 }) {
-  const { typography: typo, iconSizes } = useResponsive();
+  const { typography, iconSizes } = useResponsive();
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
@@ -391,7 +392,7 @@ export default function PerformanceScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
-  const { isTablet, typography: typo, iconSizes } = useResponsive();
+  const { isTablet, typography, iconSizes } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

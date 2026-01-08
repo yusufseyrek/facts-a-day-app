@@ -5,7 +5,7 @@ import { YStack } from 'tamagui';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
-import { hexColors, spacing, radius, sizes } from '../../src/theme';
+import { hexColors } from '../../src/theme';
 import { Text } from '../../src/components/Typography';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';

@@ -2,7 +2,7 @@ import React from 'react';
 import { styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Lightbulb } from '@tamagui/lucide-icons';
-import { hexColors, spacing, radius, sizes } from '../theme';
+import { hexColors, spacing, radius } from '../theme';
 import { Text } from './Typography';
 import { useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';

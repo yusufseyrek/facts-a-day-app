@@ -2,7 +2,7 @@ import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
 import { YStack, XStack } from "tamagui";
-import { hexColors, spacing, radius, sizes } from "../theme";
+import { hexColors, spacing, radius } from "../theme";
 import { Text } from "./Typography";
 import { useTheme } from "../theme";
 import { LAYOUT } from "../config/app";

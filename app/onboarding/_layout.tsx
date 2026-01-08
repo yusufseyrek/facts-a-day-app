@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { useColorScheme } from "react-native";
-import { hexColors, spacing, radius, sizes } from "../../src/theme";
+import { hexColors } from "../../src/theme";
 
 export default function OnboardingLayout() {
   const colorScheme = useColorScheme();

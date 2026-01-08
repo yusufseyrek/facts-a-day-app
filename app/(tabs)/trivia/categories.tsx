@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
-import { hexColors, spacing, radius, sizes } from '../../../src/theme';
+import { hexColors, spacing, radius } from '../../../src/theme';
 import { Text, FONT_FAMILIES } from '../../../src/components/Typography';
 import { useTheme } from '../../../src/theme';
 import { useTranslation } from '../../../src/i18n';
@@ -32,6 +32,7 @@ function BackButton({
   onPress: () => void; 
   primaryColor: string;
 }) {
+  const { iconSizes } = useResponsive();
   const scale = useRef(new RNAnimated.Value(1)).current;
 
   const handlePressIn = () => {

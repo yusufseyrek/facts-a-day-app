@@ -7,7 +7,7 @@ import { YStack, XStack } from "tamagui";
 import { useRouter } from "expo-router";
 import { CheckCircle, Sparkle, Star, Gift } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { hexColors, spacing, radius, sizes, getNeonColors } from "../../src/theme";
+import { hexColors, spacing, radius, getNeonColors } from "../../src/theme";
 import { Text, Button, FONT_FAMILIES } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";

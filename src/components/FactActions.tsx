@@ -18,7 +18,7 @@ import * as database from "../services/database";
 import * as api from "../services/api";
 import { useTranslation } from "../i18n";
 import { ReportFactModal } from "./ReportFactModal";
-import { hexColors, spacing, radius, sizes, useTheme } from "../theme";
+import { hexColors, spacing, radius, useTheme } from "../theme";
 import { useResponsive } from "../utils/useResponsive";
 import {
   trackFactShare,
@@ -119,7 +119,7 @@ export function FactActions({
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { iconSizes } = useResponsive();
+  const { iconSizes, componentSizes } = useResponsive();
   const insets = useSafeAreaInsets();
 
   // Neon colors for actions
@@ -341,7 +341,7 @@ export function FactActions({
     <>
       <Container
         style={{
-          height: 56 + insets.bottom,
+          height: componentSizes.tabBarHeight + insets.bottom,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 10,
         }}

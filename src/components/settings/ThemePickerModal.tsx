@@ -10,7 +10,7 @@ import {
 import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import { X, Sun, Moon, Smartphone } from '@tamagui/lucide-icons';
 import { useTheme } from '../../theme';
-import { hexColors, spacing, radius, sizes } from '../../theme';
+import { hexColors, spacing, radius } from '../../theme';
 import { useTranslation, type TranslationKeys } from '../../i18n';
 import type { ThemeMode } from '../../theme/ThemeProvider';
 import { Text } from '../Typography';

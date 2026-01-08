@@ -37,7 +37,7 @@ export interface ResponsiveValues {
   spacing: ResponsiveSpacing;
   /** Icon sizes (small, medium, large, xlarge, xxlarge) */
   iconSizes: ResponsiveIconSizes;
-  /** Component-specific sizes (titleMinHeight, etc.) */
+  /** Component-specific sizes (buttonHeight, modalMaxWidth, etc.) */
   componentSizes: ResponsiveComponentSizes;
   /** Grid layout values (columns, icon sizes in grids, etc.) */
   gridLayout: ResponsiveGridLayout;

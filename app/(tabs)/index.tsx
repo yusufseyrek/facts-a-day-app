@@ -7,7 +7,7 @@ import { YStack } from "tamagui";
 import { Lightbulb } from "@tamagui/lucide-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { hexColors, spacing, radius, sizes } from "../../src/theme";
+import { hexColors, spacing, radius } from "../../src/theme";
 import {
   Text,
   EmptyState,

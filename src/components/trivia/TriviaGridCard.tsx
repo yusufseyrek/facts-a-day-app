@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { Check, Zap, Shuffle, ChevronRight } from '@tamagui/lucide-icons';
-import { hexColors, spacing, radius, sizes } from '../../theme';
+import { hexColors, spacing, radius } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { hexToRgba } from '../../utils/colors';

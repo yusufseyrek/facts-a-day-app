@@ -25,7 +25,7 @@ import {
   Camera,
   Download,
 } from "@tamagui/lucide-icons";
-import { hexColors, spacing, radius, sizes } from "../../src/theme";
+import { hexColors, spacing, radius } from "../../src/theme";
 import {
   Text,
   ScreenContainer,

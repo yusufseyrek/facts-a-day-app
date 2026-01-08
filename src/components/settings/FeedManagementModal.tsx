@@ -13,7 +13,7 @@ import {
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { X, Search, Check, Calendar, Trash2, Edit3, RefreshCw } from '@tamagui/lucide-icons';
 import { useTheme } from '../../theme';
-import { hexColors, spacing, radius, sizes } from '../../theme';
+import { hexColors, spacing, radius } from '../../theme';
 import { typography } from '../../utils/responsive';
 import { useTranslation } from '../../i18n';
 import { Text, FONT_FAMILIES } from '../Typography';

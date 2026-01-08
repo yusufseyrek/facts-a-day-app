@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View, Modal } from 'react-native';
 import { CheckCircle } from '@tamagui/lucide-icons';
 import { useTheme } from '../theme';
-import { hexColors, spacing, radius, sizes } from '../theme';
+import { hexColors, spacing, radius } from '../theme';
 import { Text } from './Typography';
 import { useResponsive } from '../utils/useResponsive';
 

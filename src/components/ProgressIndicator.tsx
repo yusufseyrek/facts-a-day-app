@@ -2,7 +2,7 @@ import React from 'react';
 import { View, styled } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Text, FONT_FAMILIES } from './Typography';
-import { hexColors, spacing, radius, sizes } from '../theme';
+import { hexColors, spacing, radius } from '../theme';
 
 const Container = styled(YStack, {
   gap: spacing.phone.sm,

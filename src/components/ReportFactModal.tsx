@@ -3,7 +3,7 @@ import { Modal, TextInput, Keyboard, Platform, TouchableWithoutFeedback, Keyboar
 import { styled } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { X } from '@tamagui/lucide-icons';
-import { hexColors, spacing, radius, sizes, useTheme } from '../theme';
+import { hexColors, spacing, radius, useTheme } from '../theme';
 import { Text } from './Typography';
 import { Button } from './Button';
 import { useTranslation } from '../i18n';

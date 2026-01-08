@@ -1,7 +1,7 @@
 import React from 'react';
 import { styled } from '@tamagui/core';
 import { XStack } from 'tamagui';
-import { hexColors, spacing, radius, sizes, useTheme, getCategoryNeonColor } from '../theme';
+import { hexColors, spacing, radius, useTheme, getCategoryNeonColor } from '../theme';
 import { Text, FONT_FAMILIES } from './Typography';
 import { useTranslation, translateCategory } from '../i18n';
 import { getContrastColor } from '../utils/colors';

@@ -1,7 +1,7 @@
 import React, { Component, ReactNode } from 'react';
 import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { recordError } from '../config/firebase';
-import { hexColors, spacing, radius, sizes } from '../theme';
+import { hexColors, spacing, radius } from '../theme';
 import { FONT_FAMILIES } from './Typography';
 
 interface Props {
