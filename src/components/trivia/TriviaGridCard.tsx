@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { Check, Zap, Shuffle, ChevronRight } from '@tamagui/lucide-icons';
-import { hexColors, spacing, radius } from '../../theme';
+import { hexColors } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { hexToRgba } from '../../utils/colors';
@@ -39,7 +39,8 @@ export function TriviaGridCard({
   centerContent = false,
 }: TriviaGridCardProps) {
   const { t } = useTranslation();
-  const { typography: typo, iconSizes } = useResponsive();
+  const { typography, iconSizes, spacing, radius, media } = useResponsive();
+  const iconContainerSize = media.topicCardSize * 0.7;
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
   const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
@@ -109,8 +110,8 @@ export function TriviaGridCard({
     >
       <YStack
         backgroundColor={isDailyAvailable ? hexToRgba(primaryColor, 0.08) : cardBg}
-        borderRadius={radius.phone.lg}
-        padding={spacing.phone.lg}
+        borderRadius={radius.lg}
+        padding={spacing.lg}
         justifyContent="space-between"
         alignItems={centerContent ? 'center' : 'stretch'}
         borderWidth={isDailyAvailable ? 1.5 : 0}
@@ -122,11 +123,11 @@ export function TriviaGridCard({
           alignItems="flex-start"
           width="100%"
         >
-          {centerContent && <View style={{ width: 20 }} />}
+          {centerContent && <View style={{ width: iconSizes.sm }} />}
           <YStack
-            width={56}
-            height={56}
-            borderRadius={28}
+            width={iconContainerSize}
+            height={iconContainerSize}
+            borderRadius={iconContainerSize / 2}
             backgroundColor={hexToRgba(accentColor, 0.1)}
             justifyContent="center"
             alignItems="center"
@@ -137,7 +138,7 @@ export function TriviaGridCard({
         </XStack>
 
         {/* Bottom section: Title + Subtitle */}
-        <YStack gap={4} marginTop={spacing.phone.md} alignItems={centerContent ? 'center' : 'flex-start'}>
+        <YStack gap={spacing.xs} marginTop={spacing.md} alignItems={centerContent ? 'center' : 'flex-start'}>
           <Text.Label
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}

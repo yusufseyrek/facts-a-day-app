@@ -4,7 +4,7 @@ import { YStack, XStack } from 'tamagui';
 import { ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
-import { hexColors, spacing, radius } from '../../theme';
+import { hexColors } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
@@ -35,7 +35,7 @@ function CircularProgress({
   trackColor: string;
   textColor: string;
 }) {
-  const { typography: typo, iconSizes } = useResponsive();
+  const { typography, iconSizes } = useResponsive();
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -86,7 +86,9 @@ function CircularProgress({
 }
 
 export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: TriviaStatsHeroProps) {
-  const { typography: typo, iconSizes } = useResponsive();
+  const { typography, iconSizes, spacing, radius, media, borderWidths } = useResponsive();
+  const categoryIconSize = media.topicCardSize * 0.6;
+  const dividerHeight = iconSizes.heroLg + spacing.sm;
   const accuracy = stats?.accuracy ?? 0;
   const testsTaken = stats?.testsTaken ?? 0;
   
@@ -114,9 +116,9 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
   const cardContent = (
     <YStack
       backgroundColor={cardBg}
-      borderRadius={radius.phone.lg}
-      padding={spacing.phone.lg}
-      gap={spacing.phone.md}
+      borderRadius={radius.lg}
+      padding={spacing.lg}
+      gap={spacing.md}
       borderWidth={1}
       borderColor={borderColor}
     >
@@ -129,13 +131,12 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
         </Text.Title>
         {hasData && (
           <XStack alignItems="center" gap={2}>
-            <Text.Caption
-              fontFamily={FONT_FAMILIES.medium}
+            <Text.Label
               color={primaryColor}
             >
               {t('details')}
-            </Text.Caption>
-            <ChevronRight size={typo.fontSize.title} color={primaryColor} />
+            </Text.Label>
+            <ChevronRight size={iconSizes.md} color={primaryColor} />
           </XStack>
         )}
       </XStack>
@@ -145,18 +146,18 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
         <XStack 
           alignItems="center" 
           justifyContent="space-between"
-          paddingTop={spacing.phone.sm}
+          paddingTop={spacing.sm}
         >
           {/* Accuracy with circular progress */}
           <YStack 
             flex={1}
             alignItems="center"
-            gap={spacing.phone.xs}
+            gap={spacing.xs}
           >
             <CircularProgress
               percentage={accuracy}
               size={iconSizes.heroLg}
-              strokeWidth={6}
+              strokeWidth={borderWidths.extraHeavy}
               progressColor={progressColor}
               trackColor={trackColor}
               textColor={textColor}
@@ -164,8 +165,7 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
             <Text.Tiny 
               color={secondaryTextColor} 
               textTransform="uppercase"
-              letterSpacing={0.5}
-              marginTop={spacing.phone.xs}
+              marginTop={spacing.xs}
               fontFamily={FONT_FAMILIES.medium}
             >
               {t('accuracy')}
@@ -175,7 +175,7 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
           {/* Vertical Divider */}
           <YStack 
             width={1} 
-            height={70} 
+            height={dividerHeight} 
             backgroundColor={borderColor} 
           />
           
@@ -183,13 +183,12 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
           <YStack 
             flex={1}
             alignItems="center"
-            gap={spacing.phone.xs}
           >
-            <Text.Headline
+            <Text.Hero
               color={textColor}
             >
               {testsTaken}
-            </Text.Headline>
+            </Text.Hero>
             <Text.Tiny 
               color={secondaryTextColor} 
               textTransform="uppercase"
@@ -203,7 +202,7 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
           {/* Vertical Divider */}
           <YStack 
             width={1} 
-            height={70} 
+            height={dividerHeight} 
             backgroundColor={borderColor} 
           />
           
@@ -211,19 +210,19 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
           <YStack 
             flex={1}
             alignItems="center"
-            gap={spacing.phone.xs}
+            gap={spacing.xs}
           >
             {topCategory ? (
               <>
                 <YStack
-                  width={48}
-                  height={48}
-                  borderRadius={24}
+                  width={categoryIconSize}
+                  height={categoryIconSize}
+                  borderRadius={categoryIconSize / 2}
                   backgroundColor={`${categoryColor}30`}
                   justifyContent="center"
                   alignItems="center"
                 >
-                  {getLucideIcon(topCategory.icon, typo.fontSize.title, categoryColor)}
+                  {getLucideIcon(topCategory.icon, typography.fontSize.title, categoryColor)}
                 </YStack>
                 <Text.Caption
                   fontFamily={FONT_FAMILIES.semibold}
@@ -245,14 +244,14 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
             ) : (
               <>
                 <YStack
-                  width={48}
-                  height={48}
-                  borderRadius={24}
+                  width={categoryIconSize}
+                  height={categoryIconSize}
+                  borderRadius={categoryIconSize / 2}
                   backgroundColor={`${categoryColor}30`}
                   justifyContent="center"
                   alignItems="center"
                 >
-                  {getLucideIcon('help-circle', typo.fontSize.title, isDark ? hexColors.dark.textMuted : hexColors.light.textMuted)}
+                  {getLucideIcon('help-circle', typography.fontSize.title, isDark ? hexColors.dark.textMuted : hexColors.light.textMuted)}
                 </YStack>
                 <Text.Caption
                   fontFamily={FONT_FAMILIES.semibold}
@@ -279,7 +278,7 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
         <YStack 
           alignItems="center" 
           justifyContent="center"
-          paddingVertical={spacing.phone.sm}
+          paddingVertical={spacing.sm}
         >
           <Text.Label
             color={secondaryTextColor}

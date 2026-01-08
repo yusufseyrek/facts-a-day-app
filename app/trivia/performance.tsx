@@ -23,7 +23,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
-import { hexColors, spacing, radius } from '../../src/theme';
+import { hexColors } from '../../src/theme';
 import { Text, FONT_FAMILIES } from '../../src/components/Typography';
 import { useTheme } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
@@ -43,8 +43,9 @@ function BackButton({
   onPress: () => void; 
   primaryColor: string;
 }) {
-  const { iconSizes } = useResponsive();
+  const { iconSizes, media } = useResponsive();
   const scale = useRef(new RNAnimated.Value(1)).current;
+  const buttonSize = media.topicCardSize * 0.45;
 
   const handlePressIn = () => {
     RNAnimated.spring(scale, {
@@ -74,9 +75,9 @@ function BackButton({
     >
       <RNAnimated.View
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 18,
+          width: buttonSize,
+          height: buttonSize,
+          borderRadius: buttonSize / 2,
           backgroundColor: `${primaryColor}20`,
           justifyContent: 'center',
           alignItems: 'center',
@@ -107,25 +108,26 @@ function MetricCard({
   subtitle?: string;
   isDark: boolean;
 }) {
-  const { typography: typo } = useResponsive();
+  const { typography, spacing, radius, iconSizes } = useResponsive();
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const subtitleColor = isDark ? hexColors.dark.neonGreen : hexColors.light.success;
+  const iconContainerSize = iconSizes.lg;
 
   return (
     <YStack
       flex={1}
       backgroundColor={cardBg}
-      borderRadius={radius.phone.lg}
-      padding={spacing.phone.lg}
-      gap={spacing.phone.sm}
+      borderRadius={radius.lg}
+      padding={spacing.lg}
+      gap={spacing.sm}
     >
-      <XStack alignItems="center" gap={spacing.phone.sm}>
+      <XStack alignItems="center" gap={spacing.sm}>
         <View
           style={{
-            width: 28,
-            height: 28,
-            borderRadius: 6,
+            width: iconContainerSize,
+            height: iconContainerSize,
+            borderRadius: radius.sm * 0.75,
             backgroundColor: iconBgColor,
             justifyContent: 'center',
             alignItems: 'center',
@@ -165,17 +167,17 @@ function CategoryProgressBar({
   category: CategoryWithProgress;
   isDark: boolean;
 }) {
-  const { typography } = useResponsive();
+  const { typography, spacing, radius } = useResponsive();
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const trackColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const progressColor = category.color_hex || (isDark ? hexColors.dark.primary : hexColors.light.primary);
-  // Use accuracy (correct/answered) instead of mastered/total
   const percentage = category.accuracy;
+  const barHeight = spacing.sm;
 
   return (
-    <YStack gap={spacing.phone.xs}>
+    <YStack gap={spacing.xs}>
       <XStack alignItems="center" justifyContent="space-between">
-        <XStack alignItems="center" gap={spacing.phone.sm}>
+        <XStack alignItems="center" gap={spacing.sm}>
           {getLucideIcon(category.icon, typography.fontSize.title, progressColor)}
           <Text.Label
             color={textColor}
@@ -194,9 +196,9 @@ function CategoryProgressBar({
       <View
         style={{
           width: '100%',
-          height: 8,
+          height: barHeight,
           backgroundColor: trackColor,
-          borderRadius: 4,
+          borderRadius: barHeight / 2,
           overflow: 'hidden',
         }}
       >
@@ -205,7 +207,7 @@ function CategoryProgressBar({
             width: `${percentage}%`,
             height: '100%',
             backgroundColor: progressColor,
-            borderRadius: 4,
+            borderRadius: barHeight / 2,
           }}
         />
       </View>
@@ -229,7 +231,7 @@ function SessionCard({
   dateFormat?: 'time' | 'relative';
   testID?: string;
 }) {
-  const { typography, iconSizes } = useResponsive();
+  const { typography, iconSizes, spacing, radius, media } = useResponsive();
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
@@ -237,6 +239,7 @@ function SessionCard({
   const warningColor = '#F59E0B';
   const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
+  const iconContainerSize = media.topicCardSize * 0.5;
 
   const scorePercentage = session.total_questions > 0 
     ? (session.correct_answers / session.total_questions) * 100 
@@ -302,15 +305,15 @@ function SessionCard({
       return (
         <View
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 10,
+            width: iconContainerSize,
+            height: iconContainerSize,
+            borderRadius: radius.sm,
             backgroundColor: `${iconColor}20`,
             justifyContent: 'center',
             alignItems: 'center',
           }}
         >
-          {getLucideIcon(session.category.icon, 22, iconColor)}
+          {getLucideIcon(session.category.icon, iconSizes.md, iconColor)}
         </View>
       );
     }
@@ -321,9 +324,9 @@ function SessionCard({
     return (
       <View
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
+          width: iconContainerSize,
+          height: iconContainerSize,
+          borderRadius: radius.sm,
           backgroundColor: `${iconColor}20`,
           justifyContent: 'center',
           alignItems: 'center',
@@ -346,10 +349,10 @@ function SessionCard({
     >
       <XStack
         backgroundColor={cardBg}
-        borderRadius={radius.phone.lg}
-        padding={spacing.phone.lg}
+        borderRadius={radius.lg}
+        padding={spacing.lg}
         alignItems="center"
-        gap={spacing.phone.sm}
+        gap={spacing.sm}
       >
         {getIcon()}
         <YStack flex={1} gap={2}>
@@ -392,7 +395,7 @@ export default function PerformanceScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
-  const { isTablet, typography, iconSizes } = useResponsive();
+  const { isTablet, typography, iconSizes, spacing, radius, media } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -548,9 +551,9 @@ export default function PerformanceScreen() {
       {/* Header */}
       <Animated.View entering={FadeInUp.duration(400).springify()}>
         <XStack
-          paddingTop={insets.top + spacing.phone.sm}
-          paddingBottom={spacing.phone.md}
-          paddingHorizontal={spacing.phone.lg}
+          paddingTop={insets.top + spacing.sm}
+          paddingBottom={spacing.md}
+          paddingHorizontal={spacing.lg}
           alignItems="center"
           justifyContent="space-between"
           borderBottomWidth={1}
@@ -565,7 +568,7 @@ export default function PerformanceScreen() {
           </Text.Title>
           
           {/* Empty spacer to balance the header */}
-          <View style={{ width: 36, height: 36 }} />
+          <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />
         </XStack>
       </Animated.View>
 
@@ -575,19 +578,19 @@ export default function PerformanceScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
         }
       >
-        <YStack padding={spacing.phone.lg} gap={spacing.phone.xl}>
+        <YStack padding={spacing.lg} gap={spacing.xl}>
           {/* Core Metrics */}
           <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
             <Text.Title
               color={textColor}
-              marginBottom={spacing.phone.md}
+              marginBottom={spacing.md}
             >
               {t('coreMetrics')}
             </Text.Title>
             
             {isTablet ? (
               /* Tablet: All 4 metrics in a single row */
-              <XStack gap={spacing.phone.md}>
+              <XStack gap={spacing.md}>
                 <MetricCard
                   icon={<Gamepad2 size={iconSizes.sm} color={purpleColor} />}
                   iconColor={purpleColor}
@@ -626,9 +629,9 @@ export default function PerformanceScreen() {
               </XStack>
             ) : (
               /* Phone: 2 rows of 2 metrics */
-              <YStack gap={spacing.phone.md}>
+              <YStack gap={spacing.md}>
                 {/* Row 1: Tests & Correct */}
-                <XStack gap={spacing.phone.md}>
+                <XStack gap={spacing.md}>
                   <MetricCard
                     icon={<Gamepad2 size={iconSizes.sm} color={purpleColor} />}
                     iconColor={purpleColor}
@@ -650,7 +653,7 @@ export default function PerformanceScreen() {
                 </XStack>
                 
                 {/* Row 2: Answered & Mastered */}
-                <XStack gap={spacing.phone.md}>
+                <XStack gap={spacing.md}>
                   <MetricCard
                     icon={<Hash size={iconSizes.sm} color={primaryColor} />}
                     iconColor={primaryColor}
@@ -676,7 +679,7 @@ export default function PerformanceScreen() {
           {/* Accuracy by Category */}
           {displayCategories.length > 0 && (
             <Animated.View entering={SlideInRight.delay(75).duration(400).springify()}>
-              <YStack marginBottom={spacing.phone.md} gap={spacing.phone.xs}>
+              <YStack marginBottom={spacing.md} gap={spacing.xs}>
                 <XStack alignItems="center" justifyContent="space-between">
                   <Text.Title
                     color={textColor}
@@ -704,9 +707,9 @@ export default function PerformanceScreen() {
               
               <YStack
                 backgroundColor={cardBg}
-                borderRadius={radius.phone.lg}
-                padding={spacing.phone.lg}
-                gap={spacing.phone.lg}
+                borderRadius={radius.lg}
+                padding={spacing.lg}
+                gap={spacing.lg}
               >
                 {displayCategories.map((category) => (
                   <CategoryProgressBar
@@ -722,7 +725,7 @@ export default function PerformanceScreen() {
           {/* Recent Trivia */}
           {recentSessions.length > 0 && (
             <Animated.View entering={SlideInRight.delay(100).duration(400).springify()}>
-              <XStack alignItems="center" justifyContent="space-between" marginBottom={spacing.phone.md}>
+              <XStack alignItems="center" justifyContent="space-between" marginBottom={spacing.md}>
                 <Text.Title
                   color={textColor}
                 >
@@ -740,7 +743,7 @@ export default function PerformanceScreen() {
                 )}
               </XStack>
               
-              <YStack gap={spacing.phone.md}>
+              <YStack gap={spacing.md}>
                 {recentSessions.map((session, index) => (
                   <SessionCard
                     key={session.id}

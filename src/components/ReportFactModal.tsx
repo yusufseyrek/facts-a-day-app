@@ -86,7 +86,7 @@ export function ReportFactModal({
 }: ReportFactModalProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { typography: typo, iconSizes } = useResponsive();
+  const { typography, iconSizes } = useResponsive();
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
   const [inputWidth, setInputWidth] = useState<number | undefined>(undefined);
@@ -158,7 +158,7 @@ export function ReportFactModal({
                     </TouchableWithoutFeedback>
                   </Header>
 
-                  <Text.Body color="$text" fontSize={typo.fontSize.caption}>
+                  <Text.Body color="$text" fontSize={typography.fontSize.caption}>
                     {t('whatIsWrong')}
                   </Text.Body>
 
@@ -184,7 +184,7 @@ export function ReportFactModal({
                       editable={!isSubmitting}
                       autoFocus
                       style={{ 
-                        fontSize: typo.fontSize.body, 
+                        fontSize: typography.fontSize.body, 
                         color: hexColors[theme].text,
                         width: inputWidth || '100%',
                       }}
@@ -193,11 +193,11 @@ export function ReportFactModal({
 
                   <XStack justifyContent="space-between" alignItems="center">
                     {error ? (
-                      <Text.Label color="#EF4444" fontSize={typo.fontSize.caption}>
+                      <Text.Label color="#EF4444" fontSize={typography.fontSize.caption}>
                         {error}
                       </Text.Label>
                     ) : (
-                      <Text.Label color="$text" fontSize={typo.fontSize.caption}>
+                      <Text.Label color="$text" fontSize={typography.fontSize.caption}>
                         {feedback.length}/1000
                       </Text.Label>
                     )}

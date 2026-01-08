@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
-import { hexColors, spacing, radius } from '../../../src/theme';
+import { hexColors } from '../../../src/theme';
 import { Text, FONT_FAMILIES } from '../../../src/components/Typography';
 import { useTheme } from '../../../src/theme';
 import { useTranslation } from '../../../src/i18n';
@@ -32,8 +32,9 @@ function BackButton({
   onPress: () => void; 
   primaryColor: string;
 }) {
-  const { iconSizes } = useResponsive();
+  const { iconSizes, media } = useResponsive();
   const scale = useRef(new RNAnimated.Value(1)).current;
+  const buttonSize = media.topicCardSize * 0.45;
 
   const handlePressIn = () => {
     RNAnimated.spring(scale, {
@@ -62,9 +63,9 @@ function BackButton({
     >
       <RNAnimated.View
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 18,
+          width: buttonSize,
+          height: buttonSize,
+          borderRadius: buttonSize / 2,
           backgroundColor: `${primaryColor}20`,
           justifyContent: 'center',
           alignItems: 'center',
@@ -87,18 +88,19 @@ function CategoryProgressBar({
   isDark: boolean;
   index: number;
 }) {
-  const { typography: typo, iconSizes } = useResponsive();
+  const { typography, iconSizes, spacing } = useResponsive();
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const trackColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const progressColor = category.color_hex || (isDark ? hexColors.dark.primary : hexColors.light.primary);
   const percentage = category.accuracy;
+  const barHeight = spacing.sm;
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).duration(400).springify()}>
-      <YStack gap={spacing.phone.xs}>
+      <YStack gap={spacing.xs}>
       <XStack alignItems="center" justifyContent="space-between">
-        <XStack alignItems="center" gap={spacing.phone.sm}>
-          {getLucideIcon(category.icon, typo.fontSize.title, progressColor)}
+        <XStack alignItems="center" gap={spacing.sm}>
+          {getLucideIcon(category.icon, typography.fontSize.title, progressColor)}
           <Text.Label
             color={textColor}
             fontFamily={FONT_FAMILIES.medium}
@@ -116,9 +118,9 @@ function CategoryProgressBar({
         <View
           style={{
             width: '100%',
-            height: 8,
+            height: barHeight,
             backgroundColor: trackColor,
-            borderRadius: 4,
+            borderRadius: barHeight / 2,
             overflow: 'hidden',
           }}
         >
@@ -127,7 +129,7 @@ function CategoryProgressBar({
               width: `${percentage}%`,
               height: '100%',
               backgroundColor: progressColor,
-              borderRadius: 4,
+              borderRadius: barHeight / 2,
             }}
           />
         </View>
@@ -139,7 +141,7 @@ function CategoryProgressBar({
 export default function CategoriesAccuracyScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography: typo, iconSizes } = useResponsive();
+  const { typography, iconSizes, spacing, radius, media } = useResponsive();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
@@ -199,9 +201,9 @@ export default function CategoriesAccuracyScreen() {
       {/* Header */}
       <Animated.View entering={FadeInUp.duration(400).springify()}>
         <XStack
-          paddingTop={insets.top + spacing.phone.sm}
-          paddingBottom={spacing.phone.md}
-          paddingHorizontal={spacing.phone.lg}
+          paddingTop={insets.top + spacing.sm}
+          paddingBottom={spacing.md}
+          paddingHorizontal={spacing.lg}
           alignItems="center"
           justifyContent="space-between"
           borderBottomWidth={1}
@@ -216,7 +218,7 @@ export default function CategoriesAccuracyScreen() {
           </Text.Title>
           
           {/* Empty spacer to balance the header */}
-          <View style={{ width: 36, height: 36 }} />
+          <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />
         </XStack>
       </Animated.View>
 
@@ -226,17 +228,17 @@ export default function CategoriesAccuracyScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
         }
         contentContainerStyle={{ 
-          padding: spacing.phone.lg,
-          paddingBottom: insets.bottom + spacing.phone.xl,
+          padding: spacing.lg,
+          paddingBottom: insets.bottom + spacing.xl,
         }}
       >
         {categories.length > 0 ? (
           <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
             <YStack
               backgroundColor={cardBg}
-              borderRadius={radius.phone.lg}
-              padding={spacing.phone.lg}
-              gap={spacing.phone.lg}
+              borderRadius={radius.lg}
+              padding={spacing.lg}
+              gap={spacing.lg}
             >
               {categories.map((category, index) => (
                 <CategoryProgressBar

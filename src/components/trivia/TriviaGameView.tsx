@@ -11,7 +11,7 @@ import Animated, {
   SharedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
-import { hexColors, spacing, radius, media } from '../../theme';
+import { hexColors } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
 import type { QuestionWithFact } from '../../services/database';
@@ -57,7 +57,9 @@ export function TriviaGameView({
   t,
 }: TriviaGameViewProps) {
   const insets = useSafeAreaInsets();
-  const { isTablet, media, typography: typo, iconSizes } = useResponsive();
+  const { borderWidths, media, typography, iconSizes, spacing, radius } = useResponsive();
+  const radioSize = iconSizes.lg;
+  const letterBadgeSize = media.topicCardSize * 0.5;
   
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
@@ -99,7 +101,7 @@ export function TriviaGameView({
       
       {/* Header */}
       <XStack 
-        paddingHorizontal={spacing.phone.lg}
+        paddingHorizontal={spacing.lg}
         alignItems="center"
         justifyContent="space-between"
         position="relative"
@@ -125,31 +127,31 @@ export function TriviaGameView({
             position: 'absolute',
             left: 0,
             right: 0,
-            paddingBottom: spacing.phone.xs,
+            paddingBottom: spacing.xs,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Text.Label 
+          <Text.Body 
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
             numberOfLines={1}
           >
             {triviaTitle}
-          </Text.Label>
+          </Text.Body>
         </View>
         
         {/* Timer */}
         <XStack 
           backgroundColor={surfaceColor}
-          paddingHorizontal={spacing.phone.md}
-          paddingVertical={spacing.phone.sm}
-          borderRadius={radius.phone.full}
+          paddingHorizontal={spacing.md}
+          paddingVertical={spacing.sm}
+          borderRadius={radius.full}
           alignItems="center"
-          gap={spacing.phone.sm}
+          gap={spacing.sm}
           zIndex={1}
         >
-          <Timer size={typo.fontSize.title} color={timeRemaining < 30 ? errorColor : primaryColor} />
+          <Timer size={typography.fontSize.title} color={timeRemaining < 30 ? errorColor : primaryColor} />
           <Text.Label 
             fontFamily={FONT_FAMILIES.bold}
             color={timeRemaining < 30 ? errorColor : textColor}
@@ -161,31 +163,31 @@ export function TriviaGameView({
       
       {/* Progress section */}
       <YStack 
-        paddingHorizontal={spacing.phone.lg} 
-        paddingTop={spacing.phone.lg}
-        gap={spacing.phone.sm}
+        paddingHorizontal={spacing.lg} 
+        paddingTop={spacing.lg}
+        gap={spacing.sm}
       >
         <XStack justifyContent="space-between" alignItems="center">
-          <Text.Body color={secondaryTextColor}>
+          <Text.Label color={secondaryTextColor}>
             <Text.Label fontFamily={FONT_FAMILIES.bold} color={textColor}>
               {t('question') || 'Question'} {currentQuestionIndex + 1}
             </Text.Label>
             /{totalQuestions}
-          </Text.Body>
+          </Text.Label>
           {currentQuestion.fact?.categoryData && (
-            <Text.Caption 
+            <Text.Label 
               fontFamily={FONT_FAMILIES.semibold}
               color={currentQuestion.fact.categoryData.color_hex}
             >
               {currentQuestion.fact.categoryData.name}
-            </Text.Caption>
+            </Text.Label>
           )}
         </XStack>
         
         {/* Progress bar */}
         <View 
           style={{ 
-            height: 6, 
+            height: borderWidths.extraHeavy, 
             backgroundColor: borderColor, 
             borderRadius: 3,
             overflow: 'hidden',
@@ -210,8 +212,8 @@ export function TriviaGameView({
         contentContainerStyle={{ 
           flexGrow: 1,
           justifyContent: 'center',
-          paddingHorizontal: spacing.phone.xl,
-          paddingVertical: spacing.phone.lg,
+          paddingHorizontal: spacing.xl,
+          paddingVertical: spacing.lg,
         }}
         showsVerticalScrollIndicator={false}
         bounces={true}
@@ -222,11 +224,11 @@ export function TriviaGameView({
           style={{ alignItems: 'center' }}
         >
           <Text.Title
-            fontSize={typo.fontSize.display}
+            fontSize={typography.fontSize.display}
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
             textAlign="center"
-            lineHeight={typo.lineHeight.display}
+            lineHeight={typography.lineHeight.display}
           >
             {currentQuestion.question_text}
           </Text.Title>
@@ -234,10 +236,10 @@ export function TriviaGameView({
       </ScrollView>
       
       {/* Answers */}
-        <YStack paddingHorizontal={spacing.phone.lg} gap={spacing.phone.md}>
+        <YStack paddingHorizontal={spacing.lg} gap={spacing.md}>
           {isTrueFalse ? (
             // True/False - side by side radio style
-            <XStack gap={spacing.phone.md}>
+            <XStack gap={spacing.md}>
               {shuffledAnswers.map((answer, index) => {
                 const isSelected = selectedAnswer === answer;
                 
@@ -263,18 +265,18 @@ export function TriviaGameView({
                         backgroundColor={optionBg as any}
                         borderWidth={2}
                         borderColor={optionBorder as any}
-                        paddingVertical={spacing.phone.lg}
-                        borderRadius={radius.phone.lg}
+                        paddingVertical={spacing.lg}
+                        borderRadius={radius.lg}
                         alignItems="center"
                         justifyContent="center"
-                        gap={spacing.phone.sm}
+                        gap={spacing.sm}
                       >
                         {/* Radio circle */}
                         <View
                           style={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: 12,
+                            width: radioSize,
+                            height: radioSize,
+                            borderRadius: radioSize / 2,
                             borderWidth: 2,
                             borderColor: isSelected ? primaryColor : borderColor,
                             backgroundColor: isSelected ? primaryColor : 'transparent',
@@ -285,9 +287,9 @@ export function TriviaGameView({
                           {isSelected && (
                             <View
                               style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: 4,
+                                width: radioSize / 3,
+                                height: radioSize / 3,
+                                borderRadius: radioSize / 6,
                                 backgroundColor: '#FFFFFF',
                               }}
                             />
@@ -307,7 +309,7 @@ export function TriviaGameView({
             </XStack>
           ) : (
             // Multiple choice - list with letter badges
-            <YStack gap={spacing.phone.sm}>
+            <YStack gap={spacing.sm}>
               {shuffledAnswers.map((answer, index) => {
                 const isSelected = selectedAnswer === answer;
                 
@@ -336,29 +338,29 @@ export function TriviaGameView({
                         backgroundColor={optionBg as any}
                         borderWidth={1.5}
                         borderColor={optionBorder as any}
-                        paddingVertical={spacing.phone.md}
-                        paddingHorizontal={spacing.phone.md}
-                        borderRadius={radius.phone.lg}
+                        paddingVertical={spacing.md}
+                        paddingHorizontal={spacing.md}
+                        borderRadius={radius.lg}
                         alignItems="center"
-                        gap={spacing.phone.md}
+                        gap={spacing.md}
                       >
                         {/* Letter badge */}
                         <View
                           style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 20,
+                            width: letterBadgeSize,
+                            height: letterBadgeSize,
+                            borderRadius: letterBadgeSize / 2,
                             backgroundColor: badgeBg,
                             justifyContent: 'center',
                             alignItems: 'center',
                           }}
                         >
-                          <Text.Label
+                          <Text.Body
                             fontFamily={FONT_FAMILIES.bold}
                             color={badgeText}
                           >
                             {letterLabels[index]}
-                          </Text.Label>
+                          </Text.Body>
                         </View>
                         
                         {/* Answer text */}
@@ -379,10 +381,10 @@ export function TriviaGameView({
       
       {/* Navigation buttons */}
       <XStack 
-        paddingHorizontal={spacing.phone.lg} 
-        paddingTop={spacing.phone.xl}
-        paddingBottom={spacing.phone.xl}
-        gap={spacing.phone.md}
+        paddingHorizontal={spacing.lg} 
+        paddingTop={spacing.xl}
+        paddingBottom={spacing.xl}
+        gap={spacing.md}
       >
         {/* Previous button */}
         <Pressable 
@@ -395,8 +397,8 @@ export function TriviaGameView({
           <XStack
             backgroundColor={primaryColor}
             height={media.buttonHeight}
-            paddingHorizontal={spacing.phone.lg}
-            borderRadius={radius.phone.lg}
+            paddingHorizontal={spacing.lg}
+            borderRadius={radius.lg}
             justifyContent="center"
             alignItems="center"
             opacity={currentQuestionIndex > 0 ? 1 : 0.4}
@@ -417,25 +419,25 @@ export function TriviaGameView({
           <XStack
             backgroundColor={primaryColor}
             height={media.buttonHeight}
-            borderRadius={radius.phone.lg}
+            borderRadius={radius.lg}
             justifyContent="center"
             alignItems="center"
-            gap={spacing.phone.sm}
+            gap={spacing.sm}
             opacity={isLoadingResults ? 0.8 : 1}
           >
             {isLoadingResults ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <>
-                <Text.Label 
+                <Text.Body 
                   color="#FFFFFF" 
                   fontFamily={FONT_FAMILIES.semibold}
                 >
                   {currentQuestionIndex + 1 >= totalQuestions 
                     ? t('seeResults') 
                     : t('nextQuestion')}
-                </Text.Label>
-                <ChevronRight size={typo.fontSize.title} color="#FFFFFF" />
+                </Text.Body>
+                <ChevronRight size={typography.fontSize.title} color="#FFFFFF" />
               </>
             )}
           </XStack>

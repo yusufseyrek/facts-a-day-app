@@ -22,7 +22,7 @@ export function CategoryQuestCard({
   onPress,
   index,
 }: CategoryQuestCardProps) {
-  const { typography: typo, iconSizes } = useResponsive();
+  const { typography, iconSizes } = useResponsive();
   const progress = category.total > 0
     ? Math.round((category.mastered / category.total) * 100)
     : 0;
@@ -77,7 +77,7 @@ export function CategoryQuestCard({
                 {category.name}
               </Text.Label>
               {isComplete && (
-                <Check size={typo.fontSize.caption} color={successColor} />
+                <Check size={typography.fontSize.caption} color={successColor} />
               )}
             </XStack>
             

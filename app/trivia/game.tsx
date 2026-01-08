@@ -36,7 +36,7 @@ interface TriviaGameState {
 export default function TriviaGameScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography: typo } = useResponsive();
+  const { typography } = useResponsive();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ 

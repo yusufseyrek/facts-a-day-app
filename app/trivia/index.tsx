@@ -7,12 +7,12 @@ import {
   Pressable,
   View,
 } from 'react-native';
-import { YStack, XStack, styled } from 'tamagui';
+import { YStack, XStack } from 'tamagui';
 import { Brain, Flame, Sparkles, ArrowRight } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { hexColors, spacing, radius } from '../../src/theme';
+import { hexColors } from '../../src/theme';
 import {
   ScreenContainer,
   ScreenHeader,
@@ -34,23 +34,13 @@ import * as triviaService from '../../src/services/trivia';
 import type { CategoryWithProgress } from '../../src/services/trivia';
 import { useResponsive } from '../../src/utils/useResponsive';
 
-// Grid styled components
-const TriviaGrid = styled(View, {
-  gap: spacing.phone.md,
-});
-
-const TriviaRow = styled(XStack, {
-  gap: spacing.phone.md,
-});
-
-
 export default function TriviaScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
   const isDark = theme === 'dark';
   const iconColor = useIconColor();
-  const { isTablet, typography: typo, config, iconSizes } = useResponsive();
+  const { isTablet, typography, config, iconSizes, spacing, radius } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -221,7 +211,7 @@ export default function TriviaScreen() {
   // Streak badge for header (only show when streak > 0)
   const streakBadge = dailyStreak > 0 ? (
     <XStack alignItems="center" gap={4}>
-      <Flame size={typo.fontSize.title} color={orangeColor} />
+      <Flame size={typography.fontSize.title} color={orangeColor} />
       <Text.Label 
         color={orangeColor}
         fontFamily={FONT_FAMILIES.semibold}
@@ -262,7 +252,7 @@ export default function TriviaScreen() {
             />
           </Animated.View>
           
-          <ContentContainer gap={spacing.phone.lg} paddingBottom={spacing.phone.md}>
+          <ContentContainer gap={spacing.lg} paddingBottom={spacing.md}>
             {/* Always show Stats */}
             <Animated.View entering={FadeInDown.delay(50).duration(300)}>
               <TriviaStatsHero
@@ -278,18 +268,18 @@ export default function TriviaScreen() {
               <>
                 {/* Section title */}
                 <Animated.View entering={FadeInDown.delay(100).duration(300)}>
-                  <Text.Label
+                  <Text.Body
                     color={textColor}
                     fontFamily={FONT_FAMILIES.semibold}
-                    marginTop={spacing.phone.sm}
+                    marginTop={spacing.md}
                   >
                     {t('triviaGameModes')}
-                  </Text.Label>
+                  </Text.Body>
                 </Animated.View>
-                <TriviaGrid>
+                <View style={{ gap: spacing.md }}>
                   {/* First row: Daily Trivia + Mixed Trivia */}
                   <Animated.View entering={FadeInDown.delay(150).duration(300)}>
-                    <TriviaRow>
+                    <XStack gap={spacing.md}>
                       <TriviaGridCard
                         type="daily"
                         title={t('dailyTrivia')}
@@ -314,13 +304,13 @@ export default function TriviaScreen() {
                         onPress={showMixedTriviaIntro}
                         centerContent={isTablet}
                       />
-                    </TriviaRow>
+                    </XStack>
                   </Animated.View>
                   
                   {/* Category rows */}
                   {categoryRows.map((row, rowIndex) => (
                     <Animated.View key={`row-${rowIndex}`} entering={FadeInDown.delay(200 + rowIndex * 50).duration(300)}>
-                      <TriviaRow>
+                      <XStack gap={spacing.md}>
                         {row.map((category) => (
                           <TriviaGridCard
                             key={category.slug}
@@ -340,26 +330,26 @@ export default function TriviaScreen() {
                             <View key={`spacer-${i}`} style={{ flex: 1 }} />
                           ))
                         )}
-                      </TriviaRow>
+                      </XStack>
                     </Animated.View>
                   ))}
-                </TriviaGrid>
+                </View>
               </>
             ) : (
               /* Engaging Empty State */
               <Animated.View entering={FadeInDown.duration(400).delay(200)}>
                 <YStack
                   backgroundColor={cardBg}
-                  borderRadius={radius.phone.lg}
-                  padding={spacing.phone.xl}
+                  borderRadius={radius.lg}
+                  padding={spacing.xl}
                   alignItems="center"
-                  gap={spacing.phone.lg}
+                  gap={spacing.lg}
                 >
                   {/* Animated Icon */}
                   <YStack
-                    width={80}
-                    height={80}
-                    borderRadius={40}
+                    width={iconSizes.heroLg}
+                    height={iconSizes.heroLg}
+                    borderRadius={iconSizes.heroLg / 2}
                     backgroundColor={primaryLightColor}
                     justifyContent="center"
                     alignItems="center"
@@ -368,7 +358,7 @@ export default function TriviaScreen() {
                   </YStack>
                   
                   {/* Title & Description */}
-                  <YStack alignItems="center" gap={spacing.phone.sm}>
+                  <YStack alignItems="center" gap={spacing.sm}>
                     <Text.Title
                       color={textColor}
                       textAlign="center"
@@ -393,12 +383,12 @@ export default function TriviaScreen() {
                   >
                     <XStack
                       backgroundColor={primaryColor}
-                      paddingVertical={spacing.phone.md}
-                      paddingHorizontal={spacing.phone.xl}
-                      borderRadius={radius.phone.md}
+                      paddingVertical={spacing.md}
+                      paddingHorizontal={spacing.xl}
+                      borderRadius={radius.md}
                       justifyContent="center"
                       alignItems="center"
-                      gap={spacing.phone.sm}
+                      gap={spacing.sm}
                     >
                       <Text.Label
                         color="#FFFFFF"
@@ -406,7 +396,7 @@ export default function TriviaScreen() {
                       >
                         {t('startExploring')}
                       </Text.Label>
-                      <ArrowRight size={typo.fontSize.title} color="#FFFFFF" />
+                      <ArrowRight size={typography.fontSize.title} color="#FFFFFF" />
                     </XStack>
                   </Pressable>
                 </YStack>

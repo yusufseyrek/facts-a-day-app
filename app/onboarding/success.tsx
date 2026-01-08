@@ -240,7 +240,7 @@ const ProgressBar = ({ duration, theme }: { duration: number; theme: "light" | "
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography: typo, iconSizes } = useResponsive();
+  const { typography, iconSizes } = useResponsive();
   const router = useRouter();
   const { completeOnboarding, selectedCategories } = useOnboarding();
 
@@ -629,12 +629,12 @@ export default function OnboardingSuccessScreen() {
               }}
             >
               <Text.Headline
-                fontSize={typo.fontSize.display}
+                fontSize={typography.fontSize.display}
                 fontFamily={FONT_FAMILIES.extrabold}
                 textAlign="center"
                 color="$text"
                 letterSpacing={-1}
-                lineHeight={typo.lineHeight.display}
+                lineHeight={typography.lineHeight.display}
               >
                 {word}
               </Text.Headline>
@@ -651,10 +651,10 @@ export default function OnboardingSuccessScreen() {
           }}
         >
           <Text.Body
-            fontSize={typo.fontSize.title}
+            fontSize={typography.fontSize.title}
             textAlign="center"
             color="$textSecondary"
-            lineHeight={typo.lineHeight.title}
+            lineHeight={typography.lineHeight.title}
           >
             {t("welcomeToApp")}
           </Text.Body>

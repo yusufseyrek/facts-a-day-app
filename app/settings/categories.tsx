@@ -71,13 +71,13 @@ export default function CategoriesSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const { typography: typo, config, iconSizes } = useResponsive();
+  const { typography, config, iconSizes } = useResponsive();
 
   // Responsive sizing for tablets
   const numColumns = config.categoryColumns;
   const iconSize = iconSizes.xl;
-  const labelFontSize = typo.fontSize.caption;
-  const secondaryFontSize = typo.fontSize.body;
+  const labelFontSize = typography.fontSize.caption;
+  const secondaryFontSize = typography.fontSize.body;
 
   // Enter animations
   const headerOpacity = useRef(new Animated.Value(0)).current;

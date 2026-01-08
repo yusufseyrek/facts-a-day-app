@@ -65,7 +65,7 @@ export default function NotificationsScreen() {
   const [isScheduling, setIsScheduling] = useState(false);
 
   // Responsive sizing - hook handles tablet detection
-  const { typography: typo, iconSizes } = useResponsive();
+  const { typography, iconSizes } = useResponsive();
 
   // Enter animations
   const progressOpacity = useRef(new Animated.Value(0)).current;

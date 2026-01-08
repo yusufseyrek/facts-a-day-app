@@ -8,12 +8,14 @@ import {
   getConfig,
   getMedia,
   getRadius,
+  getBorderWidths,
   typography as responsiveTypography,
   spacing as responsiveSpacing,
   iconSizes as responsiveIconSizes,
   config as responsiveConfig,
   media as responsiveMedia,
   radius as responsiveRadius,
+  borderWidths as responsiveBorderWidths,
   RESPONSIVE_CONSTANTS,
 } from './responsive';
 
@@ -24,6 +26,7 @@ export type ResponsiveIconSizes = typeof responsiveIconSizes.phone | typeof resp
 export type ResponsiveConfig = typeof responsiveConfig.phone | typeof responsiveConfig.tablet;
 export type ResponsiveMedia = typeof responsiveMedia.phone | typeof responsiveMedia.tablet;
 export type ResponsiveRadius = typeof responsiveRadius.phone | typeof responsiveRadius.tablet;
+export type ResponsiveBorderWidths = typeof responsiveBorderWidths.phone | typeof responsiveBorderWidths.tablet;
 
 export interface ResponsiveValues {
   /** Current screen width */
@@ -46,6 +49,8 @@ export interface ResponsiveValues {
   media: ResponsiveMedia;
   /** Radius values (sm, md, lg, xl, full) */
   radius: ResponsiveRadius;
+  /** Border width values (hairline, thin, medium, thick, heavy, extraHeavy) */
+  borderWidths: ResponsiveBorderWidths;
 }
 
 /**
@@ -70,6 +75,7 @@ export const useResponsive = (): ResponsiveValues => {
       config: getConfig(width),
       media: getMedia(width),
       radius: getRadius(width),
+      borderWidths: getBorderWidths(width),
     };
   }, [width, height]);
 };

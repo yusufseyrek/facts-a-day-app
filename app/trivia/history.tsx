@@ -19,7 +19,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
-import { hexColors, spacing, radius } from '../../src/theme';
+import { hexColors } from '../../src/theme';
 import { Text, FONT_FAMILIES } from '../../src/components/Typography';
 import { SectionHeaderContainer } from '../../src/components/ScreenLayout';
 import { useTheme } from '../../src/theme';
@@ -40,8 +40,9 @@ function BackButton({
   onPress: () => void; 
   primaryColor: string;
 }) {
-  const { iconSizes } = useResponsive();
+  const { iconSizes, media } = useResponsive();
   const scale = useRef(new RNAnimated.Value(1)).current;
+  const buttonSize = media.topicCardSize * 0.45; // Scale with tablet
 
   const handlePressIn = () => {
     RNAnimated.spring(scale, {
@@ -70,9 +71,9 @@ function BackButton({
     >
       <RNAnimated.View
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 18,
+          width: buttonSize,
+          height: buttonSize,
+          borderRadius: buttonSize / 2,
           backgroundColor: `${primaryColor}20`,
           justifyContent: 'center',
           alignItems: 'center',
@@ -99,7 +100,8 @@ function SessionCard({
   onPress?: () => void;
   dateFormat?: 'time' | 'relative';
 }) {
-  const { typography: typo, iconSizes } = useResponsive();
+  const { typography, iconSizes, spacing, radius, media } = useResponsive();
+  const iconContainerSize = media.topicCardSize * 0.5; // Scale with tablet
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
@@ -172,15 +174,15 @@ function SessionCard({
       return (
         <View
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 10,
+            width: iconContainerSize,
+            height: iconContainerSize,
+            borderRadius: radius.sm,
             backgroundColor: `${iconColor}20`,
             justifyContent: 'center',
             alignItems: 'center',
           }}
         >
-          {getLucideIcon(session.category.icon, 22, iconColor)}
+          {getLucideIcon(session.category.icon, iconSizes.md, iconColor)}
         </View>
       );
     }
@@ -191,9 +193,9 @@ function SessionCard({
     return (
       <View
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
+          width: iconContainerSize,
+          height: iconContainerSize,
+          borderRadius: radius.sm,
           backgroundColor: `${iconColor}20`,
           justifyContent: 'center',
           alignItems: 'center',
@@ -215,10 +217,10 @@ function SessionCard({
     >
       <XStack
         backgroundColor={cardBg}
-        borderRadius={radius.phone.lg}
-        padding={spacing.phone.lg}
+        borderRadius={radius.lg}
+        padding={spacing.lg}
         alignItems="center"
-        gap={spacing.phone.sm}
+        gap={spacing.sm}
       >
         {getIcon()}
         <YStack flex={1} gap={2}>
@@ -283,7 +285,7 @@ type HistoryListItem = SectionHeaderItem | SessionItem;
 export default function ActivityHistoryScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography: typo } = useResponsive();
+  const { typography, spacing, radius, iconSizes, media } = useResponsive();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
@@ -406,7 +408,7 @@ export default function ActivityHistoryScreen() {
   const renderItem = useCallback(({ item }: ListRenderItemInfo<HistoryListItem>) => {
     if (item.type === ITEM_TYPES.SECTION_HEADER) {
       return (
-        <SectionHeaderContainer paddingTop={spacing.phone.md}>
+        <SectionHeaderContainer paddingTop={spacing.md}>
           <Text.Title>{item.title}</Text.Title>
         </SectionHeaderContainer>
       );
@@ -414,7 +416,7 @@ export default function ActivityHistoryScreen() {
     
     return (
       <Animated.View entering={FadeInDown.delay(item.index * 30).duration(350).springify()}>
-        <View style={{ paddingHorizontal: spacing.phone.lg, paddingVertical: spacing.phone.xs }}>
+        <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.xs }}>
           <SessionCard
             session={item.session}
             isDark={isDark}
@@ -424,7 +426,7 @@ export default function ActivityHistoryScreen() {
         </View>
       </Animated.View>
     );
-  }, [isDark, t, handleSessionClick]);
+  }, [isDark, t, handleSessionClick, spacing]);
 
   // FlashList getItemType
   const getItemType = useCallback((item: HistoryListItem) => {
@@ -504,9 +506,9 @@ export default function ActivityHistoryScreen() {
       {/* Header */}
       <Animated.View entering={FadeInUp.duration(400).springify()}>
         <XStack
-          paddingTop={insets.top + spacing.phone.sm}
-          paddingBottom={spacing.phone.md}
-          paddingHorizontal={spacing.phone.lg}
+          paddingTop={insets.top + spacing.sm}
+          paddingBottom={spacing.md}
+          paddingHorizontal={spacing.lg}
           alignItems="center"
           justifyContent="space-between"
           borderBottomWidth={1}
@@ -521,7 +523,7 @@ export default function ActivityHistoryScreen() {
           </Text.Title>
           
           {/* Empty spacer to balance the header */}
-          <View style={{ width: 36, height: 36 }} />
+          <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />
         </XStack>
       </Animated.View>
 
@@ -545,7 +547,7 @@ export default function ActivityHistoryScreen() {
               <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
             }
             contentContainerStyle={{ 
-              paddingBottom: spacing.phone.sm,
+              paddingBottom: spacing.sm,
             }}
             {...FLASH_LIST_SETTINGS}
           />

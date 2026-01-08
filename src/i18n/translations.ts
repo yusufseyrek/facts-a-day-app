@@ -193,7 +193,7 @@ export const translations = {
     triviaEmptyTitle: "Bereit, Ihr Wissen zu testen?",
     triviaEmptyDescription: "Lesen Sie einige Fakten, dann kommen Sie zurück, um Ihr Wissen mit interaktiven Trivia-Fragen zu testen!",
     startExploring: "Fakten entdecken",
-    triviaGameModes: "Kategorien",
+    triviaGameModes: "Kategorie zum Spielen wählen:",
     categoryProgress: "%{mastered} von %{total} beherrscht",
     categoryComplete: "Alles beherrscht!",
 
@@ -473,7 +473,7 @@ export const translations = {
     triviaEmptyTitle: "Ready to test your knowledge?",
     triviaEmptyDescription: "Read some facts first, then come back to test what you've learned with interactive trivia questions!",
     startExploring: "Start Exploring",
-    triviaGameModes: "Categories",
+    triviaGameModes: "Choose a Category to Play:",
     categoryProgress: "%{mastered} of %{total} mastered",
     categoryComplete: "All mastered!",
 
@@ -753,7 +753,7 @@ export const translations = {
     triviaEmptyTitle: "¿Listo para probar tu conocimiento?",
     triviaEmptyDescription: "Lee algunos datos primero, luego vuelve para probar lo que has aprendido con preguntas de trivia interactivas!",
     startExploring: "Empezar a explorar",
-    triviaGameModes: "Categorías",
+    triviaGameModes: "Elige una categoría para jugar:",
     categoryProgress: "%{mastered} de %{total} dominados",
     categoryComplete: "¡Todo dominado!",
 
@@ -1033,7 +1033,7 @@ export const translations = {
     triviaEmptyTitle: "Prêt à tester vos connaissances?",
     triviaEmptyDescription: "Lisez d'abord quelques faits, puis revenez pour tester ce que vous avez appris avec des questions de trivia interactives!",
     startExploring: "Commencer à explorer",
-    triviaGameModes: "Categories",
+    triviaGameModes: "Choisissez une catégorie pour jouer:",
     categoryProgress: "%{mastered} sur %{total} maîtrisés",
     categoryComplete: "Tout maîtrisé !",
 
@@ -1312,7 +1312,7 @@ export const translations = {
     triviaEmptyTitle: "知識をテストする準備はできましたか？",
     triviaEmptyDescription: "まず豆知識を読んでから、インタラクティブなトリビアで学んだことをテストしましょう！",
     startExploring: "探索を始める",
-    triviaGameModes: "カテゴリー",
+    triviaGameModes: "プレイするカテゴリを選択:",
     categoryProgress: "%{total}中%{mastered}問マスター",
     categoryComplete: "全問マスター！",
 
@@ -1588,7 +1588,7 @@ export const translations = {
     triviaEmptyTitle: "지식을 테스트할 준비가 되셨나요?",
     triviaEmptyDescription: "먼저 정보를 읽은 다음, 대화형 트리비아 질문으로 배운 내용을 테스트하세요!",
     startExploring: "탐색 시작",
-    triviaGameModes: "카테고리",
+    triviaGameModes: "플레이할 카테고리 선택:",
     categoryProgress: "%{total}개 중 %{mastered}개 마스터",
     categoryComplete: "모두 마스터!",
 
@@ -1867,7 +1867,7 @@ export const translations = {
     triviaEmptyTitle: "Bilgilerinizi test etmeye hazır mısınız?",
     triviaEmptyDescription: "Önce bazı bilgileri okuyun, ardından öğrendiklerinizi interaktif trivia sorularıyla test etmeye gelin!",
     startExploring: "Keşfetmeye Başla",
-    triviaGameModes: "Kategoriler",
+    triviaGameModes: "Oynamak için kategori seçin:",
     categoryProgress: "%{total} sorudan %{mastered} ustalaşılan",
     categoryComplete: "Tamamı ustalaşıldı!",
 
@@ -2142,7 +2142,7 @@ export const translations = {
     triviaEmptyTitle: "准备测试您的知识了吗？",
     triviaEmptyDescription: "先阅读一些知识，然后回来通过互动问答测试您学到的内容！",
     startExploring: "开始探索",
-    triviaGameModes: "类别",
+    triviaGameModes: "选择类别开始游戏:",
     categoryProgress: "%{total}题中已掌握%{mastered}题",
     categoryComplete: "全部掌握！",
 

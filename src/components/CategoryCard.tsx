@@ -45,7 +45,7 @@ export interface CategoryCardProps {
 
 const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress, labelFontSize }: CategoryCardProps) => {
   const { theme } = useTheme();
-  const { isTablet, typography: typo, iconSizes } = useResponsive();
+  const { isTablet, typography, iconSizes } = useResponsive();
 
   // Animation values
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -172,7 +172,7 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
                 fontFamily={FONT_FAMILIES.semibold}
                 color={selected ? contrastColor : '$text'}
                 textAlign="center"
-                fontSize={labelFontSize ?? typo.fontSize.caption}
+                fontSize={labelFontSize ?? typography.fontSize.caption}
                 numberOfLines={2}
               >
                 {label}

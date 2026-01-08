@@ -24,7 +24,7 @@ export function DailyChallengeCard({
   onPress,
   t,
 }: DailyChallengeCardProps) {
-  const { typography: typo, iconSizes } = useResponsive();
+  const { typography, iconSizes } = useResponsive();
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;

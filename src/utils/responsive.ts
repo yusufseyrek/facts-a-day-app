@@ -41,7 +41,7 @@ const tabletConfig = {
   categoryColumns: 5,
   discoverColumns: 2,
   triviaCategoriesPerRow: 4,
-  cardWidthMultiplier: 0.45,
+  cardWidthMultiplier: 0.70,
   headerPaddingAdjustment: 4,
 } as const;
 
@@ -70,6 +70,7 @@ const phoneMedia = {
   chipHeight: 28,
   chipClearButtonSize: 20,
   categoryIconContainerSize: 48,
+  answerLabelWidth: 70,
 } as const;
 
 export const media = {
@@ -215,6 +216,28 @@ export const radius = {
 } as const;
 
 // ============================================================================
+// BORDER WIDTHS
+// ============================================================================
+
+/**
+ * Base border width values for phones.
+ * Tablet values are automatically scaled by 1.5x.
+ */
+const phoneBorderWidths = {
+  hairline: 1,
+  thin: 1.5,
+  medium: 2,
+  thick: 3,
+  heavy: 4,
+  extraHeavy: 6,
+} as const;
+
+export const borderWidths = {
+  phone: phoneBorderWidths,
+  tablet: scaleObject(phoneBorderWidths),
+} as const;
+
+// ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
@@ -283,6 +306,14 @@ export const getRadius = (screenWidth: number) => {
   return isTabletDevice(screenWidth) ? radius.tablet : radius.phone;
 };
 
+/**
+ * Get border width values for the current screen width.
+ * @param screenWidth - Current screen width
+ */
+export const getBorderWidths = (screenWidth: number) => {
+  return isTabletDevice(screenWidth) ? borderWidths.tablet : borderWidths.phone;
+};
+
 // Export constants for external use
 export const RESPONSIVE_CONSTANTS = {
   TABLET_BREAKPOINT,
@@ -296,3 +327,4 @@ export type Typography = typeof typography.phone;
 export type Spacing = typeof spacing.phone;
 export type IconSizes = typeof iconSizes.phone;
 export type Radius = typeof radius.phone;
+export type BorderWidths = typeof borderWidths.phone;

@@ -69,6 +69,12 @@ function TriviaTabIcon({ focused, isDark, hasBadge }: { focused: boolean; isDark
     : hexColors.light.primary; // #0077A8 - teal
 
   const shadowColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
+  
+  // Calculate container size: icon + padding on both sides
+  const containerPadding = spacing.sm;
+  const containerSize = iconSizes.lg + containerPadding * 2;
+  const badgeSize = Math.round(containerSize * 0.35);
+  const badgeInnerSize = Math.round(badgeSize * 0.7);
 
   return (
     <View
@@ -78,17 +84,27 @@ function TriviaTabIcon({ focused, isDark, hasBadge }: { focused: boolean; isDark
           backgroundColor: bgColor,
           shadowColor,
           opacity: focused ? 1 : 0.85,
-          padding: spacing.xl,
-          width: iconSizes.lg,
-          height: iconSizes.lg,
+          padding: containerPadding,
+          width: containerSize,
+          height: containerSize,
           borderRadius: radius.phone.full,
         },
       ]}
     >
       <Brain size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />
       {hasBadge && (
-        <View style={styles.triviaBadge}>
-          <View style={styles.triviaBadgeInner} />
+        <View style={[styles.triviaBadge, { 
+          width: badgeSize, 
+          height: badgeSize, 
+          borderRadius: badgeSize / 2,
+          top: -badgeSize * 0.15,
+          right: -badgeSize * 0.15,
+        }]}>
+          <View style={[styles.triviaBadgeInner, {
+            width: badgeInnerSize,
+            height: badgeInnerSize,
+            borderRadius: badgeInnerSize / 2,
+          }]} />
         </View>
       )}
     </View>
@@ -133,19 +149,11 @@ const styles = StyleSheet.create({
   },
   triviaBadge: {
     position: "absolute",
-    top: -2,
-    right: -2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
   },
   triviaBadgeInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
     backgroundColor: "#FF4757", // Attention-grabbing red
   },
 });
