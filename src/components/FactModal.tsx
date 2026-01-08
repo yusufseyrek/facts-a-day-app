@@ -132,7 +132,7 @@ function formatLastUpdated(dateString: string, locale: string): string {
 export function FactModal({ fact, onClose }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, spacing, iconSizes, isTablet, screenWidth: SCREEN_WIDTH, screenHeight: SCREEN_HEIGHT, gridLayout } = useResponsive();
+  const { typography, spacing, iconSizes, isTablet, screenWidth: SCREEN_WIDTH, screenHeight: SCREEN_HEIGHT, config } = useResponsive();
 
   const insets = useSafeAreaInsets();
   const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
@@ -284,7 +284,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   // Calculate dynamic header height first (needed for transition calculations)
   const basePaddingTop = Platform.OS === "ios" ? spacing.lg : insets.top + spacing.sm;
   const basePaddingBottom = Platform.OS === "ios" ? spacing.lg : spacing.md;
-  const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight + gridLayout.headerPaddingAdjustment;
+  const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight + config.headerPaddingAdjustment;
   const minHeaderHeight = Platform.OS === "ios" ? 100 : 70 + insets.top;
   const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
 

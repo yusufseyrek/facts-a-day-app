@@ -1,6 +1,6 @@
 import { createTamagui, createTokens } from "@tamagui/core";
 import { hexColors } from "./hexColors";
-import { typography, spacing, radius, componentSizes } from "../utils/responsive";
+import { typography, spacing, radius, media } from "../utils/responsive";
 
 const tamaguiTokens = createTokens({
   color: {
@@ -82,13 +82,13 @@ const tamaguiTokens = createTokens({
     4: spacing.phone.lg,
     5: spacing.phone.xl,
     6: spacing.phone.xxl,
-    7: componentSizes.phone.buttonHeight,
-    8: componentSizes.phone.topicCardSize,
-    9: componentSizes.phone.colorSwatchSize,
+    7: media.phone.buttonHeight,
+    8: media.phone.topicCardSize,
+    9: media.phone.colorSwatchSize,
     // Semantic tokens for specific use cases
-    buttonHeight: componentSizes.phone.buttonHeight,
-    topicCard: componentSizes.phone.topicCardSize,
-    colorSwatch: componentSizes.phone.colorSwatchSize,
+    buttonHeight: media.phone.buttonHeight,
+    topicCard: media.phone.topicCardSize,
+    colorSwatch: media.phone.colorSwatchSize,
   },
   radius: {
     sm: radius.phone.sm,

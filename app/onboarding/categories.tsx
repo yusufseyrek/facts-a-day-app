@@ -69,11 +69,11 @@ export default function Categories() {
   } = useOnboarding();
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { typography: typo, gridLayout } = useResponsive();
+  const { typography: typo, config, iconSizes } = useResponsive();
 
   // Responsive sizing for tablets
-  const numColumns = gridLayout.categoryColumns;
-  const iconSize = gridLayout.categoryIconSize;
+  const numColumns = config.categoryColumns;
+  const iconSize = iconSizes.xl;
   const labelFontSize = typo.fontSize.caption;
 
   // Track if we've already logged the onboarding start event

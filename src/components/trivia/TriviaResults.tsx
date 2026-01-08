@@ -424,10 +424,10 @@ export function TriviaResults({
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { screenWidth, typography: typo, gridLayout, iconSizes } = useResponsive();
+  const { screenWidth, typography: typo, config, iconSizes } = useResponsive();
   
   // Calculate card width: 45% for tablets (two cards side by side), 85% for phones
-  const cardWidth = screenWidth * gridLayout.cardWidthMultiplier;
+  const cardWidth = screenWidth * config.cardWidthMultiplier;
   
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;

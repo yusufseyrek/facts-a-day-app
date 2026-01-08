@@ -154,7 +154,7 @@ export default function TabLayout() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { iconSizes,componentSizes } = useResponsive();
+  const { iconSizes, media } = useResponsive();
   const [hasDailyTrivia, setHasDailyTrivia] = useState(false);
 
   // Check for daily trivia availability
@@ -212,7 +212,7 @@ export default function TabLayout() {
           backgroundColor,
           borderTopColor: borderColor,
           borderTopWidth: 1,
-          height: componentSizes.tabBarHeight + insets.bottom,
+          height: media.tabBarHeight + insets.bottom,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 10,
         },

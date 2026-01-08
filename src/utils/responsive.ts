@@ -19,22 +19,67 @@ const scaleObject = <T extends Record<string, number>>(obj: T): T => {
   ) as T;
 };
 
-/**
- * Get current screen dimensions
- * Using a function to ensure we get fresh values when orientation changes
- */
-export const getScreenDimensions = () => {
-  const { width, height } = Dimensions.get('window');
-  return { width, height };
-};
+// ============================================================================
+// CONFIG - Non-dimension values (counts, multipliers, adjustments)
+// ============================================================================
 
 /**
- * Check if current device is a tablet
- * @param screenWidth - Current screen width
+ * Configuration values that differ between phone and tablet.
+ * These are NOT scaled - each device type has its own explicit values.
  */
-export const isTabletDevice = (screenWidth: number): boolean => {
-  return screenWidth >= TABLET_BREAKPOINT;
-};
+const phoneConfig = {
+  maxLines: 3,
+  categoryColumns: 3,
+  discoverColumns: 2,
+  triviaCategoriesPerRow: 2,
+  cardWidthMultiplier: 0.85,
+  headerPaddingAdjustment: 8,
+} as const;
+
+const tabletConfig = {
+  maxLines: 3,
+  categoryColumns: 5,
+  discoverColumns: 2,
+  triviaCategoriesPerRow: 4,
+  cardWidthMultiplier: 0.45,
+  headerPaddingAdjustment: 4,
+} as const;
+
+export const config = {
+  phone: phoneConfig,
+  tablet: tabletConfig,
+} as const;
+
+// ============================================================================
+// MEDIA - Dimension values (widths, heights, sizes)
+// Tablet values are automatically scaled by 1.5x
+// ============================================================================
+
+/**
+ * Media/dimension values for components.
+ * Tablet values are automatically scaled by 1.5x.
+ */
+const phoneMedia = {
+  modalMaxWidth: 340,
+  buttonHeight: 56,
+  topicCardSize: 80,
+  colorSwatchSize: 72,
+  tabBarHeight: 56,
+  searchInputHeight: 44,
+  clearButtonSize: 28,
+  chipHeight: 28,
+  chipClearButtonSize: 20,
+  categoryIconContainerSize: 48,
+} as const;
+
+export const media = {
+  phone: phoneMedia,
+  tablet: scaleObject(phoneMedia),
+} as const;
+
+// ============================================================================
+// TYPOGRAPHY
+// ============================================================================
 
 /**
  * Base typography values for phones.
@@ -91,6 +136,10 @@ export const typography = {
   },
 } as const;
 
+// ============================================================================
+// SPACING
+// ============================================================================
+
 /**
  * Base spacing values for phones.
  * Tablet values are automatically scaled by 1.5x.
@@ -109,15 +158,20 @@ export const spacing = {
   tablet: scaleObject(phoneSpacing),
 } as const;
 
+// ============================================================================
+// ICON SIZES
+// ============================================================================
+
 /**
  * Base icon sizes for phones.
  * Tablet values are automatically scaled by 1.5x.
  * 
  * Size hierarchy (phone → tablet):
- * - sm: 16 → 24 - Check marks, badges, small indicators
- * - md: 20 → 30 - Settings icons, chevrons, close buttons
- * - lg: 24 → 36 - Navigation, tab bar icons, headers
- * - xl: 32 → 48 - Extra large icons
+ * - xs: 16 → 24 - Check marks, badges, small indicators
+ * - sm: 20 → 30 - Settings icons, chevrons, close buttons
+ * - md: 24 → 36 - Navigation, tab bar icons, headers, discover category icons
+ * - lg: 28 → 42 - Larger icons
+ * - xl: 32 → 48 - Category cards icons
  * - hero: 48 → 72 - Hero/display icons (empty state, onboarding)
  * - heroLg: 64 → 96 - Large hero icons, containers
  */
@@ -136,52 +190,9 @@ export const iconSizes = {
   tablet: scaleObject(phoneIconSizes),
 } as const;
 
-/**
- * Base component-specific sizes for phones.
- * Tablet values are automatically scaled by 1.5x.
- */
-const phoneComponentSizes = {
-  modalMaxWidth: 340,
-  maxLines: 3,
-  buttonHeight: 56,
-  topicCardSize: 80,
-  colorSwatchSize: 72,
-  tabBarHeight: 56,
-} as const;
-
-export const componentSizes = {
-  phone: phoneComponentSizes,
-  tablet: scaleObject(phoneComponentSizes),
-} as const;
-
-/**
- * Grid layout configuration for different screen sizes.
- * These values control how many columns/items are displayed in grids.
- */
-const phoneGridLayout = {
-  categoryColumns: 3,           // Categories grid (onboarding, settings)
-  discoverColumns: 2,           // Discover category grid
-  triviaCategoriesPerRow: 2,    // Trivia categories per row
-  categoryIconSize: 32,         // Icon size in category cards
-  discoverIconSize: 24,         // Icon size in discover category cards
-  cardWidthMultiplier: 0.85,    // Card width as percentage of screen width
-  headerPaddingAdjustment: 8,   // Small padding adjustment for headers
-} as const;
-
-const tabletGridLayout = {
-  categoryColumns: 5,
-  discoverColumns: 3,
-  triviaCategoriesPerRow: 4,
-  categoryIconSize: 48,
-  discoverIconSize: 28,
-  cardWidthMultiplier: 0.45,
-  headerPaddingAdjustment: 4,
-} as const;
-
-export const gridLayout = {
-  phone: phoneGridLayout,
-  tablet: tabletGridLayout,
-} as const;
+// ============================================================================
+// RADIUS
+// ============================================================================
 
 /**
  * Base radius values for phones.
@@ -202,6 +213,43 @@ export const radius = {
     full: phoneRadius.full, // Keep full as-is (already very large)
   },
 } as const;
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Get current screen dimensions
+ * Using a function to ensure we get fresh values when orientation changes
+ */
+export const getScreenDimensions = () => {
+  const { width, height } = Dimensions.get('window');
+  return { width, height };
+};
+
+/**
+ * Check if current device is a tablet
+ * @param screenWidth - Current screen width
+ */
+export const isTabletDevice = (screenWidth: number): boolean => {
+  return screenWidth >= TABLET_BREAKPOINT;
+};
+
+/**
+ * Get config values for the current screen width.
+ * @param screenWidth - Current screen width
+ */
+export const getConfig = (screenWidth: number) => {
+  return isTabletDevice(screenWidth) ? config.tablet : config.phone;
+};
+
+/**
+ * Get media values for the current screen width.
+ * @param screenWidth - Current screen width
+ */
+export const getMedia = (screenWidth: number) => {
+  return isTabletDevice(screenWidth) ? media.tablet : media.phone;
+};
 
 /**
  * Get typography values for the current screen width.
@@ -228,22 +276,6 @@ export const getIconSizes = (screenWidth: number) => {
 };
 
 /**
- * Get component sizes for the current screen width.
- * @param screenWidth - Current screen width
- */
-export const getComponentSizes = (screenWidth: number) => {
-  return isTabletDevice(screenWidth) ? componentSizes.tablet : componentSizes.phone;
-};
-
-/**
- * Get grid layout values for the current screen width.
- * @param screenWidth - Current screen width
- */
-export const getGridLayout = (screenWidth: number) => {
-  return isTabletDevice(screenWidth) ? gridLayout.tablet : gridLayout.phone;
-};
-
-/**
  * Get radius values for the current screen width.
  * @param screenWidth - Current screen width
  */
@@ -258,9 +290,9 @@ export const RESPONSIVE_CONSTANTS = {
 };
 
 // Type exports
+export type Config = typeof config.phone;
+export type Media = typeof media.phone;
 export type Typography = typeof typography.phone;
 export type Spacing = typeof spacing.phone;
 export type IconSizes = typeof iconSizes.phone;
-export type ComponentSizes = typeof componentSizes.phone;
-export type GridLayout = typeof gridLayout.phone;
 export type Radius = typeof radius.phone;

@@ -50,7 +50,7 @@ export default function TriviaScreen() {
   const router = useRouter();
   const isDark = theme === 'dark';
   const iconColor = useIconColor();
-  const { isTablet, typography: typo, gridLayout, iconSizes } = useResponsive();
+  const { isTablet, typography: typo, config, iconSizes } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -241,7 +241,7 @@ export default function TriviaScreen() {
   };
 
   // On tablets, show 4 categories per row; on phones, show 2
-  const categoriesPerRow = gridLayout.triviaCategoriesPerRow;
+  const categoriesPerRow = config.triviaCategoriesPerRow;
   const categoryRows = chunkCategories(categoriesWithProgress, categoriesPerRow);
 
   return (

@@ -3,7 +3,7 @@ import { ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { styled, View } from '@tamagui/core';
 import { XStack } from 'tamagui';
-import { hexColors, spacing, radius, componentSizes, useTheme } from '../theme';
+import { hexColors, spacing, radius, media, useTheme } from '../theme';
 import { Text, FONT_FAMILIES } from './Typography';
 
 interface ButtonProps {
@@ -15,7 +15,7 @@ interface ButtonProps {
 }
 
 const ButtonContainer = styled(View, {
-  height: componentSizes.phone.buttonHeight,
+  height: media.phone.buttonHeight,
   borderRadius: radius.phone.full,
   alignItems: 'center',
   justifyContent: 'center',

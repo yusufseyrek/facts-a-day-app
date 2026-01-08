@@ -5,13 +5,15 @@ import {
   getTypography,
   getSpacing,
   getIconSizes,
-  getComponentSizes,
-  getGridLayout,
+  getConfig,
+  getMedia,
+  getRadius,
   typography as responsiveTypography,
   spacing as responsiveSpacing,
   iconSizes as responsiveIconSizes,
-  componentSizes as responsiveComponentSizes,
-  gridLayout as responsiveGridLayout,
+  config as responsiveConfig,
+  media as responsiveMedia,
+  radius as responsiveRadius,
   RESPONSIVE_CONSTANTS,
 } from './responsive';
 
@@ -19,8 +21,9 @@ import {
 export type ResponsiveTypography = typeof responsiveTypography.phone | typeof responsiveTypography.tablet;
 export type ResponsiveSpacing = typeof responsiveSpacing.phone | typeof responsiveSpacing.tablet;
 export type ResponsiveIconSizes = typeof responsiveIconSizes.phone | typeof responsiveIconSizes.tablet;
-export type ResponsiveComponentSizes = typeof responsiveComponentSizes.phone | typeof responsiveComponentSizes.tablet;
-export type ResponsiveGridLayout = typeof responsiveGridLayout.phone | typeof responsiveGridLayout.tablet;
+export type ResponsiveConfig = typeof responsiveConfig.phone | typeof responsiveConfig.tablet;
+export type ResponsiveMedia = typeof responsiveMedia.phone | typeof responsiveMedia.tablet;
+export type ResponsiveRadius = typeof responsiveRadius.phone | typeof responsiveRadius.tablet;
 
 export interface ResponsiveValues {
   /** Current screen width */
@@ -35,12 +38,14 @@ export interface ResponsiveValues {
   typography: ResponsiveTypography;
   /** Spacing values (screenPadding, sectionGap, etc.) */
   spacing: ResponsiveSpacing;
-  /** Icon sizes (small, medium, large, xlarge, xxlarge) */
+  /** Icon sizes (xs, sm, md, lg, xl, hero, heroLg) */
   iconSizes: ResponsiveIconSizes;
-  /** Component-specific sizes (buttonHeight, modalMaxWidth, etc.) */
-  componentSizes: ResponsiveComponentSizes;
-  /** Grid layout values (columns, icon sizes in grids, etc.) */
-  gridLayout: ResponsiveGridLayout;
+  /** Config values (columns, multipliers, maxLines, etc.) */
+  config: ResponsiveConfig;
+  /** Media/dimension values (buttonHeight, modalMaxWidth, etc.) */
+  media: ResponsiveMedia;
+  /** Radius values (sm, md, lg, xl, full) */
+  radius: ResponsiveRadius;
 }
 
 /**
@@ -62,8 +67,9 @@ export const useResponsive = (): ResponsiveValues => {
       typography: getTypography(width),
       spacing: getSpacing(width),
       iconSizes: getIconSizes(width),
-      componentSizes: getComponentSizes(width),
-      gridLayout: getGridLayout(width),
+      config: getConfig(width),
+      media: getMedia(width),
+      radius: getRadius(width),
     };
   }, [width, height]);
 };

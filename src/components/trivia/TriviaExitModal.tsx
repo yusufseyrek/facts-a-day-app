@@ -44,10 +44,10 @@ export function TriviaExitModal({
   exitText,
 }: TriviaExitModalProps) {
   // Get responsive values for device type
-  const { screenWidth, typography, spacing, iconSizes, componentSizes } = useResponsive();
+  const { screenWidth, typography, spacing, iconSizes, media } = useResponsive();
   
   // Responsive sizing
-  const modalMaxWidth = componentSizes.modalMaxWidth;
+  const modalMaxWidth = media.modalMaxWidth;
   const iconSize = iconSizes.heroLg;
   const iconInnerSize = iconSizes.xl;
   const titleFontSize = typography.fontSize.title;

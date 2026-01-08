@@ -33,7 +33,7 @@ const ImageFactCardComponent = ({
   isTablet: isTabletProp = false,
   testID,
 }: ImageFactCardProps) => {
-  const { screenWidth, isTablet: isTabletHook, spacing, componentSizes } = useResponsive();
+  const { screenWidth, isTablet: isTabletHook, spacing, config } = useResponsive();
   const isTablet = isTabletProp || isTabletHook;
   
   // Use a ref for the scale animation - this persists across renders
@@ -273,7 +273,7 @@ const ImageFactCardComponent = ({
               {/* Title */}
               <Text.Title
                 color="#FFFFFF"
-                numberOfLines={componentSizes.maxLines}
+                numberOfLines={config.maxLines}
                 style={styles.titleShadow}
               >
                 {title}

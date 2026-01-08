@@ -119,7 +119,7 @@ export function FactActions({
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { iconSizes, componentSizes } = useResponsive();
+  const { iconSizes, media } = useResponsive();
   const insets = useSafeAreaInsets();
 
   // Neon colors for actions
@@ -341,7 +341,7 @@ export function FactActions({
     <>
       <Container
         style={{
-          height: componentSizes.tabBarHeight + insets.bottom,
+          height: media.tabBarHeight + insets.bottom,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 10,
         }}

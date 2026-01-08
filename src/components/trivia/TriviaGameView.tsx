@@ -11,7 +11,7 @@ import Animated, {
   SharedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
-import { hexColors, spacing, radius, componentSizes } from '../../theme';
+import { hexColors, spacing, radius, media } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
 import type { QuestionWithFact } from '../../services/database';
@@ -57,7 +57,7 @@ export function TriviaGameView({
   t,
 }: TriviaGameViewProps) {
   const insets = useSafeAreaInsets();
-  const { isTablet, componentSizes, typography: typo, iconSizes } = useResponsive();
+  const { isTablet, media, typography: typo, iconSizes } = useResponsive();
   
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
@@ -394,7 +394,7 @@ export function TriviaGameView({
         >
           <XStack
             backgroundColor={primaryColor}
-            height={componentSizes.buttonHeight}
+            height={media.buttonHeight}
             paddingHorizontal={spacing.phone.lg}
             borderRadius={radius.phone.lg}
             justifyContent="center"
@@ -416,7 +416,7 @@ export function TriviaGameView({
         >
           <XStack
             backgroundColor={primaryColor}
-            height={componentSizes.buttonHeight}
+            height={media.buttonHeight}
             borderRadius={radius.phone.lg}
             justifyContent="center"
             alignItems="center"
