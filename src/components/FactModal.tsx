@@ -140,8 +140,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const scrollViewRef = useRef<ScrollView>(null);
   const currentScrollY = useRef(0);
   const [closeButtonVisible, setCloseButtonVisible] = useState(true);
-  const [headerShouldBlock, setHeaderShouldBlock] = useState(false);
-  const [titleHeight, setTitleHeight] = useState(24); // Default to 1 line height
+  const [titleHeight, setTitleHeight] = useState<number>(typography.lineHeight.headline); // Default to 1 line height
   const [containerWidth, setContainerWidth] = useState(SCREEN_WIDTH); // Actual modal width
   
   // Use authenticated image with App Check - downloads and caches locally
@@ -298,11 +297,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
       const threshold = HEADER_BG_TRANSITION * 0.95;
       const initialValue = (scrollY as any)._value || 0;
       setCloseButtonVisible(initialValue < threshold);
-      setHeaderShouldBlock(initialValue >= HEADER_BG_TRANSITION);
       
       const listener = scrollY.addListener(({ value }) => {
         setCloseButtonVisible(value < threshold);
-        setHeaderShouldBlock(value >= HEADER_BG_TRANSITION);
       });
       return () => scrollY.removeListener(listener);
     }
@@ -364,7 +361,11 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
   // Header title translateY - slides up from bottom of header as scrollY increases
   // Animation starts when header becomes visible (at HEADER_BG_TRANSITION)
-  const headerTitleStartY = headerHeight - basePaddingTop + basePaddingBottom - iosShadowOffset + tabletMagicNumber; // Start from bottom of header
+  // Account for centering offset when header is clamped to minimum height
+  // When clamped, extra space is distributed above/below title due to alignItems: "center"
+  const clampedExtraSpace = Math.max(0, headerHeight - dynamicHeaderHeight);
+  const centeringOffset = clampedExtraSpace / 2;
+  const headerTitleStartY = headerHeight - basePaddingTop + basePaddingBottom - iosShadowOffset + tabletMagicNumber - centeringOffset; // Start from bottom of header, adjusted for centering
   
   // Continuous animation: translateY decreases (moves up) as scrollY increases
   // The title starts moving up when header becomes visible and continues to move up as user scrolls
@@ -411,28 +412,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         }
       }}
     >
-      {/* Hidden measurement view to get accurate title height */}
-      <View
-        style={{
-          position: "absolute",
-          opacity: 0,
-          pointerEvents: "none",
-          zIndex: -1,
-          width: isTablet 
-            ? containerWidth - spacing.xxl * 2
-            : containerWidth - spacing.lg * 2,
-        }}
-        onLayout={(event) => {
-          const { height } = event.nativeEvent.layout;
-          if (height > 0 && height !== titleHeight) {
-            setTitleHeight(height);
-          }
-        }}
-      >
-        <Text.Headline>
-          {factTitle}
-        </Text.Headline>
-      </View>
       {/* Sticky Header with Faded Image Background */}
       <Animated.View
         style={{
@@ -657,7 +636,15 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               opacity: contentTitleOpacity
             }}
           >
-            <Text.Headline>
+            <Text.Headline
+              onTextLayout={(e) => {
+                const lines = e.nativeEvent.lines;
+                const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
+                if (totalHeight > 0 && totalHeight !== titleHeight) {
+                  setTitleHeight(totalHeight);
+                }
+              }}
+            >
               {factTitle}
             </Text.Headline>
           </Animated.View>

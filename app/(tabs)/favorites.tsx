@@ -11,6 +11,7 @@ import {
   ScreenHeader,
   ContentContainer,
   LoadingContainer,
+  TabletWrapper,
   useIconColor,
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
@@ -21,6 +22,7 @@ import * as database from '../../src/services/database';
 import { useFocusEffect } from '@react-navigation/native';
 import { trackScreenView, Screens } from '../../src/services/analytics';
 import { FACT_FLAT_LIST_SETTINGS, createFlatListGetItemLayout } from '../../src/config/factListSettings';
+import { RESPONSIVE_CONSTANTS } from '../../src/utils/responsive';
 
 // Memoized list item component to prevent re-renders
 interface FactListItemProps {
@@ -61,6 +63,7 @@ export default function FavoritesScreen() {
   const router = useRouter();
   const iconColor = useIconColor();
   const { width } = useWindowDimensions();
+  const isTablet = width >= RESPONSIVE_CONSTANTS.TABLET_BREAKPOINT;
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -107,14 +110,6 @@ export default function FavoritesScreen() {
     <FactListItem item={item} onPress={handleFactPress} />
   ), [handleFactPress]);
 
-  // Memoized header component
-  const ListHeaderComponent = useMemo(() => (
-    <ScreenHeader
-      icon={<Star size={28} color={iconColor} />}
-      title={t('favorites')}
-    />
-  ), [iconColor, t]);
-
   // Memoized refresh control
   const refreshControl = useMemo(() => (
     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
@@ -148,19 +143,30 @@ export default function FavoritesScreen() {
     );
   }
 
+  const feedContent = (
+    <FlatList
+      data={favorites}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
+      refreshControl={refreshControl}
+      getItemLayout={getItemLayout}
+      {...FACT_FLAT_LIST_SETTINGS}
+    />
+  );
+
   return (
     <ScreenContainer edges={["top"]}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+      <ScreenHeader
+        icon={<Star size={28} color={iconColor} />}
+        title={t('favorites')}
+      />
       <YStack flex={1}>
-        <FlatList
-          data={favorites}
-          keyExtractor={keyExtractor}
-          ListHeaderComponent={ListHeaderComponent}
-          renderItem={renderItem}
-          refreshControl={refreshControl}
-          getItemLayout={getItemLayout}
-          {...FACT_FLAT_LIST_SETTINGS}
-        />
+        {isTablet ? (
+          <TabletWrapper flex={1}>{feedContent}</TabletWrapper>
+        ) : (
+          feedContent
+        )}
       </YStack>
     </ScreenContainer>
   );
