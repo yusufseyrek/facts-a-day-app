@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Animated, StyleSheet, View, Modal } from 'react-native';
 import { CheckCircle } from '@tamagui/lucide-icons';
 import { useTheme } from '../theme';
-import { hexColors, spacing, radius } from '../theme';
+import { hexColors } from '../theme';
 import { Text } from './Typography';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -21,7 +21,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
   onHide,
 }) => {
   const { theme } = useTheme();
-  const { iconSizes } = useResponsive();
+  const { spacing, radius, iconSizes } = useResponsive();
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.8)).current;
   
@@ -91,6 +91,28 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
     }
   }, [visible, duration, opacity, scale]);
 
+  const containerStyle = useMemo(() => ({
+    alignItems: 'center' as const,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.xxl,
+    borderRadius: radius.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+    minWidth: 200,
+  }), [spacing, radius]);
+
+  const iconContainerStyle = useMemo(() => ({
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    marginBottom: spacing.md,
+  }), [spacing]);
+
   if (!visible && !modalVisible) return null;
 
   return (
@@ -103,7 +125,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
       <View style={styles.overlay}>
         <Animated.View
           style={[
-            styles.container,
+            containerStyle,
             {
               backgroundColor,
               opacity,
@@ -111,7 +133,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
             },
           ]}
         >
-          <View style={[styles.iconContainer, { backgroundColor: `${successColor}20` }]}>
+          <View style={[iconContainerStyle, { backgroundColor: `${successColor}20` }]}>
             <CheckCircle size={iconSizes.xl} color={successColor} />
           </View>
           <Text.Label textAlign="center" color={textColor}>{message}</Text.Label>
@@ -127,26 +149,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  container: {
-    alignItems: 'center',
-    paddingVertical: spacing.phone.xl,
-    paddingHorizontal: spacing.phone.xxl,
-    borderRadius: radius.phone.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-    minWidth: 200,
-  },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.phone.md,
   },
 });
 

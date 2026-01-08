@@ -7,7 +7,7 @@ import { YStack, XStack } from "tamagui";
 import { useRouter } from "expo-router";
 import { CheckCircle, Sparkle, Star, Gift } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { hexColors, spacing, radius, getNeonColors } from "../../src/theme";
+import { hexColors, getNeonColors } from "../../src/theme";
 import { Text, Button, FONT_FAMILIES } from "../../src/components";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
@@ -28,33 +28,7 @@ const Container = styled(SafeAreaView, {
   flex: 1,
 });
 
-const ContentContainer = styled(YStack, {
-  padding: spacing.phone.xl,
-  gap: spacing.phone.lg,
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-});
-
-const IconContainer = styled(YStack, {
-  width: 140,
-  height: 140,
-  borderRadius: radius.phone.full,
-  backgroundColor: "$primaryLight",
-  alignItems: "center",
-  justifyContent: "center",
-  marginBottom: spacing.phone.lg,
-});
-
-const ConsentIconContainer = styled(YStack, {
-  width: 100,
-  height: 100,
-  borderRadius: radius.phone.full,
-  backgroundColor: "$primaryLight",
-  alignItems: "center",
-  justifyContent: "center",
-  marginBottom: spacing.phone.md,
-});
+// ContentContainer, IconContainer, ConsentIconContainer now use inline props with useResponsive() for dynamic spacing
 
 // Particle component for confetti effect
 const Particle = ({ delay, index }: { delay: number; index: number }) => {
@@ -240,7 +214,7 @@ const ProgressBar = ({ duration, theme }: { duration: number; theme: "light" | "
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, iconSizes } = useResponsive();
+  const { typography, iconSizes, spacing, radius } = useResponsive();
   const router = useRouter();
   const { completeOnboarding, selectedCategories } = useOnboarding();
 
@@ -506,16 +480,24 @@ export default function OnboardingSuccessScreen() {
         opacity: consentOpacity,
       }}
     >
-      <ContentContainer>
-        <YStack alignItems="center" gap={spacing.phone.lg} paddingHorizontal={spacing.phone.md}>
+      <YStack padding={spacing.xl} gap={spacing.lg} flex={1} justifyContent="center" alignItems="center">
+        <YStack alignItems="center" gap={spacing.lg} paddingHorizontal={spacing.md}>
           {/* Icon */}
-          <ConsentIconContainer>
+          <YStack
+            width={100}
+            height={100}
+            borderRadius={radius.full}
+            backgroundColor="$primaryLight"
+            alignItems="center"
+            justifyContent="center"
+            marginBottom={spacing.md}
+          >
             <Gift
               size={iconSizes.hero}
               color={theme === "dark" ? hexColors.dark.neonCyan : hexColors.light.neonCyan}
               strokeWidth={2}
             />
-          </ConsentIconContainer>
+          </YStack>
 
           {/* Title */}
           <Text.Headline
@@ -535,29 +517,29 @@ export default function OnboardingSuccessScreen() {
           </Text.Body>
 
           {/* Button */}
-          <YStack width="100%" paddingTop={spacing.phone.lg}>
+          <YStack width="100%" paddingTop={spacing.lg}>
             <Button onPress={handleConsentContinue}>
               {t("adsConsentButton")}
             </Button>
           </YStack>
         </YStack>
-      </ContentContainer>
+      </YStack>
     </Animated.View>
   );
 
   // Render loading screen (checking consent requirement)
   const renderLoadingScreen = () => (
-    <ContentContainer>
-      <YStack alignItems="center" gap={spacing.phone.lg}>
+    <YStack padding={spacing.xl} gap={spacing.lg} flex={1} justifyContent="center" alignItems="center">
+      <YStack alignItems="center" gap={spacing.lg}>
         <ActivityIndicator size="large" color={theme === "dark" ? hexColors.dark.neonCyan : hexColors.light.neonCyan} />
       </YStack>
-    </ContentContainer>
+    </YStack>
   );
 
   // Render processing screen
   const renderProcessingScreen = () => (
-    <ContentContainer>
-      <YStack alignItems="center" gap={spacing.phone.lg}>
+    <YStack padding={spacing.xl} gap={spacing.lg} flex={1} justifyContent="center" alignItems="center">
+      <YStack alignItems="center" gap={spacing.lg}>
         <ActivityIndicator size="large" color={theme === "dark" ? hexColors.dark.neonCyan : hexColors.light.neonCyan} />
         <Text.Body
           textAlign="center"
@@ -566,13 +548,13 @@ export default function OnboardingSuccessScreen() {
           {t("oneMoment")}
         </Text.Body>
       </YStack>
-    </ContentContainer>
+    </YStack>
   );
 
   // Render success animation screen
   const renderAnimationScreen = () => (
-    <ContentContainer>
-      <YStack alignItems="center" gap={spacing.phone.xl}>
+    <YStack padding={spacing.xl} gap={spacing.lg} flex={1} justifyContent="center" alignItems="center">
+      <YStack alignItems="center" gap={spacing.xl}>
         {/* Icon with particles and pulse rings */}
         <View style={{ width: 200, height: 200, alignItems: "center", justifyContent: "center" }}>
           {/* Pulse rings */}
@@ -604,19 +586,27 @@ export default function OnboardingSuccessScreen() {
                 transform: [{ scale: iconPulseAnim }],
               }}
             >
-              <IconContainer>
+              <YStack
+                width={140}
+                height={140}
+                borderRadius={radius.full}
+                backgroundColor="$primaryLight"
+                alignItems="center"
+                justifyContent="center"
+                marginBottom={spacing.lg}
+              >
                 <CheckCircle
                   size={iconSizes.heroLg}
                   color={theme === "dark" ? hexColors.dark.neonGreen : hexColors.light.neonGreen}
                   strokeWidth={2.5}
                 />
-              </IconContainer>
+              </YStack>
             </Animated.View>
           </Animated.View>
         </View>
 
         {/* Animated title - word by word */}
-        <XStack gap={spacing.phone.sm} alignItems="center">
+        <XStack gap={spacing.sm} alignItems="center">
           {titleWords.map((word, index) => (
             <Animated.View
               key={index}
@@ -665,7 +655,7 @@ export default function OnboardingSuccessScreen() {
           <ProgressBar duration={2000} theme={theme} />
         </Animated.View>
       </YStack>
-    </ContentContainer>
+    </YStack>
   );
 
   return (

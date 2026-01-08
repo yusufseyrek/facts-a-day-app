@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { Pressable, Animated, StyleSheet, View, Platform } from "react-native";
 import { Image, ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { hexColors, spacing, radius } from "../theme";
+import { hexColors } from "../theme";
 import { Text, FONT_FAMILIES } from "./Typography";
 import { CategoryBadge } from "./CategoryBadge";
 import { useFactImage } from "../utils/useFactImage";
@@ -33,7 +33,7 @@ const ImageFactCardComponent = ({
   isTablet: isTabletProp = false,
   testID,
 }: ImageFactCardProps) => {
-  const { screenWidth, isTablet: isTabletHook, spacing, config } = useResponsive();
+  const { screenWidth, isTablet: isTabletHook, spacing, radius, config } = useResponsive();
   const isTablet = isTabletProp || isTabletHook;
   
   // Use a ref for the scale animation - this persists across renders
@@ -206,6 +206,18 @@ const ImageFactCardComponent = ({
   const mountTimestamp = useRef(Date.now()).current;
   const recyclingKey = `fact-image-${factId}-${mountTimestamp}-${renderRetryCount}-${downloadRetryCount}`;
 
+  const pressableStyle = useMemo(() => ({
+    overflow: "hidden" as const,
+    borderRadius: radius.lg,
+  }), [radius]);
+
+  const cardWrapperStyle = useMemo(() => ({
+    borderRadius: radius.lg,
+    overflow: "hidden" as const,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  }), [radius]);
+
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <Pressable
@@ -213,11 +225,11 @@ const ImageFactCardComponent = ({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         android_ripple={androidRipple}
-        style={styles.pressable}
+        style={pressableStyle}
         testID={testID || `fact-card-${factId}`}
         accessibilityLabel={title}
       >
-        <View style={[styles.cardWrapper, marginStyle]}>
+        <View style={[cardWrapperStyle, marginStyle]}>
           {/* Image Container */}
           <View style={[styles.imageContainer, imageContainerStyle]}>
             {/* Image */}
@@ -297,16 +309,6 @@ const gradientColors = ["transparent", "rgba(0, 0, 0, 0.3)", "rgba(0, 0, 0, 0.75
 const gradientLocations = [0.3, 0.6, 1] as const;
 
 const styles = StyleSheet.create({
-  pressable: {
-    overflow: "hidden",
-    borderRadius: radius.phone.lg,
-  },
-  cardWrapper: {
-    borderRadius: radius.phone.lg,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-  },
   imageContainer: {
     overflow: "hidden",
     backgroundColor: "#1a1a2e", // Dark base that matches the shimmer

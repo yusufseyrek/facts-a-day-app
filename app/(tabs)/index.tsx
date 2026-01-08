@@ -7,7 +7,7 @@ import { YStack } from "tamagui";
 import { Lightbulb } from "@tamagui/lucide-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { hexColors, spacing, radius } from "../../src/theme";
+import { hexColors } from "../../src/theme";
 import {
   Text,
   EmptyState,
@@ -57,18 +57,7 @@ interface FactItem {
 
 type FeedListItem = SectionHeaderItem | FactItem;
 
-const LocaleChangeOverlay = styled(YStack, {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  justifyContent: "center",
-  alignItems: "center",
-  backgroundColor: "$background",
-  zIndex: 100,
-  gap: spacing.phone.lg,
-});
+// LocaleChangeOverlay is a simple full-screen overlay - uses inline props for responsive gap
 
 // Simple list item component
 const FactListItem = React.memo(({ 
@@ -115,7 +104,7 @@ function HomeScreen() {
   const iconColor = useIconColor();
   const { width } = useWindowDimensions();
   const isTablet = width >= RESPONSIVE_CONSTANTS.TABLET_BREAKPOINT;
-  const { iconSizes } = useResponsive();
+  const { iconSizes, spacing } = useResponsive();
 
   const [sections, setSections] = useState<FactSection[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -322,12 +311,23 @@ function HomeScreen() {
         })()}
 
         {backgroundRefreshStatus === 'locale-change' && (
-          <LocaleChangeOverlay>
+          <YStack
+            position="absolute"
+            top={0}
+            left={0}
+            right={0}
+            bottom={0}
+            justifyContent="center"
+            alignItems="center"
+            backgroundColor="$background"
+            zIndex={100}
+            gap={spacing.lg}
+          >
             <ActivityIndicator size="large" color={hexColors[theme].primary} />
             <Text.Body color="$textSecondary">
               {t("updatingLanguage")}
             </Text.Body>
-          </LocaleChangeOverlay>
+          </YStack>
         )}
       </YStack>
     </ScreenContainer>

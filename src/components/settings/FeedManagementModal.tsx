@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -13,8 +13,7 @@ import {
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { X, Search, Check, Calendar, Trash2, Edit3, RefreshCw } from '@tamagui/lucide-icons';
 import { useTheme } from '../../theme';
-import { hexColors, spacing, radius } from '../../theme';
-import { typography } from '../../utils/responsive';
+import { hexColors } from '../../theme';
 import { useTranslation } from '../../i18n';
 import { Text, FONT_FAMILIES } from '../Typography';
 import * as database from '../../services/database';
@@ -36,26 +35,56 @@ interface FactItemProps {
   onEditTitle: () => void;
   colors: any;
   iconSizes: { sm: number; md: number; lg: number; xl: number; hero: number; heroLg: number };
+  spacing: Record<string, number>;
+  radius: Record<string, number>;
+  typography: { fontSize: Record<string, number>; lineHeight: Record<string, number> };
 }
 
-const FactItem = React.memo(({ fact, isSelected, onToggle, onEditTitle, colors, iconSizes }: FactItemProps) => {
+const FactItem = React.memo(({ fact, isSelected, onToggle, onEditTitle, colors, iconSizes, spacing, radius, typography }: FactItemProps) => {
   const isInFeed = fact.shown_in_feed === 1 || (fact.scheduled_date && new Date(fact.scheduled_date) <= new Date());
   
+  const itemStyles = useMemo(() => ({
+    factItem: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      paddingVertical: spacing.md,
+      gap: spacing.md,
+    },
+    factContent: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    factMeta: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: spacing.sm,
+      flexWrap: 'wrap' as const,
+    },
+    inFeedBadge: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: radius.sm,
+    },
+    editButton: {
+      padding: spacing.sm,
+    },
+  }), [spacing, radius]);
+  
   return (
-    <Pressable onPress={onToggle} style={styles.factItem}>
+    <Pressable onPress={onToggle} style={itemStyles.factItem}>
       <View style={[styles.checkbox, { borderColor: colors.border }, isSelected && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
         {isSelected && <Check size={iconSizes.sm} color="#FFFFFF" />}
       </View>
-      <View style={styles.factContent}>
+      <View style={itemStyles.factContent}>
         <Text.Label numberOfLines={2} color={colors.text}>
           {fact.title || fact.content.substring(0, 60) + '...'}
         </Text.Label>
-        <View style={styles.factMeta}>
+        <View style={itemStyles.factMeta}>
           <Text.Caption color={colors.textSecondary}>
             {fact.categoryData?.name || fact.category || 'Unknown'}
           </Text.Caption>
           {isInFeed && (
-            <View style={[styles.inFeedBadge, { backgroundColor: colors.primary + '20' }]}>
+            <View style={[itemStyles.inFeedBadge, { backgroundColor: colors.primary + '20' }]}>
               <Text.Caption color={colors.primary}>In Feed</Text.Caption>
             </View>
           )}
@@ -66,7 +95,7 @@ const FactItem = React.memo(({ fact, isSelected, onToggle, onEditTitle, colors, 
           )}
         </View>
       </View>
-      <Pressable onPress={onEditTitle} style={styles.editButton} hitSlop={8}>
+      <Pressable onPress={onEditTitle} style={itemStyles.editButton} hitSlop={8}>
         <Edit3 size={iconSizes.sm} color={colors.textSecondary} />
       </Pressable>
     </Pressable>
@@ -82,7 +111,7 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
   const { theme } = useTheme();
   const colors = hexColors[theme];
   const { t, locale } = useTranslation();
-  const { iconSizes } = useResponsive();
+  const { spacing, radius, typography, iconSizes } = useResponsive();
 
   const [showContent, setShowContent] = useState(false);
   const closingRef = useRef(false);
@@ -262,6 +291,136 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
   const screenHeight = Dimensions.get('window').height;
   const screenWidth = Dimensions.get('window').width;
 
+  const dynamicStyles = useMemo(() => ({
+    modalContainer: {
+      position: 'absolute' as const,
+      bottom: 0,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      overflow: 'hidden' as const,
+    },
+    header: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.lg,
+      borderBottomWidth: 1,
+    },
+    closeButton: {
+      padding: spacing.xs,
+    },
+    searchContainer: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      marginHorizontal: spacing.lg,
+      marginVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      gap: spacing.sm,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: typography.fontSize.body,
+      fontFamily: FONT_FAMILIES.regular,
+    },
+    selectionInfo: {
+      flexDirection: 'row' as const,
+      justifyContent: 'space-between' as const,
+      alignItems: 'center' as const,
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.sm,
+    },
+    selectionActions: {
+      flexDirection: 'row' as const,
+      gap: spacing.md,
+    },
+    selectionButton: {
+      padding: spacing.xs,
+    },
+    listContent: {
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.lg,
+    },
+    factItem: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      paddingVertical: spacing.md,
+      gap: spacing.md,
+    },
+    factContent: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    factMeta: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: spacing.sm,
+      flexWrap: 'wrap' as const,
+    },
+    inFeedBadge: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: radius.sm,
+    },
+    editButton: {
+      padding: spacing.sm,
+    },
+    actionBar: {
+      padding: spacing.lg,
+      borderTopWidth: 1,
+      gap: spacing.sm,
+    },
+    actionRow: {
+      flexDirection: 'row' as const,
+      gap: spacing.sm,
+    },
+    actionButton: {
+      flex: 1,
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      gap: spacing.xs,
+    },
+    editModalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      padding: spacing.lg,
+    },
+    editModalContent: {
+      width: '100%' as const,
+      maxWidth: 400,
+      padding: spacing.lg,
+      borderRadius: radius.lg,
+      gap: spacing.sm,
+    },
+    titleInput: {
+      borderWidth: 1,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      fontSize: typography.fontSize.body,
+      fontFamily: FONT_FAMILIES.regular,
+      minHeight: 100,
+      textAlignVertical: 'top' as const,
+    },
+    editModalActions: {
+      flexDirection: 'row' as const,
+      gap: spacing.md,
+      marginTop: spacing.md,
+    },
+    modalButton: {
+      flex: 1,
+      alignItems: 'center' as const,
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+    },
+  }), [spacing, radius, typography]);
+
   const renderFactItem = useCallback(
     ({ item }: { item: FactWithRelations }) => (
       <FactItem
@@ -271,9 +430,12 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
         onEditTitle={() => handleEditTitle(item)}
         colors={colors}
         iconSizes={iconSizes}
+        spacing={spacing}
+        radius={radius}
+        typography={typography}
       />
     ),
-    [selectedFactIds, toggleFactSelection, handleEditTitle, colors, iconSizes]
+    [selectedFactIds, toggleFactSelection, handleEditTitle, colors, iconSizes, spacing, radius, typography]
   );
 
   const keyExtractor = useCallback((item: FactWithRelations) => String(item.id), []);
@@ -299,7 +461,7 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
             entering={SlideInDown.duration(ANIMATION_DURATION)}
             exiting={SlideOutDown.duration(ANIMATION_DURATION)}
             style={[
-              styles.modalContainer,
+              dynamicStyles.modalContainer,
               {
                 backgroundColor: colors.background,
                 height: screenHeight * 0.9,
@@ -308,18 +470,18 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
             ]}
           >
             {/* Header */}
-            <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <View style={[dynamicStyles.header, { borderBottomColor: colors.border }]}>
               <Text.Title color={colors.text}>Manage Feed (DEV)</Text.Title>
-              <Pressable onPress={handleClose} style={styles.closeButton}>
+              <Pressable onPress={handleClose} style={dynamicStyles.closeButton}>
                 <X size={iconSizes.lg} color={colors.text} />
               </Pressable>
             </View>
 
             {/* Search */}
-            <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
+            <View style={[dynamicStyles.searchContainer, { backgroundColor: colors.surface }]}>
               <Search size={iconSizes.md} color={colors.textSecondary} />
               <TextInput
-                style={[styles.searchInput, { color: colors.text }]}
+                style={[dynamicStyles.searchInput, { color: colors.text }]}
                 placeholder="Search facts..."
                 placeholderTextColor={colors.textSecondary}
                 value={searchQuery}
@@ -328,15 +490,15 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
             </View>
 
             {/* Selection info */}
-            <View style={styles.selectionInfo}>
+            <View style={dynamicStyles.selectionInfo}>
               <Text.Caption color={colors.textSecondary}>
                 {selectedFactIds.size} selected • {filteredFacts.length} facts
               </Text.Caption>
-              <View style={styles.selectionActions}>
-                <Pressable onPress={selectAll} style={styles.selectionButton}>
+              <View style={dynamicStyles.selectionActions}>
+                <Pressable onPress={selectAll} style={dynamicStyles.selectionButton}>
                   <Text.Caption color={colors.primary}>Select All</Text.Caption>
                 </Pressable>
-                <Pressable onPress={clearSelection} style={styles.selectionButton}>
+                <Pressable onPress={clearSelection} style={dynamicStyles.selectionButton}>
                   <Text.Caption color={colors.primary}>Clear</Text.Caption>
                 </Pressable>
               </View>
@@ -353,47 +515,47 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
                 keyExtractor={keyExtractor}
                 renderItem={renderFactItem}
                 style={styles.list}
-                contentContainerStyle={styles.listContent}
+                contentContainerStyle={dynamicStyles.listContent}
                 showsVerticalScrollIndicator={false}
               />
             )}
 
             {/* Action buttons */}
-            <View style={[styles.actionBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
-              <View style={styles.actionRow}>
+            <View style={[dynamicStyles.actionBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+              <View style={dynamicStyles.actionRow}>
                 <Pressable
                   onPress={() => addToFeedWithDate(0)}
-                  style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                  style={[dynamicStyles.actionButton, { backgroundColor: colors.primary }]}
                 >
                   <Calendar size={iconSizes.sm} color="#FFFFFF" />
                   <Text.Caption color="#FFFFFF">Today</Text.Caption>
                 </Pressable>
                 <Pressable
                   onPress={() => addToFeedWithDate(1)}
-                  style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                  style={[dynamicStyles.actionButton, { backgroundColor: colors.primary }]}
                 >
                   <Calendar size={iconSizes.sm} color="#FFFFFF" />
                   <Text.Caption color="#FFFFFF">Yesterday</Text.Caption>
                 </Pressable>
                 <Pressable
                   onPress={() => addToFeedWithDate(2)}
-                  style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                  style={[dynamicStyles.actionButton, { backgroundColor: colors.primary }]}
                 >
                   <Calendar size={iconSizes.sm} color="#FFFFFF" />
                   <Text.Caption color="#FFFFFF">2 Days</Text.Caption>
                 </Pressable>
               </View>
-              <View style={styles.actionRow}>
+              <View style={dynamicStyles.actionRow}>
                 <Pressable
                   onPress={clearFeed}
-                  style={[styles.actionButton, styles.dangerButton]}
+                  style={[dynamicStyles.actionButton, styles.dangerButton]}
                 >
                   <Trash2 size={iconSizes.sm} color="#FFFFFF" />
                   <Text.Caption color="#FFFFFF">Clear Feed</Text.Caption>
                 </Pressable>
                 <Pressable
                   onPress={loadFacts}
-                  style={[styles.actionButton, { backgroundColor: colors.textSecondary }]}
+                  style={[dynamicStyles.actionButton, { backgroundColor: colors.textSecondary }]}
                 >
                   <RefreshCw size={iconSizes.sm} color="#FFFFFF" />
                   <Text.Caption color="#FFFFFF">Refresh</Text.Caption>
@@ -406,15 +568,15 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
         {/* Edit title modal */}
         {editingFact && (
           <Modal visible transparent animationType="fade">
-            <View style={styles.editModalOverlay}>
-              <View style={[styles.editModalContent, { backgroundColor: colors.background }]}>
+            <View style={dynamicStyles.editModalOverlay}>
+              <View style={[dynamicStyles.editModalContent, { backgroundColor: colors.background }]}>
                 <Text.Title color={colors.text}>Edit Title</Text.Title>
-                <Text.Caption color={colors.textSecondary} style={{ marginBottom: spacing.phone.md }}>
+                <Text.Caption color={colors.textSecondary} style={{ marginBottom: spacing.md }}>
                   Edit the title for screenshots
                 </Text.Caption>
                 <TextInput
                   style={[
-                    styles.titleInput,
+                    dynamicStyles.titleInput,
                     { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
                   ]}
                   value={editedTitle}
@@ -424,16 +586,16 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
                   multiline
                   numberOfLines={3}
                 />
-                <View style={styles.editModalActions}>
+                <View style={dynamicStyles.editModalActions}>
                   <Pressable
                     onPress={() => setEditingFact(null)}
-                    style={[styles.modalButton, { backgroundColor: colors.surface }]}
+                    style={[dynamicStyles.modalButton, { backgroundColor: colors.surface }]}
                   >
                     <Text.Body color={colors.text}>Cancel</Text.Body>
                   </Pressable>
                   <Pressable
                     onPress={saveEditedTitle}
-                    style={[styles.modalButton, { backgroundColor: colors.primary }]}
+                    style={[dynamicStyles.modalButton, { backgroundColor: colors.primary }]}
                   >
                     <Text.Body color="#FFFFFF">Save</Text.Body>
                   </Pressable>
@@ -455,65 +617,8 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalContainer: {
-    position: 'absolute',
-    bottom: 0,
-    borderTopLeftRadius: radius.phone.xl,
-    borderTopRightRadius: radius.phone.xl,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.phone.lg,
-    paddingVertical: spacing.phone.lg,
-    borderBottomWidth: 1,
-  },
-  closeButton: {
-    padding: spacing.phone.xs,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: spacing.phone.lg,
-    marginVertical: spacing.phone.md,
-    paddingHorizontal: spacing.phone.md,
-    paddingVertical: spacing.phone.sm,
-    borderRadius: radius.phone.md,
-    gap: spacing.phone.sm,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: typography.phone.fontSize.body,
-    fontFamily: FONT_FAMILIES.regular,
-  },
-  selectionInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.phone.lg,
-    paddingBottom: spacing.phone.sm,
-  },
-  selectionActions: {
-    flexDirection: 'row',
-    gap: spacing.phone.md,
-  },
-  selectionButton: {
-    padding: spacing.phone.xs,
-  },
   list: {
     flex: 1,
-  },
-  listContent: {
-    paddingHorizontal: spacing.phone.lg,
-    paddingBottom: spacing.phone.lg,
-  },
-  factItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.phone.md,
-    gap: spacing.phone.md,
   },
   checkbox: {
     width: 24,
@@ -523,83 +628,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  factContent: {
-    flex: 1,
-    gap: spacing.phone.xs,
-  },
-  factMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.phone.sm,
-    flexWrap: 'wrap',
-  },
-  inFeedBadge: {
-    paddingHorizontal: spacing.phone.sm,
-    paddingVertical: 2,
-    borderRadius: radius.phone.sm,
-  },
-  editButton: {
-    padding: spacing.phone.sm,
-  },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionBar: {
-    padding: spacing.phone.lg,
-    borderTopWidth: 1,
-    gap: spacing.phone.sm,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: spacing.phone.sm,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.phone.md,
-    borderRadius: radius.phone.md,
-    gap: spacing.phone.xs,
-  },
   dangerButton: {
     backgroundColor: '#E53935',
-  },
-  editModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.phone.lg,
-  },
-  editModalContent: {
-    width: '100%',
-    maxWidth: 400,
-    padding: spacing.phone.lg,
-    borderRadius: radius.phone.lg,
-    gap: spacing.phone.sm,
-  },
-  titleInput: {
-    borderWidth: 1,
-    borderRadius: radius.phone.md,
-    padding: spacing.phone.md,
-    fontSize: typography.phone.fontSize.body,
-    fontFamily: FONT_FAMILIES.regular,
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  editModalActions: {
-    flexDirection: 'row',
-    gap: spacing.phone.md,
-    marginTop: spacing.phone.md,
-  },
-  modalButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.phone.md,
-    borderRadius: radius.phone.md,
   },
 });
 

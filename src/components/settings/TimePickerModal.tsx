@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -16,7 +16,7 @@ const ANIMATION_DURATION = 150;
 import { X, Plus, Trash2, AlertTriangle } from '@tamagui/lucide-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../../theme';
-import { hexColors, spacing, radius } from '../../theme';
+import { hexColors } from '../../theme';
 import { useTranslation } from '../../i18n/useTranslation';
 import { Button } from '../Button';
 import { SuccessToast } from '../SuccessToast';
@@ -45,7 +45,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   const { theme } = useTheme();
   const colors = hexColors[theme];
   const { t, locale } = useTranslation();
-  const { iconSizes } = useResponsive();
+  const { spacing, radius, iconSizes } = useResponsive();
   
   // Warning color - darker in light mode for better readability
   const warningColor = theme === 'dark' ? '#F59E0B' : '#B45309';
@@ -223,8 +223,8 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
     const isActive = activePickerIndex === index;
 
     return (
-      <View key={index} style={styles.timePickerItem}>
-        <View style={styles.timePickerHeader}>
+      <View key={index} style={dynamicStyles.timePickerItem}>
+        <View style={dynamicStyles.timePickerHeader}>
           {label && (
             <Text.Label color={colors.text}>
               {label}
@@ -234,7 +234,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
             <Pressable
               onPress={() => handleRemoveTime(index)}
               style={[
-                styles.removeButton,
+                dynamicStyles.removeButton,
                 { backgroundColor: colors.surface },
               ]}
             >
@@ -245,7 +245,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
         <View
           style={[
-            styles.timePickerContainer,
+            dynamicStyles.timePickerContainer,
             {
               backgroundColor: colors.surface,
               borderColor: colors.border,
@@ -271,7 +271,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
               <Pressable
                 onPress={() => setActivePickerIndex(index)}
                 style={[
-                  styles.androidTimeButton,
+                  dynamicStyles.androidTimeButton,
                   { backgroundColor: colors.primary }
                 ]}
               >
@@ -310,7 +310,83 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   };
 
   const screenWidth = Dimensions.get('window').width;
+  const screenHeight = Dimensions.get('window').height;
   const modalWidth = screenWidth * 0.85;
+
+  const dynamicStyles = useMemo(() => ({
+    modalContainer: {
+      maxHeight: screenHeight * 0.8,
+      borderRadius: radius.lg,
+      overflow: 'hidden' as const,
+    },
+    header: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.lg,
+      borderBottomWidth: 1,
+    },
+    closeButton: {
+      padding: spacing.xs,
+    },
+    content: {
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    warningContainer: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      padding: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      gap: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    timePickerItem: {
+      marginBottom: spacing.sm,
+    },
+    timePickerHeader: {
+      flexDirection: 'row' as const,
+      justifyContent: 'space-between' as const,
+      alignItems: 'center' as const,
+      marginBottom: spacing.xs,
+    },
+    removeButton: {
+      padding: spacing.xs,
+      borderRadius: radius.sm,
+    },
+    timePickerContainer: {
+      padding: Platform.OS === 'ios' ? spacing.lg : spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    addButton: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      padding: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderStyle: 'dashed' as const,
+      gap: spacing.xs,
+      marginTop: spacing.sm,
+    },
+    footer: {
+      padding: spacing.lg,
+      paddingTop: 0,
+    },
+    androidTimeButton: {
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.xl,
+      borderRadius: radius.full,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      minWidth: 150,
+    },
+  }), [spacing, radius]);
 
   return (
     <Modal
@@ -342,20 +418,20 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
               <Pressable onPress={(e) => e.stopPropagation()}>
                 <View
                   style={[
-                    styles.modalContainer,
+                    dynamicStyles.modalContainer,
                     { backgroundColor: colors.background, width: modalWidth },
                   ]}
                 >
                   <View
                     style={[
-                      styles.header,
+                      dynamicStyles.header,
                       { borderBottomColor: colors.border },
                     ]}
                   >
                   <Text.Title color={colors.text}>
                     {t('settingsNotificationTime')}
                   </Text.Title>
-                  <Pressable onPress={handleClose} style={styles.closeButton}>
+                  <Pressable onPress={handleClose} style={dynamicStyles.closeButton}>
                     <X size={iconSizes.lg} color={colors.text} />
                   </Pressable>
                 </View>
@@ -367,11 +443,11 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                   nestedScrollEnabled={true}
                   keyboardShouldPersistTaps="handled"
                 >
-                  <View style={styles.content}>
+                  <View style={dynamicStyles.content}>
                     {!hasNotificationPermission && (
                       <Pressable
                         style={({ pressed }) => [
-                          styles.warningContainer,
+                          dynamicStyles.warningContainer,
                           { 
                             backgroundColor: `${warningColor}20`, 
                             borderColor: warningColor,
@@ -400,7 +476,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                     <Text.Label
                       textAlign="center"
                       color={colors.textSecondary}
-                      style={{ marginBottom: spacing.phone.sm }}
+                      style={{ marginBottom: spacing.sm }}
                     >
                       {t('scheduleUpTo3Notifications')}
                     </Text.Label>
@@ -413,7 +489,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                       <Pressable
                         onPress={handleAddTime}
                         style={[
-                          styles.addButton,
+                          dynamicStyles.addButton,
                           {
                             backgroundColor: colors.surface,
                             borderColor: colors.border,
@@ -431,7 +507,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                       textAlign="center"
                       color={colors.textSecondary}
                       fontFamily={FONT_FAMILIES.semibold}
-                      style={{ marginTop: spacing.phone.sm }}
+                      style={{ marginTop: spacing.sm }}
                     >
                       {t('multipleNotificationsPerDay', { count: times.length })}
                     </Text.Caption>
@@ -439,14 +515,14 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                       textAlign="center"
                       color={colors.textSecondary}
                       fontStyle="italic"
-                      style={{ marginTop: spacing.phone.xs }}
+                      style={{ marginTop: spacing.xs }}
                     >
                       {t('notificationRespectMessage')}
                     </Text.Caption>
                   </View>
                 </ScrollView>
 
-                  <View style={styles.footer}>
+                  <View style={dynamicStyles.footer}>
                     <Button
                       onPress={handleSave}
                       loading={isSaving}
@@ -465,8 +541,6 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   );
 };
 
-const { height: screenHeight } = Dimensions.get('window');
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -483,84 +557,11 @@ const styles = StyleSheet.create({
   animatedContainer: {
     alignItems: 'center',
   },
-  modalContainer: {
-    maxHeight: screenHeight * 0.8,
-    borderRadius: radius.phone.lg,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.phone.lg,
-    paddingVertical: spacing.phone.lg,
-    borderBottomWidth: 1,
-  },
-  closeButton: {
-    padding: spacing.phone.xs,
-  },
   scrollContent: {
     flexGrow: 0,
     flexShrink: 1,
   },
   scrollContentContainer: {
     flexGrow: 1,
-  },
-  content: {
-    padding: spacing.phone.lg,
-    gap: spacing.phone.md,
-  },
-  warningContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.phone.md,
-    borderRadius: radius.phone.md,
-    borderWidth: 1,
-    gap: spacing.phone.sm,
-    marginBottom: spacing.phone.sm,
-  },
-  timePickerItem: {
-    marginBottom: spacing.phone.sm,
-  },
-  timePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.phone.xs,
-  },
-  removeButton: {
-    padding: spacing.phone.xs,
-    borderRadius: radius.phone.sm,
-  },
-  timePickerContainer: {
-    padding: Platform.OS === 'ios' ? spacing.phone.lg : spacing.phone.md,
-    borderRadius: radius.phone.md,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    // minHeight is set dynamically in the component based on display mode
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.phone.md,
-    borderRadius: radius.phone.md,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    gap: spacing.phone.xs,
-    marginTop: spacing.phone.sm,
-  },
-  footer: {
-    padding: spacing.phone.lg,
-    paddingTop: 0,
-  },
-  androidTimeButton: {
-    paddingVertical: spacing.phone.md,
-    paddingHorizontal: spacing.phone.xl,
-    borderRadius: radius.phone.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 150,
   },
 });

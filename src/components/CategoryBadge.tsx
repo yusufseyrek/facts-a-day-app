@@ -1,10 +1,10 @@
 import React from 'react';
-import { styled } from '@tamagui/core';
 import { XStack } from 'tamagui';
-import { hexColors, spacing, radius, useTheme, getCategoryNeonColor } from '../theme';
+import { hexColors, useTheme, getCategoryNeonColor } from '../theme';
 import { Text, FONT_FAMILIES } from './Typography';
 import { useTranslation, translateCategory } from '../i18n';
 import { getContrastColor } from '../utils/colors';
+import { useResponsive } from '../utils/useResponsive';
 import type { Category } from '../services/database';
 
 interface CategoryBadgeProps {
@@ -17,16 +17,10 @@ interface CategoryBadgeProps {
   fontSize?: number;
 }
 
-const BadgeContainer = styled(XStack, {
-  paddingHorizontal: spacing.phone.md,
-  paddingVertical: spacing.phone.sm,
-  borderRadius: radius.phone.full,
-  alignSelf: 'flex-start',
-});
-
 export function CategoryBadge({ category, fontFamily, fontSize }: CategoryBadgeProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const { spacing, radius } = useResponsive();
 
   // Determine if category is a Category object or a string
   let displayName: string;
@@ -48,14 +42,20 @@ export function CategoryBadge({ category, fontFamily, fontSize }: CategoryBadgeP
   const contrastColor = getContrastColor(backgroundColor);
 
   return (
-    <BadgeContainer style={{ backgroundColor }}>
-        <Text.Caption
-          color={contrastColor}
-          fontFamily={fontFamily || FONT_FAMILIES.semibold}
-          fontSize={fontSize}
-        >
-          {displayName}
-        </Text.Caption>
-      </BadgeContainer>
+    <XStack
+      paddingHorizontal={spacing.md}
+      paddingVertical={spacing.sm}
+      borderRadius={radius.full}
+      alignSelf="flex-start"
+      style={{ backgroundColor }}
+    >
+      <Text.Caption
+        color={contrastColor}
+        fontFamily={fontFamily || FONT_FAMILIES.semibold}
+        fontSize={fontSize}
+      >
+        {displayName}
+      </Text.Caption>
+    </XStack>
   );
 }

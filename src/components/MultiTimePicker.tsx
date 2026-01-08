@@ -1,76 +1,14 @@
 import React, { useState } from 'react';
 import { Platform, Alert } from 'react-native';
-import { styled } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Plus, Trash2 } from '@tamagui/lucide-icons';
-import { hexColors, spacing, radius } from '../theme';
+import { hexColors } from '../theme';
 import { Text, FONT_FAMILIES } from './Typography';
 import { Button } from './Button';
 import { useTheme } from '../theme';
 import { useTranslation } from '../i18n';
 import { useResponsive } from '../utils/useResponsive';
-
-const TimeSlotContainer = styled(YStack, {
-  gap: spacing.phone.lg,
-});
-
-const TimeSlot = styled(XStack, {
-  backgroundColor: '$surface',
-  padding: spacing.phone.md,
-  borderRadius: radius.phone.lg,
-  borderWidth: 1,
-  borderColor: '$border',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: spacing.phone.md,
-  minHeight: 56,
-});
-
-const TimeDisplay = styled(XStack, {
-  flex: 1,
-  gap: spacing.phone.md,
-  alignItems: 'center',
-});
-
-const IOSPickerWrapper = styled(YStack, {
-  flex: 1,
-  alignItems: 'flex-start',
-});
-
-const TimeButtonWrapper = styled(YStack, {
-  flex: 1,
-});
-
-const DeleteButton = styled(XStack, {
-  width: 36,
-  height: 36,
-  borderRadius: radius.phone.sm,
-  backgroundColor: '$errorLight',
-  alignItems: 'center',
-  justifyContent: 'center',
-  pressStyle: {
-    opacity: 0.7,
-    scale: 0.95,
-  },
-});
-
-const AddTimeButton = styled(XStack, {
-  backgroundColor: 'transparent',
-  padding: spacing.phone.lg,
-  borderRadius: radius.phone.lg,
-  borderWidth: 2,
-  borderColor: '$primary',
-  borderStyle: 'dashed',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: spacing.phone.sm,
-  minHeight: 60,
-  pressStyle: {
-    opacity: 0.7,
-    scale: 0.98,
-  },
-});
 
 interface MultiTimePickerProps {
   times: Date[];
@@ -86,8 +24,8 @@ export function MultiTimePicker({
   minTimes = 1,
 }: MultiTimePickerProps) {
   const { theme } = useTheme();
+  const { spacing, radius, iconSizes } = useResponsive();
   const { t } = useTranslation();
-  const { iconSizes } = useResponsive();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
   const [androidPickerTime, setAndroidPickerTime] = useState<Date>(new Date());
@@ -152,28 +90,39 @@ export function MultiTimePicker({
   };
 
   return (
-    <TimeSlotContainer>
+    <YStack gap={spacing.lg}>
       <Text.Body
         fontFamily={FONT_FAMILIES.bold}
         textAlign="center"
-        style={{ marginBottom: spacing.phone.xs }}
+        style={{ marginBottom: spacing.xs }}
       >
         {t('notificationTimes')}
       </Text.Body>
 
       {times.map((time, index) => (
-        <TimeSlot key={index}>
-          <Text.Caption
+        <XStack
+          key={index}
+          backgroundColor="$surface"
+          padding={spacing.md}
+          borderRadius={radius.lg}
+          borderWidth={1}
+          borderColor="$border"
+          alignItems="center"
+          justifyContent="space-between"
+          gap={spacing.md}
+          minHeight={56}
+        >
+          <Text.Label
             color="$textSecondary"
             fontFamily={FONT_FAMILIES.medium}
             style={{ minWidth: 60 }}
           >
             {t('time')} {index + 1}
-          </Text.Caption>
+          </Text.Label>
 
-          <TimeDisplay>
+          <XStack flex={1} gap={spacing.md} alignItems="center">
             {Platform.OS === 'ios' ? (
-              <IOSPickerWrapper>
+              <YStack flex={1} alignItems="flex-start">
                 <DateTimePicker
                   value={time}
                   mode="time"
@@ -183,25 +132,34 @@ export function MultiTimePicker({
                   }
                   themeVariant={theme}
                 />
-              </IOSPickerWrapper>
+              </YStack>
             ) : (
-              <TimeButtonWrapper>
+              <YStack flex={1}>
                 <Button
                   onPress={() => handleAndroidTimePress(index)}
                   variant="secondary"
                 >
                   {formatTime(time)}
                 </Button>
-              </TimeButtonWrapper>
+              </YStack>
             )}
-          </TimeDisplay>
+          </XStack>
 
           {times.length > minTimes && (
-            <DeleteButton onPress={() => handleRemoveTime(index)}>
+            <XStack
+              width={36}
+              height={36}
+              borderRadius={radius.sm}
+              backgroundColor="$errorLight"
+              alignItems="center"
+              justifyContent="center"
+              pressStyle={{ opacity: 0.7, scale: 0.95 }}
+              onPress={() => handleRemoveTime(index)}
+            >
               <Trash2 size={iconSizes.md} color={hexColors.light.error} />
-            </DeleteButton>
+            </XStack>
           )}
-        </TimeSlot>
+        </XStack>
       ))}
 
       {Platform.OS === 'android' && showAndroidPicker && editingIndex !== null && (
@@ -217,7 +175,20 @@ export function MultiTimePicker({
       )}
 
       {times.length < maxTimes && (
-        <AddTimeButton onPress={handleAddTime}>
+        <XStack
+          backgroundColor="transparent"
+          padding={spacing.lg}
+          borderRadius={radius.lg}
+          borderWidth={2}
+          borderColor="$primary"
+          borderStyle="dashed"
+          alignItems="center"
+          justifyContent="center"
+          gap={spacing.sm}
+          minHeight={60}
+          pressStyle={{ opacity: 0.7, scale: 0.98 }}
+          onPress={handleAddTime}
+        >
           <Plus size={iconSizes.lg} color={hexColors.light.primary} />
           <Text.Body
             color="$primary"
@@ -225,10 +196,10 @@ export function MultiTimePicker({
           >
             {t('addAnotherTime')}
           </Text.Body>
-        </AddTimeButton>
+        </XStack>
       )}
 
-      <YStack gap={spacing.phone.xs} marginTop={spacing.phone.md}>
+      <YStack gap={spacing.xs} marginTop={spacing.md}>
         <Text.Caption
           color="$textSecondary"
           textAlign="center"
@@ -246,6 +217,6 @@ export function MultiTimePicker({
           {t('notificationRespectMessage')}
         </Text.Caption>
       </YStack>
-    </TimeSlotContainer>
+    </YStack>
   );
 }

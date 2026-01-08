@@ -1,8 +1,13 @@
 import React, { Component, ReactNode } from 'react';
 import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { recordError } from '../config/firebase';
-import { hexColors, spacing, radius } from '../theme';
+import { hexColors } from '../theme';
 import { FONT_FAMILIES } from './Typography';
+
+// Hardcoded values for ErrorBoundary since it's a class component
+// and renders OUTSIDE the theme/provider context
+const SPACING = { sm: 8, md: 12, lg: 16, xl: 24 };
+const RADIUS = { md: 12, lg: 16 };
 
 interface Props {
   children: ReactNode;
@@ -125,7 +130,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.phone.xl,
+    padding: SPACING.xl,
   },
   content: {
     alignItems: 'center',
@@ -133,7 +138,7 @@ const styles = StyleSheet.create({
   },
   emoji: {
     fontSize: 64,
-    marginBottom: spacing.phone.lg,
+    marginBottom: SPACING.lg,
     textAlign: 'center',
   },
   title: {
@@ -142,21 +147,21 @@ const styles = StyleSheet.create({
     fontFamily: FONT_FAMILIES.bold,
     color: hexColors.light.text,
     textAlign: 'center',
-    marginBottom: spacing.phone.md,
+    marginBottom: SPACING.md,
   },
   body: {
     fontSize: 16,
     fontFamily: FONT_FAMILIES.regular,
     color: hexColors.light.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.phone.xl,
+    marginBottom: SPACING.xl,
     lineHeight: 24,
   },
   errorDetails: {
     backgroundColor: '#FEF2F2',
-    borderRadius: radius.phone.md,
-    padding: spacing.phone.md,
-    marginBottom: spacing.phone.xl,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.xl,
     width: '100%',
   },
   errorLabel: {
@@ -164,7 +169,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: FONT_FAMILIES.semibold,
     color: '#DC2626',
-    marginBottom: spacing.phone.sm,
+    marginBottom: SPACING.sm,
   },
   errorText: {
     fontSize: 12,
@@ -173,9 +178,9 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: hexColors.light.primary,
-    paddingHorizontal: spacing.phone.xl,
-    paddingVertical: spacing.phone.md,
-    borderRadius: radius.phone.lg,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.lg,
     minWidth: 200,
   },
   buttonPressed: {

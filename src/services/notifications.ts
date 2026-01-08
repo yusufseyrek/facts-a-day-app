@@ -311,7 +311,7 @@ export async function preloadUpcomingNotificationImages(locale: SupportedLocale)
       IMAGE_DOWNLOAD_CONCURRENCY
     );
 
-    return results.reduce((sum, count) => sum + count, 0);
+    return results.reduce<number>((sum, count) => sum + count, 0);
   } catch {
     return 0;
   }

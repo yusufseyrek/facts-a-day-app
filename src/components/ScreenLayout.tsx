@@ -2,7 +2,7 @@ import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
 import { YStack, XStack, YStackProps } from "tamagui";
-import { hexColors, spacing, radius } from "../theme";
+import { hexColors } from "../theme";
 import { Text } from "./Typography";
 import { useTheme } from "../theme";
 import { LAYOUT } from "../config/app";
@@ -88,25 +88,40 @@ export function ContentContainer({ children, ...props }: ContentContainerProps) 
   );
 }
 
+interface ScrollContentContainerProps extends YStackProps {
+  children: React.ReactNode;
+}
+
 /**
  * ScrollContentContainer - Content container with vertical gap for scrollable content
  * Use inside ScrollView for settings-like screens
  */
-export const ScrollContentContainer = styled(YStack, {
-  paddingHorizontal: spacing.phone.xl,
-  gap: spacing.phone.lg,
-  flex: 1,
-});
+export function ScrollContentContainer({ children, ...props }: ScrollContentContainerProps) {
+  const { spacing } = useResponsive();
+  
+  return (
+    <YStack paddingHorizontal={spacing.xl} gap={spacing.lg} flex={1} {...props}>
+      {children}
+    </YStack>
+  );
+}
+
+interface LoadingContainerProps {
+  children: React.ReactNode;
+}
 
 /**
  * LoadingContainer - Centered container for loading states
  */
-export const LoadingContainer = styled(YStack, {
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  gap: spacing.phone.md,
-});
+export function LoadingContainer({ children }: LoadingContainerProps) {
+  const { spacing } = useResponsive();
+  
+  return (
+    <YStack flex={1} justifyContent="center" alignItems="center" gap={spacing.md}>
+      {children}
+    </YStack>
+  );
+}
 
 /**
  * TabletWrapper - Max-width wrapper for tablet layouts
@@ -118,27 +133,56 @@ export const TabletWrapper = styled(YStack, {
   alignSelf: "center",
 });
 
+interface SectionContainerProps extends YStackProps {
+  children: React.ReactNode;
+}
+
 /**
  * SectionContainer - Container for grouped settings/content sections
  */
-export const SectionContainer = styled(YStack, {
-  gap: spacing.phone.md,
-  marginBottom: spacing.phone.xl,
-});
+export function SectionContainer({ children, ...props }: SectionContainerProps) {
+  const { spacing } = useResponsive();
+  
+  return (
+    <YStack gap={spacing.md} marginBottom={spacing.xl} {...props}>
+      {children}
+    </YStack>
+  );
+}
+
+interface SectionTitleProps {
+  children: React.ReactNode;
+}
 
 /**
  * SectionTitle - Styled H2 for section titles
  */
-export const SectionTitle = styled(Text.Title, {
-  marginBottom: spacing.phone.sm,
-});
+export function SectionTitle({ children }: SectionTitleProps) {
+  const { spacing } = useResponsive();
+  
+  return (
+    <Text.Title marginBottom={spacing.sm}>
+      {children}
+    </Text.Title>
+  );
+}
+
+interface ItemGroupProps extends YStackProps {
+  children: React.ReactNode;
+}
 
 /**
  * ItemGroup - Container for grouped items (e.g., settings rows)
  */
-export const ItemGroup = styled(YStack, {
-  gap: spacing.phone.md,
-});
+export function ItemGroup({ children, ...props }: ItemGroupProps) {
+  const { spacing } = useResponsive();
+  
+  return (
+    <YStack gap={spacing.md} {...props}>
+      {children}
+    </YStack>
+  );
+}
 
 /**
  * Helper hook to get icon color based on theme
@@ -147,4 +191,3 @@ export function useIconColor() {
   const { theme } = useTheme();
   return theme === "dark" ? "#FFFFFF" : hexColors.light.text;
 }
-

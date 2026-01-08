@@ -1,26 +1,8 @@
 import React from 'react';
-import { View, styled } from '@tamagui/core';
+import { View } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Text, FONT_FAMILIES } from './Typography';
-import { hexColors, spacing, radius } from '../theme';
 import { useResponsive } from '../utils';
-
-const Container = styled(YStack, {
-  gap: spacing.phone.sm,
-});
-
-const ProgressBarContainer = styled(View, {
-  width: '100%',
-  backgroundColor: '$neutralLight',
-  borderRadius: radius.phone.full,
-  overflow: 'hidden',
-});
-
-const ProgressBarFill = styled(View, {
-  height: '100%',
-  backgroundColor: '$primary',
-  borderRadius: radius.phone.full,
-});
 
 interface ProgressIndicatorProps {
   currentStep: number;
@@ -28,18 +10,28 @@ interface ProgressIndicatorProps {
 }
 
 export function ProgressIndicator({ currentStep, totalSteps }: ProgressIndicatorProps) {
-  const { borderWidths } = useResponsive();
+  const { spacing, radius, borderWidths } = useResponsive();
   const progress = (currentStep / totalSteps) * 100;
 
-
   return (
-    <Container>
+    <YStack gap={spacing.sm}>
       <Text.Caption fontFamily={FONT_FAMILIES.medium}>
         {currentStep} of {totalSteps}
       </Text.Caption>
-      <ProgressBarContainer height={borderWidths.extraHeavy}>
-        <ProgressBarFill style={{ width: `${progress}%` }} />
-      </ProgressBarContainer>
-    </Container>
+      <View
+        width="100%"
+        backgroundColor="$neutralLight"
+        borderRadius={radius.full}
+        overflow="hidden"
+        height={borderWidths.extraHeavy}
+      >
+        <View
+          height="100%"
+          backgroundColor="$primary"
+          borderRadius={radius.full}
+          style={{ width: `${progress}%` }}
+        />
+      </View>
+    </YStack>
   );
 }

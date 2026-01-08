@@ -6,7 +6,7 @@ import { View, styled } from '@tamagui/core';
 import { XStack, YStack } from 'tamagui';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from '@tamagui/lucide-icons';
-import { hexColors, spacing, radius } from '../../src/theme';
+import { hexColors } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 import {
   Text,
@@ -27,39 +27,7 @@ const Container = styled(SafeAreaView, {
   backgroundColor: '$background',
 });
 
-const ContentContainer = styled(YStack, {
-  padding: spacing.phone.xl,
-  gap: spacing.phone.xl,
-  flex: 1,
-});
-
-const HeaderContainer = styled(YStack, {
-  gap: spacing.phone.md,
-});
-
-const HeaderRow = styled(XStack, {
-  alignItems: 'center',
-  gap: spacing.phone.md,
-});
-
-const HeaderText = styled(YStack, {
-  gap: spacing.phone.sm,
-  flex: 1,
-});
-
-const CategoriesGrid = styled(View, {
-  flex: 1,
-  gap: spacing.phone.md,
-});
-
-const CategoryRow = styled(XStack, {
-  gap: spacing.phone.md,
-  justifyContent: 'space-between',
-});
-
-const ButtonContainer = styled(View, {
-  paddingTop: spacing.phone.md,
-});
+// Content styled components now use inline props with useResponsive() for dynamic spacing
 
 export default function CategoriesSettings() {
   const { theme } = useTheme();
@@ -71,7 +39,7 @@ export default function CategoriesSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const { typography, config, iconSizes } = useResponsive();
+  const { typography, config, iconSizes, spacing } = useResponsive();
 
   // Responsive sizing for tablets
   const numColumns = config.categoryColumns;
@@ -256,10 +224,10 @@ export default function CategoriesSettings() {
     return (
       <Container>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-        <ContentContainer justifyContent="center" alignItems="center">
+        <YStack padding={spacing.xl} gap={spacing.xl} flex={1} justifyContent="center" alignItems="center">
           <ActivityIndicator size="large" color={hexColors.light.primary} />
           <Text.Body>{t('loadingCategories')}</Text.Body>
-        </ContentContainer>
+        </YStack>
       </Container>
     );
   }
@@ -277,33 +245,33 @@ export default function CategoriesSettings() {
         message={t('categoriesUpdated')}
         onHide={handleSuccessToastHide}
       />
-      <ContentContainer>
+      <YStack padding={spacing.xl} gap={spacing.xl} flex={1}>
         <Animated.View
           style={{
             opacity: headerOpacity,
             transform: [{ translateY: headerTranslateY }],
           }}
         >
-          <HeaderContainer>
-            <HeaderRow>
-              <Pressable onPress={() => router.back()} style={{ padding: spacing.phone.xs }}>
+          <YStack gap={spacing.md}>
+            <XStack alignItems="center" gap={spacing.md}>
+              <Pressable onPress={() => router.back()} style={{ padding: spacing.xs }}>
                 <ArrowLeft size={iconSizes.lg} color={theme === 'dark' ? '#FFFFFF' : hexColors.light.text} />
               </Pressable>
-              <HeaderText>
+              <YStack gap={spacing.sm} flex={1}>
                 <Text.Headline>{t('settingsCategories')}</Text.Headline>
-              </HeaderText>
-            </HeaderRow>
+              </YStack>
+            </XStack>
             <Text.Body color="$textSecondary" fontSize={secondaryFontSize}>
               {t('selectCategoriesMinimum')}
             </Text.Body>
-          </HeaderContainer>
+          </YStack>
         </Animated.View>
 
         <Animated.View style={{ flex: 1, opacity: gridOpacity }}>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <CategoriesGrid>
+            <View style={{ flex: 1, gap: spacing.md }}>
               {rows.map((row, rowIndex) => (
-                <CategoryRow key={`row-${rowIndex}`}>
+                <XStack key={`row-${rowIndex}`} gap={spacing.md} justifyContent="space-between">
                   {row.map((category, colIndex) => {
                     const catIndex = getCategoryIndex(rowIndex, colIndex);
                     const animValue = categoryAnimations[catIndex];
@@ -353,10 +321,10 @@ export default function CategoriesSettings() {
                       ))}
                     </>
                   )}
-                </CategoryRow>
+                </XStack>
               ))}
-            </CategoriesGrid>
-            <View height={spacing.phone.xl} />
+            </View>
+            <View height={spacing.xl} />
           </ScrollView>
         </Animated.View>
 
@@ -366,7 +334,7 @@ export default function CategoriesSettings() {
             transform: [{ translateY: buttonTranslateY }],
           }}
         >
-          <ButtonContainer>
+          <View style={{ paddingTop: spacing.md }}>
             <Button
               onPress={handleSave}
               disabled={selectedCategories.length < 5 || isSaving}
@@ -374,9 +342,9 @@ export default function CategoriesSettings() {
             >
               {isSaving ? t('saving') : t('save')}
             </Button>
-          </ButtonContainer>
+          </View>
         </Animated.View>
-      </ContentContainer>
+      </YStack>
     </Container>
   );
 }

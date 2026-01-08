@@ -1,9 +1,8 @@
 import React from 'react';
 import { ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { styled, View } from '@tamagui/core';
+import { View } from '@tamagui/core';
 import { XStack } from 'tamagui';
-import { hexColors, spacing, radius, media, useTheme } from '../theme';
 import { Text, FONT_FAMILIES } from './Typography';
 import { useResponsive } from '../utils';
 
@@ -15,37 +14,6 @@ interface ButtonProps {
   loading?: boolean;
 }
 
-const ButtonContainer = styled(View, {
-  borderRadius: radius.phone.full,
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: '100%',
-
-  variants: {
-    variant: {
-      primary: {
-        backgroundColor: '$primary',
-      },
-      secondary: {
-        backgroundColor: '$neutral',
-      },
-    },
-    disabled: {
-      true: {
-        opacity: 0.4,
-      },
-      false: {
-        opacity: 1,
-      },
-    },
-  } as const,
-
-  defaultVariants: {
-    variant: 'primary',
-    disabled: false,
-  },
-});
-
 export function Button({
   children,
   onPress,
@@ -53,7 +21,7 @@ export function Button({
   disabled = false,
   loading = false,
 }: ButtonProps) {
-  const { media, spacing } = useResponsive();
+  const { media, spacing, radius } = useResponsive();
 
   const handlePress = () => {
     if (!disabled && !loading && onPress) {
@@ -64,26 +32,30 @@ export function Button({
   };
 
   return (
-    <ButtonContainer
-        paddingHorizontal={spacing.xl}
-        height={media.buttonHeight}
-        variant={variant}
-        disabled={disabled || loading}
-        onPress={handlePress}
-        pressStyle={disabled || loading ? {} : { opacity: 0.8 }}
-      >
-        {loading ? (
-          <XStack gap={spacing.sm} alignItems="center">
-            <ActivityIndicator size="small" color="#FFFFFF" />
-            <Text.Label color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
-              {children}
-            </Text.Label>
-          </XStack>
-        ) : (
-          <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+    <View
+      borderRadius={radius.full}
+      alignItems="center"
+      justifyContent="center"
+      width="100%"
+      paddingHorizontal={spacing.xl}
+      height={media.buttonHeight}
+      backgroundColor={variant === 'primary' ? '$primary' : '$neutral'}
+      opacity={disabled || loading ? 0.4 : 1}
+      onPress={handlePress}
+      pressStyle={disabled || loading ? {} : { opacity: 0.8 }}
+    >
+      {loading ? (
+        <XStack gap={spacing.sm} alignItems="center">
+          <ActivityIndicator size="small" color="#FFFFFF" />
+          <Text.Label color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
             {children}
-          </Text.Body>
-        )}
-      </ButtonContainer>
+          </Text.Label>
+        </XStack>
+      ) : (
+        <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+          {children}
+        </Text.Body>
+      )}
+    </View>
   );
 }

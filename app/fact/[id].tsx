@@ -5,14 +5,16 @@ import { FactModal } from '../../src/components/FactModal';
 import type { FactWithRelations } from '../../src/services/database';
 import * as database from '../../src/services/database';
 import { Text } from '../../src/components';
-import { hexColors, spacing, radius } from '../../src/theme';
+import { hexColors } from '../../src/theme';
 import { useTranslation } from '../../src/i18n';
 import { trackFactView, trackScreenView, Screens, type FactViewSource } from '../../src/services/analytics';
+import { useResponsive } from '../../src/utils/useResponsive';
 
 export default function FactDetailModal() {
   const { id, source } = useLocalSearchParams<{ id: string; source?: FactViewSource }>();
   const router = useRouter();
   const { t } = useTranslation();
+  const { spacing } = useResponsive();
   const [fact, setFact] = useState<FactWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +87,7 @@ export default function FactDetailModal() {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          padding: spacing.phone.lg,
+          padding: spacing.lg,
           backgroundColor: hexColors.dark.background,
         }}
       >

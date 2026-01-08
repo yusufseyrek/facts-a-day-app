@@ -1,26 +1,12 @@
 import React from 'react';
 import { Modal, Pressable, Platform } from 'react-native';
-import { styled } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { AlertTriangle, X, DoorOpen } from '@tamagui/lucide-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
-import { hexColors, spacing, radius } from '../../theme';
+import { hexColors } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
-
-const ModalOverlay = styled(YStack, {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  padding: spacing.phone.md,
-});
-
-const ModalContent = styled(YStack, {
-  width: '100%',
-  borderRadius: radius.phone.xl,
-  overflow: 'hidden',
-});
 
 interface TriviaExitModalProps {
   visible: boolean;
@@ -44,7 +30,7 @@ export function TriviaExitModal({
   exitText,
 }: TriviaExitModalProps) {
   // Get responsive values for device type
-  const { screenWidth, typography, spacing, iconSizes, media } = useResponsive();
+  const { screenWidth, typography, spacing, radius, iconSizes, media } = useResponsive();
   
   // Responsive sizing
   const modalMaxWidth = media.modalMaxWidth;
@@ -80,7 +66,7 @@ export function TriviaExitModal({
       statusBarTranslucent
       onRequestClose={onCancel}
     >
-      <ModalOverlay>
+      <YStack flex={1} justifyContent="center" alignItems="center" padding={spacing.md}>
         {/* Blur/Overlay Background */}
         {Platform.OS === 'ios' ? (
           <BlurView
@@ -124,7 +110,7 @@ export function TriviaExitModal({
             elevation: 24,
           }}
         >
-          <ModalContent backgroundColor={bgColor}>
+          <YStack width="100%" borderRadius={radius.xl} overflow="hidden" backgroundColor={bgColor}>
             {/* Close button */}
             <Pressable
               onPress={onCancel}
@@ -180,7 +166,7 @@ export function TriviaExitModal({
             >
               <XStack 
                 backgroundColor={surfaceColor}
-                borderRadius={radius.phone.md}
+                borderRadius={radius.md}
                 padding={spacing.md}
                 alignItems="center"
                 gap={spacing.sm}
@@ -219,7 +205,7 @@ export function TriviaExitModal({
                   borderWidth={1.5}
                   borderColor={borderColor}
                   paddingVertical={buttonPadding}
-                  borderRadius={radius.phone.md}
+                  borderRadius={radius.md}
                   alignItems="center"
                   justifyContent="center"
                 >
@@ -249,7 +235,7 @@ export function TriviaExitModal({
                 <XStack
                   backgroundColor={errorColor}
                   paddingVertical={buttonPadding}
-                  borderRadius={radius.phone.md}
+                  borderRadius={radius.md}
                   alignItems="center"
                   justifyContent="center"
                   gap={spacing.xs}
@@ -265,9 +251,9 @@ export function TriviaExitModal({
                 </XStack>
               </Pressable>
             </XStack>
-          </ModalContent>
+          </YStack>
         </Animated.View>
-      </ModalOverlay>
+      </YStack>
     </Modal>
   );
 }

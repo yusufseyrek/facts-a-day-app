@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Modal, TextInput, Keyboard, Platform, TouchableWithoutFeedback, KeyboardAvoidingView, ScrollView, View } from 'react-native';
-import { styled } from '@tamagui/core';
 import { YStack, XStack } from 'tamagui';
 import { X } from '@tamagui/lucide-icons';
-import { hexColors, spacing, radius, useTheme } from '../theme';
+import { hexColors, useTheme } from '../theme';
 import { Text } from './Typography';
 import { Button } from './Button';
 import { useTranslation } from '../i18n';
@@ -16,68 +15,6 @@ interface ReportFactModalProps {
   isSubmitting: boolean;
 }
 
-const Overlay = styled(YStack, {
-  flex: 1,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  justifyContent: 'center',
-  alignItems: 'center',
-  padding: spacing.phone.lg,
-});
-
-const ModalContainer = styled(YStack, {
-  backgroundColor: '$background',
-  borderRadius: radius.phone.lg,
-  width: '100%',
-  maxWidth: 500,
-  padding: spacing.phone.lg,
-  gap: spacing.phone.md,
-  flexShrink: 0,
-  alignSelf: 'center',
-  ...Platform.select({
-    ios: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-    },
-    android: {
-      elevation: 5,
-    },
-  }),
-});
-
-const Header = styled(XStack, {
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: spacing.phone.sm,
-});
-
-const CloseButton = styled(YStack, {
-  width: 32,
-  height: 32,
-  borderRadius: radius.phone.full,
-  backgroundColor: '$surface',
-  alignItems: 'center',
-  justifyContent: 'center',
-});
-
-const StyledTextInput = styled(TextInput, {
-  backgroundColor: '$surface',
-  borderRadius: radius.phone.md,
-  padding: spacing.phone.md,
-  minHeight: 120,
-  maxHeight: 200,
-  textAlignVertical: 'top',
-  borderWidth: 1,
-  borderColor: '$border',
-  alignSelf: 'stretch',
-});
-
-const ButtonRow = styled(XStack, {
-  gap: spacing.phone.md,
-  marginTop: spacing.phone.sm,
-});
-
 export function ReportFactModal({
   visible,
   onClose,
@@ -86,7 +23,7 @@ export function ReportFactModal({
 }: ReportFactModalProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { typography, iconSizes } = useResponsive();
+  const { spacing, radius, typography, iconSizes } = useResponsive();
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
   const [inputWidth, setInputWidth] = useState<number | undefined>(undefined);
@@ -121,6 +58,43 @@ export function ReportFactModal({
     handleClose();
   };
 
+  const modalContainerStyle = useMemo(() => ({
+    backgroundColor: '$background',
+    borderRadius: radius.lg,
+    width: '100%' as const,
+    maxWidth: 500,
+    padding: spacing.lg,
+    gap: spacing.md,
+    flexShrink: 0,
+    alignSelf: 'center' as const,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  }), [spacing, radius]);
+
+  const textInputStyle = useMemo(() => ({
+    backgroundColor: hexColors[theme].surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    minHeight: 120,
+    maxHeight: 200,
+    textAlignVertical: 'top' as const,
+    borderWidth: 1,
+    borderColor: hexColors[theme].border,
+    alignSelf: 'stretch' as const,
+    fontSize: typography.fontSize.body,
+    color: hexColors[theme].text,
+    width: inputWidth ?? '100%' as const,
+  }), [spacing, radius, typography, theme, inputWidth]);
+
   return (
     <Modal
       visible={visible}
@@ -135,28 +109,41 @@ export function ReportFactModal({
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <Overlay>
+          <YStack
+            flex={1}
+            backgroundColor="rgba(0, 0, 0, 0.5)"
+            justifyContent="center"
+            alignItems="center"
+            padding={spacing.lg}
+          >
             <TouchableWithoutFeedback>
               <ScrollView
                 contentContainerStyle={{ 
                   flexGrow: 1,
                   justifyContent: 'center',
                   alignItems: 'center',
-                  paddingVertical: spacing.phone.lg,
+                  paddingVertical: spacing.lg,
                 }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
                 bounces={false}
               >
-                <ModalContainer>
-                  <Header>
+                <YStack {...modalContainerStyle}>
+                  <XStack justifyContent="space-between" alignItems="center" marginBottom={spacing.sm}>
                     <Text.Title>{t('reportFact')}</Text.Title>
                     <TouchableWithoutFeedback onPress={handleClose}>
-                      <CloseButton>
+                      <YStack
+                        width={32}
+                        height={32}
+                        borderRadius={radius.full}
+                        backgroundColor="$surface"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
                         <X size={iconSizes.md} color={hexColors[theme].text} />
-                      </CloseButton>
+                      </YStack>
                     </TouchableWithoutFeedback>
-                  </Header>
+                  </XStack>
 
                   <Text.Body color="$text" fontSize={typography.fontSize.caption}>
                     {t('whatIsWrong')}
@@ -171,7 +158,7 @@ export function ReportFactModal({
                       }
                     }}
                   >
-                    <StyledTextInput
+                    <TextInput
                       value={feedback}
                       onChangeText={(text) => {
                         setFeedback(text);
@@ -183,11 +170,7 @@ export function ReportFactModal({
                       maxLength={1000}
                       editable={!isSubmitting}
                       autoFocus
-                      style={{ 
-                        fontSize: typography.fontSize.body, 
-                        color: hexColors[theme].text,
-                        width: inputWidth || '100%',
-                      }}
+                      style={textInputStyle}
                     />
                   </View>
 
@@ -203,7 +186,7 @@ export function ReportFactModal({
                     )}
                   </XStack>
 
-                  <ButtonRow>
+                  <XStack gap={spacing.md} marginTop={spacing.sm}>
                     <YStack flex={1}>
                       <Button
                         variant="secondary"
@@ -222,11 +205,11 @@ export function ReportFactModal({
                         {isSubmitting ? t('submitting') || 'Submitting...' : t('submit')}
                       </Button>
                     </YStack>
-                  </ButtonRow>
-                </ModalContainer>
+                  </XStack>
+                </YStack>
               </ScrollView>
             </TouchableWithoutFeedback>
-          </Overlay>
+          </YStack>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </Modal>

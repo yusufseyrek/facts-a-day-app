@@ -1,4 +1,4 @@
-import { hexColors, spacing, radius } from '../../theme';
+import { hexColors } from '../../theme';
 import type { TranslationKeys } from '../../i18n/translations';
 
 export interface TriviaModeBadge {

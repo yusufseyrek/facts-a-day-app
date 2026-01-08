@@ -1,34 +1,12 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { Pressable, Animated, Easing } from 'react-native';
-import { View, styled } from '@tamagui/core';
+import { View } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Check } from '@tamagui/lucide-icons';
 import { Text, FONT_FAMILIES } from './Typography';
-import { hexColors, spacing, radius, useTheme, getCategoryNeonColor } from '../theme';
+import { hexColors, useTheme, getCategoryNeonColor } from '../theme';
 import { getContrastColor } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
-
-const Card = styled(YStack, {
-  position: 'relative',
-  width: '100%',
-  aspectRatio: 1,
-  borderRadius: radius.phone.lg,
-  borderWidth: 2,
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: spacing.phone.sm,
-});
-
-const IconContainer = styled(YStack, {
-  alignItems: 'center',
-  justifyContent: 'center',
-});
-
-const LabelContainer = styled(YStack, {
-  alignItems: 'center',
-  justifyContent: 'center',
-  paddingHorizontal: spacing.phone.xs,
-});
 
 // Animated wrapper for the checkmark
 const AnimatedCheckmarkContainer = Animated.createAnimatedComponent(View);
@@ -45,7 +23,7 @@ export interface CategoryCardProps {
 
 const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress, labelFontSize }: CategoryCardProps) => {
   const { theme } = useTheme();
-  const { isTablet, typography, iconSizes } = useResponsive();
+  const { spacing, radius, typography, iconSizes } = useResponsive();
 
   // Animation values
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -125,6 +103,18 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
     ],
   };
 
+  const checkmarkContainerStyle = useMemo(() => ({
+    position: 'absolute' as const,
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 24,
+    height: 24,
+    borderRadius: radius.full,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: contrastColor === '#000000' ? '#00000020' : '#FFFFFF30',
+  }), [spacing, radius, contrastColor]);
+
   return (
     <Pressable onPress={onPress} style={{ flex: 1 }}>
       {({ pressed }) => (
@@ -134,7 +124,15 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
             transform: [{ scale: scaleAnim }],
           }}
         >
-          <Card
+          <YStack
+            position="relative"
+            width="100%"
+            aspectRatio={1}
+            borderRadius={radius.lg}
+            borderWidth={2}
+            alignItems="center"
+            justifyContent="center"
+            gap={spacing.sm}
             opacity={pressed ? 0.85 : 1}
             style={{
               backgroundColor,
@@ -142,32 +140,19 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
             }}
           >
             <AnimatedCheckmarkContainer
-              style={[
-                {
-                  position: 'absolute',
-                  top: spacing.phone.sm,
-                  right: spacing.phone.sm,
-                  width: 24,
-                  height: 24,
-                  borderRadius: radius.phone.full,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: contrastColor === '#000000' ? '#00000020' : '#FFFFFF30',
-                },
-                checkmarkStyle,
-              ]}
+              style={[checkmarkContainerStyle, checkmarkStyle]}
             >
               <Check size={iconSizes.sm} color={contrastColor} strokeWidth={3} />
             </AnimatedCheckmarkContainer>
-            <IconContainer>
+            <YStack alignItems="center" justifyContent="center">
               {React.isValidElement(icon)
                 ? React.cloneElement(icon as React.ReactElement<any>, {
                     color: iconColor,
                     size: iconSizes.lg,
                   })
                 : icon}
-            </IconContainer>
-            <LabelContainer>
+            </YStack>
+            <YStack alignItems="center" justifyContent="center" paddingHorizontal={spacing.xs}>
               <Text.Label
                 fontFamily={FONT_FAMILIES.semibold}
                 color={selected ? contrastColor : '$text'}
@@ -177,8 +162,8 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
               >
                 {label}
               </Text.Label>
-            </LabelContainer>
-          </Card>
+            </YStack>
+          </YStack>
         </Animated.View>
       )}
     </Pressable>

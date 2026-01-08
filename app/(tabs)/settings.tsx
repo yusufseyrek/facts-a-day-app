@@ -25,7 +25,7 @@ import {
   Camera,
   Download,
 } from "@tamagui/lucide-icons";
-import { hexColors, spacing, radius } from "../../src/theme";
+import { hexColors } from "../../src/theme";
 import {
   Text,
   ScreenContainer,
@@ -84,7 +84,7 @@ export default function SettingsPage() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { resetOnboarding } = useOnboarding();
-  const { iconSizes, spacing: responsiveSpacing } = useResponsive();
+  const { iconSizes, spacing } = useResponsive();
 
   // Track if this is the initial mount to prevent re-animation on tab focus
   // We delay setting the flag to allow lazy-rendered items to also animate
@@ -945,18 +945,18 @@ export default function SettingsPage() {
   const renderFooter = () => (
     <Animated.View entering={shouldAnimate ? FadeInDown.delay(300).duration(300) : undefined}>
       <ContentContainer>
-        <YStack alignItems="center" marginVertical={spacing.phone.lg}>
-          <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: spacing.phone.xs }}>
+        <YStack alignItems="center" marginVertical={spacing.lg}>
+          <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: spacing.xs }}>
             Version {Constants.expoConfig?.version || "1.0.0"} ({Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber || 'N/A' : Constants.expoConfig?.android?.versionCode || 'N/A'})
           </Text.Caption>
           {updateInfo && (
-            <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.5, marginBottom: spacing.phone.xs }}>
+            <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.5, marginBottom: spacing.xs }}>
               {updateInfo.isEmbedded 
                 ? `Bundle: Embedded` 
                 : `Bundle: ${updateInfo.updateId?.slice(0, 8)}...`}
             </Text.Caption>
           )}
-          <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: spacing.phone.xs }}>
+          <Text.Caption textAlign="center" color={iconColor} style={{ opacity: 0.6, marginBottom: spacing.xs }}>
             {t("settingsCopyright").replace("{appName}", t("appName"))}
           </Text.Caption>
         </YStack>
@@ -978,12 +978,12 @@ export default function SettingsPage() {
         sections={sections}
         keyExtractor={(item) => item.id}
         renderSectionHeader={({ section: { title }, section }) => {
-          const sectionIndex = sections.indexOf(section);
+          const sectionIndex = sections.findIndex(s => s.title === section.title);
           return (
             <Animated.View entering={shouldAnimate ? FadeInDown.delay(sectionIndex * 50).duration(300) : undefined}>
               <YStack
-                paddingHorizontal={responsiveSpacing.xl}
-                paddingVertical={responsiveSpacing.md}
+                paddingHorizontal={spacing.xl}
+                paddingVertical={spacing.md}
                 backgroundColor="$background"
               >
                 <Text.Title>{title}</Text.Title>
@@ -992,11 +992,11 @@ export default function SettingsPage() {
           );
         }}
         renderItem={({ item, section, index }) => {
-          const sectionIndex = sections.indexOf(section);
+          const sectionIndex = sections.findIndex(s => s.title === section.title);
           const animationDelay = sectionIndex * 50 + (index + 1) * 30;
           return (
             <Animated.View entering={shouldAnimate ? FadeInDown.delay(animationDelay).duration(300) : undefined}>
-              <ContentContainer marginBottom={spacing.phone.sm}>
+              <ContentContainer marginBottom={spacing.sm}>
                 <SettingsRow
                   label={item.label}
                   value={item.value}

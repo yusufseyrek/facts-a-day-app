@@ -18,7 +18,7 @@ import * as database from "../services/database";
 import * as api from "../services/api";
 import { useTranslation } from "../i18n";
 import { ReportFactModal } from "./ReportFactModal";
-import { hexColors, spacing, radius, useTheme } from "../theme";
+import { hexColors, useTheme } from "../theme";
 import { useResponsive } from "../utils/useResponsive";
 import {
   trackFactShare,

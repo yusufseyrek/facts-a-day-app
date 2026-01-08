@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { View, styled } from "@tamagui/core";
 import { XStack, YStack } from "tamagui";
 import { useRouter } from "expo-router";
-import { hexColors, spacing, radius } from "../../src/theme";
+import { hexColors } from "../../src/theme";
 import { useResponsive } from "../../src/utils/useResponsive";
 import {
   Text,
@@ -30,29 +30,7 @@ const Container = styled(SafeAreaView, {
   backgroundColor: "$background",
 });
 
-const ContentContainer = styled(YStack, {
-  padding: spacing.phone.xl,
-  gap: spacing.phone.xl,
-  flex: 1,
-});
-
-const Header = styled(YStack, {
-  gap: spacing.phone.sm,
-});
-
-const CategoriesGrid = styled(View, {
-  flex: 1,
-  gap: spacing.phone.md,
-});
-
-const CategoryRow = styled(XStack, {
-  gap: spacing.phone.md,
-  justifyContent: "space-between",
-});
-
-const ButtonContainer = styled(View, {
-  paddingTop: spacing.phone.md,
-});
+// These components now use inline props with useResponsive() for dynamic spacing
 
 export default function Categories() {
   const { theme } = useTheme();
@@ -69,7 +47,7 @@ export default function Categories() {
   } = useOnboarding();
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { typography, config, iconSizes } = useResponsive();
+  const { typography, config, iconSizes, spacing } = useResponsive();
 
   // Responsive sizing for tablets
   const numColumns = config.categoryColumns;
@@ -217,10 +195,10 @@ export default function Categories() {
     return (
       <Container>
         <StatusBar style={theme === "dark" ? "light" : "dark"} />
-        <ContentContainer justifyContent="center" alignItems="center">
+        <YStack padding={spacing.xl} gap={spacing.xl} flex={1} justifyContent="center" alignItems="center">
           <ActivityIndicator size="large" color={hexColors.light.primary} />
           <Text.Body>{isInitializing ? t("settingUpApp") : t("loadingCategories")}</Text.Body>
-        </ContentContainer>
+        </YStack>
       </Container>
     );
   }
@@ -230,7 +208,7 @@ export default function Categories() {
     return (
       <Container>
         <StatusBar style={theme === "dark" ? "light" : "dark"} />
-        <ContentContainer justifyContent="center" alignItems="center" gap={spacing.phone.lg}>
+        <YStack padding={spacing.xl} gap={spacing.lg} flex={1} justifyContent="center" alignItems="center">
           <Text.Body color="#FF6B6B" textAlign="center">
             {initializationError}
           </Text.Body>
@@ -240,7 +218,7 @@ export default function Categories() {
           <Button onPress={() => initializeOnboarding(locale as SupportedLocale)}>
             {t("tryAgain")}
           </Button>
-        </ContentContainer>
+        </YStack>
       </Container>
     );
   }
@@ -253,7 +231,7 @@ export default function Categories() {
   return (
     <Container>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
-      <ContentContainer>
+      <YStack padding={spacing.xl} gap={spacing.xl} flex={1}>
         <Animated.View
           style={{
             opacity: headerOpacity,
@@ -262,19 +240,19 @@ export default function Categories() {
         >
           <ProgressIndicator currentStep={1} totalSteps={2} />
 
-          <Header style={{ marginTop: spacing.phone.xl }}>
+          <YStack gap={spacing.sm} style={{ marginTop: spacing.xl }}>
             <Text.Headline>{t("whatInterestsYou")}</Text.Headline>
             <Text.Body color="$textSecondary">
               {t("selectCategoriesMinimum")}
             </Text.Body>
-          </Header>
+          </YStack>
         </Animated.View>
 
         <Animated.View style={{ flex: 1, opacity: gridOpacity }}>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <CategoriesGrid>
+            <View style={{ flex: 1, gap: spacing.md }}>
               {rows.map((row, rowIndex) => (
-                <CategoryRow key={`row-${rowIndex}`}>
+                <XStack key={`row-${rowIndex}`} gap={spacing.md} justifyContent="space-between">
                   {row.map((category, colIndex) => {
                     const catIndex = getCategoryIndex(rowIndex, colIndex);
                     const animValue = categoryAnimations[catIndex];
@@ -324,10 +302,10 @@ export default function Categories() {
                       ))}
                     </>
                   )}
-                </CategoryRow>
+                </XStack>
               ))}
-            </CategoriesGrid>
-            <View height={spacing.phone.xl} />
+            </View>
+            <View height={spacing.xl} />
           </ScrollView>
         </Animated.View>
 
@@ -337,16 +315,16 @@ export default function Categories() {
             transform: [{ translateY: buttonTranslateY }],
           }}
         >
-          <ButtonContainer>
+          <View style={{ paddingTop: spacing.md }}>
             <Button
               onPress={handleContinue}
               disabled={selectedCategories.length < 5}
             >
               {t("continue")}
             </Button>
-          </ButtonContainer>
+          </View>
         </Animated.View>
-      </ContentContainer>
+      </YStack>
     </Container>
   );
 }

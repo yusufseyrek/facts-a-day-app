@@ -4,7 +4,7 @@ import { FlatList, RefreshControl, ActivityIndicator, useWindowDimensions } from
 import { YStack } from 'tamagui';
 import { Star } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
-import { hexColors, spacing, radius } from '../../src/theme';
+import { hexColors } from '../../src/theme';
 import {
   EmptyState,
   ScreenContainer,

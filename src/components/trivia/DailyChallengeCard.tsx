@@ -3,7 +3,7 @@ import { Pressable } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { Zap, Check, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { hexColors, spacing, radius } from '../../theme';
+import { hexColors } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { useResponsive } from '../../utils/useResponsive';
 import type { TranslationKeys } from '../../i18n/translations';
@@ -24,7 +24,7 @@ export function DailyChallengeCard({
   onPress,
   t,
 }: DailyChallengeCardProps) {
-  const { typography, iconSizes } = useResponsive();
+  const { spacing, radius, typography, iconSizes } = useResponsive();
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
@@ -43,12 +43,12 @@ export function DailyChallengeCard({
       >
         <XStack
           backgroundColor={cardBg}
-          padding={spacing.phone.lg}
-          borderRadius={radius.phone.md}
+          padding={spacing.lg}
+          borderRadius={radius.md}
           borderWidth={1}
           borderColor={isCompleted ? successColor : borderColor}
           alignItems="center"
-          gap={spacing.phone.md}
+          gap={spacing.md}
         >
           {/* Icon */}
           <YStack

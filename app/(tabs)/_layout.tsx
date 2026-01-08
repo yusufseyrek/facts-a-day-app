@@ -6,13 +6,13 @@ import { useRef, useCallback, useState, useEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import type { BottomTabBarButtonProps, BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BottomTabBar } from "@react-navigation/bottom-tabs";
-import { hexColors, spacing, radius } from "../../src/theme";
+import { hexColors } from "../../src/theme";
+import { useResponsive } from "../../src/utils/useResponsive";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import * as triviaService from "../../src/services/trivia";
 import { BannerAd } from "../../src/components/ads";
 import { ADS_ENABLED } from "../../src/config/ads";
-import { useResponsive } from "../../src/utils/useResponsive";
 import { ScrollToTopProvider, useScrollToTop } from "../../src/contexts";
 
 interface AnimatedTabButtonProps extends BottomTabBarButtonProps {
@@ -78,7 +78,7 @@ function AnimatedTabButton({
 
 // Minimal trivia icon with solid background - uses app's primary cyan color
 function TriviaTabIcon({ focused, isDark, hasBadge }: { focused: boolean; isDark: boolean; hasBadge: boolean }) {
-  const { iconSizes, spacing } = useResponsive();
+  const { iconSizes, spacing, radius } = useResponsive();
   // Use the app's primary color for consistency
   const bgColor = isDark
     ? hexColors.dark.primary // #00A3CC - cyan
@@ -103,7 +103,7 @@ function TriviaTabIcon({ focused, isDark, hasBadge }: { focused: boolean; isDark
           padding: containerPadding,
           width: containerSize,
           height: containerSize,
-          borderRadius: radius.phone.full,
+          borderRadius: radius.full,
         },
       ]}
     >

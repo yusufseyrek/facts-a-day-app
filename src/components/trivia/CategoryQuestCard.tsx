@@ -1,9 +1,9 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { Check, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { hexColors, spacing, radius } from '../../theme';
+import { hexColors } from '../../theme';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
@@ -22,7 +22,7 @@ export function CategoryQuestCard({
   onPress,
   index,
 }: CategoryQuestCardProps) {
-  const { typography, iconSizes } = useResponsive();
+  const { spacing, radius, typography, iconSizes } = useResponsive();
   const progress = category.total > 0
     ? Math.round((category.mastered / category.total) * 100)
     : 0;
@@ -50,10 +50,10 @@ export function CategoryQuestCard({
       >
         <XStack
           backgroundColor={cardBg}
-          padding={spacing.phone.lg}
-          borderRadius={radius.phone.md}
+          padding={spacing.lg}
+          borderRadius={radius.md}
           alignItems="center"
-          gap={spacing.phone.md}
+          gap={spacing.md}
         >
           {/* Category icon */}
           <YStack
@@ -69,7 +69,7 @@ export function CategoryQuestCard({
           
           {/* Content */}
           <YStack flex={1}>
-            <XStack alignItems="center" gap={spacing.phone.sm}>
+            <XStack alignItems="center" gap={spacing.sm}>
               <Text.Label
                 fontFamily={FONT_FAMILIES.semibold}
                 color={textColor}
@@ -82,7 +82,7 @@ export function CategoryQuestCard({
             </XStack>
             
             {/* Progress bar */}
-            <XStack alignItems="center" gap={spacing.phone.sm} marginTop={spacing.phone.xs}>
+            <XStack alignItems="center" gap={spacing.sm} marginTop={spacing.xs}>
               <YStack 
                 flex={1} 
                 height={3} 

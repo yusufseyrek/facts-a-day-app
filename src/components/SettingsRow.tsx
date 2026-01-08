@@ -1,8 +1,8 @@
-import React from 'react';
-import { Pressable, View, StyleSheet } from 'react-native';
+import React, { useMemo } from 'react';
+import { Pressable, View } from 'react-native';
 import { ChevronRight, ExternalLink, AlertCircle } from '@tamagui/lucide-icons';
 import { useTheme } from '../theme';
-import { hexColors, spacing, radius } from '../theme';
+import { hexColors } from '../theme';
 import { Text } from './Typography';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -26,7 +26,7 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   showWarning = false,
 }) => {
   const { theme } = useTheme();
-  const { iconSizes } = useResponsive();
+  const { spacing, radius, iconSizes } = useResponsive();
   const colors = hexColors[theme];
 
   // Use pure white in dark mode for better contrast
@@ -40,6 +40,35 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
     theme === "dark"
       ? hexColors.dark.surface
       : hexColors.light.surface;
+
+  const styles = useMemo(() => ({
+    container: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      minHeight: 56,
+    },
+    leftContent: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      flex: 1,
+    },
+    iconContainer: {
+      marginRight: spacing.md,
+    },
+    warningContainer: {
+      marginLeft: spacing.sm,
+    },
+    rightContent: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: spacing.sm,
+    },
+  }), [spacing, radius]);
 
   const content = (
     <View
@@ -94,32 +123,3 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
     </Pressable>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.phone.lg,
-    paddingVertical: spacing.phone.md,
-    borderRadius: radius.phone.md,
-    borderWidth: 1,
-    minHeight: 56,
-  },
-  leftContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  iconContainer: {
-    marginRight: spacing.phone.md,
-  },
-  warningContainer: {
-    marginLeft: spacing.phone.sm,
-  },
-  rightContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.phone.sm,
-  },
-});

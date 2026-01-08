@@ -7,7 +7,7 @@ import { YStack, XStack } from "tamagui";
 import { X, Calendar } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
-import { hexColors, spacing, radius, getCategoryNeonColor } from "../theme";
+import { hexColors, getCategoryNeonColor } from "../theme";
 import { FactActions } from "./FactActions";
 import { CategoryBadge } from "./CategoryBadge";
 import { Text, FONT_FAMILIES } from "./Typography";
@@ -28,73 +28,16 @@ interface FactModalProps {
   onClose: () => void;
 }
 
+// Styled components without static responsive values - use inline props with useResponsive()
 const Container = styled(YStack, {
   flex: 1,
   backgroundColor: "$surface",
-});
-
-const CloseButton = styled(YStack, {
-  width: 36,
-  height: 36,
-  borderRadius: radius.phone.full,
-  backgroundColor: "rgba(0, 0, 0, 0.4)",
-  alignItems: "center",
-  justifyContent: "center",
-});
-
-const HeaderContainer = styled(XStack, {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  zIndex: 100,
-  alignItems: "center",
-  justifyContent: "space-between",
-  paddingHorizontal: spacing.phone.lg,
-  variants: {
-    tablet: {
-      true: {
-        paddingHorizontal: spacing.phone.xxl,
-      },
-    },
-  } as const,
 });
 
 const HeaderTitleContainer = styled(XStack, {
   flex: 1,
   alignItems: "center",
   justifyContent: "center",
-});
-
-const ContentSection = styled(YStack, {
-  paddingHorizontal: spacing.phone.lg,
-  paddingTop: spacing.phone.lg,
-  paddingBottom: spacing.phone.md,
-  gap: spacing.phone.md,
-  variants: {
-    tablet: {
-      true: {
-        paddingHorizontal: spacing.phone.xxl,
-        paddingTop: spacing.phone.xxl,
-        paddingBottom: spacing.phone.xl,
-        gap: spacing.phone.xl,
-      },
-    },
-  } as const,
-});
-
-const BadgesRow = styled(XStack, {
-  gap: spacing.phone.sm,
-  flexWrap: "wrap",
-  alignItems: "center",
-  justifyContent: "space-between",
-  width: "100%",
-});
-
-const SourceLink = styled(YStack, {
-  paddingTop: spacing.phone.md,
-  borderTopWidth: 1,
-  borderTopColor: "$border",
 });
 
 function slugToTitleCase(slug: string): string {
@@ -132,7 +75,7 @@ function formatLastUpdated(dateString: string, locale: string): string {
 export function FactModal({ fact, onClose }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, spacing, iconSizes, isTablet, screenWidth: SCREEN_WIDTH, screenHeight: SCREEN_HEIGHT, config } = useResponsive();
+  const { typography, spacing, iconSizes, isTablet, screenWidth: SCREEN_WIDTH, screenHeight: SCREEN_HEIGHT, config, radius } = useResponsive();
 
   const insets = useSafeAreaInsets();
   const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
@@ -555,16 +498,23 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             />
           )}
           {/* Header content */}
-          <HeaderContainer
-            tablet={isTablet}
+          <XStack
+            position="absolute"
+            top={0}
+            left={0}
+            right={0}
+            zIndex={100}
+            alignItems="center"
+            justifyContent="space-between"
+            paddingHorizontal={isTablet ? spacing.xxl : spacing.lg}
             pointerEvents="box-none"
-              style={{
-                paddingTop: Platform.OS === "ios" ? spacing.lg : insets.top + spacing.sm,
-                minHeight: headerHeight,
-                paddingBottom: Platform.OS === "ios" ? spacing.lg : spacing.md,
-                zIndex: 101,
-                alignItems: "center",
-              }}
+            style={{
+              paddingTop: Platform.OS === "ios" ? spacing.lg : insets.top + spacing.sm,
+              minHeight: headerHeight,
+              paddingBottom: Platform.OS === "ios" ? spacing.lg : spacing.md,
+              zIndex: 101,
+              alignItems: "center",
+            }}
           >
             <HeaderTitleContainer pointerEvents="none">
               <Animated.View
@@ -579,7 +529,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 </Text.Headline>
               </Animated.View>
             </HeaderTitleContainer>
-          </HeaderContainer>
+          </XStack>
           {/* Animated border bottom when category badge is hidden */}
           {categoryColor && (
             <Animated.View
@@ -689,7 +639,12 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         )}
 
         {/* Content Section */}
-        <ContentSection tablet={isTablet}>
+        <YStack
+          paddingHorizontal={isTablet ? spacing.xxl : spacing.lg}
+          paddingTop={isTablet ? spacing.xxl : spacing.lg}
+          paddingBottom={isTablet ? spacing.xl : spacing.md}
+          gap={isTablet ? spacing.xl : spacing.md}
+        >
           {/* Title - shown in content when header is not visible */}
           <Animated.View
             style={{
@@ -711,7 +666,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
           {/* Category Badge & Date */}
           {(categoryForBadge || fact.last_updated || fact.created_at) && (
-            <BadgesRow>
+            <XStack gap={spacing.sm} flexWrap="wrap" alignItems="center" justifyContent="space-between" width="100%">
               {categoryForBadge && (
                 <Animated.View style={{ opacity: categoryBadgeOpacity }}>
                   <CategoryBadge 
@@ -731,7 +686,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   <Calendar size={iconSizes.xs} color="$textSecondary" />
                 </XStack>
               )}
-            </BadgesRow>
+            </XStack>
           )}
 
           {/* Summary */}
@@ -757,7 +712,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
           {/* Source Link */}
           {fact.source_url && (
-            <SourceLink>
+            <YStack paddingTop={spacing.md} borderTopWidth={1} borderTopColor="$border">
               <Pressable onPress={handleSourcePress}>
                 <Text.Body
                   letterSpacing={0.2}
@@ -769,9 +724,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   {extractDomain(fact.source_url)}
                 </Text.Body>
               </Pressable>
-            </SourceLink>
+            </YStack>
           )}
-        </ContentSection>
+        </YStack>
       </Animated.ScrollView>
 
       {/* Fixed Close Button - visible when header is not shown */}
@@ -801,7 +756,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             style={{
               width: iconSizes.xl,
               height: iconSizes.xl,
-              borderRadius: radius.phone.full,
+              borderRadius: radius.full,
               backgroundColor: "rgba(0, 0, 0, 0.4)",
               alignItems: "center",
               justifyContent: "center",
@@ -837,7 +792,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             style={{
               width: 36,
               height: 36,
-              borderRadius: radius.phone.full,
+              borderRadius: radius.full,
               backgroundColor: theme === "dark"
                 ? "rgba(255,255,255,0.1)"
                 : "rgba(0,0,0,0.08)",

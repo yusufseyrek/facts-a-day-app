@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -10,7 +10,7 @@ import {
 import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import { X, Sun, Moon, Smartphone } from '@tamagui/lucide-icons';
 import { useTheme } from '../../theme';
-import { hexColors, spacing, radius } from '../../theme';
+import { hexColors } from '../../theme';
 import { useTranslation, type TranslationKeys } from '../../i18n';
 import type { ThemeMode } from '../../theme/ThemeProvider';
 import { Text } from '../Typography';
@@ -38,7 +38,7 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
   const { theme, themeMode, setThemeMode } = useTheme();
   const colors = hexColors[theme];
   const { t } = useTranslation();
-  const { iconSizes } = useResponsive();
+  const { spacing, radius, iconSizes } = useResponsive();
 
   // Internal state to keep modal mounted during exit animation
   const [showContent, setShowContent] = useState(false);
@@ -104,6 +104,46 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
   const screenWidth = Dimensions.get('window').width;
   const modalWidth = screenWidth * 0.85;
 
+  const dynamicStyles = useMemo(() => ({
+    modalContainer: {
+      maxHeight: Dimensions.get('window').height * 0.7,
+      borderRadius: radius.lg,
+      overflow: 'hidden' as const,
+    },
+    header: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.lg,
+      borderBottomWidth: 1,
+    },
+    closeButton: {
+      padding: spacing.xs,
+    },
+    optionsContainer: {
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    optionCard: {
+      borderRadius: radius.lg,
+      borderWidth: 2,
+      padding: spacing.lg,
+    },
+    optionHeader: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: spacing.md,
+    },
+    iconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.md,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+  }), [spacing, radius]);
+
   return (
     <Modal
       visible={visible}
@@ -129,26 +169,26 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
               <Pressable onPress={(e) => e.stopPropagation()}>
                 <View
                   style={[
-                    styles.modalContainer,
+                    dynamicStyles.modalContainer,
                     { backgroundColor: colors.background, width: modalWidth },
                   ]}
                 >
                 <View
                   style={[
-                    styles.header,
+                    dynamicStyles.header,
                     { borderBottomColor: colors.border },
                   ]}
                 >
                   <Text.Title color={colors.text}>
                     {t('settingsThemeTitle')}
                   </Text.Title>
-                  <Pressable onPress={handleClose} style={styles.closeButton}>
+                  <Pressable onPress={handleClose} style={dynamicStyles.closeButton}>
                     <X size={iconSizes.lg} color={colors.text} />
                   </Pressable>
                 </View>
 
                 <ScrollView style={styles.scrollView}>
-                  <View style={styles.optionsContainer}>
+                  <View style={dynamicStyles.optionsContainer}>
                     {themeOptions.map((option) => {
                       const isSelected = themeMode === option.value;
                       return (
@@ -159,7 +199,7 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
                           {({ pressed }) => (
                             <View
                               style={[
-                                styles.optionCard,
+                                dynamicStyles.optionCard,
                                 {
                                   backgroundColor: isSelected
                                     ? colors.primary
@@ -171,10 +211,10 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
                                 },
                               ]}
                             >
-                              <View style={styles.optionHeader}>
+                              <View style={dynamicStyles.optionHeader}>
                                 <View
                                   style={[
-                                    styles.iconContainer,
+                                    dynamicStyles.iconContainer,
                                     {
                                       backgroundColor: isSelected
                                         ? 'rgba(255, 255, 255, 0.2)'
@@ -230,45 +270,8 @@ const styles = StyleSheet.create({
   animatedContainer: {
     alignItems: 'center',
   },
-  modalContainer: {
-    maxHeight: Dimensions.get('window').height * 0.7,
-    borderRadius: radius.phone.lg,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.phone.lg,
-    paddingVertical: spacing.phone.lg,
-    borderBottomWidth: 1,
-  },
-  closeButton: {
-    padding: spacing.phone.xs,
-  },
   scrollView: {
     maxHeight: 500,
-  },
-  optionsContainer: {
-    padding: spacing.phone.lg,
-    gap: spacing.phone.md,
-  },
-  optionCard: {
-    borderRadius: radius.phone.lg,
-    borderWidth: 2,
-    padding: spacing.phone.lg,
-  },
-  optionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.phone.md,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.phone.md,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   optionTextContainer: {
     flex: 1,
