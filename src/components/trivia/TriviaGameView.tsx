@@ -57,7 +57,7 @@ export function TriviaGameView({
   t,
 }: TriviaGameViewProps) {
   const insets = useSafeAreaInsets();
-  const { isTablet, componentSizes, typography: typo } = useResponsive();
+  const { isTablet, componentSizes, typography: typo, iconSizes } = useResponsive();
   
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
@@ -116,7 +116,7 @@ export function TriviaGameView({
           accessibilityRole="button"
           accessibilityLabel="Exit"
         >
-          <X size={24} color={textColor} />
+          <X size={iconSizes.lg} color={textColor} />
         </Pressable>
         
         {/* Trivia Mode Title - Centered */}
@@ -401,7 +401,7 @@ export function TriviaGameView({
             alignItems="center"
             opacity={currentQuestionIndex > 0 ? 1 : 0.4}
           >
-            <ChevronLeft size={24} color="#FFFFFF" />
+            <ChevronLeft size={iconSizes.lg} color="#FFFFFF" />
           </XStack>
         </Pressable>
         

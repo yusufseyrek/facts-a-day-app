@@ -82,7 +82,7 @@ function BackButton({
           transform: [{ scale }],
         }}
       >
-        <ChevronLeft size={24} color={primaryColor} />
+        <ChevronLeft size={iconSizes.lg} color={primaryColor} />
       </RNAnimated.View>
     </Pressable>
   );
@@ -228,7 +228,7 @@ function SessionCard({
   dateFormat?: 'time' | 'relative';
   testID?: string;
 }) {
-  const { typography: typo } = useResponsive();
+  const { typography: typo, iconSizes } = useResponsive();
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
@@ -328,7 +328,7 @@ function SessionCard({
           alignItems: 'center',
         }}
       >
-        <IconComponent size={22} color={iconColor} />
+        <IconComponent size={iconSizes.lg} color={iconColor} />
       </View>
     );
   };
@@ -378,7 +378,7 @@ function SessionCard({
           </Text.Caption>
         </YStack>
         {hasResultData && (
-          <ChevronRight size={20} color={secondaryTextColor} />
+          <ChevronRight size={iconSizes.md} color={secondaryTextColor} />
         )}
       </XStack>
     </Pressable>
@@ -391,7 +391,7 @@ export default function PerformanceScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
-  const { isTablet, typography: typo } = useResponsive();
+  const { isTablet, typography: typo, iconSizes } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -588,7 +588,7 @@ export default function PerformanceScreen() {
               /* Tablet: All 4 metrics in a single row */
               <XStack gap={spacing.phone.md}>
                 <MetricCard
-                  icon={<Gamepad2 size={16} color={purpleColor} />}
+                  icon={<Gamepad2 size={iconSizes.sm} color={purpleColor} />}
                   iconColor={purpleColor}
                   iconBgColor={`${purpleColor}20`}
                   label={t('tests')}
@@ -597,7 +597,7 @@ export default function PerformanceScreen() {
                   isDark={isDark}
                 />
                 <MetricCard
-                  icon={<CheckCircle size={16} color={successColor} />}
+                  icon={<CheckCircle size={iconSizes.sm} color={successColor} />}
                   iconColor={successColor}
                   iconBgColor={`${successColor}20`}
                   label={t('correct')}
@@ -606,7 +606,7 @@ export default function PerformanceScreen() {
                   isDark={isDark}
                 />
                 <MetricCard
-                  icon={<Hash size={16} color={primaryColor} />}
+                  icon={<Hash size={iconSizes.sm} color={primaryColor} />}
                   iconColor={primaryColor}
                   iconBgColor={`${primaryColor}20`}
                   label={t('answered')}
@@ -614,7 +614,7 @@ export default function PerformanceScreen() {
                   isDark={isDark}
                 />
                 <MetricCard
-                  icon={<Trophy size={16} color={accentColor} />}
+                  icon={<Trophy size={iconSizes.sm} color={accentColor} />}
                   iconColor={accentColor}
                   iconBgColor={`${accentColor}20`}
                   label={t('mastered')}
@@ -629,7 +629,7 @@ export default function PerformanceScreen() {
                 {/* Row 1: Tests & Correct */}
                 <XStack gap={spacing.phone.md}>
                   <MetricCard
-                    icon={<Gamepad2 size={16} color={purpleColor} />}
+                    icon={<Gamepad2 size={iconSizes.sm} color={purpleColor} />}
                     iconColor={purpleColor}
                     iconBgColor={`${purpleColor}20`}
                     label={t('tests')}
@@ -638,7 +638,7 @@ export default function PerformanceScreen() {
                     isDark={isDark}
                   />
                   <MetricCard
-                    icon={<CheckCircle size={16} color={successColor} />}
+                    icon={<CheckCircle size={iconSizes.sm} color={successColor} />}
                     iconColor={successColor}
                     iconBgColor={`${successColor}20`}
                     label={t('correct')}
@@ -651,7 +651,7 @@ export default function PerformanceScreen() {
                 {/* Row 2: Answered & Mastered */}
                 <XStack gap={spacing.phone.md}>
                   <MetricCard
-                    icon={<Hash size={16} color={primaryColor} />}
+                    icon={<Hash size={iconSizes.sm} color={primaryColor} />}
                     iconColor={primaryColor}
                     iconBgColor={`${primaryColor}20`}
                     label={t('answered')}
@@ -659,7 +659,7 @@ export default function PerformanceScreen() {
                     isDark={isDark}
                   />
                   <MetricCard
-                    icon={<Trophy size={16} color={accentColor} />}
+                    icon={<Trophy size={iconSizes.sm} color={accentColor} />}
                     iconColor={accentColor}
                     iconBgColor={`${accentColor}20`}
                     label={t('mastered')}

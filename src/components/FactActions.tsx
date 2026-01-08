@@ -19,6 +19,7 @@ import * as api from "../services/api";
 import { useTranslation } from "../i18n";
 import { ReportFactModal } from "./ReportFactModal";
 import { hexColors, spacing, radius, sizes, useTheme } from "../theme";
+import { useResponsive } from "../utils/useResponsive";
 import {
   trackFactShare,
   trackFactFavoriteAdd,
@@ -118,6 +119,7 @@ export function FactActions({
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const { iconSizes } = useResponsive();
   const insets = useSafeAreaInsets();
 
   // Neon colors for actions
@@ -359,7 +361,7 @@ export function FactActions({
               <ParticleBurst color={heartColor} isActive={showParticles} />
               <Animated.View style={[styles.heartIcon, heartAnimatedStyle]}>
                 <Heart
-                  size={26}
+                  size={iconSizes.lg}
                   color={heartColor}
                   fill={isFavorited ? heartColor : "none"}
                 />
@@ -378,7 +380,7 @@ export function FactActions({
             })}
           >
             <Animated.View style={shareAnimatedStyle}>
-              <ShareIcon size={26} color={shareColor} />
+              <ShareIcon size={iconSizes.lg} color={shareColor} />
             </Animated.View>
           </Pressable>
 
@@ -394,7 +396,7 @@ export function FactActions({
             })}
           >
             <Animated.View style={reportAnimatedStyle}>
-              <Flag size={26} color={flagColor} />
+              <Flag size={iconSizes.lg} color={flagColor} />
             </Animated.View>
           </Pressable>
         </ActionsRow>

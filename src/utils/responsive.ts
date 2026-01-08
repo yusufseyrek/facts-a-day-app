@@ -112,18 +112,22 @@ export const spacing = {
 /**
  * Base icon sizes for phones.
  * Tablet values are automatically scaled by 1.5x.
+ * 
+ * Size hierarchy (phone → tablet):
+ * - sm: 16 → 24 - Check marks, badges, small indicators
+ * - md: 20 → 30 - Settings icons, chevrons, close buttons
+ * - lg: 24 → 36 - Navigation, tab bar icons, headers
+ * - xl: 32 → 48 - Extra large icons
+ * - hero: 48 → 72 - Hero/display icons (empty state, onboarding)
+ * - heroLg: 64 → 96 - Large hero icons, containers
  */
 const phoneIconSizes = {
-  small: 16,
-  medium: 20,
-  large: 24,
-  xlarge: 32,
-  xxlarge: 36,
-  close: 18,
-  action: 20,
-  button: 18,
-  container: 64,
-  inner: 32,
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+  hero: 48,
+  heroLg: 64,
 } as const;
 
 export const iconSizes = {

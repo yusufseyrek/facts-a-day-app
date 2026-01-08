@@ -39,7 +39,7 @@ export function TriviaGridCard({
   centerContent = false,
 }: TriviaGridCardProps) {
   const { t } = useTranslation();
-  const { typography: typo } = useResponsive();
+  const { typography: typo, iconSizes } = useResponsive();
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
   const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
@@ -60,22 +60,20 @@ export function TriviaGridCard({
 
   // Render the icon based on type
   const renderIcon = () => {
-    const iconSize = 24;
-    
     if (isCompleted && type === 'daily') {
-      return <Check size={iconSize} color={accentColor} strokeWidth={2.5} />;
+      return <Check size={iconSizes.lg} color={accentColor} strokeWidth={2.5} />;
     }
     
     if (type === 'daily') {
-      return <Zap size={iconSize} color={accentColor} strokeWidth={2} />;
+      return <Zap size={iconSizes.lg} color={accentColor} strokeWidth={2} />;
     }
     
     if (type === 'mixed') {
-      return <Shuffle size={iconSize} color={accentColor} strokeWidth={2} />;
+      return <Shuffle size={iconSizes.lg} color={accentColor} strokeWidth={2} />;
     }
     
     // Category type - use the icon from props
-    return getLucideIcon(icon, iconSize, accentColor);
+    return getLucideIcon(icon, iconSizes.lg, accentColor);
   };
 
   // Get the subtitle text
@@ -135,7 +133,7 @@ export function TriviaGridCard({
           >
             {renderIcon()}
           </YStack>
-          <ChevronRight size={20} color={chevronColor} />
+          <ChevronRight size={iconSizes.md} color={chevronColor} />
         </XStack>
 
         {/* Bottom section: Title + Subtitle */}

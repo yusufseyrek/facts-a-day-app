@@ -424,7 +424,7 @@ export function TriviaResults({
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { screenWidth, typography: typo, gridLayout } = useResponsive();
+  const { screenWidth, typography: typo, gridLayout, iconSizes } = useResponsive();
   
   // Calculate card width: 45% for tablets (two cards side by side), 85% for phones
   const cardWidth = screenWidth * gridLayout.cardWidthMultiplier;
@@ -544,7 +544,7 @@ export function TriviaResults({
                 alignItems: 'center',
               }}
             >
-              <ChevronLeft size={24} color={primaryColor} />
+              <ChevronLeft size={iconSizes.lg} color={primaryColor} />
             </View>
           </Pressable>
           
@@ -700,7 +700,7 @@ export function TriviaResults({
                   alignItems: 'center',
                 }}
               >
-                <Timer size={22} color={primaryColor} />
+                <Timer size={iconSizes.md} color={primaryColor} />
               </View>
               <Text.Caption color={secondaryTextColor} marginTop={spacing.phone.xs}>
                 {t('timeSpent') || 'Time Spent'}

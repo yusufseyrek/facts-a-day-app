@@ -70,7 +70,7 @@ function BackButton({
           transform: [{ scale }],
         }}
       >
-        <ChevronLeft size={24} color={primaryColor} />
+        <ChevronLeft size={iconSizes.lg} color={primaryColor} />
       </RNAnimated.View>
     </Pressable>
   );
@@ -86,7 +86,7 @@ function CategoryProgressBar({
   isDark: boolean;
   index: number;
 }) {
-  const { typography: typo } = useResponsive();
+  const { typography: typo, iconSizes } = useResponsive();
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const trackColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const progressColor = category.color_hex || (isDark ? hexColors.dark.primary : hexColors.light.primary);
@@ -138,7 +138,7 @@ function CategoryProgressBar({
 export default function CategoriesAccuracyScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography: typo } = useResponsive();
+  const { typography: typo, iconSizes } = useResponsive();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';

@@ -452,7 +452,7 @@ function DiscoverScreen() {
         <ScreenHeaderContainer tablet={isTablet}>
           <SearchInputContainer>
             <Search
-              size={iconSizes.medium}
+              size={iconSizes.md}
               color={
                 theme === "dark"
                   ? hexColors.dark.textSecondary
@@ -477,7 +477,7 @@ function DiscoverScreen() {
                           : "rgba(255,255,255,0.3)",
                     }}
                   >
-                    <X size={12} color={contrastColor} />
+                    <X size={iconSizes.sm} color={contrastColor} />
                   </CategoryChipClearButton>
                 </CategoryChip>
               </Pressable>
@@ -512,7 +512,7 @@ function DiscoverScreen() {
             ) : searchQuery.length > 0 ? (
               <ClearButton onPress={clearSearch}>
                 <X
-                  size={16}
+                  size={iconSizes.sm}
                   color={
                     theme === "dark"
                       ? hexColors.dark.textSecondary

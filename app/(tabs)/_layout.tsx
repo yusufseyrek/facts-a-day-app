@@ -12,6 +12,7 @@ import { useTranslation } from "../../src/i18n";
 import * as triviaService from "../../src/services/trivia";
 import { BannerAd } from "../../src/components/ads";
 import { ADS_ENABLED } from "../../src/config/ads";
+import { useResponsive } from "../../src/utils/useResponsive";
 
 function AnimatedTabButton({
   children,
@@ -61,6 +62,7 @@ function AnimatedTabButton({
 
 // Minimal trivia icon with solid background - uses app's primary cyan color
 function TriviaTabIcon({ focused, isDark, hasBadge }: { focused: boolean; isDark: boolean; hasBadge: boolean }) {
+  const { iconSizes, spacing } = useResponsive();
   // Use the app's primary color for consistency
   const bgColor = isDark
     ? hexColors.dark.primary // #00A3CC - cyan
@@ -76,10 +78,14 @@ function TriviaTabIcon({ focused, isDark, hasBadge }: { focused: boolean; isDark
           backgroundColor: bgColor,
           shadowColor,
           opacity: focused ? 1 : 0.85,
+          padding: spacing.xl,
+          width: iconSizes.lg,
+          height: iconSizes.lg,
+          borderRadius: radius.phone.full,
         },
       ]}
     >
-      <Brain size={24} color="#FFFFFF" strokeWidth={2} />
+      <Brain size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />
       {hasBadge && (
         <View style={styles.triviaBadge}>
           <View style={styles.triviaBadgeInner} />
@@ -118,9 +124,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   triviaIconContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
     elevation: 4,
@@ -151,6 +154,7 @@ export default function TabLayout() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { iconSizes } = useResponsive();
   const [hasDailyTrivia, setHasDailyTrivia] = useState(false);
 
   // Check for daily trivia availability
@@ -218,7 +222,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t("home"),
-          tabBarIcon: ({ color }) => <Lightbulb size={28} color={color} />,
+          tabBarIcon: ({ color }) => <Lightbulb size={iconSizes.lg} color={color} />,
           tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-home" />,
         }}
       />
@@ -226,7 +230,7 @@ export default function TabLayout() {
         name="discover"
         options={{
           title: t("discover"),
-          tabBarIcon: ({ color }) => <Compass size={28} color={color} />,
+          tabBarIcon: ({ color }) => <Compass size={iconSizes.lg} color={color} />,
           tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-discover" />,
         }}
       />
@@ -242,7 +246,7 @@ export default function TabLayout() {
         name="favorites"
         options={{
           title: t("favorites"),
-          tabBarIcon: ({ color }) => <Star size={28} color={color} />,
+          tabBarIcon: ({ color }) => <Star size={iconSizes.lg} color={color} />,
           tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-favorites" />,
         }}
       />
@@ -250,7 +254,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: t("settings"),
-          tabBarIcon: ({ color }) => <Settings size={28} color={color} />,
+          tabBarIcon: ({ color }) => <Settings size={iconSizes.lg} color={color} />,
           tabBarButton: (props) => <AnimatedTabButton {...props} testID="tab-settings" />,
         }}
       />

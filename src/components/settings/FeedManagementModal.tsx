@@ -20,6 +20,7 @@ import { Text, FONT_FAMILIES } from '../Typography';
 import * as database from '../../services/database';
 import type { FactWithRelations } from '../../services/database';
 import { triggerFeedRefresh } from '../../services/contentRefresh';
+import { useResponsive } from '../../utils/useResponsive';
 
 const ANIMATION_DURATION = 300;
 
@@ -34,15 +35,16 @@ interface FactItemProps {
   onToggle: () => void;
   onEditTitle: () => void;
   colors: any;
+  iconSizes: { sm: number; md: number; lg: number; xl: number; hero: number; heroLg: number };
 }
 
-const FactItem = React.memo(({ fact, isSelected, onToggle, onEditTitle, colors }: FactItemProps) => {
+const FactItem = React.memo(({ fact, isSelected, onToggle, onEditTitle, colors, iconSizes }: FactItemProps) => {
   const isInFeed = fact.shown_in_feed === 1 || (fact.scheduled_date && new Date(fact.scheduled_date) <= new Date());
   
   return (
     <Pressable onPress={onToggle} style={styles.factItem}>
       <View style={[styles.checkbox, { borderColor: colors.border }, isSelected && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-        {isSelected && <Check size={16} color="#FFFFFF" />}
+        {isSelected && <Check size={iconSizes.sm} color="#FFFFFF" />}
       </View>
       <View style={styles.factContent}>
         <Text.Label numberOfLines={2} color={colors.text}>
@@ -65,7 +67,7 @@ const FactItem = React.memo(({ fact, isSelected, onToggle, onEditTitle, colors }
         </View>
       </View>
       <Pressable onPress={onEditTitle} style={styles.editButton} hitSlop={8}>
-        <Edit3 size={16} color={colors.textSecondary} />
+        <Edit3 size={iconSizes.sm} color={colors.textSecondary} />
       </Pressable>
     </Pressable>
   );
@@ -80,6 +82,7 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
   const { theme } = useTheme();
   const colors = hexColors[theme];
   const { t, locale } = useTranslation();
+  const { iconSizes } = useResponsive();
 
   const [showContent, setShowContent] = useState(false);
   const closingRef = useRef(false);
@@ -267,9 +270,10 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
         onToggle={() => toggleFactSelection(item.id)}
         onEditTitle={() => handleEditTitle(item)}
         colors={colors}
+        iconSizes={iconSizes}
       />
     ),
-    [selectedFactIds, toggleFactSelection, handleEditTitle, colors]
+    [selectedFactIds, toggleFactSelection, handleEditTitle, colors, iconSizes]
   );
 
   const keyExtractor = useCallback((item: FactWithRelations) => String(item.id), []);
@@ -307,13 +311,13 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
             <View style={[styles.header, { borderBottomColor: colors.border }]}>
               <Text.Title color={colors.text}>Manage Feed (DEV)</Text.Title>
               <Pressable onPress={handleClose} style={styles.closeButton}>
-                <X size={24} color={colors.text} />
+                <X size={iconSizes.lg} color={colors.text} />
               </Pressable>
             </View>
 
             {/* Search */}
             <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
-              <Search size={20} color={colors.textSecondary} />
+              <Search size={iconSizes.md} color={colors.textSecondary} />
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Search facts..."
@@ -361,21 +365,21 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
                   onPress={() => addToFeedWithDate(0)}
                   style={[styles.actionButton, { backgroundColor: colors.primary }]}
                 >
-                  <Calendar size={16} color="#FFFFFF" />
+                  <Calendar size={iconSizes.sm} color="#FFFFFF" />
                   <Text.Caption color="#FFFFFF">Today</Text.Caption>
                 </Pressable>
                 <Pressable
                   onPress={() => addToFeedWithDate(1)}
                   style={[styles.actionButton, { backgroundColor: colors.primary }]}
                 >
-                  <Calendar size={16} color="#FFFFFF" />
+                  <Calendar size={iconSizes.sm} color="#FFFFFF" />
                   <Text.Caption color="#FFFFFF">Yesterday</Text.Caption>
                 </Pressable>
                 <Pressable
                   onPress={() => addToFeedWithDate(2)}
                   style={[styles.actionButton, { backgroundColor: colors.primary }]}
                 >
-                  <Calendar size={16} color="#FFFFFF" />
+                  <Calendar size={iconSizes.sm} color="#FFFFFF" />
                   <Text.Caption color="#FFFFFF">2 Days</Text.Caption>
                 </Pressable>
               </View>
@@ -384,14 +388,14 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
                   onPress={clearFeed}
                   style={[styles.actionButton, styles.dangerButton]}
                 >
-                  <Trash2 size={16} color="#FFFFFF" />
+                  <Trash2 size={iconSizes.sm} color="#FFFFFF" />
                   <Text.Caption color="#FFFFFF">Clear Feed</Text.Caption>
                 </Pressable>
                 <Pressable
                   onPress={loadFacts}
                   style={[styles.actionButton, { backgroundColor: colors.textSecondary }]}
                 >
-                  <RefreshCw size={16} color="#FFFFFF" />
+                  <RefreshCw size={iconSizes.sm} color="#FFFFFF" />
                   <Text.Caption color="#FFFFFF">Refresh</Text.Caption>
                 </Pressable>
               </View>

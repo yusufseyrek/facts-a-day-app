@@ -157,13 +157,13 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
                 checkmarkStyle,
               ]}
             >
-              <Check size={16} color={contrastColor} strokeWidth={3} />
+              <Check size={iconSizes.sm} color={contrastColor} strokeWidth={3} />
             </AnimatedCheckmarkContainer>
             <IconContainer>
               {React.isValidElement(icon)
                 ? React.cloneElement(icon as React.ReactElement<any>, {
                     color: iconColor,
-                    size: iconSizes.large,
+                    size: iconSizes.lg,
                   })
                 : icon}
             </IconContainer>

@@ -22,7 +22,7 @@ export function CategoryQuestCard({
   onPress,
   index,
 }: CategoryQuestCardProps) {
-  const { typography: typo } = useResponsive();
+  const { typography: typo, iconSizes } = useResponsive();
   const progress = category.total > 0
     ? Math.round((category.mastered / category.total) * 100)
     : 0;
@@ -64,7 +64,7 @@ export function CategoryQuestCard({
             justifyContent="center"
             alignItems="center"
           >
-            {getLucideIcon(category.icon, 20, '#FFFFFF')}
+            {getLucideIcon(category.icon, iconSizes.md, '#FFFFFF')}
           </YStack>
           
           {/* Content */}
@@ -103,7 +103,7 @@ export function CategoryQuestCard({
           </YStack>
           
           {!isComplete && (
-            <ChevronRight size={18} color={secondaryTextColor} />
+            <ChevronRight size={iconSizes.md} color={secondaryTextColor} />
           )}
         </XStack>
       </Pressable>

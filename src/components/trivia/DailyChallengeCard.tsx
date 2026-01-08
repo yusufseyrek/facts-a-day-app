@@ -24,7 +24,7 @@ export function DailyChallengeCard({
   onPress,
   t,
 }: DailyChallengeCardProps) {
-  const { typography: typo } = useResponsive();
+  const { typography: typo, iconSizes } = useResponsive();
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
@@ -60,9 +60,9 @@ export function DailyChallengeCard({
             alignItems="center"
           >
             {isCompleted ? (
-              <Check size={22} color="#FFFFFF" />
+              <Check size={iconSizes.md} color="#FFFFFF" />
             ) : (
-              <Zap size={22} color="#FFFFFF" />
+              <Zap size={iconSizes.md} color="#FFFFFF" />
             )}
           </YStack>
           
@@ -82,7 +82,7 @@ export function DailyChallengeCard({
           </YStack>
           
           {!isCompleted && (
-            <ChevronRight size={20} color={secondaryTextColor} />
+            <ChevronRight size={iconSizes.md} color={secondaryTextColor} />
           )}
         </XStack>
       </Pressable>

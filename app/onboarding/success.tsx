@@ -240,7 +240,7 @@ const ProgressBar = ({ duration, theme }: { duration: number; theme: "light" | "
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography: typo } = useResponsive();
+  const { typography: typo, iconSizes } = useResponsive();
   const router = useRouter();
   const { completeOnboarding, selectedCategories } = useOnboarding();
 
@@ -511,7 +511,7 @@ export default function OnboardingSuccessScreen() {
           {/* Icon */}
           <ConsentIconContainer>
             <Gift
-              size={50}
+              size={iconSizes.hero}
               color={theme === "dark" ? hexColors.dark.neonCyan : hexColors.light.neonCyan}
               strokeWidth={2}
             />
@@ -606,7 +606,7 @@ export default function OnboardingSuccessScreen() {
             >
               <IconContainer>
                 <CheckCircle
-                  size={70}
+                  size={iconSizes.heroLg}
                   color={theme === "dark" ? hexColors.dark.neonGreen : hexColors.light.neonGreen}
                   strokeWidth={2.5}
                 />

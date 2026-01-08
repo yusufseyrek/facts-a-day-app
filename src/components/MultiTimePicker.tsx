@@ -9,6 +9,7 @@ import { Text, FONT_FAMILIES } from './Typography';
 import { Button } from './Button';
 import { useTheme } from '../theme';
 import { useTranslation } from '../i18n';
+import { useResponsive } from '../utils/useResponsive';
 
 const TimeSlotContainer = styled(YStack, {
   gap: spacing.phone.lg,
@@ -86,6 +87,7 @@ export function MultiTimePicker({
 }: MultiTimePickerProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const { iconSizes } = useResponsive();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
   const [androidPickerTime, setAndroidPickerTime] = useState<Date>(new Date());
@@ -196,7 +198,7 @@ export function MultiTimePicker({
 
           {times.length > minTimes && (
             <DeleteButton onPress={() => handleRemoveTime(index)}>
-              <Trash2 size={20} color={hexColors.light.error} />
+              <Trash2 size={iconSizes.md} color={hexColors.light.error} />
             </DeleteButton>
           )}
         </TimeSlot>
@@ -216,7 +218,7 @@ export function MultiTimePicker({
 
       {times.length < maxTimes && (
         <AddTimeButton onPress={handleAddTime}>
-          <Plus size={24} color={hexColors.light.primary} />
+          <Plus size={iconSizes.lg} color={hexColors.light.primary} />
           <Text.Body
             color="$primary"
             fontFamily={FONT_FAMILIES.bold}

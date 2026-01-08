@@ -15,6 +15,7 @@ import { useTranslation, type TranslationKeys } from '../../i18n';
 import type { ThemeMode } from '../../theme/ThemeProvider';
 import { Text } from '../Typography';
 import { trackThemeChange, updateThemeProperty } from '../../services/analytics';
+import { useResponsive } from '../../utils/useResponsive';
 
 const ANIMATION_DURATION = 200;
 
@@ -37,6 +38,7 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
   const { theme, themeMode, setThemeMode } = useTheme();
   const colors = hexColors[theme];
   const { t } = useTranslation();
+  const { iconSizes } = useResponsive();
 
   // Internal state to keep modal mounted during exit animation
   const [showContent, setShowContent] = useState(false);
@@ -69,19 +71,19 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
       value: 'light',
       titleKey: 'settingsThemeLight',
       descriptionKey: 'settingsThemeLightDescription',
-      icon: (color) => <Sun size={24} color={color} />,
+      icon: (color) => <Sun size={iconSizes.lg} color={color} />,
     },
     {
       value: 'dark',
       titleKey: 'settingsThemeDark',
       descriptionKey: 'settingsThemeDarkDescription',
-      icon: (color) => <Moon size={24} color={color} />,
+      icon: (color) => <Moon size={iconSizes.lg} color={color} />,
     },
     {
       value: 'system',
       titleKey: 'settingsThemeSystem',
       descriptionKey: 'settingsThemeSystemDescription',
-      icon: (color) => <Smartphone size={24} color={color} />,
+      icon: (color) => <Smartphone size={iconSizes.lg} color={color} />,
     },
   ];
 
@@ -141,7 +143,7 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
                     {t('settingsThemeTitle')}
                   </Text.Title>
                   <Pressable onPress={handleClose} style={styles.closeButton}>
-                    <X size={24} color={colors.text} />
+                    <X size={iconSizes.lg} color={colors.text} />
                   </Pressable>
                 </View>
 

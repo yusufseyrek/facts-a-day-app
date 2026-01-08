@@ -4,6 +4,7 @@ import { CheckCircle } from '@tamagui/lucide-icons';
 import { useTheme } from '../theme';
 import { hexColors, spacing, radius, sizes } from '../theme';
 import { Text } from './Typography';
+import { useResponsive } from '../utils/useResponsive';
 
 interface SuccessToastProps {
   visible: boolean;
@@ -20,6 +21,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
   onHide,
 }) => {
   const { theme } = useTheme();
+  const { iconSizes } = useResponsive();
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.8)).current;
   
@@ -110,7 +112,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
           ]}
         >
           <View style={[styles.iconContainer, { backgroundColor: `${successColor}20` }]}>
-            <CheckCircle size={32} color={successColor} />
+            <CheckCircle size={iconSizes.xl} color={successColor} />
           </View>
           <Text.Label textAlign="center" color={textColor}>{message}</Text.Label>
         </Animated.View>

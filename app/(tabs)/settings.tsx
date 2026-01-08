@@ -50,6 +50,7 @@ import { trackScreenView, Screens } from "../../src/services/analytics";
 import { requestReview } from "../../src/services/appReview";
 import { clearAllCachedImages, getCachedImagesSize } from "../../src/services/images";
 import * as updates from "../../src/services/updates";
+import { useResponsive } from "../../src/utils/useResponsive";
 
 // Helper to get language display name
 const getLanguageName = (code: string): string => {
@@ -84,6 +85,7 @@ export default function SettingsPage() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { resetOnboarding } = useOnboarding();
+  const { iconSizes } = useResponsive();
 
   // Track if this is the initial mount to prevent re-animation on tab focus
   // We delay setting the flag to allow lazy-rendered items to also animate
@@ -777,7 +779,7 @@ export default function SettingsPage() {
           id: "language",
           label: t("settingsLanguage"),
           value: getLanguageName(locale),
-          icon: <Globe size={20} color={iconColor} />,
+          icon: <Globe size={iconSizes.md} color={iconColor} />,
           onPress: handleLanguagePress,
           showExternalLink: true,
         },
@@ -785,14 +787,14 @@ export default function SettingsPage() {
           id: "theme",
           label: t("settingsThemeTitle"),
           value: getThemeName(themeMode, t),
-          icon: <Palette size={20} color={iconColor} />,
+          icon: <Palette size={iconSizes.md} color={iconColor} />,
           onPress: () => setShowThemeModal(true),
         },
         {
           id: "categories",
           label: t("settingsCategories"),
           value: `${selectedCategories.length} ${t("settingsSelected")}`,
-          icon: <Grid size={20} color={iconColor} />,
+          icon: <Grid size={iconSizes.md} color={iconColor} />,
           onPress: handleCategoriesPress,
         },
         {
@@ -806,7 +808,7 @@ export default function SettingsPage() {
                   hour12: false,
                 })
               : t("settingsNotificationTimesCount", { count: notificationTimes.length }),
-          icon: <Bell size={20} color={iconColor} />,
+          icon: <Bell size={iconSizes.md} color={iconColor} />,
           onPress: handleTimePress,
           showWarning: !notificationPermissionGranted,
         },
@@ -820,7 +822,7 @@ export default function SettingsPage() {
           id: "clearImageCache",
           label: t("settingsClearImageCache"),
           value: imageCacheSize > 0 ? t("settingsImageCacheSize", { size: formatBytes(imageCacheSize) }) : undefined,
-          icon: <Trash2 size={20} color={iconColor} />,
+          icon: <Trash2 size={iconSizes.md} color={iconColor} />,
           onPress: handleClearImageCache,
         }
       ],
@@ -837,44 +839,44 @@ export default function SettingsPage() {
               ? `Embedded (v${updateInfo.runtimeVersion})`
               : `${updateInfo.updateId?.slice(0, 8)}... (v${updateInfo.runtimeVersion})`
             : "Loading...",
-          icon: <Download size={20} color={iconColor} />,
+          icon: <Download size={iconSizes.md} color={iconColor} />,
           onPress: handleCheckForUpdates,
         },
         {
           id: "manageFeed",
           label: "Manage Feed (Screenshots)",
-          icon: <Camera size={20} color={iconColor} />,
+          icon: <Camera size={iconSizes.md} color={iconColor} />,
           onPress: () => setShowFeedManagementModal(true),
         },
         {
           id: "add10Facts",
           label: t("add10RandomFacts"),
-          icon: <Plus size={20} color={iconColor} />,
+          icon: <Plus size={iconSizes.md} color={iconColor} />,
           onPress: handleAdd10RandomFacts,
         },
         {
           id: "testNotification",
           label: t("testNotification"),
-          icon: <TestTube size={20} color={iconColor} />,
+          icon: <TestTube size={iconSizes.md} color={iconColor} />,
           onPress: handleTestNotification,
         },
         {
           id: "duplicateNotifications",
           label: "Schedule Duplicate Notifications",
-          icon: <Bug size={20} color={iconColor} />,
+          icon: <Bug size={iconSizes.md} color={iconColor} />,
           onPress: handleScheduleDuplicateNotifications,
         },
         {
           id: "toggleTheme",
           label: t("toggleTheme"),
           value: theme,
-          icon: <Contrast size={20} color={iconColor} />,
+          icon: <Contrast size={iconSizes.md} color={iconColor} />,
           onPress: toggleTheme,
         },
         {
           id: "resetOnboarding",
           label: t("resetOnboarding"),
-          icon: <RotateCcw size={20} color={iconColor} />,
+          icon: <RotateCcw size={iconSizes.md} color={iconColor} />,
           onPress: handleResetOnboarding,
         },
       ],
@@ -886,7 +888,7 @@ export default function SettingsPage() {
         {
           id: "reviewApp",
           label: t("settingsReviewApp", { appName: t("appName") }),
-          icon: <Star size={20} color={iconColor} />,
+          icon: <Star size={iconSizes.md} color={iconColor} />,
           onPress: handleReviewApp,
         },
       ],
@@ -898,13 +900,13 @@ export default function SettingsPage() {
         {
           id: "privacyPolicy",
           label: t("settingsPrivacyPolicy"),
-          icon: <Shield size={20} color={iconColor} />,
+          icon: <Shield size={iconSizes.md} color={iconColor} />,
           onPress: handlePrivacyPolicyPress,
         },
         {
           id: "termsOfService",
           label: t("settingsTermsOfService"),
-          icon: <FileText size={20} color={iconColor} />,
+          icon: <FileText size={iconSizes.md} color={iconColor} />,
           onPress: handleTermsOfServicePress,
         },
       ],
@@ -961,7 +963,7 @@ export default function SettingsPage() {
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <Animated.View entering={shouldAnimate ? FadeIn.duration(300) : undefined}>
         <ScreenHeader
-          icon={<Settings size={28} color={headerIconColor} />}
+          icon={<Settings size={iconSizes.lg} color={headerIconColor} />}
           title={t("settings")}
         />
       </Animated.View>

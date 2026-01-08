@@ -65,7 +65,7 @@ export default function NotificationsScreen() {
   const [isScheduling, setIsScheduling] = useState(false);
 
   // Responsive sizing - hook handles tablet detection
-  const { typography: typo } = useResponsive();
+  const { typography: typo, iconSizes } = useResponsive();
 
   // Enter animations
   const progressOpacity = useRef(new Animated.Value(0)).current;
@@ -327,7 +327,7 @@ export default function NotificationsScreen() {
                 }}
               >
                 <IconContainer>
-                  <Bell size={60} color={hexColors.light.primary} />
+                  <Bell size={iconSizes.heroLg} color={hexColors.light.primary} />
                 </IconContainer>
               </Animated.View>
 

@@ -71,7 +71,7 @@ export default function CategoriesSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const { typography: typo, gridLayout } = useResponsive();
+  const { typography: typo, gridLayout, iconSizes } = useResponsive();
 
   // Responsive sizing for tablets
   const numColumns = gridLayout.categoryColumns;
@@ -287,7 +287,7 @@ export default function CategoriesSettings() {
           <HeaderContainer>
             <HeaderRow>
               <Pressable onPress={() => router.back()} style={{ padding: spacing.phone.xs }}>
-                <ArrowLeft size={24} color={theme === 'dark' ? '#FFFFFF' : hexColors.light.text} />
+                <ArrowLeft size={iconSizes.lg} color={theme === 'dark' ? '#FFFFFF' : hexColors.light.text} />
               </Pressable>
               <HeaderText>
                 <Text.Headline>{t('settingsCategories')}</Text.Headline>

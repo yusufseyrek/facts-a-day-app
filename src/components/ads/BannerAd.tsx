@@ -20,12 +20,12 @@ const getAdUnitId = (position: BannerAdPosition): string => {
 
   if (isIOS) {
     return position === 'home' 
-      ? config?.ADMOB_IOS_HOME_BANNER_ID || testId
-      : config?.ADMOB_IOS_MODAL_BANNER_ID || testId;
+      ? config?.ADMOB_IOS_MAIN_BANNER_ID || testId
+      : config?.ADMOB_IOS_FACT_DETAIL_BANNER_ID || testId;
   }
   return position === 'home'
-    ? config?.ADMOB_ANDROID_HOME_BANNER_ID || testId
-    : config?.ADMOB_ANDROID_MODAL_BANNER_ID || testId;
+    ? config?.ADMOB_ANDROID_MAIN_BANNER_ID || testId
+    : config?.ADMOB_ANDROID_FACT_DETAIL_BANNER_ID || testId;
 };
 
 const getBannerSize = (position: BannerAdPosition): BannerAdSize => {

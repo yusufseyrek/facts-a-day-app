@@ -78,7 +78,7 @@ function BackButton({
           transform: [{ scale }],
         }}
       >
-        <ChevronLeft size={24} color={primaryColor} />
+        <ChevronLeft size={iconSizes.lg} color={primaryColor} />
       </RNAnimated.View>
     </Pressable>
   );
@@ -98,7 +98,7 @@ function SessionCard({
   onPress?: () => void;
   dateFormat?: 'time' | 'relative';
 }) {
-  const { typography: typo } = useResponsive();
+  const { typography: typo, iconSizes } = useResponsive();
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
@@ -198,7 +198,7 @@ function SessionCard({
           alignItems: 'center',
         }}
       >
-        <IconComponent size={22} color={iconColor} />
+        <IconComponent size={iconSizes.lg} color={iconColor} />
       </View>
     );
   };
@@ -247,7 +247,7 @@ function SessionCard({
           </Text.Caption>
         </YStack>
         {hasResultData && (
-          <ChevronRight size={20} color={secondaryTextColor} />
+          <ChevronRight size={iconSizes.md} color={secondaryTextColor} />
         )}
       </XStack>
     </Pressable>

@@ -74,7 +74,7 @@ export function TriviaIntroModal({
 }: TriviaIntroModalProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { typography: typo } = useResponsive();
+  const { typography: typo, iconSizes } = useResponsive();
   const isDark = theme === 'dark';
 
   // Colors
@@ -97,14 +97,13 @@ export function TriviaIntroModal({
 
   // Get the appropriate icon
   const renderIcon = () => {
-    const iconSize = 24;
     if (type === 'daily') {
-      return <Zap size={iconSize} color="#FFFFFF" strokeWidth={2} />;
+      return <Zap size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />;
     }
     if (type === 'mixed') {
-      return <Shuffle size={iconSize} color="#FFFFFF" strokeWidth={2} />;
+      return <Shuffle size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />;
     }
-    return getLucideIcon(categoryIcon, iconSize, '#FFFFFF');
+    return getLucideIcon(categoryIcon, iconSizes.lg, '#FFFFFF');
   };
 
   // Get title
@@ -187,7 +186,7 @@ export function TriviaIntroModal({
                 padding: spacing.phone.xs,
               }}
             >
-              <X size={20} color={secondaryTextColor} />
+              <X size={iconSizes.md} color={secondaryTextColor} />
             </Pressable>
 
             {/* Header */}

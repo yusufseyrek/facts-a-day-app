@@ -50,7 +50,7 @@ export default function TriviaScreen() {
   const router = useRouter();
   const isDark = theme === 'dark';
   const iconColor = useIconColor();
-  const { isTablet, typography: typo, gridLayout } = useResponsive();
+  const { isTablet, typography: typo, gridLayout, iconSizes } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -256,7 +256,7 @@ export default function TriviaScreen() {
         >
           <Animated.View entering={FadeIn.duration(300)}>
             <ScreenHeader
-              icon={<Brain size={28} color={iconColor} />}
+              icon={<Brain size={iconSizes.lg} color={iconColor} />}
               title={t('trivia')}
               rightElement={streakBadge}
             />
@@ -364,7 +364,7 @@ export default function TriviaScreen() {
                     justifyContent="center"
                     alignItems="center"
                   >
-                    <Sparkles size={40} color={purpleColor} />
+                    <Sparkles size={iconSizes.hero} color={purpleColor} />
                   </YStack>
                   
                   {/* Title & Description */}

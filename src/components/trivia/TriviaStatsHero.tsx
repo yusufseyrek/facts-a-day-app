@@ -35,7 +35,7 @@ function CircularProgress({
   trackColor: string;
   textColor: string;
 }) {
-  const { typography: typo } = useResponsive();
+  const { typography: typo, iconSizes } = useResponsive();
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -86,7 +86,7 @@ function CircularProgress({
 }
 
 export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: TriviaStatsHeroProps) {
-  const { typography: typo } = useResponsive();
+  const { typography: typo, iconSizes } = useResponsive();
   const accuracy = stats?.accuracy ?? 0;
   const testsTaken = stats?.testsTaken ?? 0;
   
@@ -155,7 +155,7 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
           >
             <CircularProgress
               percentage={accuracy}
-              size={65}
+              size={iconSizes.heroLg}
               strokeWidth={6}
               progressColor={progressColor}
               trackColor={trackColor}

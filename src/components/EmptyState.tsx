@@ -5,6 +5,7 @@ import { Lightbulb } from '@tamagui/lucide-icons';
 import { hexColors, spacing, radius, sizes } from '../theme';
 import { Text } from './Typography';
 import { useTheme } from '../theme';
+import { useResponsive } from '../utils/useResponsive';
 
 interface EmptyStateProps {
   title: string;
@@ -37,12 +38,13 @@ const TextContainer = styled(YStack, {
 
 export function EmptyState({ title, description }: EmptyStateProps) {
   const { theme } = useTheme();
+  const { iconSizes } = useResponsive();
 
   return (
     <Container>
       <IconContainer>
         <Lightbulb
-          size={56}
+          size={iconSizes.hero}
           color={theme === 'dark' ? '#0066FF' : hexColors.light.primary}
         />
       </IconContainer>

@@ -4,6 +4,7 @@ import { ChevronRight, ExternalLink, AlertCircle } from '@tamagui/lucide-icons';
 import { useTheme } from '../theme';
 import { hexColors, spacing, radius, sizes } from '../theme';
 import { Text } from './Typography';
+import { useResponsive } from '../utils/useResponsive';
 
 interface SettingsRowProps {
   label: string;
@@ -25,6 +26,7 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   showWarning = false,
 }) => {
   const { theme } = useTheme();
+  const { iconSizes } = useResponsive();
   const colors = hexColors[theme];
 
   // Use pure white in dark mode for better contrast
@@ -56,7 +58,7 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
         </Text.Label>
         {showWarning && (
           <View style={styles.warningContainer}>
-            <AlertCircle size={16} color={warningColor} />
+            <AlertCircle size={iconSizes.sm} color={warningColor} />
           </View>
         )}
       </View>
@@ -68,8 +70,8 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
         )}
         {onPress && (
           showExternalLink 
-            ? <ExternalLink size={18} color={colors.textSecondary} />
-            : <ChevronRight size={20} color={colors.textSecondary} />
+            ? <ExternalLink size={iconSizes.md} color={colors.textSecondary} />
+            : <ChevronRight size={iconSizes.md} color={colors.textSecondary} />
         )}
       </View>
     </View>

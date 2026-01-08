@@ -36,6 +36,7 @@ import {
 import { prefetchFactImagesWithLimit } from "../../src/services/images";
 
 import { RESPONSIVE_CONSTANTS } from '../../src/utils/responsive';
+import { useResponsive } from '../../src/utils/useResponsive';
 
 // Interface for fact sections (used internally for grouping)
 interface FactSection {
@@ -107,6 +108,7 @@ function HomeScreen() {
   const iconColor = useIconColor();
   const { width } = useWindowDimensions();
   const isTablet = width >= RESPONSIVE_CONSTANTS.TABLET_BREAKPOINT;
+  const { iconSizes } = useResponsive();
 
   const [sections, setSections] = useState<FactSection[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -272,7 +274,7 @@ function HomeScreen() {
       
       <Animated.View entering={FadeIn.duration(300)}>
         <ScreenHeader
-          icon={<Lightbulb size={24} color={iconColor} />}
+          icon={<Lightbulb size={iconSizes.lg} color={iconColor} />}
           title={t("factsFeed")}
         />
       </Animated.View>

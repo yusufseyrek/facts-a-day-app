@@ -86,7 +86,7 @@ export function ReportFactModal({
 }: ReportFactModalProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { typography: typo } = useResponsive();
+  const { typography: typo, iconSizes } = useResponsive();
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
   const [inputWidth, setInputWidth] = useState<number | undefined>(undefined);
@@ -153,7 +153,7 @@ export function ReportFactModal({
                     <Text.Title>{t('reportFact')}</Text.Title>
                     <TouchableWithoutFeedback onPress={handleClose}>
                       <CloseButton>
-                        <X size={20} color={hexColors[theme].text} />
+                        <X size={iconSizes.md} color={hexColors[theme].text} />
                       </CloseButton>
                     </TouchableWithoutFeedback>
                   </Header>

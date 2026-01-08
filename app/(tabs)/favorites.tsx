@@ -23,6 +23,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { trackScreenView, Screens } from '../../src/services/analytics';
 import { FACT_FLAT_LIST_SETTINGS, createFlatListGetItemLayout } from '../../src/config/factListSettings';
 import { RESPONSIVE_CONSTANTS } from '../../src/utils/responsive';
+import { useResponsive } from '../../src/utils/useResponsive';
 
 // Memoized list item component to prevent re-renders
 interface FactListItemProps {
@@ -64,6 +65,7 @@ export default function FavoritesScreen() {
   const iconColor = useIconColor();
   const { width } = useWindowDimensions();
   const isTablet = width >= RESPONSIVE_CONSTANTS.TABLET_BREAKPOINT;
+  const { iconSizes } = useResponsive();
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -158,7 +160,7 @@ export default function FavoritesScreen() {
     <ScreenContainer edges={["top"]}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <ScreenHeader
-        icon={<Star size={28} color={iconColor} />}
+        icon={<Star size={iconSizes.lg} color={iconColor} />}
         title={t('favorites')}
       />
       <YStack flex={1}>

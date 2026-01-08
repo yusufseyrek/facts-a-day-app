@@ -24,6 +24,7 @@ import * as onboardingService from '../../services/onboarding';
 import * as notificationService from '../../services/notifications';
 import { Text, FONT_FAMILIES } from '../Typography';
 import { trackNotificationTimeChange, updateNotificationProperty } from '../../services/analytics';
+import { useResponsive } from '../../utils/useResponsive';
 
 interface TimePickerModalProps {
   visible: boolean;
@@ -44,6 +45,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   const { theme } = useTheme();
   const colors = hexColors[theme];
   const { t, locale } = useTranslation();
+  const { iconSizes } = useResponsive();
   
   // Warning color - darker in light mode for better readability
   const warningColor = theme === 'dark' ? '#F59E0B' : '#B45309';
@@ -236,7 +238,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                 { backgroundColor: colors.surface },
               ]}
             >
-              <Trash2 size={16} color={colors.textSecondary} />
+              <Trash2 size={iconSizes.sm} color={colors.textSecondary} />
             </Pressable>
           )}
         </View>
@@ -354,7 +356,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                     {t('settingsNotificationTime')}
                   </Text.Title>
                   <Pressable onPress={handleClose} style={styles.closeButton}>
-                    <X size={24} color={colors.text} />
+                    <X size={iconSizes.lg} color={colors.text} />
                   </Pressable>
                 </View>
 
@@ -388,7 +390,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                           }
                         }}
                       >
-                        <AlertTriangle size={18} color={warningColor} />
+                        <AlertTriangle size={iconSizes.md} color={warningColor} />
                         <Text.Caption color={warningColor} style={{ flex: 1 }}>
                           {t('notificationPermissionWarning')}
                         </Text.Caption>
@@ -418,7 +420,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                           },
                         ]}
                       >
-                        <Plus size={20} color={colors.primary} />
+                        <Plus size={iconSizes.md} color={colors.primary} />
                         <Text.Label color={colors.primary}>
                           {t('addAnotherTime')}
                         </Text.Label>

@@ -7,7 +7,7 @@ import { YStack, XStack } from "tamagui";
 import { X, Calendar } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
-import { hexColors, spacing, radius, sizes } from "../theme";
+import { hexColors, spacing, radius, sizes, getCategoryNeonColor } from "../theme";
 import { FactActions } from "./FactActions";
 import { CategoryBadge } from "./CategoryBadge";
 import { Text, FONT_FAMILIES } from "./Typography";
@@ -270,6 +270,15 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     }
   }
 
+  // Get category color (same logic as CategoryBadge)
+  const categoryColor = React.useMemo(() => {
+    if (!categoryForBadge) return null;
+    if (typeof categoryForBadge === "string") {
+      return getCategoryNeonColor(categoryForBadge, theme);
+    }
+    return categoryForBadge.color_hex || getCategoryNeonColor(categoryForBadge.slug, theme);
+  }, [categoryForBadge, theme]);
+
   const hasImage = !!imageUri;
   
   // Calculate dynamic header height first (needed for transition calculations)
@@ -398,6 +407,41 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const closeButtonOpacity = scrollY.interpolate({
     inputRange: [0, HEADER_BG_TRANSITION * 0.7, HEADER_BG_TRANSITION],
     outputRange: [1, 0.5, 0],
+    extrapolate: "clamp",
+  });
+
+  // Badge scroll threshold - when category badge scrolls under the header
+  // Badge is at: IMAGE_HEIGHT (or 0 if no image) + contentPadding + titleHeight + gap
+  const BADGE_SCROLL_THRESHOLD = (hasImage ? IMAGE_HEIGHT : 0) + spacing.lg + titleHeight + spacing.md - headerHeight;
+
+  // Header border animations - appears when category badge scrolls under header
+  // ScaleX animation for sleek reveal from center
+  const headerBorderScaleX = scrollY.interpolate({
+    inputRange: [
+      BADGE_SCROLL_THRESHOLD,
+      BADGE_SCROLL_THRESHOLD + 40,
+    ],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
+
+  // Subtle opacity fade for polish
+  const headerBorderOpacity = scrollY.interpolate({
+    inputRange: [
+      BADGE_SCROLL_THRESHOLD,
+      BADGE_SCROLL_THRESHOLD + 20,
+    ],
+    outputRange: [0, 0.8],
+    extrapolate: "clamp",
+  });
+
+  // Category badge fade out as it approaches the header
+  const categoryBadgeOpacity = scrollY.interpolate({
+    inputRange: [
+      Math.max(0, BADGE_SCROLL_THRESHOLD - 5),
+      BADGE_SCROLL_THRESHOLD + 35,
+    ],
+    outputRange: [1, 0],
     extrapolate: "clamp",
   });
 
@@ -536,6 +580,22 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               </Animated.View>
             </HeaderTitleContainer>
           </HeaderContainer>
+          {/* Animated border bottom when category badge is hidden */}
+          {categoryColor && (
+            <Animated.View
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 1.5,
+                backgroundColor: categoryColor,
+                opacity: headerBorderOpacity,
+                transform: [{ scaleX: headerBorderScaleX }],
+              }}
+              pointerEvents="none"
+            />
+          )}
         </Animated.View>
       </Animated.View>
 
@@ -621,7 +681,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             />
             <View style={{ alignItems: "center", gap: spacing.sm }}>
               <ImagePlus
-                size={iconSizes.xxlarge}
+                size={iconSizes.xl}
                 color={theme === "dark" ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.2)"}
               />
             </View>
@@ -653,9 +713,11 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           {(categoryForBadge || fact.last_updated || fact.created_at) && (
             <BadgesRow>
               {categoryForBadge && (
-                <CategoryBadge 
-                  category={categoryForBadge} 
-                />
+                <Animated.View style={{ opacity: categoryBadgeOpacity }}>
+                  <CategoryBadge 
+                    category={categoryForBadge} 
+                  />
+                </Animated.View>
               )}
               {(fact.last_updated || fact.created_at) && (
                 <XStack alignItems="center" gap={spacing.xs}>
@@ -666,7 +728,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   >
                     {formatLastUpdated(fact.last_updated || fact.created_at, locale)}
                   </Text.Body>
-                  <Calendar size={iconSizes.small} color="$textSecondary" />
+                  <Calendar size={iconSizes.sm} color="$textSecondary" />
                 </XStack>
               )}
             </BadgesRow>
@@ -745,7 +807,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               justifyContent: "center",
             }}
           >
-            <X size={iconSizes.close} color="#FFFFFF" />
+            <X size={iconSizes.md} color="#FFFFFF" />
           </TouchableOpacity>
         </Animated.View>
       )}
@@ -784,7 +846,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             }}
           >
             <X
-              size={iconSizes.close}
+              size={iconSizes.md}
               color={
                 theme === "dark"
                   ? "#FFFFFF"
