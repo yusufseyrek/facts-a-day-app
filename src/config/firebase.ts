@@ -25,7 +25,11 @@ import { Platform } from "react-native";
 import * as Device from "expo-device";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Key for storing the debug token
+// Import macOS debug token from platform-specific file
+// iOS builds get the real token, Android builds get undefined
+import { MACOS_DEBUG_TOKEN } from "./appCheckConfig";
+
+// Key for storing the debug token (used for simulators/emulators in development)
 const APP_CHECK_DEBUG_TOKEN_KEY = 'appcheck_debug_token';
 
 /**
@@ -41,6 +45,7 @@ function generateUUID(): string {
 
 /**
  * Get or create a persistent debug token for App Check
+ * For development/simulators only - macOS uses a pre-registered token
  */
 async function getOrCreateDebugToken(): Promise<string> {
   try {
@@ -78,14 +83,30 @@ const APP_CHECK_INIT_MAX_RETRIES = 2;
 const APP_CHECK_INIT_RETRY_DELAY_MS = 1000;
 
 /**
+ * Check if the app is running on macOS (Mac Catalyst or Apple Silicon Mac)
+ * App Attest is NOT supported on macOS, so we need to use debug provider there.
+ */
+function isMacOS(): boolean {
+  // Device.osName returns 'macOS' on Mac Catalyst apps
+  // Device.modelName contains 'Mac' on Mac devices
+  const osName = Device.osName?.toLowerCase() || '';
+  const modelName = Device.modelName?.toLowerCase() || '';
+  
+  return osName.includes('macos') || 
+         osName.includes('mac os') || 
+         modelName.includes('mac');
+}
+
+/**
  * Initialize Firebase App Check
  * 
  * App Check helps protect your backend resources from abuse by ensuring
  * requests come from genuine app instances running on genuine devices.
  * 
- * On iOS: Uses App Attest (iOS 14+) or DeviceCheck (fallback)
+ * On iOS: Uses App Attest (iOS 14+)
  *         In DEBUG builds, uses Debug provider for simulator testing
  * On Android: Uses Play Integrity
+ * On macOS: Uses Debug provider (App Attest is NOT supported on macOS)
  */
 export async function initializeAppCheckService() {
   if (appCheckInitialized) {
@@ -95,22 +116,31 @@ export async function initializeAppCheckService() {
   // Determine platform and device type for provider selection
   const isIOS = Platform.OS === 'ios';
   const isRealDevice = Device.isDevice;
+  const isMac = isMacOS();
   
   // Use debug provider if:
   // 1. Running in development mode (__DEV__)
   // 2. Running on emulator/simulator (Play Integrity and App Attest don't work on emulators)
-  const useDebugProvider = __DEV__ || !isRealDevice;
+  // 3. Running on macOS (App Attest is NOT supported on macOS)
+  const useDebugProvider = __DEV__ || !isRealDevice || isMac;
   
   // Determine provider names
   const iosProvider = useDebugProvider ? 'debug' : 'appAttest';
   const androidProvider = useDebugProvider ? 'debug' : 'playIntegrity';
   const providerName = isIOS ? iosProvider : androidProvider;
   
-  // Get or create debug token for development
+  // Get debug token based on environment
   let debugToken: string | undefined;
   if (useDebugProvider) {
-    debugToken = await getOrCreateDebugToken();
-    console.log(`🔑 App Check Debug Token: ${debugToken}`);
+    if (isMac && !__DEV__) {
+      // Use pre-registered token for macOS production builds
+      debugToken = MACOS_DEBUG_TOKEN;
+      console.log('🖥️ App Check: Running on macOS - using pre-registered debug token');
+    } else {
+      // Use dynamically generated token for simulators/emulators in development
+      debugToken = await getOrCreateDebugToken();
+      console.log(`🔑 App Check Debug Token: ${debugToken}`);
+    }
   }
   
   let lastError: Error | null = null;
