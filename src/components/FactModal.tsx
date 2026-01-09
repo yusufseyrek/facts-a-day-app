@@ -75,7 +75,7 @@ function formatLastUpdated(dateString: string, locale: string): string {
 export function FactModal({ fact, onClose }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, spacing, iconSizes, isTablet, screenWidth: SCREEN_WIDTH, screenHeight: SCREEN_HEIGHT, config, radius } = useResponsive();
+  const { typography, spacing, iconSizes, isTablet, screenWidth: SCREEN_WIDTH, screenHeight: SCREEN_HEIGHT, config, radius, borderWidths } = useResponsive();
 
   const insets = useSafeAreaInsets();
   const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
@@ -375,7 +375,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
       BADGE_SCROLL_THRESHOLD,
       BADGE_SCROLL_THRESHOLD + 20,
     ],
-    outputRange: [0, 0.8],
+    outputRange: [0, 0.7],
     extrapolate: "clamp",
   });
 
@@ -465,7 +465,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   }}
                   contentFit="cover"
                   cachePolicy="memory-disk"
-                  transition={0}
                 />
               </Animated.View>
               {/* Overlay for better text readability */}
@@ -537,7 +536,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: 2,
+                height: borderWidths.heavy,
                 backgroundColor: categoryColor,
                 opacity: headerBorderOpacity,
                 transform: [{ scaleX: headerBorderScaleX }],
@@ -586,7 +585,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 }}
                 contentFit="cover"
                 cachePolicy="memory-disk"
-                transition={200}
                 placeholder={{ blurhash: "L6PZfSi_.AyE_3t7t7R**0o#DgR4" }}
               />
             </Animated.View>

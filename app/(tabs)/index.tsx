@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { StatusBar } from "expo-status-bar";
-import { RefreshControl, ActivityIndicator, useWindowDimensions } from "react-native";
+import { RefreshControl, ActivityIndicator } from "react-native";
 import { FlashList, ListRenderItemInfo } from "@shopify/flash-list";
 import { styled } from "@tamagui/core";
 import { YStack } from "tamagui";
@@ -15,9 +15,9 @@ import {
   ScreenHeader,
   ContentContainer,
   LoadingContainer,
-  TabletWrapper,
   useIconColor,
 } from "../../src/components";
+import { LAYOUT } from "../../src/config/app";
 import { ImageFactCard } from "../../src/components/ImageFactCard";
 import type { FactWithRelations } from "../../src/services/database";
 import { useTheme } from "../../src/theme";
@@ -35,7 +35,6 @@ import {
 import { prefetchFactImagesWithLimit } from "../../src/services/images";
 import { useScrollToTopHandler } from "../../src/contexts";
 
-import { RESPONSIVE_CONSTANTS } from '../../src/utils/responsive';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 // Interface for fact sections (used internally for grouping)
@@ -83,14 +82,21 @@ FactListItem.displayName = 'FactListItem';
 
 // Simple section header using responsive hook
 const SectionHeader = React.memo(({ title }: { title: string }) => {
-  const { spacing } = useResponsive();
+  const { spacing, isTablet } = useResponsive();
   return (
     <YStack
-      paddingHorizontal={spacing.xl}
-      paddingVertical={spacing.md}
+      width="100%"
+      alignItems="center"
       backgroundColor="$background"
     >
-      <Text.Title>{title}</Text.Title>
+      <YStack
+        width="100%"
+        maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
+        paddingHorizontal={spacing.xl}
+        paddingVertical={spacing.md}
+      >
+        <Text.Title>{title}</Text.Title>
+      </YStack>
     </YStack>
   );
 });
@@ -102,8 +108,6 @@ function HomeScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const iconColor = useIconColor();
-  const { width } = useWindowDimensions();
-  const isTablet = width >= RESPONSIVE_CONSTANTS.TABLET_BREAKPOINT;
   const { iconSizes, spacing } = useResponsive();
 
   const [sections, setSections] = useState<FactSection[]>([]);
@@ -284,31 +288,23 @@ function HomeScreen() {
       </Animated.View>
 
       <YStack flex={1}>
-        {(() => {
-          const feedContent = flattenedData.length === 0 ? (
-            <EmptyState
-              title={t("emptyStateTitle")}
-              description={t("emptyStateDescription")}
-            />
-          ) : (
-            <FlashList
-              ref={listRef}
-              data={flattenedData}
-              keyExtractor={keyExtractor}
-              renderItem={renderItem}
-              getItemType={getItemType}
-              stickyHeaderIndices={stickyHeaderIndices}
-              refreshControl={refreshControl}
-              {...FACT_FLASH_LIST_SETTINGS}
-            />
-          );
-
-          return isTablet ? (
-            <TabletWrapper flex={1}>{feedContent}</TabletWrapper>
-          ) : (
-            feedContent
-          );
-        })()}
+        {flattenedData.length === 0 ? (
+          <EmptyState
+            title={t("emptyStateTitle")}
+            description={t("emptyStateDescription")}
+          />
+        ) : (
+          <FlashList
+            ref={listRef}
+            data={flattenedData}
+            keyExtractor={keyExtractor}
+            renderItem={renderItem}
+            getItemType={getItemType}
+            stickyHeaderIndices={stickyHeaderIndices}
+            refreshControl={refreshControl}
+            {...FACT_FLASH_LIST_SETTINGS}
+          />
+        )}
 
         {backgroundRefreshStatus === 'locale-change' && (
           <YStack

@@ -172,6 +172,7 @@ function MetricCard({
       borderRadius={radius.lg}
       padding={spacing.lg}
       gap={spacing.sm}
+      alignItems="center"
     >
       <XStack alignItems="center" gap={spacing.sm}>
         <View

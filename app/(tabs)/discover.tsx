@@ -22,8 +22,8 @@ import {
   ScreenContainer,
   FONT_FAMILIES,
   ContentContainer,
-  TabletWrapper,
 } from "../../src/components";
+import { LAYOUT } from "../../src/config/app";
 import { ImageFactCard } from "../../src/components/ImageFactCard";
 import type { FactWithRelations, Category } from "../../src/services/database";
 import { useTheme } from "../../src/theme";
@@ -587,11 +587,17 @@ function DiscoverScreen() {
       }
 
       return (
-        <ScrollView ref={categoryGridRef} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          ref={categoryGridRef} 
+          showsVerticalScrollIndicator={false}
+        >
           <CategoriesContainer
             paddingHorizontal={spacing.lg}
             paddingBottom={spacing.md}
             gap={spacing.lg}
+            width="100%"
+            maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
+            alignSelf={isTablet ? "center" : undefined}
           >
             <Animated.View entering={FadeIn.duration(300)}>
               <YStack gap={spacing.sm}>
@@ -784,13 +790,7 @@ function DiscoverScreen() {
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       {renderHeader()}
       <YStack flex={1}>
-        <YStack flex={1}>
-          {isTablet ? (
-            <TabletWrapper flex={1}>{renderContent()}</TabletWrapper>
-          ) : (
-            renderContent()
-          )}
-        </YStack>
+        {renderContent()}
       </YStack>
     </ScreenContainer>
   );

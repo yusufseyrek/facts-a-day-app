@@ -11,7 +11,6 @@ import {
   ScreenHeader,
   ContentContainer,
   LoadingContainer,
-  TabletWrapper,
   useIconColor,
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
@@ -22,7 +21,6 @@ import * as database from '../../src/services/database';
 import { useFocusEffect } from '@react-navigation/native';
 import { trackScreenView, Screens } from '../../src/services/analytics';
 import { FACT_FLAT_LIST_SETTINGS, createFlatListGetItemLayout } from '../../src/config/factListSettings';
-import { RESPONSIVE_CONSTANTS } from '../../src/utils/responsive';
 import { useResponsive } from '../../src/utils/useResponsive';
 import { useScrollToTopHandler } from '../../src/contexts';
 
@@ -65,7 +63,6 @@ export default function FavoritesScreen() {
   const router = useRouter();
   const iconColor = useIconColor();
   const { width } = useWindowDimensions();
-  const isTablet = width >= RESPONSIVE_CONSTANTS.TABLET_BREAKPOINT;
   const { iconSizes } = useResponsive();
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
@@ -153,18 +150,6 @@ export default function FavoritesScreen() {
     );
   }
 
-  const feedContent = (
-    <FlatList
-      ref={listRef}
-      data={favorites}
-      keyExtractor={keyExtractor}
-      renderItem={renderItem}
-      refreshControl={refreshControl}
-      getItemLayout={getItemLayout}
-      {...FACT_FLAT_LIST_SETTINGS}
-    />
-  );
-
   return (
     <ScreenContainer edges={["top"]}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
@@ -173,11 +158,15 @@ export default function FavoritesScreen() {
         title={t('favorites')}
       />
       <YStack flex={1}>
-        {isTablet ? (
-          <TabletWrapper flex={1}>{feedContent}</TabletWrapper>
-        ) : (
-          feedContent
-        )}
+        <FlatList
+          ref={listRef}
+          data={favorites}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          refreshControl={refreshControl}
+          getItemLayout={getItemLayout}
+          {...FACT_FLAT_LIST_SETTINGS}
+        />
       </YStack>
     </ScreenContainer>
   );

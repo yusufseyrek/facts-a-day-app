@@ -72,14 +72,32 @@ export function SectionHeader({ title }: SectionHeaderProps) {
 
 interface ContentContainerProps extends YStackProps {
   children: React.ReactNode;
+  /** Whether to apply max content width on tablets. Defaults to true. */
+  shouldSetMaxContentWidth?: boolean;
 }
 
 /**
  * ContentContainer - Container for main content with consistent padding
  * Uses responsive hook for tablet/phone spacing
+ * On tablets: Full width outer container (catches all touches) with centered content
+ * On phones: Simple padding
  */
-export function ContentContainer({ children, ...props }: ContentContainerProps) {
-  const { spacing } = useResponsive();
+export function ContentContainer({ children, shouldSetMaxContentWidth = true, ...props }: ContentContainerProps) {
+  const { spacing, isTablet } = useResponsive();
+  
+  if (isTablet && shouldSetMaxContentWidth) {
+    return (
+      <YStack width="100%" alignItems="center" {...props}>
+        <YStack 
+          width="100%"
+          maxWidth={LAYOUT.MAX_CONTENT_WIDTH} 
+          paddingHorizontal={spacing.md}
+        >
+          {children}
+        </YStack>
+      </YStack>
+    );
+  }
   
   return (
     <YStack paddingHorizontal={spacing.md} {...props}>

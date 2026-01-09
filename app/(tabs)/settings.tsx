@@ -85,7 +85,7 @@ export default function SettingsPage() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { resetOnboarding } = useOnboarding();
-  const { iconSizes, spacing } = useResponsive();
+  const { iconSizes, spacing, isTablet } = useResponsive();
 
   // Track if this is the initial mount to prevent re-animation on tab focus
   // We delay setting the flag to allow lazy-rendered items to also animate
@@ -978,21 +978,23 @@ export default function SettingsPage() {
         ref={listRef}
         sections={sections}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{
-          maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
-          width: "100%",
-          alignSelf: "center",
-        }}
         renderSectionHeader={({ section: { title }, section }) => {
           const sectionIndex = sections.findIndex(s => s.title === section.title);
           return (
             <Animated.View entering={shouldAnimate ? FadeInDown.delay(sectionIndex * 50).duration(300) : undefined}>
               <YStack
-                paddingHorizontal={spacing.xl}
-                paddingVertical={spacing.md}
+                width="100%"
+                alignItems="center"
                 backgroundColor="$background"
               >
-                <Text.Title>{title}</Text.Title>
+                <YStack
+                  width="100%"
+                  maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
+                  paddingHorizontal={spacing.xl}
+                  paddingVertical={spacing.md}
+                >
+                  <Text.Title>{title}</Text.Title>
+                </YStack>
               </YStack>
             </Animated.View>
           );
