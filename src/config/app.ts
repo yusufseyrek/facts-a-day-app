@@ -69,6 +69,8 @@ export const NOTIFICATION_SETTINGS = {
   IMAGES_DIR_NAME: 'notification-images/',
   /** Time tolerance for comparing OS and DB notification times (milliseconds) */
   TIME_TOLERANCE_MS: 60 * 1000,
+  /** Concurrency limit for downloading notification images */
+  IMAGE_DOWNLOAD_CONCURRENCY: 7,
 } as const;
 
 /**

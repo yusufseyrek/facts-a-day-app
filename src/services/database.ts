@@ -2397,6 +2397,7 @@ export async function getWeeklyTestsCount(): Promise<number> {
 
 /**
  * Get count of questions answered this week (Monday to Sunday)
+ * Only counts actual answers, not skipped questions
  */
 export async function getWeeklyAnsweredCount(): Promise<number> {
   const database = await openDatabase();
@@ -2410,9 +2411,10 @@ export async function getWeeklyAnsweredCount(): Promise<number> {
   monday.setHours(0, 0, 0, 0);
   const weekStart = monday.toISOString();
 
+  // Count from question_attempts table to only count actual answers (not skipped)
   const result = await database.getFirstAsync<{ count: number }>(
-    `SELECT SUM(total_questions) as count FROM trivia_sessions
-     WHERE completed_at >= ?`,
+    `SELECT COUNT(*) as count FROM question_attempts
+     WHERE answered_at >= ?`,
     [weekStart]
   );
 

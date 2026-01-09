@@ -1,15 +1,11 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { Pressable, Animated, Easing } from 'react-native';
-import { View } from '@tamagui/core';
 import { YStack } from 'tamagui';
 import { Check } from '@tamagui/lucide-icons';
 import { Text, FONT_FAMILIES } from './Typography';
 import { hexColors, useTheme, getCategoryNeonColor } from '../theme';
 import { getContrastColor } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
-
-// Animated wrapper for the checkmark
-const AnimatedCheckmarkContainer = Animated.createAnimatedComponent(View);
 
 export interface CategoryCardProps {
   icon: React.ReactNode;
@@ -107,8 +103,8 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
     position: 'absolute' as const,
     top: spacing.sm,
     right: spacing.sm,
-    width: 24,
-    height: 24,
+    width: iconSizes.md,
+    height: iconSizes.md,
     borderRadius: radius.full,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -139,11 +135,11 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
               borderColor,
             }}
           >
-            <AnimatedCheckmarkContainer
+            <Animated.View
               style={[checkmarkContainerStyle, checkmarkStyle]}
             >
               <Check size={iconSizes.sm} color={contrastColor} strokeWidth={3} />
-            </AnimatedCheckmarkContainer>
+            </Animated.View>
             <YStack alignItems="center" justifyContent="center">
               {React.isValidElement(icon)
                 ? React.cloneElement(icon as React.ReactElement<any>, {

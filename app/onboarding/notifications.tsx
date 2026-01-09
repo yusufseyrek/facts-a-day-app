@@ -10,6 +10,7 @@ import { Bell } from "@tamagui/lucide-icons";
 import { hexColors } from "../../src/theme";
 import { useResponsive } from "../../src/utils/useResponsive";
 import { Text, Button, ProgressIndicator, MultiTimePicker } from "../../src/components";
+import { LAYOUT } from "../../src/config/app";
 import { useTheme } from "../../src/theme";
 import { useTranslation } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
@@ -279,8 +280,7 @@ export default function NotificationsScreen() {
     <Container>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <ContentContainer padding={spacing.xl} gap={spacing.xl}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <YStack gap={spacing.md} paddingBottom={spacing.xl}>
+          <ScrollView showsVerticalScrollIndicator={false} >
             <Animated.View
               style={{
                 opacity: progressOpacity,
@@ -289,69 +289,69 @@ export default function NotificationsScreen() {
             >
               <ProgressIndicator currentStep={2} totalSteps={2} />
             </Animated.View>
+            <YStack gap={spacing.md} paddingBottom={spacing.xl} width="100%" maxWidth={LAYOUT.TABLET_BREAKPOINT} alignSelf="center">  
+              <Header gap={spacing.md} paddingVertical={spacing.xxl}>
+                <Animated.View
+                  style={{
+                    transform: [
+                      { scale: iconScale },
+                      { rotate: bellRotate },
+                    ],
+                  }}
+                >
+                  <IconContainer>
+                    <Bell size={iconSizes.heroLg} color={hexColors.light.primary} />
+                  </IconContainer>
+                </Animated.View>
 
-            <Header gap={spacing.md} paddingVertical={spacing.xxl}>
+                <Animated.View
+                  style={{
+                    opacity: titleOpacity,
+                    transform: [{ translateY: titleTranslateY }],
+                  }}
+                >
+                  <YStack gap={spacing.sm} alignItems="center">
+                    <Text.Headline textAlign="center">{t("stayInformed")}</Text.Headline>
+                    <Text.Body textAlign="center" color="$textSecondary">
+                      {t("notificationRequired")}
+                    </Text.Body>
+                  </YStack>
+                </Animated.View>
+              </Header>
+
+              {/* Multi-Time Picker */}
               <Animated.View
                 style={{
-                  transform: [
-                    { scale: iconScale },
-                    { rotate: bellRotate },
-                  ],
+                  opacity: pickerOpacity,
+                  transform: [{ translateY: pickerTranslateY }],
                 }}
               >
-                <IconContainer>
-                  <Bell size={iconSizes.heroLg} color={hexColors.light.primary} />
-                </IconContainer>
+                <TimePickerContainer padding={spacing.xl} borderRadius={radius.lg} gap={spacing.md}>
+                  <MultiTimePicker
+                    times={notificationTimes}
+                    onTimesChange={setNotificationTimes}
+                    maxTimes={3}
+                    minTimes={1}
+                  />
+                </TimePickerContainer>
               </Animated.View>
+            </YStack>
+          </ScrollView>
 
-              <Animated.View
-                style={{
-                  opacity: titleOpacity,
-                  transform: [{ translateY: titleTranslateY }],
-                }}
-              >
-                <YStack gap={spacing.sm} alignItems="center">
-                  <Text.Headline textAlign="center">{t("stayInformed")}</Text.Headline>
-                  <Text.Body textAlign="center" color="$textSecondary">
-                    {t("notificationRequired")}
-                  </Text.Body>
-                </YStack>
-              </Animated.View>
-            </Header>
-
-            {/* Multi-Time Picker */}
-            <Animated.View
-              style={{
-                opacity: pickerOpacity,
-                transform: [{ translateY: pickerTranslateY }],
-              }}
-            >
-              <TimePickerContainer padding={spacing.xl} borderRadius={radius.lg} gap={spacing.md}>
-                <MultiTimePicker
-                  times={notificationTimes}
-                  onTimesChange={setNotificationTimes}
-                  maxTimes={3}
-                  minTimes={1}
-                />
-              </TimePickerContainer>
-            </Animated.View>
-          </YStack>
-        </ScrollView>
-
-        <Animated.View
-          style={{
-            opacity: buttonOpacity,
-            transform: [{ translateY: buttonTranslateY }],
-          }}
-        >
-          <Button
-            onPress={handleEnableNotifications}
-            loading={isScheduling}
-            disabled={isScheduling}
+          <Animated.View
+            style={{
+              opacity: buttonOpacity,
+              transform: [{ translateY: buttonTranslateY }],
+            }}
           >
-            {isScheduling ? t("gettingAppReady") : t("enableNotifications")}
-          </Button>
-        </Animated.View>
+            <Button
+              onPress={handleEnableNotifications}
+              loading={isScheduling}
+              disabled={isScheduling}
+            >
+              {isScheduling ? t("gettingAppReady") : t("enableNotifications")}
+            </Button>
+          </Animated.View>
       </ContentContainer>
     </Container>
   );

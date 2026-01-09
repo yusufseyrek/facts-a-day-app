@@ -103,47 +103,47 @@ export function MultiTimePicker({
         <XStack
           key={index}
           backgroundColor="$surface"
-          padding={spacing.md}
+          paddingVertical={spacing.md}
+          paddingHorizontal={spacing.lg}
           borderRadius={radius.lg}
           borderWidth={1}
           borderColor="$border"
           alignItems="center"
-          justifyContent="space-between"
+          justifyContent="center"
+          alignSelf="center"
           gap={spacing.md}
-          minHeight={56}
         >
           <Text.Label
             color="$textSecondary"
             fontFamily={FONT_FAMILIES.medium}
-            style={{ minWidth: 60 }}
           >
             {t('time')} {index + 1}
           </Text.Label>
 
-          <XStack flex={1} gap={spacing.md} alignItems="center">
-            {Platform.OS === 'ios' ? (
-              <YStack flex={1} alignItems="flex-start">
-                <DateTimePicker
-                  value={time}
-                  mode="time"
-                  display="compact"
-                  onChange={(event, selectedDate) =>
-                    handleTimeChange(index, event, selectedDate)
-                  }
-                  themeVariant={theme}
-                />
-              </YStack>
-            ) : (
-              <YStack flex={1}>
-                <Button
-                  onPress={() => handleAndroidTimePress(index)}
-                  variant="secondary"
-                >
-                  {formatTime(time)}
-                </Button>
-              </YStack>
-            )}
-          </XStack>
+          {Platform.OS === 'ios' ? (
+            <DateTimePicker
+              value={time}
+              mode="time"
+              display="compact"
+              onChange={(event, selectedDate) =>
+                handleTimeChange(index, event, selectedDate)
+              }
+              themeVariant={theme}
+            />
+          ) : (
+            <XStack
+              backgroundColor="$primaryLight"
+              paddingVertical={spacing.sm}
+              paddingHorizontal={spacing.lg}
+              borderRadius={radius.full}
+              pressStyle={{ opacity: 0.7, scale: 0.98 }}
+              onPress={() => handleAndroidTimePress(index)}
+            >
+              <Text.Label fontFamily={FONT_FAMILIES.bold} color="$primary">
+                {formatTime(time)}
+              </Text.Label>
+            </XStack>
+          )}
 
           {times.length > minTimes && (
             <XStack

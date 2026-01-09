@@ -150,8 +150,9 @@ const phoneSpacing = {
   sm: 8,
   md: 12,
   lg: 16,
-  xl: 24,
-  xxl: 32,
+  xl: 20,
+  xxl: 24,
+  xxxl: 28,
 } as const;
 
 export const spacing = {
@@ -312,6 +313,17 @@ export const getRadius = (screenWidth: number) => {
  */
 export const getBorderWidths = (screenWidth: number) => {
   return isTabletDevice(screenWidth) ? borderWidths.tablet : borderWidths.phone;
+};
+
+/**
+ * Get trivia modal width for the current screen width.
+ * ~90% on phones, 90% of tablet breakpoint on tablets.
+ * @param screenWidth - Current screen width
+ */
+export const getTriviaModalWidth = (screenWidth: number) => {
+  return isTabletDevice(screenWidth) 
+    ? TABLET_BREAKPOINT * 0.9 
+    : screenWidth * 0.9;
 };
 
 // Export constants for external use

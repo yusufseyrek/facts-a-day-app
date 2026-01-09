@@ -228,8 +228,6 @@ function shouldPreloadImage(scheduledDate: Date): boolean {
   return daysUntilNotification <= NOTIFICATION_SETTINGS.DAYS_TO_PRELOAD_IMAGES;
 }
 
-// Concurrency limit for image downloads
-const IMAGE_DOWNLOAD_CONCURRENCY = 5;
 
 /**
  * Process items in parallel with concurrency limit
@@ -308,7 +306,7 @@ export async function preloadUpcomingNotificationImages(locale: SupportedLocale)
         const localUri = await downloadImageForNotification(imageUrl, factId);
         return localUri ? 1 : 0;
       },
-      IMAGE_DOWNLOAD_CONCURRENCY
+      NOTIFICATION_SETTINGS.IMAGE_DOWNLOAD_CONCURRENCY
     );
 
     return results.reduce<number>((sum, count) => sum + count, 0);
@@ -687,7 +685,7 @@ async function syncOsWithDb(locale: SupportedLocale): Promise<{ synced: number; 
             await downloadImageForNotification(fact.image_url, fact.id);
           }
         },
-        IMAGE_DOWNLOAD_CONCURRENCY
+        NOTIFICATION_SETTINGS.IMAGE_DOWNLOAD_CONCURRENCY
       );
     }
   }

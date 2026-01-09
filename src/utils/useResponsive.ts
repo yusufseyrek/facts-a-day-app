@@ -9,6 +9,7 @@ import {
   getMedia,
   getRadius,
   getBorderWidths,
+  getTriviaModalWidth,
   typography as responsiveTypography,
   spacing as responsiveSpacing,
   iconSizes as responsiveIconSizes,
@@ -51,6 +52,8 @@ export interface ResponsiveValues {
   radius: ResponsiveRadius;
   /** Border width values (hairline, thin, medium, thick, heavy, extraHeavy) */
   borderWidths: ResponsiveBorderWidths;
+  /** Trivia modal width (~90% on phones, 90% of tablet breakpoint on tablets) */
+  triviaModalWidth: number;
 }
 
 /**
@@ -76,6 +79,7 @@ export const useResponsive = (): ResponsiveValues => {
       media: getMedia(width),
       radius: getRadius(width),
       borderWidths: getBorderWidths(width),
+      triviaModalWidth: getTriviaModalWidth(width),
     };
   }, [width, height]);
 };

@@ -506,7 +506,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             zIndex={100}
             alignItems="center"
             justifyContent="space-between"
-            paddingHorizontal={isTablet ? spacing.xxl : spacing.lg}
+            paddingHorizontal={spacing.xl}
             pointerEvents="box-none"
             style={{
               paddingTop: Platform.OS === "ios" ? spacing.lg : insets.top + spacing.sm,
@@ -519,7 +519,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             <HeaderTitleContainer pointerEvents="none">
               <Animated.View
                 style={{
-                  // opacity: headerTitleOpacity,
                   flex: 1,
                   transform: [{ translateY: headerTitleTranslateY }],
                 }}
@@ -538,7 +537,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: 1.5,
+                height: 2.5,
                 backgroundColor: categoryColor,
                 opacity: headerBorderOpacity,
                 transform: [{ scaleX: headerBorderScaleX }],
@@ -640,10 +639,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
         {/* Content Section */}
         <YStack
-          paddingHorizontal={isTablet ? spacing.xxl : spacing.lg}
-          paddingTop={isTablet ? spacing.xxl : spacing.lg}
-          paddingBottom={isTablet ? spacing.xl : spacing.md}
-          gap={isTablet ? spacing.xl : spacing.md}
+          padding={spacing.xl}
+          gap={spacing.md}
         >
           {/* Title - shown in content when header is not visible */}
           <Animated.View
