@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import { ChevronRight, ExternalLink, AlertCircle } from '@tamagui/lucide-icons';
-import { useTheme } from '../theme';
-import { hexColors } from '../theme';
+
 import { Text } from './Typography';
+import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
 interface SettingsRowProps {

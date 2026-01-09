@@ -1,25 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppThemeProvider, useTheme } from '../src/theme';
-import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
-import { hexColors } from '../src/theme';
-import { I18nProvider, getLocaleFromCode } from '../src/i18n';
-import { OnboardingProvider, useOnboarding, ScrollToTopProvider } from '../src/contexts';
-import * as onboardingService from '../src/services/onboarding';
-import * as notificationService from '../src/services/notifications';
-import * as database from '../src/services/database';
-import * as contentRefresh from '../src/services/contentRefresh';
-import { initializeAdsForReturningUser } from '../src/services/ads';
-import * as updates from '../src/services/updates';
 import { View, AppState, AppStateStatus } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as Localization from 'expo-localization';
+import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
-import { initializeFirebase, enableCrashlyticsConsoleLogging } from '../src/config/firebase';
-import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { initAnalytics } from '../src/services/analytics';
 import {
   useFonts,
   Montserrat_400Regular,
@@ -29,7 +13,23 @@ import {
   Montserrat_700Bold,
   Montserrat_800ExtraBold,
 } from '@expo-google-fonts/montserrat';
+import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { STORAGE_KEYS, TIMING, NOTIFICATION_SETTINGS } from '../src/config/app';
+import { initializeFirebase, enableCrashlyticsConsoleLogging } from '../src/config/firebase';
+import { OnboardingProvider, useOnboarding, ScrollToTopProvider } from '../src/contexts';
+import { I18nProvider, getLocaleFromCode } from '../src/i18n';
+import * as contentRefresh from '../src/services/contentRefresh';
+import * as database from '../src/services/database';
+import * as notificationService from '../src/services/notifications';
+import * as onboardingService from '../src/services/onboarding';
+import * as updates from '../src/services/updates';
+import { initializeAdsForReturningUser } from '../src/services/ads';
+import { initAnalytics } from '../src/services/analytics';
+import { AppThemeProvider, useTheme, hexColors } from '../src/theme';
 
 // Prevent "multiple linking listeners" error during Fast Refresh
 // This tells expo-router the initial route, helping it manage navigation state properly

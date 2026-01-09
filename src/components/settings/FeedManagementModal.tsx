@@ -10,16 +10,17 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { X, Search, Check, Calendar, Trash2, Edit3, RefreshCw } from '@tamagui/lucide-icons';
-import { useTheme } from '../../theme';
-import { hexColors } from '../../theme';
-import { useTranslation } from '../../i18n';
+import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+
 import { Text, FONT_FAMILIES } from '../Typography';
-import * as database from '../../services/database';
-import type { FactWithRelations } from '../../services/database';
+import { useTranslation } from '../../i18n';
 import { triggerFeedRefresh } from '../../services/contentRefresh';
+import * as database from '../../services/database';
+import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+
+import type { FactWithRelations } from '../../services/database';
 
 const ANIMATION_DURATION = 300;
 

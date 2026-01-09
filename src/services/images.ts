@@ -20,9 +20,11 @@
  */
 
 import * as FileSystem from 'expo-file-system/legacy';
-import { getCachedAppCheckToken, forceRefreshAppCheckToken } from './appCheckToken';
+
 import { PREFETCH_SETTINGS } from '../config/factListSettings';
 import { IMAGE_CACHE, IMAGE_DOWNLOAD_RETRY } from '../config/images';
+
+import { getCachedAppCheckToken, forceRefreshAppCheckToken } from './appCheckToken';
 
 // Directory for cached fact images - uses documentDirectory for persistence
 // cacheDirectory is NOT reliable for multi-day caching as it can be cleared by OS

@@ -1,26 +1,26 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Pressable, Animated, View, StyleSheet, Platform, ScrollView, TouchableOpacity } from "react-native";
-import { ImagePlus } from "@tamagui/lucide-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { styled } from "@tamagui/core";
-import { YStack, XStack } from "tamagui";
-import { X, Calendar } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
-import { hexColors, getCategoryNeonColor } from "../theme";
-import { FactActions } from "./FactActions";
-import { CategoryBadge } from "./CategoryBadge";
-import { Text, FONT_FAMILIES } from "./Typography";
-import { useTheme } from "../theme";
-import { useTranslation } from "../i18n";
-import type { FactWithRelations, Category } from "../services/database";
+import { styled } from "@tamagui/core";
+import { ImagePlus, X, Calendar } from "@tamagui/lucide-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { YStack, XStack } from "tamagui";
+
 import { BannerAd } from "./ads";
-import { openInAppBrowser } from "../utils/browser";
-import { getLocalNotificationImagePath, deleteNotificationImage } from "../services/notifications";
-import { useResponsive } from "../utils/useResponsive";
-import { trackSourceLinkClick } from "../services/analytics";
-import { useFactImage } from "../utils/useFactImage";
+import { CategoryBadge } from "./CategoryBadge";
+import { FactActions } from "./FactActions";
+import { Text, FONT_FAMILIES } from "./Typography";
+import { useTranslation } from "../i18n";
 import { addCategoryKeyword } from "../services/adKeywords";
+import { trackSourceLinkClick } from "../services/analytics";
+import { getLocalNotificationImagePath, deleteNotificationImage } from "../services/notifications";
+import { hexColors, getCategoryNeonColor, useTheme } from "../theme";
+import { openInAppBrowser } from "../utils/browser";
+import { useFactImage } from "../utils/useFactImage";
+import { useResponsive } from "../utils/useResponsive";
+
+import type { FactWithRelations, Category } from "../services/database";
 
 
 interface FactModalProps {

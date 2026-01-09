@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { Pressable, Animated, Easing } from 'react-native';
-import { YStack } from 'tamagui';
 import { Check } from '@tamagui/lucide-icons';
+import { YStack } from 'tamagui';
+
 import { Text, FONT_FAMILIES } from './Typography';
 import { hexColors, useTheme, getCategoryNeonColor } from '../theme';
 import { getContrastColor } from '../utils/colors';

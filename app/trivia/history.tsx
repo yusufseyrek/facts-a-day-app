@@ -1,35 +1,26 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
+import { RefreshControl, ActivityIndicator, Pressable, View, Animated as RNAnimated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { 
-  RefreshControl, 
-  ActivityIndicator,
-  Pressable,
-  View,
-  Animated as RNAnimated,
-} from 'react-native';
-import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
-import { YStack, XStack } from 'tamagui';
-import { 
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  Shuffle,
-} from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
+import { ChevronLeft, ChevronRight, Calendar, Shuffle } from '@tamagui/lucide-icons';
 import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
-import { hexColors } from '../../src/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { YStack, XStack } from 'tamagui';
+
 import { Text, FONT_FAMILIES } from '../../src/components/Typography';
-import { useTheme } from '../../src/theme';
-import { useTranslation } from '../../src/i18n';
-import { getLucideIcon } from '../../src/utils/iconMapper';
-import * as triviaService from '../../src/services/trivia';
 import { TriviaResults, getTriviaModeBadge } from '../../src/components/trivia';
-import type { TriviaSessionWithCategory } from '../../src/services/trivia';
-import { trackScreenView, Screens, trackTriviaResultsView, TriviaMode } from '../../src/services/analytics';
 import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
+import { useTranslation } from '../../src/i18n';
+import { trackScreenView, Screens, trackTriviaResultsView } from '../../src/services/analytics';
+import * as triviaService from '../../src/services/trivia';
+import { hexColors, useTheme } from '../../src/theme';
+import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
+
+import type { TriviaSessionWithCategory } from '../../src/services/trivia';
+import type { TriviaMode } from '../../src/services/analytics';
 
 // Back Button with press animation
 function BackButton({ 

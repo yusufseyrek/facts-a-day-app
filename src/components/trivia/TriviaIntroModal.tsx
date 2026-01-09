@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, Pressable, Platform } from 'react-native';
-import { YStack, XStack } from 'tamagui';
+import { BlurView } from 'expo-blur';
 import { 
   Zap, 
   Shuffle, 
@@ -11,16 +11,15 @@ import {
   Target,
   Trophy,
   CheckCircle,
-  CircleCheck,
 } from '@tamagui/lucide-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { BlurView } from 'expo-blur';
-import { hexColors } from '../../theme';
+import { YStack, XStack } from 'tamagui';
+
 import { Text, FONT_FAMILIES } from '../Typography';
-import { useTheme } from '../../theme';
 import { useTranslation } from '../../i18n';
-import { getLucideIcon } from '../../utils/iconMapper';
 import { getEstimatedTimeMinutes } from '../../services/trivia';
+import { hexColors, useTheme } from '../../theme';
+import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
 
 export type TriviaType = 'daily' | 'mixed' | 'category';

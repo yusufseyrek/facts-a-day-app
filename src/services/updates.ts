@@ -5,11 +5,13 @@
  * Integrates with Firebase App Check for authenticated update requests.
  */
 
-import * as Updates from 'expo-updates';
 import { Platform, Appearance } from 'react-native';
-import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
+
 import { hexColors } from '../theme';
+
 import { trackAppUpdate } from './analytics';
 
 const THEME_STORAGE_KEY = '@app_theme_mode';

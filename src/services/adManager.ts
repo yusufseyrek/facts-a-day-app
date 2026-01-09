@@ -1,5 +1,6 @@
 import { showInterstitialAd } from '../components/ads/InterstitialAd';
 import { ADS_ENABLED } from '../config/ads';
+
 import { trackInterstitialShown } from './analytics';
 
 /**

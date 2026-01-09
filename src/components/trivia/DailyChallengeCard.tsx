@@ -1,11 +1,13 @@
 import React from 'react';
 import { Pressable } from 'react-native';
-import { YStack, XStack } from 'tamagui';
 import { Zap, Check, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { hexColors } from '../../theme';
+import { YStack, XStack } from 'tamagui';
+
 import { Text, FONT_FAMILIES } from '../Typography';
+import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+
 import type { TranslationKeys } from '../../i18n/translations';
 
 interface DailyChallengeCardProps {

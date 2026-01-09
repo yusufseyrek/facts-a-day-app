@@ -1,39 +1,25 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { ScrollView, RefreshControl, ActivityIndicator, Pressable, View, Animated as RNAnimated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { 
-  ScrollView, 
-  RefreshControl, 
-  ActivityIndicator,
-  Pressable,
-  View,
-  Animated as RNAnimated,
-} from 'react-native';
-import { YStack, XStack } from 'tamagui';
-import { 
-  Gamepad2, 
-  Trophy, 
-  CheckCircle,
-  Calendar,
-  Shuffle,
-  Hash,
-  ChevronLeft,
-  ChevronRight,
-} from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Gamepad2, Trophy, CheckCircle, Calendar, Shuffle, Hash, ChevronLeft, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
-import { hexColors } from '../../src/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { YStack, XStack } from 'tamagui';
+
 import { Text, FONT_FAMILIES } from '../../src/components/Typography';
-import { useTheme } from '../../src/theme';
+import { TriviaResults, getTriviaModeBadge } from '../../src/components/trivia';
+import { DISPLAY_LIMITS } from '../../src/config/app';
 import { useTranslation } from '../../src/i18n';
+import { trackScreenView, Screens, trackTriviaResultsView } from '../../src/services/analytics';
+import * as triviaService from '../../src/services/trivia';
+import { hexColors, useTheme } from '../../src/theme';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
-import * as triviaService from '../../src/services/trivia';
-import { TriviaResults, getTriviaModeBadge } from '../../src/components/trivia';
+
 import type { TriviaStats, CategoryWithProgress, TriviaSessionWithCategory } from '../../src/services/trivia';
-import { trackScreenView, Screens, trackTriviaResultsView, TriviaMode } from '../../src/services/analytics';
-import { DISPLAY_LIMITS } from '../../src/config/app';
+import type { TriviaMode } from '../../src/services/analytics';
 
 // View All Button with press animation
 function ViewAllButton({

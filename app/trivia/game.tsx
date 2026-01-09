@@ -1,28 +1,23 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { StatusBar } from 'expo-status-bar';
 import { BackHandler, View } from 'react-native';
-import { YStack } from 'tamagui';
+import { StatusBar } from 'expo-status-bar';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
-import { hexColors } from '../../src/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { YStack } from 'tamagui';
+
 import { Text } from '../../src/components/Typography';
-import { useTheme } from '../../src/theme';
-import { useTranslation } from '../../src/i18n';
-import { 
-  trackScreenView, 
-  Screens, 
-  trackTriviaStart, 
-  trackTriviaComplete, 
-  trackTriviaExit,
-  TriviaMode,
-} from '../../src/services/analytics';
 import { TriviaResults, TriviaGameView, TriviaExitModal, getTriviaModeBadge } from '../../src/components/trivia';
-import * as triviaService from '../../src/services/trivia';
-import { useResponsive } from '../../src/utils/useResponsive';
-import { TIME_PER_QUESTION } from '../../src/services/trivia';
-import type { QuestionWithFact } from '../../src/services/database';
+import { useTranslation } from '../../src/i18n';
 import { showTriviaResultsInterstitial } from '../../src/services/adManager';
+import { trackScreenView, Screens, trackTriviaStart, trackTriviaComplete, trackTriviaExit } from '../../src/services/analytics';
+import * as triviaService from '../../src/services/trivia';
+import { TIME_PER_QUESTION } from '../../src/services/trivia';
+import { hexColors, useTheme } from '../../src/theme';
+import { useResponsive } from '../../src/utils/useResponsive';
+
+import type { QuestionWithFact } from '../../src/services/database';
+import type { TriviaMode } from '../../src/services/analytics';
 
 interface TriviaGameState {
   questions: QuestionWithFact[];

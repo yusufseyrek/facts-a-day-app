@@ -1,7 +1,4 @@
-import {
-  AdsConsent,
-  AdsConsentStatus,
-} from 'react-native-google-mobile-ads';
+import { AdsConsent, AdsConsentStatus } from 'react-native-google-mobile-ads';
 
 /**
  * Check if user has consented to personalized ads

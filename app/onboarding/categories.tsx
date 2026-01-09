@@ -1,29 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ScrollView, ActivityIndicator, Animated, Easing } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { View, styled } from "@tamagui/core";
-import { XStack, YStack } from "tamagui";
 import { useRouter } from "expo-router";
-import { hexColors } from "../../src/theme";
-import { useResponsive } from "../../src/utils/useResponsive";
-import {
-  Text,
-  Button,
-  ProgressIndicator,
-  CategoryCard,
-} from "../../src/components";
-import { useTheme } from "../../src/theme";
-import { useTranslation, type SupportedLocale } from "../../src/i18n";
+import { View, styled } from "@tamagui/core";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { XStack, YStack } from "tamagui";
+
+import { Text, Button, ProgressIndicator, CategoryCard } from "../../src/components";
 import { useOnboarding } from "../../src/contexts";
+import { useTranslation } from "../../src/i18n";
+import { trackOnboardingStart, trackOnboardingCategoriesSelected, trackScreenView, Screens } from "../../src/services/analytics";
 import * as db from "../../src/services/database";
+import { hexColors, useTheme } from "../../src/theme";
 import { getLucideIcon } from "../../src/utils/iconMapper";
-import {
-  trackOnboardingStart,
-  trackOnboardingCategoriesSelected,
-  trackScreenView,
-  Screens,
-} from "../../src/services/analytics";
+import { useResponsive } from "../../src/utils/useResponsive";
+
+import type { SupportedLocale } from "../../src/i18n";
 
 const Container = styled(SafeAreaView, {
   flex: 1,

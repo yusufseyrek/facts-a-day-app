@@ -3,13 +3,15 @@
  * Provides typed functions for all analytics events in the app
  */
 
-import { logEvent, logScreenView, setAnalyticsUserProperty, setCrashlyticsAttribute } from '../config/firebase';
-import { getSelectedCategories, getNotificationTimes } from './onboarding';
-import * as Device from 'expo-device';
-import * as Application from 'expo-application';
 import { Platform } from 'react-native';
-import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Application from 'expo-application';
+import * as Device from 'expo-device';
+import * as Localization from 'expo-localization';
+
+import { logEvent, logScreenView, setAnalyticsUserProperty, setCrashlyticsAttribute } from '../config/firebase';
+
+import { getSelectedCategories, getNotificationTimes } from './onboarding';
 
 const THEME_STORAGE_KEY = '@app_theme_mode';
 

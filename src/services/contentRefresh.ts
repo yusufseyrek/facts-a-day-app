@@ -1,10 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Localization from 'expo-localization';
+
+import { getLocaleFromCode, SupportedLocale } from '../i18n';
+
 import * as api from './api';
 import * as db from './database';
 import * as onboardingService from './onboarding';
 import * as preferencesService from './preferences';
-import { getLocaleFromCode, SupportedLocale } from '../i18n';
-import * as Localization from 'expo-localization';
 
 // AsyncStorage keys
 const LAST_CONTENT_REFRESH_KEY = '@last_content_refresh';

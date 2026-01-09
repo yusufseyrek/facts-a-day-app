@@ -1,19 +1,21 @@
 import React from 'react';
-import { StatusBar } from 'expo-status-bar';
 import { Pressable, View, ActivityIndicator, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { YStack, XStack } from 'tamagui';
+import { StatusBar } from 'expo-status-bar';
 import { X, Timer, ChevronRight, ChevronLeft } from '@tamagui/lucide-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { 
   FadeInUp,
   SlideInRight,
   SharedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
-import { hexColors } from '../../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { YStack, XStack } from 'tamagui';
+
 import { Text, FONT_FAMILIES } from '../Typography';
+import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+
 import type { QuestionWithFact } from '../../services/database';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

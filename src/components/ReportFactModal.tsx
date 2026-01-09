@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { Modal, TextInput, Keyboard, Platform, TouchableWithoutFeedback, KeyboardAvoidingView, ScrollView, View } from 'react-native';
-import { YStack, XStack } from 'tamagui';
 import { X } from '@tamagui/lucide-icons';
-import { hexColors, useTheme } from '../theme';
-import { Text } from './Typography';
+import { YStack, XStack } from 'tamagui';
+
 import { Button } from './Button';
+import { Text } from './Typography';
 import { useTranslation } from '../i18n';
+import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
 interface ReportFactModalProps {

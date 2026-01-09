@@ -8,6 +8,7 @@
 
 import { getApp } from '@react-native-firebase/app';
 import getAppCheck, { getToken } from '@react-native-firebase/app-check';
+
 import { appCheckReady, isAppCheckInitialized } from '../config/firebase';
 
 // Token cache

@@ -1,7 +1,9 @@
-import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { getCachedAppCheckToken } from './appCheckToken';
+import Constants from 'expo-constants';
+
 import { appCheckReady } from '../config/firebase';
+
+import { getCachedAppCheckToken } from './appCheckToken';
 
 /**
  * Get the API base URL, adjusting for Android emulator

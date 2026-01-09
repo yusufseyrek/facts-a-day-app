@@ -1,11 +1,11 @@
 import React from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { styled } from "@tamagui/core";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { YStack, XStack, YStackProps } from "tamagui";
-import { hexColors } from "../theme";
+
 import { Text } from "./Typography";
-import { useTheme } from "../theme";
 import { LAYOUT } from "../config/app";
+import { hexColors, useTheme } from "../theme";
 import { useResponsive } from "../utils/useResponsive";
 
 /**

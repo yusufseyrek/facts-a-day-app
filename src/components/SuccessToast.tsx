@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Animated, StyleSheet, View, Modal } from 'react-native';
 import { CheckCircle } from '@tamagui/lucide-icons';
-import { useTheme } from '../theme';
-import { hexColors } from '../theme';
+
 import { Text } from './Typography';
+import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
 interface SuccessToastProps {

@@ -10,21 +10,21 @@ import {
   Linking,
   Dimensions,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { X, Plus, Trash2, AlertTriangle } from '@tamagui/lucide-icons';
 import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 
-const ANIMATION_DURATION = 150;
-import { X, Plus, Trash2, AlertTriangle } from '@tamagui/lucide-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTheme } from '../../theme';
-import { hexColors } from '../../theme';
-import { useTranslation } from '../../i18n/useTranslation';
 import { Button } from '../Button';
 import { SuccessToast } from '../SuccessToast';
-import * as onboardingService from '../../services/onboarding';
-import * as notificationService from '../../services/notifications';
 import { Text, FONT_FAMILIES } from '../Typography';
+import { useTranslation } from '../../i18n/useTranslation';
 import { trackNotificationTimeChange, updateNotificationProperty } from '../../services/analytics';
+import * as notificationService from '../../services/notifications';
+import * as onboardingService from '../../services/onboarding';
+import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+
+const ANIMATION_DURATION = 150;
 
 interface TimePickerModalProps {
   visible: boolean;

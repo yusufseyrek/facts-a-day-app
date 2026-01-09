@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Share, Alert, Pressable, StyleSheet, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { styled } from "@tamagui/core";
+import { Heart, Share as ShareIcon, Flag } from "@tamagui/lucide-icons";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,22 +11,16 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
-
-import { styled } from "@tamagui/core";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { XStack, YStack, View } from "tamagui";
-import { Heart, Share as ShareIcon, Flag } from "@tamagui/lucide-icons";
-import * as database from "../services/database";
-import * as api from "../services/api";
-import { useTranslation } from "../i18n";
+
 import { ReportFactModal } from "./ReportFactModal";
+import { useTranslation } from "../i18n";
+import { trackFactShare, trackFactFavoriteAdd, trackFactFavoriteRemove, trackFactReport } from "../services/analytics";
+import * as api from "../services/api";
+import * as database from "../services/database";
 import { hexColors, useTheme } from "../theme";
 import { useResponsive } from "../utils/useResponsive";
-import {
-  trackFactShare,
-  trackFactFavoriteAdd,
-  trackFactFavoriteRemove,
-  trackFactReport,
-} from "../services/analytics";
 
 interface FactActionsProps {
   factId: number;

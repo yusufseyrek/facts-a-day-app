@@ -1,11 +1,9 @@
 import React from 'react';
-import { StatusBar } from 'expo-status-bar';
 import { Pressable, View, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { YStack, XStack } from 'tamagui';
-import { Timer, Flame, Check, X, ChevronRight, Star, ChevronLeft, Calendar } from '@tamagui/lucide-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import { Timer, Flame, Check, X, ChevronRight, Star, ChevronLeft, Calendar } from '@tamagui/lucide-icons';
 import Animated, { 
   FadeInDown, 
   FadeInUp, 
@@ -13,12 +11,16 @@ import Animated, {
   useSharedValue, 
   withSpring 
 } from 'react-native-reanimated';
-import { hexColors } from '../../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { YStack, XStack } from 'tamagui';
+
 import { Text, FONT_FAMILIES } from '../Typography';
-import { useResponsive } from '../../utils/useResponsive';
-import { getLucideIcon } from '../../utils/iconMapper';
-import type { QuestionWithFact, StoredAnswer } from '../../services/database';
 import { indexToAnswer } from '../../services/trivia';
+import { hexColors } from '../../theme';
+import { getLucideIcon } from '../../utils/iconMapper';
+import { useResponsive } from '../../utils/useResponsive';
+
+import type { QuestionWithFact, StoredAnswer } from '../../services/database';
 
 const CARD_GAP = 12;
 

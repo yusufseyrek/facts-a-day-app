@@ -3,6 +3,7 @@ import { ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { View } from '@tamagui/core';
 import { XStack } from 'tamagui';
+
 import { Text, FONT_FAMILIES } from './Typography';
 import { useResponsive } from '../utils';
 

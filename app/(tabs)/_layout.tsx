@@ -1,19 +1,20 @@
+import React, { useRef, useCallback, useState, useEffect, createContext, useContext } from "react";
+import { Pressable, Animated, View, StyleSheet } from "react-native";
 import { Tabs, usePathname } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { BottomTabBar } from "@react-navigation/bottom-tabs";
 import { Lightbulb, Compass, Brain, Star, Settings } from "@tamagui/lucide-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Pressable, Animated, View, StyleSheet } from "react-native";
-import React, { useRef, useCallback, useState, useEffect, createContext, useContext } from "react";
-import { useFocusEffect } from "@react-navigation/native";
-import type { BottomTabBarButtonProps, BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { BottomTabBar } from "@react-navigation/bottom-tabs";
-import { hexColors } from "../../src/theme";
-import { useResponsive } from "../../src/utils/useResponsive";
-import { useTheme } from "../../src/theme";
-import { useTranslation } from "../../src/i18n";
-import * as triviaService from "../../src/services/trivia";
+
 import { BannerAd } from "../../src/components/ads";
 import { ADS_ENABLED } from "../../src/config/ads";
 import { useScrollToTop } from "../../src/contexts";
+import { useTranslation } from "../../src/i18n";
+import * as triviaService from "../../src/services/trivia";
+import { hexColors, useTheme } from "../../src/theme";
+import { useResponsive } from "../../src/utils/useResponsive";
+
+import type { BottomTabBarButtonProps, BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
 // Context to share current tab name with tab buttons
 const CurrentTabContext = createContext<string>("index");

@@ -1,12 +1,14 @@
 import React from 'react';
 import { Pressable } from 'react-native';
-import { YStack, XStack } from 'tamagui';
 import { Check, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { hexColors } from '../../theme';
+import { YStack, XStack } from 'tamagui';
+
 import { Text, FONT_FAMILIES } from '../Typography';
+import { hexColors } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
+
 import type { CategoryWithProgress } from '../../services/trivia';
 
 interface CategoryQuestCardProps {

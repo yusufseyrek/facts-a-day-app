@@ -1,6 +1,7 @@
 import React from 'react';
 import { View } from '@tamagui/core';
 import { YStack } from 'tamagui';
+
 import { Text, FONT_FAMILIES } from './Typography';
 import { useResponsive } from '../utils';
 

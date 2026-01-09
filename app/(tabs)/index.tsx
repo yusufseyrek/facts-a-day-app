@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { StatusBar } from "expo-status-bar";
 import { RefreshControl, ActivityIndicator } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import * as Notifications from "expo-notifications";
+import { useRouter, useFocusEffect } from "expo-router";
 import { FlashList, ListRenderItemInfo } from "@shopify/flash-list";
 import { styled } from "@tamagui/core";
-import { YStack } from "tamagui";
 import { Lightbulb } from "@tamagui/lucide-icons";
-import { useRouter, useFocusEffect } from "expo-router";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { hexColors } from "../../src/theme";
+import { YStack } from "tamagui";
+
 import {
   Text,
   EmptyState,
@@ -17,25 +18,21 @@ import {
   LoadingContainer,
   useIconColor,
 } from "../../src/components";
-import { LAYOUT } from "../../src/config/app";
 import { ImageFactCard } from "../../src/components/ImageFactCard";
-import type { FactWithRelations } from "../../src/services/database";
-import { useTheme } from "../../src/theme";
+import { LAYOUT } from "../../src/config/app";
+import { FLASH_LIST_ITEM_TYPES, FACT_FLASH_LIST_SETTINGS } from "../../src/config/factListSettings";
+import { useScrollToTopHandler } from "../../src/contexts";
 import { useTranslation } from "../../src/i18n";
-import * as database from "../../src/services/database";
-import * as Notifications from "expo-notifications";
+import { trackFeedRefresh, trackScreenView, Screens } from "../../src/services/analytics";
 import { checkAndRequestReview } from "../../src/services/appReview";
 import { onFeedRefresh, forceRefreshContent, onRefreshStatusChange, getRefreshStatus, RefreshStatus } from "../../src/services/contentRefresh";
-import { onPreferenceFeedRefresh } from "../../src/services/preferences";
-import { trackFeedRefresh, trackScreenView, Screens } from "../../src/services/analytics";
-import { 
-  FLASH_LIST_ITEM_TYPES,
-  FACT_FLASH_LIST_SETTINGS,
-} from "../../src/config/factListSettings";
+import * as database from "../../src/services/database";
 import { prefetchFactImagesWithLimit } from "../../src/services/images";
-import { useScrollToTopHandler } from "../../src/contexts";
+import { onPreferenceFeedRefresh } from "../../src/services/preferences";
+import { hexColors, useTheme } from "../../src/theme";
+import { useResponsive } from "../../src/utils/useResponsive";
 
-import { useResponsive } from '../../src/utils/useResponsive';
+import type { FactWithRelations } from "../../src/services/database";
 
 // Interface for fact sections (used internally for grouping)
 interface FactSection {

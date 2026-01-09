@@ -1,18 +1,15 @@
 import { Platform } from 'react-native';
+import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import mobileAds, {
   AdsConsent,
-  AdsConsentDebugGeography,
   AdsConsentStatus,
   MaxAdContentRating,
 } from 'react-native-google-mobile-ads';
-import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
+
 import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
 import { ADS_ENABLED } from '../config/ads';
-import {
-  trackGDPRConsentResult,
-  trackATTPermissionResult,
-  trackAdsSdkInitialized,
-} from './analytics';
+
+import { trackGDPRConsentResult, trackATTPermissionResult, trackAdsSdkInitialized } from './analytics';
 
 // Re-export consent utilities for backwards compatibility
 export { canShowPersonalizedAds, shouldRequestNonPersonalizedAdsOnly } from './adsConsent';

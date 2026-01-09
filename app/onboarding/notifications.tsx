@@ -1,26 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
 import { Platform, ScrollView, Alert, Animated, Easing } from "react-native";
-import { styled } from "@tamagui/core";
-import { YStack, XStack } from "tamagui";
-import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import * as Notifications from "expo-notifications";
+import { useRouter } from "expo-router";
+import { styled } from "@tamagui/core";
 import { Bell } from "@tamagui/lucide-icons";
-import { hexColors } from "../../src/theme";
-import { useResponsive } from "../../src/utils/useResponsive";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { YStack, XStack } from "tamagui";
+
 import { Text, Button, ProgressIndicator, MultiTimePicker } from "../../src/components";
 import { LAYOUT } from "../../src/config/app";
-import { useTheme } from "../../src/theme";
-import { useTranslation } from "../../src/i18n";
 import { useOnboarding } from "../../src/contexts";
+import { useTranslation } from "../../src/i18n";
+import { trackOnboardingNotificationsEnabled, trackOnboardingNotificationsSkipped, trackScreenView, Screens } from "../../src/services/analytics";
 import * as notificationService from "../../src/services/notifications";
-import {
-  trackOnboardingNotificationsEnabled,
-  trackOnboardingNotificationsSkipped,
-  trackScreenView,
-  Screens,
-} from "../../src/services/analytics";
+import { hexColors, useTheme } from "../../src/theme";
+import { useResponsive } from "../../src/utils/useResponsive";
 
 const Container = styled(SafeAreaView, {
   flex: 1,

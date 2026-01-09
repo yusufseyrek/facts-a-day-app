@@ -1,26 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ScrollView, ActivityIndicator, Alert, Pressable, Animated, Easing } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { View, styled } from '@tamagui/core';
-import { XStack, YStack } from 'tamagui';
 import { useRouter } from 'expo-router';
+import { View, styled } from '@tamagui/core';
 import { ArrowLeft } from '@tamagui/lucide-icons';
-import { hexColors } from '../../src/theme';
-import { useResponsive } from '../../src/utils/useResponsive';
-import {
-  Text,
-  Button,
-  CategoryCard,
-  SuccessToast,
-} from '../../src/components';
-import { useTheme } from '../../src/theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { XStack, YStack } from 'tamagui';
+
+import { Text, Button, CategoryCard, SuccessToast } from '../../src/components';
 import { useTranslation } from '../../src/i18n';
+import { trackCategoriesUpdate, trackScreenView, Screens, updateCategoriesProperty } from '../../src/services/analytics';
 import * as db from '../../src/services/database';
-import { getLucideIcon } from '../../src/utils/iconMapper';
 import * as onboardingService from '../../src/services/onboarding';
 import * as preferencesService from '../../src/services/preferences';
-import { trackCategoriesUpdate, trackScreenView, Screens, updateCategoriesProperty } from '../../src/services/analytics';
+import { hexColors, useTheme } from '../../src/theme';
+import { getLucideIcon } from '../../src/utils/iconMapper';
+import { useResponsive } from '../../src/utils/useResponsive';
 
 const Container = styled(SafeAreaView, {
   flex: 1,

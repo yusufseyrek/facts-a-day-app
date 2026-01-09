@@ -7,15 +7,17 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import { X, Sun, Moon, Smartphone } from '@tamagui/lucide-icons';
-import { useTheme } from '../../theme';
-import { hexColors } from '../../theme';
-import { useTranslation, type TranslationKeys } from '../../i18n';
-import type { ThemeMode } from '../../theme/ThemeProvider';
+import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
+
 import { Text } from '../Typography';
+import { useTranslation } from '../../i18n';
 import { trackThemeChange, updateThemeProperty } from '../../services/analytics';
+import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+
+import type { TranslationKeys } from '../../i18n';
+import type { ThemeMode } from '../../theme/ThemeProvider';
 
 const ANIMATION_DURATION = 200;
 

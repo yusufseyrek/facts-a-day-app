@@ -1,12 +1,15 @@
-import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { Platform } from 'react-native';
-import * as database from './database';
-import { i18n } from '../i18n/config';
-import { SupportedLocale } from '../i18n/translations';
-import { downloadImageWithAppCheck } from './images';
+import * as Notifications from 'expo-notifications';
+
 import { NOTIFICATION_SETTINGS } from '../config/app';
+import { i18n } from '../i18n/config';
+
+import * as database from './database';
+import { downloadImageWithAppCheck } from './images';
+
+import type { SupportedLocale } from '../i18n/translations';
 
 // ============================================================================
 // CONSTANTS

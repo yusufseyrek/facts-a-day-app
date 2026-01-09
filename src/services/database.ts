@@ -1,5 +1,5 @@
-import * as SQLite from "expo-sqlite";
 import * as FileSystem from "expo-file-system";
+import * as SQLite from "expo-sqlite";
 
 const DATABASE_NAME = "factsaday.db";
 

@@ -1,13 +1,15 @@
 import React from 'react';
 import { Pressable } from 'react-native';
-import { YStack, XStack } from 'tamagui';
 import { ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
-import { hexColors } from '../../theme';
+import { YStack, XStack } from 'tamagui';
+
 import { Text, FONT_FAMILIES } from '../Typography';
+import { hexColors } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
+
 import type { TriviaStats, CategoryWithProgress } from '../../services/trivia';
 import type { TranslationKeys } from '../../i18n/translations';
 

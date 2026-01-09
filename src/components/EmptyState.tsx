@@ -1,11 +1,11 @@
 import React from 'react';
-import { YStack } from 'tamagui';
 import { Lightbulb } from '@tamagui/lucide-icons';
-import { hexColors } from '../theme';
+import { YStack } from 'tamagui';
+
 import { Text } from './Typography';
-import { useTheme } from '../theme';
-import { useResponsive } from '../utils/useResponsive';
 import { LAYOUT } from '../config';
+import { hexColors, useTheme } from '../theme';
+import { useResponsive } from '../utils/useResponsive';
 
 interface EmptyStateProps {
   title: string;

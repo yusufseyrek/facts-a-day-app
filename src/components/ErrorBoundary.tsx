@@ -1,8 +1,9 @@
 import React, { Component, ReactNode } from 'react';
 import { View, StyleSheet, Pressable, Text } from 'react-native';
+
+import { FONT_FAMILIES } from './Typography';
 import { recordError } from '../config/firebase';
 import { hexColors } from '../theme';
-import { FONT_FAMILIES } from './Typography';
 
 // Hardcoded values for ErrorBoundary since it's a class component
 // and renders OUTSIDE the theme/provider context

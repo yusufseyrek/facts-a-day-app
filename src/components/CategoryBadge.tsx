@@ -1,10 +1,12 @@
 import React from 'react';
 import { XStack } from 'tamagui';
-import { hexColors, useTheme, getCategoryNeonColor } from '../theme';
+
 import { Text, FONT_FAMILIES } from './Typography';
 import { useTranslation, translateCategory } from '../i18n';
+import { hexColors, useTheme, getCategoryNeonColor } from '../theme';
 import { getContrastColor } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
+
 import type { Category } from '../services/database';
 
 interface CategoryBadgeProps {

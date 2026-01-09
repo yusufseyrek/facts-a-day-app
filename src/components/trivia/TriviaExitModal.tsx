@@ -1,11 +1,12 @@
 import React from 'react';
 import { Modal, Pressable, Platform } from 'react-native';
-import { YStack, XStack } from 'tamagui';
+import { BlurView } from 'expo-blur';
 import { AlertTriangle, X, DoorOpen } from '@tamagui/lucide-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { BlurView } from 'expo-blur';
-import { hexColors } from '../../theme';
+import { YStack, XStack } from 'tamagui';
+
 import { Text, FONT_FAMILIES } from '../Typography';
+import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 
 interface TriviaExitModalProps {

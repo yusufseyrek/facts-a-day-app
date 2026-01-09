@@ -1,14 +1,17 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Pressable, Animated, StyleSheet, View, Platform } from "react-native";
-import { Image, ImageSource } from "expo-image";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { hexColors } from "../theme";
-import { Text, FONT_FAMILIES } from "./Typography";
+
 import { CategoryBadge } from "./CategoryBadge";
+import { Text, FONT_FAMILIES } from "./Typography";
+import { IMAGE_PLACEHOLDER, IMAGE_DIMENSIONS, IMAGE_RETRY } from "../config/images";
+import { hexColors } from "../theme";
 import { useFactImage } from "../utils/useFactImage";
 import { useResponsive } from "../utils/useResponsive";
+
+import type { ImageSource } from "expo-image";
 import type { Category } from "../services/database";
-import { IMAGE_PLACEHOLDER, IMAGE_DIMENSIONS, IMAGE_RETRY } from "../config/images";
 
 interface ImageFactCardProps {
   title: string;

@@ -8,8 +8,11 @@
  * - Gamification elements (streaks, mastery)
  */
 
+import { TRIVIA_QUESTIONS, TIME_PER_QUESTION } from '../config/trivia';
+
 import * as database from './database';
 import * as onboardingService from './onboarding';
+
 import type { 
   Question, 
   QuestionWithFact, 
@@ -19,7 +22,6 @@ import type {
   TriviaSessionWithCategory,
   StoredAnswer,
 } from './database';
-import { TRIVIA_QUESTIONS, TIME_PER_QUESTION } from '../config/trivia';
 
 // Re-export types
 export type { TriviaSession, TriviaSessionWithCategory, StoredAnswer } from './database';

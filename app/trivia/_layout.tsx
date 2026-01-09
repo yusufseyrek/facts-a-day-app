@@ -1,5 +1,6 @@
-import { Stack } from "expo-router";
 import { useColorScheme } from "react-native";
+import { Stack } from "expo-router";
+
 import { hexColors } from "../../src/theme";
 
 export default function TriviaLayout() {

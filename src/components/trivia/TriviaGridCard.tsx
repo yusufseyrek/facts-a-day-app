@@ -1,12 +1,13 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
-import { YStack, XStack } from 'tamagui';
 import { Check, Zap, Shuffle, ChevronRight } from '@tamagui/lucide-icons';
-import { hexColors } from '../../theme';
+import { YStack, XStack } from 'tamagui';
+
 import { Text, FONT_FAMILIES } from '../Typography';
-import { getLucideIcon } from '../../utils/iconMapper';
-import { hexToRgba } from '../../utils/colors';
 import { useTranslation } from '../../i18n';
+import { hexColors } from '../../theme';
+import { hexToRgba } from '../../utils/colors';
+import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
 
 export type TriviaGridCardType = 'daily' | 'mixed' | 'category';

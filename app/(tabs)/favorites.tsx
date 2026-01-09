@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { StatusBar } from 'expo-status-bar';
 import { FlatList, RefreshControl, ActivityIndicator, useWindowDimensions } from 'react-native';
-import { YStack } from 'tamagui';
-import { Star } from '@tamagui/lucide-icons';
+import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { hexColors } from '../../src/theme';
+import { useFocusEffect } from '@react-navigation/native';
+import { Star } from '@tamagui/lucide-icons';
+import { YStack } from 'tamagui';
+
 import {
   EmptyState,
   ScreenContainer,
@@ -14,15 +15,15 @@ import {
   useIconColor,
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
-import type { FactWithRelations } from '../../src/services/database';
-import { useTheme } from '../../src/theme';
-import { useTranslation } from '../../src/i18n';
-import * as database from '../../src/services/database';
-import { useFocusEffect } from '@react-navigation/native';
-import { trackScreenView, Screens } from '../../src/services/analytics';
 import { FACT_FLAT_LIST_SETTINGS, createFlatListGetItemLayout } from '../../src/config/factListSettings';
-import { useResponsive } from '../../src/utils/useResponsive';
 import { useScrollToTopHandler } from '../../src/contexts';
+import { useTranslation } from '../../src/i18n';
+import { trackScreenView, Screens } from '../../src/services/analytics';
+import * as database from '../../src/services/database';
+import { hexColors, useTheme } from '../../src/theme';
+import { useResponsive } from '../../src/utils/useResponsive';
+
+import type { FactWithRelations } from '../../src/services/database';
 
 // Memoized list item component to prevent re-renders
 interface FactListItemProps {

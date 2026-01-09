@@ -1,21 +1,14 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { useFocusEffect } from "@react-navigation/native";
+import { RefreshControl, ActivityIndicator, TextInput, ScrollView, Pressable } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import {
-  RefreshControl,
-  ActivityIndicator,
-  TextInput,
-  ScrollView,
-  Pressable,
-} from "react-native";
+import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { FlashList, ListRenderItemInfo } from "@shopify/flash-list";
 import { styled, View } from "@tamagui/core";
-import { YStack, XStack } from "tamagui";
 import { Search, X } from "@tamagui/lucide-icons";
-import { useRouter } from "expo-router";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
-import { hexColors } from "../../src/theme";
-import { useResponsive } from "../../src/utils/useResponsive";
+import { YStack, XStack } from "tamagui";
+
 import {
   Text,
   EmptyState,
@@ -23,26 +16,23 @@ import {
   FONT_FAMILIES,
   ContentContainer,
 } from "../../src/components";
-import { LAYOUT } from "../../src/config/app";
 import { ImageFactCard } from "../../src/components/ImageFactCard";
-import type { FactWithRelations, Category } from "../../src/services/database";
-import { useTheme } from "../../src/theme";
-import { useTranslation } from "../../src/i18n";
-import * as database from "../../src/services/database";
-import { getSelectedCategories } from "../../src/services/onboarding";
-import { getLucideIcon } from "../../src/utils/iconMapper";
-import { getContrastColor } from "../../src/utils/colors";
+import { LAYOUT } from "../../src/config/app";
 import { FACT_FLASH_LIST_SETTINGS, getImageCardHeight } from "../../src/config/factListSettings";
-import { prefetchFactImagesWithLimit } from "../../src/services/images";
-import { checkAndRequestReview } from "../../src/services/appReview";
-import {
-  trackSearch,
-  trackCategoryBrowse,
-  trackScreenView,
-  Screens,
-} from "../../src/services/analytics";
-import { onPreferenceFeedRefresh } from "../../src/services/preferences";
 import { useScrollToTopHandler } from "../../src/contexts";
+import { useTranslation } from "../../src/i18n";
+import { trackSearch, trackCategoryBrowse, trackScreenView, Screens } from "../../src/services/analytics";
+import { checkAndRequestReview } from "../../src/services/appReview";
+import * as database from "../../src/services/database";
+import { prefetchFactImagesWithLimit } from "../../src/services/images";
+import { getSelectedCategories } from "../../src/services/onboarding";
+import { onPreferenceFeedRefresh } from "../../src/services/preferences";
+import { hexColors, useTheme } from "../../src/theme";
+import { getContrastColor } from "../../src/utils/colors";
+import { getLucideIcon } from "../../src/utils/iconMapper";
+import { useResponsive } from "../../src/utils/useResponsive";
+
+import type { FactWithRelations, Category } from "../../src/services/database";
 
 // Device breakpoints
 

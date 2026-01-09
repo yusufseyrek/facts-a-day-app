@@ -10,11 +10,12 @@
  * - Rescheduling notifications
  */
 
-import * as database from './database';
 import * as api from './api';
-import * as onboardingService from './onboarding';
+import * as database from './database';
 import * as notificationService from './notifications';
-import { SupportedLocale } from '../i18n/translations';
+import * as onboardingService from './onboarding';
+
+import type { SupportedLocale } from '../i18n/translations';
 
 // Feed refresh listeners for preference changes
 type FeedRefreshListener = () => void;

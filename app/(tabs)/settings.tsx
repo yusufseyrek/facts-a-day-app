@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { StatusBar } from "expo-status-bar";
 import { Alert, SectionList, Linking, Platform, AppState, View } from "react-native";
-import { YStack } from "tamagui";
-import { useRouter, useFocusEffect } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
-import Constants from "expo-constants";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { useRouter, useFocusEffect } from "expo-router";
 import {
   Globe,
   Palette,
@@ -25,7 +23,9 @@ import {
   Camera,
   Download,
 } from "@tamagui/lucide-icons";
-import { hexColors } from "../../src/theme";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { YStack } from "tamagui";
+
 import {
   Text,
   ScreenContainer,
@@ -33,23 +33,23 @@ import {
   ContentContainer,
   useIconColor,
 } from "../../src/components";
-import { LAYOUT } from "../../src/config/app";
 import { SettingsRow } from "../../src/components/SettingsRow";
 import { ThemePickerModal } from "../../src/components/settings/ThemePickerModal";
 import { TimePickerModal } from "../../src/components/settings/TimePickerModal";
 import { FeedManagementModal } from "../../src/components/settings/FeedManagementModal";
-import { useTheme } from "../../src/theme";
+import { LAYOUT } from "../../src/config/app";
+import { useOnboarding, useScrollToTopHandler } from "../../src/contexts";
 import { useTranslation } from "../../src/i18n";
 import { TranslationKeys } from "../../src/i18n/translations";
-import * as onboardingService from "../../src/services/onboarding";
-import * as database from "../../src/services/database";
-import { buildNotificationContent } from "../../src/services/notifications";
-import { useOnboarding, useScrollToTopHandler } from "../../src/contexts";
-import { openInAppBrowser } from "../../src/utils/browser";
 import { trackScreenView, Screens } from "../../src/services/analytics";
 import { requestReview } from "../../src/services/appReview";
+import * as database from "../../src/services/database";
 import { clearAllCachedImages, getCachedImagesSize } from "../../src/services/images";
+import { buildNotificationContent } from "../../src/services/notifications";
+import * as onboardingService from "../../src/services/onboarding";
 import * as updates from "../../src/services/updates";
+import { hexColors, useTheme } from "../../src/theme";
+import { openInAppBrowser } from "../../src/utils/browser";
 import { useResponsive } from "../../src/utils/useResponsive";
 
 // Helper to get language display name
