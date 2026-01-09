@@ -33,6 +33,7 @@ import {
   ContentContainer,
   useIconColor,
 } from "../../src/components";
+import { LAYOUT } from "../../src/config/app";
 import { SettingsRow } from "../../src/components/SettingsRow";
 import { ThemePickerModal } from "../../src/components/settings/ThemePickerModal";
 import { TimePickerModal } from "../../src/components/settings/TimePickerModal";
@@ -977,6 +978,11 @@ export default function SettingsPage() {
         ref={listRef}
         sections={sections}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={{
+          maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
+          width: "100%",
+          alignSelf: "center",
+        }}
         renderSectionHeader={({ section: { title }, section }) => {
           const sectionIndex = sections.findIndex(s => s.title === section.title);
           return (

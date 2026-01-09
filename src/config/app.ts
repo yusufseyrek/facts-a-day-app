@@ -60,11 +60,11 @@ export const LAYOUT = {
  */
 export const NOTIFICATION_SETTINGS = {
   /** Number of days after which old notification images are cleaned up */
-  IMAGE_CLEANUP_DAYS: 7,
+  IMAGE_CLEANUP_DAYS: 30,
   /** iOS limit for scheduled notifications */
   MAX_SCHEDULED: 64,
   /** Number of days to preload notification images in advance */
-  DAYS_TO_PRELOAD_IMAGES: 7,
+  DAYS_TO_PRELOAD_IMAGES: 14,
   /** Directory name for notification images (appended to documentDirectory) */
   IMAGES_DIR_NAME: 'notification-images/',
   /** Time tolerance for comparing OS and DB notification times (milliseconds) */

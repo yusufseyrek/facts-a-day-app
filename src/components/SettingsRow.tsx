@@ -93,9 +93,9 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
       </View>
       <View style={styles.rightContent}>
         {value && (
-          <Text.Body color={colors.textSecondary}>
+          <Text.Label color={colors.textSecondary}>
             {value}
-          </Text.Body>
+          </Text.Label>
         )}
         {onPress && (
           showExternalLink 

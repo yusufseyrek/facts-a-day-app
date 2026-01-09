@@ -2,7 +2,7 @@ import { Tabs, usePathname } from "expo-router";
 import { Lightbulb, Compass, Brain, Star, Settings } from "@tamagui/lucide-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Pressable, Animated, View, StyleSheet } from "react-native";
-import { useRef, useCallback, useState, useEffect } from "react";
+import React, { useRef, useCallback, useState, useEffect, createContext, useContext } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import type { BottomTabBarButtonProps, BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BottomTabBar } from "@react-navigation/bottom-tabs";
@@ -13,7 +13,10 @@ import { useTranslation } from "../../src/i18n";
 import * as triviaService from "../../src/services/trivia";
 import { BannerAd } from "../../src/components/ads";
 import { ADS_ENABLED } from "../../src/config/ads";
-import { ScrollToTopProvider, useScrollToTop } from "../../src/contexts";
+import { useScrollToTop } from "../../src/contexts";
+
+// Context to share current tab name with tab buttons
+const CurrentTabContext = createContext<string>("index");
 
 interface AnimatedTabButtonProps extends BottomTabBarButtonProps {
   tabName?: string;
@@ -31,6 +34,7 @@ function AnimatedTabButton({
 }: AnimatedTabButtonProps) {
   const scale = useRef(new Animated.Value(1)).current;
   const { scrollToTop } = useScrollToTop();
+  const currentTab = useContext(CurrentTabContext);
 
   const handlePressIn = useCallback(() => {
     Animated.spring(scale, {
@@ -51,13 +55,15 @@ function AnimatedTabButton({
   }, [scale]);
 
   const handlePress = useCallback((e: any) => {
-    // If tab is already selected, scroll to top
-    if (accessibilityState?.selected && tabName) {
+    // Check if this tab is already the current tab
+    const isCurrentTab = tabName === currentTab;
+    console.log(`📜 Tab pressed: ${tabName}, currentTab: ${currentTab}, isCurrentTab: ${isCurrentTab}`);
+    if (isCurrentTab && tabName) {
       scrollToTop(tabName);
     }
     // Always call original onPress to handle navigation
     onPress?.(e);
-  }, [accessibilityState?.selected, tabName, scrollToTop, onPress]);
+  }, [tabName, currentTab, scrollToTop, onPress]);
 
   return (
     <Pressable
@@ -174,12 +180,17 @@ const styles = StyleSheet.create({
   },
 });
 
-function TabLayoutContent() {
+export default function TabLayout() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
   const { iconSizes, media } = useResponsive();
   const [hasDailyTrivia, setHasDailyTrivia] = useState(false);
+  
+  // Get current tab from pathname
+  const pathname = usePathname();
+  // Pathname is like "/(tabs)/index" or "/(tabs)/discover" - extract tab name
+  const currentTab = pathname.replace(/^\/(tabs\/)?/, "").split("/")[0] || "index";
 
   // Check for daily trivia availability
   const checkDailyTrivia = useCallback(async () => {
@@ -225,9 +236,10 @@ function TabLayoutContent() {
     : hexColors.light.border;
 
   return (
-    <Tabs
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{
+    <CurrentTabContext.Provider value={currentTab}>
+      <Tabs
+        tabBar={(props) => <CustomTabBar {...props} />}
+        screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: activeTintColor,
         tabBarInactiveTintColor: inactiveTintColor,
@@ -282,14 +294,7 @@ function TabLayoutContent() {
           tabBarButton: (props) => <AnimatedTabButton {...props} tabName="settings" testID="tab-settings" />,
         }}
       />
-    </Tabs>
-  );
-}
-
-export default function TabLayout() {
-  return (
-    <ScrollToTopProvider>
-      <TabLayoutContent />
-    </ScrollToTopProvider>
+      </Tabs>
+    </CurrentTabContext.Provider>
   );
 }

@@ -14,6 +14,7 @@ export function ScrollToTopProvider({ children }: { children: React.ReactNode })
   const scrollFunctionsRef = useRef<Map<string, ScrollToTopFn>>(new Map());
 
   const registerScrollToTop = useCallback((tabName: string, scrollFn: ScrollToTopFn) => {
+    console.log(`📜 Registering scrollToTop handler for tab: ${tabName}`);
     scrollFunctionsRef.current.set(tabName, scrollFn);
   }, []);
 
@@ -23,6 +24,7 @@ export function ScrollToTopProvider({ children }: { children: React.ReactNode })
 
   const scrollToTop = useCallback((tabName: string) => {
     const scrollFn = scrollFunctionsRef.current.get(tabName);
+    console.log(`📜 ScrollToTop called for tab: ${tabName}, has handler: ${!!scrollFn}`);
     if (scrollFn) {
       scrollFn();
     }

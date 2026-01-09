@@ -5,6 +5,7 @@ import { hexColors } from '../theme';
 import { Text } from './Typography';
 import { useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
+import { LAYOUT } from '../config';
 
 interface EmptyStateProps {
   title: string;
@@ -37,7 +38,7 @@ export function EmptyState({ title, description }: EmptyStateProps) {
           color={theme === 'dark' ? '#0066FF' : hexColors.light.primary}
         />
       </YStack>
-      <YStack alignItems="center" gap={spacing.md} maxWidth={300}>
+      <YStack alignItems="center" gap={spacing.md} maxWidth={LAYOUT.MAX_CONTENT_WIDTH}>
         <Text.Headline textAlign="center">{title}</Text.Headline>
         <Text.Body textAlign="center" color="$textSecondary">
           {description}

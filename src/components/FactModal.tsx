@@ -225,9 +225,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const hasImage = !!imageUri;
   
   // Calculate dynamic header height first (needed for transition calculations)
-  const basePaddingTop = Platform.OS === "ios" ? spacing.lg : insets.top + spacing.sm;
-  const basePaddingBottom = Platform.OS === "ios" ? spacing.lg : spacing.md;
-  const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight + config.headerPaddingAdjustment;
+  const basePaddingTop = Platform.OS === "ios" ? spacing.xl : insets.top;
+  const basePaddingBottom = spacing.xl;
+  const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight;
   const minHeaderHeight = Platform.OS === "ios" ? 100 : 70 + insets.top;
   const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
 
@@ -308,8 +308,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     extrapolate: "clamp",
   });
 
-  const iosShadowOffset = Platform.OS === "ios" ? 4 : 0;
-  const tabletMagicNumber = isTablet ? 10 : 0;
+  // const tabletMagicNumber = isTablet ? 10 : 0;
+
+  const tabletMagicNumber = 0;
 
   // Header title translateY - slides up from bottom of header as scrollY increases
   // Animation starts when header becomes visible (at HEADER_BG_TRANSITION)
@@ -317,7 +318,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   // When clamped, extra space is distributed above/below title due to alignItems: "center"
   const clampedExtraSpace = Math.max(0, headerHeight - dynamicHeaderHeight);
   const centeringOffset = clampedExtraSpace / 2;
-  const headerTitleStartY = headerHeight - basePaddingTop + basePaddingBottom - iosShadowOffset + tabletMagicNumber - centeringOffset; // Start from bottom of header, adjusted for centering
+  const headerTitleStartY = headerHeight - basePaddingTop + basePaddingBottom + tabletMagicNumber - centeringOffset; // Start from bottom of header, adjusted for centering
   
   // Continuous animation: translateY decreases (moves up) as scrollY increases
   // The title starts moving up when header becomes visible and continues to move up as user scrolls
@@ -412,7 +413,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           ...Platform.select({
             ios: {
               shadowColor: "#000",
-              shadowOffset: { width: 0, height: iosShadowOffset },
+              shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
               shadowRadius: 12,
             },
@@ -425,7 +426,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           pointerEvents="none"
           style={{
             minHeight: headerHeight,
-            paddingTop: Platform.OS === "ios" ? 0 : insets.top,
             overflow: "hidden",
             ...Platform.select({
               android: {
@@ -509,9 +509,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             paddingHorizontal={spacing.xl}
             pointerEvents="box-none"
             style={{
-              paddingTop: Platform.OS === "ios" ? spacing.lg : insets.top + spacing.sm,
+              paddingTop: basePaddingTop,
               minHeight: headerHeight,
-              paddingBottom: Platform.OS === "ios" ? spacing.lg : spacing.md,
+              paddingBottom: basePaddingBottom,
               zIndex: 101,
               alignItems: "center",
             }}
@@ -537,7 +537,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: 2.5,
+                height: 2,
                 backgroundColor: categoryColor,
                 opacity: headerBorderOpacity,
                 transform: [{ scaleX: headerBorderScaleX }],

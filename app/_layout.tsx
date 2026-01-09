@@ -6,7 +6,7 @@ import { AppThemeProvider, useTheme } from '../src/theme';
 import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { hexColors } from '../src/theme';
 import { I18nProvider, getLocaleFromCode } from '../src/i18n';
-import { OnboardingProvider, useOnboarding } from '../src/contexts';
+import { OnboardingProvider, useOnboarding, ScrollToTopProvider } from '../src/contexts';
 import * as onboardingService from '../src/services/onboarding';
 import * as notificationService from '../src/services/notifications';
 import * as database from '../src/services/database';
@@ -403,11 +403,13 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <I18nProvider>
             <OnboardingProvider initialComplete={initialOnboardingStatus}>
-              <AppThemeProvider>
-                <NavigationThemeWrapper>
-                  <AppContent />
-                </NavigationThemeWrapper>
-              </AppThemeProvider>
+              <ScrollToTopProvider>
+                <AppThemeProvider>
+                  <NavigationThemeWrapper>
+                    <AppContent />
+                  </NavigationThemeWrapper>
+                </AppThemeProvider>
+              </ScrollToTopProvider>
             </OnboardingProvider>
           </I18nProvider>
         </SafeAreaProvider>

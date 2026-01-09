@@ -486,7 +486,7 @@ function DiscoverScreen() {
                           : "rgba(255,255,255,0.3)",
                     }}
                   >
-                    <X size={iconSizes.sm} color={contrastColor} />
+                    <X size={iconSizes.xs} color={contrastColor} />
                   </CategoryChipClearButton>
                 </CategoryChip>
               </Pressable>
