@@ -2,8 +2,9 @@ import React from 'react';
 import { Pressable, View, ActivityIndicator, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
-import { X, Timer, ChevronRight, ChevronLeft } from '@tamagui/lucide-icons';
+import { X, Timer, ChevronRight, ChevronLeft, BookOpen, Lightbulb } from '@tamagui/lucide-icons';
 import Animated, { 
+  FadeIn,
   FadeInUp,
   SlideInRight,
   SharedValue,
@@ -38,6 +39,11 @@ export interface TriviaGameViewProps {
   onExit: () => void;
   isDark: boolean;
   t: TranslationFunction;
+  // Hint buttons
+  onOpenFact?: () => void;
+  onShowExplanation?: () => void;
+  canUseExplanation?: boolean;
+  showExplanation?: boolean;
 }
 
 export function TriviaGameView({
@@ -57,6 +63,10 @@ export function TriviaGameView({
   onExit,
   isDark,
   t,
+  onOpenFact,
+  onShowExplanation,
+  canUseExplanation = false,
+  showExplanation = false,
 }: TriviaGameViewProps) {
   const insets = useSafeAreaInsets();
   const { borderWidths, media, typography, iconSizes, spacing, radius } = useResponsive();
@@ -71,8 +81,10 @@ export function TriviaGameView({
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
+  const accentColor = isDark ? hexColors.dark.accent : hexColors.light.accent;
 
   const isTrueFalse = currentQuestion.question_type === 'true_false';
+  const hasExplanation = !!currentQuestion.explanation;
   const letterLabels = ['A', 'B', 'C', 'D'];
 
   const formatTime = (seconds: number) => {
@@ -226,14 +238,114 @@ export function TriviaGameView({
           style={{ alignItems: 'center' }}
         >
           <Text.Title
-            fontSize={typography.fontSize.display}
+            fontSize={typography.fontSize.headline}
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
             textAlign="center"
-            lineHeight={typography.lineHeight.display}
+            lineHeight={typography.lineHeight.headline}
           >
             {currentQuestion.question_text}
           </Text.Title>
+          
+          {/* Hint Buttons */}
+          <XStack 
+            marginTop={spacing.lg}
+            gap={spacing.md}
+            justifyContent="center"
+            alignItems="center"
+          >
+            {/* View Fact Button */}
+            {currentQuestion.fact?.id && onOpenFact && (
+              <Pressable
+                onPress={() => handlePressWithHaptics(onOpenFact)}
+                style={({ pressed }) => [
+                  pressed && { opacity: 0.7 }
+                ]}
+              >
+                <XStack
+                  backgroundColor={`${primaryColor}15`}
+                  paddingHorizontal={spacing.md}
+                  paddingVertical={spacing.sm}
+                  borderRadius={radius.full}
+                  alignItems="center"
+                  gap={spacing.xs}
+                >
+                  <BookOpen size={typography.fontSize.caption} color={primaryColor} />
+                  <Text.Caption
+                    fontFamily={FONT_FAMILIES.semibold}
+                    color={primaryColor}
+                  >
+                    {t('viewFact') || 'View Fact'}
+                  </Text.Caption>
+                </XStack>
+              </Pressable>
+            )}
+            
+            {/* Show Explanation Button */}
+            {hasExplanation && onShowExplanation && !showExplanation && (
+              <Pressable
+                onPress={() => canUseExplanation && handlePressWithHaptics(onShowExplanation)}
+                disabled={!canUseExplanation}
+                style={({ pressed }) => [
+                  pressed && canUseExplanation && { opacity: 0.7 }
+                ]}
+              >
+                <XStack
+                  backgroundColor={canUseExplanation ? `${accentColor}15` : `${secondaryTextColor}10`}
+                  paddingHorizontal={spacing.md}
+                  paddingVertical={spacing.sm}
+                  borderRadius={radius.full}
+                  alignItems="center"
+                  gap={spacing.xs}
+                  opacity={canUseExplanation ? 1 : 0.5}
+                >
+                  <Lightbulb size={typography.fontSize.caption} color={canUseExplanation ? accentColor : secondaryTextColor} />
+                  <Text.Caption
+                    fontFamily={FONT_FAMILIES.semibold}
+                    color={canUseExplanation ? accentColor : secondaryTextColor}
+                  >
+                    {canUseExplanation 
+                      ? (t('showHint') || 'Show Hint')
+                      : (t('hintUsedToday') || 'Hint used')}
+                  </Text.Caption>
+                </XStack>
+              </Pressable>
+            )}
+          </XStack>
+          
+          {/* Explanation Display */}
+          {showExplanation && currentQuestion.explanation && (
+            <Animated.View 
+              entering={FadeIn.duration(300)}
+              style={{ marginTop: spacing.lg, width: '100%' }}
+            >
+              <YStack
+                backgroundColor={`${accentColor}15`}
+                borderWidth={1}
+                borderColor={`${accentColor}30`}
+                padding={spacing.md}
+                borderRadius={radius.lg}
+                gap={spacing.xs}
+              >
+                <XStack alignItems="center" gap={spacing.xs}>
+                  <Lightbulb size={typography.fontSize.caption} color={accentColor} />
+                  <Text.Caption
+                    fontFamily={FONT_FAMILIES.bold}
+                    color={accentColor}
+                  >
+                    {t('hint') || 'Hint'}
+                  </Text.Caption>
+                </XStack>
+                <Text.Body
+                  color={textColor}
+                  fontFamily={FONT_FAMILIES.regular}
+                  lineHeight={typography.lineHeight.body}
+                >
+                  {currentQuestion.explanation}
+                </Text.Body>
+              </YStack>
+            </Animated.View>
+          )}
         </Animated.View>
       </ScrollView>
       
@@ -297,12 +409,12 @@ export function TriviaGameView({
                             />
                           )}
                         </View>
-                        <Text.Label
+                        <Text.Body
                           fontFamily={FONT_FAMILIES.semibold}
                           color={textColor}
                         >
                           {getDisplayAnswer(answer)}
-                        </Text.Label>
+                        </Text.Body>
                       </YStack>
                     </Animated.View>
                   </Pressable>

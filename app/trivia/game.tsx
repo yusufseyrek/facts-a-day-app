@@ -55,6 +55,10 @@ export default function TriviaGameScreen() {
     totalTime: 0,
   });
   
+  // Hint state
+  const [canUseExplanation, setCanUseExplanation] = useState(false);
+  const [explanationShownForQuestion, setExplanationShownForQuestion] = useState<number | null>(null);
+  
   // Timer state
   const [timeRemaining, setTimeRemaining] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -102,11 +106,18 @@ export default function TriviaGameScreen() {
     }
   }, [params.type, t]);
   
-  // Load questions on mount
+  // Load questions on mount and check hint availability
   useEffect(() => {
     loadQuestions();
+    checkHintAvailability();
     trackScreenView(Screens.TRIVIA_GAME);
   }, []);
+  
+  // Check if explanation hint is available today
+  const checkHintAvailability = async () => {
+    const canUse = await triviaService.canUseExplanationHint();
+    setCanUseExplanation(canUse);
+  };
   
   // Handle Android back button
   useEffect(() => {
@@ -362,6 +373,25 @@ export default function TriviaGameScreen() {
     }));
   };
   
+  // Handle opening the fact detail
+  const handleOpenFact = useCallback(() => {
+    if (currentQuestion?.fact?.id) {
+      router.push(`/fact/${currentQuestion.fact.id}?source=trivia_hint`);
+    }
+  }, [currentQuestion?.fact?.id, router]);
+  
+  // Handle showing the explanation hint
+  const handleShowExplanation = useCallback(async () => {
+    if (!currentQuestion || !canUseExplanation) return;
+    
+    // Mark hint as used for today
+    await triviaService.useExplanationHint();
+    setCanUseExplanation(false);
+    
+    // Show explanation for current question
+    setExplanationShownForQuestion(currentQuestion.id);
+  }, [currentQuestion, canUseExplanation]);
+  
   const finishQuiz = async () => {
     // Show interstitial ad before showing results
     setShowingAd(true);
@@ -550,6 +580,9 @@ export default function TriviaGameScreen() {
   // Get selected answer for current question
   const selectedAnswer = currentQuestion ? gameState.answers[currentQuestion.id] || null : null;
   
+  // Check if explanation is shown for current question
+  const showExplanation = explanationShownForQuestion === currentQuestion?.id;
+  
   return (
     <>
       <TriviaGameView
@@ -569,6 +602,10 @@ export default function TriviaGameScreen() {
         onExit={handleExitConfirm}
         isDark={isDark}
         t={t}
+        onOpenFact={handleOpenFact}
+        onShowExplanation={handleShowExplanation}
+        canUseExplanation={canUseExplanation}
+        showExplanation={showExplanation}
       />
       <TriviaExitModal
         visible={showExitModal}

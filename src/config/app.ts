@@ -17,6 +17,8 @@ export const STORAGE_KEYS = {
   REVIEW_REQUESTED: '@review_requested',
   /** Key for tracking last review prompt timestamp */
   LAST_REVIEW_PROMPT: '@last_review_prompt',
+  /** Key for tracking the last date explanation hint was used in trivia */
+  EXPLANATION_HINT_LAST_USED: '@explanation_hint_last_used',
 } as const;
 
 /**
@@ -83,3 +85,8 @@ export const APP_REVIEW = {
   MIN_DAYS_BETWEEN_PROMPTS: 15,
 } as const;
 
+/**
+ * Store IDs for linking to app stores
+ */
+export const APP_STORE_ID = '6755321394';
+export const PLAY_STORE_ID = 'dev.seyrek.factsaday';

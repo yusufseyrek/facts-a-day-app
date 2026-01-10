@@ -551,7 +551,8 @@ export default function SettingsPage() {
   };
 
   const handleReviewApp = async () => {
-    await requestReview();
+    // Use fallback to open store when in-app review isn't available
+    await requestReview(true);
   };
 
   const handleClearImageCache = async () => {

@@ -240,6 +240,10 @@ export const translations = {
     goBack: "Zurück",
     continueAnyway: "Weiter",
     unanswered: "Unbeantwortet",
+    viewFact: "Fakt ansehen",
+    showHint: "Hinweis zeigen",
+    hintUsedToday: "Hinweis verbraucht",
+    hint: "Hinweis",
 
     // Trivia Results
     greatJob: "Super gemacht!",
@@ -520,6 +524,10 @@ export const translations = {
     goBack: "Go Back",
     continueAnyway: "Continue",
     unanswered: "Unanswered",
+    viewFact: "View Fact",
+    showHint: "Show Hint",
+    hintUsedToday: "Hint used",
+    hint: "Hint",
 
     // Trivia Results
     greatJob: "Great Job!",
@@ -800,6 +808,10 @@ export const translations = {
     goBack: "Volver",
     continueAnyway: "Continuar",
     unanswered: "Sin responder",
+    viewFact: "Ver dato",
+    showHint: "Mostrar pista",
+    hintUsedToday: "Pista usada",
+    hint: "Pista",
 
     // Trivia Results
     greatJob: "¡Excelente!",
@@ -1080,6 +1092,10 @@ export const translations = {
     goBack: "Retour",
     continueAnyway: "Continuer",
     unanswered: "Sans réponse",
+    viewFact: "Voir le fait",
+    showHint: "Afficher l'indice",
+    hintUsedToday: "Indice utilisé",
+    hint: "Indice",
 
     // Trivia Results
     greatJob: "Excellent !",
@@ -1359,6 +1375,10 @@ export const translations = {
     goBack: "戻る",
     continueAnyway: "続行",
     unanswered: "未回答",
+    viewFact: "豆知識を見る",
+    showHint: "ヒントを表示",
+    hintUsedToday: "ヒント使用済み",
+    hint: "ヒント",
 
     // Trivia Results
     greatJob: "素晴らしい！",
@@ -1635,6 +1655,10 @@ export const translations = {
     goBack: "돌아가기",
     continueAnyway: "계속",
     unanswered: "미답변",
+    viewFact: "정보 보기",
+    showHint: "힌트 보기",
+    hintUsedToday: "힌트 사용됨",
+    hint: "힌트",
 
     // Trivia Results
     greatJob: "잘했어요!",
@@ -1914,6 +1938,10 @@ export const translations = {
     goBack: "Geri Dön",
     continueAnyway: "Devam",
     unanswered: "Cevaplanmamış",
+    viewFact: "Bilgiyi Gör",
+    showHint: "İpucu Göster",
+    hintUsedToday: "İpucu kullanıldı",
+    hint: "İpucu",
 
     // Trivia Results
     greatJob: "Harika!",
@@ -2189,6 +2217,10 @@ export const translations = {
     goBack: "返回",
     continueAnyway: "继续",
     unanswered: "未回答",
+    viewFact: "查看知识",
+    showHint: "显示提示",
+    hintUsedToday: "提示已用",
+    hint: "提示",
 
     // Trivia Results
     greatJob: "太棒了！",

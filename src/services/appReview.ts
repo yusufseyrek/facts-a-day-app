@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as StoreReview from 'expo-store-review';
+import { Linking, Platform } from 'react-native';
 
-import { STORAGE_KEYS, APP_REVIEW } from '../config/app';
+import { STORAGE_KEYS, APP_REVIEW, APP_STORE_ID, PLAY_STORE_ID } from '../config/app';
 
 /**
  * Track that a fact has been viewed
@@ -60,16 +61,60 @@ export async function getFactsViewedCount(): Promise<number> {
 }
 
 /**
- * Show the native app review prompt
- * Returns true if successfully shown, false otherwise
+ * Get the store URL for the app
  */
-export async function requestReview(): Promise<boolean> {
+function getStoreUrl(): string {
+  if (Platform.OS === 'ios') {
+    return `https://apps.apple.com/app/id${APP_STORE_ID}?action=write-review`;
+  }
+  return `https://play.google.com/store/apps/details?id=${PLAY_STORE_ID}`;
+}
+
+/**
+ * Open the app store page directly
+ * Used as fallback when in-app review isn't available
+ */
+export async function openStoreForReview(): Promise<boolean> {
+  try {
+    const url = getStoreUrl();
+    const canOpen = await Linking.canOpenURL(url);
+    
+    if (canOpen) {
+      await Linking.openURL(url);
+      if (__DEV__) {
+        console.log('Opened store page for review');
+      }
+      return true;
+    }
+    
+    if (__DEV__) {
+      console.log('Cannot open store URL:', url);
+    }
+    return false;
+  } catch (error) {
+    if (__DEV__) {
+      console.error('Error opening store for review:', error);
+    }
+    return false;
+  }
+}
+
+/**
+ * Show the native app review prompt
+ * If fallbackToStore is true and in-app review isn't available, opens the store page
+ * Returns true if successfully shown (either in-app or store page), false otherwise
+ */
+export async function requestReview(fallbackToStore: boolean = false): Promise<boolean> {
   try {
     // Check if review functionality is available
     const isAvailable = await StoreReview.isAvailableAsync();
     if (!isAvailable) {
       if (__DEV__) {
         console.log('Store review is not available on this device');
+      }
+      // Fallback to opening store page if requested
+      if (fallbackToStore) {
+        return await openStoreForReview();
       }
       return false;
     }
@@ -79,6 +124,10 @@ export async function requestReview(): Promise<boolean> {
     if (!canRequest) {
       if (__DEV__) {
         console.log('Cannot request review at this time');
+      }
+      // Fallback to opening store page if requested
+      if (fallbackToStore) {
+        return await openStoreForReview();
       }
       return false;
     }
@@ -98,6 +147,10 @@ export async function requestReview(): Promise<boolean> {
   } catch (error) {
     if (__DEV__) {
       console.error('Error requesting review:', error);
+    }
+    // Fallback to opening store page on error if requested
+    if (fallbackToStore) {
+      return await openStoreForReview();
     }
     return false;
   }

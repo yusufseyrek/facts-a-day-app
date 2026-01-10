@@ -8,6 +8,9 @@
  * - Gamification elements (streaks, mastery)
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { STORAGE_KEYS } from '../config/app';
 import { TRIVIA_QUESTIONS, TIME_PER_QUESTION } from '../config/trivia';
 
 import * as database from './database';
@@ -508,3 +511,36 @@ export async function getBestStreak(): Promise<number> {
   return database.getBestDailyStreak();
 }
 
+// ====== EXPLANATION HINT ======
+
+/**
+ * Check if the user can use the explanation hint today
+ * The hint is limited to 1 use per day globally
+ */
+export async function canUseExplanationHint(): Promise<boolean> {
+  try {
+    const lastUsedDate = await AsyncStorage.getItem(STORAGE_KEYS.EXPLANATION_HINT_LAST_USED);
+    if (!lastUsedDate) {
+      return true; // Never used before
+    }
+    
+    const today = getLocalDateString();
+    return lastUsedDate !== today;
+  } catch (error) {
+    console.error('Error checking explanation hint availability:', error);
+    return true; // Allow usage on error
+  }
+}
+
+/**
+ * Mark that the explanation hint was used today
+ * Call this when the user reveals an explanation
+ */
+export async function useExplanationHint(): Promise<void> {
+  try {
+    const today = getLocalDateString();
+    await AsyncStorage.setItem(STORAGE_KEYS.EXPLANATION_HINT_LAST_USED, today);
+  } catch (error) {
+    console.error('Error saving explanation hint usage:', error);
+  }
+}
