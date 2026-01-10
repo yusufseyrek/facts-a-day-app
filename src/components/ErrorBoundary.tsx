@@ -1,9 +1,10 @@
 import React, { Component, ReactNode } from 'react';
-import { View, StyleSheet, Pressable, Text } from 'react-native';
+import { Pressable, StyleSheet, Text,View } from 'react-native';
 
-import { FONT_FAMILIES } from './Typography';
 import { recordError } from '../config/firebase';
 import { hexColors } from '../theme';
+
+import { FONT_FAMILIES } from './Typography';
 
 // Hardcoded values for ErrorBoundary since it's a class component
 // and renders OUTSIDE the theme/provider context
@@ -94,7 +95,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <View style={styles.content}>
             <Text style={styles.emoji}>😔</Text>
             <Text style={styles.title}>Oops! Something went wrong</Text>
-            <Text style={styles.body}>We've been notified and will fix this soon.</Text>
+            <Text style={styles.body}>We&apos;ve been notified and will fix this soon.</Text>
 
             {__DEV__ && this.state.error && (
               <View style={styles.errorDetails}>

@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Text } from '../../src/components';
 import { FactModal } from '../../src/components/FactModal';
 import { useTranslation } from '../../src/i18n';
-import { trackFactView, trackScreenView, Screens } from '../../src/services/analytics';
+import { Screens,trackFactView, trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
 import { hexColors } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
-import type { FactWithRelations } from '../../src/services/database';
 import type { FactViewSource } from '../../src/services/analytics';
+import type { FactWithRelations } from '../../src/services/database';
 
 export default function FactDetailModal() {
   const { id, source } = useLocalSearchParams<{ id: string; source?: FactViewSource }>();

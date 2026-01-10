@@ -1,35 +1,37 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  Pressable,
-  Animated,
-  View,
-  StyleSheet,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
   AccessibilityInfo,
+  Animated,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Image } from 'expo-image';
-import { styled } from '@tamagui/core';
-import { ImagePlus, X, Calendar } from '@tamagui/lucide-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { YStack, XStack } from 'tamagui';
 
-import { BannerAd } from './ads';
-import { CategoryBadge } from './CategoryBadge';
-import { FactActions } from './FactActions';
-import { Text, FONT_FAMILIES } from './Typography';
+import { styled } from '@tamagui/core';
+import { Calendar,ImagePlus, X } from '@tamagui/lucide-icons';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { XStack,YStack } from 'tamagui';
+
 import { useTranslation } from '../i18n';
 import { addCategoryKeyword } from '../services/adKeywords';
 import { trackSourceLinkClick } from '../services/analytics';
-import { getLocalNotificationImagePath, deleteNotificationImage } from '../services/notifications';
-import { hexColors, getCategoryNeonColor, useTheme } from '../theme';
+import { deleteNotificationImage,getLocalNotificationImagePath } from '../services/notifications';
+import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { openInAppBrowser } from '../utils/browser';
 import { useFactImage } from '../utils/useFactImage';
 import { useResponsive } from '../utils/useResponsive';
 
-import type { FactWithRelations, Category } from '../services/database';
+import { BannerAd } from './ads';
+import { CategoryBadge } from './CategoryBadge';
+import { FactActions } from './FactActions';
+import { FONT_FAMILIES,Text } from './Typography';
+
+import type { Category,FactWithRelations } from '../services/database';
 
 interface FactModalProps {
   fact: FactWithRelations;
@@ -84,7 +86,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     isTablet,
     screenWidth: SCREEN_WIDTH,
     screenHeight: SCREEN_HEIGHT,
-    config,
     radius,
     borderWidths,
   } = useResponsive();

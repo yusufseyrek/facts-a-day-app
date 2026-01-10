@@ -1,12 +1,14 @@
 import React from 'react';
-import { styled } from '@tamagui/core';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { YStack, XStack, YStackProps } from 'tamagui';
 
-import { Text } from './Typography';
+import { styled } from '@tamagui/core';
+import { XStack, YStack, YStackProps } from 'tamagui';
+
 import { LAYOUT } from '../config/app';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
+
+import { Text } from './Typography';
 
 /**
  * ScreenContainer - Main container for all screens

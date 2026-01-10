@@ -1,32 +1,33 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useMemo,useRef, useState } from 'react';
 import {
-  RefreshControl,
   ActivityIndicator,
-  Pressable,
-  View,
   Animated as RNAnimated,
+  Pressable,
+  RefreshControl,
+  View,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
+import Animated, { FadeIn, FadeInDown,FadeInUp } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { useFocusEffect } from '@react-navigation/native';
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
-import { ChevronLeft, ChevronRight, Calendar, Shuffle } from '@tamagui/lucide-icons';
-import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { YStack, XStack } from 'tamagui';
+import { Calendar, ChevronLeft, ChevronRight, Shuffle } from '@tamagui/lucide-icons';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { XStack,YStack } from 'tamagui';
 
-import { Text, FONT_FAMILIES } from '../../src/components/Typography';
-import { TriviaResults, getTriviaModeBadge } from '../../src/components/trivia';
+import { getTriviaModeBadge,TriviaResults } from '../../src/components/trivia';
+import { FONT_FAMILIES,Text } from '../../src/components/Typography';
 import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
 import { useTranslation } from '../../src/i18n';
-import { trackScreenView, Screens, trackTriviaResultsView } from '../../src/services/analytics';
+import { Screens, trackScreenView, trackTriviaResultsView } from '../../src/services/analytics';
 import * as triviaService from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
 
-import type { TriviaSessionWithCategory } from '../../src/services/trivia';
 import type { TriviaMode } from '../../src/services/analytics';
+import type { TriviaSessionWithCategory } from '../../src/services/trivia';
 
 // Back Button with press animation
 function BackButton({ onPress, primaryColor }: { onPress: () => void; primaryColor: string }) {
@@ -90,7 +91,7 @@ function SessionCard({
   onPress?: () => void;
   dateFormat?: 'time' | 'relative';
 }) {
-  const { typography, iconSizes, spacing, radius, media } = useResponsive();
+  const { iconSizes, spacing, radius, media } = useResponsive();
   const iconContainerSize = media.topicCardSize * 0.5; // Scale with tablet
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
@@ -258,7 +259,7 @@ type HistoryListItem = SectionHeaderItem | SessionItem;
 export default function ActivityHistoryScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, spacing, radius, iconSizes, media } = useResponsive();
+  const { spacing, media } = useResponsive();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
@@ -333,7 +334,7 @@ export default function ActivityHistoryScreen() {
         const allSessions = await triviaService.getAllSessions();
         const groupedSections = groupSessionsByDate(allSessions);
         setSections(groupedSections);
-      } catch (error) {
+      } catch {
         // Ignore history loading errors
       } finally {
         setLoading(false);
@@ -364,7 +365,7 @@ export default function ActivityHistoryScreen() {
           categorySlug: fullSession.category_slug || undefined,
         });
       }
-    } catch (error) {
+    } catch {
       // Ignore session loading errors
     } finally {
       setLoadingSession(false);

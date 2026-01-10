@@ -1,4 +1,5 @@
 import { useColorScheme } from 'react-native';
+
 import { Stack } from 'expo-router';
 
 import { hexColors } from '../../src/theme';

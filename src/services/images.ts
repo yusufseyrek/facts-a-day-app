@@ -24,7 +24,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { PREFETCH_SETTINGS } from '../config/factListSettings';
 import { IMAGE_CACHE, IMAGE_DOWNLOAD_RETRY } from '../config/images';
 
-import { getCachedAppCheckToken, forceRefreshAppCheckToken } from './appCheckToken';
+import { forceRefreshAppCheckToken,getCachedAppCheckToken } from './appCheckToken';
 
 // Directory for cached fact images - uses documentDirectory for persistence
 // cacheDirectory is NOT reliable for multi-day caching as it can be cleared by OS
@@ -296,7 +296,7 @@ export async function downloadImageWithAppCheck(
 async function performImageDownload(
   imageUrl: string,
   factId: number | undefined,
-  forceRefresh: boolean
+  _forceRefresh: boolean
 ): Promise<string | null> {
   try {
     // Get App Check token (uses cache to prevent rate limiting)
@@ -317,9 +317,6 @@ async function performImageDownload(
 
     // Track if we've already tried refreshing the token
     let hasRetriedWithFreshToken = false;
-
-    // Download with retries
-    let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < IMAGE_DOWNLOAD_RETRY.MAX_ATTEMPTS; attempt++) {
       try {
@@ -347,7 +344,7 @@ async function performImageDownload(
 
             return downloadResult.uri;
           }
-        } catch (downloadError) {
+        } catch {
           // If downloadAsync fails (e.g., headers not supported in some versions),
           // fall back to fetch + streaming write
           try {
@@ -432,9 +429,11 @@ async function performImageDownload(
           return null;
         }
 
-        lastError = new Error(`HTTP ${downloadStatus}`);
+        // Set error for debugging (prefixed to indicate unused but kept for context)
+        const _lastError = new Error(`HTTP ${downloadStatus}`);
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
+        // Error captured for potential debugging (prefixed to indicate unused)
+        const _caughtError = error instanceof Error ? error : new Error(String(error));
       }
 
       // Wait before retrying (exponential backoff)

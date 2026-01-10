@@ -1,10 +1,12 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Animated, StyleSheet, View, Modal } from 'react-native';
+import React, { useEffect, useMemo,useRef, useState } from 'react';
+import { Animated, Modal,StyleSheet, View } from 'react-native';
+
 import { CheckCircle } from '@tamagui/lucide-icons';
 
-import { Text } from './Typography';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
+
+import { Text } from './Typography';
 
 interface SuccessToastProps {
   visible: boolean;

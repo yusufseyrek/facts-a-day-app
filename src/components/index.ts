@@ -1,33 +1,33 @@
-export { Text, FONT_FAMILIES } from './Typography';
-export type { TextProps, TextPreset, TextComponent } from './Typography';
 export { Button } from './Button';
-export { ProgressIndicator } from './ProgressIndicator';
-export { CategoryCard } from './CategoryCard';
-export type { CategoryCardProps } from './CategoryCard';
 export { CategoryBadge } from './CategoryBadge';
+export type { CategoryCardProps } from './CategoryCard';
+export { CategoryCard } from './CategoryCard';
+export { ProgressIndicator } from './ProgressIndicator';
+export type { TextComponent,TextPreset, TextProps } from './Typography';
+export { FONT_FAMILIES,Text } from './Typography';
 // ImageFactCard is imported directly by screens to avoid hot-reload issues
 export { EmptyState } from './EmptyState';
+export { ErrorBoundary } from './ErrorBoundary';
 export { FactActions } from './FactActions';
 export { FactModal } from './FactModal';
-export { SettingsRow } from './SettingsRow';
 export { MultiTimePicker } from './MultiTimePicker';
-export { ErrorBoundary } from './ErrorBoundary';
+export { SettingsRow } from './SettingsRow';
 export { SuccessToast } from './SuccessToast';
 
 // Layout components
 export {
+  ContentContainer,
+  ItemGroup,
+  LoadingContainer,
   ScreenContainer,
   ScreenHeader,
-  SectionHeader,
-  ContentContainer,
   ScrollContentContainer,
-  LoadingContainer,
-  TabletWrapper,
   SectionContainer,
+  SectionHeader,
   SectionTitle,
-  ItemGroup,
+  TabletWrapper,
   useIconColor,
 } from './ScreenLayout';
 
 // Trivia components
-export { TriviaStatsHero, DailyChallengeCard, CategoryQuestCard } from './trivia';
+export { CategoryQuestCard,DailyChallengeCard, TriviaStatsHero } from './trivia';

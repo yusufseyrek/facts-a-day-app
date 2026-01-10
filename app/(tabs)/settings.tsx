@@ -1,47 +1,48 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Alert, SectionList, Linking, Platform, AppState, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import React, { useCallback, useEffect, useMemo, useRef,useState } from 'react';
+import { Alert, AppState, Linking, Platform, SectionList } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+
+import {
+  Bell,
+  Bug,
+  Camera,
+  Contrast,
+  Download,
+  FileText,
+  Globe,
+  Grid,
+  Palette,
+  Plus,
+  RotateCcw,
+  Settings,
+  Shield,
+  Star,
+  TestTube,
+  Trash2,
+} from '@tamagui/lucide-icons';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
+import { useFocusEffect,useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import * as Updates from 'expo-updates';
-import { useRouter, useFocusEffect } from 'expo-router';
-import {
-  Globe,
-  Palette,
-  Grid,
-  Bell,
-  Plus,
-  TestTube,
-  Contrast,
-  RotateCcw,
-  FileText,
-  Shield,
-  Bug,
-  Settings,
-  Star,
-  Trash2,
-  Camera,
-  Download,
-} from '@tamagui/lucide-icons';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { YStack } from 'tamagui';
 
 import {
-  Text,
+  ContentContainer,
   ScreenContainer,
   ScreenHeader,
-  ContentContainer,
+  Text,
   useIconColor,
 } from '../../src/components';
-import { SettingsRow } from '../../src/components/SettingsRow';
+import { FeedManagementModal } from '../../src/components/settings/FeedManagementModal';
 import { ThemePickerModal } from '../../src/components/settings/ThemePickerModal';
 import { TimePickerModal } from '../../src/components/settings/TimePickerModal';
-import { FeedManagementModal } from '../../src/components/settings/FeedManagementModal';
+import { SettingsRow } from '../../src/components/SettingsRow';
 import { LAYOUT } from '../../src/config/app';
 import { useOnboarding, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { TranslationKeys } from '../../src/i18n/translations';
-import { trackScreenView, Screens } from '../../src/services/analytics';
+import { Screens,trackScreenView } from '../../src/services/analytics';
 import { requestReview } from '../../src/services/appReview';
 import * as database from '../../src/services/database';
 import { clearAllCachedImages, getCachedImagesSize } from '../../src/services/images';

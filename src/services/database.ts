@@ -2481,7 +2481,6 @@ export async function getBestDailyStreak(): Promise<number> {
 
   for (let i = 1; i < result.length; i++) {
     const prevDate = new Date(result[i - 1].date + 'T12:00:00');
-    const currDate = new Date(result[i].date + 'T12:00:00');
 
     // Check if dates are consecutive
     const nextDay = new Date(prevDate);

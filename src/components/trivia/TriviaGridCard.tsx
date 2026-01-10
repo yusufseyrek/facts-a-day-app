@@ -1,14 +1,15 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
-import { Check, Zap, Shuffle, ChevronRight } from '@tamagui/lucide-icons';
-import { YStack, XStack } from 'tamagui';
 
-import { Text, FONT_FAMILIES } from '../Typography';
+import { Check, ChevronRight,Shuffle, Zap } from '@tamagui/lucide-icons';
+import { XStack,YStack } from 'tamagui';
+
 import { useTranslation } from '../../i18n';
 import { hexColors } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
+import { FONT_FAMILIES,Text } from '../Typography';
 
 export type TriviaGridCardType = 'daily' | 'mixed' | 'category';
 
@@ -40,7 +41,7 @@ export function TriviaGridCard({
   centerContent = false,
 }: TriviaGridCardProps) {
   const { t } = useTranslation();
-  const { typography, iconSizes, spacing, radius, media } = useResponsive();
+  const { iconSizes, spacing, radius, media } = useResponsive();
   const iconContainerSize = media.topicCardSize * 0.7;
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;

@@ -1,8 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as StoreReview from 'expo-store-review';
 import { Linking, Platform } from 'react-native';
 
-import { STORAGE_KEYS, APP_REVIEW, APP_STORE_ID, PLAY_STORE_ID } from '../config/app';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as StoreReview from 'expo-store-review';
+
+import { APP_REVIEW, APP_STORE_ID, PLAY_STORE_ID,STORAGE_KEYS } from '../config/app';
 
 /**
  * Track that a fact has been viewed

@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Modal, View, StyleSheet, Pressable, ScrollView, Dimensions } from 'react-native';
-import { X, Sun, Moon, Smartphone } from '@tamagui/lucide-icons';
+import React, { useCallback, useEffect, useMemo,useRef, useState } from 'react';
+import { Dimensions,Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 
-import { Text } from '../Typography';
+import { Moon, Smartphone,Sun, X } from '@tamagui/lucide-icons';
+
 import { useTranslation } from '../../i18n';
 import { trackThemeChange, updateThemeProperty } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { Text } from '../Typography';
 
 import type { TranslationKeys } from '../../i18n';
 import type { ThemeMode } from '../../theme/ThemeProvider';

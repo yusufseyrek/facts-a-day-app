@@ -1,21 +1,22 @@
 import React from 'react';
-import { Pressable, View, ActivityIndicator, ScrollView } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import { StatusBar } from 'expo-status-bar';
-import { X, Timer, ChevronRight, ChevronLeft, BookOpen, Lightbulb } from '@tamagui/lucide-icons';
+import { ActivityIndicator, Pressable, ScrollView,View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInUp,
-  SlideInRight,
   SharedValue,
+  SlideInRight,
   useAnimatedStyle,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { YStack, XStack } from 'tamagui';
 
-import { Text, FONT_FAMILIES } from '../Typography';
+import { BookOpen, ChevronLeft, ChevronRight, Lightbulb,Timer, X } from '@tamagui/lucide-icons';
+import * as Haptics from 'expo-haptics';
+import { StatusBar } from 'expo-status-bar';
+import { XStack,YStack } from 'tamagui';
+
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { FONT_FAMILIES,Text } from '../Typography';
 
 import type { QuestionWithFact } from '../../services/database';
 

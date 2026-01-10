@@ -1,29 +1,30 @@
 // Firebase Modular API imports
-import {
-  getCrashlytics,
-  setCrashlyticsCollectionEnabled,
-  setUserId as setCrashlyticsUserId,
-  setAttribute,
-  setAttributes,
-  recordError as crashlyticsRecordError,
-  log,
-  crash,
-} from '@react-native-firebase/crashlytics';
+import { Platform } from 'react-native';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getAnalytics,
   logEvent as analyticsLogEvent,
   setUserId as setAnalyticsUserId,
   setUserProperty as analyticsSetUserProperty,
 } from '@react-native-firebase/analytics';
+import { getApp } from '@react-native-firebase/app';
 import getAppCheck, {
   getToken as getAppCheckTokenFn,
   initializeAppCheck,
   ReactNativeFirebaseAppCheckProvider,
 } from '@react-native-firebase/app-check';
-import { getApp } from '@react-native-firebase/app';
-import { Platform } from 'react-native';
+import {
+  crash,
+  getCrashlytics,
+  log,
+  recordError as crashlyticsRecordError,
+  setAttribute,
+  setAttributes,
+  setCrashlyticsCollectionEnabled,
+  setUserId as setCrashlyticsUserId,
+} from '@react-native-firebase/crashlytics';
 import * as Device from 'expo-device';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import macOS debug token from platform-specific file
 // iOS builds get the real token, Android builds get undefined
@@ -206,7 +207,7 @@ export async function initializeAppCheckService() {
           try {
             log(crashlyticsInstance, `App Check init failed (${providerName}): ${errorMessage}`);
             crashlyticsRecordError(crashlyticsInstance, lastError);
-          } catch (e) {
+          } catch {
             // Silently fail if Crashlytics isn't ready
           }
         }
@@ -266,7 +267,7 @@ function installJSErrorHandler() {
       try {
         log(crashlyticsInstance, `[JS ${isFatal ? 'FATAL' : 'ERROR'}] ${error.message}`);
         crashlyticsRecordError(crashlyticsInstance, error);
-      } catch (e) {
+      } catch {
         // Silently fail if Crashlytics fails
       }
     }
@@ -301,7 +302,7 @@ export function enableCrashlyticsConsoleLogging() {
     originalLog.apply(console, args);
     try {
       log(crashlyticsInstance, `[LOG] ${args.map(String).join(' ')}`);
-    } catch (e) {
+    } catch {
       // Silently fail
     }
   };
@@ -310,7 +311,7 @@ export function enableCrashlyticsConsoleLogging() {
     originalWarn.apply(console, args);
     try {
       log(crashlyticsInstance, `[WARN] ${args.map(String).join(' ')}`);
-    } catch (e) {
+    } catch {
       // Silently fail
     }
   };
@@ -323,7 +324,7 @@ export function enableCrashlyticsConsoleLogging() {
       if (args[0] instanceof Error) {
         crashlyticsRecordError(crashlyticsInstance, args[0]);
       }
-    } catch (e) {
+    } catch {
       // Silently fail
     }
   };
@@ -499,4 +500,4 @@ export async function getAppCheckToken() {
 }
 
 // Export instances for direct access if needed
-export { crashlyticsInstance as crashlytics, analyticsInstance as analytics };
+export { analyticsInstance as analytics,crashlyticsInstance as crashlytics };

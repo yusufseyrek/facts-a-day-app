@@ -1,28 +1,29 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo,useRef, useState } from 'react';
 import {
-  Modal,
-  View,
-  StyleSheet,
-  Pressable,
-  Platform,
-  ScrollView,
   Alert,
-  Linking,
   Dimensions,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { X, Plus, Trash2, AlertTriangle } from '@tamagui/lucide-icons';
 import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 
-import { Button } from '../Button';
-import { SuccessToast } from '../SuccessToast';
-import { Text, FONT_FAMILIES } from '../Typography';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { AlertTriangle,Plus, Trash2, X } from '@tamagui/lucide-icons';
+
 import { useTranslation } from '../../i18n/useTranslation';
 import { trackNotificationTimeChange, updateNotificationProperty } from '../../services/analytics';
 import * as notificationService from '../../services/notifications';
 import * as onboardingService from '../../services/onboarding';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { Button } from '../Button';
+import { SuccessToast } from '../SuccessToast';
+import { FONT_FAMILIES,Text } from '../Typography';
 
 const ANIMATION_DURATION = 150;
 

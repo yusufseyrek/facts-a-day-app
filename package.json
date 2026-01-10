@@ -75,6 +75,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-native": "^5.0.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
     "expo-atlas": "^0.4.0",
     "prettier": "^3.7.4",
     "typescript": "~5.9.2"

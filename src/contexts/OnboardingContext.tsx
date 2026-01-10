@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import type { SupportedLocale } from '../i18n';
+import React, { createContext, useCallback,useContext, useState } from 'react';
+
 import * as onboardingService from '../services/onboarding';
+
+import type { SupportedLocale } from '../i18n';
 
 interface OnboardingState {
   // User selections

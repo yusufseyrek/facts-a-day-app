@@ -1,21 +1,22 @@
-import React, { useEffect, useRef, useMemo, useState } from 'react';
-import { Animated, Easing, View, Dimensions, ActivityIndicator, Platform } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { styled } from '@tamagui/core';
-import { CheckCircle, Sparkle, Star, Gift } from '@tamagui/lucide-icons';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Dimensions, Easing, Platform,View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { YStack, XStack } from 'tamagui';
 
-import { Text, Button, FONT_FAMILIES } from '../../src/components';
+import { styled } from '@tamagui/core';
+import { CheckCircle, Gift,Sparkle, Star } from '@tamagui/lucide-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { XStack,YStack } from 'tamagui';
+
+import { Button, FONT_FAMILIES,Text } from '../../src/components';
 import { ADS_ENABLED } from '../../src/config/ads';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { completeConsentFlow, isConsentRequired, initializeAdsSDK } from '../../src/services/ads';
-import { trackOnboardingComplete, trackScreenView, Screens } from '../../src/services/analytics';
+import { completeConsentFlow, initializeAdsSDK,isConsentRequired } from '../../src/services/ads';
+import { Screens,trackOnboardingComplete, trackScreenView } from '../../src/services/analytics';
 import { getNotificationTimes } from '../../src/services/onboarding';
-import { hexColors, getNeonColors, useTheme } from '../../src/theme';
+import { getNeonColors, hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 const { width: screenWidth } = Dimensions.get('window');

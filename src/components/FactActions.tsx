@@ -1,31 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { Share, Alert, Pressable, StyleSheet, Platform } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import { styled } from '@tamagui/core';
-import { Heart, Share as ShareIcon, Flag } from '@tamagui/lucide-icons';
+import React, { useEffect,useState } from 'react';
+import { Alert, Platform,Pressable, Share, StyleSheet } from 'react-native';
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withSequence,
-  withTiming,
   Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { XStack, YStack, View } from 'tamagui';
 
-import { ReportFactModal } from './ReportFactModal';
+import { styled } from '@tamagui/core';
+import { Flag,Heart, Share as ShareIcon } from '@tamagui/lucide-icons';
+import * as Haptics from 'expo-haptics';
+import { View,XStack, YStack } from 'tamagui';
+
 import { useTranslation } from '../i18n';
 import {
-  trackFactShare,
   trackFactFavoriteAdd,
   trackFactFavoriteRemove,
   trackFactReport,
+  trackFactShare,
 } from '../services/analytics';
 import * as api from '../services/api';
 import * as database from '../services/database';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
+
+import { ReportFactModal } from './ReportFactModal';
 
 interface FactActionsProps {
   factId: number;

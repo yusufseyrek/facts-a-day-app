@@ -1,5 +1,5 @@
-import type { TranslationKeys } from './translations';
 import type { Category } from '../services/database';
+import type { TranslationKeys } from './translations';
 
 export type TFunction = (key: TranslationKeys) => string;
 

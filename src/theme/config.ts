@@ -1,6 +1,8 @@
 import { createTamagui, createTokens } from '@tamagui/core';
+
+import { media,radius, spacing, typography } from '../utils/responsive';
+
 import { hexColors } from './hexColors';
-import { typography, spacing, radius, media } from '../utils/responsive';
 
 const tamaguiTokens = createTokens({
   color: {
@@ -237,5 +239,6 @@ export const config = createTamagui({
 export type AppConfig = typeof config;
 
 declare module '@tamagui/core' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface TamaguiCustomConfig extends AppConfig {}
 }

@@ -1,12 +1,13 @@
 import React from 'react';
 import { Pressable } from 'react-native';
-import { Zap, Check, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { YStack, XStack } from 'tamagui';
 
-import { Text, FONT_FAMILIES } from '../Typography';
+import { Check, ChevronRight,Zap } from '@tamagui/lucide-icons';
+import { XStack,YStack } from 'tamagui';
+
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { FONT_FAMILIES,Text } from '../Typography';
 
 import type { TranslationKeys } from '../../i18n/translations';
 
@@ -26,7 +27,7 @@ export function DailyChallengeCard({
   onPress,
   t,
 }: DailyChallengeCardProps) {
-  const { spacing, radius, typography, iconSizes } = useResponsive();
+  const { spacing, radius, iconSizes } = useResponsive();
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;

@@ -1,4 +1,5 @@
 import * as WebBrowser from 'expo-web-browser';
+
 import { hexColors } from '../theme';
 
 export interface OpenBrowserOptions {

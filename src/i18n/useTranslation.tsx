@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useCallback,useContext, useState } from 'react';
+
 import * as Localization from 'expo-localization';
-import { i18n, getLocaleFromCode } from './config';
+
+import { getLocaleFromCode,i18n } from './config';
 import { SupportedLocale, TranslationKeys } from './translations';
 
 interface I18nContextType {

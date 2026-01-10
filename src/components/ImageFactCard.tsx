@@ -1,14 +1,15 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Pressable, Animated, StyleSheet, View, Platform } from 'react-native';
+import React, { useCallback, useEffect,useMemo, useRef, useState } from 'react';
+import { Animated, Platform,Pressable, StyleSheet, View } from 'react-native';
+
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { CategoryBadge } from './CategoryBadge';
-import { Text, FONT_FAMILIES } from './Typography';
-import { IMAGE_PLACEHOLDER, IMAGE_DIMENSIONS, IMAGE_RETRY } from '../config/images';
-import { hexColors } from '../theme';
+import { IMAGE_DIMENSIONS, IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
 import { useFactImage } from '../utils/useFactImage';
 import { useResponsive } from '../utils/useResponsive';
+
+import { CategoryBadge } from './CategoryBadge';
+import { Text } from './Typography';
 
 import type { ImageSource } from 'expo-image';
 import type { Category } from '../services/database';
@@ -31,7 +32,6 @@ const ImageFactCardComponent = ({
   imageUrl,
   factId,
   category,
-  categorySlug,
   onPress,
   isTablet: isTabletProp = false,
   testID,

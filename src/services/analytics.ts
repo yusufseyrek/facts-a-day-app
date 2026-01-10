@@ -4,6 +4,7 @@
  */
 
 import { Platform } from 'react-native';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
@@ -16,7 +17,7 @@ import {
   setCrashlyticsAttribute,
 } from '../config/firebase';
 
-import { getSelectedCategories, getNotificationTimes } from './onboarding';
+import { getNotificationTimes,getSelectedCategories } from './onboarding';
 
 const THEME_STORAGE_KEY = '@app_theme_mode';
 

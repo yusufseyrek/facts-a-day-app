@@ -1,10 +1,11 @@
-import React, { useRef, useCallback, useState, useEffect, createContext, useContext } from 'react';
-import { Pressable, Animated, View, StyleSheet } from 'react-native';
-import { Tabs, usePathname } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
-import { BottomTabBar } from '@react-navigation/bottom-tabs';
-import { Lightbulb, Compass, Brain, Star, Settings } from '@tamagui/lucide-icons';
+import React, { createContext, useCallback, useContext,useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet,View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { BottomTabBar } from '@react-navigation/bottom-tabs';
+import { useFocusEffect } from '@react-navigation/native';
+import { Brain, Compass, Lightbulb, Settings,Star } from '@tamagui/lucide-icons';
+import { Tabs, usePathname } from 'expo-router';
 
 import { BannerAd } from '../../src/components/ads';
 import { ADS_ENABLED } from '../../src/config/ads';

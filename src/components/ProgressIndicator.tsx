@@ -1,9 +1,11 @@
 import React from 'react';
+
 import { View } from '@tamagui/core';
 import { YStack } from 'tamagui';
 
-import { Text, FONT_FAMILIES } from './Typography';
 import { useResponsive } from '../utils';
+
+import { FONT_FAMILIES,Text } from './Typography';
 
 interface ProgressIndicatorProps {
   currentStep: number;

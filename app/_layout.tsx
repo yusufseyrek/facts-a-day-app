@@ -1,35 +1,36 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { View, AppState, AppStateStatus } from 'react-native';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import * as Localization from 'expo-localization';
-import * as Notifications from 'expo-notifications';
-import * as SplashScreen from 'expo-splash-screen';
+import { useCallback,useEffect, useRef, useState } from 'react';
+import { AppState, AppStateStatus,View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 import {
-  useFonts,
   Montserrat_400Regular,
   Montserrat_400Regular_Italic,
   Montserrat_500Medium,
   Montserrat_600SemiBold,
   Montserrat_700Bold,
   Montserrat_800ExtraBold,
+  useFonts,
 } from '@expo-google-fonts/montserrat';
-import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { DarkTheme, DefaultTheme,ThemeProvider } from '@react-navigation/native';
+import * as Localization from 'expo-localization';
+import * as Notifications from 'expo-notifications';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { STORAGE_KEYS, TIMING, NOTIFICATION_SETTINGS } from '../src/config/app';
-import { initializeFirebase, enableCrashlyticsConsoleLogging } from '../src/config/firebase';
-import { OnboardingProvider, useOnboarding, ScrollToTopProvider } from '../src/contexts';
-import { I18nProvider, getLocaleFromCode } from '../src/i18n';
+import { NOTIFICATION_SETTINGS,STORAGE_KEYS, TIMING } from '../src/config/app';
+import { enableCrashlyticsConsoleLogging,initializeFirebase } from '../src/config/firebase';
+import { OnboardingProvider, ScrollToTopProvider,useOnboarding } from '../src/contexts';
+import { getLocaleFromCode,I18nProvider } from '../src/i18n';
+import { initializeAdsForReturningUser } from '../src/services/ads';
+import { initAnalytics } from '../src/services/analytics';
 import * as contentRefresh from '../src/services/contentRefresh';
 import * as database from '../src/services/database';
 import * as notificationService from '../src/services/notifications';
 import * as onboardingService from '../src/services/onboarding';
 import * as updates from '../src/services/updates';
-import { initializeAdsForReturningUser } from '../src/services/ads';
-import { initAnalytics } from '../src/services/analytics';
-import { AppThemeProvider, useTheme, hexColors } from '../src/theme';
+import { AppThemeProvider, hexColors,useTheme } from '../src/theme';
 
 // Prevent "multiple linking listeners" error during Fast Refresh
 // This tells expo-router the initial route, helping it manage navigation state properly

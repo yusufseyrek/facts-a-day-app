@@ -1,35 +1,35 @@
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { RefreshControl, ActivityIndicator } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import * as Notifications from 'expo-notifications';
-import { useRouter, useFocusEffect } from 'expo-router';
-import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
-import { styled } from '@tamagui/core';
-import { Lightbulb } from '@tamagui/lucide-icons';
+import React, { useCallback, useEffect, useMemo, useRef,useState } from 'react';
+import { ActivityIndicator,RefreshControl } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+
+import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
+import { Lightbulb } from '@tamagui/lucide-icons';
+import * as Notifications from 'expo-notifications';
+import { useFocusEffect,useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { YStack } from 'tamagui';
 
 import {
-  Text,
+  ContentContainer,
   EmptyState,
+  LoadingContainer,
   ScreenContainer,
   ScreenHeader,
-  ContentContainer,
-  LoadingContainer,
+  Text,
   useIconColor,
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT } from '../../src/config/app';
-import { FLASH_LIST_ITEM_TYPES, FACT_FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
+import { FACT_FLASH_LIST_SETTINGS,FLASH_LIST_ITEM_TYPES } from '../../src/config/factListSettings';
 import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { trackFeedRefresh, trackScreenView, Screens } from '../../src/services/analytics';
+import { Screens,trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
 import { checkAndRequestReview } from '../../src/services/appReview';
 import {
-  onFeedRefresh,
   forceRefreshContent,
-  onRefreshStatusChange,
   getRefreshStatus,
+  onFeedRefresh,
+  onRefreshStatusChange,
   RefreshStatus,
 } from '../../src/services/contentRefresh';
 import * as database from '../../src/services/database';

@@ -1,26 +1,27 @@
 import React from 'react';
-import { Modal, Pressable, Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { Modal, Platform,Pressable } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+
 import {
-  Zap,
-  Shuffle,
-  Play,
-  X,
+  CheckCircle,
   Clock,
   HelpCircle,
+  Play,
+  Shuffle,
   Target,
   Trophy,
-  CheckCircle,
+  X,
+  Zap,
 } from '@tamagui/lucide-icons';
-import Animated, { FadeInUp } from 'react-native-reanimated';
-import { YStack, XStack } from 'tamagui';
+import { BlurView } from 'expo-blur';
+import { XStack,YStack } from 'tamagui';
 
-import { Text, FONT_FAMILIES } from '../Typography';
 import { useTranslation } from '../../i18n';
 import { getEstimatedTimeMinutes } from '../../services/trivia';
 import { hexColors, useTheme } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
+import { FONT_FAMILIES,Text } from '../Typography';
 
 export type TriviaType = 'daily' | 'mixed' | 'category';
 
@@ -53,7 +54,7 @@ export function TriviaIntroModal({
   masteredCount = 0,
   totalQuestions = 0,
   answeredCount = 0,
-  correctCount = 0,
+  correctCount: _correctCount = 0,
 }: TriviaIntroModalProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -105,8 +106,8 @@ export function TriviaIntroModal({
     return categoryDescription || '';
   };
 
-  // Calculate remaining to master
-  const remainingToMaster = totalQuestions - masteredCount;
+  // Calculate remaining to master (reserved for future use)
+  const _remainingToMaster = totalQuestions - masteredCount;
 
   return (
     <Modal

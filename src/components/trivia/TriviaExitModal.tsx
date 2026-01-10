@@ -1,13 +1,14 @@
 import React from 'react';
-import { Modal, Pressable, Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { AlertTriangle, X, DoorOpen } from '@tamagui/lucide-icons';
+import { Modal, Platform,Pressable } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { YStack, XStack } from 'tamagui';
 
-import { Text, FONT_FAMILIES } from '../Typography';
+import { AlertTriangle, DoorOpen,X } from '@tamagui/lucide-icons';
+import { BlurView } from 'expo-blur';
+import { XStack,YStack } from 'tamagui';
+
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { FONT_FAMILIES,Text } from '../Typography';
 
 interface TriviaExitModalProps {
   visible: boolean;
@@ -31,8 +32,7 @@ export function TriviaExitModal({
   exitText,
 }: TriviaExitModalProps) {
   // Get responsive values for device type
-  const { screenWidth, typography, spacing, radius, iconSizes, media, maxModalWidth } =
-    useResponsive();
+  const { screenWidth, typography, spacing, radius, iconSizes, maxModalWidth } = useResponsive();
 
   // Colors matching the app's design system
   const bgColor = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;

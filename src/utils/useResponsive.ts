@@ -1,23 +1,24 @@
-import { useWindowDimensions } from 'react-native';
 import { useMemo } from 'react';
+import { useWindowDimensions } from 'react-native';
+
 import {
-  isTabletDevice,
-  getTypography,
-  getSpacing,
-  getIconSizes,
+  borderWidths as responsiveBorderWidths,
+  config as responsiveConfig,
+  getBorderWidths,
   getConfig,
+  getIconSizes,
+  getMaxModalWidth,
   getMedia,
   getRadius,
-  getBorderWidths,
-  getMaxModalWidth,
-  typography as responsiveTypography,
-  spacing as responsiveSpacing,
+  getSpacing,
+  getTypography,
   iconSizes as responsiveIconSizes,
-  config as responsiveConfig,
+  isTabletDevice,
   media as responsiveMedia,
   radius as responsiveRadius,
-  borderWidths as responsiveBorderWidths,
   RESPONSIVE_CONSTANTS,
+  spacing as responsiveSpacing,
+  typography as responsiveTypography,
 } from './responsive';
 
 // Use union types to allow both phone and tablet values

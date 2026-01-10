@@ -1,15 +1,17 @@
-import React, { useEffect, useState, useCallback, memo, useRef } from 'react';
-import { Platform, View, StyleSheet, LayoutAnimation } from 'react-native';
+import React, { memo, useCallback, useEffect, useRef,useState } from 'react';
+import { LayoutAnimation,Platform, StyleSheet, View } from 'react-native';
 import {
+  AdsConsent,
   BannerAd as GoogleBannerAd,
   BannerAdSize,
   TestIds,
-  AdsConsent,
 } from 'react-native-google-mobile-ads';
+
 import Constants from 'expo-constants';
-import { ADS_ENABLED, AD_RETRY } from '../../config/ads';
-import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
+
+import { AD_RETRY,ADS_ENABLED } from '../../config/ads';
 import { getAdKeywords, subscribeToKeywords } from '../../services/adKeywords';
+import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 
 type BannerAdPosition = 'home' | 'fact-modal';
 

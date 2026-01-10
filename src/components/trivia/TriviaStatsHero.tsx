@@ -1,17 +1,18 @@
 import React from 'react';
 import { Pressable } from 'react-native';
-import { ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
-import { YStack, XStack } from 'tamagui';
 
-import { Text, FONT_FAMILIES } from '../Typography';
+import { ChevronRight } from '@tamagui/lucide-icons';
+import { XStack,YStack } from 'tamagui';
+
 import { hexColors } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
+import { FONT_FAMILIES,Text } from '../Typography';
 
-import type { TriviaStats, CategoryWithProgress } from '../../services/trivia';
 import type { TranslationKeys } from '../../i18n/translations';
+import type { CategoryWithProgress,TriviaStats } from '../../services/trivia';
 
 interface TriviaStatsHeroProps {
   stats: TriviaStats | null;
@@ -37,7 +38,7 @@ function CircularProgress({
   trackColor: string;
   textColor: string;
 }) {
-  const { typography, iconSizes } = useResponsive();
+  const _responsive = useResponsive();
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;

@@ -1,24 +1,25 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo,useRef, useState } from 'react';
 import {
-  Modal,
-  View,
-  StyleSheet,
-  Pressable,
-  Dimensions,
-  TextInput,
-  FlatList,
-  Alert,
   ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Modal,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
 } from 'react-native';
-import { X, Search, Check, Calendar, Trash2, Edit3, RefreshCw } from '@tamagui/lucide-icons';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 
-import { Text, FONT_FAMILIES } from '../Typography';
+import { Calendar, Check, Edit3, RefreshCw,Search, Trash2, X } from '@tamagui/lucide-icons';
+
 import { useTranslation } from '../../i18n';
 import { triggerFeedRefresh } from '../../services/contentRefresh';
 import * as database from '../../services/database';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { FONT_FAMILIES,Text } from '../Typography';
 
 import type { FactWithRelations } from '../../services/database';
 
@@ -38,21 +39,10 @@ interface FactItemProps {
   iconSizes: { sm: number; md: number; lg: number; xl: number; hero: number; heroLg: number };
   spacing: Record<string, number>;
   radius: Record<string, number>;
-  typography: { fontSize: Record<string, number>; lineHeight: Record<string, number> };
 }
 
 const FactItem = React.memo(
-  ({
-    fact,
-    isSelected,
-    onToggle,
-    onEditTitle,
-    colors,
-    iconSizes,
-    spacing,
-    radius,
-    typography,
-  }: FactItemProps) => {
+  ({ fact, isSelected, onToggle, onEditTitle, colors, iconSizes, spacing, radius }: FactItemProps) => {
     const isInFeed =
       fact.shown_in_feed === 1 ||
       (fact.scheduled_date && new Date(fact.scheduled_date) <= new Date());
@@ -131,7 +121,7 @@ FactItem.displayName = 'FactItem';
 export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({ visible, onClose }) => {
   const { theme } = useTheme();
   const colors = hexColors[theme];
-  const { t, locale } = useTranslation();
+  const { locale } = useTranslation();
   const { spacing, radius, typography, iconSizes } = useResponsive();
 
   const [showContent, setShowContent] = useState(false);
@@ -453,7 +443,6 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({ visibl
         iconSizes={iconSizes}
         spacing={spacing}
         radius={radius}
-        typography={typography}
       />
     ),
     [
@@ -464,7 +453,6 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({ visibl
       iconSizes,
       spacing,
       radius,
-      typography,
     ]
   );
 

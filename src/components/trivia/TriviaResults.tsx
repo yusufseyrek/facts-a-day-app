@@ -1,18 +1,5 @@
 import React from 'react';
-import { Pressable, View, ScrollView } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import {
-  Timer,
-  Flame,
-  Check,
-  X,
-  ChevronRight,
-  Star,
-  ChevronLeft,
-  Calendar,
-} from '@tamagui/lucide-icons';
+import { Pressable, ScrollView,View } from 'react-native';
 import Animated, {
   FadeInDown,
   FadeInUp,
@@ -21,13 +8,27 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { YStack, XStack } from 'tamagui';
 
-import { Text, FONT_FAMILIES } from '../Typography';
+import {
+  Calendar,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Flame,
+  Star,
+  Timer,
+  X,
+} from '@tamagui/lucide-icons';
+import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { XStack,YStack } from 'tamagui';
+
 import { indexToAnswer } from '../../services/trivia';
 import { hexColors } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
+import { FONT_FAMILIES,Text } from '../Typography';
 
 import type { QuestionWithFact, StoredAnswer } from '../../services/database';
 
@@ -396,8 +397,8 @@ function isStoredAnswer(answer: string | StoredAnswer | undefined): answer is St
 export function TriviaResults({
   correctAnswers,
   totalQuestions,
-  wrongCount,
-  unansweredCount,
+  wrongCount: _wrongCount,
+  unansweredCount: _unansweredCount,
   timeExpired,
   elapsedTime,
   bestStreak,
@@ -418,7 +419,6 @@ export function TriviaResults({
   const { screenWidth, typography, config, iconSizes, spacing, radius, media } = useResponsive();
   const statsIconSize = media.topicCardSize * 0.55;
   const headerBtnSize = media.topicCardSize * 0.45;
-  const badgeIconSize = iconSizes.lg;
 
   // Calculate card width: 45% for tablets (two cards side by side), 85% for phones
   const cardWidth = screenWidth * config.cardWidthMultiplier;

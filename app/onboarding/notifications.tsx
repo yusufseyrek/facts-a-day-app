@@ -1,22 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Platform, ScrollView, Alert, Animated, Easing } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import * as Notifications from 'expo-notifications';
-import { useRouter } from 'expo-router';
+import React, { useEffect, useRef,useState } from 'react';
+import { Alert, Animated, Easing, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { styled } from '@tamagui/core';
 import { Bell } from '@tamagui/lucide-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { YStack, XStack } from 'tamagui';
+import * as Notifications from 'expo-notifications';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { XStack,YStack } from 'tamagui';
 
-import { Text, Button, ProgressIndicator, MultiTimePicker } from '../../src/components';
+import { Button, MultiTimePicker,ProgressIndicator, Text } from '../../src/components';
 import { LAYOUT } from '../../src/config/app';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
+  Screens,
   trackOnboardingNotificationsEnabled,
   trackOnboardingNotificationsSkipped,
   trackScreenView,
-  Screens,
 } from '../../src/services/analytics';
 import * as notificationService from '../../src/services/notifications';
 import { hexColors, useTheme } from '../../src/theme';
@@ -60,7 +61,7 @@ export default function NotificationsScreen() {
   const [isScheduling, setIsScheduling] = useState(false);
 
   // Responsive sizing - hook handles tablet detection
-  const { typography, iconSizes, spacing, radius } = useResponsive();
+  const { iconSizes, spacing, radius } = useResponsive();
 
   // Enter animations
   const progressOpacity = useRef(new Animated.Value(0)).current;

@@ -1,13 +1,14 @@
 import React from 'react';
 import { Pressable } from 'react-native';
-import { Check, ChevronRight } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { YStack, XStack } from 'tamagui';
 
-import { Text, FONT_FAMILIES } from '../Typography';
+import { Check, ChevronRight } from '@tamagui/lucide-icons';
+import { XStack,YStack } from 'tamagui';
+
 import { hexColors } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
+import { FONT_FAMILIES,Text } from '../Typography';
 
 import type { CategoryWithProgress } from '../../services/trivia';
 
@@ -25,7 +26,6 @@ export function CategoryQuestCard({ category, isDark, onPress, index }: Category
   const isComplete = category.isComplete;
 
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
-  const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;

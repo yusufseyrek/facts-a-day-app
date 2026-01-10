@@ -1,23 +1,24 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useCallback, useRef,useState } from 'react';
 import {
-  ScrollView,
-  RefreshControl,
   ActivityIndicator,
-  Pressable,
-  View,
   Animated as RNAnimated,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  View,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
+import Animated, { FadeIn, FadeInDown,FadeInUp } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { useFocusEffect } from '@react-navigation/native';
 import { ChevronLeft } from '@tamagui/lucide-icons';
-import Animated, { FadeIn, FadeInUp, FadeInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { YStack, XStack } from 'tamagui';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { XStack,YStack } from 'tamagui';
 
-import { Text, FONT_FAMILIES } from '../../../src/components/Typography';
+import { FONT_FAMILIES,Text } from '../../../src/components/Typography';
 import { useTranslation } from '../../../src/i18n';
-import { trackScreenView, Screens } from '../../../src/services/analytics';
+import { Screens,trackScreenView } from '../../../src/services/analytics';
 import * as triviaService from '../../../src/services/trivia';
 import { hexColors, useTheme } from '../../../src/theme';
 import { getLucideIcon } from '../../../src/utils/iconMapper';
@@ -83,7 +84,7 @@ function CategoryProgressBar({
   isDark: boolean;
   index: number;
 }) {
-  const { typography, iconSizes, spacing } = useResponsive();
+  const { typography, spacing } = useResponsive();
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const trackColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const progressColor =
@@ -135,7 +136,7 @@ function CategoryProgressBar({
 export default function CategoriesAccuracyScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, iconSizes, spacing, radius, media } = useResponsive();
+  const { spacing, radius, media } = useResponsive();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';

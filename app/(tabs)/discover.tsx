@@ -1,20 +1,21 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { RefreshControl, ActivityIndicator, TextInput, ScrollView, Pressable } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo,useRef, useState } from 'react';
+import { ActivityIndicator, Pressable,RefreshControl, ScrollView, TextInput } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+
 import { useFocusEffect } from '@react-navigation/native';
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { styled, View } from '@tamagui/core';
 import { Search, X } from '@tamagui/lucide-icons';
-import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { YStack, XStack } from 'tamagui';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { XStack,YStack } from 'tamagui';
 
 import {
-  Text,
-  EmptyState,
-  ScreenContainer,
-  FONT_FAMILIES,
   ContentContainer,
+  EmptyState,
+  FONT_FAMILIES,
+  ScreenContainer,
+  Text,
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT } from '../../src/config/app';
@@ -22,10 +23,10 @@ import { FACT_FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/f
 import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
-  trackSearch,
+  Screens,
   trackCategoryBrowse,
   trackScreenView,
-  Screens,
+  trackSearch,
 } from '../../src/services/analytics';
 import { checkAndRequestReview } from '../../src/services/appReview';
 import * as database from '../../src/services/database';
@@ -37,7 +38,7 @@ import { getContrastColor } from '../../src/utils/colors';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
 
-import type { FactWithRelations, Category } from '../../src/services/database';
+import type { Category,FactWithRelations } from '../../src/services/database';
 
 // Device breakpoints
 
@@ -218,7 +219,7 @@ function DiscoverScreen() {
           resultsCount: results.length,
           categoryFilter: categorySlug || undefined,
         });
-      } catch (error) {
+      } catch {
         // Ignore search errors
         setSearchResults([]);
       } finally {
@@ -255,7 +256,7 @@ function DiscoverScreen() {
         })
       );
       setCategoryFactsCounts(counts);
-    } catch (error) {
+    } catch {
       // Ignore category loading errors
     } finally {
       setIsLoadingCategories(false);
@@ -314,7 +315,7 @@ function DiscoverScreen() {
         const facts = await database.getFactsByCategory(selectedCategorySlug, locale);
         setCategoryFacts(facts);
         prefetchFactImagesWithLimit(facts);
-      } catch (error) {
+      } catch {
         // Ignore refresh errors
       }
     }
@@ -360,7 +361,7 @@ function DiscoverScreen() {
           category: categorySlug,
           factsCount: facts.length,
         });
-      } catch (error) {
+      } catch {
         // Ignore fact loading errors
         setCategoryFacts([]);
       } finally {

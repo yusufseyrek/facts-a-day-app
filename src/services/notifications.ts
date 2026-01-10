@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Notifications from 'expo-notifications';
@@ -252,7 +253,7 @@ async function processInBatches<T, R>(
   return results;
 }
 
-export async function preloadUpcomingNotificationImages(locale: SupportedLocale): Promise<number> {
+export async function preloadUpcomingNotificationImages(_locale: SupportedLocale): Promise<number> {
   if (Platform.OS !== 'ios') {
     return 0;
   }
@@ -915,7 +916,6 @@ export async function scheduleNotifications(
     const slots = generateTimeSlots(times, facts.length);
 
     // Step 4: Assign facts to slots in DB
-    let assignedCount = 0;
     for (let i = 0; i < facts.length && i < slots.length; i++) {
       try {
         await database.markFactAsScheduled(
@@ -923,7 +923,6 @@ export async function scheduleNotifications(
           slots[i].date.toISOString(),
           null // notification_id will be set by syncOsWithDb
         );
-        assignedCount++;
       } catch {
         // Skip on error
       }

@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TamaguiProvider, Theme } from '@tamagui/core';
+
 import { config } from './config';
 
 export type ThemeMode = 'light' | 'dark' | 'system';

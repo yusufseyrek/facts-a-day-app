@@ -1,27 +1,28 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { FlatList, RefreshControl, ActivityIndicator, useWindowDimensions } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
+import React, { useCallback, useMemo, useRef,useState } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, useWindowDimensions } from 'react-native';
+
 import { useFocusEffect } from '@react-navigation/native';
 import { Star } from '@tamagui/lucide-icons';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { YStack } from 'tamagui';
 
 import {
+  ContentContainer,
   EmptyState,
+  LoadingContainer,
   ScreenContainer,
   ScreenHeader,
-  ContentContainer,
-  LoadingContainer,
   useIconColor,
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import {
-  FACT_FLAT_LIST_SETTINGS,
   createFlatListGetItemLayout,
+  FACT_FLAT_LIST_SETTINGS,
 } from '../../src/config/factListSettings';
 import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { trackScreenView, Screens } from '../../src/services/analytics';
+import { Screens,trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
@@ -92,7 +93,7 @@ export default function FavoritesScreen() {
 
         const favoritedFacts = await database.getFavorites(locale);
         setFavorites(favoritedFacts);
-      } catch (error) {
+      } catch {
         // Ignore favorites loading errors
       } finally {
         setInitialLoading(false);

@@ -1,45 +1,46 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useCallback, useRef,useState } from 'react';
 import {
-  ScrollView,
-  RefreshControl,
   ActivityIndicator,
-  Pressable,
-  View,
   Animated as RNAnimated,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  View,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
+import Animated, { FadeIn, FadeInUp, SlideInRight } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { useFocusEffect } from '@react-navigation/native';
 import {
-  Gamepad2,
-  Trophy,
-  CheckCircle,
   Calendar,
-  Shuffle,
-  Hash,
+  CheckCircle,
   ChevronLeft,
   ChevronRight,
+  Gamepad2,
+  Hash,
+  Shuffle,
+  Trophy,
 } from '@tamagui/lucide-icons';
-import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { YStack, XStack } from 'tamagui';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { XStack,YStack } from 'tamagui';
 
-import { Text, FONT_FAMILIES } from '../../src/components/Typography';
-import { TriviaResults, getTriviaModeBadge } from '../../src/components/trivia';
+import { getTriviaModeBadge,TriviaResults } from '../../src/components/trivia';
+import { FONT_FAMILIES,Text } from '../../src/components/Typography';
 import { DISPLAY_LIMITS } from '../../src/config/app';
 import { useTranslation } from '../../src/i18n';
-import { trackScreenView, Screens, trackTriviaResultsView } from '../../src/services/analytics';
+import { Screens, trackScreenView, trackTriviaResultsView } from '../../src/services/analytics';
 import * as triviaService from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
 
+import type { TriviaMode } from '../../src/services/analytics';
 import type {
-  TriviaStats,
   CategoryWithProgress,
   TriviaSessionWithCategory,
+  TriviaStats,
 } from '../../src/services/trivia';
-import type { TriviaMode } from '../../src/services/analytics';
 
 // View All Button with press animation
 function ViewAllButton({
@@ -148,7 +149,6 @@ function BackButton({ onPress, primaryColor }: { onPress: () => void; primaryCol
 // Metric Card Component
 function MetricCard({
   icon,
-  iconColor,
   iconBgColor,
   label,
   value,
@@ -156,7 +156,6 @@ function MetricCard({
   isDark,
 }: {
   icon: React.ReactNode;
-  iconColor: string;
   iconBgColor: string;
   label: string;
   value: string | number;
@@ -284,7 +283,6 @@ function MetricsGrid({
             <MetricCard
               key={index}
               icon={<metric.Icon size={iconSizes.sm} color={metric.color} />}
-              iconColor={metric.color}
               iconBgColor={`${metric.color}20`}
               label={metric.label}
               value={metric.value}
@@ -306,7 +304,7 @@ function CategoryProgressBar({
   category: CategoryWithProgress;
   isDark: boolean;
 }) {
-  const { typography, spacing, radius } = useResponsive();
+  const { typography, spacing } = useResponsive();
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const trackColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const progressColor =
@@ -365,7 +363,7 @@ function SessionCard({
   dateFormat?: 'time' | 'relative';
   testID?: string;
 }) {
-  const { typography, iconSizes, spacing, radius, media } = useResponsive();
+  const { iconSizes, spacing, radius, media } = useResponsive();
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
@@ -512,7 +510,7 @@ export default function PerformanceScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
-  const { typography, config, iconSizes, spacing, radius, media } = useResponsive();
+  const { config, iconSizes, spacing, radius, media } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -658,11 +656,6 @@ export default function PerformanceScreen() {
     .filter((c) => c.total > 0 && c.accuracy > 0)
     .sort((a, b) => b.accuracy - a.accuracy)
     .slice(0, DISPLAY_LIMITS.MAX_CATEGORIES);
-
-  // All categories with accuracy > 0, sorted high to low (for modal)
-  const allCategoriesWithAccuracy = categories
-    .filter((c) => c.total > 0 && c.accuracy > 0)
-    .sort((a, b) => b.accuracy - a.accuracy);
 
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>

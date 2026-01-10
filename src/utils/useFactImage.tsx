@@ -13,9 +13,10 @@
  * 3. Download with App Check only if not cached
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { downloadImageWithAppCheck } from '../services/images';
+import { useCallback, useEffect, useMemo,useRef, useState } from 'react';
+
 import { IMAGE_MEMORY_CACHE } from '../config/images';
+import { downloadImageWithAppCheck } from '../services/images';
 
 interface UseFactImageResult {
   /** The local image URI (null if not yet downloaded or download failed) */

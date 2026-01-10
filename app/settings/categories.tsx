@@ -1,18 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ScrollView, ActivityIndicator, Alert, Pressable, Animated, Easing } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { View, styled } from '@tamagui/core';
-import { ArrowLeft } from '@tamagui/lucide-icons';
+import React, { useEffect, useRef,useState } from 'react';
+import { ActivityIndicator, Alert, Animated, Easing,Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { styled,View } from '@tamagui/core';
+import { ArrowLeft } from '@tamagui/lucide-icons';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { Text, Button, CategoryCard, SuccessToast } from '../../src/components';
+import { Button, CategoryCard, SuccessToast,Text } from '../../src/components';
 import { useTranslation } from '../../src/i18n';
 import {
+  Screens,
   trackCategoriesUpdate,
   trackScreenView,
-  Screens,
   updateCategoriesProperty,
 } from '../../src/services/analytics';
 import * as db from '../../src/services/database';

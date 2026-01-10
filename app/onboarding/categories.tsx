@@ -1,19 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ScrollView, ActivityIndicator, Animated, Easing } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { View, styled } from '@tamagui/core';
+import React, { useEffect, useRef,useState } from 'react';
+import { ActivityIndicator, Animated, Easing,ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { styled,View } from '@tamagui/core';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { Text, Button, ProgressIndicator, CategoryCard } from '../../src/components';
+import { Button, CategoryCard,ProgressIndicator, Text } from '../../src/components';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
-  trackOnboardingStart,
-  trackOnboardingCategoriesSelected,
-  trackScreenView,
   Screens,
+  trackOnboardingCategoriesSelected,
+  trackOnboardingStart,
+  trackScreenView,
 } from '../../src/services/analytics';
 import * as db from '../../src/services/database';
 import { hexColors, useTheme } from '../../src/theme';

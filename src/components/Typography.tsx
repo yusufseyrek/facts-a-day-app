@@ -1,6 +1,7 @@
 import React from 'react';
 import { TextStyle } from 'react-native';
-import { Text as TamaguiText, GetProps } from '@tamagui/core';
+
+import { GetProps,Text as TamaguiText } from '@tamagui/core';
 
 import { useResponsive } from '../utils/useResponsive';
 

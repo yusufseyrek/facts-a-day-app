@@ -1,4 +1,5 @@
 import { Dimensions } from 'react-native';
+
 import { LAYOUT } from '../config/app';
 
 // Use centralized layout constants

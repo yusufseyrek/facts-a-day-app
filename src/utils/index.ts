@@ -1,13 +1,13 @@
 export { openInAppBrowser } from './browser';
 export { getContrastColor, hexToRgba } from './colors';
-export { useResponsive } from './useResponsive';
 export {
-  typography,
-  spacing,
+  getIconSizes,
+  getSpacing,
+  getTypography,
   iconSizes,
   isTabletDevice,
-  getTypography,
-  getSpacing,
-  getIconSizes,
+  spacing,
+  typography,
 } from './responsive';
 export { useFactImage } from './useFactImage';
+export { useResponsive } from './useResponsive';

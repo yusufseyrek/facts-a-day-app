@@ -1,24 +1,25 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { ScrollView, RefreshControl, ActivityIndicator, Pressable, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
-import { Brain, Flame, Sparkles, ArrowRight } from '@tamagui/lucide-icons';
+import React, { useCallback, useEffect, useRef,useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { YStack, XStack } from 'tamagui';
+
+import { useFocusEffect } from '@react-navigation/native';
+import { ArrowRight,Brain, Flame, Sparkles } from '@tamagui/lucide-icons';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { XStack,YStack } from 'tamagui';
 
 import {
-  ScreenContainer,
-  ScreenHeader,
   ContentContainer,
   LoadingContainer,
+  ScreenContainer,
+  ScreenHeader,
   useIconColor,
 } from '../../src/components';
-import { Text, FONT_FAMILIES } from '../../src/components/Typography';
-import { TriviaStatsHero, TriviaGridCard, TriviaIntroModal } from '../../src/components/trivia';
+import { TriviaGridCard, TriviaIntroModal,TriviaStatsHero } from '../../src/components/trivia';
+import { FONT_FAMILIES,Text } from '../../src/components/Typography';
 import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { trackScreenView, Screens } from '../../src/services/analytics';
+import { Screens,trackScreenView } from '../../src/services/analytics';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import * as triviaService from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';

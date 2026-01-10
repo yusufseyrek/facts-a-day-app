@@ -1,22 +1,24 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo,useState } from 'react';
 import {
-  Modal,
-  TextInput,
   Keyboard,
-  Platform,
-  TouchableWithoutFeedback,
   KeyboardAvoidingView,
+  Modal,
+  Platform,
   ScrollView,
+  TextInput,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { X } from '@tamagui/lucide-icons';
-import { YStack, XStack } from 'tamagui';
 
-import { Button } from './Button';
-import { Text } from './Typography';
+import { X } from '@tamagui/lucide-icons';
+import { XStack,YStack } from 'tamagui';
+
 import { useTranslation } from '../i18n';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
+
+import { Button } from './Button';
+import { Text } from './Typography';
 
 interface ReportFactModalProps {
   visible: boolean;

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
-import { InterstitialAd, AdEventType, TestIds, AdsConsent } from 'react-native-google-mobile-ads';
+import { AdEventType, AdsConsent,InterstitialAd, TestIds } from 'react-native-google-mobile-ads';
+
 import Constants from 'expo-constants';
+
 import { ADS_ENABLED } from '../../config/ads';
-import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { getAdKeywords } from '../../services/adKeywords';
+import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 
 // Get Interstitial Ad Unit ID based on platform
 const getInterstitialAdUnitId = (): string => {

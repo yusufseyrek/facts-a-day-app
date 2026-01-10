@@ -1,34 +1,34 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo,useRef, useState } from 'react';
 import { BackHandler, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { useLocalSearchParams,useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { YStack } from 'tamagui';
 
-import { Text } from '../../src/components/Typography';
 import {
-  TriviaResults,
-  TriviaGameView,
-  TriviaExitModal,
   getTriviaModeBadge,
+  TriviaExitModal,
+  TriviaGameView,
+  TriviaResults,
 } from '../../src/components/trivia';
+import { Text } from '../../src/components/Typography';
 import { useTranslation } from '../../src/i18n';
 import { showTriviaResultsInterstitial } from '../../src/services/adManager';
 import {
-  trackScreenView,
   Screens,
-  trackTriviaStart,
+  trackScreenView,
   trackTriviaComplete,
   trackTriviaExit,
+  trackTriviaStart,
 } from '../../src/services/analytics';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
-import { useResponsive } from '../../src/utils/useResponsive';
 
-import type { QuestionWithFact } from '../../src/services/database';
 import type { TriviaMode } from '../../src/services/analytics';
+import type { QuestionWithFact } from '../../src/services/database';
 
 interface TriviaGameState {
   questions: QuestionWithFact[];
@@ -42,7 +42,6 @@ interface TriviaGameState {
 export default function TriviaGameScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography } = useResponsive();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{

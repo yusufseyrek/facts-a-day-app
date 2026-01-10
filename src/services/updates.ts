@@ -5,7 +5,8 @@
  * Integrates with Firebase App Check for authenticated update requests.
  */
 
-import { Platform, Appearance } from 'react-native';
+import { Appearance, Platform } from 'react-native';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
@@ -272,7 +273,7 @@ export async function forceReloadWithVerification(): Promise<void> {
     const logs = await getNativeLogEntries(120000); // Last 2 minutes
     console.log('📦 Native logs before reload:');
     logs.forEach((l) => console.log(`📦   [${l.level}] ${l.code}: ${l.message}`));
-  } catch (e) {
+  } catch {
     console.log('📦 Could not read native logs');
   }
 
