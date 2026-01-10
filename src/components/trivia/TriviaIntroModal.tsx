@@ -57,7 +57,7 @@ export function TriviaIntroModal({
 }: TriviaIntroModalProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { typography, iconSizes, spacing, radius, media, triviaModalWidth } = useResponsive();
+  const { typography, iconSizes, spacing, radius, media, maxModalWidth } = useResponsive();
   const isDark = theme === 'dark';
   const iconContainerSize = media.topicCardSize * 0.55;
   const smallIconSize = media.topicCardSize * 0.4;
@@ -148,8 +148,8 @@ export function TriviaIntroModal({
         <Animated.View 
           entering={FadeInUp.duration(300).springify()}
           style={{ 
-            width: triviaModalWidth, 
-            maxWidth: triviaModalWidth,
+            width: maxModalWidth, 
+            maxWidth: maxModalWidth,
             // Shadow for iOS
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 12 },

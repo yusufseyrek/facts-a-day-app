@@ -60,7 +60,6 @@ export const config = {
  * Tablet values are automatically scaled by 1.5x.
  */
 const phoneMedia = {
-  modalMaxWidth: 340,
   buttonHeight: 56,
   topicCardSize: 80,
   colorSwatchSize: 72,
@@ -320,7 +319,7 @@ export const getBorderWidths = (screenWidth: number) => {
  * ~90% on phones, 90% of tablet breakpoint on tablets.
  * @param screenWidth - Current screen width
  */
-export const getTriviaModalWidth = (screenWidth: number) => {
+export const getMaxModalWidth = (screenWidth: number) => {
   return isTabletDevice(screenWidth) 
     ? TABLET_BREAKPOINT * 0.9 
     : screenWidth * 0.9;

@@ -40,7 +40,7 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
   const { theme, themeMode, setThemeMode } = useTheme();
   const colors = hexColors[theme];
   const { t } = useTranslation();
-  const { spacing, radius, iconSizes } = useResponsive();
+  const { spacing, radius, iconSizes, maxModalWidth } = useResponsive();
 
   // Internal state to keep modal mounted during exit animation
   const [showContent, setShowContent] = useState(false);
@@ -102,9 +102,6 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
       setThemeMode(mode);
     }, 50);
   };
-
-  const screenWidth = Dimensions.get('window').width;
-  const modalWidth = screenWidth * 0.85;
 
   const dynamicStyles = useMemo(() => ({
     modalContainer: {
@@ -172,7 +169,7 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
                 <View
                   style={[
                     dynamicStyles.modalContainer,
-                    { backgroundColor: colors.background, width: modalWidth },
+                    { backgroundColor: colors.background, width: maxModalWidth },
                   ]}
                 >
                 <View

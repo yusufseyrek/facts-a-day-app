@@ -31,21 +31,7 @@ export function TriviaExitModal({
   exitText,
 }: TriviaExitModalProps) {
   // Get responsive values for device type
-  const { screenWidth, typography, spacing, radius, iconSizes, media } = useResponsive();
-  
-  // Responsive sizing
-  const modalMaxWidth = media.modalMaxWidth;
-  const iconSize = iconSizes.heroLg;
-  const iconInnerSize = iconSizes.xl;
-  const titleFontSize = typography.fontSize.title;
-  const messageFontSize = typography.fontSize.caption;
-  const messageLineHeight = typography.lineHeight.caption;
-  const buttonFontSize = typography.fontSize.body;
-  const closeIconSize = iconSizes.md;
-  const messageIconSize = iconSizes.md;
-  const buttonIconSize = iconSizes.sm;
-  const padding = spacing.lg;
-  const buttonPadding = spacing.md;
+  const { screenWidth, typography, spacing, radius, iconSizes, media, maxModalWidth } = useResponsive();
   
   // Colors matching the app's design system
   const bgColor = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
@@ -103,7 +89,7 @@ export function TriviaExitModal({
           entering={FadeInUp.duration(300).springify()}
           style={{ 
             width: screenWidth - spacing.md * 2, 
-            maxWidth: modalMaxWidth,
+            maxWidth: maxModalWidth,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 12 },
             shadowOpacity: isDark ? 0.5 : 0.25,
@@ -124,32 +110,31 @@ export function TriviaExitModal({
                 padding: spacing.xs,
               }}
             >
-              <X size={closeIconSize} color={secondaryTextColor} />
+              <X size={iconSizes.md} color={secondaryTextColor} />
             </Pressable>
 
             {/* Header with Icon */}
             <YStack 
               paddingTop={spacing.xl} 
-              paddingHorizontal={padding}
+              paddingHorizontal={spacing.lg}
               paddingBottom={spacing.md}
               alignItems="center"
               gap={spacing.md}
             >
               {/* Warning Icon */}
               <YStack
-                width={iconSize}
-                height={iconSize}
-                borderRadius={iconSize / 2}
+                width={iconSizes.heroLg}
+                height={iconSizes.heroLg}
+                borderRadius={iconSizes.heroLg / 2}
                 backgroundColor={warningBgColor}
                 justifyContent="center"
                 alignItems="center"
               >
-                <AlertTriangle size={iconInnerSize} color={warningColor} strokeWidth={2} />
+                <AlertTriangle size={iconSizes.xl} color={warningColor} strokeWidth={2} />
               </YStack>
 
               {/* Title */}
               <Text.Title
-                fontSize={titleFontSize}
                 color={textColor}
                 textAlign="center"
               >
@@ -158,12 +143,12 @@ export function TriviaExitModal({
             </YStack>
 
             {/* Divider */}
-            <YStack height={1} backgroundColor={borderColor} marginHorizontal={padding} />
+            <YStack height={1} backgroundColor={borderColor} marginHorizontal={spacing.lg} />
 
             {/* Message Box */}
             <YStack 
-              paddingHorizontal={padding}
-              paddingVertical={padding}
+              paddingHorizontal={spacing.lg}
+              paddingVertical={spacing.lg}
             >
               <XStack 
                 backgroundColor={surfaceColor}
@@ -172,22 +157,20 @@ export function TriviaExitModal({
                 alignItems="center"
                 gap={spacing.sm}
               >
-                <DoorOpen size={messageIconSize} color={errorColor} />
-                <Text.Caption
+                <DoorOpen size={iconSizes.lg} margin={spacing.xs} color={errorColor} />
+                <Text.Body
                   flex={1}
-                  fontSize={messageFontSize}
                   color={secondaryTextColor}
-                  lineHeight={messageLineHeight}
                 >
                   {message}
-                </Text.Caption>
+                </Text.Body>
               </XStack>
             </YStack>
 
             {/* Buttons */}
             <XStack 
-              paddingHorizontal={padding} 
-              paddingBottom={padding}
+              paddingHorizontal={spacing.lg} 
+              paddingBottom={spacing.lg}
               gap={spacing.md}
             >
               {/* Cancel Button - Outlined */}
@@ -205,13 +188,13 @@ export function TriviaExitModal({
                   backgroundColor="transparent"
                   borderWidth={1.5}
                   borderColor={borderColor}
-                  paddingVertical={buttonPadding}
+                  paddingVertical={spacing.md}
                   borderRadius={radius.md}
                   alignItems="center"
                   justifyContent="center"
                 >
                   <Text.Label
-                    fontSize={buttonFontSize}
+                    fontSize={typography.fontSize.body}
                     fontFamily={FONT_FAMILIES.semibold}
                     color={textColor}
                   >
@@ -235,15 +218,15 @@ export function TriviaExitModal({
               >
                 <XStack
                   backgroundColor={errorColor}
-                  paddingVertical={buttonPadding}
+                  paddingVertical={spacing.md}
                   borderRadius={radius.md}
                   alignItems="center"
                   justifyContent="center"
                   gap={spacing.xs}
                 >
-                  <DoorOpen size={buttonIconSize} color="#FFFFFF" />
+                  <DoorOpen size={iconSizes.sm} color="#FFFFFF" />
                   <Text.Label
-                    fontSize={buttonFontSize}
+                    fontSize={typography.fontSize.body}
                     fontFamily={FONT_FAMILIES.semibold}
                     color="#FFFFFF"
                   >
