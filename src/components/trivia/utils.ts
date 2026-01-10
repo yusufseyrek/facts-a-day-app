@@ -7,7 +7,7 @@ export interface TriviaModeBadge {
   color: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 type TranslationFunction = (
   key: TranslationKeys | any,
   options?: Record<string, string | number>

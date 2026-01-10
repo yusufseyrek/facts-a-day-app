@@ -19,7 +19,7 @@ import { useResponsive } from '../../utils/useResponsive';
 
 import type { QuestionWithFact } from '../../services/database';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 type TranslationFunction = (key: any, params?: any) => string;
 
 export interface TriviaGameViewProps {

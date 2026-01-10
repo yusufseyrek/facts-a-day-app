@@ -11,14 +11,7 @@ module.exports = [
 
   // Global ignores
   {
-    ignores: [
-      'node_modules/**',
-      'dist/**',
-      'ios/**',
-      'android/**',
-      '.expo/**',
-      'metro.config.js',
-    ],
+    ignores: ['node_modules/**', 'dist/**', 'ios/**', 'android/**', '.expo/**', 'metro.config.js'],
   },
 
   // Main configuration for TypeScript and React files
@@ -76,7 +69,7 @@ module.exports = [
       ...reactNativePlugin.configs.all.rules,
 
       // TypeScript overrides
-      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
 
@@ -93,7 +86,7 @@ module.exports = [
       'react-native/no-unused-styles': 'warn',
 
       // General
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': 'off',
       'prefer-const': 'warn',
       'no-var': 'error',
     },

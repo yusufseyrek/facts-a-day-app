@@ -33,7 +33,7 @@ import type { QuestionWithFact, StoredAnswer } from '../../services/database';
 
 const CARD_GAP = 12;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 type TranslationFunction = (key: any, params?: any) => string;
 
 export interface TriviaResultsProps {

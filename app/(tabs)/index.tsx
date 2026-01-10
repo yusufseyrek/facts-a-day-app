@@ -113,7 +113,7 @@ function HomeScreen() {
   );
 
   // Scroll to top handler
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const listRef = useRef<any>(null);
   const scrollToTop = useCallback(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true });

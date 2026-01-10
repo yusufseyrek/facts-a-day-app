@@ -164,9 +164,9 @@ function DiscoverScreen() {
   const [isLoadingCategoryFacts, setIsLoadingCategoryFacts] = useState(false);
 
   // Scroll to top refs
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const searchListRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const categoryListRef = useRef<any>(null);
   const categoryGridRef = useRef<ScrollView>(null);
 
