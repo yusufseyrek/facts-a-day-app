@@ -1,5 +1,5 @@
 /**
- * Centralized list performance settings for FlashList and FlatList components
+ * Centralized list performance settings for FlashList components
  * These settings are optimized for smooth scrolling with proper virtualization
  */
 
@@ -10,9 +10,9 @@ export const PREFETCH_SETTINGS = {
   /** Maximum size of prefetch tracking set before clearing (prevents memory leaks) */
   maxCacheSize: 100,
   /** Maximum concurrent image downloads (prevents network saturation) */
-  maxConcurrent: 3,
-  /** Maximum images to prefetch initially when loading a list (first visible items) */
-  maxInitialPrefetch: 3,
+  maxConcurrent: 5,
+  /** Maximum images to prefetch initially when loading a list (covers ~2 screens) */
+  maxInitialPrefetch: 8,
 } as const;
 
 /**
@@ -42,34 +42,13 @@ export const FLASH_LIST_ITEM_TYPES = {
 export const FLASH_LIST_SETTINGS = {
   /** Estimated item size for FlashList layout calculations (average card height ~220px) */
   estimatedItemSize: 220,
-  /** Draw distance determines how far ahead FlashList renders items (in pixels) */
-  drawDistance: 500,
+  /** Draw distance determines how far ahead FlashList renders items (~3-4 card heights) */
+  drawDistance: 800,
   /** Show vertical scroll indicator */
   showsVerticalScrollIndicator: false,
   /** Bounces at the end of content */
   bounces: true,
 } as const;
-
-/** @deprecated Use FLASH_LIST_SETTINGS instead */
-export const FACT_FLASH_LIST_SETTINGS = FLASH_LIST_SETTINGS;
-
-/**
- * Settings for FlatList components (for screens not yet migrated to FlashList)
- */
-export const FLAT_LIST_SETTINGS = {
-  initialNumToRender: 6,
-  maxToRenderPerBatch: 4,
-  windowSize: 5,
-  removeClippedSubviews: true,
-  updateCellsBatchingPeriod: 50,
-  scrollEventThrottle: 16,
-  bounces: true,
-  decelerationRate: 'fast' as const,
-  showsVerticalScrollIndicator: false,
-} as const;
-
-/** @deprecated Use FLAT_LIST_SETTINGS instead */
-export const FACT_FLAT_LIST_SETTINGS = FLAT_LIST_SETTINGS;
 
 /**
  * Calculate ImageFactCard height based on screen width.
@@ -82,23 +61,4 @@ export const getImageCardHeight = (width: number, isTabletLayout: boolean = fals
   const margin = isTabletLayout ? CARD_HEIGHTS.cardMarginTablet : CARD_HEIGHTS.cardMargin;
   const cardWidth = isTabletLayout ? Math.min(width, 600) : width;
   return cardWidth * CARD_HEIGHTS.imageCardAspectRatio + margin;
-};
-
-/**
- * Create getItemLayout function for FlatList with ImageFactCards.
- * This enables the list to pre-calculate item positions for better scroll performance.
- *
- * NOTE: Only use this for FlatList, NOT SectionList (which has complex indexing with headers).
- *
- * @param width Screen width for calculating card height
- * @param isTabletLayout Whether tablet layout is being used
- */
-export const createFlatListGetItemLayout = (width: number, isTabletLayout: boolean = false) => {
-  const itemHeight = getImageCardHeight(width, isTabletLayout);
-
-  return (_data: unknown, index: number) => ({
-    length: itemHeight,
-    offset: itemHeight * index,
-    index,
-  });
 };

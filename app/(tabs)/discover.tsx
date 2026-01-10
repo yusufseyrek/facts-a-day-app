@@ -19,7 +19,7 @@ import {
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT } from '../../src/config/app';
-import { FACT_FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
+import { FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
 import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
@@ -739,7 +739,7 @@ function DiscoverScreen() {
             renderItem={renderSearchItem}
             refreshControl={searchRefreshControl}
             overrideItemLayout={overrideItemLayout}
-            {...FACT_FLASH_LIST_SETTINGS}
+            {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
       );
@@ -785,7 +785,7 @@ function DiscoverScreen() {
             renderItem={renderCategoryItem}
             refreshControl={categoryRefreshControl}
             overrideItemLayout={overrideItemLayout}
-            {...FACT_FLASH_LIST_SETTINGS}
+            {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
       );

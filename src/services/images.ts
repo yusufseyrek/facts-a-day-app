@@ -35,6 +35,10 @@ const FACT_IMAGES_DIR = `${FileSystem.documentDirectory}${IMAGE_CACHE.FACT_IMAGE
 // This prevents multiple components from hitting the file system for the same fact
 const fileExistenceCache = new Map<number, { uri: string; checkedAt: number }>();
 
+// Registry to track the actual file extension for each fact (avoids extension guessing)
+// Populated on download success, used for faster cache checks on subsequent sessions
+const knownExtensions = new Map<number, string>();
+
 // Track pending file existence checks to prevent duplicate async operations
 const pendingExistenceChecks = new Map<number, Promise<string | null>>();
 
@@ -184,38 +188,70 @@ export async function getCachedFactImage(factId: number): Promise<string | null>
 
 /**
  * Internal: Actually performs the file system check for cached image
- * Uses sequential checks with early return for best performance
- * (most images are jpg or webp, so we check those first)
+ * Uses known extension for single-call lookup, falls back to parallel check
  */
 async function performFileExistenceCheck(factId: number): Promise<string | null> {
   try {
-    // No need to ensure directory exists - if it doesn't, file checks will simply fail
-    // Check for common image extensions - ordered by frequency for early return
-    // jpg and webp are most common, so check them first
-    const extensions = ['jpg', 'webp', 'jpeg', 'png', 'gif'];
-
-    for (const ext of extensions) {
-      const localUri = `${FACT_IMAGES_DIR}fact-${factId}.${ext}`;
-      const fileInfo = await FileSystem.getInfoAsync(localUri);
-
-      if (fileInfo.exists) {
-        // Check if cache is still valid (7 days)
-        if (fileInfo.modificationTime) {
-          const ageMs = Date.now() - fileInfo.modificationTime * 1000;
-
-          if (ageMs > IMAGE_CACHE.MAX_AGE_MS) {
-            // Delete expired file in background, don't wait
-            FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
-            continue;
+    // Fast path: check known extension first (single file system call)
+    const knownExt = knownExtensions.get(factId);
+    if (knownExt) {
+      const localUri = `${FACT_IMAGES_DIR}fact-${factId}.${knownExt}`;
+      try {
+        const fileInfo = await FileSystem.getInfoAsync(localUri);
+        if (fileInfo.exists) {
+          // Check if cache is still valid (7 days)
+          if (fileInfo.modificationTime) {
+            const ageMs = Date.now() - fileInfo.modificationTime * 1000;
+            if (ageMs > IMAGE_CACHE.MAX_AGE_MS) {
+              FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
+              knownExtensions.delete(factId);
+            } else {
+              return localUri;
+            }
+          } else {
+            return localUri;
           }
+        } else {
+          // File no longer exists, remove from registry
+          knownExtensions.delete(factId);
         }
-
-        // Valid cached image found - return immediately
-        return localUri;
+      } catch {
+        knownExtensions.delete(factId);
       }
     }
 
-    return null;
+    // Fallback: check all extensions in parallel
+    const extensions = ['jpg', 'webp', 'jpeg', 'png', 'gif'];
+    const checkResults = await Promise.all(
+      extensions.map(async (ext) => {
+        const localUri = `${FACT_IMAGES_DIR}fact-${factId}.${ext}`;
+        try {
+          const fileInfo = await FileSystem.getInfoAsync(localUri);
+
+          if (fileInfo.exists) {
+            // Check if cache is still valid (7 days)
+            if (fileInfo.modificationTime) {
+              const ageMs = Date.now() - fileInfo.modificationTime * 1000;
+
+              if (ageMs > IMAGE_CACHE.MAX_AGE_MS) {
+                // Delete expired file in background, don't wait
+                FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
+                return null;
+              }
+            }
+            // Store extension for future fast lookups
+            knownExtensions.set(factId, ext);
+            return localUri;
+          }
+        } catch {
+          // Ignore individual check errors
+        }
+        return null;
+      })
+    );
+
+    // Return first valid result (maintains extension priority order)
+    return checkResults.find((uri) => uri !== null) || null;
   } catch {
     return null;
   }
@@ -340,6 +376,9 @@ async function performImageDownload(
             // Update file existence cache so subsequent calls don't hit file system
             if (factId !== undefined) {
               fileExistenceCache.set(factId, { uri: downloadResult.uri, checkedAt: Date.now() });
+              // Store extension for faster lookups in future sessions
+              const ext = downloadResult.uri.split('.').pop() || 'jpg';
+              knownExtensions.set(factId, ext);
             }
 
             return downloadResult.uri;
@@ -377,6 +416,9 @@ async function performImageDownload(
               // Update file existence cache so subsequent calls don't hit file system
               if (factId !== undefined) {
                 fileExistenceCache.set(factId, { uri: localUri, checkedAt: Date.now() });
+                // Store extension for faster lookups in future sessions
+                const ext = localUri.split('.').pop() || 'jpg';
+                knownExtensions.set(factId, ext);
               }
 
               return localUri;
@@ -558,6 +600,7 @@ export function prefetchFactImagesWithLimit(
  */
 function clearImageMemoryCaches(): void {
   fileExistenceCache.clear();
+  knownExtensions.clear();
   pendingExistenceChecks.clear();
   pendingDownloads.clear();
   prefetchedFactIds.clear();

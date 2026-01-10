@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, RefreshControl } from 'react-native';
 
 import { useFocusEffect } from '@react-navigation/native';
+import { FlashList } from '@shopify/flash-list';
 import { Star } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -16,14 +17,12 @@ import {
   useIconColor,
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
-import {
-  createFlatListGetItemLayout,
-  FACT_FLAT_LIST_SETTINGS,
-} from '../../src/config/factListSettings';
+import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
 import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
+import { prefetchFactImagesWithLimit } from '../../src/services/images';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -70,7 +69,6 @@ export default function FavoritesScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const iconColor = useIconColor();
-  const { width } = useWindowDimensions();
   const { iconSizes } = useResponsive();
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
@@ -78,7 +76,7 @@ export default function FavoritesScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   // Scroll to top handler
-  const listRef = useRef<FlatList<FactWithRelations>>(null);
+  const listRef = useRef<any>(null);
   const scrollToTop = useCallback(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
   }, []);
@@ -93,6 +91,7 @@ export default function FavoritesScreen() {
 
         const favoritedFacts = await database.getFavorites(locale);
         setFavorites(favoritedFacts);
+        prefetchFactImagesWithLimit(favoritedFacts);
       } catch {
         // Ignore favorites loading errors
       } finally {
@@ -139,9 +138,6 @@ export default function FavoritesScreen() {
     [refreshing, handleRefresh]
   );
 
-  // Memoized getItemLayout for better scroll performance (all items have same height now)
-  const getItemLayout = useMemo(() => createFlatListGetItemLayout(width, false), [width]);
-
   // Only show loading spinner on initial load when there's no data yet
   if (initialLoading && favorites.length === 0) {
     return (
@@ -168,14 +164,13 @@ export default function FavoritesScreen() {
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <ScreenHeader icon={<Star size={iconSizes.lg} color={iconColor} />} title={t('favorites')} />
       <YStack flex={1}>
-        <FlatList
+        <FlashList
           ref={listRef}
           data={favorites}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           refreshControl={refreshControl}
-          getItemLayout={getItemLayout}
-          {...FACT_FLAT_LIST_SETTINGS}
+          {...FLASH_LIST_SETTINGS}
         />
       </YStack>
     </ScreenContainer>
