@@ -13,6 +13,7 @@ interface ButtonProps {
   variant?: 'primary' | 'secondary';
   disabled?: boolean;
   loading?: boolean;
+  accessibilityLabel?: string;
 }
 
 export function Button({
@@ -21,6 +22,7 @@ export function Button({
   variant = 'primary',
   disabled = false,
   loading = false,
+  accessibilityLabel,
 }: ButtonProps) {
   const { media, spacing, radius } = useResponsive();
 
@@ -34,6 +36,8 @@ export function Button({
 
   return (
     <View
+      role="button"
+      aria-label={accessibilityLabel || children}
       borderRadius={radius.full}
       alignItems="center"
       justifyContent="center"

@@ -120,17 +120,16 @@ export function TriviaGameView({
         justifyContent="space-between"
         position="relative"
       >
-        <Pressable 
-          onPress={() => handlePressWithHaptics(onExit)} 
-          hitSlop={12} 
+        <Pressable
+          onPress={() => handlePressWithHaptics(onExit)}
+          hitSlop={12}
           style={({ pressed }) => [
             { zIndex: 1 },
             pressed && { opacity: 0.6 }
           ]}
           testID="trivia-game-exit-button"
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Exit"
+          role="button"
+          aria-label="Exit"
         >
           <X size={iconSizes.lg} color={textColor} />
         </Pressable>
@@ -238,6 +237,7 @@ export function TriviaGameView({
           style={{ alignItems: 'center' }}
         >
           <Text.Title
+            role="heading"
             fontSize={typography.fontSize.headline}
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
@@ -258,6 +258,8 @@ export function TriviaGameView({
             {currentQuestion.fact?.id && onOpenFact && (
               <Pressable
                 onPress={() => handlePressWithHaptics(onOpenFact)}
+                role="button"
+                aria-label={t('a11y_viewFactButton')}
                 style={({ pressed }) => [
                   pressed && { opacity: 0.7 }
                 ]}
@@ -286,6 +288,8 @@ export function TriviaGameView({
               <Pressable
                 onPress={() => canUseExplanation && handlePressWithHaptics(onShowExplanation)}
                 disabled={!canUseExplanation}
+                role="button"
+                aria-label={t('a11y_showHintButton')}
                 style={({ pressed }) => [
                   pressed && canUseExplanation && { opacity: 0.7 }
                 ]}
@@ -368,6 +372,8 @@ export function TriviaGameView({
                 return (
                   <Pressable
                     key={answer}
+                    role="button"
+                    aria-label={answer === "True" ? t('a11y_trueAnswer') : t('a11y_falseAnswer')}
                     style={({ pressed }) => [
                       { flex: 1 },
                       pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
@@ -442,6 +448,8 @@ export function TriviaGameView({
                 return (
                   <Pressable
                     key={answer}
+                    role="button"
+                    aria-label={answer}
                     style={({ pressed }) => [
                       pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
                     ]}
@@ -501,9 +509,11 @@ export function TriviaGameView({
         gap={spacing.md}
       >
         {/* Previous button */}
-        <Pressable 
+        <Pressable
           onPress={() => currentQuestionIndex > 0 && handlePressWithHaptics(onPrevQuestion)}
           disabled={currentQuestionIndex === 0}
+          role="button"
+          aria-label={t('a11y_previousButton')}
           style={({ pressed }) => [
             pressed && currentQuestionIndex > 0 && { opacity: 0.8, transform: [{ scale: 0.98 }] }
           ]}
@@ -522,9 +532,11 @@ export function TriviaGameView({
         </Pressable>
         
         {/* Next button */}
-        <Pressable 
+        <Pressable
           onPress={() => !isLoadingResults && handlePressWithHaptics(onNextQuestion)}
           disabled={isLoadingResults}
+          role="button"
+          aria-label={t('a11y_nextButton')}
           style={({ pressed }) => [
             { flex: 1 },
             pressed && !isLoadingResults && { opacity: 0.8, transform: [{ scale: 0.98 }] }

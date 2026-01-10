@@ -1,5 +1,14 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Pressable, Animated, View, StyleSheet, Platform, ScrollView, TouchableOpacity } from "react-native";
+import {
+  Pressable,
+  Animated,
+  View,
+  StyleSheet,
+  Platform,
+  ScrollView,
+  TouchableOpacity,
+  AccessibilityInfo,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import { styled } from "@tamagui/core";
@@ -14,7 +23,10 @@ import { Text, FONT_FAMILIES } from "./Typography";
 import { useTranslation } from "../i18n";
 import { addCategoryKeyword } from "../services/adKeywords";
 import { trackSourceLinkClick } from "../services/analytics";
-import { getLocalNotificationImagePath, deleteNotificationImage } from "../services/notifications";
+import {
+  getLocalNotificationImagePath,
+  deleteNotificationImage,
+} from "../services/notifications";
 import { hexColors, getCategoryNeonColor, useTheme } from "../theme";
 import { openInAppBrowser } from "../utils/browser";
 import { useFactImage } from "../utils/useFactImage";
@@ -22,18 +34,12 @@ import { useResponsive } from "../utils/useResponsive";
 
 import type { FactWithRelations, Category } from "../services/database";
 
-
 interface FactModalProps {
   fact: FactWithRelations;
   onClose: () => void;
 }
 
 // Styled components without static responsive values - use inline props with useResponsive()
-const Container = styled(YStack, {
-  flex: 1,
-  backgroundColor: "$surface",
-});
-
 const HeaderTitleContainer = styled(XStack, {
   flex: 1,
   alignItems: "center",
@@ -71,11 +77,20 @@ function formatLastUpdated(dateString: string, locale: string): string {
   }
 }
 
-
 export function FactModal({ fact, onClose }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, spacing, iconSizes, isTablet, screenWidth: SCREEN_WIDTH, screenHeight: SCREEN_HEIGHT, config, radius, borderWidths } = useResponsive();
+  const {
+    typography,
+    spacing,
+    iconSizes,
+    isTablet,
+    screenWidth: SCREEN_WIDTH,
+    screenHeight: SCREEN_HEIGHT,
+    config,
+    radius,
+    borderWidths,
+  } = useResponsive();
 
   const insets = useSafeAreaInsets();
   const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
@@ -83,21 +98,22 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const scrollViewRef = useRef<ScrollView>(null);
   const currentScrollY = useRef(0);
   const [closeButtonVisible, setCloseButtonVisible] = useState(true);
-  const [titleHeight, setTitleHeight] = useState<number>(typography.lineHeight.headline); // Default to 1 line height
+  const [titleHeight, setTitleHeight] = useState<number>(
+    typography.lineHeight.headline
+  ); // Default to 1 line height
   const [containerWidth, setContainerWidth] = useState(SCREEN_WIDTH); // Actual modal width
-  
+
   // Use authenticated image with App Check - downloads and caches locally
-  const { imageUri: authenticatedImageUri, isLoading: isImageLoading } = useFactImage(
-    fact.image_url,
-    fact.id
-  );
+  const { imageUri: authenticatedImageUri, isLoading: isImageLoading } =
+    useFactImage(fact.image_url, fact.id);
 
   // Shimmer animation for loading placeholder
   const shimmerAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Show loading placeholder when we have a URL but image is still loading
-  const showImagePlaceholder = !!fact.image_url && isImageLoading && !authenticatedImageUri;
-  
+  const showImagePlaceholder =
+    !!fact.image_url && isImageLoading && !authenticatedImageUri;
+
   // Run shimmer animation when loading
   useEffect(() => {
     if (showImagePlaceholder) {
@@ -129,24 +145,26 @@ export function FactModal({ fact, onClose }: FactModalProps) {
       addCategoryKeyword(categorySlug);
     }
   }, [fact.id, fact.categoryData?.slug, fact.category]);
-  
+
   // Local notification image state - prioritize notification image if available
-  const [notificationImageUri, setNotificationImageUri] = useState<string | null>(null);
-  
+  const [notificationImageUri, setNotificationImageUri] = useState<
+    string | null
+  >(null);
+
   // Check for local notification image and use it if available, then delete it
   useEffect(() => {
     let isMounted = true;
-    
+
     const checkAndUseLocalImage = async () => {
       if (!fact.image_url) return;
-      
+
       try {
         // Check if we have a locally cached notification image
         const localImagePath = await getLocalNotificationImagePath(fact.id);
-        
+
         if (localImagePath && isMounted) {
           setNotificationImageUri(localImagePath);
-          
+
           // Delete the notification image after a short delay to ensure it's loaded
           // This prevents the image from being deleted before it's displayed
           setTimeout(async () => {
@@ -157,25 +175,27 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         // Ignore errors checking local notification image
       }
     };
-    
+
     checkAndUseLocalImage();
-    
+
     return () => {
       isMounted = false;
     };
   }, [fact.id, fact.image_url]);
-  
+
   // Use notification image if available, otherwise use authenticated image
   // IMPORTANT: Never use remote URL directly as it requires App Check headers
   const imageUri = notificationImageUri || authenticatedImageUri;
-  
+
   // Images are always square (1:1)
   // For tablets: landscape shows 50% height (more content visible), portrait shows 80% height centered
   // For phones: square (full width)
   // Use actual container width (measured via onLayout) instead of screen width for accurate sizing
   const IMAGE_WIDTH = containerWidth;
-  const IMAGE_HEIGHT = isTablet 
-    ? (isLandscape ? IMAGE_WIDTH * 0.7 : IMAGE_WIDTH * 0.8) 
+  const IMAGE_HEIGHT = isTablet
+    ? isLandscape
+      ? IMAGE_WIDTH * 0.7
+      : IMAGE_WIDTH * 0.8
     : containerWidth;
 
   const handleScroll = Animated.event(
@@ -191,10 +211,10 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         domain: extractDomain(fact.source_url),
       });
 
-      openInAppBrowser(fact.source_url, { 
+      openInAppBrowser(fact.source_url, {
         theme,
         // Translate the source URL if user's locale is not English
-        translateTo: locale !== 'en' ? locale : undefined,
+        translateTo: locale !== "en" ? locale : undefined,
       }).catch(() => {
         // Ignore URL open errors
       });
@@ -219,11 +239,14 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     if (typeof categoryForBadge === "string") {
       return getCategoryNeonColor(categoryForBadge, theme);
     }
-    return categoryForBadge.color_hex || getCategoryNeonColor(categoryForBadge.slug, theme);
+    return (
+      categoryForBadge.color_hex ||
+      getCategoryNeonColor(categoryForBadge.slug, theme)
+    );
   }, [categoryForBadge, theme]);
 
   const hasImage = !!imageUri;
-  
+
   // Calculate dynamic header height first (needed for transition calculations)
   const basePaddingTop = Platform.OS === "ios" ? spacing.xl : insets.top;
   const basePaddingBottom = spacing.xl;
@@ -233,7 +256,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
   // Header background appears when image starts to be covered (for images) or early for no image
   const HEADER_BG_TRANSITION = hasImage ? IMAGE_HEIGHT - headerHeight : 100;
-  
+
   // Track scroll position for gesture handling
   React.useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -249,7 +272,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
       const threshold = HEADER_BG_TRANSITION * 0.95;
       const initialValue = (scrollY as any)._value || 0;
       setCloseButtonVisible(initialValue < threshold);
-      
+
       const listener = scrollY.addListener(({ value }) => {
         setCloseButtonVisible(value < threshold);
       });
@@ -274,18 +297,26 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     outputRange: [-50, 0, centeredTranslateY], // At transition, show center portion
     extrapolate: "clamp",
   });
-  
+
   // Body image opacity - hides instantly when header background appears (no fade)
   // Use very small epsilon to create instant cutoff without fade
   const bodyImageOpacity = scrollY.interpolate({
-    inputRange: [0, Math.max(0, HEADER_BG_TRANSITION - 0.01), HEADER_BG_TRANSITION],
+    inputRange: [
+      0,
+      Math.max(0, HEADER_BG_TRANSITION - 0.01),
+      HEADER_BG_TRANSITION,
+    ],
     outputRange: [1, 1, 0],
     extrapolate: "clamp",
   });
 
   // Header container opacity - appears instantly when header background should show
   const headerOpacity = scrollY.interpolate({
-    inputRange: [0, Math.max(0, HEADER_BG_TRANSITION - 0.01), HEADER_BG_TRANSITION],
+    inputRange: [
+      0,
+      Math.max(0, HEADER_BG_TRANSITION - 0.01),
+      HEADER_BG_TRANSITION,
+    ],
     outputRange: [0, 0, 1],
     extrapolate: "clamp",
   });
@@ -293,10 +324,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   // Fade opacity - overlay for header background image (slowly fades in after header becomes visible)
   const FADE_DURATION = 70; // Pixels over which to fade in after header becomes visible
   const fadeOpacity = scrollY.interpolate({
-    inputRange: [
-      HEADER_BG_TRANSITION, 
-      HEADER_BG_TRANSITION + FADE_DURATION
-    ],
+    inputRange: [HEADER_BG_TRANSITION, HEADER_BG_TRANSITION + FADE_DURATION],
     outputRange: [0, 1],
     extrapolate: "clamp",
   });
@@ -318,34 +346,49 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   // When clamped, extra space is distributed above/below title due to alignItems: "center"
   const clampedExtraSpace = Math.max(0, headerHeight - dynamicHeaderHeight);
   const centeringOffset = clampedExtraSpace / 2;
-  const headerTitleStartY = headerHeight - basePaddingTop + basePaddingBottom + tabletMagicNumber - centeringOffset; // Start from bottom of header, adjusted for centering
-  
+  const headerTitleStartY =
+    headerHeight -
+    basePaddingTop +
+    basePaddingBottom +
+    tabletMagicNumber -
+    centeringOffset; // Start from bottom of header, adjusted for centering
+
   // Continuous animation: translateY decreases (moves up) as scrollY increases
   // The title starts moving up when header becomes visible and continues to move up as user scrolls
   // Clamped at 0 to prevent going below the header
   const headerTitleTranslateY = scrollY.interpolate({
     inputRange: [
-      Math.max(0, HEADER_BG_TRANSITION - 1), 
-      HEADER_BG_TRANSITION, 
-      HEADER_BG_TRANSITION + headerTitleStartY
+      Math.max(0, HEADER_BG_TRANSITION - 1),
+      HEADER_BG_TRANSITION,
+      HEADER_BG_TRANSITION + headerTitleStartY,
     ],
-    outputRange: [
-      headerTitleStartY, 
-      headerTitleStartY, 
-      0
-    ], 
+    outputRange: [headerTitleStartY, headerTitleStartY, 0],
     extrapolate: "clamp", // Clamp at 0 to prevent going below header
   });
 
   // Header background image position - shows the center portion of the image
   // To center the image in the header: translate up by (IMAGE_HEIGHT - headerHeight) / 2
   // This aligns the center of the image with the center of the header
-  const headerImageTranslateY = hasImage ? -(IMAGE_HEIGHT - headerHeight) / 2 : 0;
-  const fadedImageTranslateY = hasImage ? scrollY.interpolate({
-    inputRange: [-100, 0, HEADER_BG_TRANSITION, HEADER_BG_TRANSITION + 1000],
-    outputRange: [-50, headerImageTranslateY, headerImageTranslateY, headerImageTranslateY], // Show center portion
-    extrapolate: "clamp",
-  }) : new Animated.Value(0);
+  const headerImageTranslateY = hasImage
+    ? -(IMAGE_HEIGHT - headerHeight) / 2
+    : 0;
+  const fadedImageTranslateY = hasImage
+    ? scrollY.interpolate({
+        inputRange: [
+          -100,
+          0,
+          HEADER_BG_TRANSITION,
+          HEADER_BG_TRANSITION + 1000,
+        ],
+        outputRange: [
+          -50,
+          headerImageTranslateY,
+          headerImageTranslateY,
+          headerImageTranslateY,
+        ], // Show center portion
+        extrapolate: "clamp",
+      })
+    : new Animated.Value(0);
 
   // Close button opacity - hides when header appears (no X button in header)
   const closeButtonOpacity = scrollY.interpolate({
@@ -356,25 +399,24 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
   // Badge scroll threshold - when category badge scrolls under the header
   // Badge is at: IMAGE_HEIGHT (or 0 if no image) + contentPadding + titleHeight + gap
-  const BADGE_SCROLL_THRESHOLD = (hasImage ? IMAGE_HEIGHT : 0) + spacing.lg + titleHeight + spacing.md - headerHeight;
+  const BADGE_SCROLL_THRESHOLD =
+    (hasImage ? IMAGE_HEIGHT : 0) +
+    spacing.lg +
+    titleHeight +
+    spacing.md -
+    headerHeight;
 
   // Header border animations - appears when category badge scrolls under header
   // ScaleX animation for sleek reveal from center
   const headerBorderScaleX = scrollY.interpolate({
-    inputRange: [
-      BADGE_SCROLL_THRESHOLD,
-      BADGE_SCROLL_THRESHOLD + 40,
-    ],
+    inputRange: [BADGE_SCROLL_THRESHOLD, BADGE_SCROLL_THRESHOLD + 40],
     outputRange: [0, 1],
     extrapolate: "clamp",
   });
 
   // Subtle opacity fade for polish
   const headerBorderOpacity = scrollY.interpolate({
-    inputRange: [
-      BADGE_SCROLL_THRESHOLD,
-      BADGE_SCROLL_THRESHOLD + 20,
-    ],
+    inputRange: [BADGE_SCROLL_THRESHOLD, BADGE_SCROLL_THRESHOLD + 20],
     outputRange: [0, 0.7],
     extrapolate: "clamp",
   });
@@ -391,8 +433,22 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
   const factTitle = fact.title || fact.content.substring(0, 60) + "...";
 
+  // Announce modal opening to screen readers
+  useEffect(() => {
+    // Small delay to ensure the modal is rendered
+    const timer = setTimeout(() => {
+      AccessibilityInfo.announceForAccessibility(factTitle);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [factTitle]);
+
   return (
-    <Container
+    <View
+      style={{ flex: 1, backgroundColor: theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface }}
+      accessibilityViewIsModal={true}
+      accessibilityLabel={factTitle}
+      accessibilityRole="none"
+      importantForAccessibility="yes"
       onLayout={(event) => {
         const { width } = event.nativeEvent.layout;
         if (width > 0 && width !== containerWidth) {
@@ -432,8 +488,12 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 elevation: 12,
                 // Background color for elevation - matches the overlay/solid background
                 backgroundColor: hasImage
-                  ? (theme === "dark" ? "rgba(0, 0, 0, 0.35)" : "rgba(255, 255, 255, 0.5)")
-                  : (theme === "dark" ? "rgba(0, 0, 0, 0.85)" : "rgba(255, 255, 255, 0.95)"),
+                  ? theme === "dark"
+                    ? "rgba(0, 0, 0, 0.35)"
+                    : "rgba(255, 255, 255, 0.5)"
+                  : theme === "dark"
+                  ? "rgba(0, 0, 0, 0.85)"
+                  : "rgba(255, 255, 255, 0.95)",
               },
             }),
           }}
@@ -459,6 +519,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               >
                 <Image
                   source={{ uri: imageUri! }}
+                  aria-label={t("a11y_factImage", { title: factTitle })}
+                  role="img"
                   style={{
                     width: IMAGE_WIDTH,
                     height: IMAGE_HEIGHT,
@@ -522,9 +584,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   transform: [{ translateY: headerTitleTranslateY }],
                 }}
               >
-                <Text.Headline>
-                  {factTitle}
-                </Text.Headline>
+                <Text.Headline>{factTitle}</Text.Headline>
               </Animated.View>
             </HeaderTitleContainer>
           </XStack>
@@ -554,7 +614,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         onScroll={handleScroll}
         scrollEventThrottle={16}
         // Optimize scroll performance on Android
-        removeClippedSubviews={Platform.OS === 'android'}
+        removeClippedSubviews={Platform.OS === "android"}
       >
         {/* Hero Image Section */}
         {hasImage && (
@@ -574,11 +634,16 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                transform: [{ scale: imageScale }, { translateY: imageTranslateY }],
+                transform: [
+                  { scale: imageScale },
+                  { translateY: imageTranslateY },
+                ],
               }}
             >
               <Image
                 source={{ uri: imageUri! }}
+                aria-label={t("a11y_factImage", { title: factTitle })}
+                role="img"
                 style={{
                   width: IMAGE_WIDTH,
                   height: isTablet ? IMAGE_HEIGHT : IMAGE_WIDTH,
@@ -602,7 +667,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             />
           </Animated.View>
         )}
-        
+
         {/* Image Loading Placeholder */}
         {showImagePlaceholder && (
           <View
@@ -629,27 +694,30 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             <View style={{ alignItems: "center", gap: spacing.sm }}>
               <ImagePlus
                 size={iconSizes.xl}
-                color={theme === "dark" ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.2)"}
+                color={
+                  theme === "dark" ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.2)"
+                }
               />
             </View>
           </View>
         )}
 
         {/* Content Section */}
-        <YStack
-          padding={spacing.xl}
-          gap={spacing.md}
-        >
+        <YStack padding={spacing.xl} gap={spacing.md}>
           {/* Title - shown in content when header is not visible */}
           <Animated.View
             style={{
-              opacity: contentTitleOpacity
+              opacity: contentTitleOpacity,
             }}
           >
             <Text.Headline
+              role="heading"
               onTextLayout={(e) => {
                 const lines = e.nativeEvent.lines;
-                const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
+                const totalHeight = lines.reduce(
+                  (sum, line) => sum + line.height,
+                  0
+                );
                 if (totalHeight > 0 && totalHeight !== titleHeight) {
                   setTitleHeight(totalHeight);
                 }
@@ -661,12 +729,16 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
           {/* Category Badge & Date */}
           {(categoryForBadge || fact.last_updated || fact.created_at) && (
-            <XStack gap={spacing.sm} flexWrap="wrap" alignItems="center" justifyContent="space-between" width="100%">
+            <XStack
+              gap={spacing.sm}
+              flexWrap="wrap"
+              alignItems="center"
+              justifyContent="space-between"
+              width="100%"
+            >
               {categoryForBadge && (
                 <Animated.View style={{ opacity: categoryBadgeOpacity }}>
-                  <CategoryBadge 
-                    category={categoryForBadge} 
-                  />
+                  <CategoryBadge category={categoryForBadge} />
                 </Animated.View>
               )}
               {(fact.last_updated || fact.created_at) && (
@@ -676,7 +748,10 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                     color="$textSecondary"
                     fontFamily={FONT_FAMILIES.semibold}
                   >
-                    {formatLastUpdated(fact.last_updated || fact.created_at, locale)}
+                    {formatLastUpdated(
+                      fact.last_updated || fact.created_at,
+                      locale
+                    )}
                   </Text.Body>
                   <Calendar size={iconSizes.xs} color="$textSecondary" />
                 </XStack>
@@ -686,10 +761,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
           {/* Summary */}
           {fact.summary && (
-            <Text.Body
-              color="$text"
-              fontFamily={FONT_FAMILIES.semibold}
-            >
+            <Text.Body color="$text" fontFamily={FONT_FAMILIES.semibold}>
               {fact.summary}
             </Text.Body>
           )}
@@ -698,17 +770,24 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           <BannerAd position="fact-modal" />
 
           {/* Main Content */}
-          <Text.Body
-            color="$text"
-            fontFamily={FONT_FAMILIES.regular}
-          >
+          <Text.Body color="$text" fontFamily={FONT_FAMILIES.regular}>
             {fact.content}
           </Text.Body>
 
           {/* Source Link */}
           {fact.source_url && (
-            <YStack paddingTop={spacing.md} borderTopWidth={1} borderTopColor="$border">
-              <Pressable onPress={handleSourcePress}>
+            <YStack
+              paddingTop={spacing.md}
+              borderTopWidth={1}
+              borderTopColor="$border"
+            >
+              <Pressable
+                onPress={handleSourcePress}
+                role="link"
+                aria-label={t("a11y_sourceLink", {
+                  domain: extractDomain(fact.source_url),
+                })}
+              >
                 <Text.Body
                   letterSpacing={0.2}
                   color="$primary"
@@ -740,14 +819,19 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             }),
           }}
           collapsable={false}
-          pointerEvents={Platform.OS === "android" && hasImage && !closeButtonVisible ? "none" : "box-none"}
+          pointerEvents={
+            Platform.OS === "android" && hasImage && !closeButtonVisible
+              ? "none"
+              : "box-none"
+          }
         >
           <TouchableOpacity
             onPress={onClose}
             activeOpacity={0.7}
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             testID="fact-modal-close-button"
-            accessibilityLabel="Close"
+            aria-label={t("a11y_closeButton")}
+            role="button"
             style={{
               width: iconSizes.xl,
               height: iconSizes.xl,
@@ -783,25 +867,21 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             activeOpacity={0.7}
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             testID="fact-modal-close-button"
-            accessibilityLabel="Close"
+            aria-label={t("a11y_closeButton")}
+            role="button"
             style={{
               width: 36,
               height: 36,
               borderRadius: radius.full,
-              backgroundColor: theme === "dark"
-                ? "rgba(255,255,255,0.1)"
-                : "rgba(0,0,0,0.08)",
+              backgroundColor:
+                theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
             <X
               size={iconSizes.md}
-              color={
-                theme === "dark"
-                  ? "#FFFFFF"
-                  : hexColors.light.text
-              }
+              color={theme === "dark" ? "#FFFFFF" : hexColors.light.text}
             />
           </TouchableOpacity>
         </Animated.View>
@@ -812,8 +892,8 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         factTitle={fact.title}
         factContent={fact.content}
         imageUrl={imageUri || undefined}
-        category={fact.categoryData?.slug || fact.category || 'unknown'}
+        category={fact.categoryData?.slug || fact.category || "unknown"}
       />
-    </Container>
+    </View>
   );
 }

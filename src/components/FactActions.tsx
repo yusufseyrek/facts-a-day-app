@@ -345,6 +345,8 @@ export function FactActions({
           {/* Like Button - Neon Red/Magenta with Animation */}
           <Pressable
             onPress={handleLike}
+            role="button"
+            aria-label={isFavorited ? t('a11y_likedButton') : t('a11y_likeButton')}
             style={({ pressed }) => ({
               alignItems: "center",
               justifyContent: "center",
@@ -367,6 +369,8 @@ export function FactActions({
           {/* Share Button - Neon Green with Animation */}
           <Pressable
             onPress={handleShare}
+            role="button"
+            aria-label={t('a11y_shareButton')}
             style={({ pressed }) => ({
               alignItems: "center",
               justifyContent: "center",
@@ -383,6 +387,8 @@ export function FactActions({
           <Pressable
             onPress={handleReport}
             disabled={isSubmittingReport}
+            role="button"
+            aria-label={t('a11y_reportButton')}
             style={({ pressed }) => ({
               alignItems: "center",
               justifyContent: "center",

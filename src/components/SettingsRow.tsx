@@ -113,6 +113,8 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   return (
     <Pressable
       onPress={onPress}
+      role="button"
+      aria-label={`${label}${value ? `, ${value}` : ''}`}
       style={({ pressed }) => [
         {
           opacity: pressed ? 0.7 : 1,

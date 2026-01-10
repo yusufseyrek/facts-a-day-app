@@ -7,6 +7,7 @@ import { Text, FONT_FAMILIES } from './Typography';
 import { hexColors, useTheme, getCategoryNeonColor } from '../theme';
 import { getContrastColor } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
+import { useTranslation } from '../i18n/useTranslation';
 
 export interface CategoryCardProps {
   icon: React.ReactNode;
@@ -21,6 +22,7 @@ export interface CategoryCardProps {
 const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress, labelFontSize }: CategoryCardProps) => {
   const { theme } = useTheme();
   const { spacing, radius, typography, iconSizes } = useResponsive();
+  const { t } = useTranslation();
 
   // Animation values
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -113,7 +115,12 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
   }), [spacing, radius, contrastColor]);
 
   return (
-    <Pressable onPress={onPress} style={{ flex: 1 }}>
+    <Pressable
+      onPress={onPress}
+      role="button"
+      aria-label={t('a11y_categoryCard', { category: label })}
+      style={{ flex: 1 }}
+    >
       {({ pressed }) => (
         <Animated.View
           style={{

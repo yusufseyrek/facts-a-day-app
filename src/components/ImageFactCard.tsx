@@ -230,7 +230,8 @@ const ImageFactCardComponent = ({
         android_ripple={androidRipple}
         style={pressableStyle}
         testID={testID || `fact-card-${factId}`}
-        accessibilityLabel={title}
+        aria-label={title}
+        role="button"
       >
         <View style={[cardWrapperStyle, marginStyle]}>
           {/* Image Container */}
@@ -238,6 +239,7 @@ const ImageFactCardComponent = ({
             {/* Image */}
             <Image
               source={imageSource}
+              aria-hidden={true}
               style={imageStyle}
               contentFit="cover"
               cachePolicy={Platform.OS === "android" ? "disk" : "memory-disk"}

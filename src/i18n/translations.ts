@@ -284,6 +284,22 @@ export const translations = {
     best: "Rekord: %{count}",
     todayCount: "+%{count} heute",
     daysAgo: "vor %{count} Tagen",
+
+    // Accessibility Labels
+    a11y_closeButton: "Schließen",
+    a11y_likeButton: "Gefällt mir",
+    a11y_likedButton: "Hat mir gefallen",
+    a11y_shareButton: "Teilen",
+    a11y_reportButton: "Melden",
+    a11y_categoryCard: "%{category}",
+    a11y_sourceLink: "Quelle: %{domain}",
+    a11y_factImage: "%{title}",
+    a11y_nextButton: "Weiter",
+    a11y_previousButton: "Zurück",
+    a11y_trueAnswer: "Wahr",
+    a11y_falseAnswer: "Falsch",
+    a11y_viewFactButton: "Fakt ansehen",
+    a11y_showHintButton: "Hinweis anzeigen",
   },
   en: {
     // Onboarding - Categories
@@ -568,6 +584,22 @@ export const translations = {
     best: "Best: %{count}",
     todayCount: "+%{count} today",
     daysAgo: "%{count} days ago",
+
+    // Accessibility Labels
+    a11y_closeButton: "Close",
+    a11y_likeButton: "Like",
+    a11y_likedButton: "Liked",
+    a11y_shareButton: "Share",
+    a11y_reportButton: "Report",
+    a11y_categoryCard: "%{category}",
+    a11y_sourceLink: "Source: %{domain}",
+    a11y_factImage: "%{title}",
+    a11y_nextButton: "Next",
+    a11y_previousButton: "Previous",
+    a11y_trueAnswer: "True",
+    a11y_falseAnswer: "False",
+    a11y_viewFactButton: "View fact",
+    a11y_showHintButton: "Show hint",
   },
   es: {
     // Onboarding - Categories
@@ -852,6 +884,22 @@ export const translations = {
     best: "Récord: %{count}",
     todayCount: "+%{count} hoy",
     daysAgo: "hace %{count} días",
+
+    // Accessibility Labels
+    a11y_closeButton: "Cerrar",
+    a11y_likeButton: "Me gusta",
+    a11y_likedButton: "Me gustó",
+    a11y_shareButton: "Compartir",
+    a11y_reportButton: "Reportar",
+    a11y_categoryCard: "%{category}",
+    a11y_sourceLink: "Fuente: %{domain}",
+    a11y_factImage: "%{title}",
+    a11y_nextButton: "Siguiente",
+    a11y_previousButton: "Anterior",
+    a11y_trueAnswer: "Verdadero",
+    a11y_falseAnswer: "Falso",
+    a11y_viewFactButton: "Ver dato",
+    a11y_showHintButton: "Mostrar pista",
   },
   fr: {
     // Onboarding - Categories
@@ -1136,6 +1184,22 @@ export const translations = {
     best: "Record: %{count}",
     todayCount: "+%{count} aujourd'hui",
     daysAgo: "il y a %{count} jours",
+
+    // Accessibility Labels
+    a11y_closeButton: "Fermer",
+    a11y_likeButton: "J'aime",
+    a11y_likedButton: "Aimé",
+    a11y_shareButton: "Partager",
+    a11y_reportButton: "Signaler",
+    a11y_categoryCard: "%{category}",
+    a11y_sourceLink: "Source: %{domain}",
+    a11y_factImage: "%{title}",
+    a11y_nextButton: "Suivant",
+    a11y_previousButton: "Précédent",
+    a11y_trueAnswer: "Vrai",
+    a11y_falseAnswer: "Faux",
+    a11y_viewFactButton: "Voir le fait",
+    a11y_showHintButton: "Afficher l'indice",
   },
   ja: {
     // Onboarding - Categories
@@ -1419,6 +1483,22 @@ export const translations = {
     best: "ベスト: %{count}",
     todayCount: "今日+%{count}",
     daysAgo: "%{count}日前",
+
+    // Accessibility Labels
+    a11y_closeButton: "閉じる",
+    a11y_likeButton: "いいね",
+    a11y_likedButton: "いいねしました",
+    a11y_shareButton: "共有",
+    a11y_reportButton: "報告",
+    a11y_categoryCard: "%{category}",
+    a11y_sourceLink: "ソース: %{domain}",
+    a11y_factImage: "%{title}",
+    a11y_nextButton: "次へ",
+    a11y_previousButton: "前へ",
+    a11y_trueAnswer: "正しい",
+    a11y_falseAnswer: "間違い",
+    a11y_viewFactButton: "事実を見る",
+    a11y_showHintButton: "ヒントを表示",
   },
   ko: {
     // Onboarding - Categories
@@ -1699,6 +1779,22 @@ export const translations = {
     best: "최고: %{count}",
     todayCount: "오늘 +%{count}",
     daysAgo: "%{count}일 전",
+
+    // Accessibility Labels
+    a11y_closeButton: "닫기",
+    a11y_likeButton: "좋아요",
+    a11y_likedButton: "좋아요 표시됨",
+    a11y_shareButton: "공유",
+    a11y_reportButton: "신고",
+    a11y_categoryCard: "%{category}",
+    a11y_sourceLink: "출처: %{domain}",
+    a11y_factImage: "%{title}",
+    a11y_nextButton: "다음",
+    a11y_previousButton: "이전",
+    a11y_trueAnswer: "참",
+    a11y_falseAnswer: "거짓",
+    a11y_viewFactButton: "사실 보기",
+    a11y_showHintButton: "힌트 표시",
   },
   tr: {
     // Onboarding - Categories
@@ -1982,6 +2078,22 @@ export const translations = {
     best: "En iyi: %{count}",
     todayCount: "Bugün +%{count}",
     daysAgo: "%{count} gün önce",
+
+    // Accessibility Labels
+    a11y_closeButton: "Kapat",
+    a11y_likeButton: "Beğen",
+    a11y_likedButton: "Beğenildi",
+    a11y_shareButton: "Paylaş",
+    a11y_reportButton: "Bildir",
+    a11y_categoryCard: "%{category}",
+    a11y_sourceLink: "Kaynak: %{domain}",
+    a11y_factImage: "%{title}",
+    a11y_nextButton: "İleri",
+    a11y_previousButton: "Geri",
+    a11y_trueAnswer: "Doğru",
+    a11y_falseAnswer: "Yanlış",
+    a11y_viewFactButton: "Bilgiyi görüntüle",
+    a11y_showHintButton: "İpucu göster",
   },
   zh: {
     // Onboarding - Categories
@@ -2261,6 +2373,22 @@ export const translations = {
     best: "最佳: %{count}",
     todayCount: "今日+%{count}",
     daysAgo: "%{count}天前",
+
+    // Accessibility Labels
+    a11y_closeButton: "关闭",
+    a11y_likeButton: "点赞",
+    a11y_likedButton: "已点赞",
+    a11y_shareButton: "分享",
+    a11y_reportButton: "举报",
+    a11y_categoryCard: "%{category}",
+    a11y_sourceLink: "来源: %{domain}",
+    a11y_factImage: "%{title}",
+    a11y_nextButton: "下一个",
+    a11y_previousButton: "上一个",
+    a11y_trueAnswer: "对",
+    a11y_falseAnswer: "错",
+    a11y_viewFactButton: "查看事实",
+    a11y_showHintButton: "显示提示",
   },
 };
 
