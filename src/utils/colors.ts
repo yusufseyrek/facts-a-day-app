@@ -6,9 +6,9 @@
  */
 export const hexToRgba = (hexColor: string, opacity: number): string => {
   const hex = hexColor.replace('#', '');
-  
+
   let r: number, g: number, b: number;
-  
+
   if (hex.length === 3) {
     r = parseInt(hex.charAt(0) + hex.charAt(0), 16);
     g = parseInt(hex.charAt(1) + hex.charAt(1), 16);
@@ -32,10 +32,10 @@ export const hexToRgba = (hexColor: string, opacity: number): string => {
 export const getContrastColor = (hexColor: string): string => {
   // Remove hash if present
   const hex = hexColor.replace('#', '');
-  
+
   // Parse RGB
   let r: number, g: number, b: number;
-  
+
   if (hex.length === 3) {
     r = parseInt(hex.charAt(0) + hex.charAt(0), 16);
     g = parseInt(hex.charAt(1) + hex.charAt(1), 16);
@@ -57,4 +57,3 @@ export const getContrastColor = (hexColor: string): string => {
   // Using 0.5 as threshold, can be adjusted (often 128/255 or ~0.5)
   return luminance > 0.5 ? '#000000' : '#FFFFFF';
 };
-

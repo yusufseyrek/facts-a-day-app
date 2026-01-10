@@ -1,12 +1,12 @@
-import React from "react";
-import { styled } from "@tamagui/core";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { YStack, XStack, YStackProps } from "tamagui";
+import React from 'react';
+import { styled } from '@tamagui/core';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { YStack, XStack, YStackProps } from 'tamagui';
 
-import { Text } from "./Typography";
-import { LAYOUT } from "../config/app";
-import { hexColors, useTheme } from "../theme";
-import { useResponsive } from "../utils/useResponsive";
+import { Text } from './Typography';
+import { LAYOUT } from '../config/app';
+import { hexColors, useTheme } from '../theme';
+import { useResponsive } from '../utils/useResponsive';
 
 /**
  * ScreenContainer - Main container for all screens
@@ -14,7 +14,7 @@ import { useResponsive } from "../utils/useResponsive";
  */
 export const ScreenContainer = styled(SafeAreaView, {
   flex: 1,
-  backgroundColor: "$background",
+  backgroundColor: '$background',
 });
 
 interface ScreenHeaderProps {
@@ -29,18 +29,11 @@ interface ScreenHeaderProps {
  */
 export function ScreenHeader({ icon, title, rightElement }: ScreenHeaderProps) {
   const { spacing } = useResponsive();
-  
+
   return (
-    <XStack
-      padding={spacing.lg}
-      paddingBottom={spacing.md}
-      alignItems="center"
-      gap={spacing.sm}
-    >
+    <XStack padding={spacing.lg} paddingBottom={spacing.md} alignItems="center" gap={spacing.sm}>
       {icon}
-      <Text.Headline flex={1}>
-        {title}
-      </Text.Headline>
+      <Text.Headline flex={1}>{title}</Text.Headline>
       {rightElement}
     </XStack>
   );
@@ -56,16 +49,14 @@ interface SectionHeaderProps {
  */
 export function SectionHeader({ title }: SectionHeaderProps) {
   const { spacing } = useResponsive();
-  
+
   return (
     <YStack
       paddingHorizontal={spacing.xl}
       paddingVertical={spacing.md}
       backgroundColor="$background"
     >
-      <Text.Title>
-        {title}
-      </Text.Title>
+      <Text.Title>{title}</Text.Title>
     </YStack>
   );
 }
@@ -82,23 +73,23 @@ interface ContentContainerProps extends YStackProps {
  * On tablets: Full width outer container (catches all touches) with centered content
  * On phones: Simple padding
  */
-export function ContentContainer({ children, shouldSetMaxContentWidth = true, ...props }: ContentContainerProps) {
+export function ContentContainer({
+  children,
+  shouldSetMaxContentWidth = true,
+  ...props
+}: ContentContainerProps) {
   const { spacing, isTablet } = useResponsive();
-  
+
   if (isTablet && shouldSetMaxContentWidth) {
     return (
       <YStack width="100%" alignItems="center" {...props}>
-        <YStack 
-          width="100%"
-          maxWidth={LAYOUT.MAX_CONTENT_WIDTH} 
-          paddingHorizontal={spacing.md}
-        >
+        <YStack width="100%" maxWidth={LAYOUT.MAX_CONTENT_WIDTH} paddingHorizontal={spacing.md}>
           {children}
         </YStack>
       </YStack>
     );
   }
-  
+
   return (
     <YStack paddingHorizontal={spacing.md} {...props}>
       {children}
@@ -116,7 +107,7 @@ interface ScrollContentContainerProps extends YStackProps {
  */
 export function ScrollContentContainer({ children, ...props }: ScrollContentContainerProps) {
   const { spacing } = useResponsive();
-  
+
   return (
     <YStack paddingHorizontal={spacing.xl} gap={spacing.lg} flex={1} {...props}>
       {children}
@@ -133,7 +124,7 @@ interface LoadingContainerProps {
  */
 export function LoadingContainer({ children }: LoadingContainerProps) {
   const { spacing } = useResponsive();
-  
+
   return (
     <YStack flex={1} justifyContent="center" alignItems="center" gap={spacing.md}>
       {children}
@@ -146,9 +137,9 @@ export function LoadingContainer({ children }: LoadingContainerProps) {
  * Centers content and limits width for better readability
  */
 export const TabletWrapper = styled(YStack, {
-  width: "100%",
+  width: '100%',
   maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
-  alignSelf: "center",
+  alignSelf: 'center',
 });
 
 interface SectionContainerProps extends YStackProps {
@@ -160,7 +151,7 @@ interface SectionContainerProps extends YStackProps {
  */
 export function SectionContainer({ children, ...props }: SectionContainerProps) {
   const { spacing } = useResponsive();
-  
+
   return (
     <YStack gap={spacing.md} marginBottom={spacing.xl} {...props}>
       {children}
@@ -177,12 +168,8 @@ interface SectionTitleProps {
  */
 export function SectionTitle({ children }: SectionTitleProps) {
   const { spacing } = useResponsive();
-  
-  return (
-    <Text.Title marginBottom={spacing.sm}>
-      {children}
-    </Text.Title>
-  );
+
+  return <Text.Title marginBottom={spacing.sm}>{children}</Text.Title>;
 }
 
 interface ItemGroupProps extends YStackProps {
@@ -194,7 +181,7 @@ interface ItemGroupProps extends YStackProps {
  */
 export function ItemGroup({ children, ...props }: ItemGroupProps) {
   const { spacing } = useResponsive();
-  
+
   return (
     <YStack gap={spacing.md} {...props}>
       {children}
@@ -207,5 +194,5 @@ export function ItemGroup({ children, ...props }: ItemGroupProps) {
  */
 export function useIconColor() {
   const { theme } = useTheme();
-  return theme === "dark" ? "#FFFFFF" : hexColors.light.text;
+  return theme === 'dark' ? '#FFFFFF' : hexColors.light.text;
 }

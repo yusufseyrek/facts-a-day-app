@@ -19,7 +19,15 @@ export interface CategoryCardProps {
   labelFontSize?: number;
 }
 
-const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress, labelFontSize }: CategoryCardProps) => {
+const CategoryCardComponent = ({
+  icon,
+  label,
+  slug,
+  colorHex,
+  selected,
+  onPress,
+  labelFontSize,
+}: CategoryCardProps) => {
   const { theme } = useTheme();
   const { spacing, radius, typography, iconSizes } = useResponsive();
   const { t } = useTranslation();
@@ -66,22 +74,28 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
   // Get neon color for this category - prefer colorHex from DB, fallback to theme-based
   const categorySlug = slug || label.toLowerCase().replace(/\s+/g, '-');
   const neonColor = colorHex || getCategoryNeonColor(categorySlug, theme);
-  
+
   // Determine contrast color for selected state
   const contrastColor = getContrastColor(neonColor);
 
   // Colors based on selection state
   const iconColor = selected
     ? contrastColor
-    : theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+    : theme === 'dark'
+      ? hexColors.dark.textSecondary
+      : hexColors.light.textSecondary;
 
   const backgroundColor = selected
     ? neonColor
-    : theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface;
+    : theme === 'dark'
+      ? hexColors.dark.surface
+      : hexColors.light.surface;
 
   const borderColor = selected
     ? neonColor
-    : theme === 'dark' ? hexColors.dark.border : hexColors.light.border;
+    : theme === 'dark'
+      ? hexColors.dark.border
+      : hexColors.light.border;
 
   // Checkmark transform styles
   const checkmarkStyle = {
@@ -102,17 +116,20 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
     ],
   };
 
-  const checkmarkContainerStyle = useMemo(() => ({
-    position: 'absolute' as const,
-    top: spacing.sm,
-    right: spacing.sm,
-    width: iconSizes.md,
-    height: iconSizes.md,
-    borderRadius: radius.full,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: contrastColor === '#000000' ? '#00000020' : '#FFFFFF30',
-  }), [spacing, radius, contrastColor]);
+  const checkmarkContainerStyle = useMemo(
+    () => ({
+      position: 'absolute' as const,
+      top: spacing.sm,
+      right: spacing.sm,
+      width: iconSizes.md,
+      height: iconSizes.md,
+      borderRadius: radius.full,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      backgroundColor: contrastColor === '#000000' ? '#00000020' : '#FFFFFF30',
+    }),
+    [spacing, radius, contrastColor]
+  );
 
   return (
     <Pressable
@@ -143,9 +160,7 @@ const CategoryCardComponent = ({ icon, label, slug, colorHex, selected, onPress,
               borderColor,
             }}
           >
-            <Animated.View
-              style={[checkmarkContainerStyle, checkmarkStyle]}
-            >
+            <Animated.View style={[checkmarkContainerStyle, checkmarkStyle]}>
               <Check size={iconSizes.sm} color={contrastColor} strokeWidth={3} />
             </Animated.View>
             <YStack alignItems="center" justifyContent="center">

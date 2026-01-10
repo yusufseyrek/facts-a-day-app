@@ -9,7 +9,11 @@ import mobileAds, {
 import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
 import { ADS_ENABLED } from '../config/ads';
 
-import { trackGDPRConsentResult, trackATTPermissionResult, trackAdsSdkInitialized } from './analytics';
+import {
+  trackGDPRConsentResult,
+  trackATTPermissionResult,
+  trackAdsSdkInitialized,
+} from './analytics';
 
 // Re-export consent utilities for backwards compatibility
 export { canShowPersonalizedAds, shouldRequestNonPersonalizedAdsOnly } from './adsConsent';
@@ -100,7 +104,7 @@ export const requestGDPRConsent = async (): Promise<{
  */
 export const requestATTPermission = async (): Promise<boolean> => {
   console.log('requestATTPermission called, platform:', Platform.OS);
-  
+
   if (Platform.OS !== 'ios') {
     // ATT is iOS only, return true for other platforms
     return true;
@@ -110,17 +114,22 @@ export const requestATTPermission = async (): Promise<boolean> => {
     // For non-EEA users, we can request ATT directly
     // For EEA users, we need to check if they consented to purpose one first
     let shouldRequestATT = true;
-    
+
     try {
       const gdprApplies = await AdsConsent.getGdprApplies();
       console.log('ATT check - GDPR applies:', gdprApplies);
-      
+
       if (gdprApplies) {
         // Check purpose consents - purpose one is "Store and/or access information on a device"
         const purposeConsents = await AdsConsent.getPurposeConsents();
         const hasConsentForPurposeOne = purposeConsents.startsWith('1');
-        console.log('ATT check - purpose consents:', purposeConsents, 'has purpose one:', hasConsentForPurposeOne);
-        
+        console.log(
+          'ATT check - purpose consents:',
+          purposeConsents,
+          'has purpose one:',
+          hasConsentForPurposeOne
+        );
+
         if (!hasConsentForPurposeOne) {
           // User hasn't consented to purpose one, don't request ATT
           console.log('GDPR applies and no consent for purpose one, skipping ATT');

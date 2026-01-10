@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack } from 'expo-router';
 
 export default function TriviaTabLayout() {
   return (
@@ -10,4 +10,3 @@ export default function TriviaTabLayout() {
     </Stack>
   );
 }
-

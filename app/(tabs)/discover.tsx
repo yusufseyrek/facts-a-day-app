@@ -1,13 +1,13 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { RefreshControl, ActivityIndicator, TextInput, ScrollView, Pressable } from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { useRouter } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
-import { FlashList, ListRenderItemInfo } from "@shopify/flash-list";
-import { styled, View } from "@tamagui/core";
-import { Search, X } from "@tamagui/lucide-icons";
-import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
-import { YStack, XStack } from "tamagui";
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { RefreshControl, ActivityIndicator, TextInput, ScrollView, Pressable } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
+import { styled, View } from '@tamagui/core';
+import { Search, X } from '@tamagui/lucide-icons';
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { YStack, XStack } from 'tamagui';
 
 import {
   Text,
@@ -15,60 +15,65 @@ import {
   ScreenContainer,
   FONT_FAMILIES,
   ContentContainer,
-} from "../../src/components";
-import { ImageFactCard } from "../../src/components/ImageFactCard";
-import { LAYOUT } from "../../src/config/app";
-import { FACT_FLASH_LIST_SETTINGS, getImageCardHeight } from "../../src/config/factListSettings";
-import { useScrollToTopHandler } from "../../src/contexts";
-import { useTranslation } from "../../src/i18n";
-import { trackSearch, trackCategoryBrowse, trackScreenView, Screens } from "../../src/services/analytics";
-import { checkAndRequestReview } from "../../src/services/appReview";
-import * as database from "../../src/services/database";
-import { prefetchFactImagesWithLimit } from "../../src/services/images";
-import { getSelectedCategories } from "../../src/services/onboarding";
-import { onPreferenceFeedRefresh } from "../../src/services/preferences";
-import { hexColors, useTheme } from "../../src/theme";
-import { getContrastColor } from "../../src/utils/colors";
-import { getLucideIcon } from "../../src/utils/iconMapper";
-import { useResponsive } from "../../src/utils/useResponsive";
+} from '../../src/components';
+import { ImageFactCard } from '../../src/components/ImageFactCard';
+import { LAYOUT } from '../../src/config/app';
+import { FACT_FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
+import { useScrollToTopHandler } from '../../src/contexts';
+import { useTranslation } from '../../src/i18n';
+import {
+  trackSearch,
+  trackCategoryBrowse,
+  trackScreenView,
+  Screens,
+} from '../../src/services/analytics';
+import { checkAndRequestReview } from '../../src/services/appReview';
+import * as database from '../../src/services/database';
+import { prefetchFactImagesWithLimit } from '../../src/services/images';
+import { getSelectedCategories } from '../../src/services/onboarding';
+import { onPreferenceFeedRefresh } from '../../src/services/preferences';
+import { hexColors, useTheme } from '../../src/theme';
+import { getContrastColor } from '../../src/utils/colors';
+import { getLucideIcon } from '../../src/utils/iconMapper';
+import { useResponsive } from '../../src/utils/useResponsive';
 
-import type { FactWithRelations, Category } from "../../src/services/database";
+import type { FactWithRelations, Category } from '../../src/services/database';
 
 // Device breakpoints
 
 const SearchInputContainer = styled(XStack, {
   flex: 1,
-  alignItems: "center",
-  backgroundColor: "$surface",
+  alignItems: 'center',
+  backgroundColor: '$surface',
   borderWidth: 1,
-  borderColor: "$border",
+  borderColor: '$border',
 });
 
 const SearchInput = styled(TextInput, {
   flex: 1,
-  height: "100%",
+  height: '100%',
 });
 
 const ClearButton = styled(YStack, {
-  alignItems: "center",
-  justifyContent: "center",
-  backgroundColor: "$border",
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '$border',
 });
 
 // Category chip in search input
 const CategoryChip = styled(XStack, {
-  alignItems: "center",
+  alignItems: 'center',
 });
 
 const CategoryChipClearButton = styled(YStack, {
-  alignItems: "center",
-  justifyContent: "center",
+  alignItems: 'center',
+  justifyContent: 'center',
 });
 
 const EmptyDiscoverState = styled(YStack, {
   flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
+  justifyContent: 'center',
+  alignItems: 'center',
 });
 
 const CategoriesContainer = styled(YStack, {
@@ -78,18 +83,18 @@ const CategoriesContainer = styled(YStack, {
 const CategoriesGrid = styled(View, {});
 
 const CategoryRow = styled(XStack, {
-  justifyContent: "space-between",
+  justifyContent: 'space-between',
 });
 
 // Discover Category Card - wider with facts count
 const DiscoverCategoryCard = styled(XStack, {
   flex: 1,
-  alignItems: "center",
+  alignItems: 'center',
 });
 
 const DiscoverCategoryIconContainer = styled(YStack, {
-  alignItems: "center",
-  justifyContent: "center",
+  alignItems: 'center',
+  justifyContent: 'center',
 });
 
 const DiscoverCategoryTextContainer = styled(YStack, {
@@ -104,33 +109,36 @@ interface FactListItemProps {
   selectedCategory?: Category | null;
 }
 
-const FactListItem = React.memo(({ item, isTablet, onPress, selectedCategory }: FactListItemProps) => {
-  const handlePress = useCallback(() => {
-    onPress(item);
-  }, [item, onPress]);
+const FactListItem = React.memo(
+  ({ item, isTablet, onPress, selectedCategory }: FactListItemProps) => {
+    const handlePress = useCallback(() => {
+      onPress(item);
+    }, [item, onPress]);
 
-  return (
-    <ContentContainer>
-      <ImageFactCard
-        title={item.title || item.content.substring(0, 80) + "..."}
-        imageUrl={item.image_url!}
-        factId={item.id}
-        category={selectedCategory || item.categoryData || item.category}
-        categorySlug={selectedCategory?.slug || item.categoryData?.slug || item.category}
-        onPress={handlePress}
-        isTablet={isTablet}
-      />
-    </ContentContainer>
-  );
-}, (prevProps, nextProps) => {
-  return (
-    prevProps.item.id === nextProps.item.id &&
-    prevProps.item.title === nextProps.item.title &&
-    prevProps.item.image_url === nextProps.item.image_url &&
-    prevProps.isTablet === nextProps.isTablet &&
-    prevProps.selectedCategory?.slug === nextProps.selectedCategory?.slug
-  );
-});
+    return (
+      <ContentContainer>
+        <ImageFactCard
+          title={item.title || item.content.substring(0, 80) + '...'}
+          imageUrl={item.image_url!}
+          factId={item.id}
+          category={selectedCategory || item.categoryData || item.category}
+          categorySlug={selectedCategory?.slug || item.categoryData?.slug || item.category}
+          onPress={handlePress}
+          isTablet={isTablet}
+        />
+      </ContentContainer>
+    );
+  },
+  (prevProps, nextProps) => {
+    return (
+      prevProps.item.id === nextProps.item.id &&
+      prevProps.item.title === nextProps.item.title &&
+      prevProps.item.image_url === nextProps.item.image_url &&
+      prevProps.isTablet === nextProps.isTablet &&
+      prevProps.selectedCategory?.slug === nextProps.selectedCategory?.slug
+    );
+  }
+);
 
 FactListItem.displayName = 'FactListItem';
 
@@ -138,9 +146,10 @@ function DiscoverScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { isTablet, screenWidth, typography, spacing, iconSizes, config, media, radius } = useResponsive();
+  const { isTablet, screenWidth, typography, spacing, iconSizes, config, media, radius } =
+    useResponsive();
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<FactWithRelations[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -172,7 +181,7 @@ function DiscoverScreen() {
       categoryGridRef.current?.scrollTo({ y: 0, animated: true });
     }
   }, [searchQuery, searchResults.length, selectedCategorySlug, categoryFacts.length]);
-  useScrollToTopHandler("discover", scrollToTop);
+  useScrollToTopHandler('discover', scrollToTop);
 
   const performSearch = useCallback(
     async (query: string, categorySlug: string | null) => {
@@ -184,21 +193,22 @@ function DiscoverScreen() {
 
       try {
         let results: FactWithRelations[];
-        
+
         if (categorySlug) {
           // Search within the selected category
           const catFacts = await database.getFactsByCategory(categorySlug, locale);
           const searchTerm = query.trim().toLowerCase();
-          results = catFacts.filter((fact) =>
-            (fact.title?.toLowerCase().includes(searchTerm)) ||
-            fact.content.toLowerCase().includes(searchTerm) ||
-            (fact.summary?.toLowerCase().includes(searchTerm))
+          results = catFacts.filter(
+            (fact) =>
+              fact.title?.toLowerCase().includes(searchTerm) ||
+              fact.content.toLowerCase().includes(searchTerm) ||
+              fact.summary?.toLowerCase().includes(searchTerm)
           );
         } else {
           // Search all facts
           results = await database.searchFacts(query.trim(), locale);
         }
-        
+
         setSearchResults(results);
         prefetchFactImagesWithLimit(results);
 
@@ -231,11 +241,9 @@ function DiscoverScreen() {
       setIsLoadingCategories(true);
       const selectedSlugs = await getSelectedCategories();
       const allCategories = await database.getAllCategories();
-      
+
       // Filter to only include user's selected categories
-      const filteredCategories = allCategories.filter((cat) =>
-        selectedSlugs.includes(cat.slug)
-      );
+      const filteredCategories = allCategories.filter((cat) => selectedSlugs.includes(cat.slug));
       setUserCategories(filteredCategories);
 
       // Load facts counts for each category
@@ -265,7 +273,7 @@ function DiscoverScreen() {
       // Clear any selected category filter since categories may have changed
       setSelectedCategorySlug(null);
       setCategoryFacts([]);
-      setSearchQuery("");
+      setSearchQuery('');
       setSearchResults([]);
       // Reload categories
       loadUserCategories();
@@ -288,10 +296,13 @@ function DiscoverScreen() {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, selectedCategorySlug, performSearch]);
 
-  const handleFactPress = useCallback((fact: FactWithRelations) => {
-    checkAndRequestReview();
-    router.push(`/fact/${fact.id}?source=discover`);
-  }, [router]);
+  const handleFactPress = useCallback(
+    (fact: FactWithRelations) => {
+      checkAndRequestReview();
+      router.push(`/fact/${fact.id}?source=discover`);
+    },
+    [router]
+  );
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -320,119 +331,133 @@ function DiscoverScreen() {
   }, []);
 
   const clearSearch = useCallback(() => {
-    setSearchQuery("");
+    setSearchQuery('');
     setSearchResults([]);
     setIsSearching(false);
     searchInputRef.current?.focus();
   }, []);
 
   // Handle category selection
-  const handleCategoryPress = useCallback(async (categorySlug: string) => {
-    // If tapping the same category, deselect it
-    if (selectedCategorySlug === categorySlug) {
-      setSelectedCategorySlug(null);
-      setCategoryFacts([]);
-      return;
-    }
+  const handleCategoryPress = useCallback(
+    async (categorySlug: string) => {
+      // If tapping the same category, deselect it
+      if (selectedCategorySlug === categorySlug) {
+        setSelectedCategorySlug(null);
+        setCategoryFacts([]);
+        return;
+      }
 
-    setSelectedCategorySlug(categorySlug);
-    setIsLoadingCategoryFacts(true);
+      setSelectedCategorySlug(categorySlug);
+      setIsLoadingCategoryFacts(true);
 
-    try {
-      const facts = await database.getFactsByCategory(categorySlug, locale);
-      setCategoryFacts(facts);
-      prefetchFactImagesWithLimit(facts);
+      try {
+        const facts = await database.getFactsByCategory(categorySlug, locale);
+        setCategoryFacts(facts);
+        prefetchFactImagesWithLimit(facts);
 
-      // Track category browse event
-      trackCategoryBrowse({
-        category: categorySlug,
-        factsCount: facts.length,
-      });
-    } catch (error) {
-      // Ignore fact loading errors
-      setCategoryFacts([]);
-    } finally {
-      setIsLoadingCategoryFacts(false);
-    }
-  }, [selectedCategorySlug, locale]);
+        // Track category browse event
+        trackCategoryBrowse({
+          category: categorySlug,
+          factsCount: facts.length,
+        });
+      } catch (error) {
+        // Ignore fact loading errors
+        setCategoryFacts([]);
+      } finally {
+        setIsLoadingCategoryFacts(false);
+      }
+    },
+    [selectedCategorySlug, locale]
+  );
 
   const clearCategoryFilter = useCallback(() => {
     setSelectedCategorySlug(null);
     setCategoryFacts([]);
-    setSearchQuery("");
+    setSearchQuery('');
     setSearchResults([]);
   }, []);
 
   // Get selected category object
-  const selectedCategory = useMemo(() => 
-    selectedCategorySlug
-      ? userCategories.find((cat) => cat.slug === selectedCategorySlug) || null
-      : null,
+  const selectedCategory = useMemo(
+    () =>
+      selectedCategorySlug
+        ? userCategories.find((cat) => cat.slug === selectedCategorySlug) || null
+        : null,
     [selectedCategorySlug, userCategories]
   );
 
   // Memoized keyExtractor
-  const keyExtractor = useCallback((item: FactWithRelations) => 
-    item.id.toString(), []);
+  const keyExtractor = useCallback((item: FactWithRelations) => item.id.toString(), []);
 
   // Calculate exact item height for FlashList layout
-  const itemHeight = useMemo(() => getImageCardHeight(screenWidth, isTablet), [screenWidth, isTablet]);
-  
+  const itemHeight = useMemo(
+    () => getImageCardHeight(screenWidth, isTablet),
+    [screenWidth, isTablet]
+  );
+
   // Override item layout to give FlashList exact dimensions (helps with recycling issues)
-  const overrideItemLayout = useCallback((layout: { span?: number; size?: number }) => {
-    layout.size = itemHeight;
-  }, [itemHeight]);
+  const overrideItemLayout = useCallback(
+    (layout: { span?: number; size?: number }) => {
+      layout.size = itemHeight;
+    },
+    [itemHeight]
+  );
 
   // Memoized renderItem for search results
-  const renderSearchItem = useCallback(({ item }: ListRenderItemInfo<FactWithRelations>) => (
-    <FactListItem
-      item={item}
-      isTablet={isTablet}
-      onPress={handleFactPress}
-      selectedCategory={selectedCategory}
-    />
-  ), [isTablet, handleFactPress, selectedCategory]);
+  const renderSearchItem = useCallback(
+    ({ item }: ListRenderItemInfo<FactWithRelations>) => (
+      <FactListItem
+        item={item}
+        isTablet={isTablet}
+        onPress={handleFactPress}
+        selectedCategory={selectedCategory}
+      />
+    ),
+    [isTablet, handleFactPress, selectedCategory]
+  );
 
   // Memoized renderItem for category facts
-  const renderCategoryItem = useCallback(({ item }: ListRenderItemInfo<FactWithRelations>) => (
-    <FactListItem
-      item={item}
-      isTablet={isTablet}
-      onPress={handleFactPress}
-      selectedCategory={selectedCategory}
-    />
-  ), [isTablet, handleFactPress, selectedCategory]);
+  const renderCategoryItem = useCallback(
+    ({ item }: ListRenderItemInfo<FactWithRelations>) => (
+      <FactListItem
+        item={item}
+        isTablet={isTablet}
+        onPress={handleFactPress}
+        selectedCategory={selectedCategory}
+      />
+    ),
+    [isTablet, handleFactPress, selectedCategory]
+  );
 
   // Memoized refresh controls
-  const searchRefreshControl = useMemo(() => (
-    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-  ), [refreshing, handleRefresh]);
+  const searchRefreshControl = useMemo(
+    () => <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
+    [refreshing, handleRefresh]
+  );
 
-  const categoryRefreshControl = useMemo(() => (
-    <RefreshControl
-      refreshing={refreshing}
-      onRefresh={async () => {
-        setRefreshing(true);
-        if (selectedCategorySlug) {
-          await handleCategoryPress(selectedCategorySlug);
-        }
-        setRefreshing(false);
-      }}
-    />
-  ), [refreshing, selectedCategorySlug, handleCategoryPress]);
-
+  const categoryRefreshControl = useMemo(
+    () => (
+      <RefreshControl
+        refreshing={refreshing}
+        onRefresh={async () => {
+          setRefreshing(true);
+          if (selectedCategorySlug) {
+            await handleCategoryPress(selectedCategorySlug);
+          }
+          setRefreshing(false);
+        }}
+      />
+    ),
+    [refreshing, selectedCategorySlug, handleCategoryPress]
+  );
 
   const renderHeader = useCallback(() => {
-    const categoryColor = selectedCategory?.color_hex || "#0066FF";
-    const contrastColor = selectedCategory ? getContrastColor(categoryColor) : "#FFFFFF";
+    const categoryColor = selectedCategory?.color_hex || '#0066FF';
+    const contrastColor = selectedCategory ? getContrastColor(categoryColor) : '#FFFFFF';
 
     return (
       <Animated.View entering={FadeIn.duration(300)}>
-        <XStack
-          padding={spacing.lg}
-          alignItems="center"
-          gap={spacing.sm}
-        >
+        <XStack padding={spacing.lg} alignItems="center" gap={spacing.sm}>
           <SearchInputContainer
             height={media.searchInputHeight}
             borderRadius={radius.md}
@@ -442,9 +467,7 @@ function DiscoverScreen() {
             <Search
               size={iconSizes.md}
               color={
-                theme === "dark"
-                  ? hexColors.dark.textSecondary
-                  : hexColors.light.textSecondary
+                theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
               }
             />
             {selectedCategory && (
@@ -471,9 +494,7 @@ function DiscoverScreen() {
                     style={{
                       padding: spacing.xs,
                       backgroundColor:
-                        contrastColor === "#000000"
-                          ? "rgba(0,0,0,0.2)"
-                          : "rgba(255,255,255,0.3)",
+                        contrastColor === '#000000' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)',
                     }}
                   >
                     <X size={iconSizes.xs} color={contrastColor} />
@@ -485,17 +506,12 @@ function DiscoverScreen() {
               ref={searchInputRef}
               value={searchQuery}
               onChangeText={handleSearchChange}
-              placeholder={selectedCategory ? t("searchPlaceholder") : t("discoverPlaceholder")}
+              placeholder={selectedCategory ? t('searchPlaceholder') : t('discoverPlaceholder')}
               placeholderTextColor={
-                theme === "dark"
-                  ? hexColors.dark.textMuted
-                  : hexColors.light.textMuted
+                theme === 'dark' ? hexColors.dark.textMuted : hexColors.light.textMuted
               }
               style={{
-                color:
-                  theme === "dark"
-                    ? hexColors.dark.text
-                    : hexColors.light.text,
+                color: theme === 'dark' ? hexColors.dark.text : hexColors.light.text,
                 fontSize: typography.fontSize.body,
                 paddingVertical: spacing.xs,
               }}
@@ -504,10 +520,7 @@ function DiscoverScreen() {
               returnKeyType="search"
             />
             {isSearching ? (
-              <ActivityIndicator
-                size="small"
-                color={hexColors[theme].textSecondary}
-              />
+              <ActivityIndicator size="small" color={hexColors[theme].textSecondary} />
             ) : searchQuery.length > 0 ? (
               <ClearButton
                 width={media.clearButtonSize}
@@ -518,9 +531,7 @@ function DiscoverScreen() {
                 <X
                   size={iconSizes.sm}
                   color={
-                    theme === "dark"
-                      ? hexColors.dark.textSecondary
-                      : hexColors.light.textSecondary
+                    theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
                   }
                 />
               </ClearButton>
@@ -529,7 +540,21 @@ function DiscoverScreen() {
         </XStack>
       </Animated.View>
     );
-  }, [selectedCategory, searchQuery, isSearching, theme, t, handleSearchChange, clearSearch, clearCategoryFilter, spacing, radius, iconSizes, typography, media]);
+  }, [
+    selectedCategory,
+    searchQuery,
+    isSearching,
+    theme,
+    t,
+    handleSearchChange,
+    clearSearch,
+    clearCategoryFilter,
+    spacing,
+    radius,
+    iconSizes,
+    typography,
+    media,
+  ]);
 
   const renderEmptyState = useCallback(() => {
     const hasQuery = searchQuery.trim().length > 0;
@@ -538,8 +563,8 @@ function DiscoverScreen() {
     if (hasQuery && searchFinished && searchResults.length === 0) {
       return (
         <EmptyState
-          title={t("noDiscoverResults")}
-          description={t("noDiscoverResultsDescription")}
+          title={t('noDiscoverResults')}
+          description={t('noDiscoverResultsDescription')}
         />
       );
     }
@@ -566,50 +591,39 @@ function DiscoverScreen() {
       if (userCategories.length === 0) {
         return (
           <EmptyDiscoverState paddingHorizontal={spacing.xl} gap={spacing.md}>
-            <Text.Body
-              textAlign="center"
-              color="$textMuted"
-            >
-              {t("discoverDescription")}
+            <Text.Body textAlign="center" color="$textMuted">
+              {t('discoverDescription')}
             </Text.Body>
           </EmptyDiscoverState>
         );
       }
 
       return (
-        <ScrollView 
-          ref={categoryGridRef} 
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView ref={categoryGridRef} showsVerticalScrollIndicator={false}>
           <CategoriesContainer
             paddingHorizontal={spacing.lg}
             paddingBottom={spacing.md}
             gap={spacing.lg}
             width="100%"
             maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
-            alignSelf={isTablet ? "center" : undefined}
+            alignSelf={isTablet ? 'center' : undefined}
           >
             <Animated.View entering={FadeIn.duration(300)}>
               <YStack gap={spacing.sm}>
-                <Text.Headline
-                  color="$text"
-                >
-                  {t("discover")}
-                </Text.Headline>
-                <Text.Body
-                  color="$textMuted"
-                >
-                  {t("discoverDescription")}
-                </Text.Body>
+                <Text.Headline color="$text">{t('discover')}</Text.Headline>
+                <Text.Body color="$textMuted">{t('discoverDescription')}</Text.Body>
               </YStack>
             </Animated.View>
 
             <CategoriesGrid gap={spacing.md}>
               {rows.map((row, rowIndex) => (
-                <Animated.View key={`row-${rowIndex}`} entering={FadeInDown.delay(100 + rowIndex * 50).duration(300)}>
+                <Animated.View
+                  key={`row-${rowIndex}`}
+                  entering={FadeInDown.delay(100 + rowIndex * 50).duration(300)}
+                >
                   <CategoryRow gap={spacing.md}>
                     {row.map((category) => {
-                      const categoryColor = category.color_hex || "#0066FF";
+                      const categoryColor = category.color_hex || '#0066FF';
                       const contrastColor = getContrastColor(categoryColor);
                       const factsCount = categoryFactsCounts[category.slug] || 0;
 
@@ -635,9 +649,9 @@ function DiscoverScreen() {
                                 borderRadius={radius.md}
                                 style={{
                                   backgroundColor:
-                                    contrastColor === "#000000"
-                                      ? "rgba(0,0,0,0.1)"
-                                      : "rgba(255,255,255,0.2)",
+                                    contrastColor === '#000000'
+                                      ? 'rgba(0,0,0,0.1)'
+                                      : 'rgba(255,255,255,0.2)',
                                 }}
                               >
                                 {getLucideIcon(category.icon, iconSize, contrastColor)}
@@ -656,8 +670,8 @@ function DiscoverScreen() {
                                   fontFamily={FONT_FAMILIES.medium}
                                 >
                                   {factsCount === 1
-                                    ? t("factCountSingular", { count: factsCount })
-                                    : t("factCountPlural", { count: factsCount })}
+                                    ? t('factCountSingular', { count: factsCount })
+                                    : t('factCountPlural', { count: factsCount })}
                                 </Text.Caption>
                               </DiscoverCategoryTextContainer>
                             </DiscoverCategoryCard>
@@ -683,7 +697,24 @@ function DiscoverScreen() {
     }
 
     return null;
-  }, [searchQuery, isSearching, searchResults.length, selectedCategorySlug, isTablet, userCategories, isLoadingCategories, categoryFactsCounts, theme, t, handleCategoryPress, spacing, radius, config, media, iconSizes]);
+  }, [
+    searchQuery,
+    isSearching,
+    searchResults.length,
+    selectedCategorySlug,
+    isTablet,
+    userCategories,
+    isLoadingCategories,
+    categoryFactsCounts,
+    theme,
+    t,
+    handleCategoryPress,
+    spacing,
+    radius,
+    config,
+    media,
+    iconSizes,
+  ]);
 
   const renderContent = useCallback(() => {
     const hasQuery = searchQuery.trim().length > 0;
@@ -695,7 +726,7 @@ function DiscoverScreen() {
       }
 
       return (
-        <Animated.View 
+        <Animated.View
           key="search-results"
           entering={FadeInUp.duration(350).springify()}
           style={{ flex: 1 }}
@@ -717,11 +748,7 @@ function DiscoverScreen() {
     if (selectedCategorySlug) {
       if (isLoadingCategoryFacts) {
         return (
-          <Animated.View 
-            key="loading" 
-            entering={FadeIn.duration(200)} 
-            style={{ flex: 1 }}
-          >
+          <Animated.View key="loading" entering={FadeIn.duration(200)} style={{ flex: 1 }}>
             <EmptyDiscoverState paddingHorizontal={spacing.xl} gap={spacing.md}>
               <ActivityIndicator size="large" color={hexColors[theme].primary} />
             </EmptyDiscoverState>
@@ -731,21 +758,21 @@ function DiscoverScreen() {
 
       if (categoryFacts.length === 0) {
         return (
-          <Animated.View 
-            key="empty" 
-            entering={FadeInUp.duration(350).springify()} 
+          <Animated.View
+            key="empty"
+            entering={FadeInUp.duration(350).springify()}
             style={{ flex: 1 }}
           >
             <EmptyState
-              title={t("noDiscoverResults")}
-              description={t("noDiscoverResultsDescription")}
+              title={t('noDiscoverResults')}
+              description={t('noDiscoverResultsDescription')}
             />
           </Animated.View>
         );
       }
 
       return (
-        <Animated.View 
+        <Animated.View
           key={`category-${selectedCategorySlug}`}
           entering={FadeInUp.duration(400).springify()}
           style={{ flex: 1 }}
@@ -765,23 +792,33 @@ function DiscoverScreen() {
 
     // Show category grid when no search and no category selected
     return (
-      <Animated.View 
-        key="category-grid"
-        entering={FadeIn.duration(300)}
-        style={{ flex: 1 }}
-      >
+      <Animated.View key="category-grid" entering={FadeIn.duration(300)} style={{ flex: 1 }}>
         {renderEmptyState()}
       </Animated.View>
     );
-  }, [searchQuery, searchResults, selectedCategorySlug, isLoadingCategoryFacts, categoryFacts, theme, t, keyExtractor, renderSearchItem, renderCategoryItem, searchRefreshControl, categoryRefreshControl, renderEmptyState, overrideItemLayout, spacing]);
+  }, [
+    searchQuery,
+    searchResults,
+    selectedCategorySlug,
+    isLoadingCategoryFacts,
+    categoryFacts,
+    theme,
+    t,
+    keyExtractor,
+    renderSearchItem,
+    renderCategoryItem,
+    searchRefreshControl,
+    categoryRefreshControl,
+    renderEmptyState,
+    overrideItemLayout,
+    spacing,
+  ]);
 
   return (
-    <ScreenContainer edges={["top"]}>
-      <StatusBar style={theme === "dark" ? "light" : "dark"} />
+    <ScreenContainer edges={['top']}>
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       {renderHeader()}
-      <YStack flex={1}>
-        {renderContent()}
-      </YStack>
+      <YStack flex={1}>{renderContent()}</YStack>
     </ScreenContainer>
   );
 }

@@ -1,34 +1,34 @@
-import React from "react";
-import { TextStyle } from "react-native";
-import { Text as TamaguiText, GetProps } from "@tamagui/core";
+import React from 'react';
+import { TextStyle } from 'react-native';
+import { Text as TamaguiText, GetProps } from '@tamagui/core';
 
-import { useResponsive } from "../utils/useResponsive";
+import { useResponsive } from '../utils/useResponsive';
 
 /**
  * Font family constants for Montserrat weights.
  * Use these to set the correct font variant for the desired weight.
  */
 export const FONT_FAMILIES = {
-  regular: "Montserrat_400Regular",
-  regular_italic: "Montserrat_400Regular_Italic",
-  medium: "Montserrat_500Medium",
-  semibold: "Montserrat_600SemiBold",
-  bold: "Montserrat_700Bold",
-  extrabold: "Montserrat_800ExtraBold",
+  regular: 'Montserrat_400Regular',
+  regular_italic: 'Montserrat_400Regular_Italic',
+  medium: 'Montserrat_500Medium',
+  semibold: 'Montserrat_600SemiBold',
+  bold: 'Montserrat_700Bold',
+  extrabold: 'Montserrat_800ExtraBold',
 } as const;
 
 /**
  * Typography preset names
  */
 export type TextPreset =
-  | "hero"
-  | "display"
-  | "headline"
-  | "title"
-  | "body"
-  | "label"
-  | "caption"
-  | "tiny";
+  | 'hero'
+  | 'display'
+  | 'headline'
+  | 'title'
+  | 'body'
+  | 'label'
+  | 'caption'
+  | 'tiny';
 
 /**
  * Preset style configurations
@@ -42,38 +42,38 @@ const PRESETS: Record<
     letterSpacing?: number;
   }
 > = {
-  hero: { fontFamily: FONT_FAMILIES.bold, fontWeight: "700", color: "$text" },
+  hero: { fontFamily: FONT_FAMILIES.bold, fontWeight: '700', color: '$text' },
   display: {
     fontFamily: FONT_FAMILIES.bold,
-    fontWeight: "700",
-    color: "$text",
+    fontWeight: '700',
+    color: '$text',
   },
   headline: {
     fontFamily: FONT_FAMILIES.bold,
-    fontWeight: "700",
-    color: "$text",
+    fontWeight: '700',
+    color: '$text',
     letterSpacing: 0.2,
   },
-  title: { fontFamily: FONT_FAMILIES.bold, fontWeight: "700", color: "$text" },
+  title: { fontFamily: FONT_FAMILIES.bold, fontWeight: '700', color: '$text' },
   body: {
     fontFamily: FONT_FAMILIES.regular,
-    fontWeight: "400",
-    color: "$textSecondary",
+    fontWeight: '400',
+    color: '$textSecondary',
   },
   label: {
     fontFamily: FONT_FAMILIES.semibold,
-    fontWeight: "600",
-    color: "$text",
+    fontWeight: '600',
+    color: '$text',
   },
   caption: {
     fontFamily: FONT_FAMILIES.regular,
-    fontWeight: "400",
-    color: "$textSecondary",
+    fontWeight: '400',
+    color: '$textSecondary',
   },
   tiny: {
     fontFamily: FONT_FAMILIES.regular,
-    fontWeight: "400",
-    color: "$textSecondary",
+    fontWeight: '400',
+    color: '$textSecondary',
   },
 } as const;
 
@@ -83,7 +83,7 @@ type BaseTextProps = GetProps<typeof TamaguiText>;
 /**
  * Props for the Text component
  */
-export interface TextProps extends Omit<BaseTextProps, "style"> {
+export interface TextProps extends Omit<BaseTextProps, 'style'> {
   children: React.ReactNode;
   style?: TextStyle;
   preset?: TextPreset;
@@ -118,20 +118,14 @@ const TextBase = React.memo(
 
     // Compute responsive fontSize and lineHeight based on preset
     const responsiveFontSize = preset ? typography.fontSize[preset] : undefined;
-    const responsiveLineHeight = preset
-      ? typography.lineHeight[preset]
-      : undefined;
-    const responsiveLetterSpacing = preset
-      ? typography.letterSpacing[preset]
-      : undefined;
+    const responsiveLineHeight = preset ? typography.lineHeight[preset] : undefined;
+    const responsiveLetterSpacing = preset ? typography.letterSpacing[preset] : undefined;
 
     // Props override preset values
     const fontSize = customFontSize ?? responsiveFontSize;
     const lineHeight = customLineHeight ?? responsiveLineHeight;
     const letterSpacing =
-      customLetterSpacing ??
-      presetStyles?.letterSpacing ??
-      responsiveLetterSpacing;
+      customLetterSpacing ?? presetStyles?.letterSpacing ?? responsiveLetterSpacing;
     const fontFamily = customFontFamily ?? presetStyles?.fontFamily;
     const fontWeight = customFontWeight ?? presetStyles?.fontWeight;
     const color = customColor ?? presetStyles?.color;
@@ -143,7 +137,7 @@ const TextBase = React.memo(
         lineHeight={lineHeight}
         letterSpacing={letterSpacing}
         fontFamily={fontFamily}
-        fontWeight={fontWeight as BaseTextProps["fontWeight"]}
+        fontWeight={fontWeight as BaseTextProps['fontWeight']}
         color={color}
         style={style}
         {...props}
@@ -154,20 +148,18 @@ const TextBase = React.memo(
   }
 );
 
-TextBase.displayName = "Text";
+TextBase.displayName = 'Text';
 
 /**
  * Props for preset variant components (no preset prop needed)
  */
-type PresetTextProps = Omit<TextProps, "preset">;
+type PresetTextProps = Omit<TextProps, 'preset'>;
 
 /**
  * Create a preset variant component
  */
 const createPresetComponent = (preset: TextPreset, displayName: string) => {
-  const Component = React.memo((props: PresetTextProps) => (
-    <TextBase preset={preset} {...props} />
-  ));
+  const Component = React.memo((props: PresetTextProps) => <TextBase preset={preset} {...props} />);
   Component.displayName = displayName;
   return Component;
 };
@@ -199,14 +191,14 @@ const createPresetComponent = (preset: TextPreset, displayName: string) => {
  * <Text fontSize={22} fontFamily={FONT_FAMILIES.bold}>Custom text</Text>
  */
 export const Text = Object.assign(TextBase, {
-  Hero: createPresetComponent("hero", "Text.Hero"),
-  Display: createPresetComponent("display", "Text.Display"),
-  Headline: createPresetComponent("headline", "Text.Headline"),
-  Title: createPresetComponent("title", "Text.Title"),
-  Body: createPresetComponent("body", "Text.Body"),
-  Label: createPresetComponent("label", "Text.Label"),
-  Caption: createPresetComponent("caption", "Text.Caption"),
-  Tiny: createPresetComponent("tiny", "Text.Tiny"),
+  Hero: createPresetComponent('hero', 'Text.Hero'),
+  Display: createPresetComponent('display', 'Text.Display'),
+  Headline: createPresetComponent('headline', 'Text.Headline'),
+  Title: createPresetComponent('title', 'Text.Title'),
+  Body: createPresetComponent('body', 'Text.Body'),
+  Label: createPresetComponent('label', 'Text.Label'),
+  Caption: createPresetComponent('caption', 'Text.Caption'),
+  Tiny: createPresetComponent('tiny', 'Text.Tiny'),
 });
 
 // Export type for the compound component

@@ -11,4 +11,3 @@ export { TriviaGameView } from './TriviaGameView';
 export type { TriviaGameViewProps } from './TriviaGameView';
 export { getTriviaModeBadge } from './utils';
 export type { TriviaModeBadge, TriviaModeBadgeOptions } from './utils';
-

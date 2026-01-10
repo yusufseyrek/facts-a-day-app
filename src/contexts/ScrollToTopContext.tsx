@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useCallback, useRef } from "react";
+import React, { createContext, useContext, useCallback, useRef } from 'react';
 
 type ScrollToTopFn = () => void;
 
@@ -31,7 +31,9 @@ export function ScrollToTopProvider({ children }: { children: React.ReactNode })
   }, []);
 
   return (
-    <ScrollToTopContext.Provider value={{ registerScrollToTop, unregisterScrollToTop, scrollToTop }}>
+    <ScrollToTopContext.Provider
+      value={{ registerScrollToTop, unregisterScrollToTop, scrollToTop }}
+    >
       {children}
     </ScrollToTopContext.Provider>
   );
@@ -40,7 +42,7 @@ export function ScrollToTopProvider({ children }: { children: React.ReactNode })
 export function useScrollToTop() {
   const context = useContext(ScrollToTopContext);
   if (!context) {
-    throw new Error("useScrollToTop must be used within a ScrollToTopProvider");
+    throw new Error('useScrollToTop must be used within a ScrollToTopProvider');
   }
   return context;
 }

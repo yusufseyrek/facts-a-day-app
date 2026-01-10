@@ -32,7 +32,7 @@ let currentRefreshStatus: RefreshStatus = 'idle';
  */
 export function onRefreshStatusChange(listener: RefreshStatusListener): () => void {
   refreshStatusListeners.add(listener);
-  
+
   // Immediately emit current status to new subscriber
   // This ensures late subscribers (like home screen mounting after refresh started) get the current state
   if (currentRefreshStatus !== 'idle') {
@@ -42,7 +42,7 @@ export function onRefreshStatusChange(listener: RefreshStatusListener): () => vo
       console.error('Error in refresh status listener (initial emit):', error);
     }
   }
-  
+
   return () => {
     refreshStatusListeners.delete(listener);
   };
@@ -160,10 +160,14 @@ async function saveCurrentLocale(locale: string): Promise<void> {
 /**
  * Check if the device locale has changed compared to the stored locale
  */
-async function hasLocaleChanged(): Promise<{ changed: boolean; currentLocale: SupportedLocale; storedLocale: string | null }> {
+async function hasLocaleChanged(): Promise<{
+  changed: boolean;
+  currentLocale: SupportedLocale;
+  storedLocale: string | null;
+}> {
   const currentLocale = getDeviceLocale();
   const storedLocale = await getStoredLocale();
-  
+
   return {
     changed: storedLocale !== null && storedLocale !== currentLocale,
     currentLocale,
@@ -225,13 +229,13 @@ async function needsQuestionsMigration(): Promise<boolean> {
     }
 
     const database = await db.openDatabase();
-    
+
     // Check if there are any facts
     const factsResult = await database.getFirstAsync<{ count: number }>(
       'SELECT COUNT(*) as count FROM facts'
     );
     const factsCount = factsResult?.count || 0;
-    
+
     if (factsCount === 0) {
       // No facts yet, no migration needed
       // Mark as done so we don't check again
@@ -267,7 +271,7 @@ async function needsQuestionsMigration(): Promise<boolean> {
 async function runQuestionsMigration(locale: SupportedLocale): Promise<void> {
   try {
     console.log('🔄 Running questions migration for existing facts...');
-    
+
     const categories = await onboardingService.getSelectedCategories();
     if (categories.length === 0) {
       console.log('No categories selected, skipping migration');
@@ -324,7 +328,7 @@ async function runQuestionsMigration(locale: SupportedLocale): Promise<void> {
  * This runs every time the app opens (no time interval restriction)
  * Runs in the background and doesn't block app startup
  * Silently fails if offline or network issues occur
- * 
+ *
  * On initial load, checks if locale has changed compared to DB.
  * If locale changed: triggers full refresh (fetch all facts, insert/update)
  * and shows an interstitial ad
@@ -344,21 +348,23 @@ export async function refreshAppContent(): Promise<RefreshResult> {
     // Check if locale has changed since last app open
     const localeStatus = await hasLocaleChanged();
     const currentLocale = localeStatus.currentLocale;
-    
+
     if (localeStatus.changed) {
       // Locale has changed - trigger full refresh with new language
-      console.log(`🌍 Locale changed from "${localeStatus.storedLocale}" to "${currentLocale}" - triggering full refresh...`);
-      
+      console.log(
+        `🌍 Locale changed from "${localeStatus.storedLocale}" to "${currentLocale}" - triggering full refresh...`
+      );
+
       // Emit locale-change status for UI loading indicator
       emitRefreshStatus('locale-change');
-      
+
       const languageChangeResult = await preferencesService.handleLanguageChange(currentLocale);
-      
+
       if (languageChangeResult.success) {
         // Save the new locale after successful refresh
         await saveCurrentLocale(currentLocale);
         await updateLastRefreshTime();
-        
+
         result.success = true;
         result.updated.facts = languageChangeResult.factsCount || 0;
         console.log(`✅ Locale change refresh completed: ${result.updated.facts} facts updated`);
@@ -366,17 +372,17 @@ export async function refreshAppContent(): Promise<RefreshResult> {
         console.error('❌ Locale change refresh failed:', languageChangeResult.error);
         result.error = languageChangeResult.error;
       }
-      
+
       // Emit idle status when done
       emitRefreshStatus('idle');
-      
+
       return result;
     }
 
     // No locale change - proceed with regular incremental refresh
     // Emit refreshing status for UI loading indicator
     emitRefreshStatus('refreshing');
-    
+
     // Also save current locale if this is the first time (storedLocale is null)
     if (localeStatus.storedLocale === null) {
       await saveCurrentLocale(currentLocale);
@@ -440,7 +446,9 @@ export async function refreshAppContent(): Promise<RefreshResult> {
                 question_type: question.question_type,
                 question_text: question.question_text,
                 correct_answer: question.correct_answer,
-                wrong_answers: question.wrong_answers ? JSON.stringify(question.wrong_answers) : null,
+                wrong_answers: question.wrong_answers
+                  ? JSON.stringify(question.wrong_answers)
+                  : null,
                 explanation: question.explanation,
                 difficulty: question.difficulty,
               });
@@ -489,7 +497,6 @@ export async function refreshAppContent(): Promise<RefreshResult> {
 
     result.success = true;
     console.log('✅ Background content refresh completed successfully');
-
   } catch (error) {
     console.error('❌ Content refresh failed:', error);
     result.error = error instanceof Error ? error.message : 'Unknown error';

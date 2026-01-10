@@ -1,9 +1,25 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { ScrollView, RefreshControl, ActivityIndicator, Pressable, View, Animated as RNAnimated } from 'react-native';
+import {
+  ScrollView,
+  RefreshControl,
+  ActivityIndicator,
+  Pressable,
+  View,
+  Animated as RNAnimated,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { Gamepad2, Trophy, CheckCircle, Calendar, Shuffle, Hash, ChevronLeft, ChevronRight } from '@tamagui/lucide-icons';
+import {
+  Gamepad2,
+  Trophy,
+  CheckCircle,
+  Calendar,
+  Shuffle,
+  Hash,
+  ChevronLeft,
+  ChevronRight,
+} from '@tamagui/lucide-icons';
 import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { YStack, XStack } from 'tamagui';
@@ -18,7 +34,11 @@ import { hexColors, useTheme } from '../../src/theme';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
 
-import type { TriviaStats, CategoryWithProgress, TriviaSessionWithCategory } from '../../src/services/trivia';
+import type {
+  TriviaStats,
+  CategoryWithProgress,
+  TriviaSessionWithCategory,
+} from '../../src/services/trivia';
 import type { TriviaMode } from '../../src/services/analytics';
 
 // View All Button with press animation
@@ -59,11 +79,15 @@ function ViewAllButton({
       onPressOut={handlePressOut}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
-      <RNAnimated.View style={{ transform: [{ scale }], flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-        <Text.Label
-          fontFamily={FONT_FAMILIES.semibold}
-          color={color}
-        >
+      <RNAnimated.View
+        style={{
+          transform: [{ scale }],
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xs,
+        }}
+      >
+        <Text.Label fontFamily={FONT_FAMILIES.semibold} color={color}>
           {label}
         </Text.Label>
         <ChevronRight size={iconSizes.sm} color={color} />
@@ -73,13 +97,7 @@ function ViewAllButton({
 }
 
 // Back Button with press animation
-function BackButton({ 
-  onPress, 
-  primaryColor 
-}: { 
-  onPress: () => void; 
-  primaryColor: string;
-}) {
+function BackButton({ onPress, primaryColor }: { onPress: () => void; primaryColor: string }) {
   const { iconSizes, media } = useResponsive();
   const scale = useRef(new RNAnimated.Value(1)).current;
   const buttonSize = media.topicCardSize * 0.45;
@@ -180,16 +198,9 @@ function MetricCard({
           {label}
         </Text.Body>
       </XStack>
-      <Text.Display
-        color={textColor}
-      >
-        {value}
-      </Text.Display>
+      <Text.Display color={textColor}>{value}</Text.Display>
       {subtitle && (
-        <Text.Caption
-          color={subtitleColor}
-          fontFamily={FONT_FAMILIES.medium}
-        >
+        <Text.Caption color={subtitleColor} fontFamily={FONT_FAMILIES.medium}>
           {subtitle}
         </Text.Caption>
       )}
@@ -250,7 +261,9 @@ function MetricsGrid({
       color: primaryColor,
       label: t('answered'),
       value: stats?.totalAnswered || 0,
-      subtitle: stats?.answeredThisWeek ? t('thisWeek', { count: stats.answeredThisWeek }) : undefined,
+      subtitle: stats?.answeredThisWeek
+        ? t('thisWeek', { count: stats.answeredThisWeek })
+        : undefined,
     },
     {
       Icon: Trophy,
@@ -296,7 +309,8 @@ function CategoryProgressBar({
   const { typography, spacing, radius } = useResponsive();
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const trackColor = isDark ? hexColors.dark.border : hexColors.light.border;
-  const progressColor = category.color_hex || (isDark ? hexColors.dark.primary : hexColors.light.primary);
+  const progressColor =
+    category.color_hex || (isDark ? hexColors.dark.primary : hexColors.light.primary);
   const percentage = category.accuracy;
   const barHeight = spacing.sm;
 
@@ -305,17 +319,11 @@ function CategoryProgressBar({
       <XStack alignItems="center" justifyContent="space-between">
         <XStack alignItems="center" gap={spacing.sm}>
           {getLucideIcon(category.icon, typography.fontSize.title, progressColor)}
-          <Text.Label
-            color={textColor}
-            fontFamily={FONT_FAMILIES.medium}
-          >
+          <Text.Label color={textColor} fontFamily={FONT_FAMILIES.medium}>
             {category.name}
           </Text.Label>
         </XStack>
-        <Text.Caption
-          color={textColor}
-          fontFamily={FONT_FAMILIES.semibold}
-        >
+        <Text.Caption color={textColor} fontFamily={FONT_FAMILIES.semibold}>
           {percentage}%
         </Text.Caption>
       </XStack>
@@ -367,9 +375,8 @@ function SessionCard({
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const iconContainerSize = media.topicCardSize * 0.5;
 
-  const scorePercentage = session.total_questions > 0 
-    ? (session.correct_answers / session.total_questions) * 100 
-    : 0;
+  const scorePercentage =
+    session.total_questions > 0 ? (session.correct_answers / session.total_questions) * 100 : 0;
 
   const getFeedback = () => {
     if (scorePercentage >= 90) {
@@ -406,8 +413,8 @@ function SessionCard({
   };
 
   const getDateDisplay = () => {
-    return dateFormat === 'relative' 
-      ? formatRelativeDate(session.completed_at) 
+    return dateFormat === 'relative'
+      ? formatRelativeDate(session.completed_at)
       : formatTimeOnly(session.completed_at);
   };
 
@@ -443,10 +450,10 @@ function SessionCard({
         </View>
       );
     }
-    
+
     const IconComponent = session.trivia_mode === 'daily' ? Calendar : Shuffle;
     const iconColor = primaryColor;
-    
+
     return (
       <View
         style={{
@@ -466,11 +473,9 @@ function SessionCard({
   const hasResultData = session.question_ids && session.selected_answers;
 
   return (
-    <Pressable 
+    <Pressable
       onPress={hasResultData ? onPress : undefined}
-      style={({ pressed }) => [
-        pressed && hasResultData && { opacity: 0.8 }
-      ]}
+      style={({ pressed }) => [pressed && hasResultData && { opacity: 0.8 }]}
       testID={testID}
     >
       <XStack
@@ -482,34 +487,20 @@ function SessionCard({
       >
         {getIcon()}
         <YStack flex={1} gap={2}>
-          <Text.Label
-            fontFamily={FONT_FAMILIES.semibold}
-            color={textColor}
-          >
+          <Text.Label fontFamily={FONT_FAMILIES.semibold} color={textColor}>
             {getDisplayName()}
           </Text.Label>
-          <Text.Caption
-            color={secondaryTextColor}
-          >
-            {getDateDisplay()}
-          </Text.Caption>
+          <Text.Caption color={secondaryTextColor}>{getDateDisplay()}</Text.Caption>
         </YStack>
         <YStack alignItems="flex-end" gap={2}>
-          <Text.Caption
-            fontFamily={FONT_FAMILIES.semibold}
-            color={feedback.color}
-          >
+          <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={feedback.color}>
             {feedback.text}
           </Text.Caption>
-          <Text.Caption
-            color={secondaryTextColor}
-          >
+          <Text.Caption color={secondaryTextColor}>
             {t('score')}: {session.correct_answers}/{session.total_questions}
           </Text.Caption>
         </YStack>
-        {hasResultData && (
-          <ChevronRight size={iconSizes.md} color={secondaryTextColor} />
-        )}
+        {hasResultData && <ChevronRight size={iconSizes.md} color={secondaryTextColor} />}
       </XStack>
     </Pressable>
   );
@@ -532,27 +523,30 @@ export default function PerformanceScreen() {
   const [selectedSession, setSelectedSession] = useState<TriviaSessionWithCategory | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
 
-  const loadData = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) setRefreshing(true);
-      
-      const [statsData, categoriesData, sessionsData] = await Promise.all([
-        triviaService.getOverallStats(),
-        triviaService.getCategoriesWithProgress(locale),
-        triviaService.getRecentSessions(DISPLAY_LIMITS.MAX_ACTIVITIES),
-      ]);
-      
-      setStats(statsData);
-      setCategories(categoriesData);
-      setRecentSessions(sessionsData);
-      setTotalSessionsCount(statsData.testsTaken);
-    } catch (error) {
-      console.error('Error loading performance data:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [locale]);
+  const loadData = useCallback(
+    async (isRefresh = false) => {
+      try {
+        if (isRefresh) setRefreshing(true);
+
+        const [statsData, categoriesData, sessionsData] = await Promise.all([
+          triviaService.getOverallStats(),
+          triviaService.getCategoriesWithProgress(locale),
+          triviaService.getRecentSessions(DISPLAY_LIMITS.MAX_ACTIVITIES),
+        ]);
+
+        setStats(statsData);
+        setCategories(categoriesData);
+        setRecentSessions(sessionsData);
+        setTotalSessionsCount(statsData.testsTaken);
+      } catch (error) {
+        console.error('Error loading performance data:', error);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [locale]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -611,23 +605,23 @@ export default function PerformanceScreen() {
   // Show results view for selected session
   if (selectedSession && selectedSession.questions && selectedSession.answers) {
     const wrongCount = selectedSession.total_questions - selectedSession.correct_answers;
-    
+
     // Format date/time for subtitle
     const formatSessionDateTime = (dateString: string) => {
       const date = new Date(dateString);
-      const dateStr = date.toLocaleDateString(locale, { 
+      const dateStr = date.toLocaleDateString(locale, {
         weekday: 'short',
-        month: 'short', 
+        month: 'short',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
       });
-      const timeStr = date.toLocaleTimeString(locale, { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      const timeStr = date.toLocaleTimeString(locale, {
+        hour: '2-digit',
+        minute: '2-digit',
       });
       return `${dateStr} • ${timeStr}`;
     };
-    
+
     return (
       <TriviaResults
         correctAnswers={selectedSession.correct_answers}
@@ -661,19 +655,19 @@ export default function PerformanceScreen() {
 
   // Take top 4 categories for display, sorted by accuracy high to low
   const displayCategories = categories
-    .filter(c => c.total > 0 && c.accuracy > 0)
+    .filter((c) => c.total > 0 && c.accuracy > 0)
     .sort((a, b) => b.accuracy - a.accuracy)
     .slice(0, DISPLAY_LIMITS.MAX_CATEGORIES);
-  
+
   // All categories with accuracy > 0, sorted high to low (for modal)
   const allCategoriesWithAccuracy = categories
-    .filter(c => c.total > 0 && c.accuracy > 0)
+    .filter((c) => c.total > 0 && c.accuracy > 0)
     .sort((a, b) => b.accuracy - a.accuracy);
 
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      
+
       {/* Header */}
       <Animated.View entering={FadeInUp.duration(400).springify()}>
         <XStack
@@ -686,13 +680,9 @@ export default function PerformanceScreen() {
           borderBottomColor={isDark ? hexColors.dark.border : hexColors.light.border}
         >
           <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
-          
-          <Text.Title
-            color={textColor}
-          >
-            {t('triviaPerformance')}
-          </Text.Title>
-          
+
+          <Text.Title color={textColor}>{t('triviaPerformance')}</Text.Title>
+
           {/* Empty spacer to balance the header */}
           <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />
         </XStack>
@@ -700,20 +690,15 @@ export default function PerformanceScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />}
       >
         <YStack padding={spacing.lg} gap={spacing.xl}>
           {/* Core Metrics */}
           <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
-            <Text.Title
-              color={textColor}
-              marginBottom={spacing.md}
-            >
+            <Text.Title color={textColor} marginBottom={spacing.md}>
               {t('coreMetrics')}
             </Text.Title>
-            
+
             <MetricsGrid
               stats={stats}
               isDark={isDark}
@@ -733,11 +718,7 @@ export default function PerformanceScreen() {
             <Animated.View entering={SlideInRight.delay(75).duration(400).springify()}>
               <YStack marginBottom={spacing.md} gap={spacing.xs}>
                 <XStack alignItems="center" justifyContent="space-between">
-                  <Text.Title
-                    color={textColor}
-                  >
-                    {t('accuracyByCategory')}
-                  </Text.Title>
+                  <Text.Title color={textColor}>{t('accuracyByCategory')}</Text.Title>
                 </XStack>
                 <Text.Caption
                   color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
@@ -746,7 +727,7 @@ export default function PerformanceScreen() {
                   {t('accuracyByCategorySubtitle')}
                 </Text.Caption>
               </YStack>
-              
+
               <Pressable
                 onPress={() => router.push('/(tabs)/trivia/categories')}
                 style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
@@ -758,11 +739,7 @@ export default function PerformanceScreen() {
                   gap={spacing.lg}
                 >
                   {displayCategories.map((category) => (
-                    <CategoryProgressBar
-                      key={category.slug}
-                      category={category}
-                      isDark={isDark}
-                    />
+                    <CategoryProgressBar key={category.slug} category={category} isDark={isDark} />
                   ))}
                 </YStack>
               </Pressable>
@@ -773,11 +750,7 @@ export default function PerformanceScreen() {
           {recentSessions.length > 0 && (
             <Animated.View entering={SlideInRight.delay(100).duration(400).springify()}>
               <XStack alignItems="center" justifyContent="space-between" marginBottom={spacing.md}>
-                <Text.Title
-                  color={textColor}
-                >
-                  {t('recentTests')}
-                </Text.Title>
+                <Text.Title color={textColor}>{t('recentTests')}</Text.Title>
                 {totalSessionsCount > DISPLAY_LIMITS.MAX_ACTIVITIES && (
                   <ViewAllButton
                     onPress={() => router.push('/(tabs)/trivia/history')}
@@ -786,7 +759,7 @@ export default function PerformanceScreen() {
                   />
                 )}
               </XStack>
-              
+
               <YStack gap={spacing.md}>
                 {recentSessions.map((session, index) => (
                   <SessionCard
@@ -807,7 +780,7 @@ export default function PerformanceScreen() {
 
       {/* Loading overlay for session fetch */}
       {loadingSession && (
-        <View 
+        <View
           style={{
             position: 'absolute',
             top: 0,

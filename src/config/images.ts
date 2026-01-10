@@ -68,4 +68,3 @@ export const IMAGE_MEMORY_CACHE = {
   /** Maximum time to wait for a pending fetch before starting a new one (milliseconds) */
   PENDING_FETCH_TIMEOUT_MS: 30 * 1000,
 } as const;
-

@@ -1,9 +1,9 @@
-import * as WebBrowser from "expo-web-browser";
-import { hexColors } from "../theme";
+import * as WebBrowser from 'expo-web-browser';
+import { hexColors } from '../theme';
 
 export interface OpenBrowserOptions {
   /** Theme mode for styling the browser controls */
-  theme?: "light" | "dark";
+  theme?: 'light' | 'dark';
   /** Target language code for translation (e.g., 'en', 'es', 'ja'). If provided, the URL will be opened through Google Translate. */
   translateTo?: string;
 }
@@ -22,7 +22,7 @@ export function getTranslatedUrl(url: string, targetLanguage: string): string {
 /**
  * Opens a URL in an in-app browser instead of the external browser app.
  * Uses Safari View Controller on iOS and Chrome Custom Tabs on Android.
- * 
+ *
  * @param url - The URL to open
  * @param options - Browser options including theme and translation settings
  */
@@ -30,7 +30,7 @@ export async function openInAppBrowser(
   url: string,
   options: OpenBrowserOptions = {}
 ): Promise<WebBrowser.WebBrowserResult> {
-  const { theme = "dark", translateTo } = options;
+  const { theme = 'dark', translateTo } = options;
   const colors = hexColors[theme];
 
   // If translation is requested, wrap the URL with Google Translate
@@ -40,7 +40,7 @@ export async function openInAppBrowser(
     const result = await WebBrowser.openBrowserAsync(finalUrl, {
       // iOS-specific options
       controlsColor: colors.primary,
-      dismissButtonStyle: "close",
+      dismissButtonStyle: 'close',
       presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
       // Android-specific options
       toolbarColor: colors.surface,
@@ -53,7 +53,7 @@ export async function openInAppBrowser(
 
     return result;
   } catch (error) {
-    console.error("Failed to open URL in browser:", error);
+    console.error('Failed to open URL in browser:', error);
     throw error;
   }
 }
@@ -65,4 +65,3 @@ export async function openInAppBrowser(
 export function dismissBrowser(): void {
   WebBrowser.dismissBrowser();
 }
-

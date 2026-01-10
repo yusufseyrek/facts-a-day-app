@@ -1,25 +1,30 @@
-import React, { useState, useEffect, useRef } from "react";
-import { ScrollView, ActivityIndicator, Animated, Easing } from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { useRouter } from "expo-router";
-import { View, styled } from "@tamagui/core";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { XStack, YStack } from "tamagui";
+import React, { useState, useEffect, useRef } from 'react';
+import { ScrollView, ActivityIndicator, Animated, Easing } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useRouter } from 'expo-router';
+import { View, styled } from '@tamagui/core';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { XStack, YStack } from 'tamagui';
 
-import { Text, Button, ProgressIndicator, CategoryCard } from "../../src/components";
-import { useOnboarding } from "../../src/contexts";
-import { useTranslation } from "../../src/i18n";
-import { trackOnboardingStart, trackOnboardingCategoriesSelected, trackScreenView, Screens } from "../../src/services/analytics";
-import * as db from "../../src/services/database";
-import { hexColors, useTheme } from "../../src/theme";
-import { getLucideIcon } from "../../src/utils/iconMapper";
-import { useResponsive } from "../../src/utils/useResponsive";
+import { Text, Button, ProgressIndicator, CategoryCard } from '../../src/components';
+import { useOnboarding } from '../../src/contexts';
+import { useTranslation } from '../../src/i18n';
+import {
+  trackOnboardingStart,
+  trackOnboardingCategoriesSelected,
+  trackScreenView,
+  Screens,
+} from '../../src/services/analytics';
+import * as db from '../../src/services/database';
+import { hexColors, useTheme } from '../../src/theme';
+import { getLucideIcon } from '../../src/utils/iconMapper';
+import { useResponsive } from '../../src/utils/useResponsive';
 
-import type { SupportedLocale } from "../../src/i18n";
+import type { SupportedLocale } from '../../src/i18n';
 
 const Container = styled(SafeAreaView, {
   flex: 1,
-  backgroundColor: "$background",
+  backgroundColor: '$background',
 });
 
 // These components now use inline props with useResponsive() for dynamic spacing
@@ -28,14 +33,14 @@ export default function Categories() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const { 
-    selectedCategories, 
-    setSelectedCategories, 
-    isInitialized, 
+  const {
+    selectedCategories,
+    setSelectedCategories,
+    isInitialized,
     isInitializing,
     initializationError,
     initializeOnboarding,
-    downloadFacts 
+    downloadFacts,
   } = useOnboarding();
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -151,7 +156,7 @@ export default function Categories() {
       const categoriesFromDb = await db.getAllCategories();
       setCategories(categoriesFromDb);
     } catch (error) {
-      console.error("Error loading categories:", error);
+      console.error('Error loading categories:', error);
     } finally {
       setIsLoading(false);
     }
@@ -159,9 +164,7 @@ export default function Categories() {
 
   const toggleCategory = (slug: string) => {
     setSelectedCategories((prev) =>
-      prev.includes(slug)
-        ? prev.filter((s) => s !== slug)
-        : [...prev, slug]
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
     );
   };
 
@@ -173,7 +176,7 @@ export default function Categories() {
     downloadFacts(locale);
 
     // Navigate immediately to notifications
-    router.push("/onboarding/notifications");
+    router.push('/onboarding/notifications');
   };
 
   // Split categories into rows
@@ -186,10 +189,16 @@ export default function Categories() {
   if (isInitializing || (!isInitialized && !initializationError) || isLoading) {
     return (
       <Container>
-        <StatusBar style={theme === "dark" ? "light" : "dark"} />
-        <YStack padding={spacing.xl} gap={spacing.xl} flex={1} justifyContent="center" alignItems="center">
+        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+        <YStack
+          padding={spacing.xl}
+          gap={spacing.xl}
+          flex={1}
+          justifyContent="center"
+          alignItems="center"
+        >
           <ActivityIndicator size="large" color={hexColors.light.primary} />
-          <Text.Body>{isInitializing ? t("settingUpApp") : t("loadingCategories")}</Text.Body>
+          <Text.Body>{isInitializing ? t('settingUpApp') : t('loadingCategories')}</Text.Body>
         </YStack>
       </Container>
     );
@@ -199,16 +208,22 @@ export default function Categories() {
   if (initializationError) {
     return (
       <Container>
-        <StatusBar style={theme === "dark" ? "light" : "dark"} />
-        <YStack padding={spacing.xl} gap={spacing.lg} flex={1} justifyContent="center" alignItems="center">
+        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+        <YStack
+          padding={spacing.xl}
+          gap={spacing.lg}
+          flex={1}
+          justifyContent="center"
+          alignItems="center"
+        >
           <Text.Body color="#FF6B6B" textAlign="center">
             {initializationError}
           </Text.Body>
           <Text.Body color="$textSecondary" textAlign="center">
-            {t("checkInternetConnection")}
+            {t('checkInternetConnection')}
           </Text.Body>
           <Button onPress={() => initializeOnboarding(locale as SupportedLocale)}>
-            {t("tryAgain")}
+            {t('tryAgain')}
           </Button>
         </YStack>
       </Container>
@@ -222,7 +237,7 @@ export default function Categories() {
 
   return (
     <Container>
-      <StatusBar style={theme === "dark" ? "light" : "dark"} />
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <YStack padding={spacing.xl} gap={spacing.xl} flex={1}>
         <Animated.View
           style={{
@@ -233,10 +248,8 @@ export default function Categories() {
           <ProgressIndicator currentStep={1} totalSteps={2} />
 
           <YStack gap={spacing.sm} style={{ marginTop: spacing.xl }}>
-            <Text.Headline>{t("whatInterestsYou")}</Text.Headline>
-            <Text.Body color="$textSecondary">
-              {t("selectCategoriesMinimum")}
-            </Text.Body>
+            <Text.Headline>{t('whatInterestsYou')}</Text.Headline>
+            <Text.Body color="$textSecondary">{t('selectCategoriesMinimum')}</Text.Body>
           </YStack>
         </Animated.View>
 
@@ -248,7 +261,7 @@ export default function Categories() {
                   {row.map((category, colIndex) => {
                     const catIndex = getCategoryIndex(rowIndex, colIndex);
                     const animValue = categoryAnimations[catIndex];
-                    
+
                     return (
                       <Animated.View
                         key={category.slug}
@@ -308,11 +321,8 @@ export default function Categories() {
           }}
         >
           <View style={{ paddingTop: spacing.md }}>
-            <Button
-              onPress={handleContinue}
-              disabled={selectedCategories.length < 5}
-            >
-              {t("continue")}
+            <Button onPress={handleContinue} disabled={selectedCategories.length < 5}>
+              {t('continue')}
             </Button>
           </View>
         </Animated.View>

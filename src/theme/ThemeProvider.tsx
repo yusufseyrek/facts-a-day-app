@@ -24,11 +24,7 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Determine actual theme based on mode
   const theme: 'light' | 'dark' =
-    themeMode === 'system'
-      ? systemColorScheme === 'dark'
-        ? 'dark'
-        : 'light'
-      : themeMode;
+    themeMode === 'system' ? (systemColorScheme === 'dark' ? 'dark' : 'light') : themeMode;
 
   // Load saved theme preference on mount
   useEffect(() => {

@@ -1,13 +1,13 @@
-import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { RefreshControl, ActivityIndicator } from "react-native";
-import { StatusBar } from "expo-status-bar";
-import * as Notifications from "expo-notifications";
-import { useRouter, useFocusEffect } from "expo-router";
-import { FlashList, ListRenderItemInfo } from "@shopify/flash-list";
-import { styled } from "@tamagui/core";
-import { Lightbulb } from "@tamagui/lucide-icons";
-import Animated, { FadeIn } from "react-native-reanimated";
-import { YStack } from "tamagui";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { RefreshControl, ActivityIndicator } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import * as Notifications from 'expo-notifications';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
+import { styled } from '@tamagui/core';
+import { Lightbulb } from '@tamagui/lucide-icons';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { YStack } from 'tamagui';
 
 import {
   Text,
@@ -17,22 +17,28 @@ import {
   ContentContainer,
   LoadingContainer,
   useIconColor,
-} from "../../src/components";
-import { ImageFactCard } from "../../src/components/ImageFactCard";
-import { LAYOUT } from "../../src/config/app";
-import { FLASH_LIST_ITEM_TYPES, FACT_FLASH_LIST_SETTINGS } from "../../src/config/factListSettings";
-import { useScrollToTopHandler } from "../../src/contexts";
-import { useTranslation } from "../../src/i18n";
-import { trackFeedRefresh, trackScreenView, Screens } from "../../src/services/analytics";
-import { checkAndRequestReview } from "../../src/services/appReview";
-import { onFeedRefresh, forceRefreshContent, onRefreshStatusChange, getRefreshStatus, RefreshStatus } from "../../src/services/contentRefresh";
-import * as database from "../../src/services/database";
-import { prefetchFactImagesWithLimit } from "../../src/services/images";
-import { onPreferenceFeedRefresh } from "../../src/services/preferences";
-import { hexColors, useTheme } from "../../src/theme";
-import { useResponsive } from "../../src/utils/useResponsive";
+} from '../../src/components';
+import { ImageFactCard } from '../../src/components/ImageFactCard';
+import { LAYOUT } from '../../src/config/app';
+import { FLASH_LIST_ITEM_TYPES, FACT_FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
+import { useScrollToTopHandler } from '../../src/contexts';
+import { useTranslation } from '../../src/i18n';
+import { trackFeedRefresh, trackScreenView, Screens } from '../../src/services/analytics';
+import { checkAndRequestReview } from '../../src/services/appReview';
+import {
+  onFeedRefresh,
+  forceRefreshContent,
+  onRefreshStatusChange,
+  getRefreshStatus,
+  RefreshStatus,
+} from '../../src/services/contentRefresh';
+import * as database from '../../src/services/database';
+import { prefetchFactImagesWithLimit } from '../../src/services/images';
+import { onPreferenceFeedRefresh } from '../../src/services/preferences';
+import { hexColors, useTheme } from '../../src/theme';
+import { useResponsive } from '../../src/utils/useResponsive';
 
-import type { FactWithRelations } from "../../src/services/database";
+import type { FactWithRelations } from '../../src/services/database';
 
 // Interface for fact sections (used internally for grouping)
 interface FactSection {
@@ -56,24 +62,20 @@ type FeedListItem = SectionHeaderItem | FactItem;
 // LocaleChangeOverlay is a simple full-screen overlay - uses inline props for responsive gap
 
 // Simple list item component
-const FactListItem = React.memo(({ 
-  item, 
-  onPress 
-}: { 
-  item: FactWithRelations; 
-  onPress: () => void;
-}) => (
-  <ContentContainer>
-    <ImageFactCard
-      title={item.title || item.content.substring(0, 80) + "..."}
-      imageUrl={item.image_url!}
-      factId={item.id}
-      category={item.categoryData || item.category}
-      categorySlug={item.categoryData?.slug || item.category}
-      onPress={onPress}
-    />
-  </ContentContainer>
-));
+const FactListItem = React.memo(
+  ({ item, onPress }: { item: FactWithRelations; onPress: () => void }) => (
+    <ContentContainer>
+      <ImageFactCard
+        title={item.title || item.content.substring(0, 80) + '...'}
+        imageUrl={item.image_url!}
+        factId={item.id}
+        category={item.categoryData || item.category}
+        categorySlug={item.categoryData?.slug || item.category}
+        onPress={onPress}
+      />
+    </ContentContainer>
+  )
+);
 
 FactListItem.displayName = 'FactListItem';
 
@@ -81,11 +83,7 @@ FactListItem.displayName = 'FactListItem';
 const SectionHeader = React.memo(({ title }: { title: string }) => {
   const { spacing, isTablet } = useResponsive();
   return (
-    <YStack
-      width="100%"
-      alignItems="center"
-      backgroundColor="$background"
-    >
+    <YStack width="100%" alignItems="center" backgroundColor="$background">
       <YStack
         width="100%"
         maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
@@ -110,7 +108,9 @@ function HomeScreen() {
   const [sections, setSections] = useState<FactSection[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() => getRefreshStatus());
+  const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() =>
+    getRefreshStatus()
+  );
 
   // Scroll to top handler
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -118,7 +118,7 @@ function HomeScreen() {
   const scrollToTop = useCallback(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
   }, []);
-  useScrollToTopHandler("index", scrollToTop);
+  useScrollToTopHandler('index', scrollToTop);
 
   // Flatten sections into a single array for FlashList
   // Each section becomes: [SectionHeader, FactItem, FactItem, ...]
@@ -156,24 +156,22 @@ function HomeScreen() {
 
   // Auto-refresh feed when new notifications are received
   useEffect(() => {
-    const subscription = Notifications.addNotificationReceivedListener(
-      async (notification) => {
-        const factId = notification.request.content.data.factId;
-        if (factId) {
-          try {
-            await database.markFactAsShown(factId as number);
-            const { syncNotificationSchedule } = await import("../../src/services/notifications");
-            const { getLocaleFromCode } = await import("../../src/i18n");
-            const Localization = await import("expo-localization");
-            const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
-            await syncNotificationSchedule(getLocaleFromCode(deviceLocale));
-          } catch {
-            // Ignore notification setup errors
-          }
-          loadFacts();
+    const subscription = Notifications.addNotificationReceivedListener(async (notification) => {
+      const factId = notification.request.content.data.factId;
+      if (factId) {
+        try {
+          await database.markFactAsShown(factId as number);
+          const { syncNotificationSchedule } = await import('../../src/services/notifications');
+          const { getLocaleFromCode } = await import('../../src/i18n');
+          const Localization = await import('expo-localization');
+          const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
+          await syncNotificationSchedule(getLocaleFromCode(deviceLocale));
+        } catch {
+          // Ignore notification setup errors
         }
+        loadFacts();
       }
-    );
+    });
     return () => subscription.remove();
   }, []);
 
@@ -195,27 +193,33 @@ function HomeScreen() {
     return () => unsubscribe();
   }, []);
 
-  const loadFacts = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) setRefreshing(true);
+  const loadFacts = useCallback(
+    async (isRefresh = false) => {
+      try {
+        if (isRefresh) setRefreshing(true);
 
-      await database.markDeliveredFactsAsShown(locale);
+        await database.markDeliveredFactsAsShown(locale);
 
-      const facts = await database.getFactsGroupedByDate(locale);
-      prefetchFactImagesWithLimit(facts);
-      setSections(groupFactsByDate(facts, t, locale));
-    } catch {
-      // Ignore fact loading errors
-    } finally {
-      setInitialLoading(false);
-      setRefreshing(false);
-    }
-  }, [locale, t]);
+        const facts = await database.getFactsGroupedByDate(locale);
+        prefetchFactImagesWithLimit(facts);
+        setSections(groupFactsByDate(facts, t, locale));
+      } catch {
+        // Ignore fact loading errors
+      } finally {
+        setInitialLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [locale, t]
+  );
 
-  const handleFactPress = useCallback((fact: FactWithRelations) => {
-    checkAndRequestReview();
-    router.push(`/fact/${fact.id}?source=feed`);
-  }, [router]);
+  const handleFactPress = useCallback(
+    (fact: FactWithRelations) => {
+      checkAndRequestReview();
+      router.push(`/fact/${fact.id}?source=feed`);
+    },
+    [router]
+  );
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -237,19 +241,17 @@ function HomeScreen() {
   }, []);
 
   // FlashList renderItem - handles both section headers and fact items
-  const renderItem = useCallback(({ item }: ListRenderItemInfo<FeedListItem>) => {
-    if (item.type === FLASH_LIST_ITEM_TYPES.SECTION_HEADER) {
-      return <SectionHeader title={item.title} />;
-    }
-    
-    if (!item.fact?.id) return null;
-    return (
-      <FactListItem
-        item={item.fact}
-        onPress={() => handleFactPress(item.fact)}
-      />
-    );
-  }, [handleFactPress]);
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<FeedListItem>) => {
+      if (item.type === FLASH_LIST_ITEM_TYPES.SECTION_HEADER) {
+        return <SectionHeader title={item.title} />;
+      }
+
+      if (!item.fact?.id) return null;
+      return <FactListItem item={item.fact} onPress={() => handleFactPress(item.fact)} />;
+    },
+    [handleFactPress]
+  );
 
   // FlashList getItemType - enables recycling optimization
   // Items with different types are recycled in separate pools for better performance
@@ -257,15 +259,16 @@ function HomeScreen() {
     return item.type;
   }, []);
 
-  const refreshControl = useMemo(() => (
-    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-  ), [refreshing, handleRefresh]);
+  const refreshControl = useMemo(
+    () => <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
+    [refreshing, handleRefresh]
+  );
 
   // Loading state
   if (initialLoading && sections.length === 0) {
     return (
-      <ScreenContainer edges={["top"]}>
-        <StatusBar style={theme === "dark" ? "light" : "dark"} />
+      <ScreenContainer edges={['top']}>
+        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <LoadingContainer>
           <ActivityIndicator size="large" color={hexColors.light.primary} />
         </LoadingContainer>
@@ -274,22 +277,19 @@ function HomeScreen() {
   }
 
   return (
-    <ScreenContainer edges={["top"]}>
-      <StatusBar style={theme === "dark" ? "light" : "dark"} />
-      
+    <ScreenContainer edges={['top']}>
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+
       <Animated.View entering={FadeIn.duration(300)}>
         <ScreenHeader
           icon={<Lightbulb size={iconSizes.lg} color={iconColor} />}
-          title={t("factsFeed")}
+          title={t('factsFeed')}
         />
       </Animated.View>
 
       <YStack flex={1}>
         {flattenedData.length === 0 ? (
-          <EmptyState
-            title={t("emptyStateTitle")}
-            description={t("emptyStateDescription")}
-          />
+          <EmptyState title={t('emptyStateTitle')} description={t('emptyStateDescription')} />
         ) : (
           <FlashList
             ref={listRef}
@@ -317,9 +317,7 @@ function HomeScreen() {
             gap={spacing.lg}
           >
             <ActivityIndicator size="large" color={hexColors[theme].primary} />
-            <Text.Body color="$textSecondary">
-              {t("updatingLanguage")}
-            </Text.Body>
+            <Text.Body color="$textSecondary">{t('updatingLanguage')}</Text.Body>
           </YStack>
         )}
       </YStack>
@@ -339,7 +337,7 @@ function getLocalDateString(date: Date = new Date()): string {
 // Helper function to group facts by date
 function groupFactsByDate(
   facts: FactWithRelations[],
-  t: (key: "today" | "yesterday") => string,
+  t: (key: 'today' | 'yesterday') => string,
   locale: string
 ): FactSection[] {
   const today = new Date();
@@ -371,24 +369,24 @@ function groupFactsByDate(
     .map((dateKey) => {
       let title: string;
       if (dateKey === todayString) {
-        title = t("today");
+        title = t('today');
       } else if (dateKey === yesterdayString) {
-        title = t("yesterday");
+        title = t('yesterday');
       } else {
         // Parse as local date for display (add T12:00:00 to avoid timezone edge cases)
         title = new Date(dateKey + 'T12:00:00').toLocaleDateString(locale, {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
         });
       }
 
       return {
         title,
-        data: grouped[dateKey].filter(item => item?.id),
+        data: grouped[dateKey].filter((item) => item?.id),
       };
     })
-    .filter(section => section.data.length > 0);
+    .filter((section) => section.data.length > 0);
 }
 
 export default HomeScreen;

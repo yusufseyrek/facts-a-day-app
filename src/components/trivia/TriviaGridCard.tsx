@@ -65,15 +65,15 @@ export function TriviaGridCard({
     if (isCompleted && type === 'daily') {
       return <Check size={iconSizes.lg} color={accentColor} strokeWidth={2.5} />;
     }
-    
+
     if (type === 'daily') {
       return <Zap size={iconSizes.lg} color={accentColor} strokeWidth={2} />;
     }
-    
+
     if (type === 'mixed') {
       return <Shuffle size={iconSizes.lg} color={accentColor} strokeWidth={2} />;
     }
-    
+
     // Category type - use the icon from props
     return getLucideIcon(icon, iconSizes.lg, accentColor);
   };
@@ -103,8 +103,15 @@ export function TriviaGridCard({
       disabled={isDisabled || (isCompleted && type === 'daily')}
       style={({ pressed }) => ({
         flex: 1,
-        opacity: pressed && !isDisabled && !(isCompleted && type === 'daily') ? 0.85 : isDisabled ? 0.5 : 1,
-        transform: [{ scale: pressed && !isDisabled && !(isCompleted && type === 'daily') ? 0.98 : 1 }],
+        opacity:
+          pressed && !isDisabled && !(isCompleted && type === 'daily')
+            ? 0.85
+            : isDisabled
+              ? 0.5
+              : 1,
+        transform: [
+          { scale: pressed && !isDisabled && !(isCompleted && type === 'daily') ? 0.98 : 1 },
+        ],
       })}
       testID={getTestId()}
       accessibilityLabel={title}
@@ -119,11 +126,7 @@ export function TriviaGridCard({
         borderColor={isDailyAvailable ? hexToRgba(primaryColor, 0.4) : 'transparent'}
       >
         {/* Top section: Icon + Chevron */}
-        <XStack 
-          justifyContent="space-between" 
-          alignItems="flex-start"
-          width="100%"
-        >
+        <XStack justifyContent="space-between" alignItems="flex-start" width="100%">
           {centerContent && <View style={{ width: iconSizes.sm }} />}
           <YStack
             width={iconContainerSize}
@@ -139,7 +142,11 @@ export function TriviaGridCard({
         </XStack>
 
         {/* Bottom section: Title + Subtitle */}
-        <YStack gap={spacing.xs} marginTop={spacing.md} alignItems={centerContent ? 'center' : 'flex-start'}>
+        <YStack
+          gap={spacing.xs}
+          marginTop={spacing.md}
+          alignItems={centerContent ? 'center' : 'flex-start'}
+        >
           <Text.Label
             fontFamily={FONT_FAMILIES.bold}
             color={textColor}
@@ -148,7 +155,7 @@ export function TriviaGridCard({
           >
             {title}
           </Text.Label>
-          <Text.Caption 
+          <Text.Caption
             color={secondaryTextColor}
             numberOfLines={1}
             textAlign={centerContent ? 'center' : 'left'}
@@ -160,4 +167,3 @@ export function TriviaGridCard({
     </Pressable>
   );
 }
-

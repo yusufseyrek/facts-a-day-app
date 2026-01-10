@@ -9,7 +9,11 @@
     "android": "expo run:android",
     "android:release": "expo run:android --variant release",
     "clean": "npx expo prebuild --clean",
-    "lint": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"app/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"app/**/*.{ts,tsx}\"",
+    "type-check": "tsc --noEmit",
     "build:ios": "./scripts/build-ios.sh",
     "build:android": "./scripts/build-android.sh",
     "update:ios": "./scripts/publish-update.sh ios",
@@ -65,7 +69,14 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.52.0",
+    "@typescript-eslint/parser": "^8.52.0",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-native": "^5.0.0",
     "expo-atlas": "^0.4.0",
+    "prettier": "^3.7.4",
     "typescript": "~5.9.2"
   },
   "private": true

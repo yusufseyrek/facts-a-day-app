@@ -9,4 +9,3 @@ export * from './app';
 export * from './images';
 export * from './factListSettings';
 export * from './trivia';
-

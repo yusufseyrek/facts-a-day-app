@@ -3,13 +3,22 @@ import { Pressable, View, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { Timer, Flame, Check, X, ChevronRight, Star, ChevronLeft, Calendar } from '@tamagui/lucide-icons';
-import Animated, { 
-  FadeInDown, 
-  FadeInUp, 
-  useAnimatedStyle, 
-  useSharedValue, 
-  withSpring 
+import {
+  Timer,
+  Flame,
+  Check,
+  X,
+  ChevronRight,
+  Star,
+  ChevronLeft,
+  Calendar,
+} from '@tamagui/lucide-icons';
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { YStack, XStack } from 'tamagui';
@@ -69,7 +78,6 @@ function ProgressBar({
   trackColor: string;
   height?: number;
 }) {
-
   return (
     <View
       style={{
@@ -144,7 +152,7 @@ function UnavailableQuestionCard({
         justifyContent="center"
         alignItems="center"
         opacity={0.7}
-        shadowColor={isDark ? "#000000": "#dddddd"}
+        shadowColor={isDark ? '#000000' : '#dddddd'}
         shadowOffset={{ width: 0, height: 2 }}
         shadowOpacity={isDark ? 0.2 : 0.06}
         shadowRadius={4}
@@ -167,11 +175,9 @@ function UnavailableQuestionCard({
               <X size={typography.fontSize.body} color="#FFFFFF" strokeWidth={3} />
             )}
           </View>
-          <Text.Body
-            fontFamily={FONT_FAMILIES.bold}
-            color={textColor}
-          >
-            {t('question') || 'Question'} {questionIndex + 1}: {isCorrect ? (t('correct') || 'Correct') + '!' : (t('wrong') || 'Wrong')}
+          <Text.Body fontFamily={FONT_FAMILIES.bold} color={textColor}>
+            {t('question') || 'Question'} {questionIndex + 1}:{' '}
+            {isCorrect ? (t('correct') || 'Correct') + '!' : t('wrong') || 'Wrong'}
           </Text.Body>
         </XStack>
 
@@ -216,9 +222,9 @@ function AnswerReviewCard({
   const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const badgeSize = iconSizes.lg;
-  
+
   const scale = useSharedValue(1);
-  
+
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
@@ -242,11 +248,11 @@ function AnswerReviewCard({
   const getDisplayAnswer = (answer: string | null | undefined): string => {
     if (!answer) return '—';
     const lowerAnswer = answer.toLowerCase().trim();
-    
+
     // Get translated values for comparison
     const translatedTrue = t('true');
     const translatedFalse = t('false');
-    
+
     // Check for English true/false or localized equivalents
     if (lowerAnswer === 'true' || lowerAnswer === translatedTrue.toLowerCase()) {
       return translatedTrue && translatedTrue !== 'true' ? translatedTrue : 'True';
@@ -272,7 +278,7 @@ function AnswerReviewCard({
           borderRadius={radius.xl}
           gap={spacing.md}
           minHeight={200}
-          shadowColor={isDark ? "#000000": "#dddddd"}
+          shadowColor={isDark ? '#000000' : '#dddddd'}
           shadowOffset={{ width: 0, height: 2 }}
           shadowOpacity={isDark ? 0.2 : 0.06}
           shadowRadius={4}
@@ -289,52 +295,28 @@ function AnswerReviewCard({
                 alignItems: 'center',
               }}
             >
-            {isCorrect ? (
-              <Check size={typography.fontSize.body} color="#FFFFFF" strokeWidth={3} />
-            ) : (
-              <X size={typography.fontSize.body} color="#FFFFFF" strokeWidth={3} />
-            )}
-          </View>
-          <Text.Body
-            fontFamily={FONT_FAMILIES.bold}
-            color={textColor}
-          >
-            {t('question') || 'Question'} {questionIndex + 1}: {isCorrect ? (t('correct') || 'Correct') + '!' : (t('wrong') || 'Wrong')}
-          </Text.Body>
-        </XStack>
-
-        {/* Question text */}
-        <Text.Label color={textColor}>
-          {question.question_text}
-        </Text.Label>
-
-        {/* Answer comparison */}
-        <YStack 
-          gap={spacing.sm} 
-          backgroundColor={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}
-          padding={spacing.md}
-          borderRadius={radius.md}
-        >
-          <XStack gap={spacing.md} alignItems="center">
-            <View style={{ width: media.answerLabelWidth }}>
-              <Text.Tiny
-                fontFamily={FONT_FAMILIES.bold}
-                color={secondaryTextColor}
-                textTransform="uppercase"
-                letterSpacing={0.5}
-              >
-                {t('yourAnswer') || 'YOUR ANSWER'}
-              </Text.Tiny>
+              {isCorrect ? (
+                <Check size={typography.fontSize.body} color="#FFFFFF" strokeWidth={3} />
+              ) : (
+                <X size={typography.fontSize.body} color="#FFFFFF" strokeWidth={3} />
+              )}
             </View>
-            <Text.Caption
-              fontFamily={FONT_FAMILIES.semibold}
-              color={isCorrect ? successColor : errorColor}
-              flex={1}
-            >
-              {selectedAnswer ? getDisplayAnswer(selectedAnswer) : '—'}
-            </Text.Caption>
+            <Text.Body fontFamily={FONT_FAMILIES.bold} color={textColor}>
+              {t('question') || 'Question'} {questionIndex + 1}:{' '}
+              {isCorrect ? (t('correct') || 'Correct') + '!' : t('wrong') || 'Wrong'}
+            </Text.Body>
           </XStack>
-          {!isCorrect && (
+
+          {/* Question text */}
+          <Text.Label color={textColor}>{question.question_text}</Text.Label>
+
+          {/* Answer comparison */}
+          <YStack
+            gap={spacing.sm}
+            backgroundColor={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}
+            padding={spacing.md}
+            borderRadius={radius.md}
+          >
             <XStack gap={spacing.md} alignItems="center">
               <View style={{ width: media.answerLabelWidth }}>
                 <Text.Tiny
@@ -343,52 +325,61 @@ function AnswerReviewCard({
                   textTransform="uppercase"
                   letterSpacing={0.5}
                 >
-                  {t('correctAnswer') || 'CORRECT ANSWER'}
+                  {t('yourAnswer') || 'YOUR ANSWER'}
                 </Text.Tiny>
               </View>
               <Text.Caption
                 fontFamily={FONT_FAMILIES.semibold}
-                color={successColor}
+                color={isCorrect ? successColor : errorColor}
                 flex={1}
               >
-                {getDisplayAnswer(question.correct_answer)}
+                {selectedAnswer ? getDisplayAnswer(selectedAnswer) : '—'}
               </Text.Caption>
+            </XStack>
+            {!isCorrect && (
+              <XStack gap={spacing.md} alignItems="center">
+                <View style={{ width: media.answerLabelWidth }}>
+                  <Text.Tiny
+                    fontFamily={FONT_FAMILIES.bold}
+                    color={secondaryTextColor}
+                    textTransform="uppercase"
+                    letterSpacing={0.5}
+                  >
+                    {t('correctAnswer') || 'CORRECT ANSWER'}
+                  </Text.Tiny>
+                </View>
+                <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={successColor} flex={1}>
+                  {getDisplayAnswer(question.correct_answer)}
+                </Text.Caption>
+              </XStack>
+            )}
+          </YStack>
+
+          {/* Insight text from fact */}
+          {question.fact?.content && (
+            <YStack gap={spacing.xs} flex={1}>
+              <Text.Caption
+                fontFamily={FONT_FAMILIES.regular_italic}
+                color={secondaryTextColor}
+                numberOfLines={3}
+                lineHeight={typography.lineHeight.caption}
+              >
+                {t('explanation') || 'Explanation'}: {question.explanation}
+              </Text.Caption>
+            </YStack>
+          )}
+
+          {/* See Fact link */}
+          {question.fact?.id && (
+            <XStack alignItems="center" justifyContent="flex-end" marginTop="auto">
+              <XStack alignItems="center" gap={2}>
+                <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={primaryColor}>
+                  {t('seeFact', { id: question.fact.id }) || `Fact#${question.fact.id}`}
+                </Text.Caption>
+                <ChevronRight size={typography.fontSize.body} color={primaryColor} />
+              </XStack>
             </XStack>
           )}
-        </YStack>
-
-        {/* Insight text from fact */}
-        {question.fact?.content && (
-          <YStack gap={spacing.xs} flex={1}>
-            <Text.Caption
-              fontFamily={FONT_FAMILIES.regular_italic}
-              color={secondaryTextColor}
-              numberOfLines={3}
-              lineHeight={typography.lineHeight.caption}
-            >
-              {t('explanation') || 'Explanation'}: {question.explanation}
-            </Text.Caption>
-          </YStack>
-        )}
-
-        {/* See Fact link */}
-        {question.fact?.id && (
-          <XStack 
-            alignItems="center" 
-            justifyContent="flex-end"
-            marginTop="auto"
-          >
-            <XStack alignItems="center" gap={2}>
-              <Text.Caption
-                fontFamily={FONT_FAMILIES.semibold}
-                color={primaryColor}
-              >
-                {t('seeFact', { id: question.fact.id }) || `Fact#${question.fact.id}`}
-              </Text.Caption>
-              <ChevronRight size={typography.fontSize.body} color={primaryColor} />
-            </XStack>
-          </XStack>
-        )}
         </YStack>
       </Animated.View>
     </Pressable>
@@ -428,10 +419,10 @@ export function TriviaResults({
   const statsIconSize = media.topicCardSize * 0.55;
   const headerBtnSize = media.topicCardSize * 0.45;
   const badgeIconSize = iconSizes.lg;
-  
+
   // Calculate card width: 45% for tablets (two cards side by side), 85% for phones
   const cardWidth = screenWidth * config.cardWidthMultiplier;
-  
+
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
   const cardBackground = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
@@ -441,23 +432,24 @@ export function TriviaResults({
   const accentColor = isDark ? hexColors.dark.accent : hexColors.light.accent;
   const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
 
-  const accuracy = totalQuestions > 0 
-    ? Math.round((correctAnswers / totalQuestions) * 100)
-    : 0;
+  const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
   const isPerfect = correctAnswers === totalQuestions;
 
   /**
    * Get the selected answer text for a question
    * Handles both string answers (live game) and StoredAnswer (historical)
    */
-  const getSelectedAnswerText = (question: QuestionWithFact, answer: string | StoredAnswer | undefined): string | undefined => {
+  const getSelectedAnswerText = (
+    question: QuestionWithFact,
+    answer: string | StoredAnswer | undefined
+  ): string | undefined => {
     if (answer === undefined) return undefined;
-    
+
     if (isStoredAnswer(answer)) {
       // Historical session: convert index back to text
       return indexToAnswer(question, answer.index);
     }
-    
+
     // Live game: answer is already a string
     return answer;
   };
@@ -466,14 +458,17 @@ export function TriviaResults({
    * Check if an answer is correct
    * Handles both string answers (live game) and StoredAnswer (historical)
    */
-  const checkIsCorrect = (question: QuestionWithFact, answer: string | StoredAnswer | undefined): boolean => {
+  const checkIsCorrect = (
+    question: QuestionWithFact,
+    answer: string | StoredAnswer | undefined
+  ): boolean => {
     if (answer === undefined) return false;
-    
+
     if (isStoredAnswer(answer)) {
       // Historical session: use stored correctness
       return answer.correct;
     }
-    
+
     // Live game: compare answer text
     if (question.question_type === 'true_false') {
       return answer.toLowerCase() === question.correct_answer?.toLowerCase();
@@ -515,9 +510,16 @@ export function TriviaResults({
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top, paddingBottom: showReturnButton ? insets.bottom + spacing.md : 0 }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: bgColor,
+        paddingTop: insets.top,
+        paddingBottom: showReturnButton ? insets.bottom + spacing.md : 0,
+      }}
+    >
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      
+
       {/* Screen Header (when viewing past results) */}
       {showBackButton && (
         <XStack
@@ -532,9 +534,7 @@ export function TriviaResults({
           <Pressable
             onPress={onClose}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={({ pressed }) => [
-              pressed && { opacity: 0.7 }
-            ]}
+            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
             testID="trivia-results-back-button"
           >
             <View
@@ -550,63 +550,57 @@ export function TriviaResults({
               <ChevronLeft size={iconSizes.lg} color={primaryColor} />
             </View>
           </Pressable>
-          
-          <Text.Title
-            fontFamily={FONT_FAMILIES.bold}
-            color={textColor}
-          >
+
+          <Text.Title fontFamily={FONT_FAMILIES.bold} color={textColor}>
             {customTitle || t('testResults') || 'Test Results'}
           </Text.Title>
-          
+
           {/* Empty spacer to balance the header */}
           <View style={{ width: headerBtnSize, height: headerBtnSize }} />
         </XStack>
       )}
-      
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-      >
+
+      <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header Section */}
         <Animated.View entering={FadeInDown.duration(400)}>
           <YStack paddingTop={spacing.lg} paddingHorizontal={spacing.xl} gap={spacing.lg}>
             {/* Date/Time Subtitle */}
             {customSubtitle && (
-              <XStack alignSelf='center' alignItems="center" gap={spacing.sm}>
+              <XStack alignSelf="center" alignItems="center" gap={spacing.sm}>
                 <Calendar size={typography.fontSize.body} color={secondaryTextColor} />
-                <Text.Body 
-                  fontFamily={FONT_FAMILIES.semibold} 
-                  color={secondaryTextColor}
-                >
+                <Text.Body fontFamily={FONT_FAMILIES.semibold} color={secondaryTextColor}>
                   {customSubtitle}
                 </Text.Body>
               </XStack>
             )}
-            
+
             {/* Only show title here if not showing header bar */}
             {!showBackButton && (
-              <Text.Display 
-                fontFamily={FONT_FAMILIES.bold} 
-                color={textColor}
-              >
+              <Text.Display fontFamily={FONT_FAMILIES.bold} color={textColor}>
                 {customTitle || t('testResults') || 'Test Results'}
               </Text.Display>
             )}
-            
+
             {/* Badge + Score Row */}
-            <XStack alignItems="center" justifyContent="space-between" >
+            <XStack alignItems="center" justifyContent="space-between">
               {/* Trivia Mode/Category Badge */}
               {triviaModeBadge ? (
-                <XStack 
-                  alignItems="center" 
+                <XStack
+                  alignItems="center"
                   gap={spacing.xs}
                   backgroundColor={`${triviaModeBadge.color || primaryColor}15`}
                   paddingHorizontal={spacing.sm}
                   paddingVertical={4}
                   borderRadius={radius.md}
                 >
-                  {triviaModeBadge.icon && getLucideIcon(triviaModeBadge.icon, typography.fontSize.caption, triviaModeBadge.color || primaryColor)}
-                  <Text.Caption 
-                    fontFamily={FONT_FAMILIES.semibold} 
+                  {triviaModeBadge.icon &&
+                    getLucideIcon(
+                      triviaModeBadge.icon,
+                      typography.fontSize.caption,
+                      triviaModeBadge.color || primaryColor
+                    )}
+                  <Text.Caption
+                    fontFamily={FONT_FAMILIES.semibold}
                     color={triviaModeBadge.color || primaryColor}
                   >
                     {triviaModeBadge.label}
@@ -615,14 +609,11 @@ export function TriviaResults({
               ) : (
                 <View />
               )}
-              
+
               {/* Star + Score Label */}
-              <XStack alignItems="center" gap={spacing.xs} >
+              <XStack alignItems="center" gap={spacing.xs}>
                 <Star size={typography.fontSize.caption} color={primaryColor} fill={primaryColor} />
-                <Text.Label 
-                  fontFamily={FONT_FAMILIES.semibold} 
-                  color={primaryColor}
-                >
+                <Text.Label fontFamily={FONT_FAMILIES.semibold} color={primaryColor}>
                   {t('score') || 'Score'}: {correctAnswers}/{totalQuestions}
                 </Text.Label>
               </XStack>
@@ -638,31 +629,36 @@ export function TriviaResults({
 
             {/* Feedback with emoji */}
             <XStack alignItems="center" gap={spacing.sm} marginBottom={spacing.md}>
-              <Text.Title>
-                {getFeedbackEmoji()}
-              </Text.Title>
+              <Text.Title>{getFeedbackEmoji()}</Text.Title>
               <YStack flex={1}>
-                <Text.Title 
-                  fontFamily={FONT_FAMILIES.bold} 
-                  color={textColor}
-                >
+                <Text.Title fontFamily={FONT_FAMILIES.bold} color={textColor}>
                   {getFeedbackTitle()}
                 </Text.Title>
                 <Text.Caption color={secondaryTextColor}>
-                  {(t('youAnswered', { correct: correctAnswers, total: totalQuestions }) ||
-                    `You answered ${correctAnswers} out of ${totalQuestions} questions correctly.`)
+                  {(
+                    t('youAnswered', { correct: correctAnswers, total: totalQuestions }) ||
+                    `You answered ${correctAnswers} out of ${totalQuestions} questions correctly.`
+                  )
                     .split(/(%\{correct\}|%\{total\}|\d+)/)
                     .map((part, i) => {
                       if (part === '%{correct}' || part === String(correctAnswers)) {
                         return (
-                          <Text.Caption key={i} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
+                          <Text.Caption
+                            key={i}
+                            fontFamily={FONT_FAMILIES.bold}
+                            color={primaryColor}
+                          >
                             {correctAnswers}
                           </Text.Caption>
                         );
                       }
                       if (part === '%{total}' || part === String(totalQuestions)) {
                         return (
-                          <Text.Caption key={i} fontFamily={FONT_FAMILIES.bold} color={primaryColor}>
+                          <Text.Caption
+                            key={i}
+                            fontFamily={FONT_FAMILIES.bold}
+                            color={primaryColor}
+                          >
                             {totalQuestions}
                           </Text.Caption>
                         );
@@ -677,8 +673,8 @@ export function TriviaResults({
 
         {/* Stats Cards */}
         <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-          <XStack 
-            paddingHorizontal={spacing.lg} 
+          <XStack
+            paddingHorizontal={spacing.lg}
             paddingTop={spacing.lg}
             gap={spacing.md}
             justifyContent="center"
@@ -746,20 +742,20 @@ export function TriviaResults({
         </Animated.View>
 
         {/* Divider */}
-        <View 
-          style={{ 
-            marginHorizontal: spacing.lg, 
+        <View
+          style={{
+            marginHorizontal: spacing.lg,
             marginTop: spacing.xl,
             height: 1,
             backgroundColor: borderColor,
-          }} 
+          }}
         />
 
         {/* Question Insights Section */}
         <Animated.View entering={FadeInUp.delay(150).duration(400)}>
           <YStack paddingTop={spacing.xl} paddingBottom={spacing.sm} gap={spacing.md}>
-            <Text.Title 
-              fontFamily={FONT_FAMILIES.bold} 
+            <Text.Title
+              fontFamily={FONT_FAMILIES.bold}
               color={textColor}
               paddingHorizontal={spacing.lg}
             >
@@ -783,7 +779,7 @@ export function TriviaResults({
                 const answer = answers[question.id];
                 const selectedAnswerText = getSelectedAnswerText(question, answer);
                 const isCorrect = checkIsCorrect(question, answer);
-                
+
                 return (
                   <AnswerReviewCard
                     key={question.id}
@@ -803,7 +799,7 @@ export function TriviaResults({
                 const answer = answers[questionId];
                 // For unavailable questions, we can only determine correctness from StoredAnswer
                 const isCorrect = isStoredAnswer(answer) ? answer.correct : false;
-                
+
                 return (
                   <UnavailableQuestionCard
                     key={`unavailable-${questionId}`}
@@ -819,20 +815,18 @@ export function TriviaResults({
           </YStack>
         </Animated.View>
       </ScrollView>
-      
+
       {/* Return button (shown for normal trivia flow) */}
       {showReturnButton && (
-        <YStack 
-          paddingHorizontal={spacing.xl} 
+        <YStack
+          paddingHorizontal={spacing.xl}
           paddingTop={spacing.md}
           paddingBottom={spacing.md}
           backgroundColor={bgColor as any}
         >
-          <Pressable 
+          <Pressable
             onPress={onClose}
-            style={({ pressed }) => [
-              pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }
-            ]}
+            style={({ pressed }) => [pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
           >
             <XStack
               backgroundColor={primaryColor}
@@ -842,10 +836,7 @@ export function TriviaResults({
               alignItems="center"
               gap={spacing.sm}
             >
-              <Text.Body 
-                color="#FFFFFF" 
-                fontFamily={FONT_FAMILIES.semibold}
-              >
+              <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
                 {t('returnToTrivia') || 'Return to Trivia'}
               </Text.Body>
             </XStack>

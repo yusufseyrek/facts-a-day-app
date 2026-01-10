@@ -41,74 +41,94 @@ interface FactItemProps {
   typography: { fontSize: Record<string, number>; lineHeight: Record<string, number> };
 }
 
-const FactItem = React.memo(({ fact, isSelected, onToggle, onEditTitle, colors, iconSizes, spacing, radius, typography }: FactItemProps) => {
-  const isInFeed = fact.shown_in_feed === 1 || (fact.scheduled_date && new Date(fact.scheduled_date) <= new Date());
-  
-  const itemStyles = useMemo(() => ({
-    factItem: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      paddingVertical: spacing.md,
-      gap: spacing.md,
-    },
-    factContent: {
-      flex: 1,
-      gap: spacing.xs,
-    },
-    factMeta: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      gap: spacing.sm,
-      flexWrap: 'wrap' as const,
-    },
-    inFeedBadge: {
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 2,
-      borderRadius: radius.sm,
-    },
-    editButton: {
-      padding: spacing.sm,
-    },
-  }), [spacing, radius]);
-  
-  return (
-    <Pressable onPress={onToggle} style={itemStyles.factItem}>
-      <View style={[styles.checkbox, { borderColor: colors.border }, isSelected && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-        {isSelected && <Check size={iconSizes.sm} color="#FFFFFF" />}
-      </View>
-      <View style={itemStyles.factContent}>
-        <Text.Label numberOfLines={2} color={colors.text}>
-          {fact.title || fact.content.substring(0, 60) + '...'}
-        </Text.Label>
-        <View style={itemStyles.factMeta}>
-          <Text.Caption color={colors.textSecondary}>
-            {fact.categoryData?.name || fact.category || 'Unknown'}
-          </Text.Caption>
-          {isInFeed && (
-            <View style={[itemStyles.inFeedBadge, { backgroundColor: colors.primary + '20' }]}>
-              <Text.Caption color={colors.primary}>In Feed</Text.Caption>
-            </View>
-          )}
-          {fact.scheduled_date && (
-            <Text.Caption color={colors.textSecondary}>
-              {new Date(fact.scheduled_date).toLocaleDateString()}
-            </Text.Caption>
-          )}
+const FactItem = React.memo(
+  ({
+    fact,
+    isSelected,
+    onToggle,
+    onEditTitle,
+    colors,
+    iconSizes,
+    spacing,
+    radius,
+    typography,
+  }: FactItemProps) => {
+    const isInFeed =
+      fact.shown_in_feed === 1 ||
+      (fact.scheduled_date && new Date(fact.scheduled_date) <= new Date());
+
+    const itemStyles = useMemo(
+      () => ({
+        factItem: {
+          flexDirection: 'row' as const,
+          alignItems: 'center' as const,
+          paddingVertical: spacing.md,
+          gap: spacing.md,
+        },
+        factContent: {
+          flex: 1,
+          gap: spacing.xs,
+        },
+        factMeta: {
+          flexDirection: 'row' as const,
+          alignItems: 'center' as const,
+          gap: spacing.sm,
+          flexWrap: 'wrap' as const,
+        },
+        inFeedBadge: {
+          paddingHorizontal: spacing.sm,
+          paddingVertical: 2,
+          borderRadius: radius.sm,
+        },
+        editButton: {
+          padding: spacing.sm,
+        },
+      }),
+      [spacing, radius]
+    );
+
+    return (
+      <Pressable onPress={onToggle} style={itemStyles.factItem}>
+        <View
+          style={[
+            styles.checkbox,
+            { borderColor: colors.border },
+            isSelected && { backgroundColor: colors.primary, borderColor: colors.primary },
+          ]}
+        >
+          {isSelected && <Check size={iconSizes.sm} color="#FFFFFF" />}
         </View>
-      </View>
-      <Pressable onPress={onEditTitle} style={itemStyles.editButton} hitSlop={8}>
-        <Edit3 size={iconSizes.sm} color={colors.textSecondary} />
+        <View style={itemStyles.factContent}>
+          <Text.Label numberOfLines={2} color={colors.text}>
+            {fact.title || fact.content.substring(0, 60) + '...'}
+          </Text.Label>
+          <View style={itemStyles.factMeta}>
+            <Text.Caption color={colors.textSecondary}>
+              {fact.categoryData?.name || fact.category || 'Unknown'}
+            </Text.Caption>
+            {isInFeed && (
+              <View style={[itemStyles.inFeedBadge, { backgroundColor: colors.primary + '20' }]}>
+                <Text.Caption color={colors.primary}>In Feed</Text.Caption>
+              </View>
+            )}
+            {fact.scheduled_date && (
+              <Text.Caption color={colors.textSecondary}>
+                {new Date(fact.scheduled_date).toLocaleDateString()}
+              </Text.Caption>
+            )}
+          </View>
+        </View>
+        <Pressable onPress={onEditTitle} style={itemStyles.editButton} hitSlop={8}>
+          <Edit3 size={iconSizes.sm} color={colors.textSecondary} />
+        </Pressable>
       </Pressable>
-    </Pressable>
-  );
-});
+    );
+  }
+);
 
 FactItem.displayName = 'FactItem';
 
-export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
-  visible,
-  onClose,
-}) => {
+export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({ visible, onClose }) => {
   const { theme } = useTheme();
   const colors = hexColors[theme];
   const { t, locale } = useTranslation();
@@ -116,7 +136,7 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
 
   const [showContent, setShowContent] = useState(false);
   const closingRef = useRef(false);
-  
+
   const [facts, setFacts] = useState<FactWithRelations[]>([]);
   const [filteredFacts, setFilteredFacts] = useState<FactWithRelations[]>([]);
   const [selectedFactIds, setSelectedFactIds] = useState<Set<number>>(new Set());
@@ -196,13 +216,11 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
 
   const saveEditedTitle = useCallback(async () => {
     if (!editingFact) return;
-    
+
     try {
       await database.updateFactTitle(editingFact.id, editedTitle);
       setFacts((prev) =>
-        prev.map((f) =>
-          f.id === editingFact.id ? { ...f, title: editedTitle } : f
-        )
+        prev.map((f) => (f.id === editingFact.id ? { ...f, title: editedTitle } : f))
       );
       setEditingFact(null);
       setEditedTitle('');
@@ -212,73 +230,72 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
     }
   }, [editingFact, editedTitle]);
 
-  const addToFeedWithDate = useCallback(async (daysAgo: number) => {
-    if (selectedFactIds.size === 0) {
-      Alert.alert('No Selection', 'Please select at least one fact');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const now = new Date();
-      let index = 0;
-      
-      for (const factId of selectedFactIds) {
-        const scheduledDate = new Date(now);
-        scheduledDate.setDate(scheduledDate.getDate() - daysAgo);
-        // Stagger times throughout the day for variety
-        scheduledDate.setHours(9 + (index % 3), Math.floor(Math.random() * 60), 0, 0);
-        
-        const notificationId = `screenshot_${factId}_${Date.now()}_${index}`;
-        await database.markFactAsScheduled(factId, scheduledDate.toISOString(), notificationId);
-        await database.markFactAsShown(factId);
-        index++;
+  const addToFeedWithDate = useCallback(
+    async (daysAgo: number) => {
+      if (selectedFactIds.size === 0) {
+        Alert.alert('No Selection', 'Please select at least one fact');
+        return;
       }
-      
-      // Refresh the feed
-      triggerFeedRefresh();
-      
-      Alert.alert(
-        'Success',
-        `Added ${selectedFactIds.size} fact(s) to feed${daysAgo === 0 ? ' for today' : daysAgo === 1 ? ' for yesterday' : ` for ${daysAgo} days ago`}`
-      );
-      
-      setSelectedFactIds(new Set());
-      loadFacts();
-    } catch (error) {
-      console.error('Error adding facts to feed:', error);
-      Alert.alert('Error', 'Failed to add facts to feed');
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedFactIds, loadFacts]);
+
+      setLoading(true);
+      try {
+        const now = new Date();
+        let index = 0;
+
+        for (const factId of selectedFactIds) {
+          const scheduledDate = new Date(now);
+          scheduledDate.setDate(scheduledDate.getDate() - daysAgo);
+          // Stagger times throughout the day for variety
+          scheduledDate.setHours(9 + (index % 3), Math.floor(Math.random() * 60), 0, 0);
+
+          const notificationId = `screenshot_${factId}_${Date.now()}_${index}`;
+          await database.markFactAsScheduled(factId, scheduledDate.toISOString(), notificationId);
+          await database.markFactAsShown(factId);
+          index++;
+        }
+
+        // Refresh the feed
+        triggerFeedRefresh();
+
+        Alert.alert(
+          'Success',
+          `Added ${selectedFactIds.size} fact(s) to feed${daysAgo === 0 ? ' for today' : daysAgo === 1 ? ' for yesterday' : ` for ${daysAgo} days ago`}`
+        );
+
+        setSelectedFactIds(new Set());
+        loadFacts();
+      } catch (error) {
+        console.error('Error adding facts to feed:', error);
+        Alert.alert('Error', 'Failed to add facts to feed');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [selectedFactIds, loadFacts]
+  );
 
   const clearFeed = useCallback(async () => {
-    Alert.alert(
-      'Clear Feed',
-      'This will remove all facts from the feed. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              await database.clearAllShownInFeed();
-              triggerFeedRefresh();
-              Alert.alert('Success', 'Feed cleared');
-              loadFacts();
-            } catch (error) {
-              console.error('Error clearing feed:', error);
-              Alert.alert('Error', 'Failed to clear feed');
-            } finally {
-              setLoading(false);
-            }
-          },
+    Alert.alert('Clear Feed', 'This will remove all facts from the feed. Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: async () => {
+          setLoading(true);
+          try {
+            await database.clearAllShownInFeed();
+            triggerFeedRefresh();
+            Alert.alert('Success', 'Feed cleared');
+            loadFacts();
+          } catch (error) {
+            console.error('Error clearing feed:', error);
+            Alert.alert('Error', 'Failed to clear feed');
+          } finally {
+            setLoading(false);
+          }
         },
-      ]
-    );
+      },
+    ]);
   }, [loadFacts]);
 
   const selectAll = useCallback(() => {
@@ -292,135 +309,138 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
   const screenHeight = Dimensions.get('window').height;
   const screenWidth = Dimensions.get('window').width;
 
-  const dynamicStyles = useMemo(() => ({
-    modalContainer: {
-      position: 'absolute' as const,
-      bottom: 0,
-      borderTopLeftRadius: radius.xl,
-      borderTopRightRadius: radius.xl,
-      overflow: 'hidden' as const,
-    },
-    header: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      justifyContent: 'space-between' as const,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.lg,
-      borderBottomWidth: 1,
-    },
-    closeButton: {
-      padding: spacing.xs,
-    },
-    searchContainer: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      marginHorizontal: spacing.lg,
-      marginVertical: spacing.md,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      borderRadius: radius.md,
-      gap: spacing.sm,
-    },
-    searchInput: {
-      flex: 1,
-      fontSize: typography.fontSize.body,
-      fontFamily: FONT_FAMILIES.regular,
-    },
-    selectionInfo: {
-      flexDirection: 'row' as const,
-      justifyContent: 'space-between' as const,
-      alignItems: 'center' as const,
-      paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.sm,
-    },
-    selectionActions: {
-      flexDirection: 'row' as const,
-      gap: spacing.md,
-    },
-    selectionButton: {
-      padding: spacing.xs,
-    },
-    listContent: {
-      paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.lg,
-    },
-    factItem: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      paddingVertical: spacing.md,
-      gap: spacing.md,
-    },
-    factContent: {
-      flex: 1,
-      gap: spacing.xs,
-    },
-    factMeta: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      gap: spacing.sm,
-      flexWrap: 'wrap' as const,
-    },
-    inFeedBadge: {
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 2,
-      borderRadius: radius.sm,
-    },
-    editButton: {
-      padding: spacing.sm,
-    },
-    actionBar: {
-      padding: spacing.lg,
-      borderTopWidth: 1,
-      gap: spacing.sm,
-    },
-    actionRow: {
-      flexDirection: 'row' as const,
-      gap: spacing.sm,
-    },
-    actionButton: {
-      flex: 1,
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      paddingVertical: spacing.md,
-      borderRadius: radius.md,
-      gap: spacing.xs,
-    },
-    editModalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      padding: spacing.lg,
-    },
-    editModalContent: {
-      width: '100%' as const,
-      maxWidth: 400,
-      padding: spacing.lg,
-      borderRadius: radius.lg,
-      gap: spacing.sm,
-    },
-    titleInput: {
-      borderWidth: 1,
-      borderRadius: radius.md,
-      padding: spacing.md,
-      fontSize: typography.fontSize.body,
-      fontFamily: FONT_FAMILIES.regular,
-      minHeight: 100,
-      textAlignVertical: 'top' as const,
-    },
-    editModalActions: {
-      flexDirection: 'row' as const,
-      gap: spacing.md,
-      marginTop: spacing.md,
-    },
-    modalButton: {
-      flex: 1,
-      alignItems: 'center' as const,
-      paddingVertical: spacing.md,
-      borderRadius: radius.md,
-    },
-  }), [spacing, radius, typography]);
+  const dynamicStyles = useMemo(
+    () => ({
+      modalContainer: {
+        position: 'absolute' as const,
+        bottom: 0,
+        borderTopLeftRadius: radius.xl,
+        borderTopRightRadius: radius.xl,
+        overflow: 'hidden' as const,
+      },
+      header: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'space-between' as const,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.lg,
+        borderBottomWidth: 1,
+      },
+      closeButton: {
+        padding: spacing.xs,
+      },
+      searchContainer: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        marginHorizontal: spacing.lg,
+        marginVertical: spacing.md,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: radius.md,
+        gap: spacing.sm,
+      },
+      searchInput: {
+        flex: 1,
+        fontSize: typography.fontSize.body,
+        fontFamily: FONT_FAMILIES.regular,
+      },
+      selectionInfo: {
+        flexDirection: 'row' as const,
+        justifyContent: 'space-between' as const,
+        alignItems: 'center' as const,
+        paddingHorizontal: spacing.lg,
+        paddingBottom: spacing.sm,
+      },
+      selectionActions: {
+        flexDirection: 'row' as const,
+        gap: spacing.md,
+      },
+      selectionButton: {
+        padding: spacing.xs,
+      },
+      listContent: {
+        paddingHorizontal: spacing.lg,
+        paddingBottom: spacing.lg,
+      },
+      factItem: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        paddingVertical: spacing.md,
+        gap: spacing.md,
+      },
+      factContent: {
+        flex: 1,
+        gap: spacing.xs,
+      },
+      factMeta: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        gap: spacing.sm,
+        flexWrap: 'wrap' as const,
+      },
+      inFeedBadge: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: radius.sm,
+      },
+      editButton: {
+        padding: spacing.sm,
+      },
+      actionBar: {
+        padding: spacing.lg,
+        borderTopWidth: 1,
+        gap: spacing.sm,
+      },
+      actionRow: {
+        flexDirection: 'row' as const,
+        gap: spacing.sm,
+      },
+      actionButton: {
+        flex: 1,
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        paddingVertical: spacing.md,
+        borderRadius: radius.md,
+        gap: spacing.xs,
+      },
+      editModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        padding: spacing.lg,
+      },
+      editModalContent: {
+        width: '100%' as const,
+        maxWidth: 400,
+        padding: spacing.lg,
+        borderRadius: radius.lg,
+        gap: spacing.sm,
+      },
+      titleInput: {
+        borderWidth: 1,
+        borderRadius: radius.md,
+        padding: spacing.md,
+        fontSize: typography.fontSize.body,
+        fontFamily: FONT_FAMILIES.regular,
+        minHeight: 100,
+        textAlignVertical: 'top' as const,
+      },
+      editModalActions: {
+        flexDirection: 'row' as const,
+        gap: spacing.md,
+        marginTop: spacing.md,
+      },
+      modalButton: {
+        flex: 1,
+        alignItems: 'center' as const,
+        paddingVertical: spacing.md,
+        borderRadius: radius.md,
+      },
+    }),
+    [spacing, radius, typography]
+  );
 
   const renderFactItem = useCallback(
     ({ item }: { item: FactWithRelations }) => (
@@ -436,18 +456,22 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
         typography={typography}
       />
     ),
-    [selectedFactIds, toggleFactSelection, handleEditTitle, colors, iconSizes, spacing, radius, typography]
+    [
+      selectedFactIds,
+      toggleFactSelection,
+      handleEditTitle,
+      colors,
+      iconSizes,
+      spacing,
+      radius,
+      typography,
+    ]
   );
 
   const keyExtractor = useCallback((item: FactWithRelations) => String(item.id), []);
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={handleClose}
-    >
+    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
       <View style={styles.container}>
         {showContent && (
           <Animated.View
@@ -456,7 +480,7 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
             style={styles.overlay}
           />
         )}
-        
+
         {showContent && (
           <Animated.View
             entering={SlideInDown.duration(ANIMATION_DURATION)}
@@ -522,7 +546,12 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
             )}
 
             {/* Action buttons */}
-            <View style={[dynamicStyles.actionBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+            <View
+              style={[
+                dynamicStyles.actionBar,
+                { backgroundColor: colors.surface, borderTopColor: colors.border },
+              ]}
+            >
               <View style={dynamicStyles.actionRow}>
                 <Pressable
                   onPress={() => addToFeedWithDate(0)}
@@ -570,7 +599,9 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
         {editingFact && (
           <Modal visible transparent animationType="fade">
             <View style={dynamicStyles.editModalOverlay}>
-              <View style={[dynamicStyles.editModalContent, { backgroundColor: colors.background }]}>
+              <View
+                style={[dynamicStyles.editModalContent, { backgroundColor: colors.background }]}
+              >
                 <Text.Title color={colors.text}>Edit Title</Text.Title>
                 <Text.Caption color={colors.textSecondary} style={{ marginBottom: spacing.md }}>
                   Edit the title for screenshots
@@ -578,7 +609,11 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({
                 <TextInput
                   style={[
                     dynamicStyles.titleInput,
-                    { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
+                    {
+                      backgroundColor: colors.surface,
+                      color: colors.text,
+                      borderColor: colors.border,
+                    },
                   ]}
                   value={editedTitle}
                   onChangeText={setEditedTitle}
@@ -638,4 +673,3 @@ const styles = StyleSheet.create({
     backgroundColor: '#E53935',
   },
 });
-

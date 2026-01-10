@@ -9,7 +9,12 @@ import * as Application from 'expo-application';
 import * as Device from 'expo-device';
 import * as Localization from 'expo-localization';
 
-import { logEvent, logScreenView, setAnalyticsUserProperty, setCrashlyticsAttribute } from '../config/firebase';
+import {
+  logEvent,
+  logScreenView,
+  setAnalyticsUserProperty,
+  setCrashlyticsAttribute,
+} from '../config/firebase';
 
 import { getSelectedCategories, getNotificationTimes } from './onboarding';
 
@@ -63,10 +68,12 @@ export const initAnalytics = async (): Promise<void> => {
     const categoriesValue = categories.join(',') || 'none';
     const notificationTimes = await getNotificationTimes();
     // Format times as HH:MM (e.g., "09:00,12:30,18:00")
-    const formattedTimes = notificationTimes.map(t => {
-      const date = new Date(t);
-      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-    }).join(',');
+    const formattedTimes = notificationTimes
+      .map((t) => {
+        const date = new Date(t);
+        return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+      })
+      .join(',');
     const notifTimesValue = formattedTimes || 'none';
 
     // Set user settings as Analytics user properties
@@ -123,9 +130,12 @@ export const updateCategoriesProperty = async (categories: string[]): Promise<vo
  * Updates both Analytics and Crashlytics
  */
 export const updateNotificationProperty = async (times: Date[]): Promise<void> => {
-  const formattedTimes = times.map(t => 
-    `${t.getHours().toString().padStart(2, '0')}:${t.getMinutes().toString().padStart(2, '0')}`
-  ).join(',');
+  const formattedTimes = times
+    .map(
+      (t) =>
+        `${t.getHours().toString().padStart(2, '0')}:${t.getMinutes().toString().padStart(2, '0')}`
+    )
+    .join(',');
   const notifTimesValue = formattedTimes || 'none';
   await setAnalyticsUserProperty('notif_times', notifTimesValue);
   await setCrashlyticsAttribute('notif_times', notifTimesValue);
@@ -265,10 +275,7 @@ export const trackFactView = (params: {
 /**
  * Track when user shares a fact
  */
-export const trackFactShare = (params: {
-  factId: number;
-  category: string;
-}): void => {
+export const trackFactShare = (params: { factId: number; category: string }): void => {
   logEvent('app_fact_share', {
     fact_id: params.factId,
     category: params.category,
@@ -278,10 +285,7 @@ export const trackFactShare = (params: {
 /**
  * Track when user adds a fact to favorites
  */
-export const trackFactFavoriteAdd = (params: {
-  factId: number;
-  category: string;
-}): void => {
+export const trackFactFavoriteAdd = (params: { factId: number; category: string }): void => {
   logEvent('app_fact_fav_add', {
     fact_id: params.factId,
     category: params.category,
@@ -291,10 +295,7 @@ export const trackFactFavoriteAdd = (params: {
 /**
  * Track when user removes a fact from favorites
  */
-export const trackFactFavoriteRemove = (params: {
-  factId: number;
-  category: string;
-}): void => {
+export const trackFactFavoriteRemove = (params: { factId: number; category: string }): void => {
   logEvent('app_fact_fav_remove', {
     fact_id: params.factId,
     category: params.category,
@@ -311,10 +312,7 @@ export const trackFactReport = (factId: number): void => {
 /**
  * Track when user clicks source link
  */
-export const trackSourceLinkClick = (params: {
-  factId: number;
-  domain: string;
-}): void => {
+export const trackSourceLinkClick = (params: { factId: number; domain: string }): void => {
   logEvent('app_source_click', {
     fact_id: params.factId,
     domain: params.domain,
@@ -343,10 +341,7 @@ export const trackSearch = (params: {
 /**
  * Track category browse in Discover
  */
-export const trackCategoryBrowse = (params: {
-  category: string;
-  factsCount: number;
-}): void => {
+export const trackCategoryBrowse = (params: { category: string; factsCount: number }): void => {
   logEvent('app_category_browse', {
     category: params.category,
     facts_count: params.factsCount,
@@ -369,10 +364,7 @@ export const trackFeedRefresh = (source: FeedRefreshSource): void => {
 /**
  * Track theme change
  */
-export const trackThemeChange = (params: {
-  from: string;
-  to: string;
-}): void => {
+export const trackThemeChange = (params: { from: string; to: string }): void => {
   logEvent('app_theme_change', {
     from: params.from,
     to: params.to,
@@ -447,10 +439,9 @@ export const trackTriviaComplete = (params: {
   timeExpired: boolean;
   categorySlug?: string;
 }): void => {
-  const accuracy = params.questionCount > 0 
-    ? Math.round((params.correctCount / params.questionCount) * 100) 
-    : 0;
-  
+  const accuracy =
+    params.questionCount > 0 ? Math.round((params.correctCount / params.questionCount) * 100) : 0;
+
   logEvent('app_trivia_complete', {
     mode: params.mode,
     question_count: params.questionCount,
@@ -507,10 +498,10 @@ export const trackAppUpdate = (): void => {
   const platform = Platform.OS;
   const appVersion = Application.nativeApplicationVersion || 'unknown';
   const buildNumber = Application.nativeBuildVersion || 'unknown';
-  
+
   // Composite identifier: platform_version_build (e.g., "ios_1.2.3_45")
   const platformBuildId = `${platform}_${appVersion}_${buildNumber}`;
-  
+
   logEvent('app_update', {
     platform,
     app_version: appVersion,

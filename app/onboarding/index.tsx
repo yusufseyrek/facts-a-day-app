@@ -1,4 +1,4 @@
-import { Redirect } from "expo-router";
+import { Redirect } from 'expo-router';
 
 /**
  * Onboarding index - redirects to categories screen
@@ -7,4 +7,3 @@ import { Redirect } from "expo-router";
 export default function OnboardingIndex() {
   return <Redirect href="/onboarding/categories" />;
 }
-

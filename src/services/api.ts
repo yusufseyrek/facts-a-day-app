@@ -12,12 +12,12 @@ import { getCachedAppCheckToken } from './appCheckToken';
  */
 function getApiBaseUrl(): string {
   const configuredUrl = Constants.expoConfig?.extra?.API_BASE_URL || 'http://localhost:3000';
-  
+
   // On Android, replace localhost with 10.0.2.2 for emulator support
   if (Platform.OS === 'android' && configuredUrl.includes('localhost')) {
     return configuredUrl.replace('localhost', '10.0.2.2');
   }
-  
+
   return configuredUrl;
 }
 
@@ -180,7 +180,9 @@ async function retryWithBackoff<T>(
         // Exponential backoff: 1s, 2s, 4s
         const delay = initialDelay * Math.pow(2, attempt - 1);
         if (__DEV__) {
-          console.log(`Retrying request (attempt ${attempt + 1}/${maxRetries}) after ${delay}ms...`);
+          console.log(
+            `Retrying request (attempt ${attempt + 1}/${maxRetries}) after ${delay}ms...`
+          );
         }
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
@@ -201,16 +203,16 @@ async function makeRequest<T>(
     // Wait for App Check initialization to complete before making any API request
     // This prevents race conditions where API calls happen before App Check is ready
     await appCheckReady;
-    
+
     // Get App Check token for protected endpoints (uses cache to prevent rate limiting)
     const appCheckToken = await getCachedAppCheckToken();
-    
+
     // Build headers with App Check token if available
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
     };
-    
+
     if (appCheckToken) {
       headers['X-Firebase-AppCheck'] = appCheckToken;
     } else if (!__DEV__) {
@@ -376,9 +378,7 @@ export async function getAllFactsWithRetry(
 /**
  * Submit feedback or report an issue
  */
-export async function submitFeedback(
-  feedback: FeedbackRequest
-): Promise<FeedbackResponse> {
+export async function submitFeedback(feedback: FeedbackRequest): Promise<FeedbackResponse> {
   return makeRequest<FeedbackResponse>('/api/feedback', {
     method: 'POST',
     body: JSON.stringify(feedback),
@@ -400,11 +400,8 @@ export async function reportFact(
     throw new Error('Feedback text must be at most 1000 characters long.');
   }
 
-  return makeRequest<ReportFactResponse>(
-    `/api/facts/${factId}/report`,
-    {
-      method: 'POST',
-      body: JSON.stringify({ feedback_text: feedbackText }),
-    }
-  );
+  return makeRequest<ReportFactResponse>(`/api/facts/${factId}/report`, {
+    method: 'POST',
+    body: JSON.stringify({ feedback_text: feedbackText }),
+  });
 }

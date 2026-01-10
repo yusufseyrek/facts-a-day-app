@@ -31,8 +31,9 @@ export function TriviaExitModal({
   exitText,
 }: TriviaExitModalProps) {
   // Get responsive values for device type
-  const { screenWidth, typography, spacing, radius, iconSizes, media, maxModalWidth } = useResponsive();
-  
+  const { screenWidth, typography, spacing, radius, iconSizes, media, maxModalWidth } =
+    useResponsive();
+
   // Colors matching the app's design system
   const bgColor = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
@@ -40,7 +41,7 @@ export function TriviaExitModal({
   const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
   const surfaceColor = isDark ? hexColors.dark.surface : hexColors.light.surface;
-  
+
   // Warning colors - amber/orange tones
   const warningColor = isDark ? '#FBBF24' : '#F59E0B';
   const warningBgColor = isDark ? 'rgba(251, 191, 36, 0.15)' : 'rgba(245, 158, 11, 0.1)';
@@ -85,10 +86,10 @@ export function TriviaExitModal({
         />
 
         {/* Modal Content */}
-        <Animated.View 
+        <Animated.View
           entering={FadeInUp.duration(300).springify()}
-          style={{ 
-            width: screenWidth - spacing.md * 2, 
+          style={{
+            width: screenWidth - spacing.md * 2,
             maxWidth: maxModalWidth,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 12 },
@@ -114,8 +115,8 @@ export function TriviaExitModal({
             </Pressable>
 
             {/* Header with Icon */}
-            <YStack 
-              paddingTop={spacing.xl} 
+            <YStack
+              paddingTop={spacing.xl}
               paddingHorizontal={spacing.lg}
               paddingBottom={spacing.md}
               alignItems="center"
@@ -134,10 +135,7 @@ export function TriviaExitModal({
               </YStack>
 
               {/* Title */}
-              <Text.Title
-                color={textColor}
-                textAlign="center"
-              >
+              <Text.Title color={textColor} textAlign="center">
                 {title}
               </Text.Title>
             </YStack>
@@ -146,11 +144,8 @@ export function TriviaExitModal({
             <YStack height={1} backgroundColor={borderColor} marginHorizontal={spacing.lg} />
 
             {/* Message Box */}
-            <YStack 
-              paddingHorizontal={spacing.lg}
-              paddingVertical={spacing.lg}
-            >
-              <XStack 
+            <YStack paddingHorizontal={spacing.lg} paddingVertical={spacing.lg}>
+              <XStack
                 backgroundColor={surfaceColor}
                 borderRadius={radius.md}
                 padding={spacing.md}
@@ -158,23 +153,16 @@ export function TriviaExitModal({
                 gap={spacing.sm}
               >
                 <DoorOpen size={iconSizes.lg} margin={spacing.xs} color={errorColor} />
-                <Text.Body
-                  flex={1}
-                  color={secondaryTextColor}
-                >
+                <Text.Body flex={1} color={secondaryTextColor}>
                   {message}
                 </Text.Body>
               </XStack>
             </YStack>
 
             {/* Buttons */}
-            <XStack 
-              paddingHorizontal={spacing.lg} 
-              paddingBottom={spacing.lg}
-              gap={spacing.md}
-            >
+            <XStack paddingHorizontal={spacing.lg} paddingBottom={spacing.lg} gap={spacing.md}>
               {/* Cancel Button - Outlined */}
-              <Pressable 
+              <Pressable
                 onPress={onCancel}
                 testID="trivia-exit-cancel"
                 accessibilityLabel={cancelText}
@@ -204,7 +192,7 @@ export function TriviaExitModal({
               </Pressable>
 
               {/* Exit Button - Solid Destructive */}
-              <Pressable 
+              <Pressable
                 onPress={onExit}
                 testID="trivia-exit-confirm"
                 accessible={true}

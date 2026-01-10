@@ -22,14 +22,14 @@ interface TriviaStatsHeroProps {
 }
 
 // Circular progress ring component
-function CircularProgress({ 
-  percentage, 
-  size, 
-  strokeWidth, 
-  progressColor, 
+function CircularProgress({
+  percentage,
+  size,
+  strokeWidth,
+  progressColor,
   trackColor,
   textColor,
-}: { 
+}: {
   percentage: number;
   size: number;
   strokeWidth: number;
@@ -71,15 +71,8 @@ function CircularProgress({
         />
       </Svg>
       {/* Percentage text in center */}
-      <YStack 
-        position="absolute" 
-        alignItems="center" 
-        justifyContent="center"
-      >
-        <Text.Label
-          fontFamily={FONT_FAMILIES.bold}
-          color={textColor}
-        >
+      <YStack position="absolute" alignItems="center" justifyContent="center">
+        <Text.Label fontFamily={FONT_FAMILIES.bold} color={textColor}>
           {percentage}%
         </Text.Label>
       </YStack>
@@ -87,34 +80,46 @@ function CircularProgress({
   );
 }
 
-export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: TriviaStatsHeroProps) {
+export function TriviaStatsHero({
+  stats,
+  categories = [],
+  isDark,
+  t,
+  onPress,
+}: TriviaStatsHeroProps) {
   const { typography, iconSizes, spacing, radius, media, borderWidths } = useResponsive();
   const categoryIconSize = media.topicCardSize * 0.6;
   const dividerHeight = iconSizes.heroLg + spacing.sm;
   const accuracy = stats?.accuracy ?? 0;
   const testsTaken = stats?.testsTaken ?? 0;
-  
+
   // Find top category by accuracy (only categories with answered questions)
-  const topCategory = categories.length > 0 
-    ? categories
-        .filter(c => c.answered > 0) // Only categories with answered questions
-        .sort((a, b) => b.accuracy - a.accuracy)[0] || null // Sort by accuracy descending, take first
-    : null;
-  
+  const topCategory =
+    categories.length > 0
+      ? categories
+          .filter((c) => c.answered > 0) // Only categories with answered questions
+          .sort((a, b) => b.accuracy - a.accuracy)[0] || null // Sort by accuracy descending, take first
+      : null;
+
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const trackColor = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)';
-  
+
   // Show muted colors when no data
   const hasData = testsTaken > 0;
-  const progressColor = hasData ? primaryColor : (isDark ? hexColors.dark.textMuted : hexColors.light.textMuted);
-  
+  const progressColor = hasData
+    ? primaryColor
+    : isDark
+      ? hexColors.dark.textMuted
+      : hexColors.light.textMuted;
+
   // Category icon color
-  const categoryColor = topCategory?.color_hex || (isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple);
-  
+  const categoryColor =
+    topCategory?.color_hex || (isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple);
+
   const cardContent = (
     <YStack
       backgroundColor={cardBg}
@@ -126,18 +131,10 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
     >
       {/* Header */}
       <XStack justifyContent="space-between" alignItems="center">
-        <Text.Title
-          color={textColor}
-        >
-          {t('yourPerformance')}
-        </Text.Title>
+        <Text.Title color={textColor}>{t('yourPerformance')}</Text.Title>
         {hasData && (
           <XStack alignItems="center" gap={2}>
-            <Text.Label
-              color={primaryColor}
-            >
-              {t('details')}
-            </Text.Label>
+            <Text.Label color={primaryColor}>{t('details')}</Text.Label>
             <ChevronRight size={iconSizes.md} color={primaryColor} />
           </XStack>
         )}
@@ -145,17 +142,9 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
 
       {/* Stats Row or Empty State */}
       {hasData ? (
-        <XStack 
-          alignItems="center" 
-          justifyContent="space-between"
-          paddingTop={spacing.sm}
-        >
+        <XStack alignItems="center" justifyContent="space-between" paddingTop={spacing.sm}>
           {/* Accuracy with circular progress */}
-          <YStack 
-            flex={1}
-            alignItems="center"
-            gap={spacing.xs}
-          >
+          <YStack flex={1} alignItems="center" gap={spacing.xs}>
             <CircularProgress
               percentage={accuracy}
               size={iconSizes.heroLg}
@@ -164,8 +153,8 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
               trackColor={trackColor}
               textColor={textColor}
             />
-            <Text.Tiny 
-              color={secondaryTextColor} 
+            <Text.Tiny
+              color={secondaryTextColor}
               textTransform="uppercase"
               marginTop={spacing.xs}
               fontFamily={FONT_FAMILIES.medium}
@@ -173,26 +162,15 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
               {t('accuracy')}
             </Text.Tiny>
           </YStack>
-          
+
           {/* Vertical Divider */}
-          <YStack 
-            width={1} 
-            height={dividerHeight} 
-            backgroundColor={borderColor} 
-          />
-          
+          <YStack width={1} height={dividerHeight} backgroundColor={borderColor} />
+
           {/* Tests Count */}
-          <YStack 
-            flex={1}
-            alignItems="center"
-          >
-            <Text.Hero
-              color={textColor}
-            >
-              {testsTaken}
-            </Text.Hero>
-            <Text.Tiny 
-              color={secondaryTextColor} 
+          <YStack flex={1} alignItems="center">
+            <Text.Hero color={textColor}>{testsTaken}</Text.Hero>
+            <Text.Tiny
+              color={secondaryTextColor}
               textTransform="uppercase"
               letterSpacing={0.5}
               fontFamily={FONT_FAMILIES.medium}
@@ -200,20 +178,12 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
               {t('quizzes')}
             </Text.Tiny>
           </YStack>
-          
+
           {/* Vertical Divider */}
-          <YStack 
-            width={1} 
-            height={dividerHeight} 
-            backgroundColor={borderColor} 
-          />
-          
+          <YStack width={1} height={dividerHeight} backgroundColor={borderColor} />
+
           {/* Top Category */}
-          <YStack 
-            flex={1}
-            alignItems="center"
-            gap={spacing.xs}
-          >
+          <YStack flex={1} alignItems="center" gap={spacing.xs}>
             {topCategory ? (
               <>
                 <YStack
@@ -234,8 +204,8 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
                 >
                   {topCategory.name}
                 </Text.Caption>
-                <Text.Tiny 
-                  color={secondaryTextColor} 
+                <Text.Tiny
+                  color={secondaryTextColor}
                   textTransform="uppercase"
                   letterSpacing={0.5}
                   fontFamily={FONT_FAMILIES.medium}
@@ -253,7 +223,11 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
                   justifyContent="center"
                   alignItems="center"
                 >
-                  {getLucideIcon('help-circle', typography.fontSize.title, isDark ? hexColors.dark.textMuted : hexColors.light.textMuted)}
+                  {getLucideIcon(
+                    'help-circle',
+                    typography.fontSize.title,
+                    isDark ? hexColors.dark.textMuted : hexColors.light.textMuted
+                  )}
                 </YStack>
                 <Text.Caption
                   fontFamily={FONT_FAMILIES.semibold}
@@ -263,8 +237,8 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
                 >
                   —
                 </Text.Caption>
-                <Text.Tiny 
-                  color={secondaryTextColor} 
+                <Text.Tiny
+                  color={secondaryTextColor}
                   textTransform="uppercase"
                   letterSpacing={0.5}
                   fontFamily={FONT_FAMILIES.medium}
@@ -277,11 +251,7 @@ export function TriviaStatsHero({ stats, categories = [], isDark, t, onPress }: 
           </YStack>
         </XStack>
       ) : (
-        <YStack 
-          alignItems="center" 
-          justifyContent="center"
-          paddingVertical={spacing.sm}
-        >
+        <YStack alignItems="center" justifyContent="center" paddingVertical={spacing.sm}>
           <Text.Label
             color={secondaryTextColor}
             textAlign="center"

@@ -1,17 +1,17 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { Pressable, Animated, StyleSheet, View, Platform } from "react-native";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { Pressable, Animated, StyleSheet, View, Platform } from 'react-native';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 
-import { CategoryBadge } from "./CategoryBadge";
-import { Text, FONT_FAMILIES } from "./Typography";
-import { IMAGE_PLACEHOLDER, IMAGE_DIMENSIONS, IMAGE_RETRY } from "../config/images";
-import { hexColors } from "../theme";
-import { useFactImage } from "../utils/useFactImage";
-import { useResponsive } from "../utils/useResponsive";
+import { CategoryBadge } from './CategoryBadge';
+import { Text, FONT_FAMILIES } from './Typography';
+import { IMAGE_PLACEHOLDER, IMAGE_DIMENSIONS, IMAGE_RETRY } from '../config/images';
+import { hexColors } from '../theme';
+import { useFactImage } from '../utils/useFactImage';
+import { useResponsive } from '../utils/useResponsive';
 
-import type { ImageSource } from "expo-image";
-import type { Category } from "../services/database";
+import type { ImageSource } from 'expo-image';
+import type { Category } from '../services/database';
 
 interface ImageFactCardProps {
   title: string;
@@ -38,22 +38,26 @@ const ImageFactCardComponent = ({
 }: ImageFactCardProps) => {
   const { screenWidth, isTablet: isTabletHook, spacing, radius, config } = useResponsive();
   const isTablet = isTabletProp || isTabletHook;
-  
+
   // Use a ref for the scale animation - this persists across renders
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  
+
   // Shimmer animation for loading state
   const shimmerAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Use authenticated image with App Check - REQUIRED since remote URLs need App Check headers
-  const { imageUri: authenticatedImageUri, isLoading: isImageLoading, retry: retryImage } = useFactImage(imageUrl, factId);
-  
+  const {
+    imageUri: authenticatedImageUri,
+    isLoading: isImageLoading,
+    retry: retryImage,
+  } = useFactImage(imageUrl, factId);
+
   // Track if image has loaded successfully
   const [imageLoaded, setImageLoaded] = useState(false);
-  
+
   // Show loading shimmer when image is loading or hasn't loaded yet
   const showLoadingState = isImageLoading || !imageLoaded;
-  
+
   // Run shimmer animation when loading
   useEffect(() => {
     if (showLoadingState) {
@@ -77,30 +81,32 @@ const ImageFactCardComponent = ({
       shimmerAnim.setValue(0);
     }
   }, [showLoadingState, shimmerAnim]);
-  
+
   // Keep track of the last valid image URI to prevent flickering
   const lastValidUriRef = useRef<string | null>(null);
-  
+
   // Update last valid URI when we get a new one
   if (authenticatedImageUri && authenticatedImageUri !== lastValidUriRef.current) {
     lastValidUriRef.current = authenticatedImageUri;
   }
-  
+
   // Use the last valid URI if current is null (prevents flicker during re-render)
   const displayUri = authenticatedImageUri || lastValidUriRef.current;
-  
+
   // Retry state: first try re-rendering, then try re-downloading
   // renderRetryCount: triggers re-render without downloading (for Android timing issues)
   // downloadRetryCount: triggers actual re-download (for corrupted files)
   const [renderRetryCount, setRenderRetryCount] = useState(0);
   const [downloadRetryCount, setDownloadRetryCount] = useState(0);
-  
+
   // Track if we're currently waiting for a retry (prevent duplicate error handling)
   const retryPendingRef = useRef(false);
 
   // Calculate card height based on aspect ratio
   // Use a smaller aspect ratio for tablets so cards aren't too tall
-  const aspectRatio = isTablet ? IMAGE_DIMENSIONS.TABLET_CARD_ASPECT_RATIO : IMAGE_DIMENSIONS.CARD_ASPECT_RATIO;
+  const aspectRatio = isTablet
+    ? IMAGE_DIMENSIONS.TABLET_CARD_ASPECT_RATIO
+    : IMAGE_DIMENSIONS.CARD_ASPECT_RATIO;
   const cardHeight = screenWidth * aspectRatio;
 
   const handlePressIn = useCallback(() => {
@@ -129,20 +135,22 @@ const ImageFactCardComponent = ({
     if (isImageLoading || !displayUri) {
       return;
     }
-    
+
     // Prevent duplicate error handling while retry is pending
     if (retryPendingRef.current) {
       return;
     }
-    
+
     // Phase 1: Try re-rendering without downloading (fixes Android timing issues)
     if (renderRetryCount < IMAGE_RETRY.MAX_RENDER_ATTEMPTS) {
       retryPendingRef.current = true;
-      
+
       if (__DEV__) {
-        console.log(`🔄 Image render failed for fact ${factId}, re-rendering in ${IMAGE_RETRY.RENDER_DELAY}ms (attempt ${renderRetryCount + 1}/${IMAGE_RETRY.MAX_RENDER_ATTEMPTS})`);
+        console.log(
+          `🔄 Image render failed for fact ${factId}, re-rendering in ${IMAGE_RETRY.RENDER_DELAY}ms (attempt ${renderRetryCount + 1}/${IMAGE_RETRY.MAX_RENDER_ATTEMPTS})`
+        );
       }
-      
+
       setTimeout(() => {
         retryPendingRef.current = false;
         setRenderRetryCount((prev) => prev + 1);
@@ -150,11 +158,11 @@ const ImageFactCardComponent = ({
       }, IMAGE_RETRY.RENDER_DELAY);
       return;
     }
-    
+
     // Phase 2: Re-rendering didn't help, try re-downloading
     if (downloadRetryCount < IMAGE_RETRY.MAX_DOWNLOAD_ATTEMPTS) {
       retryPendingRef.current = true;
-      
+
       setTimeout(() => {
         retryPendingRef.current = false;
         setDownloadRetryCount((prev) => prev + 1);
@@ -172,7 +180,7 @@ const ImageFactCardComponent = ({
     retryPendingRef.current = false;
     setImageLoaded(false);
   }, [imageUrl]);
-  
+
   // Handle image load success
   const handleImageLoad = useCallback(() => {
     setImageLoaded(true);
@@ -180,7 +188,7 @@ const ImageFactCardComponent = ({
 
   // Generate image source - memoized to prevent unnecessary re-renders
   const imageSource: ImageSource | null = useMemo(
-    () => displayUri ? { uri: displayUri } : null,
+    () => (displayUri ? { uri: displayUri } : null),
     [displayUri]
   );
 
@@ -189,8 +197,8 @@ const ImageFactCardComponent = ({
   const imageContainerStyle = { height: cardHeight };
   // Simple image style - fill the container completely
   const imageStyle = {
-    width: "100%" as const,
-    height: "100%" as const,
+    width: '100%' as const,
+    height: '100%' as const,
   };
   const badgePositionStyle = {
     top: spacing.md,
@@ -201,7 +209,6 @@ const ImageFactCardComponent = ({
     paddingBottom: spacing.lg,
     paddingTop: spacing.xl * 1.5,
   };
-  
 
   // Recycling key that includes retry count to force expo-image to re-attempt loading
   // This is important for Android where timing issues cause initial render failures
@@ -209,17 +216,23 @@ const ImageFactCardComponent = ({
   const mountTimestamp = useRef(Date.now()).current;
   const recyclingKey = `fact-image-${factId}-${mountTimestamp}-${renderRetryCount}-${downloadRetryCount}`;
 
-  const pressableStyle = useMemo(() => ({
-    overflow: "hidden" as const,
-    borderRadius: radius.lg,
-  }), [radius]);
+  const pressableStyle = useMemo(
+    () => ({
+      overflow: 'hidden' as const,
+      borderRadius: radius.lg,
+    }),
+    [radius]
+  );
 
-  const cardWrapperStyle = useMemo(() => ({
-    borderRadius: radius.lg,
-    overflow: "hidden" as const,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-  }), [radius]);
+  const cardWrapperStyle = useMemo(
+    () => ({
+      borderRadius: radius.lg,
+      overflow: 'hidden' as const,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+    }),
+    [radius]
+  );
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -242,7 +255,7 @@ const ImageFactCardComponent = ({
               aria-hidden={true}
               style={imageStyle}
               contentFit="cover"
-              cachePolicy={Platform.OS === "android" ? "disk" : "memory-disk"}
+              cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
               transition={0}
               placeholder={placeholder}
               onError={handleImageError}
@@ -250,7 +263,7 @@ const ImageFactCardComponent = ({
               recyclingKey={recyclingKey}
               priority="high"
             />
-            
+
             {/* Loading shimmer overlay */}
             {showLoadingState && (
               <Animated.View
@@ -279,9 +292,7 @@ const ImageFactCardComponent = ({
             {/* Category badge */}
             {category && (
               <View style={[styles.badgeContainer, badgePositionStyle]}>
-                <CategoryBadge
-                  category={category}
-                />
+                <CategoryBadge category={category} />
               </View>
             )}
 
@@ -305,49 +316,46 @@ const ImageFactCardComponent = ({
 
 // Static values moved outside component to prevent recreation
 const androidRipple = {
-  color: "rgba(255, 255, 255, 0.15)",
+  color: 'rgba(255, 255, 255, 0.15)',
   borderless: false,
 };
 
 const placeholder = { blurhash: IMAGE_PLACEHOLDER.DEFAULT_BLURHASH };
-const gradientColors = ["transparent", "rgba(0, 0, 0, 0.3)", "rgba(0, 0, 0, 0.75)"] as const;
+const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.3)', 'rgba(0, 0, 0, 0.75)'] as const;
 const gradientLocations = [0.3, 0.6, 1] as const;
 
 const styles = StyleSheet.create({
   imageContainer: {
-    overflow: "hidden",
-    backgroundColor: "#1a1a2e", // Dark base that matches the shimmer
+    overflow: 'hidden',
+    backgroundColor: '#1a1a2e', // Dark base that matches the shimmer
   },
   shimmerOverlay: {
-    backgroundColor: "#2d2d44", // Subtle shimmer color
+    backgroundColor: '#2d2d44', // Subtle shimmer color
   },
   badgeContainer: {
-    position: "absolute",
+    position: 'absolute',
     zIndex: 10,
   },
   contentOverlay: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
   },
   titleShadow: {
-    textShadowColor: "rgba(0, 0, 0, 0.6)",
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
   },
 });
 
 // Memoize the component to prevent unnecessary re-renders
-export const ImageFactCard = React.memo(
-  ImageFactCardComponent,
-  (prevProps, nextProps) => {
-    return (
-      prevProps.title === nextProps.title &&
-      prevProps.imageUrl === nextProps.imageUrl &&
-      prevProps.factId === nextProps.factId &&
-      prevProps.categorySlug === nextProps.categorySlug &&
-      prevProps.isTablet === nextProps.isTablet
-    );
-  }
-);
+export const ImageFactCard = React.memo(ImageFactCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.title === nextProps.title &&
+    prevProps.imageUrl === nextProps.imageUrl &&
+    prevProps.factId === nextProps.factId &&
+    prevProps.categorySlug === nextProps.categorySlug &&
+    prevProps.isTablet === nextProps.isTablet
+  );
+});

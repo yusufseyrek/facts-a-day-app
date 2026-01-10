@@ -1,5 +1,12 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { ScrollView, RefreshControl, ActivityIndicator, Pressable, View, Animated as RNAnimated } from 'react-native';
+import {
+  ScrollView,
+  RefreshControl,
+  ActivityIndicator,
+  Pressable,
+  View,
+  Animated as RNAnimated,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -19,13 +26,7 @@ import { useResponsive } from '../../../src/utils/useResponsive';
 import type { CategoryWithProgress } from '../../../src/services/trivia';
 
 // Back Button with press animation
-function BackButton({ 
-  onPress, 
-  primaryColor 
-}: { 
-  onPress: () => void; 
-  primaryColor: string;
-}) {
+function BackButton({ onPress, primaryColor }: { onPress: () => void; primaryColor: string }) {
   const { iconSizes, media } = useResponsive();
   const scale = useRef(new RNAnimated.Value(1)).current;
   const buttonSize = media.topicCardSize * 0.45;
@@ -85,30 +86,29 @@ function CategoryProgressBar({
   const { typography, iconSizes, spacing } = useResponsive();
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const trackColor = isDark ? hexColors.dark.border : hexColors.light.border;
-  const progressColor = category.color_hex || (isDark ? hexColors.dark.primary : hexColors.light.primary);
+  const progressColor =
+    category.color_hex || (isDark ? hexColors.dark.primary : hexColors.light.primary);
   const percentage = category.accuracy;
   const barHeight = spacing.sm;
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * 50).duration(400).springify()}>
+    <Animated.View
+      entering={FadeInDown.delay(index * 50)
+        .duration(400)
+        .springify()}
+    >
       <YStack gap={spacing.xs}>
-      <XStack alignItems="center" justifyContent="space-between">
-        <XStack alignItems="center" gap={spacing.sm}>
-          {getLucideIcon(category.icon, typography.fontSize.title, progressColor)}
-          <Text.Label
-            color={textColor}
-            fontFamily={FONT_FAMILIES.medium}
-          >
-            {category.name}
-          </Text.Label>
+        <XStack alignItems="center" justifyContent="space-between">
+          <XStack alignItems="center" gap={spacing.sm}>
+            {getLucideIcon(category.icon, typography.fontSize.title, progressColor)}
+            <Text.Label color={textColor} fontFamily={FONT_FAMILIES.medium}>
+              {category.name}
+            </Text.Label>
+          </XStack>
+          <Text.Caption color={textColor} fontFamily={FONT_FAMILIES.semibold}>
+            {percentage}%
+          </Text.Caption>
         </XStack>
-        <Text.Caption
-          color={textColor}
-          fontFamily={FONT_FAMILIES.semibold}
-        >
-          {percentage}%
-        </Text.Caption>
-      </XStack>
         <View
           style={{
             width: '100%',
@@ -144,25 +144,28 @@ export default function CategoriesAccuracyScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [categories, setCategories] = useState<CategoryWithProgress[]>([]);
 
-  const loadData = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) setRefreshing(true);
-      
-      const categoriesData = await triviaService.getCategoriesWithProgress(locale);
-      
-      // Filter categories with accuracy > 0 and sort high to low
-      const categoriesWithAccuracy = categoriesData
-        .filter(c => c.total > 0 && c.accuracy > 0)
-        .sort((a, b) => b.accuracy - a.accuracy);
-      
-      setCategories(categoriesWithAccuracy);
-    } catch (error) {
-      console.error('Error loading categories data:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [locale]);
+  const loadData = useCallback(
+    async (isRefresh = false) => {
+      try {
+        if (isRefresh) setRefreshing(true);
+
+        const categoriesData = await triviaService.getCategoriesWithProgress(locale);
+
+        // Filter categories with accuracy > 0 and sort high to low
+        const categoriesWithAccuracy = categoriesData
+          .filter((c) => c.total > 0 && c.accuracy > 0)
+          .sort((a, b) => b.accuracy - a.accuracy);
+
+        setCategories(categoriesWithAccuracy);
+      } catch (error) {
+        console.error('Error loading categories data:', error);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [locale]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -191,7 +194,7 @@ export default function CategoriesAccuracyScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      
+
       {/* Header */}
       <Animated.View entering={FadeInUp.duration(400).springify()}>
         <XStack
@@ -204,13 +207,9 @@ export default function CategoriesAccuracyScreen() {
           borderBottomColor={isDark ? hexColors.dark.border : hexColors.light.border}
         >
           <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
-          
-          <Text.Title
-            color={textColor}
-          >
-            {t('accuracyByCategory')}
-          </Text.Title>
-          
+
+          <Text.Title color={textColor}>{t('accuracyByCategory')}</Text.Title>
+
           {/* Empty spacer to balance the header */}
           <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />
         </XStack>
@@ -218,10 +217,8 @@ export default function CategoriesAccuracyScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
-        }
-        contentContainerStyle={{ 
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />}
+        contentContainerStyle={{
           padding: spacing.lg,
           paddingBottom: insets.bottom + spacing.xl,
         }}
@@ -257,4 +254,3 @@ export default function CategoriesAccuracyScreen() {
     </View>
   );
 }
-

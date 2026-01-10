@@ -1,0 +1,11 @@
+# Build outputs
+dist/
+ios/
+android/
+.expo/
+
+# Dependencies
+node_modules/
+
+# Config
+metro.config.js

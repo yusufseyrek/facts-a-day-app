@@ -46,9 +46,7 @@ export interface InitializationResult {
 /**
  * Initialize onboarding: fetch metadata from API
  */
-export async function initializeOnboarding(
-  deviceLanguage: string
-): Promise<InitializationResult> {
+export async function initializeOnboarding(deviceLanguage: string): Promise<InitializationResult> {
   try {
     // Fetch metadata with device language for translations
     console.log('Fetching metadata...');
@@ -180,9 +178,7 @@ export interface OnboardingPreferences {
  * Save onboarding preferences and mark onboarding as complete
  * ONLY call this AFTER facts have been successfully fetched and stored
  */
-export async function completeOnboarding(
-  preferences: OnboardingPreferences
-): Promise<void> {
+export async function completeOnboarding(preferences: OnboardingPreferences): Promise<void> {
   try {
     // Save preferences to AsyncStorage
     await AsyncStorage.setItem(
@@ -192,11 +188,8 @@ export async function completeOnboarding(
 
     // Save notification times if provided (new multi-time feature)
     if (preferences.notificationTimes && preferences.notificationTimes.length > 0) {
-      const timeStrings = preferences.notificationTimes.map(time => time.toISOString());
-      await AsyncStorage.setItem(
-        NOTIFICATION_TIMES_KEY,
-        JSON.stringify(timeStrings)
-      );
+      const timeStrings = preferences.notificationTimes.map((time) => time.toISOString());
+      await AsyncStorage.setItem(NOTIFICATION_TIMES_KEY, JSON.stringify(timeStrings));
       // Also save first time as single time for backward compatibility
       await AsyncStorage.setItem(
         NOTIFICATION_TIME_KEY,
@@ -205,10 +198,7 @@ export async function completeOnboarding(
     }
     // Fallback to single notification time if provided
     else if (preferences.notificationTime) {
-      await AsyncStorage.setItem(
-        NOTIFICATION_TIME_KEY,
-        preferences.notificationTime.toISOString()
-      );
+      await AsyncStorage.setItem(NOTIFICATION_TIME_KEY, preferences.notificationTime.toISOString());
     }
 
     // Mark onboarding as complete
@@ -266,10 +256,7 @@ export async function getNotificationTimes(): Promise<string[]> {
  */
 export async function setSelectedCategories(categories: string[]): Promise<void> {
   try {
-    await AsyncStorage.setItem(
-      SELECTED_CATEGORIES_KEY,
-      JSON.stringify(categories)
-    );
+    await AsyncStorage.setItem(SELECTED_CATEGORIES_KEY, JSON.stringify(categories));
     console.log('Selected categories updated:', categories);
   } catch (error) {
     console.error('Error setting selected categories:', error);

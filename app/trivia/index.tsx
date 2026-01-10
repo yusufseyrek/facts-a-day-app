@@ -42,8 +42,8 @@ export default function TriviaScreen() {
   const scrollToTop = useCallback(() => {
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
-  useScrollToTopHandler("trivia", scrollToTop);
-  
+  useScrollToTopHandler('trivia', scrollToTop);
+
   // Trivia stats
   const [dailyStreak, setDailyStreak] = useState(0);
   const [dailyQuestionsCount, setDailyQuestionsCount] = useState(0);
@@ -51,7 +51,7 @@ export default function TriviaScreen() {
   const [mixedQuestionsCount, setMixedQuestionsCount] = useState(0);
   const [overallStats, setOverallStats] = useState<triviaService.TriviaStats | null>(null);
   const [categoriesWithProgress, setCategoriesWithProgress] = useState<CategoryWithProgress[]>([]);
-  
+
   // Pending trivia modal state
   const [pendingTrivia, setPendingTrivia] = useState<{
     type: 'daily' | 'mixed' | 'category';
@@ -66,7 +66,7 @@ export default function TriviaScreen() {
     answeredCount: number;
     correctCount: number;
   } | null>(null);
-  
+
   // Keep last valid data for smooth close animation
   const lastPendingTriviaRef = useRef(pendingTrivia);
   if (pendingTrivia !== null) {
@@ -74,32 +74,36 @@ export default function TriviaScreen() {
   }
   const modalData = pendingTrivia ?? lastPendingTriviaRef.current;
 
-  const loadTriviaData = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) setRefreshing(true);
-      
-      const [streak, dailyCount, dailyCompleted, mixedCount, stats, categories] = await Promise.all([
-        triviaService.getDailyStreak(),
-        triviaService.getDailyTriviaQuestionsCount(locale),
-        triviaService.isDailyTriviaCompleted(),
-        triviaService.getMixedTriviaQuestionsCount(locale),
-        triviaService.getOverallStats(),
-        triviaService.getCategoriesWithProgress(locale),
-      ]);
-      
-      setDailyStreak(streak);
-      setDailyQuestionsCount(dailyCount);
-      setIsDailyCompleted(dailyCompleted);
-      setMixedQuestionsCount(mixedCount);
-      setOverallStats(stats);
-      setCategoriesWithProgress(categories);
-    } catch (error) {
-      console.error('Error loading trivia data:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [locale]);
+  const loadTriviaData = useCallback(
+    async (isRefresh = false) => {
+      try {
+        if (isRefresh) setRefreshing(true);
+
+        const [streak, dailyCount, dailyCompleted, mixedCount, stats, categories] =
+          await Promise.all([
+            triviaService.getDailyStreak(),
+            triviaService.getDailyTriviaQuestionsCount(locale),
+            triviaService.isDailyTriviaCompleted(),
+            triviaService.getMixedTriviaQuestionsCount(locale),
+            triviaService.getOverallStats(),
+            triviaService.getCategoriesWithProgress(locale),
+          ]);
+
+        setDailyStreak(streak);
+        setDailyQuestionsCount(dailyCount);
+        setIsDailyCompleted(dailyCompleted);
+        setMixedQuestionsCount(mixedCount);
+        setOverallStats(stats);
+        setCategoriesWithProgress(categories);
+      } catch (error) {
+        console.error('Error loading trivia data:', error);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [locale]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -141,7 +145,10 @@ export default function TriviaScreen() {
 
   const showCategoryTriviaIntro = (category: CategoryWithProgress) => {
     // Each session uses category trivia questions limit
-    const remainingQuestions = Math.min(category.total - category.mastered, triviaService.CATEGORY_TRIVIA_QUESTIONS);
+    const remainingQuestions = Math.min(
+      category.total - category.mastered,
+      triviaService.CATEGORY_TRIVIA_QUESTIONS
+    );
     setPendingTrivia({
       type: 'category',
       categorySlug: category.slug,
@@ -163,25 +170,26 @@ export default function TriviaScreen() {
 
   const handleStartFromIntroModal = () => {
     if (!pendingTrivia) return;
-    
+
     const triviaInfo = pendingTrivia;
     setPendingTrivia(null);
-    
+
     // Navigate to the new trivia game screen
     if (triviaInfo.type === 'daily') {
       router.push('/trivia/game?type=daily');
     } else if (triviaInfo.type === 'mixed') {
       router.push('/trivia/game?type=mixed');
     } else if (triviaInfo.type === 'category' && triviaInfo.categorySlug) {
-      router.push(`/trivia/game?type=category&categorySlug=${triviaInfo.categorySlug}&categoryName=${encodeURIComponent(triviaInfo.categoryName || '')}`);
+      router.push(
+        `/trivia/game?type=category&categorySlug=${triviaInfo.categorySlug}&categoryName=${encodeURIComponent(triviaInfo.categoryName || '')}`
+      );
     }
   };
-
 
   // Loading state
   if (loading) {
     return (
-      <ScreenContainer edges={["top"]}>
+      <ScreenContainer edges={['top']}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <LoadingContainer>
           <ActivityIndicator size="large" color={hexColors.light.primary} />
@@ -190,14 +198,13 @@ export default function TriviaScreen() {
     );
   }
 
-
   // Hub view (main trivia screen)
   // Check if there are any questions available (daily, mixed, or any category with questions)
-  const hasCategoryQuestions = categoriesWithProgress.some(cat => cat.total > 0);
+  const hasCategoryQuestions = categoriesWithProgress.some((cat) => cat.total > 0);
   const hasQuestions = dailyQuestionsCount > 0 || mixedQuestionsCount > 0 || hasCategoryQuestions;
   // Show categories section if user has selected categories (even if no questions yet)
   const hasCategories = categoriesWithProgress.length > 0;
-  
+
   // Colors for empty state
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const primaryLightColor = isDark ? hexColors.dark.primaryLight : hexColors.light.primaryLight;
@@ -208,17 +215,15 @@ export default function TriviaScreen() {
   const orangeColor = isDark ? hexColors.dark.neonOrange : hexColors.light.neonOrange;
 
   // Streak badge for header (only show when streak > 0)
-  const streakBadge = dailyStreak > 0 ? (
-    <XStack alignItems="center" gap={4}>
-      <Flame size={typography.fontSize.title} color={orangeColor} />
-      <Text.Label 
-        color={orangeColor}
-        fontFamily={FONT_FAMILIES.semibold}
-      >
-        {dailyStreak}
-      </Text.Label>
-    </XStack>
-  ) : undefined;
+  const streakBadge =
+    dailyStreak > 0 ? (
+      <XStack alignItems="center" gap={4}>
+        <Flame size={typography.fontSize.title} color={orangeColor} />
+        <Text.Label color={orangeColor} fontFamily={FONT_FAMILIES.semibold}>
+          {dailyStreak}
+        </Text.Label>
+      </XStack>
+    ) : undefined;
 
   // Helper to chunk categories into rows
   const chunkCategories = (categories: CategoryWithProgress[], size: number) => {
@@ -234,7 +239,7 @@ export default function TriviaScreen() {
   const categoryRows = chunkCategories(categoriesWithProgress, categoriesPerRow);
 
   return (
-    <ScreenContainer edges={["top"]}>
+    <ScreenContainer edges={['top']}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <YStack flex={1}>
         <Animated.View entering={FadeIn.duration(300)}>
@@ -244,7 +249,7 @@ export default function TriviaScreen() {
             rightElement={streakBadge}
           />
         </Animated.View>
-        
+
         <ScrollView
           ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
@@ -252,7 +257,7 @@ export default function TriviaScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => loadTriviaData(true)} />
           }
         >
-          <ContentContainer  paddingBottom={spacing.md} shouldSetMaxContentWidth={false}>
+          <ContentContainer paddingBottom={spacing.md} shouldSetMaxContentWidth={false}>
             {/* Always show Stats */}
             <Animated.View entering={FadeInDown.delay(50).duration(300)}>
               <TriviaStatsHero
@@ -263,8 +268,8 @@ export default function TriviaScreen() {
                 onPress={() => router.push('/(tabs)/trivia/performance')}
               />
             </Animated.View>
-            
-            {(hasQuestions || hasCategories) ? (
+
+            {hasQuestions || hasCategories ? (
               <>
                 {/* Section title */}
                 <Animated.View entering={FadeInDown.delay(100).duration(300)}>
@@ -285,11 +290,17 @@ export default function TriviaScreen() {
                       <TriviaGridCard
                         type="daily"
                         title={t('dailyTrivia')}
-                        subtitle={isDailyCompleted 
-                          ? t('dailyTriviaCompleted')
-                          : dailyQuestionsCount > 0 
-                            ? t('triviaQuestionsCount', { count: Math.min(dailyQuestionsCount, triviaService.DAILY_TRIVIA_QUESTIONS) })
-                            : t('noQuestionsYet')
+                        subtitle={
+                          isDailyCompleted
+                            ? t('dailyTriviaCompleted')
+                            : dailyQuestionsCount > 0
+                              ? t('triviaQuestionsCount', {
+                                  count: Math.min(
+                                    dailyQuestionsCount,
+                                    triviaService.DAILY_TRIVIA_QUESTIONS
+                                  ),
+                                })
+                              : t('noQuestionsYet')
                         }
                         isCompleted={isDailyCompleted}
                         isDisabled={dailyQuestionsCount === 0}
@@ -308,10 +319,13 @@ export default function TriviaScreen() {
                       />
                     </XStack>
                   </Animated.View>
-                  
+
                   {/* Category rows */}
                   {categoryRows.map((row, rowIndex) => (
-                    <Animated.View key={`row-${rowIndex}`} entering={FadeInDown.delay(200 + rowIndex * 50).duration(300)}>
+                    <Animated.View
+                      key={`row-${rowIndex}`}
+                      entering={FadeInDown.delay(200 + rowIndex * 50).duration(300)}
+                    >
                       <XStack gap={spacing.md}>
                         {row.map((category) => (
                           <TriviaGridCard
@@ -327,11 +341,10 @@ export default function TriviaScreen() {
                           />
                         ))}
                         {/* Add empty spacers if the row is not full */}
-                        {row.length < categoriesPerRow && (
+                        {row.length < categoriesPerRow &&
                           Array.from({ length: categoriesPerRow - row.length }).map((_, i) => (
                             <View key={`spacer-${i}`} style={{ flex: 1 }} />
-                          ))
-                        )}
+                          ))}
                       </XStack>
                     </Animated.View>
                   ))}
@@ -358,23 +371,17 @@ export default function TriviaScreen() {
                   >
                     <Sparkles size={iconSizes.hero} color={purpleColor} />
                   </YStack>
-                  
+
                   {/* Title & Description */}
                   <YStack alignItems="center" gap={spacing.sm}>
-                    <Text.Title
-                      color={textColor}
-                      textAlign="center"
-                    >
+                    <Text.Title color={textColor} textAlign="center">
                       {t('triviaEmptyTitle')}
                     </Text.Title>
-                    <Text.Body
-                      color={secondaryTextColor}
-                      textAlign="center"
-                    >
+                    <Text.Body color={secondaryTextColor} textAlign="center">
                       {t('triviaEmptyDescription')}
                     </Text.Body>
                   </YStack>
-                  
+
                   {/* CTA Button */}
                   <Pressable
                     onPress={() => router.push('/(tabs)/')}
@@ -392,10 +399,7 @@ export default function TriviaScreen() {
                       alignItems="center"
                       gap={spacing.sm}
                     >
-                      <Text.Label
-                        color="#FFFFFF"
-                        fontFamily={FONT_FAMILIES.semibold}
-                      >
+                      <Text.Label color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
                         {t('startExploring')}
                       </Text.Label>
                       <ArrowRight size={typography.fontSize.title} color="#FFFFFF" />
@@ -427,4 +431,3 @@ export default function TriviaScreen() {
     </ScreenContainer>
   );
 }
-

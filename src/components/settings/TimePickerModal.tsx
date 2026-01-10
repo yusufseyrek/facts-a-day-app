@@ -46,7 +46,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   const colors = hexColors[theme];
   const { t, locale } = useTranslation();
   const { spacing, radius, iconSizes } = useResponsive();
-  
+
   // Warning color - darker in light mode for better readability
   const warningColor = theme === 'dark' ? '#F59E0B' : '#B45309';
 
@@ -95,7 +95,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       const savedTimes = await onboardingService.getNotificationTimes();
 
       if (savedTimes && savedTimes.length > 0) {
-        const parsedTimes = savedTimes.map(t => new Date(t));
+        const parsedTimes = savedTimes.map((t) => new Date(t));
         setTimes(parsedTimes);
         setOriginalTimes(parsedTimes);
       } else {
@@ -115,7 +115,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
     if (times.length !== originalTimes.length) {
       return true;
     }
-    
+
     for (let i = 0; i < times.length; i++) {
       const current = times[i];
       const original = originalTimes[i];
@@ -126,7 +126,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
         return true;
       }
     }
-    
+
     return false;
   };
 
@@ -184,7 +184,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
     setIsSaving(true);
     try {
       // Save the times to AsyncStorage (always save user preference, even if notifications fail)
-      const timeStrings = times.map(t => t.toISOString());
+      const timeStrings = times.map((t) => t.toISOString());
       await onboardingService.setNotificationTimes(timeStrings);
 
       // Reschedule notifications with the new times
@@ -225,18 +225,11 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
     return (
       <View key={index} style={dynamicStyles.timePickerItem}>
         <View style={dynamicStyles.timePickerHeader}>
-          {label && (
-            <Text.Label color={colors.text}>
-              {label}
-            </Text.Label>
-          )}
+          {label && <Text.Label color={colors.text}>{label}</Text.Label>}
           {times.length > 1 && (
             <Pressable
               onPress={() => handleRemoveTime(index)}
-              style={[
-                dynamicStyles.removeButton,
-                { backgroundColor: colors.surface },
-              ]}
+              style={[dynamicStyles.removeButton, { backgroundColor: colors.surface }]}
             >
               <Trash2 size={iconSizes.sm} color={colors.textSecondary} />
             </Pressable>
@@ -270,10 +263,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
             <>
               <Pressable
                 onPress={() => setActivePickerIndex(index)}
-                style={[
-                  dynamicStyles.androidTimeButton,
-                  { backgroundColor: colors.primary }
-                ]}
+                style={[dynamicStyles.androidTimeButton, { backgroundColor: colors.primary }]}
               >
                 <Text.Label color="#FFFFFF">
                   {time.toLocaleTimeString(locale, {
@@ -313,91 +303,89 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   const screenHeight = Dimensions.get('window').height;
   const modalWidth = screenWidth * 0.85;
 
-  const dynamicStyles = useMemo(() => ({
-    modalContainer: {
-      maxHeight: screenHeight * 0.8,
-      borderRadius: radius.lg,
-      overflow: 'hidden' as const,
-    },
-    header: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      justifyContent: 'space-between' as const,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.lg,
-      borderBottomWidth: 1,
-    },
-    closeButton: {
-      padding: spacing.xs,
-    },
-    content: {
-      padding: spacing.lg,
-      gap: spacing.md,
-    },
-    warningContainer: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      padding: spacing.md,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      gap: spacing.sm,
-      marginBottom: spacing.sm,
-    },
-    timePickerItem: {
-      marginBottom: spacing.sm,
-    },
-    timePickerHeader: {
-      flexDirection: 'row' as const,
-      justifyContent: 'space-between' as const,
-      alignItems: 'center' as const,
-      marginBottom: spacing.xs,
-    },
-    removeButton: {
-      padding: spacing.xs,
-      borderRadius: radius.sm,
-    },
-    timePickerContainer: {
-      padding: Platform.OS === 'ios' ? spacing.lg : spacing.md,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-    },
-    addButton: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      padding: spacing.md,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderStyle: 'dashed' as const,
-      gap: spacing.xs,
-      marginTop: spacing.sm,
-    },
-    footer: {
-      padding: spacing.lg,
-      paddingTop: 0,
-    },
-    androidTimeButton: {
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.xl,
-      borderRadius: radius.full,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      minWidth: 150,
-    },
-  }), [spacing, radius]);
+  const dynamicStyles = useMemo(
+    () => ({
+      modalContainer: {
+        maxHeight: screenHeight * 0.8,
+        borderRadius: radius.lg,
+        overflow: 'hidden' as const,
+      },
+      header: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'space-between' as const,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.lg,
+        borderBottomWidth: 1,
+      },
+      closeButton: {
+        padding: spacing.xs,
+      },
+      content: {
+        padding: spacing.lg,
+        gap: spacing.md,
+      },
+      warningContainer: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        padding: spacing.md,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        gap: spacing.sm,
+        marginBottom: spacing.sm,
+      },
+      timePickerItem: {
+        marginBottom: spacing.sm,
+      },
+      timePickerHeader: {
+        flexDirection: 'row' as const,
+        justifyContent: 'space-between' as const,
+        alignItems: 'center' as const,
+        marginBottom: spacing.xs,
+      },
+      removeButton: {
+        padding: spacing.xs,
+        borderRadius: radius.sm,
+      },
+      timePickerContainer: {
+        padding: Platform.OS === 'ios' ? spacing.lg : spacing.md,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+      },
+      addButton: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        padding: spacing.md,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderStyle: 'dashed' as const,
+        gap: spacing.xs,
+        marginTop: spacing.sm,
+      },
+      footer: {
+        padding: spacing.lg,
+        paddingTop: 0,
+      },
+      androidTimeButton: {
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        borderRadius: radius.full,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        minWidth: 150,
+      },
+    }),
+    [spacing, radius]
+  );
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={handleClose}
-    >
+    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
       <View style={styles.container}>
         {showContent && (
-          <Animated.View 
+          <Animated.View
             entering={FadeIn.duration(ANIMATION_DURATION)}
             exiting={FadeOut.duration(ANIMATION_DURATION)}
             style={styles.overlay}
@@ -405,12 +393,14 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
         )}
         <SuccessToast
           visible={showSuccessToast}
-          message={times.length === 1 ? t('notificationTimeUpdated') : t('notificationTimesUpdated')}
+          message={
+            times.length === 1 ? t('notificationTimeUpdated') : t('notificationTimesUpdated')
+          }
           onHide={handleSuccessToastHide}
         />
         <Pressable style={styles.overlayPressable} onPress={handleClose}>
           {showContent && (
-            <Animated.View 
+            <Animated.View
               entering={ZoomIn.duration(ANIMATION_DURATION)}
               exiting={ZoomOut.duration(ANIMATION_DURATION)}
               style={styles.animatedContainer}
@@ -422,112 +412,99 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                     { backgroundColor: colors.background, width: modalWidth },
                   ]}
                 >
-                  <View
-                    style={[
-                      dynamicStyles.header,
-                      { borderBottomColor: colors.border },
-                    ]}
-                  >
-                  <Text.Title color={colors.text}>
-                    {t('settingsNotificationTime')}
-                  </Text.Title>
-                  <Pressable onPress={handleClose} style={dynamicStyles.closeButton}>
-                    <X size={iconSizes.lg} color={colors.text} />
-                  </Pressable>
-                </View>
-
-                <ScrollView 
-                  style={styles.scrollContent}
-                  contentContainerStyle={styles.scrollContentContainer}
-                  showsVerticalScrollIndicator={true}
-                  nestedScrollEnabled={true}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  <View style={dynamicStyles.content}>
-                    {!hasNotificationPermission && (
-                      <Pressable
-                        style={({ pressed }) => [
-                          dynamicStyles.warningContainer,
-                          { 
-                            backgroundColor: `${warningColor}20`, 
-                            borderColor: warningColor,
-                            opacity: pressed ? 0.7 : 1,
-                          }
-                        ]}
-                        onPress={async () => {
-                          try {
-                            if (Platform.OS === 'ios') {
-                              await Linking.openURL('app-settings:');
-                            } else {
-                              await Linking.openSettings();
-                            }
-                          } catch (error) {
-                            console.error('Error opening notification settings:', error);
-                          }
-                        }}
-                      >
-                        <AlertTriangle size={iconSizes.md} color={warningColor} />
-                        <Text.Caption color={warningColor} style={{ flex: 1 }}>
-                          {t('notificationPermissionWarning')}
-                        </Text.Caption>
-                      </Pressable>
-                    )}
-
-                    <Text.Label
-                      textAlign="center"
-                      color={colors.textSecondary}
-                      style={{ marginBottom: spacing.sm }}
-                    >
-                      {t('scheduleUpTo3Notifications')}
-                    </Text.Label>
-
-                    {times.map((time, index) =>
-                      renderTimePicker(time, index, getTimeLabels()[index])
-                    )}
-
-                    {times.length < 3 && (
-                      <Pressable
-                        onPress={handleAddTime}
-                        style={[
-                          dynamicStyles.addButton,
-                          {
-                            backgroundColor: colors.surface,
-                            borderColor: colors.border,
-                          },
-                        ]}
-                      >
-                        <Plus size={iconSizes.md} color={colors.primary} />
-                        <Text.Label color={colors.primary}>
-                          {t('addAnotherTime')}
-                        </Text.Label>
-                      </Pressable>
-                    )}
-
-                    <Text.Caption
-                      textAlign="center"
-                      color={colors.textSecondary}
-                      fontFamily={FONT_FAMILIES.semibold}
-                      style={{ marginTop: spacing.sm }}
-                    >
-                      {t('multipleNotificationsPerDay', { count: times.length })}
-                    </Text.Caption>
-                    <Text.Caption
-                      textAlign="center"
-                      color={colors.textSecondary}
-                      fontStyle="italic"
-                      style={{ marginTop: spacing.xs }}
-                    >
-                      {t('notificationRespectMessage')}
-                    </Text.Caption>
+                  <View style={[dynamicStyles.header, { borderBottomColor: colors.border }]}>
+                    <Text.Title color={colors.text}>{t('settingsNotificationTime')}</Text.Title>
+                    <Pressable onPress={handleClose} style={dynamicStyles.closeButton}>
+                      <X size={iconSizes.lg} color={colors.text} />
+                    </Pressable>
                   </View>
-                </ScrollView>
+
+                  <ScrollView
+                    style={styles.scrollContent}
+                    contentContainerStyle={styles.scrollContentContainer}
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true}
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    <View style={dynamicStyles.content}>
+                      {!hasNotificationPermission && (
+                        <Pressable
+                          style={({ pressed }) => [
+                            dynamicStyles.warningContainer,
+                            {
+                              backgroundColor: `${warningColor}20`,
+                              borderColor: warningColor,
+                              opacity: pressed ? 0.7 : 1,
+                            },
+                          ]}
+                          onPress={async () => {
+                            try {
+                              if (Platform.OS === 'ios') {
+                                await Linking.openURL('app-settings:');
+                              } else {
+                                await Linking.openSettings();
+                              }
+                            } catch (error) {
+                              console.error('Error opening notification settings:', error);
+                            }
+                          }}
+                        >
+                          <AlertTriangle size={iconSizes.md} color={warningColor} />
+                          <Text.Caption color={warningColor} style={{ flex: 1 }}>
+                            {t('notificationPermissionWarning')}
+                          </Text.Caption>
+                        </Pressable>
+                      )}
+
+                      <Text.Label
+                        textAlign="center"
+                        color={colors.textSecondary}
+                        style={{ marginBottom: spacing.sm }}
+                      >
+                        {t('scheduleUpTo3Notifications')}
+                      </Text.Label>
+
+                      {times.map((time, index) =>
+                        renderTimePicker(time, index, getTimeLabels()[index])
+                      )}
+
+                      {times.length < 3 && (
+                        <Pressable
+                          onPress={handleAddTime}
+                          style={[
+                            dynamicStyles.addButton,
+                            {
+                              backgroundColor: colors.surface,
+                              borderColor: colors.border,
+                            },
+                          ]}
+                        >
+                          <Plus size={iconSizes.md} color={colors.primary} />
+                          <Text.Label color={colors.primary}>{t('addAnotherTime')}</Text.Label>
+                        </Pressable>
+                      )}
+
+                      <Text.Caption
+                        textAlign="center"
+                        color={colors.textSecondary}
+                        fontFamily={FONT_FAMILIES.semibold}
+                        style={{ marginTop: spacing.sm }}
+                      >
+                        {t('multipleNotificationsPerDay', { count: times.length })}
+                      </Text.Caption>
+                      <Text.Caption
+                        textAlign="center"
+                        color={colors.textSecondary}
+                        fontStyle="italic"
+                        style={{ marginTop: spacing.xs }}
+                      >
+                        {t('notificationRespectMessage')}
+                      </Text.Caption>
+                    </View>
+                  </ScrollView>
 
                   <View style={dynamicStyles.footer}>
-                    <Button
-                      onPress={handleSave}
-                      loading={isSaving}
-                      disabled={isSaving}
-                    >
+                    <Button onPress={handleSave} loading={isSaving} disabled={isSaving}>
                       {isSaving ? t('saving') : t('save')}
                     </Button>
                   </View>

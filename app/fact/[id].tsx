@@ -42,7 +42,7 @@ export default function FactDetailModal() {
       const factData = await database.getFactById(factId);
       if (factData) {
         setFact(factData);
-        
+
         // Track fact view (only once per modal open)
         if (!hasTrackedView) {
           setHasTrackedView(true);

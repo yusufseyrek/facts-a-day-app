@@ -64,7 +64,7 @@ export const FLAT_LIST_SETTINGS = {
   updateCellsBatchingPeriod: 50,
   scrollEventThrottle: 16,
   bounces: true,
-  decelerationRate: "fast" as const,
+  decelerationRate: 'fast' as const,
   showsVerticalScrollIndicator: false,
 } as const;
 
@@ -74,14 +74,11 @@ export const FACT_FLAT_LIST_SETTINGS = FLAT_LIST_SETTINGS;
 /**
  * Calculate ImageFactCard height based on screen width.
  * All facts now use ImageFactCard with 9:16 aspect ratio.
- * 
+ *
  * @param width Screen width for calculating image card height
  * @param isTabletLayout Whether tablet layout is being used
  */
-export const getImageCardHeight = (
-  width: number,
-  isTabletLayout: boolean = false
-): number => {
+export const getImageCardHeight = (width: number, isTabletLayout: boolean = false): number => {
   const margin = isTabletLayout ? CARD_HEIGHTS.cardMarginTablet : CARD_HEIGHTS.cardMargin;
   const cardWidth = isTabletLayout ? Math.min(width, 600) : width;
   return cardWidth * CARD_HEIGHTS.imageCardAspectRatio + margin;
@@ -90,18 +87,15 @@ export const getImageCardHeight = (
 /**
  * Create getItemLayout function for FlatList with ImageFactCards.
  * This enables the list to pre-calculate item positions for better scroll performance.
- * 
+ *
  * NOTE: Only use this for FlatList, NOT SectionList (which has complex indexing with headers).
- * 
+ *
  * @param width Screen width for calculating card height
  * @param isTabletLayout Whether tablet layout is being used
  */
-export const createFlatListGetItemLayout = (
-  width: number,
-  isTabletLayout: boolean = false
-) => {
+export const createFlatListGetItemLayout = (width: number, isTabletLayout: boolean = false) => {
   const itemHeight = getImageCardHeight(width, isTabletLayout);
-  
+
   return (_data: unknown, index: number) => ({
     length: itemHeight,
     offset: itemHeight * index,

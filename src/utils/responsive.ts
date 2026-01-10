@@ -14,9 +14,7 @@ const scale = (value: number): number => Math.round(value * TABLET_MULTIPLIER);
  * Scale an object of values for tablet
  */
 const scaleObject = <T extends Record<string, number>>(obj: T): T => {
-  return Object.fromEntries(
-    Object.entries(obj).map(([key, value]) => [key, scale(value)])
-  ) as T;
+  return Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, scale(value)])) as T;
 };
 
 // ============================================================================
@@ -41,7 +39,7 @@ const tabletConfig = {
   categoryColumns: 5,
   discoverColumns: 2,
   triviaCategoriesPerRow: 4,
-  cardWidthMultiplier: 0.70,
+  cardWidthMultiplier: 0.7,
   headerPaddingAdjustment: 4,
 } as const;
 
@@ -84,7 +82,7 @@ export const media = {
 /**
  * Base typography values for phones.
  * Tablet values are automatically scaled by 1.5x.
- * 
+ *
  * Size hierarchy (phone → tablet):
  * - tiny: 11 → 17 - Very small text, footnotes
  * - caption: 12 → 18 - Captions, timestamps, secondary text
@@ -166,7 +164,7 @@ export const spacing = {
 /**
  * Base icon sizes for phones.
  * Tablet values are automatically scaled by 1.5x.
- * 
+ *
  * Size hierarchy (phone → tablet):
  * - xs: 16 → 24 - Check marks, badges, small indicators
  * - sm: 20 → 30 - Settings icons, chevrons, close buttons
@@ -210,7 +208,12 @@ const phoneRadius = {
 export const radius = {
   phone: phoneRadius,
   tablet: {
-    ...scaleObject({ sm: phoneRadius.sm, md: phoneRadius.md, lg: phoneRadius.lg, xl: phoneRadius.xl }),
+    ...scaleObject({
+      sm: phoneRadius.sm,
+      md: phoneRadius.md,
+      lg: phoneRadius.lg,
+      xl: phoneRadius.xl,
+    }),
     full: phoneRadius.full, // Keep full as-is (already very large)
   },
 } as const;
@@ -320,9 +323,7 @@ export const getBorderWidths = (screenWidth: number) => {
  * @param screenWidth - Current screen width
  */
 export const getMaxModalWidth = (screenWidth: number) => {
-  return isTabletDevice(screenWidth) 
-    ? TABLET_BREAKPOINT * 0.9 
-    : screenWidth * 0.9;
+  return isTabletDevice(screenWidth) ? TABLET_BREAKPOINT * 0.9 : screenWidth * 0.9;
 };
 
 // Export constants for external use

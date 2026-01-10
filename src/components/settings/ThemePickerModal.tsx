@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import {
-  Modal,
-  View,
-  StyleSheet,
-  Pressable,
-  ScrollView,
-  Dimensions,
-} from 'react-native';
+import { Modal, View, StyleSheet, Pressable, ScrollView, Dimensions } from 'react-native';
 import { X, Sun, Moon, Smartphone } from '@tamagui/lucide-icons';
 import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 
@@ -33,10 +26,7 @@ interface ThemeOption {
   icon: (color: string) => React.ReactNode;
 }
 
-export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
-  visible,
-  onClose,
-}) => {
+export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({ visible, onClose }) => {
   const { theme, themeMode, setThemeMode } = useTheme();
   const colors = hexColors[theme];
   const { t } = useTranslation();
@@ -92,7 +82,7 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
   const handleSelectTheme = (mode: ThemeMode) => {
     // Start closing animation
     handleClose();
-    
+
     // Apply theme change after animation starts
     setTimeout(() => {
       if (mode !== themeMode) {
@@ -103,56 +93,54 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
     }, 50);
   };
 
-  const dynamicStyles = useMemo(() => ({
-    modalContainer: {
-      maxHeight: Dimensions.get('window').height * 0.7,
-      borderRadius: radius.lg,
-      overflow: 'hidden' as const,
-    },
-    header: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      justifyContent: 'space-between' as const,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.lg,
-      borderBottomWidth: 1,
-    },
-    closeButton: {
-      padding: spacing.xs,
-    },
-    optionsContainer: {
-      padding: spacing.lg,
-      gap: spacing.md,
-    },
-    optionCard: {
-      borderRadius: radius.lg,
-      borderWidth: 2,
-      padding: spacing.lg,
-    },
-    optionHeader: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      gap: spacing.md,
-    },
-    iconContainer: {
-      width: 48,
-      height: 48,
-      borderRadius: radius.md,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-    },
-  }), [spacing, radius]);
+  const dynamicStyles = useMemo(
+    () => ({
+      modalContainer: {
+        maxHeight: Dimensions.get('window').height * 0.7,
+        borderRadius: radius.lg,
+        overflow: 'hidden' as const,
+      },
+      header: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'space-between' as const,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.lg,
+        borderBottomWidth: 1,
+      },
+      closeButton: {
+        padding: spacing.xs,
+      },
+      optionsContainer: {
+        padding: spacing.lg,
+        gap: spacing.md,
+      },
+      optionCard: {
+        borderRadius: radius.lg,
+        borderWidth: 2,
+        padding: spacing.lg,
+      },
+      optionHeader: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        gap: spacing.md,
+      },
+      iconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+      },
+    }),
+    [spacing, radius]
+  );
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={handleClose}
-    >
+    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
       <View style={styles.container}>
         {showContent && (
-          <Animated.View 
+          <Animated.View
             entering={FadeIn.duration(ANIMATION_DURATION)}
             exiting={FadeOut.duration(ANIMATION_DURATION)}
             style={styles.overlay}
@@ -160,7 +148,7 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
         )}
         <Pressable style={styles.overlayPressable} onPress={handleClose}>
           {showContent && (
-            <Animated.View 
+            <Animated.View
               entering={ZoomIn.duration(ANIMATION_DURATION)}
               exiting={ZoomOut.duration(ANIMATION_DURATION)}
               style={styles.animatedContainer}
@@ -172,80 +160,71 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({
                     { backgroundColor: colors.background, width: maxModalWidth },
                   ]}
                 >
-                <View
-                  style={[
-                    dynamicStyles.header,
-                    { borderBottomColor: colors.border },
-                  ]}
-                >
-                  <Text.Title color={colors.text}>
-                    {t('settingsThemeTitle')}
-                  </Text.Title>
-                  <Pressable onPress={handleClose} style={dynamicStyles.closeButton}>
-                    <X size={iconSizes.lg} color={colors.text} />
-                  </Pressable>
-                </View>
+                  <View style={[dynamicStyles.header, { borderBottomColor: colors.border }]}>
+                    <Text.Title color={colors.text}>{t('settingsThemeTitle')}</Text.Title>
+                    <Pressable onPress={handleClose} style={dynamicStyles.closeButton}>
+                      <X size={iconSizes.lg} color={colors.text} />
+                    </Pressable>
+                  </View>
 
-                <ScrollView style={styles.scrollView}>
-                  <View style={dynamicStyles.optionsContainer}>
-                    {themeOptions.map((option) => {
-                      const isSelected = themeMode === option.value;
-                      return (
-                        <Pressable
-                          key={option.value}
-                          onPress={() => handleSelectTheme(option.value)}
-                        >
-                          {({ pressed }) => (
-                            <View
-                              style={[
-                                dynamicStyles.optionCard,
-                                {
-                                  backgroundColor: isSelected
-                                    ? colors.primary
-                                    : colors.surface,
-                                  borderColor: isSelected
-                                    ? colors.primary
-                                    : colors.border,
-                                  opacity: pressed ? 0.7 : 1,
-                                },
-                              ]}
-                            >
-                              <View style={dynamicStyles.optionHeader}>
-                                <View
-                                  style={[
-                                    dynamicStyles.iconContainer,
-                                    {
-                                      backgroundColor: isSelected
-                                        ? 'rgba(255, 255, 255, 0.2)'
-                                        : 'rgba(0, 0, 0, 0.05)',
-                                    },
-                                  ]}
-                                >
-                                  {option.icon(isSelected ? '#FFFFFF' : colors.text)}
-                                </View>
-                                <View style={styles.optionTextContainer}>
-                                  <Text.Label
-                                    color={isSelected ? '#FFFFFF' : colors.text}
+                  <ScrollView style={styles.scrollView}>
+                    <View style={dynamicStyles.optionsContainer}>
+                      {themeOptions.map((option) => {
+                        const isSelected = themeMode === option.value;
+                        return (
+                          <Pressable
+                            key={option.value}
+                            onPress={() => handleSelectTheme(option.value)}
+                          >
+                            {({ pressed }) => (
+                              <View
+                                style={[
+                                  dynamicStyles.optionCard,
+                                  {
+                                    backgroundColor: isSelected ? colors.primary : colors.surface,
+                                    borderColor: isSelected ? colors.primary : colors.border,
+                                    opacity: pressed ? 0.7 : 1,
+                                  },
+                                ]}
+                              >
+                                <View style={dynamicStyles.optionHeader}>
+                                  <View
+                                    style={[
+                                      dynamicStyles.iconContainer,
+                                      {
+                                        backgroundColor: isSelected
+                                          ? 'rgba(255, 255, 255, 0.2)'
+                                          : 'rgba(0, 0, 0, 0.05)',
+                                      },
+                                    ]}
                                   >
-                                    {t(option.titleKey)}
-                                  </Text.Label>
-                                  <Text.Caption
-                                    color={isSelected ? 'rgba(255, 255, 255, 0.9)' : colors.textSecondary}
-                                  >
-                                    {t(option.descriptionKey)}
-                                  </Text.Caption>
+                                    {option.icon(isSelected ? '#FFFFFF' : colors.text)}
+                                  </View>
+                                  <View style={styles.optionTextContainer}>
+                                    <Text.Label color={isSelected ? '#FFFFFF' : colors.text}>
+                                      {t(option.titleKey)}
+                                    </Text.Label>
+                                    <Text.Caption
+                                      color={
+                                        isSelected
+                                          ? 'rgba(255, 255, 255, 0.9)'
+                                          : colors.textSecondary
+                                      }
+                                    >
+                                      {t(option.descriptionKey)}
+                                    </Text.Caption>
+                                  </View>
                                 </View>
                               </View>
-                            </View>
-                          )}
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </ScrollView>
-              </View>
-            </Pressable>
-          </Animated.View>
+                            )}
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+                </View>
+              </Pressable>
+            </Animated.View>
           )}
         </Pressable>
       </View>

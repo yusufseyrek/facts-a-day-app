@@ -94,24 +94,17 @@ export class ErrorBoundary extends Component<Props, State> {
           <View style={styles.content}>
             <Text style={styles.emoji}>😔</Text>
             <Text style={styles.title}>Oops! Something went wrong</Text>
-            <Text style={styles.body}>
-              We've been notified and will fix this soon.
-            </Text>
+            <Text style={styles.body}>We've been notified and will fix this soon.</Text>
 
             {__DEV__ && this.state.error && (
               <View style={styles.errorDetails}>
                 <Text style={styles.errorLabel}>Error Details (Dev Only):</Text>
-                <Text style={styles.errorText}>
-                  {this.state.error.toString()}
-                </Text>
+                <Text style={styles.errorText}>{this.state.error.toString()}</Text>
               </View>
             )}
 
             <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                pressed && styles.buttonPressed,
-              ]}
+              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
               onPress={this.resetError}
             >
               <Text style={styles.buttonText}>Try Again</Text>

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { Share, Alert, Pressable, StyleSheet, Platform } from "react-native";
-import * as Haptics from "expo-haptics";
-import { styled } from "@tamagui/core";
-import { Heart, Share as ShareIcon, Flag } from "@tamagui/lucide-icons";
+import React, { useState, useEffect } from 'react';
+import { Share, Alert, Pressable, StyleSheet, Platform } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { styled } from '@tamagui/core';
+import { Heart, Share as ShareIcon, Flag } from '@tamagui/lucide-icons';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,17 +10,22 @@ import Animated, {
   withSequence,
   withTiming,
   Easing,
-} from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { XStack, YStack, View } from "tamagui";
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { XStack, YStack, View } from 'tamagui';
 
-import { ReportFactModal } from "./ReportFactModal";
-import { useTranslation } from "../i18n";
-import { trackFactShare, trackFactFavoriteAdd, trackFactFavoriteRemove, trackFactReport } from "../services/analytics";
-import * as api from "../services/api";
-import * as database from "../services/database";
-import { hexColors, useTheme } from "../theme";
-import { useResponsive } from "../utils/useResponsive";
+import { ReportFactModal } from './ReportFactModal';
+import { useTranslation } from '../i18n';
+import {
+  trackFactShare,
+  trackFactFavoriteAdd,
+  trackFactFavoriteRemove,
+  trackFactReport,
+} from '../services/analytics';
+import * as api from '../services/api';
+import * as database from '../services/database';
+import { hexColors, useTheme } from '../theme';
+import { useResponsive } from '../utils/useResponsive';
 
 interface FactActionsProps {
   factId: number;
@@ -32,24 +37,18 @@ interface FactActionsProps {
 
 const Container = styled(YStack, {
   borderTopWidth: 1,
-  borderTopColor: "$border",
-  backgroundColor: "$background",
+  borderTopColor: '$border',
+  backgroundColor: '$background',
 });
 
 const ActionsRow = styled(XStack, {
-  justifyContent: "space-around",
-  alignItems: "center",
+  justifyContent: 'space-around',
+  alignItems: 'center',
 });
 
 // Particle burst component for the favorite animation
 const PARTICLE_COUNT = 6;
-const ParticleBurst = ({ 
-  color, 
-  isActive 
-}: { 
-  color: string; 
-  isActive: boolean;
-}) => {
+const ParticleBurst = ({ color, isActive }: { color: string; isActive: boolean }) => {
   const particles = Array.from({ length: PARTICLE_COUNT }, (_, i) => {
     const angle = (i / PARTICLE_COUNT) * 2 * Math.PI;
     const scale = useSharedValue(0);
@@ -91,14 +90,7 @@ const ParticleBurst = ({
     }));
 
     return (
-      <Animated.View
-        key={i}
-        style={[
-          styles.particle,
-          { backgroundColor: color },
-          animatedStyle,
-        ]}
-      />
+      <Animated.View key={i} style={[styles.particle, { backgroundColor: color }, animatedStyle]} />
     );
   });
 
@@ -118,9 +110,9 @@ export function FactActions({
   const insets = useSafeAreaInsets();
 
   // Neon colors for actions
-  const heartColor = theme === "dark" ? hexColors.dark.neonRed : hexColors.light.neonRed;
-  const shareColor = theme === "dark" ? hexColors.dark.neonGreen : hexColors.light.neonGreen;
-  const flagColor = theme === "dark" ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+  const heartColor = theme === 'dark' ? hexColors.dark.neonRed : hexColors.light.neonRed;
+  const shareColor = theme === 'dark' ? hexColors.dark.neonGreen : hexColors.light.neonGreen;
+  const flagColor = theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
@@ -141,10 +133,7 @@ export function FactActions({
   const reportRotation = useSharedValue(0);
 
   const heartAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: heartScale.value },
-      { rotate: `${heartRotation.value}deg` },
-    ],
+    transform: [{ scale: heartScale.value }, { rotate: `${heartRotation.value}deg` }],
   }));
 
   const shareAnimatedStyle = useAnimatedStyle(() => ({
@@ -156,10 +145,7 @@ export function FactActions({
   }));
 
   const reportAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: reportScale.value },
-      { rotate: `${reportRotation.value}deg` },
-    ],
+    transform: [{ scale: reportScale.value }, { rotate: `${reportRotation.value}deg` }],
   }));
 
   // Check if fact is favorited on mount
@@ -172,7 +158,7 @@ export function FactActions({
       const favorited = await database.isFactFavorited(factId);
       setIsFavorited(favorited);
     } catch (error) {
-      console.error("Error checking favorite status:", error);
+      console.error('Error checking favorite status:', error);
     }
   };
 
@@ -208,10 +194,10 @@ export function FactActions({
       // Provide immediate haptic feedback
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const newFavoriteStatus = await database.toggleFavorite(factId);
-      
+
       // Trigger animation
       triggerFavoriteAnimation(newFavoriteStatus);
-      
+
       setIsFavorited(newFavoriteStatus);
 
       // Track favorite add/remove
@@ -222,9 +208,9 @@ export function FactActions({
       }
     } catch (error) {
       if (__DEV__) {
-        console.error("Error toggling favorite:", error);
+        console.error('Error toggling favorite:', error);
       }
-      Alert.alert(t("error"), t("failedToUpdateFavorite"));
+      Alert.alert(t('error'), t('failedToUpdateFavorite'));
     }
   };
 
@@ -264,18 +250,19 @@ export function FactActions({
     try {
       // Light haptic feedback for share action
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      
+
       // Trigger animation immediately
       triggerShareAnimation();
 
       // App store links
-      const appStoreUrl = Platform.OS === 'ios'
-        ? 'https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394'
-        : 'https://play.google.com/store/apps/details?id=dev.seyrek.factsaday';
+      const appStoreUrl =
+        Platform.OS === 'ios'
+          ? 'https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394'
+          : 'https://play.google.com/store/apps/details?id=dev.seyrek.factsaday';
 
       // Build share content: Title + App attribution + Store link
-      const title = factTitle || factContent.substring(0, 60) + "...";
-      const shareText = `${title}\n\n${t("sharedFromApp")}\n${appStoreUrl}`;
+      const title = factTitle || factContent.substring(0, 60) + '...';
+      const shareText = `${title}\n\n${t('sharedFromApp')}\n${appStoreUrl}`;
 
       const shareOptions: { message: string; url?: string; title?: string } = {
         message: shareText,
@@ -296,7 +283,7 @@ export function FactActions({
       }
     } catch (error) {
       if (__DEV__) {
-        console.error("Error sharing fact:", error);
+        console.error('Error sharing fact:', error);
       }
     }
   };
@@ -304,10 +291,10 @@ export function FactActions({
   const handleReport = () => {
     // Light haptic feedback for opening report modal
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     // Trigger animation
     triggerReportAnimation();
-    
+
     setShowReportModal(true);
   };
 
@@ -315,18 +302,15 @@ export function FactActions({
     setIsSubmittingReport(true);
     try {
       await api.reportFact(factId, feedbackText);
-      
+
       // Track report submission
       trackFactReport(factId);
-      
-      Alert.alert(t("success"), t("reportSubmitted"));
+
+      Alert.alert(t('success'), t('reportSubmitted'));
     } catch (error) {
-      console.error("Error submitting report:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : t("failedToSubmitReport");
-      Alert.alert(t("error"), errorMessage);
+      console.error('Error submitting report:', error);
+      const errorMessage = error instanceof Error ? error.message : t('failedToSubmitReport');
+      Alert.alert(t('error'), errorMessage);
     } finally {
       setIsSubmittingReport(false);
     }
@@ -348,8 +332,8 @@ export function FactActions({
             role="button"
             aria-label={isFavorited ? t('a11y_likedButton') : t('a11y_likeButton')}
             style={({ pressed }) => ({
-              alignItems: "center",
-              justifyContent: "center",
+              alignItems: 'center',
+              justifyContent: 'center',
               opacity: pressed ? 0.8 : 1,
               padding: 12,
             })}
@@ -360,7 +344,7 @@ export function FactActions({
                 <Heart
                   size={iconSizes.lg}
                   color={heartColor}
-                  fill={isFavorited ? heartColor : "none"}
+                  fill={isFavorited ? heartColor : 'none'}
                 />
               </Animated.View>
             </View>
@@ -372,8 +356,8 @@ export function FactActions({
             role="button"
             aria-label={t('a11y_shareButton')}
             style={({ pressed }) => ({
-              alignItems: "center",
-              justifyContent: "center",
+              alignItems: 'center',
+              justifyContent: 'center',
               opacity: pressed ? 0.8 : 1,
               padding: 12,
             })}
@@ -390,8 +374,8 @@ export function FactActions({
             role="button"
             aria-label={t('a11y_reportButton')}
             style={({ pressed }) => ({
-              alignItems: "center",
-              justifyContent: "center",
+              alignItems: 'center',
+              justifyContent: 'center',
               opacity: pressed ? 0.8 : isSubmittingReport ? 0.5 : 1,
               padding: 12,
             })}
@@ -415,16 +399,16 @@ export function FactActions({
 
 const styles = StyleSheet.create({
   heartContainer: {
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     width: 26,
     height: 26,
   },
   heartIcon: {
-    position: "absolute",
+    position: 'absolute',
   },
   particle: {
-    position: "absolute",
+    position: 'absolute',
     width: 6,
     height: 6,
     borderRadius: 3,

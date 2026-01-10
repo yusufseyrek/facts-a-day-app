@@ -1,9 +1,9 @@
 /**
  * App Check configuration for Android
- * 
+ *
  * This file is only bundled in Android builds.
  * iOS builds use appCheckConfig.ios.ts instead.
- * 
+ *
  * Android uses Play Integrity for App Check, so no debug token is needed here.
  */
 

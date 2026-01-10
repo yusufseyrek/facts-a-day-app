@@ -8,7 +8,10 @@ export interface TriviaModeBadge {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TranslationFunction = (key: TranslationKeys | any, options?: Record<string, string | number>) => string;
+type TranslationFunction = (
+  key: TranslationKeys | any,
+  options?: Record<string, string | number>
+) => string;
 
 export interface TriviaModeBadgeOptions {
   mode: 'daily' | 'mixed' | 'category' | string;
@@ -60,4 +63,3 @@ export function getTriviaModeBadge(options: TriviaModeBadgeOptions): TriviaModeB
     color: primaryColor,
   };
 }
-

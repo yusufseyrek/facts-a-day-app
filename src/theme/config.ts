@@ -1,6 +1,6 @@
-import { createTamagui, createTokens } from "@tamagui/core";
-import { hexColors } from "./hexColors";
-import { typography, spacing, radius, media } from "../utils/responsive";
+import { createTamagui, createTokens } from '@tamagui/core';
+import { hexColors } from './hexColors';
+import { typography, spacing, radius, media } from '../utils/responsive';
 
 const tamaguiTokens = createTokens({
   color: {
@@ -217,25 +217,25 @@ export const config = createTamagui({
     gtLg: { minWidth: 1280 + 1 },
     short: { maxHeight: 820 },
     tall: { minHeight: 820 },
-    hoverNone: { hover: "none" },
-    pointerCoarse: { pointer: "coarse" },
+    hoverNone: { hover: 'none' },
+    pointerCoarse: { pointer: 'coarse' },
   },
   shorthands: {
-    px: "paddingHorizontal",
-    py: "paddingVertical",
-    bc: "backgroundColor",
-    br: "borderRadius",
-    bw: "borderWidth",
-    col: "color",
-    f: "flex",
-    m: "margin",
-    w: "width",
-    h: "height",
+    px: 'paddingHorizontal',
+    py: 'paddingVertical',
+    bc: 'backgroundColor',
+    br: 'borderRadius',
+    bw: 'borderWidth',
+    col: 'color',
+    f: 'flex',
+    m: 'margin',
+    w: 'width',
+    h: 'height',
   } as const,
 });
 
 export type AppConfig = typeof config;
 
-declare module "@tamagui/core" {
+declare module '@tamagui/core' {
   interface TamaguiCustomConfig extends AppConfig {}
 }

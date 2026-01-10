@@ -40,11 +40,9 @@ export function MultiTimePicker({
 
   const handleAddTime = () => {
     if (times.length >= maxTimes) {
-      Alert.alert(
-        t('maxTimesReached'),
-        t('maxTimesReachedMessage', { max: maxTimes }),
-        [{ text: t('ok'), style: 'default' }]
-      );
+      Alert.alert(t('maxTimesReached'), t('maxTimesReachedMessage', { max: maxTimes }), [
+        { text: t('ok'), style: 'default' },
+      ]);
       return;
     }
 
@@ -58,11 +56,9 @@ export function MultiTimePicker({
 
   const handleRemoveTime = (index: number) => {
     if (times.length <= minTimes) {
-      Alert.alert(
-        t('minTimesRequired'),
-        t('minTimesRequiredMessage', { min: minTimes }),
-        [{ text: t('ok'), style: 'default' }]
-      );
+      Alert.alert(t('minTimesRequired'), t('minTimesRequiredMessage', { min: minTimes }), [
+        { text: t('ok'), style: 'default' },
+      ]);
       return;
     }
 
@@ -113,10 +109,7 @@ export function MultiTimePicker({
           alignSelf="center"
           gap={spacing.md}
         >
-          <Text.Label
-            color="$textSecondary"
-            fontFamily={FONT_FAMILIES.medium}
-          >
+          <Text.Label color="$textSecondary" fontFamily={FONT_FAMILIES.medium}>
             {t('time')} {index + 1}
           </Text.Label>
 
@@ -125,9 +118,7 @@ export function MultiTimePicker({
               value={time}
               mode="time"
               display="compact"
-              onChange={(event, selectedDate) =>
-                handleTimeChange(index, event, selectedDate)
-              }
+              onChange={(event, selectedDate) => handleTimeChange(index, event, selectedDate)}
               themeVariant={theme}
             />
           ) : (
@@ -168,9 +159,7 @@ export function MultiTimePicker({
           mode="time"
           is24Hour={false}
           display="default"
-          onChange={(event, selectedDate) =>
-            handleTimeChange(editingIndex, event, selectedDate)
-          }
+          onChange={(event, selectedDate) => handleTimeChange(editingIndex, event, selectedDate)}
         />
       )}
 
@@ -190,10 +179,7 @@ export function MultiTimePicker({
           onPress={handleAddTime}
         >
           <Plus size={iconSizes.lg} color={hexColors.light.primary} />
-          <Text.Body
-            color="$primary"
-            fontFamily={FONT_FAMILIES.bold}
-          >
+          <Text.Body color="$primary" fontFamily={FONT_FAMILIES.bold}>
             {t('addAnotherTime')}
           </Text.Body>
         </XStack>
@@ -208,12 +194,7 @@ export function MultiTimePicker({
         >
           {t('multipleNotificationsPerDay', { count: times.length })}
         </Text.Caption>
-        <Text.Caption
-          color="$textSecondary"
-          textAlign="center"
-          lineHeight={18}
-          fontStyle="italic"
-        >
+        <Text.Caption color="$textSecondary" textAlign="center" lineHeight={18} fontStyle="italic">
           {t('notificationRespectMessage')}
         </Text.Caption>
       </YStack>

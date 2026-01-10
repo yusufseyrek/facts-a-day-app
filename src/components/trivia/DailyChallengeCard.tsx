@@ -33,7 +33,7 @@ export function DailyChallengeCard({
   const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
-  
+
   return (
     <Animated.View entering={FadeIn.duration(300).delay(100)}>
       <Pressable
@@ -67,13 +67,10 @@ export function DailyChallengeCard({
               <Zap size={iconSizes.md} color="#FFFFFF" />
             )}
           </YStack>
-          
+
           {/* Content */}
           <YStack flex={1}>
-            <Text.Label
-              fontFamily={FONT_FAMILIES.semibold}
-              color={textColor}
-            >
+            <Text.Label fontFamily={FONT_FAMILIES.semibold} color={textColor}>
               {t('dailyTrivia')}
             </Text.Label>
             <Text.Caption color={secondaryTextColor} marginTop={2}>
@@ -82,13 +79,10 @@ export function DailyChallengeCard({
                 : t('dailyTriviaQuestions', { count: questionsCount })}
             </Text.Caption>
           </YStack>
-          
-          {!isCompleted && (
-            <ChevronRight size={iconSizes.md} color={secondaryTextColor} />
-          )}
+
+          {!isCompleted && <ChevronRight size={iconSizes.md} color={secondaryTextColor} />}
         </XStack>
       </Pressable>
     </Animated.View>
   );
 }
-

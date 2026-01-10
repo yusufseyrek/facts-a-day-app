@@ -24,11 +24,11 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
   const { spacing, radius, iconSizes } = useResponsive();
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.8)).current;
-  
+
   // Internal state to properly manage Modal visibility
   const [modalVisible, setModalVisible] = useState(false);
   const onHideRef = useRef(onHide);
-  
+
   // Keep onHide ref updated to avoid stale closure issues
   useEffect(() => {
     onHideRef.current = onHide;
@@ -44,7 +44,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
     if (visible) {
       // Show modal first
       setModalVisible(true);
-      
+
       // Reset animation values first
       opacity.setValue(0);
       scale.setValue(0.8);
@@ -91,37 +91,38 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
     }
   }, [visible, duration, opacity, scale]);
 
-  const containerStyle = useMemo(() => ({
-    alignItems: 'center' as const,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.xxl,
-    borderRadius: radius.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-    minWidth: 200,
-  }), [spacing, radius]);
+  const containerStyle = useMemo(
+    () => ({
+      alignItems: 'center' as const,
+      paddingVertical: spacing.xl,
+      paddingHorizontal: spacing.xxl,
+      borderRadius: radius.lg,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 5,
+      minWidth: 200,
+    }),
+    [spacing, radius]
+  );
 
-  const iconContainerStyle = useMemo(() => ({
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    marginBottom: spacing.md,
-  }), [spacing]);
+  const iconContainerStyle = useMemo(
+    () => ({
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const,
+      marginBottom: spacing.md,
+    }),
+    [spacing]
+  );
 
   if (!visible && !modalVisible) return null;
 
   return (
-    <Modal
-      visible={modalVisible}
-      transparent
-      animationType="none"
-      statusBarTranslucent
-    >
+    <Modal visible={modalVisible} transparent animationType="none" statusBarTranslucent>
       <View style={styles.overlay}>
         <Animated.View
           style={[
@@ -136,7 +137,9 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
           <View style={[iconContainerStyle, { backgroundColor: `${successColor}20` }]}>
             <CheckCircle size={iconSizes.xl} color={successColor} />
           </View>
-          <Text.Label textAlign="center" color={textColor}>{message}</Text.Label>
+          <Text.Label textAlign="center" color={textColor}>
+            {message}
+          </Text.Label>
         </Animated.View>
       </View>
     </Modal>
@@ -151,6 +154,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-
-
-

@@ -1,11 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
-import {
-  InterstitialAd,
-  AdEventType,
-  TestIds,
-  AdsConsent,
-} from 'react-native-google-mobile-ads';
+import { InterstitialAd, AdEventType, TestIds, AdsConsent } from 'react-native-google-mobile-ads';
 import Constants from 'expo-constants';
 import { ADS_ENABLED } from '../../config/ads';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
@@ -22,7 +17,7 @@ const getInterstitialAdUnitId = (): string => {
   // Use test ID if real ID not configured
   const defaultTestId = TestIds.INTERSTITIAL;
 
-  return isIOS ? (iosId || defaultTestId) : (androidId || defaultTestId);
+  return isIOS ? iosId || defaultTestId : androidId || defaultTestId;
 };
 
 // Create the interstitial ad instance
@@ -34,13 +29,13 @@ let adLoadFailed: boolean = false; // Track if ad failed to load (e.g., no-fill)
 const loadInterstitialAd = async () => {
   // Reset failed state when attempting to load
   adLoadFailed = false;
-  
+
   // Check consent status to determine if we should request non-personalized ads
   const nonPersonalized = await shouldRequestNonPersonalizedAdsOnly();
-  
+
   // Get current keywords for ad targeting (fresh keywords each load)
   const keywords = getAdKeywords();
-  
+
   // TODO: Remove after testing
   console.log('[InterstitialAd] Loading with keywords:', keywords);
 
@@ -190,13 +185,13 @@ export const showInterstitialAd = async (): Promise<void> => {
   }
 
   console.log('📺 Attempting to show interstitial ad...');
-  
+
   // If ad already failed to load, skip immediately without waiting
   if (adLoadFailed) {
     console.log('⚠️ Ad already failed to load (no-fill), skipping immediately');
     return;
   }
-  
+
   // If ad not loaded yet, wait for it (with timeout)
   if (!interstitial || !interstitial.loaded) {
     console.log('⏳ Ad not loaded yet, waiting...');
@@ -210,12 +205,12 @@ export const showInterstitialAd = async (): Promise<void> => {
   if (interstitial && interstitial.loaded) {
     try {
       console.log('🎬 Showing interstitial ad...');
-      
+
       // Create a promise that resolves when the ad is closed OR errors
       // This prevents hanging if the ad fails to display (e.g., view controller conflict)
       const adClosedPromise = new Promise<void>((resolve) => {
         let resolved = false;
-        
+
         const cleanup = () => {
           if (!resolved) {
             resolved = true;
@@ -224,12 +219,12 @@ export const showInterstitialAd = async (): Promise<void> => {
             resolve();
           }
         };
-        
+
         const closeListener = interstitial!.addAdEventListener(AdEventType.CLOSED, () => {
           console.log('✅ Interstitial ad closed');
           cleanup();
         });
-        
+
         // Also listen for errors during ad display
         const errorListener = interstitial!.addAdEventListener(AdEventType.ERROR, (error) => {
           console.error('⚠️ Interstitial ad error during display:', error);
@@ -246,7 +241,7 @@ export const showInterstitialAd = async (): Promise<void> => {
       // Add a small delay on iOS to ensure the view hierarchy is fully restored
       // This prevents the settings screen from becoming unclickable
       if (Platform.OS === 'ios') {
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
     } catch (error) {
       console.error('Error showing interstitial ad:', error);

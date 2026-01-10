@@ -1,6 +1,6 @@
 /**
  * Trivia Service
- * 
+ *
  * Handles trivia game logic including:
  * - Daily Trivia: Questions from facts shown today
  * - Category Mastery: Master all questions in a category
@@ -16,9 +16,9 @@ import { TRIVIA_QUESTIONS, TIME_PER_QUESTION } from '../config/trivia';
 import * as database from './database';
 import * as onboardingService from './onboarding';
 
-import type { 
-  Question, 
-  QuestionWithFact, 
+import type {
+  Question,
+  QuestionWithFact,
   DailyTriviaProgress,
   FactWithRelations,
   Category,
@@ -91,9 +91,7 @@ export interface TriviaSessionResult {
  * Get questions for today's daily trivia
  * Returns questions from facts that were shown to user today
  */
-export async function getDailyTriviaQuestions(
-  language: string
-): Promise<QuestionWithFact[]> {
+export async function getDailyTriviaQuestions(language: string): Promise<QuestionWithFact[]> {
   const today = getLocalDateString();
   return database.getQuestionsForDailyTrivia(today, language);
 }
@@ -101,9 +99,7 @@ export async function getDailyTriviaQuestions(
 /**
  * Get the number of questions available for today's daily trivia
  */
-export async function getDailyTriviaQuestionsCount(
-  language: string
-): Promise<number> {
+export async function getDailyTriviaQuestionsCount(language: string): Promise<number> {
   const today = getLocalDateString();
   return database.getDailyTriviaQuestionsCount(today, language);
 }
@@ -148,18 +144,14 @@ export async function getDailyStreak(): Promise<number> {
  * Get questions for a mixed trivia session
  * Returns N random unanswered questions from the entire database
  */
-export async function getMixedTriviaQuestions(
-  language: string
-): Promise<QuestionWithFact[]> {
+export async function getMixedTriviaQuestions(language: string): Promise<QuestionWithFact[]> {
   return database.getRandomUnansweredQuestions(MIXED_TRIVIA_QUESTIONS, language);
 }
 
 /**
  * Get the number of unanswered questions available for mixed trivia
  */
-export async function getMixedTriviaQuestionsCount(
-  language: string
-): Promise<number> {
+export async function getMixedTriviaQuestionsCount(language: string): Promise<number> {
   return database.getUnansweredQuestionsCount(language);
 }
 
@@ -181,14 +173,12 @@ export async function getCategoryTriviaQuestions(
  * Get all categories with their trivia progress
  * Only returns categories that the user has selected in settings
  */
-export async function getCategoriesWithProgress(
-  language: string
-): Promise<CategoryWithProgress[]> {
+export async function getCategoriesWithProgress(language: string): Promise<CategoryWithProgress[]> {
   // Get user's selected categories to filter trivia results
   const selectedCategories = await onboardingService.getSelectedCategories();
   const categories = await database.getCategoriesWithTriviaProgress(language, selectedCategories);
-  
-  return categories.map(cat => ({
+
+  return categories.map((cat) => ({
     ...cat,
     // Accuracy is correct answers / unique questions answered (as percentage)
     accuracy: cat.answered > 0 ? Math.round((cat.correct / cat.answered) * 100) : 0,
@@ -213,10 +203,7 @@ export async function getCategoryProgress(
 /**
  * Check if a category is fully mastered
  */
-export async function isCategoryComplete(
-  categorySlug: string,
-  language: string
-): Promise<boolean> {
+export async function isCategoryComplete(categorySlug: string, language: string): Promise<boolean> {
   const progress = await getCategoryProgress(categorySlug, language);
   return progress.isComplete;
 }
@@ -261,7 +248,15 @@ export async function getFactsForWrongAnswers(
  * Get overall trivia statistics
  */
 export async function getOverallStats(): Promise<TriviaStats> {
-  const [stats, totalMastered, testsTaken, testsThisWeek, answeredThisWeek, todayStats, bestStreak] = await Promise.all([
+  const [
+    stats,
+    totalMastered,
+    testsTaken,
+    testsThisWeek,
+    answeredThisWeek,
+    todayStats,
+    bestStreak,
+  ] = await Promise.all([
     database.getOverallTriviaStats(),
     database.getTotalMasteredCount(),
     database.getTotalSessionsCount(),
@@ -270,7 +265,7 @@ export async function getOverallStats(): Promise<TriviaStats> {
     database.getTodayTriviaStats(),
     database.getBestDailyStreak(),
   ]);
-  
+
   return {
     ...stats,
     bestStreak,
@@ -287,9 +282,7 @@ export async function getOverallStats(): Promise<TriviaStats> {
  * Get total number of questions available for trivia
  * (from facts that have been shown to user)
  */
-export async function getTotalAvailableQuestions(
-  language: string
-): Promise<number> {
+export async function getTotalAvailableQuestions(language: string): Promise<number> {
   const categories = await database.getCategoriesWithTriviaProgress(language);
   return categories.reduce((sum, cat) => sum + cat.total, 0);
 }
@@ -297,9 +290,7 @@ export async function getTotalAvailableQuestions(
 /**
  * Get total mastered questions count
  */
-export async function getTotalMasteredQuestions(
-  language: string
-): Promise<number> {
+export async function getTotalMasteredQuestions(language: string): Promise<number> {
   const categories = await database.getCategoriesWithTriviaProgress(language);
   return categories.reduce((sum, cat) => sum + cat.mastered, 0);
 }
@@ -327,16 +318,16 @@ export function getShuffledAnswers(question: Question): string[] {
   if (question.question_type === 'true_false') {
     return ['True', 'False'];
   }
-  
+
   const wrongAnswers = parseWrongAnswers(question.wrong_answers);
   const allAnswers = [question.correct_answer, ...wrongAnswers];
-  
+
   // Fisher-Yates shuffle
   for (let i = allAnswers.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [allAnswers[i], allAnswers[j]] = [allAnswers[j], allAnswers[i]];
   }
-  
+
   return allAnswers;
 }
 
@@ -362,7 +353,7 @@ export function getStreakDisplay(streak: number): string {
 /**
  * Convert a selected answer text to its storage index
  * Used when saving session results
- * 
+ *
  * @param question The question object
  * @param selectedAnswer The selected answer text
  * @returns Answer index: 0 = correct, 1-3 = wrong_answers[0-2], for true/false: 0=True, 1=False
@@ -372,12 +363,12 @@ export function answerToIndex(question: Question, selectedAnswer: string): numbe
   if (question.question_type === 'true_false') {
     return selectedAnswer.toLowerCase() === 'true' ? 0 : 1;
   }
-  
+
   // For multiple choice: 0 = correct answer
   if (selectedAnswer === question.correct_answer) {
     return 0;
   }
-  
+
   // Find index in wrong answers (1-indexed in our storage)
   const wrongAnswers = parseWrongAnswers(question.wrong_answers);
   const wrongIndex = wrongAnswers.indexOf(selectedAnswer);
@@ -387,7 +378,7 @@ export function answerToIndex(question: Question, selectedAnswer: string): numbe
 /**
  * Convert a stored answer index back to the answer text
  * Used when reconstructing session results for display
- * 
+ *
  * @param question The question object
  * @param index Answer index: 0 = correct, 1-3 = wrong_answers[0-2], for true/false: 0=True, 1=False
  * @returns The answer text (in current language for true/false when translated)
@@ -397,12 +388,12 @@ export function indexToAnswer(question: Question, index: number): string {
   if (question.question_type === 'true_false') {
     return index === 0 ? 'True' : 'False';
   }
-  
+
   // For multiple choice
   if (index === 0) {
     return question.correct_answer;
   }
-  
+
   // Get wrong answer by index (1-indexed)
   const wrongAnswers = parseWrongAnswers(question.wrong_answers);
   return wrongAnswers[index - 1] || question.correct_answer;
@@ -428,7 +419,7 @@ export function isAnswerCorrect(question: Question, answerIndex: number): boolea
 /**
  * Save a trivia session result with question IDs and answer data
  * Called when a trivia session is completed
- * 
+ *
  * @param questions Array of questions from the session
  * @param answers Record mapping questionId to selected answer TEXT
  *   This will be converted to answer indexes with correctness info for storage
@@ -444,8 +435,8 @@ export async function saveSessionResult(
   answers?: Record<number, string>
 ): Promise<number> {
   // Extract question IDs
-  const questionIds = questions?.map(q => q.id);
-  
+  const questionIds = questions?.map((q) => q.id);
+
   // Convert answer texts to StoredAnswer objects with index and correctness
   let selectedAnswers: Record<number, StoredAnswer> | undefined;
   if (questions && answers) {
@@ -462,7 +453,7 @@ export async function saveSessionResult(
       }
     }
   }
-  
+
   return database.saveTriviaSession(
     triviaMode,
     totalQuestions,
@@ -480,18 +471,14 @@ export async function saveSessionResult(
  * Note: This returns basic session info. Use getSessionById for full question data.
  * @param limit Number of sessions to return (default 10)
  */
-export async function getRecentSessions(
-  limit: number = 10
-): Promise<TriviaSessionWithCategory[]> {
+export async function getRecentSessions(limit: number = 10): Promise<TriviaSessionWithCategory[]> {
   return database.getRecentTriviaSessions(limit);
 }
 
 /**
  * Get a single trivia session by ID with full data
  */
-export async function getSessionById(
-  sessionId: number
-): Promise<TriviaSessionWithCategory | null> {
+export async function getSessionById(sessionId: number): Promise<TriviaSessionWithCategory | null> {
   return database.getTriviaSessionById(sessionId);
 }
 
@@ -523,7 +510,7 @@ export async function canUseExplanationHint(): Promise<boolean> {
     if (!lastUsedDate) {
       return true; // Never used before
     }
-    
+
     const today = getLocalDateString();
     return lastUsedDate !== today;
   } catch (error) {

@@ -1,12 +1,12 @@
 /**
  * useFactImage Hook
- * 
+ *
  * A React hook that handles fetching fact images with App Check authentication.
- * 
+ *
  * IMPORTANT: Remote image URLs require App Check tokens in headers. Since expo-image
  * cannot add custom headers, all images MUST be downloaded locally with App Check
  * authentication before they can be displayed.
- * 
+ *
  * Cache Strategy:
  * 1. In-memory cache (instant, session-only)
  * 2. Local file cache in documentDirectory (persistent, 7-day TTL)
@@ -63,11 +63,10 @@ function cleanupMemoryCacheIfNeeded(): void {
   if (resolvedImages.size <= IMAGE_MEMORY_CACHE.MAX_SIZE) {
     return;
   }
-  
+
   // Sort by timestamp and remove oldest entries
-  const entries = Array.from(resolvedImagesTimestamps.entries())
-    .sort((a, b) => a[1] - b[1]);
-  
+  const entries = Array.from(resolvedImagesTimestamps.entries()).sort((a, b) => a[1] - b[1]);
+
   // Remove oldest 20% of entries
   const toRemove = Math.ceil(entries.length * 0.2);
   for (let i = 0; i < toRemove; i++) {
@@ -83,24 +82,24 @@ function cleanupMemoryCacheIfNeeded(): void {
 function cleanupStalePendingFetches(): void {
   const now = Date.now();
   const staleKeys: string[] = [];
-  
+
   pendingFetches.forEach((fetch, key) => {
     if (now - fetch.startTime > IMAGE_MEMORY_CACHE.PENDING_FETCH_TIMEOUT_MS) {
       staleKeys.push(key);
     }
   });
-  
-  staleKeys.forEach(key => {
+
+  staleKeys.forEach((key) => {
     pendingFetches.delete(key);
   });
 }
 
 /**
  * Hook to fetch and cache fact images with App Check authentication
- * 
+ *
  * IMPORTANT: This hook downloads images locally because remote URLs require
  * App Check tokens in headers, which expo-image cannot provide.
- * 
+ *
  * @param remoteUrl The remote image URL (requires App Check for access)
  * @param factId The fact ID for caching
  * @param options Optional configuration
@@ -112,10 +111,10 @@ export function useFactImage(
   options: UseFactImageOptions = {}
 ): UseFactImageResult {
   const { forceRefresh = false } = options;
-  
+
   // Simple cache key based on factId only (URL is always the same for a fact)
   const cacheKey = useMemo(() => getCacheKey(factId), [factId]);
-  
+
   // Get memory-cached URI SYNCHRONOUSLY to prevent flicker
   // This runs during render, not in an effect
   const memoryCachedUri = useMemo(() => {
@@ -127,26 +126,26 @@ export function useFactImage(
     }
     return cached || null;
   }, [cacheKey, forceRefresh]);
-  
+
   // Initialize state with memory cache value
   const [imageUri, setImageUri] = useState<string | null>(() => memoryCachedUri);
   const [isLoading, setIsLoading] = useState<boolean>(() => !!remoteUrl && !memoryCachedUri);
   const [hasError, setHasError] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState<number>(0);
-  
+
   // Use ref to track last set URI to prevent unnecessary updates
   const lastUriRef = useRef<string | null>(imageUri);
-  
+
   // Track mounted state
   const isMounted = useRef(true);
-  
+
   useEffect(() => {
     isMounted.current = true;
     return () => {
       isMounted.current = false;
     };
   }, []);
-  
+
   // Sync with memory cache immediately when it becomes available
   useEffect(() => {
     if (!forceRefresh && memoryCachedUri && lastUriRef.current !== memoryCachedUri) {
@@ -156,7 +155,7 @@ export function useFactImage(
       setHasError(false);
     }
   }, [memoryCachedUri, forceRefresh]);
-  
+
   // Fetch image effect (only when not in memory cache)
   useEffect(() => {
     // Skip if no URL
@@ -169,42 +168,46 @@ export function useFactImage(
       setHasError(false);
       return;
     }
-    
+
     // Skip if already have this URI from memory cache
-    if (!forceRefresh && lastUriRef.current && resolvedImages.get(cacheKey) === lastUriRef.current) {
+    if (
+      !forceRefresh &&
+      lastUriRef.current &&
+      resolvedImages.get(cacheKey) === lastUriRef.current
+    ) {
       setIsLoading(false);
       return;
     }
-    
+
     // Need to check file cache or download
     const fetchImage = async () => {
       if (!isMounted.current) return;
-      
+
       try {
         // Clean up stale pending fetches first
         cleanupStalePendingFetches();
-        
+
         // Check if there's already a pending fetch for this image that's still valid
-        let pendingFetch = pendingFetches.get(cacheKey);
+        const pendingFetch = pendingFetches.get(cacheKey);
         const now = Date.now();
-        
+
         // Start new fetch if:
         // 1. No pending fetch exists
         // 2. Force refresh requested
         // 3. Retry requested
         // 4. Pending fetch is stale (timed out)
-        const shouldStartNewFetch = 
-          !pendingFetch || 
-          forceRefresh || 
+        const shouldStartNewFetch =
+          !pendingFetch ||
+          forceRefresh ||
           retryCount > 0 ||
-          (now - pendingFetch.startTime > IMAGE_MEMORY_CACHE.PENDING_FETCH_TIMEOUT_MS);
-        
+          now - pendingFetch.startTime > IMAGE_MEMORY_CACHE.PENDING_FETCH_TIMEOUT_MS;
+
         let fetchPromise: Promise<string | null>;
-        
+
         if (shouldStartNewFetch) {
           setIsLoading(true);
           setHasError(false);
-          
+
           // downloadImageWithAppCheck handles file cache check internally
           // It will return cached file URI if valid, or download if not
           fetchPromise = downloadImageWithAppCheck(
@@ -212,7 +215,7 @@ export function useFactImage(
             factId,
             forceRefresh || retryCount > 0
           );
-          
+
           pendingFetches.set(cacheKey, {
             promise: fetchPromise,
             startTime: now,
@@ -222,22 +225,22 @@ export function useFactImage(
           fetchPromise = pendingFetch!.promise;
           setIsLoading(true);
         }
-        
+
         const localUri = await fetchPromise;
-        
+
         // Clean up pending fetch after completion
         pendingFetches.delete(cacheKey);
-        
+
         if (!isMounted.current) return;
-        
+
         if (localUri) {
           // Clean up memory cache if it's getting too large
           cleanupMemoryCacheIfNeeded();
-          
+
           // Store in memory cache for instant access within session
           resolvedImages.set(cacheKey, localUri);
           resolvedImagesTimestamps.set(cacheKey, Date.now());
-          
+
           // Only update state if URI changed to prevent flicker
           if (lastUriRef.current !== localUri) {
             lastUriRef.current = localUri;
@@ -252,9 +255,9 @@ export function useFactImage(
         }
       } catch {
         pendingFetches.delete(cacheKey);
-        
+
         if (!isMounted.current) return;
-        
+
         // Don't clear existing URI on error
         if (!lastUriRef.current) {
           setHasError(true);
@@ -265,23 +268,23 @@ export function useFactImage(
         }
       }
     };
-    
+
     fetchImage();
-  // Note: imageUri is intentionally NOT in dependencies to prevent re-fetch loops
+    // Note: imageUri is intentionally NOT in dependencies to prevent re-fetch loops
   }, [remoteUrl, factId, cacheKey, forceRefresh, retryCount]);
-  
+
   // Retry function
   const retry = useCallback(() => {
     resolvedImages.delete(cacheKey);
     resolvedImagesTimestamps.delete(cacheKey);
     pendingFetches.delete(cacheKey);
     lastUriRef.current = null;
-    setRetryCount(prev => prev + 1);
+    setRetryCount((prev) => prev + 1);
   }, [cacheKey]);
-  
+
   // Image is ready when we have a local URI and not loading
   const isReady = !!imageUri && !isLoading;
-  
+
   return {
     imageUri,
     isLoading,

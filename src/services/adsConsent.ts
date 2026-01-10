@@ -22,7 +22,7 @@ export const canShowPersonalizedAds = async (): Promise<boolean> => {
 
     // Check if GDPR applies
     const gdprApplies = await AdsConsent.getGdprApplies();
-    
+
     if (!gdprApplies) {
       // GDPR doesn't apply, we can show personalized ads
       return true;
@@ -53,6 +53,3 @@ export const shouldRequestNonPersonalizedAdsOnly = async (): Promise<boolean> =>
   const canPersonalize = await canShowPersonalizedAds();
   return !canPersonalize;
 };
-
-
-

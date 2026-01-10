@@ -11,7 +11,7 @@ import type { Category } from '../services/database';
 
 interface CategoryBadgeProps {
   category: string | Category;
-  /** 
+  /**
    * Font family to use for the badge text.
    * Use FONT_FAMILIES constants (e.g., FONT_FAMILIES.semibold)
    */

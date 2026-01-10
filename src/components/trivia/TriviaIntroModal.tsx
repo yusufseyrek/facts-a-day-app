@@ -1,12 +1,12 @@
 import React from 'react';
 import { Modal, Pressable, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { 
-  Zap, 
-  Shuffle, 
-  Play, 
-  X, 
-  Clock, 
+import {
+  Zap,
+  Shuffle,
+  Play,
+  X,
+  Clock,
   HelpCircle,
   Target,
   Trophy,
@@ -145,10 +145,10 @@ export function TriviaIntroModal({
           onPress={onClose}
         />
 
-        <Animated.View 
+        <Animated.View
           entering={FadeInUp.duration(300).springify()}
-          style={{ 
-            width: maxModalWidth, 
+          style={{
+            width: maxModalWidth,
             maxWidth: maxModalWidth,
             // Shadow for iOS
             shadowColor: '#000',
@@ -175,8 +175,8 @@ export function TriviaIntroModal({
             </Pressable>
 
             {/* Header */}
-            <YStack 
-              paddingTop={spacing.xl} 
+            <YStack
+              paddingTop={spacing.xl}
               paddingHorizontal={spacing.lg}
               paddingBottom={spacing.md}
               gap={spacing.sm}
@@ -194,21 +194,14 @@ export function TriviaIntroModal({
                 >
                   {renderIcon()}
                 </YStack>
-                <Text.Title
-                  color={textColor}
-                  numberOfLines={2}
-                  textAlign="center"
-                >
+                <Text.Title color={textColor} numberOfLines={2} textAlign="center">
                   {getTitle()}
                 </Text.Title>
               </XStack>
-              
+
               {/* Description */}
               {getDescription() && (
-                <Text.Caption
-                  color={secondaryTextColor}
-                  textAlign="center"
-                >
+                <Text.Caption color={secondaryTextColor} textAlign="center">
                   {getDescription()}
                 </Text.Caption>
               )}
@@ -218,13 +211,9 @@ export function TriviaIntroModal({
             <YStack height={1} backgroundColor={borderColor} marginHorizontal={spacing.lg} />
 
             {/* Stats Grid - Redesigned */}
-            <XStack 
-              paddingHorizontal={spacing.lg}
-              paddingVertical={spacing.md}
-              gap={spacing.md}
-            >
+            <XStack paddingHorizontal={spacing.lg} paddingVertical={spacing.md} gap={spacing.md}>
               {/* Questions Box */}
-              <YStack 
+              <YStack
                 flex={1}
                 backgroundColor={`${accentColor}15`}
                 borderRadius={radius.lg}
@@ -242,19 +231,25 @@ export function TriviaIntroModal({
                     justifyContent="center"
                     alignItems="center"
                   >
-                    <HelpCircle size={typography.fontSize.title} color="#FFFFFF" strokeWidth={2.5} />
+                    <HelpCircle
+                      size={typography.fontSize.title}
+                      color="#FFFFFF"
+                      strokeWidth={2.5}
+                    />
                   </YStack>
-                  <Text.Headline color={textColor}>
-                    {questionCount}
-                  </Text.Headline>
+                  <Text.Headline color={textColor}>{questionCount}</Text.Headline>
                 </XStack>
-                <Text.Caption color={secondaryTextColor} fontFamily={FONT_FAMILIES.medium} textAlign="center">
+                <Text.Caption
+                  color={secondaryTextColor}
+                  fontFamily={FONT_FAMILIES.medium}
+                  textAlign="center"
+                >
                   {t('triviaQuestions')}
                 </Text.Caption>
               </YStack>
 
               {/* Time Box */}
-              <YStack 
+              <YStack
                 flex={1}
                 backgroundColor={isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)'}
                 borderRadius={radius.lg}
@@ -278,21 +273,21 @@ export function TriviaIntroModal({
                     ~{getEstimatedTimeMinutes(questionCount)}
                   </Text.Headline>
                 </XStack>
-                <Text.Caption color={secondaryTextColor} fontFamily={FONT_FAMILIES.medium} textAlign="center">
+                <Text.Caption
+                  color={secondaryTextColor}
+                  fontFamily={FONT_FAMILIES.medium}
+                  textAlign="center"
+                >
                   {t('triviaMinutes')}
                 </Text.Caption>
               </YStack>
             </XStack>
 
             {/* Info Cards */}
-            <YStack 
-              paddingHorizontal={spacing.lg}
-              gap={spacing.xs}
-              marginBottom={spacing.md}
-            >
+            <YStack paddingHorizontal={spacing.lg} gap={spacing.xs} marginBottom={spacing.md}>
               {/* Progress Card (for categories and mixed) */}
               {(type === 'category' || type === 'mixed') && totalQuestions > 0 && (
-                <XStack 
+                <XStack
                   backgroundColor={surfaceColor}
                   borderRadius={radius.md}
                   padding={spacing.md}
@@ -318,7 +313,7 @@ export function TriviaIntroModal({
               )}
 
               {/* How to Master */}
-              <XStack 
+              <XStack
                 backgroundColor={surfaceColor}
                 borderRadius={radius.md}
                 padding={spacing.md}
@@ -330,35 +325,34 @@ export function TriviaIntroModal({
                   <Text.Caption fontFamily={FONT_FAMILIES.medium} color={textColor}>
                     {t('triviaHowToMaster')}
                   </Text.Caption>
-                  <Text.Tiny color={secondaryTextColor}>
-                    {t('triviaHowToMasterDesc')}
-                  </Text.Tiny>
+                  <Text.Tiny color={secondaryTextColor}>{t('triviaHowToMasterDesc')}</Text.Tiny>
                 </YStack>
               </XStack>
 
               {/* Question Types */}
-              <XStack 
+              <XStack
                 backgroundColor={surfaceColor}
                 borderRadius={radius.md}
                 padding={spacing.md}
                 alignItems="center"
                 gap={spacing.sm}
               >
-                <CheckCircle size={typography.fontSize.title} color={isDark ? '#FBBF24' : '#F59E0B'} />
+                <CheckCircle
+                  size={typography.fontSize.title}
+                  color={isDark ? '#FBBF24' : '#F59E0B'}
+                />
                 <YStack flex={1}>
                   <Text.Caption fontFamily={FONT_FAMILIES.medium} color={textColor}>
                     {t('triviaQuestionType')}
                   </Text.Caption>
-                  <Text.Tiny color={secondaryTextColor}>
-                    {t('triviaQuestionTypeDesc')}
-                  </Text.Tiny>
+                  <Text.Tiny color={secondaryTextColor}>{t('triviaQuestionTypeDesc')}</Text.Tiny>
                 </YStack>
               </XStack>
             </YStack>
 
             {/* Start Button */}
             <YStack paddingHorizontal={spacing.lg} paddingBottom={spacing.lg}>
-              <Pressable 
+              <Pressable
                 onPress={onStart}
                 style={({ pressed }) => ({
                   opacity: pressed ? 0.9 : 1,
@@ -377,10 +371,7 @@ export function TriviaIntroModal({
                   gap={spacing.sm}
                 >
                   <Play size={typography.fontSize.title} color="#FFFFFF" fill="#FFFFFF" />
-                  <Text.Body
-                    fontFamily={FONT_FAMILIES.semibold}
-                    color="#FFFFFF"
-                  >
+                  <Text.Body fontFamily={FONT_FAMILIES.semibold} color="#FFFFFF">
                     {t('triviaStartTest')}
                   </Text.Body>
                 </XStack>

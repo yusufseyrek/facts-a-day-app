@@ -82,12 +82,8 @@ const CustomLightTheme = {
 function NavigationThemeWrapper({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
   const navigationTheme = theme === 'dark' ? CustomDarkTheme : CustomLightTheme;
-  
-  return (
-    <ThemeProvider value={navigationTheme}>
-      {children}
-    </ThemeProvider>
-  );
+
+  return <ThemeProvider value={navigationTheme}>{children}</ThemeProvider>;
 }
 
 // Inner component that uses OnboardingContext for routing logic
@@ -96,11 +92,9 @@ function AppContent() {
   const segments = useSegments();
   const { isOnboardingComplete, setIsOnboardingComplete } = useOnboarding();
   const { theme } = useTheme();
-  
+
   // Get theme-aware background color for screens and modals
-  const backgroundColor = theme === 'dark' 
-    ? hexColors.dark.background 
-    : hexColors.light.background;
+  const backgroundColor = theme === 'dark' ? hexColors.dark.background : hexColors.light.background;
 
   // Re-check onboarding status when navigating to onboarding paths
   // This ensures the reset onboarding button works correctly
@@ -148,15 +142,15 @@ function AppContent() {
             // New notification - mark as processed and navigate
             await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_TRACK, notificationId);
             router.push(`/fact/${factId}?source=notification`);
-            
+
             // Sync notification schedule (check/repair/top-up)
             const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
             console.log('🔔 Notification opened, syncing schedule...');
-            notificationService.syncNotificationSchedule(
-              getLocaleFromCode(deviceLocale)
-            ).catch((error) => {
-              console.error('Notification sync after open failed:', error);
-            });
+            notificationService
+              .syncNotificationSchedule(getLocaleFromCode(deviceLocale))
+              .catch((error) => {
+                console.error('Notification sync after open failed:', error);
+              });
           }
         });
       }
@@ -220,10 +214,9 @@ export default function RootLayout() {
 
   // Track previous app state to detect foreground transitions
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
-  
+
   // Track when an OTA update has been downloaded and is ready to apply
   const pendingUpdateRef = useRef<boolean>(false);
-  
 
   useEffect(() => {
     initializeApp();
@@ -252,22 +245,25 @@ export default function RootLayout() {
 
         console.log('📱 App entered foreground, syncing notifications...');
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
-        notificationService.syncNotificationSchedule(
-          getLocaleFromCode(deviceLocale)
-        ).catch((error) => {
-          console.error('Notification sync failed:', error);
-        });
+        notificationService
+          .syncNotificationSchedule(getLocaleFromCode(deviceLocale))
+          .catch((error) => {
+            console.error('Notification sync failed:', error);
+          });
 
         // Check for OTA updates when app enters foreground
         console.log('📦 Checking for OTA updates on foreground...');
-        updates.checkAndDownloadUpdate().then((result) => {
-          if (result.updateAvailable && result.downloaded) {
-            console.log('📦 OTA update downloaded, marking as pending for next foreground');
-            pendingUpdateRef.current = true;
-          }
-        }).catch((error) => {
-          console.error('OTA update check on foreground failed:', error);
-        });
+        updates
+          .checkAndDownloadUpdate()
+          .then((result) => {
+            if (result.updateAvailable && result.downloaded) {
+              console.log('📦 OTA update downloaded, marking as pending for next foreground');
+              pendingUpdateRef.current = true;
+            }
+          })
+          .catch((error) => {
+            console.error('OTA update check on foreground failed:', error);
+          });
       }
       appStateRef.current = nextAppState;
     };
@@ -288,14 +284,17 @@ export default function RootLayout() {
       // Only check when app is in foreground
       if (AppState.currentState === 'active') {
         console.log('📦 Periodic OTA update check...');
-        updates.checkAndDownloadUpdate().then((result) => {
-          if (result.updateAvailable && result.downloaded) {
-            console.log('📦 OTA update downloaded, marking as pending for next foreground');
-            pendingUpdateRef.current = true;
-          }
-        }).catch((error) => {
-          console.error('Periodic OTA update check failed:', error);
-        });
+        updates
+          .checkAndDownloadUpdate()
+          .then((result) => {
+            if (result.updateAvailable && result.downloaded) {
+              console.log('📦 OTA update downloaded, marking as pending for next foreground');
+              pendingUpdateRef.current = true;
+            }
+          })
+          .catch((error) => {
+            console.error('Periodic OTA update check failed:', error);
+          });
       }
     };
 
@@ -310,25 +309,27 @@ export default function RootLayout() {
     try {
       // Initialize database first with timeout (10 seconds)
       const dbPromise = database.openDatabase();
-      const dbTimeoutPromise = new Promise((_, reject) => 
+      const dbTimeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Database initialization timed out')), 10000)
       );
-      
+
       await Promise.race([dbPromise, dbTimeoutPromise]);
       setIsDbReady(true);
 
       // Configure notifications on app start
       notificationService.configureNotifications();
-      
+
       // Clean up old notification images
-      notificationService.cleanupOldNotificationImages(NOTIFICATION_SETTINGS.IMAGE_CLEANUP_DAYS).catch(() => {});
+      notificationService
+        .cleanupOldNotificationImages(NOTIFICATION_SETTINGS.IMAGE_CLEANUP_DAYS)
+        .catch(() => {});
 
       // Check onboarding status with timeout (5 seconds)
       const onboardingPromise = onboardingService.isOnboardingComplete();
-      const onboardingTimeoutPromise = new Promise<boolean>((_, reject) => 
+      const onboardingTimeoutPromise = new Promise<boolean>((_, reject) =>
         setTimeout(() => reject(new Error('Onboarding status check timed out')), 5000)
       );
-      
+
       const isComplete = await Promise.race([onboardingPromise, onboardingTimeoutPromise]);
       setInitialOnboardingStatus(isComplete);
 
@@ -351,25 +352,30 @@ export default function RootLayout() {
         // Sync notification schedule (check/repair/top-up)
         // This runs asynchronously and doesn't block app startup
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
-        notificationService.syncNotificationSchedule(
-          getLocaleFromCode(deviceLocale)
-        ).catch((error) => {
-          // Silently handle errors - notifications continue with existing schedule
-          console.error('Notification sync failed:', error);
-        });
+        notificationService
+          .syncNotificationSchedule(getLocaleFromCode(deviceLocale))
+          .catch((error) => {
+            // Silently handle errors - notifications continue with existing schedule
+            console.error('Notification sync failed:', error);
+          });
 
         // Check for OTA updates in the background
         // This runs asynchronously and doesn't block app startup
-        updates.checkAndDownloadUpdate().then((result) => {
-          if (result.updateAvailable && result.downloaded) {
-            console.log('📦 OTA update downloaded on cold start, marking as pending for next foreground');
-            pendingUpdateRef.current = true;
-          } else if (result.error) {
-            console.error('OTA update check failed:', result.error);
-          }
-        }).catch((error) => {
-          console.error('OTA update check failed:', error);
-        });
+        updates
+          .checkAndDownloadUpdate()
+          .then((result) => {
+            if (result.updateAvailable && result.downloaded) {
+              console.log(
+                '📦 OTA update downloaded on cold start, marking as pending for next foreground'
+              );
+              pendingUpdateRef.current = true;
+            } else if (result.error) {
+              console.error('OTA update check failed:', result.error);
+            }
+          })
+          .catch((error) => {
+            console.error('OTA update check failed:', error);
+          });
       }
 
       // Log update status in development for debugging

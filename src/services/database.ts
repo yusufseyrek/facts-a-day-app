@@ -1,7 +1,7 @@
-import * as FileSystem from "expo-file-system";
-import * as SQLite from "expo-sqlite";
+import * as FileSystem from 'expo-file-system';
+import * as SQLite from 'expo-sqlite';
 
-const DATABASE_NAME = "factsaday.db";
+const DATABASE_NAME = 'factsaday.db';
 
 let db: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -23,26 +23,26 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
   // Start initialization
   dbInitPromise = (async () => {
     try {
-      console.log("🔄 Initializing database...");
+      console.log('🔄 Initializing database...');
 
       const database = await SQLite.openDatabaseAsync(DATABASE_NAME);
 
       // Log the database path for testing
       const dbPath = `${FileSystem.Paths.document.uri}SQLite/${DATABASE_NAME}`;
-      console.log("📁 Database path:", dbPath);
+      console.log('📁 Database path:', dbPath);
 
       // Enable foreign key constraints for CASCADE deletes to work
-      await database.execAsync("PRAGMA foreign_keys = ON;");
+      await database.execAsync('PRAGMA foreign_keys = ON;');
 
       // Set the db variable before running schema
       db = database;
 
       await initializeSchema();
 
-      console.log("✅ Database initialized successfully");
+      console.log('✅ Database initialized successfully');
       return database;
     } catch (error) {
-      console.error("❌ Database initialization failed:", error);
+      console.error('❌ Database initialization failed:', error);
       // Reset state on error so it can be retried
       db = null;
       dbInitPromise = null;
@@ -58,7 +58,7 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
  */
 async function initializeSchema(): Promise<void> {
   if (!db) {
-    throw new Error("Database not initialized");
+    throw new Error('Database not initialized');
   }
 
   // Create categories table
@@ -161,7 +161,6 @@ async function initializeSchema(): Promise<void> {
       trivia_session_id INTEGER
     );
   `);
-  
 
   // Create indexes on question_attempts
   await db.execAsync(`
@@ -245,7 +244,7 @@ export async function clearFutureAndUnscheduledFacts(): Promise<void> {
     [now]
   );
 
-  console.log("Cleared future and unscheduled facts");
+  console.log('Cleared future and unscheduled facts');
 }
 
 /**
@@ -308,20 +307,15 @@ export async function insertCategories(categories: Category[]): Promise<void> {
 
 export async function getAllCategories(): Promise<Category[]> {
   const database = await openDatabase();
-  const result = await database.getAllAsync<Category>(
-    "SELECT * FROM categories ORDER BY name ASC"
-  );
+  const result = await database.getAllAsync<Category>('SELECT * FROM categories ORDER BY name ASC');
   return result;
 }
 
-export async function getCategoryBySlug(
-  slug: string
-): Promise<Category | null> {
+export async function getCategoryBySlug(slug: string): Promise<Category | null> {
   const database = await openDatabase();
-  const result = await database.getFirstAsync<Category>(
-    "SELECT * FROM categories WHERE slug = ?",
-    [slug]
-  );
+  const result = await database.getFirstAsync<Category>('SELECT * FROM categories WHERE slug = ?', [
+    slug,
+  ]);
   return result;
 }
 
@@ -436,9 +430,7 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
   });
 }
 
-export async function getAllFacts(
-  language?: string
-): Promise<FactWithRelations[]> {
+export async function getAllFacts(language?: string): Promise<FactWithRelations[]> {
   const database = await openDatabase();
 
   if (language) {
@@ -476,9 +468,7 @@ export async function getAllFacts(
   return mapFactsWithRelations(result);
 }
 
-export async function getFactById(
-  id: number
-): Promise<FactWithRelations | null> {
+export async function getFactById(id: number): Promise<FactWithRelations | null> {
   const database = await openDatabase();
   const result = await database.getFirstAsync<any>(
     `SELECT
@@ -540,9 +530,7 @@ export async function getFactsByCategory(
   return mapFactsWithRelations(result);
 }
 
-export async function getRandomFact(
-  language?: string
-): Promise<FactWithRelations | null> {
+export async function getRandomFact(language?: string): Promise<FactWithRelations | null> {
   const database = await openDatabase();
 
   if (language) {
@@ -587,14 +575,14 @@ export async function getFactsCount(language?: string): Promise<number> {
 
   if (language) {
     const result = await database.getFirstAsync<{ count: number }>(
-      "SELECT COUNT(*) as count FROM facts WHERE language = ?",
+      'SELECT COUNT(*) as count FROM facts WHERE language = ?',
       [language]
     );
     return result?.count || 0;
   }
 
   const result = await database.getFirstAsync<{ count: number }>(
-    "SELECT COUNT(*) as count FROM facts"
+    'SELECT COUNT(*) as count FROM facts'
   );
   return result?.count || 0;
 }
@@ -664,10 +652,11 @@ export async function markFactAsScheduled(
   notificationId: string | null
 ): Promise<void> {
   const database = await openDatabase();
-  await database.runAsync(
-    "UPDATE facts SET scheduled_date = ?, notification_id = ? WHERE id = ?",
-    [scheduledDate, notificationId, factId]
-  );
+  await database.runAsync('UPDATE facts SET scheduled_date = ?, notification_id = ? WHERE id = ?', [
+    scheduledDate,
+    notificationId,
+    factId,
+  ]);
 }
 
 /**
@@ -676,7 +665,7 @@ export async function markFactAsScheduled(
 export async function clearFactScheduling(factId: number): Promise<void> {
   const database = await openDatabase();
   await database.runAsync(
-    "UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE id = ?",
+    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE id = ?',
     [factId]
   );
 }
@@ -686,22 +675,22 @@ export async function clearFactScheduling(factId: number): Promise<void> {
  */
 export async function markFactAsShown(factId: number): Promise<void> {
   const database = await openDatabase();
-  await database.runAsync(
-    "UPDATE facts SET shown_in_feed = 1 WHERE id = ?",
-    [factId]
-  );
+  await database.runAsync('UPDATE facts SET shown_in_feed = 1 WHERE id = ?', [factId]);
 }
 
 /**
  * Mark a fact as shown in feed with a specific scheduled_date
  * Used for immediate display (e.g., after onboarding) to properly group by date in feed
  */
-export async function markFactAsShownWithDate(factId: number, scheduledDate: string): Promise<void> {
+export async function markFactAsShownWithDate(
+  factId: number,
+  scheduledDate: string
+): Promise<void> {
   const database = await openDatabase();
-  await database.runAsync(
-    "UPDATE facts SET shown_in_feed = 1, scheduled_date = ? WHERE id = ?",
-    [scheduledDate, factId]
-  );
+  await database.runAsync('UPDATE facts SET shown_in_feed = 1, scheduled_date = ? WHERE id = ?', [
+    scheduledDate,
+    factId,
+  ]);
 }
 
 /**
@@ -710,9 +699,7 @@ export async function markFactAsShownWithDate(factId: number, scheduledDate: str
  * @param language Optional language filter
  * @returns Number of facts marked as shown
  */
-export async function markDeliveredFactsAsShown(
-  language?: string
-): Promise<number> {
+export async function markDeliveredFactsAsShown(language?: string): Promise<number> {
   const database = await openDatabase();
   const now = new Date().toISOString();
 
@@ -748,7 +735,7 @@ export async function clearAllScheduledFacts(): Promise<void> {
   const now = new Date().toISOString();
 
   await database.runAsync(
-    "UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ?",
+    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ?',
     [now]
   );
 }
@@ -764,7 +751,7 @@ export async function clearAllScheduledFactsCompletely(): Promise<void> {
   // Clear scheduling data for all facts that are NOT shown in feed
   // (shown_in_feed facts should keep their scheduled_date for proper feed grouping)
   await database.runAsync(
-    "UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE (shown_in_feed IS NULL OR shown_in_feed = 0)"
+    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE (shown_in_feed IS NULL OR shown_in_feed = 0)'
   );
 }
 
@@ -780,7 +767,7 @@ export async function clearStaleScheduledFacts(validNotificationIds: string[]): 
   // If no valid notification IDs, clear all future scheduled facts
   if (validNotificationIds.length === 0) {
     const result = await database.runAsync(
-      "UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ? AND notification_id IS NOT NULL",
+      'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ? AND notification_id IS NOT NULL',
       [now]
     );
     return result.changes;
@@ -801,21 +788,19 @@ export async function clearStaleScheduledFacts(validNotificationIds: string[]): 
 /**
  * Get count of scheduled facts
  */
-export async function getScheduledFactsCount(
-  language?: string
-): Promise<number> {
+export async function getScheduledFactsCount(language?: string): Promise<number> {
   const database = await openDatabase();
 
   if (language) {
     const result = await database.getFirstAsync<{ count: number }>(
-      "SELECT COUNT(*) as count FROM facts WHERE scheduled_date IS NOT NULL AND language = ?",
+      'SELECT COUNT(*) as count FROM facts WHERE scheduled_date IS NOT NULL AND language = ?',
       [language]
     );
     return result?.count || 0;
   }
 
   const result = await database.getFirstAsync<{ count: number }>(
-    "SELECT COUNT(*) as count FROM facts WHERE scheduled_date IS NOT NULL"
+    'SELECT COUNT(*) as count FROM facts WHERE scheduled_date IS NOT NULL'
   );
   return result?.count || 0;
 }
@@ -824,9 +809,7 @@ export async function getScheduledFactsCount(
  * Get count of future scheduled facts that are pending (not yet shown in feed)
  * These are facts with scheduled_date > now AND shown_in_feed = 0 or NULL
  */
-export async function getFutureScheduledFactsCount(
-  language?: string
-): Promise<number> {
+export async function getFutureScheduledFactsCount(language?: string): Promise<number> {
   const database = await openDatabase();
   const now = new Date().toISOString();
 
@@ -855,9 +838,7 @@ export async function getFutureScheduledFactsCount(
  * Used to determine where to append new scheduled notifications
  * Returns the MAX scheduled_date as an ISO string, or null if no scheduled facts exist
  */
-export async function getLatestScheduledDate(
-  language?: string
-): Promise<string | null> {
+export async function getLatestScheduledDate(language?: string): Promise<string | null> {
   const database = await openDatabase();
   const now = new Date().toISOString();
 
@@ -892,10 +873,10 @@ export async function getScheduledTimesForDate(
   language?: string
 ): Promise<string[]> {
   const database = await openDatabase();
-  
+
   // Match scheduled_date that starts with the given date string (YYYY-MM-DD)
   const datePrefix = dateString + 'T';
-  
+
   if (language) {
     const result = await database.getAllAsync<{ scheduled_date: string }>(
       `SELECT scheduled_date FROM facts 
@@ -905,7 +886,7 @@ export async function getScheduledTimesForDate(
        ORDER BY scheduled_date ASC`,
       [datePrefix + '%', language]
     );
-    return result.map(r => r.scheduled_date);
+    return result.map((r) => r.scheduled_date);
   }
 
   const result = await database.getAllAsync<{ scheduled_date: string }>(
@@ -915,7 +896,7 @@ export async function getScheduledTimesForDate(
      ORDER BY scheduled_date ASC`,
     [datePrefix + '%']
   );
-  return result.map(r => r.scheduled_date);
+  return result.map((r) => r.scheduled_date);
 }
 
 /**
@@ -951,15 +932,15 @@ export async function hasExcessNotificationsPerDay(
        GROUP BY local_date
        HAVING count > ?`;
 
-  const params = language 
-    ? [now, language, expectedPerDay] 
-    : [now, expectedPerDay];
+  const params = language ? [now, language, expectedPerDay] : [now, expectedPerDay];
 
   const result = await database.getAllAsync<{ local_date: string; count: number }>(query, params);
 
   if (result.length > 0) {
-    console.log(`🔔 Found ${result.length} days with excess notifications:`, 
-      result.map(r => `${r.local_date}: ${r.count}/${expectedPerDay}`).join(', '));
+    console.log(
+      `🔔 Found ${result.length} days with excess notifications:`,
+      result.map((r) => `${r.local_date}: ${r.count}/${expectedPerDay}`).join(', ')
+    );
     return true;
   }
 
@@ -970,7 +951,7 @@ export async function hasExcessNotificationsPerDay(
  * Check if there are any days with incorrect notification counts (either too many OR too few)
  * This detects scheduling issues where days don't have the expected number of notifications.
  * The last scheduled day is allowed to have fewer notifications (due to hitting the 64 limit).
- * 
+ *
  * @param expectedPerDay Number of notifications expected per day (based on user's configured times)
  * @param language Optional language filter
  * @returns Object with needsRepair flag and details about the issues found
@@ -1030,7 +1011,9 @@ export async function hasIncorrectNotificationsPerDay(
   const needsRepair = excessDays > 0 || deficitDays > 0;
 
   if (needsRepair) {
-    console.log(`🔔 Found ${excessDays} days with excess and ${deficitDays} days with deficit notifications:`);
+    console.log(
+      `🔔 Found ${excessDays} days with excess and ${deficitDays} days with deficit notifications:`
+    );
     // Log first 10 issues
     for (const issue of issues.slice(0, 10)) {
       console.log(`   ${issue}`);
@@ -1056,7 +1039,7 @@ export async function getScheduledTimesInRange(
   language?: string
 ): Promise<string[]> {
   const database = await openDatabase();
-  
+
   if (language) {
     const result = await database.getAllAsync<{ scheduled_date: string }>(
       `SELECT scheduled_date FROM facts 
@@ -1067,7 +1050,7 @@ export async function getScheduledTimesInRange(
        ORDER BY scheduled_date ASC`,
       [startIso, endIso, language]
     );
-    return result.map(r => r.scheduled_date);
+    return result.map((r) => r.scheduled_date);
   }
 
   const result = await database.getAllAsync<{ scheduled_date: string }>(
@@ -1078,7 +1061,7 @@ export async function getScheduledTimesInRange(
      ORDER BY scheduled_date ASC`,
     [startIso, endIso]
   );
-  return result.map(r => r.scheduled_date);
+  return result.map((r) => r.scheduled_date);
 }
 
 /**
@@ -1094,7 +1077,11 @@ export async function getFutureScheduledFactsWithNotificationIds(
   const now = new Date().toISOString();
 
   if (language) {
-    return await database.getAllAsync<{ id: number; notification_id: string; scheduled_date: string }>(
+    return await database.getAllAsync<{
+      id: number;
+      notification_id: string;
+      scheduled_date: string;
+    }>(
       `SELECT id, notification_id, scheduled_date FROM facts 
        WHERE scheduled_date > ? 
        AND (shown_in_feed IS NULL OR shown_in_feed = 0)
@@ -1104,7 +1091,11 @@ export async function getFutureScheduledFactsWithNotificationIds(
     );
   }
 
-  return await database.getAllAsync<{ id: number; notification_id: string; scheduled_date: string }>(
+  return await database.getAllAsync<{
+    id: number;
+    notification_id: string;
+    scheduled_date: string;
+  }>(
     `SELECT id, notification_id, scheduled_date FROM facts 
      WHERE scheduled_date > ? 
      AND (shown_in_feed IS NULL OR shown_in_feed = 0)
@@ -1119,15 +1110,12 @@ export async function getFutureScheduledFactsWithNotificationIds(
  * @param factId The ID of the fact
  * @param notificationId The OS notification identifier
  */
-export async function updateNotificationId(
-  factId: number,
-  notificationId: string
-): Promise<void> {
+export async function updateNotificationId(factId: number, notificationId: string): Promise<void> {
   const database = await openDatabase();
-  await database.runAsync(
-    "UPDATE facts SET notification_id = ? WHERE id = ?",
-    [notificationId, factId]
-  );
+  await database.runAsync('UPDATE facts SET notification_id = ? WHERE id = ?', [
+    notificationId,
+    factId,
+  ]);
 }
 
 // ====== FAVORITES ======
@@ -1141,23 +1129,21 @@ export async function toggleFavorite(factId: number): Promise<boolean> {
 
   // Check if already favorited
   const existing = await database.getFirstAsync<{ fact_id: number }>(
-    "SELECT fact_id FROM favorites WHERE fact_id = ?",
+    'SELECT fact_id FROM favorites WHERE fact_id = ?',
     [factId]
   );
 
   if (existing) {
     // Remove from favorites
-    await database.runAsync("DELETE FROM favorites WHERE fact_id = ?", [
-      factId,
-    ]);
+    await database.runAsync('DELETE FROM favorites WHERE fact_id = ?', [factId]);
     return false;
   } else {
     // Add to favorites
     const now = new Date().toISOString();
-    await database.runAsync(
-      "INSERT INTO favorites (fact_id, created_at) VALUES (?, ?)",
-      [factId, now]
-    );
+    await database.runAsync('INSERT INTO favorites (fact_id, created_at) VALUES (?, ?)', [
+      factId,
+      now,
+    ]);
     return true;
   }
 }
@@ -1168,7 +1154,7 @@ export async function toggleFavorite(factId: number): Promise<boolean> {
 export async function isFactFavorited(factId: number): Promise<boolean> {
   const database = await openDatabase();
   const result = await database.getFirstAsync<{ fact_id: number }>(
-    "SELECT fact_id FROM favorites WHERE fact_id = ?",
+    'SELECT fact_id FROM favorites WHERE fact_id = ?',
     [factId]
   );
   return !!result;
@@ -1177,9 +1163,7 @@ export async function isFactFavorited(factId: number): Promise<boolean> {
 /**
  * Get all favorited facts
  */
-export async function getFavorites(
-  language?: string
-): Promise<FactWithRelations[]> {
+export async function getFavorites(language?: string): Promise<FactWithRelations[]> {
   const database = await openDatabase();
 
   if (language) {
@@ -1236,7 +1220,7 @@ export async function getFavoritesCount(language?: string): Promise<number> {
   }
 
   const result = await database.getFirstAsync<{ count: number }>(
-    "SELECT COUNT(*) as count FROM favorites"
+    'SELECT COUNT(*) as count FROM favorites'
   );
   return result?.count || 0;
 }
@@ -1247,9 +1231,7 @@ export async function getFavoritesCount(language?: string): Promise<number> {
  * Get facts that were already delivered via notifications or marked as shown
  * Returns facts from the past 30 days where (scheduled_date <= now OR shown_in_feed = 1), ordered by date descending
  */
-export async function getFactsGroupedByDate(
-  language?: string
-): Promise<FactWithRelations[]> {
+export async function getFactsGroupedByDate(language?: string): Promise<FactWithRelations[]> {
   const database = await openDatabase();
 
   // Get date 30 days ago
@@ -1308,10 +1290,7 @@ export async function getFactsGroupedByDate(
  * Search facts by query string (searches in title, content, and summary)
  * Returns facts that match the search query, ordered by relevance (title matches first, then content/summary)
  */
-export async function searchFacts(
-  query: string,
-  language?: string
-): Promise<FactWithRelations[]> {
+export async function searchFacts(query: string, language?: string): Promise<FactWithRelations[]> {
   const database = await openDatabase();
 
   if (!query || query.trim().length === 0) {
@@ -1409,7 +1388,7 @@ export interface DailyTriviaProgress {
  */
 export async function insertQuestions(questions: Question[]): Promise<void> {
   if (questions.length === 0) return;
-  
+
   const database = await openDatabase();
 
   await database.withTransactionAsync(async () => {
@@ -1525,9 +1504,7 @@ export async function getRandomUnansweredQuestions(
 /**
  * Get count of unanswered questions available for mixed trivia
  */
-export async function getUnansweredQuestionsCount(
-  language: string
-): Promise<number> {
+export async function getUnansweredQuestionsCount(language: string): Promise<number> {
   const database = await openDatabase();
   const result = await database.getFirstAsync<{ count: number }>(
     `SELECT COUNT(*) as count 
@@ -1696,10 +1673,10 @@ export async function isQuestionMastered(questionId: number): Promise<boolean> {
      LIMIT 3`,
     [questionId]
   );
-  
+
   // Mastered if there are at least 3 attempts and all are correct
   if (attempts.length < 3) return false;
-  return attempts.every(a => a.is_correct === 1);
+  return attempts.every((a) => a.is_correct === 1);
 }
 
 /**
@@ -1778,16 +1755,18 @@ export async function getCategoryProgress(
 export async function getCategoriesWithTriviaProgress(
   language: string,
   selectedCategories?: string[]
-): Promise<Array<Category & { mastered: number; total: number; answered: number; correct: number }>> {
+): Promise<
+  Array<Category & { mastered: number; total: number; answered: number; correct: number }>
+> {
   const database = await openDatabase();
-  
+
   // If no selected categories provided, return empty array
   if (!selectedCategories || selectedCategories.length === 0) {
     return [];
   }
-  
+
   const placeholders = selectedCategories.map(() => '?').join(', ');
-  
+
   // Build query that returns ALL selected categories
   // Counts ALL questions from ALL facts in each category (not just shown facts)
   // Mastered = questions answered correctly 3 times in a row (last 3 attempts all correct)
@@ -1843,9 +1822,9 @@ export async function getCategoriesWithTriviaProgress(
     FROM categories c
     WHERE c.slug IN (${placeholders})
     ORDER BY c.name ASC`;
-  
+
   const params: any[] = [language, language, language, language, ...selectedCategories];
-  
+
   const result = await database.getAllAsync<any>(query, params);
 
   return result.map((row: any) => ({
@@ -1913,7 +1892,7 @@ function getLocalDateString(date: Date = new Date()): string {
  */
 export async function getDailyStreak(): Promise<number> {
   const database = await openDatabase();
-  
+
   // Get all completed dates, ordered descending
   const result = await database.getAllAsync<{ date: string }>(
     `SELECT date FROM daily_trivia_progress 
@@ -1930,8 +1909,8 @@ export async function getDailyStreak(): Promise<number> {
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = getLocalDateString(yesterday);
 
-  const dates = result.map(r => r.date);
-  
+  const dates = result.map((r) => r.date);
+
   // Streak must start from today or yesterday
   if (dates[0] !== todayStr && dates[0] !== yesterdayStr) {
     return 0;
@@ -2049,9 +2028,7 @@ export async function getTotalMasteredCount(): Promise<number> {
 /**
  * Get facts for a list of question IDs (used for showing related facts after wrong answers)
  */
-export async function getFactsForQuestions(
-  questionIds: number[]
-): Promise<FactWithRelations[]> {
+export async function getFactsForQuestions(questionIds: number[]): Promise<FactWithRelations[]> {
   if (questionIds.length === 0) return [];
 
   const database = await openDatabase();
@@ -2087,15 +2064,15 @@ export interface TriviaSession {
   completed_at: string;
   elapsed_time: number | null;
   best_streak: number | null;
-  question_ids: string | null;      // JSON array of question IDs
-  selected_answers: string | null;  // JSON object: {questionId: answerIndex}
+  question_ids: string | null; // JSON array of question IDs
+  selected_answers: string | null; // JSON object: {questionId: answerIndex}
 }
 
 /**
  * Answer data stored for each question in a session
  */
 export interface StoredAnswer {
-  index: number;   // 0 = correct, 1-3 = wrong_answers[0-2], for true/false: 0=True, 1=False
+  index: number; // 0 = correct, 1-3 = wrong_answers[0-2], for true/false: 0=True, 1=False
   correct: boolean; // Whether this answer was correct
 }
 
@@ -2112,7 +2089,7 @@ export interface TriviaSessionWithCategory extends TriviaSession {
 /**
  * Save a trivia session result with question IDs and answer data
  * This is language-independent and much smaller than storing full JSON
- * 
+ *
  * @param questionIds Array of question IDs used in this session
  * @param selectedAnswers Record mapping questionId to StoredAnswer:
  *   - index: 0 = correct answer (or True for T/F), 1-3 = wrong_answers[0-2] (or False for T/F)
@@ -2130,7 +2107,7 @@ export async function saveTriviaSession(
 ): Promise<number> {
   const database = await openDatabase();
   const now = new Date().toISOString();
-  
+
   // Serialize question IDs and answer data for storage
   const questionIdsJson = questionIds ? JSON.stringify(questionIds) : null;
   const selectedAnswersJson = selectedAnswers ? JSON.stringify(selectedAnswers) : null;
@@ -2138,7 +2115,17 @@ export async function saveTriviaSession(
   const result = await database.runAsync(
     `INSERT INTO trivia_sessions (trivia_mode, category_slug, total_questions, correct_answers, completed_at, elapsed_time, best_streak, question_ids, selected_answers)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [triviaMode, categorySlug || null, totalQuestions, correctAnswers, now, elapsedTime || null, bestStreak || null, questionIdsJson, selectedAnswersJson]
+    [
+      triviaMode,
+      categorySlug || null,
+      totalQuestions,
+      correctAnswers,
+      now,
+      elapsedTime || null,
+      bestStreak || null,
+      questionIdsJson,
+      selectedAnswersJson,
+    ]
   );
 
   return result.lastInsertRowId;
@@ -2205,9 +2192,7 @@ export async function getRecentTriviaSessions(
  * Used to reconstruct session data for display
  * Returns questions in the order of the provided IDs
  */
-export async function getQuestionsByIds(
-  questionIds: number[]
-): Promise<QuestionWithFact[]> {
+export async function getQuestionsByIds(questionIds: number[]): Promise<QuestionWithFact[]> {
   if (questionIds.length === 0) return [];
 
   const database = await openDatabase();
@@ -2246,7 +2231,7 @@ export async function getQuestionsByIds(
 
   // Return in original order, filtering out any that weren't found
   return questionIds
-    .map(id => questionsMap.get(id))
+    .map((id) => questionsMap.get(id))
     .filter((q): q is QuestionWithFact => q !== undefined);
 }
 
@@ -2350,10 +2335,10 @@ export async function getTriviaSessionById(
       const questionIds: number[] = JSON.parse(row.question_ids);
       const questions = await getQuestionsByIds(questionIds);
       session.questions = questions;
-      
+
       // Track unavailable questions (deleted from DB)
-      const foundIds = new Set(questions.map(q => q.id));
-      session.unavailableQuestionIds = questionIds.filter(id => !foundIds.has(id));
+      const foundIds = new Set(questions.map((q) => q.id));
+      session.unavailableQuestionIds = questionIds.filter((id) => !foundIds.has(id));
     } catch (e) {
       console.error('Error reconstructing questions:', e);
     }
@@ -2376,7 +2361,7 @@ export async function getTriviaSessionById(
  */
 export async function getWeeklyTestsCount(): Promise<number> {
   const database = await openDatabase();
-  
+
   // Get the start of the current week (Monday)
   const now = new Date();
   const dayOfWeek = now.getDay();
@@ -2401,7 +2386,7 @@ export async function getWeeklyTestsCount(): Promise<number> {
  */
 export async function getWeeklyAnsweredCount(): Promise<number> {
   const database = await openDatabase();
-  
+
   // Get the start of the current week (Monday)
   const now = new Date();
   const dayOfWeek = now.getDay();
@@ -2429,7 +2414,7 @@ export async function getTodayTriviaStats(): Promise<{
   correctToday: number;
 }> {
   const database = await openDatabase();
-  
+
   // Get start of today
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -2481,7 +2466,7 @@ export async function getTodayTriviaStats(): Promise<{
  */
 export async function getBestDailyStreak(): Promise<number> {
   const database = await openDatabase();
-  
+
   // Get all completed dates, ordered ascending
   const result = await database.getAllAsync<{ date: string }>(
     `SELECT date FROM daily_trivia_progress 
@@ -2493,16 +2478,16 @@ export async function getBestDailyStreak(): Promise<number> {
 
   let bestStreak = 1;
   let currentStreak = 1;
-  
+
   for (let i = 1; i < result.length; i++) {
     const prevDate = new Date(result[i - 1].date + 'T12:00:00');
     const currDate = new Date(result[i].date + 'T12:00:00');
-    
+
     // Check if dates are consecutive
     const nextDay = new Date(prevDate);
     nextDay.setDate(prevDate.getDate() + 1);
     const nextDayStr = getLocalDateString(nextDay);
-    
+
     if (result[i].date === nextDayStr) {
       currentStreak++;
       bestStreak = Math.max(bestStreak, currentStreak);
@@ -2519,7 +2504,7 @@ export async function getBestDailyStreak(): Promise<number> {
  */
 export async function getTotalSessionsCount(): Promise<number> {
   const database = await openDatabase();
-  
+
   const result = await database.getFirstAsync<{ count: number }>(
     `SELECT COUNT(*) as count FROM trivia_sessions`
   );
@@ -2536,10 +2521,7 @@ export async function getTotalSessionsCount(): Promise<number> {
  */
 export async function updateFactTitle(factId: number, newTitle: string): Promise<void> {
   const database = await openDatabase();
-  await database.runAsync(
-    "UPDATE facts SET title = ? WHERE id = ?",
-    [newTitle, factId]
-  );
+  await database.runAsync('UPDATE facts SET title = ? WHERE id = ?', [newTitle, factId]);
 }
 
 /**
@@ -2549,6 +2531,6 @@ export async function updateFactTitle(factId: number, newTitle: string): Promise
 export async function clearAllShownInFeed(): Promise<void> {
   const database = await openDatabase();
   await database.runAsync(
-    "UPDATE facts SET shown_in_feed = 0, scheduled_date = NULL, notification_id = NULL"
+    'UPDATE facts SET shown_in_feed = 0, scheduled_date = NULL, notification_id = NULL'
   );
 }

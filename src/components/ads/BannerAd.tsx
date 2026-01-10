@@ -1,6 +1,11 @@
 import React, { useEffect, useState, useCallback, memo, useRef } from 'react';
 import { Platform, View, StyleSheet, LayoutAnimation } from 'react-native';
-import { BannerAd as GoogleBannerAd, BannerAdSize, TestIds, AdsConsent } from 'react-native-google-mobile-ads';
+import {
+  BannerAd as GoogleBannerAd,
+  BannerAdSize,
+  TestIds,
+  AdsConsent,
+} from 'react-native-google-mobile-ads';
 import Constants from 'expo-constants';
 import { ADS_ENABLED, AD_RETRY } from '../../config/ads';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
@@ -19,7 +24,7 @@ const getAdUnitId = (position: BannerAdPosition): string => {
   const testId = TestIds.BANNER;
 
   if (isIOS) {
-    return position === 'home' 
+    return position === 'home'
       ? config?.ADMOB_IOS_MAIN_BANNER_ID || testId
       : config?.ADMOB_IOS_FACT_DETAIL_BANNER_ID || testId;
   }
@@ -29,24 +34,21 @@ const getAdUnitId = (position: BannerAdPosition): string => {
 };
 
 const getBannerSize = (position: BannerAdPosition): BannerAdSize => {
-  return position === 'fact-modal' 
-    ? BannerAdSize.INLINE_ADAPTIVE_BANNER 
+  return position === 'fact-modal'
+    ? BannerAdSize.INLINE_ADAPTIVE_BANNER
     : BannerAdSize.ANCHORED_ADAPTIVE_BANNER;
 };
 
 type AdState = 'loading' | 'loaded' | 'error';
 
-function BannerAdComponent({ 
-  position, 
-  onAdLoadChange,
-}: BannerAdProps) {
+function BannerAdComponent({ position, onAdLoadChange }: BannerAdProps) {
   const [canRequestAds, setCanRequestAds] = useState<boolean | null>(null);
   const [requestNonPersonalized, setRequestNonPersonalized] = useState(true);
   const [adState, setAdState] = useState<AdState>('loading');
   const [retryCount, setRetryCount] = useState(0);
   const [adKey, setAdKey] = useState(0);
   const [keywords, setKeywords] = useState<string[]>(getAdKeywords);
-  
+
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Subscribe to keyword changes
@@ -100,13 +102,13 @@ function BannerAdComponent({
       update: { type: LayoutAnimation.Types.easeInEaseOut },
     });
     setAdState('error');
-    
+
     if (retryCount < AD_RETRY.MAX_RETRIES) {
       const delay = AD_RETRY.DELAYS[retryCount] || AD_RETRY.DELAYS[AD_RETRY.DELAYS.length - 1];
       retryTimeoutRef.current = setTimeout(() => {
-        setRetryCount(prev => prev + 1);
+        setRetryCount((prev) => prev + 1);
         setAdState('loading');
-        setAdKey(prev => prev + 1);
+        setAdKey((prev) => prev + 1);
       }, delay);
     }
   }, [retryCount]);
@@ -119,10 +121,13 @@ function BannerAdComponent({
 
   return (
     <View
-      style={[styles.container, { 
-        height: isVisible ? undefined : 0, 
-        opacity: isVisible ? 1 : 0 
-      }]}
+      style={[
+        styles.container,
+        {
+          height: isVisible ? undefined : 0,
+          opacity: isVisible ? 1 : 0,
+        },
+      ]}
       collapsable={!isVisible}
       pointerEvents={isVisible ? 'auto' : 'none'}
     >

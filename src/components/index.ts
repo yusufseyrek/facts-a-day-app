@@ -30,8 +30,4 @@ export {
 } from './ScreenLayout';
 
 // Trivia components
-export {
-  TriviaStatsHero,
-  DailyChallengeCard,
-  CategoryQuestCard,
-} from './trivia';
+export { TriviaStatsHero, DailyChallengeCard, CategoryQuestCard } from './trivia';

@@ -1,11 +1,6 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-} from "react";
-import type { SupportedLocale } from "../i18n";
-import * as onboardingService from "../services/onboarding";
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import type { SupportedLocale } from '../i18n';
+import * as onboardingService from '../services/onboarding';
 
 interface OnboardingState {
   // User selections
@@ -55,9 +50,7 @@ interface OnboardingContextType extends OnboardingState {
   resetOnboarding: () => Promise<void>;
 }
 
-const OnboardingContext = createContext<OnboardingContextType | undefined>(
-  undefined
-);
+const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
 interface OnboardingProviderProps {
   children: React.ReactNode;
@@ -67,11 +60,13 @@ interface OnboardingProviderProps {
 export function OnboardingProvider({ children, initialComplete = null }: OnboardingProviderProps) {
   const [state, setState] = useState<OnboardingState>({
     selectedCategories: [],
-    notificationTimes: [(() => {
-      const defaultTime = new Date();
-      defaultTime.setHours(9, 0, 0, 0);
-      return defaultTime;
-    })()],
+    notificationTimes: [
+      (() => {
+        const defaultTime = new Date();
+        defaultTime.setHours(9, 0, 0, 0);
+        return defaultTime;
+      })(),
+    ],
     isOnboardingComplete: initialComplete,
     isInitialized: false,
     isInitializing: false,
@@ -81,18 +76,20 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
     downloadError: null,
   });
 
-  const [lastLocaleUsed, setLastLocaleUsed] = useState<SupportedLocale | null>(
-    null
-  );
+  const [lastLocaleUsed, setLastLocaleUsed] = useState<SupportedLocale | null>(null);
 
   // ===== Selection Methods =====
 
-  const setSelectedCategories = useCallback((categories: string[] | ((prev: string[]) => string[])) => {
-    setState((prev) => ({
-      ...prev,
-      selectedCategories: typeof categories === 'function' ? categories(prev.selectedCategories) : categories
-    }));
-  }, []);
+  const setSelectedCategories = useCallback(
+    (categories: string[] | ((prev: string[]) => string[])) => {
+      setState((prev) => ({
+        ...prev,
+        selectedCategories:
+          typeof categories === 'function' ? categories(prev.selectedCategories) : categories,
+      }));
+    },
+    []
+  );
 
   const setNotificationTimes = useCallback((times: Date[]) => {
     setState((prev) => ({ ...prev, notificationTimes: times }));
@@ -101,14 +98,14 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
   const addNotificationTime = useCallback((time: Date) => {
     setState((prev) => ({
       ...prev,
-      notificationTimes: [...prev.notificationTimes, time]
+      notificationTimes: [...prev.notificationTimes, time],
     }));
   }, []);
 
   const removeNotificationTime = useCallback((index: number) => {
     setState((prev) => ({
       ...prev,
-      notificationTimes: prev.notificationTimes.filter((_, i) => i !== index)
+      notificationTimes: prev.notificationTimes.filter((_, i) => i !== index),
     }));
   }, []);
 
@@ -118,52 +115,48 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
 
   // ===== Initialization =====
 
-  const initializeOnboarding = useCallback(
-    async (locale: SupportedLocale): Promise<boolean> => {
-      setState((prev) => ({
-        ...prev,
-        isInitializing: true,
-        initializationError: null,
-      }));
+  const initializeOnboarding = useCallback(async (locale: SupportedLocale): Promise<boolean> => {
+    setState((prev) => ({
+      ...prev,
+      isInitializing: true,
+      initializationError: null,
+    }));
 
-      setLastLocaleUsed(locale);
+    setLastLocaleUsed(locale);
 
-      try {
-        const result = await onboardingService.initializeOnboarding(locale);
+    try {
+      const result = await onboardingService.initializeOnboarding(locale);
 
-        if (result.success) {
-          setState((prev) => ({
-            ...prev,
-            isInitialized: true,
-            isInitializing: false,
-            initializationError: null,
-          }));
-          return true;
-        } else {
-          setState((prev) => ({
-            ...prev,
-            isInitializing: false,
-            initializationError: result.error || "Failed to initialize",
-          }));
-          return false;
-        }
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error occurred";
+      if (result.success) {
+        setState((prev) => ({
+          ...prev,
+          isInitialized: true,
+          isInitializing: false,
+          initializationError: null,
+        }));
+        return true;
+      } else {
         setState((prev) => ({
           ...prev,
           isInitializing: false,
-          initializationError: errorMessage,
+          initializationError: result.error || 'Failed to initialize',
         }));
         return false;
       }
-    },
-    []
-  );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setState((prev) => ({
+        ...prev,
+        isInitializing: false,
+        initializationError: errorMessage,
+      }));
+      return false;
+    }
+  }, []);
 
   const retryInitialization = useCallback(async (): Promise<boolean> => {
     if (!lastLocaleUsed) {
-      console.error("Cannot retry initialization: no locale was used");
+      console.error('Cannot retry initialization: no locale was used');
       return false;
     }
     return initializeOnboarding(lastLocaleUsed);
@@ -174,7 +167,7 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
   const downloadFacts = useCallback(
     async (locale: SupportedLocale): Promise<boolean> => {
       if (state.selectedCategories.length === 0) {
-        console.error("Cannot download facts: no categories selected");
+        console.error('Cannot download facts: no categories selected');
         return false;
       }
 
@@ -213,13 +206,12 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
           setState((prev) => ({
             ...prev,
             isDownloadingFacts: false,
-            downloadError: result.error || "Failed to download facts",
+            downloadError: result.error || 'Failed to download facts',
           }));
           return false;
         }
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error occurred";
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         setState((prev) => ({
           ...prev,
           isDownloadingFacts: false,
@@ -272,9 +264,9 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
       // Update local state immediately (synchronous) to prevent navigation race condition
       setState((prev) => ({ ...prev, isOnboardingComplete: true }));
 
-      console.log("Onboarding completed successfully");
+      console.log('Onboarding completed successfully');
     } catch (error) {
-      console.error("Error completing onboarding:", error);
+      console.error('Error completing onboarding:', error);
       throw error;
     }
   }, [state.selectedCategories, state.notificationTimes]);
@@ -288,11 +280,13 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
       // Reset state
       setState({
         selectedCategories: [],
-        notificationTimes: [(() => {
-          const defaultTime = new Date();
-          defaultTime.setHours(9, 0, 0, 0);
-          return defaultTime;
-        })()],
+        notificationTimes: [
+          (() => {
+            const defaultTime = new Date();
+            defaultTime.setHours(9, 0, 0, 0);
+            return defaultTime;
+          })(),
+        ],
         isOnboardingComplete: false,
         isInitialized: false,
         isInitializing: false,
@@ -304,9 +298,9 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
 
       setLastLocaleUsed(null);
 
-      console.log("Onboarding state reset successfully");
+      console.log('Onboarding state reset successfully');
     } catch (error) {
-      console.error("Error resetting onboarding:", error);
+      console.error('Error resetting onboarding:', error);
       throw error;
     }
   }, []);
@@ -326,17 +320,13 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
     resetOnboarding,
   };
 
-  return (
-    <OnboardingContext.Provider value={value}>
-      {children}
-    </OnboardingContext.Provider>
-  );
+  return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;
 }
 
 export function useOnboarding() {
   const context = useContext(OnboardingContext);
   if (context === undefined) {
-    throw new Error("useOnboarding must be used within OnboardingProvider");
+    throw new Error('useOnboarding must be used within OnboardingProvider');
   }
   return context;
 }

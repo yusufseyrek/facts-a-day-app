@@ -9,7 +9,12 @@ import { XStack, YStack } from 'tamagui';
 
 import { Text, Button, CategoryCard, SuccessToast } from '../../src/components';
 import { useTranslation } from '../../src/i18n';
-import { trackCategoriesUpdate, trackScreenView, Screens, updateCategoriesProperty } from '../../src/services/analytics';
+import {
+  trackCategoriesUpdate,
+  trackScreenView,
+  Screens,
+  updateCategoriesProperty,
+} from '../../src/services/analytics';
 import * as db from '../../src/services/database';
 import * as onboardingService from '../../src/services/onboarding';
 import * as preferencesService from '../../src/services/preferences';
@@ -147,9 +152,7 @@ export default function CategoriesSettings() {
 
   const toggleCategory = (slug: string) => {
     setSelectedCategories((prev) =>
-      prev.includes(slug)
-        ? prev.filter((s) => s !== slug)
-        : [...prev, slug]
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
     );
   };
 
@@ -180,8 +183,12 @@ export default function CategoriesSettings() {
         console.log(`Successfully refreshed with ${result.factsCount} facts`);
 
         // Track categories update and update user property
-        const addedCount = selectedCategories.filter((cat) => !initialCategories.includes(cat)).length;
-        const removedCount = initialCategories.filter((cat) => !selectedCategories.includes(cat)).length;
+        const addedCount = selectedCategories.filter(
+          (cat) => !initialCategories.includes(cat)
+        ).length;
+        const removedCount = initialCategories.filter(
+          (cat) => !selectedCategories.includes(cat)
+        ).length;
         trackCategoriesUpdate({
           count: selectedCategories.length,
           addedCount,
@@ -219,7 +226,13 @@ export default function CategoriesSettings() {
     return (
       <Container>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-        <YStack padding={spacing.xl} gap={spacing.xl} flex={1} justifyContent="center" alignItems="center">
+        <YStack
+          padding={spacing.xl}
+          gap={spacing.xl}
+          flex={1}
+          justifyContent="center"
+          alignItems="center"
+        >
           <ActivityIndicator size="large" color={hexColors.light.primary} />
           <Text.Body>{t('loadingCategories')}</Text.Body>
         </YStack>
@@ -250,7 +263,10 @@ export default function CategoriesSettings() {
           <YStack gap={spacing.md}>
             <XStack alignItems="center" gap={spacing.md}>
               <Pressable onPress={() => router.back()} style={{ padding: spacing.xs }}>
-                <ArrowLeft size={iconSizes.lg} color={theme === 'dark' ? '#FFFFFF' : hexColors.light.text} />
+                <ArrowLeft
+                  size={iconSizes.lg}
+                  color={theme === 'dark' ? '#FFFFFF' : hexColors.light.text}
+                />
               </Pressable>
               <YStack gap={spacing.sm} flex={1}>
                 <Text.Headline>{t('settingsCategories')}</Text.Headline>
@@ -270,7 +286,7 @@ export default function CategoriesSettings() {
                   {row.map((category, colIndex) => {
                     const catIndex = getCategoryIndex(rowIndex, colIndex);
                     const animValue = categoryAnimations[catIndex];
-                    
+
                     return (
                       <Animated.View
                         key={category.slug}

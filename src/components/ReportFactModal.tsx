@@ -1,5 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { Modal, TextInput, Keyboard, Platform, TouchableWithoutFeedback, KeyboardAvoidingView, ScrollView, View } from 'react-native';
+import {
+  Modal,
+  TextInput,
+  Keyboard,
+  Platform,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  ScrollView,
+  View,
+} from 'react-native';
 import { X } from '@tamagui/lucide-icons';
 import { YStack, XStack } from 'tamagui';
 
@@ -59,42 +68,48 @@ export function ReportFactModal({
     handleClose();
   };
 
-  const modalContainerStyle = useMemo(() => ({
-    backgroundColor: '$background',
-    borderRadius: radius.lg,
-    width: '100%' as const,
-    maxWidth: 500,
-    padding: spacing.lg,
-    gap: spacing.md,
-    flexShrink: 0,
-    alignSelf: 'center' as const,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 5,
-      },
+  const modalContainerStyle = useMemo(
+    () => ({
+      backgroundColor: '$background',
+      borderRadius: radius.lg,
+      width: '100%' as const,
+      maxWidth: 500,
+      padding: spacing.lg,
+      gap: spacing.md,
+      flexShrink: 0,
+      alignSelf: 'center' as const,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 5,
+        },
+      }),
     }),
-  }), [spacing, radius]);
+    [spacing, radius]
+  );
 
-  const textInputStyle = useMemo(() => ({
-    backgroundColor: hexColors[theme].surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    minHeight: 120,
-    maxHeight: 200,
-    textAlignVertical: 'top' as const,
-    borderWidth: 1,
-    borderColor: hexColors[theme].border,
-    alignSelf: 'stretch' as const,
-    fontSize: typography.fontSize.body,
-    color: hexColors[theme].text,
-    width: inputWidth ?? '100%' as const,
-  }), [spacing, radius, typography, theme, inputWidth]);
+  const textInputStyle = useMemo(
+    () => ({
+      backgroundColor: hexColors[theme].surface,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      minHeight: 120,
+      maxHeight: 200,
+      textAlignVertical: 'top' as const,
+      borderWidth: 1,
+      borderColor: hexColors[theme].border,
+      alignSelf: 'stretch' as const,
+      fontSize: typography.fontSize.body,
+      color: hexColors[theme].text,
+      width: inputWidth ?? ('100%' as const),
+    }),
+    [spacing, radius, typography, theme, inputWidth]
+  );
 
   return (
     <Modal
@@ -119,7 +134,7 @@ export function ReportFactModal({
           >
             <TouchableWithoutFeedback>
               <ScrollView
-                contentContainerStyle={{ 
+                contentContainerStyle={{
                   flexGrow: 1,
                   justifyContent: 'center',
                   alignItems: 'center',
@@ -130,7 +145,11 @@ export function ReportFactModal({
                 bounces={false}
               >
                 <YStack {...modalContainerStyle}>
-                  <XStack justifyContent="space-between" alignItems="center" marginBottom={spacing.sm}>
+                  <XStack
+                    justifyContent="space-between"
+                    alignItems="center"
+                    marginBottom={spacing.sm}
+                  >
                     <Text.Title>{t('reportFact')}</Text.Title>
                     <TouchableWithoutFeedback onPress={handleClose}>
                       <YStack
@@ -150,7 +169,7 @@ export function ReportFactModal({
                     {t('whatIsWrong')}
                   </Text.Body>
 
-                  <View 
+                  <View
                     style={{ width: '100%', flexShrink: 0 }}
                     onLayout={(e) => {
                       const { width } = e.nativeEvent.layout;
@@ -189,11 +208,7 @@ export function ReportFactModal({
 
                   <XStack gap={spacing.md} marginTop={spacing.sm}>
                     <YStack flex={1}>
-                      <Button
-                        variant="secondary"
-                        onPress={handleClose}
-                        disabled={isSubmitting}
-                      >
+                      <Button variant="secondary" onPress={handleClose} disabled={isSubmitting}>
                         {t('cancel')}
                       </Button>
                     </YStack>

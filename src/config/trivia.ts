@@ -28,4 +28,3 @@ export const TIME_PER_QUESTION = {
   /** Average time used for estimation */
   AVERAGE: 45,
 } as const;
-

@@ -21,13 +21,19 @@ import {
 } from './responsive';
 
 // Use union types to allow both phone and tablet values
-export type ResponsiveTypography = typeof responsiveTypography.phone | typeof responsiveTypography.tablet;
+export type ResponsiveTypography =
+  | typeof responsiveTypography.phone
+  | typeof responsiveTypography.tablet;
 export type ResponsiveSpacing = typeof responsiveSpacing.phone | typeof responsiveSpacing.tablet;
-export type ResponsiveIconSizes = typeof responsiveIconSizes.phone | typeof responsiveIconSizes.tablet;
+export type ResponsiveIconSizes =
+  | typeof responsiveIconSizes.phone
+  | typeof responsiveIconSizes.tablet;
 export type ResponsiveConfig = typeof responsiveConfig.phone | typeof responsiveConfig.tablet;
 export type ResponsiveMedia = typeof responsiveMedia.phone | typeof responsiveMedia.tablet;
 export type ResponsiveRadius = typeof responsiveRadius.phone | typeof responsiveRadius.tablet;
-export type ResponsiveBorderWidths = typeof responsiveBorderWidths.phone | typeof responsiveBorderWidths.tablet;
+export type ResponsiveBorderWidths =
+  | typeof responsiveBorderWidths.phone
+  | typeof responsiveBorderWidths.tablet;
 
 export interface ResponsiveValues {
   /** Current screen width */
@@ -66,7 +72,7 @@ export const useResponsive = (): ResponsiveValues => {
 
   return useMemo(() => {
     const isTablet = isTabletDevice(width);
-    
+
     return {
       screenWidth: width,
       screenHeight: height,

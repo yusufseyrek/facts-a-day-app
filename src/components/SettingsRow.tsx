@@ -31,44 +31,44 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
 
   // Use pure white in dark mode for better contrast
   const labelColor = theme === 'dark' ? '#FFFFFF' : colors.text;
-  
+
   // Warning indicator color - darker in light mode for better readability
   const warningColor = theme === 'dark' ? '#F59E0B' : '#B45309';
 
   // Use white background in light mode, surface in dark mode
-  const backgroundColor =
-    theme === "dark"
-      ? hexColors.dark.surface
-      : hexColors.light.surface;
+  const backgroundColor = theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface;
 
-  const styles = useMemo(() => ({
-    container: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      justifyContent: 'space-between' as const,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      minHeight: 56,
-    },
-    leftContent: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      flex: 1,
-    },
-    iconContainer: {
-      marginRight: spacing.md,
-    },
-    warningContainer: {
-      marginLeft: spacing.sm,
-    },
-    rightContent: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      gap: spacing.sm,
-    },
-  }), [spacing, radius]);
+  const styles = useMemo(
+    () => ({
+      container: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'space-between' as const,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        minHeight: 56,
+      },
+      leftContent: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        flex: 1,
+      },
+      iconContainer: {
+        marginRight: spacing.md,
+      },
+      warningContainer: {
+        marginLeft: spacing.sm,
+      },
+      rightContent: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        gap: spacing.sm,
+      },
+    }),
+    [spacing, radius]
+  );
 
   const content = (
     <View
@@ -82,9 +82,7 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
     >
       <View style={styles.leftContent}>
         {icon && <View style={styles.iconContainer}>{icon}</View>}
-        <Text.Label color={labelColor}>
-          {label}
-        </Text.Label>
+        <Text.Label color={labelColor}>{label}</Text.Label>
         {showWarning && (
           <View style={styles.warningContainer}>
             <AlertCircle size={iconSizes.sm} color={warningColor} />
@@ -92,16 +90,13 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
         )}
       </View>
       <View style={styles.rightContent}>
-        {value && (
-          <Text.Label color={colors.textSecondary}>
-            {value}
-          </Text.Label>
-        )}
-        {onPress && (
-          showExternalLink 
-            ? <ExternalLink size={iconSizes.md} color={colors.textSecondary} />
-            : <ChevronRight size={iconSizes.md} color={colors.textSecondary} />
-        )}
+        {value && <Text.Label color={colors.textSecondary}>{value}</Text.Label>}
+        {onPress &&
+          (showExternalLink ? (
+            <ExternalLink size={iconSizes.md} color={colors.textSecondary} />
+          ) : (
+            <ChevronRight size={iconSizes.md} color={colors.textSecondary} />
+          ))}
       </View>
     </View>
   );

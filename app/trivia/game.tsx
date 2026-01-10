@@ -7,10 +7,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { YStack } from 'tamagui';
 
 import { Text } from '../../src/components/Typography';
-import { TriviaResults, TriviaGameView, TriviaExitModal, getTriviaModeBadge } from '../../src/components/trivia';
+import {
+  TriviaResults,
+  TriviaGameView,
+  TriviaExitModal,
+  getTriviaModeBadge,
+} from '../../src/components/trivia';
 import { useTranslation } from '../../src/i18n';
 import { showTriviaResultsInterstitial } from '../../src/services/adManager';
-import { trackScreenView, Screens, trackTriviaStart, trackTriviaComplete, trackTriviaExit } from '../../src/services/analytics';
+import {
+  trackScreenView,
+  Screens,
+  trackTriviaStart,
+  trackTriviaComplete,
+  trackTriviaExit,
+} from '../../src/services/analytics';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
@@ -34,13 +45,13 @@ export default function TriviaGameScreen() {
   const { typography } = useResponsive();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ 
-    type: string; 
+  const params = useLocalSearchParams<{
+    type: string;
     categorySlug?: string;
     categoryName?: string;
   }>();
   const isDark = theme === 'dark';
-  
+
   const [loading, setLoading] = useState(true);
   const [showingAd, setShowingAd] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
@@ -54,44 +65,46 @@ export default function TriviaGameScreen() {
     timeExpired: false,
     totalTime: 0,
   });
-  
+
   // Hint state
   const [canUseExplanation, setCanUseExplanation] = useState(false);
-  const [explanationShownForQuestion, setExplanationShownForQuestion] = useState<number | null>(null);
-  
+  const [explanationShownForQuestion, setExplanationShownForQuestion] = useState<number | null>(
+    null
+  );
+
   // Timer state
   const [timeRemaining, setTimeRemaining] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  
+
   // Animation values
   const progressWidth = useSharedValue(0);
   const questionKey = useRef(0);
-  
+
   // Store shuffled answers per question to keep them consistent when navigating back
   const shuffledAnswersMap = useRef<Record<number, string[]>>({});
-  
+
   // Get current question
   const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
-  
+
   // Get or create shuffled answers for current question
   const shuffledAnswers = useMemo(() => {
     if (!currentQuestion) return [];
-    
+
     // If we already shuffled this question's answers, return the cached version
     if (shuffledAnswersMap.current[currentQuestion.id]) {
       return shuffledAnswersMap.current[currentQuestion.id];
     }
-    
+
     // Shuffle and cache for this question
     const shuffled = triviaService.getShuffledAnswers(currentQuestion);
     shuffledAnswersMap.current[currentQuestion.id] = shuffled;
     return shuffled;
   }, [currentQuestion?.id]);
-  
+
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
-  
+
   // Get trivia title based on type
   const getTriviaTitle = useCallback(() => {
     switch (params.type) {
@@ -105,20 +118,20 @@ export default function TriviaGameScreen() {
         return t('trivia');
     }
   }, [params.type, t]);
-  
+
   // Load questions on mount and check hint availability
   useEffect(() => {
     loadQuestions();
     checkHintAvailability();
     trackScreenView(Screens.TRIVIA_GAME);
   }, []);
-  
+
   // Check if explanation hint is available today
   const checkHintAvailability = async () => {
     const canUse = await triviaService.canUseExplanationHint();
     setCanUseExplanation(canUse);
   };
-  
+
   // Handle Android back button
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -127,7 +140,7 @@ export default function TriviaGameScreen() {
     });
     return () => backHandler.remove();
   }, [gameState.isFinished]);
-  
+
   // Timer effect
   useEffect(() => {
     if (loading || gameState.isFinished) {
@@ -137,9 +150,9 @@ export default function TriviaGameScreen() {
       }
       return;
     }
-    
+
     timerRef.current = setInterval(() => {
-      setTimeRemaining(prev => {
+      setTimeRemaining((prev) => {
         if (prev <= 1) {
           // Time's up!
           clearInterval(timerRef.current!);
@@ -150,7 +163,7 @@ export default function TriviaGameScreen() {
         return prev - 1;
       });
     }, 1000);
-    
+
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -158,7 +171,7 @@ export default function TriviaGameScreen() {
       }
     };
   }, [loading, gameState.isFinished, gameState.currentQuestionIndex]);
-  
+
   // Update progress bar animation
   useEffect(() => {
     if (gameState.questions.length > 0) {
@@ -166,12 +179,12 @@ export default function TriviaGameScreen() {
       progressWidth.value = withTiming(progress, { duration: 300 });
     }
   }, [gameState.currentQuestionIndex, gameState.questions.length]);
-  
+
   const loadQuestions = async () => {
     try {
       setLoading(true);
       let questions: QuestionWithFact[] = [];
-      
+
       if (params.type === 'daily') {
         questions = await triviaService.getDailyTriviaQuestions(locale);
       } else if (params.type === 'mixed') {
@@ -179,26 +192,26 @@ export default function TriviaGameScreen() {
       } else if (params.type === 'category' && params.categorySlug) {
         questions = await triviaService.getCategoryTriviaQuestions(params.categorySlug, locale);
       }
-      
+
       if (questions.length === 0) {
         router.back();
         return;
       }
-      
+
       // Calculate total time based on question count (using average time per question)
       const totalTime = questions.length * TIME_PER_QUESTION.AVERAGE;
       setTimeRemaining(totalTime);
-      
-      setGameState(prev => ({
+
+      setGameState((prev) => ({
         ...prev,
         questions,
         totalTime,
       }));
       setLoading(false);
-      
+
       // Track trivia start
-      const triviaMode: TriviaMode = params.type === 'daily' ? 'daily' : 
-                                      params.type === 'category' ? 'category' : 'mixed';
+      const triviaMode: TriviaMode =
+        params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
       trackTriviaStart({
         mode: triviaMode,
         questionCount: questions.length,
@@ -209,23 +222,24 @@ export default function TriviaGameScreen() {
       router.back();
     }
   };
-  
+
   const handleTimeExpired = useCallback(async () => {
     // Show interstitial ad before showing results
     setShowingAd(true);
     await showTriviaResultsInterstitial();
     setShowingAd(false);
-    
+
     // Calculate results for session save including best streak
     let correctCount = 0;
     let currentStreak = 0;
     let bestStreak = 0;
-    
+
     for (const question of gameState.questions) {
       const selectedAnswer = gameState.answers[question.id];
-      const isCorrect = question.question_type === 'true_false'
-        ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
-        : selectedAnswer === question.correct_answer;
+      const isCorrect =
+        question.question_type === 'true_false'
+          ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
+          : selectedAnswer === question.correct_answer;
       if (isCorrect) {
         correctCount++;
         currentStreak++;
@@ -234,14 +248,14 @@ export default function TriviaGameScreen() {
         currentStreak = 0;
       }
     }
-    
+
     // Determine trivia mode for session saving
-    const triviaMode = params.type === 'daily' ? 'daily' : 
-                       params.type === 'category' ? 'category' : 'mixed';
-    
+    const triviaMode =
+      params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
+
     // Time expired means all time was used
     const elapsedTime = gameState.totalTime;
-    
+
     // Save session result first to get session ID
     const sessionId = await triviaService.saveSessionResult(
       triviaMode,
@@ -253,23 +267,24 @@ export default function TriviaGameScreen() {
       gameState.questions,
       gameState.answers
     );
-    
+
     // Record each answer with session ID
     for (const question of gameState.questions) {
       const selectedAnswer = gameState.answers[question.id];
       if (selectedAnswer) {
-        const isCorrect = question.question_type === 'true_false'
-          ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
-          : selectedAnswer === question.correct_answer;
+        const isCorrect =
+          question.question_type === 'true_false'
+            ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
+            : selectedAnswer === question.correct_answer;
         await triviaService.recordAnswer(question.id, isCorrect, triviaMode, sessionId);
       }
     }
-    
+
     // Save daily progress if applicable
     if (params.type === 'daily') {
       await triviaService.saveDailyProgress(gameState.questions.length, correctCount);
     }
-    
+
     // Track trivia completion and results screen
     trackTriviaComplete({
       mode: triviaMode,
@@ -281,33 +296,39 @@ export default function TriviaGameScreen() {
       categorySlug: params.categorySlug,
     });
     trackScreenView(Screens.TRIVIA_RESULTS);
-    
-    setGameState(prev => ({
+
+    setGameState((prev) => ({
       ...prev,
       isFinished: true,
       timeExpired: true,
     }));
-  }, [gameState.questions, gameState.answers, gameState.totalTime, params.type, params.categorySlug]);
-  
+  }, [
+    gameState.questions,
+    gameState.answers,
+    gameState.totalTime,
+    params.type,
+    params.categorySlug,
+  ]);
+
   const handleExitConfirm = () => {
     if (gameState.isFinished) {
       router.back();
       return;
     }
-    
+
     // Show custom exit modal instead of native Alert for better testability
     setShowExitModal(true);
   };
-  
+
   const handleExitCancel = () => {
     setShowExitModal(false);
   };
-  
+
   const handleExitConfirmed = () => {
     setShowExitModal(false);
     // Track trivia exit
-    const triviaMode: TriviaMode = params.type === 'daily' ? 'daily' : 
-                                   params.type === 'category' ? 'category' : 'mixed';
+    const triviaMode: TriviaMode =
+      params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
     const answeredCount = Object.keys(gameState.answers).length;
     trackTriviaExit({
       mode: triviaMode,
@@ -317,19 +338,19 @@ export default function TriviaGameScreen() {
     });
     router.back();
   };
-  
+
   const handleUnansweredCancel = () => {
     setShowUnansweredModal(false);
   };
-  
+
   const handleUnansweredContinue = () => {
     setShowUnansweredModal(false);
     finishQuiz();
   };
-  
+
   const handleAnswerSelect = (answer: string) => {
     if (!currentQuestion) return;
-    setGameState(prev => ({
+    setGameState((prev) => ({
       ...prev,
       answers: {
         ...prev.answers,
@@ -337,16 +358,14 @@ export default function TriviaGameScreen() {
       },
     }));
   };
-  
+
   const handleNextQuestion = () => {
     const nextIndex = gameState.currentQuestionIndex + 1;
-    
+
     if (nextIndex >= gameState.questions.length) {
       // Check if all questions are answered
-      const unansweredCount = gameState.questions.filter(
-        q => !gameState.answers[q.id]
-      ).length;
-      
+      const unansweredCount = gameState.questions.filter((q) => !gameState.answers[q.id]).length;
+
       if (unansweredCount > 0) {
         // Show custom unanswered modal
         setUnansweredCount(unansweredCount);
@@ -357,60 +376,61 @@ export default function TriviaGameScreen() {
       }
     } else {
       questionKey.current += 1;
-      setGameState(prev => ({
+      setGameState((prev) => ({
         ...prev,
         currentQuestionIndex: nextIndex,
       }));
     }
   };
-  
+
   const handlePrevQuestion = () => {
     if (gameState.currentQuestionIndex <= 0) return;
     questionKey.current += 1;
-    setGameState(prev => ({
+    setGameState((prev) => ({
       ...prev,
       currentQuestionIndex: prev.currentQuestionIndex - 1,
     }));
   };
-  
+
   // Handle opening the fact detail
   const handleOpenFact = useCallback(() => {
     if (currentQuestion?.fact?.id) {
       router.push(`/fact/${currentQuestion.fact.id}?source=trivia_hint`);
     }
   }, [currentQuestion?.fact?.id, router]);
-  
+
   // Handle showing the explanation hint
   const handleShowExplanation = useCallback(async () => {
     if (!currentQuestion || !canUseExplanation) return;
-    
+
     // Mark hint as used for today
     await triviaService.useExplanationHint();
     setCanUseExplanation(false);
-    
+
     // Show explanation for current question
     setExplanationShownForQuestion(currentQuestion.id);
   }, [currentQuestion, canUseExplanation]);
-  
+
   const finishQuiz = async () => {
     // Show interstitial ad before showing results
     setShowingAd(true);
     await showTriviaResultsInterstitial();
     setShowingAd(false);
-    
+
     // Calculate results including best streak
     let correctCount = 0;
     let currentStreak = 0;
     let bestStreak = 0;
     const wrongIds: number[] = [];
-    
+
     for (const question of gameState.questions) {
       const selectedAnswer = gameState.answers[question.id];
       // Case-insensitive comparison for true/false questions
-      const isCorrect = question.question_type === 'true_false'
-        ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
-        : selectedAnswer === question.correct_answer;
-      
+      const isCorrect =
+        question.question_type === 'true_false'
+          ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
+          : selectedAnswer === question.correct_answer;
+
       if (isCorrect) {
         correctCount++;
         currentStreak++;
@@ -422,14 +442,14 @@ export default function TriviaGameScreen() {
         currentStreak = 0;
       }
     }
-    
+
     // Determine trivia mode for session saving
-    const triviaMode = params.type === 'daily' ? 'daily' : 
-                       params.type === 'category' ? 'category' : 'mixed';
-    
+    const triviaMode =
+      params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
+
     // Calculate elapsed time
     const elapsedTime = gameState.totalTime - timeRemaining;
-    
+
     try {
       // Save session result first to get the session ID
       const sessionId = await triviaService.saveSessionResult(
@@ -442,31 +462,24 @@ export default function TriviaGameScreen() {
         gameState.questions,
         gameState.answers
       );
-      
+
       // Record each answer with session ID
       for (const question of gameState.questions) {
         const selectedAnswer = gameState.answers[question.id];
         if (selectedAnswer) {
-          const isCorrect = question.question_type === 'true_false'
-            ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
-            : selectedAnswer === question.correct_answer;
-          await triviaService.recordAnswer(
-            question.id,
-            isCorrect,
-            triviaMode,
-            sessionId
-          );
+          const isCorrect =
+            question.question_type === 'true_false'
+              ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
+              : selectedAnswer === question.correct_answer;
+          await triviaService.recordAnswer(question.id, isCorrect, triviaMode, sessionId);
         }
       }
-      
+
       // Save daily progress if applicable
       if (params.type === 'daily') {
-        await triviaService.saveDailyProgress(
-          gameState.questions.length,
-          correctCount
-        );
+        await triviaService.saveDailyProgress(gameState.questions.length, correctCount);
       }
-      
+
       // Track trivia completion and results screen
       trackTriviaComplete({
         mode: triviaMode,
@@ -482,32 +495,37 @@ export default function TriviaGameScreen() {
       console.error('Error saving trivia results:', error);
       // Still show results even if saving fails
     }
-    
+
     // Always set isFinished to true to show results
-    setGameState(prev => ({ 
-      ...prev, 
+    setGameState((prev) => ({
+      ...prev,
       isFinished: true,
     }));
   };
-  
+
   const handleClose = () => {
     router.back();
   };
-  
+
   // Loading state
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top, paddingBottom: insets.bottom }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: bgColor,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        }}
+      >
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <YStack flex={1} justifyContent="center" alignItems="center">
-          <Text.Body color={secondaryTextColor}>
-            {t('loading') || 'Loading...'}
-          </Text.Body>
+          <Text.Body color={secondaryTextColor}>{t('loading') || 'Loading...'}</Text.Body>
         </YStack>
       </View>
     );
   }
-  
+
   // Calculate results for display
   const calculateResults = () => {
     let correct = 0;
@@ -515,14 +533,15 @@ export default function TriviaGameScreen() {
     let unanswered = 0;
     let currentStreak = 0;
     let bestStreak = 0;
-    
+
     for (const question of gameState.questions) {
       const selectedAnswer = gameState.answers[question.id];
       // Case-insensitive comparison for true/false questions
-      const isCorrect = question.question_type === 'true_false'
-        ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
-        : selectedAnswer === question.correct_answer;
-      
+      const isCorrect =
+        question.question_type === 'true_false'
+          ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
+          : selectedAnswer === question.correct_answer;
+
       if (!selectedAnswer) {
         unanswered++;
         currentStreak = 0;
@@ -537,17 +556,17 @@ export default function TriviaGameScreen() {
         currentStreak = 0;
       }
     }
-    
+
     // Calculate elapsed time
     const elapsedTime = gameState.totalTime - timeRemaining;
-    
+
     return { correct, wrong, unanswered, bestStreak, elapsedTime };
   };
-  
+
   // Results view
   if (gameState.isFinished) {
     const results = calculateResults();
-    
+
     return (
       <TriviaResults
         correctAnswers={results.correct}
@@ -571,18 +590,18 @@ export default function TriviaGameScreen() {
       />
     );
   }
-  
+
   // Game view
   if (!currentQuestion) {
     return null;
   }
-  
+
   // Get selected answer for current question
   const selectedAnswer = currentQuestion ? gameState.answers[currentQuestion.id] || null : null;
-  
+
   // Check if explanation is shown for current question
   const showExplanation = explanationShownForQuestion === currentQuestion?.id;
-  
+
   return (
     <>
       <TriviaGameView
@@ -613,7 +632,9 @@ export default function TriviaGameScreen() {
         onExit={handleExitConfirmed}
         isDark={isDark}
         title={t('exitTrivia') || 'Exit Quiz'}
-        message={t('exitTriviaConfirm') || 'Are you sure you want to exit? Your progress will be lost.'}
+        message={
+          t('exitTriviaConfirm') || 'Are you sure you want to exit? Your progress will be lost.'
+        }
         cancelText={t('cancel') || 'Cancel'}
         exitText={t('exit') || 'Exit'}
       />
@@ -623,7 +644,10 @@ export default function TriviaGameScreen() {
         onExit={handleUnansweredContinue}
         isDark={isDark}
         title={t('unansweredQuestions') || 'Unanswered Questions'}
-        message={t('unansweredQuestionsMessage', { count: unansweredCount }) || `You haven't answered ${unansweredCount} question(s). Continue anyway?`}
+        message={
+          t('unansweredQuestionsMessage', { count: unansweredCount }) ||
+          `You haven't answered ${unansweredCount} question(s). Continue anyway?`
+        }
         cancelText={t('goBack') || 'Go Back'}
         exitText={t('continueAnyway') || 'Continue'}
       />

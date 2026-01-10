@@ -8,26 +8,26 @@ import {
   recordError as crashlyticsRecordError,
   log,
   crash,
-} from "@react-native-firebase/crashlytics";
+} from '@react-native-firebase/crashlytics';
 import {
   getAnalytics,
   logEvent as analyticsLogEvent,
   setUserId as setAnalyticsUserId,
   setUserProperty as analyticsSetUserProperty,
-} from "@react-native-firebase/analytics";
+} from '@react-native-firebase/analytics';
 import getAppCheck, {
   getToken as getAppCheckTokenFn,
   initializeAppCheck,
   ReactNativeFirebaseAppCheckProvider,
-} from "@react-native-firebase/app-check";
-import { getApp } from "@react-native-firebase/app";
-import { Platform } from "react-native";
-import * as Device from "expo-device";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+} from '@react-native-firebase/app-check';
+import { getApp } from '@react-native-firebase/app';
+import { Platform } from 'react-native';
+import * as Device from 'expo-device';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import macOS debug token from platform-specific file
 // iOS builds get the real token, Android builds get undefined
-import { MACOS_DEBUG_TOKEN } from "./appCheckConfig";
+import { MACOS_DEBUG_TOKEN } from './appCheckConfig';
 
 // Key for storing the debug token (used for simulators/emulators in development)
 const APP_CHECK_DEBUG_TOKEN_KEY = 'appcheck_debug_token';
@@ -37,8 +37,8 @@ const APP_CHECK_DEBUG_TOKEN_KEY = 'appcheck_debug_token';
  */
 function generateUUID(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16).toUpperCase();
   });
 }
@@ -53,7 +53,7 @@ async function getOrCreateDebugToken(): Promise<string> {
     if (existingToken) {
       return existingToken;
     }
-    
+
     const newToken = generateUUID();
     await AsyncStorage.setItem(APP_CHECK_DEBUG_TOKEN_KEY, newToken);
     return newToken;
@@ -91,18 +91,16 @@ function isMacOS(): boolean {
   // Device.modelName contains 'Mac' on Mac devices
   const osName = Device.osName?.toLowerCase() || '';
   const modelName = Device.modelName?.toLowerCase() || '';
-  
-  return osName.includes('macos') || 
-         osName.includes('mac os') || 
-         modelName.includes('mac');
+
+  return osName.includes('macos') || osName.includes('mac os') || modelName.includes('mac');
 }
 
 /**
  * Initialize Firebase App Check
- * 
+ *
  * App Check helps protect your backend resources from abuse by ensuring
  * requests come from genuine app instances running on genuine devices.
- * 
+ *
  * On iOS: Uses App Attest (iOS 14+)
  *         In DEBUG builds, uses Debug provider for simulator testing
  * On Android: Uses Play Integrity
@@ -117,18 +115,18 @@ export async function initializeAppCheckService() {
   const isIOS = Platform.OS === 'ios';
   const isRealDevice = Device.isDevice;
   const isMac = isMacOS();
-  
+
   // Use debug provider if:
   // 1. Running in development mode (__DEV__)
   // 2. Running on emulator/simulator (Play Integrity and App Attest don't work on emulators)
   // 3. Running on macOS (App Attest is NOT supported on macOS)
   const useDebugProvider = __DEV__ || !isRealDevice || isMac;
-  
+
   // Determine provider names
   const iosProvider = useDebugProvider ? 'debug' : 'appAttest';
   const androidProvider = useDebugProvider ? 'debug' : 'playIntegrity';
   const providerName = isIOS ? iosProvider : androidProvider;
-  
+
   // Get debug token based on environment
   let debugToken: string | undefined;
   if (useDebugProvider) {
@@ -142,17 +140,17 @@ export async function initializeAppCheckService() {
       console.log(`🔑 App Check Debug Token: ${debugToken}`);
     }
   }
-  
+
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt <= APP_CHECK_INIT_MAX_RETRIES; attempt++) {
     try {
       if (attempt > 0) {
-        await new Promise(resolve => setTimeout(resolve, APP_CHECK_INIT_RETRY_DELAY_MS));
+        await new Promise((resolve) => setTimeout(resolve, APP_CHECK_INIT_RETRY_DELAY_MS));
       }
-      
+
       const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
-      
+
       await rnfbProvider.configure({
         apple: {
           // Use debug on simulators, appAttest on real devices
@@ -176,31 +174,33 @@ export async function initializeAppCheckService() {
       });
 
       appCheckInitialized = true;
-      
+
       if (__DEV__) {
         console.log(`🔒 App Check: Initialized (${providerName})`);
       }
-      
+
       // Success - exit the retry loop
       break;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       // Log error on each attempt
       const errorMessage = lastError.message;
-      
+
       if (attempt < APP_CHECK_INIT_MAX_RETRIES) {
         console.warn(`⚠️ App Check: Initialization attempt ${attempt + 1} failed: ${errorMessage}`);
       } else {
         // Final attempt failed - log detailed error
         const errorStack = lastError.stack || '';
-        
-        console.error(`❌ App Check: Initialization FAILED with ${providerName} provider after ${APP_CHECK_INIT_MAX_RETRIES + 1} attempts`);
+
+        console.error(
+          `❌ App Check: Initialization FAILED with ${providerName} provider after ${APP_CHECK_INIT_MAX_RETRIES + 1} attempts`
+        );
         console.error(`❌ App Check Error: ${errorMessage}`);
         if (errorStack && __DEV__) {
           console.error(`❌ App Check Stack: ${errorStack}`);
         }
-        
+
         // Also log to Crashlytics for production debugging
         if (!__DEV__) {
           try {
@@ -213,7 +213,7 @@ export async function initializeAppCheckService() {
       }
     }
   }
-  
+
   // Always resolve the ready promise, even on failure
   // This prevents API calls from hanging forever
   appCheckReadyResolve();
@@ -232,7 +232,7 @@ export async function initializeFirebase() {
   try {
     // Initialize App Check first (before other Firebase services)
     await initializeAppCheckService();
-    
+
     // Enable crashlytics collection (disabled in dev mode)
     await setCrashlyticsCollectionEnabled(crashlyticsInstance, !__DEV__);
 
@@ -240,12 +240,10 @@ export async function initializeFirebase() {
     installJSErrorHandler();
 
     if (__DEV__) {
-      console.log(
-        "Firebase initialized in development mode (crash reporting disabled)"
-      );
+      console.log('Firebase initialized in development mode (crash reporting disabled)');
     }
   } catch (error) {
-    console.error("Failed to initialize Firebase:", error);
+    console.error('Failed to initialize Firebase:', error);
   }
 }
 
@@ -280,7 +278,7 @@ function installJSErrorHandler() {
   });
 
   if (__DEV__) {
-    console.log("📱 JS error handler installed for Crashlytics (disabled in dev)");
+    console.log('📱 JS error handler installed for Crashlytics (disabled in dev)');
   }
 }
 
@@ -291,7 +289,7 @@ function installJSErrorHandler() {
  */
 export function enableCrashlyticsConsoleLogging() {
   if (__DEV__) {
-    console.log("Console logging to Crashlytics disabled in dev mode");
+    console.log('Console logging to Crashlytics disabled in dev mode');
     return;
   }
 
@@ -340,10 +338,10 @@ export async function clearFirebaseUser() {
     return;
   }
   try {
-    await setCrashlyticsUserId(crashlyticsInstance, "");
+    await setCrashlyticsUserId(crashlyticsInstance, '');
     await setAnalyticsUserId(analyticsInstance, null);
   } catch (error) {
-    console.error("Failed to clear Firebase user:", error);
+    console.error('Failed to clear Firebase user:', error);
   }
 }
 
@@ -358,7 +356,7 @@ export async function setCrashlyticsAttribute(key: string, value: string) {
   try {
     await setAttribute(crashlyticsInstance, key, value);
   } catch (error) {
-    console.error("Failed to set Crashlytics attribute:", error);
+    console.error('Failed to set Crashlytics attribute:', error);
   }
 }
 
@@ -374,7 +372,7 @@ export async function setAnalyticsUserProperty(name: string, value: string | nul
   try {
     await analyticsSetUserProperty(analyticsInstance, name, value);
   } catch (error) {
-    console.error("Failed to set Analytics user property:", error);
+    console.error('Failed to set Analytics user property:', error);
   }
 }
 
@@ -387,7 +385,7 @@ export const setFirebaseAttribute = setCrashlyticsAttribute;
  */
 export function recordError(error: Error, context?: Record<string, string>) {
   if (__DEV__) {
-    console.error("Crashlytics error:", error, context);
+    console.error('Crashlytics error:', error, context);
     return;
   }
 
@@ -398,7 +396,7 @@ export function recordError(error: Error, context?: Record<string, string>) {
     }
     crashlyticsRecordError(crashlyticsInstance, error);
   } catch (e) {
-    console.error("Failed to record error to Crashlytics:", e);
+    console.error('Failed to record error to Crashlytics:', e);
   }
 }
 
@@ -407,14 +405,14 @@ export function recordError(error: Error, context?: Record<string, string>) {
  */
 export function logMessage(message: string) {
   if (__DEV__) {
-    console.log("Crashlytics log:", message);
+    console.log('Crashlytics log:', message);
     return;
   }
 
   try {
     log(crashlyticsInstance, message);
   } catch (error) {
-    console.error("Failed to log message to Crashlytics:", error);
+    console.error('Failed to log message to Crashlytics:', error);
   }
 }
 
@@ -422,10 +420,7 @@ export function logMessage(message: string) {
  * Log an analytics event
  * Disabled in dev mode to prevent polluting analytics data
  */
-export async function logEvent(
-  name: string,
-  params?: Record<string, string | number | boolean>
-) {
+export async function logEvent(name: string, params?: Record<string, string | number | boolean>) {
   if (__DEV__) {
     console.log(`📊 Analytics Event: ${name}`, params);
     return;
@@ -433,7 +428,7 @@ export async function logEvent(
   try {
     await analyticsLogEvent(analyticsInstance, name, params);
   } catch (error) {
-    console.error("Failed to log analytics event:", error);
+    console.error('Failed to log analytics event:', error);
   }
 }
 
@@ -453,7 +448,7 @@ export async function logScreenView(screenName: string, screenClass?: string) {
       screen_class: screenClass || screenName,
     });
   } catch (error) {
-    console.error("Failed to log screen view:", error);
+    console.error('Failed to log screen view:', error);
   }
 }
 
@@ -463,11 +458,11 @@ export async function logScreenView(screenName: string, screenClass?: string) {
  */
 export function testCrashlytics() {
   // Log a message that will appear in the crash report
-  log(crashlyticsInstance, "Test crash initiated from settings");
-  
+  log(crashlyticsInstance, 'Test crash initiated from settings');
+
   // Record a non-fatal error first
-  crashlyticsRecordError(crashlyticsInstance, new Error("Test error before crash"));
-  
+  crashlyticsRecordError(crashlyticsInstance, new Error('Test error before crash'));
+
   // Force crash the app (this will terminate the app)
   crash(crashlyticsInstance);
 }
@@ -487,7 +482,7 @@ export function isAppCheckInitialized(): boolean {
 export async function getAppCheckToken() {
   // Wait for App Check initialization to complete
   await appCheckReady;
-  
+
   if (!appCheckInitialized) {
     console.warn('App Check not initialized');
     return null;

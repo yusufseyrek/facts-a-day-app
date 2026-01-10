@@ -1,5 +1,11 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
-import { RefreshControl, ActivityIndicator, Pressable, View, Animated as RNAnimated } from 'react-native';
+import {
+  RefreshControl,
+  ActivityIndicator,
+  Pressable,
+  View,
+  Animated as RNAnimated,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -23,13 +29,7 @@ import type { TriviaSessionWithCategory } from '../../src/services/trivia';
 import type { TriviaMode } from '../../src/services/analytics';
 
 // Back Button with press animation
-function BackButton({ 
-  onPress, 
-  primaryColor 
-}: { 
-  onPress: () => void; 
-  primaryColor: string;
-}) {
+function BackButton({ onPress, primaryColor }: { onPress: () => void; primaryColor: string }) {
   const { iconSizes, media } = useResponsive();
   const scale = useRef(new RNAnimated.Value(1)).current;
   const buttonSize = media.topicCardSize * 0.45; // Scale with tablet
@@ -100,9 +100,8 @@ function SessionCard({
   const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
 
-  const scorePercentage = session.total_questions > 0 
-    ? (session.correct_answers / session.total_questions) * 100 
-    : 0;
+  const scorePercentage =
+    session.total_questions > 0 ? (session.correct_answers / session.total_questions) * 100 : 0;
 
   const getFeedback = () => {
     if (scorePercentage >= 90) {
@@ -139,8 +138,8 @@ function SessionCard({
   };
 
   const getDateDisplay = () => {
-    return dateFormat === 'relative' 
-      ? formatRelativeDate(session.completed_at) 
+    return dateFormat === 'relative'
+      ? formatRelativeDate(session.completed_at)
       : formatTimeOnly(session.completed_at);
   };
 
@@ -176,10 +175,10 @@ function SessionCard({
         </View>
       );
     }
-    
+
     const IconComponent = session.trivia_mode === 'daily' ? Calendar : Shuffle;
     const iconColor = primaryColor;
-    
+
     return (
       <View
         style={{
@@ -199,11 +198,9 @@ function SessionCard({
   const hasResultData = session.question_ids && session.selected_answers;
 
   return (
-    <Pressable 
+    <Pressable
       onPress={hasResultData ? onPress : undefined}
-      style={({ pressed }) => [
-        pressed && hasResultData && { opacity: 0.8 }
-      ]}
+      style={({ pressed }) => [pressed && hasResultData && { opacity: 0.8 }]}
     >
       <XStack
         backgroundColor={cardBg}
@@ -214,34 +211,20 @@ function SessionCard({
       >
         {getIcon()}
         <YStack flex={1} gap={2}>
-          <Text.Label
-            fontFamily={FONT_FAMILIES.semibold}
-            color={textColor}
-          >
+          <Text.Label fontFamily={FONT_FAMILIES.semibold} color={textColor}>
             {getDisplayName()}
           </Text.Label>
-          <Text.Caption
-            color={secondaryTextColor}
-          >
-            {getDateDisplay()}
-          </Text.Caption>
+          <Text.Caption color={secondaryTextColor}>{getDateDisplay()}</Text.Caption>
         </YStack>
         <YStack alignItems="flex-end" gap={2}>
-          <Text.Caption
-            fontFamily={FONT_FAMILIES.semibold}
-            color={feedback.color}
-          >
+          <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={feedback.color}>
             {feedback.text}
           </Text.Caption>
-          <Text.Caption
-            color={secondaryTextColor}
-          >
+          <Text.Caption color={secondaryTextColor}>
             {t('score')}: {session.correct_answers}/{session.total_questions}
           </Text.Caption>
         </YStack>
-        {hasResultData && (
-          <ChevronRight size={iconSizes.md} color={secondaryTextColor} />
-        )}
+        {hasResultData && <ChevronRight size={iconSizes.md} color={secondaryTextColor} />}
       </XStack>
     </Pressable>
   );
@@ -314,45 +297,51 @@ export default function ActivityHistoryScreen() {
   }, [sections]);
 
   // Group sessions by date
-  const groupSessionsByDate = useCallback((sessions: TriviaSessionWithCategory[]): SessionSection[] => {
-    const grouped: Record<string, TriviaSessionWithCategory[]> = {};
-    
-    sessions.forEach(session => {
-      const date = new Date(session.completed_at);
-      const dateKey = date.toLocaleDateString(locale, {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+  const groupSessionsByDate = useCallback(
+    (sessions: TriviaSessionWithCategory[]): SessionSection[] => {
+      const grouped: Record<string, TriviaSessionWithCategory[]> = {};
+
+      sessions.forEach((session) => {
+        const date = new Date(session.completed_at);
+        const dateKey = date.toLocaleDateString(locale, {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+
+        if (!grouped[dateKey]) {
+          grouped[dateKey] = [];
+        }
+        grouped[dateKey].push(session);
       });
-      
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = [];
+
+      // Convert to sections array, maintaining order (most recent first)
+      return Object.entries(grouped).map(([title, data]) => ({
+        title,
+        data,
+      }));
+    },
+    [locale]
+  );
+
+  const loadData = useCallback(
+    async (isRefresh = false) => {
+      try {
+        if (isRefresh) setRefreshing(true);
+
+        const allSessions = await triviaService.getAllSessions();
+        const groupedSections = groupSessionsByDate(allSessions);
+        setSections(groupedSections);
+      } catch (error) {
+        // Ignore history loading errors
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-      grouped[dateKey].push(session);
-    });
-
-    // Convert to sections array, maintaining order (most recent first)
-    return Object.entries(grouped).map(([title, data]) => ({
-      title,
-      data,
-    }));
-  }, [locale]);
-
-  const loadData = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) setRefreshing(true);
-      
-      const allSessions = await triviaService.getAllSessions();
-      const groupedSections = groupSessionsByDate(allSessions);
-      setSections(groupedSections);
-    } catch (error) {
-      // Ignore history loading errors
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [groupSessionsByDate]);
+    },
+    [groupSessionsByDate]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -395,33 +384,40 @@ export default function ActivityHistoryScreen() {
   }, []);
 
   // FlashList renderItem
-  const renderItem = useCallback(({ item }: ListRenderItemInfo<HistoryListItem>) => {
-    if (item.type === ITEM_TYPES.SECTION_HEADER) {
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<HistoryListItem>) => {
+      if (item.type === ITEM_TYPES.SECTION_HEADER) {
+        return (
+          <YStack
+            paddingHorizontal={spacing.xl}
+            paddingVertical={spacing.md}
+            paddingTop={spacing.md}
+            backgroundColor="$background"
+          >
+            <Text.Title>{item.title}</Text.Title>
+          </YStack>
+        );
+      }
+
       return (
-        <YStack
-          paddingHorizontal={spacing.xl}
-          paddingVertical={spacing.md}
-          paddingTop={spacing.md}
-          backgroundColor="$background"
+        <Animated.View
+          entering={FadeInDown.delay(item.index * 30)
+            .duration(350)
+            .springify()}
         >
-          <Text.Title>{item.title}</Text.Title>
-        </YStack>
+          <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.xs }}>
+            <SessionCard
+              session={item.session}
+              isDark={isDark}
+              t={t}
+              onPress={() => handleSessionClick(item.session.id)}
+            />
+          </View>
+        </Animated.View>
       );
-    }
-    
-    return (
-      <Animated.View entering={FadeInDown.delay(item.index * 30).duration(350).springify()}>
-        <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.xs }}>
-          <SessionCard
-            session={item.session}
-            isDark={isDark}
-            t={t}
-            onPress={() => handleSessionClick(item.session.id)}
-          />
-        </View>
-      </Animated.View>
-    );
-  }, [isDark, t, handleSessionClick, spacing]);
+    },
+    [isDark, t, handleSessionClick, spacing]
+  );
 
   // FlashList getItemType
   const getItemType = useCallback((item: HistoryListItem) => {
@@ -447,22 +443,22 @@ export default function ActivityHistoryScreen() {
   // Show results view for selected session
   if (selectedSession && selectedSession.questions && selectedSession.answers) {
     const wrongCount = selectedSession.total_questions - selectedSession.correct_answers;
-    
+
     const formatSessionDateTime = (dateString: string) => {
       const date = new Date(dateString);
-      const dateStr = date.toLocaleDateString(locale, { 
+      const dateStr = date.toLocaleDateString(locale, {
         weekday: 'short',
-        month: 'short', 
+        month: 'short',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
       });
-      const timeStr = date.toLocaleTimeString(locale, { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      const timeStr = date.toLocaleTimeString(locale, {
+        hour: '2-digit',
+        minute: '2-digit',
       });
       return `${dateStr} • ${timeStr}`;
     };
-    
+
     return (
       <TriviaResults
         correctAnswers={selectedSession.correct_answers}
@@ -497,7 +493,7 @@ export default function ActivityHistoryScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      
+
       {/* Header */}
       <Animated.View entering={FadeInUp.duration(400).springify()}>
         <XStack
@@ -510,13 +506,9 @@ export default function ActivityHistoryScreen() {
           borderBottomColor={isDark ? hexColors.dark.border : hexColors.light.border}
         >
           <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
-          
-          <Text.Title
-            color={textColor}
-          >
-            {t('testHistory')}
-          </Text.Title>
-          
+
+          <Text.Title color={textColor}>{t('testHistory')}</Text.Title>
+
           {/* Empty spacer to balance the header */}
           <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />
         </XStack>
@@ -541,7 +533,7 @@ export default function ActivityHistoryScreen() {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
             }
-            contentContainerStyle={{ 
+            contentContainerStyle={{
               paddingBottom: spacing.sm,
             }}
             {...FLASH_LIST_SETTINGS}
@@ -551,7 +543,7 @@ export default function ActivityHistoryScreen() {
 
       {/* Loading overlay for session fetch */}
       {loadingSession && (
-        <View 
+        <View
           style={{
             position: 'absolute',
             top: 0,

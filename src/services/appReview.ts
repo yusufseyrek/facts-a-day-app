@@ -78,7 +78,7 @@ export async function openStoreForReview(): Promise<boolean> {
   try {
     const url = getStoreUrl();
     const canOpen = await Linking.canOpenURL(url);
-    
+
     if (canOpen) {
       await Linking.openURL(url);
       if (__DEV__) {
@@ -86,7 +86,7 @@ export async function openStoreForReview(): Promise<boolean> {
       }
       return true;
     }
-    
+
     if (__DEV__) {
       console.log('Cannot open store URL:', url);
     }

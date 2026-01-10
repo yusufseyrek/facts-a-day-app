@@ -55,59 +55,61 @@ async function ensureNotificationImagesDirExists(): Promise<void> {
 
 async function convertToJpegIfNeeded(localUri: string, factId: number): Promise<string> {
   const extension = localUri.split('.').pop()?.toLowerCase();
-  
+
   if (extension === 'jpg' || extension === 'jpeg' || extension === 'png') {
     return localUri;
   }
-  
+
   try {
     const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
-    
+
     const existingJpeg = await FileSystem.getInfoAsync(jpegUri);
     if (existingJpeg.exists) {
       return jpegUri;
     }
-    
-    const result = await ImageManipulator.manipulateAsync(
-      localUri,
-      [],
-      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
-    );
-    
+
+    const result = await ImageManipulator.manipulateAsync(localUri, [], {
+      compress: 0.8,
+      format: ImageManipulator.SaveFormat.JPEG,
+    });
+
     await FileSystem.moveAsync({
       from: result.uri,
       to: jpegUri,
     });
-    
+
     return jpegUri;
   } catch {
     return localUri;
   }
 }
 
-async function downloadImageForNotification(imageUrl: string, factId: number): Promise<string | null> {
+async function downloadImageForNotification(
+  imageUrl: string,
+  factId: number
+): Promise<string | null> {
   try {
     await ensureNotificationImagesDirExists();
-    
+
     const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
     const jpegInfo = await FileSystem.getInfoAsync(jpegUri);
     if (jpegInfo.exists) {
       return jpegUri;
     }
-    
+
     const downloadedUri = await downloadImageWithAppCheck(imageUrl, factId);
-    
+
     if (!downloadedUri) {
       return null;
     }
-    
+
     const urlPath = imageUrl.split('?')[0];
     const extension = urlPath.split('.').pop()?.toLowerCase() || 'jpg';
     const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
     const fileExtension = validExtensions.includes(extension) ? extension : 'jpg';
-    
+
     const notificationUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.${fileExtension}`;
-    
+
     if (downloadedUri !== notificationUri) {
       try {
         await FileSystem.copyAsync({
@@ -119,7 +121,7 @@ async function downloadImageForNotification(imageUrl: string, factId: number): P
         return finalUri;
       }
     }
-    
+
     const finalUri = await convertToJpegIfNeeded(notificationUri, factId);
     return finalUri;
   } catch {
@@ -148,19 +150,19 @@ export async function getLocalNotificationImagePath(factId: number): Promise<str
     if (jpegInfo.exists) {
       return jpegUri;
     }
-    
+
     const webpUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.webp`;
     const webpInfo = await FileSystem.getInfoAsync(webpUri);
     if (webpInfo.exists) {
       return webpUri;
     }
-    
+
     const pngUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.png`;
     const pngInfo = await FileSystem.getInfoAsync(pngUri);
     if (pngInfo.exists) {
       return pngUri;
     }
-    
+
     return null;
   } catch {
     return null;
@@ -170,11 +172,11 @@ export async function getLocalNotificationImagePath(factId: number): Promise<str
 export async function deleteNotificationImage(factId: number): Promise<void> {
   try {
     const extensions = ['jpg', 'jpeg', 'webp', 'png', 'gif'];
-    
+
     for (const ext of extensions) {
       const uri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.${ext}`;
       const fileInfo = await FileSystem.getInfoAsync(uri);
-      
+
       if (fileInfo.exists) {
         await FileSystem.deleteAsync(uri, { idempotent: true });
       }
@@ -187,26 +189,26 @@ export async function deleteNotificationImage(factId: number): Promise<void> {
 export async function cleanupOldNotificationImages(maxAgeDays: number = 7): Promise<number> {
   try {
     await ensureNotificationImagesDirExists();
-    
+
     const dirInfo = await FileSystem.getInfoAsync(NOTIFICATION_IMAGES_DIR);
     if (!dirInfo.exists) {
       return 0;
     }
-    
+
     const files = await FileSystem.readDirectoryAsync(NOTIFICATION_IMAGES_DIR);
     const now = Date.now();
     const maxAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;
     let deletedCount = 0;
-    
+
     for (const file of files) {
       const filePath = `${NOTIFICATION_IMAGES_DIR}${file}`;
-      
+
       try {
         const fileInfo = await FileSystem.getInfoAsync(filePath);
-        
+
         if (fileInfo.exists && fileInfo.modificationTime) {
           const fileAgeMs = now - fileInfo.modificationTime * 1000;
-          
+
           if (fileAgeMs > maxAgeMs) {
             await FileSystem.deleteAsync(filePath, { idempotent: true });
             deletedCount++;
@@ -216,7 +218,7 @@ export async function cleanupOldNotificationImages(maxAgeDays: number = 7): Prom
         // Ignore individual file errors
       }
     }
-    
+
     return deletedCount;
   } catch {
     return 0;
@@ -231,7 +233,6 @@ function shouldPreloadImage(scheduledDate: Date): boolean {
   return daysUntilNotification <= NOTIFICATION_SETTINGS.DAYS_TO_PRELOAD_IMAGES;
 }
 
-
 /**
  * Process items in parallel with concurrency limit
  */
@@ -241,13 +242,13 @@ async function processInBatches<T, R>(
   concurrency: number
 ): Promise<R[]> {
   const results: R[] = [];
-  
+
   for (let i = 0; i < items.length; i += concurrency) {
     const batch = items.slice(i, i + concurrency);
     const batchResults = await Promise.all(batch.map(processor));
     results.push(...batchResults);
   }
-  
+
   return results;
 }
 
@@ -258,19 +259,19 @@ export async function preloadUpcomingNotificationImages(locale: SupportedLocale)
 
   try {
     const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-    
+
     if (scheduledNotifications.length === 0) {
       return 0;
     }
 
     const now = new Date();
-    
+
     // Collect all facts that need image preloading
     const factsToPreload: Array<{ factId: number; imageUrl: string }> = [];
-    
+
     for (const notification of scheduledNotifications) {
       const trigger = notification.trigger;
-      
+
       let triggerDate: Date | null = null;
       if (trigger && 'date' in trigger && trigger.date) {
         triggerDate = trigger.date instanceof Date ? trigger.date : new Date(trigger.date);
@@ -279,17 +280,17 @@ export async function preloadUpcomingNotificationImages(locale: SupportedLocale)
       if (!triggerDate) continue;
 
       const daysUntil = Math.ceil((triggerDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      
+
       if (daysUntil <= NOTIFICATION_SETTINGS.DAYS_TO_PRELOAD_IMAGES && daysUntil > 0) {
         const factId = notification.content.data?.factId as number | undefined;
-        
+
         if (factId) {
           const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
           const jpegInfo = await FileSystem.getInfoAsync(jpegUri);
-          
+
           if (!jpegInfo.exists) {
             const fact = await database.getFactById(factId);
-            
+
             if (fact?.image_url) {
               factsToPreload.push({ factId: fact.id, imageUrl: fact.image_url });
             }
@@ -339,20 +340,20 @@ export async function buildNotificationContent(
   };
 
   const shouldDownloadImage = scheduledDate ? shouldPreloadImage(scheduledDate) : true;
-  
+
   if (fact.image_url && Platform.OS === 'ios' && shouldDownloadImage) {
     const localImageUri = await downloadImageForNotification(fact.image_url, fact.id);
-    
+
     if (localImageUri) {
       const typeHint = getTypeHintForExtension(localImageUri);
-      
+
       const attachment = {
         identifier: `fact-${fact.id}`,
         uri: localImageUri,
         url: localImageUri,
         typeHint: typeHint,
       };
-      
+
       content.attachments = [attachment] as any;
     }
   }
@@ -417,10 +418,10 @@ function generateTimeSlots(
   const sortedTimes = sortTimesByTimeOfDay(preferredTimes);
   const slots: TimeSlot[] = [];
   const now = new Date();
-  
+
   let dayOffset = 0;
   let startTimeIndex = 0;
-  
+
   // If we have a startAfterDate, calculate the appropriate day offset
   if (startAfterDate) {
     const startDate = new Date(startAfterDate);
@@ -428,14 +429,16 @@ function generateTimeSlots(
     todayMidnight.setHours(0, 0, 0, 0);
     const startMidnight = new Date(startDate);
     startMidnight.setHours(0, 0, 0, 0);
-    
-    dayOffset = Math.round((startMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
-    
+
+    dayOffset = Math.round(
+      (startMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
     // Find the next time slot after the start date's time
     const startHour = startDate.getHours();
     const startMinute = startDate.getMinutes();
     const startTotalMinutes = startHour * 60 + startMinute;
-    
+
     let foundNextSlot = false;
     for (let i = 0; i < sortedTimes.length; i++) {
       const time = sortedTimes[i];
@@ -446,7 +449,7 @@ function generateTimeSlots(
         break;
       }
     }
-    
+
     // If no slot found on the same day, move to next day
     if (!foundNextSlot) {
       dayOffset++;
@@ -459,30 +462,30 @@ function generateTimeSlots(
       const time = sortedTimes[i];
       const timeToday = new Date(now);
       timeToday.setHours(time.getHours(), time.getMinutes(), 0, 0);
-      
+
       if (timeToday > now) {
         startTimeIndex = i;
         hasValidSlotToday = true;
         break;
       }
     }
-    
+
     if (!hasValidSlotToday) {
       dayOffset = 1;
       startTimeIndex = 0;
     }
   }
-  
+
   // Generate slots
   let timeIndex = startTimeIndex;
   let currentDayOffset = dayOffset;
-  
+
   while (slots.length < count) {
     const time = sortedTimes[timeIndex];
     const slotDate = new Date(now);
     slotDate.setDate(slotDate.getDate() + currentDayOffset);
     slotDate.setHours(time.getHours(), time.getMinutes(), 0, 0);
-    
+
     // Skip if slot is in the past
     if (slotDate > now) {
       slots.push({
@@ -491,14 +494,14 @@ function generateTimeSlots(
         minute: time.getMinutes(),
       });
     }
-    
+
     timeIndex++;
     if (timeIndex >= sortedTimes.length) {
       timeIndex = 0;
       currentDayOffset++;
     }
   }
-  
+
   return slots;
 }
 
@@ -512,60 +515,63 @@ function isScheduleValid(
   if (dbScheduled.length === 0) {
     return true; // Empty schedule is valid (will be topped up)
   }
-  
+
   const expectedPerDay = preferredTimes.length;
   const sortedTimes = sortTimesByTimeOfDay(preferredTimes);
-  
+
   // Create a set of valid time strings (HH:MM)
   const validTimeSlots = new Set(
-    sortedTimes.map(t => `${t.getHours().toString().padStart(2, '0')}:${t.getMinutes().toString().padStart(2, '0')}`)
+    sortedTimes.map(
+      (t) =>
+        `${t.getHours().toString().padStart(2, '0')}:${t.getMinutes().toString().padStart(2, '0')}`
+    )
   );
-  
+
   // Group scheduled facts by local date
   const byDay = new Map<string, Array<{ scheduled_date: string }>>();
-  
+
   for (const fact of dbScheduled) {
     const date = new Date(fact.scheduled_date);
     const dateKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-    
+
     if (!byDay.has(dateKey)) {
       byDay.set(dateKey, []);
     }
     byDay.get(dateKey)!.push(fact);
   }
-  
+
   // Get sorted date keys
   const sortedDays = Array.from(byDay.keys()).sort();
-  
+
   for (let i = 0; i < sortedDays.length; i++) {
     const dayKey = sortedDays[i];
     const facts = byDay.get(dayKey)!;
     const isFirstDay = i === 0;
     const isLastDay = i === sortedDays.length - 1;
-    
+
     // Check count per day
     if (facts.length > expectedPerDay) {
       return false; // Too many notifications (even on first/last day)
     }
-    
+
     // First day can have fewer (some time slots may have passed)
     // Last day can have fewer (may not fill all slots due to 64 limit)
     // Middle days must have exactly expectedPerDay
     if (facts.length < expectedPerDay && !isFirstDay && !isLastDay) {
       return false; // Too few notifications (not allowed for middle days)
     }
-    
+
     // Check if time slots match preferred times
     for (const fact of facts) {
       const date = new Date(fact.scheduled_date);
       const timeKey = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-      
+
       if (!validTimeSlots.has(timeKey)) {
         return false; // Time slot doesn't match user's preferences
       }
     }
   }
-  
+
   return true;
 }
 
@@ -606,25 +612,28 @@ export async function clearNotificationSchedule(
  * - Schedules missing DB facts in OS
  * - Re-schedules if time mismatch detected
  */
-async function syncOsWithDb(locale: SupportedLocale): Promise<{ synced: number; cancelled: number }> {
+async function syncOsWithDb(
+  locale: SupportedLocale
+): Promise<{ synced: number; cancelled: number }> {
   const dbFacts = await database.getFutureScheduledFactsWithNotificationIds(locale);
   const osNotifications = await Notifications.getAllScheduledNotificationsAsync();
-  
+
   // Build maps for efficient lookup
   const osMap = new Map<string, { identifier: string; triggerDate: Date | null }>();
   for (const notif of osNotifications) {
     let triggerDate: Date | null = null;
     if (notif.trigger && 'date' in notif.trigger && notif.trigger.date) {
-      triggerDate = notif.trigger.date instanceof Date ? notif.trigger.date : new Date(notif.trigger.date);
+      triggerDate =
+        notif.trigger.date instanceof Date ? notif.trigger.date : new Date(notif.trigger.date);
     }
     osMap.set(notif.identifier, { identifier: notif.identifier, triggerDate });
   }
-  
-  const dbNotificationIds = new Set(dbFacts.map(f => f.notification_id).filter(Boolean));
-  
+
+  const dbNotificationIds = new Set(dbFacts.map((f) => f.notification_id).filter(Boolean));
+
   let cancelledCount = 0;
   let syncedCount = 0;
-  
+
   // Cancel OS notifications that are not in DB
   for (const [osId] of osMap) {
     if (!dbNotificationIds.has(osId)) {
@@ -632,23 +641,23 @@ async function syncOsWithDb(locale: SupportedLocale): Promise<{ synced: number; 
       cancelledCount++;
     }
   }
-  
+
   // Collect facts that need scheduling
   interface FactToSchedule {
-    dbFact: typeof dbFacts[0];
+    dbFact: (typeof dbFacts)[0];
     fact: database.FactWithRelations;
     dbDate: Date;
   }
-  
+
   const factsToSchedule: FactToSchedule[] = [];
-  
+
   for (const dbFact of dbFacts) {
     const osNotif = dbFact.notification_id ? osMap.get(dbFact.notification_id) : null;
     const dbDate = new Date(dbFact.scheduled_date);
-    
+
     // Check if we need to (re-)schedule
     let needsSchedule = false;
-    
+
     if (!osNotif) {
       // Not in OS - needs scheduling
       needsSchedule = true;
@@ -661,7 +670,7 @@ async function syncOsWithDb(locale: SupportedLocale): Promise<{ synced: number; 
         needsSchedule = true;
       }
     }
-    
+
     if (needsSchedule) {
       const fact = await database.getFactById(dbFact.id);
       if (fact) {
@@ -669,17 +678,17 @@ async function syncOsWithDb(locale: SupportedLocale): Promise<{ synced: number; 
       }
     }
   }
-  
+
   if (factsToSchedule.length === 0) {
     return { synced: 0, cancelled: cancelledCount };
   }
-  
+
   // Pre-download images concurrently for iOS (only for facts within preload window)
   if (Platform.OS === 'ios') {
     const factsNeedingImages = factsToSchedule.filter(
       ({ fact, dbDate }) => fact.image_url && shouldPreloadImage(dbDate)
     );
-    
+
     if (factsNeedingImages.length > 0) {
       await processInBatches(
         factsNeedingImages,
@@ -692,13 +701,13 @@ async function syncOsWithDb(locale: SupportedLocale): Promise<{ synced: number; 
       );
     }
   }
-  
+
   // Now schedule notifications (images are already downloaded)
   for (const { dbFact, fact, dbDate } of factsToSchedule) {
     try {
       // Build notification content (will use cached images)
       const content = await buildNotificationContent(fact, locale, dbDate);
-      
+
       // Schedule in OS
       const newNotificationId = await Notifications.scheduleNotificationAsync({
         content,
@@ -707,7 +716,7 @@ async function syncOsWithDb(locale: SupportedLocale): Promise<{ synced: number; 
           date: dbDate,
         },
       });
-      
+
       // Update DB with new notification_id
       await database.updateNotificationId(dbFact.id, newNotificationId);
       syncedCount++;
@@ -715,7 +724,7 @@ async function syncOsWithDb(locale: SupportedLocale): Promise<{ synced: number; 
       // Skip this fact if scheduling fails
     }
   }
-  
+
   return { synced: syncedCount, cancelled: cancelledCount };
 }
 
@@ -733,20 +742,20 @@ async function topUpFromDb(
 ): Promise<number> {
   const needed = NOTIFICATION_SETTINGS.MAX_SCHEDULED - existingCount;
   if (needed <= 0) return 0;
-  
+
   // Get the latest scheduled date to continue from
   const latestScheduledDateStr = await database.getLatestScheduledDate(locale);
   const startAfterDate = latestScheduledDateStr ? new Date(latestScheduledDateStr) : undefined;
-  
+
   // Get new facts to schedule
   const facts = await database.getRandomUnscheduledFacts(needed, locale);
   if (facts.length === 0) return 0;
-  
+
   // Generate time slots for new facts
   const slots = generateTimeSlots(preferredTimes, facts.length, startAfterDate);
-  
+
   let scheduledCount = 0;
-  
+
   // Assign facts to slots in DB (OS sync happens after)
   for (let i = 0; i < Math.min(facts.length, slots.length); i++) {
     try {
@@ -760,7 +769,7 @@ async function topUpFromDb(
       // Skip on error
     }
   }
-  
+
   return scheduledCount;
 }
 
@@ -770,7 +779,7 @@ async function topUpFromDb(
 
 /**
  * Sync notification schedule - called on app open, foreground, notification received
- * 
+ *
  * Flow:
  * 1. Mark delivered facts as shown (preserve for feed)
  * 2. Check permissions - if not granted, clear and return
@@ -780,16 +789,14 @@ async function topUpFromDb(
  * 6. Top up if count < 64
  * 7. Sync OS to match DB
  */
-export async function syncNotificationSchedule(
-  locale: SupportedLocale
-): Promise<SyncResult> {
+export async function syncNotificationSchedule(locale: SupportedLocale): Promise<SyncResult> {
   try {
     // Step 1: Always mark delivered facts as shown first
     await database.markDeliveredFactsAsShown(locale);
 
     // Step 2: Check permissions
     const { status } = await Notifications.getPermissionsAsync();
-    
+
     if (status !== 'granted') {
       // Cancel all from OS and clear DB
       await clearNotificationSchedule(locale, { completely: true });
@@ -799,12 +806,12 @@ export async function syncNotificationSchedule(
     // Step 3: Get user's preferred times
     const onboardingService = await import('./onboarding');
     const notificationTimeStrings = await onboardingService.getNotificationTimes();
-    
+
     if (!notificationTimeStrings || notificationTimeStrings.length === 0) {
       return { success: true, count: 0, skipped: true };
     }
-    
-    const preferredTimes = notificationTimeStrings.map(t => new Date(t));
+
+    const preferredTimes = notificationTimeStrings.map((t) => new Date(t));
 
     // Step 4: Get DB's future scheduled facts
     const dbScheduled = await database.getFutureScheduledFactsWithNotificationIds(locale);
@@ -856,7 +863,7 @@ export async function syncNotificationSchedule(
 
 /**
  * Schedule notifications - called on onboarding or when user changes notification times
- * 
+ *
  * Flow:
  * 1. Clear future schedules from both DB and OS
  * 2. Get unscheduled facts (up to 64)
@@ -891,8 +898,11 @@ export async function scheduleNotifications(
     await clearNotificationSchedule(locale, { completely: false });
 
     // Step 2: Get unscheduled facts (up to 64)
-    const facts = await database.getRandomUnscheduledFacts(NOTIFICATION_SETTINGS.MAX_SCHEDULED, locale);
-    
+    const facts = await database.getRandomUnscheduledFacts(
+      NOTIFICATION_SETTINGS.MAX_SCHEDULED,
+      locale
+    );
+
     if (facts.length === 0) {
       return {
         success: false,
@@ -926,7 +936,7 @@ export async function scheduleNotifications(
     await preloadUpcomingNotificationImages(locale);
 
     const finalCount = await getScheduledNotificationsCount();
-    
+
     if (__DEV__) {
       console.log(`🔔 Scheduled ${finalCount} notifications`);
     }
@@ -988,9 +998,7 @@ export async function rescheduleNotificationsMultiple(
  * Check and top up notifications
  * @deprecated Use syncNotificationSchedule instead
  */
-export async function checkAndTopUpNotifications(
-  locale: SupportedLocale
-): Promise<SyncResult> {
+export async function checkAndTopUpNotifications(locale: SupportedLocale): Promise<SyncResult> {
   return syncNotificationSchedule(locale);
 }
 
@@ -1024,10 +1032,7 @@ export async function clearAllScheduledNotifications(
   clearPastScheduledDates: boolean = false,
   locale?: SupportedLocale
 ): Promise<void> {
-  await clearNotificationSchedule(
-    locale || 'en',
-    { completely: clearPastScheduledDates }
-  );
+  await clearNotificationSchedule(locale || 'en', { completely: clearPastScheduledDates });
 }
 
 // ============================================================================
