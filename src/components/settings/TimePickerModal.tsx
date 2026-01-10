@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo,useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -13,7 +13,7 @@ import {
 import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { AlertTriangle,Plus, Trash2, X } from '@tamagui/lucide-icons';
+import { AlertTriangle, Plus, Trash2, X } from '@tamagui/lucide-icons';
 
 import { useTranslation } from '../../i18n/useTranslation';
 import { trackNotificationTimeChange, updateNotificationProperty } from '../../services/analytics';
@@ -23,7 +23,7 @@ import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { Button } from '../Button';
 import { SuccessToast } from '../SuccessToast';
-import { FONT_FAMILIES,Text } from '../Typography';
+import { FONT_FAMILIES, Text } from '../Typography';
 
 const ANIMATION_DURATION = 150;
 

@@ -90,3 +90,11 @@ export const APP_REVIEW = {
  */
 export const APP_STORE_ID = '6755321394';
 export const PLAY_STORE_ID = 'dev.seyrek.factsaday';
+
+/**
+ * API settings for fetching data
+ */
+export const API_SETTINGS = {
+  /** Batch size for fetching facts from the server */
+  FACTS_BATCH_SIZE: 1000,
+} as const;

@@ -4,15 +4,15 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { XStack,YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
 import { hexColors } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
-import { FONT_FAMILIES,Text } from '../Typography';
+import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { TranslationKeys } from '../../i18n/translations';
-import type { CategoryWithProgress,TriviaStats } from '../../services/trivia';
+import type { CategoryWithProgress, TriviaStats } from '../../services/trivia';
 
 interface TriviaStatsHeroProps {
   stats: TriviaStats | null;

@@ -1,13 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useRef,useState } from 'react';
-import { ActivityIndicator,RefreshControl } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, RefreshControl } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
-import { Lightbulb } from '@tamagui/lucide-icons';
+import { Dices, Lightbulb } from '@tamagui/lucide-icons';
+import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
-import { useFocusEffect,useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { YStack } from 'tamagui';
+import { View, YStack } from 'tamagui';
 
 import {
   ContentContainer,
@@ -20,10 +21,10 @@ import {
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT } from '../../src/config/app';
-import { FACT_FLASH_LIST_SETTINGS,FLASH_LIST_ITEM_TYPES } from '../../src/config/factListSettings';
+import { FACT_FLASH_LIST_SETTINGS, FLASH_LIST_ITEM_TYPES } from '../../src/config/factListSettings';
 import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { Screens,trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
+import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
 import { checkAndRequestReview } from '../../src/services/appReview';
 import {
   forceRefreshContent,
@@ -113,7 +114,7 @@ function HomeScreen() {
   );
 
   // Scroll to top handler
-   
+
   const listRef = useRef<any>(null);
   const scrollToTop = useCallback(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -232,6 +233,14 @@ function HomeScreen() {
     await loadFacts(false);
   }, [loadFacts]);
 
+  const handleRandomFact = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const randomFact = await database.getRandomFact(locale);
+    if (randomFact) {
+      router.push(`/fact/${randomFact.id}?source=random`);
+    }
+  }, [locale, router]);
+
   // FlashList key extractor
   const keyExtractor = useCallback((item: FeedListItem, index: number) => {
     if (item.type === FLASH_LIST_ITEM_TYPES.SECTION_HEADER) {
@@ -284,6 +293,17 @@ function HomeScreen() {
         <ScreenHeader
           icon={<Lightbulb size={iconSizes.lg} color={iconColor} />}
           title={t('factsFeed')}
+          rightElement={
+            <View
+              role="button"
+              aria-label={t('showRandomFact')}
+              padding={spacing.sm}
+              onPress={handleRandomFact}
+              pressStyle={{ opacity: 0.6, scale: 0.9 }}
+            >
+              <Dices size={iconSizes.md} color={iconColor} />
+            </View>
+          }
         />
       </Animated.View>
 

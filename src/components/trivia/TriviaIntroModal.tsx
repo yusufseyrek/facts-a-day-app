@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Platform,Pressable } from 'react-native';
+import { Modal, Platform, Pressable } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import {
@@ -14,14 +14,14 @@ import {
   Zap,
 } from '@tamagui/lucide-icons';
 import { BlurView } from 'expo-blur';
-import { XStack,YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../../i18n';
 import { getEstimatedTimeMinutes } from '../../services/trivia';
 import { hexColors, useTheme } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
-import { FONT_FAMILIES,Text } from '../Typography';
+import { FONT_FAMILIES, Text } from '../Typography';
 
 export type TriviaType = 'daily' | 'mixed' | 'category';
 

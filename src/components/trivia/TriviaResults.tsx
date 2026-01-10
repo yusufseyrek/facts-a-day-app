@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView,View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import Animated, {
   FadeInDown,
   FadeInUp,
@@ -22,19 +22,18 @@ import {
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack,YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
 import { indexToAnswer } from '../../services/trivia';
 import { hexColors } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
-import { FONT_FAMILIES,Text } from '../Typography';
+import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { QuestionWithFact, StoredAnswer } from '../../services/database';
 
 const CARD_GAP = 12;
 
- 
 type TranslationFunction = (key: any, params?: any) => string;
 
 export interface TriviaResultsProps {

@@ -1,5 +1,5 @@
-import { useCallback,useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus,View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, AppStateStatus, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import {
@@ -12,17 +12,17 @@ import {
   useFonts,
 } from '@expo-google-fonts/montserrat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DarkTheme, DefaultTheme,ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import * as Localization from 'expo-localization';
 import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { NOTIFICATION_SETTINGS,STORAGE_KEYS, TIMING } from '../src/config/app';
-import { enableCrashlyticsConsoleLogging,initializeFirebase } from '../src/config/firebase';
-import { OnboardingProvider, ScrollToTopProvider,useOnboarding } from '../src/contexts';
-import { getLocaleFromCode,I18nProvider } from '../src/i18n';
+import { NOTIFICATION_SETTINGS, STORAGE_KEYS, TIMING } from '../src/config/app';
+import { enableCrashlyticsConsoleLogging, initializeFirebase } from '../src/config/firebase';
+import { OnboardingProvider, ScrollToTopProvider, useOnboarding } from '../src/contexts';
+import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
 import { initAnalytics } from '../src/services/analytics';
 import * as contentRefresh from '../src/services/contentRefresh';
@@ -30,7 +30,7 @@ import * as database from '../src/services/database';
 import * as notificationService from '../src/services/notifications';
 import * as onboardingService from '../src/services/onboarding';
 import * as updates from '../src/services/updates';
-import { AppThemeProvider, hexColors,useTheme } from '../src/theme';
+import { AppThemeProvider, hexColors, useTheme } from '../src/theme';
 
 // Prevent "multiple linking listeners" error during Fast Refresh
 // This tells expo-router the initial route, helping it manage navigation state properly
@@ -175,7 +175,7 @@ function AppContent() {
           contentStyle: { backgroundColor },
         }}
       />
-      <Stack.Screen name="trivia" />
+      <Stack.Screen name="trivia" options={{ gestureEnabled: false }} />
     </Stack>
   );
 }

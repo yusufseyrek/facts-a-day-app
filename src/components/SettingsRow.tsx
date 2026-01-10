@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AlertCircle,ChevronRight, ExternalLink } from '@tamagui/lucide-icons';
+import { AlertCircle, ChevronRight, ExternalLink } from '@tamagui/lucide-icons';
 
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';

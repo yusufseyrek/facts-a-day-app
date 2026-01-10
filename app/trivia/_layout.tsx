@@ -12,7 +12,13 @@ export default function TriviaLayout() {
     colorScheme === 'dark' ? hexColors.dark.background : hexColors.light.background;
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor } }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: false,
+        contentStyle: { backgroundColor },
+      }}
+    >
       <Stack.Screen name="index" />
       <Stack.Screen name="performance" />
       <Stack.Screen
@@ -20,6 +26,8 @@ export default function TriviaLayout() {
         options={{
           presentation: 'fullScreenModal',
           animation: 'slide_from_bottom',
+          gestureEnabled: false,
+          fullScreenGestureEnabled: false,
           contentStyle: { backgroundColor },
         }}
       />

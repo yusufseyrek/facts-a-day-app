@@ -1,15 +1,15 @@
-import React, { useEffect, useMemo,useRef } from 'react';
-import { Animated, Easing,Pressable } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, Easing, Pressable } from 'react-native';
 
 import { Check } from '@tamagui/lucide-icons';
 import { YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n/useTranslation';
-import { getCategoryNeonColor,hexColors, useTheme } from '../theme';
+import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { getContrastColor } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
 
-import { FONT_FAMILIES,Text } from './Typography';
+import { FONT_FAMILIES, Text } from './Typography';
 
 export interface CategoryCardProps {
   icon: React.ReactNode;

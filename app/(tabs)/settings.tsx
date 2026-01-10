@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef,useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppState, Linking, Platform, SectionList } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
@@ -22,7 +22,7 @@ import {
 } from '@tamagui/lucide-icons';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
-import { useFocusEffect,useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Updates from 'expo-updates';
 import { YStack } from 'tamagui';
@@ -42,7 +42,7 @@ import { LAYOUT } from '../../src/config/app';
 import { useOnboarding, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { TranslationKeys } from '../../src/i18n/translations';
-import { Screens,trackScreenView } from '../../src/services/analytics';
+import { Screens, trackScreenView } from '../../src/services/analytics';
 import { requestReview } from '../../src/services/appReview';
 import * as database from '../../src/services/database';
 import { clearAllCachedImages, getCachedImagesSize } from '../../src/services/images';

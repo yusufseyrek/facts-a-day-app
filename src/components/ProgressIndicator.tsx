@@ -5,7 +5,7 @@ import { YStack } from 'tamagui';
 
 import { useResponsive } from '../utils';
 
-import { FONT_FAMILIES,Text } from './Typography';
+import { FONT_FAMILIES, Text } from './Typography';
 
 interface ProgressIndicatorProps {
   currentStep: number;

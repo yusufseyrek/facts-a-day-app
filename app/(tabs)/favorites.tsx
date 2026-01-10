@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef,useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, useWindowDimensions } from 'react-native';
 
 import { useFocusEffect } from '@react-navigation/native';
@@ -22,7 +22,7 @@ import {
 } from '../../src/config/factListSettings';
 import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { Screens,trackScreenView } from '../../src/services/analytics';
+import { Screens, trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';

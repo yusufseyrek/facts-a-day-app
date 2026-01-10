@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
-import { AdEventType, AdsConsent,InterstitialAd, TestIds } from 'react-native-google-mobile-ads';
+import { AdEventType, AdsConsent, InterstitialAd, TestIds } from 'react-native-google-mobile-ads';
 
 import Constants from 'expo-constants';
 

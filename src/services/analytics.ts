@@ -17,7 +17,7 @@ import {
   setCrashlyticsAttribute,
 } from '../config/firebase';
 
-import { getNotificationTimes,getSelectedCategories } from './onboarding';
+import { getNotificationTimes, getSelectedCategories } from './onboarding';
 
 const THEME_STORAGE_KEY = '@app_theme_mode';
 
@@ -39,6 +39,7 @@ export const initAnalytics = async (): Promise<void> => {
     const deviceModel = Device.modelName || 'unknown';
     const appVersion = Application.nativeApplicationVersion || 'unknown';
     const buildNumber = Application.nativeBuildVersion || 'unknown';
+    const platformBuildId = `${platform}_${appVersion}_${buildNumber}`;
     const locale = Localization.getLocales()[0]?.languageCode || 'unknown';
     const isDevice = Device.isDevice ? 'true' : 'false';
 
@@ -51,6 +52,7 @@ export const initAnalytics = async (): Promise<void> => {
     await setAnalyticsUserProperty('build_number', buildNumber);
     await setAnalyticsUserProperty('locale', locale);
     await setAnalyticsUserProperty('is_device', isDevice);
+    await setAnalyticsUserProperty('platform_build_id', platformBuildId);
 
     // Set device info as Crashlytics attributes (for crash report context)
     await setCrashlyticsAttribute('platform', platform);
@@ -61,6 +63,7 @@ export const initAnalytics = async (): Promise<void> => {
     await setCrashlyticsAttribute('build_number', buildNumber);
     await setCrashlyticsAttribute('locale', locale);
     await setCrashlyticsAttribute('is_device', isDevice);
+    await setCrashlyticsAttribute('platform_build_id', platformBuildId);
 
     // Get user settings
     const theme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
@@ -95,6 +98,7 @@ export const initAnalytics = async (): Promise<void> => {
         device_model: deviceModel,
         app_version: appVersion,
         build_number: buildNumber,
+        platform_build_id: platformBuildId,
         locale,
         is_device: isDevice,
         theme: themeValue,

@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useMemo,useRef, useState } from 'react';
-import { Dimensions,Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 
-import { Moon, Smartphone,Sun, X } from '@tamagui/lucide-icons';
+import { Moon, Smartphone, Sun, X } from '@tamagui/lucide-icons';
 
 import { useTranslation } from '../../i18n';
 import { trackThemeChange, updateThemeProperty } from '../../services/analytics';

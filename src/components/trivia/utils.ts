@@ -8,7 +8,6 @@ export interface TriviaModeBadge {
   color: string;
 }
 
- 
 type TranslationFunction = (
   key: TranslationKeys | any,
   options?: Record<string, string | number>

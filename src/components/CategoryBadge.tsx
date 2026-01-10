@@ -2,12 +2,12 @@ import React from 'react';
 
 import { XStack } from 'tamagui';
 
-import { translateCategory,useTranslation } from '../i18n';
+import { translateCategory, useTranslation } from '../i18n';
 import { getCategoryNeonColor, useTheme } from '../theme';
 import { getContrastColor } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
 
-import { FONT_FAMILIES,Text } from './Typography';
+import { FONT_FAMILIES, Text } from './Typography';
 
 import type { Category } from '../services/database';
 

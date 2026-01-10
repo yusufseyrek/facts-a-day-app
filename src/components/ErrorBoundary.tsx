@@ -1,5 +1,5 @@
 import React, { Component, ReactNode } from 'react';
-import { Pressable, StyleSheet, Text,View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { recordError } from '../config/firebase';
 import { hexColors } from '../theme';

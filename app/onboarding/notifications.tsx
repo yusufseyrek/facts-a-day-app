@@ -1,4 +1,4 @@
-import React, { useEffect, useRef,useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Easing, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,9 +7,9 @@ import { Bell } from '@tamagui/lucide-icons';
 import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack,YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
-import { Button, MultiTimePicker,ProgressIndicator, Text } from '../../src/components';
+import { Button, MultiTimePicker, ProgressIndicator, Text } from '../../src/components';
 import { LAYOUT } from '../../src/config/app';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';

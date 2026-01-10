@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo,useRef, useState } from 'react';
-import { ActivityIndicator, Pressable,RefreshControl, ScrollView, TextInput } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, TextInput } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { useFocusEffect } from '@react-navigation/native';
@@ -8,7 +8,7 @@ import { styled, View } from '@tamagui/core';
 import { Search, X } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack,YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
 import {
   ContentContainer,
@@ -38,7 +38,7 @@ import { getContrastColor } from '../../src/utils/colors';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
 
-import type { Category,FactWithRelations } from '../../src/services/database';
+import type { Category, FactWithRelations } from '../../src/services/database';
 
 // Device breakpoints
 
@@ -165,9 +165,9 @@ function DiscoverScreen() {
   const [isLoadingCategoryFacts, setIsLoadingCategoryFacts] = useState(false);
 
   // Scroll to top refs
-   
+
   const searchListRef = useRef<any>(null);
-   
+
   const categoryListRef = useRef<any>(null);
   const categoryGridRef = useRef<ScrollView>(null);
 

@@ -1,5 +1,5 @@
-import React, { memo, useCallback, useEffect, useRef,useState } from 'react';
-import { LayoutAnimation,Platform, StyleSheet, View } from 'react-native';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { LayoutAnimation, Platform, StyleSheet, View } from 'react-native';
 import {
   AdsConsent,
   BannerAd as GoogleBannerAd,
@@ -9,7 +9,7 @@ import {
 
 import Constants from 'expo-constants';
 
-import { AD_RETRY,ADS_ENABLED } from '../../config/ads';
+import { AD_RETRY, ADS_ENABLED } from '../../config/ads';
 import { getAdKeywords, subscribeToKeywords } from '../../services/adKeywords';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 

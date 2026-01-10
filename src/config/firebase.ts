@@ -500,4 +500,4 @@ export async function getAppCheckToken() {
 }
 
 // Export instances for direct access if needed
-export { analyticsInstance as analytics,crashlyticsInstance as crashlytics };
+export { analyticsInstance as analytics, crashlyticsInstance as crashlytics };

@@ -12,15 +12,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
-import { Calendar,ImagePlus, X } from '@tamagui/lucide-icons';
+import { Calendar, ImagePlus, X } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { XStack,YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n';
 import { addCategoryKeyword } from '../services/adKeywords';
 import { trackSourceLinkClick } from '../services/analytics';
-import { deleteNotificationImage,getLocalNotificationImagePath } from '../services/notifications';
+import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { openInAppBrowser } from '../utils/browser';
 import { useFactImage } from '../utils/useFactImage';
@@ -29,9 +29,9 @@ import { useResponsive } from '../utils/useResponsive';
 import { BannerAd } from './ads';
 import { CategoryBadge } from './CategoryBadge';
 import { FactActions } from './FactActions';
-import { FONT_FAMILIES,Text } from './Typography';
+import { FONT_FAMILIES, Text } from './Typography';
 
-import type { Category,FactWithRelations } from '../services/database';
+import type { Category, FactWithRelations } from '../services/database';
 
 interface FactModalProps {
   fact: FactWithRelations;

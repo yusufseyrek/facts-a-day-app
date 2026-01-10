@@ -2,12 +2,12 @@ import React from 'react';
 import { Pressable } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { Check, ChevronRight,Zap } from '@tamagui/lucide-icons';
-import { XStack,YStack } from 'tamagui';
+import { Check, ChevronRight, Zap } from '@tamagui/lucide-icons';
+import { XStack, YStack } from 'tamagui';
 
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
-import { FONT_FAMILIES,Text } from '../Typography';
+import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { TranslationKeys } from '../../i18n/translations';
 

@@ -11,7 +11,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { STORAGE_KEYS } from '../config/app';
-import { TIME_PER_QUESTION,TRIVIA_QUESTIONS } from '../config/trivia';
+import { TIME_PER_QUESTION, TRIVIA_QUESTIONS } from '../config/trivia';
 
 import * as database from './database';
 import * as onboardingService from './onboarding';
@@ -27,7 +27,7 @@ import type {
 } from './database';
 
 // Re-export types
-export type { StoredAnswer,TriviaSession, TriviaSessionWithCategory } from './database';
+export type { StoredAnswer, TriviaSession, TriviaSessionWithCategory } from './database';
 
 // Re-export constants for backwards compatibility
 export const DAILY_TRIVIA_QUESTIONS = TRIVIA_QUESTIONS.DAILY;

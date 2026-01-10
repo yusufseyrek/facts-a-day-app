@@ -1,4 +1,4 @@
-import React, { useCallback, useRef,useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated as RNAnimated,
@@ -7,18 +7,18 @@ import {
   ScrollView,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown,FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useFocusEffect } from '@react-navigation/native';
 import { ChevronLeft } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack,YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
-import { FONT_FAMILIES,Text } from '../../../src/components/Typography';
+import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
 import { useTranslation } from '../../../src/i18n';
-import { Screens,trackScreenView } from '../../../src/services/analytics';
+import { Screens, trackScreenView } from '../../../src/services/analytics';
 import * as triviaService from '../../../src/services/trivia';
 import { hexColors, useTheme } from '../../../src/theme';
 import { getLucideIcon } from '../../../src/utils/iconMapper';

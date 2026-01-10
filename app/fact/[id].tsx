@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Text } from '../../src/components';
 import { FactModal } from '../../src/components/FactModal';
 import { useTranslation } from '../../src/i18n';
-import { Screens,trackFactView, trackScreenView } from '../../src/services/analytics';
+import { Screens, trackFactView, trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
 import { hexColors } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';

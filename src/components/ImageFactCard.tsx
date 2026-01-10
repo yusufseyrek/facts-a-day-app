@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect,useMemo, useRef, useState } from 'react';
-import { Animated, Platform,Pressable, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';

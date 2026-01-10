@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo,useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,14 +12,14 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 
-import { Calendar, Check, Edit3, RefreshCw,Search, Trash2, X } from '@tamagui/lucide-icons';
+import { Calendar, Check, Edit3, RefreshCw, Search, Trash2, X } from '@tamagui/lucide-icons';
 
 import { useTranslation } from '../../i18n';
 import { triggerFeedRefresh } from '../../services/contentRefresh';
 import * as database from '../../services/database';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
-import { FONT_FAMILIES,Text } from '../Typography';
+import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { FactWithRelations } from '../../services/database';
 
@@ -42,7 +42,16 @@ interface FactItemProps {
 }
 
 const FactItem = React.memo(
-  ({ fact, isSelected, onToggle, onEditTitle, colors, iconSizes, spacing, radius }: FactItemProps) => {
+  ({
+    fact,
+    isSelected,
+    onToggle,
+    onEditTitle,
+    colors,
+    iconSizes,
+    spacing,
+    radius,
+  }: FactItemProps) => {
     const isInFeed =
       fact.shown_in_feed === 1 ||
       (fact.scheduled_date && new Date(fact.scheduled_date) <= new Date());
@@ -445,15 +454,7 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({ visibl
         radius={radius}
       />
     ),
-    [
-      selectedFactIds,
-      toggleFactSelection,
-      handleEditTitle,
-      colors,
-      iconSizes,
-      spacing,
-      radius,
-    ]
+    [selectedFactIds, toggleFactSelection, handleEditTitle, colors, iconSizes, spacing, radius]
   );
 
   const keyExtractor = useCallback((item: FactWithRelations) => String(item.id), []);

@@ -1,5 +1,5 @@
-import React, { useEffect,useState } from 'react';
-import { Alert, Platform,Pressable, Share, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Platform, Pressable, Share, StyleSheet } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -11,9 +11,9 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
-import { Flag,Heart, Share as ShareIcon } from '@tamagui/lucide-icons';
+import { Flag, Heart, Share as ShareIcon } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
-import { View,XStack, YStack } from 'tamagui';
+import { View, XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n';
 import {

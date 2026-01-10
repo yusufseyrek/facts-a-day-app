@@ -1,13 +1,13 @@
-import React, { useEffect, useRef,useState } from 'react';
-import { ActivityIndicator, Animated, Easing,ScrollView } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Easing, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { styled,View } from '@tamagui/core';
+import { styled, View } from '@tamagui/core';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { Button, CategoryCard,ProgressIndicator, Text } from '../../src/components';
+import { Button, CategoryCard, ProgressIndicator, Text } from '../../src/components';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {

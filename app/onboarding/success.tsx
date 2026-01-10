@@ -1,20 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, Easing, Platform,View } from 'react-native';
+import { ActivityIndicator, Animated, Dimensions, Easing, Platform, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
-import { CheckCircle, Gift,Sparkle, Star } from '@tamagui/lucide-icons';
+import { CheckCircle, Gift, Sparkle, Star } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack,YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
-import { Button, FONT_FAMILIES,Text } from '../../src/components';
+import { Button, FONT_FAMILIES, Text } from '../../src/components';
 import { ADS_ENABLED } from '../../src/config/ads';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { completeConsentFlow, initializeAdsSDK,isConsentRequired } from '../../src/services/ads';
-import { Screens,trackOnboardingComplete, trackScreenView } from '../../src/services/analytics';
+import { completeConsentFlow, initializeAdsSDK, isConsentRequired } from '../../src/services/ads';
+import { Screens, trackOnboardingComplete, trackScreenView } from '../../src/services/analytics';
 import { getNotificationTimes } from '../../src/services/onboarding';
 import { getNeonColors, hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';

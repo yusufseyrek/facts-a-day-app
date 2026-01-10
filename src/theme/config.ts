@@ -1,6 +1,6 @@
 import { createTamagui, createTokens } from '@tamagui/core';
 
-import { media,radius, spacing, typography } from '../utils/responsive';
+import { media, radius, spacing, typography } from '../utils/responsive';
 
 import { hexColors } from './hexColors';
 

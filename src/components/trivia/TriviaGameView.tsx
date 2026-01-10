@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, ScrollView,View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInUp,
@@ -9,18 +9,17 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BookOpen, ChevronLeft, ChevronRight, Lightbulb,Timer, X } from '@tamagui/lucide-icons';
+import { BookOpen, ChevronLeft, ChevronRight, Lightbulb, Timer, X } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
-import { XStack,YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
-import { FONT_FAMILIES,Text } from '../Typography';
+import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { QuestionWithFact } from '../../services/database';
 
- 
 type TranslationFunction = (key: any, params?: any) => string;
 
 export interface TriviaGameViewProps {

@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 
 import Constants from 'expo-constants';
 
+import { API_SETTINGS } from '../config/app';
 import { appCheckReady } from '../config/firebase';
 
 import { getCachedAppCheckToken } from './appCheckToken';
@@ -320,7 +321,7 @@ export async function getAllFacts(
   const allFacts: FactResponse[] = [];
   let offset = 0;
   let hasMore = true;
-  const batchSize = 500;
+  const batchSize = API_SETTINGS.FACTS_BATCH_SIZE;
 
   while (hasMore) {
     const response = await getFacts({

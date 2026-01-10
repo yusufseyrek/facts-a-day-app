@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
 
+import { API_SETTINGS } from '../config/app';
 import { getLocaleFromCode, SupportedLocale } from '../i18n';
 
 import * as api from './api';
@@ -415,7 +416,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
         language: currentLocale,
         categories: categoriesParam,
         since_updated: lastFactUpdatedAt,
-        limit: 500,
+        limit: API_SETTINGS.FACTS_BATCH_SIZE,
         include_questions: true,
       });
 

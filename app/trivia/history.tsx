@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo,useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated as RNAnimated,
@@ -6,7 +6,7 @@ import {
   RefreshControl,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown,FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useFocusEffect } from '@react-navigation/native';
@@ -14,10 +14,10 @@ import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { Calendar, ChevronLeft, ChevronRight, Shuffle } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack,YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
-import { getTriviaModeBadge,TriviaResults } from '../../src/components/trivia';
-import { FONT_FAMILIES,Text } from '../../src/components/Typography';
+import { getTriviaModeBadge, TriviaResults } from '../../src/components/trivia';
+import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView, trackTriviaResultsView } from '../../src/services/analytics';

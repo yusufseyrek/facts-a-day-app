@@ -1,10 +1,10 @@
-import React, { createContext, useCallback, useContext,useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet,View } from 'react-native';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomTabBar } from '@react-navigation/bottom-tabs';
 import { useFocusEffect } from '@react-navigation/native';
-import { Brain, Compass, Lightbulb, Settings,Star } from '@tamagui/lucide-icons';
+import { Brain, Compass, Lightbulb, Settings, Star } from '@tamagui/lucide-icons';
 import { Tabs, usePathname } from 'expo-router';
 
 import { BannerAd } from '../../src/components/ads';

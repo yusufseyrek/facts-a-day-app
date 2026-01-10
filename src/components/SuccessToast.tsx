@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo,useRef, useState } from 'react';
-import { Animated, Modal,StyleSheet, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Modal, StyleSheet, View } from 'react-native';
 
 import { CheckCircle } from '@tamagui/lucide-icons';
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef,useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated as RNAnimated,
@@ -23,10 +23,10 @@ import {
 } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack,YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
-import { getTriviaModeBadge,TriviaResults } from '../../src/components/trivia';
-import { FONT_FAMILIES,Text } from '../../src/components/Typography';
+import { getTriviaModeBadge, TriviaResults } from '../../src/components/trivia';
+import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { DISPLAY_LIMITS } from '../../src/config/app';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView, trackTriviaResultsView } from '../../src/services/analytics';
