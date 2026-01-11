@@ -41,7 +41,7 @@ import {
 import * as database from '../../src/services/database';
 import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/services/images';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
-import { consumeRandomFact } from '../../src/services/randomFact';
+import { consumeRandomFact, initializeRandomFact } from '../../src/services/randomFact';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -119,8 +119,10 @@ function HomeScreen() {
     getRefreshStatus()
   );
 
-  // Scroll to top handler
+  // Track if random fact has been initialized (only once per app session)
+  const randomFactInitializedRef = useRef(false);
 
+  // Scroll to top handler
   const listRef = useRef<any>(null);
   const scrollToTop = useCallback(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -210,6 +212,12 @@ function HomeScreen() {
         const facts = await database.getFactsGroupedByDate(locale);
         prefetchFactImagesWithLimit(facts);
         setSections(groupFactsByDate(facts, t, locale));
+
+        // Initialize random fact pre-fetch once facts are loaded (only once per session)
+        if (!randomFactInitializedRef.current && facts.length > 0) {
+          randomFactInitializedRef.current = true;
+          initializeRandomFact(locale);
+        }
       } catch {
         // Ignore fact loading errors
       } finally {

@@ -30,7 +30,6 @@ import * as database from '../src/services/database';
 import { ensureImagesDirExists, prefetchFactImage } from '../src/services/images';
 import * as notificationService from '../src/services/notifications';
 import * as onboardingService from '../src/services/onboarding';
-import { initializeRandomFact } from '../src/services/randomFact';
 import * as updates from '../src/services/updates';
 import { AppThemeProvider, hexColors, useTheme } from '../src/theme';
 
@@ -371,10 +370,6 @@ export default function RootLayout() {
             // Silently handle errors - notifications continue with existing schedule
             console.error('Notification sync failed:', error);
           });
-
-        // Pre-fetch a random fact and its image for instant display
-        // This runs asynchronously and doesn't block app startup
-        initializeRandomFact(getLocaleFromCode(deviceLocale));
 
         // Check for OTA updates in the background
         // This runs asynchronously and doesn't block app startup
