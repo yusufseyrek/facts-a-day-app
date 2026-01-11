@@ -309,8 +309,8 @@ export async function getFacts(params: GetFactsParams): Promise<FactsResponse> {
 }
 
 /**
- * Fetch ALL facts in batches
- * Automatically handles pagination
+ * Fetch ALL facts in batches with concurrent requests
+ * Fires 3 requests in parallel from the start for faster loading
  */
 export async function getAllFacts(
   language: string,
@@ -318,29 +318,70 @@ export async function getAllFacts(
   onProgress?: (downloaded: number, total: number) => void,
   includeQuestions?: boolean
 ): Promise<FactResponse[]> {
-  const allFacts: FactResponse[] = [];
-  let offset = 0;
-  let hasMore = true;
   const batchSize = API_SETTINGS.FACTS_BATCH_SIZE;
+  const concurrency = 3;
 
-  while (hasMore) {
-    const response = await getFacts({
-      language,
-      categories,
-      offset,
-      batch_size: batchSize,
-      include_questions: includeQuestions,
-    });
+  // Fire first batch of concurrent requests (offsets 0, batchSize, batchSize*2)
+  const initialOffsets = Array.from({ length: concurrency }, (_, i) => i * batchSize);
 
-    allFacts.push(...response.facts);
+  const initialResponses = await Promise.all(
+    initialOffsets.map((offset) =>
+      getFacts({
+        language,
+        categories,
+        offset,
+        batch_size: batchSize,
+        include_questions: includeQuestions,
+      })
+    )
+  );
 
-    // Report progress
-    if (onProgress) {
-      onProgress(allFacts.length, response.pagination.total);
+  // Get total from first response
+  const total = initialResponses[0].pagination.total;
+
+  // Collect facts from initial responses (only include responses that have data)
+  const allFacts: FactResponse[] = [];
+  for (const response of initialResponses) {
+    if (response.facts.length > 0) {
+      allFacts.push(...response.facts);
+    }
+  }
+
+  if (onProgress) {
+    onProgress(allFacts.length, total);
+  }
+
+  // Check if we need more batches beyond the initial 3
+  const lastInitialOffset = initialOffsets[initialOffsets.length - 1];
+  let nextOffset = lastInitialOffset + batchSize;
+
+  // Continue fetching remaining batches with concurrency
+  while (nextOffset < total) {
+    const batchOffsets: number[] = [];
+    for (let i = 0; i < concurrency && nextOffset < total; i++) {
+      batchOffsets.push(nextOffset);
+      nextOffset += batchSize;
     }
 
-    hasMore = response.pagination.has_more;
-    offset += batchSize;
+    const responses = await Promise.all(
+      batchOffsets.map((offset) =>
+        getFacts({
+          language,
+          categories,
+          offset,
+          batch_size: batchSize,
+          include_questions: includeQuestions,
+        })
+      )
+    );
+
+    for (const response of responses) {
+      allFacts.push(...response.facts);
+    }
+
+    if (onProgress) {
+      onProgress(allFacts.length, total);
+    }
   }
 
   return allFacts;

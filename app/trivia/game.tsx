@@ -21,7 +21,9 @@ import {
   trackScreenView,
   trackTriviaComplete,
   trackTriviaExit,
+  trackTriviaHintClick,
   trackTriviaStart,
+  trackTriviaViewFactClick,
 } from '../../src/services/analytics';
 import { prefetchFactImage } from '../../src/services/images';
 import * as triviaService from '../../src/services/trivia';
@@ -402,17 +404,36 @@ export default function TriviaGameScreen() {
   // Handle opening the fact detail
   const handleOpenFact = useCallback(() => {
     if (currentQuestion?.fact?.id) {
+      // Track view fact button click
+      const triviaMode: TriviaMode =
+        params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
+      trackTriviaViewFactClick({
+        mode: triviaMode,
+        factId: currentQuestion.fact.id,
+        questionIndex: gameState.currentQuestionIndex,
+        categorySlug: params.categorySlug,
+      });
+
       // Prefetch image before navigation for faster modal display
       if (currentQuestion.fact.image_url) {
         prefetchFactImage(currentQuestion.fact.image_url, currentQuestion.fact.id);
       }
       router.push(`/fact/${currentQuestion.fact.id}?source=trivia_hint`);
     }
-  }, [currentQuestion?.fact?.id, currentQuestion?.fact?.image_url, router]);
+  }, [currentQuestion?.fact?.id, currentQuestion?.fact?.image_url, router, params.type, params.categorySlug, gameState.currentQuestionIndex]);
 
   // Handle showing the explanation hint
   const handleShowExplanation = useCallback(async () => {
     if (!currentQuestion || !canUseExplanation) return;
+
+    // Track hint button click
+    const triviaMode: TriviaMode =
+      params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
+    trackTriviaHintClick({
+      mode: triviaMode,
+      questionIndex: gameState.currentQuestionIndex,
+      categorySlug: params.categorySlug,
+    });
 
     // Mark hint as used for today
     await triviaService.useExplanationHint();
@@ -420,7 +441,7 @@ export default function TriviaGameScreen() {
 
     // Show explanation for current question
     setExplanationShownForQuestion(currentQuestion.id);
-  }, [currentQuestion, canUseExplanation]);
+  }, [currentQuestion, canUseExplanation, params.type, params.categorySlug, gameState.currentQuestionIndex]);
 
   const finishQuiz = async () => {
     // Show interstitial ad before showing results

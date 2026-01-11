@@ -498,6 +498,38 @@ export const trackTriviaResultsView = (params: {
   });
 };
 
+/**
+ * Track when user clicks the hint button during trivia
+ */
+export const trackTriviaHintClick = (params: {
+  mode: TriviaMode;
+  questionIndex: number;
+  categorySlug?: string;
+}): void => {
+  logEvent('app_trivia_hint_click', {
+    mode: params.mode,
+    question_index: params.questionIndex,
+    category_slug: params.categorySlug || '',
+  });
+};
+
+/**
+ * Track when user clicks view fact button during trivia
+ */
+export const trackTriviaViewFactClick = (params: {
+  mode: TriviaMode;
+  factId: number;
+  questionIndex: number;
+  categorySlug?: string;
+}): void => {
+  logEvent('app_trivia_view_fact_click', {
+    mode: params.mode,
+    fact_id: params.factId,
+    question_index: params.questionIndex,
+    category_slug: params.categorySlug || '',
+  });
+};
+
 // ============================================================================
 // App Update Events
 // ============================================================================
