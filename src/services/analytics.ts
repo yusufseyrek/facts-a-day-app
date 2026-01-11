@@ -362,6 +362,13 @@ export const trackFeedRefresh = (source: FeedRefreshSource): void => {
   logEvent('app_feed_refresh', { source });
 };
 
+/**
+ * Track random fact button click
+ */
+export const trackRandomFactClick = (): void => {
+  logEvent('app_random_fact_click', {});
+};
+
 // ============================================================================
 // Settings Events
 // ============================================================================

@@ -24,7 +24,12 @@ import { LAYOUT } from '../../src/config/app';
 import { FLASH_LIST_ITEM_TYPES, FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
 import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
+import {
+  Screens,
+  trackFeedRefresh,
+  trackRandomFactClick,
+  trackScreenView,
+} from '../../src/services/analytics';
 import { checkAndRequestReview } from '../../src/services/appReview';
 import {
   forceRefreshContent,
@@ -34,8 +39,9 @@ import {
   RefreshStatus,
 } from '../../src/services/contentRefresh';
 import * as database from '../../src/services/database';
-import { prefetchFactImagesWithLimit } from '../../src/services/images';
+import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/services/images';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
+import { consumeRandomFact } from '../../src/services/randomFact';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -216,6 +222,10 @@ function HomeScreen() {
 
   const handleFactPress = useCallback(
     (fact: FactWithRelations) => {
+      // Prefetch image before navigation for faster modal display
+      if (fact.image_url) {
+        prefetchFactImage(fact.image_url, fact.id);
+      }
       checkAndRequestReview();
       router.push(`/fact/${fact.id}?source=feed`);
     },
@@ -235,7 +245,20 @@ function HomeScreen() {
 
   const handleRandomFact = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const randomFact = await database.getRandomFact(locale);
+    trackRandomFactClick();
+
+    // Try to get pre-fetched random fact (image already prefetched)
+    let randomFact = consumeRandomFact(locale);
+
+    // Fall back to database if no pre-fetched fact available
+    if (!randomFact) {
+      randomFact = await database.getRandomFact(locale);
+      // Prefetch image before navigation for faster modal display
+      if (randomFact?.image_url) {
+        prefetchFactImage(randomFact.image_url, randomFact.id);
+      }
+    }
+
     if (randomFact) {
       router.push(`/fact/${randomFact.id}?source=random`);
     }

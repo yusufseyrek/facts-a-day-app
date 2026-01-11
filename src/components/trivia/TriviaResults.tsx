@@ -24,6 +24,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
+import { prefetchFactImage } from '../../services/images';
 import { indexToAnswer } from '../../services/trivia';
 import { hexColors } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
@@ -415,6 +416,15 @@ export function TriviaResults({
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  // Prefetch all fact images when results screen mounts for seamless modal display
+  React.useEffect(() => {
+    questions.forEach((question) => {
+      if (question.fact?.id && question.fact?.image_url) {
+        prefetchFactImage(question.fact.image_url, question.fact.id);
+      }
+    });
+  }, [questions]);
   const { screenWidth, typography, config, iconSizes, spacing, radius, media } = useResponsive();
   const statsIconSize = media.topicCardSize * 0.55;
   const headerBtnSize = media.topicCardSize * 0.45;
@@ -504,6 +514,10 @@ export function TriviaResults({
   // Handle opening fact detail - use Expo Router like rest of app
   const handleAnswerCardPress = (question: QuestionWithFact) => {
     if (question.fact?.id) {
+      // Prefetch image before navigation for faster modal display
+      if (question.fact.image_url) {
+        prefetchFactImage(question.fact.image_url, question.fact.id);
+      }
       router.push(`/fact/${question.fact.id}?source=trivia_review`);
     }
   };

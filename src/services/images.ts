@@ -52,8 +52,9 @@ let imagesDirCheckPromise: Promise<void> | null = null;
 
 /**
  * Ensure the fact images directory exists (cached - only checks once per session)
+ * Call this at app startup to pre-warm the directory check.
  */
-async function ensureImagesDirExists(): Promise<void> {
+export async function ensureImagesDirExists(): Promise<void> {
   // Fast path: directory already confirmed to exist
   if (imagesDirExists) {
     return;
@@ -89,7 +90,7 @@ function getCacheFilename(imageUrl: string, factId?: number): string {
   const urlPath = imageUrl.split('?')[0]; // Remove query params
   const extension = urlPath.split('.').pop()?.toLowerCase() || 'jpg';
   const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-  const fileExtension = validExtensions.includes(extension) ? extension : 'jpg';
+  const fileExtension = validExtensions.includes(extension) ? extension : 'webp';
 
   if (factId !== undefined) {
     return `fact-${factId}.${fileExtension}`;
@@ -221,7 +222,7 @@ async function performFileExistenceCheck(factId: number): Promise<string | null>
     }
 
     // Fallback: check all extensions in parallel
-    const extensions = ['jpg', 'webp', 'jpeg', 'png', 'gif'];
+    const extensions = ['webp', 'jpg', 'jpeg', 'png', 'gif'];
     const checkResults = await Promise.all(
       extensions.map(async (ext) => {
         const localUri = `${FACT_IMAGES_DIR}fact-${factId}.${ext}`;

@@ -490,6 +490,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   }}
                   contentFit="cover"
                   cachePolicy="memory-disk"
+                  transition={150}
                 />
               </Animated.View>
               {/* Overlay for better text readability */}
@@ -603,6 +604,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 style={{
                   width: IMAGE_WIDTH,
                   height: isTablet ? IMAGE_HEIGHT : IMAGE_WIDTH,
+                  backgroundColor: theme === 'dark' ? '#1a1a2e' : '#e8e8f0',
                 }}
                 contentFit="cover"
                 cachePolicy="memory-disk"

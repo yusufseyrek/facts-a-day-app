@@ -30,7 +30,7 @@ import {
 } from '../../src/services/analytics';
 import { checkAndRequestReview } from '../../src/services/appReview';
 import * as database from '../../src/services/database';
-import { prefetchFactImagesWithLimit } from '../../src/services/images';
+import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/services/images';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
@@ -299,6 +299,10 @@ function DiscoverScreen() {
 
   const handleFactPress = useCallback(
     (fact: FactWithRelations) => {
+      // Prefetch image before navigation for faster modal display
+      if (fact.image_url) {
+        prefetchFactImage(fact.image_url, fact.id);
+      }
       checkAndRequestReview();
       router.push(`/fact/${fact.id}?source=discover`);
     },

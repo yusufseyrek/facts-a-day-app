@@ -23,6 +23,7 @@ import {
   trackTriviaExit,
   trackTriviaStart,
 } from '../../src/services/analytics';
+import { prefetchFactImage } from '../../src/services/images';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
@@ -178,6 +179,13 @@ export default function TriviaGameScreen() {
       progressWidth.value = withTiming(progress, { duration: 300 });
     }
   }, [gameState.currentQuestionIndex, gameState.questions.length]);
+
+  // Prefetch current question's fact image for seamless modal display
+  useEffect(() => {
+    if (currentQuestion?.fact?.id && currentQuestion?.fact?.image_url) {
+      prefetchFactImage(currentQuestion.fact.image_url, currentQuestion.fact.id);
+    }
+  }, [currentQuestion?.fact?.id, currentQuestion?.fact?.image_url]);
 
   const loadQuestions = async () => {
     try {
@@ -394,9 +402,13 @@ export default function TriviaGameScreen() {
   // Handle opening the fact detail
   const handleOpenFact = useCallback(() => {
     if (currentQuestion?.fact?.id) {
+      // Prefetch image before navigation for faster modal display
+      if (currentQuestion.fact.image_url) {
+        prefetchFactImage(currentQuestion.fact.image_url, currentQuestion.fact.id);
+      }
       router.push(`/fact/${currentQuestion.fact.id}?source=trivia_hint`);
     }
-  }, [currentQuestion?.fact?.id, router]);
+  }, [currentQuestion?.fact?.id, currentQuestion?.fact?.image_url, router]);
 
   // Handle showing the explanation hint
   const handleShowExplanation = useCallback(async () => {

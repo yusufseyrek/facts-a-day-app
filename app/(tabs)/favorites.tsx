@@ -22,7 +22,7 @@ import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
-import { prefetchFactImagesWithLimit } from '../../src/services/images';
+import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/services/images';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -112,6 +112,10 @@ export default function FavoritesScreen() {
 
   const handleFactPress = useCallback(
     (fact: FactWithRelations) => {
+      // Prefetch image before navigation for faster modal display
+      if (fact.image_url) {
+        prefetchFactImage(fact.image_url, fact.id);
+      }
       router.push(`/fact/${fact.id}?source=favorites`);
     },
     [router]

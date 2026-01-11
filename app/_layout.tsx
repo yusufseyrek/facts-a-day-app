@@ -27,8 +27,10 @@ import { initializeAdsForReturningUser } from '../src/services/ads';
 import { initAnalytics } from '../src/services/analytics';
 import * as contentRefresh from '../src/services/contentRefresh';
 import * as database from '../src/services/database';
+import { ensureImagesDirExists, prefetchFactImage } from '../src/services/images';
 import * as notificationService from '../src/services/notifications';
 import * as onboardingService from '../src/services/onboarding';
+import { initializeRandomFact } from '../src/services/randomFact';
 import * as updates from '../src/services/updates';
 import { AppThemeProvider, hexColors, useTheme } from '../src/theme';
 
@@ -140,8 +142,15 @@ function AppContent() {
       if (factId && isOnboardingComplete) {
         AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATION_TRACK).then(async (lastId) => {
           if (lastId !== notificationId) {
-            // New notification - mark as processed and navigate
+            // New notification - mark as processed
             await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_TRACK, notificationId);
+
+            // Prefetch image before navigation for faster modal display
+            const fact = await database.getFactById(Number(factId));
+            if (fact?.image_url) {
+              prefetchFactImage(fact.image_url, fact.id);
+            }
+
             router.push(`/fact/${factId}?source=notification`);
 
             // Sync notification schedule (check/repair/top-up)
@@ -317,6 +326,9 @@ export default function RootLayout() {
       await Promise.race([dbPromise, dbTimeoutPromise]);
       setIsDbReady(true);
 
+      // Pre-warm image cache directory (fire-and-forget)
+      ensureImagesDirExists().catch(() => {});
+
       // Configure notifications on app start
       notificationService.configureNotifications();
 
@@ -359,6 +371,10 @@ export default function RootLayout() {
             // Silently handle errors - notifications continue with existing schedule
             console.error('Notification sync failed:', error);
           });
+
+        // Pre-fetch a random fact and its image for instant display
+        // This runs asynchronously and doesn't block app startup
+        initializeRandomFact(getLocaleFromCode(deviceLocale));
 
         // Check for OTA updates in the background
         // This runs asynchronously and doesn't block app startup
