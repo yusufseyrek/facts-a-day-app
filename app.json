@@ -42,6 +42,9 @@
       "bundleIdentifier": "dev.seyrek.factsaday",
       "buildNumber": "39",
       "googleServicesFile": "./google/GoogleService-Info.plist",
+      "associatedDomains": [
+        "applinks:factsaday.com"
+      ],
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false,
@@ -170,6 +173,20 @@
         "SCHEDULE_EXACT_ALARM",
         "POST_NOTIFICATIONS",
         "com.google.android.gms.permission.AD_ID"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "factsaday.com",
+              "pathPrefix": "/fact"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "plugins": [

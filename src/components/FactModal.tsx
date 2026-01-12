@@ -366,8 +366,11 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
   // Badge scroll threshold - when category badge scrolls under the header
   // Badge is at: IMAGE_HEIGHT (or 0 if no image) + contentPadding + titleHeight + gap
-  const BADGE_SCROLL_THRESHOLD =
-    (hasImage ? IMAGE_HEIGHT : 0) + spacing.lg + titleHeight + spacing.md - headerHeight;
+  // Ensure non-negative to prevent invalid interpolation inputRange
+  const BADGE_SCROLL_THRESHOLD = Math.max(
+    0,
+    (hasImage ? IMAGE_HEIGHT : 0) + spacing.lg + titleHeight + spacing.md - headerHeight
+  );
 
   // Header border animations - appears when category badge scrolls under header
   // ScaleX animation for sleek reveal from center
@@ -832,7 +835,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         factTitle={fact.title}
         factContent={fact.content}
         imageUrl={imageUri || undefined}
-        category={fact.categoryData?.slug || fact.category || 'unknown'}
+        category={fact.categoryData || fact.category}
       />
     </View>
   );

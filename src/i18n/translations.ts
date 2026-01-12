@@ -136,6 +136,7 @@ export const translations = {
 
     // Share & Source
     sharedFromApp: 'Geteilt von Täglich Wissen',
+    shareAvailableOn: 'Verfügbar für iOS & Android',
     sourcePrefix: 'Quelle: ',
     externalLink: 'Externer Link',
 
@@ -437,6 +438,7 @@ export const translations = {
 
     // Share & Source
     sharedFromApp: 'Shared from Facts A Day',
+    shareAvailableOn: 'Available on iOS & Android',
     sourcePrefix: 'Source: ',
     externalLink: 'External Link',
 
@@ -739,6 +741,7 @@ export const translations = {
 
     // Share & Source
     sharedFromApp: 'Compartido desde Conocimiento Diario',
+    shareAvailableOn: 'Disponible en iOS y Android',
     sourcePrefix: 'Fuente: ',
     externalLink: 'Enlace Externo',
 
@@ -1043,6 +1046,7 @@ export const translations = {
 
     // Share & Source
     sharedFromApp: 'Partagé depuis Savoir Quotidien',
+    shareAvailableOn: 'Disponible sur iOS et Android',
     sourcePrefix: 'Source : ',
     externalLink: 'Lien Externe',
 
@@ -1344,6 +1348,7 @@ export const translations = {
 
     // Share & Source
     sharedFromApp: '毎日の知識から共有',
+    shareAvailableOn: 'iOS & Androidで利用可能',
     sourcePrefix: '出典: ',
     externalLink: '外部リンク',
 
@@ -1642,6 +1647,7 @@ export const translations = {
 
     // Share & Source
     sharedFromApp: '매일 지식에서 공유',
+    shareAvailableOn: 'iOS & Android에서 이용 가능',
     sourcePrefix: '출처: ',
     externalLink: '외부 링크',
 
@@ -1942,6 +1948,7 @@ export const translations = {
 
     // Share & Source
     sharedFromApp: "Günlük Bilgi'den paylaşıldı",
+    shareAvailableOn: "iOS & Android'de mevcut",
     sourcePrefix: 'Kaynak: ',
     externalLink: 'Dış Bağlantı',
 
@@ -2238,6 +2245,7 @@ export const translations = {
 
     // Share & Source
     sharedFromApp: '来自 每日知识 的分享',
+    shareAvailableOn: '可在 iOS 和 Android 上使用',
     sourcePrefix: '来源: ',
     externalLink: '外部链接',
 
