@@ -420,7 +420,14 @@ export default function TriviaGameScreen() {
       }
       router.push(`/fact/${currentQuestion.fact.id}?source=trivia_hint`);
     }
-  }, [currentQuestion?.fact?.id, currentQuestion?.fact?.image_url, router, params.type, params.categorySlug, gameState.currentQuestionIndex]);
+  }, [
+    currentQuestion?.fact?.id,
+    currentQuestion?.fact?.image_url,
+    router,
+    params.type,
+    params.categorySlug,
+    gameState.currentQuestionIndex,
+  ]);
 
   // Handle showing the explanation hint
   const handleShowExplanation = useCallback(async () => {
@@ -441,7 +448,13 @@ export default function TriviaGameScreen() {
 
     // Show explanation for current question
     setExplanationShownForQuestion(currentQuestion.id);
-  }, [currentQuestion, canUseExplanation, params.type, params.categorySlug, gameState.currentQuestionIndex]);
+  }, [
+    currentQuestion,
+    canUseExplanation,
+    params.type,
+    params.categorySlug,
+    gameState.currentQuestionIndex,
+  ]);
 
   const finishQuiz = async () => {
     // Show interstitial ad before showing results

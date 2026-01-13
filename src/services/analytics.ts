@@ -287,6 +287,25 @@ export const trackFactShare = (params: { factId: number; category: string }): vo
   });
 };
 
+export type SharePlatform = 'instagram_stories' | 'whatsapp' | 'twitter' | 'facebook' | 'general';
+
+/**
+ * Track when user shares a fact with platform info
+ */
+export const trackFactShareWithPlatform = (params: {
+  factId: number;
+  category: string;
+  platform: SharePlatform;
+  success: boolean;
+}): void => {
+  logEvent('app_fact_share', {
+    fact_id: params.factId,
+    category: params.category,
+    platform: params.platform,
+    success: params.success,
+  });
+};
+
 /**
  * Track when user adds a fact to favorites
  */

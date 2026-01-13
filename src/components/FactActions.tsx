@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, Share, StyleSheet } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Pressable, StyleSheet } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { styled } from '@tamagui/core';
 import { Flag, Heart, Share as ShareIcon } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
+import ViewShot from 'react-native-view-shot';
 import { View, XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n';
@@ -20,21 +21,23 @@ import {
   trackFactFavoriteAdd,
   trackFactFavoriteRemove,
   trackFactReport,
-  trackFactShare,
 } from '../services/analytics';
 import * as api from '../services/api';
 import * as database from '../services/database';
+import type { Category } from '../services/database';
+import { shareService } from '../services/share';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
 import { ReportFactModal } from './ReportFactModal';
+import { ShareCard } from './share';
 
 interface FactActionsProps {
   factId: number;
   factTitle?: string;
   factContent: string;
   imageUrl?: string;
-  category?: string;
+  category?: string | Category;
 }
 
 const Container = styled(YStack, {
@@ -119,7 +122,21 @@ export function FactActions({
   const [isFavorited, setIsFavorited] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
+
+  // ViewShot ref for capturing share card image
+  const viewShotRef = useRef<ViewShot>(null);
+
+  // Set ViewShot ref on mount
+  useEffect(() => {
+    if (viewShotRef.current) {
+      shareService.setViewShotRef(viewShotRef);
+    }
+    return () => {
+      shareService.clearViewShotRef();
+    };
+  }, []);
 
   // Animation values for heart
   const heartScale = useSharedValue(1);
@@ -203,10 +220,11 @@ export function FactActions({
       setIsFavorited(newFavoriteStatus);
 
       // Track favorite add/remove
+      const categorySlug = typeof category === 'string' ? category : category?.slug || 'unknown';
       if (newFavoriteStatus) {
-        trackFactFavoriteAdd({ factId, category });
+        trackFactFavoriteAdd({ factId, category: categorySlug });
       } else {
-        trackFactFavoriteRemove({ factId, category });
+        trackFactFavoriteRemove({ factId, category: categorySlug });
       }
     } catch (error) {
       if (__DEV__) {
@@ -249,44 +267,39 @@ export function FactActions({
   };
 
   const handleShare = async () => {
+    if (isSharing) return;
+
+    // Light haptic feedback for share action
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Trigger animation immediately
+    triggerShareAnimation();
+
+    // Share directly without modal
+    setIsSharing(true);
     try {
-      // Light haptic feedback for share action
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const result = await shareService.share(
+        {
+          id: factId,
+          title: factTitle || '',
+          content: factContent,
+          category,
+          imageUri: imageUrl,
+        },
+        {
+          platform: 'general',
+          includeImage: true,
+          includeDeepLink: true,
+        }
+      );
 
-      // Trigger animation immediately
-      triggerShareAnimation();
-
-      // App store links
-      const appStoreUrl =
-        Platform.OS === 'ios'
-          ? 'https://apps.apple.com/us/app/facts-a-day-daily-trivia/id6755321394'
-          : 'https://play.google.com/store/apps/details?id=dev.seyrek.factsaday';
-
-      // Build share content: Title + App attribution + Store link
-      const title = factTitle || factContent.substring(0, 60) + '...';
-      const shareText = `${title}\n\n${t('sharedFromApp')}\n${appStoreUrl}`;
-
-      const shareOptions: { message: string; url?: string; title?: string } = {
-        message: shareText,
-        title: title,
-      };
-
-      // On iOS, we can also share the image file URL
-      if (Platform.OS === 'ios' && imageUrl) {
-        const fileUrl = imageUrl.startsWith('file://') ? imageUrl : `file://${imageUrl}`;
-        shareOptions.url = fileUrl;
-      }
-
-      const result = await Share.share(shareOptions);
-
-      // Track share action (only if actually shared, not cancelled)
-      if (result.action === Share.sharedAction) {
-        trackFactShare({ factId, category });
+      if (!result.success && result.error && result.error !== 'cancelled') {
+        console.error('[Share] Failed:', result.error);
       }
     } catch (error) {
-      if (__DEV__) {
-        console.error('Error sharing fact:', error);
-      }
+      console.error('[Share] Error:', error);
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -394,6 +407,18 @@ export function FactActions({
         onClose={() => setShowReportModal(false)}
         onSubmit={handleSubmitReport}
         isSubmitting={isSubmittingReport}
+      />
+
+      {/* Off-screen ShareCard for image capture */}
+      <ShareCard
+        ref={viewShotRef}
+        fact={{
+          id: factId,
+          title: factTitle || '',
+          content: factContent,
+          category,
+          imageUri: imageUrl,
+        }}
       />
     </>
   );

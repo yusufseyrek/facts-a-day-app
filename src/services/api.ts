@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 
+import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 
 import { API_SETTINGS } from '../config/app';
@@ -209,9 +210,15 @@ async function makeRequest<T>(
     // Get App Check token for protected endpoints (uses cache to prevent rate limiting)
     const appCheckToken = await getCachedAppCheckToken();
 
+    // Build platform build ID for request tracking
+    const appVersion = Application.nativeApplicationVersion || 'unknown';
+    const buildNumber = Application.nativeBuildVersion || 'unknown';
+    const platformBuildId = `${Platform.OS}_${appVersion}_${buildNumber}`;
+
     // Build headers with App Check token if available
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'X-Platform-Build-Id': platformBuildId,
       ...(options.headers as Record<string, string>),
     };
 
@@ -270,6 +277,24 @@ async function makeRequest<T>(
 export async function getMetadata(language?: string): Promise<MetadataResponse> {
   const endpoint = language ? `/api/metadata?language=${language}` : '/api/metadata';
   return makeRequest<MetadataResponse>(endpoint);
+}
+
+export interface GetFactByIdResponse {
+  fact: FactResponse;
+}
+
+/**
+ * Get a single fact by ID
+ */
+export async function getFactById(id: number, includeQuestions?: boolean): Promise<FactResponse> {
+  const queryParams = new URLSearchParams();
+  if (includeQuestions) {
+    queryParams.append('include_questions', 'true');
+  }
+  const query = queryParams.toString();
+  const endpoint = `/api/facts/${id}${query ? `?${query}` : ''}`;
+  const response = await makeRequest<GetFactByIdResponse>(endpoint);
+  return response.fact;
 }
 
 /**

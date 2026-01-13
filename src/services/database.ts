@@ -570,9 +570,7 @@ export async function getRandomFact(language?: string): Promise<FactWithRelation
   return result ? mapSingleFactWithRelations(result) : null;
 }
 
-export async function getRandomFactNotInFeed(
-  language: string
-): Promise<FactWithRelations | null> {
+export async function getRandomFactNotInFeed(language: string): Promise<FactWithRelations | null> {
   const database = await openDatabase();
 
   const result = await database.getFirstAsync<any>(
