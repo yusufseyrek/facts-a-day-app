@@ -859,7 +859,7 @@ upload_android_metadata() {
     echo ""
     info "Committing changes..."
     local commit_response
-    commit_response=$(google_api POST "/applications/$ANDROID_PACKAGE_NAME/edits/$edit_id:commit?changesNotSentForReview=true" '{}')
+    commit_response=$(google_api POST "/applications/$ANDROID_PACKAGE_NAME/edits/$edit_id:commit" '{}')
     
     if echo "$commit_response" | jq -e '.id' >/dev/null 2>&1; then
         success "Changes committed successfully"

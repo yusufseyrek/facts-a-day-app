@@ -162,41 +162,57 @@ function MetricCard({
   subtitle?: string;
   isDark: boolean;
 }) {
-  const { spacing, radius, iconSizes } = useResponsive();
+  const { spacing, radius, iconSizes, isTablet } = useResponsive();
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const subtitleColor = isDark ? hexColors.dark.neonGreen : hexColors.light.success;
   const iconContainerSize = iconSizes.lg;
+
+  const iconContainer = (
+    <View
+      style={{
+        width: iconContainerSize,
+        height: iconContainerSize,
+        borderRadius: radius.sm * 0.75,
+        backgroundColor: iconBgColor,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      {icon}
+    </View>
+  );
+
+  const labelText = (
+    <Text.Body
+      color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+      fontFamily={FONT_FAMILIES.medium}
+    >
+      {label}
+    </Text.Body>
+  );
 
   return (
     <YStack
       flex={1}
       backgroundColor={cardBg}
       borderRadius={radius.lg}
-      padding={spacing.lg}
+      paddingHorizontal={spacing.sm}
+      paddingVertical={spacing.lg}
       gap={spacing.sm}
       alignItems="center"
     >
-      <XStack alignItems="center" gap={spacing.sm}>
-        <View
-          style={{
-            width: iconContainerSize,
-            height: iconContainerSize,
-            borderRadius: radius.sm * 0.75,
-            backgroundColor: iconBgColor,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          {icon}
-        </View>
-        <Text.Body
-          color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
-          fontFamily={FONT_FAMILIES.medium}
-        >
-          {label}
-        </Text.Body>
-      </XStack>
+      {isTablet ? (
+        <YStack alignItems="center" gap={spacing.xs}>
+          {iconContainer}
+          {labelText}
+        </YStack>
+      ) : (
+        <XStack alignItems="center" gap={spacing.sm}>
+          {iconContainer}
+          {labelText}
+        </XStack>
+      )}
       <Text.Display color={textColor}>{value}</Text.Display>
       {subtitle && (
         <Text.Caption color={subtitleColor} fontFamily={FONT_FAMILIES.medium}>
@@ -711,7 +727,9 @@ export default function PerformanceScreen() {
             <Animated.View entering={SlideInRight.delay(75).duration(400).springify()}>
               <YStack marginBottom={spacing.md} gap={spacing.xs}>
                 <XStack alignItems="center" justifyContent="space-between">
-                  <Text.Title color={textColor}>{t('accuracyByCategory')}</Text.Title>
+                  <Text.Title color={textColor} flex={1}>
+                    {t('accuracyByCategory')}
+                  </Text.Title>
                 </XStack>
                 <Text.Caption
                   color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}

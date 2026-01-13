@@ -5,6 +5,7 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  Text as RNText,
   View,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -136,7 +137,7 @@ function CategoryProgressBar({
 export default function CategoriesAccuracyScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { spacing, radius, media } = useResponsive();
+  const { spacing, radius, media, typography } = useResponsive();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
@@ -209,7 +210,17 @@ export default function CategoriesAccuracyScreen() {
         >
           <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
 
-          <Text.Title color={textColor}>{t('accuracyByCategory')}</Text.Title>
+          <RNText
+            style={{
+              flex: 1,
+              textAlign: 'center',
+              fontFamily: FONT_FAMILIES.bold,
+              fontSize: typography.fontSize.title,
+              color: textColor,
+            }}
+          >
+            {t('accuracyByCategory')}
+          </RNText>
 
           {/* Empty spacer to balance the header */}
           <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />

@@ -365,7 +365,7 @@ EOF
     echo -e "${BLUE}▸${NC} Committing changes..."
     
     local commit_response
-    commit_response=$(google_api POST "/applications/$ANDROID_PACKAGE_NAME/edits/$edit_id:commit?changesNotSentForReview=true" '{}')
+    commit_response=$(google_api POST "/applications/$ANDROID_PACKAGE_NAME/edits/$edit_id:commit" '{}')
     
     if echo "$commit_response" | jq -e '.id' >/dev/null 2>&1; then
         print_success "Changes committed successfully!"

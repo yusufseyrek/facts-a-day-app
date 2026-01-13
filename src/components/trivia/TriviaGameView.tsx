@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInUp,
@@ -270,9 +270,15 @@ export function TriviaGameView({
                   gap={spacing.xs}
                 >
                   <BookOpen size={typography.fontSize.caption} color={primaryColor} />
-                  <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={primaryColor}>
+                  <RNText
+                    style={{
+                      fontFamily: FONT_FAMILIES.semibold,
+                      fontSize: typography.fontSize.caption,
+                      color: primaryColor,
+                    }}
+                  >
                     {t('viewFact') || 'View Fact'}
-                  </Text.Caption>
+                  </RNText>
                 </XStack>
               </Pressable>
             )}
@@ -286,30 +292,36 @@ export function TriviaGameView({
                 aria-label={t('a11y_showHintButton')}
                 style={({ pressed }) => [pressed && canUseExplanation && { opacity: 0.7 }]}
               >
-                <XStack
-                  backgroundColor={
-                    canUseExplanation ? `${accentColor}15` : `${secondaryTextColor}10`
-                  }
-                  paddingHorizontal={spacing.md}
-                  paddingVertical={spacing.sm}
-                  borderRadius={radius.full}
-                  alignItems="center"
-                  gap={spacing.xs}
-                  opacity={canUseExplanation ? 1 : 0.5}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    backgroundColor: canUseExplanation
+                      ? `${accentColor}15`
+                      : `${secondaryTextColor}10`,
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: spacing.sm,
+                    borderRadius: radius.full,
+                    alignItems: 'center',
+                    gap: spacing.xs,
+                    opacity: canUseExplanation ? 1 : 0.5,
+                  }}
                 >
                   <Lightbulb
                     size={typography.fontSize.caption}
                     color={canUseExplanation ? accentColor : secondaryTextColor}
                   />
-                  <Text.Caption
-                    fontFamily={FONT_FAMILIES.semibold}
-                    color={canUseExplanation ? accentColor : secondaryTextColor}
+                  <RNText
+                    style={{
+                      fontFamily: FONT_FAMILIES.semibold,
+                      fontSize: typography.fontSize.caption,
+                      color: canUseExplanation ? accentColor : secondaryTextColor,
+                    }}
                   >
                     {canUseExplanation
                       ? t('showHint') || 'Show Hint'
                       : t('hintUsedToday') || 'Hint used'}
-                  </Text.Caption>
-                </XStack>
+                  </RNText>
+                </View>
               </Pressable>
             )}
           </XStack>
