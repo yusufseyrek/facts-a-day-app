@@ -183,7 +183,14 @@ function MetricCard({
     </View>
   );
 
-  const labelText = (
+  const labelText = isTablet ? (
+    <Text.Label
+      color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+      fontFamily={FONT_FAMILIES.medium}
+    >
+      {label}
+    </Text.Label>
+  ) : (
     <Text.Body
       color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
       fontFamily={FONT_FAMILIES.medium}
@@ -197,7 +204,7 @@ function MetricCard({
       flex={1}
       backgroundColor={cardBg}
       borderRadius={radius.lg}
-      paddingHorizontal={spacing.sm}
+      paddingHorizontal={spacing.xs}
       paddingVertical={spacing.lg}
       gap={spacing.sm}
       alignItems="center"
@@ -215,9 +222,9 @@ function MetricCard({
       )}
       <Text.Display color={textColor}>{value}</Text.Display>
       {subtitle && (
-        <Text.Caption color={subtitleColor} fontFamily={FONT_FAMILIES.medium}>
+        <Text.Tiny color={subtitleColor} fontFamily={FONT_FAMILIES.medium}>
           {subtitle}
-        </Text.Caption>
+        </Text.Tiny>
       )}
     </YStack>
   );

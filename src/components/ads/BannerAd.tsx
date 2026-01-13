@@ -35,10 +35,8 @@ const getAdUnitId = (position: BannerAdPosition): string => {
     : config?.ADMOB_ANDROID_FACT_DETAIL_BANNER_ID || testId;
 };
 
-const getBannerSize = (position: BannerAdPosition): BannerAdSize => {
-  return position === 'fact-modal'
-    ? BannerAdSize.INLINE_ADAPTIVE_BANNER
-    : BannerAdSize.ANCHORED_ADAPTIVE_BANNER;
+const getBannerSize = (_position: BannerAdPosition): BannerAdSize => {
+  return BannerAdSize.ANCHORED_ADAPTIVE_BANNER;
 };
 
 type AdState = 'loading' | 'loaded' | 'error';

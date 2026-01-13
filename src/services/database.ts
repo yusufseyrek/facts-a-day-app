@@ -446,7 +446,7 @@ export async function getAllFacts(language?: string): Promise<FactWithRelations[
       FROM facts f
       LEFT JOIN categories c ON f.category = c.slug
       WHERE f.language = ?
-      ORDER BY f.created_at DESC`,
+      ORDER BY RANDOM()`,
       [language]
     );
     return mapFactsWithRelations(result);
@@ -463,7 +463,7 @@ export async function getAllFacts(language?: string): Promise<FactWithRelations[
       c.color_hex as category_color_hex
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
-    ORDER BY f.created_at DESC`
+    ORDER BY RANDOM()`
   );
   return mapFactsWithRelations(result);
 }
@@ -506,7 +506,7 @@ export async function getFactsByCategory(
       FROM facts f
       LEFT JOIN categories c ON f.category = c.slug
       WHERE f.category = ? AND f.language = ?
-      ORDER BY f.created_at DESC`,
+      ORDER BY RANDOM()`,
       [category, language]
     );
     return mapFactsWithRelations(result);
@@ -524,7 +524,7 @@ export async function getFactsByCategory(
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.category = ?
-    ORDER BY f.created_at DESC`,
+    ORDER BY RANDOM()`,
     [category]
   );
   return mapFactsWithRelations(result);

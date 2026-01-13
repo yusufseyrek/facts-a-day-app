@@ -719,9 +719,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             </Text.Body>
           )}
 
-          {/* Banner between summary and content */}
-          <BannerAd position="fact-modal" />
-
           {/* Main Content */}
           <Text.Body color="$text" fontFamily={FONT_FAMILIES.regular}>
             {fact.content}
@@ -829,6 +826,9 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           </TouchableOpacity>
         </Animated.View>
       )}
+
+      {/* Anchored Banner Ad at bottom */}
+      <BannerAd position="fact-modal" />
 
       <FactActions
         factId={fact.id}
