@@ -27,7 +27,7 @@ import {
   FLASH_LIST_SETTINGS,
   getImageCardHeight,
 } from '../../src/config/factListSettings';
-import { useScrollToTopHandler } from '../../src/contexts';
+import { usePreloadedData, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
@@ -117,6 +117,7 @@ function HomeScreen() {
   const router = useRouter();
   const iconColor = useIconColor();
   const { iconSizes, spacing, screenWidth, isTablet } = useResponsive();
+  const { consumePreloadedFacts, signalHomeScreenReady } = usePreloadedData();
 
   const [sections, setSections] = useState<FactSection[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -127,6 +128,8 @@ function HomeScreen() {
 
   // Track if random fact has been initialized (only once per app session)
   const randomFactInitializedRef = useRef(false);
+  // Track if we've consumed preloaded data (only once)
+  const consumedPreloadedDataRef = useRef(false);
 
   // Scroll to top handler
   const listRef = useRef<any>(null);
@@ -164,9 +167,27 @@ function HomeScreen() {
   // Reload facts when tab gains focus
   useFocusEffect(
     useCallback(() => {
+      // On first mount, try to use preloaded data from splash screen
+      if (!consumedPreloadedDataRef.current) {
+        consumedPreloadedDataRef.current = true;
+        const preloadedFacts = consumePreloadedFacts();
+        if (preloadedFacts && preloadedFacts.length > 0) {
+          // Use preloaded data - no loading spinner needed
+          setSections(groupFactsByDate(preloadedFacts, t, locale));
+          setInitialLoading(false);
+          // Initialize random fact with preloaded data
+          if (!randomFactInitializedRef.current) {
+            randomFactInitializedRef.current = true;
+            initializeRandomFact(locale);
+          }
+          trackScreenView(Screens.HOME);
+          return;
+        }
+      }
+      // Fall back to normal loading
       loadFacts();
       trackScreenView(Screens.HOME);
-    }, [locale])
+    }, [locale, t, consumePreloadedFacts])
   );
 
   // Auto-refresh feed when new notifications are received
@@ -207,6 +228,13 @@ function HomeScreen() {
     const unsubscribe = onRefreshStatusChange(setBackgroundRefreshStatus);
     return () => unsubscribe();
   }, []);
+
+  // Signal home screen ready when showing empty state (no FlashList to trigger onLoad)
+  useEffect(() => {
+    if (!initialLoading && sections.length === 0) {
+      signalHomeScreenReady();
+    }
+  }, [initialLoading, sections.length, signalHomeScreenReady]);
 
   const loadFacts = useCallback(
     async (isRefresh = false) => {
@@ -358,6 +386,7 @@ function HomeScreen() {
             stickyHeaderIndices={stickyHeaderIndices}
             refreshControl={refreshControl}
             decelerationRate={0.8}
+            onLoad={signalHomeScreenReady}
             {...{ ...FLASH_LIST_SETTINGS, drawDistance: 800 }}
           />
         )}

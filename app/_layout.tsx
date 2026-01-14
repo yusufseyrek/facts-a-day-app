@@ -16,18 +16,28 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import * as Localization from 'expo-localization';
 import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
 
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { SplashOverlay } from '../src/components/SplashOverlay';
 import { STORAGE_KEYS, TIMING } from '../src/config/app';
 import { enableCrashlyticsConsoleLogging, initializeFirebase } from '../src/config/firebase';
-import { OnboardingProvider, ScrollToTopProvider, useOnboarding } from '../src/contexts';
+import {
+  OnboardingProvider,
+  PreloadedDataProvider,
+  ScrollToTopProvider,
+  setPreloadedFactsBeforeMount,
+  useOnboarding,
+} from '../src/contexts';
 import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
 import { initAnalytics } from '../src/services/analytics';
 import * as contentRefresh from '../src/services/contentRefresh';
 import * as database from '../src/services/database';
-import { ensureImagesDirExists, prefetchFactImage } from '../src/services/images';
+import {
+  ensureImagesDirExists,
+  prefetchFactImage,
+  prefetchFactImagesWithLimit,
+} from '../src/services/images';
 import * as notificationService from '../src/services/notifications';
 import * as onboardingService from '../src/services/onboarding';
 import * as updates from '../src/services/updates';
@@ -191,6 +201,7 @@ function AppContent() {
 export default function RootLayout() {
   const [initialOnboardingStatus, setInitialOnboardingStatus] = useState<boolean | null>(null);
   const [isDbReady, setIsDbReady] = useState(false);
+  const [showSplashOverlay, setShowSplashOverlay] = useState(true);
 
   const [fontsLoaded, fontError] = useFonts({
     Montserrat_400Regular,
@@ -343,10 +354,24 @@ export default function RootLayout() {
       const isComplete = await Promise.race([onboardingPromise, onboardingTimeoutPromise]);
       setInitialOnboardingStatus(isComplete);
 
-      // Only initialize ads for returning users (those who already completed onboarding)
+      // Only initialize ads and pre-load data for returning users
       // New users will have ads initialized during the onboarding success screen
-      // after they go through the consent flow
       if (isComplete) {
+        const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
+        const locale = getLocaleFromCode(deviceLocale);
+
+        // Pre-load home screen data during splash time
+        // This eliminates the loading spinner on home screen
+        try {
+          await database.markDeliveredFactsAsShown(locale);
+          const facts = await database.getFactsGroupedByDate(locale);
+          setPreloadedFactsBeforeMount(facts);
+          // Start prefetching images in background
+          prefetchFactImagesWithLimit(facts);
+        } catch (error) {
+          console.error('Failed to pre-load home screen data:', error);
+        }
+
         // Initialize ads using consent obtained in the previous session
         initializeAdsForReturningUser().catch((error) => {
           console.error('Failed to initialize ads for returning user:', error);
@@ -361,9 +386,8 @@ export default function RootLayout() {
 
         // Sync notification schedule (check/repair/top-up)
         // This runs asynchronously and doesn't block app startup
-        const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
         notificationService
-          .syncNotificationSchedule(getLocaleFromCode(deviceLocale))
+          .syncNotificationSchedule(locale)
           .catch((error) => {
             // Silently handle errors - notifications continue with existing schedule
             console.error('Notification sync failed:', error);
@@ -400,13 +424,10 @@ export default function RootLayout() {
     }
   };
 
-  // Hide splash screen once app is fully loaded
-  const onLayoutRootView = useCallback(async () => {
-    if (isDbReady && initialOnboardingStatus !== null && fontsLoaded) {
-      // Hide splash screen with a slight delay to ensure smooth transition
-      await SplashScreen.hideAsync();
-    }
-  }, [isDbReady, initialOnboardingStatus, fontsLoaded]);
+  // onLayout callback - SplashOverlay handles hiding native splash
+  const onLayoutRootView = useCallback(() => {
+    // Nothing to do here - SplashOverlay handles the transition
+  }, []);
 
   // Keep splash screen visible while loading
   if (!isDbReady || initialOnboardingStatus === null || !fontsLoaded) {
@@ -418,18 +439,23 @@ export default function RootLayout() {
       <ErrorBoundary>
         <SafeAreaProvider>
           <I18nProvider>
-            <OnboardingProvider initialComplete={initialOnboardingStatus}>
-              <ScrollToTopProvider>
-                <AppThemeProvider>
-                  <NavigationThemeWrapper>
-                    <AppContent />
-                  </NavigationThemeWrapper>
-                </AppThemeProvider>
-              </ScrollToTopProvider>
-            </OnboardingProvider>
+            <PreloadedDataProvider>
+              <OnboardingProvider initialComplete={initialOnboardingStatus}>
+                <ScrollToTopProvider>
+                  <AppThemeProvider>
+                    <NavigationThemeWrapper>
+                      <AppContent />
+                    </NavigationThemeWrapper>
+                  </AppThemeProvider>
+                </ScrollToTopProvider>
+              </OnboardingProvider>
+            </PreloadedDataProvider>
           </I18nProvider>
         </SafeAreaProvider>
       </ErrorBoundary>
+      {showSplashOverlay && (
+        <SplashOverlay onHidden={() => setShowSplashOverlay(false)} />
+      )}
     </View>
   );
 }

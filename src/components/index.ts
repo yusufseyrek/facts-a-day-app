@@ -12,6 +12,7 @@ export { FactActions } from './FactActions';
 export { FactModal } from './FactModal';
 export { MultiTimePicker } from './MultiTimePicker';
 export { SettingsRow } from './SettingsRow';
+export { SplashOverlay } from './SplashOverlay';
 export { SuccessToast } from './SuccessToast';
 
 // Layout components
