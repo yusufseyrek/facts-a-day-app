@@ -104,7 +104,7 @@ export const translations = {
     settingsTermsOfService: 'Nutzungsbedingungen',
     settingsSupport: 'Unterstützung',
     settingsReviewApp: '%{appName} bewerten',
-    settingsCopyright: '© 2025 {appName}. Alle Rechte vorbehalten.',
+    settingsCopyright: '© 2026 {appName}. Alle Rechte vorbehalten.',
     settingsStorage: 'Speicher',
     settingsClearImageCache: 'Bilder-Cache löschen',
     settingsClearImageCacheConfirm:
@@ -409,7 +409,7 @@ export const translations = {
     settingsTermsOfService: 'Terms of Service',
     settingsSupport: 'Support',
     settingsReviewApp: 'Review %{appName}',
-    settingsCopyright: '© 2025 {appName}. All rights reserved.',
+    settingsCopyright: '© 2026 {appName}. All rights reserved.',
     settingsStorage: 'Storage',
     settingsClearImageCache: 'Clear Image Cache',
     settingsClearImageCacheConfirm:
@@ -711,7 +711,7 @@ export const translations = {
     settingsTermsOfService: 'Términos de Servicio',
     settingsSupport: 'Soporte',
     settingsReviewApp: 'Calificar %{appName}',
-    settingsCopyright: '© 2025 {appName}. Todos los derechos reservados.',
+    settingsCopyright: '© 2026 {appName}. Todos los derechos reservados.',
     settingsStorage: 'Almacenamiento',
     settingsClearImageCache: 'Borrar caché de imágenes',
     settingsClearImageCacheConfirm:
@@ -1016,7 +1016,7 @@ export const translations = {
     settingsTermsOfService: "Conditions d'Utilisation",
     settingsSupport: 'Assistance',
     settingsReviewApp: 'Évaluer %{appName}',
-    settingsCopyright: '© 2025 {appName}. Tous droits réservés.',
+    settingsCopyright: '© 2026 {appName}. Tous droits réservés.',
     settingsStorage: 'Stockage',
     settingsClearImageCache: 'Vider le cache des images',
     settingsClearImageCacheConfirm:
@@ -1319,7 +1319,7 @@ export const translations = {
     settingsTermsOfService: '利用規約',
     settingsSupport: 'サポート',
     settingsReviewApp: '%{appName}を評価',
-    settingsCopyright: '© 2025 {appName}. 全著作権所有。',
+    settingsCopyright: '© 2026 {appName}. 全著作権所有。',
     settingsStorage: 'ストレージ',
     settingsClearImageCache: '画像キャッシュをクリア',
     settingsClearImageCacheConfirm:
@@ -1618,7 +1618,7 @@ export const translations = {
     settingsTermsOfService: '서비스 이용약관',
     settingsSupport: '지원',
     settingsReviewApp: '%{appName} 평가하기',
-    settingsCopyright: '© 2025 {appName}. 모든 권리 보유.',
+    settingsCopyright: '© 2026 {appName}. 모든 권리 보유.',
     settingsStorage: '저장공간',
     settingsClearImageCache: '이미지 캐시 지우기',
     settingsClearImageCacheConfirm:
@@ -1919,7 +1919,7 @@ export const translations = {
     settingsTermsOfService: 'Hizmet Şartları',
     settingsSupport: 'Destek',
     settingsReviewApp: "%{appName}'yi Değerlendir",
-    settingsCopyright: '© 2025 {appName}. Tüm hakları saklıdır.',
+    settingsCopyright: '© 2026 {appName}. Tüm hakları saklıdır.',
     settingsStorage: 'Depolama',
     settingsClearImageCache: 'Resim Önbelleğini Temizle',
     settingsClearImageCacheConfirm:
@@ -2217,7 +2217,7 @@ export const translations = {
     settingsTermsOfService: '服务条款',
     settingsSupport: '支持',
     settingsReviewApp: '评价%{appName}',
-    settingsCopyright: '© 2025 {appName}. 版权所有。',
+    settingsCopyright: '© 2026 {appName}. 版权所有。',
     settingsStorage: '存储',
     settingsClearImageCache: '清除图片缓存',
     settingsClearImageCacheConfirm: '确定要清除所有缓存的图片吗？需要时图片将重新下载。',

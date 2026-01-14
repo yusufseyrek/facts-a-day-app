@@ -43,8 +43,8 @@ export const IMAGE_RETRY = {
 export const IMAGE_CACHE = {
   /** Directory name for cached fact images (appended to documentDirectory) */
   FACT_IMAGES_DIR_NAME: 'fact-images/',
-  /** Maximum cache age in milliseconds (7 days) */
-  MAX_AGE_MS: 7 * 24 * 60 * 60 * 1000,
+  /** Maximum cache age in milliseconds (2 days) */
+  MAX_AGE_MS: 2 * 24 * 60 * 60 * 1000,
   /** Maximum age for in-memory file existence cache (30 minutes) */
   FILE_EXISTENCE_CACHE_MAX_AGE_MS: 30 * 60 * 1000,
 } as const;

@@ -84,16 +84,32 @@ const APP_CHECK_INIT_MAX_RETRIES = 2;
 const APP_CHECK_INIT_RETRY_DELAY_MS = 1000;
 
 /**
- * Check if the app is running on macOS (Mac Catalyst or Apple Silicon Mac)
+ * Check if the app is running on macOS (Mac Catalyst or "Designed for iPad" on Mac)
  * App Attest is NOT supported on macOS, so we need to use debug provider there.
  */
 function isMacOS(): boolean {
-  // Device.osName returns 'macOS' on Mac Catalyst apps
-  // Device.modelName contains 'Mac' on Mac devices
+  // Method 1: Check Device.deviceType === DESKTOP (3)
+  // This works for both Mac Catalyst and "Designed for iPad" running on Mac
+  // expo-device correctly identifies the host machine as DESKTOP
+  if (Device.deviceType === Device.DeviceType.DESKTOP) {
+    return true;
+  }
+
+  // Method 2: Check React Native's Platform.isMac (for Mac Catalyst)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if ((Platform as any).isMac === true) {
+    return true;
+  }
+
+  // Method 3: Check expo-device osName/modelName (fallback)
   const osName = Device.osName?.toLowerCase() || '';
   const modelName = Device.modelName?.toLowerCase() || '';
 
-  return osName.includes('macos') || osName.includes('mac os') || modelName.includes('mac');
+  if (osName.includes('macos') || osName.includes('mac os') || modelName.includes('mac')) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -131,7 +147,7 @@ export async function initializeAppCheckService() {
   // Get debug token based on environment
   let debugToken: string | undefined;
   if (useDebugProvider) {
-    if (isMac && !__DEV__) {
+    if (isMac) {
       // Use pre-registered token for macOS production builds
       debugToken = MACOS_DEBUG_TOKEN;
       console.log('🖥️ App Check: Running on macOS - using pre-registered debug token');

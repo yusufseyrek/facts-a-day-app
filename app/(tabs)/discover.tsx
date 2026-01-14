@@ -395,9 +395,10 @@ function DiscoverScreen() {
   const keyExtractor = useCallback((item: FactWithRelations) => item.id.toString(), []);
 
   // Calculate exact item height for FlashList layout
+  // Uses spacing.md from responsive hook to match ImageFactCard's marginBottom
   const itemHeight = useMemo(
-    () => getImageCardHeight(screenWidth, isTablet),
-    [screenWidth, isTablet]
+    () => getImageCardHeight(screenWidth, isTablet, spacing.md),
+    [screenWidth, isTablet, spacing.md]
   );
 
   // Override item layout to give FlashList exact dimensions (helps with recycling issues)
@@ -743,6 +744,7 @@ function DiscoverScreen() {
             renderItem={renderSearchItem}
             refreshControl={searchRefreshControl}
             overrideItemLayout={overrideItemLayout}
+            snapToInterval={itemHeight}
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -789,6 +791,7 @@ function DiscoverScreen() {
             renderItem={renderCategoryItem}
             refreshControl={categoryRefreshControl}
             overrideItemLayout={overrideItemLayout}
+            snapToInterval={itemHeight}
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>

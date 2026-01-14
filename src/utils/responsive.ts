@@ -88,8 +88,8 @@ export const media = {
  * - tiny: 11 → 17 - Very small text, footnotes
  * - caption: 12 → 18 - Captions, timestamps, secondary text
  * - body: 17 → 26 - Main content, labels, buttons
- * - title: 20 → 30 - Section headers
- * - headline: 24 → 36 - Large headers
+ * - title: 22 → 33 - Section headers
+ * - headline: 25 → 37 - Large headers
  * - display: 32 → 48 - Large display text
  * - hero: 48 → 72 - Hero/splash text
  */
@@ -99,7 +99,7 @@ const phoneTypography = {
     caption: 12,
     label: 14,
     body: 17,
-    title: 20,
+    title: 22,
     headline: 25,
     display: 32,
     hero: 48,

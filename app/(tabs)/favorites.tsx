@@ -17,7 +17,7 @@ import {
   useIconColor,
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
-import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
+import { FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
 import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
@@ -69,7 +69,7 @@ export default function FavoritesScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const iconColor = useIconColor();
-  const { iconSizes } = useResponsive();
+  const { iconSizes, screenWidth, isTablet, spacing } = useResponsive();
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -128,6 +128,20 @@ export default function FavoritesScreen() {
   // Memoized keyExtractor
   const keyExtractor = useCallback((item: FactWithRelations) => item.id.toString(), []);
 
+  // Calculate exact item height for FlashList layout
+  const itemHeight = useMemo(
+    () => getImageCardHeight(screenWidth, isTablet, spacing.md),
+    [screenWidth, isTablet, spacing.md]
+  );
+
+  // Override item layout for exact dimensions
+  const overrideItemLayout = useCallback(
+    (layout: { span?: number; size?: number }) => {
+      layout.size = itemHeight;
+    },
+    [itemHeight]
+  );
+
   // Memoized renderItem
   const renderItem = useCallback(
     ({ item }: { item: FactWithRelations }) => (
@@ -166,7 +180,11 @@ export default function FavoritesScreen() {
   return (
     <ScreenContainer edges={['top']}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <ScreenHeader icon={<Star size={iconSizes.lg} color={iconColor} />} title={t('favorites')} />
+      <ScreenHeader
+        paddingBottom={spacing.xl}
+        icon={<Star size={iconSizes.lg} color={iconColor} />}
+        title={t('favorites')}
+      />
       <YStack flex={1}>
         <FlashList
           ref={listRef}
@@ -174,6 +192,8 @@ export default function FavoritesScreen() {
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           refreshControl={refreshControl}
+          overrideItemLayout={overrideItemLayout}
+          snapToInterval={itemHeight}
           {...FLASH_LIST_SETTINGS}
         />
       </YStack>

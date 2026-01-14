@@ -13,6 +13,7 @@ import { View, YStack } from 'tamagui';
 import {
   ContentContainer,
   EmptyState,
+  FONT_FAMILIES,
   LoadingContainer,
   ScreenContainer,
   ScreenHeader,
@@ -21,7 +22,11 @@ import {
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT } from '../../src/config/app';
-import { FLASH_LIST_ITEM_TYPES, FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
+import {
+  FLASH_LIST_ITEM_TYPES,
+  FLASH_LIST_SETTINGS,
+  getImageCardHeight,
+} from '../../src/config/factListSettings';
 import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
@@ -88,7 +93,8 @@ FactListItem.displayName = 'FactListItem';
 
 // Simple section header using responsive hook
 const SectionHeader = React.memo(({ title }: { title: string }) => {
-  const { spacing, isTablet } = useResponsive();
+  const { spacing, isTablet, typography } = useResponsive();
+
   return (
     <YStack width="100%" alignItems="center" backgroundColor="$background">
       <YStack
@@ -97,7 +103,7 @@ const SectionHeader = React.memo(({ title }: { title: string }) => {
         paddingHorizontal={spacing.xl}
         paddingVertical={spacing.md}
       >
-        <Text.Title>{title}</Text.Title>
+        <Text.Title fontSize={typography.fontSize.body}>{title}</Text.Title>
       </YStack>
     </YStack>
   );
@@ -110,7 +116,7 @@ function HomeScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const iconColor = useIconColor();
-  const { iconSizes, spacing } = useResponsive();
+  const { iconSizes, spacing, screenWidth, isTablet } = useResponsive();
 
   const [sections, setSections] = useState<FactSection[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -323,6 +329,7 @@ function HomeScreen() {
       <Animated.View entering={FadeIn.duration(300)}>
         <ScreenHeader
           icon={<Lightbulb size={iconSizes.lg} color={iconColor} />}
+          paddingBottom={0}
           title={t('factsFeed')}
           rightElement={
             <View
@@ -332,7 +339,7 @@ function HomeScreen() {
               onPress={handleRandomFact}
               pressStyle={{ opacity: 0.6, scale: 0.9 }}
             >
-              <Dices size={iconSizes.md} color={iconColor} />
+              <Dices size={iconSizes.lg} color={iconColor} />
             </View>
           }
         />
@@ -350,7 +357,8 @@ function HomeScreen() {
             getItemType={getItemType}
             stickyHeaderIndices={stickyHeaderIndices}
             refreshControl={refreshControl}
-            {...FLASH_LIST_SETTINGS}
+            decelerationRate={0.8}
+            {...{ ...FLASH_LIST_SETTINGS, drawDistance: 800 }}
           />
         )}
 

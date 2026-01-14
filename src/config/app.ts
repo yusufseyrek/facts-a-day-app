@@ -61,8 +61,6 @@ export const LAYOUT = {
  * Notification settings
  */
 export const NOTIFICATION_SETTINGS = {
-  /** Number of days after which old notification images are cleaned up */
-  IMAGE_CLEANUP_DAYS: 30,
   /** iOS limit for scheduled notifications */
   MAX_SCHEDULED: 64,
   /** Number of days to preload notification images in advance */

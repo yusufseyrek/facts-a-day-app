@@ -187,7 +187,7 @@ export async function deleteNotificationImage(factId: number): Promise<void> {
   }
 }
 
-export async function cleanupOldNotificationImages(maxAgeDays: number = 7): Promise<number> {
+export async function cleanupOldNotificationImages(): Promise<number> {
   try {
     await ensureNotificationImagesDirExists();
 
@@ -197,26 +197,37 @@ export async function cleanupOldNotificationImages(maxAgeDays: number = 7): Prom
     }
 
     const files = await FileSystem.readDirectoryAsync(NOTIFICATION_IMAGES_DIR);
-    const now = Date.now();
-    const maxAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;
+    // Get fact IDs for scheduled (future) notifications - only these should be kept
+    const scheduledFacts = await database.getFutureScheduledFactsWithNotificationIds();
+    const scheduledFactIds = new Set(scheduledFacts.map((f) => f.id));
     let deletedCount = 0;
 
     for (const file of files) {
-      const filePath = `${NOTIFICATION_IMAGES_DIR}${file}`;
-
-      try {
-        const fileInfo = await FileSystem.getInfoAsync(filePath);
-
-        if (fileInfo.exists && fileInfo.modificationTime) {
-          const fileAgeMs = now - fileInfo.modificationTime * 1000;
-
-          if (fileAgeMs > maxAgeMs) {
-            await FileSystem.deleteAsync(filePath, { idempotent: true });
-            deletedCount++;
-          }
+      // Extract fact ID from filename (format: fact-{factId}.{extension})
+      const match = file.match(/^fact-(\d+)\./);
+      if (!match) {
+        // Delete files that don't match expected pattern
+        const filePath = `${NOTIFICATION_IMAGES_DIR}${file}`;
+        try {
+          await FileSystem.deleteAsync(filePath, { idempotent: true });
+          deletedCount++;
+        } catch {
+          // Ignore individual file errors
         }
-      } catch {
-        // Ignore individual file errors
+        continue;
+      }
+
+      const factId = parseInt(match[1], 10);
+
+      // Delete image if it's NOT for a scheduled notification
+      if (!scheduledFactIds.has(factId)) {
+        const filePath = `${NOTIFICATION_IMAGES_DIR}${file}`;
+        try {
+          await FileSystem.deleteAsync(filePath, { idempotent: true });
+          deletedCount++;
+        } catch {
+          // Ignore individual file errors
+        }
       }
     }
 

@@ -3,6 +3,8 @@
  * These settings are optimized for smooth scrolling with proper virtualization
  */
 
+import { IMAGE_DIMENSIONS } from './images';
+
 /**
  * Image prefetch settings to prevent network saturation and memory leaks
  */
@@ -10,21 +12,17 @@ export const PREFETCH_SETTINGS = {
   /** Maximum size of prefetch tracking set before clearing (prevents memory leaks) */
   maxCacheSize: 100,
   /** Maximum concurrent image downloads (prevents network saturation) */
-  maxConcurrent: 5,
+  maxConcurrent: 4,
   /** Maximum images to prefetch initially when loading a list (covers ~2 screens) */
-  maxInitialPrefetch: 8,
+  maxInitialPrefetch: 4,
 } as const;
 
 /**
- * Card height constants for ImageFactCard.
+ * Card aspect ratios - imported from images.ts for single source of truth
  */
-export const CARD_HEIGHTS = {
-  /** Height of ImageFactCard (based on 9:16 aspect ratio, calculated dynamically) */
-  imageCardAspectRatio: 9 / 16,
-  /** Margin between cards */
-  cardMargin: 12,
-  /** Margin between cards on tablet */
-  cardMarginTablet: 16,
+export const CARD_ASPECT_RATIOS = {
+  phone: IMAGE_DIMENSIONS.CARD_ASPECT_RATIO,
+  tablet: IMAGE_DIMENSIONS.TABLET_CARD_ASPECT_RATIO,
 } as const;
 
 /**
@@ -43,22 +41,31 @@ export const FLASH_LIST_SETTINGS = {
   /** Estimated item size for FlashList layout calculations (average card height ~220px) */
   estimatedItemSize: 220,
   /** Draw distance determines how far ahead FlashList renders items (~3-4 card heights) */
-  drawDistance: 800,
+  drawDistance: 220,
   /** Show vertical scroll indicator */
   showsVerticalScrollIndicator: false,
   /** Bounces at the end of content */
   bounces: true,
+  /** Prevents momentum from carrying scroll past the nearest snap point */
+  disableIntervalMomentum: true,
 } as const;
+
+/** Border width used by ImageFactCard's cardWrapperStyle */
+const CARD_BORDER_WIDTH = 1;
 
 /**
  * Calculate ImageFactCard height based on screen width.
- * All facts now use ImageFactCard with 9:16 aspect ratio.
+ * Must match ImageFactCard's actual rendered height including:
+ * - Image height (width * aspectRatio)
+ * - Border (1px top + 1px bottom = 2px)
+ * - Margin bottom (spacing.md)
  *
  * @param width Screen width for calculating image card height
- * @param isTabletLayout Whether tablet layout is being used
+ * @param isTablet Whether tablet layout is being used
+ * @param margin The actual spacing.md value from useResponsive()
  */
-export const getImageCardHeight = (width: number, isTabletLayout: boolean = false): number => {
-  const margin = isTabletLayout ? CARD_HEIGHTS.cardMarginTablet : CARD_HEIGHTS.cardMargin;
-  const cardWidth = isTabletLayout ? Math.min(width, 600) : width;
-  return cardWidth * CARD_HEIGHTS.imageCardAspectRatio + margin;
+export const getImageCardHeight = (width: number, isTablet: boolean, margin: number): number => {
+  const aspectRatio = isTablet ? CARD_ASPECT_RATIOS.tablet : CARD_ASPECT_RATIOS.phone;
+  const borderTotal = CARD_BORDER_WIDTH * 2; // top + bottom
+  return width * aspectRatio + borderTotal + margin;
 };

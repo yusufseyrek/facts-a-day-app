@@ -19,7 +19,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { NOTIFICATION_SETTINGS, STORAGE_KEYS, TIMING } from '../src/config/app';
+import { STORAGE_KEYS, TIMING } from '../src/config/app';
 import { enableCrashlyticsConsoleLogging, initializeFirebase } from '../src/config/firebase';
 import { OnboardingProvider, ScrollToTopProvider, useOnboarding } from '../src/contexts';
 import { getLocaleFromCode, I18nProvider } from '../src/i18n';
@@ -331,10 +331,8 @@ export default function RootLayout() {
       // Configure notifications on app start
       notificationService.configureNotifications();
 
-      // Clean up old notification images
-      notificationService
-        .cleanupOldNotificationImages(NOTIFICATION_SETTINGS.IMAGE_CLEANUP_DAYS)
-        .catch(() => {});
+      // Clean up notification images for already-delivered notifications
+      notificationService.cleanupOldNotificationImages().catch(() => {});
 
       // Check onboarding status with timeout (5 seconds)
       const onboardingPromise = onboardingService.isOnboardingComplete();

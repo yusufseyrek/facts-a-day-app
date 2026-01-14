@@ -22,6 +22,7 @@ export const ScreenContainer = styled(SafeAreaView, {
 interface ScreenHeaderProps {
   icon: React.ReactNode;
   title: string;
+  paddingBottom?: number;
   rightElement?: React.ReactNode;
 }
 
@@ -29,11 +30,12 @@ interface ScreenHeaderProps {
  * ScreenHeader - Composed header component with icon and title
  * Uses responsive hook for tablet/phone spacing
  */
-export function ScreenHeader({ icon, title, rightElement }: ScreenHeaderProps) {
+export function ScreenHeader({ icon, title, rightElement, paddingBottom }: ScreenHeaderProps) {
   const { spacing } = useResponsive();
+  const pb = paddingBottom ?? spacing.md;
 
   return (
-    <XStack padding={spacing.lg} paddingBottom={spacing.md} alignItems="center" gap={spacing.sm}>
+    <XStack padding={spacing.lg} paddingBottom={pb} alignItems="center" gap={spacing.sm}>
       {icon}
       <Text.Headline flex={1}>{title}</Text.Headline>
       {rightElement}
