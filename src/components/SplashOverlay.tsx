@@ -31,14 +31,14 @@ export function SplashOverlay({ onHidden }: SplashOverlayProps) {
     });
   }, []);
 
-  // When image is laid out, hide native splash
+  // When image is laid out, wait then hide native splash
   const handleImageLayout = useCallback(() => {
     if (!imageReady) {
-      setImageReady(true);
-      // Small delay to ensure paint is complete
-      requestAnimationFrame(() => {
-        SplashScreen.hideAsync();
-      });
+      // Delay to ensure JS splash is fully painted before hiding native
+      setTimeout(async () => {
+        await SplashScreen.hideAsync();
+        setImageReady(true);
+      }, 500);
     }
   }, [imageReady]);
 
@@ -46,11 +46,11 @@ export function SplashOverlay({ onHidden }: SplashOverlayProps) {
   useEffect(() => {
     if (imageReady && homeReady) {
       opacity.value = withTiming(0, {
-        duration: 400,
+        duration: 350,
         easing: Easing.out(Easing.ease),
       });
 
-      const timer = setTimeout(onHidden, 400);
+      const timer = setTimeout(onHidden, 350);
       return () => clearTimeout(timer);
     }
   }, [imageReady, homeReady, onHidden]);
