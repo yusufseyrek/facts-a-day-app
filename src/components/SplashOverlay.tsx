@@ -4,6 +4,7 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withTiming,
 } from 'react-native-reanimated';
 
@@ -15,6 +16,10 @@ import { waitForHomeScreenReady } from '../contexts';
 const SPLASH_BACKGROUND = '#0A1628';
 const LOGO_SIZE = 200;
 
+// Animation timing
+const DELAY_DURATION = 250;
+const FADE_DURATION = 350;
+
 interface SplashOverlayProps {
   onHidden: () => void;
 }
@@ -23,6 +28,7 @@ export function SplashOverlay({ onHidden }: SplashOverlayProps) {
   const [imageReady, setImageReady] = useState(false);
   const [homeReady, setHomeReady] = useState(false);
   const opacity = useSharedValue(1);
+  const scale = useSharedValue(1);
 
   // Wait for home screen to be ready
   useEffect(() => {
@@ -34,33 +40,35 @@ export function SplashOverlay({ onHidden }: SplashOverlayProps) {
   // When image is laid out, wait then hide native splash
   const handleImageLayout = useCallback(() => {
     if (!imageReady) {
-      // Delay to ensure JS splash is fully painted before hiding native
-      setTimeout(async () => {
-        await SplashScreen.hideAsync();
+      requestAnimationFrame(() => {
+        SplashScreen.hide();
         setImageReady(true);
-      }, 500);
+      });
     }
   }, [imageReady]);
 
-  // Fade out when both image and home screen are ready
+  // Animate when both image and home screen are ready
   useEffect(() => {
     if (imageReady && homeReady) {
-      opacity.value = withTiming(0, {
-        duration: 350,
-        easing: Easing.out(Easing.ease),
-      });
+      opacity.value = withDelay(
+        DELAY_DURATION,
+        withTiming(0, {
+          duration: FADE_DURATION,
+          easing: Easing.out(Easing.ease),
+        })
+      );
 
-      const timer = setTimeout(onHidden, 350);
+      const timer = setTimeout(onHidden, DELAY_DURATION + FADE_DURATION);
       return () => clearTimeout(timer);
     }
   }, [imageReady, homeReady, onHidden]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  const containerStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
   }));
 
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
+    <Animated.View style={[styles.container, containerStyle]}>
       <View style={styles.content}>
         <Image
           source={require('../../assets/splash-icon.png')}
