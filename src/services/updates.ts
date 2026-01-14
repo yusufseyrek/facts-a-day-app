@@ -14,8 +14,25 @@ import * as Updates from 'expo-updates';
 import { hexColors } from '../theme';
 
 import { trackAppUpdate } from './analytics';
+import { getCachedAppCheckToken } from './appCheckToken';
 
 const THEME_STORAGE_KEY = '@app_theme_mode';
+
+/**
+ * Set App Check token in update request headers
+ * This authenticates OTA update requests with Firebase App Check
+ */
+async function setAppCheckHeaders(): Promise<void> {
+  const token = await getCachedAppCheckToken();
+  if (token) {
+    Updates.setUpdateRequestHeadersOverride({
+      'X-Firebase-AppCheck': token,
+    });
+    console.log('📦 App Check header set for update request');
+  } else {
+    console.warn('📦 No App Check token available for update request');
+  }
+}
 
 /**
  * Get the current theme background color based on user preference
@@ -91,6 +108,9 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
   }
 
   try {
+    // Set App Check headers for authenticated update requests
+    await setAppCheckHeaders();
+
     console.log('📦 ========== UPDATE CHECK START ==========');
     console.log('📦 Runtime Version:', getRuntimeVersion());
     console.log('📦 Platform:', Platform.OS);
@@ -161,6 +181,9 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
  */
 export async function downloadAndApplyUpdate(): Promise<UpdateDownloadResult> {
   try {
+    // Set App Check headers for authenticated asset downloads
+    await setAppCheckHeaders();
+
     console.log('📦 Starting update download...');
     console.log('📦 Before fetch - Update ID:', Updates.updateId);
     console.log('📦 Before fetch - Is Embedded:', Updates.isEmbeddedLaunch);
