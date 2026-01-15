@@ -208,6 +208,13 @@ export const showInterstitialAd = async (): Promise<void> => {
     try {
       console.log('🎬 Showing interstitial ad...');
 
+      // Delay to ensure any dismissing modals/view controllers are fully gone
+      // React Native Modal fade animation takes ~300ms, wait longer to be safe
+      // This prevents "already presenting another view controller" errors on iOS
+      if (Platform.OS === 'ios') {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+
       // Create a promise that resolves when the ad is closed OR errors
       // This prevents hanging if the ad fails to display (e.g., view controller conflict)
       const adClosedPromise = new Promise<void>((resolve) => {

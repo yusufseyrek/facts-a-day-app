@@ -8,6 +8,7 @@ import {
   Camera,
   Contrast,
   Download,
+  Eye,
   FileText,
   Globe,
   Grid,
@@ -50,6 +51,7 @@ import { buildNotificationContent } from '../../src/services/notifications';
 import * as onboardingService from '../../src/services/onboarding';
 import * as updates from '../../src/services/updates';
 import { hexColors, useTheme } from '../../src/theme';
+import { openAdDebugMenu } from '../../src/services/ads';
 import { openInAppBrowser } from '../../src/utils/browser';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -79,7 +81,7 @@ const getThemeName = (mode: string, t: (key: TranslationKeys) => string): string
 };
 
 export default function SettingsPage() {
-  const { theme, themeMode, toggleTheme } = useTheme();
+  const { theme, themeMode } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { resetOnboarding } = useOnboarding();
@@ -850,11 +852,11 @@ export default function SettingsPage() {
           onPress: handleScheduleDuplicateNotifications,
         },
         {
-          id: 'toggleTheme',
-          label: t('toggleTheme'),
-          value: theme,
-          icon: <Contrast size={iconSizes.md} color={iconColor} />,
-          onPress: toggleTheme,
+          id: 'adInspector',
+          label: 'Ad Inspector',
+          value: 'debug ads',
+          icon: <Eye size={iconSizes.md} color={iconColor} />,
+          onPress: openAdDebugMenu,
         },
         {
           id: 'resetOnboarding',

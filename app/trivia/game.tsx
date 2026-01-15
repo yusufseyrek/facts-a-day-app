@@ -354,7 +354,11 @@ export default function TriviaGameScreen() {
 
   const handleUnansweredContinue = () => {
     setShowUnansweredModal(false);
-    finishQuiz();
+    // Delay to let the modal fully dismiss before showing the ad
+    // iOS Modal fade animation takes ~300ms, wait a bit longer to be safe
+    setTimeout(() => {
+      finishQuiz();
+    }, 400);
   };
 
   const handleAnswerSelect = (answer: string) => {

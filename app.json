@@ -42,14 +42,15 @@
       "bundleIdentifier": "dev.seyrek.factsaday",
       "buildNumber": "43",
       "googleServicesFile": "./google/GoogleService-Info.plist",
-      "associatedDomains": [
-        "applinks:factsaday.com"
-      ],
+      "associatedDomains": ["applinks:factsaday.com"],
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false,
         "FirebaseAutomaticScreenReportingEnabled": false,
         "SKAdNetworkItems": [
+          {
+            "SKAdNetworkIdentifier": "4dzt52r2t5.skadnetwork"
+          },
           {
             "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork"
           },
@@ -151,6 +152,144 @@
           },
           {
             "SKAdNetworkIdentifier": "3qcr597p9d.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "gta9lk7p23.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "22mmun2rn5.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "238da6jt44.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "294l99pt4k.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "32z4fx6l9h.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "3rd42ekr43.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "44jx6755aq.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "488r3q3dtq.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "4pfyvq9l8r.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "4w7y6s5ca2.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "578prtvx9j.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "5f5u5tfb26.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "5l3tpt7t6e.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "5lm9lj6jb7.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "5tjdwbrq8w.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "6yxyv74ff7.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "77y3x8wds4.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "97r2b46745.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "9nlqeag3gk.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "a2p9lx4jpn.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "a8cz6cu7e5.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "f73kdq92p3.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "f7s53z58qe.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "feyaarzu9v.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "g6gcrrvk4p.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "glqzh8vgby.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "k674qkevps.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "k6y4y55b64.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "lr83yxwka7.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "m8dbw4sv7c.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "mj797d8u6f.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "mlmmfzh3r3.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "mp6xlyr22a.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "mqn7fxpca7.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "n38lu8286q.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "n9x2a789qt.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "pwa73g5rt2.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "tl55sbb4fm.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "v79kvwwj4g.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "v9wttpbfk9.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "vhf287vqwu.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "w9q455wk68.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "wg4vff78zm.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "x44k69ngh6.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "xga6mpmplv.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "zmvfpc5aq8.skadnetwork"
           }
         ]
       }
@@ -185,10 +324,7 @@
               "pathPrefix": "/fact"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
@@ -196,16 +332,7 @@
       [
         "expo-localization",
         {
-          "supportedLocales": [
-            "en",
-            "de",
-            "es",
-            "fr",
-            "ja",
-            "ko",
-            "tr",
-            "zh"
-          ]
+          "supportedLocales": ["en", "de", "es", "fr", "ja", "ko", "tr", "zh"]
         }
       ],
       "@react-native-firebase/app",
@@ -228,10 +355,24 @@
         {
           "android": {
             "kotlinVersion": "2.1.20",
-            "extraProguardRules": "-keep class com.google.android.gms.internal.consent_sdk.** { *; }"
+            "extraProguardRules": "-keep class com.google.android.gms.internal.consent_sdk.** { *; }",
+            "dependencies": [
+              "com.unity3d.ads:unity-ads:4.16.2",
+              "com.google.ads.mediation:unity:4.16.5.0",
+              "com.google.ads.mediation:vungle:7.6.3.0"
+            ]
           },
           "ios": {
-            "deploymentTarget": "15.1"
+            "deploymentTarget": "15.1",
+            "useFrameworks": "static",
+            "extraPods": [
+              {
+                "name": "GoogleMobileAdsMediationUnity"
+              },
+              {
+                "name": "GoogleMobileAdsMediationVungle"
+              }
+            ]
           }
         }
       ],
