@@ -47,6 +47,7 @@ import { Screens, trackScreenView } from '../../src/services/analytics';
 import { requestReview } from '../../src/services/appReview';
 import * as database from '../../src/services/database';
 import { clearAllCachedImages, getCachedImagesSize } from '../../src/services/images';
+import { cleanupShareCards } from '../../src/services/share';
 import { buildNotificationContent } from '../../src/services/notifications';
 import * as onboardingService from '../../src/services/onboarding';
 import * as updates from '../../src/services/updates';
@@ -540,6 +541,8 @@ export default function SettingsPage() {
         onPress: async () => {
           try {
             const result = await clearAllCachedImages();
+            // Also clear share card images
+            await cleanupShareCards();
             setImageCacheSize(0);
             Alert.alert(
               t('success'),

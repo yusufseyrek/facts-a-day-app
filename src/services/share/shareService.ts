@@ -55,9 +55,26 @@ class ShareServiceImpl {
   }
 
   /**
-   * Share a fact to a specific platform or general share sheet
+   * Prepare share card image without showing share sheet
+   * @returns The image URI if successful, undefined otherwise
    */
-  async share(fact: ShareableFact, options: Partial<ShareOptions> = {}): Promise<ShareResult> {
+  async prepareShareCard(factId: number): Promise<string | undefined> {
+    if (!this.viewShotRef) {
+      return undefined;
+    }
+    const card = await generateShareCard(this.viewShotRef, factId);
+    return card?.uri;
+  }
+
+  /**
+   * Share a fact to a specific platform or general share sheet
+   * @param preparedImageUri - Optional pre-generated image URI (skips image generation if provided)
+   */
+  async share(
+    fact: ShareableFact,
+    options: Partial<ShareOptions> = {},
+    preparedImageUri?: string
+  ): Promise<ShareResult> {
     const { platform, includeImage, includeDeepLink } = {
       ...DEFAULT_OPTIONS,
       ...options,
@@ -67,9 +84,9 @@ class ShareServiceImpl {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     try {
-      // Generate image if needed and ViewShot ref is available
-      let imageUri: string | undefined;
-      if (includeImage && this.viewShotRef) {
+      // Use prepared image or generate if needed
+      let imageUri: string | undefined = preparedImageUri;
+      if (!imageUri && includeImage && this.viewShotRef) {
         const card = await generateShareCard(this.viewShotRef, fact.id);
         imageUri = card?.uri;
       }

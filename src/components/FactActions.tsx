@@ -273,12 +273,18 @@ export function FactActions({
     // Light haptic feedback for share action
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    // Trigger animation immediately
-    triggerShareAnimation();
-
-    // Share directly without modal
     setIsSharing(true);
+
     try {
+      // Prepare the share card image first
+      const preparedImageUri = await shareService.prepareShareCard(factId);
+
+      // Trigger animation in next frame for smooth execution
+      requestAnimationFrame(() => {
+        triggerShareAnimation();
+      });
+
+      // Show share modal with prepared image
       const result = await shareService.share(
         {
           id: factId,
@@ -291,7 +297,8 @@ export function FactActions({
           platform: 'general',
           includeImage: true,
           includeDeepLink: true,
-        }
+        },
+        preparedImageUri
       );
 
       if (!result.success && result.error && result.error !== 'cancelled') {
@@ -369,6 +376,7 @@ export function FactActions({
           {/* Share Button - Neon Green with Animation */}
           <Pressable
             onPress={handleShare}
+            disabled={isSharing}
             role="button"
             aria-label={t('a11y_shareButton')}
             style={({ pressed }) => ({
