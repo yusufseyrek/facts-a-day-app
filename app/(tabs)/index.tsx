@@ -30,7 +30,6 @@ import {
   trackRandomFactClick,
   trackScreenView,
 } from '../../src/services/analytics';
-import { checkAndRequestReview } from '../../src/services/appReview';
 import {
   forceRefreshContent,
   getRefreshStatus,
@@ -264,7 +263,6 @@ function HomeScreen() {
       if (fact.image_url) {
         prefetchFactImage(fact.image_url, fact.id);
       }
-      checkAndRequestReview();
       router.push(`/fact/${fact.id}?source=feed`);
     },
     [router]

@@ -8,7 +8,7 @@ import mobileAds, {
 import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 
 import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
-import { ADS_ENABLED } from '../config/ads';
+import { ADS_ENABLED } from '../config/app';
 
 import {
   trackAdsSdkInitialized,

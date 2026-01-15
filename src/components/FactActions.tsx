@@ -1,3 +1,4 @@
+/* global requestAnimationFrame */
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet } from 'react-native';
 import Animated, {
@@ -308,6 +309,8 @@ export function FactActions({
       console.error('[Share] Error:', error);
     } finally {
       setIsSharing(false);
+      // Clean up share card images after sharing
+      shareService.cleanup();
     }
   };
 

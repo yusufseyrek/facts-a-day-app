@@ -11,6 +11,11 @@ import { APP_REVIEW, APP_STORE_ID, PLAY_STORE_ID, STORAGE_KEYS } from '../config
  */
 export async function trackFactView(): Promise<boolean> {
   try {
+    // Always increment view count (used for interstitial ads too)
+    const currentCount = await getFactsViewedCount();
+    const newCount = currentCount + 1;
+    await AsyncStorage.setItem(STORAGE_KEYS.FACTS_VIEWED_COUNT, newCount.toString());
+
     // Check if review has already been requested
     const reviewRequested = await AsyncStorage.getItem(STORAGE_KEYS.REVIEW_REQUESTED);
     if (reviewRequested === 'true') {
@@ -26,11 +31,6 @@ export async function trackFactView(): Promise<boolean> {
         return false; // Too soon to prompt again
       }
     }
-
-    // Increment view count
-    const currentCount = await getFactsViewedCount();
-    const newCount = currentCount + 1;
-    await AsyncStorage.setItem(STORAGE_KEYS.FACTS_VIEWED_COUNT, newCount.toString());
 
     // Check if threshold reached
     if (newCount >= APP_REVIEW.FACTS_THRESHOLD) {
@@ -178,13 +178,21 @@ export async function resetReviewTracking(): Promise<void> {
 }
 
 /**
- * Check if review prompt should be shown and show it if appropriate
- * Call this after a fact is viewed
+ * Handle fact viewed event
+ * - Increments view count
+ * - Shows interstitial ad if threshold reached
+ * - Shows app review prompt if conditions are met
  */
-export async function checkAndRequestReview(): Promise<void> {
+export async function onFactViewed(): Promise<void> {
   try {
-    const shouldShow = await trackFactView();
-    if (shouldShow) {
+    const shouldShowReview = await trackFactView();
+
+    // Check and show interstitial ad based on view count
+    // Import dynamically to avoid circular dependency
+    const { maybeShowFactViewInterstitial } = await import('./adManager');
+    await maybeShowFactViewInterstitial();
+
+    if (shouldShowReview) {
       // Small delay to avoid interrupting the user experience
       setTimeout(async () => {
         await requestReview();

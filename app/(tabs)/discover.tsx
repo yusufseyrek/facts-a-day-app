@@ -28,7 +28,6 @@ import {
   trackScreenView,
   trackSearch,
 } from '../../src/services/analytics';
-import { checkAndRequestReview } from '../../src/services/appReview';
 import * as database from '../../src/services/database';
 import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/services/images';
 import { getSelectedCategories } from '../../src/services/onboarding';
@@ -303,7 +302,6 @@ function DiscoverScreen() {
       if (fact.image_url) {
         prefetchFactImage(fact.image_url, fact.id);
       }
-      checkAndRequestReview();
       router.push(`/fact/${fact.id}?source=discover`);
     },
     [router]

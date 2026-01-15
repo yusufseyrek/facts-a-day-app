@@ -10,7 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { Button, FONT_FAMILIES, Text } from '../../src/components';
-import { ADS_ENABLED } from '../../src/config/ads';
+import { ADS_ENABLED } from '../../src/config/app';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { completeConsentFlow, initializeAdsSDK, isConsentRequired } from '../../src/services/ads';

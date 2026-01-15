@@ -8,7 +8,7 @@ import { Brain, Compass, Lightbulb, Settings, Star } from '@tamagui/lucide-icons
 import { Tabs, usePathname } from 'expo-router';
 
 import { BannerAd } from '../../src/components/ads';
-import { ADS_ENABLED } from '../../src/config/ads';
+import { ADS_ENABLED } from '../../src/config/app';
 import { useScrollToTop } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import * as triviaService from '../../src/services/trivia';

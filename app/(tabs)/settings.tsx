@@ -47,9 +47,9 @@ import { Screens, trackScreenView } from '../../src/services/analytics';
 import { requestReview } from '../../src/services/appReview';
 import * as database from '../../src/services/database';
 import { clearAllCachedImages, getCachedImagesSize } from '../../src/services/images';
-import { cleanupShareCards } from '../../src/services/share';
 import { buildNotificationContent } from '../../src/services/notifications';
 import * as onboardingService from '../../src/services/onboarding';
+import { cleanupShareCards } from '../../src/services/share';
 import * as updates from '../../src/services/updates';
 import { hexColors, useTheme } from '../../src/theme';
 import { openInAppBrowser } from '../../src/utils/browser';
@@ -509,7 +509,7 @@ export default function SettingsPage() {
 
   const handlePrivacyPolicyPress = async () => {
     try {
-      const url = `https://factsaday.com/privacy/${locale}`;
+      const url = `https://factsaday.com/${locale}/privacy`;
       await openInAppBrowser(url, { theme });
     } catch (error) {
       console.error('Error opening privacy policy:', error);
@@ -519,7 +519,7 @@ export default function SettingsPage() {
 
   const handleTermsOfServicePress = async () => {
     try {
-      const url = `https://factsaday.com/terms/${locale}`;
+      const url = `https://factsaday.com/${locale}/terms`;
       await openInAppBrowser(url, { theme });
     } catch (error) {
       console.error('Error opening terms of service:', error);

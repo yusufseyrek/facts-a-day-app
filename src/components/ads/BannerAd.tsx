@@ -9,7 +9,7 @@ import {
 
 import Constants from 'expo-constants';
 
-import { AD_RETRY, ADS_ENABLED } from '../../config/ads';
+import { AD_RETRY, ADS_ENABLED } from '../../config/app';
 import { getAdKeywords, subscribeToKeywords } from '../../services/adKeywords';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 

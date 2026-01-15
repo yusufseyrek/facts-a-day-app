@@ -4,7 +4,7 @@ import { AdEventType, AdsConsent, InterstitialAd, TestIds } from 'react-native-g
 
 import Constants from 'expo-constants';
 
-import { ADS_ENABLED } from '../../config/ads';
+import { ADS_ENABLED } from '../../config/app';
 import { getAdKeywords } from '../../services/adKeywords';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 

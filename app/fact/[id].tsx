@@ -19,7 +19,7 @@ import type { FactWithRelations } from '../../src/services/database';
 export default function FactDetailModal() {
   const { id, source } = useLocalSearchParams<{ id: string; source?: FactViewSource }>();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { spacing } = useResponsive();
   const [fact, setFact] = useState<FactWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,7 +67,7 @@ export default function FactDetailModal() {
       // If not found locally, fetch from API (for deep links to facts not yet synced)
       if (!factData) {
         try {
-          const apiResponse = await api.getFactById(factId, true);
+          const apiResponse = await api.getFactById(factId, locale, true);
           // Validate API response has required fields
           if (!apiResponse || !apiResponse.content) {
             setError(t('factNotFound'));

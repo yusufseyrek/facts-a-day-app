@@ -321,7 +321,7 @@
             {
               "scheme": "https",
               "host": "factsaday.com",
-              "pathPrefix": "/fact"
+              "pathPattern": "/.*/fact/.*"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]

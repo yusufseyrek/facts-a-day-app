@@ -6,6 +6,26 @@
  */
 
 /**
+ * Ads configuration
+ */
+export const ADS_ENABLED = !!__DEV__;
+
+/**
+ * Interstitial ad settings
+ */
+export const INTERSTITIAL_ADS = {
+  /** Number of fact views between interstitial ads */
+  FACTS_BETWEEN_ADS: 5,
+} as const;
+
+export const AD_RETRY = {
+  /** Maximum number of retry attempts for failed ads */
+  MAX_RETRIES: 5,
+  /** Delay intervals between retries (milliseconds): 15s, 30s, 1m, 2m, 4m */
+  DELAYS: [15000, 30000, 60000, 120000, 240000],
+} as const;
+
+/**
  * AsyncStorage keys used throughout the app
  */
 export const STORAGE_KEYS = {

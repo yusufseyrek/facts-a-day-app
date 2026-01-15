@@ -16,15 +16,11 @@ const WEBSITE_URL = 'https://factsaday.com';
 /**
  * Generate a universal deep link for a fact
  * This URL can be handled by both web and app
- * Includes the current language for proper localization (only for non-English)
+ * Includes the current language for proper localization
  */
 export function generateDeepLink(factId: number): string {
   const lang = i18n.locale || 'en';
-  // Only add lang param for non-English locales
-  if (lang === 'en') {
-    return `${WEBSITE_URL}/fact/${factId}`;
-  }
-  return `${WEBSITE_URL}/fact/${factId}?lang=${lang}`;
+  return `${WEBSITE_URL}/${lang}/fact/${factId}`;
 }
 
 /**
@@ -32,7 +28,8 @@ export function generateDeepLink(factId: number): string {
  * Only works if the app is installed
  */
 export function generateAppLink(factId: number): string {
-  return `${SCHEME}://fact/${factId}`;
+  const lang = i18n.locale || 'en';
+  return `${SCHEME}://${lang}/fact/${factId}`;
 }
 
 /**

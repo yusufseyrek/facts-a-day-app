@@ -6,7 +6,7 @@
 import { Platform } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Application from 'expo-application';
+import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Localization from 'expo-localization';
 
@@ -22,6 +22,31 @@ import { getNotificationTimes, getSelectedCategories } from './onboarding';
 const THEME_STORAGE_KEY = '@app_theme_mode';
 
 // ============================================================================
+// Utilities
+// ============================================================================
+
+/**
+ * Get OTA-aware app version info from Constants.expoConfig
+ * These values update when an OTA bundle is applied (unlike native build values)
+ */
+export function getAppVersionInfo(): {
+  platform: string;
+  appVersion: string;
+  buildNumber: string;
+  platformBuildId: string;
+} {
+  const platform = Platform.OS;
+  const appVersion = Constants.expoConfig?.version || 'unknown';
+  const buildNumber =
+    platform === 'ios'
+      ? Constants.expoConfig?.ios?.buildNumber || 'unknown'
+      : String(Constants.expoConfig?.android?.versionCode || 'unknown');
+  const platformBuildId = `${platform}_${appVersion}_${buildNumber}`;
+
+  return { platform, appVersion, buildNumber, platformBuildId };
+}
+
+// ============================================================================
 // Initialization
 // ============================================================================
 
@@ -33,13 +58,10 @@ const THEME_STORAGE_KEY = '@app_theme_mode';
 export const initAnalytics = async (): Promise<void> => {
   try {
     // Device info values
-    const platform = Platform.OS;
+    const { platform, appVersion, buildNumber, platformBuildId } = getAppVersionInfo();
     const osVersion = Platform.Version?.toString() || 'unknown';
     const deviceBrand = Device.brand || 'unknown';
     const deviceModel = Device.modelName || 'unknown';
-    const appVersion = Application.nativeApplicationVersion || 'unknown';
-    const buildNumber = Application.nativeBuildVersion || 'unknown';
-    const platformBuildId = `${platform}_${appVersion}_${buildNumber}`;
     const locale = Localization.getLocales()[0]?.languageCode || 'unknown';
     const isDevice = Device.isDevice ? 'true' : 'false';
 
@@ -558,12 +580,7 @@ export const trackTriviaViewFactClick = (params: {
  * Sends composite platform + version/build identifier
  */
 export const trackAppUpdate = (): void => {
-  const platform = Platform.OS;
-  const appVersion = Application.nativeApplicationVersion || 'unknown';
-  const buildNumber = Application.nativeBuildVersion || 'unknown';
-
-  // Composite identifier: platform_version_build (e.g., "ios_1.2.3_45")
-  const platformBuildId = `${platform}_${appVersion}_${buildNumber}`;
+  const { platform, appVersion, buildNumber, platformBuildId } = getAppVersionInfo();
 
   logEvent('app_update', {
     platform,

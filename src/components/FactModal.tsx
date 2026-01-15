@@ -20,6 +20,7 @@ import { XStack, YStack } from 'tamagui';
 import { useTranslation } from '../i18n';
 import { addCategoryKeyword } from '../services/adKeywords';
 import { trackSourceLinkClick } from '../services/analytics';
+import { onFactViewed } from '../services/appReview';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { openInAppBrowser } from '../utils/browser';
@@ -142,6 +143,11 @@ export function FactModal({ fact, onClose }: FactModalProps) {
       addCategoryKeyword(categorySlug);
     }
   }, [fact.id, fact.categoryData?.slug, fact.category]);
+
+  // Track fact view for app review prompt and interstitial ads
+  useEffect(() => {
+    onFactViewed();
+  }, [fact.id]);
 
   // Local notification image state - prioritize notification image if available
   const [notificationImageUri, setNotificationImageUri] = useState<string | null>(null);

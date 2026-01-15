@@ -1,11 +1,11 @@
 import { Platform } from 'react-native';
 
-import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 
 import { API_SETTINGS } from '../config/app';
 import { appCheckReady } from '../config/firebase';
 
+import { getAppVersionInfo } from './analytics';
 import { getCachedAppCheckToken } from './appCheckToken';
 
 /**
@@ -210,10 +210,8 @@ async function makeRequest<T>(
     // Get App Check token for protected endpoints (uses cache to prevent rate limiting)
     const appCheckToken = await getCachedAppCheckToken();
 
-    // Build platform build ID for request tracking
-    const appVersion = Application.nativeApplicationVersion || 'unknown';
-    const buildNumber = Application.nativeBuildVersion || 'unknown';
-    const platformBuildId = `${Platform.OS}_${appVersion}_${buildNumber}`;
+    // Build platform build ID for request tracking (OTA-aware values)
+    const { platformBuildId } = getAppVersionInfo();
 
     // Build headers with App Check token if available
     const headers: Record<string, string> = {
@@ -285,14 +283,22 @@ export interface GetFactByIdResponse {
 
 /**
  * Get a single fact by ID
+ * @param id - The fact ID
+ * @param language - The language to fetch the fact in (uses app's current locale)
+ * @param includeQuestions - Whether to include trivia questions
  */
-export async function getFactById(id: number, includeQuestions?: boolean): Promise<FactResponse> {
+export async function getFactById(
+  id: number,
+  language: string,
+  includeQuestions?: boolean
+): Promise<FactResponse> {
   const queryParams = new URLSearchParams();
+  queryParams.append('language', language);
   if (includeQuestions) {
     queryParams.append('include_questions', 'true');
   }
   const query = queryParams.toString();
-  const endpoint = `/api/facts/${id}${query ? `?${query}` : ''}`;
+  const endpoint = `/api/facts/${id}?${query}`;
   const response = await makeRequest<GetFactByIdResponse>(endpoint);
   return response.fact;
 }
