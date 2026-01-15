@@ -12,6 +12,9 @@ import * as SplashScreen from 'expo-splash-screen';
 
 import { waitForHomeScreenReady } from '../contexts';
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const splashIcon = require('../../assets/splash-icon.png');
+
 // Must match app.json splash config exactly
 const SPLASH_BACKGROUND = '#0A1628';
 const LOGO_SIZE = 200;
@@ -28,7 +31,6 @@ export function SplashOverlay({ onHidden }: SplashOverlayProps) {
   const [imageReady, setImageReady] = useState(false);
   const [homeReady, setHomeReady] = useState(false);
   const opacity = useSharedValue(1);
-  const scale = useSharedValue(1);
 
   // Wait for home screen to be ready
   useEffect(() => {
@@ -40,7 +42,7 @@ export function SplashOverlay({ onHidden }: SplashOverlayProps) {
   // When image is laid out, wait then hide native splash
   const handleImageLayout = useCallback(() => {
     if (!imageReady) {
-      requestAnimationFrame(() => {
+      global.requestAnimationFrame(() => {
         SplashScreen.hide();
         setImageReady(true);
       });
@@ -71,7 +73,7 @@ export function SplashOverlay({ onHidden }: SplashOverlayProps) {
     <Animated.View style={[styles.container, containerStyle]}>
       <View style={styles.content}>
         <Image
-          source={require('../../assets/splash-icon.png')}
+          source={splashIcon}
           style={styles.logo}
           resizeMode="contain"
           onLayout={handleImageLayout}

@@ -13,7 +13,6 @@ import { View, YStack } from 'tamagui';
 import {
   ContentContainer,
   EmptyState,
-  FONT_FAMILIES,
   LoadingContainer,
   ScreenContainer,
   ScreenHeader,
@@ -22,11 +21,7 @@ import {
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT } from '../../src/config/app';
-import {
-  FLASH_LIST_ITEM_TYPES,
-  FLASH_LIST_SETTINGS,
-  getImageCardHeight,
-} from '../../src/config/factListSettings';
+import { FLASH_LIST_ITEM_TYPES, FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
 import { usePreloadedData, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
@@ -116,7 +111,7 @@ function HomeScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const iconColor = useIconColor();
-  const { iconSizes, spacing, screenWidth, isTablet } = useResponsive();
+  const { iconSizes, spacing } = useResponsive();
   const { consumePreloadedFacts, signalHomeScreenReady } = usePreloadedData();
 
   const [sections, setSections] = useState<FactSection[]>([]);

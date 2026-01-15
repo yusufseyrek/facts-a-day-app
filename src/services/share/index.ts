@@ -10,26 +10,26 @@ export { shareService } from './shareService';
 
 // Types
 export type {
-  SharePlatform,
-  ShareableFact,
-  ShareOptions,
-  ShareResult,
   GeneratedShareCard,
   PlatformConfig,
   PlatformConfigMap,
+  ShareableFact,
+  ShareOptions,
+  SharePlatform,
+  ShareResult,
 } from './types';
 
 // Platform configuration
-export { PLATFORM_CONFIG, getAvailablePlatforms } from './platforms';
+export { getAvailablePlatforms,PLATFORM_CONFIG } from './platforms';
 
 // Deep link utilities
 export {
-  generateDeepLink,
   generateAppLink,
-  getAppStoreUrl,
+  generateDeepLink,
   generateShareText,
   generateShortShareText,
+  getAppStoreUrl,
 } from './deepLinks';
 
 // Image generation utilities
-export { generateShareCard, cleanupShareCards, getShareImagesDir } from './imageGenerator';
+export { cleanupShareCards, generateShareCard, getShareImagesDir } from './imageGenerator';

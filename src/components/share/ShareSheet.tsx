@@ -12,9 +12,6 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-
-import { Facebook, Instagram, MessageCircle, Share2, Twitter, X } from '@tamagui/lucide-icons';
-import * as Haptics from 'expo-haptics';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -23,6 +20,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ViewShot from 'react-native-view-shot';
+
+import { Facebook, Instagram, MessageCircle, Share2, Twitter, X } from '@tamagui/lucide-icons';
+import * as Haptics from 'expo-haptics';
 import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../../i18n';
@@ -34,7 +34,7 @@ import { Text } from '../Typography';
 
 import { ShareCard } from './ShareCard';
 
-import type { SharePlatform, ShareResult, ShareableFact } from '../../services/share/types';
+import type { ShareableFact,SharePlatform, ShareResult } from '../../services/share/types';
 
 interface ShareSheetProps {
   visible: boolean;

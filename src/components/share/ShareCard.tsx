@@ -6,37 +6,40 @@
 
 import React, { forwardRef } from 'react';
 import { StyleSheet, View } from 'react-native';
+import ViewShot from 'react-native-view-shot';
 
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import ViewShot from 'react-native-view-shot';
 import { XStack, YStack } from 'tamagui';
 
 import { i18n } from '../../i18n';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const appIcon = require('../../../assets/icon.png');
 import {
-  SHARE_CARD_WIDTH,
+  SHARE_CARD_BACKGROUND,
   SHARE_CARD_HEIGHT,
   SHARE_CARD_PADDING,
-  SHARE_IMAGE_FORMAT,
-  SHARE_IMAGE_QUALITY,
-  SHARE_WATERMARK_FONT_SIZE,
-  SHARE_STORE_HINT_FONT_SIZE,
-  SHARE_WATERMARK_LOGO_SIZE,
+  SHARE_CARD_WIDTH,
   SHARE_DOMAIN_ACCENT_COLOR,
-  SHARE_CARD_BACKGROUND,
-  SHARE_TEXT_COLOR,
-  SHARE_TEXT_MUTED,
   SHARE_GRADIENT_COLORS,
   SHARE_GRADIENT_LOCATIONS,
+  SHARE_IMAGE_FORMAT,
   SHARE_IMAGE_OVERLAY_COLORS,
   SHARE_IMAGE_OVERLAY_LOCATIONS,
+  SHARE_IMAGE_QUALITY,
+  SHARE_STORE_HINT_FONT_SIZE,
+  SHARE_TEXT_COLOR,
+  SHARE_TEXT_MUTED,
+  SHARE_WATERMARK_FONT_SIZE,
+  SHARE_WATERMARK_LOGO_SIZE,
 } from '../../services/share/config';
 import { getCategoryNeonColor } from '../../theme';
 import { getContrastColor } from '../../utils/colors';
 import { FONT_FAMILIES, Text } from '../Typography';
 
-import type { ShareableFact } from '../../services/share/types';
 import type { Category } from '../../services/database';
+import type { ShareableFact } from '../../services/share/types';
 
 interface ShareCardProps {
   fact: ShareableFact;
@@ -156,7 +159,7 @@ export const ShareCard = forwardRef<ViewShot, ShareCardProps>(({ fact }, ref) =>
           <XStack alignItems="center" gap={8}>
             <View style={styles.watermarkLogoContainer}>
               <Image
-                source={require('../../../assets/icon.png')}
+                source={appIcon}
                 style={styles.watermarkLogo}
                 contentFit="contain"
               />

@@ -6,7 +6,6 @@ import {
   Bell,
   Bug,
   Camera,
-  Contrast,
   Download,
   Eye,
   FileText,
@@ -43,6 +42,7 @@ import { LAYOUT } from '../../src/config/app';
 import { useOnboarding, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { TranslationKeys } from '../../src/i18n/translations';
+import { openAdDebugMenu } from '../../src/services/ads';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import { requestReview } from '../../src/services/appReview';
 import * as database from '../../src/services/database';
@@ -51,7 +51,6 @@ import { buildNotificationContent } from '../../src/services/notifications';
 import * as onboardingService from '../../src/services/onboarding';
 import * as updates from '../../src/services/updates';
 import { hexColors, useTheme } from '../../src/theme';
-import { openAdDebugMenu } from '../../src/services/ads';
 import { openInAppBrowser } from '../../src/utils/browser';
 import { useResponsive } from '../../src/utils/useResponsive';
 

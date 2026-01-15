@@ -3,10 +3,12 @@
  * Captures share cards as images using ViewShot
  */
 
-import * as FileSystem from 'expo-file-system/legacy';
 import ViewShot from 'react-native-view-shot';
 
-import { SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT, SHARE_IMAGE_FORMAT } from './config';
+import * as FileSystem from 'expo-file-system/legacy';
+
+import { SHARE_CARD_HEIGHT, SHARE_CARD_WIDTH, SHARE_IMAGE_FORMAT } from './config';
+
 import type { GeneratedShareCard } from './types';
 
 const SHARE_IMAGES_DIR = `${FileSystem.documentDirectory}share-cards/`;

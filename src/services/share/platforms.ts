@@ -10,7 +10,7 @@ import * as Sharing from 'expo-sharing';
 
 import { SHARE_IMAGE_FORMAT } from './config';
 
-import type { SharePlatform, ShareResult, PlatformConfigMap } from './types';
+import type { PlatformConfigMap,SharePlatform, ShareResult } from './types';
 
 /**
  * Get MIME type based on configured image format

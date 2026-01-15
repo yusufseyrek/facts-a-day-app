@@ -96,7 +96,7 @@ function isMacOS(): boolean {
   }
 
   // Method 2: Check React Native's Platform.isMac (for Mac Catalyst)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   if ((Platform as any).isMac === true) {
     return true;
   }

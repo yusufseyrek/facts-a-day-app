@@ -9,11 +9,11 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ViewShot from 'react-native-view-shot';
 
 import { styled } from '@tamagui/core';
 import { Flag, Heart, Share as ShareIcon } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
-import ViewShot from 'react-native-view-shot';
 import { View, XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n';
@@ -24,13 +24,14 @@ import {
 } from '../services/analytics';
 import * as api from '../services/api';
 import * as database from '../services/database';
-import type { Category } from '../services/database';
 import { shareService } from '../services/share';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
 import { ReportFactModal } from './ReportFactModal';
 import { ShareCard } from './share';
+
+import type { Category } from '../services/database';
 
 interface FactActionsProps {
   factId: number;

@@ -3,23 +3,24 @@
  * Main orchestration service for sharing facts
  */
 
-import * as Haptics from 'expo-haptics';
 import ViewShot from 'react-native-view-shot';
+
+import * as Haptics from 'expo-haptics';
 
 import { trackFactShareWithPlatform } from '../analytics';
 
-import { generateShareText, generateShortShareText, generateDeepLink } from './deepLinks';
-import { generateShareCard, cleanupShareCards } from './imageGenerator';
+import { generateDeepLink,generateShareText, generateShortShareText } from './deepLinks';
+import { cleanupShareCards,generateShareCard } from './imageGenerator';
 import {
-  shareToInstagramStories,
-  shareToWhatsApp,
-  shareToTwitter,
-  shareToFacebook,
-  shareGeneral,
   getAvailablePlatforms,
+  shareGeneral,
+  shareToFacebook,
+  shareToInstagramStories,
+  shareToTwitter,
+  shareToWhatsApp,
 } from './platforms';
 
-import type { ShareableFact, ShareOptions, ShareResult, SharePlatform } from './types';
+import type { ShareableFact, ShareOptions, SharePlatform,ShareResult } from './types';
 
 /**
  * Default share options
@@ -103,10 +104,11 @@ class ShareServiceImpl {
           result = await shareToTwitter(text, imageUri);
           break;
 
-        case 'facebook':
+        case 'facebook': {
           const deepLink = includeDeepLink ? generateDeepLink(fact.id) : undefined;
           result = await shareToFacebook(text, imageUri, deepLink);
           break;
+        }
 
         case 'general':
         default:
