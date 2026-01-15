@@ -22,7 +22,7 @@ import {
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT } from '../../src/config/app';
 import { FLASH_LIST_ITEM_TYPES, FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
-import { usePreloadedData, useScrollToTopHandler } from '../../src/contexts';
+import { usePreloadedData } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
@@ -43,6 +43,7 @@ import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { consumeRandomFact, initializeRandomFact } from '../../src/services/randomFact';
 import { hexColors, useTheme } from '../../src/theme';
 import { preloadImageToMemoryCache } from '../../src/utils/useFactImage';
+import { useFlashListScrollToTop } from '../../src/utils/useFlashListScrollToTop';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { FactWithRelations } from '../../src/services/database';
@@ -126,12 +127,8 @@ function HomeScreen() {
   // Track if we've consumed preloaded data (only once)
   const consumedPreloadedDataRef = useRef(false);
 
-  // Scroll to top handler
-  const listRef = useRef<any>(null);
-  const scrollToTop = useCallback(() => {
-    listRef.current?.scrollToOffset({ offset: 0, animated: true });
-  }, []);
-  useScrollToTopHandler('index', scrollToTop);
+  // Scroll to top handler with smart instant/animated behavior
+  const { listRef, handleScroll } = useFlashListScrollToTop({ screenId: 'index' });
 
   // Flatten sections into a single array for FlashList
   // Each section becomes: [SectionHeader, FactItem, FactItem, ...]
@@ -383,6 +380,7 @@ function HomeScreen() {
             stickyHeaderIndices={stickyHeaderIndices}
             refreshControl={refreshControl}
             decelerationRate={0.8}
+            onScroll={handleScroll}
             onLoad={signalHomeScreenReady}
             {...{ ...FLASH_LIST_SETTINGS, drawDistance: 800 }}
           />

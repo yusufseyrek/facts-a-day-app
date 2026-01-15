@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, RefreshControl } from 'react-native';
 
 import { useFocusEffect } from '@react-navigation/native';
@@ -18,12 +18,12 @@ import {
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
-import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
 import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/services/images';
 import { hexColors, useTheme } from '../../src/theme';
+import { useFlashListScrollToTop } from '../../src/utils/useFlashListScrollToTop';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { FactWithRelations } from '../../src/services/database';
@@ -75,12 +75,8 @@ export default function FavoritesScreen() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Scroll to top handler
-  const listRef = useRef<any>(null);
-  const scrollToTop = useCallback(() => {
-    listRef.current?.scrollToOffset({ offset: 0, animated: true });
-  }, []);
-  useScrollToTopHandler('favorites', scrollToTop);
+  // Scroll to top handler with smart instant/animated behavior
+  const { listRef, handleScroll } = useFlashListScrollToTop({ screenId: 'favorites' });
 
   const loadFavorites = useCallback(
     async (isRefresh = false) => {
@@ -192,6 +188,7 @@ export default function FavoritesScreen() {
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           refreshControl={refreshControl}
+          onScroll={handleScroll}
           overrideItemLayout={overrideItemLayout}
           snapToInterval={itemHeight}
           {...FLASH_LIST_SETTINGS}

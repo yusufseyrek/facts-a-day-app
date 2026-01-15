@@ -21,6 +21,7 @@ import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT } from '../../src/config/app';
 import { FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
 import { useScrollToTopHandler } from '../../src/contexts';
+import { smartScrollToTop } from '../../src/utils/useFlashListScrollToTop';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
@@ -163,20 +164,37 @@ function DiscoverScreen() {
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [isLoadingCategoryFacts, setIsLoadingCategoryFacts] = useState(false);
 
-  // Scroll to top refs
-
+  // Scroll to top refs and offset tracking
   const searchListRef = useRef<any>(null);
+  const searchScrollOffsetRef = useRef(0);
 
   const categoryListRef = useRef<any>(null);
+  const categoryScrollOffsetRef = useRef(0);
+
   const categoryGridRef = useRef<ScrollView>(null);
 
-  // Scroll to top handler - scrolls whichever list is currently visible
+  // Scroll handlers to track offsets
+  const handleSearchScroll = useCallback(
+    (event: { nativeEvent: { contentOffset: { y: number } } }) => {
+      searchScrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+    },
+    []
+  );
+
+  const handleCategoryScroll = useCallback(
+    (event: { nativeEvent: { contentOffset: { y: number } } }) => {
+      categoryScrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+    },
+    []
+  );
+
+  // Scroll to top handler - scrolls whichever list is currently visible with smart behavior
   const scrollToTop = useCallback(() => {
     const hasQuery = searchQuery.trim().length > 0;
     if (hasQuery && searchResults.length > 0) {
-      searchListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      smartScrollToTop(searchListRef, searchScrollOffsetRef.current);
     } else if (selectedCategorySlug && categoryFacts.length > 0) {
-      categoryListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      smartScrollToTop(categoryListRef, categoryScrollOffsetRef.current);
     } else {
       categoryGridRef.current?.scrollTo({ y: 0, animated: true });
     }
@@ -741,6 +759,7 @@ function DiscoverScreen() {
             keyExtractor={keyExtractor}
             renderItem={renderSearchItem}
             refreshControl={searchRefreshControl}
+            onScroll={handleSearchScroll}
             overrideItemLayout={overrideItemLayout}
             snapToInterval={itemHeight}
             {...FLASH_LIST_SETTINGS}
@@ -788,6 +807,7 @@ function DiscoverScreen() {
             keyExtractor={keyExtractor}
             renderItem={renderCategoryItem}
             refreshControl={categoryRefreshControl}
+            onScroll={handleCategoryScroll}
             overrideItemLayout={overrideItemLayout}
             snapToInterval={itemHeight}
             {...FLASH_LIST_SETTINGS}

@@ -50,6 +50,16 @@ export const FLASH_LIST_SETTINGS = {
   disableIntervalMomentum: true,
 } as const;
 
+/**
+ * Scroll-to-top behavior settings
+ */
+export const SCROLL_TO_TOP_SETTINGS = {
+  /** Scroll offset threshold - if scrolled beyond this, jump instantly instead of animating */
+  instantJumpThreshold: 4000,
+  /** Number of items to pre-render at top before jumping (helps avoid blank flash) */
+  preRenderItemCount: 4,
+} as const;
+
 /** Border width used by ImageFactCard's cardWrapperStyle */
 const CARD_BORDER_WIDTH = 1;
 
