@@ -9,6 +9,7 @@ import { useTranslation } from '../../src/i18n';
 import { Screens, trackFactView, trackScreenView } from '../../src/services/analytics';
 import * as api from '../../src/services/api';
 import * as database from '../../src/services/database';
+import { getLastConsumedFact } from '../../src/services/randomFact';
 import { hexColors } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -41,7 +42,26 @@ export default function FactDetailModal() {
         return;
       }
 
-      // First try local database
+      // First check if this is a pre-loaded random fact (instant, no DB query needed)
+      const preloadedFact = getLastConsumedFact(factId);
+      if (preloadedFact) {
+        setFact(preloadedFact);
+        setLoading(false);
+
+        // Track fact view
+        if (!hasTrackedView) {
+          setHasTrackedView(true);
+          const categorySlug = preloadedFact.categoryData?.slug || preloadedFact.category || 'unknown';
+          trackFactView({
+            factId: preloadedFact.id,
+            category: categorySlug,
+            source: source || 'feed',
+          });
+        }
+        return;
+      }
+
+      // Fall back to local database
       let factData = await database.getFactById(factId);
 
       // If not found locally, fetch from API (for deep links to facts not yet synced)

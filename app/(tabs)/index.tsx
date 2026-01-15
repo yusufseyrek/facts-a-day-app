@@ -43,6 +43,7 @@ import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/servic
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { consumeRandomFact, initializeRandomFact } from '../../src/services/randomFact';
 import { hexColors, useTheme } from '../../src/theme';
+import { preloadImageToMemoryCache } from '../../src/utils/useFactImage';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { FactWithRelations } from '../../src/services/database';
@@ -284,15 +285,18 @@ function HomeScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     trackRandomFactClick();
 
-    // Try to get pre-fetched random fact (image already prefetched)
+    // Try to get pre-fetched random fact (image already prefetched and in memory cache)
     let randomFact = consumeRandomFact(locale);
 
     // Fall back to database if no pre-fetched fact available
     if (!randomFact) {
       randomFact = await database.getRandomFact(locale);
-      // Prefetch image before navigation for faster modal display
+      // Prefetch image and load into memory cache for instant display
       if (randomFact?.image_url) {
-        prefetchFactImage(randomFact.image_url, randomFact.id);
+        const localUri = await prefetchFactImage(randomFact.image_url, randomFact.id);
+        if (localUri) {
+          preloadImageToMemoryCache(randomFact.id, localUri);
+        }
       }
     }
 

@@ -493,7 +493,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                   }}
                   contentFit="cover"
                   cachePolicy="memory-disk"
-                  transition={150}
                 />
               </Animated.View>
               {/* Overlay for better text readability */}
@@ -611,7 +610,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 }}
                 contentFit="cover"
                 cachePolicy="memory-disk"
-                placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+                placeholder={isImageLoading ? { blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' } : undefined}
               />
             </Animated.View>
             {/* Gradient overlay */}

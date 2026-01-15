@@ -498,20 +498,22 @@ async function performImageDownload(
  *
  * @param imageUrl The remote image URL
  * @param factId The fact ID for caching
+ * @returns The local file URI if successful, null otherwise
  */
-export async function prefetchFactImage(imageUrl: string, factId: number): Promise<void> {
+export async function prefetchFactImage(imageUrl: string, factId: number): Promise<string | null> {
   try {
     // Check if already cached using getCachedFactImage which checks ALL extensions
     // This is more reliable than URL-based extension detection
     const cachedUri = await getCachedFactImage(factId);
     if (cachedUri) {
-      return; // Already cached
+      return cachedUri; // Already cached
     }
 
     // Download in background
-    await downloadImageWithAppCheck(imageUrl, factId);
+    return await downloadImageWithAppCheck(imageUrl, factId);
   } catch {
     // Silently fail for prefetch
+    return null;
   }
 }
 

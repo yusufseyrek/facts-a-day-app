@@ -11,6 +11,8 @@
  * 3. If no pre-fetched fact is available (edge case), falls back to fetching on demand
  */
 
+import { preloadImageToMemoryCache } from '../utils/useFactImage';
+
 import { getRandomFactNotInFeed } from './database';
 import { prefetchFactImage } from './images';
 
@@ -24,6 +26,10 @@ let isPreparing = false;
 
 // Store the locale used for the current pre-fetched fact
 let preparedLocale: string | null = null;
+
+// Store the last consumed random fact for instant access by FactDetailModal
+// This avoids re-querying the database when navigating to the random fact
+let lastConsumedFact: FactWithRelations | null = null;
 
 /**
  * Prepare the next random fact in background.
@@ -46,9 +52,13 @@ export async function prepareNextRandomFact(locale: string): Promise<void> {
       nextRandomFact = fact;
       preparedLocale = locale;
 
-      // Pre-fetch the image in background
+      // Pre-fetch the image and load into memory cache for instant display
       if (fact.image_url) {
-        prefetchFactImage(fact.image_url, fact.id);
+        const localUri = await prefetchFactImage(fact.image_url, fact.id);
+        if (localUri) {
+          // Pre-populate useFactImage's memory cache so the modal shows instantly
+          preloadImageToMemoryCache(fact.id, localUri);
+        }
       }
     }
   } catch {
@@ -70,6 +80,9 @@ export function consumeRandomFact(locale: string): FactWithRelations | null {
   if (nextRandomFact && preparedLocale === locale) {
     const fact = nextRandomFact;
 
+    // Store as last consumed for instant access by FactDetailModal
+    lastConsumedFact = fact;
+
     // Clear the current fact
     nextRandomFact = null;
     preparedLocale = null;
@@ -83,6 +96,22 @@ export function consumeRandomFact(locale: string): FactWithRelations | null {
   // No pre-fetched fact available, start preparing for next time
   prepareNextRandomFact(locale);
 
+  return null;
+}
+
+/**
+ * Get and clear the last consumed random fact.
+ * Used by FactDetailModal to avoid re-querying the database.
+ *
+ * @param factId The fact ID to match (ensures we return the correct fact)
+ * @returns The last consumed fact if it matches the ID, null otherwise
+ */
+export function getLastConsumedFact(factId: number): FactWithRelations | null {
+  if (lastConsumedFact && lastConsumedFact.id === factId) {
+    const fact = lastConsumedFact;
+    lastConsumedFact = null; // Clear after consuming
+    return fact;
+  }
   return null;
 }
 
@@ -115,4 +144,5 @@ export function clearRandomFact(): void {
   nextRandomFact = null;
   preparedLocale = null;
   isPreparing = false;
+  lastConsumedFact = null;
 }

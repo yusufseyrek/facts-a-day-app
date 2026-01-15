@@ -304,3 +304,23 @@ export function clearImageCache(): void {
   resolvedImagesTimestamps.clear();
   pendingFetches.clear();
 }
+
+/**
+ * Pre-populate the in-memory image cache with a known URI
+ *
+ * Call this after prefetching an image to ensure useFactImage can return
+ * the URI synchronously on first render, avoiding the flash of loading state.
+ *
+ * @param factId The fact ID
+ * @param localUri The local file URI of the cached image
+ */
+export function preloadImageToMemoryCache(factId: number, localUri: string): void {
+  const cacheKey = getCacheKey(factId);
+
+  // Clean up if cache is getting too large
+  cleanupMemoryCacheIfNeeded();
+
+  // Store in memory cache for instant access
+  resolvedImages.set(cacheKey, localUri);
+  resolvedImagesTimestamps.set(cacheKey, Date.now());
+}
