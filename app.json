@@ -2,7 +2,7 @@
   "expo": {
     "name": "Facts a Day",
     "slug": "facts-a-day-app",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -40,7 +40,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.seyrek.factsaday",
-      "buildNumber": "43",
+      "buildNumber": "44",
       "googleServicesFile": "./google/GoogleService-Info.plist",
       "associatedDomains": ["applinks:factsaday.com"],
       "infoPlist": {
@@ -303,7 +303,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "dev.seyrek.factsaday",
-      "versionCode": 23,
+      "versionCode": 24,
       "permissions": [
         "INTERNET",
         "RECEIVE_BOOT_COMPLETED",
