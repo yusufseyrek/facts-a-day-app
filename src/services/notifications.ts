@@ -54,80 +54,163 @@ async function ensureNotificationImagesDirExists(): Promise<void> {
   }
 }
 
-async function convertToJpegIfNeeded(localUri: string, factId: number): Promise<string> {
+const JPEG_CONVERSION_MAX_ATTEMPTS = 3;
+const JPEG_CONVERSION_RETRY_DELAY_MS = 100;
+
+async function convertToJpegIfNeeded(localUri: string, factId: number): Promise<string | null> {
   const extension = localUri.split('.').pop()?.toLowerCase();
 
-  if (extension === 'jpg' || extension === 'jpeg' || extension === 'png') {
+  // Already JPEG, no conversion needed
+  if (extension === 'jpg' || extension === 'jpeg') {
     return localUri;
   }
 
-  try {
-    const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
+  const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
 
+  // Check if already converted
+  try {
     const existingJpeg = await FileSystem.getInfoAsync(jpegUri);
     if (existingJpeg.exists) {
       return jpegUri;
     }
-
-    const result = await ImageManipulator.manipulateAsync(localUri, [], {
-      compress: 0.8,
-      format: ImageManipulator.SaveFormat.JPEG,
-    });
-
-    await FileSystem.moveAsync({
-      from: result.uri,
-      to: jpegUri,
-    });
-
-    return jpegUri;
   } catch {
-    return localUri;
+    // Continue to conversion
   }
+
+  // Retry conversion up to 3 times
+  for (let attempt = 0; attempt < JPEG_CONVERSION_MAX_ATTEMPTS; attempt++) {
+    try {
+      const result = await ImageManipulator.manipulateAsync(localUri, [], {
+        compress: 0.8,
+        format: ImageManipulator.SaveFormat.JPEG,
+      });
+
+      await FileSystem.moveAsync({
+        from: result.uri,
+        to: jpegUri,
+      });
+
+      return jpegUri;
+    } catch (error) {
+      if (__DEV__) {
+        console.warn(
+          `⚠️ JPEG conversion attempt ${attempt + 1}/${JPEG_CONVERSION_MAX_ATTEMPTS} failed for fact ${factId}:`,
+          error
+        );
+      }
+
+      // Wait before retrying (except on last attempt)
+      if (attempt < JPEG_CONVERSION_MAX_ATTEMPTS - 1) {
+        await new Promise((resolve) => setTimeout(resolve, JPEG_CONVERSION_RETRY_DELAY_MS));
+      }
+    }
+  }
+
+  // All attempts failed
+  if (__DEV__) {
+    console.error(`❌ JPEG conversion failed after ${JPEG_CONVERSION_MAX_ATTEMPTS} attempts for fact ${factId}`);
+  }
+  return null;
 }
+
+const IMAGE_DOWNLOAD_MAX_ATTEMPTS = 3;
+const IMAGE_DOWNLOAD_RETRY_DELAY_MS = 100;
 
 async function downloadImageForNotification(
   imageUrl: string,
   factId: number
 ): Promise<string | null> {
+  // Check if JPEG already exists (fast path)
+  const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
   try {
-    await ensureNotificationImagesDirExists();
-
-    const jpegUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.jpg`;
     const jpegInfo = await FileSystem.getInfoAsync(jpegUri);
     if (jpegInfo.exists) {
       return jpegUri;
     }
+  } catch {
+    // Continue to download
+  }
 
-    const downloadedUri = await downloadImageWithAppCheck(imageUrl, factId);
+  await ensureNotificationImagesDirExists();
 
-    if (!downloadedUri) {
-      return null;
-    }
+  // Retry the entire download + conversion process up to 3 times
+  for (let attempt = 0; attempt < IMAGE_DOWNLOAD_MAX_ATTEMPTS; attempt++) {
+    try {
+      const downloadedUri = await downloadImageWithAppCheck(imageUrl, factId);
 
-    const urlPath = imageUrl.split('?')[0];
-    const extension = urlPath.split('.').pop()?.toLowerCase() || 'jpg';
-    const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-    const fileExtension = validExtensions.includes(extension) ? extension : 'jpg';
+      if (!downloadedUri) {
+        if (__DEV__) {
+          console.warn(
+            `⚠️ Image download attempt ${attempt + 1}/${IMAGE_DOWNLOAD_MAX_ATTEMPTS} failed for fact ${factId}: no URI returned`
+          );
+        }
+        // Wait before retrying (except on last attempt)
+        if (attempt < IMAGE_DOWNLOAD_MAX_ATTEMPTS - 1) {
+          await new Promise((resolve) => setTimeout(resolve, IMAGE_DOWNLOAD_RETRY_DELAY_MS));
+        }
+        continue;
+      }
 
-    const notificationUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.${fileExtension}`;
+      // Copy to notification images directory
+      const urlPath = imageUrl.split('?')[0];
+      const extension = urlPath.split('.').pop()?.toLowerCase() || 'webp';
+      const validExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+      const fileExtension = validExtensions.includes(extension) ? extension : 'webp';
+      const notificationUri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.${fileExtension}`;
 
-    if (downloadedUri !== notificationUri) {
-      try {
-        await FileSystem.copyAsync({
-          from: downloadedUri,
-          to: notificationUri,
-        });
-      } catch {
-        const finalUri = await convertToJpegIfNeeded(downloadedUri, factId);
+      if (downloadedUri !== notificationUri) {
+        try {
+          await FileSystem.copyAsync({
+            from: downloadedUri,
+            to: notificationUri,
+          });
+        } catch {
+          // If copy fails, try to convert directly from downloaded location
+          const finalUri = await convertToJpegIfNeeded(downloadedUri, factId);
+          if (finalUri) {
+            return finalUri;
+          }
+          // Conversion failed, continue to retry
+          if (attempt < IMAGE_DOWNLOAD_MAX_ATTEMPTS - 1) {
+            await new Promise((resolve) => setTimeout(resolve, IMAGE_DOWNLOAD_RETRY_DELAY_MS));
+          }
+          continue;
+        }
+      }
+
+      // Convert to JPEG for iOS notification compatibility
+      const finalUri = await convertToJpegIfNeeded(notificationUri, factId);
+      if (finalUri) {
         return finalUri;
       }
-    }
 
-    const finalUri = await convertToJpegIfNeeded(notificationUri, factId);
-    return finalUri;
-  } catch {
-    return null;
+      // Conversion failed, retry
+      if (__DEV__) {
+        console.warn(
+          `⚠️ JPEG conversion failed on attempt ${attempt + 1}/${IMAGE_DOWNLOAD_MAX_ATTEMPTS} for fact ${factId}`
+        );
+      }
+      if (attempt < IMAGE_DOWNLOAD_MAX_ATTEMPTS - 1) {
+        await new Promise((resolve) => setTimeout(resolve, IMAGE_DOWNLOAD_RETRY_DELAY_MS));
+      }
+    } catch (error) {
+      if (__DEV__) {
+        console.warn(
+          `⚠️ Image download attempt ${attempt + 1}/${IMAGE_DOWNLOAD_MAX_ATTEMPTS} failed for fact ${factId}:`,
+          error
+        );
+      }
+      if (attempt < IMAGE_DOWNLOAD_MAX_ATTEMPTS - 1) {
+        await new Promise((resolve) => setTimeout(resolve, IMAGE_DOWNLOAD_RETRY_DELAY_MS));
+      }
+    }
   }
+
+  // All attempts failed
+  if (__DEV__) {
+    console.error(`❌ Image download failed after ${IMAGE_DOWNLOAD_MAX_ATTEMPTS} attempts for fact ${factId}`);
+  }
+  return null;
 }
 
 function getTypeHintForExtension(uri: string): string {

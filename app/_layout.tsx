@@ -193,6 +193,14 @@ function AppContent() {
           contentStyle: { backgroundColor },
         }}
       />
+      <Stack.Screen
+        name="[locale]/fact/[id]"
+        options={{
+          // This route immediately redirects, so no UI needed
+          headerShown: false,
+          animation: 'none',
+        }}
+      />
       <Stack.Screen name="trivia" options={{ gestureEnabled: false }} />
     </Stack>
   );
