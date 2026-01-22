@@ -6,7 +6,6 @@
 import { Platform } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Localization from 'expo-localization';
 
@@ -16,35 +15,14 @@ import {
   setAnalyticsUserProperty,
   setCrashlyticsAttribute,
 } from '../config/firebase';
+import { getAppVersionInfo } from '../utils/appInfo';
 
 import { getNotificationTimes, getSelectedCategories } from './onboarding';
 
+// Re-export for backward compatibility
+export { getAppVersionInfo };
+
 const THEME_STORAGE_KEY = '@app_theme_mode';
-
-// ============================================================================
-// Utilities
-// ============================================================================
-
-/**
- * Get OTA-aware app version info from Constants.expoConfig
- * These values update when an OTA bundle is applied (unlike native build values)
- */
-export function getAppVersionInfo(): {
-  platform: string;
-  appVersion: string;
-  buildNumber: string;
-  platformBuildId: string;
-} {
-  const platform = Platform.OS;
-  const appVersion = Constants.expoConfig?.version || 'unknown';
-  const buildNumber =
-    platform === 'ios'
-      ? Constants.expoConfig?.ios?.buildNumber || 'unknown'
-      : String(Constants.expoConfig?.android?.versionCode || 'unknown');
-  const platformBuildId = `${platform}_${appVersion}_${buildNumber}`;
-
-  return { platform, appVersion, buildNumber, platformBuildId };
-}
 
 // ============================================================================
 // Initialization

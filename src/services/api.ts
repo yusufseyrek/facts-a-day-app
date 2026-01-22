@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 import { API_SETTINGS } from '../config/app';
 import { appCheckReady } from '../config/firebase';
 
-import { getAppVersionInfo } from './analytics';
+import { getAppVersionInfo } from '../utils/appInfo';
 import { getCachedAppCheckToken } from './appCheckToken';
 
 /**

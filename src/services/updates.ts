@@ -21,16 +21,25 @@ const THEME_STORAGE_KEY = '@app_theme_mode';
 /**
  * Set App Check token in update request headers
  * This authenticates OTA update requests with Firebase App Check
+ *
+ * Note: expo-updates requires header keys to be pre-declared in the embedded
+ * requestHeaders config (app.json) before they can be overridden at runtime.
  */
 async function setAppCheckHeaders(): Promise<void> {
-  const token = await getCachedAppCheckToken();
-  if (token) {
-    Updates.setUpdateRequestHeadersOverride({
-      'X-Firebase-AppCheck': token,
-    });
-    console.log('📦 App Check header set for update request');
-  } else {
-    console.warn('📦 No App Check token available for update request');
+  try {
+    const token = await getCachedAppCheckToken();
+    if (token) {
+      Updates.setUpdateRequestHeadersOverride({
+        'X-Firebase-AppCheck': token,
+      });
+      console.log('📦 App Check header set for update request');
+    } else {
+      console.warn('📦 No App Check token available for update request');
+    }
+  } catch (error) {
+    // This can happen if X-Firebase-AppCheck isn't in embedded requestHeaders (app.json)
+    console.error('📦 Failed to set App Check header:', error);
+    // Continue without the header - update check will proceed but may fail server auth
   }
 }
 
