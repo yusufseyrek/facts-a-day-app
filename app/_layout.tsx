@@ -272,6 +272,7 @@ export default function RootLayout() {
         }
 
         console.log('📱 App entered foreground, syncing notifications...');
+        Notifications.setBadgeCountAsync(0);
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
         notificationService
           .syncNotificationSchedule(getLocaleFromCode(deviceLocale))
@@ -391,6 +392,9 @@ export default function RootLayout() {
           // Silently handle errors - app continues with cached data
           console.error('Background refresh failed:', error);
         });
+
+        // Clear notification badge on app launch
+        Notifications.setBadgeCountAsync(0);
 
         // Sync notification schedule (check/repair/top-up)
         // This runs asynchronously and doesn't block app startup

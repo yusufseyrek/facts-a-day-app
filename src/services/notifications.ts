@@ -432,6 +432,7 @@ export async function buildNotificationContent(
     title: appName,
     body: fact.title || fact.content.substring(0, 100),
     data: { factId: fact.id },
+    badge: 1,
   };
 
   const shouldDownloadImage = scheduledDate ? shouldPreloadImage(scheduledDate) : true;
@@ -468,7 +469,7 @@ export function configureNotifications() {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldPlaySound: true,
-      shouldSetBadge: false,
+      shouldSetBadge: true,
       shouldShowBanner: true,
       shouldShowList: true,
     }),

@@ -21,8 +21,8 @@ export const INTERSTITIAL_ADS = {
 export const AD_RETRY = {
   /** Maximum number of retry attempts for failed ads */
   MAX_RETRIES: 5,
-  /** Delay intervals between retries (milliseconds): 15s, 30s, 1m, 2m, 4m */
-  DELAYS: [15000, 30000, 60000, 120000, 240000],
+  /** Delay intervals between retries (milliseconds): 30s, 1m, 2m, 4m, 8m */
+  DELAYS: [30000, 60000, 120000, 240000, 480000],
 } as const;
 
 /**
