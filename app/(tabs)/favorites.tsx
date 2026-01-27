@@ -3,7 +3,7 @@ import { ActivityIndicator, RefreshControl } from 'react-native';
 
 import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
-import { Star } from '@tamagui/lucide-icons';
+import { Heart } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { YStack } from 'tamagui';
@@ -178,7 +178,7 @@ export default function FavoritesScreen() {
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <ScreenHeader
         paddingBottom={spacing.xl}
-        icon={<Star size={iconSizes.lg} color={iconColor} />}
+        icon={<Heart size={iconSizes.lg} color={iconColor} />}
         title={t('favorites')}
       />
       <YStack flex={1}>

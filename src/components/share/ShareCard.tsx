@@ -135,7 +135,7 @@ export const ShareCard = forwardRef<ViewShot, ShareCardProps>(({ fact }, ref) =>
                 fontFamily={FONT_FAMILIES.semibold}
                 color={categoryInfo.textColor}
               >
-                {categoryInfo.displayName} #{fact.id}
+                {categoryInfo.displayName}#{fact.id}
               </Text>
             </View>
           )}

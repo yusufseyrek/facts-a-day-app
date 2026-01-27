@@ -3,7 +3,6 @@ import {
   AccessibilityInfo,
   Animated,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -19,11 +18,9 @@ import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n';
 import { addCategoryKeyword } from '../services/adKeywords';
-import { trackSourceLinkClick } from '../services/analytics';
 import { onFactViewed } from '../services/appReview';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
-import { openInAppBrowser } from '../utils/browser';
 import { useFactImage } from '../utils/useFactImage';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -37,6 +34,9 @@ import type { Category, FactWithRelations } from '../services/database';
 interface FactModalProps {
   fact: FactWithRelations;
   onClose: () => void;
+  onNext?: () => void;
+  hasNext?: boolean;
+  positionText?: string;
 }
 
 // Styled components without static responsive values - use inline props with useResponsive()
@@ -51,15 +51,6 @@ function slugToTitleCase(slug: string): string {
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
-}
-
-function extractDomain(url: string): string {
-  try {
-    const urlObj = new URL(url);
-    return urlObj.hostname.replace('www.', '');
-  } catch {
-    return 'Source';
-  }
 }
 
 function formatLastUpdated(dateString: string, locale: string): string {
@@ -77,7 +68,7 @@ function formatLastUpdated(dateString: string, locale: string): string {
   }
 }
 
-export function FactModal({ fact, onClose }: FactModalProps) {
+export function FactModal({ fact, onClose, onNext, hasNext, positionText }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const {
@@ -89,6 +80,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     screenHeight: SCREEN_HEIGHT,
     radius,
     borderWidths,
+    media,
   } = useResponsive();
 
   const insets = useSafeAreaInsets();
@@ -202,24 +194,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     useNativeDriver: true,
   });
 
-  const handleSourcePress = () => {
-    if (fact?.source_url) {
-      // Track source link click
-      trackSourceLinkClick({
-        factId: fact.id,
-        domain: extractDomain(fact.source_url),
-      });
-
-      openInAppBrowser(fact.source_url, {
-        theme,
-        // Translate the source URL if user's locale is not English
-        translateTo: locale !== 'en' ? locale : undefined,
-      }).catch(() => {
-        // Ignore URL open errors
-      });
-    }
-  };
-
   let categoryForBadge: string | Category | null = null;
   if (fact.categoryData) {
     categoryForBadge = fact.categoryData;
@@ -247,7 +221,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const basePaddingTop = Platform.OS === 'ios' ? spacing.xl : insets.top;
   const basePaddingBottom = spacing.xl;
   const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight;
-  const minHeaderHeight = Platform.OS === 'ios' ? 100 : 70 + insets.top;
+  const minHeaderHeight = Platform.OS === 'ios' ? media.buttonHeight + media.searchInputHeight : media.searchInputHeight + spacing.xxl + insets.top;
   const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
 
   // Header background appears when image starts to be covered (for images) or early for no image
@@ -529,6 +503,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               <Animated.View
                 style={{
                   flex: 1,
+                  paddingRight: iconSizes.xl + spacing.sm,
                   transform: [{ translateY: headerTitleTranslateY }],
                 }}
               >
@@ -607,7 +582,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
                 top: 0,
                 left: 0,
                 right: 0,
-                height: 120,
+                height: media.buttonHeight + media.tabBarHeight,
               }}
               pointerEvents="none"
             />
@@ -652,6 +627,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           <Animated.View
             style={{
               opacity: contentTitleOpacity,
+              paddingRight: iconSizes.xl + spacing.sm,
             }}
           >
             <Text.Headline
@@ -679,7 +655,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             >
               {categoryForBadge && (
                 <Animated.View style={{ opacity: categoryBadgeOpacity }}>
-                  <CategoryBadge category={categoryForBadge} />
+                  <CategoryBadge category={categoryForBadge} factId={fact.id} />
                 </Animated.View>
               )}
               {(fact.last_updated || fact.created_at) && (
@@ -709,28 +685,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             {fact.content}
           </Text.Body>
 
-          {/* Source Link */}
-          {fact.source_url && (
-            <YStack paddingTop={spacing.md} borderTopWidth={1} borderTopColor="$border">
-              <Pressable
-                onPress={handleSourcePress}
-                role="link"
-                aria-label={t('a11y_sourceLink', {
-                  domain: extractDomain(fact.source_url),
-                })}
-              >
-                <Text.Body
-                  letterSpacing={0.2}
-                  color="$primary"
-                  textDecorationLine="underline"
-                  fontFamily={FONT_FAMILIES.semibold}
-                >
-                  {t('sourcePrefix')}
-                  {extractDomain(fact.source_url)}
-                </Text.Body>
-              </Pressable>
-            </YStack>
-          )}
+          {/* Source link moved to overflow menu in FactActions */}
         </YStack>
       </Animated.ScrollView>
 
@@ -754,7 +709,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           <TouchableOpacity
             onPress={onClose}
             activeOpacity={0.7}
-            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            hitSlop={{ top: spacing.lg, bottom: spacing.lg, left: spacing.lg, right: spacing.lg }}
             testID="fact-modal-close-button"
             aria-label={t('a11y_closeButton')}
             role="button"
@@ -791,13 +746,13 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           <TouchableOpacity
             onPress={onClose}
             activeOpacity={0.7}
-            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            hitSlop={{ top: spacing.lg, bottom: spacing.lg, left: spacing.lg, right: spacing.lg }}
             testID="fact-modal-close-button"
             aria-label={t('a11y_closeButton')}
             role="button"
             style={{
-              width: 36,
-              height: 36,
+              width: iconSizes.xl,
+              height: iconSizes.xl,
               borderRadius: radius.full,
               backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
               alignItems: 'center',
@@ -819,6 +774,10 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         factContent={fact.content}
         imageUrl={imageUri || undefined}
         category={fact.categoryData || fact.category}
+        onNext={onNext}
+        hasNext={hasNext}
+        sourceUrl={fact.source_url || undefined}
+        positionText={positionText}
       />
     </View>
   );

@@ -1,6 +1,6 @@
 /* global requestAnimationFrame */
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet } from 'react-native';
+import { ActionSheetIOS, Alert, Platform, Pressable, StyleSheet } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -13,7 +13,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ViewShot from 'react-native-view-shot';
 
 import { styled } from '@tamagui/core';
-import { Flag, Heart, Share as ShareIcon } from '@tamagui/lucide-icons';
+import {
+  ChevronRight,
+  Heart,
+  MoreHorizontal,
+  Share as ShareIcon,
+} from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
 import { View, XStack, YStack } from 'tamagui';
 
@@ -27,10 +32,12 @@ import * as api from '../services/api';
 import * as database from '../services/database';
 import { shareService } from '../services/share';
 import { hexColors, useTheme } from '../theme';
+import { openInAppBrowser } from '../utils/browser';
 import { useResponsive } from '../utils/useResponsive';
 
 import { ReportFactModal } from './ReportFactModal';
 import { ShareCard } from './share';
+import { Text } from './Typography';
 
 import type { Category } from '../services/database';
 
@@ -41,6 +48,10 @@ interface FactActionsProps {
   factContent: string;
   imageUrl?: string;
   category?: string | Category;
+  onNext?: () => void;
+  hasNext?: boolean;
+  sourceUrl?: string;
+  positionText?: string;
 }
 
 const Container = styled(YStack, {
@@ -57,6 +68,8 @@ const ActionsRow = styled(XStack, {
 // Particle burst component for the favorite animation
 const PARTICLE_COUNT = 6;
 const ParticleBurst = ({ color, isActive }: { color: string; isActive: boolean }) => {
+  const { spacing } = useResponsive();
+  const particleSize = spacing.xs + 2; // 6 on phone, 8 on tablet
   const particles = Array.from({ length: PARTICLE_COUNT }, (_, i) => {
     const angle = (i / PARTICLE_COUNT) * 2 * Math.PI;
     const scale = useSharedValue(0);
@@ -98,7 +111,7 @@ const ParticleBurst = ({ color, isActive }: { color: string; isActive: boolean }
     }));
 
     return (
-      <Animated.View key={i} style={[styles.particle, { backgroundColor: color }, animatedStyle]} />
+      <Animated.View key={i} style={[{ position: 'absolute' as const, width: particleSize, height: particleSize, borderRadius: particleSize / 2, backgroundColor: color }, animatedStyle]} />
     );
   });
 
@@ -112,16 +125,21 @@ export function FactActions({
   factContent,
   imageUrl,
   category = 'unknown',
+  onNext,
+  hasNext,
+  sourceUrl,
+  positionText,
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { iconSizes, media } = useResponsive();
+  const { iconSizes, typography, spacing, media } = useResponsive();
   const insets = useSafeAreaInsets();
 
   // Neon colors for actions
   const heartColor = theme === 'dark' ? hexColors.dark.neonRed : hexColors.light.neonRed;
   const shareColor = theme === 'dark' ? hexColors.dark.neonGreen : hexColors.light.neonGreen;
-  const flagColor = theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+  const nextColor = theme === 'dark' ? hexColors.dark.primary : hexColors.light.primary;
+  const moreColor = theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
@@ -151,10 +169,6 @@ export function FactActions({
   const shareRotation = useSharedValue(0);
   const shareTranslateY = useSharedValue(0);
 
-  // Animation values for report
-  const reportScale = useSharedValue(1);
-  const reportRotation = useSharedValue(0);
-
   const heartAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: heartScale.value }, { rotate: `${heartRotation.value}deg` }],
   }));
@@ -165,10 +179,6 @@ export function FactActions({
       { rotate: `${shareRotation.value}deg` },
       { translateY: shareTranslateY.value },
     ],
-  }));
-
-  const reportAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: reportScale.value }, { rotate: `${reportRotation.value}deg` }],
   }));
 
   // Check if fact is favorited on mount
@@ -255,21 +265,6 @@ export function FactActions({
     );
   };
 
-  const triggerReportAnimation = () => {
-    // Subtle shake animation
-    reportScale.value = withSequence(
-      withTiming(0.9, { duration: 60, easing: Easing.in(Easing.cubic) }),
-      withSpring(1.1, { damping: 15, stiffness: 300 }),
-      withSpring(1, { damping: 20, stiffness: 150 })
-    );
-    reportRotation.value = withSequence(
-      withTiming(-8, { duration: 50 }),
-      withTiming(8, { duration: 70 }),
-      withTiming(-4, { duration: 50 }),
-      withTiming(0, { duration: 70 })
-    );
-  };
-
   const handleShare = async () => {
     if (isSharing) return;
 
@@ -320,10 +315,6 @@ export function FactActions({
   const handleReport = () => {
     // Light haptic feedback for opening report modal
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    // Trigger animation
-    triggerReportAnimation();
-
     setShowReportModal(true);
   };
 
@@ -345,17 +336,80 @@ export function FactActions({
     }
   };
 
+  const handleMore = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    const options: string[] = [];
+    const actions: (() => void)[] = [];
+
+    if (sourceUrl) {
+      options.push(t('readSource'));
+      actions.push(() => {
+        openInAppBrowser(sourceUrl, { theme }).catch(() => {
+          // Ignore URL open errors
+        });
+      });
+    }
+
+    options.push(t('reportFact'));
+    actions.push(handleReport);
+
+    options.push(t('cancel'));
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          cancelButtonIndex: options.length - 1,
+          destructiveButtonIndex: sourceUrl ? 1 : 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex < actions.length) {
+            actions[buttonIndex]();
+          }
+        }
+      );
+    } else {
+      // On Android, use Alert as a simple fallback
+      Alert.alert(
+        t('actionMore'),
+        undefined,
+        [
+          ...actions.map((action, i) => ({
+            text: options[i],
+            onPress: action,
+          })),
+          { text: t('cancel'), style: 'cancel' as const },
+        ]
+      );
+    }
+  };
+
+  const handleNext = () => {
+    if (onNext) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onNext();
+    }
+  };
+
   return (
     <>
       <Container
         style={{
-          height: media.tabBarHeight + insets.bottom,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-          paddingTop: 10,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : spacing.xs,
+          paddingTop: spacing.xs,
         }}
       >
+        {/* Position indicator */}
+        {positionText && (
+          <XStack justifyContent="center" paddingBottom={spacing.xs}>
+            <Text.Caption color="$textSecondary">{positionText}</Text.Caption>
+          </XStack>
+        )}
+
+        {/* Action row */}
         <ActionsRow>
-          {/* Like Button - Neon Red/Magenta with Animation */}
+          {/* Save Button */}
           <Pressable
             onPress={handleLike}
             role="button"
@@ -364,22 +418,30 @@ export function FactActions({
               alignItems: 'center',
               justifyContent: 'center',
               opacity: pressed ? 0.8 : 1,
-              padding: 12,
+              width: media.colorSwatchSize,
+              paddingVertical: spacing.xs,
             })}
           >
-            <View style={styles.heartContainer}>
+            <View style={{ alignItems: 'center', justifyContent: 'center', width: iconSizes.sm, height: iconSizes.sm }}>
               <ParticleBurst color={heartColor} isActive={showParticles} />
               <Animated.View style={[styles.heartIcon, heartAnimatedStyle]}>
                 <Heart
-                  size={iconSizes.lg}
+                  size={iconSizes.md}
                   color={heartColor}
                   fill={isFavorited ? heartColor : 'none'}
                 />
               </Animated.View>
             </View>
+            <Text.Caption
+              color={heartColor}
+              fontSize={typography.fontSize.caption}
+              marginTop={spacing.xs / 2}
+            >
+              {isFavorited ? t('actionSaved') : t('actionSave')}
+            </Text.Caption>
           </Pressable>
 
-          {/* Share Button - Neon Green with Animation */}
+          {/* Share Button */}
           <Pressable
             onPress={handleShare}
             disabled={isSharing}
@@ -389,30 +451,68 @@ export function FactActions({
               alignItems: 'center',
               justifyContent: 'center',
               opacity: pressed ? 0.8 : 1,
-              padding: 12,
+              width: media.colorSwatchSize,
+              paddingVertical: spacing.xs,
             })}
           >
             <Animated.View style={shareAnimatedStyle}>
-              <ShareIcon size={iconSizes.lg} color={shareColor} />
+              <ShareIcon size={iconSizes.md} color={shareColor} />
             </Animated.View>
+            <Text.Caption
+              color={shareColor}
+              fontSize={typography.fontSize.caption}
+              marginTop={spacing.xs / 2}
+            >
+              {t('actionShare')}
+            </Text.Caption>
           </Pressable>
 
-          {/* Report Button - Subtle with Animation */}
+          {/* Next Button - only shown when fact list is available */}
+          {hasNext && onNext && (
+            <Pressable
+              onPress={handleNext}
+              role="button"
+              aria-label={t('a11y_nextButton')}
+              style={({ pressed }) => ({
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.8 : 1,
+                width: media.colorSwatchSize,
+                paddingVertical: spacing.xs,
+              })}
+            >
+              <ChevronRight size={iconSizes.md} color={nextColor} />
+              <Text.Caption
+                color={nextColor}
+                fontSize={typography.fontSize.caption}
+                marginTop={spacing.xs / 2}
+              >
+                {t('actionNext')}
+              </Text.Caption>
+            </Pressable>
+          )}
+
+          {/* More button (overflow menu) */}
           <Pressable
-            onPress={handleReport}
-            disabled={isSubmittingReport}
+            onPress={handleMore}
             role="button"
-            aria-label={t('a11y_reportButton')}
+            aria-label={t('actionMore')}
             style={({ pressed }) => ({
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: pressed ? 0.8 : isSubmittingReport ? 0.5 : 1,
-              padding: 12,
+              opacity: pressed ? 0.6 : 1,
+              width: media.colorSwatchSize,
+              paddingVertical: spacing.xs,
             })}
           >
-            <Animated.View style={reportAnimatedStyle}>
-              <Flag size={iconSizes.lg} color={flagColor} />
-            </Animated.View>
+            <MoreHorizontal size={iconSizes.md} color={moreColor} />
+            <Text.Caption
+              color={moreColor}
+              fontSize={typography.fontSize.caption}
+              marginTop={spacing.xs / 2}
+            >
+              {t('actionMore')}
+            </Text.Caption>
           </Pressable>
         </ActionsRow>
       </Container>
@@ -441,19 +541,7 @@ export function FactActions({
 }
 
 const styles = StyleSheet.create({
-  heartContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 26,
-    height: 26,
-  },
   heartIcon: {
     position: 'absolute',
-  },
-  particle: {
-    position: 'absolute',
-    width: 6,
-    height: 6,
-    borderRadius: 3,
   },
 });

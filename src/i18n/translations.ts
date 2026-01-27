@@ -312,6 +312,15 @@ export const translations = {
     a11y_falseAnswer: 'Falsch',
     a11y_viewFactButton: 'Fakt ansehen',
     a11y_showHintButton: 'Hinweis anzeigen',
+
+    // Fact Action Bar
+    actionSave: 'Merken',
+    actionSaved: 'Gemerkt',
+    actionShare: 'Teilen',
+    actionNext: 'Weiter',
+    actionMore: 'Mehr',
+    readSource: 'Quelle lesen',
+    positionOf: '%{current} von %{total}',
   },
   en: {
     // Onboarding - Categories
@@ -618,6 +627,15 @@ export const translations = {
     a11y_falseAnswer: 'False',
     a11y_viewFactButton: 'View fact',
     a11y_showHintButton: 'Show hint',
+
+    // Fact Action Bar
+    actionSave: 'Save',
+    actionSaved: 'Saved',
+    actionShare: 'Share',
+    actionNext: 'Next',
+    actionMore: 'More',
+    readSource: 'Read Source',
+    positionOf: '%{current} of %{total}',
   },
   es: {
     // Onboarding - Categories
@@ -927,6 +945,15 @@ export const translations = {
     a11y_falseAnswer: 'Falso',
     a11y_viewFactButton: 'Ver dato',
     a11y_showHintButton: 'Mostrar pista',
+
+    // Fact Action Bar
+    actionSave: 'Guardar',
+    actionSaved: 'Guardado',
+    actionShare: 'Compartir',
+    actionNext: 'Siguiente',
+    actionMore: 'Más',
+    readSource: 'Leer fuente',
+    positionOf: '%{current} de %{total}',
   },
   fr: {
     // Onboarding - Categories
@@ -1238,6 +1265,15 @@ export const translations = {
     a11y_falseAnswer: 'Faux',
     a11y_viewFactButton: 'Voir le fait',
     a11y_showHintButton: "Afficher l'indice",
+
+    // Fact Action Bar
+    actionSave: 'Sauver',
+    actionSaved: 'Sauvé',
+    actionShare: 'Partager',
+    actionNext: 'Suivant',
+    actionMore: 'Plus',
+    readSource: 'Lire la source',
+    positionOf: '%{current} sur %{total}',
   },
   ja: {
     // Onboarding - Categories
@@ -1543,6 +1579,15 @@ export const translations = {
     a11y_falseAnswer: '間違い',
     a11y_viewFactButton: '事実を見る',
     a11y_showHintButton: 'ヒントを表示',
+
+    // Fact Action Bar
+    actionSave: '保存',
+    actionSaved: '保存済み',
+    actionShare: '共有',
+    actionNext: '次へ',
+    actionMore: 'もっと',
+    readSource: '出典を読む',
+    positionOf: '%{total}中%{current}',
   },
   ko: {
     // Onboarding - Categories
@@ -1847,6 +1892,15 @@ export const translations = {
     a11y_falseAnswer: '거짓',
     a11y_viewFactButton: '사실 보기',
     a11y_showHintButton: '힌트 표시',
+
+    // Fact Action Bar
+    actionSave: '저장',
+    actionSaved: '저장됨',
+    actionShare: '공유',
+    actionNext: '다음',
+    actionMore: '더보기',
+    readSource: '출처 읽기',
+    positionOf: '%{total}개 중 %{current}',
   },
   tr: {
     // Onboarding - Categories
@@ -2153,6 +2207,15 @@ export const translations = {
     a11y_falseAnswer: 'Yanlış',
     a11y_viewFactButton: 'Bilgiyi görüntüle',
     a11y_showHintButton: 'İpucu göster',
+
+    // Fact Action Bar
+    actionSave: 'Kaydet',
+    actionSaved: 'Kaydedildi',
+    actionShare: 'Paylaş',
+    actionNext: 'Sonraki',
+    actionMore: 'Daha fazla',
+    readSource: 'Kaynağı oku',
+    positionOf: '%{total} içinden %{current}',
   },
   zh: {
     // Onboarding - Categories
@@ -2454,6 +2517,15 @@ export const translations = {
     a11y_falseAnswer: '错',
     a11y_viewFactButton: '查看事实',
     a11y_showHintButton: '显示提示',
+
+    // Fact Action Bar
+    actionSave: '收藏',
+    actionSaved: '已收藏',
+    actionShare: '分享',
+    actionNext: '下一个',
+    actionMore: '更多',
+    readSource: '阅读来源',
+    positionOf: '%{total}个中第%{current}个',
   },
 };
 

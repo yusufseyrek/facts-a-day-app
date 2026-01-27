@@ -292,7 +292,7 @@ const ImageFactCardComponent = ({
             {/* Category badge */}
             {category && (
               <View style={[styles.badgeContainer, badgePositionStyle]}>
-                <CategoryBadge category={category} />
+                <CategoryBadge category={category} factId={factId} />
               </View>
             )}
 

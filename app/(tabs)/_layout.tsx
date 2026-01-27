@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomTabBar } from '@react-navigation/bottom-tabs';
 import { useFocusEffect } from '@react-navigation/native';
-import { Brain, Compass, Lightbulb, Settings, Star } from '@tamagui/lucide-icons';
+import { Brain, Compass, Heart, Lightbulb, Settings } from '@tamagui/lucide-icons';
 import { Tabs, usePathname } from 'expo-router';
 
 import { BannerAd } from '../../src/components/ads';
@@ -306,7 +306,7 @@ export default function TabLayout() {
           name="favorites"
           options={{
             title: t('favorites'),
-            tabBarIcon: ({ color }) => <Star size={iconSizes.lg} color={color} />,
+            tabBarIcon: ({ color }) => <Heart size={iconSizes.lg} color={color} />,
             tabBarButton: (props) => (
               <AnimatedTabButton {...props} tabName="favorites" testID="tab-favorites" />
             ),
