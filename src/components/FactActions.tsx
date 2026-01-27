@@ -36,6 +36,7 @@ import type { Category } from '../services/database';
 
 interface FactActionsProps {
   factId: number;
+  factSlug?: string;
   factTitle?: string;
   factContent: string;
   imageUrl?: string;
@@ -106,6 +107,7 @@ const ParticleBurst = ({ color, isActive }: { color: string; isActive: boolean }
 
 export function FactActions({
   factId,
+  factSlug,
   factTitle,
   factContent,
   imageUrl,
@@ -289,6 +291,7 @@ export function FactActions({
       const result = await shareService.share(
         {
           id: factId,
+          slug: factSlug,
           title: factTitle || '',
           content: factContent,
           category,
@@ -426,6 +429,7 @@ export function FactActions({
         ref={viewShotRef}
         fact={{
           id: factId,
+          slug: factSlug,
           title: factTitle || '',
           content: factContent,
           category,

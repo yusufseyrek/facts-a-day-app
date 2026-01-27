@@ -116,6 +116,7 @@ export async function fetchAllFacts(
     // Note: API returns `updated_at`, we map it to `last_updated` in DB
     const dbFacts: db.Fact[] = facts.map((fact) => ({
       id: fact.id,
+      slug: fact.slug,
       title: fact.title,
       content: fact.content,
       summary: fact.summary,

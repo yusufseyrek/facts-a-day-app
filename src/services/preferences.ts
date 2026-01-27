@@ -164,10 +164,10 @@ export async function handleLanguageChange(
           await db.runAsync(
             `
             UPDATE facts
-            SET title = ?, content = ?, summary = ?, language = ?
+            SET slug = ?, title = ?, content = ?, summary = ?, language = ?
             WHERE id = ?
           `,
-            [fact.title || null, fact.content, fact.summary || null, newLanguage, fact.id]
+            [fact.slug || null, fact.title || null, fact.content, fact.summary || null, newLanguage, fact.id]
           );
           updatedCount++;
         } else {
@@ -175,10 +175,11 @@ export async function handleLanguageChange(
           await db.runAsync(
             `
             INSERT INTO facts (
-              id, title, content, summary, category,
+              id, slug, title, content, summary, category,
               source_url, image_url, language, created_at, last_updated
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
+              slug = excluded.slug,
               title = excluded.title,
               content = excluded.content,
               summary = excluded.summary,
@@ -193,6 +194,7 @@ export async function handleLanguageChange(
           `,
             [
               fact.id,
+              fact.slug || null,
               fact.title || null,
               fact.content,
               fact.summary || null,
@@ -361,11 +363,12 @@ export async function handleCategoriesChange(
           await db.runAsync(
             `
             UPDATE facts
-            SET title = ?, content = ?, summary = ?, category = ?,
+            SET slug = ?, title = ?, content = ?, summary = ?, category = ?,
                 source_url = ?, image_url = ?, last_updated = ?
             WHERE id = ?
           `,
             [
+              fact.slug || null,
               fact.title || null,
               fact.content,
               fact.summary || null,
@@ -382,10 +385,11 @@ export async function handleCategoriesChange(
           await db.runAsync(
             `
             INSERT INTO facts (
-              id, title, content, summary, category,
+              id, slug, title, content, summary, category,
               source_url, image_url, language, created_at, last_updated
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
+              slug = excluded.slug,
               title = excluded.title,
               content = excluded.content,
               summary = excluded.summary,
@@ -400,6 +404,7 @@ export async function handleCategoriesChange(
           `,
             [
               fact.id,
+              fact.slug || null,
               fact.title || null,
               fact.content,
               fact.summary || null,

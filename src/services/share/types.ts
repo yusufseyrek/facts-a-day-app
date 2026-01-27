@@ -15,6 +15,7 @@ export type SharePlatform = 'instagram_stories' | 'whatsapp' | 'twitter' | 'face
  */
 export interface ShareableFact {
   id: number;
+  slug?: string;
   title: string;
   content: string;
   category?: string | Category;

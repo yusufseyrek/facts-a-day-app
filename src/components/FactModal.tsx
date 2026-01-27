@@ -96,7 +96,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
   const currentScrollY = useRef(0);
-  const [closeButtonVisible, setCloseButtonVisible] = useState(true);
   const [titleHeight, setTitleHeight] = useState<number>(typography.lineHeight.headline); // Default to 1 line height
   const [containerWidth, setContainerWidth] = useState(SCREEN_WIDTH); // Actual modal width
 
@@ -262,20 +261,6 @@ export function FactModal({ fact, onClose }: FactModalProps) {
     return () => scrollY.removeListener(id);
   }, [scrollY]);
 
-  // Update close button visibility and header pointer events for Android
-  React.useEffect(() => {
-    if (Platform.OS === 'android' && hasImage) {
-      // Match the opacity animation - button is visible until HEADER_BG_TRANSITION
-      const threshold = HEADER_BG_TRANSITION * 0.95;
-      const initialValue = (scrollY as any)._value || 0;
-      setCloseButtonVisible(initialValue < threshold);
-
-      const listener = scrollY.addListener(({ value }) => {
-        setCloseButtonVisible(value < threshold);
-      });
-      return () => scrollY.removeListener(listener);
-    }
-  }, [HEADER_BG_TRANSITION, hasImage]);
 
   // Image scale - stays at 1, no scaling
   const imageScale = scrollY.interpolate({
@@ -363,12 +348,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
       })
     : new Animated.Value(0);
 
-  // Close button opacity - hides when header appears (no X button in header)
-  const closeButtonOpacity = scrollY.interpolate({
-    inputRange: [0, HEADER_BG_TRANSITION * 0.7, HEADER_BG_TRANSITION],
-    outputRange: [1, 0.5, 0],
-    extrapolate: 'clamp',
-  });
+  // Close button is always visible for better UX (especially on iOS where there's no back button)
 
   // Badge scroll threshold - when category badge scrolls under the header
   // Badge is at: IMAGE_HEIGHT (or 0 if no image) + contentPadding + titleHeight + gap
@@ -754,14 +734,13 @@ export function FactModal({ fact, onClose }: FactModalProps) {
         </YStack>
       </Animated.ScrollView>
 
-      {/* Fixed Close Button - visible when header is not shown */}
+      {/* Fixed Close Button - always visible for easy dismissal */}
       {hasImage && (
-        <Animated.View
+        <View
           style={{
             position: 'absolute',
             top: (Platform.OS === 'ios' ? 0 : insets.top) + spacing.xl,
             right: spacing.xl,
-            opacity: closeButtonOpacity,
             zIndex: 9999,
             ...Platform.select({
               android: {
@@ -770,9 +749,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
             }),
           }}
           collapsable={false}
-          pointerEvents={
-            Platform.OS === 'android' && hasImage && !closeButtonVisible ? 'none' : 'box-none'
-          }
+          pointerEvents="box-none"
         >
           <TouchableOpacity
             onPress={onClose}
@@ -792,12 +769,12 @@ export function FactModal({ fact, onClose }: FactModalProps) {
           >
             <X size={iconSizes.md} color="#FFFFFF" />
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       )}
 
       {/* Close button for facts without images */}
       {!hasImage && (
-        <Animated.View
+        <View
           style={{
             position: 'absolute',
             top: insets.top + spacing.xl,
@@ -822,14 +799,14 @@ export function FactModal({ fact, onClose }: FactModalProps) {
               width: 36,
               height: 36,
               borderRadius: radius.full,
-              backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+              backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
             <X size={iconSizes.md} color={theme === 'dark' ? '#FFFFFF' : hexColors.light.text} />
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       )}
 
       {/* Anchored Banner Ad at bottom */}
@@ -837,6 +814,7 @@ export function FactModal({ fact, onClose }: FactModalProps) {
 
       <FactActions
         factId={fact.id}
+        factSlug={fact.slug}
         factTitle={fact.title}
         factContent={fact.content}
         imageUrl={imageUri || undefined}

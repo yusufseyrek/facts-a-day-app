@@ -60,6 +60,7 @@ export interface QuestionResponse {
 
 export interface FactResponse {
   id: number;
+  slug?: string;
   title?: string;
   content: string;
   summary?: string;

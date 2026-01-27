@@ -13,6 +13,7 @@ import * as preferencesService from './preferences';
 const LAST_CONTENT_REFRESH_KEY = '@last_content_refresh';
 const STORED_LOCALE_KEY = '@stored_locale';
 const QUESTIONS_MIGRATION_KEY = '@questions_migration_v1';
+const SLUG_MIGRATION_KEY = '@slug_migration_v1';
 
 // Event listeners for feed refresh
 type FeedRefreshListener = () => void;
@@ -325,6 +326,89 @@ async function runQuestionsMigration(locale: SupportedLocale): Promise<void> {
 }
 
 /**
+ * Check if slug migration is needed
+ * Returns true if user has facts without slug (existing user before slug field was added)
+ */
+async function needsSlugMigration(): Promise<boolean> {
+  try {
+    // Check if migration was already done
+    const migrationDone = await AsyncStorage.getItem(SLUG_MIGRATION_KEY);
+    if (migrationDone === 'true') {
+      return false;
+    }
+
+    const database = await db.openDatabase();
+
+    // Check if any facts exist without a slug
+    const result = await database.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM facts WHERE slug IS NULL'
+    );
+
+    if ((result?.count || 0) > 0) {
+      console.log(`📊 Slug migration needed: ${result?.count} facts without slug`);
+      return true;
+    }
+
+    // All facts have slugs (or no facts exist), mark migration as done
+    await AsyncStorage.setItem(SLUG_MIGRATION_KEY, 'true');
+    return false;
+  } catch (error) {
+    console.error('Error checking slug migration:', error);
+    return false;
+  }
+}
+
+/**
+ * Run slug migration for existing users
+ * Re-fetches all facts to populate the slug field
+ */
+async function runSlugMigration(locale: SupportedLocale): Promise<void> {
+  try {
+    console.log('🔄 Running slug migration - re-downloading all facts...');
+
+    const categories = await onboardingService.getSelectedCategories();
+    if (categories.length === 0) {
+      console.log('No categories selected, skipping slug migration');
+      await AsyncStorage.setItem(SLUG_MIGRATION_KEY, 'true');
+      return;
+    }
+
+    // Fetch all facts with updated slug field
+    const facts = await api.getAllFactsWithRetry(
+      locale,
+      categories.join(','),
+      undefined,
+      3,
+      true // includeQuestions
+    );
+
+    // Convert to DB format with slug
+    const dbFacts: db.Fact[] = facts.map((fact) => ({
+      id: fact.id,
+      slug: fact.slug,
+      title: fact.title,
+      content: fact.content,
+      summary: fact.summary,
+      category: fact.category,
+      source_url: fact.source_url,
+      image_url: fact.image_url,
+      language: fact.language,
+      created_at: fact.created_at,
+      last_updated: fact.updated_at,
+    }));
+
+    // Insert/update facts (preserves scheduling info via ON CONFLICT)
+    await db.insertFacts(dbFacts);
+
+    console.log(`✅ Slug migration complete: Updated ${dbFacts.length} facts`);
+    await AsyncStorage.setItem(SLUG_MIGRATION_KEY, 'true');
+  } catch (error) {
+    console.error('❌ Slug migration failed:', error);
+    // Don't mark as complete so it can retry next time
+  }
+}
+
+/**
  * Refresh app content from API: metadata and new facts
  * This runs every time the app opens (no time interval restriction)
  * Runs in the background and doesn't block app startup
@@ -396,6 +480,12 @@ export async function refreshAppContent(): Promise<RefreshResult> {
       await runQuestionsMigration(currentLocale);
     }
 
+    // Check if we need to run slug migration for existing users
+    // This is a one-time migration for users who had facts before slug field was added
+    if (await needsSlugMigration()) {
+      await runSlugMigration(currentLocale);
+    }
+
     // Get current user preferences
     const categories = await onboardingService.getSelectedCategories();
 
@@ -425,6 +515,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
         // Note: API returns `updated_at`, we map it to `last_updated` in DB
         const dbFacts: db.Fact[] = response.facts.map((fact) => ({
           id: fact.id,
+          slug: fact.slug,
           title: fact.title,
           content: fact.content,
           summary: fact.summary,

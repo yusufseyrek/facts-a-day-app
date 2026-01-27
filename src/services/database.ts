@@ -77,6 +77,7 @@ async function initializeSchema(): Promise<void> {
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS facts (
       id INTEGER PRIMARY KEY,
+      slug TEXT,
       title TEXT,
       content TEXT NOT NULL,
       summary TEXT,
@@ -210,6 +211,13 @@ async function initializeSchema(): Promise<void> {
   await db.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_trivia_sessions_completed_at ON trivia_sessions(completed_at);
   `);
+
+  // ====== MIGRATIONS ======
+
+  // Add slug column for existing databases (migration)
+  await db.execAsync('ALTER TABLE facts ADD COLUMN slug TEXT').catch(() => {
+    // Column already exists, ignore error
+  });
 }
 
 /**
@@ -323,6 +331,7 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
 
 export interface Fact {
   id: number;
+  slug?: string;
   title?: string;
   content: string;
   summary?: string;
@@ -351,6 +360,7 @@ function mapFactsWithRelations(rows: any[]): FactWithRelations[] {
   return rows.map((row) => {
     const fact: FactWithRelations = {
       id: row.id,
+      slug: row.slug,
       title: row.title,
       content: row.content,
       summary: row.summary,
@@ -398,10 +408,11 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
       // (scheduled_date, notification_id, shown_in_feed) when updating existing facts from API
       await database.runAsync(
         `INSERT INTO facts (
-          id, title, content, summary, category,
+          id, slug, title, content, summary, category,
           source_url, image_url, language, created_at, last_updated
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
+          slug = excluded.slug,
           title = excluded.title,
           content = excluded.content,
           summary = excluded.summary,
@@ -415,6 +426,7 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
           shown_in_feed = facts.shown_in_feed`,
         [
           fact.id,
+          fact.slug || null,
           fact.title || null,
           fact.content,
           fact.summary || null,
