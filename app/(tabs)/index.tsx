@@ -19,6 +19,7 @@ import {
   Text,
   useIconColor,
 } from '../../src/components';
+import { FactCarousel } from '../../src/components/FactCarousel';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT } from '../../src/config/app';
 import { FLASH_LIST_ITEM_TYPES, FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
@@ -116,6 +117,7 @@ function HomeScreen() {
   const { consumePreloadedFacts, signalHomeScreenReady } = usePreloadedData();
 
   const [sections, setSections] = useState<FactSection[]>([]);
+  const [recommendations, setRecommendations] = useState<FactWithRelations[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() =>
@@ -300,6 +302,10 @@ function HomeScreen() {
     }
   }, [locale, router]);
 
+  const handleDiscoverPress = useCallback(() => {
+    router.push('/(tabs)/discover');
+  }, [router]);
+
   // FlashList key extractor
   const keyExtractor = useCallback((item: FeedListItem, index: number) => {
     if (item.type === FLASH_LIST_ITEM_TYPES.SECTION_HEADER) {
@@ -331,6 +337,54 @@ function HomeScreen() {
     () => <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
     [refreshing, handleRefresh]
   );
+
+  // Load recommendation facts (random facts not in the feed)
+  const loadRecommendations = useCallback(async () => {
+    try {
+      const recs = await database.getRandomUnscheduledFacts(6, locale);
+      if (recs.length > 0) {
+        prefetchFactImagesWithLimit(recs);
+        setRecommendations(recs);
+      }
+    } catch {
+      // Ignore recommendation loading errors
+    }
+  }, [locale]);
+
+  // Load recommendations on mount and when locale changes
+  useEffect(() => {
+    loadRecommendations();
+  }, [loadRecommendations]);
+
+  // Worth Knowing carousel header
+  const listHeaderComponent = useMemo(() => {
+    if (recommendations.length === 0) return null;
+
+    return (
+      <YStack>
+        <ContentContainer>
+          <YStack paddingVertical={spacing.md}>
+            <Text.Title>{t('worthKnowing')}</Text.Title>
+          </YStack>
+        </ContentContainer>
+        <FactCarousel facts={recommendations} onFactPress={handleFactPress} onDiscoverPress={handleDiscoverPress} />
+      </YStack>
+    );
+  }, [recommendations, handleFactPress, handleDiscoverPress, spacing, t]);
+
+  // End-of-feed footer - "You're all caught up"
+  const listFooterComponent = useMemo(() => {
+    if (flattenedData.length === 0) return null;
+
+    return (
+      <ContentContainer>
+        <YStack alignItems="center" paddingVertical={spacing.xl} gap={spacing.sm}>
+          <Text.Label color="$textSecondary">{t('feedEndTitle')}</Text.Label>
+          <Text.Caption color="$textMuted">{t('feedEndDescription')}</Text.Caption>
+        </YStack>
+      </ContentContainer>
+    );
+  }, [flattenedData.length, spacing, t]);
 
   // Loading state
   if (initialLoading && sections.length === 0) {
@@ -379,6 +433,8 @@ function HomeScreen() {
             getItemType={getItemType}
             stickyHeaderIndices={stickyHeaderIndices}
             refreshControl={refreshControl}
+            ListHeaderComponent={listHeaderComponent}
+            ListFooterComponent={listFooterComponent}
             decelerationRate={0.8}
             onScroll={handleScroll}
             onLoad={signalHomeScreenReady}
