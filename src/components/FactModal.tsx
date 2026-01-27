@@ -250,11 +250,27 @@ export function FactModal({
     return () => scrollY.removeListener(id);
   }, [scrollY]);
 
-  // Reset scroll position when fact changes (next/prev navigation)
+  // Fade-in animation for text content on navigation
+  const textFadeAnim = useRef(new Animated.Value(1)).current;
+  const isFirstRender = useRef(true);
+
+  // Reset scroll position and animate text when fact changes (next/prev navigation)
   useEffect(() => {
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
     scrollY.setValue(0);
     currentScrollY.current = 0;
+
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    // Instantly hide text, then fade in (synced with expo-image transition)
+    textFadeAnim.setValue(0);
+    Animated.timing(textFadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
   }, [fact.id]);
 
   // Image scale - stays at 1, no scaling
@@ -474,6 +490,7 @@ export function FactModal({
                   }}
                   contentFit="cover"
                   cachePolicy="memory-disk"
+                  transition={200}
                 />
               </Animated.View>
               {/* Overlay for better text readability */}
@@ -592,6 +609,7 @@ export function FactModal({
                 }}
                 contentFit="cover"
                 cachePolicy="memory-disk"
+                transition={200}
                 placeholder={
                   isImageLoading ? { blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' } : undefined
                 }
@@ -645,71 +663,73 @@ export function FactModal({
         )}
 
         {/* Content Section */}
-        <YStack padding={spacing.xl} gap={spacing.md}>
-          {/* Title - shown in content when header is not visible */}
-          <Animated.View
-            style={{
-              opacity: contentTitleOpacity,
-              paddingRight: iconSizes.xl + spacing.xs,
-            }}
-          >
-            <Text.Headline
-              role="heading"
-              onTextLayout={(e) => {
-                const lines = e.nativeEvent.lines;
-                const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
-                if (totalHeight > 0 && totalHeight !== titleHeight) {
-                  setTitleHeight(totalHeight);
-                }
+        <Animated.View style={{ opacity: textFadeAnim }}>
+          <YStack padding={spacing.xl} gap={spacing.md}>
+            {/* Title - shown in content when header is not visible */}
+            <Animated.View
+              style={{
+                opacity: contentTitleOpacity,
+                paddingRight: iconSizes.xl + spacing.xs,
               }}
             >
-              {factTitle}
-            </Text.Headline>
-          </Animated.View>
+              <Text.Headline
+                role="heading"
+                onTextLayout={(e) => {
+                  const lines = e.nativeEvent.lines;
+                  const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
+                  if (totalHeight > 0 && totalHeight !== titleHeight) {
+                    setTitleHeight(totalHeight);
+                  }
+                }}
+              >
+                {factTitle}
+              </Text.Headline>
+            </Animated.View>
 
-          {/* Category Badge & Date */}
-          {(categoryForBadge || fact.last_updated || fact.created_at) && (
-            <XStack
-              gap={spacing.sm}
-              flexWrap="wrap"
-              alignItems="center"
-              justifyContent="space-between"
-              width="100%"
-            >
-              {categoryForBadge && (
-                <Animated.View style={{ opacity: categoryBadgeOpacity }}>
-                  <CategoryBadge category={categoryForBadge} factId={fact.id} />
-                </Animated.View>
-              )}
-              {(fact.last_updated || fact.created_at) && (
-                <XStack alignItems="center" gap={spacing.xs}>
-                  <Text.Body
-                    fontSize={typography.fontSize.label}
-                    color="$textSecondary"
-                    fontFamily={FONT_FAMILIES.semibold}
-                  >
-                    {formatLastUpdated(fact.last_updated || fact.created_at, locale)}
-                  </Text.Body>
-                  <Calendar size={iconSizes.xs} color="$textSecondary" />
-                </XStack>
-              )}
-            </XStack>
-          )}
+            {/* Category Badge & Date */}
+            {(categoryForBadge || fact.last_updated || fact.created_at) && (
+              <XStack
+                gap={spacing.sm}
+                flexWrap="wrap"
+                alignItems="center"
+                justifyContent="space-between"
+                width="100%"
+              >
+                {categoryForBadge && (
+                  <Animated.View style={{ opacity: categoryBadgeOpacity }}>
+                    <CategoryBadge category={categoryForBadge} factId={fact.id} />
+                  </Animated.View>
+                )}
+                {(fact.last_updated || fact.created_at) && (
+                  <XStack alignItems="center" gap={spacing.xs}>
+                    <Text.Body
+                      fontSize={typography.fontSize.label}
+                      color="$textSecondary"
+                      fontFamily={FONT_FAMILIES.semibold}
+                    >
+                      {formatLastUpdated(fact.last_updated || fact.created_at, locale)}
+                    </Text.Body>
+                    <Calendar size={iconSizes.xs} color="$textSecondary" />
+                  </XStack>
+                )}
+              </XStack>
+            )}
 
-          {/* Summary */}
-          {fact.summary && (
-            <Text.Body color="$text" fontFamily={FONT_FAMILIES.semibold}>
-              {fact.summary}
+            {/* Summary */}
+            {fact.summary && (
+              <Text.Body color="$text" fontFamily={FONT_FAMILIES.semibold}>
+                {fact.summary}
+              </Text.Body>
+            )}
+
+            {/* Main Content */}
+            <Text.Body color="$text" fontFamily={FONT_FAMILIES.regular}>
+              {fact.content}
             </Text.Body>
-          )}
 
-          {/* Main Content */}
-          <Text.Body color="$text" fontFamily={FONT_FAMILIES.regular}>
-            {fact.content}
-          </Text.Body>
-
-          {/* Source link moved to overflow menu in FactActions */}
-        </YStack>
+            {/* Source link moved to overflow menu in FactActions */}
+          </YStack>
+        </Animated.View>
       </Animated.ScrollView>
 
       {/* Fixed Close Button - always visible for easy dismissal */}

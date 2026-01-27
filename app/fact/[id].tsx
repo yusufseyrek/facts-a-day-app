@@ -180,7 +180,6 @@ export default function FactDetailModal() {
   const handleNext = useCallback(() => {
     if (!factIds || currentIndex >= factIds.length - 1) return;
     const nextIndex = currentIndex + 1;
-    // Prefetch the next fact's image if possible
     const nextFactId = factIds[nextIndex];
     database.getFactById(nextFactId).then((nextFact) => {
       if (nextFact?.image_url) {
