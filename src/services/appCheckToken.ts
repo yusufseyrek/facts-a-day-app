@@ -9,7 +9,7 @@
 import { getApp } from '@react-native-firebase/app';
 import getAppCheck, { getToken } from '@react-native-firebase/app-check';
 
-import { appCheckReady, isAppCheckInitialized } from '../config/firebase';
+import { appCheckReady, isAppCheckInitialized } from '../config/appCheckState';
 
 // Token cache
 let cachedToken: string | null = null;
@@ -169,6 +169,32 @@ async function fetchNewToken(): Promise<string | null> {
     }
 
     return null;
+  }
+}
+
+/**
+ * Prime the token cache with an externally-obtained token.
+ * Called during App Check initialization to eagerly cache the first token,
+ * so it's available before the first API request fires.
+ */
+export function primeTokenCache(token: string): void {
+  if (!token || typeof token !== 'string' || token.trim().length === 0) {
+    return;
+  }
+
+  const expiration = getTokenExpirationMs(token);
+  if (!expiration) {
+    // Use conservative fallback (25 minutes from now)
+    tokenExpirationMs = Date.now() + 25 * 60 * 1000;
+  } else {
+    tokenExpirationMs = expiration;
+  }
+
+  cachedToken = token;
+
+  if (__DEV__) {
+    const expiresIn = Math.round((tokenExpirationMs - Date.now()) / 1000 / 60);
+    console.log(`🔒 App Check: Token cache primed, expires in ${expiresIn} min`);
   }
 }
 

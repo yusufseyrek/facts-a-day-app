@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 import { API_SETTINGS } from '../config/app';
-import { appCheckReady } from '../config/firebase';
+import { appCheckReady } from '../config/appCheckState';
 
 import { getAppVersionInfo } from '../utils/appInfo';
 import { getCachedAppCheckToken } from './appCheckToken';

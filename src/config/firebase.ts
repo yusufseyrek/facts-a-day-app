@@ -26,9 +26,17 @@ import {
 } from '@react-native-firebase/crashlytics';
 import * as Device from 'expo-device';
 
+import { APP_CHECK } from './app';
 // Import macOS debug token from platform-specific file
 // iOS builds get the real token, Android builds get undefined
 import { MACOS_DEBUG_TOKEN } from './appCheckConfig';
+import {
+  appCheckReady,
+  isAppCheckInitialized,
+  resolveAppCheckReady,
+  setAppCheckInitialized,
+} from './appCheckState';
+import { primeTokenCache } from '../services/appCheckToken';
 
 // Key for storing the debug token (used for simulators/emulators in development)
 const APP_CHECK_DEBUG_TOKEN_KEY = 'appcheck_debug_token';
@@ -67,21 +75,16 @@ async function getOrCreateDebugToken(): Promise<string> {
 const crashlyticsInstance = getCrashlytics();
 const analyticsInstance = getAnalytics();
 
-// Track if App Check is initialized
-let appCheckInitialized = false;
-
-// Promise that resolves when App Check initialization is complete (or failed)
-let appCheckReadyResolve: () => void;
-export const appCheckReady = new Promise<void>((resolve) => {
-  appCheckReadyResolve = resolve;
-});
-
 // Track if JS error handler is already installed
 let jsErrorHandlerInstalled = false;
 
-// Maximum retry attempts for App Check initialization
-const APP_CHECK_INIT_MAX_RETRIES = 2;
-const APP_CHECK_INIT_RETRY_DELAY_MS = 1000;
+// Destructure App Check constants for readability
+const {
+  INIT_MAX_RETRIES: APP_CHECK_INIT_MAX_RETRIES,
+  INIT_RETRY_DELAY_MS: APP_CHECK_INIT_RETRY_DELAY_MS,
+  FIRST_TOKEN_MAX_ATTEMPTS,
+  FIRST_TOKEN_RETRY_DELAY_MS,
+} = APP_CHECK;
 
 /**
  * Check if the app is running on macOS (Mac Catalyst or "Designed for iPad" on Mac)
@@ -124,116 +127,163 @@ function isMacOS(): boolean {
  * On macOS: Uses Debug provider (App Attest is NOT supported on macOS)
  */
 export async function initializeAppCheckService() {
-  if (appCheckInitialized) {
+  if (isAppCheckInitialized()) {
+    resolveAppCheckReady();
     return;
   }
 
-  // Determine platform and device type for provider selection
-  const isIOS = Platform.OS === 'ios';
-  const isRealDevice = Device.isDevice;
-  const isMac = isMacOS();
+  try {
+    // Determine platform and device type for provider selection
+    const isIOS = Platform.OS === 'ios';
+    const isRealDevice = Device.isDevice;
+    const isMac = isMacOS();
 
-  // Use debug provider if:
-  // 1. Running in development mode (__DEV__)
-  // 2. Running on emulator/simulator (Play Integrity and App Attest don't work on emulators)
-  // 3. Running on macOS (App Attest is NOT supported on macOS)
-  const useDebugProvider = __DEV__ || !isRealDevice || isMac;
+    // Use debug provider if:
+    // 1. Running in development mode (__DEV__)
+    // 2. Running on emulator/simulator (Play Integrity and App Attest don't work on emulators)
+    // 3. Running on macOS (App Attest is NOT supported on macOS)
+    const useDebugProvider = __DEV__ || !isRealDevice || isMac;
 
-  // Determine provider names
-  const iosProvider = useDebugProvider ? 'debug' : 'appAttest';
-  const androidProvider = useDebugProvider ? 'debug' : 'playIntegrity';
-  const providerName = isIOS ? iosProvider : androidProvider;
+    // Determine provider names
+    const iosProvider = useDebugProvider ? 'debug' : 'appAttest';
+    const androidProvider = useDebugProvider ? 'debug' : 'playIntegrity';
+    const providerName = isIOS ? iosProvider : androidProvider;
 
-  // Get debug token based on environment
-  let debugToken: string | undefined;
-  if (useDebugProvider) {
-    if (isMac) {
-      // Use pre-registered token for macOS production builds
-      debugToken = MACOS_DEBUG_TOKEN;
-      console.log('🖥️ App Check: Running on macOS - using pre-registered debug token');
-    } else {
-      // Use dynamically generated token for simulators/emulators in development
-      debugToken = await getOrCreateDebugToken();
-      console.log(`🔑 App Check Debug Token: ${debugToken}`);
-    }
-  }
-
-  let lastError: Error | null = null;
-
-  for (let attempt = 0; attempt <= APP_CHECK_INIT_MAX_RETRIES; attempt++) {
-    try {
-      if (attempt > 0) {
-        await new Promise((resolve) => setTimeout(resolve, APP_CHECK_INIT_RETRY_DELAY_MS));
-      }
-
-      const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
-
-      await rnfbProvider.configure({
-        apple: {
-          // Use debug on simulators, appAttest on real devices
-          provider: iosProvider,
-          // Pass debug token for debug provider
-          ...(useDebugProvider && debugToken ? { debugToken } : {}),
-        },
-        android: {
-          // Use debug on emulators, playIntegrity on real devices
-          provider: androidProvider,
-          // Pass debug token for debug provider
-          ...(useDebugProvider && debugToken ? { debugToken } : {}),
-        },
-        // Enable token auto-refresh
-        isTokenAutoRefreshEnabled: true,
-      });
-
-      await initializeAppCheck(getApp(), {
-        provider: rnfbProvider,
-        isTokenAutoRefreshEnabled: true,
-      });
-
-      appCheckInitialized = true;
-
-      if (__DEV__) {
-        console.log(`🔒 App Check: Initialized (${providerName})`);
-      }
-
-      // Success - exit the retry loop
-      break;
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-
-      // Log error on each attempt
-      const errorMessage = lastError.message;
-
-      if (attempt < APP_CHECK_INIT_MAX_RETRIES) {
-        console.warn(`⚠️ App Check: Initialization attempt ${attempt + 1} failed: ${errorMessage}`);
+    // Get debug token based on environment
+    let debugToken: string | undefined;
+    if (useDebugProvider) {
+      if (isMac) {
+        // Use pre-registered token for macOS production builds
+        debugToken = MACOS_DEBUG_TOKEN;
+        console.log('🖥️ App Check: Running on macOS - using pre-registered debug token');
       } else {
-        // Final attempt failed - log detailed error
-        const errorStack = lastError.stack || '';
+        // Use dynamically generated token for simulators/emulators in development
+        debugToken = await getOrCreateDebugToken();
+        console.log(`🔑 App Check Debug Token: ${debugToken}`);
+      }
+    }
 
-        console.error(
-          `❌ App Check: Initialization FAILED with ${providerName} provider after ${APP_CHECK_INIT_MAX_RETRIES + 1} attempts`
-        );
-        console.error(`❌ App Check Error: ${errorMessage}`);
-        if (errorStack && __DEV__) {
-          console.error(`❌ App Check Stack: ${errorStack}`);
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= APP_CHECK_INIT_MAX_RETRIES; attempt++) {
+      try {
+        if (attempt > 0) {
+          await new Promise((resolve) => setTimeout(resolve, APP_CHECK_INIT_RETRY_DELAY_MS));
         }
 
-        // Also log to Crashlytics for production debugging
-        if (!__DEV__) {
-          try {
-            log(crashlyticsInstance, `App Check init failed (${providerName}): ${errorMessage}`);
-            crashlyticsRecordError(crashlyticsInstance, lastError);
-          } catch {
-            // Silently fail if Crashlytics isn't ready
+        const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
+
+        await rnfbProvider.configure({
+          apple: {
+            // Use debug on simulators, appAttest on real devices
+            provider: iosProvider,
+            // Pass debug token for debug provider
+            ...(useDebugProvider && debugToken ? { debugToken } : {}),
+          },
+          android: {
+            // Use debug on emulators, playIntegrity on real devices
+            provider: androidProvider,
+            // Pass debug token for debug provider
+            ...(useDebugProvider && debugToken ? { debugToken } : {}),
+          },
+          // Enable token auto-refresh
+          isTokenAutoRefreshEnabled: true,
+        });
+
+        await initializeAppCheck(getApp(), {
+          provider: rnfbProvider,
+          isTokenAutoRefreshEnabled: true,
+        });
+
+        setAppCheckInitialized(true);
+
+        if (__DEV__) {
+          console.log(`🔒 App Check: Initialized (${providerName})`);
+        }
+
+        // Eagerly fetch and cache the first token so it's available
+        // before the first API request fires (closes the timing gap
+        // between initializeAppCheck() and token availability)
+        try {
+          const appCheckInstance = getAppCheck(getApp());
+          let firstToken: string | null = null;
+
+          for (let tokenAttempt = 0; tokenAttempt < FIRST_TOKEN_MAX_ATTEMPTS; tokenAttempt++) {
+            try {
+              if (tokenAttempt > 0) {
+                await new Promise((r) => setTimeout(r, FIRST_TOKEN_RETRY_DELAY_MS));
+              }
+              const result = await getAppCheckTokenFn(appCheckInstance, false);
+              if (result.token && result.token.trim().length > 0) {
+                firstToken = result.token;
+                break;
+              }
+            } catch (tokenError) {
+              if (__DEV__) {
+                console.warn(
+                  `⚠️ App Check: First token attempt ${tokenAttempt + 1} failed:`,
+                  tokenError
+                );
+              }
+            }
+          }
+
+          if (firstToken) {
+            primeTokenCache(firstToken);
+            if (__DEV__) {
+              console.log('🔒 App Check: First token obtained and cached');
+            }
+          } else if (__DEV__) {
+            console.warn('⚠️ App Check: Could not obtain first token (will retry on demand)');
+          }
+        } catch (prefetchError) {
+          // Non-fatal: token will be fetched on demand by getCachedAppCheckToken
+          if (__DEV__) {
+            console.warn('⚠️ App Check: First token prefetch failed:', prefetchError);
+          }
+        }
+
+        // Success - exit the retry loop
+        break;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Log error on each attempt
+        const errorMessage = lastError.message;
+
+        if (attempt < APP_CHECK_INIT_MAX_RETRIES) {
+          console.warn(
+            `⚠️ App Check: Initialization attempt ${attempt + 1} failed: ${errorMessage}`
+          );
+        } else {
+          // Final attempt failed - log detailed error
+          const errorStack = lastError.stack || '';
+
+          console.error(
+            `❌ App Check: Initialization FAILED with ${providerName} provider after ${APP_CHECK_INIT_MAX_RETRIES + 1} attempts`
+          );
+          console.error(`❌ App Check Error: ${errorMessage}`);
+          if (errorStack && __DEV__) {
+            console.error(`❌ App Check Stack: ${errorStack}`);
+          }
+
+          // Also log to Crashlytics for production debugging
+          if (!__DEV__) {
+            try {
+              log(crashlyticsInstance, `App Check init failed (${providerName}): ${errorMessage}`);
+              crashlyticsRecordError(crashlyticsInstance, lastError);
+            } catch {
+              // Silently fail if Crashlytics isn't ready
+            }
           }
         }
       }
     }
+  } finally {
+    // Always resolve the ready promise, even on failure
+    // This prevents API calls from hanging forever
+    resolveAppCheckReady();
   }
-
-  // Always resolve the ready promise, even on failure
-  // This prevents API calls from hanging forever
-  appCheckReadyResolve();
 }
 
 /**
@@ -261,6 +311,9 @@ export async function initializeFirebase() {
     }
   } catch (error) {
     console.error('Failed to initialize Firebase:', error);
+    // Safety: ensure appCheckReady resolves even on catastrophic failure
+    // (resolving an already-resolved Promise is a no-op)
+    resolveAppCheckReady();
   }
 }
 
@@ -485,13 +538,6 @@ export function testCrashlytics() {
 }
 
 /**
- * Check if App Check is initialized
- */
-export function isAppCheckInitialized(): boolean {
-  return appCheckInitialized;
-}
-
-/**
  * Get the current App Check token (for debugging)
  * This can be used to verify App Check is working correctly
  * Uses the modular API (v22+)
@@ -500,7 +546,7 @@ export async function getAppCheckToken() {
   // Wait for App Check initialization to complete
   await appCheckReady;
 
-  if (!appCheckInitialized) {
+  if (!isAppCheckInitialized()) {
     console.warn('App Check not initialized');
     return null;
   }
@@ -514,6 +560,9 @@ export async function getAppCheckToken() {
     return null;
   }
 }
+
+// Re-export shared App Check state for consumers that import from this module
+export { appCheckReady, isAppCheckInitialized } from './appCheckState';
 
 // Export instances for direct access if needed
 export { analyticsInstance as analytics, crashlyticsInstance as crashlytics };

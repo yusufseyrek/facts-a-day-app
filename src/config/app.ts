@@ -116,3 +116,17 @@ export const API_SETTINGS = {
   /** Batch size for fetching facts from the server */
   FACTS_BATCH_SIZE: 1000,
 } as const;
+
+/**
+ * App Check settings for Firebase App Check initialization
+ */
+export const APP_CHECK = {
+  /** Maximum retry attempts for App Check initialization */
+  INIT_MAX_RETRIES: 2,
+  /** Delay between initialization retries (milliseconds) */
+  INIT_RETRY_DELAY_MS: 500,
+  /** Maximum attempts to fetch the first token after init */
+  FIRST_TOKEN_MAX_ATTEMPTS: 3,
+  /** Delay between first token fetch retries (milliseconds) */
+  FIRST_TOKEN_RETRY_DELAY_MS: 250,
+} as const;
