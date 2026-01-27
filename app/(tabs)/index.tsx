@@ -113,7 +113,7 @@ function HomeScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const iconColor = useIconColor();
-  const { iconSizes, spacing } = useResponsive();
+  const { iconSizes, spacing, typography } = useResponsive();
   const { consumePreloadedFacts, signalHomeScreenReady } = usePreloadedData();
 
   const [sections, setSections] = useState<FactSection[]>([]);
@@ -207,13 +207,19 @@ function HomeScreen() {
 
   // Auto-refresh feed when content is updated from API
   useEffect(() => {
-    const unsubscribe = onFeedRefresh(() => loadFacts());
+    const unsubscribe = onFeedRefresh(() => {
+      loadFacts();
+      loadRecommendations();
+    });
     return () => unsubscribe();
   }, []);
 
   // Auto-refresh feed when preferences change
   useEffect(() => {
-    const unsubscribe = onPreferenceFeedRefresh(() => loadFacts());
+    const unsubscribe = onPreferenceFeedRefresh(() => {
+      loadFacts();
+      loadRecommendations();
+    });
     return () => unsubscribe();
   }, []);
 
@@ -364,13 +370,13 @@ function HomeScreen() {
       <YStack>
         <ContentContainer>
           <YStack paddingVertical={spacing.md}>
-            <Text.Title>{t('worthKnowing')}</Text.Title>
+            <Text.Title fontSize={typography.fontSize.body}>{t('worthKnowing')}</Text.Title>
           </YStack>
         </ContentContainer>
         <FactCarousel facts={recommendations} onFactPress={handleFactPress} onDiscoverPress={handleDiscoverPress} />
       </YStack>
     );
-  }, [recommendations, handleFactPress, handleDiscoverPress, spacing, t]);
+  }, [recommendations, handleFactPress, handleDiscoverPress, spacing, typography, t]);
 
   // End-of-feed footer - "You're all caught up"
   const listFooterComponent = useMemo(() => {
