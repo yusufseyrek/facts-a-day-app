@@ -263,12 +263,18 @@ function HomeScreen() {
   );
 
   const handleFactPress = useCallback(
-    (fact: FactWithRelations) => {
+    (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => {
       // Prefetch image before navigation for faster modal display
       if (fact.image_url) {
         prefetchFactImage(fact.image_url, fact.id);
       }
-      router.push(`/fact/${fact.id}?source=feed`);
+      if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
+        router.push(
+          `/fact/${fact.id}?source=feed&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
+        );
+      } else {
+        router.push(`/fact/${fact.id}?source=feed`);
+      }
     },
     [router]
   );
@@ -321,6 +327,19 @@ function HomeScreen() {
   }, []);
 
   // FlashList renderItem - handles both section headers and fact items
+  // Build a map of factId → { allFactIds, globalIndex } for navigation across the entire list
+  const factNavigationMap = useMemo(() => {
+    const allFactIds: number[] = [];
+    sections.forEach((section) => {
+      section.data.forEach((f) => allFactIds.push(f.id));
+    });
+    const map = new Map<number, { factIds: number[]; index: number }>();
+    allFactIds.forEach((id, idx) => {
+      map.set(id, { factIds: allFactIds, index: idx });
+    });
+    return map;
+  }, [sections]);
+
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<FeedListItem>) => {
       if (item.type === FLASH_LIST_ITEM_TYPES.SECTION_HEADER) {
@@ -328,9 +347,15 @@ function HomeScreen() {
       }
 
       if (!item.fact?.id) return null;
-      return <FactListItem item={item.fact} onPress={() => handleFactPress(item.fact)} />;
+      const nav = factNavigationMap.get(item.fact.id);
+      return (
+        <FactListItem
+          item={item.fact}
+          onPress={() => handleFactPress(item.fact, nav?.factIds, nav?.index)}
+        />
+      );
     },
-    [handleFactPress]
+    [handleFactPress, factNavigationMap]
   );
 
   // FlashList getItemType - enables recycling optimization

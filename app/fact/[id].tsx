@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -9,6 +9,7 @@ import { useTranslation } from '../../src/i18n';
 import { Screens, trackFactView, trackScreenView } from '../../src/services/analytics';
 import * as api from '../../src/services/api';
 import * as database from '../../src/services/database';
+import { prefetchFactImage } from '../../src/services/images';
 import { getLastConsumedFact } from '../../src/services/randomFact';
 import { hexColors } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
@@ -17,26 +18,66 @@ import type { FactViewSource } from '../../src/services/analytics';
 import type { FactWithRelations } from '../../src/services/database';
 
 export default function FactDetailModal() {
-  const { id, source } = useLocalSearchParams<{ id: string; source?: FactViewSource }>();
+  const { id, source, factIds: factIdsParam, currentIndex: currentIndexParam } =
+    useLocalSearchParams<{
+      id: string;
+      source?: FactViewSource;
+      factIds?: string;
+      currentIndex?: string;
+    }>();
   const router = useRouter();
   const { t, locale } = useTranslation();
   const { spacing } = useResponsive();
+
+  // Parse fact ID list for navigation
+  const factIds = useMemo(() => {
+    if (!factIdsParam) return null;
+    try {
+      const parsed = JSON.parse(factIdsParam);
+      return Array.isArray(parsed) ? (parsed as number[]) : null;
+    } catch {
+      return null;
+    }
+  }, [factIdsParam]);
+
+  const initialIndex = currentIndexParam ? parseInt(currentIndexParam, 10) : 0;
+  const [currentIndex, setCurrentIndex] = useState(isNaN(initialIndex) ? 0 : initialIndex);
   const [fact, setFact] = useState<FactWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasTrackedView, setHasTrackedView] = useState(false);
+  const trackedFactIds = useRef(new Set<number>());
+
+  // Determine the current fact ID — either from navigation state or the route param
+  const currentFactId = useMemo(() => {
+    if (factIds && currentIndex >= 0 && currentIndex < factIds.length) {
+      return factIds[currentIndex];
+    }
+    return parseInt(id, 10);
+  }, [factIds, currentIndex, id]);
+
+  const hasNext = factIds !== null && currentIndex < factIds.length - 1;
+  const hasPrevious = factIds !== null && currentIndex > 0;
+  const totalCount = factIds ? factIds.length : undefined;
 
   useEffect(() => {
-    loadFact();
     trackScreenView(Screens.FACT_DETAIL);
-  }, [id]);
+  }, []);
 
-  const loadFact = async () => {
+  const isInitialLoad = useRef(true);
+  useEffect(() => {
+    const isNavigation = !isInitialLoad.current;
+    isInitialLoad.current = false;
+    loadFact(currentFactId, isNavigation);
+  }, [currentFactId]);
+
+  const loadFact = async (factId: number, isNavigation = false) => {
     try {
-      setLoading(true);
+      // Only show full loading screen on initial load, not when navigating
+      if (!isNavigation) {
+        setLoading(true);
+      }
       setError(null);
 
-      const factId = parseInt(id, 10);
       if (isNaN(factId)) {
         setError(t('invalidFactId'));
         return;
@@ -47,17 +88,7 @@ export default function FactDetailModal() {
       if (preloadedFact) {
         setFact(preloadedFact);
         setLoading(false);
-
-        // Track fact view
-        if (!hasTrackedView) {
-          setHasTrackedView(true);
-          const categorySlug = preloadedFact.categoryData?.slug || preloadedFact.category || 'unknown';
-          trackFactView({
-            factId: preloadedFact.id,
-            category: categorySlug,
-            source: source || 'feed',
-          });
-        }
+        trackView(preloadedFact);
         return;
       }
 
@@ -122,17 +153,7 @@ export default function FactDetailModal() {
       }
 
       setFact(factData);
-
-      // Track fact view (only once per modal open)
-      if (!hasTrackedView) {
-        setHasTrackedView(true);
-        const categorySlug = factData.categoryData?.slug || factData.category || 'unknown';
-        trackFactView({
-          factId: factData.id,
-          category: categorySlug,
-          source: source || 'feed',
-        });
-      }
+      trackView(factData);
     } catch (err) {
       console.error('Error loading fact:', err);
       setError(t('failedToLoadFact'));
@@ -141,9 +162,45 @@ export default function FactDetailModal() {
     }
   };
 
-  const handleClose = () => {
-    router.back();
+  const trackView = (factData: FactWithRelations) => {
+    if (trackedFactIds.current.has(factData.id)) return;
+    trackedFactIds.current.add(factData.id);
+    const categorySlug = factData.categoryData?.slug || factData.category || 'unknown';
+    trackFactView({
+      factId: factData.id,
+      category: categorySlug,
+      source: source || 'feed',
+    });
   };
+
+  const handleClose = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  const handleNext = useCallback(() => {
+    if (!factIds || currentIndex >= factIds.length - 1) return;
+    const nextIndex = currentIndex + 1;
+    // Prefetch the next fact's image if possible
+    const nextFactId = factIds[nextIndex];
+    database.getFactById(nextFactId).then((nextFact) => {
+      if (nextFact?.image_url) {
+        prefetchFactImage(nextFact.image_url, nextFact.id);
+      }
+    });
+    setCurrentIndex(nextIndex);
+  }, [factIds, currentIndex]);
+
+  const handlePrevious = useCallback(() => {
+    if (!factIds || currentIndex <= 0) return;
+    const prevIndex = currentIndex - 1;
+    const prevFactId = factIds[prevIndex];
+    database.getFactById(prevFactId).then((prevFact) => {
+      if (prevFact?.image_url) {
+        prefetchFactImage(prevFact.image_url, prevFact.id);
+      }
+    });
+    setCurrentIndex(prevIndex);
+  }, [factIds, currentIndex]);
 
   if (loading) {
     return (
@@ -176,5 +233,16 @@ export default function FactDetailModal() {
     );
   }
 
-  return <FactModal fact={fact} onClose={handleClose} />;
+  return (
+    <FactModal
+      fact={fact}
+      onClose={handleClose}
+      onNext={factIds ? handleNext : undefined}
+      onPrevious={factIds ? handlePrevious : undefined}
+      hasNext={hasNext}
+      hasPrevious={hasPrevious}
+      currentIndex={factIds ? currentIndex : undefined}
+      totalCount={totalCount}
+    />
+  );
 }

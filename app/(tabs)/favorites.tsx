@@ -106,13 +106,21 @@ export default function FavoritesScreen() {
     }, [locale, loadFavorites])
   );
 
+  const favoriteFactIds = useMemo(() => favorites.map((f) => f.id), [favorites]);
+
   const handleFactPress = useCallback(
-    (fact: FactWithRelations) => {
+    (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => {
       // Prefetch image before navigation for faster modal display
       if (fact.image_url) {
         prefetchFactImage(fact.image_url, fact.id);
       }
-      router.push(`/fact/${fact.id}?source=favorites`);
+      if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
+        router.push(
+          `/fact/${fact.id}?source=favorites&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
+        );
+      } else {
+        router.push(`/fact/${fact.id}?source=favorites`);
+      }
     },
     [router]
   );
@@ -140,10 +148,10 @@ export default function FavoritesScreen() {
 
   // Memoized renderItem
   const renderItem = useCallback(
-    ({ item }: { item: FactWithRelations }) => (
-      <FactListItem item={item} onPress={handleFactPress} />
+    ({ item, index }: { item: FactWithRelations; index: number }) => (
+      <FactListItem item={item} onPress={(fact) => handleFactPress(fact, favoriteFactIds, index)} />
     ),
-    [handleFactPress]
+    [handleFactPress, favoriteFactIds]
   );
 
   // Memoized refresh control

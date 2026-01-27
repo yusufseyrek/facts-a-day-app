@@ -35,8 +35,11 @@ interface FactModalProps {
   fact: FactWithRelations;
   onClose: () => void;
   onNext?: () => void;
+  onPrevious?: () => void;
   hasNext?: boolean;
-  positionText?: string;
+  hasPrevious?: boolean;
+  currentIndex?: number;
+  totalCount?: number;
 }
 
 // Styled components without static responsive values - use inline props with useResponsive()
@@ -68,7 +71,16 @@ function formatLastUpdated(dateString: string, locale: string): string {
   }
 }
 
-export function FactModal({ fact, onClose, onNext, hasNext, positionText }: FactModalProps) {
+export function FactModal({
+  fact,
+  onClose,
+  onNext,
+  onPrevious,
+  hasNext,
+  hasPrevious,
+  currentIndex,
+  totalCount,
+}: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const {
@@ -221,7 +233,10 @@ export function FactModal({ fact, onClose, onNext, hasNext, positionText }: Fact
   const basePaddingTop = Platform.OS === 'ios' ? spacing.xl : insets.top;
   const basePaddingBottom = spacing.xl;
   const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight;
-  const minHeaderHeight = Platform.OS === 'ios' ? media.buttonHeight + media.searchInputHeight : media.searchInputHeight + spacing.xxl + insets.top;
+  const minHeaderHeight =
+    Platform.OS === 'ios'
+      ? media.buttonHeight + media.searchInputHeight
+      : media.searchInputHeight + spacing.xxl + insets.top;
   const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
 
   // Header background appears when image starts to be covered (for images) or early for no image
@@ -235,6 +250,12 @@ export function FactModal({ fact, onClose, onNext, hasNext, positionText }: Fact
     return () => scrollY.removeListener(id);
   }, [scrollY]);
 
+  // Reset scroll position when fact changes (next/prev navigation)
+  useEffect(() => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+    scrollY.setValue(0);
+    currentScrollY.current = 0;
+  }, [fact.id]);
 
   // Image scale - stays at 1, no scaling
   const imageScale = scrollY.interpolate({
@@ -503,7 +524,7 @@ export function FactModal({ fact, onClose, onNext, hasNext, positionText }: Fact
               <Animated.View
                 style={{
                   flex: 1,
-                  paddingRight: iconSizes.xl + spacing.sm,
+                  paddingRight: iconSizes.xl + spacing.xs,
                   transform: [{ translateY: headerTitleTranslateY }],
                 }}
               >
@@ -571,7 +592,9 @@ export function FactModal({ fact, onClose, onNext, hasNext, positionText }: Fact
                 }}
                 contentFit="cover"
                 cachePolicy="memory-disk"
-                placeholder={isImageLoading ? { blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' } : undefined}
+                placeholder={
+                  isImageLoading ? { blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' } : undefined
+                }
               />
             </Animated.View>
             {/* Gradient overlay */}
@@ -627,7 +650,7 @@ export function FactModal({ fact, onClose, onNext, hasNext, positionText }: Fact
           <Animated.View
             style={{
               opacity: contentTitleOpacity,
-              paddingRight: iconSizes.xl + spacing.sm,
+              paddingRight: iconSizes.xl + spacing.xs,
             }}
           >
             <Text.Headline
@@ -774,10 +797,13 @@ export function FactModal({ fact, onClose, onNext, hasNext, positionText }: Fact
         factContent={fact.content}
         imageUrl={imageUri || undefined}
         category={fact.categoryData || fact.category}
-        onNext={onNext}
-        hasNext={hasNext}
         sourceUrl={fact.source_url || undefined}
-        positionText={positionText}
+        onNext={onNext}
+        onPrevious={onPrevious}
+        hasNext={hasNext}
+        hasPrevious={hasPrevious}
+        currentIndex={currentIndex}
+        totalCount={totalCount}
       />
     </View>
   );

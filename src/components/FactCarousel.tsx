@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, NativeScrollEvent, NativeSyntheticEvent, Pressable, View } from 'react-native';
 
 import { Compass } from '@tamagui/lucide-icons';
@@ -15,7 +15,7 @@ import type { FactWithRelations } from '../services/database';
 
 interface FactCarouselProps {
   facts: FactWithRelations[];
-  onFactPress: (fact: FactWithRelations) => void;
+  onFactPress: (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => void;
   onDiscoverPress?: () => void;
 }
 
@@ -31,6 +31,7 @@ export const FactCarousel = React.memo(
     const { t } = useTranslation();
     const [activeIndex, setActiveIndex] = useState(0);
 
+    const carouselFactIds = useMemo(() => facts.map((f) => f.id), [facts]);
     const colors = hexColors[theme];
     const cardWidth = screenWidth * config.cardWidthMultiplier;
     const cardGap = spacing.sm;
@@ -108,6 +109,7 @@ export const FactCarousel = React.memo(
 
         // Regular fact card
         const fact = item as FactWithRelations;
+        const factIndex = facts.indexOf(fact);
         return (
           <View style={{ width: cardWidth }}>
             <ImageFactCard
@@ -116,7 +118,7 @@ export const FactCarousel = React.memo(
               factId={fact.id}
               category={fact.categoryData || fact.category}
               categorySlug={fact.categoryData?.slug || fact.category}
-              onPress={() => onFactPress(fact)}
+              onPress={() => onFactPress(fact, carouselFactIds, factIndex >= 0 ? factIndex : 0)}
             />
           </View>
         );
@@ -130,6 +132,8 @@ export const FactCarousel = React.memo(
         iconSizes,
         onFactPress,
         onDiscoverPress,
+        carouselFactIds,
+        facts,
         t,
       ]
     );
@@ -151,7 +155,7 @@ export const FactCarousel = React.memo(
             factId={facts[0].id}
             category={facts[0].categoryData || facts[0].category}
             categorySlug={facts[0].categoryData?.slug || facts[0].category}
-            onPress={() => onFactPress(facts[0])}
+            onPress={() => onFactPress(facts[0], carouselFactIds, 0)}
           />
         </ContentContainer>
       );

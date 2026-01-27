@@ -315,12 +315,18 @@ function DiscoverScreen() {
   }, [searchQuery, selectedCategorySlug, performSearch]);
 
   const handleFactPress = useCallback(
-    (fact: FactWithRelations) => {
+    (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => {
       // Prefetch image before navigation for faster modal display
       if (fact.image_url) {
         prefetchFactImage(fact.image_url, fact.id);
       }
-      router.push(`/fact/${fact.id}?source=discover`);
+      if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
+        router.push(
+          `/fact/${fact.id}?source=discover&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
+        );
+      } else {
+        router.push(`/fact/${fact.id}?source=discover`);
+      }
     },
     [router]
   );
@@ -425,30 +431,34 @@ function DiscoverScreen() {
     [itemHeight]
   );
 
+  // Compute fact ID lists for navigation
+  const searchFactIds = useMemo(() => searchResults.map((f) => f.id), [searchResults]);
+  const categoryFactIds = useMemo(() => categoryFacts.map((f) => f.id), [categoryFacts]);
+
   // Memoized renderItem for search results
   const renderSearchItem = useCallback(
-    ({ item }: ListRenderItemInfo<FactWithRelations>) => (
+    ({ item, index }: ListRenderItemInfo<FactWithRelations>) => (
       <FactListItem
         item={item}
         isTablet={isTablet}
-        onPress={handleFactPress}
+        onPress={(fact) => handleFactPress(fact, searchFactIds, index)}
         selectedCategory={selectedCategory}
       />
     ),
-    [isTablet, handleFactPress, selectedCategory]
+    [isTablet, handleFactPress, selectedCategory, searchFactIds]
   );
 
   // Memoized renderItem for category facts
   const renderCategoryItem = useCallback(
-    ({ item }: ListRenderItemInfo<FactWithRelations>) => (
+    ({ item, index }: ListRenderItemInfo<FactWithRelations>) => (
       <FactListItem
         item={item}
         isTablet={isTablet}
-        onPress={handleFactPress}
+        onPress={(fact) => handleFactPress(fact, categoryFactIds, index)}
         selectedCategory={selectedCategory}
       />
     ),
-    [isTablet, handleFactPress, selectedCategory]
+    [isTablet, handleFactPress, selectedCategory, categoryFactIds]
   );
 
   // Memoized refresh controls
