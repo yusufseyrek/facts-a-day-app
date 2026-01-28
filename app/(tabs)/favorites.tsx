@@ -496,6 +496,7 @@ export default function FavoritesScreen() {
             refreshControl={refreshControl}
             onScroll={handleScroll}
             overrideItemLayout={overrideItemLayout}
+            snapToInterval={itemHeight}
             {...FLASH_LIST_SETTINGS}
           />
         )}

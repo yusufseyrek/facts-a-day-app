@@ -448,8 +448,7 @@ export function FactActions({
                   height: iconSizes.lg,
                   backgroundColor: flagColor,
                   opacity: 0.3,
-                  marginLeft: spacing.md,
-                  marginRight: spacing.lg,
+                  marginHorizontal: spacing.md,
                 }}
               />
               <XStack alignItems="center">

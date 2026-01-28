@@ -9,8 +9,8 @@ import { useTranslation } from '../../src/i18n';
 import { Screens, trackFactView, trackScreenView } from '../../src/services/analytics';
 import * as api from '../../src/services/api';
 import * as database from '../../src/services/database';
-import { prefetchFactImage } from '../../src/services/images';
 import { getLastConsumedFact } from '../../src/services/randomFact';
+import { prefetchAdjacentFactsByIds } from '../../src/utils/prefetchAdjacentImages';
 import { hexColors } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -62,25 +62,7 @@ export default function FactDetailModal() {
   // Pre-fetch images for the 3 nearest facts on each side of the current position
   useEffect(() => {
     if (!factIds) return;
-    const start = Math.max(0, currentIndex - 3);
-    const end = Math.min(factIds.length - 1, currentIndex + 3);
-    const idsToFetch: number[] = [];
-    for (let i = start; i <= end; i++) {
-      if (i !== currentIndex) idsToFetch.push(factIds[i]);
-    }
-    if (idsToFetch.length === 0) return;
-
-    Promise.all(
-      idsToFetch.map((factId) =>
-        database.getFactById(factId).then((f) => {
-          if (f?.image_url) {
-            prefetchFactImage(f.image_url, f.id);
-          }
-        })
-      )
-    ).catch(() => {
-      // Silently ignore prefetch errors
-    });
+    prefetchAdjacentFactsByIds(factIds, currentIndex);
   }, [factIds, currentIndex]);
 
   useEffect(() => {

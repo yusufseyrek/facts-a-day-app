@@ -26,6 +26,7 @@ import {
   trackTriviaViewFactClick,
 } from '../../src/services/analytics';
 import { prefetchFactImage } from '../../src/services/images';
+import { prefetchAdjacentImages } from '../../src/utils/prefetchAdjacentImages';
 import { useFactImage } from '../../src/utils/useFactImage';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
@@ -189,12 +190,14 @@ export default function TriviaGameScreen() {
     }
   }, [gameState.currentQuestionIndex, gameState.questions.length]);
 
-  // Prefetch current question's fact image for seamless modal display
+  // Prefetch adjacent question images for seamless navigation
   useEffect(() => {
-    if (currentQuestion?.fact?.id && currentQuestion?.fact?.image_url) {
-      prefetchFactImage(currentQuestion.fact.image_url, currentQuestion.fact.id);
-    }
-  }, [currentQuestion?.fact?.id, currentQuestion?.fact?.image_url]);
+    if (gameState.questions.length === 0) return;
+    const facts = gameState.questions
+      .map((q) => q.fact)
+      .filter((f): f is NonNullable<typeof f> => !!f);
+    prefetchAdjacentImages(facts, gameState.currentQuestionIndex);
+  }, [gameState.currentQuestionIndex, gameState.questions]);
 
   const loadQuestions = async () => {
     try {
