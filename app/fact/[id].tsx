@@ -59,6 +59,30 @@ export default function FactDetailModal() {
   const hasPrevious = factIds !== null && currentIndex > 0;
   const totalCount = factIds ? factIds.length : undefined;
 
+  // Pre-fetch images for the 3 nearest facts on each side of the current position
+  useEffect(() => {
+    if (!factIds) return;
+    const start = Math.max(0, currentIndex - 3);
+    const end = Math.min(factIds.length - 1, currentIndex + 3);
+    const idsToFetch: number[] = [];
+    for (let i = start; i <= end; i++) {
+      if (i !== currentIndex) idsToFetch.push(factIds[i]);
+    }
+    if (idsToFetch.length === 0) return;
+
+    Promise.all(
+      idsToFetch.map((factId) =>
+        database.getFactById(factId).then((f) => {
+          if (f?.image_url) {
+            prefetchFactImage(f.image_url, f.id);
+          }
+        })
+      )
+    ).catch(() => {
+      // Silently ignore prefetch errors
+    });
+  }, [factIds, currentIndex]);
+
   useEffect(() => {
     trackScreenView(Screens.FACT_DETAIL);
   }, []);
@@ -179,26 +203,12 @@ export default function FactDetailModal() {
 
   const handleNext = useCallback(() => {
     if (!factIds || currentIndex >= factIds.length - 1) return;
-    const nextIndex = currentIndex + 1;
-    const nextFactId = factIds[nextIndex];
-    database.getFactById(nextFactId).then((nextFact) => {
-      if (nextFact?.image_url) {
-        prefetchFactImage(nextFact.image_url, nextFact.id);
-      }
-    });
-    setCurrentIndex(nextIndex);
+    setCurrentIndex(currentIndex + 1);
   }, [factIds, currentIndex]);
 
   const handlePrevious = useCallback(() => {
     if (!factIds || currentIndex <= 0) return;
-    const prevIndex = currentIndex - 1;
-    const prevFactId = factIds[prevIndex];
-    database.getFactById(prevFactId).then((prevFact) => {
-      if (prevFact?.image_url) {
-        prefetchFactImage(prevFact.image_url, prevFact.id);
-      }
-    });
-    setCurrentIndex(prevIndex);
+    setCurrentIndex(currentIndex - 1);
   }, [factIds, currentIndex]);
 
   if (loading) {

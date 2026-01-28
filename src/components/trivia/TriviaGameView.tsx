@@ -306,7 +306,7 @@ export function TriviaGameView({
                   style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                 >
                   <XStack
-                    backgroundColor={`${primaryColor}25`}
+                    backgroundColor={`${primaryColor}40`}
                     paddingHorizontal={spacing.md}
                     paddingVertical={spacing.sm}
                     borderRadius={radius.full}
@@ -340,14 +340,14 @@ export function TriviaGameView({
                     style={{
                       flexDirection: 'row',
                       backgroundColor: canUseExplanation
-                        ? `${accentColor}25`
-                        : `${secondaryTextColor}10`,
+                        ? `${accentColor}40`
+                        : `${secondaryTextColor}30`,
                       paddingHorizontal: spacing.md,
                       paddingVertical: spacing.sm,
                       borderRadius: radius.full,
                       alignItems: 'center',
                       gap: spacing.xs,
-                      opacity: canUseExplanation ? 1 : 0.5,
+                      opacity: canUseExplanation ? 1 : 0.8,
                     }}
                   >
                     <Lightbulb

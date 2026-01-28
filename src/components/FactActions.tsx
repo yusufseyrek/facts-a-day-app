@@ -138,7 +138,7 @@ export function FactActions({
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { iconSizes, typography, spacing, media } = useResponsive();
+  const { iconSizes, typography, spacing } = useResponsive();
   const insets = useSafeAreaInsets();
 
   // Neon colors for actions
@@ -367,10 +367,10 @@ export function FactActions({
           paddingTop: spacing.xs,
         }}
       >
-        {/* Action row: [Save | Share | Report]  [< N of M >] */}
+        {/* Action row: [ {} {} {} | < 1/N > ] or [ {} {} {} ] */}
         <XStack alignItems="center" justifyContent="space-between" paddingHorizontal={spacing.sm}>
           {/* Action buttons group */}
-          <XStack flex={1} justifyContent="space-around" alignItems="center">
+          <XStack gap={spacing.lg} alignItems="center" justifyContent="space-around" flex={1}>
             {/* Save Button */}
             <Pressable
               onPress={handleLike}
@@ -380,7 +380,6 @@ export function FactActions({
                 alignItems: 'center',
                 justifyContent: 'center',
                 opacity: pressed ? 0.8 : 1,
-                width: media.colorSwatchSize,
                 paddingVertical: spacing.xs,
               })}
             >
@@ -388,26 +387,19 @@ export function FactActions({
                 style={{
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: iconSizes.sm,
-                  height: iconSizes.sm,
+                  width: iconSizes.lg,
+                  height: iconSizes.lg,
                 }}
               >
                 <ParticleBurst color={heartColor} isActive={showParticles} />
                 <Animated.View style={[styles.heartIcon, heartAnimatedStyle]}>
                   <Heart
-                    size={iconSizes.md}
+                    size={iconSizes.lg}
                     color={heartColor}
                     fill={isFavorited ? heartColor : 'none'}
                   />
                 </Animated.View>
               </View>
-              <Text.Caption
-                color={heartColor}
-                fontSize={typography.fontSize.caption}
-                marginTop={spacing.xs / 2}
-              >
-                {isFavorited ? t('actionSaved') : t('actionSave')}
-              </Text.Caption>
             </Pressable>
 
             {/* Share Button */}
@@ -420,20 +412,12 @@ export function FactActions({
                 alignItems: 'center',
                 justifyContent: 'center',
                 opacity: pressed ? 0.8 : 1,
-                width: media.colorSwatchSize,
                 paddingVertical: spacing.xs,
               })}
             >
               <Animated.View style={shareAnimatedStyle}>
-                <ShareIcon size={iconSizes.md} color={shareColor} />
+                <ShareIcon size={iconSizes.lg} color={shareColor} />
               </Animated.View>
-              <Text.Caption
-                color={shareColor}
-                fontSize={typography.fontSize.caption}
-                marginTop={spacing.xs / 2}
-              >
-                {t('actionShare')}
-              </Text.Caption>
             </Pressable>
 
             {/* Report Button */}
@@ -446,32 +430,29 @@ export function FactActions({
                 alignItems: 'center',
                 justifyContent: 'center',
                 opacity: pressed ? 0.8 : isSubmittingReport ? 0.5 : 1,
-                width: media.colorSwatchSize,
                 paddingVertical: spacing.xs,
               })}
             >
               <Animated.View style={reportAnimatedStyle}>
-                <Flag size={iconSizes.md} color={flagColor} />
+                <Flag size={iconSizes.lg} color={flagColor} />
               </Animated.View>
-              <Text.Caption
-                color={flagColor}
-                fontSize={typography.fontSize.caption}
-                marginTop={spacing.xs / 2}
-              >
-                {t('a11y_reportButton')}
-              </Text.Caption>
             </Pressable>
           </XStack>
 
-          {/* Navigation buttons with position indicator */}
+          {/* Divider + Navigation */}
           {hasNavigation && (
-            <YStack alignItems="center" marginLeft={spacing.md}>
-              <XStack
-                alignItems="center"
-                height={iconSizes.md}
-                justifyContent="center"
-                marginTop={spacing.sm / 2}
-              >
+            <>
+              <View
+                style={{
+                  width: 1,
+                  height: iconSizes.lg,
+                  backgroundColor: flagColor,
+                  opacity: 0.3,
+                  marginLeft: spacing.md,
+                  marginRight: spacing.lg,
+                }}
+              />
+              <XStack alignItems="center">
                 <Pressable
                   onPress={handlePrevious}
                   disabled={!hasPrevious}
@@ -486,6 +467,16 @@ export function FactActions({
                 >
                   <ChevronLeft size={iconSizes.xl} color={navColor} padding={spacing.xl} />
                 </Pressable>
+                {showPosition && (
+                  <Text.Caption
+                    color="$textSecondary"
+                    fontSize={typography.fontSize.caption}
+                    textAlign="center"
+                    style={{ width: typography.fontSize.caption * 5 }}
+                  >
+                    {`${currentIndex! + 1} / ${totalCount}`}
+                  </Text.Caption>
+                )}
                 <Pressable
                   onPress={handleNext}
                   disabled={!hasNext}
@@ -501,16 +492,7 @@ export function FactActions({
                   <ChevronRight size={iconSizes.xl} color={navColor} padding={spacing.xl} />
                 </Pressable>
               </XStack>
-              {showPosition && (
-                <Text.Caption
-                  color="$textSecondary"
-                  fontSize={typography.fontSize.caption}
-                  marginTop={-spacing.xs}
-                >
-                  {`${currentIndex! + 1} / ${totalCount}`}
-                </Text.Caption>
-              )}
-            </YStack>
+            </>
           )}
         </XStack>
       </Container>

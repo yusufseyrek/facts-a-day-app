@@ -111,6 +111,7 @@ export default function FavoritesScreen() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
+  const previousFavoritesCount = useRef<number>(0);
 
   // Search animation
   const searchExpand = useSharedValue(0);
@@ -133,6 +134,12 @@ export default function FavoritesScreen() {
           database.getFavorites(locale),
           database.getFavoriteCategories(locale),
         ]);
+        // Scroll to top when a new favorite has been added
+        if (favoritedFacts.length > previousFavoritesCount.current && previousFavoritesCount.current > 0) {
+          setTimeout(() => scrollToTop(), 50);
+        }
+        previousFavoritesCount.current = favoritedFacts.length;
+
         setFavorites(favoritedFacts);
         setCategories(favoriteCategories);
         prefetchFactImagesWithLimit(favoritedFacts);

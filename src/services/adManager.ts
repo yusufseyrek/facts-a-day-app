@@ -4,17 +4,33 @@ import { ADS_ENABLED, INTERSTITIAL_ADS } from '../config/app';
 import { trackInterstitialShown } from './analytics';
 import { getFactsViewedCount } from './appReview';
 
+/** Timestamp of the last interstitial ad shown (ms) */
+let lastInterstitialShownAt = 0;
+
+/**
+ * Check if enough time has passed since the last interstitial
+ */
+const isCooldownElapsed = (): boolean => {
+  if (lastInterstitialShownAt === 0) return true;
+  const elapsed = (Date.now() - lastInterstitialShownAt) / 1000;
+  return elapsed >= INTERSTITIAL_ADS.COOLDOWN_SECONDS;
+};
+
 /**
  * Show interstitial ad before trivia results
  */
 export const showTriviaResultsInterstitial = async (): Promise<void> => {
-  // Don't show ads if globally disabled
   if (!ADS_ENABLED) {
+    return;
+  }
+
+  if (!isCooldownElapsed()) {
     return;
   }
 
   try {
     await showInterstitialAd();
+    lastInterstitialShownAt = Date.now();
     trackInterstitialShown('trivia_results');
   } catch (error) {
     console.error('Error showing trivia results interstitial:', error);
@@ -24,9 +40,9 @@ export const showTriviaResultsInterstitial = async (): Promise<void> => {
 /**
  * Check if interstitial ad should be shown based on fact view count
  * Shows ad every N fact views (configured in INTERSTITIAL_ADS.FACTS_BETWEEN_ADS)
+ * with a cooldown timer between ads
  */
 export const maybeShowFactViewInterstitial = async (): Promise<void> => {
-  // Don't show ads if globally disabled
   if (!ADS_ENABLED) {
     return;
   }
@@ -34,10 +50,13 @@ export const maybeShowFactViewInterstitial = async (): Promise<void> => {
   try {
     const viewCount = await getFactsViewedCount();
 
-    // Show interstitial every N views (e.g., on view 5, 10, 15, etc.)
     if (viewCount > 0 && viewCount % INTERSTITIAL_ADS.FACTS_BETWEEN_ADS === 0) {
+      if (!isCooldownElapsed()) {
+        return;
+      }
       console.log(`📺 Showing interstitial ad after ${viewCount} fact views`);
       await showInterstitialAd();
+      lastInterstitialShownAt = Date.now();
       trackInterstitialShown('fact_view');
     }
   } catch (error) {

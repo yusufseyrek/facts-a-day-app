@@ -50,7 +50,7 @@ export function CategoryBadge({ category, factId, fontFamily, fontSize }: Catego
   return (
     <XStack
       paddingHorizontal={spacing.md}
-      paddingVertical={spacing.sm}
+      paddingVertical={spacing.xs}
       borderRadius={radius.full}
       alignSelf="flex-start"
       style={{ backgroundColor }}
