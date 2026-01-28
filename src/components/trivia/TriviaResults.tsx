@@ -126,12 +126,16 @@ function UnavailableQuestionCard({
   isDark,
   t,
   cardWidth,
+  cardHeight,
+  onCardLayout,
 }: {
   questionIndex: number;
   isCorrect: boolean;
   isDark: boolean;
   t: TranslationFunction;
   cardWidth: number;
+  cardHeight?: number;
+  onCardLayout?: (height: number) => void;
 }) {
   const { typography, spacing, radius, iconSizes } = useResponsive();
   const cardBackground = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
@@ -142,7 +146,10 @@ function UnavailableQuestionCard({
   const badgeSize = iconSizes.lg;
 
   return (
-    <View style={{ width: cardWidth }}>
+    <View
+      style={{ width: cardWidth }}
+      onLayout={onCardLayout && !cardHeight ? (e) => onCardLayout(e.nativeEvent.layout.height) : undefined}
+    >
       <YStack
         backgroundColor={cardBackground}
         padding={spacing.lg}
@@ -150,6 +157,7 @@ function UnavailableQuestionCard({
         borderRadius={radius.xl}
         gap={spacing.md}
         minHeight={150}
+        height={cardHeight}
         justifyContent="center"
         alignItems="center"
         opacity={0.7}
@@ -205,6 +213,8 @@ function AnswerReviewCard({
   onPress,
   t,
   cardWidth,
+  cardHeight,
+  onCardLayout,
 }: {
   question: QuestionWithFact;
   questionIndex: number;
@@ -214,6 +224,8 @@ function AnswerReviewCard({
   onPress?: () => void;
   t: TranslationFunction;
   cardWidth: number;
+  cardHeight?: number;
+  onCardLayout?: (height: number) => void;
 }) {
   const { typography, spacing, radius, iconSizes, media } = useResponsive();
   const cardBackground = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
@@ -270,6 +282,7 @@ function AnswerReviewCard({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       style={{ width: cardWidth }}
+      onLayout={onCardLayout && !cardHeight ? (e) => onCardLayout(e.nativeEvent.layout.height) : undefined}
     >
       <Animated.View style={animatedStyle}>
         <YStack
@@ -279,6 +292,7 @@ function AnswerReviewCard({
           borderRadius={radius.xl}
           gap={spacing.md}
           minHeight={200}
+          height={cardHeight}
           shadowColor={isDark ? '#000000' : '#dddddd'}
           shadowOffset={{ width: 0, height: 2 }}
           shadowOpacity={isDark ? 0.2 : 0.06}
@@ -432,6 +446,23 @@ export function TriviaResults({
   // Calculate card width: 45% for tablets (two cards side by side), 85% for phones
   const cardWidth = screenWidth * config.cardWidthMultiplier;
 
+  // Card height synchronization - measure all cards and use the tallest height
+  const totalCards = questions.length + unavailableQuestionIds.length;
+  const [cardHeights, setCardHeights] = React.useState<Record<number, number>>({});
+
+  const handleCardLayout = React.useCallback((cardId: number, height: number) => {
+    setCardHeights((prev) => {
+      if (prev[cardId] === height) return prev;
+      return { ...prev, [cardId]: height };
+    });
+  }, []);
+
+  const maxCardHeight = React.useMemo(() => {
+    const heights = Object.values(cardHeights);
+    if (heights.length < totalCards) return undefined;
+    return Math.max(...heights);
+  }, [cardHeights, totalCards]);
+
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
   const cardBackground = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
@@ -511,6 +542,19 @@ export function TriviaResults({
     return '🌱';
   };
 
+  // Collect distinct fact IDs from questions (preserving order of first appearance)
+  const distinctFactIds = React.useMemo(() => {
+    const seen = new Set<number>();
+    const ids: number[] = [];
+    for (const question of questions) {
+      if (question.fact?.id && !seen.has(question.fact.id)) {
+        seen.add(question.fact.id);
+        ids.push(question.fact.id);
+      }
+    }
+    return ids;
+  }, [questions]);
+
   // Handle opening fact detail - use Expo Router like rest of app
   const handleAnswerCardPress = (question: QuestionWithFact) => {
     if (question.fact?.id) {
@@ -518,7 +562,17 @@ export function TriviaResults({
       if (question.fact.image_url) {
         prefetchFactImage(question.fact.image_url, question.fact.id);
       }
-      router.push(`/fact/${question.fact.id}?source=trivia_review`);
+
+      // If there are multiple distinct facts, enable navigation between them
+      if (distinctFactIds.length > 1) {
+        const currentIndex = distinctFactIds.indexOf(question.fact.id);
+        router.push(
+          `/fact/${question.fact.id}?source=trivia_review&factIds=${JSON.stringify(distinctFactIds)}&currentIndex=${currentIndex}`
+        );
+      } else {
+        // Single fact or all cards point to same fact - no navigation controls
+        router.push(`/fact/${question.fact.id}?source=trivia_review`);
+      }
     }
   };
 
@@ -804,6 +858,8 @@ export function TriviaResults({
                     onPress={() => handleAnswerCardPress(question)}
                     t={t}
                     cardWidth={cardWidth}
+                    cardHeight={maxCardHeight}
+                    onCardLayout={(h) => handleCardLayout(question.id, h)}
                   />
                 );
               })}
@@ -821,6 +877,8 @@ export function TriviaResults({
                     isDark={isDark}
                     t={t}
                     cardWidth={cardWidth}
+                    cardHeight={maxCardHeight}
+                    onCardLayout={(h) => handleCardLayout(-questionId, h)}
                   />
                 );
               })}
