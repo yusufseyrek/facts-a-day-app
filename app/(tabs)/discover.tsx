@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { styled, View } from '@tamagui/core';
 import { Search, X } from '@tamagui/lucide-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -34,7 +35,7 @@ import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/servic
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
-import { getContrastColor } from '../../src/utils/colors';
+import { darkenColor, getContrastColor } from '../../src/utils/colors';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -667,46 +668,67 @@ function DiscoverScreen() {
                           testID={`discover-category-${rowIndex * numColumns + row.indexOf(category)}`}
                         >
                           {({ pressed }) => (
-                            <DiscoverCategoryCard
-                              height={media.topicCardSize}
-                              borderRadius={radius.lg}
-                              paddingHorizontal={spacing.md}
-                              gap={spacing.md}
-                              opacity={pressed ? 0.7 : 1}
-                              style={{ backgroundColor: categoryColor }}
+                            <LinearGradient
+                              colors={[categoryColor, darkenColor(categoryColor, 0.25)]}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={{
+                                flex: 1,
+                                borderRadius: radius.lg,
+                                opacity: pressed ? 0.7 : 1,
+                                overflow: 'hidden',
+                              }}
                             >
-                              <DiscoverCategoryIconContainer
-                                width={media.categoryIconContainerSize}
-                                height={media.categoryIconContainerSize}
-                                borderRadius={radius.md}
-                                style={{
-                                  backgroundColor:
-                                    contrastColor === '#000000'
-                                      ? 'rgba(0,0,0,0.1)'
-                                      : 'rgba(255,255,255,0.2)',
-                                }}
+                              <DiscoverCategoryCard
+                                height={media.topicCardSize}
+                                paddingHorizontal={spacing.md}
+                                gap={spacing.md}
                               >
-                                {getLucideIcon(category.icon, iconSize, contrastColor)}
-                              </DiscoverCategoryIconContainer>
-                              <DiscoverCategoryTextContainer gap={2}>
-                                <Text.Label
-                                  color={contrastColor}
-                                  numberOfLines={1}
-                                  fontFamily={FONT_FAMILIES.semibold}
+                                <View
+                                  pointerEvents="none"
+                                  style={{
+                                    position: 'absolute',
+                                    top: -media.categoryIconContainerSize * 0.5,
+                                    left: -media.categoryIconContainerSize * 0.5,
+                                    width: media.categoryIconContainerSize * 2,
+                                    height: media.categoryIconContainerSize * 2,
+                                    borderRadius: media.categoryIconContainerSize,
+                                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                                  }}
+                                />
+                                <DiscoverCategoryIconContainer
+                                  width={media.categoryIconContainerSize}
+                                  height={media.categoryIconContainerSize}
+                                  borderRadius={radius.md}
+                                  style={{
+                                    backgroundColor:
+                                      contrastColor === '#000000'
+                                        ? 'rgba(0,0,0,0.1)'
+                                        : 'rgba(255,255,255,0.2)',
+                                  }}
                                 >
-                                  {category.name}
-                                </Text.Label>
-                                <Text.Caption
-                                  color={contrastColor}
-                                  style={{ opacity: 0.85 }}
-                                  fontFamily={FONT_FAMILIES.medium}
-                                >
-                                  {factsCount === 1
-                                    ? t('factCountSingular', { count: factsCount })
-                                    : t('factCountPlural', { count: factsCount })}
-                                </Text.Caption>
-                              </DiscoverCategoryTextContainer>
-                            </DiscoverCategoryCard>
+                                  {getLucideIcon(category.icon, iconSize, contrastColor)}
+                                </DiscoverCategoryIconContainer>
+                                <DiscoverCategoryTextContainer gap={2}>
+                                  <Text.Label
+                                    color={contrastColor}
+                                    numberOfLines={1}
+                                    fontFamily={FONT_FAMILIES.semibold}
+                                  >
+                                    {category.name}
+                                  </Text.Label>
+                                  <Text.Caption
+                                    color={contrastColor}
+                                    style={{ opacity: 0.85 }}
+                                    fontFamily={FONT_FAMILIES.medium}
+                                  >
+                                    {factsCount === 1
+                                      ? t('factCountSingular', { count: factsCount })
+                                      : t('factCountPlural', { count: factsCount })}
+                                  </Text.Caption>
+                                </DiscoverCategoryTextContainer>
+                              </DiscoverCategoryCard>
+                            </LinearGradient>
                           )}
                         </Pressable>
                       );

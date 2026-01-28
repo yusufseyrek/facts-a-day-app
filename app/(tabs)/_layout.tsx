@@ -1,5 +1,13 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
+import Reanimated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomTabBar } from '@react-navigation/bottom-tabs';
@@ -100,61 +108,101 @@ function TriviaTabIcon({
   hasBadge: boolean;
 }) {
   const { iconSizes, spacing, radius } = useResponsive();
+  const theme = isDark ? 'dark' : 'light';
   // Use the app's primary color for consistency
-  const bgColor = isDark
-    ? hexColors.dark.primary // #00A3CC - cyan
-    : hexColors.light.primary; // #0077A8 - teal
-
-  const shadowColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
+  const bgColor = hexColors[theme].primary;
+  const glowColor = hexColors[theme].primaryGlow;
 
   // Calculate container size: icon + padding on both sides
   const containerPadding = spacing.sm;
   const containerSize = iconSizes.lg + containerPadding * 2;
   const badgeSize = Math.round(containerSize * 0.35);
-  const badgeInnerSize = Math.round(badgeSize * 0.7);
+
+  // Pulse animation - only active when badge is visible
+  const pulseScale = useSharedValue(1);
+
+  useEffect(() => {
+    if (hasBadge) {
+      pulseScale.value = withRepeat(
+        withSequence(
+          withTiming(1.08, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1.0, { duration: 1200, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        true
+      );
+    } else {
+      pulseScale.value = withTiming(1);
+    }
+  }, [hasBadge, pulseScale]);
+
+  const pulseAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+  }));
+
+  // Platform-specific glow styles
+  const glowStyle = Platform.select({
+    ios: {
+      shadowColor: hexColors[theme].primary,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.6,
+      shadowRadius: 10,
+    },
+    android: {
+      elevation: 8,
+      borderWidth: 1.5,
+      borderColor: glowColor,
+    },
+  });
+
+  const badgeColor = hexColors[theme].neonRed;
 
   return (
-    <View
-      style={[
-        styles.triviaIconContainer,
-        {
-          backgroundColor: bgColor,
-          shadowColor,
-          opacity: focused ? 1 : 0.85,
-          padding: containerPadding,
-          width: containerSize,
-          height: containerSize,
-          borderRadius: radius.full,
-        },
-      ]}
-    >
-      <Brain size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />
-      {hasBadge && (
-        <View
-          style={[
-            styles.triviaBadge,
-            {
-              width: badgeSize,
-              height: badgeSize,
-              borderRadius: badgeSize / 2,
-              top: -badgeSize * 0.15,
-              right: -badgeSize * 0.15,
-            },
-          ]}
-        >
+    <Reanimated.View style={pulseAnimStyle}>
+      <View
+        style={[
+          styles.triviaIconContainer,
+          glowStyle,
+          {
+            backgroundColor: bgColor,
+            opacity: focused ? 1 : 0.85,
+            padding: containerPadding,
+            width: containerSize,
+            height: containerSize,
+            borderRadius: radius.full,
+          },
+        ]}
+      >
+        <Brain size={iconSizes.lg} color="#FFFFFF" strokeWidth={focused ? 2.5 : 1.5} />
+        {hasBadge && (
           <View
             style={[
-              styles.triviaBadgeInner,
+              styles.triviaBadge,
               {
-                width: badgeInnerSize,
-                height: badgeInnerSize,
-                borderRadius: badgeInnerSize / 2,
+                width: badgeSize,
+                height: badgeSize,
+                borderRadius: badgeSize / 2,
+                top: -badgeSize * 0.15,
+                right: -badgeSize * 0.15,
+                backgroundColor: badgeColor,
+                // Badge glow
+                ...Platform.select({
+                  ios: {
+                    shadowColor: badgeColor,
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.5,
+                    shadowRadius: 4,
+                  },
+                  android: {
+                    elevation: 4,
+                  },
+                }),
               },
             ]}
           />
-        </View>
-      )}
-    </View>
+        )}
+      </View>
+    </Reanimated.View>
   );
 }
 
@@ -186,19 +234,11 @@ const styles = StyleSheet.create({
   triviaIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
   triviaBadge: {
     position: 'absolute',
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  triviaBadgeInner: {
-    backgroundColor: '#FF4757', // Attention-grabbing red
   },
 });
 
@@ -274,7 +314,9 @@ export default function TabLayout() {
           name="index"
           options={{
             title: t('home'),
-            tabBarIcon: ({ color }) => <Lightbulb size={iconSizes.lg} color={color} />,
+            tabBarIcon: ({ color, focused }) => (
+              <Lightbulb size={iconSizes.lg} color={color} strokeWidth={focused ? 2.5 : 1.5} />
+            ),
             tabBarButton: (props) => (
               <AnimatedTabButton {...props} tabName="index" testID="tab-home" />
             ),
@@ -284,7 +326,9 @@ export default function TabLayout() {
           name="discover"
           options={{
             title: t('discover'),
-            tabBarIcon: ({ color }) => <Compass size={iconSizes.lg} color={color} />,
+            tabBarIcon: ({ color, focused }) => (
+              <Compass size={iconSizes.lg} color={color} strokeWidth={focused ? 2.5 : 1.5} />
+            ),
             tabBarButton: (props) => (
               <AnimatedTabButton {...props} tabName="discover" testID="tab-discover" />
             ),
@@ -306,7 +350,9 @@ export default function TabLayout() {
           name="favorites"
           options={{
             title: t('favorites'),
-            tabBarIcon: ({ color }) => <Heart size={iconSizes.lg} color={color} />,
+            tabBarIcon: ({ color, focused }) => (
+              <Heart size={iconSizes.lg} color={color} strokeWidth={focused ? 2.5 : 1.5} />
+            ),
             tabBarButton: (props) => (
               <AnimatedTabButton {...props} tabName="favorites" testID="tab-favorites" />
             ),
@@ -316,7 +362,9 @@ export default function TabLayout() {
           name="settings"
           options={{
             title: t('settings'),
-            tabBarIcon: ({ color }) => <Settings size={iconSizes.lg} color={color} />,
+            tabBarIcon: ({ color, focused }) => (
+              <Settings size={iconSizes.lg} color={color} strokeWidth={focused ? 2.5 : 1.5} />
+            ),
             tabBarButton: (props) => (
               <AnimatedTabButton {...props} tabName="settings" testID="tab-settings" />
             ),

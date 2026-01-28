@@ -5,7 +5,6 @@ import { AdEventType, AdsConsent, InterstitialAd, TestIds } from 'react-native-g
 import Constants from 'expo-constants';
 
 import { ADS_ENABLED } from '../../config/app';
-import { getAdKeywords } from '../../services/adKeywords';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 
 // Get Interstitial Ad Unit ID based on platform
@@ -35,17 +34,8 @@ const loadInterstitialAd = async () => {
   // Check consent status to determine if we should request non-personalized ads
   const nonPersonalized = await shouldRequestNonPersonalizedAdsOnly();
 
-  // Get current keywords for ad targeting (fresh keywords each load)
-  const keywords = getAdKeywords();
-
-  // TODO: Remove after testing
-  console.log('[InterstitialAd] Loading with keywords:', keywords);
-
-  // Always recreate the interstitial to use fresh keywords
-  // The previous instance will be garbage collected
   interstitial = InterstitialAd.createForAdRequest(adUnitId, {
     requestNonPersonalizedAdsOnly: nonPersonalized,
-    keywords,
   });
 
   // Set up event listeners
@@ -61,7 +51,7 @@ const loadInterstitialAd = async () => {
 
   interstitial.addAdEventListener(AdEventType.CLOSED, () => {
     console.log('Interstitial ad closed');
-    // Preload next ad (will get fresh keywords)
+    // Preload next ad
     loadInterstitialAd();
   });
 

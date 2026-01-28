@@ -10,6 +10,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BookOpen, ChevronLeft, ChevronRight, Lightbulb, Timer, X } from '@tamagui/lucide-icons';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -44,6 +45,8 @@ export interface TriviaGameViewProps {
   onShowExplanation?: () => void;
   canUseExplanation?: boolean;
   showExplanation?: boolean;
+  // Background image
+  questionImageUri?: string | null;
 }
 
 export function TriviaGameView({
@@ -67,11 +70,12 @@ export function TriviaGameView({
   onShowExplanation,
   canUseExplanation = false,
   showExplanation = false,
+  questionImageUri,
 }: TriviaGameViewProps) {
   const insets = useSafeAreaInsets();
   const { borderWidths, media, typography, iconSizes, spacing, radius } = useResponsive();
-  const radioSize = iconSizes.lg;
-  const letterBadgeSize = media.topicCardSize * 0.5;
+  const radioSize = iconSizes.md;
+  const letterBadgeSize = media.topicCardSize * 0.35;
 
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
@@ -82,6 +86,9 @@ export function TriviaGameView({
   const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
   const accentColor = isDark ? hexColors.dark.accent : hexColors.light.accent;
+
+  // When background image is present, always use white text over the dark overlay
+  const questionTextColor = questionImageUri ? '#FFFFFF' : textColor;
 
   const isTrueFalse = currentQuestion.question_type === 'true_false';
   const hasExplanation = !!currentQuestion.explanation;
@@ -219,145 +226,183 @@ export function TriviaGameView({
       </YStack>
 
       {/* Question - scrollable for long content */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: 'center',
-          paddingHorizontal: spacing.xl,
-          paddingVertical: spacing.lg,
+      <View
+        style={{
+          flex: 1,
+          overflow: 'hidden',
+          borderRadius: questionImageUri ? radius.xl : 0,
+          marginHorizontal: questionImageUri ? spacing.md : 0,
+          marginVertical: questionImageUri ? spacing.sm : 0,
         }}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
       >
-        <Animated.View
-          key={questionKey}
-          entering={SlideInRight.duration(300)}
-          style={{ alignItems: 'center' }}
+        {/* Background image */}
+        {questionImageUri && (
+          <Image
+            source={{ uri: questionImageUri }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+            contentFit="cover"
+            transition={250}
+          />
+        )}
+        {/* Dark overlay for text readability */}
+        {questionImageUri && (
+          <View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(10, 22, 40, 0.75)',
+            }}
+          />
+        )}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: 'center',
+            paddingHorizontal: spacing.xl,
+            paddingVertical: spacing.lg,
+          }}
+          showsVerticalScrollIndicator={false}
+          bounces={true}
         >
-          <Text.Title
-            role="heading"
-            fontSize={typography.fontSize.headline}
-            fontFamily={FONT_FAMILIES.bold}
-            color={textColor}
-            textAlign="center"
-            lineHeight={typography.lineHeight.headline}
+          <Animated.View
+            key={questionKey}
+            entering={SlideInRight.duration(300)}
+            style={{ alignItems: 'center' }}
           >
-            {currentQuestion.question_text}
-          </Text.Title>
+            <Text.Title
+              role="heading"
+              fontSize={typography.fontSize.headline}
+              fontFamily={FONT_FAMILIES.bold}
+              color={questionTextColor}
+              textAlign="center"
+              lineHeight={typography.lineHeight.headline}
+            >
+              {currentQuestion.question_text}
+            </Text.Title>
 
-          {/* Hint Buttons */}
-          <XStack
-            marginTop={spacing.lg}
-            gap={spacing.md}
-            justifyContent="center"
-            alignItems="center"
-          >
-            {/* View Fact Button */}
-            {currentQuestion.fact?.id && onOpenFact && (
-              <Pressable
-                onPress={() => handlePressWithHaptics(onOpenFact)}
-                role="button"
-                aria-label={t('a11y_viewFactButton')}
-                style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+            {/* Hint Buttons */}
+            <XStack
+              marginTop={spacing.lg}
+              gap={spacing.md}
+              justifyContent="center"
+              alignItems="center"
+            >
+              {/* View Fact Button */}
+              {currentQuestion.fact?.id && onOpenFact && (
+                <Pressable
+                  onPress={() => handlePressWithHaptics(onOpenFact)}
+                  role="button"
+                  aria-label={t('a11y_viewFactButton')}
+                  style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                >
+                  <XStack
+                    backgroundColor={`${primaryColor}25`}
+                    paddingHorizontal={spacing.md}
+                    paddingVertical={spacing.sm}
+                    borderRadius={radius.full}
+                    alignItems="center"
+                    gap={spacing.xs}
+                  >
+                    <BookOpen size={typography.fontSize.caption} color={primaryColor} />
+                    <RNText
+                      style={{
+                        fontFamily: FONT_FAMILIES.semibold,
+                        fontSize: typography.fontSize.caption,
+                        color: primaryColor,
+                      }}
+                    >
+                      {t('viewFact') || 'View Fact'}
+                    </RNText>
+                  </XStack>
+                </Pressable>
+              )}
+
+              {/* Show Explanation Button */}
+              {hasExplanation && onShowExplanation && !showExplanation && (
+                <Pressable
+                  onPress={() => canUseExplanation && handlePressWithHaptics(onShowExplanation)}
+                  disabled={!canUseExplanation}
+                  role="button"
+                  aria-label={t('a11y_showHintButton')}
+                  style={({ pressed }) => [pressed && canUseExplanation && { opacity: 0.7 }]}
+                >
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      backgroundColor: canUseExplanation
+                        ? `${accentColor}25`
+                        : `${secondaryTextColor}10`,
+                      paddingHorizontal: spacing.md,
+                      paddingVertical: spacing.sm,
+                      borderRadius: radius.full,
+                      alignItems: 'center',
+                      gap: spacing.xs,
+                      opacity: canUseExplanation ? 1 : 0.5,
+                    }}
+                  >
+                    <Lightbulb
+                      size={typography.fontSize.caption}
+                      color={canUseExplanation ? accentColor : secondaryTextColor}
+                    />
+                    <RNText
+                      style={{
+                        fontFamily: FONT_FAMILIES.semibold,
+                        fontSize: typography.fontSize.caption,
+                        color: canUseExplanation ? accentColor : secondaryTextColor,
+                      }}
+                    >
+                      {canUseExplanation
+                        ? t('showHint') || 'Show Hint'
+                        : t('hintUsedToday') || 'Hint used'}
+                    </RNText>
+                  </View>
+                </Pressable>
+              )}
+            </XStack>
+
+            {/* Explanation Display */}
+            {showExplanation && currentQuestion.explanation && (
+              <Animated.View
+                entering={FadeIn.duration(300)}
+                style={{ marginTop: spacing.lg, width: '100%' }}
               >
-                <XStack
-                  backgroundColor={`${primaryColor}15`}
-                  paddingHorizontal={spacing.md}
-                  paddingVertical={spacing.sm}
-                  borderRadius={radius.full}
-                  alignItems="center"
+                <YStack
+                  backgroundColor={`${accentColor}20`}
+                  borderWidth={1}
+                  borderColor={`${accentColor}30`}
+                  padding={spacing.md}
+                  borderRadius={radius.lg}
                   gap={spacing.xs}
                 >
-                  <BookOpen size={typography.fontSize.caption} color={primaryColor} />
-                  <RNText
-                    style={{
-                      fontFamily: FONT_FAMILIES.semibold,
-                      fontSize: typography.fontSize.caption,
-                      color: primaryColor,
-                    }}
+                  <XStack alignItems="center" gap={spacing.xs}>
+                    <Lightbulb size={typography.fontSize.caption} color={accentColor} />
+                    <Text.Caption fontFamily={FONT_FAMILIES.bold} color={accentColor}>
+                      {t('hint') || 'Hint'}
+                    </Text.Caption>
+                  </XStack>
+                  <Text.Body
+                    color={questionTextColor}
+                    fontFamily={FONT_FAMILIES.regular}
+                    lineHeight={typography.lineHeight.body}
                   >
-                    {t('viewFact') || 'View Fact'}
-                  </RNText>
-                </XStack>
-              </Pressable>
+                    {currentQuestion.explanation}
+                  </Text.Body>
+                </YStack>
+              </Animated.View>
             )}
-
-            {/* Show Explanation Button */}
-            {hasExplanation && onShowExplanation && !showExplanation && (
-              <Pressable
-                onPress={() => canUseExplanation && handlePressWithHaptics(onShowExplanation)}
-                disabled={!canUseExplanation}
-                role="button"
-                aria-label={t('a11y_showHintButton')}
-                style={({ pressed }) => [pressed && canUseExplanation && { opacity: 0.7 }]}
-              >
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    backgroundColor: canUseExplanation
-                      ? `${accentColor}15`
-                      : `${secondaryTextColor}10`,
-                    paddingHorizontal: spacing.md,
-                    paddingVertical: spacing.sm,
-                    borderRadius: radius.full,
-                    alignItems: 'center',
-                    gap: spacing.xs,
-                    opacity: canUseExplanation ? 1 : 0.5,
-                  }}
-                >
-                  <Lightbulb
-                    size={typography.fontSize.caption}
-                    color={canUseExplanation ? accentColor : secondaryTextColor}
-                  />
-                  <RNText
-                    style={{
-                      fontFamily: FONT_FAMILIES.semibold,
-                      fontSize: typography.fontSize.caption,
-                      color: canUseExplanation ? accentColor : secondaryTextColor,
-                    }}
-                  >
-                    {canUseExplanation
-                      ? t('showHint') || 'Show Hint'
-                      : t('hintUsedToday') || 'Hint used'}
-                  </RNText>
-                </View>
-              </Pressable>
-            )}
-          </XStack>
-
-          {/* Explanation Display */}
-          {showExplanation && currentQuestion.explanation && (
-            <Animated.View
-              entering={FadeIn.duration(300)}
-              style={{ marginTop: spacing.lg, width: '100%' }}
-            >
-              <YStack
-                backgroundColor={`${accentColor}15`}
-                borderWidth={1}
-                borderColor={`${accentColor}30`}
-                padding={spacing.md}
-                borderRadius={radius.lg}
-                gap={spacing.xs}
-              >
-                <XStack alignItems="center" gap={spacing.xs}>
-                  <Lightbulb size={typography.fontSize.caption} color={accentColor} />
-                  <Text.Caption fontFamily={FONT_FAMILIES.bold} color={accentColor}>
-                    {t('hint') || 'Hint'}
-                  </Text.Caption>
-                </XStack>
-                <Text.Body
-                  color={textColor}
-                  fontFamily={FONT_FAMILIES.regular}
-                  lineHeight={typography.lineHeight.body}
-                >
-                  {currentQuestion.explanation}
-                </Text.Body>
-              </YStack>
-            </Animated.View>
-          )}
-        </Animated.View>
-      </ScrollView>
+          </Animated.View>
+        </ScrollView>
+      </View>
 
       {/* Answers */}
       <YStack paddingHorizontal={spacing.lg} gap={spacing.md}>
@@ -391,11 +436,11 @@ export function TriviaGameView({
                       backgroundColor={optionBg as any}
                       borderWidth={2}
                       borderColor={optionBorder as any}
-                      paddingVertical={spacing.lg}
-                      borderRadius={radius.lg}
+                      paddingVertical={spacing.md}
+                      borderRadius={radius.md}
                       alignItems="center"
                       justifyContent="center"
-                      gap={spacing.sm}
+                      gap={spacing.xs}
                     >
                       {/* Radio circle */}
                       <View
@@ -432,7 +477,7 @@ export function TriviaGameView({
           </XStack>
         ) : (
           // Multiple choice - list with letter badges
-          <YStack gap={spacing.sm}>
+          <YStack gap={spacing.xs}>
             {shuffledAnswers.map((answer, index) => {
               const isSelected = selectedAnswer === answer;
 
@@ -463,11 +508,11 @@ export function TriviaGameView({
                       backgroundColor={optionBg as any}
                       borderWidth={1.5}
                       borderColor={optionBorder as any}
-                      paddingVertical={spacing.md}
+                      paddingVertical={spacing.sm}
                       paddingHorizontal={spacing.md}
-                      borderRadius={radius.lg}
+                      borderRadius={radius.md}
                       alignItems="center"
-                      gap={spacing.md}
+                      gap={spacing.sm}
                     >
                       {/* Letter badge */}
                       <View
@@ -480,15 +525,19 @@ export function TriviaGameView({
                           alignItems: 'center',
                         }}
                       >
-                        <Text.Body fontFamily={FONT_FAMILIES.bold} color={badgeText}>
+                        <Text.Label fontFamily={FONT_FAMILIES.bold} color={badgeText}>
                           {letterLabels[index]}
-                        </Text.Body>
+                        </Text.Label>
                       </View>
 
                       {/* Answer text */}
-                      <Text.Body flex={1} color={textColor}>
+                      <Text.Label
+                        lineHeight={typography.lineHeight.label * 1.2}
+                        flex={1}
+                        color={textColor}
+                      >
                         {answer}
-                      </Text.Body>
+                      </Text.Label>
                     </XStack>
                   </Animated.View>
                 </Pressable>
@@ -501,8 +550,8 @@ export function TriviaGameView({
       {/* Navigation buttons */}
       <XStack
         paddingHorizontal={spacing.lg}
-        paddingTop={spacing.xl}
-        paddingBottom={spacing.xl}
+        paddingTop={spacing.md}
+        paddingBottom={spacing.lg}
         gap={spacing.md}
       >
         {/* Previous button */}

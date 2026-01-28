@@ -26,6 +26,7 @@ import {
   trackTriviaViewFactClick,
 } from '../../src/services/analytics';
 import { prefetchFactImage } from '../../src/services/images';
+import { useFactImage } from '../../src/utils/useFactImage';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
@@ -87,6 +88,12 @@ export default function TriviaGameScreen() {
 
   // Get current question
   const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
+
+  // Load background image for current question
+  const { imageUri: questionImageUri } = useFactImage(
+    currentQuestion?.fact?.image_url,
+    currentQuestion?.fact?.id ?? 0
+  );
 
   // Get or create shuffled answers for current question
   const shuffledAnswers = useMemo(() => {
@@ -674,6 +681,7 @@ export default function TriviaGameScreen() {
         onShowExplanation={handleShowExplanation}
         canUseExplanation={canUseExplanation}
         showExplanation={showExplanation}
+        questionImageUri={questionImageUri}
       />
       <TriviaExitModal
         visible={showExitModal}

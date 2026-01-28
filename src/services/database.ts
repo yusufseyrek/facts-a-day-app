@@ -1244,6 +1244,36 @@ export async function getFavorites(language?: string): Promise<FactWithRelations
 }
 
 /**
+ * Get distinct categories from favorited facts
+ * Returns category objects for categories that have at least one favorited fact
+ */
+export async function getFavoriteCategories(language?: string): Promise<Category[]> {
+  const database = await openDatabase();
+
+  if (language) {
+    const result = await database.getAllAsync<Category>(
+      `SELECT DISTINCT c.*
+       FROM categories c
+       INNER JOIN facts f ON f.category = c.slug
+       INNER JOIN favorites fav ON fav.fact_id = f.id
+       WHERE f.language = ?
+       ORDER BY c.name ASC`,
+      [language]
+    );
+    return result;
+  }
+
+  const result = await database.getAllAsync<Category>(
+    `SELECT DISTINCT c.*
+     FROM categories c
+     INNER JOIN facts f ON f.category = c.slug
+     INNER JOIN favorites fav ON fav.fact_id = f.id
+     ORDER BY c.name ASC`
+  );
+  return result;
+}
+
+/**
  * Get count of favorited facts
  */
 export async function getFavoritesCount(language?: string): Promise<number> {

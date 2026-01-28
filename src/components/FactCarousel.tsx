@@ -187,7 +187,6 @@ export const FactCarousel = React.memo(
             alignItems: 'center',
             gap: spacing.xs,
             marginTop: spacing.sm,
-            marginBottom: spacing.md,
           }}
         >
           {data.map((_, index) => {

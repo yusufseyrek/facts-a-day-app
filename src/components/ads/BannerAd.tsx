@@ -10,7 +10,6 @@ import {
 import Constants from 'expo-constants';
 
 import { AD_RETRY, ADS_ENABLED } from '../../config/app';
-import { getAdKeywords, subscribeToKeywords } from '../../services/adKeywords';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 
 type BannerAdPosition = 'home' | 'fact-modal';
@@ -47,17 +46,8 @@ function BannerAdComponent({ position, onAdLoadChange }: BannerAdProps) {
   const [adState, setAdState] = useState<AdState>('loading');
   const [retryCount, setRetryCount] = useState(0);
   const [adKey, setAdKey] = useState(0);
-  const [keywords, setKeywords] = useState<string[]>(getAdKeywords);
 
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Subscribe to keyword changes
-  useEffect(() => {
-    const unsubscribe = subscribeToKeywords((newKeywords) => {
-      setKeywords(newKeywords);
-    });
-    return unsubscribe;
-  }, []);
 
   // Check consent on mount
   useEffect(() => {
@@ -139,7 +129,6 @@ function BannerAdComponent({ position, onAdLoadChange }: BannerAdProps) {
             size={getBannerSize(position)}
             requestOptions={{
               requestNonPersonalizedAdsOnly: requestNonPersonalized,
-              keywords,
             }}
             onAdLoaded={handleAdLoaded}
             onAdFailedToLoad={handleAdFailedToLoad}

@@ -29,6 +29,36 @@ export const hexToRgba = (hexColor: string, opacity: number): string => {
  * @param hexColor The hex color string (e.g. "#FFFFFF", "#000000", "FFF")
  * @returns "#000000" for dark text or "#FFFFFF" for light text
  */
+/**
+ * Darkens a hex color by the specified amount.
+ * @param hex The hex color string (e.g. "#FF6600")
+ * @param amount A value between 0 and 1 (e.g. 0.25 = 25% darker)
+ * @returns Darkened hex color string
+ */
+export const darkenColor = (hex: string, amount: number): string => {
+  const cleaned = hex.replace('#', '');
+
+  let r: number, g: number, b: number;
+
+  if (cleaned.length === 3) {
+    r = parseInt(cleaned.charAt(0) + cleaned.charAt(0), 16);
+    g = parseInt(cleaned.charAt(1) + cleaned.charAt(1), 16);
+    b = parseInt(cleaned.charAt(2) + cleaned.charAt(2), 16);
+  } else if (cleaned.length === 6) {
+    r = parseInt(cleaned.substring(0, 2), 16);
+    g = parseInt(cleaned.substring(2, 4), 16);
+    b = parseInt(cleaned.substring(4, 6), 16);
+  } else {
+    return hex;
+  }
+
+  r = Math.round(r * (1 - amount));
+  g = Math.round(g * (1 - amount));
+  b = Math.round(b * (1 - amount));
+
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+};
+
 export const getContrastColor = (hexColor: string): string => {
   // Remove hash if present
   const hex = hexColor.replace('#', '');

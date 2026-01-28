@@ -17,7 +17,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n';
-import { addCategoryKeyword } from '../services/adKeywords';
 import { onFactViewed } from '../services/appReview';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
@@ -138,14 +137,6 @@ export function FactModal({
       shimmerAnim.setValue(0);
     }
   }, [showImagePlaceholder, shimmerAnim]);
-
-  // Add fact category to ad keywords for better ad targeting
-  useEffect(() => {
-    const categorySlug = fact.categoryData?.slug || fact.category;
-    if (categorySlug) {
-      addCategoryKeyword(categorySlug);
-    }
-  }, [fact.id, fact.categoryData?.slug, fact.category]);
 
   // Track fact view for app review prompt and interstitial ads
   useEffect(() => {

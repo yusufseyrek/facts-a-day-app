@@ -1,32 +1,63 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, TextInput } from 'react-native';
+import Animated, {
+  FadeIn,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
-import { Heart } from '@tamagui/lucide-icons';
+import { styled } from '@tamagui/core';
+import { Heart, Search, X, XCircle } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
 import {
+  Button,
   ContentContainer,
-  EmptyState,
+  FONT_FAMILIES,
   LoadingContainer,
   ScreenContainer,
-  ScreenHeader,
+  Text,
   useIconColor,
 } from '../../src/components';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
+import { LAYOUT } from '../../src/config/app';
 import { FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
 import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/services/images';
 import { hexColors, useTheme } from '../../src/theme';
+import { getContrastColor } from '../../src/utils/colors';
 import { useFlashListScrollToTop } from '../../src/utils/useFlashListScrollToTop';
 import { useResponsive } from '../../src/utils/useResponsive';
 
-import type { FactWithRelations } from '../../src/services/database';
+import type { Category, FactWithRelations } from '../../src/services/database';
+
+// Styled components
+const SearchInputContainer = styled(XStack, {
+  flex: 1,
+  alignItems: 'center',
+  backgroundColor: '$surface',
+  borderWidth: 1,
+  borderColor: '$border',
+});
+
+const SearchInput = styled(TextInput, {
+  flex: 1,
+  height: '100%',
+});
+
+const ClearButton = styled(YStack, {
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '$border',
+});
 
 // Memoized list item component to prevent re-renders
 interface FactListItemProps {
@@ -69,14 +100,27 @@ export default function FavoritesScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const iconColor = useIconColor();
-  const { iconSizes, screenWidth, isTablet, spacing } = useResponsive();
+  const { iconSizes, screenWidth, isTablet, spacing, radius, typography, media } = useResponsive();
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
+
+  // Search animation
+  const searchExpand = useSharedValue(0);
+
+  const searchContainerStyle = useAnimatedStyle(() => ({
+    opacity: searchExpand.value,
+  }));
 
   // Scroll to top handler with smart instant/animated behavior
-  const { listRef, handleScroll } = useFlashListScrollToTop({ screenId: 'favorites' });
+  const { listRef, handleScroll, scrollToTop } = useFlashListScrollToTop({ screenId: 'favorites' });
 
   const loadFavorites = useCallback(
     async (isRefresh = false) => {
@@ -85,8 +129,12 @@ export default function FavoritesScreen() {
           setRefreshing(true);
         }
 
-        const favoritedFacts = await database.getFavorites(locale);
+        const [favoritedFacts, favoriteCategories] = await Promise.all([
+          database.getFavorites(locale),
+          database.getFavoriteCategories(locale),
+        ]);
         setFavorites(favoritedFacts);
+        setCategories(favoriteCategories);
         prefetchFactImagesWithLimit(favoritedFacts);
       } catch {
         // Ignore favorites loading errors
@@ -106,7 +154,48 @@ export default function FavoritesScreen() {
     }, [locale, loadFavorites])
   );
 
-  const favoriteFactIds = useMemo(() => favorites.map((f) => f.id), [favorites]);
+  // Debounce search query
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  // Scroll to top when search query changes
+  useEffect(() => {
+    if (debouncedQuery) {
+      // Delay scroll to allow filtered list to re-render
+      setTimeout(() => scrollToTop(), 50);
+    }
+  }, [debouncedQuery, scrollToTop]);
+
+  // Filter favorites based on search query and selected category
+  const filteredFavorites = useMemo(() => {
+    let result = favorites;
+
+    // Filter by category
+    if (selectedCategory) {
+      result = result.filter(
+        (f) => f.category === selectedCategory || f.categoryData?.slug === selectedCategory
+      );
+    }
+
+    // Filter by search query
+    if (debouncedQuery.trim()) {
+      const query = debouncedQuery.trim().toLowerCase();
+      result = result.filter(
+        (f) =>
+          f.title?.toLowerCase().includes(query) ||
+          f.content.toLowerCase().includes(query) ||
+          f.summary?.toLowerCase().includes(query)
+      );
+    }
+
+    return result;
+  }, [favorites, selectedCategory, debouncedQuery]);
+
+  const filteredFactIds = useMemo(() => filteredFavorites.map((f) => f.id), [filteredFavorites]);
 
   const handleFactPress = useCallback(
     (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => {
@@ -129,6 +218,27 @@ export default function FavoritesScreen() {
     loadFavorites(true);
   }, [loadFavorites]);
 
+  const handleCategoryPress = useCallback((categorySlug: string | null) => {
+    setSelectedCategory((prev) => (prev === categorySlug ? null : categorySlug));
+    // Delay scroll to allow state update and re-render
+    setTimeout(() => scrollToTop(), 50);
+  }, [scrollToTop]);
+
+  const openSearch = useCallback(() => {
+    setIsSearchMode(true);
+    searchExpand.value = withTiming(1, { duration: 250 });
+    // Focus after animation starts
+    setTimeout(() => searchInputRef.current?.focus(), 100);
+  }, [searchExpand]);
+
+  const closeSearch = useCallback(() => {
+    searchInputRef.current?.blur();
+    setSearchQuery('');
+    setDebouncedQuery('');
+    searchExpand.value = withTiming(0, { duration: 200 });
+    setTimeout(() => setIsSearchMode(false), 200);
+  }, [searchExpand]);
+
   // Memoized keyExtractor
   const keyExtractor = useCallback((item: FactWithRelations) => item.id.toString(), []);
 
@@ -149,9 +259,9 @@ export default function FavoritesScreen() {
   // Memoized renderItem
   const renderItem = useCallback(
     ({ item, index }: { item: FactWithRelations; index: number }) => (
-      <FactListItem item={item} onPress={(fact) => handleFactPress(fact, favoriteFactIds, index)} />
+      <FactListItem item={item} onPress={(fact) => handleFactPress(fact, filteredFactIds, index)} />
     ),
-    [handleFactPress, favoriteFactIds]
+    [handleFactPress, filteredFactIds]
   );
 
   // Memoized refresh control
@@ -159,6 +269,9 @@ export default function FavoritesScreen() {
     () => <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
     [refreshing, handleRefresh]
   );
+
+  // Check if filters are active
+  const hasActiveFilters = selectedCategory !== null || debouncedQuery.trim().length > 0;
 
   // Only show loading spinner on initial load when there's no data yet
   if (initialLoading && favorites.length === 0) {
@@ -172,11 +285,38 @@ export default function FavoritesScreen() {
     );
   }
 
+  // Empty state: no favorites at all
   if (favorites.length === 0) {
     return (
       <ScreenContainer edges={['top']}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-        <EmptyState title={t('noFavorites')} description={t('noFavoritesDescription')} />
+        <YStack flex={1} justifyContent="center" alignItems="center" padding={spacing.xl} gap={spacing.lg}>
+          <YStack
+            width={120}
+            height={120}
+            borderRadius={radius.full}
+            backgroundColor="$primaryLight"
+            alignItems="center"
+            justifyContent="center"
+            marginBottom={spacing.md}
+          >
+            <Heart
+              size={iconSizes.hero}
+              color={theme === 'dark' ? hexColors.dark.neonRed : hexColors.light.neonRed}
+            />
+          </YStack>
+          <YStack alignItems="center" gap={spacing.md} maxWidth={LAYOUT.MAX_CONTENT_WIDTH}>
+            <Text.Headline textAlign="center">{t('noFavorites')}</Text.Headline>
+            <Text.Body textAlign="center" color="$textSecondary">
+              {t('noFavoritesDescription')}
+            </Text.Body>
+          </YStack>
+          <YStack width="100%" maxWidth={280} marginTop={spacing.md}>
+            <Button onPress={() => router.push('/(tabs)/discover')}>
+              {t('discoverFacts')}
+            </Button>
+          </YStack>
+        </YStack>
       </ScreenContainer>
     );
   }
@@ -184,23 +324,174 @@ export default function FavoritesScreen() {
   return (
     <ScreenContainer edges={['top']}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <ScreenHeader
-        paddingBottom={spacing.xl}
-        icon={<Heart size={iconSizes.lg} color={iconColor} />}
-        title={t('favorites')}
-      />
+
+      {/* Header with search icon or search input */}
+      {isSearchMode ? (
+        <Animated.View style={searchContainerStyle}>
+          <XStack
+            padding={spacing.lg}
+            paddingBottom={spacing.sm}
+            alignItems="center"
+            gap={spacing.sm}
+          >
+            <SearchInputContainer
+              height={media.searchInputHeight}
+              borderRadius={radius.md}
+              paddingHorizontal={spacing.md}
+              gap={spacing.sm}
+            >
+              <Search
+                size={iconSizes.md}
+                color={theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+              />
+              <SearchInput
+                ref={searchInputRef}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder={t('searchFavorites')}
+                placeholderTextColor={
+                  theme === 'dark' ? hexColors.dark.textMuted : hexColors.light.textMuted
+                }
+                style={{
+                  color: theme === 'dark' ? hexColors.dark.text : hexColors.light.text,
+                  fontSize: typography.fontSize.body,
+                  paddingVertical: spacing.xs,
+                }}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+              />
+              <Pressable
+                onPress={searchQuery.length > 0 ? () => setSearchQuery('') : closeSearch}
+                hitSlop={8}
+              >
+                <ClearButton
+                  width={media.clearButtonSize}
+                  height={media.clearButtonSize}
+                  borderRadius={radius.full}
+                >
+                  {searchQuery.length > 0 ? (
+                    <XCircle
+                      size={iconSizes.sm}
+                      color={
+                        theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
+                      }
+                    />
+                  ) : (
+                    <X
+                      size={iconSizes.sm}
+                      color={
+                        theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
+                      }
+                    />
+                  )}
+                </ClearButton>
+              </Pressable>
+            </SearchInputContainer>
+          </XStack>
+        </Animated.View>
+      ) : (
+        <XStack padding={spacing.lg} paddingBottom={spacing.sm} alignItems="center" gap={spacing.sm}>
+          <XStack height={media.searchInputHeight} alignItems="center" flex={1} gap={spacing.sm}>
+            <Heart size={iconSizes.lg} color={iconColor} />
+            <Text.Headline flex={1}>{t('favorites')}</Text.Headline>
+          </XStack>
+          <Pressable onPress={openSearch} hitSlop={8}>
+            <Search
+              size={iconSizes.lg}
+              color={theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+            />
+          </Pressable>
+        </XStack>
+      )}
+
+      {/* Category Filter Chips */}
+      {categories.length > 0 && (
+        <Animated.View entering={FadeIn.duration(250)} layout={LinearTransition.duration(250)}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: spacing.lg,
+              paddingBottom: spacing.md,
+              gap: spacing.sm,
+            }}
+          >
+            {/* "All" chip */}
+            <Pressable onPress={() => handleCategoryPress(null)}>
+              <XStack
+                height={media.chipHeight}
+                borderRadius={radius.full}
+                paddingHorizontal={spacing.md}
+                alignItems="center"
+                justifyContent="center"
+                backgroundColor={selectedCategory === null ? '$primary' : '$surface'}
+                borderWidth={selectedCategory === null ? 0 : 1}
+                borderColor="$border"
+              >
+                <Text.Caption
+                  color={selectedCategory === null ? '#FFFFFF' : '$textSecondary'}
+                  fontFamily={FONT_FAMILIES.semibold}
+                >
+                  {t('allCategories')}
+                </Text.Caption>
+              </XStack>
+            </Pressable>
+
+            {/* Category chips */}
+            {categories.map((category) => {
+              const isActive = selectedCategory === category.slug;
+              const categoryColor = category.color_hex || hexColors.light.primary;
+              const contrastColor = getContrastColor(categoryColor);
+
+              return (
+                <Pressable key={category.slug} onPress={() => handleCategoryPress(category.slug)}>
+                  <XStack
+                    height={media.chipHeight}
+                    borderRadius={radius.full}
+                    paddingHorizontal={spacing.md}
+                    alignItems="center"
+                    justifyContent="center"
+                    backgroundColor={isActive ? categoryColor : '$surface'}
+                    borderWidth={isActive ? 0 : 1}
+                    borderColor="$border"
+                  >
+                    <Text.Caption
+                      color={isActive ? contrastColor : '$textSecondary'}
+                      fontFamily={FONT_FAMILIES.semibold}
+                    >
+                      {category.name}
+                    </Text.Caption>
+                  </XStack>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </Animated.View>
+      )}
+
+      {/* Content */}
       <YStack flex={1}>
-        <FlashList
-          ref={listRef}
-          data={favorites}
-          keyExtractor={keyExtractor}
-          renderItem={renderItem}
-          refreshControl={refreshControl}
-          onScroll={handleScroll}
-          overrideItemLayout={overrideItemLayout}
-          snapToInterval={itemHeight}
-          {...FLASH_LIST_SETTINGS}
-        />
+        {filteredFavorites.length === 0 && hasActiveFilters ? (
+          // No-results state
+          <YStack flex={1} justifyContent="center" alignItems="center" padding={spacing.xl} gap={spacing.md}>
+            <Text.Headline textAlign="center">{t('noMatchingFavorites')}</Text.Headline>
+            <Text.Body textAlign="center" color="$textSecondary">
+              {t('noMatchingFavoritesDescription')}
+            </Text.Body>
+          </YStack>
+        ) : (
+          <FlashList
+            ref={listRef}
+            data={filteredFavorites}
+            keyExtractor={keyExtractor}
+            renderItem={renderItem}
+            refreshControl={refreshControl}
+            onScroll={handleScroll}
+            overrideItemLayout={overrideItemLayout}
+            {...FLASH_LIST_SETTINGS}
+          />
+        )}
       </YStack>
     </ScreenContainer>
   );

@@ -321,8 +321,8 @@ const androidRipple = {
 };
 
 const placeholder = { blurhash: IMAGE_PLACEHOLDER.DEFAULT_BLURHASH };
-const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.3)', 'rgba(0, 0, 0, 0.75)'] as const;
-const gradientLocations = [0.3, 0.6, 1] as const;
+const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.45)', 'rgba(0, 0, 0, 0.85)'] as const;
+const gradientLocations = [0.25, 0.55, 1] as const;
 
 const styles = StyleSheet.create({
   imageContainer: {
@@ -343,9 +343,9 @@ const styles = StyleSheet.create({
     right: 0,
   },
   titleShadow: {
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 10,
   },
 });
 
