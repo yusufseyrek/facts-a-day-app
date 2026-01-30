@@ -3,10 +3,12 @@ import { FlatList, NativeScrollEvent, NativeSyntheticEvent, Pressable, View } fr
 
 import { Compass } from '@tamagui/lucide-icons';
 
+import { NativeAdCard } from './ads/NativeAdCard';
 import { ImageFactCard } from './ImageFactCard';
 import { Text } from './Typography';
 import { ContentContainer } from './ScreenLayout';
-import { IMAGE_DIMENSIONS } from '../config/images';
+import { NATIVE_ADS } from '../config/app';
+import { insertNativeAds, isNativeAdPlaceholder, type NativeAdPlaceholder } from '../utils/insertNativeAds';
 import { useResponsive } from '../utils/useResponsive';
 import { hexColors, useTheme } from '../theme';
 import { useTranslation } from '../i18n';
@@ -22,11 +24,11 @@ interface FactCarouselProps {
 // Sentinel item to represent the Discover CTA card at the end
 const DISCOVER_CTA_ID = '__discover_cta__';
 
-type CarouselItem = FactWithRelations | { id: typeof DISCOVER_CTA_ID };
+type CarouselItem = FactWithRelations | { id: typeof DISCOVER_CTA_ID } | NativeAdPlaceholder;
 
 export const FactCarousel = React.memo(
   ({ facts, onFactPress, onDiscoverPress }: FactCarouselProps) => {
-    const { screenWidth, spacing, isTablet, radius, iconSizes, config } = useResponsive();
+    const { screenWidth, spacing, radius, iconSizes, config } = useResponsive();
     const { theme } = useTheme();
     const { t } = useTranslation();
     const [activeIndex, setActiveIndex] = useState(0);
@@ -38,8 +40,14 @@ export const FactCarousel = React.memo(
     const snapInterval = cardWidth + cardGap;
     const horizontalPadding = (screenWidth - cardWidth) / 2;
 
-    // Append the Discover CTA card to the end of the list
-    const data: CarouselItem[] = onDiscoverPress ? [...facts, { id: DISCOVER_CTA_ID }] : facts;
+    // Insert native ads into facts, then append the Discover CTA card
+    const factsWithAds = useMemo(
+      () => insertNativeAds(facts, undefined, NATIVE_ADS.CAROUSEL_FACTS_BETWEEN_ADS),
+      [facts],
+    );
+    const data: CarouselItem[] = onDiscoverPress
+      ? [...factsWithAds, { id: DISCOVER_CTA_ID }]
+      : factsWithAds;
 
     const totalDots = data.length;
 
@@ -53,13 +61,19 @@ export const FactCarousel = React.memo(
     );
 
     // Calculate card height to match ImageFactCard
-    const aspectRatio = isTablet
-      ? IMAGE_DIMENSIONS.TABLET_CARD_ASPECT_RATIO
-      : IMAGE_DIMENSIONS.CARD_ASPECT_RATIO;
-    const ctaCardHeight = screenWidth * aspectRatio;
+    const ctaCardHeight = screenWidth * config.cardAspectRatio;
 
     const renderItem = useCallback(
       ({ item }: { item: CarouselItem }) => {
+        // Native ad card
+        if (isNativeAdPlaceholder(item)) {
+          return (
+            <View style={{ width: cardWidth }}>
+              <NativeAdCard cardWidth={cardWidth} />
+            </View>
+          );
+        }
+
         // Discover CTA card
         if ('id' in item && item.id === DISCOVER_CTA_ID) {
           return (
@@ -139,6 +153,7 @@ export const FactCarousel = React.memo(
     );
 
     const keyExtractor = useCallback((item: CarouselItem) => {
+      if (isNativeAdPlaceholder(item)) return item.key;
       if ('id' in item && item.id === DISCOVER_CTA_ID) return DISCOVER_CTA_ID;
       return `carousel-${(item as FactWithRelations).id}`;
     }, []);

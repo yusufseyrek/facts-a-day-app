@@ -21,8 +21,14 @@ import {
 } from '../../src/components';
 import { FactCarousel } from '../../src/components/FactCarousel';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
+import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
 import { LAYOUT } from '../../src/config/app';
 import { FLASH_LIST_ITEM_TYPES, FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  type NativeAdPlaceholder,
+} from '../../src/utils/insertNativeAds';
 import { usePreloadedData } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
@@ -66,7 +72,7 @@ interface FactItem {
   fact: FactWithRelations;
 }
 
-type FeedListItem = SectionHeaderItem | FactItem;
+type FeedListItem = SectionHeaderItem | FactItem | NativeAdPlaceholder;
 
 // LocaleChangeOverlay is a simple full-screen overlay - uses inline props for responsive gap
 
@@ -132,21 +138,17 @@ function HomeScreen() {
   // Scroll to top handler with smart instant/animated behavior
   const { listRef, handleScroll } = useFlashListScrollToTop({ screenId: 'index' });
 
-  // Flatten sections into a single array for FlashList
-  // Each section becomes: [SectionHeader, FactItem, FactItem, ...]
+  // Flatten sections into a single array for FlashList, insert native ads,
+  // and recompute sticky header indices after ad insertion
   const { flattenedData, stickyHeaderIndices } = useMemo(() => {
     const items: FeedListItem[] = [];
-    const headerIndices: number[] = [];
 
     sections.forEach((section) => {
-      // Add section header
-      headerIndices.push(items.length);
       items.push({
         type: FLASH_LIST_ITEM_TYPES.SECTION_HEADER,
         title: section.title,
       });
 
-      // Add fact items
       section.data.forEach((fact) => {
         items.push({
           type: FLASH_LIST_ITEM_TYPES.FACT_ITEM,
@@ -155,7 +157,21 @@ function HomeScreen() {
       });
     });
 
-    return { flattenedData: items, stickyHeaderIndices: headerIndices };
+    // Insert native ad placeholders (only counting fact items, not headers)
+    const withAds = insertNativeAds(
+      items,
+      (item) => item.type === FLASH_LIST_ITEM_TYPES.FACT_ITEM,
+    );
+
+    // Recompute sticky header indices from the final array
+    const headerIndices: number[] = [];
+    withAds.forEach((item, index) => {
+      if (!isNativeAdPlaceholder(item) && item.type === FLASH_LIST_ITEM_TYPES.SECTION_HEADER) {
+        headerIndices.push(index);
+      }
+    });
+
+    return { flattenedData: withAds, stickyHeaderIndices: headerIndices };
   }, [sections]);
 
   // Reload facts when tab gains focus
@@ -320,6 +336,9 @@ function HomeScreen() {
 
   // FlashList key extractor
   const keyExtractor = useCallback((item: FeedListItem, index: number) => {
+    if (isNativeAdPlaceholder(item)) {
+      return item.key;
+    }
     if (item.type === FLASH_LIST_ITEM_TYPES.SECTION_HEADER) {
       return `header-${item.title}-${index}`;
     }
@@ -342,6 +361,14 @@ function HomeScreen() {
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<FeedListItem>) => {
+      if (isNativeAdPlaceholder(item)) {
+        return (
+          <ContentContainer>
+            <NativeAdCard />
+          </ContentContainer>
+        );
+      }
+
       if (item.type === FLASH_LIST_ITEM_TYPES.SECTION_HEADER) {
         return <SectionHeader title={item.title} />;
       }
@@ -361,6 +388,7 @@ function HomeScreen() {
   // FlashList getItemType - enables recycling optimization
   // Items with different types are recycled in separate pools for better performance
   const getItemType = useCallback((item: FeedListItem) => {
+    if (isNativeAdPlaceholder(item)) return FLASH_LIST_ITEM_TYPES.NATIVE_AD;
     return item.type;
   }, []);
 

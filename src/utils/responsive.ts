@@ -1,6 +1,7 @@
 import { Dimensions } from 'react-native';
 
 import { LAYOUT } from '../config/app';
+import { IMAGE_DIMENSIONS } from '../config/images';
 
 // Use centralized layout constants
 const TABLET_BREAKPOINT = LAYOUT.TABLET_BREAKPOINT;
@@ -33,6 +34,7 @@ const phoneConfig = {
   triviaCategoriesPerRow: 2,
   cardWidthMultiplier: 0.85,
   headerPaddingAdjustment: 8,
+  cardAspectRatio: IMAGE_DIMENSIONS.CARD_ASPECT_RATIO,
 } as const;
 
 const tabletConfig = {
@@ -42,6 +44,7 @@ const tabletConfig = {
   triviaCategoriesPerRow: 4,
   cardWidthMultiplier: 0.7,
   headerPaddingAdjustment: 4,
+  cardAspectRatio: IMAGE_DIMENSIONS.TABLET_CARD_ASPECT_RATIO,
 } as const;
 
 export const config = {

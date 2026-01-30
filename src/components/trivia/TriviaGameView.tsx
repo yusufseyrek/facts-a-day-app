@@ -45,6 +45,9 @@ export interface TriviaGameViewProps {
   onShowExplanation?: () => void;
   canUseExplanation?: boolean;
   showExplanation?: boolean;
+  // Rewarded ad hint
+  onWatchAdForHint?: () => void;
+  canWatchAdForHint?: boolean;
   // Background image
   questionImageUri?: string | null;
 }
@@ -70,6 +73,8 @@ export function TriviaGameView({
   onShowExplanation,
   canUseExplanation = false,
   showExplanation = false,
+  onWatchAdForHint,
+  canWatchAdForHint = false,
   questionImageUri,
 }: TriviaGameViewProps) {
   const insets = useSafeAreaInsets();
@@ -327,46 +332,97 @@ export function TriviaGameView({
                 </Pressable>
               )}
 
-              {/* Show Explanation Button */}
-              {hasExplanation && onShowExplanation && !showExplanation && (
+              {/* Show Explanation Button - Free hint available */}
+              {hasExplanation && onShowExplanation && !showExplanation && canUseExplanation && (
                 <Pressable
-                  onPress={() => canUseExplanation && handlePressWithHaptics(onShowExplanation)}
-                  disabled={!canUseExplanation}
+                  onPress={() => handlePressWithHaptics(onShowExplanation)}
                   role="button"
                   aria-label={t('a11y_showHintButton')}
-                  style={({ pressed }) => [pressed && canUseExplanation && { opacity: 0.7 }]}
+                  style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                 >
                   <View
                     style={{
                       flexDirection: 'row',
-                      backgroundColor: canUseExplanation
-                        ? `${accentColor}40`
-                        : `${secondaryTextColor}30`,
+                      backgroundColor: `${accentColor}40`,
                       paddingHorizontal: spacing.md,
                       paddingVertical: spacing.sm,
                       borderRadius: radius.full,
                       alignItems: 'center',
                       gap: spacing.xs,
-                      opacity: canUseExplanation ? 1 : 0.8,
                     }}
                   >
-                    <Lightbulb
-                      size={typography.fontSize.caption}
-                      color={canUseExplanation ? accentColor : secondaryTextColor}
-                    />
+                    <Lightbulb size={typography.fontSize.caption} color={accentColor} />
                     <RNText
                       style={{
                         fontFamily: FONT_FAMILIES.semibold,
                         fontSize: typography.fontSize.caption,
-                        color: canUseExplanation ? accentColor : secondaryTextColor,
+                        color: accentColor,
                       }}
                     >
-                      {canUseExplanation
-                        ? t('showHint') || 'Show Hint'
-                        : t('hintUsedToday') || 'Hint used'}
+                      {t('showHint') || 'Show Hint'}
                     </RNText>
                   </View>
                 </Pressable>
+              )}
+
+              {/* Watch Ad for Hint Button - Free hint used, ad available */}
+              {hasExplanation && onWatchAdForHint && !showExplanation && !canUseExplanation && canWatchAdForHint && (
+                <Pressable
+                  onPress={() => handlePressWithHaptics(onWatchAdForHint)}
+                  role="button"
+                  aria-label={t('a11y_watchAdForHint') || 'Watch an ad to unlock a hint'}
+                  style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                >
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      backgroundColor: `${accentColor}40`,
+                      paddingHorizontal: spacing.md,
+                      paddingVertical: spacing.sm,
+                      borderRadius: radius.full,
+                      alignItems: 'center',
+                      gap: spacing.xs,
+                    }}
+                  >
+                    <Lightbulb size={typography.fontSize.caption} color={accentColor} />
+                    <RNText
+                      style={{
+                        fontFamily: FONT_FAMILIES.semibold,
+                        fontSize: typography.fontSize.caption,
+                        color: accentColor,
+                      }}
+                    >
+                      {t('watchAdForHint') || 'Watch Ad for Hint'}
+                    </RNText>
+                  </View>
+                </Pressable>
+              )}
+
+              {/* Hint Used - No free hint, no ad option */}
+              {hasExplanation && !showExplanation && !canUseExplanation && !canWatchAdForHint && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    backgroundColor: `${secondaryTextColor}30`,
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: spacing.sm,
+                    borderRadius: radius.full,
+                    alignItems: 'center',
+                    gap: spacing.xs,
+                    opacity: 0.8,
+                  }}
+                >
+                  <Lightbulb size={typography.fontSize.caption} color={secondaryTextColor} />
+                  <RNText
+                    style={{
+                      fontFamily: FONT_FAMILIES.semibold,
+                      fontSize: typography.fontSize.caption,
+                      color: secondaryTextColor,
+                    }}
+                  >
+                    {t('hintUsedToday') || 'Hint used'}
+                  </RNText>
+                </View>
               )}
             </XStack>
 

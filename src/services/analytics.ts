@@ -437,6 +437,39 @@ export const trackInterstitialShown = (source: InterstitialSource): void => {
   logEvent('app_interstitial_shown', { source });
 };
 
+/**
+ * Track when App Open ad is loaded
+ */
+export const trackAppOpenAdLoaded = (): void => {
+  logEvent('app_open_ad_loaded', {});
+};
+
+/**
+ * Track when App Open ad is shown
+ */
+export const trackAppOpenAdShown = (params: { backgroundSeconds: number }): void => {
+  logEvent('app_open_ad_shown', {
+    background_seconds: params.backgroundSeconds,
+  });
+};
+
+/**
+ * Track when App Open ad is dismissed
+ */
+export const trackAppOpenAdDismissed = (): void => {
+  logEvent('app_open_ad_dismissed', {});
+};
+
+/**
+ * Track when App Open ad fails to load or show
+ */
+export const trackAppOpenAdError = (params: { phase: 'load' | 'show'; error: string }): void => {
+  logEvent('app_open_ad_error', {
+    phase: params.phase,
+    error: params.error.substring(0, 100),
+  });
+};
+
 // ============================================================================
 // Trivia Events
 // ============================================================================
@@ -523,11 +556,45 @@ export const trackTriviaResultsView = (params: {
 export const trackTriviaHintClick = (params: {
   mode: TriviaMode;
   questionIndex: number;
+  source: 'free' | 'rewarded_ad';
   categorySlug?: string;
 }): void => {
   logEvent('app_trivia_hint_click', {
     mode: params.mode,
     question_index: params.questionIndex,
+    source: params.source,
+    category_slug: params.categorySlug || '',
+  });
+};
+
+/**
+ * Track when a rewarded ad is shown for a trivia hint
+ */
+export const trackRewardedAdShown = (params: {
+  mode: TriviaMode;
+  questionIndex: number;
+  categorySlug?: string;
+}): void => {
+  logEvent('app_rewarded_ad_shown', {
+    mode: params.mode,
+    question_index: params.questionIndex,
+    category_slug: params.categorySlug || '',
+  });
+};
+
+/**
+ * Track the result of a rewarded ad (completed or dismissed)
+ */
+export const trackRewardedAdResult = (params: {
+  mode: TriviaMode;
+  questionIndex: number;
+  rewarded: boolean;
+  categorySlug?: string;
+}): void => {
+  logEvent('app_rewarded_ad_result', {
+    mode: params.mode,
+    question_index: params.questionIndex,
+    rewarded: params.rewarded,
     category_slug: params.categorySlug || '',
   });
 };

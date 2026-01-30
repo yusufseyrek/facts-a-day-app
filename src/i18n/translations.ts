@@ -317,6 +317,8 @@ export const translations = {
     a11y_falseAnswer: 'Falsch',
     a11y_viewFactButton: 'Fakt ansehen',
     a11y_showHintButton: 'Hinweis anzeigen',
+    watchAdForHint: 'Werbung für Hinweis',
+    a11y_watchAdForHint: 'Werbung ansehen, um einen Hinweis freizuschalten',
 
     // Fact Action Bar
     actionSave: 'Merken',
@@ -326,6 +328,9 @@ export const translations = {
     actionMore: 'Mehr',
     readSource: 'Quelle lesen',
     positionOf: '%{current} von %{total}',
+
+    // Ads
+    sponsored: 'Gesponsert',
   },
   en: {
     // Onboarding - Categories
@@ -637,6 +642,8 @@ export const translations = {
     a11y_falseAnswer: 'False',
     a11y_viewFactButton: 'View fact',
     a11y_showHintButton: 'Show hint',
+    watchAdForHint: 'Watch Ad for Hint',
+    a11y_watchAdForHint: 'Watch an ad to unlock a hint for this question',
 
     // Fact Action Bar
     actionSave: 'Save',
@@ -646,6 +653,9 @@ export const translations = {
     actionMore: 'More',
     readSource: 'Read Source',
     positionOf: '%{current} of %{total}',
+
+    // Ads
+    sponsored: 'Sponsored',
   },
   es: {
     // Onboarding - Categories
@@ -960,6 +970,8 @@ export const translations = {
     a11y_falseAnswer: 'Falso',
     a11y_viewFactButton: 'Ver dato',
     a11y_showHintButton: 'Mostrar pista',
+    watchAdForHint: 'Ver anuncio para pista',
+    a11y_watchAdForHint: 'Ver un anuncio para desbloquear una pista',
 
     // Fact Action Bar
     actionSave: 'Guardar',
@@ -969,6 +981,9 @@ export const translations = {
     actionMore: 'Más',
     readSource: 'Leer fuente',
     positionOf: '%{current} de %{total}',
+
+    // Ads
+    sponsored: 'Patrocinado',
   },
   fr: {
     // Onboarding - Categories
@@ -1285,6 +1300,8 @@ export const translations = {
     a11y_falseAnswer: 'Faux',
     a11y_viewFactButton: 'Voir le fait',
     a11y_showHintButton: "Afficher l'indice",
+    watchAdForHint: "Pub pour l'indice",
+    a11y_watchAdForHint: "Regarder une pub pour débloquer un indice",
 
     // Fact Action Bar
     actionSave: 'Sauver',
@@ -1294,6 +1311,9 @@ export const translations = {
     actionMore: 'Plus',
     readSource: 'Lire la source',
     positionOf: '%{current} sur %{total}',
+
+    // Ads
+    sponsored: 'Sponsorisé',
   },
   ja: {
     // Onboarding - Categories
@@ -1604,6 +1624,8 @@ export const translations = {
     a11y_falseAnswer: '間違い',
     a11y_viewFactButton: '事実を見る',
     a11y_showHintButton: 'ヒントを表示',
+    watchAdForHint: '広告でヒント',
+    a11y_watchAdForHint: '広告を見てヒントを解除する',
 
     // Fact Action Bar
     actionSave: '保存',
@@ -1613,6 +1635,9 @@ export const translations = {
     actionMore: 'もっと',
     readSource: '出典を読む',
     positionOf: '%{total}中%{current}',
+
+    // Ads
+    sponsored: 'PR',
   },
   ko: {
     // Onboarding - Categories
@@ -1922,6 +1947,8 @@ export const translations = {
     a11y_falseAnswer: '거짓',
     a11y_viewFactButton: '사실 보기',
     a11y_showHintButton: '힌트 표시',
+    watchAdForHint: '광고 보고 힌트',
+    a11y_watchAdForHint: '광고를 보고 힌트를 잠금 해제하세요',
 
     // Fact Action Bar
     actionSave: '저장',
@@ -1931,6 +1958,9 @@ export const translations = {
     actionMore: '더보기',
     readSource: '출처 읽기',
     positionOf: '%{total}개 중 %{current}',
+
+    // Ads
+    sponsored: '광고',
   },
   tr: {
     // Onboarding - Categories
@@ -2242,6 +2272,8 @@ export const translations = {
     a11y_falseAnswer: 'Yanlış',
     a11y_viewFactButton: 'Bilgiyi görüntüle',
     a11y_showHintButton: 'İpucu göster',
+    watchAdForHint: 'İpucu için reklam izle',
+    a11y_watchAdForHint: 'İpucu açmak için reklam izleyin',
 
     // Fact Action Bar
     actionSave: 'Kaydet',
@@ -2251,6 +2283,9 @@ export const translations = {
     actionMore: 'Daha fazla',
     readSource: 'Kaynağı oku',
     positionOf: '%{total} içinden %{current}',
+
+    // Ads
+    sponsored: 'Sponsorlu',
   },
   zh: {
     // Onboarding - Categories
@@ -2557,6 +2592,8 @@ export const translations = {
     a11y_falseAnswer: '错',
     a11y_viewFactButton: '查看事实',
     a11y_showHintButton: '显示提示',
+    watchAdForHint: '看广告获提示',
+    a11y_watchAdForHint: '观看广告解锁提示',
 
     // Fact Action Bar
     actionSave: '收藏',
@@ -2566,6 +2603,9 @@ export const translations = {
     actionMore: '更多',
     readSource: '阅读来源',
     positionOf: '%{total}个中第%{current}个',
+
+    // Ads
+    sponsored: '赞助',
   },
 };
 

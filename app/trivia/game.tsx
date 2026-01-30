@@ -18,6 +18,8 @@ import { useTranslation } from '../../src/i18n';
 import { showTriviaResultsInterstitial } from '../../src/services/adManager';
 import {
   Screens,
+  trackRewardedAdResult,
+  trackRewardedAdShown,
   trackScreenView,
   trackTriviaComplete,
   trackTriviaExit,
@@ -25,6 +27,7 @@ import {
   trackTriviaStart,
   trackTriviaViewFactClick,
 } from '../../src/services/analytics';
+import { showRewardedAd } from '../../src/components/ads/RewardedAd';
 import { prefetchFactImage } from '../../src/services/images';
 import { prefetchAdjacentImages } from '../../src/utils/prefetchAdjacentImages';
 import { useFactImage } from '../../src/utils/useFactImage';
@@ -75,6 +78,8 @@ export default function TriviaGameScreen() {
   const [explanationShownForQuestion, setExplanationShownForQuestion] = useState<number | null>(
     null
   );
+  const [adHintUsedForQuestions, setAdHintUsedForQuestions] = useState<Set<number>>(new Set());
+  const [showingRewardedAd, setShowingRewardedAd] = useState(false);
 
   // Timer state
   const [timeRemaining, setTimeRemaining] = useState(0);
@@ -153,7 +158,7 @@ export default function TriviaGameScreen() {
 
   // Timer effect
   useEffect(() => {
-    if (loading || gameState.isFinished) {
+    if (loading || gameState.isFinished || showingRewardedAd) {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -180,7 +185,7 @@ export default function TriviaGameScreen() {
         timerRef.current = null;
       }
     };
-  }, [loading, gameState.isFinished, gameState.currentQuestionIndex]);
+  }, [loading, gameState.isFinished, gameState.currentQuestionIndex, showingRewardedAd]);
 
   // Update progress bar animation
   useEffect(() => {
@@ -453,6 +458,7 @@ export default function TriviaGameScreen() {
     trackTriviaHintClick({
       mode: triviaMode,
       questionIndex: gameState.currentQuestionIndex,
+      source: 'free',
       categorySlug: params.categorySlug,
     });
 
@@ -465,6 +471,49 @@ export default function TriviaGameScreen() {
   }, [
     currentQuestion,
     canUseExplanation,
+    params.type,
+    params.categorySlug,
+    gameState.currentQuestionIndex,
+  ]);
+
+  // Handle watching a rewarded ad to unlock a hint
+  const handleWatchAdForHint = useCallback(async () => {
+    if (!currentQuestion || showingRewardedAd) return;
+
+    const triviaMode: TriviaMode =
+      params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
+
+    trackTriviaHintClick({
+      mode: triviaMode,
+      questionIndex: gameState.currentQuestionIndex,
+      source: 'rewarded_ad',
+      categorySlug: params.categorySlug,
+    });
+
+    trackRewardedAdShown({
+      mode: triviaMode,
+      questionIndex: gameState.currentQuestionIndex,
+      categorySlug: params.categorySlug,
+    });
+
+    setShowingRewardedAd(true);
+    const rewarded = await showRewardedAd();
+    setShowingRewardedAd(false);
+
+    trackRewardedAdResult({
+      mode: triviaMode,
+      questionIndex: gameState.currentQuestionIndex,
+      rewarded,
+      categorySlug: params.categorySlug,
+    });
+
+    if (rewarded) {
+      setAdHintUsedForQuestions((prev) => new Set(prev).add(currentQuestion.id));
+      setExplanationShownForQuestion(currentQuestion.id);
+    }
+  }, [
+    currentQuestion,
+    showingRewardedAd,
     params.type,
     params.categorySlug,
     gameState.currentQuestionIndex,
@@ -658,8 +707,10 @@ export default function TriviaGameScreen() {
   // Get selected answer for current question
   const selectedAnswer = currentQuestion ? gameState.answers[currentQuestion.id] || null : null;
 
-  // Check if explanation is shown for current question
-  const showExplanation = explanationShownForQuestion === currentQuestion?.id;
+  // Check if explanation is shown for current question (free or ad-based)
+  const showExplanation =
+    explanationShownForQuestion === currentQuestion?.id ||
+    adHintUsedForQuestions.has(currentQuestion?.id ?? -1);
 
   return (
     <>
@@ -684,6 +735,8 @@ export default function TriviaGameScreen() {
         onShowExplanation={handleShowExplanation}
         canUseExplanation={canUseExplanation}
         showExplanation={showExplanation}
+        onWatchAdForHint={handleWatchAdForHint}
+        canWatchAdForHint={!canUseExplanation && !showingRewardedAd}
         questionImageUri={questionImageUri}
       />
       <TriviaExitModal

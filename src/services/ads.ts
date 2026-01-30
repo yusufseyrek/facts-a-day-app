@@ -7,7 +7,9 @@ import mobileAds, {
 
 import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 
+import { preloadAppOpenAd } from '../components/ads/AppOpenAd';
 import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
+import { preloadRewardedAd } from '../components/ads/RewardedAd';
 import { ADS_ENABLED } from '../config/app';
 
 import {
@@ -212,6 +214,16 @@ export const initializeAdsSDK = async (): Promise<boolean> => {
     // Preload interstitial ad
     preloadInterstitialAd();
 
+    // Preload rewarded ad
+    preloadRewardedAd().catch((error) => {
+      console.error('Failed to preload rewarded ad:', error);
+    });
+
+    // Preload app open ad
+    preloadAppOpenAd().catch((error) => {
+      console.error('Failed to preload app open ad:', error);
+    });
+
     return true;
   } catch (error) {
     console.error('Failed to initialize Google Mobile Ads SDK:', error);
@@ -301,8 +313,16 @@ export const initializeAdsForReturningUser = async (): Promise<boolean> => {
     // Gather consent - this uses stored consent or shows form if needed
     const consentInfo = await AdsConsent.gatherConsent();
 
-    if (!consentInfo.canRequestAds || isSDKInitialized) {
+    if (!consentInfo.canRequestAds) {
       return isSDKInitialized;
+    }
+
+    if (isSDKInitialized) {
+      // SDK already initialized — ensure ads are preloaded
+      preloadRewardedAd().catch((error) => {
+        console.error('Failed to preload rewarded ad:', error);
+      });
+      return true;
     }
 
     return await initializeAdsSDK();

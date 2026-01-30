@@ -15,8 +15,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Brain, Compass, Heart, Lightbulb, Settings } from '@tamagui/lucide-icons';
 import { Tabs, usePathname } from 'expo-router';
 
-import { BannerAd } from '../../src/components/ads';
-import { ADS_ENABLED } from '../../src/config/app';
 import { useScrollToTop } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import * as triviaService from '../../src/services/trivia';
@@ -206,31 +204,11 @@ function TriviaTabIcon({
   );
 }
 
-// Custom tab bar that includes banner ad above the tabs
 function CustomTabBar(props: BottomTabBarProps) {
-  const { theme } = useTheme();
-
-  const backgroundColor = theme === 'dark' ? hexColors.dark.background : hexColors.light.background;
-
-  return (
-    <View style={[styles.tabBarContainer, { backgroundColor }]}>
-      {ADS_ENABLED && (
-        <View style={styles.adContainer}>
-          <BannerAd position="home" />
-        </View>
-      )}
-      <BottomTabBar {...props} />
-    </View>
-  );
+  return <BottomTabBar {...props} />;
 }
 
 const styles = StyleSheet.create({
-  tabBarContainer: {
-    // Container for both ad and tab bar
-  },
-  adContainer: {
-    alignItems: 'center',
-  },
   triviaIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',

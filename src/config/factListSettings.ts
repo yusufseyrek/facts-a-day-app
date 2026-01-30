@@ -3,7 +3,7 @@
  * These settings are optimized for smooth scrolling with proper virtualization
  */
 
-import { IMAGE_DIMENSIONS } from './images';
+import { config } from '../utils/responsive';
 
 /**
  * Image prefetch settings to prevent network saturation and memory leaks
@@ -21,8 +21,8 @@ export const PREFETCH_SETTINGS = {
  * Card aspect ratios - imported from images.ts for single source of truth
  */
 export const CARD_ASPECT_RATIOS = {
-  phone: IMAGE_DIMENSIONS.CARD_ASPECT_RATIO,
-  tablet: IMAGE_DIMENSIONS.TABLET_CARD_ASPECT_RATIO,
+  phone: config.phone.cardAspectRatio,
+  tablet: config.tablet.cardAspectRatio,
 } as const;
 
 /**
@@ -31,6 +31,7 @@ export const CARD_ASPECT_RATIOS = {
 export const FLASH_LIST_ITEM_TYPES = {
   SECTION_HEADER: 'sectionHeader',
   FACT_ITEM: 'factItem',
+  NATIVE_AD: 'nativeAd',
 } as const;
 
 /**

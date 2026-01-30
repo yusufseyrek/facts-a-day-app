@@ -8,7 +8,7 @@
 /**
  * Ads configuration
  */
-export const ADS_ENABLED = !__DEV__;
+export const ADS_ENABLED = true;
 
 /**
  * Interstitial ad settings
@@ -18,6 +18,30 @@ export const INTERSTITIAL_ADS = {
   FACTS_BETWEEN_ADS: 5,
   /** Minimum seconds between interstitial ads (cooldown) */
   COOLDOWN_SECONDS: 300,
+} as const;
+
+/**
+ * App Open ad settings
+ */
+export const APP_OPEN_ADS = {
+  /** Whether App Open ads are enabled */
+  ACTIVE: false,
+  /** Minimum seconds the app must be in background before showing an App Open ad */
+  MIN_BACKGROUND_SECONDS: 30,
+  /** App Open ads expire after 4 hours (Google's limit). Reload if older than this. */
+  AD_EXPIRY_MS: 4 * 60 * 60 * 1000,
+} as const;
+
+/**
+ * Native ad settings (in-feed ads)
+ */
+export const NATIVE_ADS = {
+  /** Whether native feed ads are active */
+  ACTIVE: true,
+  /** Number of fact items between native ads in vertical lists */
+  FACTS_BETWEEN_ADS: 5,
+  /** Number of fact items between native ads in the carousel */
+  CAROUSEL_FACTS_BETWEEN_ADS: 3,
 } as const;
 
 export const AD_RETRY = {

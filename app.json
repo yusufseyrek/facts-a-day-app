@@ -36,18 +36,22 @@
       "ADMOB_IOS_MAIN_BANNER_ID": "ca-app-pub-7740246752776234/1196911062",
       "ADMOB_IOS_FACT_DETAIL_BANNER_ID": "ca-app-pub-7740246752776234/8006410731",
       "ADMOB_IOS_INTERSTITIAL_ID": "ca-app-pub-7740246752776234/2739316775",
+      "ADMOB_IOS_REWARDED_ID": "ca-app-pub-7740246752776234/2986807019",
       "ADMOB_ANDROID_MAIN_BANNER_ID": "ca-app-pub-7740246752776234/6776540803",
       "ADMOB_ANDROID_FACT_DETAIL_BANNER_ID": "ca-app-pub-7740246752776234/5718610008",
-      "ADMOB_ANDROID_INTERSTITIAL_ID": "ca-app-pub-7740246752776234/6299287835"
+      "ADMOB_ANDROID_INTERSTITIAL_ID": "ca-app-pub-7740246752776234/6299287835",
+      "ADMOB_ANDROID_REWARDED_ID": "ca-app-pub-7740246752776234/6926052020",
+      "ADMOB_IOS_APP_OPEN_ID": "",
+      "ADMOB_ANDROID_APP_OPEN_ID": "",
+      "ADMOB_IOS_NATIVE_ID": "ca-app-pub-7740246752776234/5409257544",
+      "ADMOB_ANDROID_NATIVE_ID": "ca-app-pub-7740246752776234/9607028018"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.seyrek.factsaday",
       "buildNumber": "49",
       "googleServicesFile": "./google/GoogleService-Info.plist",
-      "associatedDomains": [
-        "applinks:factsaday.com"
-      ],
+      "associatedDomains": ["applinks:factsaday.com"],
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false,
@@ -329,10 +333,7 @@
               "pathPattern": "/.*/fact/.*"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
@@ -340,16 +341,7 @@
       [
         "expo-localization",
         {
-          "supportedLocales": [
-            "en",
-            "de",
-            "es",
-            "fr",
-            "ja",
-            "ko",
-            "tr",
-            "zh"
-          ]
+          "supportedLocales": ["en", "de", "es", "fr", "ja", "ko", "tr", "zh"]
         }
       ],
       "@react-native-firebase/app",

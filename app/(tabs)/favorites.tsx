@@ -25,9 +25,15 @@ import {
   Text,
   useIconColor,
 } from '../../src/components';
+import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT } from '../../src/config/app';
 import { FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  type NativeAdPlaceholder,
+} from '../../src/utils/insertNativeAds';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
@@ -204,6 +210,13 @@ export default function FavoritesScreen() {
 
   const filteredFactIds = useMemo(() => filteredFavorites.map((f) => f.id), [filteredFavorites]);
 
+  // Insert native ads after filtering
+  type FavoritesListItem = FactWithRelations | NativeAdPlaceholder;
+  const filteredDataWithAds = useMemo(
+    () => insertNativeAds(filteredFavorites),
+    [filteredFavorites],
+  );
+
   const handleFactPress = useCallback(
     (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => {
       // Prefetch image before navigation for faster modal display
@@ -247,7 +260,10 @@ export default function FavoritesScreen() {
   }, [searchExpand]);
 
   // Memoized keyExtractor
-  const keyExtractor = useCallback((item: FactWithRelations) => item.id.toString(), []);
+  const keyExtractor = useCallback((item: FavoritesListItem) => {
+    if (isNativeAdPlaceholder(item)) return item.key;
+    return item.id.toString();
+  }, []);
 
   // Calculate exact item height for FlashList layout
   const itemHeight = useMemo(
@@ -265,9 +281,19 @@ export default function FavoritesScreen() {
 
   // Memoized renderItem
   const renderItem = useCallback(
-    ({ item, index }: { item: FactWithRelations; index: number }) => (
-      <FactListItem item={item} onPress={(fact) => handleFactPress(fact, filteredFactIds, index)} />
-    ),
+    ({ item }: { item: FavoritesListItem }) => {
+      if (isNativeAdPlaceholder(item)) {
+        return (
+          <ContentContainer>
+            <NativeAdCard />
+          </ContentContainer>
+        );
+      }
+      const factIndex = filteredFactIds.indexOf(item.id);
+      return (
+        <FactListItem item={item} onPress={(fact) => handleFactPress(fact, filteredFactIds, factIndex >= 0 ? factIndex : 0)} />
+      );
+    },
     [handleFactPress, filteredFactIds]
   );
 
@@ -490,13 +516,15 @@ export default function FavoritesScreen() {
         ) : (
           <FlashList
             ref={listRef}
-            data={filteredFavorites}
+            data={filteredDataWithAds}
             keyExtractor={keyExtractor}
             renderItem={renderItem}
             refreshControl={refreshControl}
             onScroll={handleScroll}
             overrideItemLayout={overrideItemLayout}
             snapToInterval={itemHeight}
+            snapToAlignment="start"
+            decelerationRate="fast"
             {...FLASH_LIST_SETTINGS}
           />
         )}

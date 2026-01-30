@@ -18,9 +18,15 @@ import {
   ScreenContainer,
   Text,
 } from '../../src/components';
+import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT } from '../../src/config/app';
 import { FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  type NativeAdPlaceholder,
+} from '../../src/utils/insertNativeAds';
 import { useScrollToTopHandler } from '../../src/contexts';
 import { smartScrollToTop } from '../../src/utils/useFlashListScrollToTop';
 import { useTranslation } from '../../src/i18n';
@@ -414,8 +420,24 @@ function DiscoverScreen() {
     [selectedCategorySlug, userCategories]
   );
 
+  // Insert native ads into search results and category facts
+  type DiscoverListItem = FactWithRelations | NativeAdPlaceholder;
+
+  const searchDataWithAds = useMemo(
+    () => insertNativeAds(searchResults),
+    [searchResults],
+  );
+
+  const categoryDataWithAds = useMemo(
+    () => insertNativeAds(categoryFacts),
+    [categoryFacts],
+  );
+
   // Memoized keyExtractor
-  const keyExtractor = useCallback((item: FactWithRelations) => item.id.toString(), []);
+  const keyExtractor = useCallback((item: DiscoverListItem) => {
+    if (isNativeAdPlaceholder(item)) return item.key;
+    return item.id.toString();
+  }, []);
 
   // Calculate exact item height for FlashList layout
   // Uses spacing.md from responsive hook to match ImageFactCard's marginBottom
@@ -438,27 +460,47 @@ function DiscoverScreen() {
 
   // Memoized renderItem for search results
   const renderSearchItem = useCallback(
-    ({ item, index }: ListRenderItemInfo<FactWithRelations>) => (
-      <FactListItem
-        item={item}
-        isTablet={isTablet}
-        onPress={(fact) => handleFactPress(fact, searchFactIds, index)}
-        selectedCategory={selectedCategory}
-      />
-    ),
+    ({ item }: ListRenderItemInfo<DiscoverListItem>) => {
+      if (isNativeAdPlaceholder(item)) {
+        return (
+          <ContentContainer>
+            <NativeAdCard />
+          </ContentContainer>
+        );
+      }
+      const factIndex = searchFactIds.indexOf(item.id);
+      return (
+        <FactListItem
+          item={item}
+          isTablet={isTablet}
+          onPress={(fact) => handleFactPress(fact, searchFactIds, factIndex >= 0 ? factIndex : 0)}
+          selectedCategory={selectedCategory}
+        />
+      );
+    },
     [isTablet, handleFactPress, selectedCategory, searchFactIds]
   );
 
   // Memoized renderItem for category facts
   const renderCategoryItem = useCallback(
-    ({ item, index }: ListRenderItemInfo<FactWithRelations>) => (
-      <FactListItem
-        item={item}
-        isTablet={isTablet}
-        onPress={(fact) => handleFactPress(fact, categoryFactIds, index)}
-        selectedCategory={selectedCategory}
-      />
-    ),
+    ({ item }: ListRenderItemInfo<DiscoverListItem>) => {
+      if (isNativeAdPlaceholder(item)) {
+        return (
+          <ContentContainer>
+            <NativeAdCard />
+          </ContentContainer>
+        );
+      }
+      const factIndex = categoryFactIds.indexOf(item.id);
+      return (
+        <FactListItem
+          item={item}
+          isTablet={isTablet}
+          onPress={(fact) => handleFactPress(fact, categoryFactIds, factIndex >= 0 ? factIndex : 0)}
+          selectedCategory={selectedCategory}
+        />
+      );
+    },
     [isTablet, handleFactPress, selectedCategory, categoryFactIds]
   );
 
@@ -787,13 +829,15 @@ function DiscoverScreen() {
         >
           <FlashList
             ref={searchListRef}
-            data={searchResults}
+            data={searchDataWithAds}
             keyExtractor={keyExtractor}
             renderItem={renderSearchItem}
             refreshControl={searchRefreshControl}
             onScroll={handleSearchScroll}
             overrideItemLayout={overrideItemLayout}
             snapToInterval={itemHeight}
+            snapToAlignment="start"
+            decelerationRate="fast"
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -835,13 +879,15 @@ function DiscoverScreen() {
         >
           <FlashList
             ref={categoryListRef}
-            data={categoryFacts}
+            data={categoryDataWithAds}
             keyExtractor={keyExtractor}
             renderItem={renderCategoryItem}
             refreshControl={categoryRefreshControl}
             onScroll={handleCategoryScroll}
             overrideItemLayout={overrideItemLayout}
             snapToInterval={itemHeight}
+            snapToAlignment="start"
+            decelerationRate="fast"
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -857,9 +903,11 @@ function DiscoverScreen() {
   }, [
     searchQuery,
     searchResults,
+    searchDataWithAds,
     selectedCategorySlug,
     isLoadingCategoryFacts,
     categoryFacts,
+    categoryDataWithAds,
     theme,
     t,
     keyExtractor,

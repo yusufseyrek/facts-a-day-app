@@ -4,7 +4,7 @@ import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { IMAGE_DIMENSIONS, IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
+import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
 import { useFactImage } from '../utils/useFactImage';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -104,10 +104,7 @@ const ImageFactCardComponent = ({
 
   // Calculate card height based on aspect ratio
   // Use a smaller aspect ratio for tablets so cards aren't too tall
-  const aspectRatio = isTablet
-    ? IMAGE_DIMENSIONS.TABLET_CARD_ASPECT_RATIO
-    : IMAGE_DIMENSIONS.CARD_ASPECT_RATIO;
-  const cardHeight = screenWidth * aspectRatio;
+  const cardHeight = screenWidth * config.cardAspectRatio;
 
   const handlePressIn = useCallback(() => {
     Animated.spring(scaleAnim, {

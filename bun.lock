@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "facts-a-day-app",
@@ -43,7 +44,7 @@
         "react": "19.1.0",
         "react-native": "0.81.5",
         "react-native-gesture-handler": "~2.28.0",
-        "react-native-google-mobile-ads": "^15.8.3",
+        "react-native-google-mobile-ads": "^16.0.3",
         "react-native-reanimated": "~4.1.1",
         "react-native-safe-area-context": "^5.6.2",
         "react-native-screens": "~4.16.0",
@@ -1822,7 +1823,7 @@
 
     "react-native-gesture-handler": ["react-native-gesture-handler@2.28.0", "", { "dependencies": { "@egjs/hammerjs": "^2.0.17", "hoist-non-react-statics": "^3.3.0", "invariant": "^2.2.4" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-0msfJ1vRxXKVgTgvL+1ZOoYw3/0z1R+Ked0+udoJhyplC2jbVKIJ8Z1bzWdpQRCV3QcQ87Op0zJVE5DhKK2A0A=="],
 
-    "react-native-google-mobile-ads": ["react-native-google-mobile-ads@15.8.3", "", { "dependencies": { "@iabtcf/core": "^1.5.3", "use-deep-compare-effect": "^1.8.1" }, "peerDependencies": { "expo": ">=47.0.0" }, "optionalPeers": ["expo"] }, "sha512-Cdd7pX5p+8f8MTzdyxp0lr3SrlRZ+XbpLKbollByg6m7za0c+QTXWYG2VRzMRP6eU0M0hFuEzBnB1lBSl3kd5A=="],
+    "react-native-google-mobile-ads": ["react-native-google-mobile-ads@16.0.3", "", { "dependencies": { "@iabtcf/core": "^1.5.6", "use-deep-compare-effect": "^1.8.1" }, "peerDependencies": { "expo": ">=47.0.0" }, "optionalPeers": ["expo"] }, "sha512-H+ViSEPiwAorLhKL29t6oaEN+thA1KTvSR8IYRY80Bv4Y62IdIYcucuqUsELrH2qFPC3+D2uPRG4HriLY/hjvA=="],
 
     "react-native-is-edge-to-edge": ["react-native-is-edge-to-edge@1.2.1", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-FLbPWl/MyYQWz+KwqOZsSyj2JmLKglHatd3xLZWskXOpRaio4LfEDEz8E/A6uD8QoTHW6Aobw1jbEwK7KMgR7Q=="],
 
