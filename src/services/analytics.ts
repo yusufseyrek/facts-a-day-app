@@ -447,10 +447,8 @@ export const trackAppOpenAdLoaded = (): void => {
 /**
  * Track when App Open ad is shown
  */
-export const trackAppOpenAdShown = (params: { backgroundSeconds: number }): void => {
-  logEvent('app_open_ad_shown', {
-    background_seconds: params.backgroundSeconds,
-  });
+export const trackAppOpenAdShown = (): void => {
+  logEvent('app_open_ad_shown', {});
 };
 
 /**

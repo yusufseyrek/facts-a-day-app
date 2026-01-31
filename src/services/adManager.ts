@@ -17,20 +17,32 @@ const isCooldownElapsed = (): boolean => {
 };
 
 /**
- * Show interstitial ad before trivia results
+ * Show interstitial ad immediately (no cooldown check)
+ * Used for settings changes where an ad is always shown during the transition.
+ */
+export const showSettingsInterstitial = async (): Promise<void> => {
+  if (!ADS_ENABLED) {
+    return;
+  }
+
+  try {
+    await showInterstitialAd();
+    trackInterstitialShown('settings');
+  } catch (error) {
+    console.error('Error showing settings interstitial:', error);
+  }
+};
+
+/**
+ * Show interstitial ad before trivia results (no cooldown check)
  */
 export const showTriviaResultsInterstitial = async (): Promise<void> => {
   if (!ADS_ENABLED) {
     return;
   }
 
-  if (!isCooldownElapsed()) {
-    return;
-  }
-
   try {
     await showInterstitialAd();
-    lastInterstitialShownAt = Date.now();
     trackInterstitialShown('trivia_results');
   } catch (error) {
     console.error('Error showing trivia results interstitial:', error);

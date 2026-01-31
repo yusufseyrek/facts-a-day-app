@@ -25,6 +25,8 @@ interface ImageFactCardProps {
   isTablet?: boolean;
   /** Optional testID for automated testing with Maestro */
   testID?: string;
+  /** Called once when the image has successfully loaded and rendered */
+  onImageReady?: () => void;
 }
 
 const ImageFactCardComponent = ({
@@ -35,6 +37,7 @@ const ImageFactCardComponent = ({
   onPress,
   isTablet: isTabletProp = false,
   testID,
+  onImageReady,
 }: ImageFactCardProps) => {
   const { screenWidth, isTablet: isTabletHook, spacing, radius, config } = useResponsive();
   const isTablet = isTabletProp || isTabletHook;
@@ -181,7 +184,8 @@ const ImageFactCardComponent = ({
   // Handle image load success
   const handleImageLoad = useCallback(() => {
     setImageLoaded(true);
-  }, []);
+    onImageReady?.();
+  }, [onImageReady]);
 
   // Generate image source - memoized to prevent unnecessary re-renders
   const imageSource: ImageSource | null = useMemo(

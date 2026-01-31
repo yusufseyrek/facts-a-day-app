@@ -26,6 +26,7 @@ import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { CategoryWithProgress } from '../../src/services/trivia';
+import { BannerAd } from '../../src/components/ads';
 
 export default function TriviaScreen() {
   const { theme } = useTheme();
@@ -320,7 +321,6 @@ export default function TriviaScreen() {
                       />
                     </XStack>
                   </Animated.View>
-
                   {/* Category rows */}
                   {categoryRows.map((row, rowIndex) => (
                     <Animated.View

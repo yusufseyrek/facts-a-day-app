@@ -14,9 +14,12 @@ import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 
 type BannerAdPosition = 'home' | 'fact-modal';
 
+type CollapsiblePlacement = 'top' | 'bottom';
+
 interface BannerAdProps {
   position: BannerAdPosition;
   onAdLoadChange?: (loaded: boolean) => void;
+  collapsible?: CollapsiblePlacement;
 }
 
 const getAdUnitId = (position: BannerAdPosition): string => {
@@ -40,7 +43,7 @@ const getBannerSize = (_position: BannerAdPosition): BannerAdSize => {
 
 type AdState = 'loading' | 'loaded' | 'error';
 
-function BannerAdComponent({ position, onAdLoadChange }: BannerAdProps) {
+function BannerAdComponent({ position, onAdLoadChange, collapsible }: BannerAdProps) {
   const [canRequestAds, setCanRequestAds] = useState<boolean | null>(null);
   const [requestNonPersonalized, setRequestNonPersonalized] = useState(true);
   const [adState, setAdState] = useState<AdState>('loading');
@@ -129,6 +132,9 @@ function BannerAdComponent({ position, onAdLoadChange }: BannerAdProps) {
             size={getBannerSize(position)}
             requestOptions={{
               requestNonPersonalizedAdsOnly: requestNonPersonalized,
+              ...(collapsible && {
+                networkExtras: { collapsible },
+              }),
             }}
             onAdLoaded={handleAdLoaded}
             onAdFailedToLoad={handleAdFailedToLoad}

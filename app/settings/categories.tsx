@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { Button, CategoryCard, SuccessToast, Text } from '../../src/components';
+import { showSettingsInterstitial } from '../../src/services/adManager';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
@@ -167,6 +168,9 @@ export default function CategoriesSettings() {
 
     setIsSaving(true);
     try {
+      // Show interstitial ad in parallel with save operations
+      const adPromise = showSettingsInterstitial();
+
       // Save selected categories
       await onboardingService.setSelectedCategories(selectedCategories);
 
@@ -196,6 +200,9 @@ export default function CategoriesSettings() {
           removedCount,
         });
         updateCategoriesProperty(selectedCategories);
+
+        // Wait for ad to close before showing success toast (prevents view controller conflicts)
+        await adPromise;
 
         // Show success toast
         setTimeout(() => {

@@ -4,6 +4,8 @@ import * as Localization from 'expo-localization';
 import { API_SETTINGS } from '../config/app';
 import { getLocaleFromCode, SupportedLocale } from '../i18n';
 
+import { showAppOpenAdForLocaleChange } from '../components/ads/AppOpenAd';
+
 import * as api from './api';
 import * as db from './database';
 import * as onboardingService from './onboarding';
@@ -162,7 +164,7 @@ async function saveCurrentLocale(locale: string): Promise<void> {
 /**
  * Check if the device locale has changed compared to the stored locale
  */
-async function hasLocaleChanged(): Promise<{
+export async function hasLocaleChanged(): Promise<{
   changed: boolean;
   currentLocale: SupportedLocale;
   storedLocale: string | null;
@@ -443,7 +445,14 @@ export async function refreshAppContent(): Promise<RefreshResult> {
       // Emit locale-change status for UI loading indicator
       emitRefreshStatus('locale-change');
 
-      const languageChangeResult = await preferencesService.handleLanguageChange(currentLocale);
+      // Load and show app open ad alongside content refresh
+      // Both run in parallel - ad displays while content downloads
+      const [languageChangeResult] = await Promise.all([
+        preferencesService.handleLanguageChange(currentLocale),
+        showAppOpenAdForLocaleChange().catch((error) => {
+          console.error('Failed to show app open ad for locale change:', error);
+        }),
+      ]);
 
       if (languageChangeResult.success) {
         // Save the new locale after successful refresh

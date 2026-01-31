@@ -12,6 +12,7 @@ import {
   TriviaExitModal,
   TriviaGameView,
   TriviaResults,
+  TriviaNativeAdView,
 } from '../../src/components/trivia';
 import { Text } from '../../src/components/Typography';
 import { useTranslation } from '../../src/i18n';
@@ -28,6 +29,7 @@ import {
   trackTriviaViewFactClick,
 } from '../../src/services/analytics';
 import { showRewardedAd } from '../../src/components/ads/RewardedAd';
+import { useNativeAd } from '../../src/hooks/useNativeAd';
 import { prefetchFactImage } from '../../src/services/images';
 import { prefetchAdjacentImages } from '../../src/utils/prefetchAdjacentImages';
 import { useFactImage } from '../../src/utils/useFactImage';
@@ -72,6 +74,12 @@ export default function TriviaGameScreen() {
     timeExpired: false,
     totalTime: 0,
   });
+
+  // Native ad state - show at the midpoint of the quiz
+  const nativeAdIndex = Math.ceil(gameState.questions.length / 2);
+  const [showingNativeAd, setShowingNativeAd] = useState(false);
+  const [nativeAdShown, setNativeAdShown] = useState(false);
+  const { nativeAd } = useNativeAd();
 
   // Hint state
   const [canUseExplanation, setCanUseExplanation] = useState(false);
@@ -158,7 +166,7 @@ export default function TriviaGameScreen() {
 
   // Timer effect
   useEffect(() => {
-    if (loading || gameState.isFinished || showingRewardedAd) {
+    if (loading || gameState.isFinished || showingRewardedAd || showingNativeAd) {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -185,7 +193,7 @@ export default function TriviaGameScreen() {
         timerRef.current = null;
       }
     };
-  }, [loading, gameState.isFinished, gameState.currentQuestionIndex, showingRewardedAd]);
+  }, [loading, gameState.isFinished, gameState.currentQuestionIndex, showingRewardedAd, showingNativeAd]);
 
   // Update progress bar animation
   useEffect(() => {
@@ -390,6 +398,18 @@ export default function TriviaGameScreen() {
   const handleNextQuestion = () => {
     const nextIndex = gameState.currentQuestionIndex + 1;
 
+    // Show native ad after the 5th question (index 4 -> next is 5)
+    if (
+      nextIndex === nativeAdIndex &&
+      !nativeAdShown &&
+      nativeAd &&
+      nextIndex < gameState.questions.length
+    ) {
+      setShowingNativeAd(true);
+      setNativeAdShown(true);
+      return;
+    }
+
     if (nextIndex >= gameState.questions.length) {
       // Check if all questions are answered
       const unansweredCount = gameState.questions.filter((q) => !gameState.answers[q.id]).length;
@@ -409,6 +429,21 @@ export default function TriviaGameScreen() {
         currentQuestionIndex: nextIndex,
       }));
     }
+  };
+
+  const handleNativeAdContinue = () => {
+    setShowingNativeAd(false);
+    // Advance to the next question
+    questionKey.current += 1;
+    setGameState((prev) => ({
+      ...prev,
+      currentQuestionIndex: nativeAdIndex,
+    }));
+  };
+
+  const handleNativeAdPrev = () => {
+    setShowingNativeAd(false);
+    // Go back to the last question before the ad
   };
 
   const handlePrevQuestion = () => {
@@ -696,6 +731,37 @@ export default function TriviaGameScreen() {
           t,
         })}
       />
+    );
+  }
+
+  // Native ad view - shown after 5th question
+  if (showingNativeAd && nativeAd) {
+    return (
+      <>
+        <TriviaNativeAdView
+          nativeAd={nativeAd}
+          progressWidth={progressWidth}
+          triviaTitle={getTriviaTitle()}
+          timeRemaining={timeRemaining}
+          onContinue={handleNativeAdContinue}
+          onPrevQuestion={handleNativeAdPrev}
+          onExit={handleExitConfirm}
+          isDark={isDark}
+          t={t}
+        />
+        <TriviaExitModal
+          visible={showExitModal}
+          onCancel={handleExitCancel}
+          onExit={handleExitConfirmed}
+          isDark={isDark}
+          title={t('exitTrivia') || 'Exit Quiz'}
+          message={
+            t('exitTriviaConfirm') || 'Are you sure you want to exit? Your progress will be lost.'
+          }
+          cancelText={t('cancel') || 'Cancel'}
+          exitText={t('exit') || 'Exit'}
+        />
+      </>
     );
   }
 

@@ -16,6 +16,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { AlertTriangle, Plus, Trash2, X } from '@tamagui/lucide-icons';
 
 import { useTranslation } from '../../i18n/useTranslation';
+import { showSettingsInterstitial } from '../../services/adManager';
 import { trackNotificationTimeChange, updateNotificationProperty } from '../../services/analytics';
 import * as notificationService from '../../services/notifications';
 import * as onboardingService from '../../services/onboarding';
@@ -184,6 +185,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
     setIsSaving(true);
     try {
+      // Show interstitial ad in parallel with save operations
+      const adPromise = showSettingsInterstitial();
+
       // Save the times to AsyncStorage (always save user preference, even if notifications fail)
       const timeStrings = times.map((t) => t.toISOString());
       await onboardingService.setNotificationTimes(timeStrings);
@@ -207,6 +211,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       // Track notification time change and update user property
       trackNotificationTimeChange(times.length);
       updateNotificationProperty(times);
+
+      // Wait for ad to close before showing success toast (prevents view controller conflicts)
+      await adPromise;
 
       // Show success toast
       setTimeout(() => {

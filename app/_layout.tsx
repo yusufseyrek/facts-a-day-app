@@ -19,17 +19,18 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { SplashOverlay } from '../src/components/SplashOverlay';
-import { APP_OPEN_ADS, STORAGE_KEYS, TIMING } from '../src/config/app';
+import { STORAGE_KEYS, TIMING } from '../src/config/app';
 import { enableCrashlyticsConsoleLogging, initializeFirebase } from '../src/config/firebase';
 import {
   OnboardingProvider,
   PreloadedDataProvider,
   ScrollToTopProvider,
+  setLocaleRefreshPending,
   setPreloadedFactsBeforeMount,
+  signalLocaleRefreshDone,
   useOnboarding,
 } from '../src/contexts';
 import { getLocaleFromCode, I18nProvider } from '../src/i18n';
-import { showAppOpenAd } from '../src/components/ads/AppOpenAd';
 import { initializeAdsForReturningUser } from '../src/services/ads';
 import { initAnalytics } from '../src/services/analytics';
 import * as contentRefresh from '../src/services/contentRefresh';
@@ -246,8 +247,6 @@ export default function RootLayout() {
 
   // Track when an OTA update has been downloaded and is ready to apply
   const pendingUpdateRef = useRef<boolean>(false);
-  // Track when the app went to background (for App Open ad timing)
-  const backgroundTimestampRef = useRef<number>(0);
 
   useEffect(() => {
     initializeApp();
@@ -256,11 +255,6 @@ export default function RootLayout() {
   // Listen for app state changes to sync notifications and check for OTA updates when app enters foreground
   useEffect(() => {
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-      // Record timestamp when going to background (for App Open ad timing)
-      if (appStateRef.current === 'active' && nextAppState.match(/inactive|background/)) {
-        backgroundTimestampRef.current = Date.now();
-      }
-
       // Only run when app transitions from background/inactive to active (foreground)
       if (
         appStateRef.current.match(/inactive|background/) &&
@@ -277,19 +271,6 @@ export default function RootLayout() {
           } catch (error) {
             console.error('Failed to reload app for OTA update:', error);
           }
-        }
-
-        // Show App Open ad if user was in background for 30+ seconds
-        if (backgroundTimestampRef.current > 0) {
-          const backgroundSeconds = (Date.now() - backgroundTimestampRef.current) / 1000;
-          if (backgroundSeconds >= APP_OPEN_ADS.MIN_BACKGROUND_SECONDS) {
-            try {
-              await showAppOpenAd(backgroundSeconds);
-            } catch (error) {
-              console.error('Failed to show app open ad:', error);
-            }
-          }
-          backgroundTimestampRef.current = 0;
         }
 
         console.log('📱 App entered foreground, syncing notifications...');
@@ -382,7 +363,6 @@ export default function RootLayout() {
       );
 
       const isComplete = await Promise.race([onboardingPromise, onboardingTimeoutPromise]);
-      setInitialOnboardingStatus(isComplete);
 
       // Only initialize ads and pre-load data for returning users
       // New users will have ads initialized during the onboarding success screen
@@ -390,29 +370,81 @@ export default function RootLayout() {
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
         const locale = getLocaleFromCode(deviceLocale);
 
-        // Pre-load home screen data during splash time
-        // This eliminates the loading spinner on home screen
-        try {
-          await database.markDeliveredFactsAsShown(locale);
-          const facts = await database.getFactsGroupedByDate(locale);
-          setPreloadedFactsBeforeMount(facts);
-          // Start prefetching images in background
-          prefetchFactImagesWithLimit(facts);
-        } catch (error) {
-          console.error('Failed to pre-load home screen data:', error);
+        // Check if locale changed (e.g. user changed app language in device settings)
+        const localeStatus = await contentRefresh.hasLocaleChanged();
+
+        if (localeStatus.changed) {
+          // Locale changed (OS cold-restarted the app)
+          // Gate the splash so it stays visible during refresh + app open ad.
+          // We set onboarding status early so the JS splash overlay mounts,
+          // but the splash won't fade out until signalLocaleRefreshDone() is called.
+          setLocaleRefreshPending();
+
+          // Pre-load home screen data with OLD language first so the home screen
+          // can mount and signal ready (required for splash overlay flow)
+          try {
+            await database.markDeliveredFactsAsShown(locale);
+            const facts = await database.getFactsGroupedByDate(locale);
+            setPreloadedFactsBeforeMount(facts);
+          } catch (error) {
+            console.error('Failed to pre-load home screen data:', error);
+          }
+
+          // Let the JS splash overlay mount (replaces native splash)
+          setInitialOnboardingStatus(isComplete);
+
+          // Initialize ads SDK (needed before loading app open ad)
+          try {
+            await initializeAdsForReturningUser();
+          } catch (error) {
+            console.error('Failed to initialize ads for locale change:', error);
+          }
+
+          // Run content refresh + app open ad in parallel
+          // Splash stays visible because localeRefreshPromise is still pending
+          try {
+            await contentRefresh.refreshAppContent();
+          } catch (error) {
+            console.error('Language change refresh failed:', error);
+          }
+
+          // Re-load home screen data with new language
+          try {
+            await database.markDeliveredFactsAsShown(locale);
+            const facts = await database.getFactsGroupedByDate(locale);
+            setPreloadedFactsBeforeMount(facts);
+            prefetchFactImagesWithLimit(facts);
+          } catch (error) {
+            console.error('Failed to re-load home screen data:', error);
+          }
+
+          // Now let splash fade out
+          signalLocaleRefreshDone();
+        } else {
+          // No locale change - normal startup flow
+          // Pre-load home screen data during splash time
+          try {
+            await database.markDeliveredFactsAsShown(locale);
+            const facts = await database.getFactsGroupedByDate(locale);
+            setPreloadedFactsBeforeMount(facts);
+            prefetchFactImagesWithLimit(facts);
+          } catch (error) {
+            console.error('Failed to pre-load home screen data:', error);
+          }
+
+          // Let splash close, then do the rest in background
+          setInitialOnboardingStatus(isComplete);
+
+          // Initialize ads in background
+          initializeAdsForReturningUser().catch((error) => {
+            console.error('Failed to initialize ads for returning user:', error);
+          });
+
+          // Refresh content in background
+          contentRefresh.refreshAppContent().catch((error) => {
+            console.error('Background refresh failed:', error);
+          });
         }
-
-        // Initialize ads using consent obtained in the previous session
-        initializeAdsForReturningUser().catch((error) => {
-          console.error('Failed to initialize ads for returning user:', error);
-        });
-
-        // Refresh content in background
-        // This runs asynchronously and doesn't block app startup
-        contentRefresh.refreshAppContent().catch((error) => {
-          // Silently handle errors - app continues with cached data
-          console.error('Background refresh failed:', error);
-        });
 
         // Clear notification badge on app launch
         Notifications.setBadgeCountAsync(0);

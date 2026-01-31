@@ -24,10 +24,6 @@ export const INTERSTITIAL_ADS = {
  * App Open ad settings
  */
 export const APP_OPEN_ADS = {
-  /** Whether App Open ads are enabled */
-  ACTIVE: false,
-  /** Minimum seconds the app must be in background before showing an App Open ad */
-  MIN_BACKGROUND_SECONDS: 30,
   /** App Open ads expire after 4 hours (Google's limit). Reload if older than this. */
   AD_EXPIRY_MS: 4 * 60 * 60 * 1000,
 } as const;

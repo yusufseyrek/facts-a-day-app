@@ -3,6 +3,8 @@ export { DailyChallengeCard } from './DailyChallengeCard';
 export { TriviaExitModal } from './TriviaExitModal';
 export type { TriviaGameViewProps } from './TriviaGameView';
 export { TriviaGameView } from './TriviaGameView';
+export type { TriviaNativeAdViewProps } from './TriviaNativeAdView';
+export { TriviaNativeAdView } from './TriviaNativeAdView';
 export type { TriviaGridCardType } from './TriviaGridCard';
 export { TriviaGridCard } from './TriviaGridCard';
 export { TriviaIntroModal } from './TriviaIntroModal';

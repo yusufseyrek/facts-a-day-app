@@ -18,6 +18,7 @@ import {
   ScreenContainer,
   Text,
 } from '../../src/components';
+import { BannerAd } from '../../src/components/ads';
 import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT } from '../../src/config/app';
@@ -180,6 +181,13 @@ function DiscoverScreen() {
 
   const categoryGridRef = useRef<ScrollView>(null);
 
+  const clearCategoryFilter = useCallback(() => {
+    setSelectedCategorySlug(null);
+    setCategoryFacts([]);
+    setSearchQuery('');
+    setSearchResults([]);
+  }, []);
+
   // Scroll handlers to track offsets
   const handleSearchScroll = useCallback(
     (event: { nativeEvent: { contentOffset: { y: number } } }) => {
@@ -196,16 +204,28 @@ function DiscoverScreen() {
   );
 
   // Scroll to top handler - scrolls whichever list is currently visible with smart behavior
+  // If already at top in category facts view, go back to category selection
   const scrollToTop = useCallback(() => {
     const hasQuery = searchQuery.trim().length > 0;
     if (hasQuery && searchResults.length > 0) {
       smartScrollToTop(searchListRef, searchScrollOffsetRef.current);
     } else if (selectedCategorySlug && categoryFacts.length > 0) {
-      smartScrollToTop(categoryListRef, categoryScrollOffsetRef.current);
+      const isAtTop = categoryScrollOffsetRef.current <= 1;
+      if (isAtTop) {
+        clearCategoryFilter();
+      } else {
+        smartScrollToTop(categoryListRef, categoryScrollOffsetRef.current);
+      }
     } else {
       categoryGridRef.current?.scrollTo({ y: 0, animated: true });
     }
-  }, [searchQuery, searchResults.length, selectedCategorySlug, categoryFacts.length]);
+  }, [
+    searchQuery,
+    searchResults.length,
+    selectedCategorySlug,
+    categoryFacts.length,
+    clearCategoryFilter,
+  ]);
   useScrollToTopHandler('discover', scrollToTop);
 
   const performSearch = useCallback(
@@ -404,13 +424,6 @@ function DiscoverScreen() {
     [selectedCategorySlug, locale]
   );
 
-  const clearCategoryFilter = useCallback(() => {
-    setSelectedCategorySlug(null);
-    setCategoryFacts([]);
-    setSearchQuery('');
-    setSearchResults([]);
-  }, []);
-
   // Get selected category object
   const selectedCategory = useMemo(
     () =>
@@ -423,15 +436,9 @@ function DiscoverScreen() {
   // Insert native ads into search results and category facts
   type DiscoverListItem = FactWithRelations | NativeAdPlaceholder;
 
-  const searchDataWithAds = useMemo(
-    () => insertNativeAds(searchResults),
-    [searchResults],
-  );
+  const searchDataWithAds = useMemo(() => insertNativeAds(searchResults), [searchResults]);
 
-  const categoryDataWithAds = useMemo(
-    () => insertNativeAds(categoryFacts),
-    [categoryFacts],
-  );
+  const categoryDataWithAds = useMemo(() => insertNativeAds(categoryFacts), [categoryFacts]);
 
   // Memoized keyExtractor
   const keyExtractor = useCallback((item: DiscoverListItem) => {
@@ -925,6 +932,8 @@ function DiscoverScreen() {
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       {renderHeader()}
       <YStack flex={1}>{renderContent()}</YStack>
+      {searchResults.length > 0 ||
+        (!selectedCategorySlug && <BannerAd position="home" collapsible="bottom" />)}
     </ScreenContainer>
   );
 }

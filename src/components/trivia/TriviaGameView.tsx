@@ -311,7 +311,7 @@ export function TriviaGameView({
                   style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                 >
                   <XStack
-                    backgroundColor={`${primaryColor}40`}
+                    backgroundColor={`${primaryColor}55`}
                     paddingHorizontal={spacing.md}
                     paddingVertical={spacing.sm}
                     borderRadius={radius.full}
@@ -343,7 +343,7 @@ export function TriviaGameView({
                   <View
                     style={{
                       flexDirection: 'row',
-                      backgroundColor: `${accentColor}40`,
+                      backgroundColor: `${accentColor}55`,
                       paddingHorizontal: spacing.md,
                       paddingVertical: spacing.sm,
                       borderRadius: radius.full,
@@ -366,37 +366,41 @@ export function TriviaGameView({
               )}
 
               {/* Watch Ad for Hint Button - Free hint used, ad available */}
-              {hasExplanation && onWatchAdForHint && !showExplanation && !canUseExplanation && canWatchAdForHint && (
-                <Pressable
-                  onPress={() => handlePressWithHaptics(onWatchAdForHint)}
-                  role="button"
-                  aria-label={t('a11y_watchAdForHint') || 'Watch an ad to unlock a hint'}
-                  style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-                >
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      backgroundColor: `${accentColor}40`,
-                      paddingHorizontal: spacing.md,
-                      paddingVertical: spacing.sm,
-                      borderRadius: radius.full,
-                      alignItems: 'center',
-                      gap: spacing.xs,
-                    }}
+              {hasExplanation &&
+                onWatchAdForHint &&
+                !showExplanation &&
+                !canUseExplanation &&
+                canWatchAdForHint && (
+                  <Pressable
+                    onPress={() => handlePressWithHaptics(onWatchAdForHint)}
+                    role="button"
+                    aria-label={t('a11y_watchAdForHint') || 'Watch an ad to unlock a hint'}
+                    style={({ pressed }) => [pressed && { opacity: 0.7 }]}
                   >
-                    <Lightbulb size={typography.fontSize.caption} color={accentColor} />
-                    <RNText
+                    <View
                       style={{
-                        fontFamily: FONT_FAMILIES.semibold,
-                        fontSize: typography.fontSize.caption,
-                        color: accentColor,
+                        flexDirection: 'row',
+                        backgroundColor: `${accentColor}55`,
+                        paddingHorizontal: spacing.md,
+                        paddingVertical: spacing.sm,
+                        borderRadius: radius.full,
+                        alignItems: 'center',
+                        gap: spacing.xs,
                       }}
                     >
-                      {t('watchAdForHint') || 'Watch Ad for Hint'}
-                    </RNText>
-                  </View>
-                </Pressable>
-              )}
+                      <Lightbulb size={typography.fontSize.caption} color={accentColor} />
+                      <RNText
+                        style={{
+                          fontFamily: FONT_FAMILIES.semibold,
+                          fontSize: typography.fontSize.caption,
+                          color: accentColor,
+                        }}
+                      >
+                        {t('watchAdForHint') || 'Watch Ad for Hint'}
+                      </RNText>
+                    </View>
+                  </Pressable>
+                )}
 
               {/* Hint Used - No free hint, no ad option */}
               {hasExplanation && !showExplanation && !canUseExplanation && !canWatchAdForHint && (
