@@ -5,10 +5,15 @@ import type { FactWithRelations } from '../services/database';
 // Module-level storage for preloaded data
 // This allows setting data before React providers mount
 let preloadedFactsStorage: FactWithRelations[] | null = null;
+let preloadedRecommendationsStorage: FactWithRelations[] | null = null;
 
 // Module-level promise for home screen ready signal
 let homeScreenReadyResolve: (() => void) | null = null;
 let homeScreenReadyPromise: Promise<void> | null = null;
+
+// Module-level promise for first carousel image ready signal
+let carouselImageReadyResolve: (() => void) | null = null;
+let carouselImageReadyPromise: Promise<void> | null = null;
 
 // Module-level promise for locale refresh gate
 // When set, splash overlay will wait for this before fading out
@@ -21,6 +26,16 @@ export function setPreloadedFactsBeforeMount(facts: FactWithRelations[]) {
   homeScreenReadyPromise = new Promise((resolve) => {
     homeScreenReadyResolve = resolve;
   });
+}
+
+export function setPreloadedRecommendationsBeforeMount(recs: FactWithRelations[]) {
+  preloadedRecommendationsStorage = recs;
+  if (recs.length > 0) {
+    // Create a promise that will resolve when the first carousel image loads
+    carouselImageReadyPromise = new Promise((resolve) => {
+      carouselImageReadyResolve = resolve;
+    });
+  }
 }
 
 /**
@@ -59,6 +74,16 @@ export function waitForHomeScreenReady(): Promise<void> {
     );
   }
 
+  if (carouselImageReadyPromise) {
+    // Wait for first carousel image to load (3 second max wait)
+    promises.push(
+      Promise.race([
+        carouselImageReadyPromise,
+        new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+      ])
+    );
+  }
+
   if (localeRefreshPromise) {
     promises.push(localeRefreshPromise);
   }
@@ -72,7 +97,9 @@ export function waitForHomeScreenReady(): Promise<void> {
 
 interface PreloadedDataContextType {
   consumePreloadedFacts: () => FactWithRelations[] | null;
+  consumePreloadedRecommendations: () => FactWithRelations[] | null;
   signalHomeScreenReady: () => void;
+  signalCarouselImageReady: () => void;
 }
 
 const PreloadedDataContext = createContext<PreloadedDataContextType | null>(null);
@@ -80,16 +107,26 @@ const PreloadedDataContext = createContext<PreloadedDataContextType | null>(null
 export function PreloadedDataProvider({ children }: { children: ReactNode }) {
   // Move module-level data into ref on mount
   const factsRef = useRef<FactWithRelations[] | null>(preloadedFactsStorage);
+  const recsRef = useRef<FactWithRelations[] | null>(preloadedRecommendationsStorage);
 
   // Clear module-level storage after reading
   if (preloadedFactsStorage) {
     preloadedFactsStorage = null;
+  }
+  if (preloadedRecommendationsStorage) {
+    preloadedRecommendationsStorage = null;
   }
 
   const consumePreloadedFacts = useCallback((): FactWithRelations[] | null => {
     const facts = factsRef.current;
     factsRef.current = null;
     return facts;
+  }, []);
+
+  const consumePreloadedRecommendations = useCallback((): FactWithRelations[] | null => {
+    const recs = recsRef.current;
+    recsRef.current = null;
+    return recs;
   }, []);
 
   const signalHomeScreenReady = useCallback(() => {
@@ -100,8 +137,16 @@ export function PreloadedDataProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const signalCarouselImageReady = useCallback(() => {
+    if (carouselImageReadyResolve) {
+      carouselImageReadyResolve();
+      carouselImageReadyResolve = null;
+      carouselImageReadyPromise = null;
+    }
+  }, []);
+
   return (
-    <PreloadedDataContext.Provider value={{ consumePreloadedFacts, signalHomeScreenReady }}>
+    <PreloadedDataContext.Provider value={{ consumePreloadedFacts, consumePreloadedRecommendations, signalHomeScreenReady, signalCarouselImageReady }}>
       {children}
     </PreloadedDataContext.Provider>
   );

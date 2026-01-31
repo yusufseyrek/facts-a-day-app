@@ -27,6 +27,7 @@ import {
   ScrollToTopProvider,
   setLocaleRefreshPending,
   setPreloadedFactsBeforeMount,
+  setPreloadedRecommendationsBeforeMount,
   signalLocaleRefreshDone,
   useOnboarding,
 } from '../src/contexts';
@@ -428,6 +429,11 @@ export default function RootLayout() {
             const facts = await database.getFactsGroupedByDate(locale);
             setPreloadedFactsBeforeMount(facts);
             prefetchFactImagesWithLimit(facts);
+
+            // Preload carousel recommendations so images start loading during splash
+            const recs = await database.getRandomUnscheduledFacts(6, locale);
+            setPreloadedRecommendationsBeforeMount(recs);
+            prefetchFactImagesWithLimit(recs);
           } catch (error) {
             console.error('Failed to pre-load home screen data:', error);
           }

@@ -120,7 +120,7 @@ function HomeScreen() {
   const router = useRouter();
   const iconColor = useIconColor();
   const { iconSizes, spacing, typography } = useResponsive();
-  const { consumePreloadedFacts, signalHomeScreenReady } = usePreloadedData();
+  const { consumePreloadedFacts, consumePreloadedRecommendations, signalHomeScreenReady, signalCarouselImageReady } = usePreloadedData();
 
   const [sections, setSections] = useState<FactSection[]>([]);
   const [recommendations, setRecommendations] = useState<FactWithRelations[]>([]);
@@ -181,10 +181,15 @@ function HomeScreen() {
       if (!consumedPreloadedDataRef.current) {
         consumedPreloadedDataRef.current = true;
         const preloadedFacts = consumePreloadedFacts();
+        const preloadedRecs = consumePreloadedRecommendations();
         if (preloadedFacts && preloadedFacts.length > 0) {
           // Use preloaded data - no loading spinner needed
           setSections(groupFactsByDate(preloadedFacts, t, locale));
           setInitialLoading(false);
+          // Use preloaded recommendations if available
+          if (preloadedRecs && preloadedRecs.length > 0) {
+            setRecommendations(preloadedRecs);
+          }
           // Initialize random fact with preloaded data
           if (!randomFactInitializedRef.current) {
             randomFactInitializedRef.current = true;
@@ -426,10 +431,10 @@ function HomeScreen() {
             <Text.Title fontSize={typography.fontSize.body}>{t('worthKnowing')}</Text.Title>
           </YStack>
         </ContentContainer>
-        <FactCarousel facts={recommendations} onFactPress={handleFactPress} onDiscoverPress={handleDiscoverPress} />
+        <FactCarousel facts={recommendations} onFactPress={handleFactPress} onDiscoverPress={handleDiscoverPress} onFirstImageReady={signalCarouselImageReady} />
       </YStack>
     );
-  }, [recommendations, handleFactPress, handleDiscoverPress, spacing, typography, t]);
+  }, [recommendations, handleFactPress, handleDiscoverPress, signalCarouselImageReady, spacing, typography, t]);
 
   // End-of-feed footer - "You're all caught up"
   const listFooterComponent = useMemo(() => {

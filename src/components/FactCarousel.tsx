@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, NativeScrollEvent, NativeSyntheticEvent, Pressable, View } from 'react-native';
 
 import { Compass } from '@tamagui/lucide-icons';
@@ -19,6 +19,8 @@ interface FactCarouselProps {
   facts: FactWithRelations[];
   onFactPress: (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => void;
   onDiscoverPress?: () => void;
+  /** Called once when the first carousel image has loaded */
+  onFirstImageReady?: () => void;
 }
 
 // Sentinel item to represent the Discover CTA card at the end
@@ -27,11 +29,12 @@ const DISCOVER_CTA_ID = '__discover_cta__';
 type CarouselItem = FactWithRelations | { id: typeof DISCOVER_CTA_ID } | NativeAdPlaceholder;
 
 export const FactCarousel = React.memo(
-  ({ facts, onFactPress, onDiscoverPress }: FactCarouselProps) => {
+  ({ facts, onFactPress, onDiscoverPress, onFirstImageReady }: FactCarouselProps) => {
     const { screenWidth, spacing, radius, iconSizes, config } = useResponsive();
     const { theme } = useTheme();
     const { t } = useTranslation();
     const [activeIndex, setActiveIndex] = useState(0);
+    const firstImageSignalledRef = useRef(false);
 
     const carouselFactIds = useMemo(() => facts.map((f) => f.id), [facts]);
     const colors = hexColors[theme];
@@ -124,6 +127,13 @@ export const FactCarousel = React.memo(
         // Regular fact card
         const fact = item as FactWithRelations;
         const factIndex = facts.indexOf(fact);
+        // Signal first image ready for splash coordination
+        const handleImageReady = factIndex === 0 && onFirstImageReady && !firstImageSignalledRef.current
+          ? () => {
+              firstImageSignalledRef.current = true;
+              onFirstImageReady();
+            }
+          : undefined;
         return (
           <View style={{ width: cardWidth }}>
             <ImageFactCard
@@ -133,6 +143,7 @@ export const FactCarousel = React.memo(
               category={fact.categoryData || fact.category}
               categorySlug={fact.categoryData?.slug || fact.category}
               onPress={() => onFactPress(fact, carouselFactIds, factIndex >= 0 ? factIndex : 0)}
+              onImageReady={handleImageReady}
             />
           </View>
         );
@@ -146,6 +157,7 @@ export const FactCarousel = React.memo(
         iconSizes,
         onFactPress,
         onDiscoverPress,
+        onFirstImageReady,
         carouselFactIds,
         facts,
         t,
@@ -171,6 +183,7 @@ export const FactCarousel = React.memo(
             category={facts[0].categoryData || facts[0].category}
             categorySlug={facts[0].categoryData?.slug || facts[0].category}
             onPress={() => onFactPress(facts[0], carouselFactIds, 0)}
+            onImageReady={onFirstImageReady}
           />
         </ContentContainer>
       );

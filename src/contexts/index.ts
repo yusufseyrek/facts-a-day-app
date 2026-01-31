@@ -3,6 +3,7 @@ export {
   PreloadedDataProvider,
   setLocaleRefreshPending,
   setPreloadedFactsBeforeMount,
+  setPreloadedRecommendationsBeforeMount,
   signalLocaleRefreshDone,
   usePreloadedData,
   waitForHomeScreenReady,
