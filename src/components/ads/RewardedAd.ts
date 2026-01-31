@@ -63,7 +63,7 @@ const loadRewardedAd = async () => {
   });
 
   const unsubError = rewarded.addAdEventListener(AdEventType.ERROR, (error) => {
-    console.error('Rewarded ad error:', error);
+    console.warn('Rewarded ad not filled:', error?.message || error);
     adLoadFailed = true;
     isLoading = false;
   });
@@ -124,7 +124,7 @@ const waitForAdToLoad = async (timeoutMs: number = 5000): Promise<boolean> => {
     });
 
     const errorListener = rewarded.addAdEventListener(AdEventType.ERROR, (error) => {
-      console.error('❌ Rewarded ad failed to load while waiting:', error);
+      console.warn('Rewarded ad failed to load while waiting:', error?.message || error);
       cleanup();
       resolve(false);
     });

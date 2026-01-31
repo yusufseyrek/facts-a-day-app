@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { FlatList, NativeScrollEvent, NativeSyntheticEvent, Pressable, View } from 'react-native';
 
 import { Compass } from '@tamagui/lucide-icons';
@@ -43,14 +43,34 @@ export const FactCarousel = React.memo(
     const snapInterval = cardWidth + cardGap;
     const horizontalPadding = (screenWidth - cardWidth) / 2;
 
-    // Insert native ads into facts, then append the Discover CTA card
+    // Track native ad slots that failed to load (no-fill)
+    const [failedAdKeys, setFailedAdKeys] = useState<Set<string>>(new Set());
+
+    // Reset failed keys when facts change (new data)
+    useEffect(() => {
+      setFailedAdKeys(new Set());
+    }, [facts]);
+
+    const handleAdFailed = useCallback((key: string) => {
+      setFailedAdKeys(prev => {
+        const next = new Set(prev);
+        next.add(key);
+        return next;
+      });
+    }, []);
+
+    // Insert native ads into facts, then filter out failed ones, then append CTA
     const factsWithAds = useMemo(
       () => insertNativeAds(facts, undefined, NATIVE_ADS.CAROUSEL_FACTS_BETWEEN_ADS),
       [facts],
     );
+    const filteredData = useMemo(
+      () => factsWithAds.filter(item => !isNativeAdPlaceholder(item) || !failedAdKeys.has(item.key)),
+      [factsWithAds, failedAdKeys],
+    );
     const data: CarouselItem[] = onDiscoverPress
-      ? [...factsWithAds, { id: DISCOVER_CTA_ID }]
-      : factsWithAds;
+      ? [...filteredData, { id: DISCOVER_CTA_ID }]
+      : filteredData;
 
     const totalDots = data.length;
 
@@ -72,7 +92,7 @@ export const FactCarousel = React.memo(
         if (isNativeAdPlaceholder(item)) {
           return (
             <View style={{ width: cardWidth }}>
-              <NativeAdCard cardWidth={cardWidth} />
+              <NativeAdCard cardWidth={cardWidth} onAdFailed={() => handleAdFailed(item.key)} />
             </View>
           );
         }
@@ -160,6 +180,7 @@ export const FactCarousel = React.memo(
         onFirstImageReady,
         carouselFactIds,
         facts,
+        handleAdFailed,
         t,
       ]
     );

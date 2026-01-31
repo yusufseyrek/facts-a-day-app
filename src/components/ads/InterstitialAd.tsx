@@ -45,7 +45,7 @@ const loadInterstitialAd = async () => {
   });
 
   interstitial.addAdEventListener(AdEventType.ERROR, (error) => {
-    console.error('Interstitial ad error:', error);
+    console.warn('Interstitial ad not filled:', error?.message || error);
     adLoadFailed = true;
   });
 
@@ -147,7 +147,7 @@ const waitForAdToLoad = async (timeoutMs: number = 3000): Promise<boolean> => {
       const errorListener = interstitial.addAdEventListener(AdEventType.ERROR, (error) => {
         clearTimeout(timeout);
         errorListener(); // Remove listener
-        console.error('❌ Ad failed to load while waiting:', error);
+        console.warn('Interstitial ad failed to load while waiting:', error?.message || error);
         resolve(false);
       });
     } else {

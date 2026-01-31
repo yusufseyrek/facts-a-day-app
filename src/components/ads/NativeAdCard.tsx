@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,15 +19,23 @@ import { FONT_FAMILIES, Text } from '../Typography';
 interface NativeAdCardProps {
   /** Fixed card width (for carousel use) */
   cardWidth?: number;
+  /** Called when the native ad fails to load (e.g. no-fill) */
+  onAdFailed?: () => void;
 }
 
 const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.45)', 'rgba(0, 0, 0, 0.85)'] as const;
 const gradientLocations = [0.25, 0.55, 1] as const;
 
-function NativeAdCardComponent({ cardWidth }: NativeAdCardProps) {
+function NativeAdCardComponent({ cardWidth, onAdFailed }: NativeAdCardProps) {
   const { nativeAd, isLoading, error } = useNativeAd();
   const { screenWidth, spacing, radius, config } = useResponsive();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (!isLoading && (error || !nativeAd)) {
+      onAdFailed?.();
+    }
+  }, [isLoading, error, nativeAd, onAdFailed]);
 
   if (!nativeAd || isLoading || error) {
     return null;

@@ -77,7 +77,7 @@ const loadAppOpenAd = (): Promise<boolean> => {
       });
 
       const unsubError = appOpenAd!.addAdEventListener(AdEventType.ERROR, (error) => {
-        console.error('App open ad load error:', error);
+        console.warn('App open ad not filled:', error?.message || error);
         trackAppOpenAdError({ phase: 'load', error: String(error) });
         unsubLoaded();
         unsubError();
