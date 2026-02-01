@@ -2,7 +2,7 @@
   "expo": {
     "name": "Facts a Day",
     "slug": "facts-a-day-app",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -41,15 +41,15 @@
       "ADMOB_ANDROID_FACT_DETAIL_BANNER_ID": "ca-app-pub-7740246752776234/5718610008",
       "ADMOB_ANDROID_INTERSTITIAL_ID": "ca-app-pub-7740246752776234/6299287835",
       "ADMOB_ANDROID_REWARDED_ID": "ca-app-pub-7740246752776234/6926052020",
-      "ADMOB_IOS_APP_OPEN_ID": "",
-      "ADMOB_ANDROID_APP_OPEN_ID": "",
+      "ADMOB_IOS_APP_OPEN_ID": "ca-app-pub-7740246752776234/3967215761",
+      "ADMOB_ANDROID_APP_OPEN_ID": "ca-app-pub-7740246752776234/5447419015",
       "ADMOB_IOS_NATIVE_ID": "ca-app-pub-7740246752776234/5409257544",
       "ADMOB_ANDROID_NATIVE_ID": "ca-app-pub-7740246752776234/9607028018"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.seyrek.factsaday",
-      "buildNumber": "49",
+      "buildNumber": "50",
       "googleServicesFile": "./google/GoogleService-Info.plist",
       "associatedDomains": ["applinks:factsaday.com"],
       "infoPlist": {
@@ -368,13 +368,11 @@
           "android": {
             "kotlinVersion": "2.1.20",
             "extraProguardRules": "-keep class com.google.android.gms.internal.consent_sdk.** { *; }",
-            "extraMavenRepos": [
-              "https://android-sdk.is.com/"
-            ],
+            "extraMavenRepos": ["https://android-sdk.is.com/"],
             "dependencies": [
-              "com.unity3d.ads:unity-ads:4.16.2",
+              "com.unity3d.ads:unity-ads:4.16.6",
               "com.google.ads.mediation:unity:4.16.5.0",
-              "com.google.ads.mediation:vungle:7.6.3.0",
+              "com.google.ads.mediation:vungle:7.6.3.1",
               "com.google.ads.mediation:ironsource:9.3.0.0"
             ]
           },

@@ -25,6 +25,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
+import { InlineNativeAd } from '../../src/components/ads/InlineNativeAd';
 import { getTriviaModeBadge, TriviaResults } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { DISPLAY_LIMITS } from '../../src/config/app';
@@ -205,8 +206,8 @@ function MetricCard({
       backgroundColor={cardBg}
       borderRadius={radius.lg}
       paddingHorizontal={spacing.xs}
-      paddingVertical={spacing.lg}
-      gap={spacing.sm}
+      paddingVertical={spacing.sm}
+      gap={spacing.xs}
       alignItems="center"
     >
       {isTablet ? (
@@ -220,7 +221,7 @@ function MetricCard({
           {labelText}
         </XStack>
       )}
-      <Text.Display color={textColor}>{value}</Text.Display>
+      <Text.Title color={textColor} fontFamily={FONT_FAMILIES.semibold}>{value}</Text.Title>
       {subtitle && (
         <Text.Tiny color={subtitleColor} fontFamily={FONT_FAMILIES.medium}>
           {subtitle}
@@ -727,6 +728,11 @@ export default function PerformanceScreen() {
               successColor={successColor}
               columnsPerRow={config.triviaCategoriesPerRow}
             />
+          </Animated.View>
+
+          {/* Native Ad */}
+          <Animated.View entering={FadeIn.delay(75).duration(400).springify()}>
+            <InlineNativeAd />
           </Animated.View>
 
           {/* Accuracy by Category */}

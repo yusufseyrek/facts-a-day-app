@@ -12,6 +12,7 @@ import { XStack } from 'tamagui';
 
 import { useNativeAd } from '../../hooks/useNativeAd';
 import { useTranslation } from '../../i18n';
+import { trackNativeAdImpression } from '../../services/analytics';
 import { useResponsive } from '../../utils/useResponsive';
 
 import { FONT_FAMILIES, Text } from '../Typography';
@@ -19,6 +20,8 @@ import { FONT_FAMILIES, Text } from '../Typography';
 interface NativeAdCardProps {
   /** Fixed card width (for carousel use) */
   cardWidth?: number;
+  /** Fixed card height — overrides the default aspect-ratio-based height */
+  cardHeight?: number;
   /** Called when the native ad fails to load (e.g. no-fill) */
   onAdFailed?: () => void;
 }
@@ -26,7 +29,7 @@ interface NativeAdCardProps {
 const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.45)', 'rgba(0, 0, 0, 0.85)'] as const;
 const gradientLocations = [0.25, 0.55, 1] as const;
 
-function NativeAdCardComponent({ cardWidth, onAdFailed }: NativeAdCardProps) {
+function NativeAdCardComponent({ cardWidth, cardHeight: cardHeightProp, onAdFailed }: NativeAdCardProps) {
   const { nativeAd, isLoading, error } = useNativeAd();
   const { screenWidth, spacing, radius, config } = useResponsive();
   const { t } = useTranslation();
@@ -37,11 +40,17 @@ function NativeAdCardComponent({ cardWidth, onAdFailed }: NativeAdCardProps) {
     }
   }, [isLoading, error, nativeAd, onAdFailed]);
 
+  useEffect(() => {
+    if (nativeAd && !isLoading && !error) {
+      trackNativeAdImpression();
+    }
+  }, [nativeAd, isLoading, error]);
+
   if (!nativeAd || isLoading || error) {
     return null;
   }
 
-  const cardHeight = screenWidth * config.cardAspectRatio;
+  const cardHeight = cardHeightProp ?? screenWidth * config.cardAspectRatio;
 
   return (
     <NativeAdView nativeAd={nativeAd} style={{ marginBottom: cardWidth ? 0 : spacing.md }}>

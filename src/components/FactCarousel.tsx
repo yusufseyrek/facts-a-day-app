@@ -61,7 +61,7 @@ export const FactCarousel = React.memo(
 
     // Insert native ads into facts, then filter out failed ones, then append CTA
     const factsWithAds = useMemo(
-      () => insertNativeAds(facts, undefined, NATIVE_ADS.CAROUSEL_FACTS_BETWEEN_ADS),
+      () => insertNativeAds(facts, NATIVE_ADS.FIRST_AD_INDEX.HOME_CAROUSEL),
       [facts],
     );
     const filteredData = useMemo(

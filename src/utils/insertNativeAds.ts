@@ -17,43 +17,47 @@ export function isNativeAdPlaceholder(item: unknown): item is NativeAdPlaceholde
 }
 
 /**
- * Insert native ad placeholders into an array of items at every Nth countable position.
+ * Insert native ad placeholders into an array of items.
  *
- * After every `interval` countable items, an ad placeholder is inserted.
- * For example, with interval=5: items 1-4 are facts, position 5 is an ad,
- * items 6-9 are facts, position 10 is an ad, etc.
+ * The first ad is inserted after `firstAdIndex` countable items, then every
+ * `NATIVE_ADS.INTERVAL` countable items after that.
  *
  * @param items - The source array of items
- * @param isCountableItem - Predicate returning true for items that count toward the interval
- *   (e.g., facts but not section headers). If not provided, all items are counted.
- * @param interval - Number of countable items between ads. Defaults to NATIVE_ADS.FACTS_BETWEEN_ADS.
+ * @param firstAdIndex - Number of countable items before the first ad
+ * @param isCountable - Optional predicate to decide which items count toward
+ *   ad positioning (e.g. skip section headers). Defaults to counting all items.
  * @returns New array with NativeAdPlaceholder items inserted.
  */
 export function insertNativeAds<T>(
   items: T[],
-  isCountableItem?: (item: T) => boolean,
-  interval: number = NATIVE_ADS.FACTS_BETWEEN_ADS,
+  firstAdIndex: number,
+  isCountable?: (item: T) => boolean,
 ): (T | NativeAdPlaceholder)[] {
   if (!ADS_ENABLED || !NATIVE_ADS.ACTIVE || items.length === 0) {
     return items;
   }
 
+  const interval = NATIVE_ADS.INTERVAL;
   const result: (T | NativeAdPlaceholder)[] = [];
-  let countableCount = 0;
   let adIndex = 0;
+  let counted = 0;
+  let nextAdAt = firstAdIndex;
 
   for (const item of items) {
-    const shouldCount = isCountableItem ? isCountableItem(item) : true;
-    if (shouldCount) {
-      countableCount++;
-      if (countableCount > 0 && countableCount % interval === 0) {
-        result.push({
-          type: 'nativeAd',
-          key: `native-ad-${adIndex++}`,
-        });
+    const countable = isCountable ? isCountable(item) : true;
+    if (countable) {
+      if (counted === nextAdAt) {
+        result.push({ type: 'nativeAd', key: `native-ad-${adIndex++}` });
+        nextAdAt = counted + interval;
       }
+      counted++;
     }
     result.push(item);
+  }
+
+  // If the list was too short for any ad, append one at the end
+  if (adIndex === 0) {
+    result.push({ type: 'nativeAd', key: `native-ad-${adIndex}` });
   }
 
   return result;

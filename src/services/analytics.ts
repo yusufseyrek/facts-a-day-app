@@ -598,6 +598,76 @@ export const trackRewardedAdResult = (params: {
 };
 
 /**
+ * Track when a rewarded ad is loaded successfully
+ */
+export const trackRewardedAdLoaded = (): void => {
+  logEvent('app_rewarded_ad_loaded', {});
+};
+
+/**
+ * Track when a rewarded ad fails to load or show
+ */
+export const trackRewardedAdError = (params: { phase: 'load' | 'show'; error: string }): void => {
+  logEvent('app_rewarded_ad_error', {
+    phase: params.phase,
+    error: params.error.substring(0, 100),
+  });
+};
+
+// ============================================================================
+// Banner Ad Events
+// ============================================================================
+
+export type BannerAdPosition = 'home' | 'fact-modal';
+
+/**
+ * Track when a banner ad is loaded successfully
+ */
+export const trackBannerAdLoaded = (position: BannerAdPosition): void => {
+  logEvent('app_banner_ad_loaded', { position });
+};
+
+/**
+ * Track when a banner ad fails to load
+ */
+export const trackBannerAdError = (params: {
+  position: BannerAdPosition;
+  retryCount: number;
+}): void => {
+  logEvent('app_banner_ad_error', {
+    position: params.position,
+    retry_count: params.retryCount,
+  });
+};
+
+// ============================================================================
+// Native Ad Events
+// ============================================================================
+
+/**
+ * Track when a native ad is loaded successfully
+ */
+export const trackNativeAdLoaded = (): void => {
+  logEvent('app_native_ad_loaded', {});
+};
+
+/**
+ * Track when a native ad is displayed (impression)
+ */
+export const trackNativeAdImpression = (): void => {
+  logEvent('app_native_ad_impression', {});
+};
+
+/**
+ * Track when a native ad fails to load
+ */
+export const trackNativeAdError = (params: { error: string }): void => {
+  logEvent('app_native_ad_error', {
+    error: params.error.substring(0, 100),
+  });
+};
+
+/**
  * Track when user clicks view fact button during trivia
  */
 export const trackTriviaViewFactClick = (params: {

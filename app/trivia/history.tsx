@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
+import { InlineNativeAd } from '../../src/components/ads/InlineNativeAd';
 import { getTriviaModeBadge, TriviaResults } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
@@ -531,6 +532,11 @@ export default function ActivityHistoryScreen() {
             renderItem={renderItem}
             getItemType={getItemType}
             stickyHeaderIndices={stickyHeaderIndices}
+            ListHeaderComponent={
+              <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>
+                <InlineNativeAd />
+              </View>
+            }
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
             }

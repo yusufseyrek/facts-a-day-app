@@ -10,6 +10,7 @@ import {
 import Constants from 'expo-constants';
 
 import { AD_RETRY, ADS_ENABLED } from '../../config/app';
+import { trackBannerAdError, trackBannerAdLoaded } from '../../services/analytics';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 
 type BannerAdPosition = 'home' | 'fact-modal';
@@ -87,7 +88,8 @@ function BannerAdComponent({ position, onAdLoadChange, collapsible }: BannerAdPr
     });
     setAdState('loaded');
     setRetryCount(0);
-  }, []);
+    trackBannerAdLoaded(position);
+  }, [position]);
 
   const handleAdFailedToLoad = useCallback(() => {
     LayoutAnimation.configureNext({
@@ -95,6 +97,7 @@ function BannerAdComponent({ position, onAdLoadChange, collapsible }: BannerAdPr
       update: { type: LayoutAnimation.Types.easeInEaseOut },
     });
     setAdState('error');
+    trackBannerAdError({ position, retryCount });
 
     if (retryCount < AD_RETRY.MAX_RETRIES) {
       const delay = AD_RETRY.DELAYS[retryCount] || AD_RETRY.DELAYS[AD_RETRY.DELAYS.length - 1];
@@ -104,7 +107,7 @@ function BannerAdComponent({ position, onAdLoadChange, collapsible }: BannerAdPr
         setAdKey((prev) => prev + 1);
       }, delay);
     }
-  }, [retryCount]);
+  }, [position, retryCount]);
 
   if (!ADS_ENABLED || canRequestAds === false || canRequestAds === null) {
     return null;

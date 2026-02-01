@@ -29,6 +29,7 @@ import { indexToAnswer } from '../../services/trivia';
 import { hexColors } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
+import { InlineNativeAd } from '../ads/InlineNativeAd';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { QuestionWithFact, StoredAnswer } from '../../services/database';
@@ -148,7 +149,9 @@ function UnavailableQuestionCard({
   return (
     <View
       style={{ width: cardWidth }}
-      onLayout={onCardLayout && !cardHeight ? (e) => onCardLayout(e.nativeEvent.layout.height) : undefined}
+      onLayout={
+        onCardLayout && !cardHeight ? (e) => onCardLayout(e.nativeEvent.layout.height) : undefined
+      }
     >
       <YStack
         backgroundColor={cardBackground}
@@ -282,7 +285,9 @@ function AnswerReviewCard({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       style={{ width: cardWidth }}
-      onLayout={onCardLayout && !cardHeight ? (e) => onCardLayout(e.nativeEvent.layout.height) : undefined}
+      onLayout={
+        onCardLayout && !cardHeight ? (e) => onCardLayout(e.nativeEvent.layout.height) : undefined
+      }
     >
       <Animated.View style={animatedStyle}>
         <YStack
@@ -430,6 +435,15 @@ export function TriviaResults({
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const scrollViewRef = React.useRef<ScrollView>(null);
+  const hasSnappedToBottom = React.useRef(false);
+
+  const handleVerticalScroll = React.useCallback(() => {
+    if (!hasSnappedToBottom.current) {
+      hasSnappedToBottom.current = true;
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }
+  }, []);
 
   // Prefetch all fact images when results screen mounts for seamless modal display
   React.useEffect(() => {
@@ -462,6 +476,22 @@ export function TriviaResults({
     if (heights.length < totalCards) return undefined;
     return Math.max(...heights);
   }, [cardHeights, totalCards]);
+
+  type InsightItem =
+    | { kind: 'question'; question: QuestionWithFact; index: number }
+    | { kind: 'unavailable'; questionId: number; index: number };
+
+  const insightItems = React.useMemo<InsightItem[]>(
+    () => [
+      ...questions.map((q, i) => ({ kind: 'question' as const, question: q, index: i })),
+      ...unavailableQuestionIds.map((id, i) => ({
+        kind: 'unavailable' as const,
+        questionId: id,
+        index: questions.length + i,
+      })),
+    ],
+    [questions, unavailableQuestionIds]
+  );
 
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
@@ -627,7 +657,11 @@ export function TriviaResults({
         </XStack>
       )}
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollViewRef}
+        showsVerticalScrollIndicator={false}
+        onScrollEndDrag={handleVerticalScroll}
+      >
         {/* Header Section */}
         <Animated.View entering={FadeInDown.duration(400)}>
           <YStack paddingTop={spacing.lg} paddingHorizontal={spacing.xl} gap={spacing.lg}>
@@ -808,12 +842,19 @@ export function TriviaResults({
           </XStack>
         </Animated.View>
 
+        {/* Native Ad */}
+        <Animated.View entering={FadeInDown.delay(150).duration(400)}>
+          <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
+            <InlineNativeAd />
+          </View>
+        </Animated.View>
+
         {/* Divider */}
         <View
           style={{
             marginHorizontal: spacing.lg,
-            marginTop: spacing.xl,
             height: 1,
+            marginTop: spacing.md,
             backgroundColor: borderColor,
           }}
         />
@@ -829,7 +870,7 @@ export function TriviaResults({
               {t('questionInsights') || 'Question Insights'}
             </Text.Title>
 
-            {/* Horizontal scrolling cards */}
+            {/* Horizontal scrolling cards with native ads */}
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -841,44 +882,40 @@ export function TriviaResults({
               snapToInterval={cardWidth + CARD_GAP}
               snapToAlignment="start"
             >
-              {/* Available questions */}
-              {questions.map((question, index) => {
-                const answer = answers[question.id];
-                const selectedAnswerText = getSelectedAnswerText(question, answer);
-                const isCorrect = checkIsCorrect(question, answer);
+              {insightItems.map((item) => {
+                if (item.kind === 'unavailable') {
+                  const answer = answers[item.questionId];
+                  const isCorrect = isStoredAnswer(answer) ? answer.correct : false;
+                  return (
+                    <UnavailableQuestionCard
+                      key={`unavailable-${item.questionId}`}
+                      questionIndex={item.index}
+                      isCorrect={isCorrect}
+                      isDark={isDark}
+                      t={t}
+                      cardWidth={cardWidth}
+                      cardHeight={maxCardHeight}
+                      onCardLayout={(h) => handleCardLayout(-item.questionId, h)}
+                    />
+                  );
+                }
 
+                const answer = answers[item.question.id];
+                const selectedAnswerText = getSelectedAnswerText(item.question, answer);
+                const isCorrect = checkIsCorrect(item.question, answer);
                 return (
                   <AnswerReviewCard
-                    key={question.id}
-                    question={question}
-                    questionIndex={index}
+                    key={item.question.id}
+                    question={item.question}
+                    questionIndex={item.index}
                     selectedAnswer={selectedAnswerText}
                     isCorrect={isCorrect}
                     isDark={isDark}
-                    onPress={() => handleAnswerCardPress(question)}
+                    onPress={() => handleAnswerCardPress(item.question)}
                     t={t}
                     cardWidth={cardWidth}
                     cardHeight={maxCardHeight}
-                    onCardLayout={(h) => handleCardLayout(question.id, h)}
-                  />
-                );
-              })}
-              {/* Unavailable questions (deleted from database) */}
-              {unavailableQuestionIds.map((questionId, idx) => {
-                const answer = answers[questionId];
-                // For unavailable questions, we can only determine correctness from StoredAnswer
-                const isCorrect = isStoredAnswer(answer) ? answer.correct : false;
-
-                return (
-                  <UnavailableQuestionCard
-                    key={`unavailable-${questionId}`}
-                    questionIndex={questions.length + idx}
-                    isCorrect={isCorrect}
-                    isDark={isDark}
-                    t={t}
-                    cardWidth={cardWidth}
-                    cardHeight={maxCardHeight}
-                    onCardLayout={(h) => handleCardLayout(-questionId, h)}
+                    onCardLayout={(h) => handleCardLayout(item.question.id, h)}
                   />
                 );
               })}

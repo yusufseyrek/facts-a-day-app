@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
+import { InlineNativeAd } from '../../../src/components/ads/InlineNativeAd';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackScreenView } from '../../../src/services/analytics';
@@ -236,23 +237,31 @@ export default function CategoriesAccuracyScreen() {
         }}
       >
         {categories.length > 0 ? (
-          <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
-            <YStack
-              backgroundColor={cardBg}
-              borderRadius={radius.lg}
-              padding={spacing.lg}
-              gap={spacing.lg}
-            >
-              {categories.map((category, index) => (
-                <CategoryProgressBar
-                  key={category.slug}
-                  category={category}
-                  isDark={isDark}
-                  index={index}
-                />
-              ))}
-            </YStack>
-          </Animated.View>
+          <>
+            <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
+              <YStack
+                backgroundColor={cardBg}
+                borderRadius={radius.lg}
+                padding={spacing.lg}
+                gap={spacing.lg}
+              >
+                {categories.map((category, index) => (
+                  <CategoryProgressBar
+                    key={category.slug}
+                    category={category}
+                    isDark={isDark}
+                    index={index}
+                  />
+                ))}
+              </YStack>
+            </Animated.View>
+
+            <Animated.View entering={FadeIn.delay(100).duration(400).springify()}>
+              <YStack marginTop={spacing.lg}>
+                <InlineNativeAd />
+              </YStack>
+            </Animated.View>
+          </>
         ) : (
           <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
             <Text.Body

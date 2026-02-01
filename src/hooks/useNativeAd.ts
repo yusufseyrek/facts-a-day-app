@@ -10,6 +10,7 @@ import {
 } from 'react-native-google-mobile-ads';
 
 import { ADS_ENABLED, NATIVE_ADS } from '../config/app';
+import { trackNativeAdError, trackNativeAdLoaded } from '../services/analytics';
 import { shouldRequestNonPersonalizedAdsOnly } from '../services/adsConsent';
 
 const getNativeAdUnitId = (): string => {
@@ -52,6 +53,7 @@ export function useNativeAd() {
           nativeAdRef.current = ad;
           setNativeAd(ad);
           setIsLoading(false);
+          trackNativeAdLoaded();
         } else {
           ad.destroy();
         }
@@ -59,6 +61,7 @@ export function useNativeAd() {
         if (!cancelled) {
           setError(err as Error);
           setIsLoading(false);
+          trackNativeAdError({ error: String(err) });
         }
       }
     };

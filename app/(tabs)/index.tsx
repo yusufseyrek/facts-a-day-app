@@ -22,7 +22,7 @@ import {
 import { FactCarousel } from '../../src/components/FactCarousel';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
-import { LAYOUT } from '../../src/config/app';
+import { LAYOUT, NATIVE_ADS } from '../../src/config/app';
 import { FLASH_LIST_ITEM_TYPES, FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
 import {
   insertNativeAds,
@@ -160,6 +160,7 @@ function HomeScreen() {
     // Insert native ad placeholders (only counting fact items, not headers)
     const withAds = insertNativeAds(
       items,
+      NATIVE_ADS.FIRST_AD_INDEX.HOME_FEED,
       (item) => item.type === FLASH_LIST_ITEM_TYPES.FACT_ITEM,
     );
 

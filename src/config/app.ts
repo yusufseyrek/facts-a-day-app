@@ -34,10 +34,15 @@ export const APP_OPEN_ADS = {
 export const NATIVE_ADS = {
   /** Whether native feed ads are active */
   ACTIVE: true,
-  /** Number of fact items between native ads in vertical lists */
-  FACTS_BETWEEN_ADS: 5,
-  /** Number of fact items between native ads in the carousel */
-  CAROUSEL_FACTS_BETWEEN_ADS: 3,
+  /** Show an ad every N items after the first ad */
+  INTERVAL: 3,
+  /** Index of the first ad in each list (0-based) */
+  FIRST_AD_INDEX: {
+    HOME_FEED: 3,
+    HOME_CAROUSEL: 1,
+    DISCOVER: 1,
+    FAVORITES: 1,
+  },
 } as const;
 
 export const AD_RETRY = {

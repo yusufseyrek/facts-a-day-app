@@ -27,7 +27,7 @@ import {
 } from '../../src/components';
 import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
-import { LAYOUT } from '../../src/config/app';
+import { LAYOUT, NATIVE_ADS } from '../../src/config/app';
 import { FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
 import {
   insertNativeAds,
@@ -213,7 +213,7 @@ export default function FavoritesScreen() {
   // Insert native ads after filtering
   type FavoritesListItem = FactWithRelations | NativeAdPlaceholder;
   const filteredDataWithAds = useMemo(
-    () => insertNativeAds(filteredFavorites),
+    () => insertNativeAds(filteredFavorites, NATIVE_ADS.FIRST_AD_INDEX.FAVORITES),
     [filteredFavorites],
   );
 

@@ -21,7 +21,7 @@ import {
 import { BannerAd } from '../../src/components/ads';
 import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
-import { LAYOUT } from '../../src/config/app';
+import { LAYOUT, NATIVE_ADS } from '../../src/config/app';
 import { FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
 import {
   insertNativeAds,
@@ -436,9 +436,9 @@ function DiscoverScreen() {
   // Insert native ads into search results and category facts
   type DiscoverListItem = FactWithRelations | NativeAdPlaceholder;
 
-  const searchDataWithAds = useMemo(() => insertNativeAds(searchResults), [searchResults]);
+  const searchDataWithAds = useMemo(() => insertNativeAds(searchResults, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER), [searchResults]);
 
-  const categoryDataWithAds = useMemo(() => insertNativeAds(categoryFacts), [categoryFacts]);
+  const categoryDataWithAds = useMemo(() => insertNativeAds(categoryFacts, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER), [categoryFacts]);
 
   // Memoized keyExtractor
   const keyExtractor = useCallback((item: DiscoverListItem) => {

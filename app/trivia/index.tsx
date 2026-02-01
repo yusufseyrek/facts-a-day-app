@@ -15,6 +15,7 @@ import {
   ScreenHeader,
   useIconColor,
 } from '../../src/components';
+import { InlineNativeAd } from '../../src/components/ads/InlineNativeAd';
 import { TriviaGridCard, TriviaIntroModal, TriviaStatsHero } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { useScrollToTopHandler } from '../../src/contexts';
@@ -26,7 +27,6 @@ import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { CategoryWithProgress } from '../../src/services/trivia';
-import { BannerAd } from '../../src/components/ads';
 
 export default function TriviaScreen() {
   const { theme } = useTheme();
@@ -321,6 +321,12 @@ export default function TriviaScreen() {
                       />
                     </XStack>
                   </Animated.View>
+
+                  {/* Native Ad */}
+                  <Animated.View entering={FadeInDown.delay(250).duration(300)}>
+                    <InlineNativeAd />
+                  </Animated.View>
+
                   {/* Category rows */}
                   {categoryRows.map((row, rowIndex) => (
                     <Animated.View
