@@ -6,6 +6,7 @@ import {
   Bell,
   Bug,
   Camera,
+  Crown,
   Download,
   Eye,
   FileText,
@@ -39,9 +40,10 @@ import { ThemePickerModal } from '../../src/components/settings/ThemePickerModal
 import { TimePickerModal } from '../../src/components/settings/TimePickerModal';
 import { SettingsRow } from '../../src/components/SettingsRow';
 import { LAYOUT } from '../../src/config/app';
-import { useOnboarding, useScrollToTopHandler } from '../../src/contexts';
+import { useOnboarding, usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { TranslationKeys } from '../../src/i18n/translations';
+import { deepLinkToSubscriptions } from 'expo-iap';
 import { openAdDebugMenu } from '../../src/services/ads';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import { requestReview } from '../../src/services/appReview';
@@ -50,6 +52,7 @@ import { clearAllCachedImages, getCachedImagesSize } from '../../src/services/im
 import { buildNotificationContent } from '../../src/services/notifications';
 import * as onboardingService from '../../src/services/onboarding';
 import { cleanupShareCards } from '../../src/services/share';
+import { clearHintUsage } from '../../src/services/trivia';
 import * as updates from '../../src/services/updates';
 import { hexColors, useTheme } from '../../src/theme';
 import { openInAppBrowser } from '../../src/utils/browser';
@@ -85,6 +88,7 @@ export default function SettingsPage() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { resetOnboarding } = useOnboarding();
+  const { isPremium, restorePurchases, toggleDevPremium } = usePremium();
   const { iconSizes, spacing, isTablet } = useResponsive();
 
   // Track if this is the initial mount to prevent re-animation on tab focus
@@ -444,6 +448,7 @@ export default function SettingsPage() {
   const handleResetOnboarding = async () => {
     try {
       await resetOnboarding();
+      await clearHintUsage();
       router.replace('/onboarding');
     } catch (error) {
       console.error('Error resetting onboarding:', error);
@@ -861,6 +866,13 @@ export default function SettingsPage() {
           onPress: openAdDebugMenu,
         },
         {
+          id: 'togglePremium',
+          label: 'Toggle Premium',
+          value: isPremium ? 'ON' : 'OFF',
+          icon: <Crown size={iconSizes.md} color={isPremium ? '#FFD700' : iconColor} />,
+          onPress: toggleDevPremium,
+        },
+        {
           id: 'resetOnboarding',
           label: t('resetOnboarding'),
           icon: <RotateCcw size={iconSizes.md} color={iconColor} />,
@@ -899,11 +911,47 @@ export default function SettingsPage() {
       ],
     };
 
-    const result: SettingsSection[] = [userPreferencesSection];
+    const premiumSection: SettingsSection = {
+      title: t('settingsPremium'),
+      data: isPremium
+        ? [
+            {
+              id: 'premiumActive',
+              label: t('settingsPremiumActive'),
+              value: t('settingsManageSubscription'),
+              icon: <Crown size={iconSizes.md} color="#FFD700" />,
+              onPress: () => deepLinkToSubscriptions(),
+            },
+          ]
+        : [
+            {
+              id: 'upgradePremium',
+              label: t('settingsUpgradeToPremium'),
+              value: t('settingsRemoveAds'),
+              icon: <Crown size={iconSizes.md} color={iconColor} />,
+              onPress: () => router.push('/paywall'),
+            },
+          ],
+    };
+
+    const result: SettingsSection[] = [premiumSection, userPreferencesSection];
     result.push(storageSection);
     if (isDevelopment) {
       result.push(developerSection);
     }
+    // Add restore purchases to support section
+    supportSection.data.push({
+      id: 'restorePurchases',
+      label: t('settingsRestorePurchases'),
+      icon: <RotateCcw size={iconSizes.md} color={iconColor} />,
+      onPress: async () => {
+        const restored = await restorePurchases();
+        Alert.alert(
+          restored ? t('settingsRestoreSuccess') : t('settingsRestoreNoSubscription'),
+          restored ? t('settingsRestoreSuccessMessage') : t('settingsRestoreNoSubscriptionMessage'),
+        );
+      },
+    });
     result.push(supportSection);
     result.push(legalSection);
 
@@ -921,6 +969,10 @@ export default function SettingsPage() {
     imageCacheSize,
     updateInfo,
     isCheckingUpdate,
+    isPremium,
+    restorePurchases,
+    toggleDevPremium,
+    router,
   ]);
 
   const renderFooter = () => (

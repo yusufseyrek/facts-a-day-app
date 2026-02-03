@@ -19,6 +19,7 @@ export interface CategoryCardProps {
   selected: boolean;
   onPress: () => void;
   labelFontSize?: number;
+  disabled?: boolean;
 }
 
 const CategoryCardComponent = ({
@@ -29,6 +30,7 @@ const CategoryCardComponent = ({
   selected,
   onPress,
   labelFontSize,
+  disabled = false,
 }: CategoryCardProps) => {
   const { theme } = useTheme();
   const { spacing, radius, typography, iconSizes } = useResponsive();
@@ -135,10 +137,12 @@ const CategoryCardComponent = ({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
       role="button"
       aria-label={t('a11y_categoryCard', { category: label })}
+      aria-disabled={disabled}
       style={{ flex: 1 }}
+      disabled={disabled}
     >
       {({ pressed }) => (
         <Animated.View
@@ -156,7 +160,7 @@ const CategoryCardComponent = ({
             alignItems="center"
             justifyContent="center"
             gap={spacing.sm}
-            opacity={pressed ? 0.85 : 1}
+            opacity={disabled ? 0.4 : pressed ? 0.85 : 1}
             style={{
               backgroundColor,
               borderColor,
@@ -198,7 +202,8 @@ export const CategoryCard = React.memo(CategoryCardComponent, (prevProps, nextPr
     prevProps.slug === nextProps.slug &&
     prevProps.colorHex === nextProps.colorHex &&
     prevProps.selected === nextProps.selected &&
-    prevProps.labelFontSize === nextProps.labelFontSize
+    prevProps.labelFontSize === nextProps.labelFontSize &&
+    prevProps.disabled === nextProps.disabled
     // Don't compare icon and onPress as they may be recreated but functionally equivalent
   );
 });

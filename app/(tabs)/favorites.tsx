@@ -34,6 +34,7 @@ import {
   isNativeAdPlaceholder,
   type NativeAdPlaceholder,
 } from '../../src/utils/insertNativeAds';
+import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
@@ -107,6 +108,7 @@ export default function FavoritesScreen() {
   const router = useRouter();
   const iconColor = useIconColor();
   const { iconSizes, screenWidth, isTablet, spacing, radius, typography, media } = useResponsive();
+  const { isPremium } = usePremium();
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -214,7 +216,8 @@ export default function FavoritesScreen() {
   type FavoritesListItem = FactWithRelations | NativeAdPlaceholder;
   const filteredDataWithAds = useMemo(
     () => insertNativeAds(filteredFavorites, NATIVE_ADS.FIRST_AD_INDEX.FAVORITES),
-    [filteredFavorites],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isPremium triggers re-computation to remove/add native ads
+    [filteredFavorites, isPremium],
   );
 
   const handleFactPress = useCallback(

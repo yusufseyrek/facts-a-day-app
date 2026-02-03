@@ -9,9 +9,9 @@ import {
 
 import Constants from 'expo-constants';
 
-import { ADS_ENABLED } from '../../config/app';
 import { trackRewardedAdError, trackRewardedAdLoaded } from '../../services/analytics';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
+import { canShowRewardedAds } from '../../services/premiumState';
 
 // Get Rewarded Ad Unit ID based on platform
 const getRewardedAdUnitId = (): string => {
@@ -153,9 +153,10 @@ const waitForAdToLoad = async (timeoutMs: number = 5000): Promise<boolean> => {
  * Show a rewarded ad and return whether the reward was earned.
  * Returns true if the user watched the full ad and earned the reward.
  * Returns false if the user dismissed early, ad failed, or consent not given.
+ * Note: Available for all users including premium (for extra trivia hints)
  */
 export const showRewardedAd = async (): Promise<boolean> => {
-  if (!ADS_ENABLED) {
+  if (!canShowRewardedAds()) {
     return false;
   }
 
@@ -271,11 +272,12 @@ export const isRewardedAdLoaded = (): boolean => {
 
 /**
  * Preload rewarded ad (call this when app starts)
+ * Note: Available for all users including premium (for extra trivia hints)
  */
 export const preloadRewardedAd = async () => {
   console.log('📺 Preloading rewarded ad...');
 
-  if (!ADS_ENABLED) {
+  if (!canShowRewardedAds()) {
     console.log('⚠️ Rewarded ad preload skipped - ads disabled');
     return;
   }

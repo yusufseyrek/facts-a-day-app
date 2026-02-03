@@ -315,7 +315,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "dev.seyrek.factsaday",
-      "versionCode": 29,
+      "versionCode": 30,
       "permissions": [
         "INTERNET",
         "RECEIVE_BOOT_COMPLETED",
@@ -407,7 +407,8 @@
       "expo-router",
       "expo-sqlite",
       "expo-updates",
-      "./plugins/withAndroidWindowBackground.js"
+      "./plugins/withAndroidWindowBackground.js",
+      "expo-iap"
     ]
   }
 }

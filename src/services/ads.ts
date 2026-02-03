@@ -10,7 +10,7 @@ import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import { preloadAppOpenAd } from '../components/ads/AppOpenAd';
 import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
 import { preloadRewardedAd } from '../components/ads/RewardedAd';
-import { ADS_ENABLED } from '../config/app';
+import { shouldShowAds, shouldInitializeAdsSdk } from './premiumState';
 
 import {
   trackAdsSdkInitialized,
@@ -29,7 +29,7 @@ let isSDKInitialized = false;
  * Returns true if we need to show GDPR consent form, false otherwise
  */
 export const isConsentRequired = async (): Promise<boolean> => {
-  if (!ADS_ENABLED) {
+  if (!shouldInitializeAdsSdk()) {
     return false;
   }
 
@@ -167,9 +167,10 @@ export const requestATTPermission = async (): Promise<boolean> => {
 /**
  * Initialize the Google Mobile Ads SDK with proper configuration
  * Should be called after consent is collected
+ * Note: SDK is initialized even for premium users to allow rewarded ads for hints
  */
 export const initializeAdsSDK = async (): Promise<boolean> => {
-  if (!ADS_ENABLED) {
+  if (!shouldInitializeAdsSdk()) {
     console.log('Ads are disabled, skipping SDK initialization');
     return false;
   }
@@ -211,17 +212,18 @@ export const initializeAdsSDK = async (): Promise<boolean> => {
     // Track successful SDK initialization
     trackAdsSdkInitialized(true);
 
-    // Preload interstitial ad
-    preloadInterstitialAd();
+    // Preload interstitial and app open ads only for non-premium users
+    if (shouldShowAds()) {
+      preloadInterstitialAd();
 
-    // Preload rewarded ad
+      preloadAppOpenAd().catch((error) => {
+        console.error('Failed to preload app open ad:', error);
+      });
+    }
+
+    // Always preload rewarded ad (available for premium users for extra hints)
     preloadRewardedAd().catch((error) => {
       console.error('Failed to preload rewarded ad:', error);
-    });
-
-    // Preload app open ad
-    preloadAppOpenAd().catch((error) => {
-      console.error('Failed to preload app open ad:', error);
     });
 
     return true;
@@ -282,7 +284,7 @@ export const isAdsSDKInitialized = (): boolean => {
  * Only works in development builds
  */
 export const openAdDebugMenu = async (): Promise<void> => {
-  if (!ADS_ENABLED) {
+  if (!shouldInitializeAdsSdk()) {
     console.log('Ads are disabled, cannot open debug menu');
     return;
   }
@@ -303,9 +305,10 @@ export const openAdDebugMenu = async (): Promise<void> => {
 /**
  * For returning users - gather consent using stored data or show form if needed
  * This is used on app startup for users who already completed onboarding
+ * Note: SDK is initialized even for premium users to allow rewarded ads for hints
  */
 export const initializeAdsForReturningUser = async (): Promise<boolean> => {
-  if (!ADS_ENABLED) {
+  if (!shouldInitializeAdsSdk()) {
     return false;
   }
 
@@ -318,7 +321,7 @@ export const initializeAdsForReturningUser = async (): Promise<boolean> => {
     }
 
     if (isSDKInitialized) {
-      // SDK already initialized — ensure ads are preloaded
+      // SDK already initialized — ensure rewarded ad is preloaded (always available)
       preloadRewardedAd().catch((error) => {
         console.error('Failed to preload rewarded ad:', error);
       });

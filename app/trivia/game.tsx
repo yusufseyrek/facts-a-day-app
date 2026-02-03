@@ -29,6 +29,7 @@ import {
   trackTriviaViewFactClick,
 } from '../../src/services/analytics';
 import { showRewardedAd } from '../../src/components/ads/RewardedAd';
+import { usePremium } from '../../src/contexts/PremiumContext';
 import { useNativeAd } from '../../src/hooks/useNativeAd';
 import { prefetchFactImage } from '../../src/services/images';
 import { prefetchAdjacentImages } from '../../src/utils/prefetchAdjacentImages';
@@ -54,6 +55,7 @@ export default function TriviaGameScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { isPremium } = usePremium();
   const params = useLocalSearchParams<{
     type: string;
     categorySlug?: string;
@@ -83,6 +85,7 @@ export default function TriviaGameScreen() {
 
   // Hint state
   const [canUseExplanation, setCanUseExplanation] = useState(false);
+  const [remainingHints, setRemainingHints] = useState(0);
   const [explanationShownForQuestion, setExplanationShownForQuestion] = useState<number | null>(
     null
   );
@@ -153,6 +156,8 @@ export default function TriviaGameScreen() {
   const checkHintAvailability = async () => {
     const canUse = await triviaService.canUseExplanationHint();
     setCanUseExplanation(canUse);
+    const remaining = await triviaService.getRemainingHints();
+    setRemainingHints(remaining);
   };
 
   // Handle Android back button
@@ -499,10 +504,15 @@ export default function TriviaGameScreen() {
 
     // Mark hint as used for today
     await triviaService.useExplanationHint();
-    setCanUseExplanation(false);
 
     // Show explanation for current question
     setExplanationShownForQuestion(currentQuestion.id);
+
+    // Re-check if more hints are available (premium users get 3)
+    const stillCanUse = await triviaService.canUseExplanationHint();
+    setCanUseExplanation(stillCanUse);
+    const remaining = await triviaService.getRemainingHints();
+    setRemainingHints(remaining);
   }, [
     currentQuestion,
     canUseExplanation,
@@ -804,6 +814,8 @@ export default function TriviaGameScreen() {
         onWatchAdForHint={handleWatchAdForHint}
         canWatchAdForHint={!canUseExplanation && !showingRewardedAd}
         questionImageUri={questionImageUri}
+        isPremium={isPremium}
+        remainingHints={remainingHints}
       />
       <TriviaExitModal
         visible={showExitModal}

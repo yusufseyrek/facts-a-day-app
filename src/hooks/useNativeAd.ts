@@ -12,6 +12,7 @@ import {
 import { ADS_ENABLED, NATIVE_ADS } from '../config/app';
 import { trackNativeAdError, trackNativeAdLoaded } from '../services/analytics';
 import { shouldRequestNonPersonalizedAdsOnly } from '../services/adsConsent';
+import { shouldShowAds } from '../services/premiumState';
 
 const getNativeAdUnitId = (): string => {
   const config = Constants.expoConfig?.extra;
@@ -28,7 +29,8 @@ export function useNativeAd() {
   const nativeAdRef = useRef<NativeAd | null>(null);
 
   useEffect(() => {
-    if (!ADS_ENABLED || !NATIVE_ADS.ACTIVE) {
+    // Don't load native ads if ads are disabled or user is premium
+    if (!ADS_ENABLED || !NATIVE_ADS.ACTIVE || !shouldShowAds()) {
       setIsLoading(false);
       return;
     }

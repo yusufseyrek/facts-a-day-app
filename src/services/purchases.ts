@@ -1,0 +1,107 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { initConnection, endConnection, hasActiveSubscriptions } from 'expo-iap';
+
+import { SUBSCRIPTION } from '../config/app';
+import { setIsPremium } from './premiumState';
+
+/**
+ * Initialize the IAP connection with the store.
+ * Should be called once during app startup.
+ */
+export const initIAPConnection = async (): Promise<void> => {
+  try {
+    await initConnection();
+    console.log('IAP connection initialized');
+  } catch (error) {
+    console.error('Failed to initialize IAP connection:', error);
+  }
+};
+
+/**
+ * End the IAP connection. Call on app unmount.
+ */
+export const endIAPConnection = async (): Promise<void> => {
+  try {
+    await endConnection();
+  } catch (error) {
+    console.error('Failed to end IAP connection:', error);
+  }
+};
+
+/**
+ * Check if user has an active subscription and update premium state.
+ * Returns true if user is premium.
+ */
+export const checkAndUpdatePremiumStatus = async (): Promise<boolean> => {
+  try {
+    const isActive = await hasActiveSubscriptions([...SUBSCRIPTION.PRODUCT_IDS]);
+    setIsPremium(isActive);
+    await cachePremiumStatus(isActive);
+    return isActive;
+  } catch (error) {
+    console.error('Failed to check subscription status:', error);
+    // Fall back to cached status
+    const cached = await getCachedPremiumStatus();
+    setIsPremium(cached);
+    return cached;
+  }
+};
+
+/**
+ * Cache premium status in AsyncStorage for fast cold-start reads.
+ */
+export const cachePremiumStatus = async (isPremium: boolean): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(SUBSCRIPTION.PREMIUM_STORAGE_KEY, JSON.stringify(isPremium));
+  } catch (error) {
+    console.error('Failed to cache premium status:', error);
+  }
+};
+
+/**
+ * Read cached premium status from AsyncStorage.
+ * Used for instant cold-start checks before IAP connection is ready.
+ */
+export const getCachedPremiumStatus = async (): Promise<boolean> => {
+  try {
+    const value = await AsyncStorage.getItem(SUBSCRIPTION.PREMIUM_STORAGE_KEY);
+    return value ? JSON.parse(value) === true : false;
+  } catch {
+    return false;
+  }
+};
+
+// DEV-only premium override storage key
+const DEV_PREMIUM_STORAGE_KEY = '@factsaday_dev_premium_override';
+
+/**
+ * [DEV ONLY] Get the dev premium override status.
+ * Returns null if no override is set.
+ */
+export const getDevPremiumOverride = async (): Promise<boolean | null> => {
+  if (!__DEV__) return null;
+  try {
+    const value = await AsyncStorage.getItem(DEV_PREMIUM_STORAGE_KEY);
+    if (value === null) return null;
+    return JSON.parse(value) === true;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * [DEV ONLY] Set the dev premium override status.
+ * Pass null to clear the override.
+ */
+export const setDevPremiumOverride = async (isPremium: boolean | null): Promise<void> => {
+  if (!__DEV__) return;
+  try {
+    if (isPremium === null) {
+      await AsyncStorage.removeItem(DEV_PREMIUM_STORAGE_KEY);
+    } else {
+      await AsyncStorage.setItem(DEV_PREMIUM_STORAGE_KEY, JSON.stringify(isPremium));
+    }
+  } catch (error) {
+    console.error('Failed to set dev premium override:', error);
+  }
+};

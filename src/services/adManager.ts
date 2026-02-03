@@ -1,8 +1,9 @@
 import { showInterstitialAd } from '../components/ads/InterstitialAd';
-import { ADS_ENABLED, INTERSTITIAL_ADS } from '../config/app';
+import { INTERSTITIAL_ADS } from '../config/app';
 
 import { trackInterstitialShown } from './analytics';
 import { getFactsViewedCount } from './appReview';
+import { shouldShowAds } from './premiumState';
 
 /** Timestamp of the last interstitial ad shown (ms) */
 let lastInterstitialShownAt = 0;
@@ -21,7 +22,7 @@ const isCooldownElapsed = (): boolean => {
  * Used for settings changes where an ad is always shown during the transition.
  */
 export const showSettingsInterstitial = async (): Promise<void> => {
-  if (!ADS_ENABLED) {
+  if (!shouldShowAds()) {
     return;
   }
 
@@ -37,7 +38,7 @@ export const showSettingsInterstitial = async (): Promise<void> => {
  * Show interstitial ad before trivia results (no cooldown check)
  */
 export const showTriviaResultsInterstitial = async (): Promise<void> => {
-  if (!ADS_ENABLED) {
+  if (!shouldShowAds()) {
     return;
   }
 
@@ -55,7 +56,7 @@ export const showTriviaResultsInterstitial = async (): Promise<void> => {
  * with a cooldown timer between ads
  */
 export const maybeShowFactViewInterstitial = async (): Promise<void> => {
-  if (!ADS_ENABLED) {
+  if (!shouldShowAds()) {
     return;
   }
 

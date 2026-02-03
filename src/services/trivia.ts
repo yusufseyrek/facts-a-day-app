@@ -10,8 +10,9 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { STORAGE_KEYS } from '../config/app';
+import { HINT_LIMITS, STORAGE_KEYS } from '../config/app';
 import { TIME_PER_QUESTION, TRIVIA_QUESTIONS } from '../config/trivia';
+import { getIsPremium } from './premiumState';
 
 import * as database from './database';
 import * as onboardingService from './onboarding';
@@ -500,19 +501,56 @@ export async function getBestStreak(): Promise<number> {
 
 // ====== EXPLANATION HINT ======
 
+interface HintUsage {
+  date: string;
+  count: number;
+}
+
+/**
+ * Get the current hint usage for today
+ */
+async function getHintUsage(): Promise<HintUsage> {
+  try {
+    const today = getLocalDateString();
+    const lastUsedDate = await AsyncStorage.getItem(STORAGE_KEYS.EXPLANATION_HINT_LAST_USED);
+    const countStr = await AsyncStorage.getItem(STORAGE_KEYS.EXPLANATION_HINT_COUNT);
+
+    // Reset count if it's a new day
+    if (lastUsedDate !== today) {
+      return { date: today, count: 0 };
+    }
+
+    return { date: today, count: parseInt(countStr || '0', 10) };
+  } catch (error) {
+    console.error('Error getting hint usage:', error);
+    return { date: getLocalDateString(), count: 0 };
+  }
+}
+
+/**
+ * Get the daily hint limit based on premium status
+ */
+export function getHintLimit(): number {
+  return getIsPremium() ? HINT_LIMITS.PREMIUM : HINT_LIMITS.FREE;
+}
+
+/**
+ * Get the number of remaining hints for today
+ */
+export async function getRemainingHints(): Promise<number> {
+  const usage = await getHintUsage();
+  const limit = getHintLimit();
+  return Math.max(0, limit - usage.count);
+}
+
 /**
  * Check if the user can use the explanation hint today
- * The hint is limited to 1 use per day globally
+ * Free users get 1 hint per day, premium users get 3
  */
 export async function canUseExplanationHint(): Promise<boolean> {
   try {
-    const lastUsedDate = await AsyncStorage.getItem(STORAGE_KEYS.EXPLANATION_HINT_LAST_USED);
-    if (!lastUsedDate) {
-      return true; // Never used before
-    }
-
-    const today = getLocalDateString();
-    return lastUsedDate !== today;
+    const remaining = await getRemainingHints();
+    return remaining > 0;
   } catch (error) {
     console.error('Error checking explanation hint availability:', error);
     return true; // Allow usage on error
@@ -526,8 +564,29 @@ export async function canUseExplanationHint(): Promise<boolean> {
 export async function useExplanationHint(): Promise<void> {
   try {
     const today = getLocalDateString();
+    const usage = await getHintUsage();
+
+    // If it's a new day, reset count to 1
+    const newCount = usage.date === today ? usage.count + 1 : 1;
+
     await AsyncStorage.setItem(STORAGE_KEYS.EXPLANATION_HINT_LAST_USED, today);
+    await AsyncStorage.setItem(STORAGE_KEYS.EXPLANATION_HINT_COUNT, String(newCount));
   } catch (error) {
     console.error('Error saving explanation hint usage:', error);
+  }
+}
+
+/**
+ * Clear all hint usage data
+ * Used when resetting onboarding/app state
+ */
+export async function clearHintUsage(): Promise<void> {
+  try {
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.EXPLANATION_HINT_LAST_USED,
+      STORAGE_KEYS.EXPLANATION_HINT_COUNT,
+    ]);
+  } catch (error) {
+    console.error('Error clearing hint usage:', error);
   }
 }

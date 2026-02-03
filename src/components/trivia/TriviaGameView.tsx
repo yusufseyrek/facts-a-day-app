@@ -50,6 +50,9 @@ export interface TriviaGameViewProps {
   canWatchAdForHint?: boolean;
   // Background image
   questionImageUri?: string | null;
+  // Premium status and remaining hints
+  isPremium?: boolean;
+  remainingHints?: number;
 }
 
 export function TriviaGameView({
@@ -76,6 +79,8 @@ export function TriviaGameView({
   onWatchAdForHint,
   canWatchAdForHint = false,
   questionImageUri,
+  isPremium = false,
+  remainingHints = 0,
 }: TriviaGameViewProps) {
   const insets = useSafeAreaInsets();
   const { borderWidths, media, typography, iconSizes, spacing, radius } = useResponsive();
@@ -359,7 +364,9 @@ export function TriviaGameView({
                         color: accentColor,
                       }}
                     >
-                      {t('showHint') || 'Show Hint'}
+                      {isPremium
+                        ? `${t('showHint') || 'Show Hint'} (${remainingHints})`
+                        : t('showHint') || 'Show Hint'}
                     </RNText>
                   </View>
                 </Pressable>

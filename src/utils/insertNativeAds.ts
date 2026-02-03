@@ -1,4 +1,5 @@
-import { ADS_ENABLED, NATIVE_ADS } from '../config/app';
+import { NATIVE_ADS } from '../config/app';
+import { shouldShowAds } from '../services/premiumState';
 
 /** Sentinel type for a native ad placeholder in a list */
 export interface NativeAdPlaceholder {
@@ -31,9 +32,9 @@ export function isNativeAdPlaceholder(item: unknown): item is NativeAdPlaceholde
 export function insertNativeAds<T>(
   items: T[],
   firstAdIndex: number,
-  isCountable?: (item: T) => boolean,
+  isCountable?: (item: T) => boolean
 ): (T | NativeAdPlaceholder)[] {
-  if (!ADS_ENABLED || !NATIVE_ADS.ACTIVE || items.length === 0) {
+  if (!shouldShowAds() || !NATIVE_ADS.ACTIVE || items.length === 0) {
     return items;
   }
 
@@ -55,8 +56,8 @@ export function insertNativeAds<T>(
     result.push(item);
   }
 
-  // If the list was too short for any ad, append one at the end
-  if (adIndex === 0) {
+  // If the list was too short for any ad, append one at the end if needed
+  if (adIndex === 0 && counted >= firstAdIndex) {
     result.push({ type: 'nativeAd', key: `native-ad-${adIndex}` });
   }
 

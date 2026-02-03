@@ -9,9 +9,10 @@ import {
 
 import Constants from 'expo-constants';
 
-import { AD_RETRY, ADS_ENABLED } from '../../config/app';
+import { AD_RETRY } from '../../config/app';
 import { trackBannerAdError, trackBannerAdLoaded } from '../../services/analytics';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
+import { shouldShowAds } from '../../services/premiumState';
 
 type BannerAdPosition = 'home' | 'fact-modal';
 
@@ -109,7 +110,7 @@ function BannerAdComponent({ position, onAdLoadChange, collapsible }: BannerAdPr
     }
   }, [position, retryCount]);
 
-  if (!ADS_ENABLED || canRequestAds === false || canRequestAds === null) {
+  if (!shouldShowAds() || canRequestAds === false || canRequestAds === null) {
     return null;
   }
 

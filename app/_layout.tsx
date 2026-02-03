@@ -24,6 +24,7 @@ import { enableCrashlyticsConsoleLogging, initializeFirebase } from '../src/conf
 import {
   OnboardingProvider,
   PreloadedDataProvider,
+  PremiumProvider,
   ScrollToTopProvider,
   setLocaleRefreshPending,
   setPreloadedFactsBeforeMount,
@@ -33,6 +34,8 @@ import {
 } from '../src/contexts';
 import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
+import { setIsPremium } from '../src/services/premiumState';
+import { getCachedPremiumStatus, initIAPConnection, checkAndUpdatePremiumStatus } from '../src/services/purchases';
 import { initAnalytics } from '../src/services/analytics';
 import * as contentRefresh from '../src/services/contentRefresh';
 import * as database from '../src/services/database';
@@ -205,6 +208,14 @@ function AppContent() {
         }}
       />
       <Stack.Screen name="trivia" options={{ gestureEnabled: false }} />
+      <Stack.Screen
+        name="paywall"
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+          contentStyle: { backgroundColor },
+        }}
+      />
     </Stack>
   );
 }
@@ -368,6 +379,18 @@ export default function RootLayout() {
       // Only initialize ads and pre-load data for returning users
       // New users will have ads initialized during the onboarding success screen
       if (isComplete) {
+        // Initialize IAP and check premium status before ads
+        // First use cached status for instant check, then verify with store
+        const cachedPremium = await getCachedPremiumStatus();
+        setIsPremium(cachedPremium);
+
+        try {
+          await initIAPConnection();
+          await checkAndUpdatePremiumStatus();
+        } catch (error) {
+          console.error('Failed to initialize IAP:', error);
+        }
+
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
         const locale = getLocaleFromCode(deviceLocale);
 
@@ -394,11 +417,13 @@ export default function RootLayout() {
           // Let the JS splash overlay mount (replaces native splash)
           setInitialOnboardingStatus(isComplete);
 
-          // Initialize ads SDK (needed before loading app open ad)
-          try {
-            await initializeAdsForReturningUser();
-          } catch (error) {
-            console.error('Failed to initialize ads for locale change:', error);
+          // Initialize ads SDK (needed before loading app open ad) - skip for premium users
+          if (!cachedPremium) {
+            try {
+              await initializeAdsForReturningUser();
+            } catch (error) {
+              console.error('Failed to initialize ads for locale change:', error);
+            }
           }
 
           // Run content refresh + app open ad in parallel
@@ -441,10 +466,12 @@ export default function RootLayout() {
           // Let splash close, then do the rest in background
           setInitialOnboardingStatus(isComplete);
 
-          // Initialize ads in background
-          initializeAdsForReturningUser().catch((error) => {
-            console.error('Failed to initialize ads for returning user:', error);
-          });
+          // Initialize ads in background - skip for premium users
+          if (!cachedPremium) {
+            initializeAdsForReturningUser().catch((error) => {
+              console.error('Failed to initialize ads for returning user:', error);
+            });
+          }
 
           // Refresh content in background
           contentRefresh.refreshAppContent().catch((error) => {
@@ -512,13 +539,15 @@ export default function RootLayout() {
           <I18nProvider>
             <PreloadedDataProvider>
               <OnboardingProvider initialComplete={initialOnboardingStatus}>
-                <ScrollToTopProvider>
-                  <AppThemeProvider>
-                    <NavigationThemeWrapper>
-                      <AppContent />
-                    </NavigationThemeWrapper>
-                  </AppThemeProvider>
-                </ScrollToTopProvider>
+                <PremiumProvider>
+                  <ScrollToTopProvider>
+                    <AppThemeProvider>
+                      <NavigationThemeWrapper>
+                        <AppContent />
+                      </NavigationThemeWrapper>
+                    </AppThemeProvider>
+                  </ScrollToTopProvider>
+                </PremiumProvider>
               </OnboardingProvider>
             </PreloadedDataProvider>
           </I18nProvider>

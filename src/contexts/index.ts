@@ -1,4 +1,5 @@
 export { OnboardingProvider, useOnboarding } from './OnboardingContext';
+export { PremiumProvider, usePremium } from './PremiumContext';
 export {
   PreloadedDataProvider,
   setLocaleRefreshPending,

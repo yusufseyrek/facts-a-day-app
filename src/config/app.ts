@@ -8,7 +8,7 @@
 /**
  * Ads configuration
  */
-export const ADS_ENABLED = true;
+export const ADS_ENABLED = !__DEV__;
 
 /**
  * Interstitial ad settings
@@ -39,7 +39,7 @@ export const NATIVE_ADS = {
   /** Index of the first ad in each list (0-based) */
   FIRST_AD_INDEX: {
     HOME_FEED: 3,
-    HOME_CAROUSEL: 1,
+    HOME_CAROUSEL: 2,
     DISCOVER: 1,
     FAVORITES: 1,
   },
@@ -66,6 +66,16 @@ export const STORAGE_KEYS = {
   LAST_REVIEW_PROMPT: '@last_review_prompt',
   /** Key for tracking the last date explanation hint was used in trivia */
   EXPLANATION_HINT_LAST_USED: '@explanation_hint_last_used',
+  /** Key for tracking the number of hints used today */
+  EXPLANATION_HINT_COUNT: '@explanation_hint_count',
+} as const;
+
+/**
+ * Daily trivia hint limits by user tier
+ */
+export const HINT_LIMITS = {
+  FREE: 1,
+  PREMIUM: 3,
 } as const;
 
 /**
@@ -135,6 +145,24 @@ export const APP_REVIEW = {
  */
 export const APP_STORE_ID = '6755321394';
 export const PLAY_STORE_ID = 'dev.seyrek.factsaday';
+
+/**
+ * Category selection limits by user tier
+ */
+export const CATEGORY_LIMITS = {
+  FREE: { min: 3, max: 7 },
+  PREMIUM: { min: 3, max: Infinity },
+} as const;
+
+/**
+ * Subscription / Premium settings
+ */
+export const SUBSCRIPTION = {
+  /** Product IDs for subscription plans (must match App Store Connect / Google Play Console) */
+  PRODUCT_IDS: ['factsaday_premium_weekly', 'factsaday_premium_monthly'],
+  /** AsyncStorage key for caching premium status */
+  PREMIUM_STORAGE_KEY: '@factsaday_premium_status',
+} as const;
 
 /**
  * API settings for fetching data

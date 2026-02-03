@@ -8,7 +8,8 @@ import {
 
 import Constants from 'expo-constants';
 
-import { ADS_ENABLED, APP_OPEN_ADS } from '../../config/app';
+import { APP_OPEN_ADS } from '../../config/app';
+import { shouldShowAds } from '../../services/premiumState';
 import {
   trackAppOpenAdDismissed,
   trackAppOpenAdError,
@@ -145,7 +146,7 @@ const ensureAdLoaded = async (): Promise<boolean> => {
  * Returns true if the ad was shown, false otherwise.
  */
 export const showAppOpenAdForLocaleChange = async (): Promise<boolean> => {
-  if (!ADS_ENABLED) {
+  if (!shouldShowAds()) {
     return false;
   }
 
@@ -236,7 +237,7 @@ export const showAppOpenAdForLocaleChange = async (): Promise<boolean> => {
 export const preloadAppOpenAd = async () => {
   console.log('🚀 Preloading app open ad...');
 
-  if (!ADS_ENABLED) {
+  if (!shouldShowAds()) {
     console.log('⚠️ App open ad preload skipped - ads disabled');
     return;
   }

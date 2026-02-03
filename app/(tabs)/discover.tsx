@@ -28,7 +28,7 @@ import {
   isNativeAdPlaceholder,
   type NativeAdPlaceholder,
 } from '../../src/utils/insertNativeAds';
-import { useScrollToTopHandler } from '../../src/contexts';
+import { usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { smartScrollToTop } from '../../src/utils/useFlashListScrollToTop';
 import { useTranslation } from '../../src/i18n';
 import {
@@ -157,6 +157,7 @@ function DiscoverScreen() {
   const { t, locale } = useTranslation();
   const { isTablet, screenWidth, typography, spacing, iconSizes, config, media, radius } =
     useResponsive();
+  const { isPremium } = usePremium();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<FactWithRelations[]>([]);
@@ -436,9 +437,11 @@ function DiscoverScreen() {
   // Insert native ads into search results and category facts
   type DiscoverListItem = FactWithRelations | NativeAdPlaceholder;
 
-  const searchDataWithAds = useMemo(() => insertNativeAds(searchResults, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER), [searchResults]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- isPremium triggers re-computation to remove/add native ads
+  const searchDataWithAds = useMemo(() => insertNativeAds(searchResults, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER), [searchResults, isPremium]);
 
-  const categoryDataWithAds = useMemo(() => insertNativeAds(categoryFacts, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER), [categoryFacts]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- isPremium triggers re-computation to remove/add native ads
+  const categoryDataWithAds = useMemo(() => insertNativeAds(categoryFacts, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER), [categoryFacts, isPremium]);
 
   // Memoized keyExtractor
   const keyExtractor = useCallback((item: DiscoverListItem) => {

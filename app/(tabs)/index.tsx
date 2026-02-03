@@ -19,7 +19,7 @@ import {
   Text,
   useIconColor,
 } from '../../src/components';
-import { FactCarousel } from '../../src/components/FactCarousel';
+import { FactCarousel, type FactCarouselRef } from '../../src/components/FactCarousel';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
 import { LAYOUT, NATIVE_ADS } from '../../src/config/app';
@@ -29,7 +29,7 @@ import {
   isNativeAdPlaceholder,
   type NativeAdPlaceholder,
 } from '../../src/utils/insertNativeAds';
-import { usePreloadedData } from '../../src/contexts';
+import { usePremium, usePreloadedData, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
@@ -121,6 +121,7 @@ function HomeScreen() {
   const iconColor = useIconColor();
   const { iconSizes, spacing, typography } = useResponsive();
   const { consumePreloadedFacts, consumePreloadedRecommendations, signalHomeScreenReady, signalCarouselImageReady } = usePreloadedData();
+  const { isPremium } = usePremium();
 
   const [sections, setSections] = useState<FactSection[]>([]);
   const [recommendations, setRecommendations] = useState<FactWithRelations[]>([]);
@@ -134,9 +135,26 @@ function HomeScreen() {
   const randomFactInitializedRef = useRef(false);
   // Track if we've consumed preloaded data (only once)
   const consumedPreloadedDataRef = useRef(false);
+  // Carousel ref for scroll-to-start functionality
+  const carouselRef = useRef<FactCarouselRef>(null);
 
   // Scroll to top handler with smart instant/animated behavior
-  const { listRef, handleScroll } = useFlashListScrollToTop({ screenId: 'index' });
+  const { listRef, handleScroll, getScrollOffset } = useFlashListScrollToTop({ screenId: 'index' });
+
+  // Custom scroll-to-top that scrolls carousel to start when list is already at top
+  const handleScrollToTop = useCallback(() => {
+    const scrollOffset = getScrollOffset();
+    if (scrollOffset === 0) {
+      // Already at top, scroll carousel to start
+      carouselRef.current?.scrollToStart();
+    } else {
+      // Scroll list to top
+      listRef.current?.scrollToOffset({ offset: 0, animated: scrollOffset < 1000 });
+    }
+  }, [getScrollOffset, listRef]);
+
+  // Register custom scroll-to-top handler
+  useScrollToTopHandler('index', handleScrollToTop);
 
   // Flatten sections into a single array for FlashList, insert native ads,
   // and recompute sticky header indices after ad insertion
@@ -173,7 +191,8 @@ function HomeScreen() {
     });
 
     return { flattenedData: withAds, stickyHeaderIndices: headerIndices };
-  }, [sections]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isPremium triggers re-computation to remove/add native ads
+  }, [sections, isPremium]);
 
   // Reload facts when tab gains focus
   useFocusEffect(
@@ -432,7 +451,7 @@ function HomeScreen() {
             <Text.Title fontSize={typography.fontSize.body}>{t('worthKnowing')}</Text.Title>
           </YStack>
         </ContentContainer>
-        <FactCarousel facts={recommendations} onFactPress={handleFactPress} onDiscoverPress={handleDiscoverPress} onFirstImageReady={signalCarouselImageReady} />
+        <FactCarousel ref={carouselRef} facts={recommendations} onFactPress={handleFactPress} onDiscoverPress={handleDiscoverPress} onFirstImageReady={signalCarouselImageReady} />
       </YStack>
     );
   }, [recommendations, handleFactPress, handleDiscoverPress, signalCarouselImageReady, spacing, typography, t]);

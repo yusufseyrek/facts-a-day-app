@@ -685,6 +685,47 @@ export const trackTriviaViewFactClick = (params: {
 };
 
 // ============================================================================
+// Subscription/Premium Events
+// ============================================================================
+
+/**
+ * Track when a subscription is purchased
+ */
+export const trackSubscriptionPurchased = (params: { productId: string }): void => {
+  logEvent('app_subscription_purchased', {
+    product_id: params.productId,
+  });
+};
+
+/**
+ * Track when a subscription is restored
+ */
+export const trackSubscriptionRestored = (): void => {
+  logEvent('app_subscription_restored', {});
+};
+
+/**
+ * Track when the paywall screen is viewed
+ */
+export const trackPaywallViewed = (source: string): void => {
+  logEvent('app_paywall_viewed', { source });
+};
+
+/**
+ * Track when the paywall screen is dismissed
+ */
+export const trackPaywallDismissed = (source: string): void => {
+  logEvent('app_paywall_dismissed', { source });
+};
+
+/**
+ * Track when subscription status changes
+ */
+export const trackSubscriptionStatusChanged = (isPremium: boolean): void => {
+  logEvent('app_subscription_status_changed', { is_premium: isPremium });
+};
+
+// ============================================================================
 // App Update Events
 // ============================================================================
 

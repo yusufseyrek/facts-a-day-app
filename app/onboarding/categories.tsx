@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, ScrollView } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Easing, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { styled, View } from '@tamagui/core';
@@ -8,7 +8,8 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { Button, CategoryCard, ProgressIndicator, Text } from '../../src/components';
-import { useOnboarding } from '../../src/contexts';
+import { CATEGORY_LIMITS } from '../../src/config/app';
+import { useOnboarding, usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
@@ -45,6 +46,8 @@ export default function Categories() {
   } = useOnboarding();
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const { isPremium, restorePurchases } = usePremium();
   const { typography, config, iconSizes, spacing } = useResponsive();
 
   // Responsive sizing for tablets
@@ -163,10 +166,20 @@ export default function Categories() {
     }
   };
 
+  // Get category limits based on premium status
+  const categoryLimits = isPremium ? CATEGORY_LIMITS.PREMIUM : CATEGORY_LIMITS.FREE;
+
   const toggleCategory = (slug: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
-    );
+    setSelectedCategories((prev) => {
+      if (prev.includes(slug)) {
+        return prev.filter((s) => s !== slug);
+      }
+      // Enforce max limit based on premium status
+      if (prev.length >= categoryLimits.max) {
+        return prev;
+      }
+      return [...prev, slug];
+    });
   };
 
   const handleContinue = () => {
@@ -178,6 +191,23 @@ export default function Categories() {
 
     // Navigate immediately to notifications
     router.push('/onboarding/notifications');
+  };
+
+  const handleRestorePurchases = async () => {
+    setIsRestoring(true);
+    try {
+      const restored = await restorePurchases();
+      if (restored) {
+        Alert.alert(t('settingsRestoreSuccess'), t('settingsRestoreSuccessMessage'));
+      } else {
+        Alert.alert(t('settingsRestoreNoSubscription'), t('settingsRestoreNoSubscriptionMessage'));
+      }
+    } catch (error) {
+      console.error('Error restoring purchases:', error);
+      Alert.alert(t('error'), t('settingsRestoreNoSubscriptionMessage'));
+    } finally {
+      setIsRestoring(false);
+    }
   };
 
   // Split categories into rows
@@ -250,7 +280,14 @@ export default function Categories() {
 
           <YStack gap={spacing.sm} style={{ marginTop: spacing.xl }}>
             <Text.Headline>{t('whatInterestsYou')}</Text.Headline>
-            <Text.Body color="$textSecondary">{t('selectCategoriesMinimum')}</Text.Body>
+            <Text.Body color="$textSecondary">
+              {isPremium
+                ? t('categoryLimitPremium', { min: CATEGORY_LIMITS.PREMIUM.min })
+                : t('categoryLimitFree', {
+                    min: CATEGORY_LIMITS.FREE.min,
+                    max: CATEGORY_LIMITS.FREE.max,
+                  })}
+            </Text.Body>
           </YStack>
         </Animated.View>
 
@@ -296,6 +333,10 @@ export default function Categories() {
                           selected={selectedCategories.includes(category.slug)}
                           onPress={() => toggleCategory(category.slug)}
                           labelFontSize={labelFontSize}
+                          disabled={
+                            !selectedCategories.includes(category.slug) &&
+                            selectedCategories.length >= categoryLimits.max
+                          }
                         />
                       </Animated.View>
                     );
@@ -321,11 +362,18 @@ export default function Categories() {
             transform: [{ translateY: buttonTranslateY }],
           }}
         >
-          <View style={{ paddingTop: spacing.md }}>
-            <Button onPress={handleContinue} disabled={selectedCategories.length < 5}>
+          <YStack gap={spacing.md} style={{ paddingTop: spacing.md }}>
+            <Button onPress={handleContinue} disabled={selectedCategories.length < categoryLimits.min}>
               {t('continue')}
             </Button>
-          </View>
+            {!isPremium && (
+              <Pressable onPress={handleRestorePurchases} disabled={isRestoring}>
+                <Text.Caption color="$textSecondary" textAlign="center">
+                  {isRestoring ? t('loading') : t('paywallRestore')}
+                </Text.Caption>
+              </Pressable>
+            )}
+          </YStack>
         </Animated.View>
       </YStack>
     </Container>

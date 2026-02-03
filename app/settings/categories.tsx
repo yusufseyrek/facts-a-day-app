@@ -9,6 +9,8 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { Button, CategoryCard, SuccessToast, Text } from '../../src/components';
+import { CATEGORY_LIMITS } from '../../src/config/app';
+import { usePremium } from '../../src/contexts';
 import { showSettingsInterstitial } from '../../src/services/adManager';
 import { useTranslation } from '../../src/i18n';
 import {
@@ -35,6 +37,7 @@ export default function CategoriesSettings() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
+  const { isPremium } = usePremium();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [initialCategories, setInitialCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<db.Category[]>([]);
@@ -152,10 +155,20 @@ export default function CategoriesSettings() {
     return !sortedSelected.every((cat, i) => cat === sortedInitial[i]);
   };
 
+  // Get category limits based on premium status
+  const categoryLimits = isPremium ? CATEGORY_LIMITS.PREMIUM : CATEGORY_LIMITS.FREE;
+
   const toggleCategory = (slug: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
-    );
+    setSelectedCategories((prev) => {
+      if (prev.includes(slug)) {
+        return prev.filter((s) => s !== slug);
+      }
+      // Enforce max limit for non-premium users
+      if (prev.length >= categoryLimits.max) {
+        return prev;
+      }
+      return [...prev, slug];
+    });
   };
 
   const handleSave = async () => {
@@ -281,7 +294,9 @@ export default function CategoriesSettings() {
               </YStack>
             </XStack>
             <Text.Body color="$textSecondary" fontSize={secondaryFontSize}>
-              {t('selectCategoriesMinimum')}
+              {isPremium
+                ? t('categoryLimitPremium', { min: categoryLimits.min })
+                : t('categoryLimitFree', { min: categoryLimits.min, max: categoryLimits.max })}
             </Text.Body>
           </YStack>
         </Animated.View>
@@ -328,6 +343,10 @@ export default function CategoriesSettings() {
                           selected={selectedCategories.includes(category.slug)}
                           onPress={() => toggleCategory(category.slug)}
                           labelFontSize={labelFontSize}
+                          disabled={
+                            !selectedCategories.includes(category.slug) &&
+                            selectedCategories.length >= categoryLimits.max
+                          }
                         />
                       </Animated.View>
                     );
@@ -356,7 +375,7 @@ export default function CategoriesSettings() {
           <View style={{ paddingTop: spacing.md }}>
             <Button
               onPress={handleSave}
-              disabled={selectedCategories.length < 5 || isSaving}
+              disabled={selectedCategories.length < categoryLimits.min || isSaving}
               loading={isSaving}
             >
               {isSaving ? t('saving') : t('save')}

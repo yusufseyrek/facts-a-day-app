@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useRef, useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { FlatList, NativeScrollEvent, NativeSyntheticEvent, Pressable, View } from 'react-native';
 
 import { Compass } from '@tamagui/lucide-icons';
@@ -12,8 +12,13 @@ import { insertNativeAds, isNativeAdPlaceholder, type NativeAdPlaceholder } from
 import { useResponsive } from '../utils/useResponsive';
 import { hexColors, useTheme } from '../theme';
 import { useTranslation } from '../i18n';
+import { usePremium } from '../contexts';
 
 import type { FactWithRelations } from '../services/database';
+
+export interface FactCarouselRef {
+  scrollToStart: () => void;
+}
 
 interface FactCarouselProps {
   facts: FactWithRelations[];
@@ -29,14 +34,25 @@ const DISCOVER_CTA_ID = '__discover_cta__';
 type CarouselItem = FactWithRelations | { id: typeof DISCOVER_CTA_ID } | NativeAdPlaceholder;
 
 export const FactCarousel = React.memo(
-  ({ facts, onFactPress, onDiscoverPress, onFirstImageReady }: FactCarouselProps) => {
-    const { screenWidth, spacing, radius, iconSizes, config } = useResponsive();
-    const { theme } = useTheme();
-    const { t } = useTranslation();
-    const [activeIndex, setActiveIndex] = useState(0);
-    const firstImageSignalledRef = useRef(false);
+  forwardRef<FactCarouselRef, FactCarouselProps>(
+    ({ facts, onFactPress, onDiscoverPress, onFirstImageReady }, ref) => {
+      const { screenWidth, spacing, radius, iconSizes, config } = useResponsive();
+      const { theme } = useTheme();
+      const { t } = useTranslation();
+      const { isPremium } = usePremium();
+      const [activeIndex, setActiveIndex] = useState(0);
+      const firstImageSignalledRef = useRef(false);
+      const flatListRef = useRef<FlatList>(null);
 
-    const carouselFactIds = useMemo(() => facts.map((f) => f.id), [facts]);
+      // Expose scrollToStart method to parent
+      useImperativeHandle(ref, () => ({
+        scrollToStart: () => {
+          flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+          setActiveIndex(0);
+        },
+      }), []);
+
+      const carouselFactIds = useMemo(() => facts.map((f) => f.id), [facts]);
     const colors = hexColors[theme];
     const cardWidth = screenWidth * config.cardWidthMultiplier;
     const cardGap = spacing.sm;
@@ -62,7 +78,8 @@ export const FactCarousel = React.memo(
     // Insert native ads into facts, then filter out failed ones, then append CTA
     const factsWithAds = useMemo(
       () => insertNativeAds(facts, NATIVE_ADS.FIRST_AD_INDEX.HOME_CAROUSEL),
-      [facts],
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- isPremium triggers re-computation to remove/add native ads
+      [facts, isPremium],
     );
     const filteredData = useMemo(
       () => factsWithAds.filter(item => !isNativeAdPlaceholder(item) || !failedAdKeys.has(item.key)),
@@ -213,6 +230,7 @@ export const FactCarousel = React.memo(
     return (
       <View>
         <FlatList
+          ref={flatListRef}
           data={data}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
@@ -255,7 +273,7 @@ export const FactCarousel = React.memo(
         </View>
       </View>
     );
-  }
+  })
 );
 
 FactCarousel.displayName = 'FactCarousel';
