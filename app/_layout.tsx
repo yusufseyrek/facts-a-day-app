@@ -508,6 +508,9 @@ export default function RootLayout() {
           .catch((error) => {
             console.error('OTA update check failed:', error);
           });
+      } else {
+        // New user - no ads/preloading needed, just set status
+        setInitialOnboardingStatus(false);
       }
 
       // Log update status in development for debugging
