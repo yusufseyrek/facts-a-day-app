@@ -16,6 +16,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import * as Localization from 'expo-localization';
 import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { SplashOverlay } from '../src/components/SplashOverlay';
@@ -64,6 +65,9 @@ enableCrashlyticsConsoleLogging();
 
 // Initialize analytics with device info and user properties
 initAnalytics();
+
+// Keep native splash visible until SplashOverlay is ready to take over
+SplashScreen.preventAutoHideAsync();
 
 // Log update status on app start for debugging OTA issues
 if (!__DEV__) {
@@ -536,7 +540,7 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+    <View style={{ flex: 1, backgroundColor: '#0A1628' }} onLayout={onLayoutRootView}>
       <ErrorBoundary>
         <SafeAreaProvider>
           <I18nProvider>
