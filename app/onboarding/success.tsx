@@ -13,7 +13,7 @@ import { Button, FONT_FAMILIES, Text } from '../../src/components';
 import { ADS_ENABLED } from '../../src/config/app';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { completeConsentFlow, initializeAdsSDK, isConsentRequired } from '../../src/services/ads';
+import { completeConsentFlow, isConsentRequired } from '../../src/services/ads';
 import { Screens, trackOnboardingComplete, trackScreenView } from '../../src/services/analytics';
 import { getNotificationTimes } from '../../src/services/onboarding';
 import { getNeonColors, hexColors, useTheme } from '../../src/theme';
@@ -251,8 +251,12 @@ export default function OnboardingSuccessScreen() {
         setShouldRunAnimations(true);
       } else {
         // Android user outside EEA, no consent screens needed
-        console.log('No consent required, initializing ads...');
-        await initializeAdsSDK();
+        // Still need to run completeConsentFlow() so gatherConsent() is called,
+        // which is required for canRequestAds to become true on fresh installs.
+        console.log('Non-EEA Android user, running consent flow directly...');
+        setScreenState('processing');
+        const result = await completeConsentFlow();
+        console.log('Consent flow completed:', result);
         setScreenState('animation');
         setShouldRunAnimations(true);
       }
