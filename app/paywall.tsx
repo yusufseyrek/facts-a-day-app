@@ -27,7 +27,7 @@ export default function PaywallScreen() {
   const { t, locale } = useTranslation();
   const { spacing, radius, iconSizes, media, borderWidths } = useResponsive();
   const tc = paywallThemeColors[theme];
-  const { isPremium, subscriptions, restorePurchases, mockDevPurchase } = usePremium();
+  const { isPremium, subscriptions, restorePurchases } = usePremium();
   const { requestPurchase } = useIAP();
 
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -57,17 +57,10 @@ export default function PaywallScreen() {
   };
 
   const handlePurchase = async () => {
-    if (isPurchasing) return;
+    if (isPurchasing || !selectedPlan) return;
 
     setIsPurchasing(true);
     try {
-      // DEV mode: use mock purchase
-      if (__DEV__) {
-        await mockDevPurchase();
-        return;
-      }
-
-      if (!selectedPlan) return;
 
       const sub = subscriptions.find((s) => s.id === selectedPlan);
       if (!sub) return;
@@ -244,7 +237,6 @@ export default function PaywallScreen() {
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.08,
           shadowRadius: 8,
-          elevation: 3,
         },
         featureGlow: {
           position: 'absolute',
@@ -545,10 +537,10 @@ export default function PaywallScreen() {
           <YStack gap={spacing.sm} marginHorizontal={spacing.lg} paddingBottom={spacing.lg}>
             <Pressable
               onPress={handlePurchase}
-              disabled={(!__DEV__ && !selectedPlan) || isPurchasing}
+              disabled={!selectedPlan || isPurchasing}
               style={({ pressed }) => [
                 dynamicStyles.ctaButton,
-                ((!__DEV__ && !selectedPlan) || isPurchasing) && dynamicStyles.ctaButtonDisabled,
+                (!selectedPlan || isPurchasing) && dynamicStyles.ctaButtonDisabled,
                 pressed && dynamicStyles.ctaButtonPressed,
               ]}
             >

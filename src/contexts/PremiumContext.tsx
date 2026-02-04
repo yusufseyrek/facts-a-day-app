@@ -12,12 +12,7 @@ import {
 import { SUBSCRIPTION } from '../config/app';
 import { setAnalyticsUserProperty } from '../config/firebase';
 import { setIsPremium as setPremiumState } from '../services/premiumState';
-import {
-  cachePremiumStatus,
-  getCachedPremiumStatus,
-  getDevPremiumOverride,
-  setDevPremiumOverride,
-} from '../services/purchases';
+import { cachePremiumStatus, getCachedPremiumStatus } from '../services/purchases';
 import {
   trackSubscriptionPurchased,
   trackSubscriptionRestored,
@@ -29,9 +24,6 @@ interface PremiumContextType {
   isLoading: boolean;
   subscriptions: ProductSubscription[];
   restorePurchases: () => Promise<boolean>;
-  mockDevPurchase: () => Promise<void>;
-  /** [DEV ONLY] Toggle dev premium override - persists across app restarts */
-  toggleDevPremium: () => Promise<void>;
 }
 
 const PremiumContext = createContext<PremiumContextType>({
@@ -39,8 +31,6 @@ const PremiumContext = createContext<PremiumContextType>({
   isLoading: true,
   subscriptions: [],
   restorePurchases: async () => false,
-  mockDevPurchase: async () => {},
-  toggleDevPremium: async () => {},
 });
 
 export const usePremium = () => useContext(PremiumContext);
@@ -97,20 +87,9 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Load cached status and dev override immediately for fast cold start
+  // Load cached status immediately for fast cold start
   useEffect(() => {
     const loadInitialStatus = async () => {
-      // Check dev override first (only in DEV mode)
-      if (__DEV__) {
-        const devOverride = await getDevPremiumOverride();
-        if (devOverride !== null) {
-          console.log('[DEV] Using dev premium override:', devOverride);
-          setIsPremium(devOverride);
-          setPremiumState(devOverride);
-          return;
-        }
-      }
-      // Fall back to cached status
       const cached = await getCachedPremiumStatus();
       if (cached) {
         setIsPremium(true);
@@ -152,14 +131,6 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
   }, [activeSubscriptions, connected, updatePremiumStatus]);
 
   const restorePurchases = useCallback(async (): Promise<boolean> => {
-    // DEV mode: mock restore as successful
-    if (__DEV__) {
-      console.log('[DEV] Mocking restore purchases - granting premium');
-      await updatePremiumStatus(true);
-      trackSubscriptionRestored();
-      return true;
-    }
-
     try {
       await getAvailablePurchases();
       // After restoring, check active subscriptions
@@ -178,31 +149,6 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
     }
   }, [getAvailablePurchases, getActiveSubscriptions, activeSubscriptions, updatePremiumStatus]);
 
-  // DEV mode only: Mock purchase for testing
-  const mockDevPurchase = useCallback(async (): Promise<void> => {
-    if (!__DEV__) {
-      console.warn('mockDevPurchase should only be called in DEV mode');
-      return;
-    }
-    console.log('[DEV] Mocking purchase - granting premium');
-    await updatePremiumStatus(true);
-    trackSubscriptionPurchased({ productId: 'dev_mock_purchase' });
-  }, [updatePremiumStatus]);
-
-  // DEV mode only: Toggle dev premium override (persists across app restarts)
-  const toggleDevPremium = useCallback(async (): Promise<void> => {
-    if (!__DEV__) {
-      console.warn('toggleDevPremium should only be called in DEV mode');
-      return;
-    }
-    const newStatus = !isPremium;
-    console.log('[DEV] Toggling dev premium to:', newStatus);
-    await setDevPremiumOverride(newStatus);
-    setIsPremium(newStatus);
-    setPremiumState(newStatus);
-    await setAnalyticsUserProperty('is_premium', newStatus ? 'true' : 'false');
-  }, [isPremium]);
-
   return (
     <PremiumContext.Provider
       value={{
@@ -210,8 +156,6 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         subscriptions,
         restorePurchases,
-        mockDevPurchase,
-        toggleDevPremium,
       }}
     >
       {children}

@@ -256,11 +256,9 @@ export default function CategoriesAccuracyScreen() {
               </YStack>
             </Animated.View>
 
-            <Animated.View entering={FadeIn.delay(100).duration(400).springify()}>
-              <YStack marginTop={spacing.lg}>
-                <InlineNativeAd />
-              </YStack>
-            </Animated.View>
+            <YStack marginTop={spacing.lg}>
+              <InlineNativeAd />
+            </YStack>
           </>
         ) : (
           <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>

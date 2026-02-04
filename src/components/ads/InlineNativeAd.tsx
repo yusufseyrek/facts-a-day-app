@@ -1,6 +1,7 @@
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo } from 'react';
 import { View } from 'react-native';
 
+import { useNativeAd } from '../../hooks/useNativeAd';
 import { useResponsive } from '../../utils/useResponsive';
 
 import { NativeAdCard } from './NativeAdCard';
@@ -15,22 +16,20 @@ interface InlineNativeAdProps {
 
 function InlineNativeAdComponent({ cardHeight: cardHeightProp }: InlineNativeAdProps) {
   const { screenWidth, radius, isTablet } = useResponsive();
-  const [adFailed, setAdFailed] = useState(false);
+  const { nativeAd, isLoading, error } = useNativeAd();
 
-  const handleAdFailed = useCallback(() => {
-    setAdFailed(true);
-  }, []);
-
-  if (adFailed) {
+  // Don't render anything until we have an ad ready
+  if (!nativeAd || isLoading || error) {
     return null;
   }
 
   const cardHeight =
-    cardHeightProp ?? screenWidth * (isTablet ? INLINE_HEIGHT_RATIO_TABLET : INLINE_HEIGHT_RATIO_PHONE);
+    cardHeightProp ??
+    screenWidth * (isTablet ? INLINE_HEIGHT_RATIO_TABLET : INLINE_HEIGHT_RATIO_PHONE);
 
   return (
     <View style={{ height: cardHeight, overflow: 'hidden', borderRadius: radius.lg }}>
-      <NativeAdCard cardHeight={cardHeight} onAdFailed={handleAdFailed} />
+      <NativeAdCard cardHeight={cardHeight} nativeAd={nativeAd} />
     </View>
   );
 }

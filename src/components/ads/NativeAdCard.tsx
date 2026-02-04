@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import {
+  NativeAd,
   NativeAdView,
   NativeAsset,
   NativeAssetType,
@@ -24,36 +25,45 @@ interface NativeAdCardProps {
   cardHeight?: number;
   /** Called when the native ad fails to load (e.g. no-fill) */
   onAdFailed?: () => void;
+  /** Called when the native ad successfully loads */
+  onAdLoaded?: () => void;
+  /** Pre-loaded native ad (when provided, skips internal useNativeAd hook) */
+  nativeAd?: NativeAd;
 }
 
 const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.45)', 'rgba(0, 0, 0, 0.85)'] as const;
 const gradientLocations = [0.25, 0.55, 1] as const;
 
-function NativeAdCardComponent({ cardWidth, cardHeight: cardHeightProp, onAdFailed }: NativeAdCardProps) {
-  const { nativeAd, isLoading, error } = useNativeAd();
+function NativeAdCardComponent({ cardWidth, cardHeight: cardHeightProp, onAdFailed, onAdLoaded, nativeAd: nativeAdProp }: NativeAdCardProps) {
+  const { nativeAd: nativeAdFromHook, isLoading, error } = useNativeAd({ skip: !!nativeAdProp });
+  const nativeAd = nativeAdProp ?? nativeAdFromHook;
   const { screenWidth, spacing, radius, config } = useResponsive();
   const { t } = useTranslation();
 
   useEffect(() => {
-    if (!isLoading && (error || !nativeAd)) {
+    if (!nativeAdProp && !isLoading && (error || !nativeAd)) {
       onAdFailed?.();
     }
-  }, [isLoading, error, nativeAd, onAdFailed]);
+  }, [nativeAdProp, isLoading, error, nativeAd, onAdFailed]);
 
   useEffect(() => {
-    if (nativeAd && !isLoading && !error) {
+    if (nativeAd && (nativeAdProp || (!isLoading && !error))) {
       trackNativeAdImpression();
+      onAdLoaded?.();
     }
-  }, [nativeAd, isLoading, error]);
+  }, [nativeAd, nativeAdProp, isLoading, error, onAdLoaded]);
 
-  if (!nativeAd || isLoading || error) {
+  if (!nativeAd || (!nativeAdProp && (isLoading || error))) {
     return null;
   }
 
   const cardHeight = cardHeightProp ?? screenWidth * config.cardAspectRatio;
 
+  // When nativeAd is passed as prop (inline usage), no margin needed since parent handles spacing
+  const needsMargin = !nativeAdProp && !cardWidth;
+
   return (
-    <NativeAdView nativeAd={nativeAd} style={{ marginBottom: cardWidth ? 0 : spacing.md }}>
+    <NativeAdView nativeAd={nativeAd} style={needsMargin ? { marginBottom: spacing.md } : undefined}>
       <View
         style={{
           borderRadius: radius.lg,

@@ -71,37 +71,3 @@ export const getCachedPremiumStatus = async (): Promise<boolean> => {
   }
 };
 
-// DEV-only premium override storage key
-const DEV_PREMIUM_STORAGE_KEY = '@factsaday_dev_premium_override';
-
-/**
- * [DEV ONLY] Get the dev premium override status.
- * Returns null if no override is set.
- */
-export const getDevPremiumOverride = async (): Promise<boolean | null> => {
-  if (!__DEV__) return null;
-  try {
-    const value = await AsyncStorage.getItem(DEV_PREMIUM_STORAGE_KEY);
-    if (value === null) return null;
-    return JSON.parse(value) === true;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * [DEV ONLY] Set the dev premium override status.
- * Pass null to clear the override.
- */
-export const setDevPremiumOverride = async (isPremium: boolean | null): Promise<void> => {
-  if (!__DEV__) return;
-  try {
-    if (isPremium === null) {
-      await AsyncStorage.removeItem(DEV_PREMIUM_STORAGE_KEY);
-    } else {
-      await AsyncStorage.setItem(DEV_PREMIUM_STORAGE_KEY, JSON.stringify(isPremium));
-    }
-  } catch (error) {
-    console.error('Failed to set dev premium override:', error);
-  }
-};

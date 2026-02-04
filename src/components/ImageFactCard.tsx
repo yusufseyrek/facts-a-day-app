@@ -45,6 +45,9 @@ const ImageFactCardComponent = ({
   // Use a ref for the scale animation - this persists across renders
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
+  // Ref to track press delay timeout - prevents animation during scroll
+  const pressDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Shimmer animation for loading state
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
@@ -109,16 +112,30 @@ const ImageFactCardComponent = ({
   // Use a smaller aspect ratio for tablets so cards aren't too tall
   const cardHeight = screenWidth * config.cardAspectRatio;
 
+  // Delay press animation to avoid triggering during scroll
   const handlePressIn = useCallback(() => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.96,
-      useNativeDriver: true,
-      friction: 8,
-      tension: 100,
-    }).start();
+    // Clear any existing timeout
+    if (pressDelayRef.current) {
+      clearTimeout(pressDelayRef.current);
+    }
+    // Delay the animation - if user starts scrolling, pressOut will cancel it
+    pressDelayRef.current = setTimeout(() => {
+      Animated.spring(scaleAnim, {
+        toValue: 0.96,
+        useNativeDriver: true,
+        friction: 8,
+        tension: 100,
+      }).start();
+    }, 100);
   }, [scaleAnim]);
 
   const handlePressOut = useCallback(() => {
+    // Cancel pending animation if user was scrolling
+    if (pressDelayRef.current) {
+      clearTimeout(pressDelayRef.current);
+      pressDelayRef.current = null;
+    }
+    // Always reset scale to 1
     Animated.spring(scaleAnim, {
       toValue: 1,
       useNativeDriver: true,

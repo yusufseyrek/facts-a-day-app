@@ -323,9 +323,7 @@ export default function TriviaScreen() {
                   </Animated.View>
 
                   {/* Native Ad */}
-                  <Animated.View entering={FadeInDown.delay(250).duration(300)}>
-                    <InlineNativeAd />
-                  </Animated.View>
+                  <InlineNativeAd />
 
                   {/* Category rows */}
                   {categoryRows.map((row, rowIndex) => (

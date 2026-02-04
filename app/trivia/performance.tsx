@@ -7,7 +7,7 @@ import {
   ScrollView,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInUp, SlideInRight } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useFocusEffect } from '@react-navigation/native';
@@ -221,7 +221,9 @@ function MetricCard({
           {labelText}
         </XStack>
       )}
-      <Text.Title color={textColor} fontFamily={FONT_FAMILIES.semibold}>{value}</Text.Title>
+      <Text.Title color={textColor} fontFamily={FONT_FAMILIES.semibold}>
+        {value}
+      </Text.Title>
       {subtitle && (
         <Text.Tiny color={subtitleColor} fontFamily={FONT_FAMILIES.medium}>
           {subtitle}
@@ -731,13 +733,11 @@ export default function PerformanceScreen() {
           </Animated.View>
 
           {/* Native Ad */}
-          <Animated.View entering={FadeIn.delay(75).duration(400).springify()}>
-            <InlineNativeAd />
-          </Animated.View>
+          <InlineNativeAd />
 
           {/* Accuracy by Category */}
           {displayCategories.length > 0 && (
-            <Animated.View entering={SlideInRight.delay(75).duration(400).springify()}>
+            <View>
               <YStack marginBottom={spacing.md} gap={spacing.xs}>
                 <XStack alignItems="center" justifyContent="space-between">
                   <Text.Title color={textColor} flex={1}>
@@ -767,12 +767,12 @@ export default function PerformanceScreen() {
                   ))}
                 </YStack>
               </Pressable>
-            </Animated.View>
+            </View>
           )}
 
           {/* Recent Trivia */}
           {recentSessions.length > 0 && (
-            <Animated.View entering={SlideInRight.delay(100).duration(400).springify()}>
+            <View>
               <XStack alignItems="center" justifyContent="space-between" marginBottom={spacing.md}>
                 <Text.Title color={textColor}>{t('recentTests')}</Text.Title>
                 {totalSessionsCount > DISPLAY_LIMITS.MAX_ACTIVITIES && (
@@ -797,7 +797,7 @@ export default function PerformanceScreen() {
                   />
                 ))}
               </YStack>
-            </Animated.View>
+            </View>
           )}
         </YStack>
       </ScrollView>

@@ -1,4 +1,12 @@
-import React, { useCallback, useMemo, useRef, useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+  useImperativeHandle,
+  forwardRef,
+} from 'react';
 import { FlatList, NativeScrollEvent, NativeSyntheticEvent, Pressable, View } from 'react-native';
 
 import { Compass } from '@tamagui/lucide-icons';
@@ -8,7 +16,11 @@ import { ImageFactCard } from './ImageFactCard';
 import { Text } from './Typography';
 import { ContentContainer } from './ScreenLayout';
 import { NATIVE_ADS } from '../config/app';
-import { insertNativeAds, isNativeAdPlaceholder, type NativeAdPlaceholder } from '../utils/insertNativeAds';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  type NativeAdPlaceholder,
+} from '../utils/insertNativeAds';
 import { useResponsive } from '../utils/useResponsive';
 import { hexColors, useTheme } from '../theme';
 import { useTranslation } from '../i18n';
@@ -45,235 +57,244 @@ export const FactCarousel = React.memo(
       const flatListRef = useRef<FlatList>(null);
 
       // Expose scrollToStart method to parent
-      useImperativeHandle(ref, () => ({
-        scrollToStart: () => {
-          flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-          setActiveIndex(0);
-        },
-      }), []);
+      useImperativeHandle(
+        ref,
+        () => ({
+          scrollToStart: () => {
+            flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+            setActiveIndex(0);
+          },
+        }),
+        []
+      );
 
       const carouselFactIds = useMemo(() => facts.map((f) => f.id), [facts]);
-    const colors = hexColors[theme];
-    const cardWidth = screenWidth * config.cardWidthMultiplier;
-    const cardGap = spacing.sm;
-    const snapInterval = cardWidth + cardGap;
-    const horizontalPadding = (screenWidth - cardWidth) / 2;
+      const colors = hexColors[theme];
+      const cardWidth = screenWidth * config.cardWidthMultiplier;
+      const cardGap = spacing.sm;
+      const snapInterval = cardWidth + cardGap;
+      const horizontalPadding = (screenWidth - cardWidth) / 2;
 
-    // Track native ad slots that failed to load (no-fill)
-    const [failedAdKeys, setFailedAdKeys] = useState<Set<string>>(new Set());
+      // Track native ad slots that failed to load (no-fill)
+      const [failedAdKeys, setFailedAdKeys] = useState<Set<string>>(new Set());
 
-    // Reset failed keys when facts change (new data)
-    useEffect(() => {
-      setFailedAdKeys(new Set());
-    }, [facts]);
+      // Reset failed keys when facts change (new data)
+      useEffect(() => {
+        setFailedAdKeys(new Set());
+      }, [facts]);
 
-    const handleAdFailed = useCallback((key: string) => {
-      setFailedAdKeys(prev => {
-        const next = new Set(prev);
-        next.add(key);
-        return next;
-      });
-    }, []);
+      const handleAdFailed = useCallback((key: string) => {
+        setFailedAdKeys((prev) => {
+          const next = new Set(prev);
+          next.add(key);
+          return next;
+        });
+      }, []);
 
-    // Insert native ads into facts, then filter out failed ones, then append CTA
-    const factsWithAds = useMemo(
-      () => insertNativeAds(facts, NATIVE_ADS.FIRST_AD_INDEX.HOME_CAROUSEL),
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- isPremium triggers re-computation to remove/add native ads
-      [facts, isPremium],
-    );
-    const filteredData = useMemo(
-      () => factsWithAds.filter(item => !isNativeAdPlaceholder(item) || !failedAdKeys.has(item.key)),
-      [factsWithAds, failedAdKeys],
-    );
-    const data: CarouselItem[] = onDiscoverPress
-      ? [...filteredData, { id: DISCOVER_CTA_ID }]
-      : filteredData;
+      // Insert native ads into facts, then filter out failed ones, then append CTA
+      const factsWithAds = useMemo(
+        () => insertNativeAds(facts, NATIVE_ADS.FIRST_AD_INDEX.HOME_CAROUSEL),
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- isPremium triggers re-computation to remove/add native ads
+        [facts, isPremium]
+      );
+      const filteredData = useMemo(
+        () =>
+          factsWithAds.filter(
+            (item) => !isNativeAdPlaceholder(item) || !failedAdKeys.has(item.key)
+          ),
+        [factsWithAds, failedAdKeys]
+      );
+      const data: CarouselItem[] = onDiscoverPress
+        ? [...filteredData, { id: DISCOVER_CTA_ID }]
+        : filteredData;
 
-    const totalDots = data.length;
+      const totalDots = data.length;
 
-    const handleScroll = useCallback(
-      (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const offsetX = event.nativeEvent.contentOffset.x;
-        const index = Math.round(offsetX / snapInterval);
-        setActiveIndex(Math.max(0, Math.min(index, totalDots - 1)));
-      },
-      [snapInterval, totalDots]
-    );
+      const handleScroll = useCallback(
+        (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+          const offsetX = event.nativeEvent.contentOffset.x;
+          const index = Math.round(offsetX / snapInterval);
+          setActiveIndex(Math.max(0, Math.min(index, totalDots - 1)));
+        },
+        [snapInterval, totalDots]
+      );
 
-    // Calculate card height to match ImageFactCard
-    const ctaCardHeight = screenWidth * config.cardAspectRatio;
+      // Calculate card height to match ImageFactCard
+      const ctaCardHeight = screenWidth * config.cardAspectRatio;
 
-    const renderItem = useCallback(
-      ({ item }: { item: CarouselItem }) => {
-        // Native ad card
-        if (isNativeAdPlaceholder(item)) {
+      const renderItem = useCallback(
+        ({ item }: { item: CarouselItem }) => {
+          // Native ad card
+          if (isNativeAdPlaceholder(item)) {
+            return (
+              <View style={{ width: cardWidth }}>
+                <NativeAdCard cardWidth={cardWidth} onAdFailed={() => handleAdFailed(item.key)} />
+              </View>
+            );
+          }
+
+          // Discover CTA card
+          if ('id' in item && item.id === DISCOVER_CTA_ID) {
+            return (
+              <View style={{ width: cardWidth }}>
+                <Pressable
+                  onPress={onDiscoverPress}
+                  style={({ pressed }) => [
+                    {
+                      height: ctaCardHeight,
+                      borderRadius: radius.lg,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      backgroundColor: colors.surface,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: spacing.md,
+                      opacity: pressed ? 0.8 : 1,
+                    },
+                  ]}
+                >
+                  <View
+                    style={{
+                      width: iconSizes.heroLg,
+                      height: iconSizes.heroLg,
+                      borderRadius: radius.full,
+                      backgroundColor: colors.primaryLight,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Compass size={iconSizes.xl} color={colors.primary} />
+                  </View>
+                  <Text.Title color="$text" style={{ textAlign: 'center' }}>
+                    {t('discoverMoreTitle')}
+                  </Text.Title>
+                  <Text.Caption
+                    color="$textSecondary"
+                    style={{ textAlign: 'center', paddingHorizontal: spacing.xl }}
+                  >
+                    {t('discoverMoreDescription')}
+                  </Text.Caption>
+                </Pressable>
+              </View>
+            );
+          }
+
+          // Regular fact card
+          const fact = item as FactWithRelations;
+          const factIndex = facts.indexOf(fact);
+          // Signal first image ready for splash coordination
+          const handleImageReady =
+            factIndex === 0 && onFirstImageReady && !firstImageSignalledRef.current
+              ? () => {
+                  firstImageSignalledRef.current = true;
+                  onFirstImageReady();
+                }
+              : undefined;
           return (
             <View style={{ width: cardWidth }}>
-              <NativeAdCard cardWidth={cardWidth} onAdFailed={() => handleAdFailed(item.key)} />
+              <ImageFactCard
+                title={fact.title || fact.content.substring(0, 80) + '...'}
+                imageUrl={fact.image_url!}
+                factId={fact.id}
+                category={fact.categoryData || fact.category}
+                categorySlug={fact.categoryData?.slug || fact.category}
+                onPress={() => onFactPress(fact, carouselFactIds, factIndex >= 0 ? factIndex : 0)}
+                onImageReady={handleImageReady}
+              />
             </View>
           );
-        }
+        },
+        [
+          cardWidth,
+          ctaCardHeight,
+          radius,
+          colors,
+          spacing,
+          iconSizes,
+          onFactPress,
+          onDiscoverPress,
+          onFirstImageReady,
+          carouselFactIds,
+          facts,
+          handleAdFailed,
+          t,
+        ]
+      );
 
-        // Discover CTA card
-        if ('id' in item && item.id === DISCOVER_CTA_ID) {
-          return (
-            <View style={{ width: cardWidth }}>
-              <Pressable
-                onPress={onDiscoverPress}
-                style={({ pressed }) => [
-                  {
-                    height: ctaCardHeight,
-                    borderRadius: radius.lg,
-                    overflow: 'hidden',
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    backgroundColor: colors.surface,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: spacing.md,
-                    opacity: pressed ? 0.8 : 1,
-                  },
-                ]}
-              >
-                <View
-                  style={{
-                    width: iconSizes.heroLg,
-                    height: iconSizes.heroLg,
-                    borderRadius: radius.full,
-                    backgroundColor: colors.primaryLight,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Compass size={iconSizes.xl} color={colors.primary} />
-                </View>
-                <Text.Title color="$text" style={{ textAlign: 'center' }}>
-                  {t('discoverMoreTitle')}
-                </Text.Title>
-                <Text.Caption
-                  color="$textSecondary"
-                  style={{ textAlign: 'center', paddingHorizontal: spacing.xl }}
-                >
-                  {t('discoverMoreDescription')}
-                </Text.Caption>
-              </Pressable>
-            </View>
-          );
-        }
+      const keyExtractor = useCallback((item: CarouselItem) => {
+        if (isNativeAdPlaceholder(item)) return item.key;
+        if ('id' in item && item.id === DISCOVER_CTA_ID) return DISCOVER_CTA_ID;
+        return `carousel-${(item as FactWithRelations).id}`;
+      }, []);
 
-        // Regular fact card
-        const fact = item as FactWithRelations;
-        const factIndex = facts.indexOf(fact);
-        // Signal first image ready for splash coordination
-        const handleImageReady = factIndex === 0 && onFirstImageReady && !firstImageSignalledRef.current
-          ? () => {
-              firstImageSignalledRef.current = true;
-              onFirstImageReady();
-            }
-          : undefined;
+      if (facts.length === 0) return null;
+
+      // Single fact with no CTA: render as a regular card, no carousel needed
+      if (facts.length === 1 && !onDiscoverPress) {
         return (
-          <View style={{ width: cardWidth }}>
+          <ContentContainer>
             <ImageFactCard
-              title={fact.title || fact.content.substring(0, 80) + '...'}
-              imageUrl={fact.image_url!}
-              factId={fact.id}
-              category={fact.categoryData || fact.category}
-              categorySlug={fact.categoryData?.slug || fact.category}
-              onPress={() => onFactPress(fact, carouselFactIds, factIndex >= 0 ? factIndex : 0)}
-              onImageReady={handleImageReady}
+              title={facts[0].title || facts[0].content.substring(0, 80) + '...'}
+              imageUrl={facts[0].image_url!}
+              factId={facts[0].id}
+              category={facts[0].categoryData || facts[0].category}
+              categorySlug={facts[0].categoryData?.slug || facts[0].category}
+              onPress={() => onFactPress(facts[0], carouselFactIds, 0)}
+              onImageReady={onFirstImageReady}
             />
-          </View>
+          </ContentContainer>
         );
-      },
-      [
-        cardWidth,
-        ctaCardHeight,
-        radius,
-        colors,
-        spacing,
-        iconSizes,
-        onFactPress,
-        onDiscoverPress,
-        onFirstImageReady,
-        carouselFactIds,
-        facts,
-        handleAdFailed,
-        t,
-      ]
-    );
+      }
 
-    const keyExtractor = useCallback((item: CarouselItem) => {
-      if (isNativeAdPlaceholder(item)) return item.key;
-      if ('id' in item && item.id === DISCOVER_CTA_ID) return DISCOVER_CTA_ID;
-      return `carousel-${(item as FactWithRelations).id}`;
-    }, []);
-
-    if (facts.length === 0) return null;
-
-    // Single fact with no CTA: render as a regular card, no carousel needed
-    if (facts.length === 1 && !onDiscoverPress) {
       return (
-        <ContentContainer>
-          <ImageFactCard
-            title={facts[0].title || facts[0].content.substring(0, 80) + '...'}
-            imageUrl={facts[0].image_url!}
-            factId={facts[0].id}
-            category={facts[0].categoryData || facts[0].category}
-            categorySlug={facts[0].categoryData?.slug || facts[0].category}
-            onPress={() => onFactPress(facts[0], carouselFactIds, 0)}
-            onImageReady={onFirstImageReady}
+        <View>
+          <FlatList
+            ref={flatListRef}
+            data={data}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={snapInterval}
+            decelerationRate="fast"
+            contentContainerStyle={{
+              paddingHorizontal: horizontalPadding,
+              gap: cardGap,
+            }}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
           />
-        </ContentContainer>
+
+          {/* Pagination dots */}
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: spacing.xs,
+              marginTop: spacing.sm,
+            }}
+          >
+            {data.map((_, index) => {
+              const dotSize = index === activeIndex ? spacing.sm : spacing.xs + 2;
+              return (
+                <View
+                  key={index}
+                  style={{
+                    width: dotSize,
+                    height: dotSize,
+                    borderRadius: radius.full,
+                    backgroundColor: index === activeIndex ? colors.primary : colors.border,
+                  }}
+                />
+              );
+            })}
+          </View>
+        </View>
       );
     }
-
-    return (
-      <View>
-        <FlatList
-          ref={flatListRef}
-          data={data}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          snapToInterval={snapInterval}
-          decelerationRate="fast"
-          contentContainerStyle={{
-            paddingHorizontal: horizontalPadding,
-            gap: cardGap,
-          }}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-        />
-
-        {/* Pagination dots */}
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: spacing.xs,
-            marginTop: spacing.sm,
-          }}
-        >
-          {data.map((_, index) => {
-            const dotSize = index === activeIndex ? spacing.sm : spacing.xs + 2;
-            return (
-              <View
-                key={index}
-                style={{
-                  width: dotSize,
-                  height: dotSize,
-                  borderRadius: radius.full,
-                  backgroundColor: index === activeIndex ? colors.primary : colors.border,
-                }}
-              />
-            );
-          })}
-        </View>
-      </View>
-    );
-  })
+  )
 );
 
 FactCarousel.displayName = 'FactCarousel';

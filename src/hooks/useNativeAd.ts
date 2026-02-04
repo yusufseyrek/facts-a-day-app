@@ -22,15 +22,21 @@ const getNativeAdUnitId = (): string => {
   return config?.ADMOB_ANDROID_NATIVE_ID || TestIds.NATIVE;
 };
 
-export function useNativeAd() {
+interface UseNativeAdOptions {
+  /** Skip loading the ad (useful when ad is provided externally) */
+  skip?: boolean;
+}
+
+export function useNativeAd(options: UseNativeAdOptions = {}) {
+  const { skip = false } = options;
   const [nativeAd, setNativeAd] = useState<NativeAd | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<Error | null>(null);
   const nativeAdRef = useRef<NativeAd | null>(null);
 
   useEffect(() => {
-    // Don't load native ads if ads are disabled or user is premium
-    if (!ADS_ENABLED || !NATIVE_ADS.ACTIVE || !shouldShowAds()) {
+    // Don't load native ads if skipped, ads are disabled, or user is premium
+    if (skip || !ADS_ENABLED || !NATIVE_ADS.ACTIVE || !shouldShowAds()) {
       setIsLoading(false);
       return;
     }

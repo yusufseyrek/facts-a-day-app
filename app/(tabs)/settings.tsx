@@ -88,7 +88,7 @@ export default function SettingsPage() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { resetOnboarding } = useOnboarding();
-  const { isPremium, restorePurchases, toggleDevPremium } = usePremium();
+  const { isPremium, restorePurchases } = usePremium();
   const { iconSizes, spacing, isTablet } = useResponsive();
 
   // Track if this is the initial mount to prevent re-animation on tab focus
@@ -866,13 +866,6 @@ export default function SettingsPage() {
           onPress: openAdDebugMenu,
         },
         {
-          id: 'togglePremium',
-          label: 'Toggle Premium',
-          value: isPremium ? 'ON' : 'OFF',
-          icon: <Crown size={iconSizes.md} color={isPremium ? '#FFD700' : iconColor} />,
-          onPress: toggleDevPremium,
-        },
-        {
           id: 'resetOnboarding',
           label: t('resetOnboarding'),
           icon: <RotateCcw size={iconSizes.md} color={iconColor} />,
@@ -971,7 +964,6 @@ export default function SettingsPage() {
     isCheckingUpdate,
     isPremium,
     restorePurchases,
-    toggleDevPremium,
     router,
   ]);
 

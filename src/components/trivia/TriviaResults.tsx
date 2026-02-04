@@ -843,11 +843,9 @@ export function TriviaResults({
         </Animated.View>
 
         {/* Native Ad */}
-        <Animated.View entering={FadeInDown.delay(150).duration(400)}>
-          <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
-            <InlineNativeAd />
-          </View>
-        </Animated.View>
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
+          <InlineNativeAd />
+        </View>
 
         {/* Divider */}
         <View
