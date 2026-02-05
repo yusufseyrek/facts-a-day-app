@@ -708,7 +708,7 @@ export const translations = {
     settingsRestoreNoSubscriptionMessage: 'No active subscription was found.',
     paywallTitle: 'Go Premium',
     paywallSubtitle: 'Unlock the full experience',
-    paywallFeatureNoAds: 'Remove All Ads',
+    paywallFeatureNoAds: 'Remove Ads',
     paywallFeatureNoAdsDesc: 'No banners, no interruptions',
     paywallFeatureUnlimitedCategories: 'Unlimited Categories',
     paywallFeatureUnlimitedCategoriesDesc: 'Select as many topics as you want',
