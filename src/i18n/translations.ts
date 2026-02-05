@@ -365,7 +365,7 @@ export const translations = {
     paywallRestore: 'Käufe wiederherstellen',
     paywallTerms: 'AGB',
     paywallPrivacy: 'Datenschutz',
-    paywallLegalAgree: 'Mit dem Fortfahren stimmst du unseren',
+    paywallLegalAgree: 'Mit dem Fortfahren akzeptierst du unsere',
     paywallLegalAnd: 'und',
   },
   en: {
@@ -1816,7 +1816,7 @@ export const translations = {
     paywallRestore: '購入を復元',
     paywallTerms: '利用規約',
     paywallPrivacy: 'プライバシー',
-    paywallLegalAgree: '続行すると、',
+    paywallLegalAgree: '続行すると、以下に同意したことになります：',
     paywallLegalAnd: 'と',
   },
   ko: {
@@ -2175,7 +2175,7 @@ export const translations = {
     paywallRestore: '구매 복원',
     paywallTerms: '약관',
     paywallPrivacy: '개인정보',
-    paywallLegalAgree: '계속하면',
+    paywallLegalAgree: '계속하면 다음에 동의하게 됩니다:',
     paywallLegalAnd: '및',
   },
   tr: {
@@ -2536,7 +2536,7 @@ export const translations = {
     paywallRestore: 'Satın Alımları Geri Yükle',
     paywallTerms: 'Koşullar',
     paywallPrivacy: 'Gizlilik',
-    paywallLegalAgree: 'Devam ederek',
+    paywallLegalAgree: 'Devam ederek kabul edersiniz:',
     paywallLegalAnd: 've',
   },
   zh: {

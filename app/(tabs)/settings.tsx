@@ -911,7 +911,6 @@ export default function SettingsPage() {
             {
               id: 'premiumActive',
               label: t('settingsPremiumActive'),
-              value: t('settingsManageSubscription'),
               icon: <Crown size={iconSizes.md} color="#FFD700" />,
               onPress: () => deepLinkToSubscriptions(),
             },
@@ -920,7 +919,6 @@ export default function SettingsPage() {
             {
               id: 'upgradePremium',
               label: t('settingsUpgradeToPremium'),
-              value: t('settingsRemoveAds'),
               icon: <Crown size={iconSizes.md} color={iconColor} />,
               onPress: () => router.push('/paywall'),
             },
