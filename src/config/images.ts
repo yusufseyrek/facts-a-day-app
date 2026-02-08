@@ -57,6 +57,8 @@ export const IMAGE_DOWNLOAD_RETRY = {
   MAX_ATTEMPTS: 3,
   /** Base delay between retries in milliseconds (exponential backoff) */
   DELAY_BASE_MS: 1000,
+  /** Timeout per download attempt in milliseconds (images are <100KB) */
+  TIMEOUT_MS: 5_000,
 } as const;
 
 /**

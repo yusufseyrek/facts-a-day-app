@@ -3,13 +3,14 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  FlatList,
   Modal,
   Pressable,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
+
+import { FlashList } from '@shopify/flash-list';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 
 import { Calendar, Check, Edit3, RefreshCw, Search, Trash2, X } from '@tamagui/lucide-icons';
@@ -524,11 +525,10 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({ visibl
                 <ActivityIndicator size="large" color={colors.primary} />
               </View>
             ) : (
-              <FlatList
+              <FlashList
                 data={filteredFacts}
                 keyExtractor={keyExtractor}
                 renderItem={renderFactItem}
-                style={styles.list}
                 contentContainerStyle={dynamicStyles.listContent}
                 showsVerticalScrollIndicator={false}
               />

@@ -369,7 +369,14 @@ async function performImageDownload(
 
         try {
           // Try FileSystem.downloadAsync first - fastest option
-          const downloadResult = await FileSystem.downloadAsync(imageUrl, localUri, { headers });
+          // Wrap in Promise.race with timeout to prevent hanging on dead connections
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Download timeout')), IMAGE_DOWNLOAD_RETRY.TIMEOUT_MS)
+          );
+          const downloadResult = await Promise.race([
+            FileSystem.downloadAsync(imageUrl, localUri, { headers }),
+            timeoutPromise,
+          ]);
 
           downloadStatus = downloadResult.status;
 
@@ -385,14 +392,24 @@ async function performImageDownload(
             return downloadResult.uri;
           }
         } catch {
+          // Clean up partial file on timeout or error
+          FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
           // If downloadAsync fails (e.g., headers not supported in some versions),
           // fall back to fetch + streaming write
           try {
+            const controller = new AbortController();
+            const fetchTimeout = setTimeout(
+              () => controller.abort(),
+              IMAGE_DOWNLOAD_RETRY.TIMEOUT_MS
+            );
+
             const response = await fetch(imageUrl, {
               method: 'GET',
               headers,
+              signal: controller.signal,
             });
 
+            clearTimeout(fetchTimeout);
             downloadStatus = response.status;
 
             if (response.ok) {

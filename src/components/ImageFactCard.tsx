@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 
+import { RefreshCw } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -61,14 +62,73 @@ const ImageFactCardComponent = ({
   const {
     imageUri: authenticatedImageUri,
     isLoading: isImageLoading,
+    hasError,
     retry: retryImage,
   } = useFactImage(imageUrl, factId);
 
   // Track if image has loaded successfully
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Show loading shimmer when image is loading or hasn't loaded yet
-  const showLoadingState = isImageLoading || !imageLoaded;
+  // Keep track of the last valid image URI to prevent flickering
+  const lastValidUriRef = useRef<string | null>(null);
+
+  // Update last valid URI when we get a new one
+  if (authenticatedImageUri && authenticatedImageUri !== lastValidUriRef.current) {
+    lastValidUriRef.current = authenticatedImageUri;
+  }
+
+  // Use the last valid URI if current is null (prevents flicker during re-render)
+  const displayUri = authenticatedImageUri || lastValidUriRef.current;
+
+  // Retry state: first try re-rendering, then try re-downloading
+  // renderRetryCount: triggers re-render without downloading (for Android timing issues)
+  // downloadRetryCount: triggers actual re-download (for corrupted files)
+  const [renderRetryCount, setRenderRetryCount] = useState(0);
+  const [downloadRetryCount, setDownloadRetryCount] = useState(0);
+
+  // All retries exhausted and still no image — show error overlay instead of infinite shimmer
+  const isPermanentlyFailed =
+    !isImageLoading &&
+    !imageLoaded &&
+    (// Case 1: Download failed completely, no URI to even attempt rendering
+    (hasError && !displayUri) ||
+      // Case 2: All render + download retries exhausted
+      ((hasError || downloadRetryCount >= IMAGE_RETRY.MAX_DOWNLOAD_ATTEMPTS) &&
+        renderRetryCount >= IMAGE_RETRY.MAX_RENDER_ATTEMPTS));
+
+  // Show loading shimmer when image is loading or hasn't loaded yet, but NOT when permanently failed
+  const showLoadingState = (isImageLoading || !imageLoaded) && !isPermanentlyFailed;
+
+  // Watchdog: after a render retry, if expo-image doesn't call onError/onLoad again
+  // within a few seconds, force-advance the retry state to prevent getting stuck
+  const renderWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    // Only activate after a render retry has been attempted
+    if (renderRetryCount === 0 || imageLoaded || isImageLoading || isPermanentlyFailed) {
+      return;
+    }
+
+    if (renderWatchdogRef.current) clearTimeout(renderWatchdogRef.current);
+
+    renderWatchdogRef.current = setTimeout(() => {
+      if (retryPendingRef.current) return;
+
+      if (renderRetryCount < IMAGE_RETRY.MAX_RENDER_ATTEMPTS) {
+        // Still have render retries — try another
+        setRenderRetryCount((prev) => prev + 1);
+      } else if (downloadRetryCount < IMAGE_RETRY.MAX_DOWNLOAD_ATTEMPTS) {
+        // Render retries exhausted — move to download retry
+        setDownloadRetryCount((prev) => prev + 1);
+        setRenderRetryCount(0);
+        retryImage();
+      }
+      // else: all exhausted → isPermanentlyFailed will be true on next render
+    }, 3000);
+
+    return () => {
+      if (renderWatchdogRef.current) clearTimeout(renderWatchdogRef.current);
+    };
+  }, [renderRetryCount, downloadRetryCount, imageLoaded, isImageLoading, isPermanentlyFailed, retryImage]);
 
   // Run shimmer animation when loading
   useEffect(() => {
@@ -93,23 +153,6 @@ const ImageFactCardComponent = ({
       shimmerAnim.setValue(0);
     }
   }, [showLoadingState, shimmerAnim]);
-
-  // Keep track of the last valid image URI to prevent flickering
-  const lastValidUriRef = useRef<string | null>(null);
-
-  // Update last valid URI when we get a new one
-  if (authenticatedImageUri && authenticatedImageUri !== lastValidUriRef.current) {
-    lastValidUriRef.current = authenticatedImageUri;
-  }
-
-  // Use the last valid URI if current is null (prevents flicker during re-render)
-  const displayUri = authenticatedImageUri || lastValidUriRef.current;
-
-  // Retry state: first try re-rendering, then try re-downloading
-  // renderRetryCount: triggers re-render without downloading (for Android timing issues)
-  // downloadRetryCount: triggers actual re-download (for corrupted files)
-  const [renderRetryCount, setRenderRetryCount] = useState(0);
-  const [downloadRetryCount, setDownloadRetryCount] = useState(0);
 
   // Track if we're currently waiting for a retry (prevent duplicate error handling)
   const retryPendingRef = useRef(false);
@@ -213,6 +256,15 @@ const ImageFactCardComponent = ({
     onImageReady?.();
   }, [onImageReady]);
 
+  // Reset everything and retry from scratch when user taps error overlay
+  const handleRetryFromError = useCallback(() => {
+    setRenderRetryCount(0);
+    setDownloadRetryCount(0);
+    setImageLoaded(false);
+    retryPendingRef.current = false;
+    retryImage();
+  }, [retryImage]);
+
   // Generate image source - memoized to prevent unnecessary re-renders
   const imageSource: ImageSource | null = useMemo(
     () => (displayUri ? { uri: displayUri } : null),
@@ -308,6 +360,17 @@ const ImageFactCardComponent = ({
               />
             )}
 
+            {/* Error overlay with retry — shown when all retries exhausted */}
+            {isPermanentlyFailed && (
+              <TouchableOpacity
+                style={[StyleSheet.absoluteFill, styles.errorOverlay]}
+                onPress={handleRetryFromError}
+                activeOpacity={0.7}
+              >
+                <RefreshCw size={32} color="rgba(255, 255, 255, 0.6)" />
+              </TouchableOpacity>
+            )}
+
             {/* Dark gradient overlay for text legibility */}
             <LinearGradient
               colors={gradientColors}
@@ -358,6 +421,11 @@ const styles = StyleSheet.create({
   },
   shimmerOverlay: {
     backgroundColor: '#2d2d44', // Subtle shimmer color
+  },
+  errorOverlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   badgeContainer: {
     position: 'absolute',

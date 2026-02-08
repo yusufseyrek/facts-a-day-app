@@ -7,7 +7,9 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from 'react';
-import { FlatList, NativeScrollEvent, NativeSyntheticEvent, Pressable, View } from 'react-native';
+import { NativeScrollEvent, NativeSyntheticEvent, Pressable, View } from 'react-native';
+
+import { FlashList, FlashListRef } from '@shopify/flash-list';
 
 import { Compass } from '@tamagui/lucide-icons';
 
@@ -54,7 +56,7 @@ export const FactCarousel = React.memo(
       const { isPremium } = usePremium();
       const [activeIndex, setActiveIndex] = useState(0);
       const firstImageSignalledRef = useRef(false);
-      const flatListRef = useRef<FlatList>(null);
+      const flatListRef = useRef<FlashListRef<CarouselItem>>(null);
 
       // Expose scrollToStart method to parent
       useImperativeHandle(
@@ -247,24 +249,31 @@ export const FactCarousel = React.memo(
         );
       }
 
+      const itemSeparator = useCallback(
+        () => <View style={{ width: cardGap }} />,
+        [cardGap]
+      );
+
       return (
         <View>
-          <FlatList
-            ref={flatListRef}
-            data={data}
-            renderItem={renderItem}
-            keyExtractor={keyExtractor}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            snapToInterval={snapInterval}
-            decelerationRate="fast"
-            contentContainerStyle={{
-              paddingHorizontal: horizontalPadding,
-              gap: cardGap,
-            }}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-          />
+          <View style={{ height: ctaCardHeight, width: '100%' }}>
+            <FlashList
+              ref={flatListRef}
+              data={data}
+              renderItem={renderItem}
+              keyExtractor={keyExtractor}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={snapInterval}
+              decelerationRate="fast"
+              ItemSeparatorComponent={itemSeparator}
+              contentContainerStyle={{
+                paddingHorizontal: horizontalPadding,
+              }}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+            />
+          </View>
 
           {/* Pagination dots */}
           <View

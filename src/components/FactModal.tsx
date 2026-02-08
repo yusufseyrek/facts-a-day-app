@@ -11,7 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
-import { Calendar, ImagePlus, X } from '@tamagui/lucide-icons';
+import { Calendar, ImagePlus, RefreshCw, X } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { XStack, YStack } from 'tamagui';
@@ -103,20 +103,27 @@ export function FactModal({
   const [containerWidth, setContainerWidth] = useState(SCREEN_WIDTH); // Actual modal width
 
   // Use authenticated image with App Check - downloads and caches locally
-  const { imageUri: authenticatedImageUri, isLoading: isImageLoading } = useFactImage(
-    fact.image_url,
-    fact.id
-  );
+  const {
+    imageUri: authenticatedImageUri,
+    isLoading: isImageLoading,
+    hasError: imageHasError,
+    retry: retryImage,
+  } = useFactImage(fact.image_url, fact.id);
 
   // Shimmer animation for loading placeholder
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
-  // Show loading placeholder when we have a URL but image is still loading
-  const showImagePlaceholder = !!fact.image_url && isImageLoading && !authenticatedImageUri;
+  // Image permanently failed: not loading, no URI, has error
+  const isImageFailed = !!fact.image_url && !isImageLoading && !authenticatedImageUri && imageHasError;
 
-  // Run shimmer animation when loading
+  // Show placeholder when loading OR when permanently failed (error state)
+  const showImagePlaceholder =
+    (!!fact.image_url && isImageLoading && !authenticatedImageUri) || isImageFailed;
+
+  // Run shimmer animation only during actual loading (not on permanent error)
+  const isActivelyLoading = showImagePlaceholder && !isImageFailed;
   useEffect(() => {
-    if (showImagePlaceholder) {
+    if (isActivelyLoading) {
       const animation = Animated.loop(
         Animated.sequence([
           Animated.timing(shimmerAnim, {
@@ -136,7 +143,7 @@ export function FactModal({
     } else {
       shimmerAnim.setValue(0);
     }
-  }, [showImagePlaceholder, shimmerAnim]);
+  }, [isActivelyLoading, shimmerAnim]);
 
   // Track fact view for app review prompt and interstitial ads
   useEffect(() => {
@@ -621,9 +628,12 @@ export function FactModal({
           </Animated.View>
         )}
 
-        {/* Image Loading Placeholder */}
+        {/* Image Loading / Error Placeholder */}
         {showImagePlaceholder && (
-          <View
+          <TouchableOpacity
+            activeOpacity={isImageFailed ? 0.7 : 1}
+            onPress={isImageFailed ? retryImage : undefined}
+            disabled={!isImageFailed}
             style={{
               width: IMAGE_WIDTH,
               height: IMAGE_HEIGHT,
@@ -632,25 +642,35 @@ export function FactModal({
               justifyContent: 'center',
             }}
           >
-            <Animated.View
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  backgroundColor: theme === 'dark' ? '#2d2d44' : '#d0d0e0',
-                  opacity: shimmerAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.3, 0.6],
-                  }),
-                },
-              ]}
-            />
-            <View style={{ alignItems: 'center', gap: spacing.sm }}>
-              <ImagePlus
-                size={iconSizes.xl}
-                color={theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'}
+            {/* Shimmer only during active loading */}
+            {isActivelyLoading && (
+              <Animated.View
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    backgroundColor: theme === 'dark' ? '#2d2d44' : '#d0d0e0',
+                    opacity: shimmerAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.3, 0.6],
+                    }),
+                  },
+                ]}
               />
+            )}
+            <View style={{ alignItems: 'center', gap: spacing.sm }}>
+              {isImageFailed ? (
+                <RefreshCw
+                  size={iconSizes.xl}
+                  color={theme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.25)'}
+                />
+              ) : (
+                <ImagePlus
+                  size={iconSizes.xl}
+                  color={theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'}
+                />
+              )}
             </View>
-          </View>
+          </TouchableOpacity>
         )}
 
         {/* Content Section */}

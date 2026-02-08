@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
   RefreshControl,
@@ -9,6 +8,8 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+
+import { FlashList } from '@shopify/flash-list';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import * as Notifications from 'expo-notifications';
@@ -49,7 +50,7 @@ function HomeScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const { spacing, typography, config, screenWidth } = useResponsive();
+  const { spacing, typography, config, screenWidth, iconSizes } = useResponsive();
   const {
     consumePreloadedFacts,
     consumePreloadedRecommendations,
@@ -241,6 +242,8 @@ function HomeScreen() {
 
   // On tablets, cap content width to MAX_CONTENT_WIDTH (matches ContentContainer)
   const contentWidth = Math.min(screenWidth, LAYOUT.MAX_CONTENT_WIDTH);
+  // Horizontal inset so FlashList cards align within content area (centers on tablets)
+  const listInset = (screenWidth - contentWidth) / 2 + spacing.md;
 
   // Today's facts carousel sizing - left-aligned, square cards with next card peeking
   const todayCardWidth = contentWidth - spacing.lg * 2 - spacing.xl;
@@ -270,23 +273,24 @@ function HomeScreen() {
             }
           : undefined;
       return (
-        <View
-          style={[
-            { width: todayCardWidth },
-            theme === 'dark' ? styles.shadowDark : styles.shadowLight,
-          ]}
-        >
-          <ImageFactCard
-            title={item.title || item.content.substring(0, 80) + '...'}
-            imageUrl={item.image_url!}
-            factId={item.id}
-            category={item.categoryData || item.category}
-            categorySlug={item.categoryData?.slug || item.category}
-            onPress={() => handleFactPress(item, todayCarouselFactIds, index)}
-            aspectRatio={1}
-            cardWidth={todayCardWidth}
-            onImageReady={handleImageReady}
-          />
+        <View style={{ width: todayCardWidth, paddingVertical: spacing.sm }}>
+          <View
+            style={[
+              theme === 'dark' ? styles.shadowDark : styles.shadowLight,
+            ]}
+          >
+            <ImageFactCard
+              title={item.title || item.content.substring(0, 80) + '...'}
+              imageUrl={item.image_url!}
+              factId={item.id}
+              category={item.categoryData || item.category}
+              categorySlug={item.categoryData?.slug || item.category}
+              onPress={() => handleFactPress(item, todayCarouselFactIds, index)}
+              aspectRatio={1}
+              cardWidth={todayCardWidth}
+              onImageReady={handleImageReady}
+            />
+          </View>
         </View>
       );
     },
@@ -301,16 +305,31 @@ function HomeScreen() {
 
   const renderPopularItem = useCallback(
     ({ item }: { item: FactWithRelations }) => (
-      <PopularFactCard
-        fact={item}
-        cardWidth={popularCardWidth}
-        onPress={() => handleFactPress(item)}
-      />
+      <View style={{ paddingVertical: spacing.sm }}>
+        <PopularFactCard
+          fact={item}
+          cardWidth={popularCardWidth}
+          onPress={() => handleFactPress(item)}
+        />
+      </View>
     ),
-    [popularCardWidth, handleFactPress]
+    [popularCardWidth, handleFactPress, spacing.sm]
   );
 
   const popularKeyExtractor = useCallback((item: FactWithRelations) => `popular-${item.id}`, []);
+
+  // Separators for horizontal FlashLists (replaces gap in contentContainerStyle)
+  const todaySeparator = useCallback(
+    () => <View style={{ width: todayCardGap }} />,
+    [todayCardGap]
+  );
+  const popularSeparator = useCallback(
+    () => <View style={{ width: popularCardGap }} />,
+    [popularCardGap]
+  );
+
+  // Popular card height for FlashList container (thumbnail + padding + shadow room)
+  const popularListHeight = iconSizes.heroLg + spacing.md * 2 + spacing.sm * 2;
 
   // Loading state
   if (initialLoading && todaysFacts.length === 0) {
@@ -344,7 +363,12 @@ function HomeScreen() {
           >
             {/* Title */}
             <Animated.View entering={FadeIn.duration(300)}>
-              <XStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} paddingBottom={spacing.sm} alignItems="center">
+              <XStack
+                paddingHorizontal={spacing.lg}
+                paddingTop={spacing.lg}
+                paddingBottom={spacing.sm}
+                alignItems="center"
+              >
                 <Text.Headline flex={1}>{t('appName')}</Text.Headline>
               </XStack>
             </Animated.View>
@@ -356,15 +380,17 @@ function HomeScreen() {
 
             {/* Fact of the Day */}
             {hasTodaysFacts && (
-              <ContentContainer>
-                <YStack>
+              <>
+                <ContentContainer>
                   <YStack paddingBottom={spacing.sm}>
                     <Text.Title fontSize={typography.fontSize.body}>
                       {todaysFacts.length > 1 ? t('factsOfTheDay') : t('factOfTheDay')}
                     </Text.Title>
                   </YStack>
+                </ContentContainer>
 
-                  {todaysFacts.length === 1 ? (
+                {todaysFacts.length === 1 ? (
+                  <ContentContainer>
                     <View style={theme === 'dark' ? styles.shadowDark : styles.shadowLight}>
                       <ImageFactCard
                         title={
@@ -380,9 +406,16 @@ function HomeScreen() {
                         onImageReady={signalCarouselImageReady}
                       />
                     </View>
-                  ) : (
-                    <YStack>
-                      <FlatList
+                  </ContentContainer>
+                ) : (
+                  <YStack>
+                    <View
+                      style={{
+                        height: todayCardWidth + spacing.md + spacing.sm * 2,
+                        width: '100%',
+                      }}
+                    >
+                      <FlashList
                         data={todaysFacts}
                         renderItem={renderTodayItem}
                         keyExtractor={todayKeyExtractor}
@@ -390,55 +423,62 @@ function HomeScreen() {
                         showsHorizontalScrollIndicator={false}
                         snapToInterval={todaySnapInterval}
                         decelerationRate="fast"
+                        ItemSeparatorComponent={todaySeparator}
                         contentContainerStyle={{
-                          gap: todayCardGap,
+                          paddingHorizontal: listInset,
                         }}
                         onScroll={handleTodayScroll}
                         scrollEventThrottle={16}
-                        style={{ overflow: 'visible' }}
                       />
+                    </View>
 
-                      {/* Pagination dots */}
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          gap: spacing.xs,
-                          marginTop: spacing.sm,
-                        }}
-                      >
-                        {todaysFacts.map((_, index) => {
-                          const dotSize = index === todayActiveIndex ? spacing.sm : spacing.sm - 2;
-                          return (
-                            <View
-                              key={index}
-                              style={{
-                                width: dotSize,
-                                height: dotSize,
-                                borderRadius: 100,
-                                backgroundColor:
-                                  index === todayActiveIndex ? colors.primary : colors.border,
-                              }}
-                            />
-                          );
-                        })}
-                      </View>
-                    </YStack>
-                  )}
-                </YStack>
-              </ContentContainer>
+                    {/* Pagination dots */}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: spacing.xs,
+                        marginTop: spacing.sm,
+                      }}
+                    >
+                      {todaysFacts.map((_, index) => {
+                        const dotSize = index === todayActiveIndex ? spacing.sm : spacing.sm - 2;
+                        return (
+                          <View
+                            key={index}
+                            style={{
+                              width: dotSize,
+                              height: dotSize,
+                              borderRadius: 100,
+                              backgroundColor:
+                                index === todayActiveIndex ? colors.primary : colors.border,
+                            }}
+                          />
+                        );
+                      })}
+                    </View>
+                  </YStack>
+                )}
+              </>
             )}
 
             {/* Popular Section */}
             {hasPopularFacts && (
-              <ContentContainer>
-                <YStack paddingTop={spacing.lg}>
-                  <YStack paddingBottom={spacing.sm}>
+              <>
+                <ContentContainer>
+                  <YStack paddingTop={spacing.lg} paddingBottom={spacing.sm}>
                     <Text.Title fontSize={typography.fontSize.body}>{t('popular')}</Text.Title>
                   </YStack>
+                </ContentContainer>
 
-                  <FlatList
+                <View
+                  style={{
+                    height: popularListHeight + spacing.sm * 2,
+                    width: '100%',
+                  }}
+                >
+                  <FlashList
                     data={popularFacts}
                     renderItem={renderPopularItem}
                     keyExtractor={popularKeyExtractor}
@@ -446,14 +486,13 @@ function HomeScreen() {
                     showsHorizontalScrollIndicator={false}
                     snapToInterval={popularCardWidth + popularCardGap}
                     decelerationRate="fast"
-                    style={{ overflow: 'visible' }}
+                    ItemSeparatorComponent={popularSeparator}
                     contentContainerStyle={{
-                      paddingVertical: spacing.sm,
-                      gap: popularCardGap,
+                      paddingHorizontal: listInset,
                     }}
                   />
-                </YStack>
-              </ContentContainer>
+                </View>
+              </>
             )}
           </ScrollView>
         )}

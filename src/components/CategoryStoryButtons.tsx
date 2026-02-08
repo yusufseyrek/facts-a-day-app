@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+
+import { FlashList } from '@shopify/flash-list';
 
 import { Shuffle } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
@@ -101,20 +103,30 @@ export function CategoryStoryButtons() {
 
   const keyExtractor = useCallback((item: CategoryItem) => item.slug, []);
 
+  // Height for horizontal FlashList container: circle + label margin + label line
+  const listHeight = circleSize + spacing.xs + typography.fontSize.tiny * 2;
+
+  const itemSeparator = useCallback(
+    () => <View style={{ width: spacing.md }} />,
+    [spacing.md]
+  );
+
   if (categories.length === 0) return null;
 
   return (
-    <FlatList
-      data={categories}
-      renderItem={renderItem}
-      keyExtractor={keyExtractor}
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{
-        paddingHorizontal: spacing.lg,
-        gap: spacing.md,
-      }}
-    />
+    <View style={{ height: listHeight, width: '100%' }}>
+      <FlashList
+        data={categories}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        ItemSeparatorComponent={itemSeparator}
+        contentContainerStyle={{
+          paddingHorizontal: spacing.lg,
+        }}
+      />
+    </View>
   );
 }
 
