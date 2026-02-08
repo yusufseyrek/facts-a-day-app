@@ -383,7 +383,7 @@ export const translations = {
     // Common
     continue: 'Continue',
     ok: 'OK',
-    appName: 'Facts A Day',
+    appName: 'Facts a Day',
 
     // Onboarding - Initialization
     settingUpApp: 'Setting up your app...',

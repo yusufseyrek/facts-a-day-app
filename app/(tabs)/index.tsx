@@ -10,24 +10,26 @@ import {
 } from 'react-native';
 
 import { FlashList } from '@shopify/flash-list';
+import { Lightbulb } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import * as Notifications from 'expo-notifications';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
+import { YStack } from 'tamagui';
 
 import {
   ContentContainer,
   EmptyState,
   LoadingContainer,
   ScreenContainer,
+  ScreenHeader,
   Text,
 } from '../../src/components';
 import { CategoryStoryButtons } from '../../src/components/CategoryStoryButtons';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { PopularFactCard } from '../../src/components/PopularFactCard';
-import { LAYOUT } from '../../src/config/app';
+import { HOME_FEED, LAYOUT } from '../../src/config/app';
 import { usePreloadedData, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
@@ -60,6 +62,7 @@ function HomeScreen() {
 
   const [todaysFacts, setTodaysFacts] = useState<FactWithRelations[]>([]);
   const [popularFacts, setPopularFacts] = useState<FactWithRelations[]>([]);
+  const [worthKnowingFacts, setWorthKnowingFacts] = useState<FactWithRelations[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() =>
@@ -98,9 +101,10 @@ function HomeScreen() {
           });
           setTodaysFacts(todayItems.length > 0 ? todayItems : []);
           setInitialLoading(false);
-          // Use preloaded recommendations as popular facts
+          // Use preloaded recommendations: split between popular carousel and worth knowing
           if (preloadedRecs && preloadedRecs.length > 0) {
-            setPopularFacts(preloadedRecs);
+            setPopularFacts(preloadedRecs.slice(0, HOME_FEED.POPULAR_COUNT));
+            setWorthKnowingFacts(preloadedRecs.slice(HOME_FEED.POPULAR_COUNT));
           }
           signalHomeScreenReady();
           trackScreenView(Screens.HOME);
@@ -139,6 +143,7 @@ function HomeScreen() {
     const unsubscribe = onFeedRefresh(() => {
       loadTodaysFacts();
       loadPopularFacts();
+      loadWorthKnowingFacts();
     });
     return () => unsubscribe();
   }, []);
@@ -148,6 +153,7 @@ function HomeScreen() {
     const unsubscribe = onPreferenceFeedRefresh(() => {
       loadTodaysFacts();
       loadPopularFacts();
+      loadWorthKnowingFacts();
     });
     return () => unsubscribe();
   }, []);
@@ -213,25 +219,40 @@ function HomeScreen() {
     }
     await loadTodaysFacts(false);
     await loadPopularFacts();
+    await loadWorthKnowingFacts();
   }, [loadTodaysFacts]);
 
-  // Load popular facts (random unscheduled facts)
+  // Load popular facts (16:9 carousel cards)
   const loadPopularFacts = useCallback(async () => {
     try {
-      const recs = await database.getRandomUnscheduledFacts(8, locale);
+      const recs = await database.getRandomUnscheduledFacts(HOME_FEED.POPULAR_COUNT, locale);
       if (recs.length > 0) {
         prefetchFactImagesWithLimit(recs);
         setPopularFacts(recs);
       }
     } catch {
-      // Ignore recommendation loading errors
+      // Ignore loading errors
     }
   }, [locale]);
 
-  // Load popular facts on mount and when locale changes
+  // Load worth knowing facts (thumbnail cards)
+  const loadWorthKnowingFacts = useCallback(async () => {
+    try {
+      const recs = await database.getRandomUnscheduledFacts(HOME_FEED.WORTH_KNOWING_COUNT, locale);
+      if (recs.length > 0) {
+        prefetchFactImagesWithLimit(recs);
+        setWorthKnowingFacts(recs);
+      }
+    } catch {
+      // Ignore loading errors
+    }
+  }, [locale]);
+
+  // Load popular and worth knowing facts on mount and when locale changes
   useEffect(() => {
     loadPopularFacts();
-  }, [loadPopularFacts]);
+    loadWorthKnowingFacts();
+  }, [loadPopularFacts, loadWorthKnowingFacts]);
 
   const refreshControl = useMemo(
     () => <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
@@ -299,26 +320,54 @@ function HomeScreen() {
 
   const todayKeyExtractor = useCallback((item: FactWithRelations) => `today-${item.id}`, []);
 
-  // Popular section card width (85% phone, 70% tablet via config)
+  // Popular section (16:9 carousel) sizing
   const popularCardWidth = contentWidth * config.cardWidthMultiplier;
   const popularCardGap = spacing.sm;
+  const popularSnapInterval = popularCardWidth + popularCardGap;
+  const popularCardHeight = screenWidth * config.cardAspectRatio;
+  const popularCarouselFactIds = useMemo(() => popularFacts.map((f) => f.id), [popularFacts]);
 
-  const renderPopularItem = useCallback(
+  const renderPopularCarouselItem = useCallback(
+    ({ item, index }: { item: FactWithRelations; index: number }) => (
+      <View style={{ width: popularCardWidth, paddingVertical: spacing.sm }}>
+        <View style={theme === 'dark' ? styles.shadowDark : styles.shadowLight}>
+          <ImageFactCard
+            title={item.title || item.content.substring(0, 80) + '...'}
+            imageUrl={item.image_url!}
+            factId={item.id}
+            category={item.categoryData || item.category}
+            categorySlug={item.categoryData?.slug || item.category}
+            onPress={() => handleFactPress(item, popularCarouselFactIds, index)}
+            cardWidth={popularCardWidth}
+          />
+        </View>
+      </View>
+    ),
+    [popularCardWidth, handleFactPress, popularCarouselFactIds, theme, spacing.sm]
+  );
+
+  const popularCarouselKeyExtractor = useCallback((item: FactWithRelations) => `popular-${item.id}`, []);
+
+  // Worth knowing section (thumbnail cards) sizing
+  const worthKnowingCardWidth = contentWidth * config.cardWidthMultiplier;
+  const worthKnowingCardGap = spacing.sm;
+
+  const renderWorthKnowingItem = useCallback(
     ({ item }: { item: FactWithRelations }) => (
       <View style={{ paddingVertical: spacing.sm }}>
         <PopularFactCard
           fact={item}
-          cardWidth={popularCardWidth}
+          cardWidth={worthKnowingCardWidth}
           onPress={() => handleFactPress(item)}
         />
       </View>
     ),
-    [popularCardWidth, handleFactPress, spacing.sm]
+    [worthKnowingCardWidth, handleFactPress, spacing.sm]
   );
 
-  const popularKeyExtractor = useCallback((item: FactWithRelations) => `popular-${item.id}`, []);
+  const worthKnowingKeyExtractor = useCallback((item: FactWithRelations) => `wk-${item.id}`, []);
 
-  // Separators for horizontal FlashLists (replaces gap in contentContainerStyle)
+  // Separators for horizontal FlashLists
   const todaySeparator = useCallback(
     () => <View style={{ width: todayCardGap }} />,
     [todayCardGap]
@@ -327,9 +376,13 @@ function HomeScreen() {
     () => <View style={{ width: popularCardGap }} />,
     [popularCardGap]
   );
+  const worthKnowingSeparator = useCallback(
+    () => <View style={{ width: worthKnowingCardGap }} />,
+    [worthKnowingCardGap]
+  );
 
-  // Popular card height for FlashList container (thumbnail + padding + shadow room)
-  const popularListHeight = iconSizes.heroLg + spacing.md * 2 + spacing.sm * 2;
+  // Worth knowing card height for FlashList container (thumbnail + padding + shadow room)
+  const worthKnowingListHeight = iconSizes.heroLg + spacing.md * 2 + spacing.sm * 2;
 
   // Loading state
   if (initialLoading && todaysFacts.length === 0) {
@@ -345,7 +398,8 @@ function HomeScreen() {
 
   const hasTodaysFacts = todaysFacts.length > 0;
   const hasPopularFacts = popularFacts.length > 0;
-  const hasAnyContent = hasTodaysFacts || hasPopularFacts;
+  const hasWorthKnowingFacts = worthKnowingFacts.length > 0;
+  const hasAnyContent = hasTodaysFacts || hasPopularFacts || hasWorthKnowingFacts;
 
   return (
     <ScreenContainer edges={['top']}>
@@ -363,14 +417,11 @@ function HomeScreen() {
           >
             {/* Title */}
             <Animated.View entering={FadeIn.duration(300)}>
-              <XStack
-                paddingHorizontal={spacing.lg}
-                paddingTop={spacing.lg}
+              <ScreenHeader
+                icon={<Lightbulb size={iconSizes.lg} color={colors.primary} />}
+                title={t('appName')}
                 paddingBottom={spacing.sm}
-                alignItems="center"
-              >
-                <Text.Headline flex={1}>{t('appName')}</Text.Headline>
-              </XStack>
+              />
             </Animated.View>
 
             {/* Category Story Buttons */}
@@ -381,13 +432,11 @@ function HomeScreen() {
             {/* Fact of the Day */}
             {hasTodaysFacts && (
               <>
-                <ContentContainer>
-                  <YStack paddingBottom={spacing.sm}>
-                    <Text.Title fontSize={typography.fontSize.body}>
-                      {todaysFacts.length > 1 ? t('factsOfTheDay') : t('factOfTheDay')}
-                    </Text.Title>
-                  </YStack>
-                </ContentContainer>
+                <YStack width="100%" maxWidth={LAYOUT.MAX_CONTENT_WIDTH} alignSelf="center" paddingHorizontal={spacing.lg} paddingBottom={spacing.sm}>
+                  <Text.Title fontSize={typography.fontSize.body}>
+                    {todaysFacts.length > 1 ? t('factsOfTheDay') : t('factOfTheDay')}
+                  </Text.Title>
+                </YStack>
 
                 {todaysFacts.length === 1 ? (
                   <ContentContainer>
@@ -463,30 +512,58 @@ function HomeScreen() {
               </>
             )}
 
-            {/* Popular Section */}
+            {/* Popular Section (16:9 carousel) */}
             {hasPopularFacts && (
               <>
-                <ContentContainer>
-                  <YStack paddingTop={spacing.lg} paddingBottom={spacing.sm}>
-                    <Text.Title fontSize={typography.fontSize.body}>{t('popular')}</Text.Title>
-                  </YStack>
-                </ContentContainer>
+                <YStack width="100%" maxWidth={LAYOUT.MAX_CONTENT_WIDTH} alignSelf="center" paddingHorizontal={spacing.lg} paddingTop={spacing.lg} paddingBottom={spacing.sm}>
+                  <Text.Title fontSize={typography.fontSize.body}>{t('popular')}</Text.Title>
+                </YStack>
 
                 <View
                   style={{
-                    height: popularListHeight + spacing.sm * 2,
+                    height: popularCardHeight + spacing.sm * 2,
                     width: '100%',
                   }}
                 >
                   <FlashList
                     data={popularFacts}
-                    renderItem={renderPopularItem}
-                    keyExtractor={popularKeyExtractor}
+                    renderItem={renderPopularCarouselItem}
+                    keyExtractor={popularCarouselKeyExtractor}
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    snapToInterval={popularCardWidth + popularCardGap}
+                    snapToInterval={popularSnapInterval}
                     decelerationRate="fast"
                     ItemSeparatorComponent={popularSeparator}
+                    contentContainerStyle={{
+                      paddingHorizontal: listInset,
+                    }}
+                  />
+                </View>
+              </>
+            )}
+
+            {/* Worth Knowing Section (thumbnail cards) */}
+            {hasWorthKnowingFacts && (
+              <>
+                <YStack width="100%" maxWidth={LAYOUT.MAX_CONTENT_WIDTH} alignSelf="center" paddingHorizontal={spacing.lg} paddingTop={spacing.lg} paddingBottom={spacing.sm}>
+                  <Text.Title fontSize={typography.fontSize.body}>{t('worthKnowing')}</Text.Title>
+                </YStack>
+
+                <View
+                  style={{
+                    height: worthKnowingListHeight + spacing.sm * 2,
+                    width: '100%',
+                  }}
+                >
+                  <FlashList
+                    data={worthKnowingFacts}
+                    renderItem={renderWorthKnowingItem}
+                    keyExtractor={worthKnowingKeyExtractor}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    snapToInterval={worthKnowingCardWidth + worthKnowingCardGap}
+                    decelerationRate="fast"
+                    ItemSeparatorComponent={worthKnowingSeparator}
                     contentContainerStyle={{
                       paddingHorizontal: listInset,
                     }}
