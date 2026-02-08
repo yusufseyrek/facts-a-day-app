@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
-
 import { Shuffle } from '@tamagui/lucide-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
 import { useTranslation } from '../i18n';
@@ -26,7 +27,7 @@ interface CategoryItem {
 }
 
 export function CategoryStoryButtons() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { spacing, iconSizes, borderWidths, typography } = useResponsive();
@@ -37,10 +38,18 @@ export function CategoryStoryButtons() {
   const iconSize = iconSizes.lg;
 
   const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [unseenStatus, setUnseenStatus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadCategories();
   }, []);
+
+  // Refresh unseen status when screen is focused (returning from story)
+  useFocusEffect(
+    useCallback(() => {
+      loadUnseenStatus();
+    }, [locale])
+  );
 
   const loadCategories = async () => {
     try {
@@ -67,6 +76,20 @@ export function CategoryStoryButtons() {
 
       // Prepend Mix button
       setCategories([{ slug: 'mix', name: t('mix'), isMix: true }, ...items]);
+
+      // Load unseen status
+      const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
+      setUnseenStatus(status);
+    } catch {
+      // Ignore errors
+    }
+  };
+
+  const loadUnseenStatus = async () => {
+    try {
+      const selectedSlugs = await getSelectedCategories();
+      const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
+      setUnseenStatus(status);
     } catch {
       // Ignore errors
     }
@@ -74,31 +97,36 @@ export function CategoryStoryButtons() {
 
   const handlePress = useCallback(
     (item: CategoryItem) => {
-      if (item.isMix) {
-        router.push('/(tabs)/discover');
-      } else {
-        router.push(`/(tabs)/discover?category=${item.slug}`);
-      }
+      router.push(`/story/${item.slug}`);
     },
     [router]
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: CategoryItem }) => (
-      <CategoryButton
-        item={item}
-        primaryColor={colors.primary}
-        textColor={colors.text}
-        surfaceColor={colors.surface}
-        onPress={() => handlePress(item)}
-        circleSize={circleSize}
-        iconSize={iconSize}
-        borderWidth={borderWidths.medium}
-        labelMarginTop={spacing.xs}
-        labelFontSize={typography.fontSize.tiny}
-      />
-    ),
-    [colors, handlePress, circleSize, iconSize, borderWidths, spacing, typography]
+    ({ item }: { item: CategoryItem }) => {
+      // Mix button has unseen if ANY category has unseen
+      const hasUnseen = item.isMix
+        ? Object.values(unseenStatus).some(Boolean)
+        : unseenStatus[item.slug] ?? true;
+
+      return (
+        <CategoryButton
+          item={item}
+          hasUnseen={hasUnseen}
+          primaryColor={colors.primary}
+          textColor={colors.text}
+          surfaceColor={colors.surface}
+          borderColor={colors.border}
+          onPress={() => handlePress(item)}
+          circleSize={circleSize}
+          iconSize={iconSize}
+          borderWidth={borderWidths.medium}
+          labelMarginTop={spacing.xs}
+          labelFontSize={typography.fontSize.tiny}
+        />
+      );
+    },
+    [colors, handlePress, circleSize, iconSize, borderWidths, spacing, typography, unseenStatus]
   );
 
   const keyExtractor = useCallback((item: CategoryItem) => item.slug, []);
@@ -130,13 +158,29 @@ export function CategoryStoryButtons() {
   );
 }
 
+/**
+ * Lighten a hex color by a given amount (0–1)
+ */
+function lightenColor(hex: string, amount: number): string {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  const newR = Math.min(255, Math.round(r + (255 - r) * amount));
+  const newG = Math.min(255, Math.round(g + (255 - g) * amount));
+  const newB = Math.min(255, Math.round(b + (255 - b) * amount));
+  return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+}
+
 // Separate memoized button component for performance
 const CategoryButton = React.memo(
   ({
     item,
+    hasUnseen,
     primaryColor,
     textColor,
     surfaceColor,
+    borderColor,
     onPress,
     circleSize,
     iconSize,
@@ -145,9 +189,11 @@ const CategoryButton = React.memo(
     labelFontSize,
   }: {
     item: CategoryItem;
+    hasUnseen: boolean;
     primaryColor: string;
     textColor: string;
     surfaceColor: string;
+    borderColor: string;
     onPress: () => void;
     circleSize: number;
     iconSize: number;
@@ -157,31 +203,70 @@ const CategoryButton = React.memo(
   }) => {
     const ringColor = item.isMix ? primaryColor : item.color_hex || primaryColor;
     const iconColor = item.isMix ? primaryColor : item.color_hex || primaryColor;
+    const ringWidth = borderWidth + 1; // Slightly thicker than regular border
+    const outerSize = circleSize + ringWidth * 2;
+    const innerSize = circleSize - 2; // Gap between gradient and inner circle
 
     return (
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => [styles.buttonContainer, { opacity: pressed ? 0.7 : 1, width: circleSize + labelMarginTop * 2 }]}
+        style={({ pressed }) => [styles.buttonContainer, { opacity: pressed ? 0.7 : 1, width: outerSize + labelMarginTop }]}
       >
-        <View
-          style={[
-            styles.circle,
-            {
-              width: circleSize,
-              height: circleSize,
-              borderRadius: circleSize / 2,
-              borderWidth,
-              borderColor: ringColor,
-              backgroundColor: surfaceColor,
-            },
-          ]}
-        >
-          {item.isMix ? (
-            <Shuffle size={iconSize} color={iconColor} />
-          ) : (
-            getLucideIcon(item.icon, iconSize, iconColor)
-          )}
-        </View>
+        {hasUnseen ? (
+          // Gradient ring for unseen facts
+          <LinearGradient
+            colors={[ringColor, lightenColor(ringColor, 0.4)]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[
+              styles.circle,
+              {
+                width: outerSize,
+                height: outerSize,
+                borderRadius: outerSize / 2,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.circle,
+                {
+                  width: innerSize,
+                  height: innerSize,
+                  borderRadius: innerSize / 2,
+                  backgroundColor: surfaceColor,
+                },
+              ]}
+            >
+              {item.isMix ? (
+                <Shuffle size={iconSize} color={iconColor} />
+              ) : (
+                getLucideIcon(item.icon, iconSize, iconColor)
+              )}
+            </View>
+          </LinearGradient>
+        ) : (
+          // Muted border for all-viewed categories
+          <View
+            style={[
+              styles.circle,
+              {
+                width: outerSize,
+                height: outerSize,
+                borderRadius: outerSize / 2,
+                borderWidth: ringWidth,
+                borderColor,
+                backgroundColor: surfaceColor,
+              },
+            ]}
+          >
+            {item.isMix ? (
+              <Shuffle size={iconSize} color={iconColor} />
+            ) : (
+              getLucideIcon(item.icon, iconSize, iconColor)
+            )}
+          </View>
+        )}
         <Text.Caption numberOfLines={1} color={textColor} style={{ marginTop: labelMarginTop, textAlign: 'center', fontSize: labelFontSize }}>
           {item.name}
         </Text.Caption>

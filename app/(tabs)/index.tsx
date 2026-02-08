@@ -533,6 +533,7 @@ function HomeScreen() {
                     showsHorizontalScrollIndicator={false}
                     snapToInterval={popularSnapInterval}
                     decelerationRate="fast"
+                    disableIntervalMomentum
                     ItemSeparatorComponent={popularSeparator}
                     contentContainerStyle={{
                       paddingHorizontal: listInset,
@@ -563,6 +564,7 @@ function HomeScreen() {
                     showsHorizontalScrollIndicator={false}
                     snapToInterval={worthKnowingCardWidth + worthKnowingCardGap}
                     decelerationRate="fast"
+                    disableIntervalMomentum
                     ItemSeparatorComponent={worthKnowingSeparator}
                     contentContainerStyle={{
                       paddingHorizontal: listInset,

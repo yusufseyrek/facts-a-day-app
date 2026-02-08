@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -18,6 +18,7 @@ import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n';
 import { onFactViewed } from '../services/appReview';
+import { addFactDetailTimeSpent, markFactDetailOpened, markFactDetailRead } from '../services/database';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { useFactImage } from '../utils/useFactImage';
@@ -150,6 +151,25 @@ export function FactModal({
     onFactViewed();
   }, [fact.id]);
 
+  // Track detail interactions
+  const mountTimeRef = useRef(Date.now());
+  const hasMarkedRead = useRef(false);
+
+  // Mark detail as opened on mount
+  useEffect(() => {
+    markFactDetailOpened(fact.id).catch(() => {});
+    mountTimeRef.current = Date.now();
+    hasMarkedRead.current = false;
+
+    return () => {
+      // Track time spent on unmount
+      const seconds = Math.round((Date.now() - mountTimeRef.current) / 1000);
+      if (seconds > 0) {
+        addFactDetailTimeSpent(fact.id, seconds).catch(() => {});
+      }
+    };
+  }, [fact.id]);
+
   // Local notification image state - prioritize notification image if available
   const [notificationImageUri, setNotificationImageUri] = useState<string | null>(null);
 
@@ -203,6 +223,20 @@ export function FactModal({
   const handleScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
     useNativeDriver: true,
   });
+
+  // Detect scroll to bottom for read tracking
+  const checkScrolledToBottom = useCallback(
+    (event: any) => {
+      if (hasMarkedRead.current) return;
+      const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+      const threshold = 50;
+      if (contentOffset.y + layoutMeasurement.height >= contentSize.height - threshold) {
+        hasMarkedRead.current = true;
+        markFactDetailRead(fact.id).catch(() => {});
+      }
+    },
+    [fact.id]
+  );
 
   let categoryForBadge: string | Category | null = null;
   if (fact.categoryData) {
@@ -571,6 +605,8 @@ export function FactModal({
         showsVerticalScrollIndicator={false}
         bounces={true}
         onScroll={handleScroll}
+        onScrollEndDrag={checkScrolledToBottom}
+        onMomentumScrollEnd={checkScrolledToBottom}
         scrollEventThrottle={16}
         // Optimize scroll performance on Android
         removeClippedSubviews={Platform.OS === 'android'}

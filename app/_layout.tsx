@@ -211,6 +211,16 @@ function AppContent() {
           animation: 'none',
         }}
       />
+      <Stack.Screen
+        name="story/[category]"
+        options={{
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
+          headerShown: false,
+          gestureEnabled: true,
+          contentStyle: { backgroundColor },
+        }}
+      />
       <Stack.Screen name="trivia" options={{ gestureEnabled: false }} />
       <Stack.Screen
         name="paywall"

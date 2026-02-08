@@ -212,6 +212,20 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_trivia_sessions_completed_at ON trivia_sessions(completed_at);
   `);
 
+  // ====== FACT INTERACTIONS ======
+
+  // Track story views and detail engagement
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS fact_interactions (
+      fact_id INTEGER PRIMARY KEY,
+      story_viewed_at TEXT,
+      detail_opened_at TEXT,
+      detail_read_at TEXT,
+      detail_time_spent INTEGER DEFAULT 0,
+      FOREIGN KEY (fact_id) REFERENCES facts(id) ON DELETE CASCADE
+    );
+  `);
+
   // ====== MIGRATIONS ======
 
   // Add slug column for existing databases (migration)
@@ -233,6 +247,7 @@ export async function clearDatabase(): Promise<void> {
     DELETE FROM question_attempts;
     DELETE FROM daily_trivia_progress;
     DELETE FROM trivia_sessions;
+    DELETE FROM fact_interactions;
   `);
 }
 
@@ -2625,6 +2640,165 @@ export async function getTotalSessionsCount(): Promise<number> {
   );
 
   return result?.count || 0;
+}
+
+// ====== FACT INTERACTIONS ======
+
+/**
+ * Mark a fact as viewed in story view
+ * Only sets story_viewed_at if not already set (preserves first view time)
+ */
+export async function markFactViewedInStory(factId: number): Promise<void> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+  await database.runAsync(
+    `INSERT INTO fact_interactions (fact_id, story_viewed_at)
+     VALUES (?, ?)
+     ON CONFLICT(fact_id) DO UPDATE SET
+       story_viewed_at = COALESCE(story_viewed_at, excluded.story_viewed_at)`,
+    [factId, now]
+  );
+}
+
+/**
+ * Get facts for story view (single category)
+ * Returns unseen facts first, then previously viewed facts
+ */
+export async function getFactsForStory(
+  category: string,
+  language: string
+): Promise<FactWithRelations[]> {
+  const database = await openDatabase();
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex,
+      CASE WHEN fi.story_viewed_at IS NOT NULL THEN 1 ELSE 0 END as is_viewed
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
+    WHERE f.category = ? AND f.language = ?
+    ORDER BY is_viewed ASC, RANDOM()`,
+    [category, language]
+  );
+  return mapFactsWithRelations(result);
+}
+
+/**
+ * Get facts for mixed story view (multiple categories)
+ * Returns unseen facts first, then previously viewed facts
+ */
+export async function getFactsForMixedStory(
+  categorySlugs: string[],
+  language: string
+): Promise<FactWithRelations[]> {
+  if (categorySlugs.length === 0) return [];
+  const database = await openDatabase();
+  const placeholders = categorySlugs.map(() => '?').join(',');
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex,
+      CASE WHEN fi.story_viewed_at IS NOT NULL THEN 1 ELSE 0 END as is_viewed
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
+    WHERE f.category IN (${placeholders}) AND f.language = ?
+    ORDER BY is_viewed ASC, RANDOM()`,
+    [...categorySlugs, language]
+  );
+  return mapFactsWithRelations(result);
+}
+
+/**
+ * Get unseen story status for each category
+ * Returns a map of category slug → whether it has unseen facts
+ */
+export async function getUnseenStoryStatus(
+  categorySlugs: string[],
+  language: string
+): Promise<Record<string, boolean>> {
+  if (categorySlugs.length === 0) return {};
+  const database = await openDatabase();
+  const placeholders = categorySlugs.map(() => '?').join(',');
+  const result = await database.getAllAsync<{ category: string; unseen_count: number }>(
+    `SELECT f.category, COUNT(*) as unseen_count
+     FROM facts f
+     LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
+     WHERE f.category IN (${placeholders})
+       AND f.language = ?
+       AND fi.story_viewed_at IS NULL
+     GROUP BY f.category`,
+    [...categorySlugs, language]
+  );
+
+  // Build result map - default all to false, then set true for categories with unseen facts
+  const statusMap: Record<string, boolean> = {};
+  for (const slug of categorySlugs) {
+    statusMap[slug] = false;
+  }
+  for (const row of result) {
+    statusMap[row.category] = row.unseen_count > 0;
+  }
+  return statusMap;
+}
+
+/**
+ * Mark a fact's detail view as opened
+ * Only sets detail_opened_at if not already set
+ */
+export async function markFactDetailOpened(factId: number): Promise<void> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+  await database.runAsync(
+    `INSERT INTO fact_interactions (fact_id, detail_opened_at)
+     VALUES (?, ?)
+     ON CONFLICT(fact_id) DO UPDATE SET
+       detail_opened_at = COALESCE(detail_opened_at, excluded.detail_opened_at)`,
+    [factId, now]
+  );
+}
+
+/**
+ * Mark a fact's detail as fully read (scrolled to bottom)
+ * Only sets detail_read_at if not already set
+ */
+export async function markFactDetailRead(factId: number): Promise<void> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+  await database.runAsync(
+    `INSERT INTO fact_interactions (fact_id, detail_read_at)
+     VALUES (?, ?)
+     ON CONFLICT(fact_id) DO UPDATE SET
+       detail_read_at = COALESCE(detail_read_at, excluded.detail_read_at)`,
+    [factId, now]
+  );
+}
+
+/**
+ * Add time spent in fact detail view
+ * Accumulates seconds across multiple opens
+ */
+export async function addFactDetailTimeSpent(factId: number, seconds: number): Promise<void> {
+  if (seconds <= 0) return;
+  const database = await openDatabase();
+  await database.runAsync(
+    `INSERT INTO fact_interactions (fact_id, detail_time_spent)
+     VALUES (?, ?)
+     ON CONFLICT(fact_id) DO UPDATE SET
+       detail_time_spent = detail_time_spent + excluded.detail_time_spent`,
+    [factId, seconds]
+  );
 }
 
 // ====== DEV TOOLS ======

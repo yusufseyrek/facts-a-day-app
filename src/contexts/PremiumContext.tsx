@@ -49,13 +49,20 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
     getAvailablePurchases,
   } = useIAP();
 
+  // Track the last known status to avoid redundant analytics events
+  const lastKnownStatusRef = useRef<boolean | null>(null);
+
   // Update premium state everywhere when it changes
   const updatePremiumStatus = useCallback(async (status: boolean) => {
     setIsPremium(status);
     setPremiumState(status);
     await cachePremiumStatus(status);
     await setAnalyticsUserProperty('is_premium', status ? 'true' : 'false');
-    trackSubscriptionStatusChanged(status);
+    // Only fire analytics on actual transitions, not initial load
+    if (lastKnownStatusRef.current !== null && lastKnownStatusRef.current !== status) {
+      trackSubscriptionStatusChanged(status);
+    }
+    lastKnownStatusRef.current = status;
   }, []);
 
   // Keep ref in sync for use in event listeners
