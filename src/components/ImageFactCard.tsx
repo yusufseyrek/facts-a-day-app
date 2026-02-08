@@ -27,6 +27,10 @@ interface ImageFactCardProps {
   testID?: string;
   /** Called once when the image has successfully loaded and rendered */
   onImageReady?: () => void;
+  /** Optional aspect ratio override (e.g., 1 for square). Defaults to config.cardAspectRatio */
+  aspectRatio?: number;
+  /** Optional explicit card width for height calculation (e.g., in carousels where card is narrower than screen) */
+  cardWidth?: number;
 }
 
 const ImageFactCardComponent = ({
@@ -38,6 +42,8 @@ const ImageFactCardComponent = ({
   isTablet: isTabletProp = false,
   testID,
   onImageReady,
+  aspectRatio,
+  cardWidth: cardWidthProp,
 }: ImageFactCardProps) => {
   const { screenWidth, isTablet: isTabletHook, spacing, radius, config } = useResponsive();
   const isTablet = isTabletProp || isTabletHook;
@@ -110,7 +116,10 @@ const ImageFactCardComponent = ({
 
   // Calculate card height based on aspect ratio
   // Use a smaller aspect ratio for tablets so cards aren't too tall
-  const cardHeight = screenWidth * config.cardAspectRatio;
+  // When aspectRatio is provided, use the base width / aspectRatio for the height
+  // cardWidthProp allows carousels to pass the actual card width for correct sizing
+  const baseWidth = cardWidthProp || screenWidth;
+  const cardHeight = aspectRatio ? baseWidth / aspectRatio : screenWidth * config.cardAspectRatio;
 
   // Delay press animation to avoid triggering during scroll
   const handlePressIn = useCallback(() => {
@@ -374,6 +383,8 @@ export const ImageFactCard = React.memo(ImageFactCardComponent, (prevProps, next
     prevProps.imageUrl === nextProps.imageUrl &&
     prevProps.factId === nextProps.factId &&
     prevProps.categorySlug === nextProps.categorySlug &&
-    prevProps.isTablet === nextProps.isTablet
+    prevProps.isTablet === nextProps.isTablet &&
+    prevProps.aspectRatio === nextProps.aspectRatio &&
+    prevProps.cardWidth === nextProps.cardWidth
   );
 });

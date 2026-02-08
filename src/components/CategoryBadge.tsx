@@ -21,9 +21,11 @@ interface CategoryBadgeProps {
    */
   fontFamily?: string;
   fontSize?: number;
+  /** Compact variant with reduced padding, suitable for inline use in cards */
+  compact?: boolean;
 }
 
-export function CategoryBadge({ category, factId, fontFamily, fontSize }: CategoryBadgeProps) {
+export function CategoryBadge({ category, factId, fontFamily, fontSize, compact }: CategoryBadgeProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { spacing, radius } = useResponsive();
@@ -49,8 +51,8 @@ export function CategoryBadge({ category, factId, fontFamily, fontSize }: Catego
 
   return (
     <XStack
-      paddingHorizontal={spacing.md}
-      paddingVertical={spacing.xs}
+      paddingHorizontal={compact ? spacing.sm : spacing.md}
+      paddingVertical={compact ? 2 : spacing.xs}
       borderRadius={radius.full}
       alignSelf="flex-start"
       style={{ backgroundColor }}

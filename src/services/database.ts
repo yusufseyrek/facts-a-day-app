@@ -1298,6 +1298,52 @@ export async function getFavoritesCount(language?: string): Promise<number> {
 // ====== DATE-BASED QUERIES ======
 
 /**
+ * Get facts scheduled for today (visible after midnight regardless of notification time)
+ * Uses local date to match today's facts so they appear at 00:01 even if scheduled for 08:00
+ * @param language Language filter
+ */
+export async function getTodaysFacts(language: string): Promise<FactWithRelations[]> {
+  const database = await openDatabase();
+
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    WHERE date(f.scheduled_date, 'localtime') = date('now', 'localtime')
+      AND f.language = ?
+    ORDER BY f.scheduled_date ASC`,
+    [language]
+  );
+  return mapFactsWithRelations(result);
+}
+
+/**
+ * Mark today's scheduled facts as shown in feed
+ * This ensures facts appear in the feed immediately after midnight
+ * @param language Language filter
+ * @returns Number of facts marked as shown
+ */
+export async function markTodaysFactsAsShown(language: string): Promise<number> {
+  const database = await openDatabase();
+
+  const result = await database.runAsync(
+    `UPDATE facts SET shown_in_feed = 1
+     WHERE date(scheduled_date, 'localtime') = date('now', 'localtime')
+       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+       AND language = ?`,
+    [language]
+  );
+  return result.changes;
+}
+
+/**
  * Get facts that were already delivered via notifications or marked as shown
  * Returns facts from the past 30 days where (scheduled_date <= now OR shown_in_feed = 1), ordered by date descending
  */

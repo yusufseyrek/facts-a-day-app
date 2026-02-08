@@ -1,42 +1,35 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, RefreshControl } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
-import { Dices, Lightbulb } from '@tamagui/lucide-icons';
-import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
 import {
   ContentContainer,
   EmptyState,
   LoadingContainer,
   ScreenContainer,
-  ScreenHeader,
   Text,
-  useIconColor,
 } from '../../src/components';
-import { FactCarousel, type FactCarouselRef } from '../../src/components/FactCarousel';
+import { CategoryStoryButtons } from '../../src/components/CategoryStoryButtons';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
-import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
-import { LAYOUT, NATIVE_ADS } from '../../src/config/app';
-import { FLASH_LIST_ITEM_TYPES, FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
-import {
-  insertNativeAds,
-  isNativeAdPlaceholder,
-  type NativeAdPlaceholder,
-} from '../../src/utils/insertNativeAds';
-import { usePremium, usePreloadedData, useScrollToTopHandler } from '../../src/contexts';
+import { PopularFactCard } from '../../src/components/PopularFactCard';
+import { LAYOUT } from '../../src/config/app';
+import { usePreloadedData, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import {
-  Screens,
-  trackFeedRefresh,
-  trackRandomFactClick,
-  trackScreenView,
-} from '../../src/services/analytics';
+import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
 import {
   forceRefreshContent,
   getRefreshStatus,
@@ -47,152 +40,42 @@ import {
 import * as database from '../../src/services/database';
 import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/services/images';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
-import { consumeRandomFact, initializeRandomFact } from '../../src/services/randomFact';
 import { hexColors, useTheme } from '../../src/theme';
-import { preloadImageToMemoryCache } from '../../src/utils/useFactImage';
-import { useFlashListScrollToTop } from '../../src/utils/useFlashListScrollToTop';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { FactWithRelations } from '../../src/services/database';
-
-// Interface for fact sections (used internally for grouping)
-interface FactSection {
-  title: string;
-  data: FactWithRelations[];
-}
-
-// FlashList item types - either a section header or a fact item
-interface SectionHeaderItem {
-  type: typeof FLASH_LIST_ITEM_TYPES.SECTION_HEADER;
-  title: string;
-}
-
-interface FactItem {
-  type: typeof FLASH_LIST_ITEM_TYPES.FACT_ITEM;
-  fact: FactWithRelations;
-}
-
-type FeedListItem = SectionHeaderItem | FactItem | NativeAdPlaceholder;
-
-// LocaleChangeOverlay is a simple full-screen overlay - uses inline props for responsive gap
-
-// Simple list item component
-const FactListItem = React.memo(
-  ({ item, onPress }: { item: FactWithRelations; onPress: () => void }) => (
-    <ContentContainer>
-      <ImageFactCard
-        title={item.title || item.content.substring(0, 80) + '...'}
-        imageUrl={item.image_url!}
-        factId={item.id}
-        category={item.categoryData || item.category}
-        categorySlug={item.categoryData?.slug || item.category}
-        onPress={onPress}
-      />
-    </ContentContainer>
-  )
-);
-
-FactListItem.displayName = 'FactListItem';
-
-// Simple section header using responsive hook
-const SectionHeader = React.memo(({ title }: { title: string }) => {
-  const { spacing, isTablet, typography } = useResponsive();
-
-  return (
-    <YStack width="100%" alignItems="center" backgroundColor="$background">
-      <YStack
-        width="100%"
-        maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
-        paddingHorizontal={spacing.xl}
-        paddingVertical={spacing.md}
-      >
-        <Text.Title fontSize={typography.fontSize.body}>{title}</Text.Title>
-      </YStack>
-    </YStack>
-  );
-});
-
-SectionHeader.displayName = 'SectionHeader';
 
 function HomeScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const iconColor = useIconColor();
-  const { iconSizes, spacing, typography } = useResponsive();
-  const { consumePreloadedFacts, consumePreloadedRecommendations, signalHomeScreenReady, signalCarouselImageReady } = usePreloadedData();
-  const { isPremium } = usePremium();
+  const { spacing, typography, config, screenWidth } = useResponsive();
+  const {
+    consumePreloadedFacts,
+    consumePreloadedRecommendations,
+    signalHomeScreenReady,
+    signalCarouselImageReady,
+  } = usePreloadedData();
 
-  const [sections, setSections] = useState<FactSection[]>([]);
-  const [recommendations, setRecommendations] = useState<FactWithRelations[]>([]);
+  const [todaysFacts, setTodaysFacts] = useState<FactWithRelations[]>([]);
+  const [popularFacts, setPopularFacts] = useState<FactWithRelations[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() =>
     getRefreshStatus()
   );
 
-  // Track if random fact has been initialized (only once per app session)
-  const randomFactInitializedRef = useRef(false);
   // Track if we've consumed preloaded data (only once)
   const consumedPreloadedDataRef = useRef(false);
-  // Carousel ref for scroll-to-start functionality
-  const carouselRef = useRef<FactCarouselRef>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  // Scroll to top handler with smart instant/animated behavior
-  const { listRef, handleScroll, getScrollOffset } = useFlashListScrollToTop({ screenId: 'index' });
-
-  // Custom scroll-to-top that scrolls carousel to start when list is already at top
-  const handleScrollToTop = useCallback(() => {
-    const scrollOffset = getScrollOffset();
-    if (scrollOffset === 0) {
-      // Already at top, scroll carousel to start
-      carouselRef.current?.scrollToStart();
-    } else {
-      // Scroll list to top
-      listRef.current?.scrollToOffset({ offset: 0, animated: scrollOffset < 1000 });
-    }
-  }, [getScrollOffset, listRef]);
-
-  // Register custom scroll-to-top handler
-  useScrollToTopHandler('index', handleScrollToTop);
-
-  // Flatten sections into a single array for FlashList, insert native ads,
-  // and recompute sticky header indices after ad insertion
-  const { flattenedData, stickyHeaderIndices } = useMemo(() => {
-    const items: FeedListItem[] = [];
-
-    sections.forEach((section) => {
-      items.push({
-        type: FLASH_LIST_ITEM_TYPES.SECTION_HEADER,
-        title: section.title,
-      });
-
-      section.data.forEach((fact) => {
-        items.push({
-          type: FLASH_LIST_ITEM_TYPES.FACT_ITEM,
-          fact,
-        });
-      });
-    });
-
-    // Insert native ad placeholders (only counting fact items, not headers)
-    const withAds = insertNativeAds(
-      items,
-      NATIVE_ADS.FIRST_AD_INDEX.HOME_FEED,
-      (item) => item.type === FLASH_LIST_ITEM_TYPES.FACT_ITEM,
-    );
-
-    // Recompute sticky header indices from the final array
-    const headerIndices: number[] = [];
-    withAds.forEach((item, index) => {
-      if (!isNativeAdPlaceholder(item) && item.type === FLASH_LIST_ITEM_TYPES.SECTION_HEADER) {
-        headerIndices.push(index);
-      }
-    });
-
-    return { flattenedData: withAds, stickyHeaderIndices: headerIndices };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- isPremium triggers re-computation to remove/add native ads
-  }, [sections, isPremium]);
+  // Register scroll-to-top handler
+  useScrollToTopHandler(
+    'index',
+    useCallback(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    }, [])
+  );
 
   // Reload facts when tab gains focus
   useFocusEffect(
@@ -203,24 +86,28 @@ function HomeScreen() {
         const preloadedFacts = consumePreloadedFacts();
         const preloadedRecs = consumePreloadedRecommendations();
         if (preloadedFacts && preloadedFacts.length > 0) {
-          // Use preloaded data - no loading spinner needed
-          setSections(groupFactsByDate(preloadedFacts, t, locale));
+          // Filter today's facts from preloaded data
+          const todayStr = getLocalDateString();
+          const todayItems = preloadedFacts.filter((fact) => {
+            if (fact.scheduled_date) {
+              const factDate = getLocalDateString(new Date(fact.scheduled_date));
+              return factDate === todayStr;
+            }
+            return fact.shown_in_feed === 1;
+          });
+          setTodaysFacts(todayItems.length > 0 ? todayItems : []);
           setInitialLoading(false);
-          // Use preloaded recommendations if available
+          // Use preloaded recommendations as popular facts
           if (preloadedRecs && preloadedRecs.length > 0) {
-            setRecommendations(preloadedRecs);
+            setPopularFacts(preloadedRecs);
           }
-          // Initialize random fact with preloaded data
-          if (!randomFactInitializedRef.current) {
-            randomFactInitializedRef.current = true;
-            initializeRandomFact(locale);
-          }
+          signalHomeScreenReady();
           trackScreenView(Screens.HOME);
           return;
         }
       }
       // Fall back to normal loading
-      loadFacts();
+      loadTodaysFacts();
       trackScreenView(Screens.HOME);
     }, [locale, t, consumePreloadedFacts])
   );
@@ -240,7 +127,7 @@ function HomeScreen() {
         } catch {
           // Ignore notification setup errors
         }
-        loadFacts();
+        loadTodaysFacts();
       }
     });
     return () => subscription.remove();
@@ -249,8 +136,8 @@ function HomeScreen() {
   // Auto-refresh feed when content is updated from API
   useEffect(() => {
     const unsubscribe = onFeedRefresh(() => {
-      loadFacts();
-      loadRecommendations();
+      loadTodaysFacts();
+      loadPopularFacts();
     });
     return () => unsubscribe();
   }, []);
@@ -258,8 +145,8 @@ function HomeScreen() {
   // Auto-refresh feed when preferences change
   useEffect(() => {
     const unsubscribe = onPreferenceFeedRefresh(() => {
-      loadFacts();
-      loadRecommendations();
+      loadTodaysFacts();
+      loadPopularFacts();
     });
     return () => unsubscribe();
   }, []);
@@ -270,29 +157,25 @@ function HomeScreen() {
     return () => unsubscribe();
   }, []);
 
-  // Signal home screen ready when showing empty state (no FlashList to trigger onLoad)
+  // Signal home screen ready when showing empty state
   useEffect(() => {
-    if (!initialLoading && sections.length === 0) {
+    if (!initialLoading && todaysFacts.length === 0) {
       signalHomeScreenReady();
     }
-  }, [initialLoading, sections.length, signalHomeScreenReady]);
+  }, [initialLoading, todaysFacts.length, signalHomeScreenReady]);
 
-  const loadFacts = useCallback(
+  const loadTodaysFacts = useCallback(
     async (isRefresh = false) => {
       try {
         if (isRefresh) setRefreshing(true);
 
+        // Mark today's facts as shown and also mark delivered facts
+        await database.markTodaysFactsAsShown(locale);
         await database.markDeliveredFactsAsShown(locale);
 
-        const facts = await database.getFactsGroupedByDate(locale);
+        const facts = await database.getTodaysFacts(locale);
         prefetchFactImagesWithLimit(facts);
-        setSections(groupFactsByDate(facts, t, locale));
-
-        // Initialize random fact pre-fetch once facts are loaded (only once per session)
-        if (!randomFactInitializedRef.current && facts.length > 0) {
-          randomFactInitializedRef.current = true;
-          initializeRandomFact(locale);
-        }
+        setTodaysFacts(facts);
       } catch {
         // Ignore fact loading errors
       } finally {
@@ -300,12 +183,11 @@ function HomeScreen() {
         setRefreshing(false);
       }
     },
-    [locale, t]
+    [locale]
   );
 
   const handleFactPress = useCallback(
     (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => {
-      // Prefetch image before navigation for faster modal display
       if (fact.image_url) {
         prefetchFactImage(fact.image_url, fact.id);
       }
@@ -328,150 +210,110 @@ function HomeScreen() {
     } catch {
       // Ignore refresh errors
     }
-    await loadFacts(false);
-  }, [loadFacts]);
+    await loadTodaysFacts(false);
+    await loadPopularFacts();
+  }, [loadTodaysFacts]);
 
-  const handleRandomFact = useCallback(async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    trackRandomFactClick();
-
-    // Try to get pre-fetched random fact (image already prefetched and in memory cache)
-    let randomFact = consumeRandomFact(locale);
-
-    // Fall back to database if no pre-fetched fact available
-    if (!randomFact) {
-      randomFact = await database.getRandomFact(locale);
-      // Prefetch image and load into memory cache for instant display
-      if (randomFact?.image_url) {
-        const localUri = await prefetchFactImage(randomFact.image_url, randomFact.id);
-        if (localUri) {
-          preloadImageToMemoryCache(randomFact.id, localUri);
-        }
-      }
-    }
-
-    if (randomFact) {
-      router.push(`/fact/${randomFact.id}?source=random`);
-    }
-  }, [locale, router]);
-
-  const handleDiscoverPress = useCallback(() => {
-    router.push('/(tabs)/discover');
-  }, [router]);
-
-  // FlashList key extractor
-  const keyExtractor = useCallback((item: FeedListItem, index: number) => {
-    if (isNativeAdPlaceholder(item)) {
-      return item.key;
-    }
-    if (item.type === FLASH_LIST_ITEM_TYPES.SECTION_HEADER) {
-      return `header-${item.title}-${index}`;
-    }
-    return `fact-${item.fact.id}`;
-  }, []);
-
-  // FlashList renderItem - handles both section headers and fact items
-  // Build a map of factId → { allFactIds, globalIndex } for navigation across the entire list
-  const factNavigationMap = useMemo(() => {
-    const allFactIds: number[] = [];
-    sections.forEach((section) => {
-      section.data.forEach((f) => allFactIds.push(f.id));
-    });
-    const map = new Map<number, { factIds: number[]; index: number }>();
-    allFactIds.forEach((id, idx) => {
-      map.set(id, { factIds: allFactIds, index: idx });
-    });
-    return map;
-  }, [sections]);
-
-  const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<FeedListItem>) => {
-      if (isNativeAdPlaceholder(item)) {
-        return (
-          <ContentContainer>
-            <NativeAdCard />
-          </ContentContainer>
-        );
-      }
-
-      if (item.type === FLASH_LIST_ITEM_TYPES.SECTION_HEADER) {
-        return <SectionHeader title={item.title} />;
-      }
-
-      if (!item.fact?.id) return null;
-      const nav = factNavigationMap.get(item.fact.id);
-      return (
-        <FactListItem
-          item={item.fact}
-          onPress={() => handleFactPress(item.fact, nav?.factIds, nav?.index)}
-        />
-      );
-    },
-    [handleFactPress, factNavigationMap]
-  );
-
-  // FlashList getItemType - enables recycling optimization
-  // Items with different types are recycled in separate pools for better performance
-  const getItemType = useCallback((item: FeedListItem) => {
-    if (isNativeAdPlaceholder(item)) return FLASH_LIST_ITEM_TYPES.NATIVE_AD;
-    return item.type;
-  }, []);
-
-  const refreshControl = useMemo(
-    () => <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
-    [refreshing, handleRefresh]
-  );
-
-  // Load recommendation facts (random facts not in the feed)
-  const loadRecommendations = useCallback(async () => {
+  // Load popular facts (random unscheduled facts)
+  const loadPopularFacts = useCallback(async () => {
     try {
-      const recs = await database.getRandomUnscheduledFacts(6, locale);
+      const recs = await database.getRandomUnscheduledFacts(8, locale);
       if (recs.length > 0) {
         prefetchFactImagesWithLimit(recs);
-        setRecommendations(recs);
+        setPopularFacts(recs);
       }
     } catch {
       // Ignore recommendation loading errors
     }
   }, [locale]);
 
-  // Load recommendations on mount and when locale changes
+  // Load popular facts on mount and when locale changes
   useEffect(() => {
-    loadRecommendations();
-  }, [loadRecommendations]);
+    loadPopularFacts();
+  }, [loadPopularFacts]);
 
-  // Worth Knowing carousel header
-  const listHeaderComponent = useMemo(() => {
-    if (recommendations.length === 0) return null;
+  const refreshControl = useMemo(
+    () => <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
+    [refreshing, handleRefresh]
+  );
 
-    return (
-      <YStack>
-        <ContentContainer>
-          <YStack paddingVertical={spacing.md}>
-            <Text.Title fontSize={typography.fontSize.body}>{t('worthKnowing')}</Text.Title>
-          </YStack>
-        </ContentContainer>
-        <FactCarousel ref={carouselRef} facts={recommendations} onFactPress={handleFactPress} onDiscoverPress={handleDiscoverPress} onFirstImageReady={signalCarouselImageReady} />
-      </YStack>
-    );
-  }, [recommendations, handleFactPress, handleDiscoverPress, signalCarouselImageReady, spacing, typography, t]);
+  const colors = hexColors[theme];
 
-  // End-of-feed footer - "You're all caught up"
-  const listFooterComponent = useMemo(() => {
-    if (flattenedData.length === 0) return null;
+  // On tablets, cap content width to MAX_CONTENT_WIDTH (matches ContentContainer)
+  const contentWidth = Math.min(screenWidth, LAYOUT.MAX_CONTENT_WIDTH);
 
-    return (
-      <ContentContainer>
-        <YStack alignItems="center" paddingVertical={spacing.xl} gap={spacing.sm}>
-          <Text.Label color="$textSecondary">{t('feedEndTitle')}</Text.Label>
-          <Text.Caption color="$textMuted">{t('feedEndDescription')}</Text.Caption>
-        </YStack>
-      </ContentContainer>
-    );
-  }, [flattenedData.length, spacing, t]);
+  // Today's facts carousel sizing - left-aligned, square cards with next card peeking
+  const todayCardWidth = contentWidth - spacing.lg * 2 - spacing.xl;
+  const todayCardGap = spacing.sm;
+  const todaySnapInterval = todayCardWidth + todayCardGap;
+  const [todayActiveIndex, setTodayActiveIndex] = useState(0);
+
+  const handleTodayScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const index = Math.round(offsetX / todaySnapInterval);
+      setTodayActiveIndex(Math.max(0, Math.min(index, todaysFacts.length - 1)));
+    },
+    [todaySnapInterval, todaysFacts.length]
+  );
+
+  const todayCarouselFactIds = useMemo(() => todaysFacts.map((f) => f.id), [todaysFacts]);
+  const firstImageSignalledRef = useRef(false);
+
+  const renderTodayItem = useCallback(
+    ({ item, index }: { item: FactWithRelations; index: number }) => {
+      const handleImageReady =
+        index === 0 && !firstImageSignalledRef.current
+          ? () => {
+              firstImageSignalledRef.current = true;
+              signalCarouselImageReady();
+            }
+          : undefined;
+      return (
+        <View
+          style={[
+            { width: todayCardWidth },
+            theme === 'dark' ? styles.shadowDark : styles.shadowLight,
+          ]}
+        >
+          <ImageFactCard
+            title={item.title || item.content.substring(0, 80) + '...'}
+            imageUrl={item.image_url!}
+            factId={item.id}
+            category={item.categoryData || item.category}
+            categorySlug={item.categoryData?.slug || item.category}
+            onPress={() => handleFactPress(item, todayCarouselFactIds, index)}
+            aspectRatio={1}
+            cardWidth={todayCardWidth}
+            onImageReady={handleImageReady}
+          />
+        </View>
+      );
+    },
+    [todayCardWidth, handleFactPress, todayCarouselFactIds, signalCarouselImageReady]
+  );
+
+  const todayKeyExtractor = useCallback((item: FactWithRelations) => `today-${item.id}`, []);
+
+  // Popular section card width (85% phone, 70% tablet via config)
+  const popularCardWidth = contentWidth * config.cardWidthMultiplier;
+  const popularCardGap = spacing.sm;
+
+  const renderPopularItem = useCallback(
+    ({ item }: { item: FactWithRelations }) => (
+      <PopularFactCard
+        fact={item}
+        cardWidth={popularCardWidth}
+        onPress={() => handleFactPress(item)}
+      />
+    ),
+    [popularCardWidth, handleFactPress]
+  );
+
+  const popularKeyExtractor = useCallback((item: FactWithRelations) => `popular-${item.id}`, []);
 
   // Loading state
-  if (initialLoading && sections.length === 0) {
+  if (initialLoading && todaysFacts.length === 0) {
     return (
       <ScreenContainer edges={['top']}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
@@ -482,48 +324,138 @@ function HomeScreen() {
     );
   }
 
+  const hasTodaysFacts = todaysFacts.length > 0;
+  const hasPopularFacts = popularFacts.length > 0;
+  const hasAnyContent = hasTodaysFacts || hasPopularFacts;
+
   return (
     <ScreenContainer edges={['top']}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
 
-      <Animated.View entering={FadeIn.duration(300)}>
-        <ScreenHeader
-          icon={<Lightbulb size={iconSizes.lg} color={iconColor} />}
-          paddingBottom={0}
-          title={t('factsFeed')}
-          rightElement={
-            <View
-              role="button"
-              aria-label={t('showRandomFact')}
-              padding={spacing.sm}
-              onPress={handleRandomFact}
-              pressStyle={{ opacity: 0.6, scale: 0.9 }}
-            >
-              <Dices size={iconSizes.lg} color={iconColor} />
-            </View>
-          }
-        />
-      </Animated.View>
-
       <YStack flex={1}>
-        {flattenedData.length === 0 ? (
+        {!hasAnyContent ? (
           <EmptyState title={t('emptyStateTitle')} description={t('emptyStateDescription')} />
         ) : (
-          <FlashList
-            ref={listRef}
-            data={flattenedData}
-            keyExtractor={keyExtractor}
-            renderItem={renderItem}
-            getItemType={getItemType}
-            stickyHeaderIndices={stickyHeaderIndices}
+          <ScrollView
+            ref={scrollViewRef}
             refreshControl={refreshControl}
-            ListHeaderComponent={listHeaderComponent}
-            ListFooterComponent={listFooterComponent}
-            decelerationRate={0.8}
-            onScroll={handleScroll}
-            onLoad={signalHomeScreenReady}
-            {...{ ...FLASH_LIST_SETTINGS, drawDistance: 800 }}
-          />
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: spacing.xl }}
+          >
+            {/* Title */}
+            <Animated.View entering={FadeIn.duration(300)}>
+              <XStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} paddingBottom={spacing.sm} alignItems="center">
+                <Text.Headline flex={1}>{t('appName')}</Text.Headline>
+              </XStack>
+            </Animated.View>
+
+            {/* Category Story Buttons */}
+            <YStack paddingBottom={spacing.md}>
+              <CategoryStoryButtons />
+            </YStack>
+
+            {/* Fact of the Day */}
+            {hasTodaysFacts && (
+              <ContentContainer>
+                <YStack>
+                  <YStack paddingBottom={spacing.sm}>
+                    <Text.Title fontSize={typography.fontSize.body}>
+                      {todaysFacts.length > 1 ? t('factsOfTheDay') : t('factOfTheDay')}
+                    </Text.Title>
+                  </YStack>
+
+                  {todaysFacts.length === 1 ? (
+                    <View style={theme === 'dark' ? styles.shadowDark : styles.shadowLight}>
+                      <ImageFactCard
+                        title={
+                          todaysFacts[0].title || todaysFacts[0].content.substring(0, 80) + '...'
+                        }
+                        imageUrl={todaysFacts[0].image_url!}
+                        factId={todaysFacts[0].id}
+                        category={todaysFacts[0].categoryData || todaysFacts[0].category}
+                        categorySlug={todaysFacts[0].categoryData?.slug || todaysFacts[0].category}
+                        onPress={() => handleFactPress(todaysFacts[0])}
+                        aspectRatio={1}
+                        cardWidth={contentWidth}
+                        onImageReady={signalCarouselImageReady}
+                      />
+                    </View>
+                  ) : (
+                    <YStack>
+                      <FlatList
+                        data={todaysFacts}
+                        renderItem={renderTodayItem}
+                        keyExtractor={todayKeyExtractor}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        snapToInterval={todaySnapInterval}
+                        decelerationRate="fast"
+                        contentContainerStyle={{
+                          gap: todayCardGap,
+                        }}
+                        onScroll={handleTodayScroll}
+                        scrollEventThrottle={16}
+                        style={{ overflow: 'visible' }}
+                      />
+
+                      {/* Pagination dots */}
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          gap: spacing.xs,
+                          marginTop: spacing.sm,
+                        }}
+                      >
+                        {todaysFacts.map((_, index) => {
+                          const dotSize = index === todayActiveIndex ? spacing.sm : spacing.sm - 2;
+                          return (
+                            <View
+                              key={index}
+                              style={{
+                                width: dotSize,
+                                height: dotSize,
+                                borderRadius: 100,
+                                backgroundColor:
+                                  index === todayActiveIndex ? colors.primary : colors.border,
+                              }}
+                            />
+                          );
+                        })}
+                      </View>
+                    </YStack>
+                  )}
+                </YStack>
+              </ContentContainer>
+            )}
+
+            {/* Popular Section */}
+            {hasPopularFacts && (
+              <ContentContainer>
+                <YStack paddingTop={spacing.lg}>
+                  <YStack paddingBottom={spacing.sm}>
+                    <Text.Title fontSize={typography.fontSize.body}>{t('popular')}</Text.Title>
+                  </YStack>
+
+                  <FlatList
+                    data={popularFacts}
+                    renderItem={renderPopularItem}
+                    keyExtractor={popularKeyExtractor}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    snapToInterval={popularCardWidth + popularCardGap}
+                    decelerationRate="fast"
+                    style={{ overflow: 'visible' }}
+                    contentContainerStyle={{
+                      paddingVertical: spacing.sm,
+                      gap: popularCardGap,
+                    }}
+                  />
+                </YStack>
+              </ContentContainer>
+            )}
+          </ScrollView>
         )}
 
         {backgroundRefreshStatus === 'locale-change' && (
@@ -548,68 +480,29 @@ function HomeScreen() {
   );
 }
 
+const styles = StyleSheet.create({
+  shadowLight: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  shadowDark: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+});
+
 // Helper to get local date string in YYYY-MM-DD format
-// Using local date instead of UTC to properly match user's timezone
 function getLocalDateString(date: Date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
-
-// Helper function to group facts by date
-function groupFactsByDate(
-  facts: FactWithRelations[],
-  t: (key: 'today' | 'yesterday') => string,
-  locale: string
-): FactSection[] {
-  const today = new Date();
-  const todayString = getLocalDateString(today);
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayString = getLocalDateString(yesterday);
-
-  const grouped: { [key: string]: FactWithRelations[] } = {};
-
-  facts.forEach((fact) => {
-    let dateKey: string;
-    if (fact.shown_in_feed === 1 && !fact.scheduled_date) {
-      dateKey = todayString;
-    } else if (fact.scheduled_date) {
-      // Parse the scheduled_date as local date for comparison
-      const scheduledDate = new Date(fact.scheduled_date);
-      dateKey = getLocalDateString(scheduledDate);
-    } else {
-      return;
-    }
-
-    if (!grouped[dateKey]) grouped[dateKey] = [];
-    grouped[dateKey].push(fact);
-  });
-
-  return Object.keys(grouped)
-    .sort((a, b) => b.localeCompare(a))
-    .map((dateKey) => {
-      let title: string;
-      if (dateKey === todayString) {
-        title = t('today');
-      } else if (dateKey === yesterdayString) {
-        title = t('yesterday');
-      } else {
-        // Parse as local date for display (add T12:00:00 to avoid timezone edge cases)
-        title = new Date(dateKey + 'T12:00:00').toLocaleDateString(locale, {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-      }
-
-      return {
-        title,
-        data: grouped[dateKey].filter((item) => item?.id),
-      };
-    })
-    .filter((section) => section.data.length > 0);
 }
 
 export default HomeScreen;
