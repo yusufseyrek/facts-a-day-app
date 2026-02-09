@@ -26,7 +26,7 @@ import {
   ScreenHeader,
   Text,
 } from '../../src/components';
-import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
+import { PopularNativeAdItem } from '../../src/components/ads/PopularNativeAdItem';
 import { CategoryStoryButtons } from '../../src/components/CategoryStoryButtons';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { PopularFactCard } from '../../src/components/PopularFactCard';
@@ -371,13 +371,12 @@ function HomeScreen() {
     ({ item }: { item: PopularListItem }) => {
       if (isNativeAdPlaceholder(item)) {
         return (
-          <View style={{ width: popularCardWidth, paddingVertical: spacing.sm }}>
-            <NativeAdCard
-              cardWidth={popularCardWidth}
-              cardHeight={popularCardHeight}
-              onAdFailed={() => handlePopularAdFailed(item.key)}
-            />
-          </View>
+          <PopularNativeAdItem
+            adKey={item.key}
+            cardWidth={popularCardWidth}
+            cardHeight={popularCardHeight}
+            onAdFailed={handlePopularAdFailed}
+          />
         );
       }
       const factIndex = popularCarouselFactIds.indexOf(item.id);
@@ -398,7 +397,7 @@ function HomeScreen() {
         </View>
       );
     },
-    [popularCardWidth, popularCardHeight, handleFactPress, popularCarouselFactIds, theme, spacing.sm]
+    [popularCardWidth, popularCardHeight, handleFactPress, handlePopularAdFailed, popularCarouselFactIds, theme, spacing.sm]
   );
 
   const popularCarouselKeyExtractor = useCallback(

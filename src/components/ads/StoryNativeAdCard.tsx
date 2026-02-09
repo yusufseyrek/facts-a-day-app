@@ -62,9 +62,7 @@ function StoryNativeAdCardComponent({
   }, [nativeAd, nativeAdProp, isLoading, error, onAdLoaded]);
 
   if (!nativeAd || (!nativeAdProp && (isLoading || error))) {
-    return (
-      <View style={{ width: screenWidth, height: screenHeight, overflow: 'hidden', backgroundColor: '#1a1a2e' }} />
-    );
+    return null;
   }
 
   return (
@@ -98,6 +96,7 @@ function StoryNativeAdCardComponent({
       >
         {/* Sponsored badge — styled like CategoryBadge compact */}
         <XStack
+          pointerEvents="none"
           paddingHorizontal={spacing.sm}
           paddingVertical={2}
           borderRadius={999}
@@ -111,7 +110,7 @@ function StoryNativeAdCardComponent({
 
         {/* Headline — matches story title */}
         <NativeAsset assetType={NativeAssetType.HEADLINE}>
-          <Text.Headline numberOfLines={3} color="#FFFFFF" style={styles.textShadow}>
+          <Text.Headline pointerEvents="none" numberOfLines={3} color="#FFFFFF" style={styles.textShadow}>
             {nativeAd.headline}
           </Text.Headline>
         </NativeAsset>
@@ -120,6 +119,7 @@ function StoryNativeAdCardComponent({
         {nativeAd.body ? (
           <NativeAsset assetType={NativeAssetType.BODY}>
             <Text.Body
+              pointerEvents="none"
               color="rgba(255,255,255,0.8)"
               fontFamily={FONT_FAMILIES.regular}
               numberOfLines={3}
@@ -130,20 +130,18 @@ function StoryNativeAdCardComponent({
           </NativeAsset>
         ) : null}
 
-        {/* CTA — matches story "Read More" link style */}
+        {/* CTA — pointerEvents="none" so taps pass through to the ad behind */}
         {nativeAd.callToAction ? (
-          <NativeAsset assetType={NativeAssetType.CALL_TO_ACTION}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs }}>
-              <Text.Body
-                color={colors.primary}
-                fontFamily={FONT_FAMILIES.semibold}
-                fontSize={typography.fontSize.body}
-              >
-                {nativeAd.callToAction}
-              </Text.Body>
-              <ChevronRight size={iconSizes.sm} color={colors.primary} />
-            </View>
-          </NativeAsset>
+          <View pointerEvents="none" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs }}>
+            <Text.Body
+              color={colors.primary}
+              fontFamily={FONT_FAMILIES.semibold}
+              fontSize={typography.fontSize.body}
+            >
+              {nativeAd.callToAction}
+            </Text.Body>
+            <ChevronRight size={iconSizes.sm} color={colors.primary} />
+          </View>
         ) : null}
       </View>
     </NativeAdView>
