@@ -37,6 +37,7 @@ import {
   trackScreenView,
   trackSearch,
 } from '../../src/services/analytics';
+import type { FactViewSource } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
 import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/services/images';
 import { getSelectedCategories } from '../../src/services/onboarding';
@@ -343,17 +344,17 @@ function DiscoverScreen() {
   }, [searchQuery, selectedCategorySlug, performSearch]);
 
   const handleFactPress = useCallback(
-    (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => {
+    (fact: FactWithRelations, source: FactViewSource, factIdList?: number[], indexInList?: number) => {
       // Prefetch image before navigation for faster modal display
       if (fact.image_url) {
         prefetchFactImage(fact.image_url, fact.id);
       }
       if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
         router.push(
-          `/fact/${fact.id}?source=discover&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
+          `/fact/${fact.id}?source=${source}&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
         );
       } else {
-        router.push(`/fact/${fact.id}?source=discover`);
+        router.push(`/fact/${fact.id}?source=${source}`);
       }
     },
     [router]
@@ -483,7 +484,7 @@ function DiscoverScreen() {
         <FactListItem
           item={item}
           isTablet={isTablet}
-          onPress={(fact) => handleFactPress(fact, searchFactIds, factIndex >= 0 ? factIndex : 0)}
+          onPress={(fact) => handleFactPress(fact, 'discover_search', searchFactIds, factIndex >= 0 ? factIndex : 0)}
           selectedCategory={selectedCategory}
         />
       );
@@ -506,7 +507,7 @@ function DiscoverScreen() {
         <FactListItem
           item={item}
           isTablet={isTablet}
-          onPress={(fact) => handleFactPress(fact, categoryFactIds, factIndex >= 0 ? factIndex : 0)}
+          onPress={(fact) => handleFactPress(fact, 'discover_category', categoryFactIds, factIndex >= 0 ? factIndex : 0)}
           selectedCategory={selectedCategory}
         />
       );

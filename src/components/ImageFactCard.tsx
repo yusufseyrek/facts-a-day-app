@@ -162,7 +162,7 @@ const ImageFactCardComponent = ({
   // When aspectRatio is provided, use the base width / aspectRatio for the height
   // cardWidthProp allows carousels to pass the actual card width for correct sizing
   const baseWidth = cardWidthProp || screenWidth;
-  const cardHeight = aspectRatio ? baseWidth / aspectRatio : screenWidth * config.cardAspectRatio;
+  const cardHeight = aspectRatio ? baseWidth / aspectRatio : baseWidth * config.cardAspectRatio;
 
   // Delay press animation to avoid triggering during scroll
   const handlePressIn = useCallback(() => {

@@ -38,10 +38,10 @@ export const NATIVE_ADS = {
   INTERVAL: 3,
   /** Index of the first ad in each list (0-based) */
   FIRST_AD_INDEX: {
-    HOME_FEED: 3,
-    HOME_CAROUSEL: 2,
+    HOME_CAROUSEL: 1,
     DISCOVER: 1,
     FAVORITES: 1,
+    STORY: 3,
   },
 } as const;
 

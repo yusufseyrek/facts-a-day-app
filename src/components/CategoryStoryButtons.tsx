@@ -74,12 +74,19 @@ export function CategoryStoryButtons() {
         }
       }
 
-      // Prepend Mix button
-      setCategories([{ slug: 'mix', name: t('mix'), isMix: true }, ...items]);
-
       // Load unseen status
       const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
       setUnseenStatus(status);
+
+      // Sort categories: unseen (has new facts) first
+      items.sort((a, b) => {
+        const aUnseen = status[a.slug] ? 0 : 1;
+        const bUnseen = status[b.slug] ? 0 : 1;
+        return aUnseen - bUnseen;
+      });
+
+      // Prepend Mix button
+      setCategories([{ slug: 'mix', name: t('mix'), isMix: true }, ...items]);
     } catch {
       // Ignore errors
     }
@@ -90,6 +97,18 @@ export function CategoryStoryButtons() {
       const selectedSlugs = await getSelectedCategories();
       const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
       setUnseenStatus(status);
+
+      // Re-sort categories by unseen status
+      setCategories((prev) => {
+        const mix = prev.find((c) => c.isMix);
+        const rest = prev.filter((c) => !c.isMix);
+        rest.sort((a, b) => {
+          const aUnseen = status[a.slug] ? 0 : 1;
+          const bUnseen = status[b.slug] ? 0 : 1;
+          return aUnseen - bUnseen;
+        });
+        return mix ? [mix, ...rest] : rest;
+      });
     } catch {
       // Ignore errors
     }

@@ -3,6 +3,7 @@ import {
   AccessibilityInfo,
   Animated,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -11,16 +12,18 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
-import { Calendar, ImagePlus, RefreshCw, X } from '@tamagui/lucide-icons';
+import { Calendar, ExternalLink, ImagePlus, RefreshCw, X } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n';
+import { trackSourceLinkClick } from '../services/analytics';
 import { onFactViewed } from '../services/appReview';
 import { addFactDetailTimeSpent, markFactDetailOpened, markFactDetailRead } from '../services/database';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
+import { openInAppBrowser } from '../utils/browser';
 import { useFactImage } from '../utils/useFactImage';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -54,6 +57,14 @@ function slugToTitleCase(slug: string): string {
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+function extractDomain(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
 }
 
 function formatLastUpdated(dateString: string, locale: string): string {
@@ -236,6 +247,14 @@ export function FactModal({
       }
     },
     [fact.id]
+  );
+
+  const handleSourcePress = useCallback(
+    (url: string) => {
+      trackSourceLinkClick({ factId: fact.id, domain: extractDomain(url) });
+      openInAppBrowser(url, { theme });
+    },
+    [fact.id, theme]
   );
 
   let categoryForBadge: string | Category | null = null;
@@ -774,7 +793,26 @@ export function FactModal({
               {fact.content}
             </Text.Body>
 
-            {/* Source link moved to overflow menu in FactActions */}
+            {/* Source link */}
+            {fact.source_url && (
+              <Pressable
+                onPress={() => handleSourcePress(fact.source_url!)}
+                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+              >
+                <XStack alignItems="center" gap={spacing.xs}>
+                  <ExternalLink
+                    size={iconSizes.xs}
+                    color={theme === 'dark' ? hexColors.dark.textMuted : hexColors.light.textMuted}
+                  />
+                  <Text.Caption
+                    color="$textMuted"
+                    numberOfLines={1}
+                  >
+                    {extractDomain(fact.source_url)}
+                  </Text.Caption>
+                </XStack>
+              </Pressable>
+            )}
           </YStack>
         </Animated.View>
       </Animated.ScrollView>

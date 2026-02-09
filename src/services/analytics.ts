@@ -171,6 +171,7 @@ export const Screens = {
   ONBOARDING_NOTIFICATIONS: 'OnboardingNotifications',
   ONBOARDING_SUCCESS: 'OnboardingSuccess',
   SETTINGS_CATEGORIES: 'SettingsCategories',
+  STORY: 'Story',
 } as const;
 
 // ============================================================================
@@ -260,7 +261,16 @@ export const trackOnboardingComplete = (params: {
 // Content Engagement Events
 // ============================================================================
 
-export type FactViewSource = 'feed' | 'discover' | 'favorites' | 'notification' | 'trivia_review';
+export type FactViewSource =
+  | 'home_today'
+  | 'home_popular'
+  | 'home_worth_knowing'
+  | 'discover_search'
+  | 'discover_category'
+  | 'favorites'
+  | 'story'
+  | 'notification'
+  | 'trivia_review';
 
 /**
  * Track when user views a fact
@@ -379,13 +389,6 @@ export type FeedRefreshSource = 'pull' | 'notification' | 'auto';
  */
 export const trackFeedRefresh = (source: FeedRefreshSource): void => {
   logEvent('app_feed_refresh', { source });
-};
-
-/**
- * Track random fact button click
- */
-export const trackRandomFactClick = (): void => {
-  logEvent('app_random_fact_click', {});
 };
 
 // ============================================================================
@@ -741,5 +744,52 @@ export const trackAppUpdate = (): void => {
     app_version: appVersion,
     build_number: buildNumber,
     platform_build_id: platformBuildId,
+  });
+};
+
+// ============================================================================
+// Story Events
+// ============================================================================
+
+export const trackStoryOpen = (params: {
+  category: string;
+  factCount: number;
+  isMix: boolean;
+}): void => {
+  logEvent('app_story_open', {
+    category: params.category,
+    fact_count: params.factCount,
+    is_mix: params.isMix,
+  });
+};
+
+export const trackStoryFactView = (params: {
+  factId: number;
+  category: string;
+  index: number;
+}): void => {
+  logEvent('app_story_fact_view', {
+    fact_id: params.factId,
+    category: params.category,
+    index: params.index,
+  });
+};
+
+export const trackStoryReadMore = (params: { factId: number; category: string }): void => {
+  logEvent('app_story_read_more', {
+    fact_id: params.factId,
+    category: params.category,
+  });
+};
+
+export const trackStoryClose = (params: {
+  category: string;
+  factsViewed: number;
+  totalFacts: number;
+}): void => {
+  logEvent('app_story_close', {
+    category: params.category,
+    facts_viewed: params.factsViewed,
+    total_facts: params.totalFacts,
   });
 };

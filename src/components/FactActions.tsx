@@ -22,6 +22,7 @@ import {
   trackFactFavoriteAdd,
   trackFactFavoriteRemove,
   trackFactReport,
+  trackFactShare,
 } from '../services/analytics';
 import * as api from '../services/api';
 import * as database from '../services/database';
@@ -289,6 +290,11 @@ export function FactActions({
     if (isSharing) return;
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsSharing(true);
+
+    trackFactShare({
+      factId,
+      category: typeof category === 'string' ? category : category?.slug || 'unknown',
+    });
 
     try {
       const preparedImageUri = await shareService.prepareShareCard(factId);

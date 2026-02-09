@@ -16,17 +16,31 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+import { StoryNativeAdCard } from '../../src/components/ads/StoryNativeAdCard';
 import { CategoryBadge } from '../../src/components/CategoryBadge';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
+import { NATIVE_ADS } from '../../src/config/app';
+import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
+import {
+  Screens,
+  trackScreenView,
+  trackStoryClose,
+  trackStoryFactView,
+  trackStoryOpen,
+  trackStoryReadMore,
+} from '../../src/services/analytics';
 import * as database from '../../src/services/database';
 import { prefetchFactImagesWithLimit } from '../../src/services/images';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { hexColors, useTheme } from '../../src/theme';
+import { insertNativeAds, isNativeAdPlaceholder, NativeAdPlaceholder } from '../../src/utils/insertNativeAds';
 import { useFactImage } from '../../src/utils/useFactImage';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { FactWithRelations } from '../../src/services/database';
+
+type StoryListItem = FactWithRelations | NativeAdPlaceholder;
 
 export default function StoryScreen() {
   const { category } = useLocalSearchParams<{ category: string }>();
@@ -38,10 +52,34 @@ export default function StoryScreen() {
   const { spacing, iconSizes, radius } = useResponsive();
   const colors = hexColors[theme];
 
+  const { isPremium } = usePremium();
+
   const [facts, setFacts] = useState<FactWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const viewedFactIds = useRef(new Set<number>());
+
+  const [failedAdKeys, setFailedAdKeys] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setFailedAdKeys(new Set());
+  }, [facts]);
+
+  const handleAdFailed = useCallback((key: string) => {
+    setFailedAdKeys((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+  }, []);
+
+  const storyDataWithAds = useMemo(
+    () =>
+      insertNativeAds(facts, NATIVE_ADS.FIRST_AD_INDEX.STORY, undefined, NATIVE_ADS.INTERVAL * 2).filter(
+        (item) => !isNativeAdPlaceholder(item) || !failedAdKeys.has(item.key)
+      ),
+    [facts, isPremium, failedAdKeys]
+  );
 
   // Bouncing animation for scroll hint
   const hintBounce = useRef(new Animated.Value(0)).current;
@@ -74,6 +112,12 @@ export default function StoryScreen() {
 
       setFacts(result);
       prefetchFactImagesWithLimit(result, 4);
+      trackScreenView(Screens.STORY);
+      trackStoryOpen({
+        category: category!,
+        factCount: result.length,
+        isMix: category === 'mix',
+      });
     } catch (error) {
       console.error('Failed to load story facts:', error);
     } finally {
@@ -84,17 +128,23 @@ export default function StoryScreen() {
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: Array<{ item: any; index: number | null }> }) => {
       for (const entry of viewableItems) {
+        if (entry.index != null) {
+          setCurrentIndex(entry.index);
+        }
+        if (isNativeAdPlaceholder(entry.item)) continue;
         const fact = entry.item as FactWithRelations;
         if (fact && !viewedFactIds.current.has(fact.id)) {
           viewedFactIds.current.add(fact.id);
           database.markFactViewedInStory(fact.id).catch(() => {});
-        }
-        if (entry.index != null) {
-          setCurrentIndex(entry.index);
+          trackStoryFactView({
+            factId: fact.id,
+            category: category!,
+            index: entry.index ?? 0,
+          });
         }
       }
     },
-    []
+    [category]
   );
 
   const viewabilityConfig = useMemo(
@@ -105,17 +155,34 @@ export default function StoryScreen() {
   );
 
   const handleClose = useCallback(() => {
+    trackStoryClose({
+      category: category!,
+      factsViewed: viewedFactIds.current.size,
+      totalFacts: facts.length,
+    });
     router.back();
-  }, [router]);
+  }, [router, category, facts.length]);
 
   const renderItem = useCallback(
-    ({ item }: { item: FactWithRelations }) => (
-      <StoryPage fact={item} screenWidth={screenWidth} screenHeight={screenHeight} />
-    ),
+    ({ item }: { item: StoryListItem }) => {
+      if (isNativeAdPlaceholder(item)) {
+        return (
+          <StoryNativeAdCard
+            screenWidth={screenWidth}
+            screenHeight={screenHeight}
+            onAdFailed={() => handleAdFailed(item.key)}
+          />
+        );
+      }
+      return <StoryPage fact={item} screenWidth={screenWidth} screenHeight={screenHeight} />;
+    },
     [screenWidth, screenHeight]
   );
 
-  const keyExtractor = useCallback((item: FactWithRelations) => String(item.id), []);
+  const keyExtractor = useCallback(
+    (item: StoryListItem) => (isNativeAdPlaceholder(item) ? item.key : String(item.id)),
+    []
+  );
 
   if (loading || facts.length === 0) {
     return <View style={[styles.container, { backgroundColor: colors.background }]} />;
@@ -124,7 +191,7 @@ export default function StoryScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlashList
-        data={facts}
+        data={storyDataWithAds}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         snapToInterval={screenHeight}
@@ -164,7 +231,7 @@ export default function StoryScreen() {
       </View>
 
       {/* Scroll hint — hidden on last story */}
-      {currentIndex < facts.length - 1 && (
+      {currentIndex < storyDataWithAds.length - 1 && (
         <Animated.View
           style={[
             styles.scrollHint,
@@ -235,9 +302,12 @@ const StoryPage = React.memo(
       outputRange: [0, -screenHeight * 0.015, 0, screenHeight * 0.015, 0],
     });
 
+    const categorySlug = fact.categoryData?.slug || fact.category || 'unknown';
+
     const handleReadMore = useCallback(() => {
-      router.push(`/fact/${fact.id}`);
-    }, [router, fact.id]);
+      trackStoryReadMore({ factId: fact.id, category: categorySlug });
+      router.push(`/fact/${fact.id}?source=story`);
+    }, [router, fact.id, categorySlug]);
 
     return (
       <View style={{ width: screenWidth, height: screenHeight, overflow: 'hidden' }}>

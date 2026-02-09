@@ -6,6 +6,7 @@ import {
   Bell,
   Bug,
   Camera,
+  CircleCheck,
   Crown,
   Download,
   Eye,
@@ -621,6 +622,17 @@ export default function SettingsPage() {
     }
   };
 
+  const handleMarkAllStoriesViewed = async () => {
+    try {
+      const count = await database.markAllFactsViewedInStory(locale);
+      Alert.alert('Stories Marked Viewed', `${count} facts marked as viewed in story`, [
+        { text: t('ok'), style: 'default' },
+      ]);
+    } catch (error) {
+      console.error('Error marking stories viewed:', error);
+    }
+  };
+
   const handleScheduleDuplicateNotifications = async () => {
     try {
       console.log('🐛 Creating buggy notification schedule to test repair...');
@@ -845,6 +857,12 @@ export default function SettingsPage() {
           label: t('add10RandomFacts'),
           icon: <Plus size={iconSizes.md} color={iconColor} />,
           onPress: handleAdd10RandomFacts,
+        },
+        {
+          id: 'markStoriesViewed',
+          label: 'Mark All Stories Viewed',
+          icon: <CircleCheck size={iconSizes.md} color={iconColor} />,
+          onPress: handleMarkAllStoriesViewed,
         },
         {
           id: 'testNotification',

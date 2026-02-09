@@ -32,13 +32,14 @@ export function isNativeAdPlaceholder(item: unknown): item is NativeAdPlaceholde
 export function insertNativeAds<T>(
   items: T[],
   firstAdIndex: number,
-  isCountable?: (item: T) => boolean
+  isCountable?: (item: T) => boolean,
+  intervalOverride?: number
 ): (T | NativeAdPlaceholder)[] {
   if (!shouldShowAds() || !NATIVE_ADS.ACTIVE || items.length === 0) {
     return items;
   }
 
-  const interval = NATIVE_ADS.INTERVAL;
+  const interval = intervalOverride ?? NATIVE_ADS.INTERVAL;
   const result: (T | NativeAdPlaceholder)[] = [];
   let adIndex = 0;
   let counted = 0;

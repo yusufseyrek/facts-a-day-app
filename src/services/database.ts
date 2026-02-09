@@ -2804,6 +2804,26 @@ export async function addFactDetailTimeSpent(factId: number, seconds: number): P
 // ====== DEV TOOLS ======
 
 /**
+ * Mark all facts as viewed in story (DEV tool for testing muted ring state)
+ * @param language Optional language filter
+ */
+export async function markAllFactsViewedInStory(language?: string): Promise<number> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+  const query = language
+    ? `INSERT INTO fact_interactions (fact_id, story_viewed_at)
+       SELECT id, ? FROM facts WHERE language = ?
+       ON CONFLICT(fact_id) DO UPDATE SET
+         story_viewed_at = COALESCE(story_viewed_at, excluded.story_viewed_at)`
+    : `INSERT INTO fact_interactions (fact_id, story_viewed_at)
+       SELECT id, ? FROM facts
+       ON CONFLICT(fact_id) DO UPDATE SET
+         story_viewed_at = COALESCE(story_viewed_at, excluded.story_viewed_at)`;
+  const result = await database.runAsync(query, language ? [now, language] : [now]);
+  return result.changes;
+}
+
+/**
  * Update a fact's title (DEV tool for screenshots)
  * @param factId The ID of the fact to update
  * @param newTitle The new title to set

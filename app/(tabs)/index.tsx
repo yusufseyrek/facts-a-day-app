@@ -26,13 +26,20 @@ import {
   ScreenHeader,
   Text,
 } from '../../src/components';
+import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
 import { CategoryStoryButtons } from '../../src/components/CategoryStoryButtons';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { PopularFactCard } from '../../src/components/PopularFactCard';
-import { HOME_FEED, LAYOUT } from '../../src/config/app';
-import { usePreloadedData, useScrollToTopHandler } from '../../src/contexts';
+import { HOME_FEED, LAYOUT, NATIVE_ADS } from '../../src/config/app';
+import { usePreloadedData, usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
+import {
+  Screens,
+  trackFeedRefresh,
+  trackScreenView,
+} from '../../src/services/analytics';
+
+import type { FactViewSource } from '../../src/services/analytics';
 import {
   forceRefreshContent,
   getRefreshStatus,
@@ -44,6 +51,11 @@ import * as database from '../../src/services/database';
 import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/services/images';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  type NativeAdPlaceholder,
+} from '../../src/utils/insertNativeAds';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { FactWithRelations } from '../../src/services/database';
@@ -52,6 +64,7 @@ function HomeScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
+  const { isPremium } = usePremium();
   const { spacing, typography, config, screenWidth, iconSizes } = useResponsive();
   const {
     consumePreloadedFacts,
@@ -194,16 +207,16 @@ function HomeScreen() {
   );
 
   const handleFactPress = useCallback(
-    (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => {
+    (fact: FactWithRelations, source: FactViewSource, factIdList?: number[], indexInList?: number) => {
       if (fact.image_url) {
         prefetchFactImage(fact.image_url, fact.id);
       }
       if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
         router.push(
-          `/fact/${fact.id}?source=feed&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
+          `/fact/${fact.id}?source=${source}&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
         );
       } else {
-        router.push(`/fact/${fact.id}?source=feed`);
+        router.push(`/fact/${fact.id}?source=${source}`);
       }
     },
     [router]
@@ -306,7 +319,7 @@ function HomeScreen() {
               factId={item.id}
               category={item.categoryData || item.category}
               categorySlug={item.categoryData?.slug || item.category}
-              onPress={() => handleFactPress(item, todayCarouselFactIds, index)}
+              onPress={() => handleFactPress(item, 'home_today', todayCarouselFactIds, index)}
               aspectRatio={1}
               cardWidth={todayCardWidth}
               onImageReady={handleImageReady}
@@ -321,48 +334,96 @@ function HomeScreen() {
   const todayKeyExtractor = useCallback((item: FactWithRelations) => `today-${item.id}`, []);
 
   // Popular section (16:9 carousel) sizing
-  const popularCardWidth = contentWidth * config.cardWidthMultiplier;
+  const isWideScreen = screenWidth > LAYOUT.MAX_CONTENT_WIDTH;
+  const popularCardWidth = isWideScreen
+    ? contentWidth - spacing.lg * 2
+    : contentWidth * config.cardWidthMultiplier;
   const popularCardGap = spacing.sm;
   const popularSnapInterval = popularCardWidth + popularCardGap;
-  const popularCardHeight = screenWidth * config.cardAspectRatio;
+  const popularCardHeight = popularCardWidth * (9 / 16);
   const popularCarouselFactIds = useMemo(() => popularFacts.map((f) => f.id), [popularFacts]);
 
-  const renderPopularCarouselItem = useCallback(
-    ({ item, index }: { item: FactWithRelations; index: number }) => (
-      <View style={{ width: popularCardWidth, paddingVertical: spacing.sm }}>
-        <View style={theme === 'dark' ? styles.shadowDark : styles.shadowLight}>
-          <ImageFactCard
-            title={item.title || item.content.substring(0, 80) + '...'}
-            imageUrl={item.image_url!}
-            factId={item.id}
-            category={item.categoryData || item.category}
-            categorySlug={item.categoryData?.slug || item.category}
-            onPress={() => handleFactPress(item, popularCarouselFactIds, index)}
-            cardWidth={popularCardWidth}
-          />
-        </View>
-      </View>
-    ),
-    [popularCardWidth, handleFactPress, popularCarouselFactIds, theme, spacing.sm]
+  type PopularListItem = FactWithRelations | NativeAdPlaceholder;
+
+  const [popularFailedAdKeys, setPopularFailedAdKeys] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setPopularFailedAdKeys(new Set());
+  }, [popularFacts]);
+
+  const handlePopularAdFailed = useCallback((key: string) => {
+    setPopularFailedAdKeys((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+  }, []);
+
+  const popularDataWithAds = useMemo(
+    () =>
+      insertNativeAds(popularFacts, NATIVE_ADS.FIRST_AD_INDEX.HOME_CAROUSEL).filter(
+        (item) => !isNativeAdPlaceholder(item) || !popularFailedAdKeys.has(item.key)
+      ),
+    [popularFacts, isPremium, popularFailedAdKeys]
   );
 
-  const popularCarouselKeyExtractor = useCallback((item: FactWithRelations) => `popular-${item.id}`, []);
+  const renderPopularCarouselItem = useCallback(
+    ({ item }: { item: PopularListItem }) => {
+      if (isNativeAdPlaceholder(item)) {
+        return (
+          <View style={{ width: popularCardWidth, paddingVertical: spacing.sm }}>
+            <NativeAdCard
+              cardWidth={popularCardWidth}
+              cardHeight={popularCardHeight}
+              onAdFailed={() => handlePopularAdFailed(item.key)}
+            />
+          </View>
+        );
+      }
+      const factIndex = popularCarouselFactIds.indexOf(item.id);
+      return (
+        <View style={{ width: popularCardWidth, paddingVertical: spacing.sm }}>
+          <View style={theme === 'dark' ? styles.shadowDark : styles.shadowLight}>
+            <ImageFactCard
+              title={item.title || item.content.substring(0, 80) + '...'}
+              imageUrl={item.image_url!}
+              factId={item.id}
+              category={item.categoryData || item.category}
+              categorySlug={item.categoryData?.slug || item.category}
+              onPress={() => handleFactPress(item, 'home_popular', popularCarouselFactIds, factIndex)}
+              cardWidth={popularCardWidth}
+              aspectRatio={16 / 9}
+            />
+          </View>
+        </View>
+      );
+    },
+    [popularCardWidth, popularCardHeight, handleFactPress, popularCarouselFactIds, theme, spacing.sm]
+  );
+
+  const popularCarouselKeyExtractor = useCallback(
+    (item: PopularListItem) => (isNativeAdPlaceholder(item) ? item.key : `popular-${item.id}`),
+    []
+  );
 
   // Worth knowing section (thumbnail cards) sizing
-  const worthKnowingCardWidth = contentWidth * config.cardWidthMultiplier;
+  const worthKnowingCardWidth = isWideScreen
+    ? contentWidth - spacing.lg * 2
+    : contentWidth * config.cardWidthMultiplier;
   const worthKnowingCardGap = spacing.sm;
+  const worthKnowingFactIds = useMemo(() => worthKnowingFacts.map((f) => f.id), [worthKnowingFacts]);
 
   const renderWorthKnowingItem = useCallback(
-    ({ item }: { item: FactWithRelations }) => (
+    ({ item, index }: { item: FactWithRelations; index: number }) => (
       <View style={{ paddingVertical: spacing.sm }}>
         <PopularFactCard
           fact={item}
           cardWidth={worthKnowingCardWidth}
-          onPress={() => handleFactPress(item)}
+          onPress={() => handleFactPress(item, 'home_worth_knowing', worthKnowingFactIds, index)}
         />
       </View>
     ),
-    [worthKnowingCardWidth, handleFactPress, spacing.sm]
+    [worthKnowingCardWidth, handleFactPress, worthKnowingFactIds, spacing.sm]
   );
 
   const worthKnowingKeyExtractor = useCallback((item: FactWithRelations) => `wk-${item.id}`, []);
@@ -449,7 +510,7 @@ function HomeScreen() {
                         factId={todaysFacts[0].id}
                         category={todaysFacts[0].categoryData || todaysFacts[0].category}
                         categorySlug={todaysFacts[0].categoryData?.slug || todaysFacts[0].category}
-                        onPress={() => handleFactPress(todaysFacts[0])}
+                        onPress={() => handleFactPress(todaysFacts[0], 'home_today')}
                         aspectRatio={1}
                         cardWidth={contentWidth}
                         onImageReady={signalCarouselImageReady}
@@ -526,7 +587,7 @@ function HomeScreen() {
                   }}
                 >
                   <FlashList
-                    data={popularFacts}
+                    data={popularDataWithAds}
                     renderItem={renderPopularCarouselItem}
                     keyExtractor={popularCarouselKeyExtractor}
                     horizontal
