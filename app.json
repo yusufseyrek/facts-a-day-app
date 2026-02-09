@@ -354,6 +354,7 @@
       "./plugins/withAppCheckAppAttest.js",
       "./plugins/withModularHeaders.js",
       "./plugins/withDisableAutoScreenReporting.js",
+      "./plugins/withMediationAdapters.js",
       [
         "react-native-google-mobile-ads",
         {
@@ -368,14 +369,8 @@
         {
           "android": {
             "kotlinVersion": "2.1.20",
-            "extraProguardRules": "-keep class com.google.android.gms.internal.consent_sdk.** { *; }",
-            "extraMavenRepos": ["https://android-sdk.is.com/"],
-            "dependencies": [
-              "com.unity3d.ads:unity-ads:4.16.6",
-              "com.google.ads.mediation:unity:4.16.5.0",
-              "com.google.ads.mediation:vungle:7.6.3.1",
-              "com.google.ads.mediation:ironsource:9.3.0.0"
-            ]
+            "extraProguardRules": "-keep class com.google.android.gms.internal.consent_sdk.** { *; }\n-keep class com.google.ads.mediation.** { *; }\n-keep class com.vungle.** { *; }\n-keep class com.unity3d.** { *; }",
+            "extraMavenRepos": ["https://android-sdk.is.com/"]
           },
           "ios": {
             "deploymentTarget": "15.1",
