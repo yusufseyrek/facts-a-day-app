@@ -112,16 +112,19 @@ function HomeScreen() {
             }
             return fact.shown_in_feed === 1;
           });
-          setTodaysFacts(todayItems.length > 0 ? todayItems : []);
-          setInitialLoading(false);
-          // Use preloaded recommendations: split between popular carousel and worth knowing
+          // Use preloaded recommendations regardless of today's facts
           if (preloadedRecs && preloadedRecs.length > 0) {
             setPopularFacts(preloadedRecs.slice(0, HOME_FEED.POPULAR_COUNT));
             setWorthKnowingFacts(preloadedRecs.slice(HOME_FEED.POPULAR_COUNT));
           }
-          signalHomeScreenReady();
-          trackScreenView(Screens.HOME);
-          return;
+          if (todayItems.length > 0) {
+            setTodaysFacts(todayItems);
+            setInitialLoading(false);
+            signalHomeScreenReady();
+            trackScreenView(Screens.HOME);
+            return;
+          }
+          // Today's facts not in preloaded data — fall through to loadTodaysFacts()
         }
       }
       // Fall back to normal loading
