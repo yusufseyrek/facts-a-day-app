@@ -10,7 +10,7 @@ import { Platform } from 'react-native';
 /**
  * Ads configuration
  */
-export const ADS_ENABLED = __DEV__;
+export const ADS_ENABLED = !__DEV__;
 
 /**
  * Interstitial ad settings

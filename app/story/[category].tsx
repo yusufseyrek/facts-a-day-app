@@ -111,7 +111,11 @@ export default function StoryScreen() {
       }
 
       setFacts(result);
-      prefetchFactImagesWithLimit(result, 4);
+      // Delay prefetching images 2-4 so the first visible image gets full bandwidth
+      // Image 0 is downloaded by useFactImage in the first StoryPage
+      setTimeout(() => {
+        prefetchFactImagesWithLimit(result.slice(1), 3);
+      }, 500);
       trackScreenView(Screens.STORY);
       trackStoryOpen({
         category: category!,
