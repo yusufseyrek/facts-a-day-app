@@ -272,7 +272,6 @@ const ImageFactCardComponent = ({
   );
 
   // Style objects
-  const marginStyle = { marginBottom: spacing.md };
   const imageContainerStyle = { height: cardHeight };
   // Simple image style - fill the container completely
   const imageStyle = {
@@ -314,7 +313,7 @@ const ImageFactCardComponent = ({
   );
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+    <Animated.View style={[styles.shadowWrapper, { borderRadius: radius.lg, marginBottom: spacing.md, transform: [{ scale: scaleAnim }] }]}>
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
@@ -325,7 +324,7 @@ const ImageFactCardComponent = ({
         aria-label={title}
         role="button"
       >
-        <View style={[cardWrapperStyle, marginStyle]}>
+        <View style={cardWrapperStyle}>
           {/* Image Container */}
           <View style={[styles.imageContainer, imageContainerStyle]}>
             {/* Image */}
@@ -415,6 +414,15 @@ const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.45)', 'rgba(0, 0, 0, 0.8
 const gradientLocations = [0.25, 0.55, 1] as const;
 
 const styles = StyleSheet.create({
+  shadowWrapper: {
+    // iOS shadow
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    // Android shadow
+    elevation: 8,
+  },
   imageContainer: {
     overflow: 'hidden',
     backgroundColor: '#1a1a2e', // Dark base that matches the shimmer

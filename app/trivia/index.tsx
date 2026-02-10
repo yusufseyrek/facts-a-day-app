@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { useFocusEffect } from '@react-navigation/native';
@@ -287,7 +287,10 @@ export default function TriviaScreen() {
                 </Animated.View>
                 <View style={{ gap: spacing.md }}>
                   {/* First row: Daily Trivia + Mixed Trivia */}
-                  <Animated.View entering={FadeInDown.delay(150).duration(300)}>
+                  <Animated.View
+                    entering={FadeInDown.delay(150).duration(300)}
+                    needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+                  >
                     <XStack gap={spacing.md}>
                       <TriviaGridCard
                         type="daily"
@@ -330,6 +333,7 @@ export default function TriviaScreen() {
                     <Animated.View
                       key={`row-${rowIndex}`}
                       entering={FadeInDown.delay(200 + rowIndex * 50).duration(300)}
+                      needsOffscreenAlphaCompositing={Platform.OS === 'android'}
                     >
                       <XStack gap={spacing.md}>
                         {row.map((category) => (

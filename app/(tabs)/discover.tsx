@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, TextInput } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { useFocusEffect } from '@react-navigation/native';
@@ -706,6 +706,7 @@ function DiscoverScreen() {
                 <Animated.View
                   key={`row-${rowIndex}`}
                   entering={FadeInDown.delay(100 + rowIndex * 50).duration(300)}
+                  needsOffscreenAlphaCompositing={Platform.OS === 'android'}
                 >
                   <CategoryRow gap={spacing.md}>
                     {row.map((category) => {
@@ -717,21 +718,22 @@ function DiscoverScreen() {
                         <Pressable
                           key={category.slug}
                           onPress={() => handleCategoryPress(category.slug)}
-                          style={{ flex: 1 }}
+                          style={({ pressed }) => [
+                            categoryShadowStyles.wrapper,
+                            { flex: 1, borderRadius: radius.lg, opacity: pressed ? 0.85 : 1 },
+                          ]}
                           testID={`discover-category-${rowIndex * numColumns + row.indexOf(category)}`}
                         >
-                          {({ pressed }) => (
-                            <LinearGradient
-                              colors={[categoryColor, darkenColor(categoryColor, 0.25)]}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 1 }}
-                              style={{
-                                flex: 1,
-                                borderRadius: radius.lg,
-                                opacity: pressed ? 0.7 : 1,
-                                overflow: 'hidden',
-                              }}
-                            >
+                          <LinearGradient
+                            colors={[categoryColor, darkenColor(categoryColor, 0.25)]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={{
+                              flex: 1,
+                              borderRadius: radius.lg,
+                              overflow: 'hidden',
+                            }}
+                          >
                               <DiscoverCategoryCard
                                 height={media.topicCardSize}
                                 paddingHorizontal={spacing.md}
@@ -782,7 +784,6 @@ function DiscoverScreen() {
                                 </DiscoverCategoryTextContainer>
                               </DiscoverCategoryCard>
                             </LinearGradient>
-                          )}
                         </Pressable>
                       );
                     })}
@@ -941,5 +942,15 @@ function DiscoverScreen() {
     </ScreenContainer>
   );
 }
+
+const categoryShadowStyles = StyleSheet.create({
+  wrapper: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+});
 
 export default DiscoverScreen;

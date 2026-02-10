@@ -286,20 +286,20 @@ const StoryPage = React.memo(
       return () => animation.stop();
     }, [fact.id]);
 
-    // Scale gently pulses between 1 and 1.08
+    // Scale gently pulses between 1 and 1.12
     const imageScale = kenBurns.interpolate({
       inputRange: [0, 1, 2, 3, 4],
-      outputRange: [1, 1.06, 1.08, 1.06, 1],
+      outputRange: [1, 1.08, 1.12, 1.08, 1],
     });
     // Drift left → right → back
     const imageTranslateX = kenBurns.interpolate({
       inputRange: [0, 1, 2, 3, 4],
-      outputRange: [0, -screenWidth * 0.02, 0, screenWidth * 0.02, 0],
+      outputRange: [0, -screenWidth * 0.035, 0, screenWidth * 0.035, 0],
     });
     // Drift up → down → back
     const imageTranslateY = kenBurns.interpolate({
       inputRange: [0, 1, 2, 3, 4],
-      outputRange: [0, -screenHeight * 0.015, 0, screenHeight * 0.015, 0],
+      outputRange: [0, -screenHeight * 0.025, 0, screenHeight * 0.025, 0],
     });
 
     const categorySlug = fact.categoryData?.slug || fact.category || 'unknown';

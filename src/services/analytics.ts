@@ -793,3 +793,23 @@ export const trackStoryClose = (params: {
     total_facts: params.totalFacts,
   });
 };
+
+// App Check tracking
+export const trackAppCheckFailure = (params: {
+  reason: string;
+  provider: string;
+  error?: string;
+}): void => {
+  logEvent('app_check_failed', {
+    reason: params.reason,
+    provider: params.provider,
+    error: params.error || '',
+    platform: Platform.OS,
+  });
+};
+
+export const trackAppCheckRetry = (params: { success: boolean }): void => {
+  logEvent('app_check_retry', {
+    success: params.success,
+  });
+};

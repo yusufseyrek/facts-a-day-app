@@ -9,7 +9,7 @@
 import { getApp } from '@react-native-firebase/app';
 import getAppCheck, { getToken } from '@react-native-firebase/app-check';
 
-import { appCheckReady, isAppCheckInitialized } from '../config/appCheckState';
+import { getAppCheckReady, isAppCheckInitialized } from '../config/appCheckState';
 
 // Token cache
 let cachedToken: string | null = null;
@@ -123,7 +123,7 @@ export async function getCachedAppCheckToken(): Promise<string | null> {
 async function fetchNewToken(): Promise<string | null> {
   try {
     // Wait for App Check initialization to complete first
-    await appCheckReady;
+    await getAppCheckReady();
 
     // Check if initialization was successful
     if (!isAppCheckInitialized()) {
@@ -240,7 +240,7 @@ export async function forceRefreshAppCheckToken(): Promise<string | null> {
   }
 
   try {
-    await appCheckReady;
+    await getAppCheckReady();
 
     if (!isAppCheckInitialized()) {
       return null;

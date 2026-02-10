@@ -59,6 +59,38 @@ export const darkenColor = (hex: string, amount: number): string => {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 };
 
+/**
+ * Blends a foreground hex color at a given opacity onto a background hex color,
+ * returning an opaque hex result. Useful on Android where semi-transparent
+ * backgrounds combined with elevation cause a visible outline artifact.
+ */
+export const blendHexColors = (fgHex: string, bgHex: string, opacity: number): string => {
+  const parse = (hex: string) => {
+    const h = hex.replace('#', '');
+    if (h.length === 3) {
+      return [
+        parseInt(h[0] + h[0], 16),
+        parseInt(h[1] + h[1], 16),
+        parseInt(h[2] + h[2], 16),
+      ];
+    }
+    return [
+      parseInt(h.substring(0, 2), 16),
+      parseInt(h.substring(2, 4), 16),
+      parseInt(h.substring(4, 6), 16),
+    ];
+  };
+
+  const [fR, fG, fB] = parse(fgHex);
+  const [bR, bG, bB] = parse(bgHex);
+
+  const r = Math.round(fR * opacity + bR * (1 - opacity));
+  const g = Math.round(fG * opacity + bG * (1 - opacity));
+  const b = Math.round(fB * opacity + bB * (1 - opacity));
+
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+};
+
 export const getContrastColor = (hexColor: string): string => {
   // Remove hash if present
   const hex = hexColor.replace('#', '');

@@ -21,6 +21,8 @@
 
 import * as FileSystem from 'expo-file-system/legacy';
 
+import { APP_CHECK } from '../config/app';
+import { getAppCheckReady, isAppCheckInitialized } from '../config/appCheckState';
 import { PREFETCH_SETTINGS } from '../config/factListSettings';
 import { IMAGE_CACHE, IMAGE_DOWNLOAD_RETRY } from '../config/images';
 
@@ -336,6 +338,14 @@ async function performImageDownload(
   _forceRefresh: boolean
 ): Promise<string | null> {
   try {
+    // In strict mode, block image downloads if App Check failed to initialize
+    if (APP_CHECK.STRICT_MODE_ENABLED && !__DEV__) {
+      await getAppCheckReady();
+      if (!isAppCheckInitialized()) {
+        return null;
+      }
+    }
+
     // Get App Check token (uses cache to prevent rate limiting)
     let appCheckToken = await getCachedAppCheckToken();
 

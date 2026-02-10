@@ -273,10 +273,9 @@ export default function TriviaGameScreen() {
 
     for (const question of gameState.questions) {
       const selectedAnswer = gameState.answers[question.id];
-      const isCorrect =
-        question.question_type === 'true_false'
-          ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
-          : selectedAnswer === question.correct_answer;
+      const isCorrect = selectedAnswer
+        ? triviaService.isTextAnswerCorrect(question, selectedAnswer)
+        : false;
       if (isCorrect) {
         correctCount++;
         currentStreak++;
@@ -309,10 +308,7 @@ export default function TriviaGameScreen() {
     for (const question of gameState.questions) {
       const selectedAnswer = gameState.answers[question.id];
       if (selectedAnswer) {
-        const isCorrect =
-          question.question_type === 'true_false'
-            ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
-            : selectedAnswer === question.correct_answer;
+        const isCorrect = triviaService.isTextAnswerCorrect(question, selectedAnswer);
         await triviaService.recordAnswer(question.id, isCorrect, triviaMode, sessionId);
       }
     }
@@ -578,11 +574,9 @@ export default function TriviaGameScreen() {
 
     for (const question of gameState.questions) {
       const selectedAnswer = gameState.answers[question.id];
-      // Case-insensitive comparison for true/false questions
-      const isCorrect =
-        question.question_type === 'true_false'
-          ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
-          : selectedAnswer === question.correct_answer;
+      const isCorrect = selectedAnswer
+        ? triviaService.isTextAnswerCorrect(question, selectedAnswer)
+        : false;
 
       if (isCorrect) {
         correctCount++;
@@ -620,10 +614,7 @@ export default function TriviaGameScreen() {
       for (const question of gameState.questions) {
         const selectedAnswer = gameState.answers[question.id];
         if (selectedAnswer) {
-          const isCorrect =
-            question.question_type === 'true_false'
-              ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
-              : selectedAnswer === question.correct_answer;
+          const isCorrect = triviaService.isTextAnswerCorrect(question, selectedAnswer);
           await triviaService.recordAnswer(question.id, isCorrect, triviaMode, sessionId);
         }
       }
@@ -689,11 +680,9 @@ export default function TriviaGameScreen() {
 
     for (const question of gameState.questions) {
       const selectedAnswer = gameState.answers[question.id];
-      // Case-insensitive comparison for true/false questions
-      const isCorrect =
-        question.question_type === 'true_false'
-          ? selectedAnswer?.toLowerCase() === question.correct_answer?.toLowerCase()
-          : selectedAnswer === question.correct_answer;
+      const isCorrect = selectedAnswer
+        ? triviaService.isTextAnswerCorrect(question, selectedAnswer)
+        : false;
 
       if (!selectedAnswer) {
         unanswered++;

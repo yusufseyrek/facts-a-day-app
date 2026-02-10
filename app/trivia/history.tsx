@@ -4,6 +4,7 @@ import {
   Animated as RNAnimated,
   Pressable,
   RefreshControl,
+  StyleSheet,
   View,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -202,7 +203,11 @@ function SessionCard({
   return (
     <Pressable
       onPress={hasResultData ? onPress : undefined}
-      style={({ pressed }) => [pressed && hasResultData && { opacity: 0.8 }]}
+      style={({ pressed }) => [
+        sessionShadowStyles.card,
+        { borderRadius: radius.lg },
+        pressed && hasResultData && { opacity: 0.8 },
+      ]}
     >
       <XStack
         backgroundColor={cardBg}
@@ -231,6 +236,16 @@ function SessionCard({
     </Pressable>
   );
 }
+
+const sessionShadowStyles = StyleSheet.create({
+  card: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+});
 
 // Type for section data (used internally for grouping)
 interface SessionSection {
@@ -407,7 +422,7 @@ export default function ActivityHistoryScreen() {
             .duration(350)
             .springify()}
         >
-          <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.xs }}>
+          <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
             <SessionCard
               session={item.session}
               isDark={isDark}

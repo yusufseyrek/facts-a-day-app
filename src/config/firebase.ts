@@ -27,13 +27,16 @@ import {
 import * as Device from 'expo-device';
 
 import { APP_CHECK } from './app';
+import { isDeviceOnline } from '../utils/network';
 // Import macOS debug token from platform-specific file
 // iOS builds get the real token, Android builds get undefined
 import { MACOS_DEBUG_TOKEN } from './appCheckConfig';
 import {
-  appCheckReady,
+  getAppCheckReady,
   isAppCheckInitialized,
+  resetAppCheckReady,
   resolveAppCheckReady,
+  setAppCheckInitFailed,
   setAppCheckInitialized,
 } from './appCheckState';
 import { primeTokenCache } from '../services/appCheckToken';
@@ -127,6 +130,8 @@ function isMacOS(): boolean {
  * On macOS: Uses Debug provider (App Attest is NOT supported on macOS)
  */
 export async function initializeAppCheckService() {
+  console.log(`[AppCheck] initializeAppCheckService called — __DEV__=${__DEV__}, STRICT_MODE=${APP_CHECK.STRICT_MODE_ENABLED}, alreadyInit=${isAppCheckInitialized()}`);
+
   if (isAppCheckInitialized()) {
     resolveAppCheckReady();
     return;
@@ -139,10 +144,13 @@ export async function initializeAppCheckService() {
     const isMac = isMacOS();
 
     // Use debug provider if:
-    // 1. Running in development mode (__DEV__)
-    // 2. Running on emulator/simulator (Play Integrity and App Attest don't work on emulators)
-    // 3. Running on macOS (App Attest is NOT supported on macOS)
-    const useDebugProvider = __DEV__ || !isRealDevice || isMac;
+    // 1. Running in development mode (__DEV__) — covers simulators/emulators in dev
+    // 2. Running on macOS (App Attest is NOT supported on macOS, uses pre-registered token)
+    // Note: Emulators in release builds intentionally use the real provider so that
+    // failure is detected and the blocking screen can be shown.
+    const useDebugProvider = __DEV__ || isMac;
+
+    console.log(`[AppCheck] isIOS=${isIOS}, isRealDevice=${isRealDevice}, isMac=${isMac}, useDebugProvider=${useDebugProvider}`);
 
     // Determine provider names
     const iosProvider = useDebugProvider ? 'debug' : 'appAttest';
@@ -190,16 +198,23 @@ export async function initializeAppCheckService() {
           isTokenAutoRefreshEnabled: true,
         });
 
-        await initializeAppCheck(getApp(), {
-          provider: rnfbProvider,
-          isTokenAutoRefreshEnabled: true,
-        });
+        try {
+          await initializeAppCheck(getApp(), {
+            provider: rnfbProvider,
+            isTokenAutoRefreshEnabled: true,
+          });
+        } catch (initError) {
+          // Firebase SDK throws if initializeAppCheck is called twice (retry flow)
+          const msg = initError instanceof Error ? initError.message : String(initError);
+          if (msg.includes('already initialized') || msg.includes('already been called')) {
+            // Already initialized — proceed to token fetch
+          } else {
+            throw initError;
+          }
+        }
 
         setAppCheckInitialized(true);
-
-        if (__DEV__) {
-          console.log(`🔒 App Check: Initialized (${providerName})`);
-        }
+        console.log(`[AppCheck] Init SUCCESS — provider=${providerName}, isInitialized=${isAppCheckInitialized()}`);
 
         // Eagerly fetch and cache the first token so it's available
         // before the first API request fires (closes the timing gap
@@ -238,23 +253,34 @@ export async function initializeAppCheckService() {
 
           if (firstToken) {
             primeTokenCache(firstToken);
-            if (__DEV__) {
-              console.log('🔒 App Check: First token obtained and cached');
+            console.log('[AppCheck] First token obtained and cached');
+          } else {
+            console.log('[AppCheck] Could not obtain first token');
+            // In strict mode, treat first token failure as init failure
+            // The SDK initialized but can't produce valid tokens (e.g. emulator with Play Integrity)
+            if (APP_CHECK.STRICT_MODE_ENABLED && !__DEV__) {
+              console.log('[AppCheck] Strict mode: rolling back init due to token failure');
+              setAppCheckInitialized(false);
+              logEvent('app_check_failed', { reason: 'first_token_failure', provider: providerName, platform: Platform.OS });
             }
-          } else if (__DEV__) {
-            console.warn('⚠️ App Check: Could not obtain first token (will retry on demand)');
           }
         } catch (prefetchError) {
-          // Non-fatal: token will be fetched on demand by getCachedAppCheckToken
-          if (__DEV__) {
-            console.warn('⚠️ App Check: First token prefetch failed:', prefetchError);
+          const prefetchMsg = prefetchError instanceof Error ? prefetchError.message : String(prefetchError);
+          console.log(`[AppCheck] First token prefetch threw: ${prefetchMsg}`);
+          // In strict mode, treat prefetch error as init failure
+          if (APP_CHECK.STRICT_MODE_ENABLED && !__DEV__) {
+            console.log('[AppCheck] Strict mode: rolling back init due to token prefetch error');
+            setAppCheckInitialized(false);
+            logEvent('app_check_failed', { reason: 'token_prefetch_error', provider: providerName, error: prefetchMsg, platform: Platform.OS });
           }
         }
 
         // Success - exit the retry loop
+        console.log('[AppCheck] Init loop completed successfully, breaking');
         break;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
+        console.log(`[AppCheck] Init attempt FAILED: ${lastError.message}`);
 
         // Log error on each attempt
         const errorMessage = lastError.message;
@@ -275,7 +301,7 @@ export async function initializeAppCheckService() {
             console.error(`❌ App Check Stack: ${errorStack}`);
           }
 
-          // Also log to Crashlytics for production debugging
+          // Also log to Crashlytics and Analytics for production debugging
           if (!__DEV__) {
             try {
               log(crashlyticsInstance, `App Check init failed (${providerName}): ${errorMessage}`);
@@ -283,6 +309,7 @@ export async function initializeAppCheckService() {
             } catch {
               // Silently fail if Crashlytics isn't ready
             }
+            logEvent('app_check_failed', { reason: 'init_retries_exhausted', provider: providerName, error: errorMessage, platform: Platform.OS });
           }
         }
       }
@@ -291,6 +318,22 @@ export async function initializeAppCheckService() {
     // Always resolve the ready promise, even on failure
     // This prevents API calls from hanging forever
     resolveAppCheckReady();
+
+    console.log(`[AppCheck] FINALLY — isInitialized=${isAppCheckInitialized()}, __DEV__=${__DEV__}, STRICT_MODE=${APP_CHECK.STRICT_MODE_ENABLED}`);
+
+    // If init failed in production with strict mode, set failure flag for blocking screen
+    // but only when the device is online — offline failures are not a security concern
+    if (!isAppCheckInitialized() && !__DEV__ && APP_CHECK.STRICT_MODE_ENABLED) {
+      const online = await isDeviceOnline();
+      if (online) {
+        console.log('[AppCheck] Setting appCheckInitFailed = true (blocking screen will show)');
+        setAppCheckInitFailed(true);
+      } else {
+        console.log('[AppCheck] Device is offline — skipping blocking screen');
+      }
+    } else {
+      console.log(`[AppCheck] NOT setting failure flag — init succeeded or conditions not met`);
+    }
   }
 }
 
@@ -552,7 +595,7 @@ export function testCrashlytics() {
  */
 export async function getAppCheckToken() {
   // Wait for App Check initialization to complete
-  await appCheckReady;
+  await getAppCheckReady();
 
   if (!isAppCheckInitialized()) {
     console.warn('App Check not initialized');
@@ -569,8 +612,23 @@ export async function getAppCheckToken() {
   }
 }
 
+/**
+ * Retry App Check initialization (called from blocking screen retry button)
+ * Resets state and re-runs the full init flow.
+ * @returns true if initialization succeeded
+ */
+export async function retryAppCheckInit(): Promise<boolean> {
+  resetAppCheckReady();
+  setAppCheckInitFailed(false);
+  setAppCheckInitialized(false);
+  await initializeAppCheckService();
+  const success = isAppCheckInitialized();
+  logEvent('app_check_retry', { success, platform: Platform.OS });
+  return success;
+}
+
 // Re-export shared App Check state for consumers that import from this module
-export { appCheckReady, isAppCheckInitialized } from './appCheckState';
+export { getAppCheckReady, isAppCheckInitialized } from './appCheckState';
 
 // Export instances for direct access if needed
 export { analyticsInstance as analytics, crashlyticsInstance as crashlytics };

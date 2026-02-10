@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Check, ChevronRight } from '@tamagui/lucide-icons';
@@ -35,7 +35,7 @@ export function CategoryQuestCard({ category, isDark, onPress, index }: Category
   const categoryColor = category.color_hex || primaryColor;
 
   return (
-    <Animated.View entering={FadeIn.duration(300).delay(150 + index * 50)}>
+    <Animated.View entering={FadeIn.duration(300).delay(150 + index * 50)} style={[questShadowStyles.card, { borderRadius: radius.md }]}>
       <Pressable
         onPress={onPress}
         disabled={isComplete}
@@ -98,3 +98,13 @@ export function CategoryQuestCard({ category, isDark, onPress, index }: Category
     </Animated.View>
   );
 }
+
+const questShadowStyles = StyleSheet.create({
+  card: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+});

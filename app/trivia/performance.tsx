@@ -5,6 +5,7 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  StyleSheet,
   View,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
@@ -201,6 +202,7 @@ function MetricCard({
   );
 
   return (
+    <View style={[perfShadowStyles.card, { flex: 1, borderRadius: radius.lg }]}>
     <YStack
       flex={1}
       backgroundColor={cardBg}
@@ -230,6 +232,7 @@ function MetricCard({
         </Text.Tiny>
       )}
     </YStack>
+    </View>
   );
 }
 
@@ -499,7 +502,11 @@ function SessionCard({
   return (
     <Pressable
       onPress={hasResultData ? onPress : undefined}
-      style={({ pressed }) => [pressed && hasResultData && { opacity: 0.8 }]}
+      style={({ pressed }) => [
+        perfShadowStyles.card,
+        { borderRadius: radius.lg },
+        pressed && hasResultData && { opacity: 0.8 },
+      ]}
       testID={testID}
     >
       <XStack
@@ -529,6 +536,16 @@ function SessionCard({
     </Pressable>
   );
 }
+
+const perfShadowStyles = StyleSheet.create({
+  card: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+});
 
 export default function PerformanceScreen() {
   const { theme } = useTheme();
@@ -754,7 +771,11 @@ export default function PerformanceScreen() {
 
               <Pressable
                 onPress={() => router.push('/(tabs)/trivia/categories')}
-                style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+                style={({ pressed }) => [
+                  perfShadowStyles.card,
+                  { borderRadius: radius.lg },
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
               >
                 <YStack
                   backgroundColor={cardBg}

@@ -160,7 +160,7 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
   const shadowStyle = theme === 'dark' ? styles.shadowDark : styles.shadowLight;
 
   return (
-    <Animated.View style={[{ transform: [{ scale: scaleAnim }], width: cardWidth }, shadowStyle]}>
+    <Animated.View style={[{ transform: [{ scale: scaleAnim }], width: cardWidth, borderRadius: radius.lg }, shadowStyle]}>
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}

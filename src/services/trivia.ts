@@ -415,6 +415,16 @@ export function isAnswerCorrect(question: Question, answerIndex: number): boolea
   return answerIndex === 0;
 }
 
+/**
+ * Check if a text answer is correct for a question
+ * Uses the same index-based logic as isAnswerCorrect for consistency
+ * between live game and historical results
+ */
+export function isTextAnswerCorrect(question: Question, selectedAnswer: string): boolean {
+  const index = answerToIndex(question, selectedAnswer);
+  return isAnswerCorrect(question, index);
+}
+
 // ====== SESSION TRACKING ======
 
 /**

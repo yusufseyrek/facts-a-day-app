@@ -2,8 +2,8 @@ import { Platform } from 'react-native';
 
 import Constants from 'expo-constants';
 
-import { API_SETTINGS } from '../config/app';
-import { appCheckReady } from '../config/appCheckState';
+import { API_SETTINGS, APP_CHECK } from '../config/app';
+import { getAppCheckReady, isAppCheckInitialized } from '../config/appCheckState';
 
 import { getAppVersionInfo } from '../utils/appInfo';
 import { getCachedAppCheckToken } from './appCheckToken';
@@ -206,7 +206,12 @@ async function makeRequest<T>(
   const executeRequest = async (): Promise<T> => {
     // Wait for App Check initialization to complete before making any API request
     // This prevents race conditions where API calls happen before App Check is ready
-    await appCheckReady;
+    await getAppCheckReady();
+
+    // In strict mode, block API calls if App Check failed to initialize
+    if (APP_CHECK.STRICT_MODE_ENABLED && !isAppCheckInitialized() && !__DEV__) {
+      throw new Error('App Check not initialized');
+    }
 
     // Get App Check token for protected endpoints (uses cache to prevent rate limiting)
     const appCheckToken = await getCachedAppCheckToken();

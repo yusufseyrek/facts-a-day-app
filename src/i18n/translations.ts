@@ -16,6 +16,11 @@ export const translations = {
     settingUpApp: 'Lade Ihre App...',
     tryAgain: 'Erneut versuchen',
 
+    // App Check Blocking
+    appCheckFailedTitle: 'Verifizierung fehlgeschlagen',
+    appCheckFailedMessage:
+      'Diese App kann nur auf echten Geräten mit einer Version aus dem App Store oder Google Play verwendet werden. Bitte überprüfe deine Internetverbindung und versuche es erneut. Wenn das Problem weiterhin besteht, installiere die App aus dem offiziellen Store neu.',
+
     // Onboarding - Notifications
     stayInformed: 'Bleiben Sie informiert mit täglichen Fakten',
     notificationRequired:
@@ -390,6 +395,11 @@ export const translations = {
     settingUpApp: 'Setting up your app...',
     tryAgain: 'Try Again',
 
+    // App Check Blocking
+    appCheckFailedTitle: 'Verification Failed',
+    appCheckFailedMessage:
+      'This app can only be used on genuine devices with a version downloaded from the App Store or Google Play. Please check your internet connection and try again. If the issue persists, reinstall the app from the official store.',
+
     // Onboarding - Notifications
     stayInformed: 'Stay informed with daily facts',
     notificationRequired:
@@ -755,6 +765,11 @@ export const translations = {
     // Onboarding - Initialization
     settingUpApp: 'Configurando tu aplicación...',
     tryAgain: 'Intentar de Nuevo',
+
+    // App Check Blocking
+    appCheckFailedTitle: 'Verificaci\u00f3n fallida',
+    appCheckFailedMessage:
+      'Esta aplicaci\u00f3n solo puede usarse en dispositivos originales con una versi\u00f3n descargada del App Store o Google Play. Comprueba tu conexi\u00f3n a internet e int\u00e9ntalo de nuevo. Si el problema persiste, reinstala la aplicaci\u00f3n desde la tienda oficial.',
 
     // Onboarding - Notifications
     stayInformed: 'Mantente informado con datos diarios',
@@ -1123,7 +1138,12 @@ export const translations = {
 
     // Onboarding - Initialization
     settingUpApp: 'Configuration de votre application...',
-    tryAgain: 'Réessayer',
+    tryAgain: 'R\u00e9essayer',
+
+    // App Check Blocking
+    appCheckFailedTitle: 'V\u00e9rification \u00e9chou\u00e9e',
+    appCheckFailedMessage:
+      'Cette application ne peut \u00eatre utilis\u00e9e que sur des appareils authentiques avec une version t\u00e9l\u00e9charg\u00e9e depuis l\'App Store ou Google Play. V\u00e9rifiez votre connexion internet et r\u00e9essayez. Si le probl\u00e8me persiste, r\u00e9installez l\'application depuis la boutique officielle.',
 
     // Onboarding - Notifications
     stayInformed: 'Restez informé avec des faits quotidiens',
@@ -1496,6 +1516,11 @@ export const translations = {
     settingUpApp: 'アプリをセットアップ中...',
     tryAgain: '再試行',
 
+    // App Check Blocking
+    appCheckFailedTitle: '検証に失敗しました',
+    appCheckFailedMessage:
+      'このアプリは、App StoreまたはGoogle Playからダウンロードされた正規のデバイスでのみ使用できます。インターネット接続を確認して再試行してください。問題が解決しない場合は、公式ストアからアプリを再インストールしてください。',
+
     // Onboarding - Notifications
     stayInformed: '毎日の豆知識で情報を得よう',
     notificationRequired: '通知を有効にすると、毎日新しい豆知識があなたのデバイスに届きます',
@@ -1861,6 +1886,11 @@ export const translations = {
     settingUpApp: '앱 설정 중...',
     tryAgain: '다시 시도',
 
+    // App Check Blocking
+    appCheckFailedTitle: '인증 실패',
+    appCheckFailedMessage:
+      '이 앱은 App Store 또는 Google Play에서 다운로드한 정품 기기에서만 사용할 수 있습니다. 인터넷 연결을 확인하고 다시 시도해 주세요. 문제가 지속되면 공식 스토어에서 앱을 다시 설치해 주세요.',
+
     // Onboarding - Notifications
     stayInformed: '매일 새로운 정보를 받아보세요',
     notificationRequired: '알림을 활성화하면 매일 새로운 정보가 기기로 바로 전달됩니다',
@@ -2224,6 +2254,11 @@ export const translations = {
     // Onboarding - Initialization
     settingUpApp: 'Uygulamanız kuruluyor...',
     tryAgain: 'Tekrar Dene',
+
+    // App Check Blocking
+    appCheckFailedTitle: 'Doğrulama başarısız',
+    appCheckFailedMessage:
+      'Bu uygulama yalnızca App Store veya Google Play\'den indirilen orijinal cihazlarda kullanılabilir. Lütfen internet bağlantınızı kontrol edip tekrar deneyin. Sorun devam ederse uygulamayı resmi mağazadan yeniden yükleyin.',
 
     // Onboarding - Notifications
     stayInformed: 'Her gün yeni bilgiler öğrenin',
@@ -2590,6 +2625,11 @@ export const translations = {
     // Onboarding - Initialization
     settingUpApp: '正在设置您的应用...',
     tryAgain: '重试',
+
+    // App Check Blocking
+    appCheckFailedTitle: '验证失败',
+    appCheckFailedMessage:
+      '此应用仅可在从 App Store 或 Google Play 下载的正版设备上使用。请检查您的网络连接并重试。如果问题持续存在，请从官方商店重新安装应用。',
 
     // Onboarding - Notifications
     stayInformed: '通过每日知识保持了解',

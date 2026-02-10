@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Check, ChevronRight, Zap } from '@tamagui/lucide-icons';
@@ -36,7 +36,7 @@ export function DailyChallengeCard({
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
 
   return (
-    <Animated.View entering={FadeIn.duration(300).delay(100)}>
+    <Animated.View entering={FadeIn.duration(300).delay(100)} style={[dailyShadowStyles.card, { borderRadius: radius.md }]}>
       <Pressable
         onPress={onPress}
         disabled={isCompleted}
@@ -87,3 +87,13 @@ export function DailyChallengeCard({
     </Animated.View>
   );
 }
+
+const dailyShadowStyles = StyleSheet.create({
+  card: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+});

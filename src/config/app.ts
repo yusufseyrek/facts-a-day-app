@@ -5,6 +5,8 @@
  * storage keys, and display limits.
  */
 
+import { Platform } from 'react-native';
+
 /**
  * Ads configuration
  */
@@ -168,6 +170,8 @@ export const CATEGORY_LIMITS = {
  * Subscription / Premium settings
  */
 export const SUBSCRIPTION = {
+  /** Whether subscriptions are enabled on this platform */
+  ENABLED: Platform.OS !== 'android',
   /** Product IDs for subscription plans (must match App Store Connect / Google Play Console) */
   PRODUCT_IDS: ['factsaday_premium_weekly', 'factsaday_premium_monthly'],
   /** AsyncStorage key for caching premium status */
@@ -194,4 +198,6 @@ export const APP_CHECK = {
   FIRST_TOKEN_MAX_ATTEMPTS: 3,
   /** Delay between first token fetch retries (milliseconds) */
   FIRST_TOKEN_RETRY_DELAY_MS: 250,
+  /** When true, block the app and reject API calls if App Check init fails */
+  STRICT_MODE_ENABLED: true,
 } as const;

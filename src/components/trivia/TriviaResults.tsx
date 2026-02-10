@@ -25,7 +25,7 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { prefetchFactImage } from '../../services/images';
-import { indexToAnswer } from '../../services/trivia';
+import { indexToAnswer, isTextAnswerCorrect } from '../../services/trivia';
 import { hexColors } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
@@ -539,11 +539,8 @@ export function TriviaResults({
       return answer.correct;
     }
 
-    // Live game: compare answer text
-    if (question.question_type === 'true_false') {
-      return answer.toLowerCase() === question.correct_answer?.toLowerCase();
-    }
-    return answer === question.correct_answer;
+    // Live game: use unified correctness check
+    return isTextAnswerCorrect(question, answer);
   };
 
   // Format time as MM:SS

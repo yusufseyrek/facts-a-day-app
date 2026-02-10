@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -266,7 +266,7 @@ export function TriviaStatsHero({
   );
 
   return (
-    <Animated.View entering={FadeIn.duration(300)}>
+    <Animated.View entering={FadeIn.duration(300)} style={[heroShadowStyles.card, { borderRadius: radius.lg }]}>
       {hasData ? (
         <Pressable
           onPress={onPress}
@@ -284,3 +284,13 @@ export function TriviaStatsHero({
     </Animated.View>
   );
 }
+
+const heroShadowStyles = StyleSheet.create({
+  card: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+});

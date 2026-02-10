@@ -19,10 +19,12 @@ import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
+import { AppCheckBlockingScreen } from '../src/components/AppCheckBlockingScreen';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { SplashOverlay } from '../src/components/SplashOverlay';
 import { STORAGE_KEYS, TIMING } from '../src/config/app';
-import { enableCrashlyticsConsoleLogging, initializeFirebase } from '../src/config/firebase';
+import { isAppCheckInitFailed, subscribeAppCheckFailure } from '../src/config/appCheckState';
+import { enableCrashlyticsConsoleLogging, initializeFirebase, retryAppCheckInit } from '../src/config/firebase';
 import {
   OnboardingProvider,
   PreloadedDataProvider,
@@ -247,6 +249,8 @@ export default function RootLayout() {
   const [initialOnboardingStatus, setInitialOnboardingStatus] = useState<boolean | null>(null);
   const [isDbReady, setIsDbReady] = useState(false);
   const [showSplashOverlay, setShowSplashOverlay] = useState(true);
+  const [appCheckFailed, setAppCheckFailed] = useState(false);
+  const [isRetryingAppCheck, setIsRetryingAppCheck] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     Montserrat_400Regular,
@@ -262,6 +266,28 @@ export default function RootLayout() {
       console.error('Font loading error:', fontError);
     }
   }, [fontError]);
+
+  // Subscribe to App Check failure state for blocking screen
+  useEffect(() => {
+    // Check initial state (init may have completed before React mounts)
+    const initialFailed = isAppCheckInitFailed();
+    console.log(`[AppCheck UI] Initial failure state: ${initialFailed}`);
+    setAppCheckFailed(initialFailed);
+    const unsubscribe = subscribeAppCheckFailure((failed) => {
+      console.log(`[AppCheck UI] Failure state changed: ${failed}`);
+      setAppCheckFailed(failed);
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleAppCheckRetry = useCallback(async () => {
+    setIsRetryingAppCheck(true);
+    try {
+      await retryAppCheckInit();
+    } finally {
+      setIsRetryingAppCheck(false);
+    }
+  }, []);
 
   // Safety timeout: If the app is still showing blank screen after 15 seconds,
   // force initialization to complete to prevent infinite blank screen
@@ -562,6 +588,9 @@ export default function RootLayout() {
     <View style={{ flex: 1, backgroundColor: '#0A1628' }} onLayout={onLayoutRootView}>
       <ErrorBoundary>
         <SafeAreaProvider>
+          {appCheckFailed && (
+            <AppCheckBlockingScreen onRetry={handleAppCheckRetry} isRetrying={isRetryingAppCheck} />
+          )}
           <I18nProvider>
             <PreloadedDataProvider>
               <OnboardingProvider initialComplete={initialOnboardingStatus}>

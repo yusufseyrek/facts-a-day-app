@@ -1,12 +1,12 @@
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Check, ChevronRight, Shuffle, Zap } from '@tamagui/lucide-icons';
 import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../../i18n';
 import { hexColors } from '../../theme';
-import { hexToRgba } from '../../utils/colors';
+import { blendHexColors, hexToRgba } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
@@ -102,29 +102,30 @@ export function TriviaGridCard({
     <Pressable
       onPress={onPress}
       disabled={isDisabled || (isCompleted && type === 'daily')}
-      style={({ pressed }) => ({
-        flex: 1,
-        opacity:
-          pressed && !isDisabled && !(isCompleted && type === 'daily')
-            ? 0.85
-            : isDisabled
-              ? 0.5
-              : 1,
-        transform: [
-          { scale: pressed && !isDisabled && !(isCompleted && type === 'daily') ? 0.98 : 1 },
-        ],
-      })}
+      style={({ pressed }) => [
+        shadowStyles.card,
+        {
+          flex: 1,
+          borderRadius: radius.lg,
+          backgroundColor: isDailyAvailable ? blendHexColors(primaryColor, cardBg, 0.08) : cardBg,
+          opacity:
+            pressed && !isDisabled && !(isCompleted && type === 'daily')
+              ? 0.85
+              : isDisabled
+                ? 0.5
+                : 1,
+          transform: [
+            { scale: pressed && !isDisabled && !(isCompleted && type === 'daily') ? 0.98 : 1 },
+          ],
+        },
+      ]}
       testID={getTestId()}
       accessibilityLabel={title}
     >
       <YStack
-        backgroundColor={isDailyAvailable ? hexToRgba(primaryColor, 0.08) : cardBg}
-        borderRadius={radius.lg}
         padding={spacing.lg}
         justifyContent="space-between"
         alignItems={centerContent ? 'center' : 'stretch'}
-        borderWidth={isDailyAvailable ? 1.5 : 0}
-        borderColor={isDailyAvailable ? hexToRgba(primaryColor, 0.4) : 'transparent'}
       >
         {/* Top section: Icon + Chevron */}
         <XStack justifyContent="space-between" alignItems="flex-start" width="100%">
@@ -168,3 +169,13 @@ export function TriviaGridCard({
     </Pressable>
   );
 }
+
+const shadowStyles = StyleSheet.create({
+  card: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+});

@@ -5,7 +5,6 @@ import {
   NativeSyntheticEvent,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   View,
 } from 'react-native';
 
@@ -310,24 +309,18 @@ function HomeScreen() {
             }
           : undefined;
       return (
-        <View style={{ width: todayCardWidth, paddingVertical: spacing.sm }}>
-          <View
-            style={[
-              theme === 'dark' ? styles.shadowDark : styles.shadowLight,
-            ]}
-          >
-            <ImageFactCard
-              title={item.title || item.content.substring(0, 80) + '...'}
-              imageUrl={item.image_url!}
-              factId={item.id}
-              category={item.categoryData || item.category}
-              categorySlug={item.categoryData?.slug || item.category}
-              onPress={() => handleFactPress(item, 'home_today', todayCarouselFactIds, index)}
-              aspectRatio={1}
-              cardWidth={todayCardWidth}
-              onImageReady={handleImageReady}
-            />
-          </View>
+        <View style={{ width: todayCardWidth, paddingVertical: spacing.md }}>
+          <ImageFactCard
+            title={item.title || item.content.substring(0, 80) + '...'}
+            imageUrl={item.image_url!}
+            factId={item.id}
+            category={item.categoryData || item.category}
+            categorySlug={item.categoryData?.slug || item.category}
+            onPress={() => handleFactPress(item, 'home_today', todayCarouselFactIds, index)}
+            aspectRatio={1}
+            cardWidth={todayCardWidth}
+            onImageReady={handleImageReady}
+          />
         </View>
       );
     },
@@ -384,23 +377,21 @@ function HomeScreen() {
       }
       const factIndex = popularCarouselFactIds.indexOf(item.id);
       return (
-        <View style={{ width: popularCardWidth, paddingVertical: spacing.sm }}>
-          <View style={theme === 'dark' ? styles.shadowDark : styles.shadowLight}>
-            <ImageFactCard
-              title={item.title || item.content.substring(0, 80) + '...'}
-              imageUrl={item.image_url!}
-              factId={item.id}
-              category={item.categoryData || item.category}
-              categorySlug={item.categoryData?.slug || item.category}
-              onPress={() => handleFactPress(item, 'home_popular', popularCarouselFactIds, factIndex)}
-              cardWidth={popularCardWidth}
-              aspectRatio={16 / 9}
-            />
-          </View>
+        <View style={{ width: popularCardWidth, paddingVertical: spacing.md }}>
+          <ImageFactCard
+            title={item.title || item.content.substring(0, 80) + '...'}
+            imageUrl={item.image_url!}
+            factId={item.id}
+            category={item.categoryData || item.category}
+            categorySlug={item.categoryData?.slug || item.category}
+            onPress={() => handleFactPress(item, 'home_popular', popularCarouselFactIds, factIndex)}
+            cardWidth={popularCardWidth}
+            aspectRatio={16 / 9}
+          />
         </View>
       );
     },
-    [popularCardWidth, popularCardHeight, handleFactPress, handlePopularAdFailed, popularCarouselFactIds, theme, spacing.sm]
+    [popularCardWidth, popularCardHeight, handleFactPress, handlePopularAdFailed, popularCarouselFactIds, spacing.md]
   );
 
   const popularCarouselKeyExtractor = useCallback(
@@ -417,7 +408,7 @@ function HomeScreen() {
 
   const renderWorthKnowingItem = useCallback(
     ({ item, index }: { item: FactWithRelations; index: number }) => (
-      <View style={{ paddingVertical: spacing.sm }}>
+      <View style={{ paddingVertical: spacing.md }}>
         <PopularFactCard
           fact={item}
           cardWidth={worthKnowingCardWidth}
@@ -425,7 +416,7 @@ function HomeScreen() {
         />
       </View>
     ),
-    [worthKnowingCardWidth, handleFactPress, worthKnowingFactIds, spacing.sm]
+    [worthKnowingCardWidth, handleFactPress, worthKnowingFactIds, spacing.md]
   );
 
   const worthKnowingKeyExtractor = useCallback((item: FactWithRelations) => `wk-${item.id}`, []);
@@ -444,8 +435,8 @@ function HomeScreen() {
     [worthKnowingCardGap]
   );
 
-  // Worth knowing card height for FlashList container (thumbnail + padding + shadow room)
-  const worthKnowingListHeight = iconSizes.heroLg + spacing.md * 2 + spacing.sm * 2;
+  // Worth knowing card height for FlashList container (thumbnail + card padding + outer shadow padding)
+  const worthKnowingListHeight = iconSizes.heroLg + spacing.md * 2 + spacing.md * 2;
 
   // Loading state
   if (initialLoading && todaysFacts.length === 0) {
@@ -503,27 +494,25 @@ function HomeScreen() {
 
                 {todaysFacts.length === 1 ? (
                   <ContentContainer>
-                    <View style={theme === 'dark' ? styles.shadowDark : styles.shadowLight}>
-                      <ImageFactCard
-                        title={
-                          todaysFacts[0].title || todaysFacts[0].content.substring(0, 80) + '...'
-                        }
-                        imageUrl={todaysFacts[0].image_url!}
-                        factId={todaysFacts[0].id}
-                        category={todaysFacts[0].categoryData || todaysFacts[0].category}
-                        categorySlug={todaysFacts[0].categoryData?.slug || todaysFacts[0].category}
-                        onPress={() => handleFactPress(todaysFacts[0], 'home_today')}
-                        aspectRatio={1}
-                        cardWidth={contentWidth}
-                        onImageReady={signalCarouselImageReady}
-                      />
-                    </View>
+                    <ImageFactCard
+                      title={
+                        todaysFacts[0].title || todaysFacts[0].content.substring(0, 80) + '...'
+                      }
+                      imageUrl={todaysFacts[0].image_url!}
+                      factId={todaysFacts[0].id}
+                      category={todaysFacts[0].categoryData || todaysFacts[0].category}
+                      categorySlug={todaysFacts[0].categoryData?.slug || todaysFacts[0].category}
+                      onPress={() => handleFactPress(todaysFacts[0], 'home_today')}
+                      aspectRatio={1}
+                      cardWidth={contentWidth}
+                      onImageReady={signalCarouselImageReady}
+                    />
                   </ContentContainer>
                 ) : (
                   <YStack>
                     <View
                       style={{
-                        height: todayCardWidth + spacing.md + spacing.sm * 2,
+                        height: todayCardWidth + spacing.md * 3,
                         width: '100%',
                       }}
                     >
@@ -584,7 +573,7 @@ function HomeScreen() {
 
                 <View
                   style={{
-                    height: popularCardHeight + spacing.sm * 2,
+                    height: popularCardHeight + spacing.md * 2,
                     width: '100%',
                   }}
                 >
@@ -615,7 +604,7 @@ function HomeScreen() {
 
                 <View
                   style={{
-                    height: worthKnowingListHeight + spacing.sm * 2,
+                    height: worthKnowingListHeight,
                     width: '100%',
                   }}
                 >
@@ -661,22 +650,6 @@ function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  shadowLight: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  shadowDark: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-});
 
 // Helper to get local date string in YYYY-MM-DD format
 function getLocalDateString(date: Date = new Date()): string {
