@@ -122,6 +122,12 @@ async function getCachedImageUri(imageUrl: string, factId?: number): Promise<str
       return null;
     }
 
+    // Reject files that are too small (corrupt/partial downloads)
+    if (fileInfo.size !== undefined && fileInfo.size < IMAGE_CACHE.MIN_FILE_SIZE_BYTES) {
+      await FileSystem.deleteAsync(localUri, { idempotent: true });
+      return null;
+    }
+
     // Check if cache is still valid
     if (fileInfo.modificationTime) {
       const ageMs = Date.now() - fileInfo.modificationTime * 1000;
@@ -202,8 +208,12 @@ async function performFileExistenceCheck(factId: number): Promise<string | null>
       try {
         const fileInfo = await FileSystem.getInfoAsync(localUri);
         if (fileInfo.exists) {
-          // Check if cache is still valid (7 days)
-          if (fileInfo.modificationTime) {
+          // Reject files that are too small (corrupt/partial downloads)
+          if (fileInfo.size !== undefined && fileInfo.size < IMAGE_CACHE.MIN_FILE_SIZE_BYTES) {
+            FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
+            knownExtensions.delete(factId);
+          } else if (fileInfo.modificationTime) {
+            // Check if cache is still valid (7 days)
             const ageMs = Date.now() - fileInfo.modificationTime * 1000;
             if (ageMs > IMAGE_CACHE.MAX_AGE_MS) {
               FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
@@ -232,6 +242,12 @@ async function performFileExistenceCheck(factId: number): Promise<string | null>
           const fileInfo = await FileSystem.getInfoAsync(localUri);
 
           if (fileInfo.exists) {
+            // Reject files that are too small (corrupt/partial downloads)
+            if (fileInfo.size !== undefined && fileInfo.size < IMAGE_CACHE.MIN_FILE_SIZE_BYTES) {
+              FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
+              return null;
+            }
+
             // Check if cache is still valid (7 days)
             if (fileInfo.modificationTime) {
               const ageMs = Date.now() - fileInfo.modificationTime * 1000;
@@ -361,6 +377,8 @@ async function performImageDownload(
     // Prepare download destination
     const filename = getCacheFilename(imageUrl, factId);
     const localUri = `${FACT_IMAGES_DIR}${filename}`;
+    // Use a temp file for atomic writes - prevents serving partial downloads from cache
+    const tempUri = `${localUri}.${Date.now()}.tmp`;
 
     // Track if we've already tried refreshing the token
     let hasRetriedWithFreshToken = false;
@@ -379,31 +397,46 @@ async function performImageDownload(
 
         try {
           // Try FileSystem.downloadAsync first - fastest option
+          // Download to temp file to prevent serving partial downloads
           // Wrap in Promise.race with timeout to prevent hanging on dead connections
           const timeoutPromise = new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('Download timeout')), IMAGE_DOWNLOAD_RETRY.TIMEOUT_MS)
           );
           const downloadResult = await Promise.race([
-            FileSystem.downloadAsync(imageUrl, localUri, { headers }),
+            FileSystem.downloadAsync(imageUrl, tempUri, { headers }),
             timeoutPromise,
           ]);
 
           downloadStatus = downloadResult.status;
 
           if (downloadResult.status === 200) {
+            // Validate file size before committing to cache
+            const fileInfo = await FileSystem.getInfoAsync(tempUri);
+            if (!fileInfo.exists) {
+              throw new Error('Downloaded file does not exist');
+            }
+            if (fileInfo.size !== undefined && fileInfo.size < IMAGE_CACHE.MIN_FILE_SIZE_BYTES) {
+              // File is too small - partial download
+              FileSystem.deleteAsync(tempUri, { idempotent: true }).catch(() => {});
+              throw new Error(`Downloaded file too small: ${fileInfo.size} bytes`);
+            }
+
+            // Atomic move: temp → final location (overwrites any existing partial file)
+            await FileSystem.moveAsync({ from: tempUri, to: localUri });
+
             // Update file existence cache so subsequent calls don't hit file system
             if (factId !== undefined) {
-              fileExistenceCache.set(factId, { uri: downloadResult.uri, checkedAt: Date.now() });
+              fileExistenceCache.set(factId, { uri: localUri, checkedAt: Date.now() });
               // Store extension for faster lookups in future sessions
-              const ext = downloadResult.uri.split('.').pop() || 'jpg';
+              const ext = localUri.split('.').pop() || 'jpg';
               knownExtensions.set(factId, ext);
             }
 
-            return downloadResult.uri;
+            return localUri;
           }
-        } catch {
-          // Clean up partial file on timeout or error
-          FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
+        } catch (downloadError) {
+          // Clean up temp file on timeout or error
+          FileSystem.deleteAsync(tempUri, { idempotent: true }).catch(() => {});
           // If downloadAsync fails (e.g., headers not supported in some versions),
           // fall back to fetch + streaming write
           try {
@@ -427,6 +460,11 @@ async function performImageDownload(
               const arrayBuffer = await response.arrayBuffer();
               const uint8Array = new Uint8Array(arrayBuffer);
 
+              // Validate size before writing
+              if (uint8Array.length < IMAGE_CACHE.MIN_FILE_SIZE_BYTES) {
+                throw new Error(`Fetched image too small: ${uint8Array.length} bytes`);
+              }
+
               // Convert to base64 more efficiently
               let binary = '';
               const chunkSize = 32768; // Process in chunks for large images
@@ -436,10 +474,23 @@ async function performImageDownload(
               }
               const base64Data = btoa(binary);
 
-              // Write the base64 data to file
-              await FileSystem.writeAsStringAsync(localUri, base64Data, {
+              // Write to temp file first, then move atomically
+              await FileSystem.writeAsStringAsync(tempUri, base64Data, {
                 encoding: FileSystem.EncodingType.Base64,
               });
+
+              // Verify written file size
+              const writtenInfo = await FileSystem.getInfoAsync(tempUri);
+              if (!writtenInfo.exists) {
+                throw new Error('Written file does not exist');
+              }
+              if (writtenInfo.size !== undefined && writtenInfo.size < IMAGE_CACHE.MIN_FILE_SIZE_BYTES) {
+                FileSystem.deleteAsync(tempUri, { idempotent: true }).catch(() => {});
+                throw new Error(`Written file too small: ${writtenInfo.size} bytes`);
+              }
+
+              // Atomic move: temp → final location
+              await FileSystem.moveAsync({ from: tempUri, to: localUri });
 
               // Update file existence cache so subsequent calls don't hit file system
               if (factId !== undefined) {
@@ -452,6 +503,8 @@ async function performImageDownload(
               return localUri;
             }
           } catch {
+            // Clean up temp file on fallback failure
+            FileSystem.deleteAsync(tempUri, { idempotent: true }).catch(() => {});
             // Continue to retry logic
           }
         }

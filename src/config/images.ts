@@ -47,6 +47,8 @@ export const IMAGE_CACHE = {
   MAX_AGE_MS: 2 * 24 * 60 * 60 * 1000,
   /** Maximum age for in-memory file existence cache (30 minutes) */
   FILE_EXISTENCE_CACHE_MAX_AGE_MS: 30 * 60 * 1000,
+  /** Minimum valid image file size in bytes (1KB) - files smaller than this are treated as corrupt/partial */
+  MIN_FILE_SIZE_BYTES: 1024,
 } as const;
 
 /**
