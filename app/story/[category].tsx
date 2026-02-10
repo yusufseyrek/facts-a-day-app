@@ -369,9 +369,11 @@ const StoryPage = React.memo(
 
           {/* Title */}
           {fact.title && (
-            <Text.Headline numberOfLines={3} color="#FFFFFF">
-              {fact.title}
-            </Text.Headline>
+            <Pressable onPress={handleReadMore} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+              <Text.Headline numberOfLines={3} color="#FFFFFF">
+                {fact.title}
+              </Text.Headline>
+            </Pressable>
           )}
 
           {/* Summary */}

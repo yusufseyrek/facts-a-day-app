@@ -13,7 +13,12 @@ export const initIAPConnection = async (): Promise<void> => {
     await initConnection();
     console.log('IAP connection initialized');
   } catch (error) {
-    console.error('Failed to initialize IAP connection:', error);
+    // Expected to fail on emulators/simulators without Play Store or StoreKit
+    if (__DEV__) {
+      console.warn('⚠️ IAP: initConnection failed (expected on emulators)');
+    } else {
+      console.error('Failed to initialize IAP connection:', error);
+    }
   }
 };
 

@@ -21,6 +21,10 @@ const EXPIRATION_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
 // Prevent concurrent token fetches
 let tokenFetchPromise: Promise<string | null> | null = null;
 
+// Rate-limit cooldown: don't retry token fetch until this time
+let rateLimitedUntilMs: number = 0;
+const RATE_LIMIT_COOLDOWN_MS = 30 * 1000; // 30 seconds
+
 /**
  * Decode JWT payload to extract expiration time
  * App Check tokens are JWTs with an 'exp' claim (seconds since epoch)
@@ -87,6 +91,14 @@ export async function getCachedAppCheckToken(): Promise<string | null> {
   // Return cached token if still valid
   if (isCachedTokenValid()) {
     return cachedToken;
+  }
+
+  // If we're in a rate-limit cooldown, return cached token or null without retrying
+  if (Date.now() < rateLimitedUntilMs) {
+    if (cachedToken && tokenExpirationMs && Date.now() < tokenExpirationMs) {
+      return cachedToken;
+    }
+    return null;
   }
 
   // If a fetch is already in progress, wait for it
@@ -156,10 +168,20 @@ async function fetchNewToken(): Promise<string | null> {
 
     return token;
   } catch (error) {
-    if (__DEV__) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorCode = (error as any)?.code || 'unknown';
-      console.error(`❌ App Check: Token retrieval FAILED (${errorCode}): ${errorMessage}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorCode = (error as any)?.code || 'unknown';
+
+    // Detect rate-limiting or attestation failure and set cooldown to avoid spamming
+    const isRateLimited = errorMessage.includes('Too many attempts');
+    const isAttestationFailure = errorMessage.includes('App attestation failed');
+
+    if (isRateLimited || isAttestationFailure) {
+      rateLimitedUntilMs = Date.now() + RATE_LIMIT_COOLDOWN_MS;
+      if (__DEV__) {
+        console.warn(`⚠️ App Check: ${isRateLimited ? 'Rate limited' : 'Attestation failed'}, cooling down for ${RATE_LIMIT_COOLDOWN_MS / 1000}s`);
+      }
+    } else if (__DEV__) {
+      console.warn(`⚠️ App Check: Token retrieval failed (${errorCode}): ${errorMessage}`);
     }
 
     // If we have a previously cached token that's not actually expired, return it as fallback
@@ -203,6 +225,11 @@ export function primeTokenCache(token: string): void {
  * Use this when you know the token is invalid (e.g., after a 401 response)
  */
 export async function forceRefreshAppCheckToken(): Promise<string | null> {
+  // If we're in a rate-limit cooldown, don't force refresh
+  if (Date.now() < rateLimitedUntilMs) {
+    return cachedToken;
+  }
+
   // Clear the cache
   cachedToken = null;
   tokenExpirationMs = 0;
@@ -247,9 +274,14 @@ export async function forceRefreshAppCheckToken(): Promise<string | null> {
 
     return token;
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (errorMessage.includes('Too many attempts') || errorMessage.includes('App attestation failed')) {
+      rateLimitedUntilMs = Date.now() + RATE_LIMIT_COOLDOWN_MS;
+    }
+
     if (__DEV__) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`❌ App Check: Force refresh failed: ${errorMessage}`);
+      console.warn(`⚠️ App Check: Force refresh failed: ${errorMessage}`);
     }
     return null;
   }

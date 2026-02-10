@@ -219,6 +219,14 @@ export async function initializeAppCheckService() {
                 break;
               }
             } catch (tokenError) {
+              const msg = tokenError instanceof Error ? tokenError.message : String(tokenError);
+              // Stop retrying if rate-limited or attestation failed (retries will only make it worse)
+              if (msg.includes('Too many attempts') || msg.includes('App attestation failed')) {
+                if (__DEV__) {
+                  console.warn('⚠️ App Check: First token blocked by rate limit/attestation, stopping retries');
+                }
+                break;
+              }
               if (__DEV__) {
                 console.warn(
                   `⚠️ App Check: First token attempt ${tokenAttempt + 1} failed:`,

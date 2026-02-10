@@ -134,11 +134,11 @@ export default function Categories() {
   // Auto-initialize with device locale if not already initialized
   // Language selection has been removed - we use device language settings
   useEffect(() => {
-    if (!isInitialized && !isInitializing) {
+    if (!isInitialized && !isInitializing && !initializationError) {
       // Initialize with the current device locale
       initializeOnboarding(locale as SupportedLocale);
     }
-  }, [isInitialized, isInitializing, locale, initializeOnboarding]);
+  }, [isInitialized, isInitializing, initializationError, locale, initializeOnboarding]);
 
   // Track onboarding start and screen view when screen is initialized
   useEffect(() => {

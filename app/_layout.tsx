@@ -13,6 +13,7 @@ import {
 } from '@expo-google-fonts/montserrat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import * as Device from 'expo-device';
 import * as Localization from 'expo-localization';
 import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -99,6 +100,14 @@ const CustomLightTheme = {
     text: hexColors.light.text,
   },
 };
+
+// Skip PremiumProvider on emulators in dev mode — IAP can't work without a real store
+function IAPSafeProvider({ children }: { children: React.ReactNode }) {
+  if (__DEV__ && !Device.isDevice) {
+    return <>{children}</>;
+  }
+  return <PremiumProvider>{children}</PremiumProvider>;
+}
 
 // Component that wraps content with navigation ThemeProvider based on app theme
 function NavigationThemeWrapper({ children }: { children: React.ReactNode }) {
@@ -556,7 +565,7 @@ export default function RootLayout() {
           <I18nProvider>
             <PreloadedDataProvider>
               <OnboardingProvider initialComplete={initialOnboardingStatus}>
-                <PremiumProvider>
+                <IAPSafeProvider>
                   <ScrollToTopProvider>
                     <AppThemeProvider>
                       <NavigationThemeWrapper>
@@ -564,7 +573,7 @@ export default function RootLayout() {
                       </NavigationThemeWrapper>
                     </AppThemeProvider>
                   </ScrollToTopProvider>
-                </PremiumProvider>
+                </IAPSafeProvider>
               </OnboardingProvider>
             </PreloadedDataProvider>
           </I18nProvider>
