@@ -40,7 +40,7 @@ import { FeedManagementModal } from '../../src/components/settings/FeedManagemen
 import { ThemePickerModal } from '../../src/components/settings/ThemePickerModal';
 import { TimePickerModal } from '../../src/components/settings/TimePickerModal';
 import { SettingsRow } from '../../src/components/SettingsRow';
-import { LAYOUT } from '../../src/config/app';
+import { LAYOUT, SUBSCRIPTION } from '../../src/config/app';
 import { useOnboarding, usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { TranslationKeys } from '../../src/i18n/translations';
@@ -943,24 +943,30 @@ export default function SettingsPage() {
           ],
     };
 
-    const result: SettingsSection[] = [premiumSection, userPreferencesSection];
+    const result: SettingsSection[] = SUBSCRIPTION.ENABLED
+      ? [premiumSection, userPreferencesSection]
+      : [userPreferencesSection];
     result.push(storageSection);
     if (isDevelopment) {
       result.push(developerSection);
     }
     // Add restore purchases to support section
-    supportSection.data.push({
-      id: 'restorePurchases',
-      label: t('settingsRestorePurchases'),
-      icon: <RotateCcw size={iconSizes.md} color={iconColor} />,
-      onPress: async () => {
-        const restored = await restorePurchases();
-        Alert.alert(
-          restored ? t('settingsRestoreSuccess') : t('settingsRestoreNoSubscription'),
-          restored ? t('settingsRestoreSuccessMessage') : t('settingsRestoreNoSubscriptionMessage'),
-        );
-      },
-    });
+    if (SUBSCRIPTION.ENABLED) {
+      supportSection.data.push({
+        id: 'restorePurchases',
+        label: t('settingsRestorePurchases'),
+        icon: <RotateCcw size={iconSizes.md} color={iconColor} />,
+        onPress: async () => {
+          const restored = await restorePurchases();
+          Alert.alert(
+            restored ? t('settingsRestoreSuccess') : t('settingsRestoreNoSubscription'),
+            restored
+              ? t('settingsRestoreSuccessMessage')
+              : t('settingsRestoreNoSubscriptionMessage'),
+          );
+        },
+      });
+    }
     result.push(supportSection);
     result.push(legalSection);
 

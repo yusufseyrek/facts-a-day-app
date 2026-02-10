@@ -8,7 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { Button, CategoryCard, ProgressIndicator, Text } from '../../src/components';
-import { CATEGORY_LIMITS } from '../../src/config/app';
+import { CATEGORY_LIMITS, SUBSCRIPTION } from '../../src/config/app';
 import { useOnboarding, usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
@@ -366,7 +366,7 @@ export default function Categories() {
             <Button onPress={handleContinue} disabled={selectedCategories.length < categoryLimits.min}>
               {t('continue')}
             </Button>
-            {!isPremium && (
+            {SUBSCRIPTION.ENABLED && !isPremium && (
               <Pressable onPress={handleRestorePurchases} disabled={isRestoring}>
                 <Text.Caption color="$textSecondary" textAlign="center">
                   {isRestoring ? t('loading') : t('paywallRestore')}
