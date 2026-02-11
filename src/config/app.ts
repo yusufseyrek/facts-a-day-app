@@ -10,7 +10,7 @@ import { Platform } from 'react-native';
 /**
  * Ads configuration
  */
-export const ADS_ENABLED = __DEV__;
+export const ADS_ENABLED = !__DEV__;
 
 /**
  * App Check settings for Firebase App Check initialization
@@ -25,7 +25,7 @@ export const APP_CHECK = {
   /** Delay between first token fetch retries (milliseconds) */
   FIRST_TOKEN_RETRY_DELAY_MS: 250,
   /** When true, block the app and reject API calls if App Check init fails */
-  STRICT_MODE_ENABLED: false,
+  STRICT_MODE_ENABLED: true,
 } as const;
 
 /**

@@ -238,8 +238,8 @@ export default function NotificationsScreen() {
         console.error('❌ Failed to mark immediate fact:', immediateFactResult.error);
       }
 
-      // Schedule notifications (will exclude the fact marked as shown)
-      const result = await notificationService.scheduleNotifications(notificationTimes, locale);
+      // Schedule notifications starting from tomorrow (today is covered by the immediate fact)
+      const result = await notificationService.scheduleNotifications(notificationTimes, locale, { skipToday: true });
 
       if (result.success) {
         // Successfully scheduled notifications - navigate to success screen

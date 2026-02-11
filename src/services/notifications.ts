@@ -969,7 +969,8 @@ export async function syncNotificationSchedule(locale: SupportedLocale): Promise
  */
 export async function scheduleNotifications(
   times: Date[],
-  locale: SupportedLocale
+  locale: SupportedLocale,
+  options?: { skipToday?: boolean }
 ): Promise<ScheduleResult> {
   try {
     // Check permissions first
@@ -1008,7 +1009,14 @@ export async function scheduleNotifications(
     }
 
     // Step 3: Generate time slots for all facts
-    const slots = generateTimeSlots(times, facts.length);
+    // When skipToday is set (e.g., after showImmediateFact during onboarding),
+    // start scheduling from tomorrow to avoid duplicating today's fact
+    let startAfterDate: Date | undefined;
+    if (options?.skipToday) {
+      startAfterDate = new Date();
+      startAfterDate.setHours(23, 59, 59, 999);
+    }
+    const slots = generateTimeSlots(times, facts.length, startAfterDate);
 
     // Step 4: Assign facts to slots in DB
     for (let i = 0; i < facts.length && i < slots.length; i++) {
