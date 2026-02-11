@@ -1,0 +1,58 @@
+# Story Screen Screenshot Flow
+# Assumes we're on home screen after fact-detail modal closed
+
+appId: dev.seyrek.factsaday
+
+---
+# Wait for home to stabilize after fact-detail modal close
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Wait for story buttons to be visible
+- extendedWaitUntil:
+    visible:
+      id: "story-button-.*"
+    timeout: 5000
+
+# Tap the mix story button (always first, always exists)
+- tapOn:
+    id: "story-button-mix"
+    retryTapIfNoChange: true
+
+# Wait for story content to load (image + text overlay)
+- extendedWaitUntil:
+    visible:
+      id: "story-content"
+    timeout: 8000
+
+# Wait for image render + Ken Burns animation to settle
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Take screenshot
+- takeScreenshot: ${OUTPUT_DIR}/03_story
+
+# Close story - iOS uses close button, Android uses back key
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: "story-close-button"
+          retryTapIfNoChange: true
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - pressKey: back
+      - waitForAnimationToEnd:
+          timeout: 1000
+
+# Wait for home tab to be visible again
+- extendedWaitUntil:
+    visible:
+      id: "tab-home"
+    timeout: 5000

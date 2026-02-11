@@ -25,4 +25,4 @@ appId: dev.seyrek.factsaday
     timeout: 2000
 
 # Take screenshot
-- takeScreenshot: ${OUTPUT_DIR}/07_trivia_performance
+- takeScreenshot: ${OUTPUT_DIR}/08_trivia_performance

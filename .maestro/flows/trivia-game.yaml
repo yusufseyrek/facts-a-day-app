@@ -36,7 +36,7 @@ appId: dev.seyrek.factsaday
 
 
 # Take screenshot
-- takeScreenshot: ${OUTPUT_DIR}/06_trivia_game
+- takeScreenshot: ${OUTPUT_DIR}/07_trivia_game
 
 # Wait for screen to be fully stable before exit (prevents stale element issues)
 - waitForAnimationToEnd:

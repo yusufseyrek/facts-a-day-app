@@ -32,7 +32,7 @@ SCREENSHOTS_DIR="$PROJECT_DIR/screenshots"
 ALL_LOCALES=("en" "de" "es" "fr" "ja" "ko" "tr" "zh")
 ALL_PLATFORMS=("ios" "android")
 ALL_DEVICES=("phone" "tablet")
-ALL_SCREENSHOTS=("01_home" "02_fact_detail" "03_discover" "04_category_browse" "05_trivia" "06_trivia_game" "07_trivia_performance" "08_trivia_results" "09_favorites")
+ALL_SCREENSHOTS=("01_home" "02_fact_detail" "03_story" "04_discover" "05_category_browse" "06_trivia" "07_trivia_game" "08_trivia_performance" "09_trivia_results" "10_favorites")
 
 # Parallel execution settings
 MAX_JOBS="${MAX_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)}"

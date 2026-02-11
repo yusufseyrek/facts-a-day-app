@@ -204,12 +204,13 @@ export function TriviaGameView({
             /{totalQuestions}
           </Text.Label>
           {currentQuestion.fact?.categoryData && (
-            <Text.Label
+            <Text
               fontFamily={FONT_FAMILIES.semibold}
+              fontSize={typography.fontSize.label}
               color={currentQuestion.fact.categoryData.color_hex}
             >
               {currentQuestion.fact.categoryData.name}
-            </Text.Label>
+            </Text>
           )}
         </XStack>
 

@@ -9,10 +9,14 @@
 appId: dev.seyrek.factsaday
 
 ---
-# Launch the app
+# Launch the app with locale override
+# arguments are passed as -key value to the app process on iOS
 - launchApp:
     clearState: false
     clearKeychain: false
+    arguments:
+      AppleLanguages: "(${LOCALE})"
+      AppleLocale: "${FULL_LOCALE}"
 
 # Wait for app to fully load (tab bar visible)
 - extendedWaitUntil:
@@ -40,25 +44,28 @@ appId: dev.seyrek.factsaday
 # 2. Fact Detail (opens modal from home)
 - runFlow: flows/fact-detail.yaml
 
-# 3. Discover Screen (navigates to discover tab)
+# 3. Story Screen (opens story from home)
+- runFlow: flows/story.yaml
+
+# 4. Discover Screen (navigates to discover tab)
 - runFlow: flows/discover.yaml
 
-# 4. Category Browse (taps category, already on discover)
+# 5. Category Browse (taps category, already on discover)
 - runFlow: flows/category-browse.yaml
 
-# 5. Trivia Hub (navigates to trivia tab)
+# 6. Trivia Hub (navigates to trivia tab)
 - runFlow: flows/trivia.yaml
 
-# 6. Trivia Game (starts game, already on trivia hub)
+# 7. Trivia Game (starts game, already on trivia hub)
 - runFlow: flows/trivia-game.yaml
 
-# 7. Trivia Performance (opens from trivia hub)
+# 8. Trivia Performance (opens from trivia hub)
 - runFlow: flows/trivia-performance.yaml
 
-# 8. Trivia Results (taps session, already on performance)
+# 9. Trivia Results (taps session, already on performance)
 - runFlow: flows/trivia-results.yaml
 
-# 9. Favorites Screen (navigates to favorites tab)
+# 10. Favorites Screen (navigates to favorites tab)
 - runFlow: flows/favorites.yaml
 
 # Return to home

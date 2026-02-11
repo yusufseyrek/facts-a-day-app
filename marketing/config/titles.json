@@ -20,7 +20,17 @@
       "tr": "Her bilginin\nardındaki hikaye",
       "zh": "每个事实背后\n的精彩故事"
     },
-    "03_discover": {
+    "03_story": {
+      "en": "Stories That\nSpark Curiosity",
+      "de": "Geschichten die\nNeugier wecken",
+      "es": "Historias que\ndespertan curiosidad",
+      "fr": "Des histoires qui\nattisent la curiosité",
+      "ja": "好奇心を\n刺激するストーリー",
+      "ko": "호기심을 자극하는\n이야기",
+      "tr": "Merak uyandıran\nhikayeler",
+      "zh": "激发好奇心的\n故事"
+    },
+    "04_discover": {
       "en": "Dive Deep Into\nAny Topic",
       "de": "Tauche tief in\njedes Thema ein",
       "es": "Profundiza en\ncualquier tema",
@@ -30,7 +40,7 @@
       "tr": "Her konuyu\nderinlemesine keşfet",
       "zh": "深入探索\n任何主题"
     },
-    "04_category_browse": {
+    "05_category_browse": {
       "en": "Learn What\nYou Love",
       "de": "Lerne was\ndich begeistert",
       "es": "Aprende lo que\nte apasiona",
@@ -40,7 +50,7 @@
       "tr": "Sevdiğin konuları\nöğren",
       "zh": "学你所爱"
     },
-    "05_trivia": {
+    "06_trivia": {
       "en": "Challenge Your\nMind Daily",
       "de": "Trainiere täglich\ndeinen Geist",
       "es": "Reta tu mente\ncada día",
@@ -50,7 +60,7 @@
       "tr": "Her gün zihnini\nzorlayarak geliştir",
       "zh": "每日挑战\n你的大脑"
     },
-    "06_trivia_game": {
+    "07_trivia_game": {
       "en": "Quick & Fun\nKnowledge Tests",
       "de": "Schnelle & lustige\nWissenstests",
       "es": "Tests rápidos\ny divertidos",
@@ -60,7 +70,7 @@
       "tr": "Hızlı ve eğlenceli\nbilgi testleri",
       "zh": "快速有趣的\n知识测试"
     },
-    "07_trivia_performance": {
+    "08_trivia_performance": {
       "en": "Watch Yourself\nGrow Smarter",
       "de": "Werde jeden\nTag schlauer",
       "es": "Mira cómo\ncreces cada día",
@@ -70,7 +80,7 @@
       "tr": "Gelişimini\nizle",
       "zh": "见证自己\n变得更聪明"
     },
-    "08_trivia_results": {
+    "09_trivia_results": {
       "en": "Celebrate\nEvery Win",
       "de": "Feiere jeden\nErfolg",
       "es": "Celebra cada\nvictoria",
@@ -80,7 +90,7 @@
       "tr": "Her başarını\nkutla",
       "zh": "庆祝每一次\n胜利"
     },
-    "09_favorites": {
+    "10_favorites": {
       "en": "Build Your\nKnowledge Library",
       "de": "Deine eigene\nWissensbibliothek",
       "es": "Crea tu propia\nbiblioteca",
@@ -94,13 +104,14 @@
   "screenshot_gradients": {
     "01_home": "indigo",
     "02_fact_detail": "ocean",
-    "03_discover": "sunset",
-    "04_category_browse": "aurora",
-    "05_trivia": "candy",
-    "06_trivia_game": "royal",
-    "07_trivia_performance": "emerald",
-    "08_trivia_results": "flame",
-    "09_favorites": "berry"
+    "03_story": "midnight",
+    "04_discover": "sunset",
+    "05_category_browse": "aurora",
+    "06_trivia": "candy",
+    "07_trivia_game": "royal",
+    "08_trivia_performance": "emerald",
+    "09_trivia_results": "flame",
+    "10_favorites": "berry"
   },
   "gradients": {
     "default": ["#6366f1", "#8b5cf6", "#d946ef"],

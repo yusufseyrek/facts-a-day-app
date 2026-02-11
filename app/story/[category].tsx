@@ -218,6 +218,7 @@ export default function StoryScreen() {
         ]}
       >
         <TouchableOpacity
+          testID="story-close-button"
           onPress={handleClose}
           activeOpacity={0.7}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -356,6 +357,7 @@ const StoryPage = React.memo(
 
         {/* Text content overlaid at bottom */}
         <View
+          testID="story-content"
           style={{
             position: 'absolute',
             bottom: 0,

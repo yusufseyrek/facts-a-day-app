@@ -35,31 +35,33 @@ SCREENSHOTS_DIR="$PROJECT_DIR/screenshots"
 
 ALL_LOCALES=("en" "de" "es" "fr" "ja" "ko" "tr" "zh")
 
-# Flow configuration (index 0 unused, 1-9 are valid flows)
+# Flow configuration (index 0 unused, 1-10 are valid flows)
 FLOW_FILES=(
     ""                      # 0: unused
     "home.yaml"             # 1
     "fact-detail.yaml"      # 2
-    "discover.yaml"         # 3
-    "category-browse.yaml"  # 4
-    "trivia.yaml"           # 5
-    "trivia-game.yaml"      # 6
-    "trivia-performance.yaml" # 7
-    "trivia-results.yaml"   # 8
-    "favorites.yaml"        # 9
+    "story.yaml"            # 3
+    "discover.yaml"         # 4
+    "category-browse.yaml"  # 5
+    "trivia.yaml"           # 6
+    "trivia-game.yaml"      # 7
+    "trivia-performance.yaml" # 8
+    "trivia-results.yaml"   # 9
+    "favorites.yaml"        # 10
 )
 
 FLOW_NAMES=(
     ""                      # 0: unused
     "Home Screen"           # 1
     "Fact Detail"           # 2
-    "Discover Screen"       # 3
-    "Category Browse"       # 4
-    "Trivia Hub"            # 5
-    "Trivia Game"           # 6
-    "Trivia Performance"    # 7
-    "Trivia Results"        # 8
-    "Favorites Screen"      # 9
+    "Story Screen"          # 3
+    "Discover Screen"       # 4
+    "Category Browse"       # 5
+    "Trivia Hub"            # 6
+    "Trivia Game"           # 7
+    "Trivia Performance"    # 8
+    "Trivia Results"        # 9
+    "Favorites Screen"      # 10
 )
 
 # Flow prerequisites (which flows need to run first to set up state)
@@ -68,13 +70,14 @@ FLOW_PREREQS=(
     ""      # 0: unused
     ""      # 1: Home - just needs app launched
     ""      # 2: Fact Detail - starts from home
-    ""      # 3: Discover - navigates to tab itself
-    "3"     # 4: Category Browse - needs discover screen first
-    ""      # 5: Trivia Hub - navigates to tab itself
-    "5"     # 6: Trivia Game - needs trivia hub first
-    "5"     # 7: Trivia Performance - needs trivia hub first
-    "5 7"   # 8: Trivia Results - needs trivia hub, then performance
-    ""      # 9: Favorites - navigates to tab itself
+    ""      # 3: Story - starts from home
+    ""      # 4: Discover - navigates to tab itself
+    "4"     # 5: Category Browse - needs discover screen first
+    ""      # 6: Trivia Hub - navigates to tab itself
+    "6"     # 7: Trivia Game - needs trivia hub first
+    "6"     # 8: Trivia Performance - needs trivia hub first
+    "6 8"   # 9: Trivia Results - needs trivia hub, then performance
+    ""      # 10: Favorites - navigates to tab itself
 )
 
 # Colors
@@ -345,10 +348,13 @@ run_maestro() {
 appId: $APP_ID
 
 ---
-# Launch the app
+# Launch the app with locale override
 - launchApp:
     clearState: false
     clearKeychain: false
+    arguments:
+      AppleLanguages: "(\${LOCALE})"
+      AppleLocale: "\${FULL_LOCALE}"
 
 # Wait for app to fully load
 - extendedWaitUntil:
@@ -402,10 +408,13 @@ EOF
     info "  Output: $abs_output_dir"
     
     # Run Maestro from project directory
+    local full_locale
+    full_locale=$(get_full_locale "$locale")
     local result=0
     maestro --device "$device_id" test "$flow_file" \
         -e "OUTPUT_DIR=$abs_output_dir" \
         -e "LOCALE=$locale" \
+        -e "FULL_LOCALE=$full_locale" \
         --no-ansi || result=$?
     
     # Clean up temp file
@@ -468,19 +477,20 @@ PLATFORM (required):
 OPTIONS:
     --locale <code>     Capture specific locale (en, de, es, fr, ja, ko, tr, zh)
     --all-locales       Capture all 8 supported locales
-    --flow <number>     Capture only a specific screen (1-9, see list below)
+    --flow <number>     Capture only a specific screen (1-10, see list below)
     --help              Show this help
 
 FLOWS:
     1  Home Screen         - Facts feed
     2  Fact Detail         - Modal detail view
-    3  Discover Screen     - Category discovery
-    4  Category Browse     - Category facts list (auto-runs: 3)
-    5  Trivia Hub          - Trivia main screen
-    6  Trivia Game         - Active trivia question (auto-runs: 5)
-    7  Trivia Performance  - Stats overview (auto-runs: 5)
-    8  Trivia Results      - Session results (auto-runs: 5, 7)
-    9  Favorites Screen    - Saved facts
+    3  Story Screen        - Full-screen story view
+    4  Discover Screen     - Category discovery
+    5  Category Browse     - Category facts list (auto-runs: 4)
+    6  Trivia Hub          - Trivia main screen
+    7  Trivia Game         - Active trivia question (auto-runs: 6)
+    8  Trivia Performance  - Stats overview (auto-runs: 6)
+    9  Trivia Results      - Session results (auto-runs: 6, 8)
+    10 Favorites Screen    - Saved facts
 
     Note: Prerequisites are automatically run to reach the correct app state.
 
@@ -548,11 +558,11 @@ main() {
                 ;;
             --flow)
                 flow_num="$2"
-                if [[ ! "$flow_num" =~ ^[1-9]$ ]]; then
-                    error "Invalid flow number: $flow_num (must be 1-9)"
+                if [[ ! "$flow_num" =~ ^([1-9]|10)$ ]]; then
+                    error "Invalid flow number: $flow_num (must be 1-10)"
                     echo "" >&2
                     echo "Available flows:" >&2
-                    for i in {1..9}; do
+                    for i in {1..10}; do
                         echo "  $i: ${FLOW_NAMES[$i]}" >&2
                     done
                     exit 1
@@ -622,7 +632,7 @@ main() {
     if [ -n "$flow_num" ]; then
         info "Flow:        $flow_num (${FLOW_NAMES[$flow_num]})"
     else
-        info "Flow:        All screens (1-9)"
+        info "Flow:        All screens (1-10)"
     fi
     info "Output:      screenshots/$platform/$device_type/"
     

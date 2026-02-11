@@ -19,7 +19,7 @@ appId: dev.seyrek.factsaday
     timeout: 2000
 
 # Take screenshot
-- takeScreenshot: ${OUTPUT_DIR}/08_trivia_results
+- takeScreenshot: ${OUTPUT_DIR}/09_trivia_results
 
 # Go back to trivia hub (2 backs: results -> performance -> hub)
 # iOS: tap back buttons, Android: use hardware back key

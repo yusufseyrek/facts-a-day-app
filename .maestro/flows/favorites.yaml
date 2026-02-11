@@ -9,9 +9,16 @@ appId: dev.seyrek.factsaday
     id: "tab-favorites"
     retryTapIfNoChange: true
 
-# Wait for content to load (favorites list or empty state)
+# Wait for favorites content to load (optional — may be empty state)
+- extendedWaitUntil:
+    visible:
+      id: "fact-card-.*"
+    timeout: 5000
+    optional: true
+
+# Wait for images and animations to settle
 - waitForAnimationToEnd:
-    timeout: 1000
+    timeout: 2000
 
 # Take screenshot
-- takeScreenshot: ${OUTPUT_DIR}/09_favorites
+- takeScreenshot: ${OUTPUT_DIR}/10_favorites

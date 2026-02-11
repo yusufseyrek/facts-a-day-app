@@ -228,6 +228,7 @@ const CategoryButton = React.memo(
 
     return (
       <Pressable
+        testID={`story-button-${item.slug}`}
         onPress={onPress}
         style={({ pressed }) => [styles.buttonContainer, { opacity: pressed ? 0.7 : 1, width: outerSize + labelMarginTop }]}
       >

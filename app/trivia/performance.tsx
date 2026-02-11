@@ -203,35 +203,35 @@ function MetricCard({
 
   return (
     <View style={[perfShadowStyles.card, { flex: 1, borderRadius: radius.lg }]}>
-    <YStack
-      flex={1}
-      backgroundColor={cardBg}
-      borderRadius={radius.lg}
-      paddingHorizontal={spacing.xs}
-      paddingVertical={spacing.sm}
-      gap={spacing.xs}
-      alignItems="center"
-    >
-      {isTablet ? (
-        <YStack alignItems="center" gap={spacing.xs}>
-          {iconContainer}
-          {labelText}
-        </YStack>
-      ) : (
-        <XStack alignItems="center" gap={spacing.sm}>
-          {iconContainer}
-          {labelText}
-        </XStack>
-      )}
-      <Text.Title color={textColor} fontFamily={FONT_FAMILIES.semibold}>
-        {value}
-      </Text.Title>
-      {subtitle && (
-        <Text.Tiny color={subtitleColor} fontFamily={FONT_FAMILIES.medium}>
-          {subtitle}
-        </Text.Tiny>
-      )}
-    </YStack>
+      <YStack
+        flex={1}
+        backgroundColor={cardBg}
+        borderRadius={radius.lg}
+        paddingHorizontal={spacing.xs}
+        paddingVertical={spacing.sm}
+        gap={spacing.xs}
+        alignItems="center"
+      >
+        {isTablet ? (
+          <YStack alignItems="center" gap={spacing.xs}>
+            {iconContainer}
+            {labelText}
+          </YStack>
+        ) : (
+          <XStack alignItems="center" gap={spacing.sm}>
+            {iconContainer}
+            {labelText}
+          </XStack>
+        )}
+        <Text.Title color={textColor} fontFamily={FONT_FAMILIES.semibold}>
+          {value}
+        </Text.Title>
+        {subtitle && (
+          <Text.Tiny color={subtitleColor} fontFamily={FONT_FAMILIES.medium}>
+            {subtitle}
+          </Text.Tiny>
+        )}
+      </YStack>
     </View>
   );
 }
@@ -346,7 +346,7 @@ function CategoryProgressBar({
       <XStack alignItems="center" justifyContent="space-between">
         <XStack alignItems="center" gap={spacing.sm}>
           {getLucideIcon(category.icon, typography.fontSize.title, progressColor)}
-          <Text.Label color={textColor} fontFamily={FONT_FAMILIES.medium}>
+          <Text.Label color={textColor} fontFamily={FONT_FAMILIES.medium} w="50%">
             {category.name}
           </Text.Label>
         </XStack>

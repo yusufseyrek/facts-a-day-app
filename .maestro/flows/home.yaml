@@ -4,6 +4,12 @@
 appId: dev.seyrek.factsaday
 
 ---
+# Wait for story buttons to load
+- extendedWaitUntil:
+    visible:
+      id: "story-button-.*"
+    timeout: 5000
+
 # Wait for the feed to fully load and render
 - extendedWaitUntil:
     visible:
@@ -12,7 +18,7 @@ appId: dev.seyrek.factsaday
 
 # Wait for images and animations to settle
 - waitForAnimationToEnd:
-    timeout: 2000
+    timeout: 3000
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/01_home
