@@ -272,6 +272,9 @@ async function makeRequest<T>(
   }
 }
 
+// Expose private helpers for unit testing
+export const __testing = { fetchWithTimeout, retryWithBackoff };
+
 // ====== API Endpoints ======
 
 /**

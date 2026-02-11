@@ -249,6 +249,49 @@ google_api() {
     curl "${curl_args[@]}" "${GOOGLE_PLAY_API_BASE}${endpoint}"
 }
 
+# Build release notes JSON array from metadata.json
+# Reads recentChanges for all Android locales and expands to additional Google Play locales
+build_release_notes() {
+    local metadata_file="$PROJECT_ROOT/marketing/config/metadata.json"
+
+    if [ ! -f "$metadata_file" ]; then
+        print_warning "metadata.json not found at $metadata_file — skipping release notes"
+        return 1
+    fi
+
+    # Use jq to read recentChanges and expand to all Google Play locales in one pass
+    local release_notes
+    release_notes=$(jq '
+        . as $root |
+        {
+            "en-US": ["en-US", "en-GB", "en-AU", "en-CA", "en-IN", "en-SG", "en-ZA"],
+            "de-DE": ["de-DE", "de-AT", "de-CH"],
+            "es-419": ["es-419", "es-ES", "es-US"],
+            "fr-FR": ["fr-FR", "fr-CA"],
+            "ja-JP": ["ja-JP"],
+            "ko-KR": ["ko-KR"],
+            "zh-CN": ["zh-CN", "zh-TW", "zh-HK"],
+            "tr-TR": ["tr-TR"]
+        } as $expansions |
+        [
+            $expansions | to_entries[] |
+            .key as $src |
+            .value as $targets |
+            ($root.android.locales[$src].recentChanges // null) as $text |
+            select($text != null) |
+            $targets[] |
+            {"language": ., "text": $text}
+        ] | sort_by(.language)
+    ' "$metadata_file")
+
+    if [ "$(echo "$release_notes" | jq 'length')" -eq 0 ]; then
+        print_warning "No recentChanges found in metadata.json — skipping release notes"
+        return 1
+    fi
+
+    echo "$release_notes"
+}
+
 # Upload AAB to Google Play
 upload_aab_to_google_play() {
     local aab_file="$1"
@@ -328,21 +371,32 @@ upload_aab_to_google_play() {
     fi
     print_success "Uploaded bundle with version code: $version_code"
     
-    # Step 3: Assign the bundle to the track
+    # Step 3: Build release notes and assign the bundle to the track
+    echo -e "${BLUE}▸${NC} Building release notes..."
+
+    local release_notes_json
+    if release_notes_json=$(build_release_notes); then
+        local note_count
+        note_count=$(echo "$release_notes_json" | jq 'length')
+        print_success "Built release notes for $note_count locales"
+    else
+        release_notes_json=""
+        print_warning "Proceeding without release notes"
+    fi
+
     echo -e "${BLUE}▸${NC} Assigning to $track track..."
-    
+
     local track_data
-    track_data=$(cat <<EOF
-{
-    "releases": [
-        {
-            "versionCodes": ["$version_code"],
-            "status": "completed"
-        }
-    ]
-}
-EOF
-)
+    if [ -n "$release_notes_json" ]; then
+        track_data=$(jq -n \
+            --arg vc "$version_code" \
+            --argjson notes "$release_notes_json" \
+            '{"releases": [{"versionCodes": [$vc], "status": "completed", "releaseNotes": $notes}]}')
+    else
+        track_data=$(jq -n \
+            --arg vc "$version_code" \
+            '{"releases": [{"versionCodes": [$vc], "status": "completed"}]}')
+    fi
     
     local track_response
     track_response=$(google_api PUT "/applications/$ANDROID_PACKAGE_NAME/edits/$edit_id/tracks/$track" "$track_data")
@@ -378,6 +432,14 @@ EOF
     
     return 0
 }
+
+# Run tests before building
+print_step "Running tests..."
+if ! bun run test; then
+    print_error "Tests failed. Fix failing tests before building."
+    exit 1
+fi
+print_success "All tests passed"
 
 # Check for required tools
 print_step "Checking requirements..."
@@ -549,13 +611,13 @@ echo ""
 if [ "$UPLOAD_ENABLED" = true ]; then
     if [ "$UPLOAD_SUCCESS" = true ]; then
         echo -e "${GREEN}✓ Uploaded to Google Play Console ($TRACK track)${NC}"
+        echo -e "${GREEN}✓ Release notes included from metadata.json${NC}"
         echo ""
         echo -e "${YELLOW}Next steps:${NC}"
         echo "  1. Go to https://play.google.com/console"
         echo "  2. Select your app → Release → $TRACK"
-        echo "  3. Add release notes"
-        echo "  4. Send changes for review"
-        echo "  5. Review and roll out"
+        echo "  3. Send changes for review"
+        echo "  4. Review and roll out"
     else
         echo -e "${YELLOW}Upload failed. To upload manually:${NC}"
         echo "  1. Go to https://play.google.com/console"

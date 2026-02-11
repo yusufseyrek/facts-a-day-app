@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { Lightbulb } from '@tamagui/lucide-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -81,15 +81,26 @@ function HomeScreen() {
     getRefreshStatus()
   );
 
+  type PopularListItem = FactWithRelations | NativeAdPlaceholder;
+
   // Track if we've consumed preloaded data (only once)
   const consumedPreloadedDataRef = useRef(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const popularListRef = useRef<FlashListRef<PopularListItem>>(null);
+  const worthKnowingListRef = useRef<FlashListRef<FactWithRelations>>(null);
+  const scrollYRef = useRef(0);
 
   // Register scroll-to-top handler
   useScrollToTopHandler(
     'index',
     useCallback(() => {
-      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      if (scrollYRef.current <= 0) {
+        // Already at top — reset carousels to index 0
+        popularListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        worthKnowingListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      } else {
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      }
     }, [])
   );
 
@@ -339,8 +350,6 @@ function HomeScreen() {
   const popularCardHeight = popularCardWidth * (9 / 16);
   const popularCarouselFactIds = useMemo(() => popularFacts.map((f) => f.id), [popularFacts]);
 
-  type PopularListItem = FactWithRelations | NativeAdPlaceholder;
-
   const [popularFailedAdKeys, setPopularFailedAdKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -468,6 +477,8 @@ function HomeScreen() {
             refreshControl={refreshControl}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: spacing.xl }}
+            onScroll={(e) => { scrollYRef.current = e.nativeEvent.contentOffset.y; }}
+            scrollEventThrottle={16}
           >
             {/* Title */}
             <Animated.View entering={FadeIn.duration(300)}>
@@ -578,6 +589,7 @@ function HomeScreen() {
                   }}
                 >
                   <FlashList
+                    ref={popularListRef}
                     data={popularDataWithAds}
                     renderItem={renderPopularCarouselItem}
                     keyExtractor={popularCarouselKeyExtractor}
@@ -609,6 +621,7 @@ function HomeScreen() {
                   }}
                 >
                   <FlashList
+                    ref={worthKnowingListRef}
                     data={worthKnowingFacts}
                     renderItem={renderWorthKnowingItem}
                     keyExtractor={worthKnowingKeyExtractor}

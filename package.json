@@ -14,11 +14,33 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"app/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"app/**/*.{ts,tsx}\"",
     "type-check": "tsc --noEmit",
+    "test": "jest --forceExit --detectOpenHandles",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --forceExit --coverage --collectCoverageFrom='src/services/**/*.ts' --collectCoverageFrom='src/utils/insertNativeAds.ts'",
     "build:ios": "./scripts/build-ios.sh",
     "build:android": "./scripts/build-android.sh",
     "update:ios": "./scripts/publish-update.sh ios",
     "update:android": "./scripts/publish-update.sh android",
     "update:all": "./scripts/publish-update.sh all"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "setupFiles": [
+      "./src/__tests__/setup.ts"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.test.ts"
+    ],
+    "testTimeout": 10000,
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@shopify/flash-list|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|tamagui|@tamagui/.*|i18n-js|react-native-google-mobile-ads|react-native-reanimated|react-native-gesture-handler|react-native-screens|react-native-safe-area-context|react-native-worklets)"
+    ],
+    "moduleNameMapper": {
+      "^@react-native-firebase/app$": "<rootDir>/src/__tests__/__mocks__/firebase/app.ts",
+      "^@react-native-firebase/app-check$": "<rootDir>/src/__tests__/__mocks__/firebase/appCheck.ts",
+      "^@react-native-firebase/analytics$": "<rootDir>/src/__tests__/__mocks__/firebase/analytics.ts",
+      "^@react-native-firebase/crashlytics$": "<rootDir>/src/__tests__/__mocks__/firebase/crashlytics.ts"
+    }
   },
   "dependencies": {
     "@expo-google-fonts/montserrat": "^0.4.2",
@@ -71,6 +93,7 @@
     "tamagui": "^1.136.2"
   },
   "devDependencies": {
+    "@types/jest": "29.5.14",
     "@types/react": "~19.1.0",
     "@typescript-eslint/eslint-plugin": "^8.52.0",
     "@typescript-eslint/parser": "^8.52.0",
@@ -80,6 +103,8 @@
     "eslint-plugin-react-native": "^5.0.0",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "expo-atlas": "^0.4.0",
+    "jest": "~29.7.0",
+    "jest-expo": "~54.0.17",
     "prettier": "^3.7.4",
     "typescript": "~5.9.2"
   },

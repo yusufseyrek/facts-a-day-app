@@ -1144,6 +1144,16 @@ export async function clearAllScheduledNotifications(
 /**
  * Mark one random fact as shown immediately in feed for new users
  */
+// Expose pure private functions for unit testing
+export const __testing = {
+  generateTimeSlots,
+  isScheduleValid,
+  sortTimesByTimeOfDay,
+  shouldPreloadImage,
+  getTypeHintForExtension,
+  processInBatches,
+};
+
 export async function showImmediateFact(
   locale: SupportedLocale
 ): Promise<{ success: boolean; fact?: database.FactWithRelations; error?: string }> {

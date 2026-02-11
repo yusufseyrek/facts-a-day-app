@@ -49,6 +49,14 @@ print_warning() {
     echo -e "${YELLOW}⚠ Warning: $1${NC}"
 }
 
+# Run tests before building
+print_step "Running tests..."
+if ! bun run test; then
+    print_error "Tests failed. Fix failing tests before building."
+    exit 1
+fi
+print_success "All tests passed"
+
 # Check for required tools
 print_step "Checking requirements..."
 
