@@ -55,7 +55,7 @@ if ! bun run test; then
     print_error "Tests failed. Fix failing tests before building."
     exit 1
 fi
-print_success "All tests passed"
+echo -e "${GREEN}✓ All tests passed${NC}"
 
 # Check for required tools
 print_step "Checking requirements..."

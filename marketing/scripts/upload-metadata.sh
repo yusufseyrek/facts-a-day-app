@@ -14,6 +14,7 @@
 #   ./marketing/scripts/upload-metadata.sh --android                # Upload to Google Play Store
 #   ./marketing/scripts/upload-metadata.sh --all                    # Upload to both stores
 #   ./marketing/scripts/upload-metadata.sh --ios --locale en        # Upload specific locale
+#   ./marketing/scripts/upload-metadata.sh --ios --screenshots      # Include screenshots
 #   ./marketing/scripts/upload-metadata.sh --ios --dry-run          # Preview without uploading
 
 set -e
@@ -398,100 +399,6 @@ update_version_localization() {
     return 0
 }
 
-# Get or create app info localization (for name and subtitle)
-get_or_create_app_info_localization() {
-    local app_id="$1"
-    local locale="$2"
-    
-    # First, get the app info ID
-    local app_info_response
-    app_info_response=$(asc_api GET "/apps/$app_id/appInfos")
-    
-    local app_info_id
-    app_info_id=$(echo "$app_info_response" | jq -r '.data[0].id // empty')
-    
-    if [ -z "$app_info_id" ]; then
-        echo "  Could not get app info" >&2
-        return 1
-    fi
-    
-    # Get app info localizations
-    local response
-    response=$(asc_api GET "/appInfos/$app_info_id/appInfoLocalizations")
-    
-    local loc_id
-    loc_id=$(echo "$response" | jq -r ".data[] | select(.attributes.locale == \"$locale\") | .id" | head -1)
-    
-    if [ -n "$loc_id" ]; then
-        echo "$loc_id"
-        return 0
-    fi
-    
-    # Create new app info localization
-    echo "  Creating new app info localization for $locale..." >&2
-    local create_data='{
-        "data": {
-            "type": "appInfoLocalizations",
-            "attributes": {
-                "locale": "'"$locale"'"
-            },
-            "relationships": {
-                "appInfo": {
-                    "data": {
-                        "type": "appInfos",
-                        "id": "'"$app_info_id"'"
-                    }
-                }
-            }
-        }
-    }'
-    
-    response=$(asc_api POST "/appInfoLocalizations" "$create_data")
-    
-    local error_msg
-    error_msg=$(echo "$response" | jq -r '.errors[0].detail // .errors[0].title // empty' 2>/dev/null)
-    if [ -n "$error_msg" ]; then
-        echo "  Error creating app info localization: $error_msg" >&2
-    fi
-    
-    loc_id=$(echo "$response" | jq -r '.data.id // empty')
-    echo "$loc_id"
-}
-
-# Update app info localization (name and subtitle)
-update_app_info_localization() {
-    local loc_id="$1"
-    local name="$2"
-    local subtitle="$3"
-    
-    local update_data
-    update_data=$(jq -n \
-        --arg name "$name" \
-        --arg subtitle "$subtitle" \
-        '{
-            "data": {
-                "type": "appInfoLocalizations",
-                "id": "'"$loc_id"'",
-                "attributes": {
-                    "name": $name,
-                    "subtitle": $subtitle
-                }
-            }
-        }')
-    
-    local response
-    response=$(asc_api PATCH "/appInfoLocalizations/$loc_id" "$update_data")
-    
-    local error_msg
-    error_msg=$(echo "$response" | jq -r '.errors[0].detail // .errors[0].title // empty' 2>/dev/null)
-    if [ -n "$error_msg" ]; then
-        echo "    Error: $error_msg" >&2
-        return 1
-    fi
-    
-    return 0
-}
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Google Play API - Authentication
 # ─────────────────────────────────────────────────────────────────────────────
@@ -671,28 +578,12 @@ upload_ios_metadata() {
             continue
         fi
         
-        local name subtitle description keywords whats_new promo_text
-        name=$(echo "$metadata" | jq -r '.name // empty')
-        subtitle=$(echo "$metadata" | jq -r '.subtitle // empty')
+        local description keywords whats_new promo_text
         description=$(echo "$metadata" | jq -r '.description // empty')
         keywords=$(echo "$metadata" | jq -r '.keywords // empty')
         whats_new=$(echo "$metadata" | jq -r '.whatsNew // empty')
         promo_text=$(echo "$metadata" | jq -r '.promotionalText // empty')
-        
-        # Update app info localization (name & subtitle)
-        local app_info_loc_id
-        app_info_loc_id=$(get_or_create_app_info_localization "$app_id" "$store_locale")
-        
-        if [ -n "$app_info_loc_id" ] && [ -n "$name" ]; then
-            info "  Updating app info (name & subtitle)..."
-            if update_app_info_localization "$app_info_loc_id" "$name" "$subtitle"; then
-                success "    Name: $name"
-                success "    Subtitle: $subtitle"
-            else
-                warn "    Failed to update app info"
-            fi
-        fi
-        
+
         # Update version localization (description, keywords, etc.)
         local loc_id
         loc_id=$(get_or_create_localization "$version_id" "$store_locale")
@@ -903,6 +794,7 @@ PLATFORM (at least one required):
 OPTIONS:
     --locale <code>     Upload specific locale only (en, de, es, fr, ja, ko, tr, zh)
     --all-locales       Upload all 8 supported locales (default)
+    --screenshots       Also upload screenshots (calls upload-images.sh)
     --dry-run           Preview what would be uploaded without uploading
     --verbose, -v       Show detailed debug output
     --help, -h          Show this help
@@ -970,7 +862,8 @@ main() {
     local filter_locale=""
     local dry_run=false
     local verbose=false
-    
+    local include_screenshots=false
+
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -993,6 +886,10 @@ main() {
                 ;;
             --all-locales)
                 filter_locale=""
+                shift
+                ;;
+            --screenshots)
+                include_screenshots=true
                 shift
                 ;;
             --dry-run)
@@ -1059,33 +956,54 @@ main() {
     info "Config:       $METADATA_FILE"
     info "Locales:      ${locales[*]}"
     info "Platforms:    $([ "$upload_ios" = true ] && echo "iOS ")$([ "$upload_android" = true ] && echo "Android")"
+    $include_screenshots && info "Screenshots:  included"
     $dry_run && warn "Mode:         DRY RUN (no actual upload)"
-    
+
     local failed=0
-    
+
     # Upload to iOS
     if $upload_ios; then
         if ! upload_ios_metadata "${locales[@]}"; then
             ((failed++))
         fi
     fi
-    
+
     # Upload to Android
     if $upload_android; then
         if ! upload_android_metadata "${locales[@]}"; then
             ((failed++))
         fi
     fi
-    
+
+    # Upload screenshots if requested
+    if $include_screenshots; then
+        local upload_images_script="$SCRIPT_DIR/upload-images.sh"
+        if [ ! -f "$upload_images_script" ]; then
+            error "upload-images.sh not found at $upload_images_script"
+            ((failed++))
+        else
+            local image_args=()
+            $upload_ios && image_args+=(--ios)
+            $upload_android && image_args+=(--android)
+            [ -n "$filter_locale" ] && image_args+=(--locale "$filter_locale")
+            $dry_run && image_args+=(--dry-run)
+            $verbose && image_args+=(--verbose)
+
+            if ! bash "$upload_images_script" "${image_args[@]}"; then
+                ((failed++))
+            fi
+        fi
+    fi
+
     # Summary
     echo ""
     header "Complete"
     echo ""
-    
+
     if [ $failed -eq 0 ]; then
-        success "All metadata uploads completed successfully"
+        success "All uploads completed successfully"
     else
-        error "$failed platform(s) failed"
+        error "$failed upload(s) failed"
         exit 1
     fi
 }
