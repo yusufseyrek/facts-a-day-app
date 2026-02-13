@@ -42,6 +42,14 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
 
   // Prevent flicker: keep last valid URI while retrying
   const lastValidUriRef = useRef<string | null>(null);
+
+  // Clear stale ref when fact changes (FlashList recycling)
+  const prevFactIdRef = useRef(fact.id);
+  if (prevFactIdRef.current !== fact.id) {
+    prevFactIdRef.current = fact.id;
+    lastValidUriRef.current = null;
+  }
+
   if (authenticatedImageUri && authenticatedImageUri !== lastValidUriRef.current) {
     lastValidUriRef.current = authenticatedImageUri;
   }
@@ -114,6 +122,7 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
     setDownloadRetryCount(0);
     setImageLoaded(false);
     retryPendingRef.current = false;
+    lastValidUriRef.current = null;
   }, [fact.id]);
 
   const handleRetryFromError = useCallback(() => {

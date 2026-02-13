@@ -137,6 +137,19 @@ export function useFactImage(
   // Use ref to track last set URI to prevent unnecessary updates
   const lastUriRef = useRef<string | null>(imageUri);
 
+  // Reset state synchronously during render when fact changes (FlashList recycling)
+  const prevCacheKeyRef = useRef(cacheKey);
+  if (prevCacheKeyRef.current !== cacheKey) {
+    prevCacheKeyRef.current = cacheKey;
+    const newUri = memoryCachedUri;
+    if (lastUriRef.current !== newUri) {
+      lastUriRef.current = newUri;
+      setImageUri(newUri);
+    }
+    setIsLoading(!!remoteUrl && !memoryCachedUri);
+    setHasError(false);
+  }
+
   // Track mounted state
   const isMounted = useRef(true);
 
@@ -232,7 +245,8 @@ export function useFactImage(
         // Clean up pending fetch after completion
         pendingFetches.delete(cacheKey);
 
-        if (!isMounted.current) return;
+        // Skip state update if fact changed while downloading (FlashList recycling)
+        if (!isMounted.current || prevCacheKeyRef.current !== cacheKey) return;
 
         if (localUri) {
           // Clean up memory cache if it's getting too large
@@ -257,14 +271,14 @@ export function useFactImage(
       } catch {
         pendingFetches.delete(cacheKey);
 
-        if (!isMounted.current) return;
+        if (!isMounted.current || prevCacheKeyRef.current !== cacheKey) return;
 
         // Don't clear existing URI on error
         if (!lastUriRef.current) {
           setHasError(true);
         }
       } finally {
-        if (isMounted.current) {
+        if (isMounted.current && prevCacheKeyRef.current === cacheKey) {
           setIsLoading(false);
         }
       }

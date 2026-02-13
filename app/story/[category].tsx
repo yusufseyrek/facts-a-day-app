@@ -59,6 +59,21 @@ export default function StoryScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const viewedFactIds = useRef(new Set<number>());
 
+  // Event-driven prefetch refs
+  const prefetchTriggeredRef = useRef(false);
+  const factsRef = useRef<FactWithRelations[]>([]);
+  const prefetchFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerPrefetch = useCallback(() => {
+    if (prefetchTriggeredRef.current) return;
+    prefetchTriggeredRef.current = true;
+    if (prefetchFallbackRef.current) {
+      clearTimeout(prefetchFallbackRef.current);
+      prefetchFallbackRef.current = null;
+    }
+    prefetchFactImagesWithLimit(factsRef.current.slice(1), 2);
+  }, []);
+
   const [failedAdKeys, setFailedAdKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -96,6 +111,12 @@ export default function StoryScreen() {
 
   useEffect(() => {
     loadFacts();
+    return () => {
+      if (prefetchFallbackRef.current) {
+        clearTimeout(prefetchFallbackRef.current);
+        prefetchFallbackRef.current = null;
+      }
+    };
   }, [category, locale]);
 
   const loadFacts = async () => {
@@ -111,11 +132,14 @@ export default function StoryScreen() {
       }
 
       setFacts(result);
-      // Delay prefetching images 2-4 so the first visible image gets full bandwidth
-      // Image 0 is downloaded by useFactImage in the first StoryPage
-      setTimeout(() => {
-        prefetchFactImagesWithLimit(result.slice(1), 3);
-      }, 500);
+      // Store facts for event-driven prefetch and reset trigger
+      factsRef.current = result;
+      prefetchTriggeredRef.current = false;
+      // Fallback: prefetch after 2s if first image hasn't loaded yet
+      if (prefetchFallbackRef.current) clearTimeout(prefetchFallbackRef.current);
+      prefetchFallbackRef.current = setTimeout(() => {
+        triggerPrefetch();
+      }, 2000);
       trackScreenView(Screens.STORY);
       trackStoryOpen({
         category: category!,
@@ -168,7 +192,7 @@ export default function StoryScreen() {
   }, [router, category, facts.length]);
 
   const renderItem = useCallback(
-    ({ item }: { item: StoryListItem }) => {
+    ({ item, index }: { item: StoryListItem; index: number }) => {
       if (isNativeAdPlaceholder(item)) {
         return (
           <StoryNativeAdCard
@@ -178,9 +202,16 @@ export default function StoryScreen() {
           />
         );
       }
-      return <StoryPage fact={item} screenWidth={screenWidth} screenHeight={screenHeight} />;
+      return (
+        <StoryPage
+          fact={item}
+          screenWidth={screenWidth}
+          screenHeight={screenHeight}
+          onImageReady={index === 0 ? triggerPrefetch : undefined}
+        />
+      );
     },
-    [screenWidth, screenHeight]
+    [screenWidth, screenHeight, triggerPrefetch]
   );
 
   const keyExtractor = useCallback(
@@ -260,10 +291,12 @@ const StoryPage = React.memo(
     fact,
     screenWidth,
     screenHeight,
+    onImageReady,
   }: {
     fact: FactWithRelations;
     screenWidth: number;
     screenHeight: number;
+    onImageReady?: () => void;
   }) => {
     const router = useRouter();
     const { t } = useTranslation();
@@ -336,6 +369,7 @@ const StoryPage = React.memo(
               contentFit="cover"
               cachePolicy="memory-disk"
               transition={200}
+              onLoad={onImageReady}
             />
           </Animated.View>
         ) : (

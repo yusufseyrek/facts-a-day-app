@@ -2683,7 +2683,7 @@ export async function getFactsForStory(
     LEFT JOIN categories c ON f.category = c.slug
     LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
     WHERE f.category = ? AND f.language = ?
-    ORDER BY is_viewed ASC, RANDOM()`,
+    ORDER BY is_viewed ASC, COALESCE(f.last_updated, f.created_at) DESC`,
     [category, language]
   );
   return mapFactsWithRelations(result);
@@ -2714,7 +2714,7 @@ export async function getFactsForMixedStory(
     LEFT JOIN categories c ON f.category = c.slug
     LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
     WHERE f.category IN (${placeholders}) AND f.language = ?
-    ORDER BY is_viewed ASC, RANDOM()`,
+    ORDER BY is_viewed ASC, COALESCE(f.last_updated, f.created_at) DESC`,
     [...categorySlugs, language]
   );
   return mapFactsWithRelations(result);

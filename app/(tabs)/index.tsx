@@ -602,6 +602,7 @@ function HomeScreen() {
                     contentContainerStyle={{
                       paddingHorizontal: listInset,
                     }}
+                    drawDistance={popularCardWidth}
                   />
                 </View>
               </>
@@ -634,6 +635,7 @@ function HomeScreen() {
                     contentContainerStyle={{
                       paddingHorizontal: listInset,
                     }}
+                    drawDistance={worthKnowingCardWidth}
                   />
                 </View>
               </>

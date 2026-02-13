@@ -72,6 +72,13 @@ const ImageFactCardComponent = ({
   // Keep track of the last valid image URI to prevent flickering
   const lastValidUriRef = useRef<string | null>(null);
 
+  // Clear stale ref when fact changes (FlashList recycling)
+  const prevFactIdRef = useRef(factId);
+  if (prevFactIdRef.current !== factId) {
+    prevFactIdRef.current = factId;
+    lastValidUriRef.current = null;
+  }
+
   // Update last valid URI when we get a new one
   if (authenticatedImageUri && authenticatedImageUri !== lastValidUriRef.current) {
     lastValidUriRef.current = authenticatedImageUri;
@@ -248,6 +255,7 @@ const ImageFactCardComponent = ({
     setDownloadRetryCount(0);
     retryPendingRef.current = false;
     setImageLoaded(false);
+    lastValidUriRef.current = null;
   }, [imageUrl]);
 
   // Handle image load success

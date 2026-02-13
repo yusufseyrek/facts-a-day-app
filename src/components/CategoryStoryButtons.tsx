@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from '../i18n';
 import * as database from '../services/database';
 import { getSelectedCategories } from '../services/onboarding';
+import { onPreferenceFeedRefresh } from '../services/preferences';
 import { hexColors, useTheme } from '../theme';
 import { getLucideIcon } from '../utils/iconMapper';
 import { useResponsive } from '../utils/useResponsive';
@@ -42,6 +43,9 @@ export function CategoryStoryButtons() {
 
   useEffect(() => {
     loadCategories();
+    return onPreferenceFeedRefresh(() => {
+      loadCategories();
+    });
   }, []);
 
   // Refresh unseen status when screen is focused (returning from story)
