@@ -47,7 +47,6 @@ import {
   RefreshStatus,
 } from '../../src/services/contentRefresh';
 import * as database from '../../src/services/database';
-import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/services/images';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
 import {
@@ -207,7 +206,6 @@ function HomeScreen() {
         await database.markDeliveredFactsAsShown(locale);
 
         const facts = await database.getTodaysFacts(locale);
-        prefetchFactImagesWithLimit(facts);
         setTodaysFacts(facts);
       } catch {
         // Ignore fact loading errors
@@ -221,9 +219,6 @@ function HomeScreen() {
 
   const handleFactPress = useCallback(
     (fact: FactWithRelations, source: FactViewSource, factIdList?: number[], indexInList?: number) => {
-      if (fact.image_url) {
-        prefetchFactImage(fact.image_url, fact.id);
-      }
       if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
         router.push(
           `/fact/${fact.id}?source=${source}&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
@@ -253,7 +248,6 @@ function HomeScreen() {
     try {
       const recs = await database.getRandomUnscheduledFacts(HOME_FEED.POPULAR_COUNT, locale);
       if (recs.length > 0) {
-        prefetchFactImagesWithLimit(recs);
         setPopularFacts(recs);
       }
     } catch {
@@ -266,7 +260,6 @@ function HomeScreen() {
     try {
       const recs = await database.getRandomUnscheduledFacts(HOME_FEED.WORTH_KNOWING_COUNT, locale);
       if (recs.length > 0) {
-        prefetchFactImagesWithLimit(recs);
         setWorthKnowingFacts(recs);
       }
     } catch {

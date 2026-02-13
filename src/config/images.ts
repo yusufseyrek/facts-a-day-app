@@ -62,13 +62,3 @@ export const IMAGE_DOWNLOAD_RETRY = {
   /** Timeout per download attempt in milliseconds (images are <100KB) */
   TIMEOUT_MS: 5_000,
 } as const;
-
-/**
- * In-memory image cache settings for the useFactImage hook
- */
-export const IMAGE_MEMORY_CACHE = {
-  /** Maximum size of in-memory cache to prevent memory issues on tablets */
-  MAX_SIZE: 200,
-  /** Maximum time to wait for a pending fetch before starting a new one (milliseconds) */
-  PENDING_FETCH_TIMEOUT_MS: 30 * 1000,
-} as const;

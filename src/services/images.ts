@@ -1,19 +1,14 @@
 /**
- * Image Service with App Check Token Support
+ * Image Service
  *
- * This service handles downloading fact images with Firebase App Check tokens
- * to authenticate requests to protected image endpoints.
+ * This service handles downloading fact images for local use (e.g., iOS notifications).
+ * Display images no longer require local downloads — components use remote URLs
+ * directly with expo-image.
  *
  * The service:
- * 1. Gets an App Check token before downloading (if available)
- * 2. Downloads images with the token in the X-Firebase-AppCheck header
- * 3. Falls back to direct URL access if App Check token is unavailable
- * 4. Caches images locally for offline access and performance (7-day TTL)
- * 5. Provides both hooks for React components and utility functions for services
- *
- * FALLBACK BEHAVIOR: If App Check token is not available (e.g., initialization
- * failed, emulator, etc.), the service will attempt to download images without
- * the token. If the server requires App Check (returns 401/403), it fails fast.
+ * 1. Downloads images to local storage when needed (notifications)
+ * 2. Caches images locally for offline access (2-day TTL)
+ * 3. Provides cache management functions (clear, size)
  *
  * IMPORTANT: Uses documentDirectory (persistent) instead of cacheDirectory
  * because cacheDirectory can be cleared by the OS at any time.
@@ -21,12 +16,7 @@
 
 import * as FileSystem from 'expo-file-system/legacy';
 
-import { APP_CHECK } from '../config/app';
-import { getAppCheckReady, isAppCheckInitialized } from '../config/appCheckState';
-import { PREFETCH_SETTINGS } from '../config/factListSettings';
 import { IMAGE_CACHE, IMAGE_DOWNLOAD_RETRY } from '../config/images';
-
-import { forceRefreshAppCheckToken, getCachedAppCheckToken } from './appCheckToken';
 
 // Directory for cached fact images - uses documentDirectory for persistence
 // cacheDirectory is NOT reliable for multi-day caching as it can be cleared by OS
@@ -108,41 +98,6 @@ function getCacheFilename(imageUrl: string, factId?: number): string {
   return `img-${Math.abs(hash).toString(16)}.${fileExtension}`;
 }
 
-/**
- * Check if a cached image exists and is still valid (internal helper)
- */
-async function getCachedImageUri(imageUrl: string, factId?: number): Promise<string | null> {
-  try {
-    const filename = getCacheFilename(imageUrl, factId);
-    const localUri = `${FACT_IMAGES_DIR}${filename}`;
-
-    const fileInfo = await FileSystem.getInfoAsync(localUri);
-
-    if (!fileInfo.exists) {
-      return null;
-    }
-
-    // Reject files that are too small (corrupt/partial downloads)
-    if (fileInfo.size !== undefined && fileInfo.size < IMAGE_CACHE.MIN_FILE_SIZE_BYTES) {
-      await FileSystem.deleteAsync(localUri, { idempotent: true });
-      return null;
-    }
-
-    // Check if cache is still valid
-    if (fileInfo.modificationTime) {
-      const ageMs = Date.now() - fileInfo.modificationTime * 1000;
-      if (ageMs > IMAGE_CACHE.MAX_AGE_MS) {
-        // Delete expired file
-        await FileSystem.deleteAsync(localUri, { idempotent: true });
-        return null;
-      }
-    }
-
-    return localUri;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Check if a fact image is already cached (public API)
@@ -277,54 +232,38 @@ async function performFileExistenceCheck(factId: number): Promise<string | null>
 }
 
 /**
- * Download an image with App Check token authentication
+ * Download an image to local storage.
  *
- * This function:
- * 1. Checks the local file cache first (7-day TTL)
- * 2. If not cached, downloads with App Check token in header
- * 3. Caches the downloaded image locally
+ * Used primarily for iOS notification image attachments. Display images
+ * no longer need local downloads — use remote URLs directly with expo-image.
  *
  * @param imageUrl The remote image URL to download
  * @param factId Optional fact ID for better caching
  * @param forceRefresh If true, bypasses cache and re-downloads
  * @returns Local file URI of the downloaded image, or null if download fails
  */
-export async function downloadImageWithAppCheck(
+export async function downloadImage(
   imageUrl: string,
   factId?: number,
   forceRefresh: boolean = false
 ): Promise<string | null> {
   try {
-    // Check cache first (unless force refresh) - BEFORE ensuring directory exists
-    // This makes cache hits faster by avoiding unnecessary async operations
+    // Check cache first (unless force refresh)
     if (!forceRefresh && factId !== undefined) {
-      // Use getCachedFactImage which checks ALL extensions
-      // This is more reliable than URL-based extension detection
       const cachedUri = await getCachedFactImage(factId);
       if (cachedUri) {
         return cachedUri;
       }
 
-      // Check if there's already a pending download for this fact
-      // This prevents duplicate network requests when multiple components
-      // request the same image simultaneously
       const pendingDownload = pendingDownloads.get(factId);
-      if (pendingDownload && !forceRefresh) {
+      if (pendingDownload) {
         return pendingDownload;
-      }
-    } else if (!forceRefresh && factId === undefined) {
-      // Fallback for non-fact images (use URL-based lookup)
-      const cachedUri = await getCachedImageUri(imageUrl, factId);
-      if (cachedUri) {
-        return cachedUri;
       }
     }
 
-    // Only ensure directory exists when we need to download
     await ensureImagesDirExists();
 
-    // Start the actual download and track it if we have a factId
-    const downloadPromise = performImageDownload(imageUrl, factId, forceRefresh);
+    const downloadPromise = performImageDownload(imageUrl, factId);
 
     if (factId !== undefined) {
       pendingDownloads.set(factId, downloadPromise);
@@ -350,95 +289,51 @@ export async function downloadImageWithAppCheck(
  */
 async function performImageDownload(
   imageUrl: string,
-  factId: number | undefined,
-  _forceRefresh: boolean
+  factId: number | undefined
 ): Promise<string | null> {
   try {
-    // In strict mode, block image downloads if App Check failed to initialize
-    if (APP_CHECK.STRICT_MODE_ENABLED && !__DEV__) {
-      await getAppCheckReady();
-      if (!isAppCheckInitialized()) {
-        return null;
-      }
-    }
-
-    // Get App Check token (uses cache to prevent rate limiting)
-    let appCheckToken = await getCachedAppCheckToken();
-
-    // Track if we're using fallback mode (no App Check token)
-    const usingFallback = !appCheckToken;
-
-    if (usingFallback && __DEV__) {
-      console.warn(
-        `⚠️ Image Download: No App Check token available for factId=${factId}, attempting fallback without token`
-      );
-    }
-
-    // Prepare download destination
     const filename = getCacheFilename(imageUrl, factId);
     const localUri = `${FACT_IMAGES_DIR}${filename}`;
-    // Use a temp file for atomic writes - prevents serving partial downloads from cache
     const tempUri = `${localUri}.${Date.now()}.tmp`;
-
-    // Track if we've already tried refreshing the token
-    let hasRetriedWithFreshToken = false;
 
     for (let attempt = 0; attempt < IMAGE_DOWNLOAD_RETRY.MAX_ATTEMPTS; attempt++) {
       try {
-        // Build headers - include App Check token if available
-        const headers: Record<string, string> = {};
-        if (appCheckToken) {
-          headers['X-Firebase-AppCheck'] = appCheckToken;
-        }
-
-        // Use FileSystem.downloadAsync FIRST - it's much faster because it streams
-        // directly to disk instead of loading into memory and converting to base64
         let downloadStatus = 0;
 
         try {
-          // Try FileSystem.downloadAsync first - fastest option
-          // Download to temp file to prevent serving partial downloads
-          // Wrap in Promise.race with timeout to prevent hanging on dead connections
           const timeoutPromise = new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('Download timeout')), IMAGE_DOWNLOAD_RETRY.TIMEOUT_MS)
           );
           const downloadResult = await Promise.race([
-            FileSystem.downloadAsync(imageUrl, tempUri, { headers }),
+            FileSystem.downloadAsync(imageUrl, tempUri),
             timeoutPromise,
           ]);
 
           downloadStatus = downloadResult.status;
 
           if (downloadResult.status === 200) {
-            // Validate file size before committing to cache
             const fileInfo = await FileSystem.getInfoAsync(tempUri);
             if (!fileInfo.exists) {
               throw new Error('Downloaded file does not exist');
             }
             if (fileInfo.size !== undefined && fileInfo.size < IMAGE_CACHE.MIN_FILE_SIZE_BYTES) {
-              // File is too small - partial download
               FileSystem.deleteAsync(tempUri, { idempotent: true }).catch(() => {});
               throw new Error(`Downloaded file too small: ${fileInfo.size} bytes`);
             }
 
-            // Atomic move: temp → final location (overwrites any existing partial file)
             await FileSystem.moveAsync({ from: tempUri, to: localUri });
 
-            // Update file existence cache so subsequent calls don't hit file system
             if (factId !== undefined) {
               fileExistenceCache.set(factId, { uri: localUri, checkedAt: Date.now() });
-              // Store extension for faster lookups in future sessions
               const ext = localUri.split('.').pop() || 'jpg';
               knownExtensions.set(factId, ext);
             }
 
             return localUri;
           }
-        } catch (downloadError) {
-          // Clean up temp file on timeout or error
+        } catch {
           FileSystem.deleteAsync(tempUri, { idempotent: true }).catch(() => {});
-          // If downloadAsync fails (e.g., headers not supported in some versions),
-          // fall back to fetch + streaming write
+
           try {
             const controller = new AbortController();
             const fetchTimeout = setTimeout(
@@ -448,7 +343,6 @@ async function performImageDownload(
 
             const response = await fetch(imageUrl, {
               method: 'GET',
-              headers,
               signal: controller.signal,
             });
 
@@ -456,30 +350,25 @@ async function performImageDownload(
             downloadStatus = response.status;
 
             if (response.ok) {
-              // Use arrayBuffer for better performance than base64
               const arrayBuffer = await response.arrayBuffer();
               const uint8Array = new Uint8Array(arrayBuffer);
 
-              // Validate size before writing
               if (uint8Array.length < IMAGE_CACHE.MIN_FILE_SIZE_BYTES) {
                 throw new Error(`Fetched image too small: ${uint8Array.length} bytes`);
               }
 
-              // Convert to base64 more efficiently
               let binary = '';
-              const chunkSize = 32768; // Process in chunks for large images
+              const chunkSize = 32768;
               for (let i = 0; i < uint8Array.length; i += chunkSize) {
                 const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
                 binary += String.fromCharCode.apply(null, Array.from(chunk));
               }
               const base64Data = btoa(binary);
 
-              // Write to temp file first, then move atomically
               await FileSystem.writeAsStringAsync(tempUri, base64Data, {
                 encoding: FileSystem.EncodingType.Base64,
               });
 
-              // Verify written file size
               const writtenInfo = await FileSystem.getInfoAsync(tempUri);
               if (!writtenInfo.exists) {
                 throw new Error('Written file does not exist');
@@ -489,13 +378,10 @@ async function performImageDownload(
                 throw new Error(`Written file too small: ${writtenInfo.size} bytes`);
               }
 
-              // Atomic move: temp → final location
               await FileSystem.moveAsync({ from: tempUri, to: localUri });
 
-              // Update file existence cache so subsequent calls don't hit file system
               if (factId !== undefined) {
                 fileExistenceCache.set(factId, { uri: localUri, checkedAt: Date.now() });
-                // Store extension for faster lookups in future sessions
                 const ext = localUri.split('.').pop() || 'jpg';
                 knownExtensions.set(factId, ext);
               }
@@ -503,60 +389,16 @@ async function performImageDownload(
               return localUri;
             }
           } catch {
-            // Clean up temp file on fallback failure
             FileSystem.deleteAsync(tempUri, { idempotent: true }).catch(() => {});
-            // Continue to retry logic
           }
         }
 
-        // Handle 401/403 - likely App Check token issue
-        // Try refreshing the token once before giving up (only if we had a token to begin with)
-        if (
-          (downloadStatus === 401 || downloadStatus === 403) &&
-          !hasRetriedWithFreshToken &&
-          !usingFallback
-        ) {
-          hasRetriedWithFreshToken = true;
-
-          const freshToken = await forceRefreshAppCheckToken();
-          if (freshToken) {
-            appCheckToken = freshToken;
-            // Don't count this as an attempt - decrement before continue
-            // because the for loop will increment attempt at the end of the iteration
-            attempt--;
-            continue;
-          } else {
-            // Token refresh failed - continue with remaining retries
-            // The server might still accept the request in some cases
-            if (__DEV__) {
-              console.warn(
-                '⚠️ Image Download: Failed to refresh App Check token, continuing with retries'
-              );
-            }
-          }
-        }
-
-        // In fallback mode, 401/403 means the server requires App Check - fail fast
-        if ((downloadStatus === 401 || downloadStatus === 403) && usingFallback) {
-          if (__DEV__) {
-            console.warn(
-              `⚠️ Image Download: Server rejected request without App Check token (${downloadStatus})`
-            );
-          }
-          return null;
-        }
-
-        // Handle non-200 status codes
-        // Don't retry on client errors (4xx) except 429 (rate limit) and already handled 401/403
+        // Don't retry on client errors (4xx) except 429 (rate limit)
         if (downloadStatus >= 400 && downloadStatus < 500 && downloadStatus !== 429) {
           return null;
         }
-
-        // Set error for debugging (prefixed to indicate unused but kept for context)
-        const _lastError = new Error(`HTTP ${downloadStatus}`);
-      } catch (error) {
-        // Error captured for potential debugging (prefixed to indicate unused)
-        const _caughtError = error instanceof Error ? error : new Error(String(error));
+      } catch {
+        // Continue to retry
       }
 
       // Wait before retrying (exponential backoff)
@@ -573,121 +415,13 @@ async function performImageDownload(
 }
 
 /**
- * Prefetch an image for later use
- * Downloads the image in the background and caches it locally
- *
- * @param imageUrl The remote image URL
- * @param factId The fact ID for caching
- * @returns The local file URI if successful, null otherwise
- */
-export async function prefetchFactImage(imageUrl: string, factId: number): Promise<string | null> {
-  try {
-    // Check if already cached using getCachedFactImage which checks ALL extensions
-    // This is more reliable than URL-based extension detection
-    const cachedUri = await getCachedFactImage(factId);
-    if (cachedUri) {
-      return cachedUri; // Already cached
-    }
-
-    // Download in background
-    return await downloadImageWithAppCheck(imageUrl, factId);
-  } catch {
-    // Silently fail for prefetch
-    return null;
-  }
-}
-
-// Track prefetched fact IDs to prevent duplicate prefetch requests
-const prefetchedFactIds = new Set<number>();
-
-// Track active prefetch count
-let activePrefetchCount = 0;
-const prefetchQueue: Array<{ imageUrl: string; factId: number }> = [];
-
-/**
- * Process the next item in the prefetch queue
- */
-async function processPrefetchQueue(): Promise<void> {
-  // Check if we can start another download
-  if (activePrefetchCount >= PREFETCH_SETTINGS.maxConcurrent || prefetchQueue.length === 0) {
-    return;
-  }
-
-  // Get next item from queue
-  const item = prefetchQueue.shift();
-  if (!item) return;
-
-  activePrefetchCount++;
-
-  try {
-    await prefetchFactImage(item.imageUrl, item.factId);
-  } catch {
-    // Silently fail for prefetch, but remove from tracking set on failure
-    prefetchedFactIds.delete(item.factId);
-  } finally {
-    activePrefetchCount--;
-    // Process next item in queue
-    processPrefetchQueue();
-  }
-}
-
-/**
- * Prefetch images for a list of facts with rate limiting
- *
- * This function:
- * 1. Only prefetches the first N images initially (for visible items)
- * 2. Limits concurrent downloads to prevent network saturation
- * 3. Uses a queue system to process downloads sequentially in batches
- *
- * @param facts Array of facts with image_url and id properties
- * @param maxInitialPrefetch Maximum number of images to prefetch initially (default: 6)
- */
-export function prefetchFactImagesWithLimit(
-  facts: Array<{ id: number; image_url?: string | null }>,
-  maxInitialPrefetch: number = PREFETCH_SETTINGS.maxInitialPrefetch
-): void {
-  // Filter to only facts with images that haven't been prefetched yet
-  const factsWithImages = facts.filter((fact) => fact.image_url && !prefetchedFactIds.has(fact.id));
-
-  if (factsWithImages.length === 0) {
-    return;
-  }
-
-  // Clear prefetch set if it gets too large to prevent memory leaks
-  if (prefetchedFactIds.size > PREFETCH_SETTINGS.maxCacheSize) {
-    prefetchedFactIds.clear();
-    prefetchQueue.length = 0; // Clear queue too
-  }
-
-  // Only prefetch the first N items initially (most likely to be visible)
-  const factsToQueue = factsWithImages.slice(0, maxInitialPrefetch);
-
-  // Add to tracking set and queue
-  factsToQueue.forEach((fact) => {
-    prefetchedFactIds.add(fact.id);
-    prefetchQueue.push({
-      imageUrl: fact.image_url!,
-      factId: fact.id,
-    });
-  });
-
-  // Start processing queue (will respect concurrent limit)
-  for (let i = 0; i < PREFETCH_SETTINGS.maxConcurrent; i++) {
-    processPrefetchQueue();
-  }
-}
-
-/**
  * Clear all in-memory caches
- * Called when clearing disk cache or when memory pressure is detected
  */
 function clearImageMemoryCaches(): void {
   fileExistenceCache.clear();
   knownExtensions.clear();
   pendingExistenceChecks.clear();
   pendingDownloads.clear();
-  prefetchedFactIds.clear();
-  prefetchQueue.length = 0;
   imagesDirExists = false;
 }
 

@@ -10,7 +10,6 @@ import { Screens, trackFactView, trackScreenView } from '../../src/services/anal
 import * as api from '../../src/services/api';
 import * as database from '../../src/services/database';
 import { getLastConsumedFact } from '../../src/services/randomFact';
-import { prefetchAdjacentFactsByIds } from '../../src/utils/prefetchAdjacentImages';
 import { hexColors } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -59,11 +58,6 @@ export default function FactDetailModal() {
   const hasPrevious = factIds !== null && currentIndex > 0;
   const totalCount = factIds ? factIds.length : undefined;
 
-  // Pre-fetch images for the 3 nearest facts on each side of the current position
-  useEffect(() => {
-    if (!factIds) return;
-    prefetchAdjacentFactsByIds(factIds, currentIndex);
-  }, [factIds, currentIndex]);
 
   useEffect(() => {
     trackScreenView(Screens.FACT_DETAIL);

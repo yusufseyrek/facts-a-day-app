@@ -6,7 +6,6 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
-import { useFactImage } from '../utils/useFactImage';
 import { useResponsive } from '../utils/useResponsive';
 
 import { CategoryBadge } from './CategoryBadge';
@@ -18,7 +17,6 @@ import type { Category } from '../services/database';
 interface ImageFactCardProps {
   title: string;
   imageUrl: string;
-  /** Fact ID used for image caching with App Check authentication */
   factId: number;
   category?: string | Category;
   categorySlug?: string;
@@ -58,60 +56,24 @@ const ImageFactCardComponent = ({
   // Shimmer animation for loading state
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
-  // Use authenticated image with App Check - REQUIRED since remote URLs need App Check headers
-  const {
-    imageUri: authenticatedImageUri,
-    isLoading: isImageLoading,
-    hasError,
-    retry: retryImage,
-  } = useFactImage(imageUrl, factId);
-
   // Track if image has loaded successfully
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Keep track of the last valid image URI to prevent flickering
-  const lastValidUriRef = useRef<string | null>(null);
-
-  // Clear stale ref when fact changes (FlashList recycling)
-  const prevFactIdRef = useRef(factId);
-  if (prevFactIdRef.current !== factId) {
-    prevFactIdRef.current = factId;
-    lastValidUriRef.current = null;
-  }
-
-  // Update last valid URI when we get a new one
-  if (authenticatedImageUri && authenticatedImageUri !== lastValidUriRef.current) {
-    lastValidUriRef.current = authenticatedImageUri;
-  }
-
-  // Use the last valid URI if current is null (prevents flicker during re-render)
-  const displayUri = authenticatedImageUri || lastValidUriRef.current;
-
-  // Retry state: first try re-rendering, then try re-downloading
-  // renderRetryCount: triggers re-render without downloading (for Android timing issues)
-  // downloadRetryCount: triggers actual re-download (for corrupted files)
+  // Retry state for re-rendering (handles Android timing issues with expo-image)
   const [renderRetryCount, setRenderRetryCount] = useState(0);
-  const [downloadRetryCount, setDownloadRetryCount] = useState(0);
 
-  // All retries exhausted and still no image — show error overlay instead of infinite shimmer
+  // All retries exhausted and still no image — show error overlay
   const isPermanentlyFailed =
-    !isImageLoading &&
-    !imageLoaded &&
-    (// Case 1: Download failed completely, no URI to even attempt rendering
-    (hasError && !displayUri) ||
-      // Case 2: All render + download retries exhausted
-      ((hasError || downloadRetryCount >= IMAGE_RETRY.MAX_DOWNLOAD_ATTEMPTS) &&
-        renderRetryCount >= IMAGE_RETRY.MAX_RENDER_ATTEMPTS));
+    !imageLoaded && renderRetryCount >= IMAGE_RETRY.MAX_RENDER_ATTEMPTS;
 
-  // Show loading shimmer when image is loading or hasn't loaded yet, but NOT when permanently failed
-  const showLoadingState = (isImageLoading || !imageLoaded) && !isPermanentlyFailed;
+  // Show loading shimmer when image hasn't loaded yet, but NOT when permanently failed
+  const showLoadingState = !imageLoaded && !isPermanentlyFailed;
 
   // Watchdog: after a render retry, if expo-image doesn't call onError/onLoad again
   // within a few seconds, force-advance the retry state to prevent getting stuck
   const renderWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    // Only activate after a render retry has been attempted
-    if (renderRetryCount === 0 || imageLoaded || isImageLoading || isPermanentlyFailed) {
+    if (renderRetryCount === 0 || imageLoaded || isPermanentlyFailed) {
       return;
     }
 
@@ -121,21 +83,14 @@ const ImageFactCardComponent = ({
       if (retryPendingRef.current) return;
 
       if (renderRetryCount < IMAGE_RETRY.MAX_RENDER_ATTEMPTS) {
-        // Still have render retries — try another
         setRenderRetryCount((prev) => prev + 1);
-      } else if (downloadRetryCount < IMAGE_RETRY.MAX_DOWNLOAD_ATTEMPTS) {
-        // Render retries exhausted — move to download retry
-        setDownloadRetryCount((prev) => prev + 1);
-        setRenderRetryCount(0);
-        retryImage();
       }
-      // else: all exhausted → isPermanentlyFailed will be true on next render
     }, 3000);
 
     return () => {
       if (renderWatchdogRef.current) clearTimeout(renderWatchdogRef.current);
     };
-  }, [renderRetryCount, downloadRetryCount, imageLoaded, isImageLoading, isPermanentlyFailed, retryImage]);
+  }, [renderRetryCount, imageLoaded, isPermanentlyFailed]);
 
   // Run shimmer animation when loading
   useEffect(() => {
@@ -203,59 +158,24 @@ const ImageFactCardComponent = ({
     }).start();
   }, [scaleAnim]);
 
-  // Handle image render error with smart retry logic
-  // On Android, expo-image often fails to render local files due to timing issues
-  // Strategy: First try re-rendering (cheap), then try re-downloading (expensive)
+  // Handle image render error — retry by re-rendering (fixes Android timing issues)
   const handleImageError = useCallback(() => {
-    // Don't treat loading/null state as an error - wait for actual image to load
-    if (isImageLoading || !displayUri) {
-      return;
-    }
+    if (retryPendingRef.current) return;
 
-    // Prevent duplicate error handling while retry is pending
-    if (retryPendingRef.current) {
-      return;
-    }
-
-    // Phase 1: Try re-rendering without downloading (fixes Android timing issues)
     if (renderRetryCount < IMAGE_RETRY.MAX_RENDER_ATTEMPTS) {
       retryPendingRef.current = true;
-
-      if (__DEV__) {
-        console.log(
-          `🔄 Image render failed for fact ${factId}, re-rendering in ${IMAGE_RETRY.RENDER_DELAY}ms (attempt ${renderRetryCount + 1}/${IMAGE_RETRY.MAX_RENDER_ATTEMPTS})`
-        );
-      }
-
       setTimeout(() => {
         retryPendingRef.current = false;
         setRenderRetryCount((prev) => prev + 1);
-        // Just increment state to trigger re-render, no download
       }, IMAGE_RETRY.RENDER_DELAY);
-      return;
     }
-
-    // Phase 2: Re-rendering didn't help, try re-downloading
-    if (downloadRetryCount < IMAGE_RETRY.MAX_DOWNLOAD_ATTEMPTS) {
-      retryPendingRef.current = true;
-
-      setTimeout(() => {
-        retryPendingRef.current = false;
-        setDownloadRetryCount((prev) => prev + 1);
-        setRenderRetryCount(0); // Reset render retries for the new download
-        retryImage(); // Actually re-download with App Check
-      }, IMAGE_RETRY.DOWNLOAD_DELAY);
-      return;
-    }
-  }, [renderRetryCount, downloadRetryCount, factId, retryImage, isImageLoading, displayUri]);
+  }, [renderRetryCount]);
 
   // Reset retry state and loaded state when imageUrl changes
   React.useEffect(() => {
     setRenderRetryCount(0);
-    setDownloadRetryCount(0);
     retryPendingRef.current = false;
     setImageLoaded(false);
-    lastValidUriRef.current = null;
   }, [imageUrl]);
 
   // Handle image load success
@@ -267,16 +187,14 @@ const ImageFactCardComponent = ({
   // Reset everything and retry from scratch when user taps error overlay
   const handleRetryFromError = useCallback(() => {
     setRenderRetryCount(0);
-    setDownloadRetryCount(0);
     setImageLoaded(false);
     retryPendingRef.current = false;
-    retryImage();
-  }, [retryImage]);
+  }, []);
 
   // Generate image source - memoized to prevent unnecessary re-renders
   const imageSource: ImageSource | null = useMemo(
-    () => (displayUri ? { uri: displayUri } : null),
-    [displayUri]
+    () => (imageUrl ? { uri: imageUrl } : null),
+    [imageUrl]
   );
 
   // Style objects
@@ -300,7 +218,7 @@ const ImageFactCardComponent = ({
   // This is important for Android where timing issues cause initial render failures
   // Also includes a mount timestamp to prevent stale layout from recycled views
   const mountTimestamp = useRef(Date.now()).current;
-  const recyclingKey = `fact-image-${factId}-${mountTimestamp}-${renderRetryCount}-${downloadRetryCount}`;
+  const recyclingKey = `fact-image-${factId}-${mountTimestamp}-${renderRetryCount}`;
 
   const pressableStyle = useMemo(
     () => ({

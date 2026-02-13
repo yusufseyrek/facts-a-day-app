@@ -8,7 +8,7 @@ import { NOTIFICATION_SETTINGS } from '../config/app';
 import { i18n } from '../i18n/config';
 
 import * as database from './database';
-import { downloadImageWithAppCheck } from './images';
+import { downloadImage } from './images';
 
 import type { SupportedLocale } from '../i18n/translations';
 
@@ -136,7 +136,7 @@ async function downloadImageForNotification(
   // Retry the entire download + conversion process up to 3 times
   for (let attempt = 0; attempt < IMAGE_DOWNLOAD_MAX_ATTEMPTS; attempt++) {
     try {
-      const downloadedUri = await downloadImageWithAppCheck(imageUrl, factId);
+      const downloadedUri = await downloadImage(imageUrl, factId);
 
       if (!downloadedUri) {
         if (__DEV__) {

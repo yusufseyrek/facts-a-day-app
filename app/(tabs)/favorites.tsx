@@ -38,7 +38,6 @@ import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
-import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/services/images';
 import { hexColors, useTheme } from '../../src/theme';
 import { getContrastColor } from '../../src/utils/colors';
 import { useFlashListScrollToTop } from '../../src/utils/useFlashListScrollToTop';
@@ -150,7 +149,6 @@ export default function FavoritesScreen() {
 
         setFavorites(favoritedFacts);
         setCategories(favoriteCategories);
-        prefetchFactImagesWithLimit(favoritedFacts);
       } catch {
         // Ignore favorites loading errors
       } finally {
@@ -222,10 +220,6 @@ export default function FavoritesScreen() {
 
   const handleFactPress = useCallback(
     (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => {
-      // Prefetch image before navigation for faster modal display
-      if (fact.image_url) {
-        prefetchFactImage(fact.image_url, fact.id);
-      }
       if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
         router.push(
           `/fact/${fact.id}?source=favorites&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`

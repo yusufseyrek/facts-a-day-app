@@ -31,11 +31,9 @@ import {
   trackStoryReadMore,
 } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
-import { prefetchFactImagesWithLimit } from '../../src/services/images';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { hexColors, useTheme } from '../../src/theme';
 import { insertNativeAds, isNativeAdPlaceholder, NativeAdPlaceholder } from '../../src/utils/insertNativeAds';
-import { useFactImage } from '../../src/utils/useFactImage';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { FactWithRelations } from '../../src/services/database';
@@ -71,7 +69,6 @@ export default function StoryScreen() {
       clearTimeout(prefetchFallbackRef.current);
       prefetchFallbackRef.current = null;
     }
-    prefetchFactImagesWithLimit(factsRef.current.slice(1), 2);
   }, []);
 
   const [failedAdKeys, setFailedAdKeys] = useState<Set<string>>(new Set());
@@ -305,7 +302,7 @@ const StoryPage = React.memo(
     const { spacing, typography, iconSizes } = useResponsive();
     const colors = hexColors[theme];
 
-    const { imageUri } = useFactImage(fact.image_url, fact.id);
+    const imageUri = fact.image_url;
 
     // Looping Ken Burns: gentle scale + drift in X/Y to reveal more of the image
     const kenBurns = useRef(new Animated.Value(0)).current;

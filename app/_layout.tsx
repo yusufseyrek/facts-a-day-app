@@ -43,11 +43,7 @@ import { getCachedPremiumStatus, initIAPConnection, checkAndUpdatePremiumStatus 
 import { initAnalytics } from '../src/services/analytics';
 import * as contentRefresh from '../src/services/contentRefresh';
 import * as database from '../src/services/database';
-import {
-  ensureImagesDirExists,
-  prefetchFactImage,
-  prefetchFactImagesWithLimit,
-} from '../src/services/images';
+import { ensureImagesDirExists } from '../src/services/images';
 import * as notificationService from '../src/services/notifications';
 import * as onboardingService from '../src/services/onboarding';
 import * as updates from '../src/services/updates';
@@ -174,12 +170,6 @@ function AppContent() {
           if (lastId !== notificationId) {
             // New notification - mark as processed
             await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_TRACK, notificationId);
-
-            // Prefetch image before navigation for faster modal display
-            const fact = await database.getFactById(Number(factId));
-            if (fact?.image_url) {
-              prefetchFactImage(fact.image_url, fact.id);
-            }
 
             router.push(`/fact/${factId}?source=notification`);
 
@@ -488,7 +478,6 @@ export default function RootLayout() {
             await database.markDeliveredFactsAsShown(locale);
             const facts = await database.getFactsGroupedByDate(locale);
             setPreloadedFactsBeforeMount(facts);
-            prefetchFactImagesWithLimit(facts);
           } catch (error) {
             console.error('Failed to re-load home screen data:', error);
           }
@@ -502,12 +491,10 @@ export default function RootLayout() {
             await database.markDeliveredFactsAsShown(locale);
             const facts = await database.getFactsGroupedByDate(locale);
             setPreloadedFactsBeforeMount(facts);
-            prefetchFactImagesWithLimit(facts);
 
-            // Preload carousel recommendations so images start loading during splash
+            // Preload carousel recommendations
             const recs = await database.getRandomUnscheduledFacts(6, locale);
             setPreloadedRecommendationsBeforeMount(recs);
-            prefetchFactImagesWithLimit(recs);
           } catch (error) {
             console.error('Failed to pre-load home screen data:', error);
           }

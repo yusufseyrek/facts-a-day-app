@@ -31,9 +31,6 @@ import {
 import { showRewardedAd } from '../../src/components/ads/RewardedAd';
 import { usePremium } from '../../src/contexts/PremiumContext';
 import { useNativeAd } from '../../src/hooks/useNativeAd';
-import { prefetchFactImage } from '../../src/services/images';
-import { prefetchAdjacentImages } from '../../src/utils/prefetchAdjacentImages';
-import { useFactImage } from '../../src/utils/useFactImage';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
@@ -106,11 +103,8 @@ export default function TriviaGameScreen() {
   // Get current question
   const currentQuestion = gameState.questions[gameState.currentQuestionIndex];
 
-  // Load background image for current question
-  const { imageUri: questionImageUri } = useFactImage(
-    currentQuestion?.fact?.image_url,
-    currentQuestion?.fact?.id ?? 0
-  );
+  // Background image for current question
+  const questionImageUri = currentQuestion?.fact?.image_url;
 
   // Get or create shuffled answers for current question
   const shuffledAnswers = useMemo(() => {
@@ -209,13 +203,6 @@ export default function TriviaGameScreen() {
   }, [gameState.currentQuestionIndex, gameState.questions.length]);
 
   // Prefetch adjacent question images for seamless navigation
-  useEffect(() => {
-    if (gameState.questions.length === 0) return;
-    const facts = gameState.questions
-      .map((q) => q.fact)
-      .filter((f): f is NonNullable<typeof f> => !!f);
-    prefetchAdjacentImages(facts, gameState.currentQuestionIndex);
-  }, [gameState.currentQuestionIndex, gameState.questions]);
 
   const loadQuestions = async () => {
     try {
@@ -469,10 +456,6 @@ export default function TriviaGameScreen() {
         categorySlug: params.categorySlug,
       });
 
-      // Prefetch image before navigation for faster modal display
-      if (currentQuestion.fact.image_url) {
-        prefetchFactImage(currentQuestion.fact.image_url, currentQuestion.fact.id);
-      }
       router.push(`/fact/${currentQuestion.fact.id}?source=trivia_hint`);
     }
   }, [

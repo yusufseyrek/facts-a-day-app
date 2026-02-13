@@ -9,5 +9,4 @@ export {
   spacing,
   typography,
 } from './responsive';
-export { useFactImage } from './useFactImage';
 export { useResponsive } from './useResponsive';

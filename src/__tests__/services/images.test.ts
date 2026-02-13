@@ -1,28 +1,14 @@
 const FileSystem = jest.requireMock('expo-file-system/legacy');
 
-// Mock appCheckToken
-jest.mock('../../services/appCheckToken', () => ({
-  getCachedAppCheckToken: jest.fn().mockResolvedValue('mock-app-check-token'),
-  forceRefreshAppCheckToken: jest.fn().mockResolvedValue('mock-fresh-token'),
-}));
-
-const appCheckToken = jest.requireMock('../../services/appCheckToken');
-const appCheckState = jest.requireMock('../../config/appCheckState');
-
 import {
-  downloadImageWithAppCheck,
+  downloadImage,
   getCachedFactImage,
-  prefetchFactImagesWithLimit,
   clearAllCachedImages,
 } from '../../services/images';
 
-describe('images — downloadImageWithAppCheck', () => {
+describe('images — downloadImage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset module state by clearing file caches
-    appCheckState.getAppCheckReady.mockResolvedValue(undefined);
-    appCheckState.isAppCheckInitialized.mockReturnValue(true);
-    appCheckToken.getCachedAppCheckToken.mockResolvedValue('mock-token');
 
     // Default: no cached file
     FileSystem.getInfoAsync.mockResolvedValue({ exists: false, size: 0 });
@@ -38,7 +24,7 @@ describe('images — downloadImageWithAppCheck', () => {
       modificationTime: Date.now() / 1000, // Recent
     });
 
-    const result = await downloadImageWithAppCheck('https://img.test/fact.webp', 42);
+    const result = await downloadImage('https://img.test/fact.webp', 42);
     expect(result).toContain('fact-42');
     // downloadAsync should NOT be called on cache hit
     expect(FileSystem.downloadAsync).not.toHaveBeenCalled();
@@ -61,15 +47,15 @@ describe('images — downloadImageWithAppCheck', () => {
 
     // Fire concurrent downloads for the same fact
     const [r1, r2] = await Promise.all([
-      downloadImageWithAppCheck('https://img.test/fact.webp', 99),
-      downloadImageWithAppCheck('https://img.test/fact.webp', 99),
+      downloadImage('https://img.test/fact.webp', 99),
+      downloadImage('https://img.test/fact.webp', 99),
     ]);
 
     // Both should get the same result
     expect(r1).toBe(r2);
   });
 
-  it('includes App Check header in download', async () => {
+  it('downloads without custom headers', async () => {
     FileSystem.getInfoAsync.mockResolvedValue({ exists: false });
     FileSystem.downloadAsync.mockResolvedValue({ status: 200, uri: 'file:///mock/dl' });
     // For the temp file check
@@ -80,12 +66,12 @@ describe('images — downloadImageWithAppCheck', () => {
       return { exists: false };
     });
 
-    await downloadImageWithAppCheck('https://img.test/fact.webp', 1);
+    await downloadImage('https://img.test/fact.webp', 1);
 
-    // Check that downloadAsync was called with headers containing App Check token
+    // Check that downloadAsync was called without auth headers
     if (FileSystem.downloadAsync.mock.calls.length > 0) {
       const headers = FileSystem.downloadAsync.mock.calls[0][2]?.headers;
-      expect(headers?.['X-Firebase-AppCheck']).toBe('mock-token');
+      expect(headers?.['X-Firebase-AppCheck']).toBeUndefined();
     }
   });
 
@@ -98,7 +84,7 @@ describe('images — downloadImageWithAppCheck', () => {
     });
     FileSystem.downloadAsync.mockResolvedValue({ status: 200, uri: 'file:///mock/dl' });
 
-    const result = await downloadImageWithAppCheck('https://img.test/small.webp', 50);
+    const result = await downloadImage('https://img.test/small.webp', 50);
     // Should fail because file is too small
     expect(result).toBeNull();
   });
@@ -116,30 +102,12 @@ describe('images — downloadImageWithAppCheck', () => {
       return { status: 200, uri: 'file:///mock/dl' };
     });
 
-    await downloadImageWithAppCheck('https://img.test/fact.webp', 10);
+    await downloadImage('https://img.test/fact.webp', 10);
 
     // moveAsync should be called (temp → final)
     if (FileSystem.downloadAsync.mock.calls.length > 0) {
       expect(FileSystem.moveAsync).toHaveBeenCalled();
     }
-  });
-
-  it('refreshes token on 401/403', async () => {
-    FileSystem.getInfoAsync.mockResolvedValue({ exists: false });
-    // First attempt: 403
-    FileSystem.downloadAsync.mockResolvedValueOnce({ status: 403, uri: '' });
-    // After token refresh: success
-    FileSystem.downloadAsync.mockImplementation(async () => {
-      return { status: 200, uri: 'file:///mock/dl' };
-    });
-    FileSystem.getInfoAsync.mockImplementation(async (uri: string) => {
-      if (uri.includes('.tmp')) return { exists: true, size: 5000 };
-      return { exists: false };
-    });
-
-    await downloadImageWithAppCheck('https://img.test/fact.webp', 20);
-
-    expect(appCheckToken.forceRefreshAppCheckToken).toHaveBeenCalled();
   });
 });
 
@@ -196,31 +164,6 @@ describe('images — getCachedFactImage', () => {
     const { getCachedFactImage: freshGetCached } = require('../../services/images');
     const result = await freshGetCached(789);
     expect(result).toBeNull();
-  });
-});
-
-describe('images — prefetchFactImagesWithLimit', () => {
-  it('deduplicates by factId', () => {
-    jest.resetModules();
-    const { prefetchFactImagesWithLimit: freshPrefetch } = require('../../services/images');
-    const facts = [
-      { id: 1, image_url: 'https://img.test/1.webp' },
-      { id: 1, image_url: 'https://img.test/1.webp' }, // Duplicate
-      { id: 2, image_url: 'https://img.test/2.webp' },
-    ];
-    // Should not throw, dedup is handled internally
-    freshPrefetch(facts, 10);
-  });
-
-  it('limits by maxInitialPrefetch', () => {
-    jest.resetModules();
-    const { prefetchFactImagesWithLimit: freshPrefetch } = require('../../services/images');
-    const facts = Array.from({ length: 20 }, (_, i) => ({
-      id: i + 1000,
-      image_url: `https://img.test/${i}.webp`,
-    }));
-    // With limit of 3, should not prefetch all 20
-    freshPrefetch(facts, 3);
   });
 });
 

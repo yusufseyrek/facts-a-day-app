@@ -39,7 +39,6 @@ import {
 } from '../../src/services/analytics';
 import type { FactViewSource } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
-import { prefetchFactImage, prefetchFactImagesWithLimit } from '../../src/services/images';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
@@ -257,7 +256,6 @@ function DiscoverScreen() {
         }
 
         setSearchResults(results);
-        prefetchFactImagesWithLimit(results);
 
         // Track search event
         trackSearch({
@@ -345,10 +343,6 @@ function DiscoverScreen() {
 
   const handleFactPress = useCallback(
     (fact: FactWithRelations, source: FactViewSource, factIdList?: number[], indexInList?: number) => {
-      // Prefetch image before navigation for faster modal display
-      if (fact.image_url) {
-        prefetchFactImage(fact.image_url, fact.id);
-      }
       if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
         router.push(
           `/fact/${fact.id}?source=${source}&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
@@ -369,7 +363,6 @@ function DiscoverScreen() {
       try {
         const facts = await database.getFactsByCategory(selectedCategorySlug, locale);
         setCategoryFacts(facts);
-        prefetchFactImagesWithLimit(facts);
       } catch {
         // Ignore refresh errors
       }
@@ -409,7 +402,6 @@ function DiscoverScreen() {
       try {
         const facts = await database.getFactsByCategory(categorySlug, locale);
         setCategoryFacts(facts);
-        prefetchFactImagesWithLimit(facts);
 
         // Track category browse event
         trackCategoryBrowse({

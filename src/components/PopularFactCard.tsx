@@ -6,7 +6,6 @@ import { Image } from 'expo-image';
 
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
 import { hexColors, useTheme } from '../theme';
-import { useFactImage } from '../utils/useFactImage';
 import { useResponsive } from '../utils/useResponsive';
 
 import { CategoryBadge } from './CategoryBadge';
@@ -31,66 +30,35 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const pressDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const {
-    imageUri: authenticatedImageUri,
-    isLoading: isImageLoading,
-    hasError,
-    retry: retryImage,
-  } = useFactImage(fact.image_url!, fact.id);
-
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Prevent flicker: keep last valid URI while retrying
-  const lastValidUriRef = useRef<string | null>(null);
-
-  // Clear stale ref when fact changes (FlashList recycling)
-  const prevFactIdRef = useRef(fact.id);
-  if (prevFactIdRef.current !== fact.id) {
-    prevFactIdRef.current = fact.id;
-    lastValidUriRef.current = null;
-  }
-
-  if (authenticatedImageUri && authenticatedImageUri !== lastValidUriRef.current) {
-    lastValidUriRef.current = authenticatedImageUri;
-  }
-  const displayUri = authenticatedImageUri || lastValidUriRef.current;
-
-  // 2-phase retry: render retries (cheap) → download retries (expensive)
+  // Render retry for Android timing issues
   const [renderRetryCount, setRenderRetryCount] = useState(0);
-  const [downloadRetryCount, setDownloadRetryCount] = useState(0);
   const retryPendingRef = useRef(false);
 
   const isPermanentlyFailed =
-    !isImageLoading &&
-    !imageLoaded &&
-    ((hasError && !displayUri) ||
-      ((hasError || downloadRetryCount >= IMAGE_RETRY.MAX_DOWNLOAD_ATTEMPTS) &&
-        renderRetryCount >= IMAGE_RETRY.MAX_RENDER_ATTEMPTS));
+    !imageLoaded && renderRetryCount >= IMAGE_RETRY.MAX_RENDER_ATTEMPTS;
 
   // Watchdog: if expo-image doesn't call onError/onLoad after a render retry, force-advance
   const renderWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (renderRetryCount === 0 || imageLoaded || isImageLoading || isPermanentlyFailed) return;
+    if (renderRetryCount === 0 || imageLoaded || isPermanentlyFailed) return;
 
     if (renderWatchdogRef.current) clearTimeout(renderWatchdogRef.current);
     renderWatchdogRef.current = setTimeout(() => {
       if (retryPendingRef.current) return;
       if (renderRetryCount < IMAGE_RETRY.MAX_RENDER_ATTEMPTS) {
         setRenderRetryCount((prev) => prev + 1);
-      } else if (downloadRetryCount < IMAGE_RETRY.MAX_DOWNLOAD_ATTEMPTS) {
-        setDownloadRetryCount((prev) => prev + 1);
-        setRenderRetryCount(0);
-        retryImage();
       }
     }, 3000);
 
     return () => {
       if (renderWatchdogRef.current) clearTimeout(renderWatchdogRef.current);
     };
-  }, [renderRetryCount, downloadRetryCount, imageLoaded, isImageLoading, isPermanentlyFailed, retryImage]);
+  }, [renderRetryCount, imageLoaded, isPermanentlyFailed]);
 
   const handleImageError = useCallback(() => {
-    if (isImageLoading || !displayUri || retryPendingRef.current) return;
+    if (retryPendingRef.current) return;
 
     if (renderRetryCount < IMAGE_RETRY.MAX_RENDER_ATTEMPTS) {
       retryPendingRef.current = true;
@@ -98,48 +66,33 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
         retryPendingRef.current = false;
         setRenderRetryCount((prev) => prev + 1);
       }, IMAGE_RETRY.RENDER_DELAY);
-      return;
     }
-
-    if (downloadRetryCount < IMAGE_RETRY.MAX_DOWNLOAD_ATTEMPTS) {
-      retryPendingRef.current = true;
-      setTimeout(() => {
-        retryPendingRef.current = false;
-        setDownloadRetryCount((prev) => prev + 1);
-        setRenderRetryCount(0);
-        retryImage();
-      }, IMAGE_RETRY.DOWNLOAD_DELAY);
-    }
-  }, [renderRetryCount, downloadRetryCount, retryImage, isImageLoading, displayUri]);
+  }, [renderRetryCount]);
 
   const handleImageLoad = useCallback(() => {
     setImageLoaded(true);
   }, []);
 
-  // Reset all retry state when fact changes
+  // Reset retry state when fact changes
   useEffect(() => {
     setRenderRetryCount(0);
-    setDownloadRetryCount(0);
     setImageLoaded(false);
     retryPendingRef.current = false;
-    lastValidUriRef.current = null;
   }, [fact.id]);
 
   const handleRetryFromError = useCallback(() => {
     setRenderRetryCount(0);
-    setDownloadRetryCount(0);
     setImageLoaded(false);
     retryPendingRef.current = false;
-    retryImage();
-  }, [retryImage]);
+  }, []);
 
   const imageSource = useMemo(
-    () => (displayUri ? { uri: displayUri } : null),
-    [displayUri]
+    () => (fact.image_url ? { uri: fact.image_url } : null),
+    [fact.image_url]
   );
 
   const mountTimestamp = useRef(Date.now()).current;
-  const recyclingKey = `popular-${fact.id}-${mountTimestamp}-${renderRetryCount}-${downloadRetryCount}`;
+  const recyclingKey = `popular-${fact.id}-${mountTimestamp}-${renderRetryCount}`;
 
   const handlePressIn = useCallback(() => {
     if (pressDelayRef.current) clearTimeout(pressDelayRef.current);

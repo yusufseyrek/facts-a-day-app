@@ -19,7 +19,7 @@ const dbMock = database as jest.Mocked<typeof database>;
 
 // Mock images module
 jest.mock('../../services/images', () => ({
-  downloadImageWithAppCheck: jest.fn().mockResolvedValue('file:///mock/image.jpg'),
+  downloadImage: jest.fn().mockResolvedValue('file:///mock/image.jpg'),
 }));
 
 // Mock i18n

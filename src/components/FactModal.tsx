@@ -24,7 +24,6 @@ import { addFactDetailTimeSpent, markFactDetailOpened, markFactDetailRead } from
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { openInAppBrowser } from '../utils/browser';
-import { useFactImage } from '../utils/useFactImage';
 import { useResponsive } from '../utils/useResponsive';
 
 import { BannerAd } from './ads';
@@ -114,23 +113,25 @@ export function FactModal({
   const [titleHeight, setTitleHeight] = useState<number>(typography.lineHeight.headline); // Default to 1 line height
   const [containerWidth, setContainerWidth] = useState(SCREEN_WIDTH); // Actual modal width
 
-  // Use authenticated image with App Check - downloads and caches locally
-  const {
-    imageUri: authenticatedImageUri,
-    isLoading: isImageLoading,
-    hasError: imageHasError,
-    retry: retryImage,
-  } = useFactImage(fact.image_url, fact.id);
+  // Image loading state tracked via expo-image callbacks
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [isImageError, setIsImageError] = useState(false);
 
   // Shimmer animation for loading placeholder
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
-  // Image permanently failed: not loading, no URI, has error
-  const isImageFailed = !!fact.image_url && !isImageLoading && !authenticatedImageUri && imageHasError;
+  // Reset image state when fact changes
+  useEffect(() => {
+    setIsImageLoaded(false);
+    setIsImageError(false);
+  }, [fact.id]);
 
-  // Show placeholder when loading OR when permanently failed (error state)
+  // Show placeholder when loading OR when error (before image loads)
   const showImagePlaceholder =
-    (!!fact.image_url && isImageLoading && !authenticatedImageUri) || isImageFailed;
+    !!fact.image_url && !isImageLoaded && !isImageError;
+
+  // Show error state when image fails
+  const isImageFailed = !!fact.image_url && isImageError && !isImageLoaded;
 
   // Run shimmer animation only during actual loading (not on permanent error)
   const isActivelyLoading = showImagePlaceholder && !isImageFailed;
@@ -216,9 +217,8 @@ export function FactModal({
     };
   }, [fact.id, fact.image_url]);
 
-  // Use notification image if available, otherwise use authenticated image
-  // IMPORTANT: Never use remote URL directly as it requires App Check headers
-  const imageUri = notificationImageUri || authenticatedImageUri;
+  // Use notification image if available, otherwise use remote URL directly
+  const imageUri = notificationImageUri || fact.image_url;
 
   // Images are always square (1:1)
   // For tablets: landscape shows 50% height (more content visible), portrait shows 80% height centered
@@ -664,8 +664,10 @@ export function FactModal({
                 cachePolicy="memory-disk"
                 transition={200}
                 placeholder={
-                  isImageLoading ? { blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' } : undefined
+                  !isImageLoaded ? { blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' } : undefined
                 }
+                onLoad={() => setIsImageLoaded(true)}
+                onError={() => setIsImageError(true)}
               />
             </Animated.View>
             {/* Gradient overlay */}
@@ -687,7 +689,7 @@ export function FactModal({
         {showImagePlaceholder && (
           <TouchableOpacity
             activeOpacity={isImageFailed ? 0.7 : 1}
-            onPress={isImageFailed ? retryImage : undefined}
+            onPress={isImageFailed ? () => { setIsImageError(false); setIsImageLoaded(false); } : undefined}
             disabled={!isImageFailed}
             style={{
               width: IMAGE_WIDTH,

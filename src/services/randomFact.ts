@@ -11,10 +11,7 @@
  * 3. If no pre-fetched fact is available (edge case), falls back to fetching on demand
  */
 
-import { preloadImageToMemoryCache } from '../utils/useFactImage';
-
 import { getRandomFactNotInFeed } from './database';
-import { prefetchFactImage } from './images';
 
 import type { FactWithRelations } from './database';
 
@@ -51,15 +48,6 @@ export async function prepareNextRandomFact(locale: string): Promise<void> {
     if (fact) {
       nextRandomFact = fact;
       preparedLocale = locale;
-
-      // Pre-fetch the image and load into memory cache for instant display
-      if (fact.image_url) {
-        const localUri = await prefetchFactImage(fact.image_url, fact.id);
-        if (localUri) {
-          // Pre-populate useFactImage's memory cache so the modal shows instantly
-          preloadImageToMemoryCache(fact.id, localUri);
-        }
-      }
     }
   } catch {
     // Silently fail - user can still get random fact on demand
