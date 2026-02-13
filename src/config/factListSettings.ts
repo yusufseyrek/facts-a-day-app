@@ -41,8 +41,8 @@ export const FLASH_LIST_ITEM_TYPES = {
 export const FLASH_LIST_SETTINGS = {
   /** Estimated item size for FlashList layout calculations (average card height ~220px) */
   estimatedItemSize: 220,
-  /** Draw distance determines how far ahead FlashList renders items (~3-4 card heights) */
-  drawDistance: 220,
+  /** Draw distance determines how far ahead FlashList renders items (~2-3 items beyond viewport) */
+  drawDistance: 600,
   /** Show vertical scroll indicator */
   showsVerticalScrollIndicator: false,
   /** Bounces at the end of content */
