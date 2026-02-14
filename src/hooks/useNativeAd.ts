@@ -25,10 +25,12 @@ const getNativeAdUnitId = (): string => {
 interface UseNativeAdOptions {
   /** Skip loading the ad (useful when ad is provided externally) */
   skip?: boolean;
+  /** Preferred media aspect ratio (defaults to LANDSCAPE) */
+  aspectRatio?: NativeMediaAspectRatio;
 }
 
 export function useNativeAd(options: UseNativeAdOptions = {}) {
-  const { skip = false } = options;
+  const { skip = false, aspectRatio = NativeMediaAspectRatio.LANDSCAPE } = options;
   const [nativeAd, setNativeAd] = useState<NativeAd | null>(null);
   const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<Error | null>(null);
@@ -54,7 +56,7 @@ export function useNativeAd(options: UseNativeAdOptions = {}) {
         const nonPersonalized = await shouldRequestNonPersonalizedAdsOnly();
         const ad = await NativeAd.createForAdRequest(getNativeAdUnitId(), {
           requestNonPersonalizedAdsOnly: nonPersonalized,
-          aspectRatio: NativeMediaAspectRatio.LANDSCAPE,
+          aspectRatio,
         });
 
         if (!cancelled) {

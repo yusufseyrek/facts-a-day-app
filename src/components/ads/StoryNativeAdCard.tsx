@@ -9,6 +9,7 @@ import {
   NativeAdView,
   NativeAsset,
   NativeAssetType,
+  NativeMediaAspectRatio,
   NativeMediaView,
 } from 'react-native-google-mobile-ads';
 import { XStack } from 'tamagui';
@@ -39,7 +40,15 @@ function StoryNativeAdCardComponent({
   onAdLoaded,
   nativeAd: nativeAdProp,
 }: StoryNativeAdCardProps) {
-  const { nativeAd: nativeAdFromHook, isLoading, error } = useNativeAd({ skip: !!nativeAdProp });
+  const isPortrait = screenHeight > screenWidth;
+  const {
+    nativeAd: nativeAdFromHook,
+    isLoading,
+    error,
+  } = useNativeAd({
+    skip: !!nativeAdProp,
+    aspectRatio: isPortrait ? NativeMediaAspectRatio.PORTRAIT : NativeMediaAspectRatio.LANDSCAPE,
+  });
   const nativeAd = nativeAdProp ?? nativeAdFromHook;
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -66,11 +75,21 @@ function StoryNativeAdCardComponent({
   }
 
   return (
-    <NativeAdView nativeAd={nativeAd} style={{ width: screenWidth, height: screenHeight, overflow: 'hidden' }}>
+    <NativeAdView
+      nativeAd={nativeAd}
+      style={{ width: screenWidth, height: screenHeight, overflow: 'hidden' }}
+    >
       {/* Full-screen media background */}
       <NativeMediaView
         resizeMode="cover"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: screenHeight, aspectRatio: undefined }}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: screenHeight,
+          aspectRatio: undefined,
+        }}
       />
 
       {/* Gradient overlay — matches StoryPage */}
@@ -110,7 +129,12 @@ function StoryNativeAdCardComponent({
 
         {/* Headline — matches story title */}
         <NativeAsset assetType={NativeAssetType.HEADLINE}>
-          <Text.Headline pointerEvents="none" numberOfLines={3} color="#FFFFFF" style={styles.textShadow}>
+          <Text.Headline
+            pointerEvents="none"
+            numberOfLines={3}
+            color="#FFFFFF"
+            style={styles.textShadow}
+          >
             {nativeAd.headline}
           </Text.Headline>
         </NativeAsset>
@@ -132,7 +156,15 @@ function StoryNativeAdCardComponent({
 
         {/* CTA — pointerEvents="none" so taps pass through to the ad behind */}
         {nativeAd.callToAction ? (
-          <View pointerEvents="none" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs }}>
+          <View
+            pointerEvents="none"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.xs,
+              marginTop: spacing.xs,
+            }}
+          >
             <Text.Body
               color={colors.primary}
               fontFamily={FONT_FAMILIES.semibold}
