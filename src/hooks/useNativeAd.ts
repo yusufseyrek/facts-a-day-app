@@ -25,7 +25,7 @@ const getNativeAdUnitId = (): string => {
 interface UseNativeAdOptions {
   /** Skip loading the ad (useful when ad is provided externally) */
   skip?: boolean;
-  /** Preferred media aspect ratio (defaults to LANDSCAPE) */
+  /** Preferred media aspect ratio for the ad request. Only used on initial mount. Defaults to LANDSCAPE. */
   aspectRatio?: NativeMediaAspectRatio;
 }
 

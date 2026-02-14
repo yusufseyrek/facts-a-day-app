@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { ChevronRight, ChevronUp, X } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -57,6 +57,13 @@ export default function StoryScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const viewedFactIds = useRef(new Set<number>());
 
+  // Orientation-change handling
+  const listRef = useRef<FlashListRef<StoryListItem>>(null);
+  const currentIndexRef = useRef(0);
+  const isResizingRef = useRef(false);
+  const prevDimensionsRef = useRef({ width: screenWidth, height: screenHeight });
+  const needsScrollRef = useRef(false);
+
   // Event-driven prefetch refs
   const prefetchTriggeredRef = useRef(false);
   const factsRef = useRef<FactWithRelations[]>([]);
@@ -92,6 +99,39 @@ export default function StoryScreen() {
       ),
     [facts, isPremium, failedAdKeys]
   );
+
+  // Orientation change: clear FlashList layout cache (must run during render,
+  // before commit) and flag that we need to scroll back to the current item.
+  if (
+    prevDimensionsRef.current.width !== screenWidth ||
+    prevDimensionsRef.current.height !== screenHeight
+  ) {
+    prevDimensionsRef.current = { width: screenWidth, height: screenHeight };
+    listRef.current?.clearLayoutCacheOnUpdate();
+    needsScrollRef.current = true;
+  }
+
+  useEffect(() => {
+    if (!needsScrollRef.current) return;
+    needsScrollRef.current = false;
+
+    const targetIndex = currentIndexRef.current;
+    if (storyDataWithAds.length === 0 || targetIndex === 0) return;
+
+    isResizingRef.current = true;
+    const raf = requestAnimationFrame(() => {
+      listRef.current?.scrollToIndex({ index: targetIndex, animated: false });
+    });
+    const timer = setTimeout(() => {
+      isResizingRef.current = false;
+    }, 400);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(timer);
+      isResizingRef.current = false;
+    };
+  }, [screenHeight, screenWidth]);
 
   // Bouncing animation for scroll hint
   const hintBounce = useRef(new Animated.Value(0)).current;
@@ -153,8 +193,9 @@ export default function StoryScreen() {
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: Array<{ item: any; index: number | null }> }) => {
       for (const entry of viewableItems) {
-        if (entry.index != null) {
+        if (entry.index != null && !isResizingRef.current) {
           setCurrentIndex(entry.index);
+          currentIndexRef.current = entry.index;
         }
         if (isNativeAdPlaceholder(entry.item)) continue;
         const fact = entry.item as FactWithRelations;
@@ -192,11 +233,13 @@ export default function StoryScreen() {
     ({ item, index }: { item: StoryListItem; index: number }) => {
       if (isNativeAdPlaceholder(item)) {
         return (
-          <StoryNativeAdCard
-            screenWidth={screenWidth}
-            screenHeight={screenHeight}
-            onAdFailed={() => handleAdFailed(item.key)}
-          />
+          <View style={{ width: screenWidth, height: screenHeight }}>
+            <StoryNativeAdCard
+              screenWidth={screenWidth}
+              screenHeight={screenHeight}
+              onAdFailed={() => handleAdFailed(item.key)}
+            />
+          </View>
         );
       }
       return (
@@ -208,7 +251,7 @@ export default function StoryScreen() {
         />
       );
     },
-    [screenWidth, screenHeight, triggerPrefetch]
+    [screenWidth, screenHeight, triggerPrefetch, handleAdFailed]
   );
 
   const keyExtractor = useCallback(
@@ -223,6 +266,7 @@ export default function StoryScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlashList
+        ref={listRef}
         data={storyDataWithAds}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
