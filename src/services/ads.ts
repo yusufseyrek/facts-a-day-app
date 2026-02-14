@@ -199,12 +199,12 @@ export const initializeAdsSDK = async (): Promise<boolean> => {
     // Initialize the SDK and get adapter statuses
     const adapterStatuses = await mobileAds().initialize();
 
-    // Log mediation adapter statuses for debugging
-    console.log('=== Mediation Adapter Statuses ===');
+    // Log adapter statuses for debugging
+    console.log('=== Ad Adapter Statuses ===');
     for (const [adapterName, status] of Object.entries(adapterStatuses)) {
       console.log(`${adapterName}: ${JSON.stringify(status)}`);
     }
-    console.log('==================================');
+    console.log('===========================');
 
     isSDKInitialized = true;
     console.log('Google Mobile Ads SDK initialized successfully');
@@ -279,8 +279,7 @@ export const isAdsSDKInitialized = (): boolean => {
 };
 
 /**
- * Open the Ad Inspector debug menu for testing mediation
- * Use this to verify mediation adapters are properly configured
+ * Open the Ad Inspector debug menu for testing ads
  * Only works in development builds
  */
 export const openAdDebugMenu = async (): Promise<void> => {

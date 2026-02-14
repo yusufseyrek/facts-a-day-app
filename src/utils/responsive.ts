@@ -1,5 +1,3 @@
-import { Dimensions } from 'react-native';
-
 import { LAYOUT } from '../config/app';
 import { IMAGE_DIMENSIONS } from '../config/images';
 
@@ -247,15 +245,6 @@ export const borderWidths = {
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
-
-/**
- * Get current screen dimensions
- * Using a function to ensure we get fresh values when orientation changes
- */
-export const getScreenDimensions = () => {
-  const { width, height } = Dimensions.get('window');
-  return { width, height };
-};
 
 /**
  * Check if current device is a tablet

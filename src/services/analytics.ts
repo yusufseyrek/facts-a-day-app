@@ -19,9 +19,6 @@ import { getAppVersionInfo } from '../utils/appInfo';
 
 import { getNotificationTimes, getSelectedCategories } from './onboarding';
 
-// Re-export for backward compatibility
-export { getAppVersionInfo };
-
 const THEME_STORAGE_KEY = '@app_theme_mode';
 
 // ============================================================================
