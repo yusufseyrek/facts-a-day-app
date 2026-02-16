@@ -1,11 +1,11 @@
 {
   "ios": {
-    "CFBundleDisplayName": "毎日の知識",
-    "CFBundleName": "毎日の知識",
-    "NSHumanReadableCopyright": "学ぶ · クイズ · 賢くなる"
+    "CFBundleDisplayName": "毎日の雑学",
+    "CFBundleName": "毎日の雑学",
+    "NSHumanReadableCopyright": "雑学 · 脳トレクイズゲーム"
   },
   "android": {
-    "app_name": "毎日の知識"
+    "app_name": "毎日の雑学"
   }
 }
 

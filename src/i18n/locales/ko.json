@@ -1,11 +1,11 @@
 {
   "ios": {
-    "CFBundleDisplayName": "매일 지식",
-    "CFBundleName": "매일 지식",
-    "NSHumanReadableCopyright": "배우고 · 퀴즈하고 · 똑똑해지세요"
+    "CFBundleDisplayName": "매일 상식",
+    "CFBundleName": "매일 상식",
+    "NSHumanReadableCopyright": "재미있는 상식 & 두뇌 퀴즈"
   },
   "android": {
-    "app_name": "매일 지식"
+    "app_name": "매일 상식"
   }
 }
 

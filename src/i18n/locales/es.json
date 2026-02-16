@@ -1,11 +1,11 @@
 {
   "ios": {
-    "CFBundleDisplayName": "Conocimiento Diario",
-    "CFBundleName": "Conocimiento Diario",
-    "NSHumanReadableCopyright": "Aprende · Juega · Sé más listo"
+    "CFBundleDisplayName": "Datos Diarios",
+    "CFBundleName": "Datos Diarios",
+    "NSHumanReadableCopyright": "Datos Curiosos y Quiz Mental"
   },
   "android": {
-    "app_name": "Conocimiento Diario"
+    "app_name": "Datos Diarios"
   }
 }
 

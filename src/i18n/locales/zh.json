@@ -1,11 +1,11 @@
 {
   "ios": {
-    "CFBundleDisplayName": "每日知识",
-    "CFBundleName": "每日知识",
-    "NSHumanReadableCopyright": "学习 · 测验 · 变聪明"
+    "CFBundleDisplayName": "每日冷知识",
+    "CFBundleName": "每日冷知识",
+    "NSHumanReadableCopyright": "趣味冷知识 · 脑力问答游戏"
   },
   "android": {
-    "app_name": "每日知识"
+    "app_name": "每日冷知识"
   }
 }
 

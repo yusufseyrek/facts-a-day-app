@@ -2,7 +2,7 @@
   "ios": {
     "CFBundleDisplayName": "Facts a Day",
     "CFBundleName": "Facts a Day",
-    "NSHumanReadableCopyright": "Learn · Quiz · Get Smarter"
+    "NSHumanReadableCopyright": "Fun Facts & Brain Quiz Game"
   },
   "android": {
     "app_name": "Facts a Day"

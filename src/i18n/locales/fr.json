@@ -1,11 +1,11 @@
 {
   "ios": {
-    "CFBundleDisplayName": "Savoir Quotidien",
-    "CFBundleName": "Savoir Quotidien",
-    "NSHumanReadableCopyright": "Apprends · Joue · Progresse"
+    "CFBundleDisplayName": "Savoir du Jour",
+    "CFBundleName": "Savoir du Jour",
+    "NSHumanReadableCopyright": "Fun Facts & Quiz Cérébral"
   },
   "android": {
-    "app_name": "Savoir Quotidien"
+    "app_name": "Savoir du Jour"
   }
 }
 
