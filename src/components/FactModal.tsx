@@ -128,7 +128,7 @@ export function FactModal({
 
   // Show placeholder when loading OR when error (before image loads)
   const showImagePlaceholder =
-    !!fact.image_url && !isImageLoaded && !isImageError;
+    !!fact.image_url && !isImageLoaded;
 
   // Show error state when image fails
   const isImageFailed = !!fact.image_url && isImageError && !isImageLoaded;
@@ -682,52 +682,50 @@ export function FactModal({
               }}
               pointerEvents="none"
             />
-          </Animated.View>
-        )}
-
-        {/* Image Loading / Error Placeholder */}
-        {showImagePlaceholder && (
-          <TouchableOpacity
-            activeOpacity={isImageFailed ? 0.7 : 1}
-            onPress={isImageFailed ? () => { setIsImageError(false); setIsImageLoaded(false); } : undefined}
-            disabled={!isImageFailed}
-            style={{
-              width: IMAGE_WIDTH,
-              height: IMAGE_HEIGHT,
-              backgroundColor: theme === 'dark' ? '#1a1a2e' : '#e8e8f0',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {/* Shimmer only during active loading */}
-            {isActivelyLoading && (
-              <Animated.View
-                style={[
-                  StyleSheet.absoluteFill,
-                  {
-                    backgroundColor: theme === 'dark' ? '#2d2d44' : '#d0d0e0',
-                    opacity: shimmerAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.3, 0.6],
-                    }),
-                  },
-                ]}
-              />
+            {/* Image Loading / Error Placeholder (absolute overlay inside hero) */}
+            {showImagePlaceholder && (
+              <TouchableOpacity
+                activeOpacity={isImageFailed ? 0.7 : 1}
+                onPress={isImageFailed ? () => { setIsImageError(false); setIsImageLoaded(false); } : undefined}
+                disabled={!isImageFailed}
+                style={{
+                  ...StyleSheet.absoluteFillObject,
+                  backgroundColor: theme === 'dark' ? '#1a1a2e' : '#e8e8f0',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {/* Shimmer only during active loading */}
+                {isActivelyLoading && (
+                  <Animated.View
+                    style={[
+                      StyleSheet.absoluteFill,
+                      {
+                        backgroundColor: theme === 'dark' ? '#2d2d44' : '#d0d0e0',
+                        opacity: shimmerAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.3, 0.6],
+                        }),
+                      },
+                    ]}
+                  />
+                )}
+                <View style={{ alignItems: 'center', gap: spacing.sm }}>
+                  {isImageFailed ? (
+                    <RefreshCw
+                      size={iconSizes.xl}
+                      color={theme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.25)'}
+                    />
+                  ) : (
+                    <ImagePlus
+                      size={iconSizes.xl}
+                      color={theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'}
+                    />
+                  )}
+                </View>
+              </TouchableOpacity>
             )}
-            <View style={{ alignItems: 'center', gap: spacing.sm }}>
-              {isImageFailed ? (
-                <RefreshCw
-                  size={iconSizes.xl}
-                  color={theme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.25)'}
-                />
-              ) : (
-                <ImagePlus
-                  size={iconSizes.xl}
-                  color={theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'}
-                />
-              )}
-            </View>
-          </TouchableOpacity>
+          </Animated.View>
         )}
 
         {/* Content Section */}

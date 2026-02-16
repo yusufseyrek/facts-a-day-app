@@ -103,41 +103,38 @@ function HomeScreen() {
     }, [])
   );
 
-  // Reload facts when tab gains focus
+  // On first focus, show preloaded splash data instantly while async DB loads.
+  // Functional setState preserves data already loaded by mount effects
+  // (during deep link cold start, mount effects run before first focus).
+  // On every focus, reload from DB to ensure accurate data.
   useFocusEffect(
     useCallback(() => {
-      // On first mount, try to use preloaded data from splash screen
       if (!consumedPreloadedDataRef.current) {
         consumedPreloadedDataRef.current = true;
-        const preloadedFacts = consumePreloadedFacts();
-        const preloadedRecs = consumePreloadedRecommendations();
-        if (preloadedFacts && preloadedFacts.length > 0) {
-          // Filter today's facts from preloaded data
-          const todayStr = getLocalDateString();
-          const todayItems = preloadedFacts.filter((fact) => {
-            if (fact.scheduled_date) {
-              const factDate = getLocalDateString(new Date(fact.scheduled_date));
-              return factDate === todayStr;
-            }
-            return fact.shown_in_feed === 1;
-          });
-          // Use preloaded recommendations regardless of today's facts
-          if (preloadedRecs && preloadedRecs.length > 0) {
-            setPopularFacts(preloadedRecs.slice(0, HOME_FEED.POPULAR_COUNT));
-            setWorthKnowingFacts(preloadedRecs.slice(HOME_FEED.POPULAR_COUNT));
-          }
+        const facts = consumePreloadedFacts();
+        const recs = consumePreloadedRecommendations();
+        if (facts && facts.length > 0) {
+          const today = getLocalDateString();
+          const todayItems = facts.filter((f) =>
+            f.scheduled_date
+              ? getLocalDateString(new Date(f.scheduled_date)) === today
+              : f.shown_in_feed === 1
+          );
           if (todayItems.length > 0) {
-            setTodaysFacts(todayItems);
+            setTodaysFacts(prev => prev.length > 0 ? prev : todayItems);
             setInitialLoading(false);
             signalHomeScreenReady();
-            trackScreenView(Screens.HOME);
-            return;
           }
-          // Today's facts not in preloaded data — fall through to loadTodaysFacts()
+          if (recs && recs.length > 0) {
+            setPopularFacts(prev => prev.length > 0 ? prev : recs.slice(0, HOME_FEED.POPULAR_COUNT));
+            setWorthKnowingFacts(prev => prev.length > 0 ? prev : recs.slice(HOME_FEED.POPULAR_COUNT));
+          }
         }
       }
-      // Fall back to normal loading
+
       loadTodaysFacts();
+      loadPopularFacts(true);
+      loadWorthKnowingFacts(true);
       trackScreenView(Screens.HOME);
     }, [locale, t, consumePreloadedFacts])
   );
@@ -243,28 +240,31 @@ function HomeScreen() {
     await loadWorthKnowingFacts();
   }, [loadTodaysFacts]);
 
-  // Load popular facts (16:9 carousel cards)
-  const loadPopularFacts = useCallback(async () => {
+  // onlyIfEmpty: skip update if section already has data (prevents reshuffling on tab focus)
+  const loadPopularFacts = useCallback(async (onlyIfEmpty?: boolean) => {
     try {
       const recs = await database.getRandomUnscheduledFacts(HOME_FEED.POPULAR_COUNT, locale);
       if (recs.length > 0) {
-        setPopularFacts(recs);
+        if (onlyIfEmpty) {
+          setPopularFacts(prev => prev.length > 0 ? prev : recs);
+        } else {
+          setPopularFacts(recs);
+        }
       }
-    } catch {
-      // Ignore loading errors
-    }
+    } catch {}
   }, [locale]);
 
-  // Load worth knowing facts (thumbnail cards)
-  const loadWorthKnowingFacts = useCallback(async () => {
+  const loadWorthKnowingFacts = useCallback(async (onlyIfEmpty?: boolean) => {
     try {
       const recs = await database.getRandomUnscheduledFacts(HOME_FEED.WORTH_KNOWING_COUNT, locale);
       if (recs.length > 0) {
-        setWorthKnowingFacts(recs);
+        if (onlyIfEmpty) {
+          setWorthKnowingFacts(prev => prev.length > 0 ? prev : recs);
+        } else {
+          setWorthKnowingFacts(recs);
+        }
       }
-    } catch {
-      // Ignore loading errors
-    }
+    } catch {}
   }, [locale]);
 
   // Load popular and worth knowing facts on mount and when locale changes
