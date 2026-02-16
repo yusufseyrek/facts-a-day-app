@@ -39,7 +39,7 @@ function PopularNativeAdItemComponent({
   }
 
   return (
-    <View style={{ width: cardWidth, paddingVertical: spacing.sm }}>
+    <View style={{ width: cardWidth, paddingVertical: spacing.md }}>
       <NativeAdCard
         cardWidth={cardWidth}
         cardHeight={cardHeight}
