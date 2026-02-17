@@ -44,6 +44,7 @@ import { initAnalytics } from '../src/services/analytics';
 import * as contentRefresh from '../src/services/contentRefresh';
 import * as database from '../src/services/database';
 import { ensureImagesDirExists } from '../src/services/images';
+import { startNetworkMonitoring } from '../src/services/network';
 import * as notificationService from '../src/services/notifications';
 import * as onboardingService from '../src/services/onboarding';
 import * as updates from '../src/services/updates';
@@ -64,6 +65,9 @@ enableCrashlyticsConsoleLogging();
 
 // Initialize analytics with device info and user properties
 initAnalytics();
+
+// Start background network connectivity monitoring
+startNetworkMonitoring();
 
 // Keep native splash visible until SplashOverlay is ready to take over
 SplashScreen.preventAutoHideAsync();
@@ -585,7 +589,7 @@ export default function RootLayout() {
                   <ScrollToTopProvider>
                     <AppThemeProvider>
                       <NavigationThemeWrapper>
-                        <AppContent />
+                          <AppContent />
                       </NavigationThemeWrapper>
                     </AppThemeProvider>
                   </ScrollToTopProvider>

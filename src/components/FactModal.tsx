@@ -20,6 +20,7 @@ import { XStack, YStack } from 'tamagui';
 import { useTranslation } from '../i18n';
 import { trackSourceLinkClick } from '../services/analytics';
 import { onFactViewed } from '../services/appReview';
+import { getIsConnected } from '../services/network';
 import { addFactDetailTimeSpent, markFactDetailOpened, markFactDetailRead } from '../services/database';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
@@ -127,8 +128,7 @@ export function FactModal({
   }, [fact.id]);
 
   // Show placeholder when loading OR when error (before image loads)
-  const showImagePlaceholder =
-    !!fact.image_url && !isImageLoaded;
+  const showImagePlaceholder = !!fact.image_url && !isImageLoaded;
 
   // Show error state when image fails
   const isImageFailed = !!fact.image_url && isImageError && !isImageLoaded;
@@ -220,6 +220,42 @@ export function FactModal({
   // Use notification image if available, otherwise use remote URL directly
   const imageUri = notificationImageUri || fact.image_url;
 
+  // Smart image availability check: cache → network status → safety timeout
+  useEffect(() => {
+    if (!imageUri || isImageLoaded || isImageError) return;
+
+    let cancelled = false;
+    let safetyTimeoutId: ReturnType<typeof setTimeout>;
+
+    async function checkImageAvailability() {
+      // Check expo-image disk cache first
+      try {
+        const cachePath = await Image.getCachePathAsync(imageUri!);
+        if (cachePath || cancelled) return; // Cached — expo-image will load it
+      } catch {}
+
+      // Not cached — check network status
+      if (!getIsConnected() && !cancelled) {
+        setIsImageError(true); // Offline + no cache → immediate no-image
+        return;
+      }
+
+      // Online but not cached — expo-image loads from network
+      // Safety timeout in case network is flaky or image server is down
+      if (!cancelled) {
+        safetyTimeoutId = setTimeout(() => {
+          setIsImageError(true);
+        }, 8000);
+      }
+    }
+
+    checkImageAvailability();
+    return () => {
+      cancelled = true;
+      clearTimeout(safetyTimeoutId);
+    };
+  }, [imageUri, isImageLoaded, isImageError]);
+
   // Images are always square (1:1)
   // For tablets: landscape shows 50% height (more content visible), portrait shows 80% height centered
   // For phones: square (full width)
@@ -278,7 +314,7 @@ export function FactModal({
     return categoryForBadge.color_hex || getCategoryNeonColor(categoryForBadge.slug, theme);
   }, [categoryForBadge, theme]);
 
-  const hasImage = !!imageUri;
+  const hasImage = !!imageUri && !isImageError;
 
   // Calculate dynamic header height first (needed for transition calculations)
   const basePaddingTop = Platform.OS === 'ios' ? spacing.xl : insets.top;
@@ -350,12 +386,15 @@ export function FactModal({
     extrapolate: 'clamp',
   });
 
-  // Header container opacity - appears instantly when header background should show
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, Math.max(0, HEADER_BG_TRANSITION - 0.01), HEADER_BG_TRANSITION],
-    outputRange: [0, 0, 1],
-    extrapolate: 'clamp',
-  });
+  // Header container opacity - appears when image scrolls under (has-image only)
+  // For no-image: header is completely hidden; title is sticky via stickyHeaderIndices
+  const headerOpacity = hasImage
+    ? scrollY.interpolate({
+        inputRange: [0, Math.max(0, HEADER_BG_TRANSITION - 0.01), HEADER_BG_TRANSITION],
+        outputRange: [0, 0, 1],
+        extrapolate: 'clamp',
+      })
+    : 0;
 
   // Fade opacity - overlay for header background image (slowly fades in after header becomes visible)
   const FADE_DURATION = 70; // Pixels over which to fade in after header becomes visible
@@ -388,15 +427,18 @@ export function FactModal({
   // Continuous animation: translateY decreases (moves up) as scrollY increases
   // The title starts moving up when header becomes visible and continues to move up as user scrolls
   // Clamped at 0 to prevent going below the header
-  const headerTitleTranslateY = scrollY.interpolate({
-    inputRange: [
-      Math.max(0, HEADER_BG_TRANSITION - 1),
-      HEADER_BG_TRANSITION,
-      HEADER_BG_TRANSITION + headerTitleStartY,
-    ],
-    outputRange: [headerTitleStartY, headerTitleStartY, 0],
-    extrapolate: 'clamp', // Clamp at 0 to prevent going below header
-  });
+  // For no-image layout: title is static (no slide-up) to avoid distracting motion while reading
+  const headerTitleTranslateY = hasImage
+    ? scrollY.interpolate({
+        inputRange: [
+          Math.max(0, HEADER_BG_TRANSITION - 1),
+          HEADER_BG_TRANSITION,
+          HEADER_BG_TRANSITION + headerTitleStartY,
+        ],
+        outputRange: [headerTitleStartY, headerTitleStartY, 0],
+        extrapolate: 'clamp',
+      })
+    : 0;
 
   // Header background image position - shows the center portion of the image
   // To center the image in the header: translate up by (IMAGE_HEIGHT - headerHeight) / 2
@@ -436,11 +478,15 @@ export function FactModal({
   });
 
   // Category badge fade out as it approaches the header
-  const categoryBadgeOpacity = scrollY.interpolate({
-    inputRange: [Math.max(0, BADGE_SCROLL_THRESHOLD - 5), BADGE_SCROLL_THRESHOLD + 35],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
+  // Category badge fades out as it scrolls under the header (has-image only)
+  // For no-image: badge is always visible (no header to scroll under)
+  const categoryBadgeOpacity = hasImage
+    ? scrollY.interpolate({
+        inputRange: [Math.max(0, BADGE_SCROLL_THRESHOLD - 5), BADGE_SCROLL_THRESHOLD + 35],
+        outputRange: [1, 0],
+        extrapolate: 'clamp',
+      })
+    : 1;
 
   const factTitle = fact.title || fact.content.substring(0, 60) + '...';
 
@@ -629,9 +675,10 @@ export function FactModal({
         scrollEventThrottle={16}
         // Optimize scroll performance on Android
         removeClippedSubviews={Platform.OS === 'android'}
+        stickyHeaderIndices={!hasImage ? [0] : undefined}
       >
-        {/* Hero Image Section */}
-        {hasImage && (
+        {/* First child: Hero Image (has-image) or Sticky Title (no-image) */}
+        {hasImage ? (
           <Animated.View
             style={{
               position: 'relative',
@@ -686,7 +733,14 @@ export function FactModal({
             {showImagePlaceholder && (
               <TouchableOpacity
                 activeOpacity={isImageFailed ? 0.7 : 1}
-                onPress={isImageFailed ? () => { setIsImageError(false); setIsImageLoaded(false); } : undefined}
+                onPress={
+                  isImageFailed
+                    ? () => {
+                        setIsImageError(false);
+                        setIsImageLoaded(false);
+                      }
+                    : undefined
+                }
                 disabled={!isImageFailed}
                 style={{
                   ...StyleSheet.absoluteFillObject,
@@ -726,18 +780,19 @@ export function FactModal({
               </TouchableOpacity>
             )}
           </Animated.View>
-        )}
-
-        {/* Content Section */}
-        <Animated.View style={{ opacity: textFadeAnim }}>
-          <YStack padding={spacing.xl} gap={spacing.md}>
-            {/* Title - shown in content when header is not visible */}
-            <Animated.View
-              style={{
-                opacity: contentTitleOpacity,
-                paddingRight: iconSizes.xl + spacing.xs,
-              }}
-            >
+        ) : (
+          <Animated.View
+            style={{
+              opacity: textFadeAnim,
+              backgroundColor: theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface,
+              paddingTop: spacing.xl,
+              paddingHorizontal: spacing.xl,
+              paddingBottom: spacing.md,
+              borderBottomWidth: categoryColor ? borderWidths.heavy : 0,
+              borderBottomColor: categoryColor || 'transparent',
+            }}
+          >
+            <View style={{ paddingRight: iconSizes.xl + spacing.xs }}>
               <Text.Headline
                 role="heading"
                 onTextLayout={(e) => {
@@ -750,7 +805,35 @@ export function FactModal({
               >
                 {factTitle}
               </Text.Headline>
-            </Animated.View>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Content Section */}
+        <Animated.View style={{ opacity: textFadeAnim }}>
+          <YStack padding={spacing.xl} gap={spacing.md}>
+            {/* Title - shown in content only when has image (no-image uses sticky title above) */}
+            {hasImage && (
+              <Animated.View
+                style={{
+                  opacity: contentTitleOpacity,
+                  paddingRight: iconSizes.xl + spacing.xs,
+                }}
+              >
+                <Text.Headline
+                  role="heading"
+                  onTextLayout={(e) => {
+                    const lines = e.nativeEvent.lines;
+                    const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
+                    if (totalHeight > 0 && totalHeight !== titleHeight) {
+                      setTitleHeight(totalHeight);
+                    }
+                  }}
+                >
+                  {factTitle}
+                </Text.Headline>
+              </Animated.View>
+            )}
 
             {/* Category Badge & Date */}
             {(categoryForBadge || fact.last_updated || fact.created_at) && (
@@ -804,10 +887,7 @@ export function FactModal({
                     size={iconSizes.xs}
                     color={theme === 'dark' ? hexColors.dark.textMuted : hexColors.light.textMuted}
                   />
-                  <Text.Caption
-                    color="$textMuted"
-                    numberOfLines={1}
-                  >
+                  <Text.Caption color="$textMuted" numberOfLines={1}>
                     {extractDomain(fact.source_url)}
                   </Text.Caption>
                 </XStack>
@@ -860,7 +940,7 @@ export function FactModal({
         <View
           style={{
             position: 'absolute',
-            top: insets.top + spacing.xl,
+            top: spacing.xl,
             right: spacing.xl,
             zIndex: 9999,
             ...Platform.select({
