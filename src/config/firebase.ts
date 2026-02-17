@@ -102,7 +102,7 @@ function isMacOS(): boolean {
   }
 
   // Method 2: Check React Native's Platform.isMac (for Mac Catalyst)
-   
+
   if ((Platform as any).isMac === true) {
     return true;
   }
@@ -130,7 +130,9 @@ function isMacOS(): boolean {
  * On macOS: Uses Debug provider (App Attest is NOT supported on macOS)
  */
 export async function initializeAppCheckService() {
-  console.log(`[AppCheck] initializeAppCheckService called — __DEV__=${__DEV__}, STRICT_MODE=${APP_CHECK.STRICT_MODE_ENABLED}, alreadyInit=${isAppCheckInitialized()}`);
+  console.log(
+    `[AppCheck] initializeAppCheckService called — __DEV__=${__DEV__}, STRICT_MODE=${APP_CHECK.STRICT_MODE_ENABLED}, alreadyInit=${isAppCheckInitialized()}`
+  );
 
   if (isAppCheckInitialized()) {
     resolveAppCheckReady();
@@ -150,7 +152,9 @@ export async function initializeAppCheckService() {
     // failure is detected and the blocking screen can be shown.
     const useDebugProvider = __DEV__ || isMac;
 
-    console.log(`[AppCheck] isIOS=${isIOS}, isRealDevice=${isRealDevice}, isMac=${isMac}, useDebugProvider=${useDebugProvider}`);
+    console.log(
+      `[AppCheck] isIOS=${isIOS}, isRealDevice=${isRealDevice}, isMac=${isMac}, useDebugProvider=${useDebugProvider}`
+    );
 
     // Determine provider names
     const iosProvider = useDebugProvider ? 'debug' : 'appAttest';
@@ -214,7 +218,9 @@ export async function initializeAppCheckService() {
         }
 
         setAppCheckInitialized(true);
-        console.log(`[AppCheck] Init SUCCESS — provider=${providerName}, isInitialized=${isAppCheckInitialized()}`);
+        console.log(
+          `[AppCheck] Init SUCCESS — provider=${providerName}, isInitialized=${isAppCheckInitialized()}`
+        );
 
         // Eagerly fetch and cache the first token so it's available
         // before the first API request fires (closes the timing gap
@@ -238,7 +244,9 @@ export async function initializeAppCheckService() {
               // Stop retrying if rate-limited or attestation failed (retries will only make it worse)
               if (msg.includes('Too many attempts') || msg.includes('App attestation failed')) {
                 if (__DEV__) {
-                  console.warn('⚠️ App Check: First token blocked by rate limit/attestation, stopping retries');
+                  console.warn(
+                    '⚠️ App Check: First token blocked by rate limit/attestation, stopping retries'
+                  );
                 }
                 break;
               }
@@ -261,17 +269,27 @@ export async function initializeAppCheckService() {
             if (APP_CHECK.STRICT_MODE_ENABLED && !__DEV__) {
               console.log('[AppCheck] Strict mode: rolling back init due to token failure');
               setAppCheckInitialized(false);
-              logEvent('app_check_failed', { reason: 'first_token_failure', provider: providerName, platform: Platform.OS });
+              logEvent('app_check_failed', {
+                reason: 'first_token_failure',
+                provider: providerName,
+                platform: Platform.OS,
+              });
             }
           }
         } catch (prefetchError) {
-          const prefetchMsg = prefetchError instanceof Error ? prefetchError.message : String(prefetchError);
+          const prefetchMsg =
+            prefetchError instanceof Error ? prefetchError.message : String(prefetchError);
           console.log(`[AppCheck] First token prefetch threw: ${prefetchMsg}`);
           // In strict mode, treat prefetch error as init failure
           if (APP_CHECK.STRICT_MODE_ENABLED && !__DEV__) {
             console.log('[AppCheck] Strict mode: rolling back init due to token prefetch error');
             setAppCheckInitialized(false);
-            logEvent('app_check_failed', { reason: 'token_prefetch_error', provider: providerName, error: prefetchMsg, platform: Platform.OS });
+            logEvent('app_check_failed', {
+              reason: 'token_prefetch_error',
+              provider: providerName,
+              error: prefetchMsg,
+              platform: Platform.OS,
+            });
           }
         }
 
@@ -309,7 +327,12 @@ export async function initializeAppCheckService() {
             } catch {
               // Silently fail if Crashlytics isn't ready
             }
-            logEvent('app_check_failed', { reason: 'init_retries_exhausted', provider: providerName, error: errorMessage, platform: Platform.OS });
+            logEvent('app_check_failed', {
+              reason: 'init_retries_exhausted',
+              provider: providerName,
+              error: errorMessage,
+              platform: Platform.OS,
+            });
           }
         }
       }
@@ -319,7 +342,9 @@ export async function initializeAppCheckService() {
     // This prevents API calls from hanging forever
     resolveAppCheckReady();
 
-    console.log(`[AppCheck] FINALLY — isInitialized=${isAppCheckInitialized()}, __DEV__=${__DEV__}, STRICT_MODE=${APP_CHECK.STRICT_MODE_ENABLED}`);
+    console.log(
+      `[AppCheck] FINALLY — isInitialized=${isAppCheckInitialized()}, __DEV__=${__DEV__}, STRICT_MODE=${APP_CHECK.STRICT_MODE_ENABLED}`
+    );
 
     // If init failed in production with strict mode, set failure flag for blocking screen
     // but only when the device is online — offline failures are not a security concern
