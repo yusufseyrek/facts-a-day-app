@@ -21,9 +21,9 @@ export const APP_CHECK = {
   /** Delay between initialization retries (milliseconds) */
   INIT_RETRY_DELAY_MS: 500,
   /** Maximum attempts to fetch the first token after init */
-  FIRST_TOKEN_MAX_ATTEMPTS: 3,
+  FIRST_TOKEN_MAX_ATTEMPTS: 5,
   /** Delay between first token fetch retries (milliseconds) */
-  FIRST_TOKEN_RETRY_DELAY_MS: 750,
+  FIRST_TOKEN_RETRY_DELAY_MS: 1000,
   /** When true, block the app and reject API calls if App Check init fails */
   STRICT_MODE_ENABLED: true,
 } as const;

@@ -3,7 +3,7 @@
     "01_home": {
       "en": "Discover Fun Facts\nEvery Day",
       "de": "Entdecke spannende\nFakten jeden Tag",
-      "es": "Descubre datos curiosos\ncada día",
+      "es": "Datos curiosos\ncada día",
       "fr": "Découvrez des faits\namusants chaque jour",
       "ja": "毎日おもしろい\n雑学を発見",
       "ko": "매일 재미있는\n상식을 발견하세요",
@@ -11,14 +11,14 @@
       "zh": "每天发现\n有趣的冷知识"
     },
     "02_fact_detail": {
-      "en": "Amazing Stories Behind\nEvery Fact",
-      "de": "Erstaunliche Geschichten\nhinter jedem Fakt",
-      "es": "Historias increíbles\ndetrás de cada dato",
-      "fr": "Des histoires incroyables\nderrière chaque fait",
-      "ja": "すべての事実に\n驚きの物語",
-      "ko": "모든 사실 뒤에\n놀라운 이야기",
-      "tr": "Her bilginin ardında\nşaşırtıcı hikayeler",
-      "zh": "每个事实背后\n令人惊叹的故事"
+      "en": "Amazing Stories\nIn Every Fact",
+      "de": "Tolle Geschichten\nin jedem Fakt",
+      "es": "Historias increíbles\nen cada dato",
+      "fr": "Histoires incroyables\ndans chaque fait",
+      "ja": "驚きの物語が\nすべての事実に",
+      "ko": "모든 사실 속\n놀라운 이야기",
+      "tr": "Her bilgide\nşaşırtıcı hikayeler",
+      "zh": "每个事实中\n令人惊叹的故事"
     },
     "03_story": {
       "en": "Did You Know?\nMind-Blowing Facts",
@@ -31,44 +31,44 @@
       "zh": "你知道吗？\n令人惊叹的冷知识"
     },
     "04_discover": {
-      "en": "Explore Science, History\nSpace & More",
-      "de": "Entdecke Wissenschaft\nGeschichte & mehr",
-      "es": "Explora ciencia, historia\nespacio y más",
-      "fr": "Explorez science, histoire\nespace et plus",
-      "ja": "科学・歴史・宇宙\nなど幅広く探求",
-      "ko": "과학, 역사, 우주\n그리고 더 많은 주제",
-      "tr": "Bilim, tarih, uzay\nve daha fazlasını keşfet",
-      "zh": "探索科学、历史\n太空等更多主题"
+      "en": "Explore Science,\nHistory & More",
+      "de": "Wissenschaft,\nGeschichte & mehr",
+      "es": "Explora ciencia,\nhistoria y más",
+      "fr": "Explorez science,\nhistoire et plus",
+      "ja": "科学・歴史など\n幅広く探求",
+      "ko": "과학, 역사\n그리고 더 많은 주제",
+      "tr": "Bilim, tarih ve\ndaha fazlasını keşfet",
+      "zh": "探索科学、历史\n等更多主题"
     },
     "05_category_browse": {
-      "en": "17 Topics to\nFeed Your Curiosity",
-      "de": "17 Themen für\ndeine Neugier",
-      "es": "17 temas para\ntu curiosidad",
-      "fr": "17 sujets pour\nnourrir votre curiosité",
-      "ja": "好奇心を満たす\n17のトピック",
-      "ko": "호기심을 채워줄\n17가지 주제",
-      "tr": "Merakını besleyecek\n17 konu",
-      "zh": "17个主题\n满足你的好奇心"
+      "en": "Topics to Feed\nYour Curiosity",
+      "de": "Themen für\ndeine Neugier",
+      "es": "Temas para\ntu curiosidad",
+      "fr": "Sujets pour nourrir\nvotre curiosité",
+      "ja": "好奇心を満たす\nトピック",
+      "ko": "호기심을 채워줄\n주제",
+      "tr": "Merakını besleyecek\nkonular",
+      "zh": "满足好奇心的\n主题"
     },
     "06_trivia": {
-      "en": "Brain Quiz:\nTest Your IQ Daily",
-      "de": "Gehirn-Quiz:\nTeste täglich deinen IQ",
+      "en": "Brain Quiz:\nTest Your IQ",
+      "de": "Gehirn-Quiz:\nTeste deinen IQ",
       "es": "Quiz Mental:\nPon a prueba tu IQ",
       "fr": "Quiz Cérébral :\nTestez votre QI",
-      "ja": "脳トレクイズ：\n毎日IQを試そう",
-      "ko": "두뇌 퀴즈:\n매일 IQ를 테스트하세요",
-      "tr": "Beyin Quizi:\nHer gün IQ'nu test et",
-      "zh": "脑力问答：\n每天测试你的IQ"
+      "ja": "脳トレクイズ：\nIQを試そう",
+      "ko": "두뇌 퀴즈:\nIQ를 테스트하세요",
+      "tr": "Beyin Quizi:\nIQ'nu test et",
+      "zh": "脑力问答：\n测试你的IQ"
     },
     "07_trivia_game": {
-      "en": "3 Fun Trivia\nGame Modes",
-      "de": "3 unterhaltsame\nQuiz-Spielmodi",
-      "es": "3 modos de\ntrivia divertidos",
-      "fr": "3 modes de\njeu trivia amusants",
-      "ja": "3つの楽しい\nトリビアモード",
-      "ko": "3가지 재미있는\n트리비아 모드",
-      "tr": "3 eğlenceli\ntrivia oyun modu",
-      "zh": "3种趣味\n问答游戏模式"
+      "en": "Fun Trivia\nGame Modes",
+      "de": "Unterhaltsame\nQuiz-Spielmodi",
+      "es": "Modos de\ntrivia divertidos",
+      "fr": "Modes de\njeu trivia amusants",
+      "ja": "楽しい\nトリビアモード",
+      "ko": "재미있는\n트리비아 모드",
+      "tr": "Eğlenceli\ntrivia oyun modları",
+      "zh": "趣味\n问答游戏模式"
     },
     "08_trivia_performance": {
       "en": "Track Your Streak\n& Get Smarter",
@@ -84,7 +84,7 @@
       "en": "Earn Badges &\nCelebrate Wins",
       "de": "Sammle Abzeichen\n& feiere Erfolge",
       "es": "Gana insignias\ny celebra victorias",
-      "fr": "Gagnez des badges\n& célébrez vos victoires",
+      "fr": "Gagnez des badges\n& célébrez",
       "ja": "バッジを獲得して\n勝利を祝おう",
       "ko": "배지를 획득하고\n승리를 축하하세요",
       "tr": "Rozet kazan\nve başarılarını kutla",
@@ -94,7 +94,7 @@
       "en": "Save Favorites\n& Read Offline",
       "de": "Favoriten speichern\n& offline lesen",
       "es": "Guarda favoritos\ny lee sin conexión",
-      "fr": "Sauvegardez vos favoris\n& lisez hors ligne",
+      "fr": "Sauvegardez favoris\n& lisez hors ligne",
       "ja": "お気に入りを保存\nオフラインで読もう",
       "ko": "즐겨찾기 저장\n오프라인으로 읽기",
       "tr": "Favorileri kaydet\nçevrimdışı oku",
