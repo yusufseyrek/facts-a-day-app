@@ -258,6 +258,11 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_fi_detail_read_at ON fact_interactions(detail_read_at);
   `);
 
+  // fact_interactions: detail open also counts as reading activity for streaks
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_fi_detail_opened_at ON fact_interactions(detail_opened_at);
+  `);
+
   // question_attempts: covering index for master_scholar nested subquery
   await db.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_attempts_qid_correct_at ON question_attempts(question_id, is_correct, answered_at);

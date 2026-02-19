@@ -209,15 +209,20 @@ export async function getAllBadgesWithStatus(): Promise<BadgeWithStatus[]> {
 
 /**
  * Compute reading streak from fact_interactions dates.
- * Counts consecutive days (backwards from today) with at least one story_viewed_at.
+ * Counts consecutive days (backwards from today) with at least one reading activity
+ * (story view or detail open).
  */
 export async function getReadingStreak(): Promise<number> {
   const db = await openDatabase();
 
   const result = await db.getAllAsync<{ view_date: string }>(
-    `SELECT DISTINCT date(story_viewed_at, 'localtime') as view_date
-     FROM fact_interactions
-     WHERE story_viewed_at IS NOT NULL
+    `SELECT DISTINCT view_date FROM (
+       SELECT date(story_viewed_at, 'localtime') as view_date
+       FROM fact_interactions WHERE story_viewed_at IS NOT NULL
+       UNION
+       SELECT date(detail_opened_at, 'localtime') as view_date
+       FROM fact_interactions WHERE detail_opened_at IS NOT NULL
+     )
      ORDER BY view_date DESC
      LIMIT 365`
   );
@@ -307,9 +312,13 @@ export async function getBestReadingStreak(): Promise<number> {
   const db = await openDatabase();
 
   const result = await db.getAllAsync<{ view_date: string }>(
-    `SELECT DISTINCT date(story_viewed_at, 'localtime') as view_date
-     FROM fact_interactions
-     WHERE story_viewed_at IS NOT NULL
+    `SELECT DISTINCT view_date FROM (
+       SELECT date(story_viewed_at, 'localtime') as view_date
+       FROM fact_interactions WHERE story_viewed_at IS NOT NULL
+       UNION
+       SELECT date(detail_opened_at, 'localtime') as view_date
+       FROM fact_interactions WHERE detail_opened_at IS NOT NULL
+     )
      ORDER BY view_date ASC`
   );
 
