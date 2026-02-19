@@ -61,7 +61,19 @@ export function BadgeCard({ badge, onPress }: BadgeCardProps) {
     >
       <XStack alignItems="center" padding={spacing.md} gap={spacing.md}>
         {/* Badge icon */}
-        <View style={shadowStyles.badgeIcon}>
+        <View
+          style={
+            isUnlocked
+              ? {
+                  shadowColor: STAR_COLORS.filled,
+                  shadowOffset: { width: 0, height: 3 + earnedStars.length * 3 },
+                  shadowOpacity: 0.3 + earnedStars.length * 0.2,
+                  shadowRadius: 8 + earnedStars.length * 6,
+                  elevation: 4 + earnedStars.length * 5,
+                }
+              : shadowStyles.badgeIcon
+          }
+        >
           <BadgeIcon badgeId={definition.id} size={iconSize} isUnlocked={isUnlocked} />
         </View>
 

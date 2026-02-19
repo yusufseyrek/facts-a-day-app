@@ -124,8 +124,20 @@ export function BadgeDetailSheet({ badge, visible, onClose }: BadgeDetailSheetPr
                   <X size={iconSizes.sm} color={colors.textSecondary} />
                 </Pressable>
 
-                {/* Badge icon — no ring */}
-                <View style={detailStyles.badgeIcon}>
+                {/* Badge icon — gold shadow scales with stars */}
+                <View
+                  style={
+                    isUnlocked
+                      ? {
+                          shadowColor: STAR_COLORS.filled,
+                          shadowOffset: { width: 0, height: 4 + badge.earnedStars.length * 4 },
+                          shadowOpacity: 0.35 + badge.earnedStars.length * 0.2,
+                          shadowRadius: 10 + badge.earnedStars.length * 8,
+                          elevation: 6 + badge.earnedStars.length * 6,
+                        }
+                      : detailStyles.badgeIcon
+                  }
+                >
                   <BadgeIcon badgeId={definition.id} size={heroIconSize} isUnlocked={isUnlocked} />
                 </View>
               </LinearGradient>
