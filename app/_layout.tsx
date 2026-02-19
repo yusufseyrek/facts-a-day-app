@@ -26,6 +26,7 @@ import { STORAGE_KEYS, TIMING } from '../src/config/app';
 import { isAppCheckInitFailed, subscribeAppCheckFailure } from '../src/config/appCheckState';
 import { enableCrashlyticsConsoleLogging, initializeFirebase, retryAppCheckInit } from '../src/config/firebase';
 import {
+  BadgeToastProvider,
   OnboardingProvider,
   PreloadedDataProvider,
   PremiumProvider,
@@ -226,6 +227,7 @@ function AppContent() {
           contentStyle: { backgroundColor },
         }}
       />
+      <Stack.Screen name="badges" options={{ headerShown: false }} />
       <Stack.Screen name="trivia" options={{ gestureEnabled: false }} />
       <Stack.Screen
         name="paywall"
@@ -589,7 +591,9 @@ export default function RootLayout() {
                   <ScrollToTopProvider>
                     <AppThemeProvider>
                       <NavigationThemeWrapper>
+                        <BadgeToastProvider>
                           <AppContent />
+                        </BadgeToastProvider>
                       </NavigationThemeWrapper>
                     </AppThemeProvider>
                   </ScrollToTopProvider>

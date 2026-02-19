@@ -30,6 +30,7 @@ import {
   trackStoryOpen,
   trackStoryReadMore,
 } from '../../src/services/analytics';
+import { checkAndAwardBadges, pushModalScreen, popModalScreen } from '../../src/services/badges';
 import * as database from '../../src/services/database';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { hexColors, useTheme } from '../../src/theme';
@@ -51,6 +52,12 @@ export default function StoryScreen() {
   const colors = hexColors[theme];
 
   const { isPremium } = usePremium();
+
+  // Track modal screen for badge toast deferral
+  useEffect(() => {
+    pushModalScreen();
+    return () => popModalScreen();
+  }, []);
 
   const [facts, setFacts] = useState<FactWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
@@ -201,7 +208,9 @@ export default function StoryScreen() {
         const fact = entry.item as FactWithRelations;
         if (fact && !viewedFactIds.current.has(fact.id)) {
           viewedFactIds.current.add(fact.id);
-          database.markFactViewedInStory(fact.id).catch(() => {});
+          database.markFactViewedInStory(fact.id)
+            .then(() => checkAndAwardBadges())
+            .catch(() => {});
           trackStoryFactView({
             factId: fact.id,
             category: category!,

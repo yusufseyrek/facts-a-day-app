@@ -25,6 +25,7 @@ import {
   trackFactShare,
 } from '../services/analytics';
 import * as api from '../services/api';
+import { checkAndAwardBadges } from '../services/badges';
 import * as database from '../services/database';
 import { shareService } from '../services/share';
 import { hexColors, useTheme } from '../theme';
@@ -245,6 +246,7 @@ export function FactActions({
       const categorySlug = typeof category === 'string' ? category : category?.slug || 'unknown';
       if (newFavoriteStatus) {
         trackFactFavoriteAdd({ factId, category: categorySlug });
+        checkAndAwardBadges().catch(() => {});
       } else {
         trackFactFavoriteRemove({ factId, category: categorySlug });
       }

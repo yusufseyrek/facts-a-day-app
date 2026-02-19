@@ -21,6 +21,7 @@ import {
   Star,
   TestTube,
   Trash2,
+  Trophy,
 } from '@tamagui/lucide-icons';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
@@ -46,6 +47,7 @@ import { useTranslation } from '../../src/i18n';
 import { TranslationKeys } from '../../src/i18n/translations';
 import { deepLinkToSubscriptions } from 'expo-iap';
 import { openAdDebugMenu } from '../../src/services/ads';
+import { triggerTestBadgeToast } from '../../src/services/badges';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import { requestReview } from '../../src/services/appReview';
 import * as database from '../../src/services/database';
@@ -773,6 +775,18 @@ export default function SettingsPage() {
 
   // Build sections dynamically
   const sections = useMemo((): SettingsSection[] => {
+    const generalSection: SettingsSection = {
+      title: t('settingsGeneral'),
+      data: [
+        {
+          id: 'achievements',
+          label: t('achievements'),
+          icon: <Trophy size={iconSizes.md} color={iconColor} />,
+          onPress: () => router.push('/badges'),
+        },
+      ],
+    };
+
     const userPreferencesSection: SettingsSection = {
       title: t('settingsUserPreferences'),
       data: [
@@ -884,6 +898,15 @@ export default function SettingsPage() {
           onPress: openAdDebugMenu,
         },
         {
+          id: 'testBadgeToast',
+          label: 'Test Badge Toast',
+          icon: <Trophy size={iconSizes.md} color={iconColor} />,
+          onPress: () => {
+            triggerTestBadgeToast();
+            Alert.alert('Badge toast queued', 'A test badge toast will appear shortly.');
+          },
+        },
+        {
           id: 'resetOnboarding',
           label: t('resetOnboarding'),
           icon: <RotateCcw size={iconSizes.md} color={iconColor} />,
@@ -944,8 +967,8 @@ export default function SettingsPage() {
     };
 
     const result: SettingsSection[] = SUBSCRIPTION.ENABLED
-      ? [premiumSection, userPreferencesSection]
-      : [userPreferencesSection];
+      ? [premiumSection, generalSection, userPreferencesSection]
+      : [generalSection, userPreferencesSection];
     result.push(storageSection);
     if (isDevelopment) {
       result.push(developerSection);

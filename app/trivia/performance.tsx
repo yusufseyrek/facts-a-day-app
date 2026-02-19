@@ -22,6 +22,8 @@ import {
   Shuffle,
   Trophy,
 } from '@tamagui/lucide-icons';
+import { getEarnedBadges } from '../../src/services/badges';
+import { TOTAL_POSSIBLE_BADGES } from '../../src/config/badges';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -563,22 +565,25 @@ export default function PerformanceScreen() {
   const [totalSessionsCount, setTotalSessionsCount] = useState(0);
   const [selectedSession, setSelectedSession] = useState<TriviaSessionWithCategory | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
+  const [earnedBadgeCount, setEarnedBadgeCount] = useState(0);
 
   const loadData = useCallback(
     async (isRefresh = false) => {
       try {
         if (isRefresh) setRefreshing(true);
 
-        const [statsData, categoriesData, sessionsData] = await Promise.all([
+        const [statsData, categoriesData, sessionsData, earnedBadges] = await Promise.all([
           triviaService.getOverallStats(),
           triviaService.getCategoriesWithProgress(locale),
           triviaService.getRecentSessions(DISPLAY_LIMITS.MAX_ACTIVITIES),
+          getEarnedBadges(),
         ]);
 
         setStats(statsData);
         setCategories(categoriesData);
         setRecentSessions(sessionsData);
         setTotalSessionsCount(statsData.testsTaken);
+        setEarnedBadgeCount(earnedBadges.length);
       } catch (error) {
         console.error('Error loading performance data:', error);
       } finally {
@@ -747,6 +752,56 @@ export default function PerformanceScreen() {
               successColor={successColor}
               columnsPerRow={config.triviaCategoriesPerRow}
             />
+          </Animated.View>
+
+          {/* Achievements Card */}
+          <Animated.View entering={FadeIn.delay(100).duration(400).springify()}>
+            <Pressable
+              onPress={() => router.push('/badges')}
+              style={({ pressed }) => [
+                perfShadowStyles.card,
+                { borderRadius: radius.lg },
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <XStack
+                backgroundColor={cardBg}
+                borderRadius={radius.lg}
+                padding={spacing.lg}
+                alignItems="center"
+                gap={spacing.sm}
+              >
+                <View
+                  style={{
+                    width: iconSizes.lg,
+                    height: iconSizes.lg,
+                    borderRadius: radius.sm * 0.75,
+                    backgroundColor: `${accentColor}20`,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Trophy size={iconSizes.sm} color={accentColor} />
+                </View>
+                <YStack flex={1}>
+                  <Text.Label fontFamily={FONT_FAMILIES.semibold} color={textColor}>
+                    {t('achievements')}
+                  </Text.Label>
+                  <Text.Caption
+                    color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+                  >
+                    {t('badgesEarnedCount', {
+                      earned: String(earnedBadgeCount),
+                      total: String(TOTAL_POSSIBLE_BADGES),
+                    })}
+                  </Text.Caption>
+                </YStack>
+                <ChevronRight
+                  size={iconSizes.md}
+                  color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+                />
+              </XStack>
+            </Pressable>
           </Animated.View>
 
           {/* Native Ad */}

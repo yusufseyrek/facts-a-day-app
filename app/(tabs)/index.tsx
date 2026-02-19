@@ -25,6 +25,7 @@ import {
   ScreenHeader,
   Text,
 } from '../../src/components';
+import { ReadingStreakIndicator } from '../../src/components/badges/ReadingStreakIndicator';
 import { PopularNativeAdItem } from '../../src/components/ads/PopularNativeAdItem';
 import { CategoryStoryButtons } from '../../src/components/CategoryStoryButtons';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
@@ -39,6 +40,7 @@ import {
 } from '../../src/services/analytics';
 
 import type { FactViewSource } from '../../src/services/analytics';
+import { getReadingStreak } from '../../src/services/badges';
 import {
   forceRefreshContent,
   getRefreshStatus,
@@ -76,6 +78,7 @@ function HomeScreen() {
   const [worthKnowingFacts, setWorthKnowingFacts] = useState<FactWithRelations[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [readingStreak, setReadingStreak] = useState(0);
   const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() =>
     getRefreshStatus()
   );
@@ -135,6 +138,7 @@ function HomeScreen() {
       loadTodaysFacts();
       loadPopularFacts(true);
       loadWorthKnowingFacts(true);
+      getReadingStreak().then(setReadingStreak).catch(() => {});
       trackScreenView(Screens.HOME);
     }, [locale, t, consumePreloadedFacts])
   );
@@ -479,6 +483,12 @@ function HomeScreen() {
                 icon={<Lightbulb size={iconSizes.lg} color={colors.primary} />}
                 title={t('appName')}
                 paddingBottom={spacing.sm}
+                rightElement={
+                  <ReadingStreakIndicator
+                    streak={readingStreak}
+                    onPress={() => router.push('/badges')}
+                  />
+                }
               />
             </Animated.View>
 

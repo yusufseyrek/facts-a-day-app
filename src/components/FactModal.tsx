@@ -21,7 +21,12 @@ import { useTranslation } from '../i18n';
 import { trackSourceLinkClick } from '../services/analytics';
 import { onFactViewed } from '../services/appReview';
 import { getIsConnected } from '../services/network';
-import { addFactDetailTimeSpent, markFactDetailOpened, markFactDetailRead } from '../services/database';
+import { checkAndAwardBadges, pushModalScreen, popModalScreen } from '../services/badges';
+import {
+  addFactDetailTimeSpent,
+  markFactDetailOpened,
+  markFactDetailRead,
+} from '../services/database';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { openInAppBrowser } from '../utils/browser';
@@ -158,6 +163,12 @@ export function FactModal({
     }
   }, [isActivelyLoading, shimmerAnim]);
 
+  // Track modal screen for badge toast deferral
+  useEffect(() => {
+    pushModalScreen();
+    return () => popModalScreen();
+  }, []);
+
   // Track fact view for app review prompt and interstitial ads
   useEffect(() => {
     onFactViewed();
@@ -169,7 +180,9 @@ export function FactModal({
 
   // Mark detail as opened on mount
   useEffect(() => {
-    markFactDetailOpened(fact.id).catch(() => {});
+    markFactDetailOpened(fact.id)
+      .then(() => checkAndAwardBadges())
+      .catch(() => {});
     mountTimeRef.current = Date.now();
     hasMarkedRead.current = false;
 
@@ -177,7 +190,9 @@ export function FactModal({
       // Track time spent on unmount
       const seconds = Math.round((Date.now() - mountTimeRef.current) / 1000);
       if (seconds > 0) {
-        addFactDetailTimeSpent(fact.id, seconds).catch(() => {});
+        addFactDetailTimeSpent(fact.id, seconds)
+          .then(() => checkAndAwardBadges())
+          .catch(() => {});
       }
     };
   }, [fact.id]);
@@ -279,7 +294,9 @@ export function FactModal({
       const threshold = 50;
       if (contentOffset.y + layoutMeasurement.height >= contentSize.height - threshold) {
         hasMarkedRead.current = true;
-        markFactDetailRead(fact.id).catch(() => {});
+        markFactDetailRead(fact.id)
+          .then(() => checkAndAwardBadges())
+          .catch(() => {});
       }
     },
     [fact.id]

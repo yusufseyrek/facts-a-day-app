@@ -226,6 +226,30 @@ async function initializeSchema(): Promise<void> {
     );
   `);
 
+  // ====== SHARE EVENTS ======
+
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS share_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fact_id INTEGER NOT NULL,
+      shared_at TEXT NOT NULL
+    );
+  `);
+
+  // ====== BADGES ======
+
+  // Drop and recreate to fix schema mismatches during development
+  // Safe: this table is new and has no production data yet
+  await db.execAsync(`DROP TABLE IF EXISTS user_badges`);
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS user_badges (
+      badge_id TEXT NOT NULL,
+      tier TEXT NOT NULL,
+      earned_at TEXT NOT NULL,
+      PRIMARY KEY (badge_id, tier)
+    );
+  `);
+
   // ====== MIGRATIONS ======
 
   // Add slug column for existing databases (migration)
@@ -248,6 +272,8 @@ export async function clearDatabase(): Promise<void> {
     DELETE FROM daily_trivia_progress;
     DELETE FROM trivia_sessions;
     DELETE FROM fact_interactions;
+    DELETE FROM share_events;
+    DELETE FROM user_badges;
   `);
 }
 
@@ -2821,6 +2847,20 @@ export async function markAllFactsViewedInStory(language?: string): Promise<numb
          story_viewed_at = COALESCE(story_viewed_at, excluded.story_viewed_at)`;
   const result = await database.runAsync(query, language ? [now, language] : [now]);
   return result.changes;
+}
+
+// ====== SHARE EVENTS ======
+
+/**
+ * Record a successful share event for badge tracking
+ */
+export async function recordShareEvent(factId: number): Promise<void> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+  await database.runAsync(
+    `INSERT INTO share_events (fact_id, shared_at) VALUES (?, ?)`,
+    [factId, now]
+  );
 }
 
 /**

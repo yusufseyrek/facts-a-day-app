@@ -8,6 +8,8 @@ import ViewShot from 'react-native-view-shot';
 import * as Haptics from 'expo-haptics';
 
 import { trackFactShareWithPlatform } from '../analytics';
+import { checkAndAwardBadges } from '../badges';
+import { recordShareEvent } from '../database';
 
 import { generateDeepLink,generateShareText, generateShortShareText } from './deepLinks';
 import { cleanupShareCards,generateShareCard } from './imageGenerator';
@@ -133,7 +135,7 @@ class ShareServiceImpl {
           break;
       }
 
-      // Track analytics for successful shares (not cancellations)
+      // Track analytics and record share event for successful shares (not cancellations)
       if (result.success) {
         const category =
           typeof fact.category === 'string' ? fact.category : fact.category?.slug || 'unknown';
@@ -144,6 +146,9 @@ class ShareServiceImpl {
           platform: platform!,
           success: true,
         });
+
+        // Record for badge tracking
+        recordShareEvent(fact.id).then(() => checkAndAwardBadges()).catch(() => {});
       }
 
       return result;

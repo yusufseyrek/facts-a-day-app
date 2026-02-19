@@ -14,6 +14,7 @@ import { HINT_LIMITS, STORAGE_KEYS } from '../config/app';
 import { TIME_PER_QUESTION, TRIVIA_QUESTIONS } from '../config/trivia';
 import { getIsPremium } from './premiumState';
 
+import { checkAndAwardBadges } from './badges';
 import * as database from './database';
 import * as onboardingService from './onboarding';
 
@@ -465,7 +466,7 @@ export async function saveSessionResult(
     }
   }
 
-  return database.saveTriviaSession(
+  const sessionId = await database.saveTriviaSession(
     triviaMode,
     totalQuestions,
     correctAnswers,
@@ -475,6 +476,11 @@ export async function saveSessionResult(
     questionIds,
     selectedAnswers
   );
+
+  // Check for badge unlocks after saving session
+  checkAndAwardBadges().catch(() => {});
+
+  return sessionId;
 }
 
 /**

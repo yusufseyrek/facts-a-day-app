@@ -1,3 +1,4 @@
+export { BadgeToastProvider } from './BadgeToastContext';
 export { OnboardingProvider, useOnboarding } from './OnboardingContext';
 export { PremiumProvider, usePremium } from './PremiumContext';
 export {

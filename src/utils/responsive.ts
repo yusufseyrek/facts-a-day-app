@@ -184,6 +184,7 @@ const phoneIconSizes = {
   xl: 32,
   hero: 48,
   heroLg: 64,
+  heroXl: 96,
 } as const;
 
 export const iconSizes = {
