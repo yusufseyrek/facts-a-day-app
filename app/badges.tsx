@@ -74,8 +74,20 @@ export default function BadgesScreen() {
     }, [])
   );
 
-  const readingBadges = badges.filter((b) => b.definition.category === 'reading');
-  const quizBadges = badges.filter((b) => b.definition.category === 'quiz');
+  const sortByProgress = (a: BadgeWithStatus, b: BadgeWithStatus) => {
+    const progressScore = (badge: BadgeWithStatus) => {
+      const earned = badge.earnedStars.length;
+      const fraction =
+        badge.nextThreshold && badge.nextThreshold > 0
+          ? Math.min(badge.currentProgress / badge.nextThreshold, 1)
+          : 0;
+      return earned + fraction;
+    };
+    return progressScore(b) - progressScore(a);
+  };
+
+  const readingBadges = badges.filter((b) => b.definition.category === 'reading').sort(sortByProgress);
+  const quizBadges = badges.filter((b) => b.definition.category === 'quiz').sort(sortByProgress);
   const readingEarned = readingBadges.reduce((s, b) => s + b.earnedStars.length, 0);
   const quizEarned = quizBadges.reduce((s, b) => s + b.earnedStars.length, 0);
   const totalEarned = readingEarned + quizEarned;
