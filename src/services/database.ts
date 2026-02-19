@@ -247,6 +247,32 @@ async function initializeSchema(): Promise<void> {
     );
   `);
 
+  // ====== BADGE PERFORMANCE INDEXES ======
+
+  // fact_interactions: used by curious_reader, deep_diver, reading streak queries
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_fi_story_viewed_at ON fact_interactions(story_viewed_at);
+  `);
+
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_fi_detail_read_at ON fact_interactions(detail_read_at);
+  `);
+
+  // question_attempts: covering index for master_scholar nested subquery
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_attempts_qid_correct_at ON question_attempts(question_id, is_correct, answered_at);
+  `);
+
+  // trivia_sessions: used by category_ace badge
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_trivia_sessions_category ON trivia_sessions(category_slug);
+  `);
+
+  // trivia_sessions: used by quick_thinker badge
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_trivia_sessions_elapsed ON trivia_sessions(elapsed_time);
+  `);
+
   // ====== MIGRATIONS ======
 
   // Add slug column for existing databases (migration)

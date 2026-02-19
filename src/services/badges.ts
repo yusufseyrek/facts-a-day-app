@@ -84,8 +84,10 @@ export async function checkAndAwardBadges(): Promise<NewlyEarnedBadge[]> {
     const newlyEarned: NewlyEarnedBadge[] = [];
     const now = new Date().toISOString();
 
+    const progressMap = await getAllBadgeProgressValues();
+
     for (const badge of BADGE_DEFINITIONS) {
-      const progress = await getBadgeProgressValue(badge.id);
+      const progress = progressMap.get(badge.id) || 0;
       if (progress > 0) {
         console.log(`🏅 [Badge] ${badge.id}: progress=${progress}, thresholds=${badge.stars.map(s => s.threshold).join(',')}`);
       }
@@ -172,12 +174,15 @@ export async function getAllBadgesWithStatus(): Promise<BadgeWithStatus[]> {
     earnedMap.set(e.badge_id, list);
   }
 
+  // Batch: get ALL progress values in 3-4 queries instead of 14
+  const progressMap = await getAllBadgeProgressValues();
+
   const results: BadgeWithStatus[] = [];
 
   for (const definition of BADGE_DEFINITIONS) {
     const earnedStars = earnedMap.get(definition.id) || [];
     const earnedStarSet = new Set(earnedStars.map((e) => e.star));
-    const currentProgress = await getBadgeProgressValue(definition.id);
+    const currentProgress = progressMap.get(definition.id) || 0;
 
     // Find next unearned star
     let nextStar: BadgeStar | null = null;
@@ -213,7 +218,8 @@ export async function getReadingStreak(): Promise<number> {
     `SELECT DISTINCT date(story_viewed_at, 'localtime') as view_date
      FROM fact_interactions
      WHERE story_viewed_at IS NOT NULL
-     ORDER BY view_date DESC`
+     ORDER BY view_date DESC
+     LIMIT 365`
   );
 
   if (result.length === 0) return 0;
@@ -260,7 +266,8 @@ export async function getQuizStreak(): Promise<number> {
     `SELECT DISTINCT date(completed_at, 'localtime') as quiz_date
      FROM trivia_sessions
      WHERE completed_at IS NOT NULL
-     ORDER BY quiz_date DESC`
+     ORDER BY quiz_date DESC
+     LIMIT 365`
   );
 
   if (result.length === 0) return 0;
@@ -327,12 +334,143 @@ export async function getBestReadingStreak(): Promise<number> {
 }
 
 // ============================================
+// BATCH PROGRESS RESOLVER
+// ============================================
+
+/**
+ * Compute best daily trivia streak from daily_trivia_progress dates.
+ */
+async function getBestDailyTriviaStreak(): Promise<number> {
+  const db = await openDatabase();
+  const result = await db.getAllAsync<{ date: string }>(
+    `SELECT date FROM daily_trivia_progress
+     WHERE completed_at IS NOT NULL
+     ORDER BY date ASC`
+  );
+  if (result.length === 0) return 0;
+  let bestStreak = 1;
+  let currentStreak = 1;
+  for (let i = 1; i < result.length; i++) {
+    const prev = new Date(result[i - 1].date + 'T12:00:00');
+    const curr = new Date(result[i].date + 'T12:00:00');
+    const diffDays = Math.round(
+      (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (diffDays === 1) {
+      currentStreak++;
+      bestStreak = Math.max(bestStreak, currentStreak);
+    } else {
+      currentStreak = 1;
+    }
+  }
+  return bestStreak;
+}
+
+/**
+ * Get all badge progress values in batch (3 queries instead of 14).
+ * Used by getAllBadgesWithStatus() and checkAndAwardBadges() for bulk loading.
+ */
+async function getAllBadgeProgressValues(): Promise<Map<string, number>> {
+  const db = await openDatabase();
+  const progress = new Map<string, number>();
+
+  // Query 1: fact_interactions aggregates (curious_reader, deep_diver, bookworm)
+  const fiResult = await db.getFirstAsync<{
+    curious_reader: number;
+    deep_diver: number;
+    bookworm_seconds: number;
+  }>(
+    `SELECT
+       COUNT(CASE WHEN story_viewed_at IS NOT NULL THEN 1 END) as curious_reader,
+       COUNT(CASE WHEN detail_read_at IS NOT NULL THEN 1 END) as deep_diver,
+       COALESCE(SUM(detail_time_spent), 0) as bookworm_seconds
+     FROM fact_interactions`
+  );
+  progress.set('curious_reader', fiResult?.curious_reader || 0);
+  progress.set('deep_diver', fiResult?.deep_diver || 0);
+  progress.set('bookworm', Math.floor((fiResult?.bookworm_seconds || 0) / 60));
+
+  // Query 2: all count-based badges via scalar subqueries
+  const countsResult = await db.getFirstAsync<{
+    quiz_starter: number;
+    perfectionist: number;
+    quick_thinker: number;
+    category_ace: number;
+    sharp_mind: number;
+    endurance: number;
+    master_scholar: number;
+    fact_collector: number;
+    knowledge_sharer: number;
+  }>(
+    `SELECT
+       (SELECT COUNT(*) FROM trivia_sessions) as quiz_starter,
+       (SELECT COUNT(*) FROM trivia_sessions
+        WHERE correct_answers = total_questions AND total_questions > 0) as perfectionist,
+       (SELECT COUNT(*) FROM trivia_sessions
+        WHERE elapsed_time <= 60 AND total_questions > 0
+        AND CAST(correct_answers AS REAL) / total_questions >= 0.6) as quick_thinker,
+       (SELECT COUNT(*) FROM (
+         SELECT ts.category_slug
+         FROM trivia_sessions ts
+         WHERE ts.category_slug IS NOT NULL AND ts.category_slug != ''
+         GROUP BY ts.category_slug
+         HAVING SUM(ts.total_questions) >= 5
+         AND (CAST(SUM(ts.correct_answers) AS REAL) / SUM(ts.total_questions)) >= 0.8
+       )) as category_ace,
+       (SELECT COUNT(*) FROM question_attempts qa
+        JOIN questions q ON qa.question_id = q.id
+        WHERE qa.is_correct = 1) as sharp_mind,
+       (SELECT COUNT(*) FROM question_attempts qa
+        JOIN questions q ON qa.question_id = q.id) as endurance,
+       (SELECT COUNT(*) FROM (
+         SELECT q.id
+         FROM questions q
+         WHERE (
+           SELECT COUNT(*) FROM (
+             SELECT is_correct FROM question_attempts
+             WHERE question_id = q.id
+             ORDER BY answered_at DESC
+             LIMIT 3
+           ) WHERE is_correct = 1
+         ) = 3
+         AND (
+           SELECT COUNT(*) FROM question_attempts WHERE question_id = q.id
+         ) >= 3
+       )) as master_scholar,
+       (SELECT COUNT(*) FROM favorites) as fact_collector,
+       (SELECT COUNT(*) FROM share_events) as knowledge_sharer`
+  );
+
+  if (countsResult) {
+    progress.set('quiz_starter', countsResult.quiz_starter || 0);
+    progress.set('perfectionist', countsResult.perfectionist || 0);
+    progress.set('quick_thinker', countsResult.quick_thinker || 0);
+    progress.set('category_ace', countsResult.category_ace || 0);
+    progress.set('sharp_mind', countsResult.sharp_mind || 0);
+    progress.set('endurance', countsResult.endurance || 0);
+    progress.set('master_scholar', countsResult.master_scholar || 0);
+    progress.set('fact_collector', countsResult.fact_collector || 0);
+    progress.set('knowledge_sharer', countsResult.knowledge_sharer || 0);
+  }
+
+  // Query 3: daily_reader (current reading streak)
+  const readingStreak = await getReadingStreak();
+  progress.set('daily_reader', readingStreak);
+
+  // Query 4: streak_champion (best daily trivia streak)
+  const streakChampion = await getBestDailyTriviaStreak();
+  progress.set('streak_champion', streakChampion);
+
+  return progress;
+}
+
+// ============================================
 // PROGRESS VALUE RESOLVERS
 // ============================================
 
 /**
- * Get the raw progress number for a badge.
- * This is the core logic that maps badge IDs to their data sources.
+ * Get the raw progress number for a single badge.
+ * Used by getBadgeProgress() for individual badge detail views.
  */
 async function getBadgeProgressValue(badgeId: string): Promise<number> {
   const db = await openDatabase();

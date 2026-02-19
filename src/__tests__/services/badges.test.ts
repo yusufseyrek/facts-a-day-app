@@ -47,6 +47,14 @@ import {
 
 import type { BadgeCategory } from '../../config/badges';
 
+// ─── Global beforeEach: reset mocks and re-establish defaults ───
+beforeEach(() => {
+  mockDb.getAllAsync.mockReset().mockResolvedValue([]);
+  mockDb.getFirstAsync.mockReset().mockResolvedValue(null);
+  mockDb.runAsync.mockReset().mockResolvedValue({ changes: 1 });
+  mockDb.execAsync.mockReset().mockResolvedValue(undefined);
+});
+
 // ─── Helpers ───
 
 function toDateStr(date: Date): string {
@@ -71,44 +79,60 @@ function consecutiveDatesFromToday(count: number): string[] {
 }
 
 /**
- * Set up mocks so checkAndAwardBadges sees specific progress for one badge
- * while all others return 0. Iterates BADGE_DEFINITIONS in order to match
- * the exact sequence of DB calls.
+ * Set up mocks so checkAndAwardBadges / getAllBadgesWithStatus sees specific
+ * progress for one badge while all others return 0.
+ * Matches the batch query structure of getAllBadgeProgressValues():
+ *   1. getAllAsync → getEarnedBadges
+ *   2. getFirstAsync → fact_interactions batch (curious_reader, deep_diver, bookworm)
+ *   3. getFirstAsync → counts batch (quiz_starter, perfectionist, quick_thinker,
+ *      category_ace, sharp_mind, endurance, master_scholar, fact_collector, knowledge_sharer)
+ *   4. getAllAsync → getReadingStreak (for daily_reader)
+ *   5. getAllAsync → getBestDailyTriviaStreak (for streak_champion)
  */
 function setupSingleBadgeProgress(
   badgeId: string,
   value: number,
   earnedBadges: Array<{ badge_id: string; star: string; earned_at: string }> = []
 ): void {
-  // getEarnedBadges call (first getAllAsync)
+  // 1. getEarnedBadges call
   mockDb.getAllAsync.mockResolvedValueOnce(earnedBadges);
 
-  for (const badge of BADGE_DEFINITIONS) {
-    if (badge.id === badgeId) {
-      if (badgeId === 'bookworm') {
-        mockDb.getFirstAsync.mockResolvedValueOnce({ total: value });
-      } else if (badgeId === 'daily_reader') {
-        // getReadingStreak -> getAllAsync
-        const dates = consecutiveDatesFromToday(value).map((d) => ({ view_date: d }));
-        mockDb.getAllAsync.mockResolvedValueOnce(dates);
-      } else if (badgeId === 'streak_champion') {
-        // getAllAsync for daily_trivia_progress dates (ASC order)
-        const dates = consecutiveDatesFromToday(value)
-          .reverse()
-          .map((d) => ({ date: d }));
-        mockDb.getAllAsync.mockResolvedValueOnce(dates);
-      } else {
-        mockDb.getFirstAsync.mockResolvedValueOnce({ count: value });
-      }
-    } else if (badge.id === 'daily_reader') {
-      mockDb.getAllAsync.mockResolvedValueOnce([]);
-    } else if (badge.id === 'streak_champion') {
-      mockDb.getAllAsync.mockResolvedValueOnce([]);
-    } else if (badge.id === 'bookworm') {
-      mockDb.getFirstAsync.mockResolvedValueOnce({ total: 0 });
-    } else {
-      mockDb.getFirstAsync.mockResolvedValueOnce({ count: 0 });
-    }
+  // 2. fact_interactions batch query
+  mockDb.getFirstAsync.mockResolvedValueOnce({
+    curious_reader: badgeId === 'curious_reader' ? value : 0,
+    deep_diver: badgeId === 'deep_diver' ? value : 0,
+    bookworm_seconds: badgeId === 'bookworm' ? value : 0,
+  });
+
+  // 3. counts batch query
+  mockDb.getFirstAsync.mockResolvedValueOnce({
+    quiz_starter: badgeId === 'quiz_starter' ? value : 0,
+    perfectionist: badgeId === 'perfectionist' ? value : 0,
+    quick_thinker: badgeId === 'quick_thinker' ? value : 0,
+    category_ace: badgeId === 'category_ace' ? value : 0,
+    sharp_mind: badgeId === 'sharp_mind' ? value : 0,
+    endurance: badgeId === 'endurance' ? value : 0,
+    master_scholar: badgeId === 'master_scholar' ? value : 0,
+    fact_collector: badgeId === 'fact_collector' ? value : 0,
+    knowledge_sharer: badgeId === 'knowledge_sharer' ? value : 0,
+  });
+
+  // 4. getReadingStreak (for daily_reader progress)
+  if (badgeId === 'daily_reader') {
+    const dates = consecutiveDatesFromToday(value).map((d) => ({ view_date: d }));
+    mockDb.getAllAsync.mockResolvedValueOnce(dates);
+  } else {
+    mockDb.getAllAsync.mockResolvedValueOnce([]);
+  }
+
+  // 5. getBestDailyTriviaStreak (for streak_champion progress)
+  if (badgeId === 'streak_champion') {
+    const dates = consecutiveDatesFromToday(value)
+      .reverse()
+      .map((d) => ({ date: d }));
+    mockDb.getAllAsync.mockResolvedValueOnce(dates);
+  } else {
+    mockDb.getAllAsync.mockResolvedValueOnce([]);
   }
 }
 
@@ -305,9 +329,7 @@ describe('checkAndAwardBadges', () => {
   });
 
   it('awards no badges when all progress is 0', async () => {
-    mockDb.getAllAsync.mockResolvedValueOnce([]); // getEarnedBadges
-    mockDb.getFirstAsync.mockResolvedValue({ count: 0 });
-    mockDb.getAllAsync.mockResolvedValue([]); // streak queries
+    setupSingleBadgeProgress('curious_reader', 0);
 
     const earned = await checkAndAwardBadges();
     expect(earned).toEqual([]);
@@ -460,17 +482,13 @@ describe('getAllBadgesWithStatus', () => {
   });
 
   it('returns all 14 badges', async () => {
-    mockDb.getAllAsync.mockResolvedValueOnce([]);
-    mockDb.getFirstAsync.mockResolvedValue({ count: 0 });
-    mockDb.getAllAsync.mockResolvedValue([]);
+    setupSingleBadgeProgress('curious_reader', 0);
     const results = await getAllBadgesWithStatus();
     expect(results).toHaveLength(14);
   });
 
   it('each result has required shape', async () => {
-    mockDb.getAllAsync.mockResolvedValueOnce([]);
-    mockDb.getFirstAsync.mockResolvedValue({ count: 0 });
-    mockDb.getAllAsync.mockResolvedValue([]);
+    setupSingleBadgeProgress('curious_reader', 0);
     const results = await getAllBadgesWithStatus();
     for (const result of results) {
       expect(result).toHaveProperty('definition');
@@ -482,12 +500,10 @@ describe('getAllBadgesWithStatus', () => {
   });
 
   it('correctly merges earned stars with definitions', async () => {
-    mockDb.getAllAsync.mockResolvedValueOnce([
+    setupSingleBadgeProgress('curious_reader', 600, [
       { badge_id: 'curious_reader', star: 'star1', earned_at: '2025-01-01T00:00:00Z' },
       { badge_id: 'curious_reader', star: 'star2', earned_at: '2025-02-01T00:00:00Z' },
     ]);
-    mockDb.getFirstAsync.mockResolvedValue({ count: 600 });
-    mockDb.getAllAsync.mockResolvedValue([]);
     const results = await getAllBadgesWithStatus();
     const curReader = results.find((r) => r.definition.id === 'curious_reader')!;
     expect(curReader.earnedStars).toHaveLength(2);
@@ -496,11 +512,9 @@ describe('getAllBadgesWithStatus', () => {
   });
 
   it('identifies the next unearned star', async () => {
-    mockDb.getAllAsync.mockResolvedValueOnce([
+    setupSingleBadgeProgress('curious_reader', 100, [
       { badge_id: 'curious_reader', star: 'star1', earned_at: '2025-01-01T00:00:00Z' },
     ]);
-    mockDb.getFirstAsync.mockResolvedValue({ count: 100 });
-    mockDb.getAllAsync.mockResolvedValue([]);
     const results = await getAllBadgesWithStatus();
     const curReader = results.find((r) => r.definition.id === 'curious_reader')!;
     expect(curReader.nextStar).toBe('star2');
@@ -508,13 +522,11 @@ describe('getAllBadgesWithStatus', () => {
   });
 
   it('sets nextStar/nextThreshold to null when all stars earned', async () => {
-    mockDb.getAllAsync.mockResolvedValueOnce([
+    setupSingleBadgeProgress('curious_reader', 3000, [
       { badge_id: 'curious_reader', star: 'star1', earned_at: '2025-01-01T00:00:00Z' },
       { badge_id: 'curious_reader', star: 'star2', earned_at: '2025-02-01T00:00:00Z' },
       { badge_id: 'curious_reader', star: 'star3', earned_at: '2025-03-01T00:00:00Z' },
     ]);
-    mockDb.getFirstAsync.mockResolvedValue({ count: 3000 });
-    mockDb.getAllAsync.mockResolvedValue([]);
     const results = await getAllBadgesWithStatus();
     const curReader = results.find((r) => r.definition.id === 'curious_reader')!;
     expect(curReader.nextStar).toBeNull();
@@ -522,9 +534,7 @@ describe('getAllBadgesWithStatus', () => {
   });
 
   it('badges with no earned stars show star1 as next star', async () => {
-    mockDb.getAllAsync.mockResolvedValueOnce([]);
-    mockDb.getFirstAsync.mockResolvedValue({ count: 0 });
-    mockDb.getAllAsync.mockResolvedValue([]);
+    setupSingleBadgeProgress('curious_reader', 0);
     const results = await getAllBadgesWithStatus();
     for (const result of results) {
       expect(result.nextStar).toBe('star1');
