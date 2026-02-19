@@ -199,16 +199,16 @@ describe('Badge Progress Queries', () => {
     consumePendingBadgeToasts();
   });
 
-  it('curious_reader: awards star1 when view count >= 50', async () => {
-    setupSingleBadgeProgress('curious_reader', 50);
+  it('curious_reader: awards star1 when view count >= 25', async () => {
+    setupSingleBadgeProgress('curious_reader', 25);
     const earned = await checkAndAwardBadges();
     const match = earned.find((e) => e.badgeId === 'curious_reader');
     expect(match).toBeDefined();
     expect(match!.star).toBe('star1');
   });
 
-  it('deep_diver: awards star1 when detail-read count >= 25', async () => {
-    setupSingleBadgeProgress('deep_diver', 25);
+  it('deep_diver: awards star1 when detail-read count >= 10', async () => {
+    setupSingleBadgeProgress('deep_diver', 10);
     const earned = await checkAndAwardBadges();
     expect(earned.find((e) => e.badgeId === 'deep_diver')).toBeDefined();
   });
@@ -269,8 +269,8 @@ describe('Badge Progress Queries', () => {
     expect(earned.find((e) => e.badgeId === 'master_scholar')).toBeDefined();
   });
 
-  it('category_ace: awards star1 when qualifying categories >= 3', async () => {
-    setupSingleBadgeProgress('category_ace', 3);
+  it('category_ace: awards star1 when qualifying categories >= 2', async () => {
+    setupSingleBadgeProgress('category_ace', 2);
     const earned = await checkAndAwardBadges();
     expect(earned.find((e) => e.badgeId === 'category_ace')).toBeDefined();
   });
@@ -315,8 +315,8 @@ describe('checkAndAwardBadges', () => {
   });
 
   it('awards multiple stars when progress far exceeds thresholds', async () => {
-    // curious_reader: star1=50, star2=500, star3=2000
-    setupSingleBadgeProgress('curious_reader', 2000);
+    // curious_reader: star1=25, star2=250, star3=1000
+    setupSingleBadgeProgress('curious_reader', 1000);
     const earned = await checkAndAwardBadges();
     const curReaderBadges = earned.filter((e) => e.badgeId === 'curious_reader');
     expect(curReaderBadges).toHaveLength(3);
@@ -324,7 +324,7 @@ describe('checkAndAwardBadges', () => {
   });
 
   it('does not re-award already-earned badges', async () => {
-    setupSingleBadgeProgress('curious_reader', 2000, [
+    setupSingleBadgeProgress('curious_reader', 1000, [
       { badge_id: 'curious_reader', star: 'star1', earned_at: '2025-01-01T00:00:00Z' },
       { badge_id: 'curious_reader', star: 'star2', earned_at: '2025-01-02T00:00:00Z' },
     ]);
@@ -412,11 +412,11 @@ describe('getBadgeProgress', () => {
   });
 
   it('returns current progress and next threshold for unearned badge', async () => {
-    mockDb.getFirstAsync.mockResolvedValueOnce({ count: 30 });
+    mockDb.getFirstAsync.mockResolvedValueOnce({ count: 10 });
     mockDb.getAllAsync.mockResolvedValueOnce([]);
     const progress = await getBadgeProgress('curious_reader');
-    expect(progress.current).toBe(30);
-    expect(progress.nextThreshold).toBe(50); // star1 threshold
+    expect(progress.current).toBe(10);
+    expect(progress.nextThreshold).toBe(25); // star1 threshold
   });
 
   it('returns next unearned star when star1 is earned', async () => {
@@ -426,7 +426,7 @@ describe('getBadgeProgress', () => {
     ]);
     const progress = await getBadgeProgress('curious_reader');
     expect(progress.current).toBe(100);
-    expect(progress.nextThreshold).toBe(500); // star2 threshold
+    expect(progress.nextThreshold).toBe(250); // star2 threshold
   });
 
   it('returns last star threshold when all stars earned', async () => {
@@ -438,7 +438,7 @@ describe('getBadgeProgress', () => {
     ]);
     const progress = await getBadgeProgress('curious_reader');
     expect(progress.current).toBe(3000);
-    expect(progress.nextThreshold).toBe(2000); // star3 threshold
+    expect(progress.nextThreshold).toBe(1000); // star3 threshold
   });
 
   it('returns null nextThreshold for unknown badge id', async () => {
@@ -504,7 +504,7 @@ describe('getAllBadgesWithStatus', () => {
     const results = await getAllBadgesWithStatus();
     const curReader = results.find((r) => r.definition.id === 'curious_reader')!;
     expect(curReader.nextStar).toBe('star2');
-    expect(curReader.nextThreshold).toBe(500);
+    expect(curReader.nextThreshold).toBe(250);
   });
 
   it('sets nextStar/nextThreshold to null when all stars earned', async () => {
@@ -706,7 +706,7 @@ describe('Toast Queue Management', () => {
 
     it('accumulates multiple badges before consumption', async () => {
       jest.clearAllMocks();
-      setupSingleBadgeProgress('curious_reader', 2000);
+      setupSingleBadgeProgress('curious_reader', 1000);
       await checkAndAwardBadges();
 
       const toasts = consumePendingBadgeToasts();

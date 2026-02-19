@@ -2,7 +2,7 @@
   "expo": {
     "name": "Facts a Day",
     "slug": "facts-a-day-app",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -49,11 +49,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.seyrek.factsaday",
-      "buildNumber": "56",
+      "buildNumber": "57",
       "googleServicesFile": "./google/GoogleService-Info.plist",
-      "associatedDomains": [
-        "applinks:factsaday.com"
-      ],
+      "associatedDomains": ["applinks:factsaday.com"],
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false,
@@ -317,7 +315,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "dev.seyrek.factsaday",
-      "versionCode": 36,
+      "versionCode": 37,
       "permissions": [
         "INTERNET",
         "RECEIVE_BOOT_COMPLETED",
@@ -339,10 +337,7 @@
               "pathPattern": "/.*/fact/.*"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
@@ -350,16 +345,7 @@
       [
         "expo-localization",
         {
-          "supportedLocales": [
-            "en",
-            "de",
-            "es",
-            "fr",
-            "ja",
-            "ko",
-            "tr",
-            "zh"
-          ]
+          "supportedLocales": ["en", "de", "es", "fr", "ja", "ko", "tr", "zh"]
         }
       ],
       "@react-native-firebase/app",
