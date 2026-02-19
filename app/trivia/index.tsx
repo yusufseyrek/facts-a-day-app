@@ -3,7 +3,7 @@ import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, Vie
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { useFocusEffect } from '@react-navigation/native';
-import { ArrowRight, Brain, Flame, Sparkles } from '@tamagui/lucide-icons';
+import { ArrowRight, Brain, Gamepad2, Sparkles } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -214,18 +214,28 @@ export default function TriviaScreen() {
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
   const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
-  const orangeColor = isDark ? hexColors.dark.neonOrange : hexColors.light.neonOrange;
 
-  // Streak badge for header (only show when streak > 0)
-  const streakBadge =
-    dailyStreak > 0 ? (
-      <XStack alignItems="center" gap={4}>
-        <Flame size={typography.fontSize.title} color={orangeColor} />
-        <Text.Label color={orangeColor} fontFamily={FONT_FAMILIES.semibold}>
+
+  // Streak badge for header
+  const isStreakActive = dailyStreak > 0;
+  const streakColor = isStreakActive ? '#8B5CF6' : secondaryTextColor;
+  const streakBadge = (
+    <Pressable onPress={() => router.push('/badges')} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+      <XStack
+        alignItems="center"
+        gap={spacing.xs}
+        paddingHorizontal={spacing.sm}
+        paddingVertical={spacing.xs}
+        borderRadius={radius.md}
+        backgroundColor={isStreakActive ? `${streakColor}15` : `${cardBg}20`}
+      >
+        <Gamepad2 size={iconSizes.sm} color={streakColor} />
+        <Text.Label fontFamily={FONT_FAMILIES.semibold} color={streakColor}>
           {dailyStreak}
         </Text.Label>
       </XStack>
-    ) : undefined;
+    </Pressable>
+  );
 
   // Helper to chunk categories into rows
   const chunkCategories = (categories: CategoryWithProgress[], size: number) => {

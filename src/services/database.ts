@@ -844,7 +844,7 @@ export async function clearAllScheduledFacts(): Promise<void> {
   const now = new Date().toISOString();
 
   await database.runAsync(
-    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ?',
+    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ? AND (shown_in_feed IS NULL OR shown_in_feed = 0)',
     [now]
   );
 }
@@ -2103,6 +2103,53 @@ export async function getDailyStreak(): Promise<number> {
 
   let streak = 1;
   let currentDate = new Date(dates[0] + 'T12:00:00'); // Use noon to avoid DST issues
+
+  for (let i = 1; i < dates.length; i++) {
+    const prevDate = new Date(currentDate);
+    prevDate.setDate(prevDate.getDate() - 1);
+    const prevDateStr = getLocalDateString(prevDate);
+
+    if (dates[i] === prevDateStr) {
+      streak++;
+      currentDate = prevDate;
+    } else {
+      break;
+    }
+  }
+
+  return streak;
+}
+
+/**
+ * Get the current trivia streak (consecutive days with ANY completed trivia session)
+ */
+export async function getAnyTriviaStreak(): Promise<number> {
+  const database = await openDatabase();
+
+  const result = await database.getAllAsync<{ quiz_date: string }>(
+    `SELECT DISTINCT date(completed_at, 'localtime') as quiz_date
+     FROM trivia_sessions
+     WHERE completed_at IS NOT NULL
+     ORDER BY quiz_date DESC
+     LIMIT 365`
+  );
+
+  if (result.length === 0) return 0;
+
+  const today = new Date();
+  const todayStr = getLocalDateString(today);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = getLocalDateString(yesterday);
+
+  const dates = result.map((r) => r.quiz_date);
+
+  if (dates[0] !== todayStr && dates[0] !== yesterdayStr) {
+    return 0;
+  }
+
+  let streak = 1;
+  let currentDate = new Date(dates[0] + 'T12:00:00');
 
   for (let i = 1; i < dates.length; i++) {
     const prevDate = new Date(currentDate);

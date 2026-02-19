@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Gamepad2,
+  GraduationCap,
   Hash,
   Shuffle,
   Trophy,
@@ -298,7 +299,7 @@ function MetricsGrid({
         : undefined,
     },
     {
-      Icon: Trophy,
+      Icon: GraduationCap,
       color: accentColor,
       label: t('mastered'),
       value: stats?.totalMastered || 0,

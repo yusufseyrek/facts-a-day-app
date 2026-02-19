@@ -134,10 +134,10 @@ export async function saveDailyProgress(
 }
 
 /**
- * Get the current daily streak
+ * Get the current trivia streak (consecutive days with any completed trivia session)
  */
 export async function getDailyStreak(): Promise<number> {
-  return database.getDailyStreak();
+  return database.getAnyTriviaStreak();
 }
 
 // ====== MIXED TRIVIA ======
