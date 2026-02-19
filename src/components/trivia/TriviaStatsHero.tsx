@@ -38,7 +38,6 @@ function CircularProgress({
   trackColor: string;
   textColor: string;
 }) {
-  const _responsive = useResponsive();
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
