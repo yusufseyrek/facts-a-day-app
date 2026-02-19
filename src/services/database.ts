@@ -238,15 +238,12 @@ async function initializeSchema(): Promise<void> {
 
   // ====== BADGES ======
 
-  // Drop and recreate to fix schema mismatches during development
-  // Safe: this table is new and has no production data yet
-  await db.execAsync(`DROP TABLE IF EXISTS user_badges`);
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS user_badges (
       badge_id TEXT NOT NULL,
-      tier TEXT NOT NULL,
+      star TEXT NOT NULL,
       earned_at TEXT NOT NULL,
-      PRIMARY KEY (badge_id, tier)
+      PRIMARY KEY (badge_id, star)
     );
   `);
 

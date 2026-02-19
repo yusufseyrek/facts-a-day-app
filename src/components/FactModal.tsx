@@ -177,6 +177,7 @@ export function FactModal({
   // Track detail interactions
   const mountTimeRef = useRef(Date.now());
   const hasMarkedRead = useRef(false);
+  const hasScrolledToBottom = useRef(false);
 
   // Mark detail as opened on mount
   useEffect(() => {
@@ -185,6 +186,7 @@ export function FactModal({
       .catch(() => {});
     mountTimeRef.current = Date.now();
     hasMarkedRead.current = false;
+    hasScrolledToBottom.current = false;
 
     return () => {
       // Track time spent on unmount
@@ -193,6 +195,19 @@ export function FactModal({
         addFactDetailTimeSpent(fact.id, seconds)
           .then(() => checkAndAwardBadges())
           .catch(() => {});
+      }
+      // If user scrolled to bottom but hadn't spent enough time during scroll,
+      // check again on unmount with final elapsed time
+      if (hasScrolledToBottom.current && !hasMarkedRead.current) {
+        const wordCount = (fact.content || '').split(/\s+/).length;
+        const estimatedSeconds = (wordCount / 200) * 60;
+        const minReadingTime = Math.max(10, Math.min(30, Math.round(estimatedSeconds * 0.4)));
+        if (seconds >= minReadingTime) {
+          hasMarkedRead.current = true;
+          markFactDetailRead(fact.id)
+            .then(() => checkAndAwardBadges())
+            .catch(() => {});
+        }
       }
     };
   }, [fact.id]);
@@ -287,19 +302,31 @@ export function FactModal({
   });
 
   // Detect scroll to bottom for read tracking
+  // Requires both scrolling to bottom AND spending enough time reading
   const checkScrolledToBottom = useCallback(
     (event: any) => {
       if (hasMarkedRead.current) return;
       const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
       const threshold = 50;
       if (contentOffset.y + layoutMeasurement.height >= contentSize.height - threshold) {
-        hasMarkedRead.current = true;
-        markFactDetailRead(fact.id)
-          .then(() => checkAndAwardBadges())
-          .catch(() => {});
+        hasScrolledToBottom.current = true;
+
+        // Calculate minimum reading time based on content length
+        // ~200 words/min average reading speed, clamped between 10-30 seconds
+        const wordCount = (fact.content || '').split(/\s+/).length;
+        const estimatedSeconds = (wordCount / 200) * 60;
+        const minReadingTime = Math.max(10, Math.min(30, Math.round(estimatedSeconds * 0.4)));
+        const elapsedSeconds = (Date.now() - mountTimeRef.current) / 1000;
+
+        if (elapsedSeconds >= minReadingTime) {
+          hasMarkedRead.current = true;
+          markFactDetailRead(fact.id)
+            .then(() => checkAndAwardBadges())
+            .catch(() => {});
+        }
       }
     },
-    [fact.id]
+    [fact.id, fact.content]
   );
 
   const handleSourcePress = useCallback(

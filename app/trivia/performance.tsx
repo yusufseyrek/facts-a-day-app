@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated as RNAnimated,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -23,7 +24,8 @@ import {
   Trophy,
 } from '@tamagui/lucide-icons';
 import { getEarnedBadges } from '../../src/services/badges';
-import { TOTAL_POSSIBLE_BADGES } from '../../src/config/badges';
+import { BADGE_DEFINITIONS } from '../../src/config/badges';
+import { BadgeIcon } from '../../src/components/badges/BadgeIcon';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -565,7 +567,7 @@ export default function PerformanceScreen() {
   const [totalSessionsCount, setTotalSessionsCount] = useState(0);
   const [selectedSession, setSelectedSession] = useState<TriviaSessionWithCategory | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
-  const [earnedBadgeCount, setEarnedBadgeCount] = useState(0);
+  const [earnedBadgeIds, setEarnedBadgeIds] = useState<Set<string>>(new Set());
 
   const loadData = useCallback(
     async (isRefresh = false) => {
@@ -583,7 +585,7 @@ export default function PerformanceScreen() {
         setCategories(categoriesData);
         setRecentSessions(sessionsData);
         setTotalSessionsCount(statsData.testsTaken);
-        setEarnedBadgeCount(earnedBadges.length);
+        setEarnedBadgeIds(new Set(earnedBadges.map((b) => b.badge_id)));
       } catch (error) {
         console.error('Error loading performance data:', error);
       } finally {
@@ -710,7 +712,10 @@ export default function PerformanceScreen() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       {/* Header */}
-      <Animated.View entering={FadeInUp.duration(400).springify()}>
+      <Animated.View
+        entering={FadeInUp.duration(400).springify()}
+        needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+      >
         <XStack
           paddingTop={insets.top + spacing.sm}
           paddingBottom={spacing.md}
@@ -735,7 +740,10 @@ export default function PerformanceScreen() {
       >
         <YStack padding={spacing.lg} gap={spacing.xl}>
           {/* Core Metrics */}
-          <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
+          <Animated.View
+            entering={FadeIn.delay(50).duration(400).springify()}
+            needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+          >
             <Text.Title color={textColor} marginBottom={spacing.md}>
               {t('coreMetrics')}
             </Text.Title>
@@ -755,7 +763,10 @@ export default function PerformanceScreen() {
           </Animated.View>
 
           {/* Achievements Card */}
-          <Animated.View entering={FadeIn.delay(100).duration(400).springify()}>
+          <Animated.View
+            entering={FadeIn.delay(100).duration(400).springify()}
+            needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+          >
             <Pressable
               onPress={() => router.push('/badges')}
               style={({ pressed }) => [
@@ -764,43 +775,63 @@ export default function PerformanceScreen() {
                 { opacity: pressed ? 0.7 : 1 },
               ]}
             >
-              <XStack
+              <YStack
                 backgroundColor={cardBg}
                 borderRadius={radius.lg}
                 padding={spacing.lg}
-                alignItems="center"
-                gap={spacing.sm}
+                gap={spacing.md}
               >
-                <View
-                  style={{
-                    width: iconSizes.lg,
-                    height: iconSizes.lg,
-                    borderRadius: radius.sm * 0.75,
-                    backgroundColor: `${accentColor}20`,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
+                <XStack alignItems="center" justifyContent="space-between">
+                  <XStack alignItems="center" gap={spacing.sm}>
+                    <Trophy size={iconSizes.sm} color={accentColor} />
+                    <Text.Label fontFamily={FONT_FAMILIES.semibold} color={textColor}>
+                      {t('achievements')}
+                    </Text.Label>
+                  </XStack>
+                  <XStack alignItems="center" gap={spacing.xs}>
+                    <Text.Caption
+                      color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+                    >
+                      {t('badgesEarnedCount', {
+                        earned: String(
+                          BADGE_DEFINITIONS.filter(
+                            (b) => b.category === 'quiz' && earnedBadgeIds.has(b.id)
+                          ).length
+                        ),
+                        total: String(
+                          BADGE_DEFINITIONS.filter((b) => b.category === 'quiz').length
+                        ),
+                      })}
+                    </Text.Caption>
+                    <ChevronRight
+                      size={iconSizes.sm}
+                      color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+                    />
+                  </XStack>
+                </XStack>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: spacing.xs }}
                 >
-                  <Trophy size={iconSizes.sm} color={accentColor} />
-                </View>
-                <YStack flex={1}>
-                  <Text.Label fontFamily={FONT_FAMILIES.semibold} color={textColor}>
-                    {t('achievements')}
-                  </Text.Label>
-                  <Text.Caption
-                    color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
-                  >
-                    {t('badgesEarnedCount', {
-                      earned: String(earnedBadgeCount),
-                      total: String(TOTAL_POSSIBLE_BADGES),
-                    })}
-                  </Text.Caption>
-                </YStack>
-                <ChevronRight
-                  size={iconSizes.md}
-                  color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
-                />
-              </XStack>
+                  {BADGE_DEFINITIONS.filter((b) => b.category === 'quiz')
+                    .sort((a, b) => {
+                      const aEarned = earnedBadgeIds.has(a.id);
+                      const bEarned = earnedBadgeIds.has(b.id);
+                      if (aEarned && !bEarned) return -1;
+                      if (!aEarned && bEarned) return 1;
+                      return 0;
+                    })
+                    .map((badge) => (
+                      <BadgeIcon
+                        key={badge.id}
+                        badgeId={badge.id}
+                        size={iconSizes.xl}
+                        isUnlocked={earnedBadgeIds.has(badge.id)}
+                      />
+                    ))}
+                </ScrollView>
+              </YStack>
             </Pressable>
           </Animated.View>
 

@@ -123,12 +123,8 @@ export function TriviaStatsHero({
 
   const cardContent = (
     <YStack
-      backgroundColor={cardBg}
-      borderRadius={radius.lg}
       padding={spacing.lg}
       gap={spacing.md}
-      borderWidth={1}
-      borderColor={borderColor}
     >
       {/* Header */}
       <XStack justifyContent="space-between" alignItems="center">
@@ -266,20 +262,36 @@ export function TriviaStatsHero({
   );
 
   return (
-    <Animated.View entering={FadeIn.duration(300)} style={[heroShadowStyles.card, { borderRadius: radius.lg }]}>
+    <Animated.View entering={FadeIn.duration(300)}>
       {hasData ? (
         <Pressable
           onPress={onPress}
-          style={({ pressed }) => ({
-            opacity: pressed ? 0.8 : 1,
-          })}
+          style={({ pressed }) => [
+            heroShadowStyles.card,
+            {
+              backgroundColor: cardBg,
+              borderRadius: radius.lg,
+              borderWidth: 1,
+              borderColor: borderColor,
+              opacity: pressed ? 0.85 : 1,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
+            },
+          ]}
           testID="trivia-stats-hero"
           accessibilityLabel={t('yourPerformance')}
         >
           {cardContent}
         </Pressable>
       ) : (
-        cardContent
+        <YStack
+          backgroundColor={cardBg}
+          borderRadius={radius.lg}
+          borderWidth={1}
+          borderColor={borderColor}
+          style={heroShadowStyles.card}
+        >
+          {cardContent}
+        </YStack>
       )}
     </Animated.View>
   );

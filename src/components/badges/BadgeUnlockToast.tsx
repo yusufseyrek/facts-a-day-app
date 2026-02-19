@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SvgXml } from 'react-native-svg';
 import { XStack, YStack } from 'tamagui';
 
-import { STAR_COLORS, TIER_TO_STAR_INDEX, type BadgeTier } from '../../config/badges';
+import { STAR_COLORS, type BadgeStar } from '../../config/badges';
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
@@ -50,7 +50,7 @@ interface BadgeUnlockToastProps {
   badge: {
     badgeId?: string;
     name?: string;
-    tier?: BadgeTier;
+    star?: BadgeStar;
   } | null;
   onHide: () => void;
   onPress?: () => void;
@@ -72,7 +72,7 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
   useEffect(() => {
     if (!badge) return;
 
-    console.log('🏅 [BadgeToast] Showing toast for:', badge.name, badge.tier);
+    console.log('🏅 [BadgeToast] Showing toast for:', badge.name, badge.star);
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 
@@ -110,7 +110,7 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
 
   if (!badge) return null;
 
-  const starCount = badge.tier ? TIER_TO_STAR_INDEX[badge.tier] + 1 : 3;
+  const starCount = badge.star ? parseInt(badge.star.replace('star', '')) : 3;
   const iconSize = Math.round(iconSizes.heroLg);
   const accentColor = STAR_COLORS.filled;
   const burstSize = iconSize + spacing.lg;

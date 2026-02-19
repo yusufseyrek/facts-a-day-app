@@ -66,7 +66,7 @@ export function BadgeToastProvider({ children }: { children: React.ReactNode }) 
     ? {
         badgeId: current.definition.id,
         name: t(`badge_${current.definition.id}` as any),
-        tier: current.tier,
+        star: current.star,
       }
     : null;
 

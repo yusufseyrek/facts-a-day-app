@@ -8,7 +8,7 @@
 import {
   BADGE_DEFINITIONS,
   type BadgeDefinition,
-  type BadgeTier,
+  type BadgeStar,
 } from '../config/badges';
 
 import { openDatabase } from './database';
@@ -44,13 +44,13 @@ export function isModalScreenActive(): boolean {
 
 export interface EarnedBadge {
   badge_id: string;
-  tier: BadgeTier;
+  star: BadgeStar;
   earned_at: string;
 }
 
 export interface NewlyEarnedBadge {
   badgeId: string;
-  tier: BadgeTier;
+  star: BadgeStar;
   definition: BadgeDefinition;
 }
 
@@ -61,9 +61,9 @@ export interface BadgeProgress {
 
 export interface BadgeWithStatus {
   definition: BadgeDefinition;
-  earnedTiers: { tier: BadgeTier; earned_at: string }[];
+  earnedStars: { star: BadgeStar; earned_at: string }[];
   currentProgress: number;
-  nextTier: BadgeTier | null;
+  nextStar: BadgeStar | null;
   nextThreshold: number | null;
 }
 
@@ -72,7 +72,7 @@ export interface BadgeWithStatus {
 // ============================================
 
 /**
- * Check all badges and award any newly earned tiers.
+ * Check all badges and award any newly earned stars.
  * Returns the list of newly earned badges (for toast display).
  */
 export async function checkAndAwardBadges(): Promise<NewlyEarnedBadge[]> {
@@ -80,27 +80,27 @@ export async function checkAndAwardBadges(): Promise<NewlyEarnedBadge[]> {
   try {
     const db = await openDatabase();
     const earned = await getEarnedBadges();
-    const earnedSet = new Set(earned.map((e) => `${e.badge_id}:${e.tier}`));
+    const earnedSet = new Set(earned.map((e) => `${e.badge_id}:${e.star}`));
     const newlyEarned: NewlyEarnedBadge[] = [];
     const now = new Date().toISOString();
 
     for (const badge of BADGE_DEFINITIONS) {
       const progress = await getBadgeProgressValue(badge.id);
       if (progress > 0) {
-        console.log(`🏅 [Badge] ${badge.id}: progress=${progress}, thresholds=${badge.tiers.map(t => t.threshold).join(',')}`);
+        console.log(`🏅 [Badge] ${badge.id}: progress=${progress}, thresholds=${badge.stars.map(s => s.threshold).join(',')}`);
       }
 
-      for (const tierDef of badge.tiers) {
-        const key = `${badge.id}:${tierDef.tier}`;
+      for (const starDef of badge.stars) {
+        const key = `${badge.id}:${starDef.star}`;
         if (earnedSet.has(key)) continue;
 
-        if (progress >= tierDef.threshold) {
-          console.log(`🏅 [Badge] EARNED: ${badge.id} ${tierDef.tier}!`);
+        if (progress >= starDef.threshold) {
+          console.log(`🏅 [Badge] EARNED: ${badge.id} ${starDef.star}!`);
           await db.runAsync(
-            `INSERT OR IGNORE INTO user_badges (badge_id, tier, earned_at) VALUES (?, ?, ?)`,
-            [badge.id, tierDef.tier, now]
+            `INSERT OR IGNORE INTO user_badges (badge_id, star, earned_at) VALUES (?, ?, ?)`,
+            [badge.id, starDef.star, now]
           );
-          newlyEarned.push({ badgeId: badge.id, tier: tierDef.tier, definition: badge });
+          newlyEarned.push({ badgeId: badge.id, star: starDef.star, definition: badge });
         }
       }
     }
@@ -120,19 +120,19 @@ export async function checkAndAwardBadges(): Promise<NewlyEarnedBadge[]> {
 /** Push a fake badge toast for testing. */
 export function triggerTestBadgeToast(): void {
   const def = BADGE_DEFINITIONS[0];
-  const tiers: BadgeTier[] = ['bronze', 'silver', 'gold'];
-  const tier = tiers[Math.floor(Math.random() * tiers.length)];
-  _pendingToasts.push({ badgeId: def.id, tier, definition: def });
-  console.log(`🏅 [Badge] Test toast queued: ${def.id} (${tier})`);
+  const stars: BadgeStar[] = ['star1', 'star2', 'star3'];
+  const star = stars[Math.floor(Math.random() * stars.length)];
+  _pendingToasts.push({ badgeId: def.id, star, definition: def });
+  console.log(`🏅 [Badge] Test toast queued: ${def.id} (${star})`);
 }
 
 /**
- * Get all earned badge+tier rows from the database.
+ * Get all earned badge+star rows from the database.
  */
 export async function getEarnedBadges(): Promise<EarnedBadge[]> {
   const db = await openDatabase();
   return db.getAllAsync<EarnedBadge>(
-    `SELECT badge_id, tier, earned_at FROM user_badges ORDER BY earned_at DESC`
+    `SELECT badge_id, star, earned_at FROM user_badges ORDER BY earned_at DESC`
   );
 }
 
@@ -145,18 +145,18 @@ export async function getBadgeProgress(badgeId: string): Promise<BadgeProgress> 
   if (!definition) return { current, nextThreshold: null };
 
   const earned = await getEarnedBadges();
-  const earnedTiers = new Set(earned.filter((e) => e.badge_id === badgeId).map((e) => e.tier));
+  const earnedStars = new Set(earned.filter((e) => e.badge_id === badgeId).map((e) => e.star));
 
-  // Find the next unearned tier threshold
-  for (const tierDef of definition.tiers) {
-    if (!earnedTiers.has(tierDef.tier)) {
-      return { current, nextThreshold: tierDef.threshold };
+  // Find the next unearned star threshold
+  for (const starDef of definition.stars) {
+    if (!earnedStars.has(starDef.star)) {
+      return { current, nextThreshold: starDef.threshold };
     }
   }
 
-  // All tiers earned
-  const lastTier = definition.tiers[definition.tiers.length - 1];
-  return { current, nextThreshold: lastTier?.threshold ?? null };
+  // All stars earned
+  const lastStar = definition.stars[definition.stars.length - 1];
+  return { current, nextThreshold: lastStar?.threshold ?? null };
 }
 
 /**
@@ -164,37 +164,37 @@ export async function getBadgeProgress(badgeId: string): Promise<BadgeProgress> 
  */
 export async function getAllBadgesWithStatus(): Promise<BadgeWithStatus[]> {
   const earned = await getEarnedBadges();
-  const earnedMap = new Map<string, { tier: BadgeTier; earned_at: string }[]>();
+  const earnedMap = new Map<string, { star: BadgeStar; earned_at: string }[]>();
 
   for (const e of earned) {
     const list = earnedMap.get(e.badge_id) || [];
-    list.push({ tier: e.tier, earned_at: e.earned_at });
+    list.push({ star: e.star, earned_at: e.earned_at });
     earnedMap.set(e.badge_id, list);
   }
 
   const results: BadgeWithStatus[] = [];
 
   for (const definition of BADGE_DEFINITIONS) {
-    const earnedTiers = earnedMap.get(definition.id) || [];
-    const earnedTierSet = new Set(earnedTiers.map((e) => e.tier));
+    const earnedStars = earnedMap.get(definition.id) || [];
+    const earnedStarSet = new Set(earnedStars.map((e) => e.star));
     const currentProgress = await getBadgeProgressValue(definition.id);
 
-    // Find next unearned tier
-    let nextTier: BadgeTier | null = null;
+    // Find next unearned star
+    let nextStar: BadgeStar | null = null;
     let nextThreshold: number | null = null;
-    for (const tierDef of definition.tiers) {
-      if (!earnedTierSet.has(tierDef.tier)) {
-        nextTier = tierDef.tier;
-        nextThreshold = tierDef.threshold;
+    for (const starDef of definition.stars) {
+      if (!earnedStarSet.has(starDef.star)) {
+        nextStar = starDef.star;
+        nextThreshold = starDef.threshold;
         break;
       }
     }
 
     results.push({
       definition,
-      earnedTiers,
+      earnedStars,
       currentProgress,
-      nextTier,
+      nextStar,
       nextThreshold,
     });
   }
@@ -224,6 +224,53 @@ export async function getReadingStreak(): Promise<number> {
   );
 
   const dates = result.map((r) => r.view_date);
+
+  // Streak must start from today or yesterday
+  if (dates[0] !== today && dates[0] !== yesterday) {
+    return 0;
+  }
+
+  let streak = 1;
+  let currentDate = new Date(dates[0] + 'T12:00:00');
+
+  for (let i = 1; i < dates.length; i++) {
+    const prevDate = new Date(currentDate);
+    prevDate.setDate(prevDate.getDate() - 1);
+    const prevDateStr = getLocalDateString(prevDate);
+
+    if (dates[i] === prevDateStr) {
+      streak++;
+      currentDate = prevDate;
+    } else {
+      break;
+    }
+  }
+
+  return streak;
+}
+
+/**
+ * Compute quiz streak from trivia_sessions dates.
+ * Counts consecutive days (backwards from today) with at least one completed quiz.
+ */
+export async function getQuizStreak(): Promise<number> {
+  const db = await openDatabase();
+
+  const result = await db.getAllAsync<{ quiz_date: string }>(
+    `SELECT DISTINCT date(completed_at, 'localtime') as quiz_date
+     FROM trivia_sessions
+     WHERE completed_at IS NOT NULL
+     ORDER BY quiz_date DESC`
+  );
+
+  if (result.length === 0) return 0;
+
+  const today = getLocalDateString();
+  const yesterday = getLocalDateString(
+    new Date(new Date().setDate(new Date().getDate() - 1))
+  );
+
+  const dates = result.map((r) => r.quiz_date);
 
   // Streak must start from today or yesterday
   if (dates[0] !== today && dates[0] !== yesterday) {
@@ -344,7 +391,8 @@ async function getBadgeProgressValue(badgeId: string): Promise<number> {
     case 'quick_thinker': {
       const r = await db.getFirstAsync<{ count: number }>(
         `SELECT COUNT(*) as count FROM trivia_sessions
-         WHERE elapsed_time <= 60 AND total_questions > 0`
+         WHERE elapsed_time <= 60 AND total_questions > 0
+         AND CAST(correct_answers AS REAL) / total_questions >= 0.6`
       );
       return r?.count || 0;
     }

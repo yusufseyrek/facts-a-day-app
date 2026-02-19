@@ -25,19 +25,19 @@ export function BadgeCard({ badge, onPress }: BadgeCardProps) {
   const { spacing, radius, iconSizes } = useResponsive();
   const colors = hexColors[theme];
 
-  const { definition, earnedTiers, currentProgress, nextThreshold } = badge;
+  const { definition, earnedStars, currentProgress, nextThreshold } = badge;
 
-  const isUnlocked = earnedTiers.length > 0;
-  const allTiersEarned = earnedTiers.length === definition.tiers.length;
+  const isUnlocked = earnedStars.length > 0;
+  const allStarsEarned = earnedStars.length === definition.stars.length;
 
   const progressFraction = useMemo(() => {
-    if (allTiersEarned) return 1;
+    if (allStarsEarned) return 1;
     if (!nextThreshold || nextThreshold === 0) return isUnlocked ? 1 : 0;
     return Math.min(currentProgress / nextThreshold, 1);
-  }, [currentProgress, nextThreshold, isUnlocked, allTiersEarned]);
+  }, [currentProgress, nextThreshold, isUnlocked, allStarsEarned]);
 
   const iconSize = iconSizes.heroLg * 1.5;
-  const progressText = allTiersEarned
+  const progressText = allStarsEarned
     ? null
     : nextThreshold
       ? `${currentProgress}/${nextThreshold}`
@@ -61,7 +61,9 @@ export function BadgeCard({ badge, onPress }: BadgeCardProps) {
     >
       <XStack alignItems="center" padding={spacing.md} gap={spacing.md}>
         {/* Badge icon */}
-        <BadgeIcon badgeId={definition.id} size={iconSize} isUnlocked={isUnlocked} />
+        <View style={shadowStyles.badgeIcon}>
+          <BadgeIcon badgeId={definition.id} size={iconSize} isUnlocked={isUnlocked} />
+        </View>
 
         {/* Name + description + stars */}
         <YStack flex={1} gap={spacing.xs}>
@@ -76,7 +78,7 @@ export function BadgeCard({ badge, onPress }: BadgeCardProps) {
             {t(`badge_${definition.id}_desc` as any)}
           </Text.Caption>
           <XStack alignItems="center" gap={spacing.sm} marginTop={spacing.xs}>
-            <StarRating earnedCount={earnedTiers.length} size={iconSizes.xs} gap={spacing.xs} />
+            <StarRating earnedCount={earnedStars.length} size={iconSizes.xs} gap={spacing.xs} />
             {progressText && (
               <Text.Caption color={colors.textMuted} fontFamily={FONT_FAMILIES.medium}>
                 {progressText}
@@ -87,7 +89,7 @@ export function BadgeCard({ badge, onPress }: BadgeCardProps) {
       </XStack>
 
       {/* Progress bar at bottom */}
-      {!allTiersEarned && progressFraction > 0 && (
+      {!allStarsEarned && progressFraction > 0 && (
         <View
           style={{
             position: 'absolute',
@@ -119,5 +121,12 @@ const shadowStyles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
+  },
+  badgeIcon: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
   },
 });

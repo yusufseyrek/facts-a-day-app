@@ -244,7 +244,10 @@ export default function TriviaScreen() {
     <ScreenContainer edges={['top']}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <YStack flex={1}>
-        <Animated.View entering={FadeIn.duration(300)}>
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+        >
           <ScreenHeader
             icon={<Brain size={iconSizes.lg} color={iconColor} />}
             title={t('trivia')}
@@ -261,7 +264,10 @@ export default function TriviaScreen() {
         >
           <ContentContainer paddingBottom={spacing.md} shouldSetMaxContentWidth={false}>
             {/* Always show Stats */}
-            <Animated.View entering={FadeInDown.delay(50).duration(300)}>
+            <Animated.View
+              entering={FadeInDown.delay(50).duration(300)}
+              needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+            >
               <TriviaStatsHero
                 stats={overallStats}
                 categories={categoriesWithProgress}
@@ -274,7 +280,10 @@ export default function TriviaScreen() {
             {hasQuestions || hasCategories ? (
               <>
                 {/* Section title */}
-                <Animated.View entering={FadeInDown.delay(100).duration(300)}>
+                <Animated.View
+                  entering={FadeInDown.delay(100).duration(300)}
+                  needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+                >
                   <Text.Body
                     color={textColor}
                     fontFamily={FONT_FAMILIES.semibold}
@@ -361,7 +370,10 @@ export default function TriviaScreen() {
               </>
             ) : (
               /* Engaging Empty State */
-              <Animated.View entering={FadeInDown.duration(400).delay(200)}>
+              <Animated.View
+                entering={FadeInDown.duration(400).delay(200)}
+                needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+              >
                 <YStack
                   backgroundColor={cardBg}
                   borderRadius={radius.lg}
