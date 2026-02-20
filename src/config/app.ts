@@ -26,6 +26,10 @@ export const APP_CHECK = {
   FIRST_TOKEN_RETRY_DELAY_MS: 1000,
   /** When true, block the app and reject API calls if App Check init fails */
   STRICT_MODE_ENABLED: true,
+  /** Background retry delays for transient first-token failures (exponential backoff) */
+  BG_RETRY_DELAYS_MS: [3_000, 6_000, 12_000, 24_000, 48_000],
+  /** Quick retry delay for attestation-failed errors (one attempt before blocking) */
+  ATTESTATION_FAILED_RETRY_MS: 3_000,
 } as const;
 
 /**

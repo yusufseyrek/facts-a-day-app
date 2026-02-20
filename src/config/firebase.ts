@@ -228,6 +228,7 @@ export async function initializeAppCheckService() {
         try {
           const appCheckInstance = getAppCheck(getApp());
           let firstToken: string | null = null;
+          let lastTokenError: string = '';
 
           for (let tokenAttempt = 0; tokenAttempt < FIRST_TOKEN_MAX_ATTEMPTS; tokenAttempt++) {
             try {
@@ -241,6 +242,7 @@ export async function initializeAppCheckService() {
               }
             } catch (tokenError) {
               const msg = tokenError instanceof Error ? tokenError.message : String(tokenError);
+              lastTokenError = msg;
               // Stop retrying if rate-limited or attestation failed (retries will only make it worse)
               if (msg.includes('Too many attempts') || msg.includes('App attestation failed')) {
                 if (__DEV__) {
@@ -264,32 +266,49 @@ export async function initializeAppCheckService() {
             console.log('[AppCheck] First token obtained and cached');
           } else {
             console.log('[AppCheck] Could not obtain first token');
-            // In strict mode, treat first token failure as init failure
-            // The SDK initialized but can't produce valid tokens (e.g. emulator with Play Integrity)
+            // Don't roll back appCheckInitialized — the SDK IS initialized.
+            // Start background retry to get the token while the app proceeds.
             if (APP_CHECK.STRICT_MODE_ENABLED && !__DEV__) {
-              console.log('[AppCheck] Strict mode: rolling back init due to token failure');
-              setAppCheckInitialized(false);
               logEvent('app_check_failed', {
                 reason: 'first_token_failure',
                 provider: providerName,
+                error: lastTokenError,
                 platform: Platform.OS,
               });
+
+              if (lastTokenError.includes('App attestation failed')) {
+                // Attestation rejected — likely non-real device.
+                // One quick retry (attestation key may now be cached), then block.
+                startAttestationFailedRetry(providerName, lastTokenError);
+              } else if (lastTokenError.includes('Too many attempts')) {
+                // Rate limited — don't retry, don't block, proceed without token
+                console.log('[AppCheck] Rate limited — proceeding without token');
+              } else {
+                // Transient error — full background retry with exponential backoff
+                startBackgroundTokenRetry(providerName);
+              }
             }
           }
         } catch (prefetchError) {
           const prefetchMsg =
             prefetchError instanceof Error ? prefetchError.message : String(prefetchError);
           console.log(`[AppCheck] First token prefetch threw: ${prefetchMsg}`);
-          // In strict mode, treat prefetch error as init failure
+          // Don't roll back — start background retry instead
           if (APP_CHECK.STRICT_MODE_ENABLED && !__DEV__) {
-            console.log('[AppCheck] Strict mode: rolling back init due to token prefetch error');
-            setAppCheckInitialized(false);
             logEvent('app_check_failed', {
               reason: 'token_prefetch_error',
               provider: providerName,
               error: prefetchMsg,
               platform: Platform.OS,
             });
+
+            if (prefetchMsg.includes('App attestation failed')) {
+              startAttestationFailedRetry(providerName, prefetchMsg);
+            } else if (prefetchMsg.includes('Too many attempts')) {
+              console.log('[AppCheck] Rate limited — proceeding without token');
+            } else {
+              startBackgroundTokenRetry(providerName);
+            }
           }
         }
 
@@ -611,6 +630,105 @@ export function testCrashlytics() {
 
   // Force crash the app (this will terminate the app)
   crash(crashlyticsInstance);
+}
+
+/**
+ * Quick retry for attestation-failed errors.
+ * "App attestation failed" is likely a non-real device (emulator/virtual).
+ * We give one extra chance (the attestation key may have been cached by now),
+ * then block if it still fails.
+ */
+function startAttestationFailedRetry(providerName: string, originalError: string) {
+  (async () => {
+    console.log('[AppCheck] Attestation failed — one quick retry in 3s...');
+    await new Promise((r) => setTimeout(r, APP_CHECK.ATTESTATION_FAILED_RETRY_MS));
+
+    try {
+      const appCheckInstance = getAppCheck(getApp());
+      const result = await getAppCheckTokenFn(appCheckInstance, false);
+      if (result.token && result.token.trim().length > 0) {
+        primeTokenCache(result.token);
+        console.log('[AppCheck] Quick retry succeeded — token obtained');
+        logEvent('app_check_bg_retry_success', {
+          attempt: 1,
+          error_type: 'attestation_failed',
+          platform: Platform.OS,
+        });
+        return;
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.log('[AppCheck] Quick retry also failed:', msg);
+    }
+
+    // Quick retry failed — block if online
+    const online = await isDeviceOnline();
+    if (online) {
+      logEvent('app_check_blocked', {
+        reason: 'attestation_failed_persistent',
+        provider: providerName,
+        error: originalError,
+        platform: Platform.OS,
+      });
+      setAppCheckInitFailed(true);
+    }
+  })();
+}
+
+/**
+ * Full background retry for transient first-token failures.
+ * Uses exponential backoff (3s, 6s, 12s, 24s, 48s ≈ 93s total).
+ * The app proceeds normally while this runs in the background.
+ * When the token is obtained, it's primed into the cache for subsequent API calls.
+ * If all retries are exhausted and the device is online, the blocking screen is shown.
+ */
+function startBackgroundTokenRetry(providerName: string) {
+  const delays = APP_CHECK.BG_RETRY_DELAYS_MS;
+
+  (async () => {
+    const appCheckInstance = getAppCheck(getApp());
+
+    for (let i = 0; i < delays.length; i++) {
+      await new Promise((r) => setTimeout(r, delays[i]));
+
+      try {
+        const result = await getAppCheckTokenFn(appCheckInstance, false);
+        if (result.token && result.token.trim().length > 0) {
+          primeTokenCache(result.token);
+          console.log(`[AppCheck] Background retry ${i + 1} succeeded — token obtained`);
+          logEvent('app_check_bg_retry_success', {
+            attempt: i + 1,
+            delay_ms: delays[i],
+            platform: Platform.OS,
+          });
+          return;
+        }
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.log(`[AppCheck] Background retry ${i + 1} failed: ${msg}`);
+
+        // Stop if rate-limited or attestation permanently failed
+        if (msg.includes('Too many attempts') || msg.includes('App attestation failed')) {
+          logEvent('app_check_bg_retry_stopped', {
+            attempt: i + 1,
+            error: msg,
+            platform: Platform.OS,
+          });
+          break;
+        }
+      }
+    }
+
+    // All retries exhausted or stopped early — block if online
+    const online = await isDeviceOnline();
+    if (online) {
+      logEvent('app_check_bg_retry_exhausted', {
+        provider: providerName,
+        platform: Platform.OS,
+      });
+      setAppCheckInitFailed(true);
+    }
+  })();
 }
 
 /**
