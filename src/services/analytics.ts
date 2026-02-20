@@ -169,6 +169,8 @@ export const Screens = {
   ONBOARDING_SUCCESS: 'OnboardingSuccess',
   SETTINGS_CATEGORIES: 'SettingsCategories',
   STORY: 'Story',
+  BADGES: 'Badges',
+  BADGE_DETAIL: 'BadgeDetail',
 } as const;
 
 // ============================================================================
@@ -788,6 +790,25 @@ export const trackStoryClose = (params: {
     category: params.category,
     facts_viewed: params.factsViewed,
     total_facts: params.totalFacts,
+  });
+};
+
+// ============================================================================
+// Badge Events
+// ============================================================================
+
+/**
+ * Track when user opens a badge detail sheet
+ */
+export const trackBadgeDetailView = (params: {
+  badgeId: string;
+  category: string;
+  earnedStars: number;
+}): void => {
+  logEvent('app_badge_detail_view', {
+    badge_id: params.badgeId,
+    category: params.category,
+    earned_stars: params.earnedStars,
   });
 };
 

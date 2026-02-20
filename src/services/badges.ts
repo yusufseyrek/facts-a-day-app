@@ -11,6 +11,7 @@ import {
   type BadgeStar,
 } from '../config/badges';
 
+import { invalidateBadgeCache } from './badgeCache';
 import { openDatabase } from './database';
 
 // ============================================
@@ -108,6 +109,7 @@ export async function checkAndAwardBadges(): Promise<NewlyEarnedBadge[]> {
     }
 
     if (newlyEarned.length > 0) {
+      invalidateBadgeCache();
       console.log(`🏅 [Badge] Queued ${newlyEarned.length} toasts`);
       _pendingToasts.push(...newlyEarned);
     }
