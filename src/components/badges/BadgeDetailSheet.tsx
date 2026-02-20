@@ -26,7 +26,7 @@ interface BadgeDetailSheetProps {
 export function BadgeDetailSheet({ badge, visible, onClose }: BadgeDetailSheetProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { spacing, radius, iconSizes } = useResponsive();
+  const { spacing, radius, iconSizes, maxModalWidth } = useResponsive();
   const colors = hexColors[theme];
 
   const opacity = useRef(new Animated.Value(0)).current;
@@ -80,7 +80,7 @@ export function BadgeDetailSheet({ badge, visible, onClose }: BadgeDetailSheetPr
             opacity,
             transform: [{ scale }],
             width: '88%',
-            maxWidth: 380,
+            maxWidth: maxModalWidth,
           }}
         >
           <Pressable>

@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
+import { ContentContainer } from '../../../src/components';
 import { InlineNativeAd } from '../../../src/components/ads/InlineNativeAd';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
 import { useTranslation } from '../../../src/i18n';
@@ -232,10 +233,11 @@ export default function CategoriesAccuracyScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />}
         contentContainerStyle={{
-          padding: spacing.lg,
           paddingBottom: insets.bottom + spacing.xl,
         }}
       >
+        <ContentContainer>
+        <YStack padding={spacing.lg}>
         {categories.length > 0 ? (
           <>
             <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
@@ -269,6 +271,8 @@ export default function CategoriesAccuracyScreen() {
             </Text.Body>
           </YStack>
         )}
+        </YStack>
+        </ContentContainer>
       </ScrollView>
     </View>
   );

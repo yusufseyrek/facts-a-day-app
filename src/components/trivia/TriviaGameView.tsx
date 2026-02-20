@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
+import { LAYOUT } from '../../config/app';
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
@@ -83,7 +84,7 @@ export function TriviaGameView({
   remainingHints = 0,
 }: TriviaGameViewProps) {
   const insets = useSafeAreaInsets();
-  const { borderWidths, media, typography, iconSizes, spacing, radius } = useResponsive();
+  const { borderWidths, isTablet, media, typography, iconSizes, spacing, radius } = useResponsive();
   const radioSize = iconSizes.md;
   const letterBadgeSize = media.topicCardSize * 0.35;
 
@@ -133,10 +134,12 @@ export function TriviaGameView({
         backgroundColor: bgColor,
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
+        alignItems: 'center',
       }}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
+      <View style={{ flex: 1, width: '100%', maxWidth: isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined }}>
       {/* Header */}
       <XStack
         paddingHorizontal={spacing.lg}
@@ -678,6 +681,7 @@ export function TriviaGameView({
           </XStack>
         </Pressable>
       </XStack>
+      </View>
     </View>
   );
 }

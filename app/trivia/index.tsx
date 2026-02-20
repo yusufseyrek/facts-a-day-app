@@ -272,7 +272,7 @@ export default function TriviaScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => loadTriviaData(true)} />
           }
         >
-          <ContentContainer paddingBottom={spacing.md} shouldSetMaxContentWidth={false}>
+          <ContentContainer paddingBottom={spacing.md}>
             {/* Always show Stats */}
             <Animated.View
               entering={FadeInDown.delay(50).duration(300)}

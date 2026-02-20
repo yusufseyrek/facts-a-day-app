@@ -24,6 +24,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
+import { LAYOUT } from '../../config/app';
 import { indexToAnswer, isTextAnswerCorrect } from '../../services/trivia';
 import { hexColors } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
@@ -444,12 +445,13 @@ export function TriviaResults({
     }
   }, []);
 
-  const { screenWidth, typography, config, iconSizes, spacing, radius, media } = useResponsive();
+  const { screenWidth, isTablet, typography, config, iconSizes, spacing, radius, media } = useResponsive();
   const statsIconSize = media.topicCardSize * 0.55;
   const headerBtnSize = media.topicCardSize * 0.45;
 
-  // Calculate card width: 45% for tablets (two cards side by side), 85% for phones
-  const cardWidth = screenWidth * config.cardWidthMultiplier;
+  // Calculate card width based on content width (not screen width) for tablet max-width constraint
+  const contentWidth = isTablet ? Math.min(screenWidth, LAYOUT.MAX_CONTENT_WIDTH) : screenWidth;
+  const cardWidth = contentWidth * config.cardWidthMultiplier;
 
   // Card height synchronization - measure all cards and use the tallest height
   const totalCards = questions.length + unavailableQuestionIds.length;
@@ -645,6 +647,8 @@ export function TriviaResults({
         showsVerticalScrollIndicator={false}
         onScrollEndDrag={handleVerticalScroll}
       >
+        <YStack width="100%" alignItems="center">
+        <YStack width="100%" maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined} paddingHorizontal={isTablet ? spacing.md : undefined}>
         {/* Header Section */}
         <Animated.View entering={FadeInDown.duration(400)}>
           <YStack paddingTop={spacing.lg} paddingHorizontal={spacing.xl} gap={spacing.lg}>
@@ -903,11 +907,16 @@ export function TriviaResults({
             </ScrollView>
           </YStack>
         </Animated.View>
+        </YStack>
+        </YStack>
       </ScrollView>
 
       {/* Return button (shown for normal trivia flow) */}
       {showReturnButton && (
+        <YStack width="100%" alignItems="center">
         <YStack
+          width="100%"
+          maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
           paddingHorizontal={spacing.xl}
           paddingTop={spacing.md}
           paddingBottom={spacing.md}
@@ -930,6 +939,7 @@ export function TriviaResults({
               </Text.Body>
             </XStack>
           </Pressable>
+        </YStack>
         </YStack>
       )}
     </View>

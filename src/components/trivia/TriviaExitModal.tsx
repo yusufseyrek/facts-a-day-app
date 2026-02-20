@@ -6,6 +6,7 @@ import { AlertTriangle, DoorOpen, X } from '@tamagui/lucide-icons';
 import { BlurView } from 'expo-blur';
 import { XStack, YStack } from 'tamagui';
 
+import { LAYOUT } from '../../config/app';
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
@@ -32,7 +33,7 @@ export function TriviaExitModal({
   exitText,
 }: TriviaExitModalProps) {
   // Get responsive values for device type
-  const { screenWidth, typography, spacing, radius, iconSizes, maxModalWidth } = useResponsive();
+  const { screenWidth, typography, spacing, radius, iconSizes } = useResponsive();
 
   // Colors matching the app's design system
   const bgColor = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
@@ -90,7 +91,7 @@ export function TriviaExitModal({
           entering={FadeInUp.duration(300).springify()}
           style={{
             width: screenWidth - spacing.md * 2,
-            maxWidth: maxModalWidth,
+            maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 12 },
             shadowOpacity: isDark ? 0.5 : 0.25,

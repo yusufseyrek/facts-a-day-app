@@ -31,6 +31,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
+import { ContentContainer } from '../../src/components';
 import { InlineNativeAd } from '../../src/components/ads/InlineNativeAd';
 import { getTriviaModeBadge, TriviaResults } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
@@ -739,7 +740,8 @@ export default function PerformanceScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />}
       >
-        <YStack padding={spacing.lg} gap={spacing.xl}>
+        <ContentContainer>
+          <YStack padding={spacing.lg} gap={spacing.xl}>
           {/* Core Metrics */}
           <Animated.View
             entering={FadeIn.delay(50).duration(400).springify()}
@@ -907,7 +909,8 @@ export default function PerformanceScreen() {
               </YStack>
             </View>
           )}
-        </YStack>
+          </YStack>
+        </ContentContainer>
       </ScrollView>
 
       {/* Loading overlay for session fetch */}
