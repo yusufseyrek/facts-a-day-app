@@ -1,8 +1,16 @@
-import React, { useCallback, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import React, { useCallback, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated as RNAnimated,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
-import { ArrowLeft, BookOpen, Flame, Gamepad2, Trophy } from '@tamagui/lucide-icons';
+import { BookOpen, ChevronLeft, Flame, Gamepad2, Trophy } from '@tamagui/lucide-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -35,8 +43,8 @@ function SectionLabel({
   const colors = hexColors[theme];
 
   return (
-    <XStack alignItems="center" justifyContent="space-between">
-      <XStack alignItems="center" gap={spacing.sm}>
+    <XStack alignItems="center" justifyContent="space-between" paddingTop={spacing.md}>
+      <XStack alignItems="center" gap={spacing.md}>
         {icon}
         <Text.Headline color={colors.text}>{label}</Text.Headline>
       </XStack>
@@ -47,11 +55,59 @@ function SectionLabel({
   );
 }
 
+// Back Button with press animation
+function BackButton({ onPress, primaryColor }: { onPress: () => void; primaryColor: string }) {
+  const { iconSizes, media } = useResponsive();
+  const scale = useRef(new RNAnimated.Value(1)).current;
+  const buttonSize = media.topicCardSize * 0.45;
+
+  const handlePressIn = () => {
+    RNAnimated.spring(scale, {
+      toValue: 0.9,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 10,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    RNAnimated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 8,
+    }).start();
+  };
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    >
+      <RNAnimated.View
+        style={{
+          width: buttonSize,
+          height: buttonSize,
+          borderRadius: buttonSize / 2,
+          backgroundColor: `${primaryColor}20`,
+          justifyContent: 'center',
+          alignItems: 'center',
+          transform: [{ scale }],
+        }}
+      >
+        <ChevronLeft size={iconSizes.lg} color={primaryColor} />
+      </RNAnimated.View>
+    </Pressable>
+  );
+}
+
 export default function BadgesScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const router = useRouter();
-  const { spacing, radius, iconSizes } = useResponsive();
+  const { spacing, radius, iconSizes, media } = useResponsive();
   const colors = hexColors[theme];
 
   const [badges, setBadges] = useState<BadgeWithStatus[]>([]);
@@ -59,18 +115,16 @@ export default function BadgesScreen() {
   const [quizStreakCount, setQuizStreakCount] = useState(0);
   const [selectedBadge, setSelectedBadge] = useState<BadgeWithStatus | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
-      getAllBadgesWithStatus()
-        .then(setBadges)
-        .catch(() => {});
-      getReadingStreak()
-        .then(setStreak)
-        .catch(() => {});
-      getQuizStreak()
-        .then(setQuizStreakCount)
-        .catch(() => {});
+      setLoading(true);
+      Promise.all([
+        getAllBadgesWithStatus().then(setBadges).catch(() => {}),
+        getReadingStreak().then(setStreak).catch(() => {}),
+        getQuizStreak().then(setQuizStreakCount).catch(() => {}),
+      ]).finally(() => setLoading(false));
     }, [])
   );
 
@@ -86,7 +140,9 @@ export default function BadgesScreen() {
     return progressScore(b) - progressScore(a);
   };
 
-  const readingBadges = badges.filter((b) => b.definition.category === 'reading').sort(sortByProgress);
+  const readingBadges = badges
+    .filter((b) => b.definition.category === 'reading')
+    .sort(sortByProgress);
   const quizBadges = badges.filter((b) => b.definition.category === 'quiz').sort(sortByProgress);
   const readingEarned = readingBadges.reduce((s, b) => s + b.earnedStars.length, 0);
   const quizEarned = quizBadges.reduce((s, b) => s + b.earnedStars.length, 0);
@@ -117,180 +173,191 @@ export default function BadgesScreen() {
 
       {/* Header */}
       <Animated.View
-        entering={FadeIn.duration(300)}
+        entering={FadeInUp.duration(400).springify()}
         needsOffscreenAlphaCompositing={Platform.OS === 'android'}
       >
         <XStack
-          padding={spacing.lg}
+          paddingTop={spacing.sm}
           paddingBottom={spacing.md}
+          paddingHorizontal={spacing.lg}
           alignItems="center"
-          gap={spacing.sm}
+          justifyContent="space-between"
+          borderBottomWidth={1}
+          borderBottomColor={colors.border}
         >
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-          >
-            <ArrowLeft size={iconSizes.lg} color={colors.text} />
-          </Pressable>
-          <Trophy size={iconSizes.lg} color={colors.primary} />
-          <Text.Headline flex={1}>{t('achievements')}</Text.Headline>
+          <BackButton onPress={() => router.back()} primaryColor={colors.primary} />
+
+          <Text.Title color={colors.text}>{t('achievements')}</Text.Title>
+
+          {/* Empty spacer to balance the header */}
+          <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />
         </XStack>
       </Animated.View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: spacing.xxl }}
-      >
-        <ContentContainer>
-          {/* Streak panel */}
-          <Animated.View
-            entering={FadeInDown.delay(50).duration(300)}
-            needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-          >
-            <XStack
-              backgroundColor={colors.cardBackground}
-              borderRadius={radius.lg}
-              padding={spacing.md}
-              marginBottom={spacing.lg}
-              borderWidth={1}
-              borderColor={colors.border}
-              alignItems="center"
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom: spacing.xxl }}
+        >
+          <ContentContainer>
+            {/* Streak panel */}
+            <Animated.View
+              entering={FadeInDown.delay(50).duration(300)}
+              needsOffscreenAlphaCompositing={Platform.OS === 'android'}
             >
-              {/* Current streak */}
-              <YStack flex={1} alignItems="center" gap={spacing.xs}>
-                <View style={panelStyles.iconShadow}>
-                  <View
-                    style={{
-                      width: iconSizes.hero,
-                      height: iconSizes.hero,
-                      borderRadius: iconSizes.hero / 2,
-                      backgroundColor: streak > 0 ? '#FF6B3515' : `${colors.border}20`,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Flame size={iconSizes.lg} color={streak > 0 ? '#FF6B35' : colors.textMuted} />
-                  </View>
-                </View>
-                <Text.Title
-                  color={streak > 0 ? '#FF6B35' : colors.textMuted}
-                  fontFamily={FONT_FAMILIES.bold}
-                >
-                  {streak}
-                </Text.Title>
-                <Text.Tiny color={colors.textMuted} fontFamily={FONT_FAMILIES.medium}>
-                  {t('readingStreak')}
-                </Text.Tiny>
-              </YStack>
-
-              {/* Divider */}
-              <View style={{ width: 1, height: iconSizes.xl, backgroundColor: `${colors.border}60` }} />
-
-              {/* Quiz streak */}
-              <YStack flex={1} alignItems="center" gap={spacing.xs}>
-                <View style={panelStyles.iconShadow}>
-                  <View
-                    style={{
-                      width: iconSizes.hero,
-                      height: iconSizes.hero,
-                      borderRadius: iconSizes.hero / 2,
-                      backgroundColor: quizStreakCount > 0 ? '#8B5CF615' : `${colors.border}20`,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Gamepad2
-                      size={iconSizes.lg}
-                      color={quizStreakCount > 0 ? '#8B5CF6' : colors.textMuted}
-                    />
-                  </View>
-                </View>
-                <Text.Title
-                  color={quizStreakCount > 0 ? '#8B5CF6' : colors.textMuted}
-                  fontFamily={FONT_FAMILIES.bold}
-                >
-                  {quizStreakCount}
-                </Text.Title>
-                <Text.Tiny color={colors.textMuted} fontFamily={FONT_FAMILIES.medium}>
-                  {t('quizStreak')}
-                </Text.Tiny>
-              </YStack>
-
-              {/* Divider */}
-              <View style={{ width: 1, height: iconSizes.xl, backgroundColor: `${colors.border}60` }} />
-
-              {/* Total earned badges */}
-              <YStack flex={1} alignItems="center" gap={spacing.xs}>
-                <View style={panelStyles.iconShadow}>
-                  <View
-                    style={{
-                      width: iconSizes.hero,
-                      height: iconSizes.hero,
-                      borderRadius: iconSizes.hero / 2,
-                      backgroundColor: totalEarned > 0 ? `${colors.primary}15` : `${colors.border}20`,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Trophy
-                      size={iconSizes.lg}
-                      color={totalEarned > 0 ? colors.primary : colors.textMuted}
-                    />
-                  </View>
-                </View>
-                <Text.Title
-                  color={totalEarned > 0 ? colors.primary : colors.textMuted}
-                  fontFamily={FONT_FAMILIES.bold}
-                >
-                  {totalEarned}
-                </Text.Title>
-                <Text.Tiny color={colors.textMuted} fontFamily={FONT_FAMILIES.medium}>
-                  {t('badgesEarned')}
-                </Text.Tiny>
-              </YStack>
-            </XStack>
-          </Animated.View>
-
-          {/* Reading Section */}
-          {readingBadges.length > 0 && (
-            <YStack marginBottom={spacing.xl}>
-              <Animated.View
-                entering={FadeInDown.delay(100).duration(300)}
-                needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+              <XStack
+                backgroundColor={colors.cardBackground}
+                borderRadius={radius.lg}
+                padding={spacing.md}
+                marginBottom={spacing.lg}
+                borderWidth={1}
+                borderColor={colors.border}
+                alignItems="center"
               >
-                <YStack marginBottom={spacing.md}>
-                  <SectionLabel
-                    icon={<BookOpen size={iconSizes.sm} color={colors.primary} />}
-                    label={t('badgeSectionReading')}
-                    count={`${readingEarned}/${readingBadges.length * 3}`}
-                  />
+                {/* Current streak */}
+                <YStack flex={1} alignItems="center" gap={spacing.xs}>
+                  <View style={panelStyles.iconShadow}>
+                    <View
+                      style={{
+                        width: iconSizes.hero,
+                        height: iconSizes.hero,
+                        borderRadius: iconSizes.hero / 2,
+                        backgroundColor: streak > 0 ? '#FF6B3515' : `${colors.border}20`,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Flame size={iconSizes.lg} color={streak > 0 ? '#FF6B35' : colors.textMuted} />
+                    </View>
+                  </View>
+                  <Text.Title
+                    color={streak > 0 ? '#FF6B35' : colors.textMuted}
+                    fontFamily={FONT_FAMILIES.bold}
+                  >
+                    {streak}
+                  </Text.Title>
+                  <Text.Tiny color={colors.textMuted} fontFamily={FONT_FAMILIES.medium}>
+                    {t('readingStreak')}
+                  </Text.Tiny>
                 </YStack>
-              </Animated.View>
-              {renderBadgeList(readingBadges, 0)}
-            </YStack>
-          )}
 
-          {/* Quiz Section */}
-          {quizBadges.length > 0 && (
-            <YStack marginBottom={spacing.xl}>
-              <Animated.View
-                entering={FadeInDown.delay(200).duration(300)}
-                needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-              >
-                <YStack marginBottom={spacing.md}>
-                  <SectionLabel
-                    icon={<Gamepad2 size={iconSizes.sm} color={colors.primary} />}
-                    label={t('badgeSectionQuiz')}
-                    count={`${quizEarned}/${quizBadges.length * 3}`}
-                  />
+                {/* Divider */}
+                <View
+                  style={{ width: 1, height: iconSizes.xl, backgroundColor: `${colors.border}60` }}
+                />
+
+                {/* Quiz streak */}
+                <YStack flex={1} alignItems="center" gap={spacing.xs}>
+                  <View style={panelStyles.iconShadow}>
+                    <View
+                      style={{
+                        width: iconSizes.hero,
+                        height: iconSizes.hero,
+                        borderRadius: iconSizes.hero / 2,
+                        backgroundColor: quizStreakCount > 0 ? '#8B5CF615' : `${colors.border}20`,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Gamepad2
+                        size={iconSizes.lg}
+                        color={quizStreakCount > 0 ? '#8B5CF6' : colors.textMuted}
+                      />
+                    </View>
+                  </View>
+                  <Text.Title
+                    color={quizStreakCount > 0 ? '#8B5CF6' : colors.textMuted}
+                    fontFamily={FONT_FAMILIES.bold}
+                  >
+                    {quizStreakCount}
+                  </Text.Title>
+                  <Text.Tiny color={colors.textMuted} fontFamily={FONT_FAMILIES.medium}>
+                    {t('quizStreak')}
+                  </Text.Tiny>
                 </YStack>
-              </Animated.View>
-              {renderBadgeList(quizBadges, 1)}
-            </YStack>
-          )}
-        </ContentContainer>
-      </ScrollView>
+
+                {/* Divider */}
+                <View
+                  style={{ width: 1, height: iconSizes.xl, backgroundColor: `${colors.border}60` }}
+                />
+
+                {/* Total earned badges */}
+                <YStack flex={1} alignItems="center" gap={spacing.xs}>
+                  <View style={panelStyles.iconShadow}>
+                    <View
+                      style={{
+                        width: iconSizes.hero,
+                        height: iconSizes.hero,
+                        borderRadius: iconSizes.hero / 2,
+                        backgroundColor:
+                          totalEarned > 0 ? `${colors.primary}15` : `${colors.border}20`,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Trophy
+                        size={iconSizes.lg}
+                        color={totalEarned > 0 ? colors.primary : colors.textMuted}
+                      />
+                    </View>
+                  </View>
+                  <Text.Title
+                    color={totalEarned > 0 ? colors.primary : colors.textMuted}
+                    fontFamily={FONT_FAMILIES.bold}
+                  >
+                    {totalEarned}
+                  </Text.Title>
+                  <Text.Tiny color={colors.textMuted} fontFamily={FONT_FAMILIES.medium}>
+                    {t('badgesEarned')}
+                  </Text.Tiny>
+                </YStack>
+              </XStack>
+            </Animated.View>
+
+            {/* Reading Section */}
+            {readingBadges.length > 0 && (
+              <YStack marginBottom={spacing.xl}>
+                <Animated.View
+                  entering={FadeInDown.delay(100).duration(300)}
+                  needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+                >
+                  <YStack marginBottom={spacing.md}>
+                    <SectionLabel
+                      icon={<BookOpen size={iconSizes.md} color={colors.primary} />}
+                      label={t('badgeSectionReading')}
+                      count={`${readingEarned}/${readingBadges.length * 3}`}
+                    />
+                  </YStack>
+                </Animated.View>
+                {renderBadgeList(readingBadges, 0)}
+              </YStack>
+            )}
+
+            {/* Quiz Section */}
+            {quizBadges.length > 0 && (
+              <YStack marginBottom={spacing.xl}>
+                <Animated.View
+                  entering={FadeInDown.delay(200).duration(300)}
+                  needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+                >
+                  <YStack marginBottom={spacing.md}>
+                    <SectionLabel
+                      icon={<Gamepad2 size={iconSizes.md} color={colors.primary} />}
+                      label={t('badgeSectionQuiz')}
+                      count={`${quizEarned}/${quizBadges.length * 3}`}
+                    />
+                  </YStack>
+                </Animated.View>
+                {renderBadgeList(quizBadges, 1)}
+              </YStack>
+            )}
+          </ContentContainer>
+        </ScrollView>
+      )}
 
       <BadgeDetailSheet
         badge={selectedBadge}
