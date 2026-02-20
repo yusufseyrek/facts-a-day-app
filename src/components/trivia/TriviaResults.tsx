@@ -453,6 +453,9 @@ export function TriviaResults({
   const contentWidth = isTablet ? Math.min(screenWidth, LAYOUT.MAX_CONTENT_WIDTH) : screenWidth;
   const cardWidth = contentWidth * config.cardWidthMultiplier;
 
+  // Horizontal inset so ScrollView cards align within content area (centers on tablets)
+  const listInset = (screenWidth - contentWidth) / 2 + spacing.lg;
+
   // Card height synchronization - measure all cards and use the tallest height
   const totalCards = questions.length + unavailableQuestionIds.length;
   const [cardHeights, setCardHeights] = React.useState<Record<number, number>>({});
@@ -844,23 +847,26 @@ export function TriviaResults({
           }}
         />
 
-        {/* Question Insights Section */}
+        </YStack>
+        </YStack>
+
+        {/* Question Insights Section — full width for horizontal scroll, centered via listInset */}
         <Animated.View entering={FadeInUp.delay(150).duration(400)}>
           <YStack paddingTop={spacing.xl} paddingBottom={spacing.sm} gap={spacing.md}>
             <Text.Title
               fontFamily={FONT_FAMILIES.bold}
               color={textColor}
-              paddingHorizontal={spacing.lg}
+              paddingHorizontal={listInset}
             >
               {t('questionInsights') || 'Question Insights'}
             </Text.Title>
 
-            {/* Horizontal scrolling cards with native ads */}
+            {/* Horizontal scrolling cards */}
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{
-                paddingHorizontal: spacing.lg,
+                paddingHorizontal: listInset,
                 gap: CARD_GAP,
               }}
               decelerationRate="fast"
@@ -907,8 +913,6 @@ export function TriviaResults({
             </ScrollView>
           </YStack>
         </Animated.View>
-        </YStack>
-        </YStack>
       </ScrollView>
 
       {/* Return button (shown for normal trivia flow) */}
