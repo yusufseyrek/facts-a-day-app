@@ -30,6 +30,7 @@ import {
 } from '../../src/services/analytics';
 import { showRewardedAd } from '../../src/components/ads/RewardedAd';
 import { usePremium } from '../../src/contexts/PremiumContext';
+import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 import { useNativeAd } from '../../src/hooks/useNativeAd';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
@@ -78,7 +79,7 @@ export default function TriviaGameScreen() {
   const nativeAdIndex = Math.ceil(gameState.questions.length / 2);
   const [showingNativeAd, setShowingNativeAd] = useState(false);
   const [nativeAdShown, setNativeAdShown] = useState(false);
-  const { nativeAd } = useNativeAd();
+  const { nativeAd } = useNativeAd({ aspectRatio: NativeMediaAspectRatio.PORTRAIT });
 
   // Hint state
   const [canUseExplanation, setCanUseExplanation] = useState(false);
