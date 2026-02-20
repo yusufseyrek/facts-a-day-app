@@ -741,125 +741,37 @@ export default function PerformanceScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />}
       >
         <ContentContainer>
-          <YStack padding={spacing.lg} gap={spacing.xl}>
-          {/* Core Metrics */}
-          <Animated.View
-            entering={FadeIn.delay(50).duration(400).springify()}
-            needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-          >
-            <Text.Title color={textColor} marginBottom={spacing.md}>
-              {t('coreMetrics')}
-            </Text.Title>
-
-            <MetricsGrid
-              stats={stats}
-              isDark={isDark}
-              t={t}
-              iconSizes={iconSizes}
-              spacing={spacing}
-              primaryColor={primaryColor}
-              accentColor={accentColor}
-              purpleColor={purpleColor}
-              successColor={successColor}
-              columnsPerRow={config.triviaCategoriesPerRow}
-            />
-          </Animated.View>
-
-          {/* Achievements Card */}
-          <Animated.View
-            entering={FadeIn.delay(100).duration(400).springify()}
-            needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-          >
-            <Pressable
-              onPress={() => router.push('/badges')}
-              style={({ pressed }) => [
-                perfShadowStyles.card,
-                { borderRadius: radius.lg },
-                { opacity: pressed ? 0.7 : 1 },
-              ]}
+          <YStack marginVertical={spacing.lg} gap={spacing.xl}>
+            {/* Core Metrics */}
+            <Animated.View
+              entering={FadeIn.delay(50).duration(400).springify()}
+              needsOffscreenAlphaCompositing={Platform.OS === 'android'}
             >
-              <YStack
-                backgroundColor={cardBg}
-                borderRadius={radius.lg}
-                padding={spacing.lg}
-                gap={spacing.md}
-              >
-                <XStack alignItems="center" justifyContent="space-between">
-                  <XStack alignItems="center" gap={spacing.sm}>
-                    <Trophy size={iconSizes.sm} color={accentColor} />
-                    <Text.Label fontFamily={FONT_FAMILIES.semibold} color={textColor}>
-                      {t('achievements')}
-                    </Text.Label>
-                  </XStack>
-                  <XStack alignItems="center" gap={spacing.xs}>
-                    <Text.Caption
-                      color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
-                    >
-                      {t('badgesEarnedCount', {
-                        earned: String(
-                          BADGE_DEFINITIONS.filter(
-                            (b) => b.category === 'quiz' && earnedBadgeIds.has(b.id)
-                          ).length
-                        ),
-                        total: String(
-                          BADGE_DEFINITIONS.filter((b) => b.category === 'quiz').length
-                        ),
-                      })}
-                    </Text.Caption>
-                    <ChevronRight
-                      size={iconSizes.sm}
-                      color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
-                    />
-                  </XStack>
-                </XStack>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: spacing.xs }}
-                >
-                  {BADGE_DEFINITIONS.filter((b) => b.category === 'quiz')
-                    .sort((a, b) => {
-                      const aEarned = earnedBadgeIds.has(a.id);
-                      const bEarned = earnedBadgeIds.has(b.id);
-                      if (aEarned && !bEarned) return -1;
-                      if (!aEarned && bEarned) return 1;
-                      return 0;
-                    })
-                    .map((badge) => (
-                      <BadgeIcon
-                        key={badge.id}
-                        badgeId={badge.id}
-                        size={iconSizes.xl}
-                        isUnlocked={earnedBadgeIds.has(badge.id)}
-                      />
-                    ))}
-                </ScrollView>
-              </YStack>
-            </Pressable>
-          </Animated.View>
+              <Text.Title color={textColor} marginBottom={spacing.md}>
+                {t('coreMetrics')}
+              </Text.Title>
 
-          {/* Native Ad */}
-          <InlineNativeAd />
+              <MetricsGrid
+                stats={stats}
+                isDark={isDark}
+                t={t}
+                iconSizes={iconSizes}
+                spacing={spacing}
+                primaryColor={primaryColor}
+                accentColor={accentColor}
+                purpleColor={purpleColor}
+                successColor={successColor}
+                columnsPerRow={config.triviaCategoriesPerRow}
+              />
+            </Animated.View>
 
-          {/* Accuracy by Category */}
-          {displayCategories.length > 0 && (
-            <View>
-              <YStack marginBottom={spacing.md} gap={spacing.xs}>
-                <XStack alignItems="center" justifyContent="space-between">
-                  <Text.Title color={textColor} flex={1}>
-                    {t('accuracyByCategory')}
-                  </Text.Title>
-                </XStack>
-                <Text.Caption
-                  color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
-                  opacity={0.9}
-                >
-                  {t('accuracyByCategorySubtitle')}
-                </Text.Caption>
-              </YStack>
-
+            {/* Achievements Card */}
+            <Animated.View
+              entering={FadeIn.delay(100).duration(400).springify()}
+              needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+            >
               <Pressable
-                onPress={() => router.push('/(tabs)/trivia/categories')}
+                onPress={() => router.push('/badges')}
                 style={({ pressed }) => [
                   perfShadowStyles.card,
                   { borderRadius: radius.lg },
@@ -870,45 +782,145 @@ export default function PerformanceScreen() {
                   backgroundColor={cardBg}
                   borderRadius={radius.lg}
                   padding={spacing.lg}
-                  gap={spacing.lg}
+                  gap={spacing.md}
                 >
-                  {displayCategories.map((category) => (
-                    <CategoryProgressBar key={category.slug} category={category} isDark={isDark} />
-                  ))}
+                  <XStack alignItems="center" justifyContent="space-between">
+                    <XStack alignItems="center" gap={spacing.sm}>
+                      <Trophy size={iconSizes.sm} color={accentColor} />
+                      <Text.Label fontFamily={FONT_FAMILIES.semibold} color={textColor}>
+                        {t('achievements')}
+                      </Text.Label>
+                    </XStack>
+                    <XStack alignItems="center" gap={spacing.xs}>
+                      <Text.Caption
+                        color={
+                          isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary
+                        }
+                      >
+                        {t('badgesEarnedCount', {
+                          earned: String(
+                            BADGE_DEFINITIONS.filter(
+                              (b) => b.category === 'quiz' && earnedBadgeIds.has(b.id)
+                            ).length
+                          ),
+                          total: String(
+                            BADGE_DEFINITIONS.filter((b) => b.category === 'quiz').length
+                          ),
+                        })}
+                      </Text.Caption>
+                      <ChevronRight
+                        size={iconSizes.sm}
+                        color={
+                          isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary
+                        }
+                      />
+                    </XStack>
+                  </XStack>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: spacing.xs }}
+                  >
+                    {BADGE_DEFINITIONS.filter((b) => b.category === 'quiz')
+                      .sort((a, b) => {
+                        const aEarned = earnedBadgeIds.has(a.id);
+                        const bEarned = earnedBadgeIds.has(b.id);
+                        if (aEarned && !bEarned) return -1;
+                        if (!aEarned && bEarned) return 1;
+                        return 0;
+                      })
+                      .map((badge) => (
+                        <BadgeIcon
+                          key={badge.id}
+                          badgeId={badge.id}
+                          size={iconSizes.xl}
+                          isUnlocked={earnedBadgeIds.has(badge.id)}
+                        />
+                      ))}
+                  </ScrollView>
                 </YStack>
               </Pressable>
-            </View>
-          )}
+            </Animated.View>
 
-          {/* Recent Trivia */}
-          {recentSessions.length > 0 && (
-            <View>
-              <XStack alignItems="center" justifyContent="space-between" marginBottom={spacing.md}>
-                <Text.Title color={textColor}>{t('recentTests')}</Text.Title>
-                {totalSessionsCount > DISPLAY_LIMITS.MAX_ACTIVITIES && (
-                  <ViewAllButton
-                    onPress={() => router.push('/(tabs)/trivia/history')}
-                    label={t('viewAll')}
-                    color={primaryColor}
-                  />
-                )}
-              </XStack>
+            {/* Native Ad */}
+            <InlineNativeAd />
 
-              <YStack gap={spacing.md}>
-                {recentSessions.map((session, index) => (
-                  <SessionCard
-                    key={session.id}
-                    session={session}
-                    isDark={isDark}
-                    t={t}
-                    dateFormat="relative"
-                    onPress={() => handleSessionClick(session.id)}
-                    testID={`trivia-session-${index}`}
-                  />
-                ))}
-              </YStack>
-            </View>
-          )}
+            {/* Accuracy by Category */}
+            {displayCategories.length > 0 && (
+              <View>
+                <YStack marginBottom={spacing.md} gap={spacing.xs}>
+                  <XStack alignItems="center" justifyContent="space-between">
+                    <Text.Title color={textColor} flex={1}>
+                      {t('accuracyByCategory')}
+                    </Text.Title>
+                  </XStack>
+                  <Text.Caption
+                    color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+                    opacity={0.9}
+                  >
+                    {t('accuracyByCategorySubtitle')}
+                  </Text.Caption>
+                </YStack>
+
+                <Pressable
+                  onPress={() => router.push('/(tabs)/trivia/categories')}
+                  style={({ pressed }) => [
+                    perfShadowStyles.card,
+                    { borderRadius: radius.lg },
+                    { opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <YStack
+                    backgroundColor={cardBg}
+                    borderRadius={radius.lg}
+                    padding={spacing.lg}
+                    gap={spacing.lg}
+                  >
+                    {displayCategories.map((category) => (
+                      <CategoryProgressBar
+                        key={category.slug}
+                        category={category}
+                        isDark={isDark}
+                      />
+                    ))}
+                  </YStack>
+                </Pressable>
+              </View>
+            )}
+
+            {/* Recent Trivia */}
+            {recentSessions.length > 0 && (
+              <View>
+                <XStack
+                  alignItems="center"
+                  justifyContent="space-between"
+                  marginBottom={spacing.md}
+                >
+                  <Text.Title color={textColor}>{t('recentTests')}</Text.Title>
+                  {totalSessionsCount > DISPLAY_LIMITS.MAX_ACTIVITIES && (
+                    <ViewAllButton
+                      onPress={() => router.push('/(tabs)/trivia/history')}
+                      label={t('viewAll')}
+                      color={primaryColor}
+                    />
+                  )}
+                </XStack>
+
+                <YStack gap={spacing.md}>
+                  {recentSessions.map((session, index) => (
+                    <SessionCard
+                      key={session.id}
+                      session={session}
+                      isDark={isDark}
+                      t={t}
+                      dateFormat="relative"
+                      onPress={() => handleSessionClick(session.id)}
+                      testID={`trivia-session-${index}`}
+                    />
+                  ))}
+                </YStack>
+              </View>
+            )}
           </YStack>
         </ContentContainer>
       </ScrollView>

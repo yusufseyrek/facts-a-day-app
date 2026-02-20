@@ -4,7 +4,7 @@ import { Animated, type ViewStyle } from 'react-native';
 import { hexColors, useTheme } from '../theme';
 
 interface ShimmerPlaceholderProps {
-  width: number | string;
+  width: number | `${number}%`;
   height: number;
   borderRadius?: number;
   style?: ViewStyle;
