@@ -30,7 +30,7 @@ import { PopularNativeAdItem } from '../../src/components/ads/PopularNativeAdIte
 import { CategoryStoryButtons } from '../../src/components/CategoryStoryButtons';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { PopularFactCard } from '../../src/components/PopularFactCard';
-import { HOME_FEED, LAYOUT, NATIVE_ADS } from '../../src/config/app';
+import { HOME_FEED, LAYOUT, NATIVE_ADS, PAYWALL_PROMPT } from '../../src/config/app';
 import { usePreloadedData, usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
@@ -40,7 +40,8 @@ import {
 } from '../../src/services/analytics';
 
 import type { FactViewSource } from '../../src/services/analytics';
-import { getReadingStreak } from '../../src/services/badges';
+import { getReadingStreak, isModalScreenActive } from '../../src/services/badges';
+import { shouldShowPaywall } from '../../src/services/paywallTiming';
 import {
   forceRefreshContent,
   getRefreshStatus,
@@ -87,6 +88,7 @@ function HomeScreen() {
 
   // Track if we've consumed preloaded data (only once)
   const consumedPreloadedDataRef = useRef(false);
+  const paywallCheckRef = useRef(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const popularListRef = useRef<FlashListRef<PopularListItem>>(null);
   const worthKnowingListRef = useRef<FlashListRef<FactWithRelations>>(null);
@@ -140,7 +142,22 @@ function HomeScreen() {
       loadWorthKnowingFacts(true);
       getReadingStreak().then(setReadingStreak).catch(() => {});
       trackScreenView(Screens.HOME);
-    }, [locale, t, consumePreloadedFacts])
+
+      // Auto-show paywall for free users (once every N days)
+      if (!isPremium && !paywallCheckRef.current) {
+        const timer = setTimeout(async () => {
+          try {
+            if (isModalScreenActive()) return;
+            const should = await shouldShowPaywall();
+            if (should) {
+              paywallCheckRef.current = true;
+              router.push('/paywall?source=auto');
+            }
+          } catch {}
+        }, PAYWALL_PROMPT.DELAY_MS);
+        return () => clearTimeout(timer);
+      }
+    }, [locale, t, consumePreloadedFacts, isPremium])
   );
 
   // Auto-refresh feed when new notifications are received

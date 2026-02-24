@@ -90,6 +90,8 @@ export const STORAGE_KEYS = {
   EXPLANATION_HINT_LAST_USED: '@explanation_hint_last_used',
   /** Key for tracking the number of hints used today */
   EXPLANATION_HINT_COUNT: '@explanation_hint_count',
+  /** Key for tracking last paywall prompt timestamp */
+  PAYWALL_LAST_SHOWN: '@paywall_last_shown',
 } as const;
 
 /**
@@ -191,11 +193,21 @@ export const CATEGORY_LIMITS = {
  */
 export const SUBSCRIPTION = {
   /** Whether subscriptions are enabled on this platform */
-  ENABLED: Platform.OS !== 'android',
+  ENABLED: true,
   /** Product IDs for subscription plans (must match App Store Connect / Google Play Console) */
   PRODUCT_IDS: ['factsaday_premium_weekly', 'factsaday_premium_monthly'],
   /** AsyncStorage key for caching premium status */
   PREMIUM_STORAGE_KEY: '@factsaday_premium_status',
+} as const;
+
+/**
+ * Paywall prompt settings (auto-show interval)
+ */
+export const PAYWALL_PROMPT = {
+  /** Minimum days between automatic paywall prompts */
+  MIN_DAYS_BETWEEN_PROMPTS: 1,
+  /** Delay after screen focus before showing paywall (ms) */
+  DELAY_MS: 1500,
 } as const;
 
 /**

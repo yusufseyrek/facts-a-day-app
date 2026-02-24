@@ -4,7 +4,7 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 
 import { Ban, Check, Crown, Infinity, Lightbulb, Sparkles, X } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ErrorCode, useIAP } from 'expo-iap';
 import { XStack, YStack } from 'tamagui';
@@ -15,6 +15,7 @@ import { SUBSCRIPTION } from '../src/config/app';
 import { usePremium } from '../src/contexts';
 import { useTranslation } from '../src/i18n';
 import { trackPaywallDismissed, trackPaywallViewed } from '../src/services/analytics';
+import { markPaywallShown } from '../src/services/paywallTiming';
 import { PAYWALL_GOLD, paywallThemeColors, useTheme } from '../src/theme';
 import { openInAppBrowser } from '../src/utils/browser';
 import { useResponsive } from '../src/utils/useResponsive';
@@ -22,6 +23,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PaywallScreen() {
   const router = useRouter();
+  const { source: sourceParam } = useLocalSearchParams<{ source?: string }>();
+  const source = sourceParam || 'settings';
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { t, locale } = useTranslation();
@@ -35,7 +38,8 @@ export default function PaywallScreen() {
   const [isRestoring, setIsRestoring] = useState(false);
 
   useEffect(() => {
-    trackPaywallViewed('settings');
+    trackPaywallViewed(source);
+    markPaywallShown();
   }, []);
 
   useEffect(() => {
@@ -52,7 +56,7 @@ export default function PaywallScreen() {
   }, [isPremium, router]);
 
   const handleClose = () => {
-    trackPaywallDismissed('settings');
+    trackPaywallDismissed(source);
     router.back();
   };
 
@@ -61,7 +65,6 @@ export default function PaywallScreen() {
 
     setIsPurchasing(true);
     try {
-
       const sub = subscriptions.find((s) => s.id === selectedPlan);
       if (!sub) return;
 
@@ -257,7 +260,6 @@ export default function PaywallScreen() {
           borderColor: tc.planBorder,
           backgroundColor: tc.planBg,
           gap: 2,
-          minHeight: 185,
         },
         planCardSelected: {
           borderColor: tc.planSelectedBorder,
@@ -491,10 +493,17 @@ export default function PaywallScreen() {
                     </View>
 
                     {/* Price */}
-                    <Text.Display color={tc.planPrice}>{getDisplayPrice(productId)}</Text.Display>
+                    <Text.Display color={tc.planPrice} numberOfLines={1} adjustsFontSizeToFit>
+                      {getDisplayPrice(productId)}
+                    </Text.Display>
 
                     {/* Period */}
-                    <Text.Caption color={tc.planPeriod}>
+                    <Text.Caption
+                      color={tc.planPeriod}
+                      numberOfLines={1}
+                      alignSelf="stretch"
+                      textAlign="center"
+                    >
                       {weekly ? t('paywallPerWeek') : t('paywallPerMonth')}
                     </Text.Caption>
 

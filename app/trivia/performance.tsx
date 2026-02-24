@@ -19,7 +19,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Gamepad2,
-  GraduationCap,
   Hash,
   Shuffle,
   Trophy,
@@ -270,7 +269,6 @@ function MetricsGrid({
   iconSizes: { sm: number };
   spacing: { md: number };
   primaryColor: string;
-  accentColor: string;
   purpleColor: string;
   successColor: string;
   columnsPerRow: number;
@@ -298,13 +296,6 @@ function MetricsGrid({
       subtitle: stats?.answeredThisWeek
         ? t('thisWeek', { count: stats.answeredThisWeek })
         : undefined,
-    },
-    {
-      Icon: GraduationCap,
-      color: accentColor,
-      label: t('mastered'),
-      value: stats?.totalMastered || 0,
-      subtitle: stats?.masteredToday ? t('todayCount', { count: stats.masteredToday }) : undefined,
     },
   ];
 
@@ -758,7 +749,6 @@ export default function PerformanceScreen() {
                 iconSizes={iconSizes}
                 spacing={spacing}
                 primaryColor={primaryColor}
-                accentColor={accentColor}
                 purpleColor={purpleColor}
                 successColor={successColor}
                 columnsPerRow={config.triviaCategoriesPerRow}

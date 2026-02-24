@@ -39,7 +39,7 @@ const tabletConfig = {
   maxLines: 3,
   categoryColumns: 5,
   discoverColumns: 2,
-  triviaCategoriesPerRow: 4,
+  triviaCategoriesPerRow: 3,
   cardWidthMultiplier: 0.7,
   headerPaddingAdjustment: 4,
   cardAspectRatio: IMAGE_DIMENSIONS.TABLET_CARD_ASPECT_RATIO,
