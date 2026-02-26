@@ -34,7 +34,7 @@ import { Text } from '../Typography';
 
 import { ShareCard } from './ShareCard';
 
-import type { ShareableFact,SharePlatform, ShareResult } from '../../services/share/types';
+import type { ShareableFact, SharePlatform, ShareResult } from '../../services/share/types';
 
 interface ShareSheetProps {
   visible: boolean;

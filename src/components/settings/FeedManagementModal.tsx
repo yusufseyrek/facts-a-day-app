@@ -9,10 +9,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
-
-import { FlashList } from '@shopify/flash-list';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 
+import { FlashList } from '@shopify/flash-list';
 import { Calendar, Check, Edit3, RefreshCw, Search, Trash2, X } from '@tamagui/lucide-icons';
 
 import { useTranslation } from '../../i18n';
@@ -641,9 +640,6 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  list: {
-    flex: 1,
   },
   checkbox: {
     width: 24,

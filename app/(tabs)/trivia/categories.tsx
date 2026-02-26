@@ -237,41 +237,41 @@ export default function CategoriesAccuracyScreen() {
         }}
       >
         <ContentContainer>
-        <YStack padding={spacing.lg}>
-        {categories.length > 0 ? (
-          <>
-            <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
-              <YStack
-                backgroundColor={cardBg}
-                borderRadius={radius.lg}
-                padding={spacing.lg}
-                gap={spacing.lg}
-              >
-                {categories.map((category, index) => (
-                  <CategoryProgressBar
-                    key={category.slug}
-                    category={category}
-                    isDark={isDark}
-                    index={index}
-                  />
-                ))}
-              </YStack>
-            </Animated.View>
+          <YStack padding={spacing.lg}>
+            {categories.length > 0 ? (
+              <>
+                <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
+                  <YStack
+                    backgroundColor={cardBg}
+                    borderRadius={radius.lg}
+                    padding={spacing.lg}
+                    gap={spacing.lg}
+                  >
+                    {categories.map((category, index) => (
+                      <CategoryProgressBar
+                        key={category.slug}
+                        category={category}
+                        isDark={isDark}
+                        index={index}
+                      />
+                    ))}
+                  </YStack>
+                </Animated.View>
 
-            <YStack marginTop={spacing.lg}>
-              <InlineNativeAd />
-            </YStack>
-          </>
-        ) : (
-          <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
-            <Text.Body
-              color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
-            >
-              {t('noDataYet')}
-            </Text.Body>
+                <YStack marginTop={spacing.lg}>
+                  <InlineNativeAd />
+                </YStack>
+              </>
+            ) : (
+              <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
+                <Text.Body
+                  color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+                >
+                  {t('noDataYet')}
+                </Text.Body>
+              </YStack>
+            )}
           </YStack>
-        )}
-        </YStack>
         </ContentContainer>
       </ScrollView>
     </View>

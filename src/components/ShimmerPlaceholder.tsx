@@ -10,7 +10,12 @@ interface ShimmerPlaceholderProps {
   style?: ViewStyle;
 }
 
-export function ShimmerPlaceholder({ width, height, borderRadius = 8, style }: ShimmerPlaceholderProps) {
+export function ShimmerPlaceholder({
+  width,
+  height,
+  borderRadius = 8,
+  style,
+}: ShimmerPlaceholderProps) {
   const { theme } = useTheme();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const colors = hexColors[theme];

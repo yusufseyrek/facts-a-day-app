@@ -1,6 +1,5 @@
 export { BadgeToastProvider } from './BadgeToastContext';
 export { OnboardingProvider, useOnboarding } from './OnboardingContext';
-export { PremiumProvider, usePremium } from './PremiumContext';
 export {
   PreloadedDataProvider,
   setLocaleRefreshPending,
@@ -10,4 +9,5 @@ export {
   usePreloadedData,
   waitForHomeScreenReady,
 } from './PreloadedDataContext';
+export { PremiumProvider, usePremium } from './PremiumContext';
 export { ScrollToTopProvider, useScrollToTop, useScrollToTopHandler } from './ScrollToTopContext';

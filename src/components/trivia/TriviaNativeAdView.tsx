@@ -1,12 +1,5 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { ChevronLeft, ChevronRight, Timer, X } from '@tamagui/lucide-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
-import { StatusBar } from 'expo-status-bar';
 import {
   NativeAd,
   NativeAdView,
@@ -14,6 +7,13 @@ import {
   NativeAssetType,
   NativeMediaView,
 } from 'react-native-google-mobile-ads';
+import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { ChevronLeft, ChevronRight, Timer, X } from '@tamagui/lucide-icons';
+import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { hexColors } from '../../theme';
@@ -182,10 +182,7 @@ export function TriviaNativeAdView({
             }}
           >
             {/* Media content */}
-            <NativeMediaView
-              resizeMode="cover"
-              style={StyleSheet.absoluteFill}
-            />
+            <NativeMediaView resizeMode="cover" style={StyleSheet.absoluteFill} />
 
             {/* Gradient overlay */}
             <LinearGradient
@@ -228,9 +225,7 @@ export function TriviaNativeAdView({
           onPress={() => handlePressWithHaptics(onPrevQuestion)}
           role="button"
           aria-label={t('a11y_previousButton')}
-          style={({ pressed }) => [
-            pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
-          ]}
+          style={({ pressed }) => [pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
         >
           <XStack
             backgroundColor={primaryColor}

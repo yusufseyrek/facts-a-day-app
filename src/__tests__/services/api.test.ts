@@ -64,7 +64,9 @@ describe('api — fetchWithTimeout', () => {
     const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
     (global.fetch as jest.Mock) = jest.fn().mockRejectedValue(new Error('Network error'));
 
-    await expect(fetchWithTimeout('https://api.test/fail', {}, 5000)).rejects.toThrow('Network error');
+    await expect(fetchWithTimeout('https://api.test/fail', {}, 5000)).rejects.toThrow(
+      'Network error'
+    );
     expect(clearTimeoutSpy).toHaveBeenCalled();
     clearTimeoutSpy.mockRestore();
   });
@@ -91,7 +93,8 @@ describe('api — retryWithBackoff', () => {
   });
 
   it('retries with exponential delays', async () => {
-    const fn = jest.fn()
+    const fn = jest
+      .fn()
       .mockRejectedValueOnce(new Error('fail 1'))
       .mockRejectedValueOnce(new Error('fail 2'))
       .mockResolvedValue('success');
@@ -122,7 +125,8 @@ describe('api — retryWithBackoff', () => {
   });
 
   it('retries on 429 errors', async () => {
-    const fn = jest.fn()
+    const fn = jest
+      .fn()
       .mockRejectedValueOnce(new Error('API Error: 429 Too Many Requests'))
       .mockResolvedValue('ok');
 

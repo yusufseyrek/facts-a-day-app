@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-
 import { SvgXml } from 'react-native-svg';
 
 import { BADGE_SVG_MAP } from '../../utils/badgeSvgs';
@@ -25,7 +24,5 @@ export function BadgeIcon({ badgeId, size, isUnlocked = true }: BadgeIconProps) 
 
   if (!xml) return null;
 
-  return (
-    <SvgXml xml={isUnlocked ? xml : grayscaleXml!} width={size} height={size} />
-  );
+  return <SvgXml xml={isUnlocked ? xml : grayscaleXml!} width={size} height={size} />;
 }

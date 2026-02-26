@@ -7,11 +7,10 @@ import {
   ScrollView,
   View,
 } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { Lightbulb } from '@tamagui/lucide-icons';
-import Animated, { FadeIn } from 'react-native-reanimated';
-
 import * as Notifications from 'expo-notifications';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -25,8 +24,8 @@ import {
   ScreenHeader,
   Text,
 } from '../../src/components';
-import { ReadingStreakIndicator } from '../../src/components/badges/ReadingStreakIndicator';
 import { PopularNativeAdItem } from '../../src/components/ads/PopularNativeAdItem';
+import { ReadingStreakIndicator } from '../../src/components/badges/ReadingStreakIndicator';
 import { CategoryStoryButtons } from '../../src/components/CategoryStoryButtons';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { PopularFactCard } from '../../src/components/PopularFactCard';
@@ -34,10 +33,7 @@ import { HOME_FEED, LAYOUT, NATIVE_ADS, PAYWALL_PROMPT } from '../../src/config/
 import { usePreloadedData, usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
-
-import type { FactViewSource } from '../../src/services/analytics';
 import { getReadingStreak, isModalScreenActive } from '../../src/services/badges';
-import { shouldShowPaywall } from '../../src/services/paywallTiming';
 import {
   forceRefreshContent,
   getRefreshStatus,
@@ -46,6 +42,7 @@ import {
   RefreshStatus,
 } from '../../src/services/contentRefresh';
 import * as database from '../../src/services/database';
+import { shouldShowPaywall } from '../../src/services/paywallTiming';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
 import {
@@ -55,6 +52,7 @@ import {
 } from '../../src/utils/insertNativeAds';
 import { useResponsive } from '../../src/utils/useResponsive';
 
+import type { FactViewSource } from '../../src/services/analytics';
 import type { FactWithRelations } from '../../src/services/database';
 
 function HomeScreen() {
@@ -155,7 +153,9 @@ function HomeScreen() {
               paywallCheckRef.current = true;
               router.push('/paywall?source=auto');
             }
-          } catch {}
+          } catch {
+            // silently ignore paywall check errors
+          }
         }, PAYWALL_PROMPT.DELAY_MS);
         return () => clearTimeout(timer);
       }
@@ -280,7 +280,9 @@ function HomeScreen() {
             setPopularFacts(recs);
           }
         }
-      } catch {}
+      } catch {
+        // silently ignore
+      }
     },
     [locale]
   );
@@ -299,7 +301,9 @@ function HomeScreen() {
             setWorthKnowingFacts(recs);
           }
         }
-      } catch {}
+      } catch {
+        // silently ignore
+      }
     },
     [locale]
   );
@@ -409,15 +413,12 @@ function HomeScreen() {
     });
   }, []);
 
-  const popularDataWithAds = useMemo(
-    () => {
-      if (!popularAdReady) return popularFacts as PopularListItem[];
-      return insertNativeAds(popularFacts, NATIVE_ADS.FIRST_AD_INDEX.HOME_CAROUSEL).filter(
-        (item) => !isNativeAdPlaceholder(item) || !popularFailedAdKeys.has(item.key)
-      );
-    },
-    [popularFacts, isPremium, popularFailedAdKeys, popularAdReady]
-  );
+  const popularDataWithAds = useMemo(() => {
+    if (!popularAdReady) return popularFacts as PopularListItem[];
+    return insertNativeAds(popularFacts, NATIVE_ADS.FIRST_AD_INDEX.HOME_CAROUSEL).filter(
+      (item) => !isNativeAdPlaceholder(item) || !popularFailedAdKeys.has(item.key)
+    );
+  }, [popularFacts, isPremium, popularFailedAdKeys, popularAdReady]);
 
   const renderPopularCarouselItem = useCallback(
     ({ item }: { item: PopularListItem }) => {

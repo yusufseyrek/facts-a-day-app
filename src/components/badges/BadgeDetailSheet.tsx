@@ -10,10 +10,10 @@ import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
 import { useResponsive } from '../../utils/useResponsive';
+import { FONT_FAMILIES, Text } from '../Typography';
 
 import { BadgeIcon } from './BadgeIcon';
 import { StarRating } from './StarRating';
-import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { BadgeWithStatus } from '../../services/badges';
 

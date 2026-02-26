@@ -20,7 +20,7 @@ export type {
 } from './types';
 
 // Platform configuration
-export { getAvailablePlatforms,PLATFORM_CONFIG } from './platforms';
+export { getAvailablePlatforms, PLATFORM_CONFIG } from './platforms';
 
 // Deep link utilities
 export {

@@ -9,8 +9,8 @@ import {
 
 import Constants from 'expo-constants';
 
-import { trackRewardedAdError, trackRewardedAdLoaded } from '../../services/analytics';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
+import { trackRewardedAdError, trackRewardedAdLoaded } from '../../services/analytics';
 import { canShowRewardedAds } from '../../services/premiumState';
 
 // Get Rewarded Ad Unit ID based on platform

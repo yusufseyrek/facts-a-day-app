@@ -17,13 +17,17 @@ import type { FactViewSource } from '../../src/services/analytics';
 import type { FactWithRelations } from '../../src/services/database';
 
 export default function FactDetailModal() {
-  const { id, source, factIds: factIdsParam, currentIndex: currentIndexParam } =
-    useLocalSearchParams<{
-      id: string;
-      source?: FactViewSource;
-      factIds?: string;
-      currentIndex?: string;
-    }>();
+  const {
+    id,
+    source,
+    factIds: factIdsParam,
+    currentIndex: currentIndexParam,
+  } = useLocalSearchParams<{
+    id: string;
+    source?: FactViewSource;
+    factIds?: string;
+    currentIndex?: string;
+  }>();
   const router = useRouter();
   const { t, locale } = useTranslation();
   const { spacing } = useResponsive();
@@ -57,7 +61,6 @@ export default function FactDetailModal() {
   const hasNext = factIds !== null && currentIndex < factIds.length - 1;
   const hasPrevious = factIds !== null && currentIndex > 0;
   const totalCount = factIds ? factIds.length : undefined;
-
 
   useEffect(() => {
     trackScreenView(Screens.FACT_DETAIL);

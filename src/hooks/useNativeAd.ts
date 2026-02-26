@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
-
-import Constants from 'expo-constants';
 import {
   AdsConsent,
   NativeAd,
@@ -9,9 +7,11 @@ import {
   TestIds,
 } from 'react-native-google-mobile-ads';
 
+import Constants from 'expo-constants';
+
 import { ADS_ENABLED, NATIVE_ADS } from '../config/app';
-import { trackNativeAdError, trackNativeAdLoaded } from '../services/analytics';
 import { shouldRequestNonPersonalizedAdsOnly } from '../services/adsConsent';
+import { trackNativeAdError, trackNativeAdLoaded } from '../services/analytics';
 import { shouldShowAds } from '../services/premiumState';
 
 const getNativeAdUnitId = (): string => {

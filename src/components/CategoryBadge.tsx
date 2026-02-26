@@ -25,7 +25,13 @@ interface CategoryBadgeProps {
   compact?: boolean;
 }
 
-export function CategoryBadge({ category, factId, fontFamily, fontSize, compact }: CategoryBadgeProps) {
+export function CategoryBadge({
+  category,
+  factId,
+  fontFamily,
+  fontSize,
+  compact,
+}: CategoryBadgeProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { spacing, radius } = useResponsive();

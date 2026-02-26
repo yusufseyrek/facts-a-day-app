@@ -3,13 +3,13 @@ import { AppState } from 'react-native';
 
 import { useRouter } from 'expo-router';
 
+import { BadgeUnlockToast } from '../components/badges/BadgeUnlockToast';
 import { useTranslation } from '../i18n';
 import {
-  type NewlyEarnedBadge,
   consumePendingBadgeToasts,
   isModalScreenActive,
+  type NewlyEarnedBadge,
 } from '../services/badges';
-import { BadgeUnlockToast } from '../components/badges/BadgeUnlockToast';
 
 const POLL_INTERVAL = 500;
 

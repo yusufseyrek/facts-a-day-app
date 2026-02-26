@@ -1,4 +1,8 @@
-import { insertNativeAds, isNativeAdPlaceholder, NativeAdPlaceholder } from '../../utils/insertNativeAds';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  NativeAdPlaceholder,
+} from '../../utils/insertNativeAds';
 
 // Access mocked modules
 const premiumState = jest.requireMock('../../services/premiumState');
@@ -62,7 +66,10 @@ describe('insertNativeAds', () => {
   });
 
   it('uses isCountable predicate for filtering', () => {
-    interface Item { value: number; isHeader?: boolean }
+    interface Item {
+      value: number;
+      isHeader?: boolean;
+    }
     const items: Item[] = [
       { value: 1 },
       { value: 2, isHeader: true },
@@ -71,12 +78,7 @@ describe('insertNativeAds', () => {
       { value: 5 },
       { value: 6 },
     ];
-    const result = insertNativeAds(
-      items,
-      2,
-      (item) => !item.isHeader,
-      100
-    );
+    const result = insertNativeAds(items, 2, (item) => !item.isHeader, 100);
     // The header should NOT count toward ad positioning
     // After 2 countable items, ad should appear
     const adIdx = result.findIndex(isNativeAdPlaceholder);

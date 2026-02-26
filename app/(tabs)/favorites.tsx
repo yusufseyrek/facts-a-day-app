@@ -29,17 +29,17 @@ import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT, NATIVE_ADS } from '../../src/config/app';
 import { FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
-import {
-  insertNativeAds,
-  isNativeAdPlaceholder,
-  type NativeAdPlaceholder,
-} from '../../src/utils/insertNativeAds';
 import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
 import { hexColors, useTheme } from '../../src/theme';
 import { getContrastColor } from '../../src/utils/colors';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  type NativeAdPlaceholder,
+} from '../../src/utils/insertNativeAds';
 import { useFlashListScrollToTop } from '../../src/utils/useFlashListScrollToTop';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -142,7 +142,10 @@ export default function FavoritesScreen() {
           database.getFavoriteCategories(locale),
         ]);
         // Scroll to top when a new favorite has been added
-        if (favoritedFacts.length > previousFavoritesCount.current && previousFavoritesCount.current > 0) {
+        if (
+          favoritedFacts.length > previousFavoritesCount.current &&
+          previousFavoritesCount.current > 0
+        ) {
           setTimeout(() => scrollToTop(), 50);
         }
         previousFavoritesCount.current = favoritedFacts.length;
@@ -214,8 +217,8 @@ export default function FavoritesScreen() {
   type FavoritesListItem = FactWithRelations | NativeAdPlaceholder;
   const filteredDataWithAds = useMemo(
     () => insertNativeAds(filteredFavorites, NATIVE_ADS.FIRST_AD_INDEX.FAVORITES),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- isPremium triggers re-computation to remove/add native ads
-    [filteredFavorites, isPremium],
+    // isPremium triggers re-computation to remove/add native ads
+    [filteredFavorites, isPremium]
   );
 
   const handleFactPress = useCallback(
@@ -235,11 +238,14 @@ export default function FavoritesScreen() {
     loadFavorites(true);
   }, [loadFavorites]);
 
-  const handleCategoryPress = useCallback((categorySlug: string | null) => {
-    setSelectedCategory((prev) => (prev === categorySlug ? null : categorySlug));
-    // Delay scroll to allow state update and re-render
-    setTimeout(() => scrollToTop(), 50);
-  }, [scrollToTop]);
+  const handleCategoryPress = useCallback(
+    (categorySlug: string | null) => {
+      setSelectedCategory((prev) => (prev === categorySlug ? null : categorySlug));
+      // Delay scroll to allow state update and re-render
+      setTimeout(() => scrollToTop(), 50);
+    },
+    [scrollToTop]
+  );
 
   const openSearch = useCallback(() => {
     setIsSearchMode(true);
@@ -288,7 +294,10 @@ export default function FavoritesScreen() {
       }
       const factIndex = filteredFactIds.indexOf(item.id);
       return (
-        <FactListItem item={item} onPress={(fact) => handleFactPress(fact, filteredFactIds, factIndex >= 0 ? factIndex : 0)} />
+        <FactListItem
+          item={item}
+          onPress={(fact) => handleFactPress(fact, filteredFactIds, factIndex >= 0 ? factIndex : 0)}
+        />
       );
     },
     [handleFactPress, filteredFactIds]
@@ -320,7 +329,13 @@ export default function FavoritesScreen() {
     return (
       <ScreenContainer edges={['top']}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-        <YStack flex={1} justifyContent="center" alignItems="center" padding={spacing.xl} gap={spacing.lg}>
+        <YStack
+          flex={1}
+          justifyContent="center"
+          alignItems="center"
+          padding={spacing.xl}
+          gap={spacing.lg}
+        >
           <YStack
             width={120}
             height={120}
@@ -342,9 +357,7 @@ export default function FavoritesScreen() {
             </Text.Body>
           </YStack>
           <YStack width="100%" maxWidth={280} marginTop={spacing.md}>
-            <Button onPress={() => router.push('/(tabs)/discover')}>
-              {t('discoverFacts')}
-            </Button>
+            <Button onPress={() => router.push('/(tabs)/discover')}>{t('discoverFacts')}</Button>
           </YStack>
         </YStack>
       </ScreenContainer>
@@ -372,7 +385,9 @@ export default function FavoritesScreen() {
             >
               <Search
                 size={iconSizes.md}
-                color={theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+                color={
+                  theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
+                }
               />
               <SearchInput
                 ref={searchInputRef}
@@ -404,14 +419,18 @@ export default function FavoritesScreen() {
                     <XCircle
                       size={iconSizes.sm}
                       color={
-                        theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
+                        theme === 'dark'
+                          ? hexColors.dark.textSecondary
+                          : hexColors.light.textSecondary
                       }
                     />
                   ) : (
                     <X
                       size={iconSizes.sm}
                       color={
-                        theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
+                        theme === 'dark'
+                          ? hexColors.dark.textSecondary
+                          : hexColors.light.textSecondary
                       }
                     />
                   )}
@@ -421,7 +440,12 @@ export default function FavoritesScreen() {
           </XStack>
         </Animated.View>
       ) : (
-        <XStack padding={spacing.lg} paddingBottom={spacing.sm} alignItems="center" gap={spacing.sm}>
+        <XStack
+          padding={spacing.lg}
+          paddingBottom={spacing.sm}
+          alignItems="center"
+          gap={spacing.sm}
+        >
           <XStack height={media.searchInputHeight} alignItems="center" flex={1} gap={spacing.sm}>
             <Heart size={iconSizes.lg} color={iconColor} />
             <Text.Headline flex={1}>{t('favorites')}</Text.Headline>
@@ -429,7 +453,9 @@ export default function FavoritesScreen() {
           <Pressable onPress={openSearch} hitSlop={8}>
             <Search
               size={iconSizes.lg}
-              color={theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+              color={
+                theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
+              }
             />
           </Pressable>
         </XStack>
@@ -504,7 +530,13 @@ export default function FavoritesScreen() {
       <YStack flex={1}>
         {filteredFavorites.length === 0 && hasActiveFilters ? (
           // No-results state
-          <YStack flex={1} justifyContent="center" alignItems="center" padding={spacing.xl} gap={spacing.md}>
+          <YStack
+            flex={1}
+            justifyContent="center"
+            alignItems="center"
+            padding={spacing.xl}
+            gap={spacing.md}
+          >
             <Text.Headline textAlign="center">{t('noMatchingFavorites')}</Text.Headline>
             <Text.Body textAlign="center" color="$textSecondary">
               {t('noMatchingFavoritesDescription')}

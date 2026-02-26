@@ -24,6 +24,7 @@ import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { NATIVE_ADS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
+import { maybeShowFactViewInterstitial } from '../../src/services/adManager';
 import {
   Screens,
   trackScreenView,
@@ -32,9 +33,8 @@ import {
   trackStoryOpen,
   trackStoryReadMore,
 } from '../../src/services/analytics';
-import { maybeShowFactViewInterstitial } from '../../src/services/adManager';
 import { trackFactView } from '../../src/services/appReview';
-import { checkAndAwardBadges, pushModalScreen, popModalScreen } from '../../src/services/badges';
+import { checkAndAwardBadges, popModalScreen, pushModalScreen } from '../../src/services/badges';
 import * as database from '../../src/services/database';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { hexColors, useTheme } from '../../src/theme';
@@ -169,7 +169,12 @@ export default function StoryScreen() {
     const animation = Animated.loop(
       Animated.sequence([
         Animated.parallel([
-          Animated.timing(hintTranslateY, { toValue: -14, duration: 800, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+          Animated.timing(hintTranslateY, {
+            toValue: -14,
+            duration: 800,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
           Animated.timing(hintOpacity, { toValue: 0, duration: 800, useNativeDriver: true }),
         ]),
         Animated.delay(200),

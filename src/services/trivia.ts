@@ -12,11 +12,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { HINT_LIMITS, STORAGE_KEYS } from '../config/app';
 import { TIME_PER_QUESTION, TRIVIA_QUESTIONS } from '../config/trivia';
-import { getIsPremium } from './premiumState';
 
 import { checkAndAwardBadges } from './badges';
 import * as database from './database';
 import * as onboardingService from './onboarding';
+import { getIsPremium } from './premiumState';
 
 import type {
   Category,

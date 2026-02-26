@@ -26,8 +26,10 @@ import {
 } from '@react-native-firebase/crashlytics';
 import * as Device from 'expo-device';
 
-import { APP_CHECK } from './app';
+import { primeTokenCache } from '../services/appCheckToken';
 import { isDeviceOnline } from '../utils/network';
+
+import { APP_CHECK } from './app';
 // Import macOS debug token from platform-specific file
 // iOS builds get the real token, Android builds get undefined
 import { MACOS_DEBUG_TOKEN } from './appCheckConfig';
@@ -39,7 +41,6 @@ import {
   setAppCheckInitFailed,
   setAppCheckInitialized,
 } from './appCheckState';
-import { primeTokenCache } from '../services/appCheckToken';
 
 // Key for storing the debug token (used for simulators/emulators in development)
 const APP_CHECK_DEBUG_TOKEN_KEY = 'appcheck_debug_token';

@@ -21,9 +21,7 @@ describe('appCheckToken', () => {
 
     // Get the exact same getToken mock instance that appCheckToken.ts imported
     mockGetToken = require('@react-native-firebase/app-check').getToken;
-    mockGetToken.mockImplementation(() =>
-      Promise.resolve({ token: 'mock-app-check-token' })
-    );
+    mockGetToken.mockImplementation(() => Promise.resolve({ token: 'mock-app-check-token' }));
 
     // Set up appCheckState mock
     const appCheckState = require('../../config/appCheckState');

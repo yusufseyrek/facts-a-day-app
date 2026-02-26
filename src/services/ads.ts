@@ -10,13 +10,13 @@ import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import { preloadAppOpenAd } from '../components/ads/AppOpenAd';
 import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
 import { preloadRewardedAd } from '../components/ads/RewardedAd';
-import { shouldShowAds, shouldInitializeAdsSdk } from './premiumState';
 
 import {
   trackAdsSdkInitialized,
   trackATTPermissionResult,
   trackGDPRConsentResult,
 } from './analytics';
+import { shouldInitializeAdsSdk, shouldShowAds } from './premiumState';
 
 // Re-export consent utilities for backwards compatibility
 export { canShowPersonalizedAds, shouldRequestNonPersonalizedAdsOnly } from './adsConsent';

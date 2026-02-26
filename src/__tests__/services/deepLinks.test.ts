@@ -31,9 +31,7 @@ describe('generateDeepLink', () => {
   });
 
   it('appends slug when provided', () => {
-    expect(generateDeepLink(42, 'cool-fact')).toBe(
-      'https://factsaday.com/en/fact/42/cool-fact'
-    );
+    expect(generateDeepLink(42, 'cool-fact')).toBe('https://factsaday.com/en/fact/42/cool-fact');
   });
 
   it('uses locale from i18n.locale', () => {

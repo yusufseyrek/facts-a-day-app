@@ -8,11 +8,11 @@ jest.mock('../../services/appCheckToken', () => ({
 }));
 
 import {
-  getRuntimeVersion,
   checkForUpdates,
   downloadAndApplyUpdate,
-  reloadApp,
+  getRuntimeVersion,
   performUpdateCycle,
+  reloadApp,
 } from '../../services/updates';
 
 describe('updates — getRuntimeVersion', () => {

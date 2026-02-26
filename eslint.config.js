@@ -59,6 +59,8 @@ module.exports = [
         Response: 'readonly',
         AbortController: 'readonly',
         URLSearchParams: 'readonly',
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
         atob: 'readonly',
         btoa: 'readonly',
         // React Native specific
@@ -130,6 +132,26 @@ module.exports = [
         },
       ],
       'simple-import-sort/exports': 'warn',
+    },
+  },
+
+  // Test files configuration
+  {
+    files: ['**/__tests__/**/*.{ts,tsx}', '**/__mocks__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}'],
+    languageOptions: {
+      globals: {
+        jest: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
 

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, View } from 'react-native';
+import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,14 +8,17 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { YStack } from 'tamagui';
 
+import { showRewardedAd } from '../../src/components/ads/RewardedAd';
 import {
   getTriviaModeBadge,
   TriviaExitModal,
   TriviaGameView,
-  TriviaResults,
   TriviaNativeAdView,
+  TriviaResults,
 } from '../../src/components/trivia';
 import { Text } from '../../src/components/Typography';
+import { usePremium } from '../../src/contexts/PremiumContext';
+import { useNativeAd } from '../../src/hooks/useNativeAd';
 import { useTranslation } from '../../src/i18n';
 import { showTriviaResultsInterstitial } from '../../src/services/adManager';
 import {
@@ -28,10 +32,6 @@ import {
   trackTriviaStart,
   trackTriviaViewFactClick,
 } from '../../src/services/analytics';
-import { showRewardedAd } from '../../src/components/ads/RewardedAd';
-import { usePremium } from '../../src/contexts/PremiumContext';
-import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
-import { useNativeAd } from '../../src/hooks/useNativeAd';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
@@ -193,7 +193,13 @@ export default function TriviaGameScreen() {
         timerRef.current = null;
       }
     };
-  }, [loading, gameState.isFinished, gameState.currentQuestionIndex, showingRewardedAd, showingNativeAd]);
+  }, [
+    loading,
+    gameState.isFinished,
+    gameState.currentQuestionIndex,
+    showingRewardedAd,
+    showingNativeAd,
+  ]);
 
   // Update progress bar animation
   useEffect(() => {

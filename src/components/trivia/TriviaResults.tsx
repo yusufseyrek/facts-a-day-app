@@ -445,7 +445,8 @@ export function TriviaResults({
     }
   }, []);
 
-  const { screenWidth, isTablet, typography, config, iconSizes, spacing, radius, media } = useResponsive();
+  const { screenWidth, isTablet, typography, config, iconSizes, spacing, radius, media } =
+    useResponsive();
   const statsIconSize = media.topicCardSize * 0.55;
   const headerBtnSize = media.topicCardSize * 0.45;
 
@@ -651,203 +652,212 @@ export function TriviaResults({
         onScrollEndDrag={handleVerticalScroll}
       >
         <YStack width="100%" alignItems="center">
-        <YStack width="100%" maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined} paddingHorizontal={isTablet ? spacing.md : undefined}>
-        {/* Header Section */}
-        <Animated.View entering={FadeInDown.duration(400)}>
-          <YStack paddingTop={spacing.lg} paddingHorizontal={spacing.xl} gap={spacing.lg}>
-            {/* Date/Time Subtitle */}
-            {customSubtitle && (
-              <XStack alignSelf="center" alignItems="center" gap={spacing.sm}>
-                <Calendar size={typography.fontSize.body} color={secondaryTextColor} />
-                <Text.Body fontFamily={FONT_FAMILIES.semibold} color={secondaryTextColor}>
-                  {customSubtitle}
-                </Text.Body>
-              </XStack>
-            )}
+          <YStack
+            width="100%"
+            maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
+            paddingHorizontal={isTablet ? spacing.md : undefined}
+          >
+            {/* Header Section */}
+            <Animated.View entering={FadeInDown.duration(400)}>
+              <YStack paddingTop={spacing.lg} paddingHorizontal={spacing.xl} gap={spacing.lg}>
+                {/* Date/Time Subtitle */}
+                {customSubtitle && (
+                  <XStack alignSelf="center" alignItems="center" gap={spacing.sm}>
+                    <Calendar size={typography.fontSize.body} color={secondaryTextColor} />
+                    <Text.Body fontFamily={FONT_FAMILIES.semibold} color={secondaryTextColor}>
+                      {customSubtitle}
+                    </Text.Body>
+                  </XStack>
+                )}
 
-            {/* Only show title here if not showing header bar */}
-            {!showBackButton && (
-              <Text.Display fontFamily={FONT_FAMILIES.bold} color={textColor}>
-                {customTitle || t('testResults') || 'Test Results'}
-              </Text.Display>
-            )}
+                {/* Only show title here if not showing header bar */}
+                {!showBackButton && (
+                  <Text.Display fontFamily={FONT_FAMILIES.bold} color={textColor}>
+                    {customTitle || t('testResults') || 'Test Results'}
+                  </Text.Display>
+                )}
 
-            {/* Badge + Score Row */}
-            <XStack alignItems="center" justifyContent="space-between">
-              {/* Trivia Mode/Category Badge */}
-              {triviaModeBadge ? (
-                <XStack
+                {/* Badge + Score Row */}
+                <XStack alignItems="center" justifyContent="space-between">
+                  {/* Trivia Mode/Category Badge */}
+                  {triviaModeBadge ? (
+                    <XStack
+                      alignItems="center"
+                      gap={spacing.xs}
+                      backgroundColor={`${triviaModeBadge.color || primaryColor}15`}
+                      paddingHorizontal={spacing.sm}
+                      paddingVertical={4}
+                      borderRadius={radius.md}
+                    >
+                      {triviaModeBadge.icon &&
+                        getLucideIcon(
+                          triviaModeBadge.icon,
+                          typography.fontSize.caption,
+                          triviaModeBadge.color || primaryColor
+                        )}
+                      <Text.Caption
+                        fontFamily={FONT_FAMILIES.semibold}
+                        color={triviaModeBadge.color || primaryColor}
+                      >
+                        {triviaModeBadge.label}
+                      </Text.Caption>
+                    </XStack>
+                  ) : (
+                    <View />
+                  )}
+
+                  {/* Star + Score Label */}
+                  <XStack alignItems="center" gap={spacing.xs}>
+                    <Star
+                      size={typography.fontSize.caption}
+                      color={primaryColor}
+                      fill={primaryColor}
+                    />
+                    <Text.Label fontFamily={FONT_FAMILIES.semibold} color={primaryColor}>
+                      {t('score') || 'Score'}: {correctAnswers}/{totalQuestions}
+                    </Text.Label>
+                  </XStack>
+                </XStack>
+
+                {/* Progress Bar */}
+                <ProgressBar
+                  percentage={accuracy}
+                  primaryColor={primaryColor}
+                  trackColor={borderColor}
+                  height={spacing.lg}
+                />
+
+                {/* Feedback with emoji */}
+                <XStack alignItems="center" gap={spacing.sm} marginBottom={spacing.md}>
+                  <Text.Title>{getFeedbackEmoji()}</Text.Title>
+                  <YStack flex={1}>
+                    <Text.Title fontFamily={FONT_FAMILIES.bold} color={textColor}>
+                      {getFeedbackTitle()}
+                    </Text.Title>
+                    <Text.Caption color={secondaryTextColor}>
+                      {(
+                        t('youAnswered', { correct: correctAnswers, total: totalQuestions }) ||
+                        `You answered ${correctAnswers} out of ${totalQuestions} questions correctly.`
+                      )
+                        .split(/(%\{correct\}|%\{total\}|\d+)/)
+                        .map((part, i) => {
+                          if (part === '%{correct}' || part === String(correctAnswers)) {
+                            return (
+                              <Text.Caption
+                                key={i}
+                                fontFamily={FONT_FAMILIES.bold}
+                                color={primaryColor}
+                              >
+                                {correctAnswers}
+                              </Text.Caption>
+                            );
+                          }
+                          if (part === '%{total}' || part === String(totalQuestions)) {
+                            return (
+                              <Text.Caption
+                                key={i}
+                                fontFamily={FONT_FAMILIES.bold}
+                                color={primaryColor}
+                              >
+                                {totalQuestions}
+                              </Text.Caption>
+                            );
+                          }
+                          return part;
+                        })}
+                    </Text.Caption>
+                  </YStack>
+                </XStack>
+              </YStack>
+            </Animated.View>
+
+            {/* Stats Cards */}
+            <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+              <XStack
+                paddingHorizontal={spacing.lg}
+                paddingTop={spacing.lg}
+                gap={spacing.md}
+                justifyContent="center"
+              >
+                {/* Duration Card */}
+                <YStack
+                  flex={1}
+                  backgroundColor={cardBackground}
+                  paddingVertical={spacing.lg}
+                  paddingHorizontal={spacing.md}
+                  borderRadius={radius.lg}
                   alignItems="center"
                   gap={spacing.xs}
-                  backgroundColor={`${triviaModeBadge.color || primaryColor}15`}
-                  paddingHorizontal={spacing.sm}
-                  paddingVertical={4}
-                  borderRadius={radius.md}
                 >
-                  {triviaModeBadge.icon &&
-                    getLucideIcon(
-                      triviaModeBadge.icon,
-                      typography.fontSize.caption,
-                      triviaModeBadge.color || primaryColor
-                    )}
-                  <Text.Caption
-                    fontFamily={FONT_FAMILIES.semibold}
-                    color={triviaModeBadge.color || primaryColor}
+                  <View
+                    style={{
+                      width: statsIconSize,
+                      height: statsIconSize,
+                      borderRadius: statsIconSize / 2,
+                      backgroundColor: isDark
+                        ? 'rgba(0, 163, 204, 0.15)'
+                        : 'rgba(0, 119, 168, 0.1)',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
                   >
-                    {triviaModeBadge.label}
+                    <Timer size={iconSizes.md} color={primaryColor} />
+                  </View>
+                  <Text.Caption color={secondaryTextColor} marginTop={spacing.xs}>
+                    {t('timeSpent') || 'Time Spent'}
                   </Text.Caption>
-                </XStack>
-              ) : (
-                <View />
-              )}
+                  <Text.Headline fontFamily={FONT_FAMILIES.bold} color={textColor}>
+                    {formatTime(elapsedTime)}
+                  </Text.Headline>
+                </YStack>
 
-              {/* Star + Score Label */}
-              <XStack alignItems="center" gap={spacing.xs}>
-                <Star size={typography.fontSize.caption} color={primaryColor} fill={primaryColor} />
-                <Text.Label fontFamily={FONT_FAMILIES.semibold} color={primaryColor}>
-                  {t('score') || 'Score'}: {correctAnswers}/{totalQuestions}
-                </Text.Label>
+                {/* Streak Card */}
+                <YStack
+                  flex={1}
+                  backgroundColor={cardBackground}
+                  paddingVertical={spacing.lg}
+                  paddingHorizontal={spacing.md}
+                  borderRadius={radius.lg}
+                  alignItems="center"
+                  gap={spacing.xs}
+                >
+                  <View
+                    style={{
+                      width: statsIconSize,
+                      height: statsIconSize,
+                      borderRadius: statsIconSize / 2,
+                      backgroundColor: isDark ? 'rgba(255, 140, 0, 0.15)' : 'rgba(204, 85, 0, 0.1)',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Flame size={typography.fontSize.title} color={accentColor} />
+                  </View>
+                  <Text.Caption color={secondaryTextColor} marginTop={spacing.xs}>
+                    {t('currentStreak') || 'Current Streak'}
+                  </Text.Caption>
+                  <Text.Headline fontFamily={FONT_FAMILIES.bold} color={textColor}>
+                    {bestStreak}x
+                  </Text.Headline>
+                </YStack>
               </XStack>
-            </XStack>
+            </Animated.View>
 
-            {/* Progress Bar */}
-            <ProgressBar
-              percentage={accuracy}
-              primaryColor={primaryColor}
-              trackColor={borderColor}
-              height={spacing.lg}
+            {/* Native Ad */}
+            <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
+              <InlineNativeAd />
+            </View>
+
+            {/* Divider */}
+            <View
+              style={{
+                marginHorizontal: spacing.lg,
+                height: 1,
+                marginTop: spacing.md,
+                backgroundColor: borderColor,
+              }}
             />
-
-            {/* Feedback with emoji */}
-            <XStack alignItems="center" gap={spacing.sm} marginBottom={spacing.md}>
-              <Text.Title>{getFeedbackEmoji()}</Text.Title>
-              <YStack flex={1}>
-                <Text.Title fontFamily={FONT_FAMILIES.bold} color={textColor}>
-                  {getFeedbackTitle()}
-                </Text.Title>
-                <Text.Caption color={secondaryTextColor}>
-                  {(
-                    t('youAnswered', { correct: correctAnswers, total: totalQuestions }) ||
-                    `You answered ${correctAnswers} out of ${totalQuestions} questions correctly.`
-                  )
-                    .split(/(%\{correct\}|%\{total\}|\d+)/)
-                    .map((part, i) => {
-                      if (part === '%{correct}' || part === String(correctAnswers)) {
-                        return (
-                          <Text.Caption
-                            key={i}
-                            fontFamily={FONT_FAMILIES.bold}
-                            color={primaryColor}
-                          >
-                            {correctAnswers}
-                          </Text.Caption>
-                        );
-                      }
-                      if (part === '%{total}' || part === String(totalQuestions)) {
-                        return (
-                          <Text.Caption
-                            key={i}
-                            fontFamily={FONT_FAMILIES.bold}
-                            color={primaryColor}
-                          >
-                            {totalQuestions}
-                          </Text.Caption>
-                        );
-                      }
-                      return part;
-                    })}
-                </Text.Caption>
-              </YStack>
-            </XStack>
           </YStack>
-        </Animated.View>
-
-        {/* Stats Cards */}
-        <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-          <XStack
-            paddingHorizontal={spacing.lg}
-            paddingTop={spacing.lg}
-            gap={spacing.md}
-            justifyContent="center"
-          >
-            {/* Duration Card */}
-            <YStack
-              flex={1}
-              backgroundColor={cardBackground}
-              paddingVertical={spacing.lg}
-              paddingHorizontal={spacing.md}
-              borderRadius={radius.lg}
-              alignItems="center"
-              gap={spacing.xs}
-            >
-              <View
-                style={{
-                  width: statsIconSize,
-                  height: statsIconSize,
-                  borderRadius: statsIconSize / 2,
-                  backgroundColor: isDark ? 'rgba(0, 163, 204, 0.15)' : 'rgba(0, 119, 168, 0.1)',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Timer size={iconSizes.md} color={primaryColor} />
-              </View>
-              <Text.Caption color={secondaryTextColor} marginTop={spacing.xs}>
-                {t('timeSpent') || 'Time Spent'}
-              </Text.Caption>
-              <Text.Headline fontFamily={FONT_FAMILIES.bold} color={textColor}>
-                {formatTime(elapsedTime)}
-              </Text.Headline>
-            </YStack>
-
-            {/* Streak Card */}
-            <YStack
-              flex={1}
-              backgroundColor={cardBackground}
-              paddingVertical={spacing.lg}
-              paddingHorizontal={spacing.md}
-              borderRadius={radius.lg}
-              alignItems="center"
-              gap={spacing.xs}
-            >
-              <View
-                style={{
-                  width: statsIconSize,
-                  height: statsIconSize,
-                  borderRadius: statsIconSize / 2,
-                  backgroundColor: isDark ? 'rgba(255, 140, 0, 0.15)' : 'rgba(204, 85, 0, 0.1)',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Flame size={typography.fontSize.title} color={accentColor} />
-              </View>
-              <Text.Caption color={secondaryTextColor} marginTop={spacing.xs}>
-                {t('currentStreak') || 'Current Streak'}
-              </Text.Caption>
-              <Text.Headline fontFamily={FONT_FAMILIES.bold} color={textColor}>
-                {bestStreak}x
-              </Text.Headline>
-            </YStack>
-          </XStack>
-        </Animated.View>
-
-        {/* Native Ad */}
-        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
-          <InlineNativeAd />
-        </View>
-
-        {/* Divider */}
-        <View
-          style={{
-            marginHorizontal: spacing.lg,
-            height: 1,
-            marginTop: spacing.md,
-            backgroundColor: borderColor,
-          }}
-        />
-
-        </YStack>
         </YStack>
 
         {/* Question Insights Section — full width for horizontal scroll, centered via listInset */}
@@ -918,32 +928,32 @@ export function TriviaResults({
       {/* Return button (shown for normal trivia flow) */}
       {showReturnButton && (
         <YStack width="100%" alignItems="center">
-        <YStack
-          width="100%"
-          maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
-          paddingHorizontal={spacing.xl}
-          paddingTop={spacing.md}
-          paddingBottom={spacing.md}
-          backgroundColor={bgColor as any}
-        >
-          <Pressable
-            onPress={onClose}
-            style={({ pressed }) => [pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
+          <YStack
+            width="100%"
+            maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
+            paddingHorizontal={spacing.xl}
+            paddingTop={spacing.md}
+            paddingBottom={spacing.md}
+            backgroundColor={bgColor as any}
           >
-            <XStack
-              backgroundColor={primaryColor}
-              paddingVertical={spacing.lg}
-              borderRadius={radius.lg}
-              justifyContent="center"
-              alignItems="center"
-              gap={spacing.sm}
+            <Pressable
+              onPress={onClose}
+              style={({ pressed }) => [pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
             >
-              <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
-                {t('returnToTrivia') || 'Return to Trivia'}
-              </Text.Body>
-            </XStack>
-          </Pressable>
-        </YStack>
+              <XStack
+                backgroundColor={primaryColor}
+                paddingVertical={spacing.lg}
+                borderRadius={radius.lg}
+                justifyContent="center"
+                alignItems="center"
+                gap={spacing.sm}
+              >
+                <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+                  {t('returnToTrivia') || 'Return to Trivia'}
+                </Text.Body>
+              </XStack>
+            </Pressable>
+          </YStack>
         </YStack>
       )}
     </View>

@@ -5,10 +5,10 @@ const mobileAds = jest.requireMock('react-native-google-mobile-ads');
 const { AdsConsent } = mobileAds;
 
 import {
-  isConsentRequired,
-  requestATTPermission,
   completeConsentFlow,
   initializeAdsForReturningUser,
+  isConsentRequired,
+  requestATTPermission,
 } from '../../services/ads';
 
 describe('ads — isConsentRequired', () => {

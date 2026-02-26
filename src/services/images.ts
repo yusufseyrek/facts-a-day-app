@@ -98,7 +98,6 @@ function getCacheFilename(imageUrl: string, factId?: number): string {
   return `img-${Math.abs(hash).toString(16)}.${fileExtension}`;
 }
 
-
 /**
  * Check if a fact image is already cached (public API)
  *
@@ -373,7 +372,10 @@ async function performImageDownload(
               if (!writtenInfo.exists) {
                 throw new Error('Written file does not exist');
               }
-              if (writtenInfo.size !== undefined && writtenInfo.size < IMAGE_CACHE.MIN_FILE_SIZE_BYTES) {
+              if (
+                writtenInfo.size !== undefined &&
+                writtenInfo.size < IMAGE_CACHE.MIN_FILE_SIZE_BYTES
+              ) {
                 FileSystem.deleteAsync(tempUri, { idempotent: true }).catch(() => {});
                 throw new Error(`Written file too small: ${writtenInfo.size} bytes`);
               }

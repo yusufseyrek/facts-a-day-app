@@ -1,32 +1,32 @@
 import React, {
+  forwardRef,
   useCallback,
+  useEffect,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
-  useEffect,
-  useImperativeHandle,
-  forwardRef,
 } from 'react';
 import { NativeScrollEvent, NativeSyntheticEvent, Pressable, View } from 'react-native';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-
 import { Compass } from '@tamagui/lucide-icons';
 
-import { NativeAdCard } from './ads/NativeAdCard';
-import { ImageFactCard } from './ImageFactCard';
-import { Text } from './Typography';
-import { ContentContainer } from './ScreenLayout';
 import { NATIVE_ADS } from '../config/app';
+import { usePremium } from '../contexts';
+import { useTranslation } from '../i18n';
+import { hexColors, useTheme } from '../theme';
 import {
   insertNativeAds,
   isNativeAdPlaceholder,
   type NativeAdPlaceholder,
 } from '../utils/insertNativeAds';
 import { useResponsive } from '../utils/useResponsive';
-import { hexColors, useTheme } from '../theme';
-import { useTranslation } from '../i18n';
-import { usePremium } from '../contexts';
+
+import { NativeAdCard } from './ads/NativeAdCard';
+import { ImageFactCard } from './ImageFactCard';
+import { ContentContainer } from './ScreenLayout';
+import { Text } from './Typography';
 
 import type { FactWithRelations } from '../services/database';
 
@@ -96,7 +96,7 @@ export const FactCarousel = React.memo(
       // Insert native ads into facts, then filter out failed ones, then append CTA
       const factsWithAds = useMemo(
         () => insertNativeAds(facts, NATIVE_ADS.FIRST_AD_INDEX.HOME_CAROUSEL),
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- isPremium triggers re-computation to remove/add native ads
+        // isPremium triggers re-computation to remove/add native ads
         [facts, isPremium]
       );
       const filteredData = useMemo(
@@ -249,10 +249,7 @@ export const FactCarousel = React.memo(
         );
       }
 
-      const itemSeparator = useCallback(
-        () => <View style={{ width: cardGap }} />,
-        [cardGap]
-      );
+      const itemSeparator = useCallback(() => <View style={{ width: cardGap }} />, [cardGap]);
 
       return (
         <View>

@@ -1,4 +1,4 @@
-import type { FactWithRelations, Category, Fact } from '../../services/database';
+import type { Category, Fact, FactWithRelations } from '../../services/database';
 
 let factIdCounter = 1;
 
@@ -41,9 +41,10 @@ export function createFactWithRelations(
   const fact = createFact(overrides);
   return {
     ...fact,
-    categoryData: overrides.categoryData !== undefined
-      ? overrides.categoryData
-      : createCategory({ slug: fact.category || 'science' }),
+    categoryData:
+      overrides.categoryData !== undefined
+        ? overrides.categoryData
+        : createCategory({ slug: fact.category || 'science' }),
     ...overrides,
   };
 }

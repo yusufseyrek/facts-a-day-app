@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  View,
+} from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { useFocusEffect } from '@react-navigation/native';
@@ -215,12 +222,14 @@ export default function TriviaScreen() {
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
   const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
 
-
   // Streak badge for header
   const isStreakActive = dailyStreak > 0;
   const streakColor = isStreakActive ? '#8B5CF6' : secondaryTextColor;
   const streakBadge = (
-    <Pressable onPress={() => router.push('/badges')} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+    <Pressable
+      onPress={() => router.push('/badges')}
+      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+    >
       <XStack
         alignItems="center"
         gap={spacing.xs}

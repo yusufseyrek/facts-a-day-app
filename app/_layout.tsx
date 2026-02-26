@@ -24,7 +24,11 @@ import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { SplashOverlay } from '../src/components/SplashOverlay';
 import { STORAGE_KEYS, TIMING } from '../src/config/app';
 import { isAppCheckInitFailed, subscribeAppCheckFailure } from '../src/config/appCheckState';
-import { enableCrashlyticsConsoleLogging, initializeFirebase, retryAppCheckInit } from '../src/config/firebase';
+import {
+  enableCrashlyticsConsoleLogging,
+  initializeFirebase,
+  retryAppCheckInit,
+} from '../src/config/firebase';
 import {
   BadgeToastProvider,
   OnboardingProvider,
@@ -39,8 +43,6 @@ import {
 } from '../src/contexts';
 import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
-import { setIsPremium } from '../src/services/premiumState';
-import { getCachedPremiumStatus, initIAPConnection, checkAndUpdatePremiumStatus } from '../src/services/purchases';
 import { initAnalytics } from '../src/services/analytics';
 import * as contentRefresh from '../src/services/contentRefresh';
 import * as database from '../src/services/database';
@@ -48,6 +50,12 @@ import { ensureImagesDirExists } from '../src/services/images';
 import { startNetworkMonitoring } from '../src/services/network';
 import * as notificationService from '../src/services/notifications';
 import * as onboardingService from '../src/services/onboarding';
+import { setIsPremium } from '../src/services/premiumState';
+import {
+  checkAndUpdatePremiumStatus,
+  getCachedPremiumStatus,
+  initIAPConnection,
+} from '../src/services/purchases';
 import * as updates from '../src/services/updates';
 import { AppThemeProvider, hexColors, useTheme } from '../src/theme';
 
@@ -526,12 +534,10 @@ export default function RootLayout() {
 
         // Sync notification schedule (check/repair/top-up)
         // This runs asynchronously and doesn't block app startup
-        notificationService
-          .syncNotificationSchedule(locale)
-          .catch((error) => {
-            // Silently handle errors - notifications continue with existing schedule
-            console.error('Notification sync failed:', error);
-          });
+        notificationService.syncNotificationSchedule(locale).catch((error) => {
+          // Silently handle errors - notifications continue with existing schedule
+          console.error('Notification sync failed:', error);
+        });
 
         // Check for OTA updates in the background
         // This runs asynchronously and doesn't block app startup
@@ -603,9 +609,7 @@ export default function RootLayout() {
           </I18nProvider>
         </SafeAreaProvider>
       </ErrorBoundary>
-      {showSplashOverlay && (
-        <SplashOverlay onHidden={() => setShowSplashOverlay(false)} />
-      )}
+      {showSplashOverlay && <SplashOverlay onHidden={() => setShowSplashOverlay(false)} />}
     </View>
   );
 }

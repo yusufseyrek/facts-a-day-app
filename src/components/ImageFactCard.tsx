@@ -38,14 +38,13 @@ const ImageFactCardComponent = ({
   factId,
   category,
   onPress,
-  isTablet: isTabletProp = false,
+  isTablet: _isTabletProp = false,
   testID,
   onImageReady,
   aspectRatio,
   cardWidth: cardWidthProp,
 }: ImageFactCardProps) => {
-  const { screenWidth, isTablet: isTabletHook, spacing, radius, config } = useResponsive();
-  const isTablet = isTabletProp || isTabletHook;
+  const { screenWidth, spacing, radius, config } = useResponsive();
 
   // Use a ref for the scale animation - this persists across renders
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -63,8 +62,7 @@ const ImageFactCardComponent = ({
   const [renderRetryCount, setRenderRetryCount] = useState(0);
 
   // All retries exhausted and still no image — show error overlay
-  const isPermanentlyFailed =
-    !imageLoaded && renderRetryCount >= IMAGE_RETRY.MAX_RENDER_ATTEMPTS;
+  const isPermanentlyFailed = !imageLoaded && renderRetryCount >= IMAGE_RETRY.MAX_RENDER_ATTEMPTS;
 
   // Show loading shimmer when image hasn't loaded yet, but NOT when permanently failed
   const showLoadingState = !imageLoaded && !isPermanentlyFailed;
@@ -239,7 +237,12 @@ const ImageFactCardComponent = ({
   );
 
   return (
-    <Animated.View style={[styles.shadowWrapper, { borderRadius: radius.lg, marginBottom: spacing.md, transform: [{ scale: scaleAnim }] }]}>
+    <Animated.View
+      style={[
+        styles.shadowWrapper,
+        { borderRadius: radius.lg, marginBottom: spacing.md, transform: [{ scale: scaleAnim }] },
+      ]}
+    >
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}

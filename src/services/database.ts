@@ -2932,10 +2932,10 @@ export async function markAllFactsViewedInStory(language?: string): Promise<numb
 export async function recordShareEvent(factId: number): Promise<void> {
   const database = await openDatabase();
   const now = new Date().toISOString();
-  await database.runAsync(
-    `INSERT INTO share_events (fact_id, shared_at) VALUES (?, ?)`,
-    [factId, now]
-  );
+  await database.runAsync(`INSERT INTO share_events (fact_id, shared_at) VALUES (?, ?)`, [
+    factId,
+    now,
+  ]);
 }
 
 /**

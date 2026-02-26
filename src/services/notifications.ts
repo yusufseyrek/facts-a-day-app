@@ -108,7 +108,9 @@ async function convertToJpegIfNeeded(localUri: string, factId: number): Promise<
 
   // All attempts failed
   if (__DEV__) {
-    console.error(`❌ JPEG conversion failed after ${JPEG_CONVERSION_MAX_ATTEMPTS} attempts for fact ${factId}`);
+    console.error(
+      `❌ JPEG conversion failed after ${JPEG_CONVERSION_MAX_ATTEMPTS} attempts for fact ${factId}`
+    );
   }
   return null;
 }
@@ -208,7 +210,9 @@ async function downloadImageForNotification(
 
   // All attempts failed
   if (__DEV__) {
-    console.error(`❌ Image download failed after ${IMAGE_DOWNLOAD_MAX_ATTEMPTS} attempts for fact ${factId}`);
+    console.error(
+      `❌ Image download failed after ${IMAGE_DOWNLOAD_MAX_ATTEMPTS} attempts for fact ${factId}`
+    );
   }
   return null;
 }

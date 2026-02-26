@@ -121,10 +121,7 @@ export function TriviaStatsHero({
     topCategory?.color_hex || (isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple);
 
   const cardContent = (
-    <YStack
-      padding={spacing.lg}
-      gap={spacing.md}
-    >
+    <YStack padding={spacing.lg} gap={spacing.md}>
       {/* Header */}
       <XStack justifyContent="space-between" alignItems="center">
         <Text.Title color={textColor}>{t('yourPerformance')}</Text.Title>

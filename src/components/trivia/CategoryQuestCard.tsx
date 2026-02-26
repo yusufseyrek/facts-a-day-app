@@ -35,7 +35,10 @@ export function CategoryQuestCard({ category, isDark, onPress, index }: Category
   const categoryColor = category.color_hex || primaryColor;
 
   return (
-    <Animated.View entering={FadeIn.duration(300).delay(150 + index * 50)} style={[questShadowStyles.card, { borderRadius: radius.md }]}>
+    <Animated.View
+      entering={FadeIn.duration(300).delay(150 + index * 50)}
+      style={[questShadowStyles.card, { borderRadius: radius.md }]}
+    >
       <Pressable
         onPress={onPress}
         disabled={isComplete}

@@ -1,12 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Ban, Check, Crown, Infinity, Lightbulb, Sparkles, X } from '@tamagui/lucide-icons';
+import {
+  Ban,
+  Check,
+  Crown,
+  Infinity as InfinityIcon,
+  Lightbulb,
+  Sparkles,
+  X,
+} from '@tamagui/lucide-icons';
+import { ErrorCode, useIAP } from 'expo-iap';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ErrorCode, useIAP } from 'expo-iap';
 import { XStack, YStack } from 'tamagui';
 
 import { Text } from '../src/components';
@@ -19,7 +28,6 @@ import { markPaywallShown } from '../src/services/paywallTiming';
 import { PAYWALL_GOLD, paywallThemeColors, useTheme } from '../src/theme';
 import { openInAppBrowser } from '../src/utils/browser';
 import { useResponsive } from '../src/utils/useResponsive';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PaywallScreen() {
   const router = useRouter();
@@ -152,7 +160,7 @@ export default function PaywallScreen() {
       gradient: [PAYWALL_GOLD.dark, PAYWALL_GOLD.primary] as const,
     },
     {
-      icon: <Infinity size={iconSizes.md} color={featureIconColor} />,
+      icon: <InfinityIcon size={iconSizes.md} color={featureIconColor} />,
       title: t('paywallFeatureUnlimitedCategories'),
       description: t('paywallFeatureUnlimitedCategoriesDesc'),
       gradient: [PAYWALL_GOLD.primary, PAYWALL_GOLD.light] as const,
@@ -165,6 +173,7 @@ export default function PaywallScreen() {
     },
   ];
 
+  /* eslint-disable react-native/no-unused-styles -- styles used via dynamicStyles.* */
   const dynamicStyles = useMemo(
     () =>
       StyleSheet.create({
@@ -361,6 +370,7 @@ export default function PaywallScreen() {
       checkCircleRadius,
     ]
   );
+  /* eslint-enable react-native/no-unused-styles */
 
   return (
     <View style={dynamicStyles.container}>

@@ -178,7 +178,9 @@ async function fetchNewToken(): Promise<string | null> {
     if (isRateLimited || isAttestationFailure) {
       rateLimitedUntilMs = Date.now() + RATE_LIMIT_COOLDOWN_MS;
       if (__DEV__) {
-        console.warn(`⚠️ App Check: ${isRateLimited ? 'Rate limited' : 'Attestation failed'}, cooling down for ${RATE_LIMIT_COOLDOWN_MS / 1000}s`);
+        console.warn(
+          `⚠️ App Check: ${isRateLimited ? 'Rate limited' : 'Attestation failed'}, cooling down for ${RATE_LIMIT_COOLDOWN_MS / 1000}s`
+        );
       }
     } else if (__DEV__) {
       console.warn(`⚠️ App Check: Token retrieval failed (${errorCode}): ${errorMessage}`);
@@ -276,7 +278,10 @@ export async function forceRefreshAppCheckToken(): Promise<string | null> {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
-    if (errorMessage.includes('Too many attempts') || errorMessage.includes('App attestation failed')) {
+    if (
+      errorMessage.includes('Too many attempts') ||
+      errorMessage.includes('App attestation failed')
+    ) {
       rateLimitedUntilMs = Date.now() + RATE_LIMIT_COOLDOWN_MS;
     }
 

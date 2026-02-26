@@ -25,25 +25,24 @@ const mockDb = sqlite.__mockDb;
 
 // ─── Import after mocks ───
 import {
-  checkAndAwardBadges,
-  getEarnedBadges,
-  getBadgeProgress,
-  getAllBadgesWithStatus,
-  getReadingStreak,
-  getQuizStreak,
-  getBestReadingStreak,
-  consumePendingBadgeToasts,
-  pushModalScreen,
-  popModalScreen,
-  isModalScreenActive,
-} from '../../services/badges';
-
-import {
   BADGE_DEFINITIONS,
-  TOTAL_POSSIBLE_BADGES,
   getBadgeDefinition,
   STAR_COLORS,
+  TOTAL_POSSIBLE_BADGES,
 } from '../../config/badges';
+import {
+  checkAndAwardBadges,
+  consumePendingBadgeToasts,
+  getAllBadgesWithStatus,
+  getBadgeProgress,
+  getBestReadingStreak,
+  getEarnedBadges,
+  getQuizStreak,
+  getReadingStreak,
+  isModalScreenActive,
+  popModalScreen,
+  pushModalScreen,
+} from '../../services/badges';
 
 import type { BadgeCategory } from '../../config/badges';
 
@@ -559,9 +558,7 @@ describe('Streak Calculations', () => {
     });
 
     it('returns 1 when only today has a view', async () => {
-      mockDb.getAllAsync.mockResolvedValueOnce([
-        { view_date: toDateStr(new Date()) },
-      ]);
+      mockDb.getAllAsync.mockResolvedValueOnce([{ view_date: toDateStr(new Date()) }]);
       expect(await getReadingStreak()).toBe(1);
     });
 
@@ -613,9 +610,7 @@ describe('Streak Calculations', () => {
     });
 
     it('returns 0 when latest date is not today or yesterday', async () => {
-      mockDb.getAllAsync.mockResolvedValueOnce([
-        { quiz_date: toDateStr(daysAgo(5)) },
-      ]);
+      mockDb.getAllAsync.mockResolvedValueOnce([{ quiz_date: toDateStr(daysAgo(5)) }]);
       expect(await getQuizStreak()).toBe(0);
     });
 
@@ -636,9 +631,7 @@ describe('Streak Calculations', () => {
     });
 
     it('returns 1 for a single date', async () => {
-      mockDb.getAllAsync.mockResolvedValueOnce([
-        { view_date: '2025-01-15' },
-      ]);
+      mockDb.getAllAsync.mockResolvedValueOnce([{ view_date: '2025-01-15' }]);
       expect(await getBestReadingStreak()).toBe(1);
     });
 

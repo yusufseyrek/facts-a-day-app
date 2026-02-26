@@ -1,9 +1,5 @@
 import React, { memo, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { ChevronRight } from '@tamagui/lucide-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   NativeAd,
   NativeAdView,
@@ -12,6 +8,10 @@ import {
   NativeMediaAspectRatio,
   NativeMediaView,
 } from 'react-native-google-mobile-ads';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { ChevronRight } from '@tamagui/lucide-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { XStack } from 'tamagui';
 
 import { useNativeAd } from '../../hooks/useNativeAd';
@@ -19,7 +19,6 @@ import { useTranslation } from '../../i18n';
 import { trackNativeAdError, trackNativeAdImpression } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
-
 import { FONT_FAMILIES, Text } from '../Typography';
 
 interface StoryNativeAdCardProps {

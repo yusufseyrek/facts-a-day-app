@@ -158,11 +158,7 @@ export const ShareCard = forwardRef<ViewShot, ShareCardProps>(({ fact }, ref) =>
         <View style={styles.watermarkContainer}>
           <XStack alignItems="center" gap={8}>
             <View style={styles.watermarkLogoContainer}>
-              <Image
-                source={appIcon}
-                style={styles.watermarkLogo}
-                contentFit="contain"
-              />
+              <Image source={appIcon} style={styles.watermarkLogo} contentFit="contain" />
             </View>
             <Text
               fontSize={SHARE_WATERMARK_FONT_SIZE}

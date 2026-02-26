@@ -1,10 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
 
+import { showAppOpenAdForLocaleChange } from '../components/ads/AppOpenAd';
 import { API_SETTINGS } from '../config/app';
 import { getLocaleFromCode, SupportedLocale } from '../i18n';
-
-import { showAppOpenAdForLocaleChange } from '../components/ads/AppOpenAd';
 
 import * as api from './api';
 import * as db from './database';

@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+} from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { useFocusEffect } from '@react-navigation/native';
@@ -23,13 +31,7 @@ import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT, NATIVE_ADS } from '../../src/config/app';
 import { FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
-import {
-  insertNativeAds,
-  isNativeAdPlaceholder,
-  type NativeAdPlaceholder,
-} from '../../src/utils/insertNativeAds';
 import { usePremium, useScrollToTopHandler } from '../../src/contexts';
-import { smartScrollToTop } from '../../src/utils/useFlashListScrollToTop';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
@@ -37,15 +39,21 @@ import {
   trackScreenView,
   trackSearch,
 } from '../../src/services/analytics';
-import type { FactViewSource } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
 import { darkenColor, getContrastColor } from '../../src/utils/colors';
 import { getLucideIcon } from '../../src/utils/iconMapper';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  type NativeAdPlaceholder,
+} from '../../src/utils/insertNativeAds';
+import { smartScrollToTop } from '../../src/utils/useFlashListScrollToTop';
 import { useResponsive } from '../../src/utils/useResponsive';
 
+import type { FactViewSource } from '../../src/services/analytics';
 import type { Category, FactWithRelations } from '../../src/services/database';
 
 // Device breakpoints
@@ -342,7 +350,12 @@ function DiscoverScreen() {
   }, [searchQuery, selectedCategorySlug, performSearch]);
 
   const handleFactPress = useCallback(
-    (fact: FactWithRelations, source: FactViewSource, factIdList?: number[], indexInList?: number) => {
+    (
+      fact: FactWithRelations,
+      source: FactViewSource,
+      factIdList?: number[],
+      indexInList?: number
+    ) => {
       if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
         router.push(
           `/fact/${fact.id}?source=${source}&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
@@ -430,11 +443,17 @@ function DiscoverScreen() {
   // Insert native ads into search results and category facts
   type DiscoverListItem = FactWithRelations | NativeAdPlaceholder;
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- isPremium triggers re-computation to remove/add native ads
-  const searchDataWithAds = useMemo(() => insertNativeAds(searchResults, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER), [searchResults, isPremium]);
+  // isPremium triggers re-computation to remove/add native ads
+  const searchDataWithAds = useMemo(
+    () => insertNativeAds(searchResults, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER),
+    [searchResults, isPremium]
+  );
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- isPremium triggers re-computation to remove/add native ads
-  const categoryDataWithAds = useMemo(() => insertNativeAds(categoryFacts, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER), [categoryFacts, isPremium]);
+  // isPremium triggers re-computation to remove/add native ads
+  const categoryDataWithAds = useMemo(
+    () => insertNativeAds(categoryFacts, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER),
+    [categoryFacts, isPremium]
+  );
 
   // Memoized keyExtractor
   const keyExtractor = useCallback((item: DiscoverListItem) => {
@@ -476,7 +495,9 @@ function DiscoverScreen() {
         <FactListItem
           item={item}
           isTablet={isTablet}
-          onPress={(fact) => handleFactPress(fact, 'discover_search', searchFactIds, factIndex >= 0 ? factIndex : 0)}
+          onPress={(fact) =>
+            handleFactPress(fact, 'discover_search', searchFactIds, factIndex >= 0 ? factIndex : 0)
+          }
           selectedCategory={selectedCategory}
         />
       );
@@ -499,7 +520,14 @@ function DiscoverScreen() {
         <FactListItem
           item={item}
           isTablet={isTablet}
-          onPress={(fact) => handleFactPress(fact, 'discover_category', categoryFactIds, factIndex >= 0 ? factIndex : 0)}
+          onPress={(fact) =>
+            handleFactPress(
+              fact,
+              'discover_category',
+              categoryFactIds,
+              factIndex >= 0 ? factIndex : 0
+            )
+          }
           selectedCategory={selectedCategory}
         />
       );
@@ -726,56 +754,56 @@ function DiscoverScreen() {
                               overflow: 'hidden',
                             }}
                           >
-                              <DiscoverCategoryCard
-                                height={media.topicCardSize}
-                                paddingHorizontal={spacing.md}
-                                gap={spacing.md}
+                            <DiscoverCategoryCard
+                              height={media.topicCardSize}
+                              paddingHorizontal={spacing.md}
+                              gap={spacing.md}
+                            >
+                              <View
+                                pointerEvents="none"
+                                style={{
+                                  position: 'absolute',
+                                  top: -media.categoryIconContainerSize * 0.5,
+                                  left: -media.categoryIconContainerSize * 0.5,
+                                  width: media.categoryIconContainerSize * 2,
+                                  height: media.categoryIconContainerSize * 2,
+                                  borderRadius: media.categoryIconContainerSize,
+                                  backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                                }}
+                              />
+                              <DiscoverCategoryIconContainer
+                                width={media.categoryIconContainerSize}
+                                height={media.categoryIconContainerSize}
+                                borderRadius={radius.md}
+                                style={{
+                                  backgroundColor:
+                                    contrastColor === '#000000'
+                                      ? 'rgba(0,0,0,0.1)'
+                                      : 'rgba(255,255,255,0.2)',
+                                }}
                               >
-                                <View
-                                  pointerEvents="none"
-                                  style={{
-                                    position: 'absolute',
-                                    top: -media.categoryIconContainerSize * 0.5,
-                                    left: -media.categoryIconContainerSize * 0.5,
-                                    width: media.categoryIconContainerSize * 2,
-                                    height: media.categoryIconContainerSize * 2,
-                                    borderRadius: media.categoryIconContainerSize,
-                                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                                  }}
-                                />
-                                <DiscoverCategoryIconContainer
-                                  width={media.categoryIconContainerSize}
-                                  height={media.categoryIconContainerSize}
-                                  borderRadius={radius.md}
-                                  style={{
-                                    backgroundColor:
-                                      contrastColor === '#000000'
-                                        ? 'rgba(0,0,0,0.1)'
-                                        : 'rgba(255,255,255,0.2)',
-                                  }}
+                                {getLucideIcon(category.icon, iconSize, contrastColor)}
+                              </DiscoverCategoryIconContainer>
+                              <DiscoverCategoryTextContainer gap={2}>
+                                <Text.Label
+                                  color={contrastColor}
+                                  numberOfLines={1}
+                                  fontFamily={FONT_FAMILIES.semibold}
                                 >
-                                  {getLucideIcon(category.icon, iconSize, contrastColor)}
-                                </DiscoverCategoryIconContainer>
-                                <DiscoverCategoryTextContainer gap={2}>
-                                  <Text.Label
-                                    color={contrastColor}
-                                    numberOfLines={1}
-                                    fontFamily={FONT_FAMILIES.semibold}
-                                  >
-                                    {category.name}
-                                  </Text.Label>
-                                  <Text.Caption
-                                    color={contrastColor}
-                                    style={{ opacity: 0.85 }}
-                                    fontFamily={FONT_FAMILIES.medium}
-                                  >
-                                    {factsCount === 1
-                                      ? t('factCountSingular', { count: factsCount })
-                                      : t('factCountPlural', { count: factsCount })}
-                                  </Text.Caption>
-                                </DiscoverCategoryTextContainer>
-                              </DiscoverCategoryCard>
-                            </LinearGradient>
+                                  {category.name}
+                                </Text.Label>
+                                <Text.Caption
+                                  color={contrastColor}
+                                  style={{ opacity: 0.85 }}
+                                  fontFamily={FONT_FAMILIES.medium}
+                                >
+                                  {factsCount === 1
+                                    ? t('factCountSingular', { count: factsCount })
+                                    : t('factCountPlural', { count: factsCount })}
+                                </Text.Caption>
+                              </DiscoverCategoryTextContainer>
+                            </DiscoverCategoryCard>
+                          </LinearGradient>
                         </Pressable>
                       );
                     })}

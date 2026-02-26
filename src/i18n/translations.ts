@@ -1320,7 +1320,7 @@ export const translations = {
     // App Check Blocking
     appCheckFailedTitle: 'V\u00e9rification \u00e9chou\u00e9e',
     appCheckFailedMessage:
-      'Cette application ne peut \u00eatre utilis\u00e9e que sur des appareils authentiques avec une version t\u00e9l\u00e9charg\u00e9e depuis l\'App Store ou Google Play. V\u00e9rifiez votre connexion internet et r\u00e9essayez. Si le probl\u00e8me persiste, r\u00e9installez l\'application depuis la boutique officielle.',
+      "Cette application ne peut \u00eatre utilis\u00e9e que sur des appareils authentiques avec une version t\u00e9l\u00e9charg\u00e9e depuis l'App Store ou Google Play. V\u00e9rifiez votre connexion internet et r\u00e9essayez. Si le probl\u00e8me persiste, r\u00e9installez l'application depuis la boutique officielle.",
 
     // Onboarding - Notifications
     stayInformed: 'Restez informé avec des faits quotidiens',
@@ -1628,7 +1628,7 @@ export const translations = {
     a11y_viewFactButton: 'Voir le fait',
     a11y_showHintButton: "Afficher l'indice",
     watchAdForHint: "Pub pour l'indice",
-    a11y_watchAdForHint: "Regarder une pub pour débloquer un indice",
+    a11y_watchAdForHint: 'Regarder une pub pour débloquer un indice',
 
     // Fact Action Bar
     actionSave: 'Sauver',
@@ -1726,7 +1726,7 @@ export const translations = {
     badge_fact_collector_desc: 'Faits ajoutés aux favoris',
     badge_fact_collector_goal: 'Mettre %{count} faits en favori',
     badge_knowledge_sharer: 'Partageur de savoir',
-    badge_knowledge_sharer_desc: 'Faits partagés avec d\'autres',
+    badge_knowledge_sharer_desc: "Faits partagés avec d'autres",
     badge_knowledge_sharer_goal: 'Partager %{count} faits',
     badge_category_ace: 'As de catégorie',
     badge_category_ace_desc: 'Catégories avec ≥80% de précision',
@@ -2612,7 +2612,7 @@ export const translations = {
     // App Check Blocking
     appCheckFailedTitle: 'Doğrulama başarısız',
     appCheckFailedMessage:
-      'Bu uygulama yalnızca App Store veya Google Play\'den indirilen orijinal cihazlarda kullanılabilir. Lütfen internet bağlantınızı kontrol edip tekrar deneyin. Sorun devam ederse uygulamayı resmi mağazadan yeniden yükleyin.',
+      "Bu uygulama yalnızca App Store veya Google Play'den indirilen orijinal cihazlarda kullanılabilir. Lütfen internet bağlantınızı kontrol edip tekrar deneyin. Sorun devam ederse uygulamayı resmi mağazadan yeniden yükleyin.",
 
     // Onboarding - Notifications
     stayInformed: 'Her gün yeni bilgiler öğrenin',

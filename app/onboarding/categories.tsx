@@ -363,7 +363,10 @@ export default function Categories() {
           }}
         >
           <YStack gap={spacing.md} style={{ paddingTop: spacing.md }}>
-            <Button onPress={handleContinue} disabled={selectedCategories.length < categoryLimits.min}>
+            <Button
+              onPress={handleContinue}
+              disabled={selectedCategories.length < categoryLimits.min}
+            >
               {t('continue')}
             </Button>
             {SUBSCRIPTION.ENABLED && !isPremium && (

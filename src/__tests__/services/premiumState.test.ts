@@ -11,11 +11,11 @@ jest.mock('../../config/app', () => ({
 }));
 
 import {
-  setIsPremium,
-  getIsPremium,
-  shouldShowAds,
-  shouldInitializeAdsSdk,
   canShowRewardedAds,
+  getIsPremium,
+  setIsPremium,
+  shouldInitializeAdsSdk,
+  shouldShowAds,
 } from '../../services/premiumState';
 
 beforeEach(() => {

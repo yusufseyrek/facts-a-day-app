@@ -17,10 +17,10 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { LAYOUT } from '../../src/config/app';
 import { InlineNativeAd } from '../../src/components/ads/InlineNativeAd';
 import { getTriviaModeBadge, TriviaResults } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
+import { LAYOUT } from '../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView, trackTriviaResultsView } from '../../src/services/analytics';
@@ -532,37 +532,46 @@ export default function ActivityHistoryScreen() {
         </XStack>
       </Animated.View>
 
-      <Animated.View entering={FadeIn.delay(50).duration(400).springify()} style={{ flex: 1, alignItems: 'center' }}>
-        <View style={{ flex: 1, width: '100%', maxWidth: isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined }}>
-        {flattenedData.length === 0 ? (
-          <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
-            <Text.Body
-              color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
-            >
-              {t('noTestsYet')}
-            </Text.Body>
-          </YStack>
-        ) : (
-          <FlashList
-            data={flattenedData}
-            keyExtractor={keyExtractor}
-            renderItem={renderItem}
-            getItemType={getItemType}
-            stickyHeaderIndices={stickyHeaderIndices}
-            ListHeaderComponent={
-              <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>
-                <InlineNativeAd />
-              </View>
-            }
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
-            }
-            contentContainerStyle={{
-              paddingBottom: spacing.sm,
-            }}
-            {...FLASH_LIST_SETTINGS}
-          />
-        )}
+      <Animated.View
+        entering={FadeIn.delay(50).duration(400).springify()}
+        style={{ flex: 1, alignItems: 'center' }}
+      >
+        <View
+          style={{
+            flex: 1,
+            width: '100%',
+            maxWidth: isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined,
+          }}
+        >
+          {flattenedData.length === 0 ? (
+            <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
+              <Text.Body
+                color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+              >
+                {t('noTestsYet')}
+              </Text.Body>
+            </YStack>
+          ) : (
+            <FlashList
+              data={flattenedData}
+              keyExtractor={keyExtractor}
+              renderItem={renderItem}
+              getItemType={getItemType}
+              stickyHeaderIndices={stickyHeaderIndices}
+              ListHeaderComponent={
+                <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>
+                  <InlineNativeAd />
+                </View>
+              }
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
+              }
+              contentContainerStyle={{
+                paddingBottom: spacing.sm,
+              }}
+              {...FLASH_LIST_SETTINGS}
+            />
+          )}
         </View>
       </Animated.View>
 

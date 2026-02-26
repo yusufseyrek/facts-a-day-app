@@ -36,7 +36,10 @@ export function DailyChallengeCard({
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
 
   return (
-    <Animated.View entering={FadeIn.duration(300).delay(100)} style={[dailyShadowStyles.card, { borderRadius: radius.md }]}>
+    <Animated.View
+      entering={FadeIn.duration(300).delay(100)}
+      style={[dailyShadowStyles.card, { borderRadius: radius.md }]}
+    >
       <Pressable
         onPress={onPress}
         disabled={isCompleted}

@@ -7,10 +7,10 @@ import { STAR_COLORS } from '../../config/badges';
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { FONT_FAMILIES, Text } from '../Typography';
 
 import { BadgeIcon } from './BadgeIcon';
 import { StarRating } from './StarRating';
-import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { BadgeWithStatus } from '../../services/badges';
 
@@ -86,7 +86,10 @@ export function BadgeCard({ badge, onPress }: BadgeCardProps) {
           >
             {t(`badge_${definition.id}` as any)}
           </Text.Body>
-          <Text.Caption color={isUnlocked ? colors.textSecondary : colors.textMuted} numberOfLines={1}>
+          <Text.Caption
+            color={isUnlocked ? colors.textSecondary : colors.textMuted}
+            numberOfLines={1}
+          >
             {t(`badge_${definition.id}_desc` as any)}
           </Text.Caption>
           <XStack alignItems="center" gap={spacing.sm} marginTop={spacing.xs}>

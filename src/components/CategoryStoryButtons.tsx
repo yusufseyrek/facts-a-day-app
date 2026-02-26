@@ -130,7 +130,7 @@ export function CategoryStoryButtons() {
       // Mix button has unseen if ANY category has unseen
       const hasUnseen = item.isMix
         ? Object.values(unseenStatus).some(Boolean)
-        : unseenStatus[item.slug] ?? true;
+        : (unseenStatus[item.slug] ?? true);
 
       return (
         <CategoryButton
@@ -157,10 +157,7 @@ export function CategoryStoryButtons() {
   // Height for horizontal FlashList container: circle + label margin + label line
   const listHeight = circleSize + spacing.xs + typography.fontSize.tiny * 2;
 
-  const itemSeparator = useCallback(
-    () => <View style={{ width: spacing.md }} />,
-    [spacing.md]
-  );
+  const itemSeparator = useCallback(() => <View style={{ width: spacing.md }} />, [spacing.md]);
 
   if (categories.length === 0) return null;
 
@@ -234,7 +231,10 @@ const CategoryButton = React.memo(
       <Pressable
         testID={`story-button-${item.slug}`}
         onPress={onPress}
-        style={({ pressed }) => [styles.buttonContainer, { opacity: pressed ? 0.7 : 1, width: outerSize + labelMarginTop }]}
+        style={({ pressed }) => [
+          styles.buttonContainer,
+          { opacity: pressed ? 0.7 : 1, width: outerSize + labelMarginTop },
+        ]}
       >
         {hasUnseen ? (
           // Gradient ring for unseen facts
@@ -291,7 +291,11 @@ const CategoryButton = React.memo(
             )}
           </View>
         )}
-        <Text.Caption numberOfLines={1} color={textColor} style={{ marginTop: labelMarginTop, textAlign: 'center', fontSize: labelFontSize }}>
+        <Text.Caption
+          numberOfLines={1}
+          color={textColor}
+          style={{ marginTop: labelMarginTop, textAlign: 'center', fontSize: labelFontSize }}
+        >
           {item.name}
         </Text.Caption>
       </Pressable>

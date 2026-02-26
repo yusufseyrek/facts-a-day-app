@@ -11,8 +11,8 @@ import { XStack, YStack } from 'tamagui';
 import { Button, CategoryCard, SuccessToast, Text } from '../../src/components';
 import { CATEGORY_LIMITS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
-import { showSettingsInterstitial } from '../../src/services/adManager';
 import { useTranslation } from '../../src/i18n';
+import { showSettingsInterstitial } from '../../src/services/adManager';
 import {
   Screens,
   trackCategoriesUpdate,

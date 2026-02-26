@@ -20,13 +20,13 @@ import { XStack, YStack } from 'tamagui';
 import { useTranslation } from '../i18n';
 import { trackSourceLinkClick } from '../services/analytics';
 import { onFactViewed } from '../services/appReview';
-import { getIsConnected } from '../services/network';
-import { checkAndAwardBadges, pushModalScreen, popModalScreen } from '../services/badges';
+import { checkAndAwardBadges, popModalScreen, pushModalScreen } from '../services/badges';
 import {
   addFactDetailTimeSpent,
   markFactDetailOpened,
   markFactDetailRead,
 } from '../services/database';
+import { getIsConnected } from '../services/network';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { openInAppBrowser } from '../utils/browser';
@@ -262,7 +262,9 @@ export function FactModal({
       try {
         const cachePath = await Image.getCachePathAsync(imageUri!);
         if (cachePath || cancelled) return; // Cached — expo-image will load it
-      } catch {}
+      } catch {
+        // silently ignore cache check
+      }
 
       // Not cached — check network status
       if (!getIsConnected() && !cancelled) {

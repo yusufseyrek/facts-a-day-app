@@ -4,8 +4,8 @@ import Constants from 'expo-constants';
 
 import { API_SETTINGS, APP_CHECK } from '../config/app';
 import { getAppCheckReady, isAppCheckInitialized } from '../config/appCheckState';
-
 import { getAppVersionInfo } from '../utils/appInfo';
+
 import { getCachedAppCheckToken } from './appCheckToken';
 
 /**

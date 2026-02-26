@@ -10,8 +10,8 @@ import {
 import Constants from 'expo-constants';
 
 import { AD_RETRY } from '../../config/app';
-import { trackBannerAdError, trackBannerAdLoaded } from '../../services/analytics';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
+import { trackBannerAdError, trackBannerAdLoaded } from '../../services/analytics';
 import { shouldShowAds } from '../../services/premiumState';
 
 type BannerAdPosition = 'home' | 'fact-modal';

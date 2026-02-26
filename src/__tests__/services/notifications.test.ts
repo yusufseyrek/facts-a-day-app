@@ -1,8 +1,11 @@
-import { createPreferredTime, createFactWithRelations, futureDate } from '../helpers/factories';
-
-// Import after setup mocks
-import { __testing, syncNotificationSchedule, scheduleNotifications } from '../../services/notifications';
 import * as database from '../../services/database';
+// Import after setup mocks
+import {
+  __testing,
+  scheduleNotifications,
+  syncNotificationSchedule,
+} from '../../services/notifications';
+import { createFactWithRelations, createPreferredTime, futureDate } from '../helpers/factories';
 
 const {
   generateTimeSlots,
@@ -126,8 +129,16 @@ describe('notifications — pure functions', () => {
       const preferredTimes = [createPreferredTime(9, 0)];
       const future = futureDate(2);
       const scheduled = [
-        { id: 1, scheduled_date: new Date(future.setHours(9, 0, 0, 0)).toISOString(), notification_id: 'n1' },
-        { id: 2, scheduled_date: new Date(future.setHours(9, 0, 0, 0)).toISOString(), notification_id: 'n2' },
+        {
+          id: 1,
+          scheduled_date: new Date(future.setHours(9, 0, 0, 0)).toISOString(),
+          notification_id: 'n1',
+        },
+        {
+          id: 2,
+          scheduled_date: new Date(future.setHours(9, 0, 0, 0)).toISOString(),
+          notification_id: 'n2',
+        },
       ];
       expect(isScheduleValid(scheduled, preferredTimes)).toBe(false);
     });
@@ -138,12 +149,32 @@ describe('notifications — pure functions', () => {
       const day2 = futureDate(3);
       const day3 = futureDate(4);
       const scheduled = [
-        { id: 1, scheduled_date: new Date(day1.setHours(9, 0, 0, 0)).toISOString(), notification_id: 'n1' },
-        { id: 2, scheduled_date: new Date(day1.setHours(18, 0, 0, 0)).toISOString(), notification_id: 'n2' },
+        {
+          id: 1,
+          scheduled_date: new Date(day1.setHours(9, 0, 0, 0)).toISOString(),
+          notification_id: 'n1',
+        },
+        {
+          id: 2,
+          scheduled_date: new Date(day1.setHours(18, 0, 0, 0)).toISOString(),
+          notification_id: 'n2',
+        },
         // Day 2 has only 1 (deficit for middle day)
-        { id: 3, scheduled_date: new Date(day2.setHours(9, 0, 0, 0)).toISOString(), notification_id: 'n3' },
-        { id: 4, scheduled_date: new Date(day3.setHours(9, 0, 0, 0)).toISOString(), notification_id: 'n4' },
-        { id: 5, scheduled_date: new Date(day3.setHours(18, 0, 0, 0)).toISOString(), notification_id: 'n5' },
+        {
+          id: 3,
+          scheduled_date: new Date(day2.setHours(9, 0, 0, 0)).toISOString(),
+          notification_id: 'n3',
+        },
+        {
+          id: 4,
+          scheduled_date: new Date(day3.setHours(9, 0, 0, 0)).toISOString(),
+          notification_id: 'n4',
+        },
+        {
+          id: 5,
+          scheduled_date: new Date(day3.setHours(18, 0, 0, 0)).toISOString(),
+          notification_id: 'n5',
+        },
       ];
       expect(isScheduleValid(scheduled, preferredTimes)).toBe(false);
     });
@@ -154,9 +185,17 @@ describe('notifications — pure functions', () => {
       const day2 = futureDate(3);
       const scheduled = [
         // First day: only 1 (partial - allowed)
-        { id: 1, scheduled_date: new Date(day1.setHours(18, 0, 0, 0)).toISOString(), notification_id: 'n1' },
+        {
+          id: 1,
+          scheduled_date: new Date(day1.setHours(18, 0, 0, 0)).toISOString(),
+          notification_id: 'n1',
+        },
         // Last day: only 1 (partial - allowed)
-        { id: 2, scheduled_date: new Date(day2.setHours(9, 0, 0, 0)).toISOString(), notification_id: 'n2' },
+        {
+          id: 2,
+          scheduled_date: new Date(day2.setHours(9, 0, 0, 0)).toISOString(),
+          notification_id: 'n2',
+        },
       ];
       expect(isScheduleValid(scheduled, preferredTimes)).toBe(true);
     });
@@ -165,7 +204,11 @@ describe('notifications — pure functions', () => {
       const preferredTimes = [createPreferredTime(9, 0)];
       const day = futureDate(2);
       const scheduled = [
-        { id: 1, scheduled_date: new Date(day.setHours(14, 30, 0, 0)).toISOString(), notification_id: 'n1' },
+        {
+          id: 1,
+          scheduled_date: new Date(day.setHours(14, 30, 0, 0)).toISOString(),
+          notification_id: 'n1',
+        },
       ];
       expect(isScheduleValid(scheduled, preferredTimes)).toBe(false);
     });
@@ -239,10 +282,14 @@ describe('notifications — pure functions', () => {
     it('propagates errors', async () => {
       const items = [1, 2, 3];
       await expect(
-        processInBatches(items, async (n) => {
-          if (n === 2) throw new Error('fail');
-          return n;
-        }, 3)
+        processInBatches(
+          items,
+          async (n) => {
+            if (n === 2) throw new Error('fail');
+            return n;
+          },
+          3
+        )
       ).rejects.toThrow('fail');
     });
   });
@@ -250,7 +297,7 @@ describe('notifications — pure functions', () => {
 
 describe('notifications — integration', () => {
   const Notifications = jest.requireMock('expo-notifications');
-  const onboardingService = jest.requireMock('../../services/onboarding');
+  const _onboardingService = jest.requireMock('../../services/onboarding');
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -288,16 +335,11 @@ describe('notifications — integration', () => {
   describe('scheduleNotifications', () => {
     it('clears, gets facts, assigns slots, syncs OS', async () => {
       const times = [createPreferredTime(9, 0)];
-      const facts = [
-        createFactWithRelations({ id: 1 }),
-        createFactWithRelations({ id: 2 }),
-      ];
+      const facts = [createFactWithRelations({ id: 1 }), createFactWithRelations({ id: 2 })];
       dbMock.getRandomUnscheduledFacts.mockResolvedValue(facts);
       dbMock.markFactAsScheduled.mockResolvedValue(undefined as any);
       dbMock.getFutureScheduledFactsWithNotificationIds.mockResolvedValue([]);
-      dbMock.getFactById.mockImplementation(async (id) =>
-        facts.find((f) => f.id === id) || null
-      );
+      dbMock.getFactById.mockImplementation(async (id) => facts.find((f) => f.id === id) || null);
       dbMock.updateNotificationId.mockResolvedValue(undefined as any);
 
       Notifications.getAllScheduledNotificationsAsync.mockResolvedValue([]);

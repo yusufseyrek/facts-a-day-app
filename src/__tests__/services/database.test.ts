@@ -5,7 +5,7 @@
  * and test the public API contracts + mapFactsWithRelations logic.
  */
 
-import { createDbRow, createCategory, createFact } from '../helpers/factories';
+import { createCategory, createDbRow, createFact } from '../helpers/factories';
 
 // Mock expo-sqlite
 jest.mock('expo-sqlite', () => {

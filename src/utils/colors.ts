@@ -32,7 +32,7 @@ export const darkenColor = (hex: string, amount: number): string => {
   return toHex(
     Math.round(rgb[0] * (1 - amount)),
     Math.round(rgb[1] * (1 - amount)),
-    Math.round(rgb[2] * (1 - amount)),
+    Math.round(rgb[2] * (1 - amount))
   );
 };
 
@@ -48,7 +48,7 @@ export const blendHexColors = (fgHex: string, bgHex: string, opacity: number): s
   return toHex(
     Math.round(fg[0] * opacity + bg[0] * (1 - opacity)),
     Math.round(fg[1] * opacity + bg[1] * (1 - opacity)),
-    Math.round(fg[2] * opacity + bg[2] * (1 - opacity)),
+    Math.round(fg[2] * opacity + bg[2] * (1 - opacity))
   );
 };
 

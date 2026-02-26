@@ -11,8 +11,8 @@ import { trackFactShareWithPlatform } from '../analytics';
 import { checkAndAwardBadges } from '../badges';
 import { recordShareEvent } from '../database';
 
-import { generateDeepLink,generateShareText, generateShortShareText } from './deepLinks';
-import { cleanupShareCards,generateShareCard } from './imageGenerator';
+import { generateDeepLink, generateShareText, generateShortShareText } from './deepLinks';
+import { cleanupShareCards, generateShareCard } from './imageGenerator';
 import {
   getAvailablePlatforms,
   shareGeneral,
@@ -22,7 +22,7 @@ import {
   shareToWhatsApp,
 } from './platforms';
 
-import type { ShareableFact, ShareOptions, SharePlatform,ShareResult } from './types';
+import type { ShareableFact, ShareOptions, SharePlatform, ShareResult } from './types';
 
 /**
  * Default share options
@@ -148,7 +148,9 @@ class ShareServiceImpl {
         });
 
         // Record for badge tracking
-        recordShareEvent(fact.id).then(() => checkAndAwardBadges()).catch(() => {});
+        recordShareEvent(fact.id)
+          .then(() => checkAndAwardBadges())
+          .catch(() => {});
       }
 
       return result;

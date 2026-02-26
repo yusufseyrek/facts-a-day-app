@@ -167,7 +167,14 @@ export async function handleLanguageChange(
             SET slug = ?, title = ?, content = ?, summary = ?, language = ?
             WHERE id = ?
           `,
-            [fact.slug || null, fact.title || null, fact.content, fact.summary || null, newLanguage, fact.id]
+            [
+              fact.slug || null,
+              fact.title || null,
+              fact.content,
+              fact.summary || null,
+              newLanguage,
+              fact.id,
+            ]
           );
           updatedCount++;
         } else {

@@ -1,9 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const appJson = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, '../../../app.json'), 'utf-8')
-);
+const appJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../app.json'), 'utf-8'));
 const expo = appJson.expo;
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,5 @@
 import React, { memo, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   NativeAd,
   NativeAdView,
@@ -9,13 +7,14 @@ import {
   NativeAssetType,
   NativeMediaView,
 } from 'react-native-google-mobile-ads';
+
+import { LinearGradient } from 'expo-linear-gradient';
 import { XStack } from 'tamagui';
 
 import { useNativeAd } from '../../hooks/useNativeAd';
 import { useTranslation } from '../../i18n';
 import { trackNativeAdImpression } from '../../services/analytics';
 import { useResponsive } from '../../utils/useResponsive';
-
 import { FONT_FAMILIES, Text } from '../Typography';
 
 interface NativeAdCardProps {
@@ -34,7 +33,13 @@ interface NativeAdCardProps {
 const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.45)', 'rgba(0, 0, 0, 0.85)'] as const;
 const gradientLocations = [0.25, 0.55, 1] as const;
 
-function NativeAdCardComponent({ cardWidth, cardHeight: cardHeightProp, onAdFailed, onAdLoaded, nativeAd: nativeAdProp }: NativeAdCardProps) {
+function NativeAdCardComponent({
+  cardWidth,
+  cardHeight: cardHeightProp,
+  onAdFailed,
+  onAdLoaded,
+  nativeAd: nativeAdProp,
+}: NativeAdCardProps) {
   const { nativeAd: nativeAdFromHook, isLoading, error } = useNativeAd({ skip: !!nativeAdProp });
   const nativeAd = nativeAdProp ?? nativeAdFromHook;
   const { screenWidth, spacing, radius, config } = useResponsive();
@@ -63,7 +68,10 @@ function NativeAdCardComponent({ cardWidth, cardHeight: cardHeightProp, onAdFail
   const needsMargin = !nativeAdProp && !cardWidth;
 
   return (
-    <NativeAdView nativeAd={nativeAd} style={needsMargin ? { marginBottom: spacing.md } : undefined}>
+    <NativeAdView
+      nativeAd={nativeAd}
+      style={needsMargin ? { marginBottom: spacing.md } : undefined}
+    >
       <View
         style={{
           borderRadius: radius.lg,

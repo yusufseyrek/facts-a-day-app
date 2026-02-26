@@ -20,14 +20,14 @@ import { BadgesScreenSkeleton } from '../src/components/badges/BadgesScreenSkele
 import { ContentContainer } from '../src/components/ScreenLayout';
 import { FONT_FAMILIES, Text } from '../src/components/Typography';
 import { useTranslation } from '../src/i18n';
+import { Screens, trackBadgeDetailView, trackScreenView } from '../src/services/analytics';
+import { getCachedBadgeData, setCachedBadgeData } from '../src/services/badgeCache';
 import {
   type BadgeWithStatus,
   getAllBadgesWithStatus,
   getQuizStreak,
   getReadingStreak,
 } from '../src/services/badges';
-import { Screens, trackBadgeDetailView, trackScreenView } from '../src/services/analytics';
-import { getCachedBadgeData, setCachedBadgeData } from '../src/services/badgeCache';
 import { hexColors, useTheme } from '../src/theme';
 import { useResponsive } from '../src/utils/useResponsive';
 
@@ -208,7 +208,11 @@ export default function BadgesScreen() {
   const renderBadgeList = (items: BadgeWithStatus[]) => (
     <YStack gap={spacing.sm}>
       {items.map((badge) => (
-        <BadgeCard key={badge.definition.id} badge={badge} onPress={() => handleBadgePress(badge)} />
+        <BadgeCard
+          key={badge.definition.id}
+          badge={badge}
+          onPress={() => handleBadgePress(badge)}
+        />
       ))}
     </YStack>
   );

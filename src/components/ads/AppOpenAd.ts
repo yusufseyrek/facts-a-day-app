@@ -1,22 +1,17 @@
 import { Platform } from 'react-native';
-import {
-  AdEventType,
-  AdsConsent,
-  AppOpenAd,
-  TestIds,
-} from 'react-native-google-mobile-ads';
+import { AdEventType, AdsConsent, AppOpenAd, TestIds } from 'react-native-google-mobile-ads';
 
 import Constants from 'expo-constants';
 
 import { APP_OPEN_ADS } from '../../config/app';
-import { shouldShowAds } from '../../services/premiumState';
+import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import {
   trackAppOpenAdDismissed,
   trackAppOpenAdError,
   trackAppOpenAdLoaded,
   trackAppOpenAdShown,
 } from '../../services/analytics';
-import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
+import { shouldShowAds } from '../../services/premiumState';
 
 // Get App Open Ad Unit ID based on platform
 const getAppOpenAdUnitId = (): string => {

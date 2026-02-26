@@ -1,4 +1,4 @@
-import { createContext, type ReactNode,useCallback, useContext, useRef } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useRef } from 'react';
 
 import type { FactWithRelations } from '../services/database';
 
@@ -146,7 +146,14 @@ export function PreloadedDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <PreloadedDataContext.Provider value={{ consumePreloadedFacts, consumePreloadedRecommendations, signalHomeScreenReady, signalCarouselImageReady }}>
+    <PreloadedDataContext.Provider
+      value={{
+        consumePreloadedFacts,
+        consumePreloadedRecommendations,
+        signalHomeScreenReady,
+        signalCarouselImageReady,
+      }}
+    >
       {children}
     </PreloadedDataContext.Provider>
   );

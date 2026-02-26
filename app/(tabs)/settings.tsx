@@ -24,6 +24,7 @@ import {
   Trophy,
 } from '@tamagui/lucide-icons';
 import Constants from 'expo-constants';
+import { deepLinkToSubscriptions } from 'expo-iap';
 import * as Notifications from 'expo-notifications';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -45,11 +46,10 @@ import { LAYOUT, SUBSCRIPTION } from '../../src/config/app';
 import { useOnboarding, usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { TranslationKeys } from '../../src/i18n/translations';
-import { deepLinkToSubscriptions } from 'expo-iap';
 import { openAdDebugMenu } from '../../src/services/ads';
-import { triggerTestBadgeToast } from '../../src/services/badges';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import { requestReview } from '../../src/services/appReview';
+import { triggerTestBadgeToast } from '../../src/services/badges';
 import * as database from '../../src/services/database';
 import { clearAllCachedImages, getCachedImagesSize } from '../../src/services/images';
 import { buildNotificationContent } from '../../src/services/notifications';
@@ -985,7 +985,7 @@ export default function SettingsPage() {
             restored ? t('settingsRestoreSuccess') : t('settingsRestoreNoSubscription'),
             restored
               ? t('settingsRestoreSuccessMessage')
-              : t('settingsRestoreNoSubscriptionMessage'),
+              : t('settingsRestoreNoSubscriptionMessage')
           );
         },
       });

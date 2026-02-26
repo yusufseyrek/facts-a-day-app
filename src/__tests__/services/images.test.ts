@@ -1,10 +1,6 @@
 const FileSystem = jest.requireMock('expo-file-system/legacy');
 
-import {
-  downloadImage,
-  getCachedFactImage,
-  clearAllCachedImages,
-} from '../../services/images';
+import { clearAllCachedImages, downloadImage } from '../../services/images';
 
 describe('images — downloadImage', () => {
   beforeEach(() => {

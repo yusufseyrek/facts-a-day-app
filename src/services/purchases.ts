@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { initConnection, endConnection, hasActiveSubscriptions } from 'expo-iap';
+import { endConnection, hasActiveSubscriptions, initConnection } from 'expo-iap';
 
 import { SUBSCRIPTION } from '../config/app';
+
 import { setIsPremium } from './premiumState';
 
 /**
@@ -75,4 +76,3 @@ export const getCachedPremiumStatus = async (): Promise<boolean> => {
     return false;
   }
 };
-

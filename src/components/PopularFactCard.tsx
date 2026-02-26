@@ -36,8 +36,7 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
   const [renderRetryCount, setRenderRetryCount] = useState(0);
   const retryPendingRef = useRef(false);
 
-  const isPermanentlyFailed =
-    !imageLoaded && renderRetryCount >= IMAGE_RETRY.MAX_RENDER_ATTEMPTS;
+  const isPermanentlyFailed = !imageLoaded && renderRetryCount >= IMAGE_RETRY.MAX_RENDER_ATTEMPTS;
 
   // Watchdog: if expo-image doesn't call onError/onLoad after a render retry, force-advance
   const renderWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -122,7 +121,12 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
   const shadowStyle = theme === 'dark' ? styles.shadowDark : styles.shadowLight;
 
   return (
-    <Animated.View style={[{ transform: [{ scale: scaleAnim }], width: cardWidth, borderRadius: radius.lg }, shadowStyle]}>
+    <Animated.View
+      style={[
+        { transform: [{ scale: scaleAnim }], width: cardWidth, borderRadius: radius.lg },
+        shadowStyle,
+      ]}
+    >
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
@@ -141,7 +145,12 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
         <View
           style={[
             styles.thumbnail,
-            { borderRadius: radius.md, width: thumbnailSize, height: thumbnailSize, backgroundColor: colors.border },
+            {
+              borderRadius: radius.md,
+              width: thumbnailSize,
+              height: thumbnailSize,
+              backgroundColor: colors.border,
+            },
           ]}
         >
           <Image

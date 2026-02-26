@@ -9,7 +9,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useFocusEffect } from '@react-navigation/native';
@@ -23,20 +23,20 @@ import {
   Shuffle,
   Trophy,
 } from '@tamagui/lucide-icons';
-import { getEarnedBadges } from '../../src/services/badges';
-import { BADGE_DEFINITIONS } from '../../src/config/badges';
-import { BadgeIcon } from '../../src/components/badges/BadgeIcon';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { ContentContainer } from '../../src/components';
 import { InlineNativeAd } from '../../src/components/ads/InlineNativeAd';
+import { BadgeIcon } from '../../src/components/badges/BadgeIcon';
 import { getTriviaModeBadge, TriviaResults } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { DISPLAY_LIMITS } from '../../src/config/app';
+import { BADGE_DEFINITIONS } from '../../src/config/badges';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView, trackTriviaResultsView } from '../../src/services/analytics';
+import { getEarnedBadges } from '../../src/services/badges';
 import * as triviaService from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
 import { getLucideIcon } from '../../src/utils/iconMapper';
@@ -258,7 +258,6 @@ function MetricsGrid({
   iconSizes,
   spacing,
   primaryColor,
-  accentColor,
   purpleColor,
   successColor,
   columnsPerRow,

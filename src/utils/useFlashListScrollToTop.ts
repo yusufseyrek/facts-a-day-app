@@ -1,4 +1,4 @@
-import { useCallback, useRef, RefObject } from 'react';
+import { RefObject, useCallback, useRef } from 'react';
 
 import { SCROLL_TO_TOP_SETTINGS } from '../config/factListSettings';
 import { useScrollToTopHandler } from '../contexts';
@@ -41,7 +41,6 @@ interface ScrollEvent {
   nativeEvent: { contentOffset: { y: number } };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FlashListRef = any;
 
 interface UseFlashListScrollToTopOptions {

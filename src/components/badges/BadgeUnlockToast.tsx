@@ -1,21 +1,21 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SvgXml } from 'react-native-svg';
 
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SvgXml } from 'react-native-svg';
 import { XStack, YStack } from 'tamagui';
 
-import { STAR_COLORS, type BadgeStar } from '../../config/badges';
+import { type BadgeStar, STAR_COLORS } from '../../config/badges';
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
 import { useResponsive } from '../../utils/useResponsive';
+import { FONT_FAMILIES, Text } from '../Typography';
 
 import { BadgeIcon } from './BadgeIcon';
 import { StarRating } from './StarRating';
-import { FONT_FAMILIES, Text } from '../Typography';
 
 function buildShineSvg(size: number, color: string, colorFade: string): string {
   const cx = size / 2;
@@ -150,60 +150,60 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
           });
         }}
       >
-      <XStack
-        backgroundColor={colors.cardBackground}
-        borderRadius={radius.lg}
-        overflow="hidden"
-        alignItems="stretch"
-        shadowColor={accentColor}
-        shadowOffset={{ width: 0, height: 4 }}
-        shadowOpacity={theme === 'dark' ? 0.35 : 0.15}
-        shadowRadius={12}
-        elevation={10}
-        borderWidth={1}
-        borderColor={`${accentColor}20`}
-      >
-        {/* Left accent gradient bar */}
-        <LinearGradient
-          colors={[accentColor, hexToRgba(accentColor, 0.6)]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={{ width: 4 }}
-        />
+        <XStack
+          backgroundColor={colors.cardBackground}
+          borderRadius={radius.lg}
+          overflow="hidden"
+          alignItems="stretch"
+          shadowColor={accentColor}
+          shadowOffset={{ width: 0, height: 4 }}
+          shadowOpacity={theme === 'dark' ? 0.35 : 0.15}
+          shadowRadius={12}
+          elevation={10}
+          borderWidth={1}
+          borderColor={`${accentColor}20`}
+        >
+          {/* Left accent gradient bar */}
+          <LinearGradient
+            colors={[accentColor, hexToRgba(accentColor, 0.6)]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={{ width: 4 }}
+          />
 
-        <XStack flex={1} padding={spacing.md} gap={spacing.md} alignItems="center">
-          {/* Icon with sunburst */}
-          <View
-            style={{
-              width: burstSize,
-              height: burstSize,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Animated.View
+          <XStack flex={1} padding={spacing.md} gap={spacing.md} alignItems="center">
+            {/* Icon with sunburst */}
+            <View
               style={{
-                position: 'absolute',
-                transform: [{ rotate: spinRotation }],
+                width: burstSize,
+                height: burstSize,
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
-              <SvgXml xml={sunburstXml} width={burstSize} height={burstSize} />
-            </Animated.View>
-            {badge.badgeId && <BadgeIcon badgeId={badge.badgeId} size={iconSize} />}
-          </View>
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  transform: [{ rotate: spinRotation }],
+                }}
+              >
+                <SvgXml xml={sunburstXml} width={burstSize} height={burstSize} />
+              </Animated.View>
+              {badge.badgeId && <BadgeIcon badgeId={badge.badgeId} size={iconSize} />}
+            </View>
 
-          {/* Text */}
-          <YStack flex={1} gap={spacing.xs}>
-            <Text.Label color={accentColor} fontFamily={FONT_FAMILIES.bold}>
-              {t('badgeEarned')}
-            </Text.Label>
-            <Text.Body color={colors.text} fontFamily={FONT_FAMILIES.semibold} numberOfLines={1}>
-              {badge.name}
-            </Text.Body>
-            <StarRating earnedCount={starCount} size={iconSizes.sm} gap={spacing.xs} />
-          </YStack>
+            {/* Text */}
+            <YStack flex={1} gap={spacing.xs}>
+              <Text.Label color={accentColor} fontFamily={FONT_FAMILIES.bold}>
+                {t('badgeEarned')}
+              </Text.Label>
+              <Text.Body color={colors.text} fontFamily={FONT_FAMILIES.semibold} numberOfLines={1}>
+                {badge.name}
+              </Text.Body>
+              <StarRating earnedCount={starCount} size={iconSizes.sm} gap={spacing.xs} />
+            </YStack>
+          </XStack>
         </XStack>
-      </XStack>
       </Pressable>
     </Animated.View>
   );

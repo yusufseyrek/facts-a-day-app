@@ -5,11 +5,7 @@
  * Reuses existing DB tables (fact_interactions, trivia_sessions, question_attempts, etc.)
  */
 
-import {
-  BADGE_DEFINITIONS,
-  type BadgeDefinition,
-  type BadgeStar,
-} from '../config/badges';
+import { BADGE_DEFINITIONS, type BadgeDefinition, type BadgeStar } from '../config/badges';
 
 import { invalidateBadgeCache } from './badgeCache';
 import { openDatabase } from './database';
@@ -90,7 +86,9 @@ export async function checkAndAwardBadges(): Promise<NewlyEarnedBadge[]> {
     for (const badge of BADGE_DEFINITIONS) {
       const progress = progressMap.get(badge.id) || 0;
       if (progress > 0) {
-        console.log(`🏅 [Badge] ${badge.id}: progress=${progress}, thresholds=${badge.stars.map(s => s.threshold).join(',')}`);
+        console.log(
+          `🏅 [Badge] ${badge.id}: progress=${progress}, thresholds=${badge.stars.map((s) => s.threshold).join(',')}`
+        );
       }
 
       for (const starDef of badge.stars) {
@@ -232,9 +230,7 @@ export async function getReadingStreak(): Promise<number> {
   if (result.length === 0) return 0;
 
   const today = getLocalDateString();
-  const yesterday = getLocalDateString(
-    new Date(new Date().setDate(new Date().getDate() - 1))
-  );
+  const yesterday = getLocalDateString(new Date(new Date().setDate(new Date().getDate() - 1)));
 
   const dates = result.map((r) => r.view_date);
 
@@ -280,9 +276,7 @@ export async function getQuizStreak(): Promise<number> {
   if (result.length === 0) return 0;
 
   const today = getLocalDateString();
-  const yesterday = getLocalDateString(
-    new Date(new Date().setDate(new Date().getDate() - 1))
-  );
+  const yesterday = getLocalDateString(new Date(new Date().setDate(new Date().getDate() - 1)));
 
   const dates = result.map((r) => r.quiz_date);
 
@@ -364,9 +358,7 @@ async function getBestDailyTriviaStreak(): Promise<number> {
   for (let i = 1; i < result.length; i++) {
     const prev = new Date(result[i - 1].date + 'T12:00:00');
     const curr = new Date(result[i].date + 'T12:00:00');
-    const diffDays = Math.round(
-      (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays === 1) {
       currentStreak++;
       bestStreak = Math.max(bestStreak, currentStreak);
@@ -581,9 +573,7 @@ async function getBadgeProgressValue(badgeId: string): Promise<number> {
       for (let i = 1; i < result.length; i++) {
         const prev = new Date(result[i - 1].date + 'T12:00:00');
         const curr = new Date(result[i].date + 'T12:00:00');
-        const diffDays = Math.round(
-          (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
-        );
+        const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
         if (diffDays === 1) {
           currentStreak++;
           bestStreak = Math.max(bestStreak, currentStreak);
