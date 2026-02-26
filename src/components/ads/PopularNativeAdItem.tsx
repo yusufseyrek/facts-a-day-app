@@ -19,7 +19,7 @@ function PopularNativeAdItemComponent({
   cardHeight,
   onAdFailed,
 }: PopularNativeAdItemProps) {
-  const { nativeAd, isLoading, error } = useNativeAd();
+  const { nativeAd, isLoading, error } = useNativeAd({ requestKey: adKey });
   const { spacing } = useResponsive();
 
   const handleAdFailed = useCallback(() => {

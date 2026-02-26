@@ -27,10 +27,12 @@ interface UseNativeAdOptions {
   skip?: boolean;
   /** Preferred media aspect ratio for the ad request. Only used on initial mount. Defaults to LANDSCAPE. */
   aspectRatio?: NativeMediaAspectRatio;
+  /** Unique key to trigger a new ad request (handles FlashList view recycling). */
+  requestKey?: string;
 }
 
 export function useNativeAd(options: UseNativeAdOptions = {}) {
-  const { skip = false, aspectRatio = NativeMediaAspectRatio.LANDSCAPE } = options;
+  const { skip = false, aspectRatio = NativeMediaAspectRatio.LANDSCAPE, requestKey } = options;
   const [nativeAd, setNativeAd] = useState<NativeAd | null>(null);
   const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<Error | null>(null);
@@ -42,6 +44,11 @@ export function useNativeAd(options: UseNativeAdOptions = {}) {
       setIsLoading(false);
       return;
     }
+
+    // Reset state for new request (handles FlashList recycling)
+    setNativeAd(null);
+    setIsLoading(true);
+    setError(null);
 
     let cancelled = false;
 
@@ -85,7 +92,7 @@ export function useNativeAd(options: UseNativeAdOptions = {}) {
         nativeAdRef.current = null;
       }
     };
-  }, []);
+  }, [requestKey]);
 
   return { nativeAd, isLoading, error };
 }
