@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Easing,
   Platform,
   Pressable,
   StyleSheet,
@@ -9,9 +10,10 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-import { ChevronRight, ChevronUp, X } from '@tamagui/lucide-icons';
+import { ChevronRight, ChevronsUp, X } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -30,16 +32,25 @@ import {
   trackStoryOpen,
   trackStoryReadMore,
 } from '../../src/services/analytics';
+import { maybeShowFactViewInterstitial } from '../../src/services/adManager';
+import { trackFactView } from '../../src/services/appReview';
 import { checkAndAwardBadges, pushModalScreen, popModalScreen } from '../../src/services/badges';
 import * as database from '../../src/services/database';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { hexColors, useTheme } from '../../src/theme';
-import { insertNativeAds, isNativeAdPlaceholder, NativeAdPlaceholder } from '../../src/utils/insertNativeAds';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  NativeAdPlaceholder,
+} from '../../src/utils/insertNativeAds';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { FactWithRelations } from '../../src/services/database';
 
 type StoryListItem = FactWithRelations | NativeAdPlaceholder;
+
+const AD_PAUSE_DURATION = 1000;
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export default function StoryScreen() {
   const { category } = useLocalSearchParams<{ category: string }>();
@@ -63,6 +74,11 @@ export default function StoryScreen() {
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const viewedFactIds = useRef(new Set<number>());
+
+  // Ad scroll-lock: pause scrolling briefly when landing on a native ad
+  const [scrollLocked, setScrollLocked] = useState(false);
+  const adPauseProgress = useRef(new Animated.Value(0)).current;
+  const adPauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Orientation-change handling
   const listRef = useRef<FlashListRef<StoryListItem>>(null);
@@ -101,9 +117,12 @@ export default function StoryScreen() {
 
   const storyDataWithAds = useMemo(
     () =>
-      insertNativeAds(facts, NATIVE_ADS.FIRST_AD_INDEX.STORY, undefined, NATIVE_ADS.INTERVAL * 2).filter(
-        (item) => !isNativeAdPlaceholder(item) || !failedAdKeys.has(item.key)
-      ),
+      insertNativeAds(
+        facts,
+        NATIVE_ADS.FIRST_AD_INDEX.STORY,
+        undefined,
+        NATIVE_ADS.INTERVAL * 2
+      ).filter((item) => !isNativeAdPlaceholder(item) || !failedAdKeys.has(item.key)),
     [facts, isPremium, failedAdKeys]
   );
 
@@ -140,18 +159,29 @@ export default function StoryScreen() {
     };
   }, [screenHeight, screenWidth]);
 
-  // Bouncing animation for scroll hint
-  const hintBounce = useRef(new Animated.Value(0)).current;
+  // Swipe-up hint animation: slides up while fading out, then resets
+  const hintTranslateY = useRef(new Animated.Value(0)).current;
+  const hintOpacity = useRef(new Animated.Value(1)).current;
   useEffect(() => {
+    if (scrollLocked) return;
+    hintTranslateY.setValue(0);
+    hintOpacity.setValue(1);
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(hintBounce, { toValue: -8, duration: 600, useNativeDriver: true }),
-        Animated.timing(hintBounce, { toValue: 0, duration: 600, useNativeDriver: true }),
+        Animated.parallel([
+          Animated.timing(hintTranslateY, { toValue: -14, duration: 800, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+          Animated.timing(hintOpacity, { toValue: 0, duration: 800, useNativeDriver: true }),
+        ]),
+        Animated.delay(200),
+        Animated.parallel([
+          Animated.timing(hintTranslateY, { toValue: 0, duration: 0, useNativeDriver: true }),
+          Animated.timing(hintOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+        ]),
       ])
     );
     animation.start();
     return () => animation.stop();
-  }, []);
+  }, [scrollLocked]);
 
   useEffect(() => {
     loadFacts();
@@ -159,6 +189,10 @@ export default function StoryScreen() {
       if (prefetchFallbackRef.current) {
         clearTimeout(prefetchFallbackRef.current);
         prefetchFallbackRef.current = null;
+      }
+      if (adPauseTimer.current) {
+        clearTimeout(adPauseTimer.current);
+        adPauseTimer.current = null;
       }
     };
   }, [category, locale]);
@@ -199,18 +233,25 @@ export default function StoryScreen() {
 
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: Array<{ item: any; index: number | null }> }) => {
+      let landedOnAd = false;
       for (const entry of viewableItems) {
         if (entry.index != null && !isResizingRef.current) {
           setCurrentIndex(entry.index);
           currentIndexRef.current = entry.index;
         }
-        if (isNativeAdPlaceholder(entry.item)) continue;
+        if (isNativeAdPlaceholder(entry.item)) {
+          landedOnAd = true;
+          continue;
+        }
         const fact = entry.item as FactWithRelations;
         if (fact && !viewedFactIds.current.has(fact.id)) {
           viewedFactIds.current.add(fact.id);
-          database.markFactViewedInStory(fact.id)
+          database
+            .markFactViewedInStory(fact.id)
             .then(() => checkAndAwardBadges())
             .catch(() => {});
+          // Count toward global fact view counter (for interstitial ad interval)
+          trackFactView();
           trackStoryFactView({
             factId: fact.id,
             category: category!,
@@ -218,8 +259,25 @@ export default function StoryScreen() {
           });
         }
       }
+
+      // Lock scrolling briefly when landing on a native ad
+      if (landedOnAd && !scrollLocked) {
+        setScrollLocked(true);
+        adPauseProgress.setValue(0);
+        Animated.timing(adPauseProgress, {
+          toValue: 1,
+          duration: AD_PAUSE_DURATION,
+          easing: Easing.linear,
+          useNativeDriver: false,
+        }).start();
+        if (adPauseTimer.current) clearTimeout(adPauseTimer.current);
+        adPauseTimer.current = setTimeout(() => {
+          setScrollLocked(false);
+          adPauseTimer.current = null;
+        }, AD_PAUSE_DURATION);
+      }
     },
-    [category]
+    [category, scrollLocked, adPauseProgress]
   );
 
   const viewabilityConfig = useMemo(
@@ -229,12 +287,13 @@ export default function StoryScreen() {
     []
   );
 
-  const handleClose = useCallback(() => {
+  const handleClose = useCallback(async () => {
     trackStoryClose({
       category: category!,
       factsViewed: viewedFactIds.current.size,
       totalFacts: facts.length,
     });
+    await maybeShowFactViewInterstitial();
     router.back();
   }, [router, category, facts.length]);
 
@@ -284,6 +343,7 @@ export default function StoryScreen() {
         decelerationRate="fast"
         disableIntervalMomentum
         showsVerticalScrollIndicator={false}
+        scrollEnabled={!scrollLocked}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
       />
@@ -316,24 +376,73 @@ export default function StoryScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Scroll hint — hidden on last story */}
-      {currentIndex < storyDataWithAds.length - 1 && (
-        <Animated.View
-          style={[
-            styles.scrollHint,
-            {
-              bottom: spacing.sm,
-              transform: [{ translateY: hintBounce }],
-            },
-          ]}
-          pointerEvents="none"
-        >
-          <ChevronUp size={iconSizes.lg} color="rgba(255,255,255,0.7)" />
-        </Animated.View>
-      )}
+      {/* Scroll hint — circular progress on ad pause, bouncing chevron otherwise */}
+      {currentIndex < storyDataWithAds.length - 1 &&
+        (scrollLocked ? (
+          <View style={[styles.scrollHint, { bottom: spacing.sm }]} pointerEvents="none">
+            <CircularProgress progress={adPauseProgress} size={iconSizes.lg} />
+          </View>
+        ) : (
+          <Animated.View
+            style={[
+              styles.scrollHint,
+              {
+                bottom: spacing.sm,
+                opacity: hintOpacity,
+                transform: [{ translateY: hintTranslateY }],
+              },
+            ]}
+            pointerEvents="none"
+          >
+            <ChevronsUp size={iconSizes.lg} color="rgba(255,255,255,0.7)" />
+          </Animated.View>
+        ))}
     </View>
   );
 }
+
+// Circular progress indicator shown during ad scroll-lock
+const CircularProgress = React.memo(
+  ({ progress, size }: { progress: Animated.Value; size: number }) => {
+    const strokeWidth = 2.5;
+    const r = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * r;
+
+    const strokeDashoffset = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [circumference, 0],
+    });
+
+    return (
+      <Svg width={size} height={size}>
+        {/* Track */}
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke="rgba(255,255,255,0.25)"
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+        {/* Animated fill */}
+        <AnimatedCircle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke="rgba(255,255,255,0.85)"
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={strokeDashoffset}
+          rotation="-90"
+          origin={`${size / 2}, ${size / 2}`}
+        />
+      </Svg>
+    );
+  }
+);
+CircularProgress.displayName = 'CircularProgress';
 
 // Individual story page component — full-screen image with text overlay
 const StoryPage = React.memo(
@@ -459,10 +568,11 @@ const StoryPage = React.memo(
 
           {/* Title */}
           {fact.title && (
-            <Pressable onPress={handleReadMore} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
-              <Text.Headline color="#FFFFFF">
-                {fact.title}
-              </Text.Headline>
+            <Pressable
+              onPress={handleReadMore}
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            >
+              <Text.Headline color="#FFFFFF">{fact.title}</Text.Headline>
             </Pressable>
           )}
 
