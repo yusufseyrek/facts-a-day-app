@@ -33,11 +33,7 @@ import { PopularFactCard } from '../../src/components/PopularFactCard';
 import { HOME_FEED, LAYOUT, NATIVE_ADS, PAYWALL_PROMPT } from '../../src/config/app';
 import { usePreloadedData, usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import {
-  Screens,
-  trackFeedRefresh,
-  trackScreenView,
-} from '../../src/services/analytics';
+import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
 
 import type { FactViewSource } from '../../src/services/analytics';
 import { getReadingStreak, isModalScreenActive } from '../../src/services/badges';
@@ -126,13 +122,17 @@ function HomeScreen() {
               : f.shown_in_feed === 1
           );
           if (todayItems.length > 0) {
-            setTodaysFacts(prev => prev.length > 0 ? prev : todayItems);
+            setTodaysFacts((prev) => (prev.length > 0 ? prev : todayItems));
             setInitialLoading(false);
             signalHomeScreenReady();
           }
           if (recs && recs.length > 0) {
-            setPopularFacts(prev => prev.length > 0 ? prev : recs.slice(0, HOME_FEED.POPULAR_COUNT));
-            setWorthKnowingFacts(prev => prev.length > 0 ? prev : recs.slice(HOME_FEED.POPULAR_COUNT));
+            setPopularFacts((prev) =>
+              prev.length > 0 ? prev : recs.slice(0, HOME_FEED.POPULAR_COUNT)
+            );
+            setWorthKnowingFacts((prev) =>
+              prev.length > 0 ? prev : recs.slice(HOME_FEED.POPULAR_COUNT)
+            );
           }
         }
       }
@@ -140,7 +140,9 @@ function HomeScreen() {
       loadTodaysFacts();
       loadPopularFacts(true);
       loadWorthKnowingFacts(true);
-      getReadingStreak().then(setReadingStreak).catch(() => {});
+      getReadingStreak()
+        .then(setReadingStreak)
+        .catch(() => {});
       trackScreenView(Screens.HOME);
 
       // Auto-show paywall for free users (once every N days)
@@ -236,7 +238,12 @@ function HomeScreen() {
   );
 
   const handleFactPress = useCallback(
-    (fact: FactWithRelations, source: FactViewSource, factIdList?: number[], indexInList?: number) => {
+    (
+      fact: FactWithRelations,
+      source: FactViewSource,
+      factIdList?: number[],
+      indexInList?: number
+    ) => {
       if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
         router.push(
           `/fact/${fact.id}?source=${source}&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
@@ -262,31 +269,40 @@ function HomeScreen() {
   }, [loadTodaysFacts]);
 
   // onlyIfEmpty: skip update if section already has data (prevents reshuffling on tab focus)
-  const loadPopularFacts = useCallback(async (onlyIfEmpty?: boolean) => {
-    try {
-      const recs = await database.getRandomUnscheduledFacts(HOME_FEED.POPULAR_COUNT, locale);
-      if (recs.length > 0) {
-        if (onlyIfEmpty) {
-          setPopularFacts(prev => prev.length > 0 ? prev : recs);
-        } else {
-          setPopularFacts(recs);
+  const loadPopularFacts = useCallback(
+    async (onlyIfEmpty?: boolean) => {
+      try {
+        const recs = await database.getRandomUnscheduledFacts(HOME_FEED.POPULAR_COUNT, locale);
+        if (recs.length > 0) {
+          if (onlyIfEmpty) {
+            setPopularFacts((prev) => (prev.length > 0 ? prev : recs));
+          } else {
+            setPopularFacts(recs);
+          }
         }
-      }
-    } catch {}
-  }, [locale]);
+      } catch {}
+    },
+    [locale]
+  );
 
-  const loadWorthKnowingFacts = useCallback(async (onlyIfEmpty?: boolean) => {
-    try {
-      const recs = await database.getRandomUnscheduledFacts(HOME_FEED.WORTH_KNOWING_COUNT, locale);
-      if (recs.length > 0) {
-        if (onlyIfEmpty) {
-          setWorthKnowingFacts(prev => prev.length > 0 ? prev : recs);
-        } else {
-          setWorthKnowingFacts(recs);
+  const loadWorthKnowingFacts = useCallback(
+    async (onlyIfEmpty?: boolean) => {
+      try {
+        const recs = await database.getRandomUnscheduledFacts(
+          HOME_FEED.WORTH_KNOWING_COUNT,
+          locale
+        );
+        if (recs.length > 0) {
+          if (onlyIfEmpty) {
+            setWorthKnowingFacts((prev) => (prev.length > 0 ? prev : recs));
+          } else {
+            setWorthKnowingFacts(recs);
+          }
         }
-      }
-    } catch {}
-  }, [locale]);
+      } catch {}
+    },
+    [locale]
+  );
 
   // Load popular and worth knowing facts on mount and when locale changes
   useEffect(() => {
@@ -364,11 +380,26 @@ function HomeScreen() {
   const popularCardHeight = popularCardWidth * (9 / 16);
   const popularCarouselFactIds = useMemo(() => popularFacts.map((f) => f.id), [popularFacts]);
 
+  const popularActiveIndexRef = useRef(0);
+  const [popularAdReady, setPopularAdReady] = useState(false);
   const [popularFailedAdKeys, setPopularFailedAdKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setPopularFailedAdKeys(new Set());
   }, [popularFacts]);
+
+  const handlePopularScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const index = Math.round(offsetX / popularSnapInterval);
+      popularActiveIndexRef.current = index;
+      // Trigger ad mount once the user is one card away from the first ad
+      if (!popularAdReady && index + 1 >= NATIVE_ADS.FIRST_AD_INDEX.HOME_CAROUSEL) {
+        setPopularAdReady(true);
+      }
+    },
+    [popularSnapInterval, popularAdReady]
+  );
 
   const handlePopularAdFailed = useCallback((key: string) => {
     setPopularFailedAdKeys((prev) => {
@@ -379,11 +410,13 @@ function HomeScreen() {
   }, []);
 
   const popularDataWithAds = useMemo(
-    () =>
-      insertNativeAds(popularFacts, NATIVE_ADS.FIRST_AD_INDEX.HOME_CAROUSEL).filter(
+    () => {
+      if (!popularAdReady) return popularFacts as PopularListItem[];
+      return insertNativeAds(popularFacts, NATIVE_ADS.FIRST_AD_INDEX.HOME_CAROUSEL).filter(
         (item) => !isNativeAdPlaceholder(item) || !popularFailedAdKeys.has(item.key)
-      ),
-    [popularFacts, isPremium, popularFailedAdKeys]
+      );
+    },
+    [popularFacts, isPremium, popularFailedAdKeys, popularAdReady]
   );
 
   const renderPopularCarouselItem = useCallback(
@@ -414,7 +447,14 @@ function HomeScreen() {
         </View>
       );
     },
-    [popularCardWidth, popularCardHeight, handleFactPress, handlePopularAdFailed, popularCarouselFactIds, spacing.md]
+    [
+      popularCardWidth,
+      popularCardHeight,
+      handleFactPress,
+      handlePopularAdFailed,
+      popularCarouselFactIds,
+      spacing.md,
+    ]
   );
 
   const popularCarouselKeyExtractor = useCallback(
@@ -427,7 +467,10 @@ function HomeScreen() {
     ? contentWidth - spacing.lg * 2
     : contentWidth * config.cardWidthMultiplier;
   const worthKnowingCardGap = spacing.sm;
-  const worthKnowingFactIds = useMemo(() => worthKnowingFacts.map((f) => f.id), [worthKnowingFacts]);
+  const worthKnowingFactIds = useMemo(
+    () => worthKnowingFacts.map((f) => f.id),
+    [worthKnowingFacts]
+  );
 
   const renderWorthKnowingItem = useCallback(
     ({ item, index }: { item: FactWithRelations; index: number }) => (
@@ -491,7 +534,9 @@ function HomeScreen() {
             refreshControl={refreshControl}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: spacing.xl }}
-            onScroll={(e) => { scrollYRef.current = e.nativeEvent.contentOffset.y; }}
+            onScroll={(e) => {
+              scrollYRef.current = e.nativeEvent.contentOffset.y;
+            }}
             scrollEventThrottle={16}
           >
             {/* Title */}
@@ -517,7 +562,13 @@ function HomeScreen() {
             {/* Fact of the Day */}
             {hasTodaysFacts && (
               <>
-                <YStack width="100%" maxWidth={LAYOUT.MAX_CONTENT_WIDTH} alignSelf="center" paddingHorizontal={spacing.lg} paddingBottom={spacing.sm}>
+                <YStack
+                  width="100%"
+                  maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
+                  alignSelf="center"
+                  paddingHorizontal={spacing.lg}
+                  paddingBottom={spacing.sm}
+                >
                   <Text.Title fontSize={typography.fontSize.body}>
                     {todaysFacts.length > 1 ? t('factsOfTheDay') : t('factOfTheDay')}
                   </Text.Title>
@@ -598,7 +649,14 @@ function HomeScreen() {
             {/* Popular Section (16:9 carousel) */}
             {hasPopularFacts && (
               <>
-                <YStack width="100%" maxWidth={LAYOUT.MAX_CONTENT_WIDTH} alignSelf="center" paddingHorizontal={spacing.lg} paddingTop={spacing.lg} paddingBottom={spacing.sm}>
+                <YStack
+                  width="100%"
+                  maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
+                  alignSelf="center"
+                  paddingHorizontal={spacing.lg}
+                  paddingTop={spacing.lg}
+                  paddingBottom={spacing.sm}
+                >
                   <Text.Title fontSize={typography.fontSize.body}>{t('popular')}</Text.Title>
                 </YStack>
 
@@ -623,6 +681,8 @@ function HomeScreen() {
                       paddingHorizontal: listInset,
                     }}
                     drawDistance={popularCardWidth}
+                    onScroll={handlePopularScroll}
+                    scrollEventThrottle={16}
                   />
                 </View>
               </>
@@ -631,7 +691,14 @@ function HomeScreen() {
             {/* Worth Knowing Section (thumbnail cards) */}
             {hasWorthKnowingFacts && (
               <>
-                <YStack width="100%" maxWidth={LAYOUT.MAX_CONTENT_WIDTH} alignSelf="center" paddingHorizontal={spacing.lg} paddingTop={spacing.lg} paddingBottom={spacing.sm}>
+                <YStack
+                  width="100%"
+                  maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
+                  alignSelf="center"
+                  paddingHorizontal={spacing.lg}
+                  paddingTop={spacing.lg}
+                  paddingBottom={spacing.sm}
+                >
                   <Text.Title fontSize={typography.fontSize.body}>{t('worthKnowing')}</Text.Title>
                 </YStack>
 
@@ -684,7 +751,6 @@ function HomeScreen() {
     </ScreenContainer>
   );
 }
-
 
 // Helper to get local date string in YYYY-MM-DD format
 function getLocalDateString(date: Date = new Date()): string {
