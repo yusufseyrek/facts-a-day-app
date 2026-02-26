@@ -5,8 +5,6 @@
  * storage keys, and display limits.
  */
 
-import { Platform } from 'react-native';
-
 /**
  * Ads configuration
  */
@@ -57,7 +55,7 @@ export const NATIVE_ADS = {
   /** Whether native feed ads are active */
   ACTIVE: true,
   /** Show an ad every N items after the first ad */
-  INTERVAL: 3,
+  INTERVAL: 4,
   /** Index of the first ad in each list (0-based) */
   FIRST_AD_INDEX: {
     HOME_CAROUSEL: 1,
