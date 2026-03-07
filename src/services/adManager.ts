@@ -51,6 +51,24 @@ export const showTriviaResultsInterstitial = async (): Promise<void> => {
 };
 
 /**
+ * Show interstitial ad on story close if cooldown has elapsed
+ */
+export const showStoryInterstitial = async (): Promise<void> => {
+  if (!shouldShowAds()) return;
+
+  try {
+    if (!isCooldownElapsed()) return;
+
+    console.log('📺 Showing interstitial ad on story close');
+    await showInterstitialAd();
+    lastInterstitialShownAt = Date.now();
+    trackInterstitialShown('story');
+  } catch (error) {
+    console.error('Error showing story interstitial:', error);
+  }
+};
+
+/**
  * Check if interstitial ad should be shown based on fact view count
  * Shows ad every N fact views (configured in INTERSTITIAL_ADS.FACTS_BETWEEN_ADS)
  * with a cooldown timer between ads

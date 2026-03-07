@@ -66,24 +66,47 @@ export const unstable_settings = {
 };
 
 // Initialize Firebase Crashlytics and Analytics as early as possible
-initializeFirebase();
+try {
+  initializeFirebase();
+} catch (error) {
+  console.error('Failed to initialize Firebase:', error);
+}
 
 // Forward console logs to Crashlytics in production
-// This captures console.log/warn/error as breadcrumbs for crash reports
-enableCrashlyticsConsoleLogging();
+try {
+  enableCrashlyticsConsoleLogging();
+} catch (error) {
+  console.error('Failed to enable Crashlytics console logging:', error);
+}
 
 // Initialize analytics with device info and user properties
-initAnalytics();
+try {
+  initAnalytics();
+} catch (error) {
+  console.error('Failed to initialize analytics:', error);
+}
 
 // Start background network connectivity monitoring
-startNetworkMonitoring();
+try {
+  startNetworkMonitoring();
+} catch (error) {
+  console.error('Failed to start network monitoring:', error);
+}
 
 // Keep native splash visible until SplashOverlay is ready to take over
-SplashScreen.preventAutoHideAsync();
+try {
+  SplashScreen.preventAutoHideAsync();
+} catch (error) {
+  console.error('Failed to prevent splash screen auto-hide:', error);
+}
 
 // Log update status on app start for debugging OTA issues
-if (!__DEV__) {
-  updates.logUpdateStatus();
+try {
+  if (!__DEV__) {
+    updates.logUpdateStatus();
+  }
+} catch (error) {
+  console.error('Failed to log update status:', error);
 }
 
 // Custom dark theme with our app's colors
@@ -403,165 +426,166 @@ export default function RootLayout() {
 
   const initializeApp = async () => {
     try {
-      // Initialize database first with timeout (10 seconds)
-      const dbPromise = database.openDatabase();
-      const dbTimeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Database initialization timed out')), 10000)
-      );
-
-      await Promise.race([dbPromise, dbTimeoutPromise]);
-      setIsDbReady(true);
-
-      // Pre-warm image cache directory (fire-and-forget)
-      ensureImagesDirExists().catch(() => {});
-
-      // Configure notifications on app start
+      // ── Phase 1: DB init + AsyncStorage reads in parallel ──
+      // These are independent: DB uses SQLite, the rest use AsyncStorage.
+      // Fire-and-forget tasks that don't need DB can start immediately.
       notificationService.configureNotifications();
-
-      // Clean up notification images for already-delivered notifications
+      ensureImagesDirExists().catch(() => {});
       notificationService.cleanupOldNotificationImages().catch(() => {});
 
-      // Check onboarding status with timeout (5 seconds)
-      const onboardingPromise = onboardingService.isOnboardingComplete();
-      const onboardingTimeoutPromise = new Promise<boolean>((_, reject) =>
-        setTimeout(() => reject(new Error('Onboarding status check timed out')), 5000)
-      );
+      const dbPromise = Promise.race([
+        database.openDatabase(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Database initialization timed out')), 10000)
+        ),
+      ]);
 
-      const isComplete = await Promise.race([onboardingPromise, onboardingTimeoutPromise]);
+      const onboardingPromise = Promise.race([
+        onboardingService.isOnboardingComplete(),
+        new Promise<boolean>((_, reject) =>
+          setTimeout(() => reject(new Error('Onboarding status check timed out')), 5000)
+        ),
+      ]);
 
-      // Only initialize ads and pre-load data for returning users
-      // New users will have ads initialized during the onboarding success screen
-      if (isComplete) {
-        // Initialize IAP and check premium status before ads
-        // First use cached status for instant check, then verify with store
-        const cachedPremium = await getCachedPremiumStatus();
-        setIsPremium(cachedPremium);
+      const [, isComplete, cachedPremium, localeStatus] = await Promise.all([
+        dbPromise,
+        onboardingPromise,
+        getCachedPremiumStatus(),
+        contentRefresh.hasLocaleChanged(),
+      ]);
 
+      setIsDbReady(true);
+
+      // ── Phase 2: Returning user flow ──
+      if (!isComplete) {
+        setInitialOnboardingStatus(false);
+
+        if (__DEV__) {
+          updates.logUpdateStatus();
+        }
+        return;
+      }
+
+      setIsPremium(cachedPremium);
+
+      // Start IAP connection in background — don't block on it
+      const iapPromise = (async () => {
         try {
           await initIAPConnection();
           await checkAndUpdatePremiumStatus();
         } catch (error) {
           console.error('Failed to initialize IAP:', error);
         }
+      })();
 
-        const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
-        const locale = getLocaleFromCode(deviceLocale);
+      const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
+      const locale = getLocaleFromCode(deviceLocale);
 
-        // Check if locale changed (e.g. user changed app language in device settings)
-        const localeStatus = await contentRefresh.hasLocaleChanged();
+      if (localeStatus.changed) {
+        // Locale changed (OS cold-restarted the app)
+        // Gate the splash so it stays visible during refresh + app open ad.
+        setLocaleRefreshPending();
 
-        if (localeStatus.changed) {
-          // Locale changed (OS cold-restarted the app)
-          // Gate the splash so it stays visible during refresh + app open ad.
-          // We set onboarding status early so the JS splash overlay mounts,
-          // but the splash won't fade out until signalLocaleRefreshDone() is called.
-          setLocaleRefreshPending();
+        // Pre-load home screen data with OLD language first so the home screen
+        // can mount and signal ready (required for splash overlay flow)
+        try {
+          await database.markDeliveredFactsAsShown(locale);
+          const facts = await database.getFactsGroupedByDate(locale);
+          setPreloadedFactsBeforeMount(facts);
+        } catch (error) {
+          console.error('Failed to pre-load home screen data:', error);
+        }
 
-          // Pre-load home screen data with OLD language first so the home screen
-          // can mount and signal ready (required for splash overlay flow)
+        // Let the JS splash overlay mount (replaces native splash)
+        setInitialOnboardingStatus(isComplete);
+
+        // Initialize ads SDK (needed before loading app open ad) - skip for premium users
+        if (!cachedPremium) {
           try {
-            await database.markDeliveredFactsAsShown(locale);
-            const facts = await database.getFactsGroupedByDate(locale);
-            setPreloadedFactsBeforeMount(facts);
+            await initializeAdsForReturningUser();
           } catch (error) {
-            console.error('Failed to pre-load home screen data:', error);
+            console.error('Failed to initialize ads for locale change:', error);
           }
+        }
 
-          // Let the JS splash overlay mount (replaces native splash)
-          setInitialOnboardingStatus(isComplete);
+        // Run content refresh — splash stays visible because localeRefreshPromise is pending
+        try {
+          await contentRefresh.refreshAppContent();
+        } catch (error) {
+          console.error('Language change refresh failed:', error);
+        }
 
-          // Initialize ads SDK (needed before loading app open ad) - skip for premium users
-          if (!cachedPremium) {
-            try {
-              await initializeAdsForReturningUser();
-            } catch (error) {
-              console.error('Failed to initialize ads for locale change:', error);
-            }
-          }
+        // Re-load home screen data with new language
+        try {
+          await database.markDeliveredFactsAsShown(locale);
+          const facts = await database.getFactsGroupedByDate(locale);
+          setPreloadedFactsBeforeMount(facts);
+        } catch (error) {
+          console.error('Failed to re-load home screen data:', error);
+        }
 
-          // Run content refresh + app open ad in parallel
-          // Splash stays visible because localeRefreshPromise is still pending
-          try {
-            await contentRefresh.refreshAppContent();
-          } catch (error) {
-            console.error('Language change refresh failed:', error);
-          }
+        // Now let splash fade out
+        signalLocaleRefreshDone();
+      } else {
+        // No locale change — normal startup flow
+        // Pre-load facts + recommendations in parallel
+        try {
+          const [facts, recs] = await Promise.all([
+            (async () => {
+              await database.markDeliveredFactsAsShown(locale);
+              return database.getFactsGroupedByDate(locale);
+            })(),
+            database.getRandomUnscheduledFacts(6, locale),
+          ]);
+          setPreloadedFactsBeforeMount(facts);
+          setPreloadedRecommendationsBeforeMount(recs);
+        } catch (error) {
+          console.error('Failed to pre-load home screen data:', error);
+        }
 
-          // Re-load home screen data with new language
-          try {
-            await database.markDeliveredFactsAsShown(locale);
-            const facts = await database.getFactsGroupedByDate(locale);
-            setPreloadedFactsBeforeMount(facts);
-          } catch (error) {
-            console.error('Failed to re-load home screen data:', error);
-          }
+        // Let splash close, then do the rest in background
+        setInitialOnboardingStatus(isComplete);
 
-          // Now let splash fade out
-          signalLocaleRefreshDone();
-        } else {
-          // No locale change - normal startup flow
-          // Pre-load home screen data during splash time
-          try {
-            await database.markDeliveredFactsAsShown(locale);
-            const facts = await database.getFactsGroupedByDate(locale);
-            setPreloadedFactsBeforeMount(facts);
-
-            // Preload carousel recommendations
-            const recs = await database.getRandomUnscheduledFacts(6, locale);
-            setPreloadedRecommendationsBeforeMount(recs);
-          } catch (error) {
-            console.error('Failed to pre-load home screen data:', error);
-          }
-
-          // Let splash close, then do the rest in background
-          setInitialOnboardingStatus(isComplete);
-
-          // Initialize ads in background - skip for premium users
-          if (!cachedPremium) {
-            initializeAdsForReturningUser().catch((error) => {
-              console.error('Failed to initialize ads for returning user:', error);
-            });
-          }
-
-          // Refresh content in background
-          contentRefresh.refreshAppContent().catch((error) => {
-            console.error('Background refresh failed:', error);
+        // ── Phase 3: Background tasks (fire-and-forget) ──
+        if (!cachedPremium) {
+          initializeAdsForReturningUser().catch((error) => {
+            console.error('Failed to initialize ads for returning user:', error);
           });
         }
 
-        // Clear notification badge on app launch
-        Notifications.setBadgeCountAsync(0);
-
-        // Sync notification schedule (check/repair/top-up)
-        // This runs asynchronously and doesn't block app startup
-        notificationService.syncNotificationSchedule(locale).catch((error) => {
-          // Silently handle errors - notifications continue with existing schedule
-          console.error('Notification sync failed:', error);
+        contentRefresh.refreshAppContent().catch((error) => {
+          console.error('Background refresh failed:', error);
         });
-
-        // Check for OTA updates in the background
-        // This runs asynchronously and doesn't block app startup
-        updates
-          .checkAndDownloadUpdate()
-          .then((result) => {
-            if (result.updateAvailable && result.downloaded) {
-              console.log(
-                '📦 OTA update downloaded on cold start, marking as pending for next foreground'
-              );
-              pendingUpdateRef.current = true;
-            } else if (result.error) {
-              console.error('OTA update check failed:', result.error);
-            }
-          })
-          .catch((error) => {
-            console.error('OTA update check failed:', error);
-          });
-      } else {
-        // New user - no ads/preloading needed, just set status
-        setInitialOnboardingStatus(false);
       }
 
-      // Log update status in development for debugging
+      // Wait for IAP to finish (has been running in parallel since Phase 2 start)
+      await iapPromise;
+
+      // Clear notification badge on app launch
+      Notifications.setBadgeCountAsync(0);
+
+      // Sync notification schedule — fire-and-forget
+      notificationService.syncNotificationSchedule(locale).catch((error) => {
+        console.error('Notification sync failed:', error);
+      });
+
+      // Check for OTA updates in the background
+      updates
+        .checkAndDownloadUpdate()
+        .then((result) => {
+          if (result.updateAvailable && result.downloaded) {
+            console.log(
+              '📦 OTA update downloaded on cold start, marking as pending for next foreground'
+            );
+            pendingUpdateRef.current = true;
+          } else if (result.error) {
+            console.error('OTA update check failed:', result.error);
+          }
+        })
+        .catch((error) => {
+          console.error('OTA update check failed:', error);
+        });
+
       if (__DEV__) {
         updates.logUpdateStatus();
       }
@@ -578,9 +602,12 @@ export default function RootLayout() {
     // Nothing to do here - SplashOverlay handles the transition
   }, []);
 
-  // Keep splash screen visible while loading
+  // Render a minimal View while loading so expo-updates registers "content appeared".
+  // Without this, the native module never confirms the OTA update as successfully launched,
+  // and on next cold start it rolls back to the embedded bundle.
+  // The native splash screen is still visible on top, so users see no difference.
   if (!isDbReady || initialOnboardingStatus === null || !fontsLoaded) {
-    return null;
+    return <View style={{ flex: 1, backgroundColor: '#0A1628' }} />;
   }
 
   return (

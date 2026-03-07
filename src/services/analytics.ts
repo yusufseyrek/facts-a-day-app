@@ -430,7 +430,7 @@ export const trackNotificationTimeChange = (timesCount: number): void => {
 // Ads Events
 // ============================================================================
 
-export type InterstitialSource = 'fact_view' | 'settings' | 'content_refresh' | 'trivia_results';
+export type InterstitialSource = 'fact_view' | 'settings' | 'content_refresh' | 'trivia_results' | 'story';
 
 /**
  * Track when interstitial ad is shown

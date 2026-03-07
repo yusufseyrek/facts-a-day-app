@@ -24,7 +24,7 @@ import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { NATIVE_ADS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { maybeShowFactViewInterstitial } from '../../src/services/adManager';
+import { showStoryInterstitial } from '../../src/services/adManager';
 import {
   Screens,
   trackScreenView,
@@ -33,7 +33,6 @@ import {
   trackStoryOpen,
   trackStoryReadMore,
 } from '../../src/services/analytics';
-import { trackFactView } from '../../src/services/appReview';
 import { checkAndAwardBadges, popModalScreen, pushModalScreen } from '../../src/services/badges';
 import * as database from '../../src/services/database';
 import { getSelectedCategories } from '../../src/services/onboarding';
@@ -255,8 +254,6 @@ export default function StoryScreen() {
             .markFactViewedInStory(fact.id)
             .then(() => checkAndAwardBadges())
             .catch(() => {});
-          // Count toward global fact view counter (for interstitial ad interval)
-          trackFactView();
           trackStoryFactView({
             factId: fact.id,
             category: category!,
@@ -298,7 +295,7 @@ export default function StoryScreen() {
       factsViewed: viewedFactIds.current.size,
       totalFacts: facts.length,
     });
-    await maybeShowFactViewInterstitial();
+    await showStoryInterstitial();
     router.back();
   }, [router, category, facts.length]);
 
