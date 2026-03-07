@@ -917,9 +917,15 @@ export function FactModal({
               </Text.Body>
             )}
 
-            {/* Main Content */}
-            <Text.Body color="$text" fontFamily={FONT_FAMILIES.regular}>
-              {fact.content}
+            {/* Main Content — '\n\u200B' appended to work around Fabric iOS text clipping bug
+               (RN #53450) where the last line's characters aren't rendered despite space being allocated.
+               Negative marginBottom compensates for the extra invisible line. */}
+            <Text.Body
+              color="$text"
+              fontFamily={FONT_FAMILIES.regular}
+              marginBottom={-typography.lineHeight.body}
+            >
+              {fact.content + '\n\u200B'}
             </Text.Body>
 
             {/* Source link */}
