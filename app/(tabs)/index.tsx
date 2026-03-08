@@ -24,12 +24,12 @@ import {
   ScreenHeader,
   Text,
 } from '../../src/components';
-import { PopularNativeAdItem } from '../../src/components/ads/PopularNativeAdItem';
+import { BannerAd } from '../../src/components/ads/BannerAd';
 import { ReadingStreakIndicator } from '../../src/components/badges/ReadingStreakIndicator';
 import { CategoryStoryButtons } from '../../src/components/CategoryStoryButtons';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { PopularFactCard } from '../../src/components/PopularFactCard';
-import { HOME_FEED, LAYOUT, NATIVE_ADS, PAYWALL_PROMPT } from '../../src/config/app';
+import { HOME_FEED, LAYOUT, PAYWALL_PROMPT } from '../../src/config/app';
 import { usePreloadedData, usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
@@ -45,11 +45,6 @@ import * as database from '../../src/services/database';
 import { shouldShowPaywall } from '../../src/services/paywallTiming';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
-import {
-  insertNativeAds,
-  isNativeAdPlaceholder,
-  type NativeAdPlaceholder,
-} from '../../src/utils/insertNativeAds';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { FactViewSource } from '../../src/services/analytics';
@@ -78,13 +73,11 @@ function HomeScreen() {
     getRefreshStatus()
   );
 
-  type PopularListItem = FactWithRelations | NativeAdPlaceholder;
-
   // Track if we've consumed preloaded data (only once)
   const consumedPreloadedDataRef = useRef(false);
   const paywallCheckRef = useRef(false);
   const scrollViewRef = useRef<ScrollView>(null);
-  const popularListRef = useRef<FlashListRef<PopularListItem>>(null);
+  const popularListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const worthKnowingListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const scrollYRef = useRef(0);
 
@@ -385,53 +378,18 @@ function HomeScreen() {
   const popularCarouselFactIds = useMemo(() => popularFacts.map((f) => f.id), [popularFacts]);
 
   const popularActiveIndexRef = useRef(0);
-  const [popularAdReady, setPopularAdReady] = useState(false);
-  const [popularFailedAdKeys, setPopularFailedAdKeys] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    setPopularFailedAdKeys(new Set());
-  }, [popularFacts]);
 
   const handlePopularScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetX = event.nativeEvent.contentOffset.x;
       const index = Math.round(offsetX / popularSnapInterval);
       popularActiveIndexRef.current = index;
-      // Trigger ad mount once the user is one card away from the first ad
-      if (!popularAdReady && index + 1 >= NATIVE_ADS.FIRST_AD_INDEX.HOME_CAROUSEL) {
-        setPopularAdReady(true);
-      }
     },
-    [popularSnapInterval, popularAdReady]
+    [popularSnapInterval]
   );
 
-  const handlePopularAdFailed = useCallback((key: string) => {
-    setPopularFailedAdKeys((prev) => {
-      const next = new Set(prev);
-      next.add(key);
-      return next;
-    });
-  }, []);
-
-  const popularDataWithAds = useMemo(() => {
-    if (!popularAdReady) return popularFacts as PopularListItem[];
-    return insertNativeAds(popularFacts, NATIVE_ADS.FIRST_AD_INDEX.HOME_CAROUSEL).filter(
-      (item) => !isNativeAdPlaceholder(item) || !popularFailedAdKeys.has(item.key)
-    );
-  }, [popularFacts, isPremium, popularFailedAdKeys, popularAdReady]);
-
   const renderPopularCarouselItem = useCallback(
-    ({ item }: { item: PopularListItem }) => {
-      if (isNativeAdPlaceholder(item)) {
-        return (
-          <PopularNativeAdItem
-            adKey={item.key}
-            cardWidth={popularCardWidth}
-            cardHeight={popularCardHeight}
-            onAdFailed={handlePopularAdFailed}
-          />
-        );
-      }
+    ({ item }: { item: FactWithRelations }) => {
       const factIndex = popularCarouselFactIds.indexOf(item.id);
       return (
         <View style={{ width: popularCardWidth, paddingVertical: spacing.md }}>
@@ -448,18 +406,11 @@ function HomeScreen() {
         </View>
       );
     },
-    [
-      popularCardWidth,
-      popularCardHeight,
-      handleFactPress,
-      handlePopularAdFailed,
-      popularCarouselFactIds,
-      spacing.md,
-    ]
+    [popularCardWidth, handleFactPress, popularCarouselFactIds, spacing.md]
   );
 
   const popularCarouselKeyExtractor = useCallback(
-    (item: PopularListItem) => (isNativeAdPlaceholder(item) ? item.key : `popular-${item.id}`),
+    (item: FactWithRelations) => `popular-${item.id}`,
     []
   );
 
@@ -669,7 +620,7 @@ function HomeScreen() {
                 >
                   <FlashList
                     ref={popularListRef}
-                    data={popularDataWithAds}
+                    data={popularFacts}
                     renderItem={renderPopularCarouselItem}
                     keyExtractor={popularCarouselKeyExtractor}
                     horizontal
@@ -730,6 +681,8 @@ function HomeScreen() {
             )}
           </ScrollView>
         )}
+
+        <BannerAd position="home" collapsible="bottom" />
 
         {backgroundRefreshStatus === 'locale-change' && (
           <YStack

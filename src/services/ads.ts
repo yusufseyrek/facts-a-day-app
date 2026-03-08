@@ -190,10 +190,10 @@ export const initializeAdsSDK = async (): Promise<boolean> => {
 
     console.log('Initializing Google Mobile Ads SDK...');
 
-    // Configure ad request settings for COPPA compliance
+    // Configure ad request settings for general audience
     await mobileAds().setRequestConfiguration({
-      tagForUnderAgeOfConsent: true,
-      maxAdContentRating: MaxAdContentRating.G,
+      tagForUnderAgeOfConsent: false,
+      maxAdContentRating: MaxAdContentRating.PG,
     });
 
     // Initialize the SDK and get adapter statuses

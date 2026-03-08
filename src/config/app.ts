@@ -8,7 +8,7 @@
 /**
  * Ads configuration
  */
-export const ADS_ENABLED = !__DEV__;
+export const ADS_ENABLED = __DEV__;
 
 /**
  * App Check settings for Firebase App Check initialization
@@ -37,15 +37,22 @@ export const INTERSTITIAL_ADS = {
   /** Number of fact views between interstitial ads */
   FACTS_BETWEEN_ADS: 5,
   /** Minimum seconds between interstitial ads (cooldown) */
-  COOLDOWN_SECONDS: 300,
+  COOLDOWN_SECONDS: 180,
 } as const;
 
 /**
  * App Open ad settings
  */
+/**
+ * Ad request targeting keywords to improve ad relevance and eCPM
+ */
+export const AD_KEYWORDS = ['trivia', 'facts', 'education', 'learning', 'quiz', 'knowledge'];
+
 export const APP_OPEN_ADS = {
   /** App Open ads expire after 4 hours (Google's limit). Reload if older than this. */
   AD_EXPIRY_MS: 4 * 60 * 60 * 1000,
+  /** Minimum milliseconds between app open ads on foreground */
+  FOREGROUND_COOLDOWN_MS: 5 * 60 * 1000,
 } as const;
 
 /**

@@ -9,7 +9,7 @@ import {
 
 import Constants from 'expo-constants';
 
-import { AD_RETRY } from '../../config/app';
+import { AD_KEYWORDS, AD_RETRY } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { trackBannerAdError, trackBannerAdLoaded } from '../../services/analytics';
 import { shouldShowAds } from '../../services/premiumState';
@@ -136,6 +136,7 @@ function BannerAdComponent({ position, onAdLoadChange, collapsible }: BannerAdPr
             size={getBannerSize(position)}
             requestOptions={{
               requestNonPersonalizedAdsOnly: requestNonPersonalized,
+              keywords: AD_KEYWORDS,
               ...(collapsible && {
                 networkExtras: { collapsible },
               }),

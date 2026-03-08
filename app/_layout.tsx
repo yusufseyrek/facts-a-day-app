@@ -19,6 +19,7 @@ import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
+import { showAppOpenAdOnForeground } from '../src/components/ads/AppOpenAd';
 import { AppCheckBlockingScreen } from '../src/components/AppCheckBlockingScreen';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { SplashOverlay } from '../src/components/SplashOverlay';
@@ -369,6 +370,11 @@ export default function RootLayout() {
           .catch((error) => {
             console.error('Notification sync failed:', error);
           });
+
+        // Show app open ad on foreground (with cooldown)
+        showAppOpenAdOnForeground().catch((error) => {
+          console.error('Failed to show app open ad on foreground:', error);
+        });
 
         // Check for OTA updates when app enters foreground
         console.log('📦 Checking for OTA updates on foreground...');

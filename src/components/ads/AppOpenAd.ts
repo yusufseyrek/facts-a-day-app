@@ -3,7 +3,7 @@ import { AdEventType, AdsConsent, AppOpenAd, TestIds } from 'react-native-google
 
 import Constants from 'expo-constants';
 
-import { APP_OPEN_ADS } from '../../config/app';
+import { AD_KEYWORDS, APP_OPEN_ADS } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import {
   trackAppOpenAdDismissed,
@@ -28,6 +28,7 @@ const getAppOpenAdUnitId = (): string => {
 const adUnitId = getAppOpenAdUnitId();
 let appOpenAd: AppOpenAd | null = null;
 let adLoadedTimestamp: number = 0;
+let lastAppOpenAdShownAt: number = 0;
 
 // Store unsubscribe functions for current listeners
 let cleanupLoadListeners: (() => void) | null = null;
@@ -60,6 +61,7 @@ const loadAppOpenAd = (): Promise<boolean> => {
 
     appOpenAd = AppOpenAd.createForAdRequest(adUnitId, {
       requestNonPersonalizedAdsOnly: nonPersonalized,
+      keywords: AD_KEYWORDS,
     });
 
     const loaded = await new Promise<boolean>((resolve) => {
@@ -208,6 +210,9 @@ export const showAppOpenAdForLocaleChange = async (): Promise<boolean> => {
     await appOpenAd!.show();
     const result = await adCompletedPromise;
 
+    // Track when ad was shown for cooldown
+    lastAppOpenAdShownAt = Date.now();
+
     // iOS delay to restore view hierarchy
     if (Platform.OS === 'ios') {
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -221,6 +226,102 @@ export const showAppOpenAdForLocaleChange = async (): Promise<boolean> => {
     console.error('Error showing app open ad:', error);
     trackAppOpenAdError({ phase: 'show', error: String(error) });
     // Try to preload for next time
+    loadAppOpenAd().catch(console.error);
+    return false;
+  }
+};
+
+/**
+ * Show an app open ad when the app returns to foreground.
+ * Enforces a cooldown to avoid showing too frequently.
+ */
+export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
+  if (!shouldShowAds()) {
+    return false;
+  }
+
+  // Enforce cooldown
+  const now = Date.now();
+  if (now - lastAppOpenAdShownAt < APP_OPEN_ADS.FOREGROUND_COOLDOWN_MS) {
+    return false;
+  }
+
+  // Check consent
+  try {
+    const { canRequestAds } = await AdsConsent.getConsentInfo();
+    if (!canRequestAds) {
+      return false;
+    }
+  } catch (error) {
+    console.error('Error checking consent:', error);
+    return false;
+  }
+
+  // Ensure ad is loaded (waits for in-progress load or starts new one)
+  const adReady = await ensureAdLoaded();
+  if (!adReady || !appOpenAd?.loaded) {
+    return false;
+  }
+
+  try {
+    console.log('🚀 Showing app open ad on foreground...');
+
+    // iOS delay to prevent view controller conflicts
+    if (Platform.OS === 'ios') {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    // Remove the load-phase CLOSED listener to prevent conflict
+    if (cleanupLoadListeners) {
+      cleanupLoadListeners();
+      cleanupLoadListeners = null;
+    }
+
+    const adCompletedPromise = new Promise<boolean>((resolve) => {
+      let resolved = false;
+
+      const cleanup = () => {
+        if (!resolved) {
+          resolved = true;
+          closeListener();
+          errorListener();
+        }
+      };
+
+      const closeListener = appOpenAd!.addAdEventListener(AdEventType.CLOSED, () => {
+        console.log('✅ App open ad closed (foreground)');
+        trackAppOpenAdDismissed();
+        cleanup();
+        resolve(true);
+      });
+
+      const errorListener = appOpenAd!.addAdEventListener(AdEventType.ERROR, (error) => {
+        console.error('⚠️ App open ad error during display:', error);
+        trackAppOpenAdError({ phase: 'show', error: String(error) });
+        cleanup();
+        resolve(false);
+      });
+    });
+
+    trackAppOpenAdShown();
+    await appOpenAd!.show();
+    const result = await adCompletedPromise;
+
+    // Track when ad was shown for cooldown
+    lastAppOpenAdShownAt = Date.now();
+
+    // iOS delay to restore view hierarchy
+    if (Platform.OS === 'ios') {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+
+    // Preload next ad after showing
+    loadAppOpenAd().catch(console.error);
+
+    return result;
+  } catch (error) {
+    console.error('Error showing app open ad on foreground:', error);
+    trackAppOpenAdError({ phase: 'show', error: String(error) });
     loadAppOpenAd().catch(console.error);
     return false;
   }

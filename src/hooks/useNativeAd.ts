@@ -9,7 +9,7 @@ import {
 
 import Constants from 'expo-constants';
 
-import { ADS_ENABLED, NATIVE_ADS } from '../config/app';
+import { AD_KEYWORDS, ADS_ENABLED, NATIVE_ADS } from '../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../services/adsConsent';
 import { trackNativeAdError, trackNativeAdLoaded } from '../services/analytics';
 import { shouldShowAds } from '../services/premiumState';
@@ -64,6 +64,7 @@ export function useNativeAd(options: UseNativeAdOptions = {}) {
         const ad = await NativeAd.createForAdRequest(getNativeAdUnitId(), {
           requestNonPersonalizedAdsOnly: nonPersonalized,
           aspectRatio,
+          keywords: AD_KEYWORDS,
         });
 
         if (!cancelled) {

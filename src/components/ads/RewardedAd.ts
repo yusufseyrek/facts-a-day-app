@@ -9,6 +9,7 @@ import {
 
 import Constants from 'expo-constants';
 
+import { AD_KEYWORDS } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { trackRewardedAdError, trackRewardedAdLoaded } from '../../services/analytics';
 import { canShowRewardedAds } from '../../services/premiumState';
@@ -55,6 +56,7 @@ const loadRewardedAd = async () => {
 
   rewarded = RewardedAd.createForAdRequest(adUnitId, {
     requestNonPersonalizedAdsOnly: nonPersonalized,
+    keywords: AD_KEYWORDS,
   });
 
   const unsubLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {

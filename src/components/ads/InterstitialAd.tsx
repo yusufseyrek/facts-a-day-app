@@ -4,6 +4,7 @@ import { AdEventType, AdsConsent, InterstitialAd, TestIds } from 'react-native-g
 
 import Constants from 'expo-constants';
 
+import { AD_KEYWORDS } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { shouldShowAds } from '../../services/premiumState';
 
@@ -36,6 +37,7 @@ const loadInterstitialAd = async () => {
 
   interstitial = InterstitialAd.createForAdRequest(adUnitId, {
     requestNonPersonalizedAdsOnly: nonPersonalized,
+    keywords: AD_KEYWORDS,
   });
 
   // Set up event listeners
