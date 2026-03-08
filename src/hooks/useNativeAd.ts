@@ -11,7 +11,6 @@ import Constants from 'expo-constants';
 
 import { AD_KEYWORDS, ADS_ENABLED, NATIVE_ADS } from '../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../services/adsConsent';
-import { trackNativeAdError, trackNativeAdLoaded } from '../services/analytics';
 import { shouldShowAds } from '../services/premiumState';
 
 const getNativeAdUnitId = (): string => {
@@ -71,7 +70,6 @@ export function useNativeAd(options: UseNativeAdOptions = {}) {
           nativeAdRef.current = ad;
           setNativeAd(ad);
           setIsLoading(false);
-          trackNativeAdLoaded();
         } else {
           ad.destroy();
         }
@@ -79,7 +77,6 @@ export function useNativeAd(options: UseNativeAdOptions = {}) {
         if (!cancelled) {
           setError(err as Error);
           setIsLoading(false);
-          trackNativeAdError({ error: String(err) });
         }
       }
     };

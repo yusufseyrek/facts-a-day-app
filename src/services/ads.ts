@@ -11,11 +11,7 @@ import { preloadAppOpenAd } from '../components/ads/AppOpenAd';
 import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
 import { preloadRewardedAd } from '../components/ads/RewardedAd';
 
-import {
-  trackAdsSdkInitialized,
-  trackATTPermissionResult,
-  trackGDPRConsentResult,
-} from './analytics';
+import { trackATTPermissionResult, trackGDPRConsentResult } from './analytics';
 import { shouldInitializeAdsSdk, shouldShowAds } from './premiumState';
 
 // Re-export consent utilities for backwards compatibility
@@ -210,7 +206,7 @@ export const initializeAdsSDK = async (): Promise<boolean> => {
     console.log('Google Mobile Ads SDK initialized successfully');
 
     // Track successful SDK initialization
-    trackAdsSdkInitialized(true);
+    console.log('Ads SDK initialized successfully');
 
     // Preload interstitial and app open ads only for non-premium users
     if (shouldShowAds()) {
@@ -229,7 +225,7 @@ export const initializeAdsSDK = async (): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error('Failed to initialize Google Mobile Ads SDK:', error);
-    trackAdsSdkInitialized(false);
+    console.log('Ads SDK initialization failed');
     return false;
   }
 };

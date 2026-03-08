@@ -8,7 +8,7 @@
 /**
  * Ads configuration
  */
-export const ADS_ENABLED = __DEV__;
+export const ADS_ENABLED = !__DEV__;
 
 /**
  * App Check settings for Firebase App Check initialization

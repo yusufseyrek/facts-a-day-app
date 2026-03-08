@@ -5,12 +5,7 @@ import Constants from 'expo-constants';
 
 import { AD_KEYWORDS, APP_OPEN_ADS } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
-import {
-  trackAppOpenAdDismissed,
-  trackAppOpenAdError,
-  trackAppOpenAdLoaded,
-  trackAppOpenAdShown,
-} from '../../services/analytics';
+import { trackAppOpenAdShown } from '../../services/analytics';
 import { shouldShowAds } from '../../services/premiumState';
 
 // Get App Open Ad Unit ID based on platform
@@ -68,7 +63,6 @@ const loadAppOpenAd = (): Promise<boolean> => {
       const unsubLoaded = appOpenAd!.addAdEventListener(AdEventType.LOADED, () => {
         console.log('✅ App open ad loaded');
         adLoadedTimestamp = Date.now();
-        trackAppOpenAdLoaded();
         unsubLoaded();
         unsubError();
         resolve(true);
@@ -76,7 +70,7 @@ const loadAppOpenAd = (): Promise<boolean> => {
 
       const unsubError = appOpenAd!.addAdEventListener(AdEventType.ERROR, (error) => {
         console.warn('App open ad not filled:', error?.message || error);
-        trackAppOpenAdError({ phase: 'load', error: String(error) });
+        console.warn('App open ad load error:', String(error));
         unsubLoaded();
         unsubError();
         resolve(false);
@@ -193,14 +187,14 @@ export const showAppOpenAdForLocaleChange = async (): Promise<boolean> => {
 
       const closeListener = appOpenAd!.addAdEventListener(AdEventType.CLOSED, () => {
         console.log('✅ App open ad closed');
-        trackAppOpenAdDismissed();
+        console.log('App open ad dismissed');
         cleanup();
         resolve(true);
       });
 
       const errorListener = appOpenAd!.addAdEventListener(AdEventType.ERROR, (error) => {
         console.error('⚠️ App open ad error during display:', error);
-        trackAppOpenAdError({ phase: 'show', error: String(error) });
+        console.warn('App open ad show error:', String(error));
         cleanup();
         resolve(false);
       });
@@ -224,7 +218,7 @@ export const showAppOpenAdForLocaleChange = async (): Promise<boolean> => {
     return result;
   } catch (error) {
     console.error('Error showing app open ad:', error);
-    trackAppOpenAdError({ phase: 'show', error: String(error) });
+    console.warn('App open ad show error:', String(error));
     // Try to preload for next time
     loadAppOpenAd().catch(console.error);
     return false;
@@ -290,14 +284,14 @@ export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
 
       const closeListener = appOpenAd!.addAdEventListener(AdEventType.CLOSED, () => {
         console.log('✅ App open ad closed (foreground)');
-        trackAppOpenAdDismissed();
+        console.log('App open ad dismissed');
         cleanup();
         resolve(true);
       });
 
       const errorListener = appOpenAd!.addAdEventListener(AdEventType.ERROR, (error) => {
         console.error('⚠️ App open ad error during display:', error);
-        trackAppOpenAdError({ phase: 'show', error: String(error) });
+        console.warn('App open ad show error:', String(error));
         cleanup();
         resolve(false);
       });
@@ -321,7 +315,7 @@ export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
     return result;
   } catch (error) {
     console.error('Error showing app open ad on foreground:', error);
-    trackAppOpenAdError({ phase: 'show', error: String(error) });
+    console.warn('App open ad show error:', String(error));
     loadAppOpenAd().catch(console.error);
     return false;
   }

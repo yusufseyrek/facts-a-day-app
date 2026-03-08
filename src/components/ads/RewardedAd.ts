@@ -11,7 +11,6 @@ import Constants from 'expo-constants';
 
 import { AD_KEYWORDS } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
-import { trackRewardedAdError, trackRewardedAdLoaded } from '../../services/analytics';
 import { canShowRewardedAds } from '../../services/premiumState';
 
 // Get Rewarded Ad Unit ID based on platform
@@ -63,14 +62,12 @@ const loadRewardedAd = async () => {
     console.log('Rewarded ad loaded');
     adLoadFailed = false;
     isLoading = false;
-    trackRewardedAdLoaded();
   });
 
   const unsubError = rewarded.addAdEventListener(AdEventType.ERROR, (error) => {
     console.warn('Rewarded ad not filled:', error?.message || error);
     adLoadFailed = true;
     isLoading = false;
-    trackRewardedAdError({ phase: 'load', error: String(error?.message || error) });
   });
 
   const unsubClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
@@ -234,7 +231,7 @@ export const showRewardedAd = async (): Promise<boolean> => {
 
         const errorListener = rewarded!.addAdEventListener(AdEventType.ERROR, (error) => {
           console.error('⚠️ Rewarded ad error during display:', error);
-          trackRewardedAdError({ phase: 'show', error: String(error?.message || error) });
+          console.warn('Rewarded ad show error:', String(error?.message || error));
           cleanup();
           resolve(false);
         });

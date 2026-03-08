@@ -16,7 +16,7 @@ import { XStack } from 'tamagui';
 
 import { useNativeAd } from '../../hooks/useNativeAd';
 import { useTranslation } from '../../i18n';
-import { trackNativeAdError, trackNativeAdImpression } from '../../services/analytics';
+import { trackNativeAdImpression } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
@@ -57,7 +57,7 @@ function StoryNativeAdCardComponent({
 
   useEffect(() => {
     if (!nativeAdProp && !isLoading && (error || !nativeAd)) {
-      if (error) trackNativeAdError({ error: String(error) });
+      if (error) console.warn('Native ad error:', String(error));
       onAdFailed?.();
     }
   }, [nativeAdProp, isLoading, error, nativeAd, onAdFailed]);

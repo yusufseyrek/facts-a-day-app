@@ -24,7 +24,7 @@ import {
   ScreenHeader,
   Text,
 } from '../../src/components';
-import { BannerAd } from '../../src/components/ads/BannerAd';
+import { InlineNativeAd } from '../../src/components/ads/InlineNativeAd';
 import { ReadingStreakIndicator } from '../../src/components/badges/ReadingStreakIndicator';
 import { CategoryStoryButtons } from '../../src/components/CategoryStoryButtons';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
@@ -32,7 +32,12 @@ import { PopularFactCard } from '../../src/components/PopularFactCard';
 import { HOME_FEED, LAYOUT, PAYWALL_PROMPT } from '../../src/config/app';
 import { usePreloadedData, usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
+import {
+  Screens,
+  trackCarouselSwipe,
+  trackFeedRefresh,
+  trackScreenView,
+} from '../../src/services/analytics';
 import { getReadingStreak, isModalScreenActive } from '../../src/services/badges';
 import {
   forceRefreshContent,
@@ -325,13 +330,22 @@ function HomeScreen() {
   const todaySnapInterval = todayCardWidth + todayCardGap;
   const [todayActiveIndex, setTodayActiveIndex] = useState(0);
 
+  const todayActiveIndexRef = useRef(0);
   const handleTodayScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetX = event.nativeEvent.contentOffset.x;
-      const index = Math.round(offsetX / todaySnapInterval);
-      setTodayActiveIndex(Math.max(0, Math.min(index, todaysFacts.length - 1)));
+      const index = Math.max(0, Math.min(Math.round(offsetX / todaySnapInterval), todaysFacts.length - 1));
+      setTodayActiveIndex(index);
+      if (index !== todayActiveIndexRef.current) {
+        todayActiveIndexRef.current = index;
+        trackCarouselSwipe({
+          section: 'today',
+          index,
+          factId: todaysFacts[index]?.id,
+        });
+      }
     },
-    [todaySnapInterval, todaysFacts.length]
+    [todaySnapInterval, todaysFacts]
   );
 
   const todayCarouselFactIds = useMemo(() => todaysFacts.map((f) => f.id), [todaysFacts]);
@@ -355,7 +369,7 @@ function HomeScreen() {
             category={item.categoryData || item.category}
             categorySlug={item.categoryData?.slug || item.category}
             onPress={() => handleFactPress(item, 'home_today', todayCarouselFactIds, index)}
-            aspectRatio={1}
+            aspectRatio={5 / 4}
             cardWidth={todayCardWidth}
             onImageReady={handleImageReady}
           />
@@ -374,7 +388,7 @@ function HomeScreen() {
     : contentWidth * config.cardWidthMultiplier;
   const popularCardGap = spacing.sm;
   const popularSnapInterval = popularCardWidth + popularCardGap;
-  const popularCardHeight = popularCardWidth * (9 / 16);
+  const popularCardHeight = popularCardWidth * (2 / 3);
   const popularCarouselFactIds = useMemo(() => popularFacts.map((f) => f.id), [popularFacts]);
 
   const popularActiveIndexRef = useRef(0);
@@ -383,9 +397,16 @@ function HomeScreen() {
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetX = event.nativeEvent.contentOffset.x;
       const index = Math.round(offsetX / popularSnapInterval);
-      popularActiveIndexRef.current = index;
+      if (index !== popularActiveIndexRef.current) {
+        popularActiveIndexRef.current = index;
+        trackCarouselSwipe({
+          section: 'popular',
+          index,
+          factId: popularFacts[index]?.id,
+        });
+      }
     },
-    [popularSnapInterval]
+    [popularSnapInterval, popularFacts]
   );
 
   const renderPopularCarouselItem = useCallback(
@@ -401,7 +422,7 @@ function HomeScreen() {
             categorySlug={item.categoryData?.slug || item.category}
             onPress={() => handleFactPress(item, 'home_popular', popularCarouselFactIds, factIndex)}
             cardWidth={popularCardWidth}
-            aspectRatio={16 / 9}
+            aspectRatio={3 / 2}
           />
         </View>
       );
@@ -438,6 +459,24 @@ function HomeScreen() {
   );
 
   const worthKnowingKeyExtractor = useCallback((item: FactWithRelations) => `wk-${item.id}`, []);
+
+  const worthKnowingActiveIndexRef = useRef(0);
+  const worthKnowingSnapInterval = worthKnowingCardWidth + worthKnowingCardGap;
+  const handleWorthKnowingScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const index = Math.round(offsetX / worthKnowingSnapInterval);
+      if (index !== worthKnowingActiveIndexRef.current) {
+        worthKnowingActiveIndexRef.current = index;
+        trackCarouselSwipe({
+          section: 'worth_knowing',
+          index,
+          factId: worthKnowingFacts[index]?.id,
+        });
+      }
+    },
+    [worthKnowingSnapInterval, worthKnowingFacts]
+  );
 
   // Separators for horizontal FlashLists
   const todaySeparator = useCallback(
@@ -507,7 +546,7 @@ function HomeScreen() {
             </Animated.View>
 
             {/* Category Story Buttons */}
-            <YStack paddingBottom={spacing.md}>
+            <YStack paddingBottom={spacing.lg}>
               <CategoryStoryButtons />
             </YStack>
 
@@ -521,7 +560,7 @@ function HomeScreen() {
                   paddingHorizontal={spacing.lg}
                   paddingBottom={spacing.sm}
                 >
-                  <Text.Title fontSize={typography.fontSize.body}>
+                  <Text.Title fontSize={typography.fontSize.title}>
                     {todaysFacts.length > 1 ? t('factsOfTheDay') : t('factOfTheDay')}
                   </Text.Title>
                 </YStack>
@@ -537,7 +576,7 @@ function HomeScreen() {
                       category={todaysFacts[0].categoryData || todaysFacts[0].category}
                       categorySlug={todaysFacts[0].categoryData?.slug || todaysFacts[0].category}
                       onPress={() => handleFactPress(todaysFacts[0], 'home_today')}
-                      aspectRatio={1}
+                      aspectRatio={5 / 4}
                       cardWidth={contentWidth}
                       onImageReady={signalCarouselImageReady}
                     />
@@ -546,7 +585,7 @@ function HomeScreen() {
                   <YStack>
                     <View
                       style={{
-                        height: todayCardWidth + spacing.md * 3,
+                        height: todayCardWidth * (4 / 5) + spacing.md * 3,
                         width: '100%',
                       }}
                     >
@@ -574,7 +613,7 @@ function HomeScreen() {
                         justifyContent: 'center',
                         alignItems: 'center',
                         gap: spacing.xs,
-                        marginTop: spacing.sm,
+                        marginTop: -spacing.sm,
                       }}
                     >
                       {todaysFacts.map((_, index) => {
@@ -598,7 +637,16 @@ function HomeScreen() {
               </>
             )}
 
-            {/* Popular Section (16:9 carousel) */}
+            {/* Inline ad after Fact of the Day */}
+            {!isPremium && hasTodaysFacts && (
+              <ContentContainer>
+                <YStack paddingTop={spacing.lg}>
+                  <InlineNativeAd />
+                </YStack>
+              </ContentContainer>
+            )}
+
+            {/* Popular Section (3:2 carousel) */}
             {hasPopularFacts && (
               <>
                 <YStack
@@ -606,7 +654,7 @@ function HomeScreen() {
                   maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
                   alignSelf="center"
                   paddingHorizontal={spacing.lg}
-                  paddingTop={spacing.lg}
+                  paddingTop={spacing.xl}
                   paddingBottom={spacing.sm}
                 >
                   <Text.Title fontSize={typography.fontSize.body}>{t('popular')}</Text.Title>
@@ -614,7 +662,7 @@ function HomeScreen() {
 
                 <View
                   style={{
-                    height: popularCardHeight + spacing.md * 2,
+                    height: popularCardHeight + spacing.md * 2 + spacing.sm,
                     width: '100%',
                   }}
                 >
@@ -648,7 +696,7 @@ function HomeScreen() {
                   maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
                   alignSelf="center"
                   paddingHorizontal={spacing.lg}
-                  paddingTop={spacing.lg}
+                  paddingTop={spacing.xl}
                   paddingBottom={spacing.sm}
                 >
                   <Text.Title fontSize={typography.fontSize.body}>{t('worthKnowing')}</Text.Title>
@@ -667,7 +715,7 @@ function HomeScreen() {
                     keyExtractor={worthKnowingKeyExtractor}
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    snapToInterval={worthKnowingCardWidth + worthKnowingCardGap}
+                    snapToInterval={worthKnowingSnapInterval}
                     decelerationRate="fast"
                     disableIntervalMomentum
                     ItemSeparatorComponent={worthKnowingSeparator}
@@ -675,14 +723,14 @@ function HomeScreen() {
                       paddingHorizontal: listInset,
                     }}
                     drawDistance={worthKnowingCardWidth}
+                    onScroll={handleWorthKnowingScroll}
+                    scrollEventThrottle={16}
                   />
                 </View>
               </>
             )}
           </ScrollView>
         )}
-
-        <BannerAd position="home" collapsible="bottom" />
 
         {backgroundRefreshStatus === 'locale-change' && (
           <YStack
