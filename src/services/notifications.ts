@@ -1172,11 +1172,7 @@ export async function showImmediateFact(
     }
 
     const fact = facts[0];
-    // Use local date so daily trivia LIKE query (getLocalDateString() + 'T%') matches
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const localDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-    await database.markFactAsShownWithDate(fact.id, localDate);
+    await database.markFactAsShownWithDate(fact.id, new Date().toISOString());
 
     return {
       success: true,
