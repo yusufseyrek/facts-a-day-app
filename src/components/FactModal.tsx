@@ -129,8 +129,10 @@ export function FactModal({
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   // Reset image state when fact changes
+  // Skip placeholder if image is already locally cached
   useEffect(() => {
-    setIsImageLoaded(false);
+    const isCached = !!getCachedFactImageSync(fact.id);
+    setIsImageLoaded(isCached);
     setIsImageError(false);
   }, [fact.id]);
 
@@ -767,7 +769,7 @@ export function FactModal({
                 }}
                 contentFit="cover"
                 cachePolicy="memory-disk"
-                transition={200}
+                transition={isImageLoaded ? 0 : 200}
                 recyclingKey={`modal-main-${fact.id}`}
                 placeholder={
                   !isImageLoaded ? { blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' } : undefined

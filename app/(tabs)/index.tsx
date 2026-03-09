@@ -7,7 +7,13 @@ import {
   ScrollView,
   View,
 } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { Lightbulb } from '@tamagui/lucide-icons';
@@ -80,6 +86,19 @@ function HomeScreen() {
     getRefreshStatus()
   );
   const [preCacheProgress, setPreCacheProgress] = useState<number | null>(null);
+  const preCacheWidth = useSharedValue(0);
+
+  useEffect(() => {
+    if (preCacheProgress !== null) {
+      preCacheWidth.value = withTiming(preCacheProgress * 100, { duration: 300 });
+    } else {
+      preCacheWidth.value = 0;
+    }
+  }, [preCacheProgress]);
+
+  const preCacheBarStyle = useAnimatedStyle(() => ({
+    width: `${preCacheWidth.value}%` as any,
+  }));
 
   // Track if we've consumed preloaded data (only once)
   const consumedPreloadedDataRef = useRef(false);
@@ -803,20 +822,24 @@ function HomeScreen() {
 
         {/* Image pre-cache progress bar */}
         {preCacheProgress !== null && (
-          <View
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            exiting={FadeOut.duration(400)}
             style={{
               height: 2,
               backgroundColor: colors.border,
             }}
           >
-            <View
-              style={{
-                height: 2,
-                width: `${Math.round(preCacheProgress * 100)}%`,
-                backgroundColor: colors.primary,
-              }}
+            <Animated.View
+              style={[
+                {
+                  height: 2,
+                  backgroundColor: colors.primary,
+                },
+                preCacheBarStyle,
+              ]}
             />
-          </View>
+          </Animated.View>
         )}
       </YStack>
     </ScreenContainer>
