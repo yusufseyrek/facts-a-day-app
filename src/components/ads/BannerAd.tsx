@@ -10,6 +10,7 @@ import {
 import Constants from 'expo-constants';
 
 import { AD_KEYWORDS, AD_RETRY } from '../../config/app';
+import { usePremium } from '../../contexts/PremiumContext';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { shouldShowAds } from '../../services/premiumState';
 
@@ -45,6 +46,9 @@ const getBannerSize = (_position: BannerAdPosition): BannerAdSize => {
 type AdState = 'loading' | 'loaded' | 'error';
 
 function BannerAdComponent({ position, onAdLoadChange, collapsible }: BannerAdProps) {
+  // Subscribe to premium context so component re-renders when premium status changes
+  // (shouldShowAds() reads module-level state which doesn't trigger re-renders on its own)
+  usePremium();
   const [canRequestAds, setCanRequestAds] = useState<boolean | null>(null);
   const [requestNonPersonalized, setRequestNonPersonalized] = useState(true);
   const [adState, setAdState] = useState<AdState>('loading');

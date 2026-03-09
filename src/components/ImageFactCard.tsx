@@ -6,6 +6,8 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
+import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
+import { getIsConnected } from '../services/network';
 import { useResponsive } from '../utils/useResponsive';
 
 import { CategoryBadge } from './CategoryBadge';
@@ -58,11 +60,17 @@ const ImageFactCardComponent = ({
   // Track if image has loaded successfully
   const [imageLoaded, setImageLoaded] = useState(false);
 
+  // Resolved image URI: local cache or remote URL
+  const resolvedUri = useResolvedImageUri(factId, imageUrl);
+
   // Retry state for re-rendering (handles Android timing issues with expo-image)
   const [renderRetryCount, setRenderRetryCount] = useState(0);
 
   // All retries exhausted and still no image — show error overlay
   const isPermanentlyFailed = !imageLoaded && renderRetryCount >= IMAGE_RETRY.MAX_RENDER_ATTEMPTS;
+
+  // When offline and image failed, hide the image area entirely (text-only card)
+  const isOfflineImageFailed = isPermanentlyFailed && !getIsConnected();
 
   // Show loading shimmer when image hasn't loaded yet, but NOT when permanently failed
   const showLoadingState = !imageLoaded && !isPermanentlyFailed;
@@ -189,10 +197,10 @@ const ImageFactCardComponent = ({
     retryPendingRef.current = false;
   }, []);
 
-  // Generate image source - memoized to prevent unnecessary re-renders
+  // Generate image source - uses local cache if available, otherwise remote URL
   const imageSource: ImageSource | null = useMemo(
-    () => (imageUrl ? { uri: imageUrl } : null),
-    [imageUrl]
+    () => (resolvedUri ? { uri: resolvedUri } : null),
+    [resolvedUri]
   );
 
   // Style objects
@@ -235,6 +243,40 @@ const ImageFactCardComponent = ({
     }),
     [radius]
   );
+
+  // Offline text-only card: no image, just text on dark background
+  if (isOfflineImageFailed) {
+    return (
+      <Animated.View
+        style={[
+          styles.shadowWrapper,
+          { borderRadius: radius.lg, marginBottom: spacing.md, transform: [{ scale: scaleAnim }] },
+        ]}
+      >
+        <Pressable
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          android_ripple={androidRipple}
+          style={pressableStyle}
+          testID={testID || `fact-card-${factId}`}
+          aria-label={title}
+          role="button"
+        >
+          <View style={[cardWrapperStyle, styles.imageContainer, styles.offlineCard]}>
+            {category && (
+              <View style={{ marginBottom: spacing.sm }}>
+                <CategoryBadge category={category} factId={factId} />
+              </View>
+            )}
+            <Text.Title color="#FFFFFF" numberOfLines={config.maxLines} style={styles.titleShadow}>
+              {title}
+            </Text.Title>
+          </View>
+        </Pressable>
+      </Animated.View>
+    );
+  }
 
   return (
     <Animated.View
@@ -378,6 +420,11 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 10,
+  },
+  offlineCard: {
+    padding: 20,
+    justifyContent: 'flex-end',
+    minHeight: 120,
   },
 });
 

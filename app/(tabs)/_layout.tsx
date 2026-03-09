@@ -15,7 +15,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Brain, Compass, Heart, Lightbulb, Settings } from '@tamagui/lucide-icons';
 import { Tabs, usePathname } from 'expo-router';
 
+import { OfflinePaywallSheet } from '../../src/components/OfflinePaywallSheet';
 import { useScrollToTop } from '../../src/contexts';
+import { useOfflineAccess } from '../../src/hooks/useOfflineAccess';
 import { useTranslation } from '../../src/i18n';
 import * as triviaService from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
@@ -225,6 +227,7 @@ export default function TabLayout() {
   const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
   const { iconSizes, media } = useResponsive();
+  const { shouldShowOfflineGate } = useOfflineAccess();
   const [hasDailyTrivia, setHasDailyTrivia] = useState(false);
 
   // Get current tab from pathname
@@ -349,6 +352,7 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
+      {shouldShowOfflineGate && <OfflinePaywallSheet />}
     </CurrentTabContext.Provider>
   );
 }

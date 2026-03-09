@@ -52,6 +52,16 @@ export const IMAGE_CACHE = {
 } as const;
 
 /**
+ * Offline image pre-caching settings
+ */
+export const PRECACHE = {
+  /** Max concurrent image downloads during pre-caching */
+  CONCURRENCY: 5,
+  /** Max images to download per background session (iOS gives ~30s) */
+  BACKGROUND_BATCH_SIZE: 15,
+} as const;
+
+/**
  * Image download retry settings for the image service
  */
 export const IMAGE_DOWNLOAD_RETRY = {

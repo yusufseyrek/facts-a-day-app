@@ -17,7 +17,14 @@ import {
   trackSubscriptionRestored,
   trackSubscriptionStatusChanged,
 } from '../services/analytics';
-import { setIsPremium as setPremiumState } from '../services/premiumState';
+import { preloadAppOpenAd } from '../components/ads/AppOpenAd';
+import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
+import { getIsConnected } from '../services/network';
+import {
+  getIsPremium as getPremiumState,
+  setIsPremium as setPremiumState,
+  shouldShowAds,
+} from '../services/premiumState';
 import { cachePremiumStatus, getCachedPremiumStatus } from '../services/purchases';
 
 interface PremiumContextType {
@@ -37,7 +44,8 @@ const PremiumContext = createContext<PremiumContextType>({
 export const usePremium = () => useContext(PremiumContext);
 
 export function PremiumProvider({ children }: { children: React.ReactNode }) {
-  const [isPremium, setIsPremium] = useState(false);
+  // Initialize from in-memory state (already set by _layout.tsx from cache)
+  const [isPremium, setIsPremium] = useState(getPremiumState);
   const [isLoading, setIsLoading] = useState(true);
   const updatePremiumRef = useRef<(status: boolean) => Promise<void>>(undefined);
 
@@ -62,6 +70,12 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
     // Only fire analytics on actual transitions, not initial load
     if (lastKnownStatusRef.current !== null && lastKnownStatusRef.current !== status) {
       trackSubscriptionStatusChanged(status);
+
+      // When user loses premium, preload ads so they're ready immediately
+      if (!status && shouldShowAds()) {
+        preloadInterstitialAd();
+        preloadAppOpenAd().catch(console.error);
+      }
     }
     lastKnownStatusRef.current = status;
   }, []);
@@ -119,8 +133,11 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
           type: 'subs',
         });
 
-        // Check active subscriptions
-        await getActiveSubscriptions([...SUBSCRIPTION.PRODUCT_IDS]);
+        // Only verify subscriptions with the store if we have network
+        // When offline, trust cached premium status
+        if (getIsConnected()) {
+          await getActiveSubscriptions([...SUBSCRIPTION.PRODUCT_IDS]);
+        }
       } catch (error) {
         console.error('Failed to initialize IAP products:', error);
       } finally {
@@ -131,12 +148,20 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
     init();
   }, [connected]);
 
-  // React to activeSubscriptions changes
+  // React to activeSubscriptions changes (only after initial load completes)
+  // When offline, trust cached premium status — don't let empty store response override it
   useEffect(() => {
-    if (!connected) return;
+    if (!connected || isLoading) return;
     const hasActive = activeSubscriptions && activeSubscriptions.length > 0;
+
+    // If offline and store says no active subs, trust the cached value instead
+    // (store can't verify subscriptions without network)
+    if (!hasActive && !getIsConnected()) {
+      return;
+    }
+
     updatePremiumStatus(!!hasActive);
-  }, [activeSubscriptions, connected, updatePremiumStatus]);
+  }, [activeSubscriptions, connected, isLoading, updatePremiumStatus]);
 
   const restorePurchases = useCallback(async (): Promise<boolean> => {
     try {

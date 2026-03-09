@@ -37,7 +37,7 @@ export const INTERSTITIAL_ADS = {
   /** Number of fact views between interstitial ads */
   FACTS_BETWEEN_ADS: 5,
   /** Minimum seconds between interstitial ads (cooldown) */
-  COOLDOWN_SECONDS: 180,
+  COOLDOWN_SECONDS: 240,
 } as const;
 
 /**

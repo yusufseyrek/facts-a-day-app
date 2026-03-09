@@ -452,6 +452,9 @@ export default function SettingsPage() {
     try {
       await resetOnboarding();
       await clearHintUsage();
+      // Clear cached images on disk
+      const { clearAllCachedImages } = await import('../../src/services/images');
+      await clearAllCachedImages();
       router.replace('/onboarding');
     } catch (error) {
       console.error('Error resetting onboarding:', error);

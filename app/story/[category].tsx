@@ -35,6 +35,7 @@ import {
 } from '../../src/services/analytics';
 import { checkAndAwardBadges, popModalScreen, pushModalScreen } from '../../src/services/badges';
 import * as database from '../../src/services/database';
+import { useResolvedImageUri } from '../../src/hooks/useResolvedImageUri';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { hexColors, useTheme } from '../../src/theme';
 import {
@@ -466,7 +467,8 @@ const StoryPage = React.memo(
     const { spacing, typography, iconSizes } = useResponsive();
     const colors = hexColors[theme];
 
-    const imageUri = fact.image_url;
+    // Resolved image URI: local cache or remote URL
+    const imageUri = useResolvedImageUri(fact.id, fact.image_url);
 
     // Looping Ken Burns: gentle scale + drift in X/Y to reveal more of the image
     const kenBurns = useRef(new Animated.Value(0)).current;
@@ -531,6 +533,7 @@ const StoryPage = React.memo(
               cachePolicy="memory-disk"
               transition={200}
               onLoad={onImageReady}
+              recyclingKey={`story-${fact.id}`}
             />
           </Animated.View>
         ) : (

@@ -1,40 +1,47 @@
-let _isConnected = true;
-let _intervalId: ReturnType<typeof setInterval> | null = null;
+import * as Network from 'expo-network';
 
-async function probe(): Promise<boolean> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    await fetch('https://clients3.google.com/generate_204', {
-      method: 'HEAD',
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    return true;
-  } catch {
-    return false;
-  }
-}
+let _isConnected = true;
+let _subscription: { remove: () => void } | null = null;
+
+type NetworkListener = (isConnected: boolean) => void;
+const _listeners = new Set<NetworkListener>();
 
 export function startNetworkMonitoring() {
-  if (_intervalId) return;
+  if (_subscription) return;
 
-  probe().then((online) => {
-    _isConnected = online;
+  // Get initial state
+  Network.getNetworkStateAsync().then((state) => {
+    _isConnected = state.isInternetReachable ?? state.isConnected ?? true;
   });
 
-  _intervalId = setInterval(async () => {
-    _isConnected = await probe();
-  }, 10000);
+  // Subscribe to native network state changes (instant detection)
+  _subscription = Network.addNetworkStateListener((state) => {
+    const connected = state.isInternetReachable ?? state.isConnected ?? true;
+    if (connected !== _isConnected) {
+      _isConnected = connected;
+      _listeners.forEach((listener) => listener(connected));
+    }
+  });
 }
 
 export function stopNetworkMonitoring() {
-  if (_intervalId) {
-    clearInterval(_intervalId);
-    _intervalId = null;
+  if (_subscription) {
+    _subscription.remove();
+    _subscription = null;
   }
 }
 
 export function getIsConnected(): boolean {
   return _isConnected;
+}
+
+/**
+ * Subscribe to network connectivity changes.
+ * Returns an unsubscribe function.
+ */
+export function onNetworkChange(listener: NetworkListener): () => void {
+  _listeners.add(listener);
+  return () => {
+    _listeners.delete(listener);
+  };
 }

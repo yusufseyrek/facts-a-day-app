@@ -47,6 +47,8 @@ import {
   RefreshStatus,
 } from '../../src/services/contentRefresh';
 import * as database from '../../src/services/database';
+import { preCacheOfflineImages } from '../../src/services/images';
+import { onNetworkChange } from '../../src/services/network';
 import { shouldShowPaywall } from '../../src/services/paywallTiming';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
@@ -77,9 +79,11 @@ function HomeScreen() {
   const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() =>
     getRefreshStatus()
   );
+  const [preCacheProgress, setPreCacheProgress] = useState<number | null>(null);
 
   // Track if we've consumed preloaded data (only once)
   const consumedPreloadedDataRef = useRef(false);
+  const preCacheDateRef = useRef<string | null>(null);
   const paywallCheckRef = useRef(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const popularListRef = useRef<FlashListRef<FactWithRelations>>(null);
@@ -134,8 +138,16 @@ function HomeScreen() {
       }
 
       loadTodaysFacts();
-      loadPopularFacts(true);
-      loadWorthKnowingFacts(true);
+      // Load feed sections, then trigger image pre-caching once
+      Promise.all([loadPopularFacts(true), loadWorthKnowingFacts(true)]).then(() => {
+        const today = new Date().toISOString().split('T')[0];
+        if (preCacheDateRef.current !== today) {
+          preCacheDateRef.current = today;
+          preCacheOfflineImages(undefined, setPreCacheProgress)
+            .then(() => setTimeout(() => setPreCacheProgress(null), 1000))
+            .catch(() => setPreCacheProgress(null));
+        }
+      });
       getReadingStreak()
         .then(setReadingStreak)
         .catch(() => {});
@@ -185,8 +197,8 @@ function HomeScreen() {
   useEffect(() => {
     const unsubscribe = onFeedRefresh(() => {
       loadTodaysFacts();
-      loadPopularFacts();
-      loadWorthKnowingFacts();
+      loadPopularFacts(true);
+      loadWorthKnowingFacts(true);
     });
     return () => unsubscribe();
   }, []);
@@ -197,6 +209,18 @@ function HomeScreen() {
       loadTodaysFacts();
       loadPopularFacts();
       loadWorthKnowingFacts();
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Pre-cache images when network comes back online
+  useEffect(() => {
+    const unsubscribe = onNetworkChange((connected) => {
+      if (connected) {
+        preCacheOfflineImages(undefined, setPreCacheProgress)
+            .then(() => setTimeout(() => setPreCacheProgress(null), 1000))
+            .catch(() => setPreCacheProgress(null));
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -267,11 +291,28 @@ function HomeScreen() {
   }, [loadTodaysFacts]);
 
   // onlyIfEmpty: skip update if section already has data (prevents reshuffling on tab focus)
+  // Uses daily feed cache to lock sections for the day (consistent offline experience)
   const loadPopularFacts = useCallback(
     async (onlyIfEmpty?: boolean) => {
       try {
+        // Try daily cache first (locked for the day)
+        const cached = await database.getDailyFeedCache('popular', locale);
+        if (cached.length > 0) {
+          if (onlyIfEmpty) {
+            setPopularFacts((prev) => (prev.length > 0 ? prev : cached));
+          } else {
+            setPopularFacts(cached);
+          }
+          return;
+        }
+
+        // No cache for today — pick random and lock them
         const recs = await database.getRandomUnscheduledFacts(HOME_FEED.POPULAR_COUNT, locale);
         if (recs.length > 0) {
+          await database.setDailyFeedCache(
+            'popular',
+            recs.map((f) => f.id)
+          );
           if (onlyIfEmpty) {
             setPopularFacts((prev) => (prev.length > 0 ? prev : recs));
           } else {
@@ -288,11 +329,27 @@ function HomeScreen() {
   const loadWorthKnowingFacts = useCallback(
     async (onlyIfEmpty?: boolean) => {
       try {
+        // Try daily cache first (locked for the day)
+        const cached = await database.getDailyFeedCache('worth_knowing', locale);
+        if (cached.length > 0) {
+          if (onlyIfEmpty) {
+            setWorthKnowingFacts((prev) => (prev.length > 0 ? prev : cached));
+          } else {
+            setWorthKnowingFacts(cached);
+          }
+          return;
+        }
+
+        // No cache for today — pick random and lock them
         const recs = await database.getRandomUnscheduledFacts(
           HOME_FEED.WORTH_KNOWING_COUNT,
           locale
         );
         if (recs.length > 0) {
+          await database.setDailyFeedCache(
+            'worth_knowing',
+            recs.map((f) => f.id)
+          );
           if (onlyIfEmpty) {
             setWorthKnowingFacts((prev) => (prev.length > 0 ? prev : recs));
           } else {
@@ -305,12 +362,6 @@ function HomeScreen() {
     },
     [locale]
   );
-
-  // Load popular and worth knowing facts on mount and when locale changes
-  useEffect(() => {
-    loadPopularFacts();
-    loadWorthKnowingFacts();
-  }, [loadPopularFacts, loadWorthKnowingFacts]);
 
   const refreshControl = useMemo(
     () => <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
@@ -748,6 +799,24 @@ function HomeScreen() {
             <ActivityIndicator size="large" color={hexColors[theme].primary} />
             <Text.Body color="$textSecondary">{t('updatingLanguage')}</Text.Body>
           </YStack>
+        )}
+
+        {/* Image pre-cache progress bar */}
+        {preCacheProgress !== null && (
+          <View
+            style={{
+              height: 2,
+              backgroundColor: colors.border,
+            }}
+          >
+            <View
+              style={{
+                height: 2,
+                width: `${Math.round(preCacheProgress * 100)}%`,
+                backgroundColor: colors.primary,
+              }}
+            />
+          </View>
         )}
       </YStack>
     </ScreenContainer>

@@ -278,6 +278,23 @@ async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_trivia_sessions_elapsed ON trivia_sessions(elapsed_time);
   `);
 
+  // ====== DAILY FEED CACHE ======
+
+  // Cache for locking Popular & Worth Knowing sections for the day
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS daily_feed_cache (
+      section TEXT NOT NULL,
+      fact_id INTEGER NOT NULL,
+      cached_date TEXT NOT NULL,
+      display_order INTEGER NOT NULL,
+      PRIMARY KEY (section, fact_id, cached_date)
+    );
+  `);
+
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_daily_feed_cache_date ON daily_feed_cache(cached_date);
+  `);
+
   // ====== MIGRATIONS ======
 
   // Add slug column for existing databases (migration)
@@ -302,6 +319,7 @@ export async function clearDatabase(): Promise<void> {
     DELETE FROM fact_interactions;
     DELETE FROM share_events;
     DELETE FROM user_badges;
+    DELETE FROM daily_feed_cache;
   `);
 }
 
@@ -2957,4 +2975,133 @@ export async function clearAllShownInFeed(): Promise<void> {
   await database.runAsync(
     'UPDATE facts SET shown_in_feed = 0, scheduled_date = NULL, notification_id = NULL'
   );
+}
+
+// ====== DAILY FEED CACHE ======
+
+/**
+ * Get cached facts for a daily feed section (popular / worth_knowing)
+ * Returns facts for today only; returns empty array if cache is stale
+ */
+export async function getDailyFeedCache(
+  section: string,
+  language: string
+): Promise<FactWithRelations[]> {
+  const database = await openDatabase();
+
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM daily_feed_cache dfc
+    INNER JOIN facts f ON dfc.fact_id = f.id
+    LEFT JOIN categories c ON f.category = c.slug
+    WHERE dfc.section = ?
+      AND dfc.cached_date = date('now', 'localtime')
+      AND f.language = ?
+    ORDER BY dfc.display_order ASC`,
+    [section, language]
+  );
+  return mapFactsWithRelations(result);
+}
+
+/**
+ * Store today's feed section facts in the daily cache
+ */
+export async function setDailyFeedCache(section: string, factIds: number[]): Promise<void> {
+  const database = await openDatabase();
+
+  // Use SQLite's localtime to match getDailyFeedCache query (avoids UTC/local date mismatch)
+  const todayResult = await database.getFirstAsync<{ today: string }>(
+    "SELECT date('now', 'localtime') as today"
+  );
+  const today = todayResult?.today || new Date().toISOString().split('T')[0];
+
+  // Atomic: clear old + insert new in a single transaction
+  await database.execAsync('BEGIN TRANSACTION');
+  try {
+    await database.runAsync('DELETE FROM daily_feed_cache WHERE section = ?', [section]);
+    for (let i = 0; i < factIds.length; i++) {
+      await database.runAsync(
+        'INSERT INTO daily_feed_cache (section, fact_id, cached_date, display_order) VALUES (?, ?, ?, ?)',
+        [section, factIds[i], today, i]
+      );
+    }
+    await database.execAsync('COMMIT');
+  } catch (e) {
+    await database.execAsync('ROLLBACK');
+    throw e;
+  }
+}
+
+/**
+ * Clear stale daily feed cache entries (older than today)
+ */
+export async function clearStaleFeedCache(): Promise<void> {
+  const database = await openDatabase();
+  await database.runAsync(
+    "DELETE FROM daily_feed_cache WHERE cached_date < date('now', 'localtime')"
+  );
+}
+
+/**
+ * Get fact IDs and image URLs for pre-caching
+ * Covers: fact of the day, popular + worth knowing (daily feed), next 20 story facts (unseen first), and favorites
+ *
+ * No language filter needed — the DB only contains facts for the user's active locale,
+ * and daily_feed_cache already references the correct fact IDs.
+ */
+export async function getFactsForOfflineCache(): Promise<
+  Array<{ id: number; image_url: string }>
+> {
+  const database = await openDatabase();
+
+  // Query each source separately for logging
+  const todayFacts = await database.getAllAsync<{ id: number; image_url: string }>(
+    `SELECT DISTINCT f.id, f.image_url FROM facts f
+     WHERE f.image_url IS NOT NULL AND f.image_url != ''
+       AND date(f.scheduled_date, 'localtime') = date('now', 'localtime')`
+  );
+
+  const feedCacheFacts = await database.getAllAsync<{ id: number; image_url: string }>(
+    `SELECT DISTINCT f.id, f.image_url FROM facts f
+     WHERE f.image_url IS NOT NULL AND f.image_url != ''
+       AND f.id IN (SELECT fact_id FROM daily_feed_cache WHERE cached_date = date('now', 'localtime'))`
+  );
+
+  // Story view: next 20 facts in mix story order (unseen first, then newest)
+  // Same ordering as getFactsForMixedStory
+  const storyFacts = await database.getAllAsync<{ id: number; image_url: string }>(
+    `SELECT f.id, f.image_url
+     FROM facts f
+     LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
+     WHERE f.image_url IS NOT NULL AND f.image_url != ''
+     ORDER BY CASE WHEN fi.story_viewed_at IS NOT NULL THEN 1 ELSE 0 END ASC,
+              COALESCE(f.last_updated, f.created_at) DESC
+     LIMIT 20`
+  );
+
+  // Favorites
+  const favoriteFacts = await database.getAllAsync<{ id: number; image_url: string }>(
+    `SELECT DISTINCT f.id, f.image_url FROM facts f
+     INNER JOIN favorites fav ON f.id = fav.fact_id
+     WHERE f.image_url IS NOT NULL AND f.image_url != ''`
+  );
+
+  // Deduplicate
+  const seen = new Set<number>();
+  const result: Array<{ id: number; image_url: string }> = [];
+  for (const fact of [...todayFacts, ...feedCacheFacts, ...storyFacts, ...favoriteFacts]) {
+    if (!seen.has(fact.id)) {
+      seen.add(fact.id);
+      result.push(fact);
+    }
+  }
+
+  return result;
 }

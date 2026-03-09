@@ -7,7 +7,7 @@
  *
  * The service:
  * 1. Downloads images to local storage when needed (notifications)
- * 2. Caches images locally for offline access (2-day TTL)
+ * 2. Pre-caches home screen & story images for offline access (2-day TTL)
  * 3. Provides cache management functions (clear, size)
  *
  * IMPORTANT: Uses documentDirectory (persistent) instead of cacheDirectory
@@ -16,7 +16,10 @@
 
 import * as FileSystem from 'expo-file-system/legacy';
 
-import { IMAGE_CACHE, IMAGE_DOWNLOAD_RETRY } from '../config/images';
+import { IMAGE_CACHE, IMAGE_DOWNLOAD_RETRY, PRECACHE } from '../config/images';
+
+import { getFactsForOfflineCache } from './database';
+import { getIsConnected } from './network';
 
 // Directory for cached fact images - uses documentDirectory for persistence
 // cacheDirectory is NOT reliable for multi-day caching as it can be cleared by OS
@@ -110,6 +113,14 @@ function getCacheFilename(imageUrl: string, factId?: number): string {
  * @param factId The fact ID to check
  * @returns Local file URI if cached and valid, null otherwise
  */
+export function getCachedFactImageSync(factId: number): string | null {
+  const entry = fileExistenceCache.get(factId);
+  if (entry && Date.now() - entry.checkedAt < IMAGE_CACHE.FILE_EXISTENCE_CACHE_MAX_AGE_MS) {
+    return entry.uri;
+  }
+  return null;
+}
+
 export async function getCachedFactImage(factId: number): Promise<string | null> {
   const now = Date.now();
 
@@ -154,6 +165,8 @@ export async function getCachedFactImage(factId: number): Promise<string | null>
  * Uses known extension for single-call lookup, falls back to parallel check
  */
 async function performFileExistenceCheck(factId: number): Promise<string | null> {
+  const maxAgeMs = IMAGE_CACHE.MAX_AGE_MS;
+
   try {
     // Fast path: check known extension first (single file system call)
     const knownExt = knownExtensions.get(factId);
@@ -167,9 +180,9 @@ async function performFileExistenceCheck(factId: number): Promise<string | null>
             FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
             knownExtensions.delete(factId);
           } else if (fileInfo.modificationTime) {
-            // Check if cache is still valid (7 days)
+            // Check if cache is still valid (2-day TTL)
             const ageMs = Date.now() - fileInfo.modificationTime * 1000;
-            if (ageMs > IMAGE_CACHE.MAX_AGE_MS) {
+            if (ageMs > maxAgeMs) {
               FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
               knownExtensions.delete(factId);
             } else {
@@ -202,11 +215,11 @@ async function performFileExistenceCheck(factId: number): Promise<string | null>
               return null;
             }
 
-            // Check if cache is still valid (7 days)
+            // Check if cache is still valid (2-day TTL)
             if (fileInfo.modificationTime) {
               const ageMs = Date.now() - fileInfo.modificationTime * 1000;
 
-              if (ageMs > IMAGE_CACHE.MAX_AGE_MS) {
+              if (ageMs > maxAgeMs) {
                 // Delete expired file in background, don't wait
                 FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
                 return null;
@@ -505,4 +518,112 @@ export async function getCachedImagesSize(): Promise<number> {
   } catch {
     return 0;
   }
+}
+
+/**
+ * Resolve the best available image URI for a fact.
+ * Checks local cache first (with retry), falls back to remote URL only when online.
+ * Returns null when offline and no cached image exists.
+ */
+export async function resolveFactImageUri(
+  factId: number,
+  remoteUrl: string | undefined | null
+): Promise<string | null> {
+  // Try local cache
+  const localUri = await getCachedFactImage(factId);
+
+  if (localUri) return localUri;
+
+  // Fall back to remote URL only when online
+  if (remoteUrl && getIsConnected()) return remoteUrl;
+
+  return null;
+}
+
+/**
+ * Pre-cache images for offline access.
+ * Downloads images for: fact of the day, popular, worth knowing, and last 10 facts per category (story view).
+ *
+ * @param maxImages Optional cap on images to download (for background sessions)
+ * @param onProgress Optional callback with progress 0-1
+ * @returns Summary of pre-caching results
+ */
+let _preCacheInProgress = false;
+
+export async function preCacheOfflineImages(
+  maxImages?: number,
+  onProgress?: (progress: number) => void
+): Promise<{ total: number; alreadyCached: number; downloaded: number; failed: number }> {
+  // Prevent concurrent pre-cache runs from fighting over progress state
+  if (_preCacheInProgress) {
+    return { total: 0, alreadyCached: 0, downloaded: 0, failed: 0 };
+  }
+  _preCacheInProgress = true;
+
+  try {
+    return await _preCacheOfflineImagesInner(maxImages, onProgress);
+  } finally {
+    _preCacheInProgress = false;
+  }
+}
+
+async function _preCacheOfflineImagesInner(
+  maxImages?: number,
+  onProgress?: (progress: number) => void
+): Promise<{ total: number; alreadyCached: number; downloaded: number; failed: number }> {
+  const factsToCache = await getFactsForOfflineCache();
+
+  let alreadyCached = 0;
+  let downloaded = 0;
+  let failed = 0;
+
+  // Filter to only uncached images
+  const uncached: Array<{ id: number; image_url: string }> = [];
+  for (const fact of factsToCache) {
+    const cached = await getCachedFactImage(fact.id);
+    if (cached) {
+      alreadyCached++;
+    } else {
+      uncached.push(fact);
+    }
+  }
+
+  // If everything is already cached, signal complete immediately
+  if (uncached.length === 0) {
+    onProgress?.(1);
+    return { total: factsToCache.length, alreadyCached, downloaded, failed };
+  }
+
+  // Apply max limit (for background sessions with limited time)
+  const toDownload = maxImages ? uncached.slice(0, maxImages) : uncached;
+
+  onProgress?.(0);
+  let completed = 0;
+
+  // Download with concurrency control
+  const concurrency = PRECACHE.CONCURRENCY;
+  for (let i = 0; i < toDownload.length; i += concurrency) {
+    const batch = toDownload.slice(i, i + concurrency);
+    const results = await Promise.allSettled(
+      batch.map((fact) => downloadImage(fact.image_url, fact.id))
+    );
+
+    for (let j = 0; j < results.length; j++) {
+      const result = results[j];
+      completed++;
+      if (result.status === 'fulfilled' && result.value) {
+        downloaded++;
+      } else {
+        failed++;
+      }
+    }
+    onProgress?.(completed / toDownload.length);
+  }
+
+  return {
+    total: factsToCache.length,
+    alreadyCached,
+    downloaded,
+    failed,
+  };
 }

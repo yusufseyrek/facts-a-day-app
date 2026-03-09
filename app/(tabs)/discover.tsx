@@ -40,6 +40,8 @@ import {
   trackSearch,
 } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
+import { getCachedFactImageSync } from '../../src/services/images';
+import { getIsConnected } from '../../src/services/network';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
@@ -159,6 +161,19 @@ const FactListItem = React.memo(
 
 FactListItem.displayName = 'FactListItem';
 
+/**
+ * When offline, sort facts so those with locally cached images appear first.
+ * Online: returns facts as-is (original DB order).
+ */
+function sortByImageAvailability(facts: FactWithRelations[]): FactWithRelations[] {
+  if (getIsConnected()) return facts;
+  return [...facts].sort((a, b) => {
+    const aCached = a.image_url ? (getCachedFactImageSync(a.id) ? 1 : 0) : 0;
+    const bCached = b.image_url ? (getCachedFactImageSync(b.id) ? 1 : 0) : 0;
+    return bCached - aCached;
+  });
+}
+
 function DiscoverScreen() {
   const router = useRouter();
   const { theme } = useTheme();
@@ -263,7 +278,7 @@ function DiscoverScreen() {
           results = await database.searchFacts(query.trim(), locale);
         }
 
-        setSearchResults(results);
+        setSearchResults(sortByImageAvailability(results));
 
         // Track search event
         trackSearch({
@@ -375,7 +390,7 @@ function DiscoverScreen() {
       // Refresh category facts
       try {
         const facts = await database.getFactsByCategory(selectedCategorySlug, locale);
-        setCategoryFacts(facts);
+        setCategoryFacts(sortByImageAvailability(facts));
       } catch {
         // Ignore refresh errors
       }
@@ -414,7 +429,7 @@ function DiscoverScreen() {
 
       try {
         const facts = await database.getFactsByCategory(categorySlug, locale);
-        setCategoryFacts(facts);
+        setCategoryFacts(sortByImageAvailability(facts));
 
         // Track category browse event
         trackCategoryBrowse({

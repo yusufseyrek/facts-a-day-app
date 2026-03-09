@@ -45,6 +45,7 @@ import {
 import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
 import { initAnalytics } from '../src/services/analytics';
+import { registerBackgroundSync } from '../src/services/backgroundSync';
 import * as contentRefresh from '../src/services/contentRefresh';
 import * as database from '../src/services/database';
 import { ensureImagesDirExists } from '../src/services/images';
@@ -344,9 +345,11 @@ export default function RootLayout() {
   // Listen for app state changes to sync notifications and check for OTA updates when app enters foreground
   useEffect(() => {
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-      // Only run when app transitions from background/inactive to active (foreground)
+      // Only run when app transitions from background to active (foreground)
+      // Excludes inactive→active (e.g., notification center, share sheet) to prevent
+      // showing app open ads while the user is actively using the app
       if (
-        appStateRef.current.match(/inactive|background/) &&
+        appStateRef.current === 'background' &&
         nextAppState === 'active' &&
         initialOnboardingStatus === true
       ) {
@@ -541,7 +544,12 @@ export default function RootLayout() {
               await database.markDeliveredFactsAsShown(locale);
               return database.getFactsGroupedByDate(locale);
             })(),
-            database.getRandomUnscheduledFacts(6, locale),
+            (async () => {
+              const cached = await database.getDailyFeedCache('popular', locale);
+              // Fall back to random facts if no daily cache yet (first launch of the day)
+              if (cached.length > 0) return cached;
+              return database.getRandomUnscheduledFacts(6, locale);
+            })(),
           ]);
           setPreloadedFactsBeforeMount(facts);
           setPreloadedRecommendationsBeforeMount(recs);
@@ -566,6 +574,14 @@ export default function RootLayout() {
 
       // Wait for IAP to finish (has been running in parallel since Phase 2 start)
       await iapPromise;
+
+      // Clean up stale daily feed cache entries (older than today)
+      database.clearStaleFeedCache().catch(() => {});
+
+      // Register background sync for all users (fact sync)
+      registerBackgroundSync().catch((error) => {
+        console.error('Failed to register background sync:', error);
+      });
 
       // Clear notification badge on app launch
       Notifications.setBadgeCountAsync(0);

@@ -5,11 +5,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   Ban,
+  Brain,
   Check,
   Crown,
   Infinity as InfinityIcon,
   Lightbulb,
   Sparkles,
+  WifiOff,
   X,
 } from '@tamagui/lucide-icons';
 import { ErrorCode, useIAP } from 'expo-iap';
@@ -170,6 +172,18 @@ export default function PaywallScreen() {
       title: t('paywallFeatureHints'),
       description: t('paywallFeatureHintsDesc'),
       gradient: ['#FF8C00', PAYWALL_GOLD.badge] as const,
+    },
+    {
+      icon: <WifiOff size={iconSizes.md} color={featureIconColor} />,
+      title: t('paywallFeatureOffline'),
+      description: t('paywallFeatureOfflineDesc'),
+      gradient: [PAYWALL_GOLD.dark, PAYWALL_GOLD.badge] as const,
+    },
+    {
+      icon: <Brain size={iconSizes.md} color={featureIconColor} />,
+      title: t('paywallFeatureOfflineTrivia'),
+      description: t('paywallFeatureOfflineTriviaDesc'),
+      gradient: [PAYWALL_GOLD.primary, PAYWALL_GOLD.badge] as const,
     },
   ];
 

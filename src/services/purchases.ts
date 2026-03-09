@@ -3,7 +3,8 @@ import { endConnection, hasActiveSubscriptions, initConnection } from 'expo-iap'
 
 import { SUBSCRIPTION } from '../config/app';
 
-import { setIsPremium } from './premiumState';
+import { getIsConnected } from './network';
+import { getIsPremium, setIsPremium } from './premiumState';
 
 /**
  * Initialize the IAP connection with the store.
@@ -40,9 +41,22 @@ export const endIAPConnection = async (): Promise<void> => {
  */
 export const checkAndUpdatePremiumStatus = async (): Promise<boolean> => {
   try {
+    // Don't verify with store when offline — trust cached status
+    if (!getIsConnected()) {
+      const cached = await getCachedPremiumStatus();
+      setIsPremium(cached);
+      return cached;
+    }
+
+    const wasPremium = getIsPremium();
     const isActive = await hasActiveSubscriptions([...SUBSCRIPTION.PRODUCT_IDS]);
     setIsPremium(isActive);
     await cachePremiumStatus(isActive);
+
+    if (wasPremium && !isActive) {
+      console.log('Premium expired — image cache will expire via TTL');
+    }
+
     return isActive;
   } catch (error) {
     console.error('Failed to check subscription status:', error);

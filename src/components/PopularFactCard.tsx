@@ -5,6 +5,7 @@ import { RefreshCw } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
+import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -31,6 +32,9 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
   const pressDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Resolved image URI: local cache or remote URL
+  const resolvedUri = useResolvedImageUri(fact.id, fact.image_url);
 
   // Render retry for Android timing issues
   const [renderRetryCount, setRenderRetryCount] = useState(0);
@@ -86,8 +90,8 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
   }, []);
 
   const imageSource = useMemo(
-    () => (fact.image_url ? { uri: fact.image_url } : null),
-    [fact.image_url]
+    () => (resolvedUri ? { uri: resolvedUri } : null),
+    [resolvedUri]
   );
 
   const mountTimestamp = useRef(Date.now()).current;

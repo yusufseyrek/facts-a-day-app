@@ -26,6 +26,8 @@ import {
   markFactDetailOpened,
   markFactDetailRead,
 } from '../services/database';
+import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
+import { getCachedFactImageSync } from '../services/images';
 import { getIsConnected } from '../services/network';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
@@ -247,10 +249,17 @@ export function FactModal({
     };
   }, [fact.id, fact.image_url]);
 
-  // Use notification image if available, otherwise use remote URL directly
-  const imageUri = notificationImageUri || fact.image_url;
+  // Use notification image → local cache (with retry) → remote URL (online only)
+  // Initialize with in-memory cache or remote URL to preserve layout
+  const resolvedImageUri = useResolvedImageUri(
+    fact.id,
+    fact.image_url,
+    getCachedFactImageSync(fact.id) || fact.image_url
+  );
 
-  // Smart image availability check: cache → network status → safety timeout
+  const imageUri = notificationImageUri || resolvedImageUri;
+
+  // Smart image availability check: local file / cache / network → safety timeout
   useEffect(() => {
     if (!imageUri || isImageLoaded || isImageError) return;
 
@@ -258,22 +267,24 @@ export function FactModal({
     let safetyTimeoutId: ReturnType<typeof setTimeout>;
 
     async function checkImageAvailability() {
-      // Check expo-image disk cache first
+      // Local file URIs (from our cache) are always available — skip network checks
+      if (imageUri!.startsWith('file://')) return;
+
+      // Check expo-image disk cache for remote URLs
       try {
         const cachePath = await Image.getCachePathAsync(imageUri!);
-        if (cachePath || cancelled) return; // Cached — expo-image will load it
+        if (cachePath || cancelled) return;
       } catch {
         // silently ignore cache check
       }
 
       // Not cached — check network status
       if (!getIsConnected() && !cancelled) {
-        setIsImageError(true); // Offline + no cache → immediate no-image
+        setIsImageError(true);
         return;
       }
 
-      // Online but not cached — expo-image loads from network
-      // Safety timeout in case network is flaky or image server is down
+      // Online but not cached — safety timeout for flaky network
       if (!cancelled) {
         safetyTimeoutId = setTimeout(() => {
           setIsImageError(true);
@@ -634,6 +645,7 @@ export function FactModal({
                   contentFit="cover"
                   cachePolicy="memory-disk"
                   transition={200}
+                  recyclingKey={`modal-hero-${fact.id}`}
                 />
               </Animated.View>
               {/* Overlay for better text readability */}
@@ -756,6 +768,7 @@ export function FactModal({
                 contentFit="cover"
                 cachePolicy="memory-disk"
                 transition={200}
+                recyclingKey={`modal-main-${fact.id}`}
                 placeholder={
                   !isImageLoaded ? { blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' } : undefined
                 }

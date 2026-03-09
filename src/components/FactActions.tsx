@@ -26,6 +26,7 @@ import {
 import * as api from '../services/api';
 import { checkAndAwardBadges } from '../services/badges';
 import * as database from '../services/database';
+import { downloadImage } from '../services/images';
 import { shareService } from '../services/share';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
@@ -246,6 +247,10 @@ export function FactActions({
       if (newFavoriteStatus) {
         trackFactFavoriteAdd({ factId, category: categorySlug });
         checkAndAwardBadges().catch(() => {});
+        // Cache the image for offline access
+        if (imageUrl) {
+          downloadImage(imageUrl, factId).catch(() => {});
+        }
       } else {
         trackFactFavoriteRemove({ factId, category: categorySlug });
       }
