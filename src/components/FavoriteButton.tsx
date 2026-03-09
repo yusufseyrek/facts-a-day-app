@@ -12,10 +12,8 @@ import Animated, {
 import { Heart } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
 
-import { trackFactFavoriteAdd, trackFactFavoriteRemove } from '../services/analytics';
-import { checkAndAwardBadges } from '../services/badges';
 import * as database from '../services/database';
-import { downloadImage } from '../services/images';
+import { performFavoriteToggle } from '../services/favorites';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -53,7 +51,7 @@ const FavoriteButtonComponent = ({
   const handlePress = useCallback(async () => {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const newStatus = await database.toggleFavorite(factId);
+      const newStatus = await performFavoriteToggle(factId, categorySlug, imageUrl);
       setIsFavorited(newStatus);
 
       if (newStatus) {
@@ -62,17 +60,11 @@ const FavoriteButtonComponent = ({
           withSpring(1.3, { damping: 15, stiffness: 300, mass: 0.2 }),
           withSpring(1, { damping: 15, stiffness: 100 })
         );
-        trackFactFavoriteAdd({ factId, category: categorySlug });
-        checkAndAwardBadges().catch(() => {});
-        if (imageUrl) {
-          downloadImage(imageUrl, factId).catch(() => {});
-        }
       } else {
         heartScale.value = withSequence(
           withTiming(0.8, { duration: 100, easing: Easing.in(Easing.cubic) }),
           withSpring(1, { damping: 20, stiffness: 100 })
         );
-        trackFactFavoriteRemove({ factId, category: categorySlug });
       }
     } catch (error) {
       if (__DEV__) {
