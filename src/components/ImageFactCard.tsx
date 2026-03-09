@@ -11,6 +11,7 @@ import { getIsConnected } from '../services/network';
 import { useResponsive } from '../utils/useResponsive';
 
 import { CategoryBadge } from './CategoryBadge';
+import { FavoriteButton } from './FavoriteButton';
 import { Text } from './Typography';
 
 import type { ImageSource } from 'expo-image';
@@ -214,6 +215,10 @@ const ImageFactCardComponent = ({
     top: spacing.md,
     right: spacing.md,
   };
+  const favoritePositionStyle = {
+    top: spacing.md,
+    left: spacing.md,
+  };
   const contentOverlayStyle = {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
@@ -355,6 +360,15 @@ const ImageFactCardComponent = ({
                 <CategoryBadge category={category} factId={factId} />
               </View>
             )}
+
+            {/* Favorite button */}
+            <View style={[styles.badgeContainer, favoritePositionStyle]}>
+              <FavoriteButton
+                factId={factId}
+                imageUrl={imageUrl}
+                categorySlug={typeof category === 'string' ? category : category?.slug}
+              />
+            </View>
 
             {/* Content overlay */}
             <View style={[styles.contentOverlay, contentOverlayStyle]}>

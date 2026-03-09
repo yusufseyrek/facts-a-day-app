@@ -20,6 +20,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { StoryNativeAdCard } from '../../src/components/ads/StoryNativeAdCard';
 import { CategoryBadge } from '../../src/components/CategoryBadge';
+import { FavoriteButton } from '../../src/components/FavoriteButton';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { NATIVE_ADS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
@@ -566,10 +567,25 @@ const StoryPage = React.memo(
             gap: spacing.sm,
           }}
         >
-          {/* Category badge */}
-          {(fact.categoryData || fact.category) && (
-            <CategoryBadge category={fact.categoryData || fact.category!} compact />
-          )}
+          {/* Category badge + Favorite button row */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <View>
+              {(fact.categoryData || fact.category) && (
+                <CategoryBadge category={fact.categoryData || fact.category!} compact />
+              )}
+            </View>
+            <FavoriteButton
+              factId={fact.id}
+              imageUrl={fact.image_url}
+              categorySlug={categorySlug}
+            />
+          </View>
 
           {/* Title */}
           {fact.title && (
