@@ -125,15 +125,21 @@ export function FactModal({
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isImageError, setIsImageError] = useState(false);
 
+  // Double-buffer: keep the previous image visible until the new one loads.
+  // `displayedImageUri` is the last successfully loaded image — it stays on screen
+  // as a "back" layer while the new image loads on the "front" layer.
+  const [displayedImageUri, setDisplayedImageUri] = useState<string | null>(null);
+
   // Shimmer animation for loading placeholder
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
-  // Reset image state when fact changes
-  // Skip placeholder if image is already locally cached
+  // Reset error state when fact changes; keep isImageLoaded true if we have
+  // a displayed image so the placeholder overlay doesn't flash
   useEffect(() => {
-    const isCached = !!getCachedFactImageSync(fact.id);
-    setIsImageLoaded(isCached);
     setIsImageError(false);
+    if (!displayedImageUri) {
+      setIsImageLoaded(false);
+    }
   }, [fact.id]);
 
   // Show placeholder when loading OR when error (before image loads)
@@ -222,6 +228,8 @@ export function FactModal({
   // Check for local notification image and use it if available, then delete it
   useEffect(() => {
     let isMounted = true;
+    // Clear stale notification image from previous fact
+    setNotificationImageUri(null);
 
     const checkAndUseLocalImage = async () => {
       if (!fact.image_url) return;
@@ -647,7 +655,7 @@ export function FactModal({
                   contentFit="cover"
                   cachePolicy="memory-disk"
                   transition={200}
-                  recyclingKey={`modal-hero-${fact.id}`}
+                  recyclingKey="modal-hero"
                 />
               </Animated.View>
               {/* Overlay for better text readability */}
@@ -758,6 +766,22 @@ export function FactModal({
                 transform: [{ scale: imageScale }, { translateY: imageTranslateY }],
               }}
             >
+              {/* Back layer: last successfully loaded image (prevents flash during swap) */}
+              {displayedImageUri && displayedImageUri !== imageUri && (
+                <Image
+                  source={{ uri: displayedImageUri }}
+                  aria-hidden
+                  style={{
+                    ...StyleSheet.absoluteFillObject,
+                    width: IMAGE_WIDTH,
+                    height: isTablet ? IMAGE_HEIGHT : IMAGE_WIDTH,
+                  }}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  recyclingKey="modal-main-back"
+                />
+              )}
+              {/* Front layer: current/loading image */}
               <Image
                 source={{ uri: imageUri! }}
                 aria-label={t('a11y_factImage', { title: factTitle })}
@@ -765,16 +789,20 @@ export function FactModal({
                 style={{
                   width: IMAGE_WIDTH,
                   height: isTablet ? IMAGE_HEIGHT : IMAGE_WIDTH,
-                  backgroundColor: theme === 'dark' ? '#1a1a2e' : '#e8e8f0',
                 }}
                 contentFit="cover"
                 cachePolicy="memory-disk"
-                transition={isImageLoaded ? 0 : 200}
-                recyclingKey={`modal-main-${fact.id}`}
+                transition={displayedImageUri ? 150 : 200}
+                recyclingKey="modal-main"
                 placeholder={
-                  !isImageLoaded ? { blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' } : undefined
+                  !displayedImageUri && !isImageLoaded
+                    ? { blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }
+                    : undefined
                 }
-                onLoad={() => setIsImageLoaded(true)}
+                onLoad={() => {
+                  setIsImageLoaded(true);
+                  setDisplayedImageUri(imageUri);
+                }}
                 onError={() => setIsImageError(true)}
               />
             </Animated.View>
@@ -842,9 +870,8 @@ export function FactModal({
             )}
           </Animated.View>
         ) : (
-          <Animated.View
+          <View
             style={{
-              opacity: textFadeAnim,
               backgroundColor: theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface,
               paddingTop: spacing.xl,
               paddingHorizontal: spacing.xl,
@@ -867,7 +894,7 @@ export function FactModal({
                 {factTitle}
               </Text.Headline>
             </View>
-          </Animated.View>
+          </View>
         )}
 
         {/* Content Section */}
