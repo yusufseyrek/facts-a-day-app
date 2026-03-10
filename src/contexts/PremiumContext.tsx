@@ -25,7 +25,11 @@ import {
   setIsPremium as setPremiumState,
   shouldShowAds,
 } from '../services/premiumState';
-import { cachePremiumStatus, getCachedPremiumStatus } from '../services/purchases';
+import {
+  cachePremiumStatus,
+  getCachedPremiumStatus,
+  isCachedPremiumWithinGracePeriod,
+} from '../services/purchases';
 
 interface PremiumContextType {
   isPremium: boolean;
@@ -160,6 +164,19 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Guard against false downgrades: StoreKit can return empty activeSubscriptions
+    // during init before it has synced. If user was recently premium, don't downgrade.
+    if (!hasActive && getPremiumState()) {
+      isCachedPremiumWithinGracePeriod().then((withinGrace) => {
+        if (withinGrace) {
+          console.log('activeSubscriptions empty but cache is recent — keeping premium');
+          return;
+        }
+        updatePremiumStatus(false);
+      });
+      return;
+    }
+
     updatePremiumStatus(!!hasActive);
   }, [activeSubscriptions, connected, isLoading, updatePremiumStatus]);
 
@@ -175,6 +192,8 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
         trackSubscriptionRestored();
         return true;
       }
+      // Explicit user action — trust the result and clear premium cache
+      await updatePremiumStatus(false);
       return false;
     } catch (error) {
       console.error('Failed to restore purchases:', error);
