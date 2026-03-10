@@ -370,7 +370,7 @@ export function getUpdateInfo(): {
     updateId: Updates.updateId,
     channel: Updates.channel,
     runtimeVersion: getRuntimeVersion(),
-    isEmbedded: Updates.isEmbeddedLaunch,
+    isEmbedded: Updates.isEmbeddedLaunch || !Updates.updateId,
   };
 }
 
@@ -461,7 +461,7 @@ export function getDetailedUpdateInfo(): {
     updateId: Updates.updateId,
     channel: Updates.channel,
     runtimeVersion: getRuntimeVersion(),
-    isEmbedded: Updates.isEmbeddedLaunch,
+    isEmbedded: Updates.isEmbeddedLaunch || !Updates.updateId,
     manifestId: manifest?.id || null,
     manifestCreatedAt: manifest?.createdAt || null,
     isEnabled: Updates.isEnabled,

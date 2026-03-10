@@ -858,7 +858,7 @@ export default function SettingsPage() {
           value: updateInfo
             ? updateInfo.isEmbedded
               ? `Embedded (v${updateInfo.runtimeVersion})`
-              : `${updateInfo.updateId?.slice(0, 8)}... (v${updateInfo.runtimeVersion})`
+              : `${updateInfo.updateId?.slice(0, 8) ?? 'Embedded'}... (v${updateInfo.runtimeVersion})`
             : 'Loading...',
           icon: <Download size={iconSizes.md} color={iconColor} />,
           onPress: handleCheckForUpdates,
@@ -1038,7 +1038,7 @@ export default function SettingsPage() {
             >
               {updateInfo.isEmbedded
                 ? `Bundle: Embedded`
-                : `Bundle: ${updateInfo.updateId?.slice(0, 8)}...`}
+                : `Bundle: ${updateInfo.updateId?.slice(0, 8) ?? 'Embedded'}...`}
             </Text.Caption>
           )}
           <Text.Caption
