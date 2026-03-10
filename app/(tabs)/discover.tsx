@@ -882,9 +882,6 @@ function DiscoverScreen() {
             refreshControl={searchRefreshControl}
             onScroll={handleSearchScroll}
             overrideItemLayout={overrideItemLayout}
-            snapToInterval={itemHeight}
-            snapToAlignment="start"
-            decelerationRate="fast"
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -932,9 +929,6 @@ function DiscoverScreen() {
             refreshControl={categoryRefreshControl}
             onScroll={handleCategoryScroll}
             overrideItemLayout={overrideItemLayout}
-            snapToInterval={itemHeight}
-            snapToAlignment="start"
-            decelerationRate="fast"
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
