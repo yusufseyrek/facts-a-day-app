@@ -316,6 +316,7 @@ export default function StoryScreen() {
       }
       return (
         <StoryPage
+          key={item.id}
           fact={item}
           screenWidth={screenWidth}
           screenHeight={screenHeight}
