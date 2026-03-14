@@ -6,6 +6,11 @@ import { FlashList } from '@shopify/flash-list';
 import { Shuffle } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { useTranslation } from '../i18n';
 import * as database from '../services/database';
@@ -15,7 +20,7 @@ import { hexColors, useTheme } from '../theme';
 import { getLucideIcon } from '../utils/iconMapper';
 import { useResponsive } from '../utils/useResponsive';
 
-import { Text } from './Typography';
+import { FONT_FAMILIES, Text } from './Typography';
 
 import type { Category } from '../services/database';
 
@@ -225,75 +230,89 @@ const CategoryButton = React.memo(
     const iconColor = item.isMix ? primaryColor : item.color_hex || primaryColor;
     const ringWidth = borderWidth + 1; // Slightly thicker than regular border
     const outerSize = circleSize + ringWidth * 2;
-    const innerSize = circleSize - 2; // Gap between gradient and inner circle
+    const innerSize = circleSize - 2; // Gap between gradient/border and inner circle
+    // Spring scale animation
+    const scale = useSharedValue(1);
+    const animatedStyle = useAnimatedStyle(() => ({
+      transform: [{ scale: scale.value }],
+      opacity: scale.value < 1 ? 0.85 : 1,
+    }));
+    const handlePressIn = useCallback(() => {
+      scale.value = withSpring(0.92, { damping: 15, stiffness: 300 });
+    }, []);
+    const handlePressOut = useCallback(() => {
+      scale.value = withSpring(1, { damping: 15, stiffness: 150 });
+    }, []);
+
+    const icon = item.isMix ? (
+      <Shuffle size={iconSize} color={iconColor} />
+    ) : (
+      getLucideIcon(item.icon, iconSize, iconColor)
+    );
 
     return (
       <Pressable
         testID={`story-button-${item.slug}`}
         onPress={onPress}
-        style={({ pressed }) => [
-          styles.buttonContainer,
-          { opacity: pressed ? 0.7 : 1, width: outerSize + labelMarginTop },
-        ]}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[styles.buttonContainer, { width: outerSize + labelMarginTop }]}
       >
-        {hasUnseen ? (
-          // Gradient ring for unseen facts
-          <LinearGradient
-            colors={[ringColor, lightenColor(ringColor, 0.4)]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[
-              styles.circle,
-              {
-                width: outerSize,
-                height: outerSize,
-                borderRadius: outerSize / 2,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.circle,
-                {
-                  width: innerSize,
-                  height: innerSize,
-                  borderRadius: innerSize / 2,
-                  backgroundColor: surfaceColor,
-                },
-              ]}
-            >
-              {item.isMix ? (
-                <Shuffle size={iconSize} color={iconColor} />
-              ) : (
-                getLucideIcon(item.icon, iconSize, iconColor)
-              )}
-            </View>
-          </LinearGradient>
-        ) : (
-          // Muted border for all-viewed categories
-          <View
-            style={[
-              styles.circle,
-              {
-                width: outerSize,
-                height: outerSize,
-                borderRadius: outerSize / 2,
-                borderWidth: ringWidth,
-                borderColor,
-                backgroundColor: surfaceColor,
-              },
-            ]}
-          >
-            {item.isMix ? (
-              <Shuffle size={iconSize} color={iconColor} />
+        <Animated.View style={animatedStyle}>
+          <View>
+            {hasUnseen ? (
+              // Gradient ring for unseen facts
+              <LinearGradient
+                colors={[ringColor, lightenColor(ringColor, 0.4)]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[
+                  styles.circle,
+                  {
+                    width: outerSize,
+                    height: outerSize,
+                    borderRadius: outerSize / 2,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.circle,
+                    {
+                      width: innerSize,
+                      height: innerSize,
+                      borderRadius: innerSize / 2,
+                      backgroundColor: surfaceColor,
+                    },
+                  ]}
+                >
+                  {icon}
+                </View>
+              </LinearGradient>
             ) : (
-              getLucideIcon(item.icon, iconSize, iconColor)
+              // Muted border for all-viewed categories
+              <View
+                style={[
+                  styles.circle,
+                  {
+                    width: outerSize,
+                    height: outerSize,
+                    borderRadius: outerSize / 2,
+                    borderWidth: ringWidth,
+                    borderColor,
+                    backgroundColor: surfaceColor,
+                  },
+                ]}
+              >
+                {icon}
+              </View>
             )}
           </View>
-        )}
+        </Animated.View>
         <Text.Caption
           numberOfLines={1}
           color={textColor}
+          fontFamily={FONT_FAMILIES.medium}
           style={{ marginTop: labelMarginTop, textAlign: 'center', fontSize: labelFontSize }}
         >
           {item.name}
