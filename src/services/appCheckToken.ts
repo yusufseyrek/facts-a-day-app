@@ -135,7 +135,7 @@ async function fetchNewToken(): Promise<string | null> {
 
     // Use false to allow SDK-level caching first, fall back to force refresh if needed
     // The SDK will return a cached token if available and valid
-    const { token } = await getToken(appCheckInstance, false);
+    let { token } = await getToken(appCheckInstance, false);
 
     // Validate that token is a non-empty string
     if (!token || typeof token !== 'string' || token.trim().length === 0) {
@@ -149,7 +149,15 @@ async function fetchNewToken(): Promise<string | null> {
     }
 
     // Extract expiration time from JWT token
-    const expiration = getTokenExpirationMs(token);
+    let expiration = getTokenExpirationMs(token);
+
+    // If the token Firebase returned is already expired, force a fresh one
+    if (expiration && expiration < Date.now()) {
+      console.warn('⚠️ App Check: SDK returned expired token, forcing refresh');
+      ({ token } = await getToken(appCheckInstance, true));
+      expiration = getTokenExpirationMs(token);
+    }
+
     if (!expiration) {
       // If we can't decode the token, use a conservative fallback (25 minutes from now)
       console.warn('⚠️ App Check: Could not decode token expiration, using fallback');

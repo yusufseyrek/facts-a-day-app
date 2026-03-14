@@ -46,6 +46,7 @@ import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
 import { initAnalytics } from '../src/services/analytics';
 import { registerBackgroundSync } from '../src/services/backgroundSync';
+import { loadDailyFeedSections } from '../src/services/dailyFeed';
 import * as contentRefresh from '../src/services/contentRefresh';
 import * as database from '../src/services/database';
 import { ensureImagesDirExists } from '../src/services/images';
@@ -539,20 +540,17 @@ export default function RootLayout() {
         // No locale change — normal startup flow
         // Pre-load facts + recommendations in parallel
         try {
-          const [facts, recs] = await Promise.all([
-            (async () => {
-              await database.markDeliveredFactsAsShown(locale);
-              return database.getFactsGroupedByDate(locale);
-            })(),
-            (async () => {
-              const cached = await database.getDailyFeedCache('popular', locale);
-              // Fall back to random facts if no daily cache yet (first launch of the day)
-              if (cached.length > 0) return cached;
-              return database.getRandomUnscheduledFacts(6, locale);
-            })(),
-          ]);
+          const [facts, { popular: popularRecs, worthKnowing: worthKnowingRecs }] =
+            await Promise.all([
+              (async () => {
+                await database.markDeliveredFactsAsShown(locale);
+                return database.getFactsGroupedByDate(locale);
+              })(),
+              loadDailyFeedSections(locale),
+            ]);
+
           setPreloadedFactsBeforeMount(facts);
-          setPreloadedRecommendationsBeforeMount(recs);
+          setPreloadedRecommendationsBeforeMount([...popularRecs, ...worthKnowingRecs]);
         } catch (error) {
           console.error('Failed to pre-load home screen data:', error);
         }

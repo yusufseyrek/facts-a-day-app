@@ -138,7 +138,7 @@ export const HOME_FEED = {
   /** Number of 16:9 cards in the Popular carousel */
   POPULAR_COUNT: 10,
   /** Number of thumbnail cards in the Worth Knowing section */
-  WORTH_KNOWING_COUNT: 10,
+  WORTH_KNOWING_COUNT: 5,
 } as const;
 
 /**

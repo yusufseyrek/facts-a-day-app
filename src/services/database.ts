@@ -768,6 +768,38 @@ export async function getRandomUnscheduledFacts(
 }
 
 /**
+ * Like getRandomUnscheduledFacts, but falls back to any unscheduled facts
+ * (ignoring shown_in_feed) when the unshown pool is exhausted.
+ */
+export async function getRandomUnscheduledFactsWithFallback(
+  limit: number,
+  language: string
+): Promise<FactWithRelations[]> {
+  const unshown = await getRandomUnscheduledFacts(limit, language);
+  if (unshown.length > 0) return unshown;
+
+  // Fallback: any unscheduled facts regardless of shown status (pool exhausted)
+  const database = await openDatabase();
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    WHERE f.language = ? AND f.scheduled_date IS NULL
+    ORDER BY RANDOM()
+    LIMIT ?`,
+    [language, limit]
+  );
+  return mapFactsWithRelations(result);
+}
+
+/**
  * Mark a fact as scheduled with notification details
  * @param factId The ID of the fact
  * @param scheduledDate The scheduled date in ISO format

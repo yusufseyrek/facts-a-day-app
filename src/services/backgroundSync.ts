@@ -1,19 +1,21 @@
 /**
  * Background Sync Service
  *
- * Registers a background fetch task that periodically syncs facts from the API
- * and pre-caches images for offline access. This runs even when the app is closed.
+ * Registers a background task that periodically syncs facts from the API,
+ * curates the daily Popular & Worth Knowing sections (once per day),
+ * and pre-caches images for offline access. Runs even when the app is closed.
  *
  * IMPORTANT: TaskManager.defineTask() must be called at the module top level
  * and this module must be imported early (before component rendering).
  */
 
-import * as BackgroundFetch from 'expo-background-fetch';
+import * as BackgroundTask from 'expo-background-task';
 import * as TaskManager from 'expo-task-manager';
 
 import { PRECACHE } from '../config/images';
 
-import { refreshAppContent } from './contentRefresh';
+import { refreshAppContent, getStoredLocale } from './contentRefresh';
+import { loadDailyFeedSections } from './dailyFeed';
 import { preCacheOfflineImages } from './images';
 
 const BACKGROUND_SYNC_TASK = 'FACTS_BACKGROUND_SYNC';
@@ -23,19 +25,25 @@ TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
   try {
     console.log('🔄 Background sync started');
 
-    // 1. Sync facts from API (all users)
+    // 1. Sync facts from API
     const result = await refreshAppContent();
 
-    // 2. Pre-cache images (capped for background time limit)
+    // 2. Curate daily feed sections if not already done today
+    const locale = await getStoredLocale();
+    if (locale) {
+      await loadDailyFeedSections(locale);
+    }
+
+    // 3. Pre-cache images (capped for background time limit)
     await preCacheOfflineImages(PRECACHE.BACKGROUND_BATCH_SIZE);
     console.log('✅ Background sync completed');
 
     return result.success
-      ? BackgroundFetch.BackgroundFetchResult.NewData
-      : BackgroundFetch.BackgroundFetchResult.Failed;
+      ? BackgroundTask.BackgroundTaskResult.Success
+      : BackgroundTask.BackgroundTaskResult.Failed;
   } catch (error) {
     console.error('❌ Background sync failed:', error);
-    return BackgroundFetch.BackgroundFetchResult.Failed;
+    return BackgroundTask.BackgroundTaskResult.Failed;
   }
 });
 
@@ -45,28 +53,14 @@ TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
  */
 export async function registerBackgroundSync(): Promise<void> {
   try {
-    const status = await BackgroundFetch.getStatusAsync();
-
-    if (status === BackgroundFetch.BackgroundFetchStatus.Denied) {
-      console.log('⚠️ Background fetch is denied by the system');
-      return;
-    }
-
-    if (status === BackgroundFetch.BackgroundFetchStatus.Restricted) {
-      console.log('⚠️ Background fetch is restricted');
-      return;
-    }
-
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_SYNC_TASK);
     if (isRegistered) {
       console.log('ℹ️ Background sync task already registered');
       return;
     }
 
-    await BackgroundFetch.registerTaskAsync(BACKGROUND_SYNC_TASK, {
-      minimumInterval: 60 * 60, // 1 hour minimum (OS decides actual timing)
-      stopOnTerminate: false, // Android: continue after app killed
-      startOnBoot: true, // Android: start after reboot
+    await BackgroundTask.registerTaskAsync(BACKGROUND_SYNC_TASK, {
+      minimumInterval: 15, // 15 min minimum (OS decides actual timing)
     });
 
     console.log('✅ Background sync task registered');
@@ -82,7 +76,7 @@ export async function unregisterBackgroundSync(): Promise<void> {
   try {
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_SYNC_TASK);
     if (isRegistered) {
-      await BackgroundFetch.unregisterTaskAsync(BACKGROUND_SYNC_TASK);
+      await BackgroundTask.unregisterTaskAsync(BACKGROUND_SYNC_TASK);
       console.log('✅ Background sync task unregistered');
     }
   } catch (error) {

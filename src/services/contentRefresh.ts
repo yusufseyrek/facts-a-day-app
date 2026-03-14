@@ -139,7 +139,7 @@ function getDeviceLocale(): SupportedLocale {
  * Get the stored locale from AsyncStorage
  * Returns null if no locale has been stored yet
  */
-async function getStoredLocale(): Promise<string | null> {
+export async function getStoredLocale(): Promise<string | null> {
   try {
     return await AsyncStorage.getItem(STORED_LOCALE_KEY);
   } catch (error) {

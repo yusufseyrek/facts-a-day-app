@@ -52,6 +52,7 @@ import {
   onRefreshStatusChange,
   RefreshStatus,
 } from '../../src/services/contentRefresh';
+import { loadDailyFeedSections } from '../../src/services/dailyFeed';
 import * as database from '../../src/services/database';
 import { preCacheOfflineImages } from '../../src/services/images';
 import { onNetworkChange } from '../../src/services/network';
@@ -158,8 +159,8 @@ function HomeScreen() {
 
       loadTodaysFacts();
       // Load feed sections, then trigger image pre-caching once
-      Promise.all([loadPopularFacts(true), loadWorthKnowingFacts(true)]).then(() => {
-        const today = new Date().toISOString().split('T')[0];
+      Promise.all([loadFeedSections(true)]).then(() => {
+        const today = getLocalDateString();
         if (preCacheDateRef.current !== today) {
           preCacheDateRef.current = today;
           preCacheOfflineImages(undefined, setPreCacheProgress)
@@ -216,8 +217,7 @@ function HomeScreen() {
   useEffect(() => {
     const unsubscribe = onFeedRefresh(() => {
       loadTodaysFacts();
-      loadPopularFacts(true);
-      loadWorthKnowingFacts(true);
+      loadFeedSections(true);
     });
     return () => unsubscribe();
   }, []);
@@ -226,8 +226,7 @@ function HomeScreen() {
   useEffect(() => {
     const unsubscribe = onPreferenceFeedRefresh(() => {
       loadTodaysFacts();
-      loadPopularFacts();
-      loadWorthKnowingFacts();
+      loadFeedSections();
     });
     return () => unsubscribe();
   }, []);
@@ -296,6 +295,26 @@ function HomeScreen() {
     [router]
   );
 
+  // onlyIfEmpty: skip update if section already has data (prevents reshuffling on tab focus)
+  // Uses daily feed cache to lock sections for the day (consistent offline experience)
+  const loadFeedSections = useCallback(
+    async (onlyIfEmpty?: boolean) => {
+      try {
+        const { popular, worthKnowing } = await loadDailyFeedSections(locale);
+        if (onlyIfEmpty) {
+          setPopularFacts((prev) => (prev.length > 0 ? prev : popular));
+          setWorthKnowingFacts((prev) => (prev.length > 0 ? prev : worthKnowing));
+        } else {
+          setPopularFacts(popular);
+          setWorthKnowingFacts(worthKnowing);
+        }
+      } catch {
+        // silently ignore
+      }
+    },
+    [locale]
+  );
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     trackFeedRefresh('pull');
@@ -305,82 +324,8 @@ function HomeScreen() {
       // Ignore refresh errors
     }
     await loadTodaysFacts(false);
-    await loadPopularFacts();
-    await loadWorthKnowingFacts();
-  }, [loadTodaysFacts]);
-
-  // onlyIfEmpty: skip update if section already has data (prevents reshuffling on tab focus)
-  // Uses daily feed cache to lock sections for the day (consistent offline experience)
-  const loadPopularFacts = useCallback(
-    async (onlyIfEmpty?: boolean) => {
-      try {
-        // Try daily cache first (locked for the day)
-        const cached = await database.getDailyFeedCache('popular', locale);
-        if (cached.length > 0) {
-          if (onlyIfEmpty) {
-            setPopularFacts((prev) => (prev.length > 0 ? prev : cached));
-          } else {
-            setPopularFacts(cached);
-          }
-          return;
-        }
-
-        // No cache for today — pick random and lock them
-        const recs = await database.getRandomUnscheduledFacts(HOME_FEED.POPULAR_COUNT, locale);
-        if (recs.length > 0) {
-          await database.setDailyFeedCache(
-            'popular',
-            recs.map((f) => f.id)
-          );
-          if (onlyIfEmpty) {
-            setPopularFacts((prev) => (prev.length > 0 ? prev : recs));
-          } else {
-            setPopularFacts(recs);
-          }
-        }
-      } catch {
-        // silently ignore
-      }
-    },
-    [locale]
-  );
-
-  const loadWorthKnowingFacts = useCallback(
-    async (onlyIfEmpty?: boolean) => {
-      try {
-        // Try daily cache first (locked for the day)
-        const cached = await database.getDailyFeedCache('worth_knowing', locale);
-        if (cached.length > 0) {
-          if (onlyIfEmpty) {
-            setWorthKnowingFacts((prev) => (prev.length > 0 ? prev : cached));
-          } else {
-            setWorthKnowingFacts(cached);
-          }
-          return;
-        }
-
-        // No cache for today — pick random and lock them
-        const recs = await database.getRandomUnscheduledFacts(
-          HOME_FEED.WORTH_KNOWING_COUNT,
-          locale
-        );
-        if (recs.length > 0) {
-          await database.setDailyFeedCache(
-            'worth_knowing',
-            recs.map((f) => f.id)
-          );
-          if (onlyIfEmpty) {
-            setWorthKnowingFacts((prev) => (prev.length > 0 ? prev : recs));
-          } else {
-            setWorthKnowingFacts(recs);
-          }
-        }
-      } catch {
-        // silently ignore
-      }
-    },
-    [locale]
-  );
+    await loadFeedSections();
+  }, [loadTodaysFacts, loadFeedSections]);
 
   const refreshControl = useMemo(
     () => <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,

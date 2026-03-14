@@ -392,8 +392,8 @@
       "expo-updates",
       "./plugins/withAndroidWindowBackground.js",
       "expo-iap",
-      "expo-background-fetch",
-      "expo-task-manager"
+      "expo-task-manager",
+      "expo-background-task"
     ]
   }
 }
