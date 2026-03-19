@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Notifications from 'expo-notifications';
@@ -23,6 +24,17 @@ const NOTIFICATION_IMAGES_DIR = `${FileSystem.documentDirectory}${NOTIFICATION_S
 // TYPES
 // ============================================================================
 
+export type SyncSource =
+  | 'cold_start'
+  | 'foreground'
+  | 'notification_tap'
+  | 'home_focus'
+  | 'notification_received'
+  | 'time_change'
+  | 'language_change'
+  | 'categories_change'
+  | 'unknown';
+
 export interface SyncResult {
   success: boolean;
   count: number;
@@ -41,6 +53,64 @@ interface TimeSlot {
   date: Date;
   hour: number;
   minute: number;
+}
+
+export interface SyncLogEntry {
+  timestamp: string;
+  source: SyncSource;
+  action: 'sync' | 'schedule' | 'reschedule';
+  scheduleValid?: boolean;
+  osCountBefore?: number;
+  osCountAfter?: number;
+  dbCount?: number;
+  repaired?: boolean;
+  toppedUp?: number;
+  skipped?: boolean;
+  error?: string;
+}
+
+// ============================================================================
+// CONCURRENCY GUARD
+// ============================================================================
+
+let _syncLock: Promise<SyncResult> | null = null;
+let _scheduleLock: Promise<ScheduleResult> | null = null;
+
+// ============================================================================
+// SYNC LOGGING
+// ============================================================================
+
+const SYNC_LOG_KEY = '@notification_sync_log';
+const MAX_LOG_ENTRIES = 50;
+
+async function appendSyncLog(entry: SyncLogEntry): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem(SYNC_LOG_KEY);
+    const log: SyncLogEntry[] = raw ? JSON.parse(raw) : [];
+    log.push(entry);
+    // Keep only the last N entries
+    const trimmed = log.slice(-MAX_LOG_ENTRIES);
+    await AsyncStorage.setItem(SYNC_LOG_KEY, JSON.stringify(trimmed));
+  } catch {
+    // Never let logging break the sync flow
+  }
+}
+
+export async function getSyncLog(): Promise<SyncLogEntry[]> {
+  try {
+    const raw = await AsyncStorage.getItem(SYNC_LOG_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function clearSyncLog(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(SYNC_LOG_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 // ============================================================================
@@ -369,13 +439,7 @@ export async function preloadUpcomingNotificationImages(_locale: SupportedLocale
     const factsToPreload: Array<{ factId: number; imageUrl: string }> = [];
 
     for (const notification of scheduledNotifications) {
-      const trigger = notification.trigger;
-
-      let triggerDate: Date | null = null;
-      if (trigger && 'date' in trigger && trigger.date) {
-        triggerDate = trigger.date instanceof Date ? trigger.date : new Date(trigger.date);
-      }
-
+      const triggerDate = extractTriggerDate(notification.trigger);
       if (!triggerDate) continue;
 
       const daysUntil = Math.ceil((triggerDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -492,6 +556,53 @@ export async function getScheduledNotificationsCount(): Promise<number> {
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+/**
+ * Extract a Date from an expo-notifications trigger object.
+ * Handles:
+ * - `date` field (Android / some Expo versions)
+ * - `dateComponents` field (iOS CalendarNotificationTrigger)
+ * - `seconds` field (iOS UNTimeIntervalNotificationTrigger) — remaining seconds from now
+ */
+function extractTriggerDate(trigger: Notifications.NotificationTrigger | null): Date | null {
+  if (!trigger) return null;
+
+  // Direct date field (Android or some expo versions)
+  if ('date' in trigger && trigger.date) {
+    return trigger.date instanceof Date
+      ? trigger.date
+      : new Date(trigger.date as number | string);
+  }
+
+  // iOS CalendarNotificationTrigger with dateComponents
+  if ('dateComponents' in trigger && trigger.dateComponents) {
+    const dc = trigger.dateComponents as {
+      year?: number;
+      month?: number;
+      day?: number;
+      hour?: number;
+      minute?: number;
+      second?: number;
+    };
+    if (dc.year != null && dc.month != null && dc.day != null) {
+      return new Date(
+        dc.year,
+        dc.month - 1, // JS months are 0-indexed
+        dc.day,
+        dc.hour ?? 0,
+        dc.minute ?? 0,
+        dc.second ?? 0
+      );
+    }
+  }
+
+  // iOS UNTimeIntervalNotificationTrigger — seconds remaining from now
+  if ('seconds' in trigger && typeof (trigger as any).seconds === 'number') {
+    return new Date(Date.now() + (trigger as any).seconds * 1000);
+  }
+
+  return null;
+}
 
 /**
  * Sort times by hour:minute in chronological order
@@ -721,11 +832,7 @@ async function syncOsWithDb(
   // Build maps for efficient lookup
   const osMap = new Map<string, { identifier: string; triggerDate: Date | null }>();
   for (const notif of osNotifications) {
-    let triggerDate: Date | null = null;
-    if (notif.trigger && 'date' in notif.trigger && notif.trigger.date) {
-      triggerDate =
-        notif.trigger.date instanceof Date ? notif.trigger.date : new Date(notif.trigger.date);
-    }
+    const triggerDate = extractTriggerDate(notif.trigger);
     osMap.set(notif.identifier, { identifier: notif.identifier, triggerDate });
   }
 
@@ -889,7 +996,40 @@ async function topUpFromDb(
  * 6. Top up if count < 64
  * 7. Sync OS to match DB
  */
-export async function syncNotificationSchedule(locale: SupportedLocale): Promise<SyncResult> {
+export async function syncNotificationSchedule(
+  locale: SupportedLocale,
+  source: SyncSource = 'unknown'
+): Promise<SyncResult> {
+  // Concurrency guard: if a sync is already running, wait for it and skip
+  if (_syncLock) {
+    console.log(`🔔 [${source}] Sync already in progress, waiting...`);
+    try {
+      const existing = await _syncLock;
+      return { ...existing, skipped: true };
+    } catch {
+      return { success: false, count: 0, skipped: true };
+    }
+  }
+
+  const impl = _syncNotificationScheduleImpl(locale, source);
+  _syncLock = impl;
+  try {
+    return await impl;
+  } finally {
+    _syncLock = null;
+  }
+}
+
+async function _syncNotificationScheduleImpl(
+  locale: SupportedLocale,
+  source: SyncSource
+): Promise<SyncResult> {
+  const logEntry: SyncLogEntry = {
+    timestamp: new Date().toISOString(),
+    source,
+    action: 'sync',
+  };
+
   try {
     // Step 1: Always mark delivered facts as shown first
     await database.markDeliveredFactsAsShown(locale);
@@ -900,6 +1040,9 @@ export async function syncNotificationSchedule(locale: SupportedLocale): Promise
     if (status !== 'granted') {
       // Cancel all from OS and clear DB
       await clearNotificationSchedule(locale, { completely: true });
+      logEntry.skipped = true;
+      logEntry.osCountAfter = 0;
+      await appendSyncLog(logEntry);
       return { success: true, count: 0, skipped: true };
     }
 
@@ -908,6 +1051,8 @@ export async function syncNotificationSchedule(locale: SupportedLocale): Promise
     const notificationTimeStrings = await onboardingService.getNotificationTimes();
 
     if (!notificationTimeStrings || notificationTimeStrings.length === 0) {
+      logEntry.skipped = true;
+      await appendSyncLog(logEntry);
       return { success: true, count: 0, skipped: true };
     }
 
@@ -915,40 +1060,53 @@ export async function syncNotificationSchedule(locale: SupportedLocale): Promise
 
     // Step 4: Get DB's future scheduled facts
     const dbScheduled = await database.getFutureScheduledFactsWithNotificationIds(locale);
+    logEntry.dbCount = dbScheduled.length;
+    logEntry.osCountBefore = await getScheduledNotificationsCount();
 
     // Step 5: Check if schedule is valid according to preferred times
-    if (!isScheduleValid(dbScheduled, preferredTimes)) {
+    const valid = isScheduleValid(dbScheduled, preferredTimes);
+    logEntry.scheduleValid = valid;
+
+    if (!valid) {
       // Schedule is invalid - full reschedule needed
-      if (__DEV__) {
-        console.log('🔔 Schedule invalid - triggering full reschedule');
-      }
-      const result = await scheduleNotifications(preferredTimes, locale);
+      console.log(`🔔 [${source}] Schedule invalid - triggering full reschedule`);
+      logEntry.action = 'reschedule';
+      const result = await scheduleNotifications(preferredTimes, locale, undefined, source);
+      logEntry.repaired = true;
+      logEntry.osCountAfter = result.count;
+      await appendSyncLog(logEntry);
       return { ...result, repaired: true };
     }
 
     // Step 6: Top up if needed
+    let toppedUp = 0;
     if (dbScheduled.length < NOTIFICATION_SETTINGS.MAX_SCHEDULED) {
-      const addedCount = await topUpFromDb(preferredTimes, locale, dbScheduled.length);
-      if (__DEV__ && addedCount > 0) {
-        console.log(`🔔 Topped up ${addedCount} notifications`);
+      toppedUp = await topUpFromDb(preferredTimes, locale, dbScheduled.length);
+      if (__DEV__ && toppedUp > 0) {
+        console.log(`🔔 [${source}] Topped up ${toppedUp} notifications`);
       }
     }
+    logEntry.toppedUp = toppedUp;
 
     // Step 7: Sync OS to match DB
     const syncResult = await syncOsWithDb(locale);
     if (__DEV__ && (syncResult.synced > 0 || syncResult.cancelled > 0)) {
-      console.log(`🔔 OS sync: ${syncResult.synced} scheduled, ${syncResult.cancelled} cancelled`);
+      console.log(
+        `🔔 [${source}] OS sync: ${syncResult.synced} scheduled, ${syncResult.cancelled} cancelled`
+      );
     }
 
     // Preload images for upcoming notifications
     await preloadUpcomingNotificationImages(locale);
 
     const finalCount = await getScheduledNotificationsCount();
+    logEntry.osCountAfter = finalCount;
+    await appendSyncLog(logEntry);
     return { success: true, count: finalCount };
   } catch (error) {
-    if (__DEV__) {
-      console.error('Error syncing notification schedule:', error);
-    }
+    console.error(`🔔 [${source}] Error syncing notification schedule:`, error);
+    logEntry.error = error instanceof Error ? error.message : 'Unknown error';
+    await appendSyncLog(logEntry);
     return {
       success: false,
       count: 0,
@@ -974,12 +1132,46 @@ export async function syncNotificationSchedule(locale: SupportedLocale): Promise
 export async function scheduleNotifications(
   times: Date[],
   locale: SupportedLocale,
-  options?: { skipToday?: boolean }
+  options?: { skipToday?: boolean },
+  source: SyncSource = 'unknown'
 ): Promise<ScheduleResult> {
+  // Concurrency guard: if scheduling is already running, wait for it
+  if (_scheduleLock) {
+    console.log(`🔔 [${source}] Schedule already in progress, waiting...`);
+    try {
+      return await _scheduleLock;
+    } catch {
+      return { success: false, count: 0 };
+    }
+  }
+
+  const impl = _scheduleNotificationsImpl(times, locale, options, source);
+  _scheduleLock = impl;
+  try {
+    return await impl;
+  } finally {
+    _scheduleLock = null;
+  }
+}
+
+async function _scheduleNotificationsImpl(
+  times: Date[],
+  locale: SupportedLocale,
+  options?: { skipToday?: boolean },
+  source: SyncSource = 'unknown'
+): Promise<ScheduleResult> {
+  const logEntry: SyncLogEntry = {
+    timestamp: new Date().toISOString(),
+    source,
+    action: 'schedule',
+  };
+
   try {
     // Check permissions first
     const { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted') {
+      logEntry.error = 'permission_not_granted';
+      await appendSyncLog(logEntry);
       return {
         success: false,
         count: 0,
@@ -988,12 +1180,16 @@ export async function scheduleNotifications(
     }
 
     if (times.length === 0) {
+      logEntry.error = 'no_times_provided';
+      await appendSyncLog(logEntry);
       return {
         success: false,
         count: 0,
         error: 'No notification times provided',
       };
     }
+
+    logEntry.osCountBefore = await getScheduledNotificationsCount();
 
     // Step 1: Clear future schedules from both DB and OS
     await clearNotificationSchedule(locale, { completely: false });
@@ -1005,6 +1201,8 @@ export async function scheduleNotifications(
     );
 
     if (facts.length === 0) {
+      logEntry.error = 'no_facts_available';
+      await appendSyncLog(logEntry);
       return {
         success: false,
         count: 0,
@@ -1042,19 +1240,20 @@ export async function scheduleNotifications(
     await preloadUpcomingNotificationImages(locale);
 
     const finalCount = await getScheduledNotificationsCount();
+    logEntry.osCountAfter = finalCount;
+    logEntry.dbCount = facts.length;
+    await appendSyncLog(logEntry);
 
-    if (__DEV__) {
-      console.log(`🔔 Scheduled ${finalCount} notifications`);
-    }
+    console.log(`🔔 [${source}] Scheduled ${finalCount} notifications`);
 
     return {
       success: finalCount > 0,
       count: finalCount,
     };
   } catch (error) {
-    if (__DEV__) {
-      console.error('Error scheduling notifications:', error);
-    }
+    console.error(`🔔 [${source}] Error scheduling notifications:`, error);
+    logEntry.error = error instanceof Error ? error.message : 'Unknown error';
+    await appendSyncLog(logEntry);
     return {
       success: false,
       count: 0,
@@ -1187,4 +1386,137 @@ export async function showImmediateFact(
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
+}
+
+// ============================================================================
+// DIAGNOSTICS
+// ============================================================================
+
+export interface DiagnosticsState {
+  osNotifications: Array<{
+    id: string;
+    triggerDate: string | null;
+    title: string | null;
+    rawTrigger: string;
+  }>;
+  dbScheduled: Array<{
+    id: number;
+    notification_id: string;
+    scheduled_date: string;
+  }>;
+  preferredTimes: string[];
+  osCount: number;
+  dbCount: number;
+  mismatches: Array<{
+    type: 'in_os_not_db' | 'in_db_not_os' | 'time_mismatch';
+    id: string;
+    details: string;
+  }>;
+}
+
+export async function getNotificationDiagnostics(
+  locale: SupportedLocale
+): Promise<DiagnosticsState> {
+  const osNotifications = await Notifications.getAllScheduledNotificationsAsync();
+  const dbScheduled = await database.getFutureScheduledFactsWithNotificationIds(locale);
+
+  const onboardingService = await import('./onboarding');
+  const preferredTimes = await onboardingService.getNotificationTimes();
+
+  // Build OS map
+  const osMap = new Map<string, { id: string; triggerDate: Date | null; title: string | null }>();
+  const osEntries: DiagnosticsState['osNotifications'] = [];
+
+  for (const notif of osNotifications) {
+    const triggerDate = extractTriggerDate(notif.trigger);
+    osMap.set(notif.identifier, {
+      id: notif.identifier,
+      triggerDate,
+      title: notif.content.title ?? null,
+    });
+    osEntries.push({
+      id: notif.identifier,
+      triggerDate: triggerDate?.toISOString() ?? null,
+      title: notif.content.title ?? null,
+      rawTrigger: JSON.stringify(notif.trigger, null, 0),
+    });
+  }
+
+  // Sort OS entries by trigger date
+  osEntries.sort((a, b) => {
+    if (!a.triggerDate) return 1;
+    if (!b.triggerDate) return -1;
+    return a.triggerDate.localeCompare(b.triggerDate);
+  });
+
+  // Build DB notification_id set
+  const dbNotifIds = new Set(dbScheduled.map((f) => f.notification_id).filter(Boolean));
+
+  // Find mismatches
+  const mismatches: DiagnosticsState['mismatches'] = [];
+
+  // OS notifications not tracked in DB
+  for (const [osId] of osMap) {
+    if (!dbNotifIds.has(osId)) {
+      mismatches.push({
+        type: 'in_os_not_db',
+        id: osId,
+        details: `OS notification ${osId.substring(0, 8)}... has no matching DB entry`,
+      });
+    }
+  }
+
+  // DB entries not in OS
+  for (const dbFact of dbScheduled) {
+    if (dbFact.notification_id && !osMap.has(dbFact.notification_id)) {
+      mismatches.push({
+        type: 'in_db_not_os',
+        id: dbFact.notification_id,
+        details: `DB fact ${dbFact.id} (${dbFact.scheduled_date}) not found in OS`,
+      });
+    }
+
+    // Time mismatch check
+    if (dbFact.notification_id && osMap.has(dbFact.notification_id)) {
+      const osNotif = osMap.get(dbFact.notification_id)!;
+      if (osNotif.triggerDate) {
+        const dbDate = new Date(dbFact.scheduled_date);
+        const diff = Math.abs(osNotif.triggerDate.getTime() - dbDate.getTime());
+        if (diff > NOTIFICATION_SETTINGS.TIME_TOLERANCE_MS) {
+          mismatches.push({
+            type: 'time_mismatch',
+            id: dbFact.notification_id,
+            details: `Fact ${dbFact.id}: DB=${dbFact.scheduled_date}, OS=${osNotif.triggerDate.toISOString()} (diff=${Math.round(diff / 1000)}s)`,
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    osNotifications: osEntries,
+    dbScheduled,
+    preferredTimes,
+    osCount: osNotifications.length,
+    dbCount: dbScheduled.length,
+    mismatches,
+  };
+}
+
+/**
+ * Schedule a test notification for 30 seconds from now (diagnostics)
+ */
+export async function scheduleTestNotification(): Promise<string> {
+  const id = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Test Notification',
+      body: 'This is a test notification from Facts a Day diagnostics.',
+      data: { test: true },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: new Date(Date.now() + 30 * 1000),
+    },
+  });
+  return id;
 }

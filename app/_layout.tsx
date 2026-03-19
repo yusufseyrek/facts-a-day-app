@@ -216,7 +216,7 @@ function AppContent() {
             const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
             console.log('🔔 Notification opened, syncing schedule...');
             notificationService
-              .syncNotificationSchedule(getLocaleFromCode(deviceLocale))
+              .syncNotificationSchedule(getLocaleFromCode(deviceLocale), 'notification_tap')
               .catch((error) => {
                 console.error('Notification sync after open failed:', error);
               });
@@ -370,7 +370,7 @@ export default function RootLayout() {
         Notifications.setBadgeCountAsync(0);
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
         notificationService
-          .syncNotificationSchedule(getLocaleFromCode(deviceLocale))
+          .syncNotificationSchedule(getLocaleFromCode(deviceLocale), 'foreground')
           .catch((error) => {
             console.error('Notification sync failed:', error);
           });
@@ -585,7 +585,7 @@ export default function RootLayout() {
       Notifications.setBadgeCountAsync(0);
 
       // Sync notification schedule — fire-and-forget
-      notificationService.syncNotificationSchedule(locale).catch((error) => {
+      notificationService.syncNotificationSchedule(locale, 'cold_start').catch((error) => {
         console.error('Notification sync failed:', error);
       });
 

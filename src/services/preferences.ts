@@ -257,7 +257,12 @@ export async function handleLanguageChange(
       const times = notificationTimes.map((t) => new Date(t));
 
       // Clear all existing notifications and reschedule with new language
-      await notificationService.scheduleNotifications(times, newLanguage);
+      await notificationService.scheduleNotifications(
+        times,
+        newLanguage,
+        undefined,
+        'language_change'
+      );
     }
 
     onProgress?.({
@@ -468,7 +473,12 @@ export async function handleCategoriesChange(
       const times = notificationTimes.map((t) => new Date(t));
 
       // Clear all existing notifications and reschedule with new facts
-      await notificationService.scheduleNotifications(times, currentLanguage);
+      await notificationService.scheduleNotifications(
+        times,
+        currentLanguage,
+        undefined,
+        'categories_change'
+      );
     }
 
     onProgress?.({

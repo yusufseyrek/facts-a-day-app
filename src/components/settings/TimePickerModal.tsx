@@ -193,7 +193,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       await onboardingService.setNotificationTimes(timeStrings);
 
       // Reschedule notifications with the new times
-      const result = await notificationService.scheduleNotifications(times, locale);
+      const result = await notificationService.scheduleNotifications(times, locale, undefined, 'time_change');
 
       // Update parent component with the first time (for backward compatibility)
       if (onTimeChange) {

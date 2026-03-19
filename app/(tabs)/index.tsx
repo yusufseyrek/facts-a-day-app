@@ -203,7 +203,7 @@ function HomeScreen() {
           const { getLocaleFromCode } = await import('../../src/i18n');
           const Localization = await import('expo-localization');
           const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
-          await syncNotificationSchedule(getLocaleFromCode(deviceLocale));
+          await syncNotificationSchedule(getLocaleFromCode(deviceLocale), 'notification_received');
         } catch {
           // Ignore notification setup errors
         }

@@ -16,6 +16,7 @@ import {
   Palette,
   Plus,
   RotateCcw,
+  Search,
   Settings,
   Shield,
   Star,
@@ -892,6 +893,12 @@ export default function SettingsPage() {
           label: 'Schedule Duplicate Notifications',
           icon: <Bug size={iconSizes.md} color={iconColor} />,
           onPress: handleScheduleDuplicateNotifications,
+        },
+        {
+          id: 'notificationDiagnostics',
+          label: 'Notification Diagnostics',
+          icon: <Search size={iconSizes.md} color={iconColor} />,
+          onPress: () => router.push('/notification-diagnostics'),
         },
         {
           id: 'adInspector',
