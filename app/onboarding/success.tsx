@@ -15,6 +15,7 @@ import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { completeConsentFlow, isConsentRequired } from '../../src/services/ads';
 import { Screens, trackOnboardingComplete, trackScreenView } from '../../src/services/analytics';
+import * as notificationService from '../../src/services/notifications';
 import { getNotificationTimes } from '../../src/services/onboarding';
 import { getNeonColors, hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
@@ -398,6 +399,12 @@ export default function OnboardingSuccessScreen() {
     try {
       // Complete onboarding (save preferences)
       await completeOnboarding();
+
+      // Fire-and-forget: sync DB-scheduled notifications to OS
+      // Runs during success animation while user transitions to home screen
+      notificationService.syncNotificationSchedule(locale, 'cold_start').catch((error) => {
+        console.error('Post-onboarding notification sync failed:', error);
+      });
 
       // Track onboarding complete event
       const notificationTimes = await getNotificationTimes();

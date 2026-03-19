@@ -1132,7 +1132,7 @@ async function _syncNotificationScheduleImpl(
 export async function scheduleNotifications(
   times: Date[],
   locale: SupportedLocale,
-  options?: { skipToday?: boolean },
+  options?: { skipToday?: boolean; skipOsSync?: boolean },
   source: SyncSource = 'unknown'
 ): Promise<ScheduleResult> {
   // Concurrency guard: if scheduling is already running, wait for it
@@ -1157,7 +1157,7 @@ export async function scheduleNotifications(
 async function _scheduleNotificationsImpl(
   times: Date[],
   locale: SupportedLocale,
-  options?: { skipToday?: boolean },
+  options?: { skipToday?: boolean; skipOsSync?: boolean },
   source: SyncSource = 'unknown'
 ): Promise<ScheduleResult> {
   const logEntry: SyncLogEntry = {
@@ -1233,15 +1233,18 @@ async function _scheduleNotificationsImpl(
       }
     }
 
-    // Step 5: Sync OS to match DB
-    await syncOsWithDb(locale);
+    // Step 5: Sync OS to match DB (skip for fast onboarding path)
+    if (!options?.skipOsSync) {
+      await syncOsWithDb(locale);
+      await preloadUpcomingNotificationImages(locale);
+    }
 
-    // Preload images for upcoming notifications
-    await preloadUpcomingNotificationImages(locale);
-
-    const finalCount = await getScheduledNotificationsCount();
-    logEntry.osCountAfter = finalCount;
-    logEntry.dbCount = facts.length;
+    const scheduledCount = Math.min(facts.length, slots.length);
+    const finalCount = options?.skipOsSync
+      ? scheduledCount
+      : await getScheduledNotificationsCount();
+    logEntry.osCountAfter = options?.skipOsSync ? 0 : finalCount;
+    logEntry.dbCount = scheduledCount;
     await appendSyncLog(logEntry);
 
     console.log(`🔔 [${source}] Scheduled ${finalCount} notifications`);
