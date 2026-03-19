@@ -15,6 +15,7 @@ const LAST_CONTENT_REFRESH_KEY = '@last_content_refresh';
 const STORED_LOCALE_KEY = '@stored_locale';
 const QUESTIONS_MIGRATION_KEY = '@questions_migration_v1';
 const SLUG_MIGRATION_KEY = '@slug_migration_v1';
+const HISTORICAL_MIGRATION_KEY = '@historical_migration_v1';
 
 // Event listeners for feed refresh
 type FeedRefreshListener = () => void;
@@ -393,6 +394,13 @@ async function runSlugMigration(locale: SupportedLocale): Promise<void> {
       category: fact.category,
       source_url: fact.source_url,
       image_url: fact.image_url,
+      is_historical: fact.is_historical ? 1 : 0,
+      event_month: fact.metadata?.month ?? undefined,
+      event_day: fact.metadata?.day ?? undefined,
+      event_year: fact.metadata?.event_year ?? undefined,
+      metadata: fact.metadata
+        ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+        : undefined,
       language: fact.language,
       created_at: fact.created_at,
       last_updated: fact.updated_at,
@@ -405,6 +413,118 @@ async function runSlugMigration(locale: SupportedLocale): Promise<void> {
     await AsyncStorage.setItem(SLUG_MIGRATION_KEY, 'true');
   } catch (error) {
     console.error('❌ Slug migration failed:', error);
+    // Don't mark as complete so it can retry next time
+  }
+}
+
+/**
+ * Check if historical facts migration is needed for existing users
+ * Returns true if there are facts in DB but no historical facts have been synced yet
+ */
+async function needsHistoricalMigration(): Promise<boolean> {
+  try {
+    const migrationDone = await AsyncStorage.getItem(HISTORICAL_MIGRATION_KEY);
+    if (migrationDone === 'true') {
+      return false;
+    }
+
+    const database = await db.openDatabase();
+
+    // Check if any facts exist at all (if no facts, user is new — no migration needed)
+    const result = await database.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM facts'
+    );
+
+    if ((result?.count || 0) === 0) {
+      await AsyncStorage.setItem(HISTORICAL_MIGRATION_KEY, 'true');
+      return false;
+    }
+
+    // Facts exist but migration hasn't run — we need to re-fetch with historical included
+    console.log('📊 Historical migration needed: re-fetching all facts with historical data');
+    return true;
+  } catch (error) {
+    console.error('Error checking historical migration:', error);
+    return false;
+  }
+}
+
+/**
+ * Run historical facts migration for existing users
+ * Re-fetches all facts with include_historical=true to backfill historical facts
+ * and populate is_historical/event_month/event_day/event_year/metadata on existing facts
+ */
+async function runHistoricalMigration(locale: SupportedLocale): Promise<void> {
+  try {
+    console.log('🔄 Running historical migration - re-downloading all facts with historical data...');
+
+    const categories = await onboardingService.getSelectedCategories();
+    if (categories.length === 0) {
+      console.log('No categories selected, skipping historical migration');
+      await AsyncStorage.setItem(HISTORICAL_MIGRATION_KEY, 'true');
+      return;
+    }
+
+    const facts = await api.getAllFactsWithRetry(
+      locale,
+      categories.join(','),
+      undefined,
+      3,
+      true, // includeQuestions
+      true // includeHistorical
+    );
+
+    const dbFacts: db.Fact[] = facts.map((fact) => ({
+      id: fact.id,
+      slug: fact.slug,
+      title: fact.title,
+      content: fact.content,
+      summary: fact.summary,
+      category: fact.category,
+      source_url: fact.source_url,
+      image_url: fact.image_url,
+      is_historical: fact.is_historical ? 1 : 0,
+      event_month: fact.metadata?.month ?? undefined,
+      event_day: fact.metadata?.day ?? undefined,
+      event_year: fact.metadata?.event_year ?? undefined,
+      metadata: fact.metadata
+        ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+        : undefined,
+      language: fact.language,
+      created_at: fact.created_at,
+      last_updated: fact.updated_at,
+    }));
+
+    // Insert/update facts (preserves scheduling info via ON CONFLICT)
+    await db.insertFacts(dbFacts);
+
+    // Extract and insert questions
+    const dbQuestions: db.Question[] = [];
+    for (const fact of facts) {
+      if (fact.questions && fact.questions.length > 0) {
+        for (const question of fact.questions) {
+          dbQuestions.push({
+            id: question.id,
+            fact_id: fact.id,
+            question_type: question.question_type,
+            question_text: question.question_text,
+            correct_answer: question.correct_answer,
+            wrong_answers: question.wrong_answers ? JSON.stringify(question.wrong_answers) : null,
+            explanation: question.explanation,
+            difficulty: question.difficulty,
+          });
+        }
+      }
+    }
+
+    if (dbQuestions.length > 0) {
+      await db.insertQuestions(dbQuestions);
+    }
+
+    console.log(`✅ Historical migration complete: Synced ${dbFacts.length} facts`);
+    await AsyncStorage.setItem(HISTORICAL_MIGRATION_KEY, 'true');
+  } catch (error) {
+    console.error('❌ Historical migration failed:', error);
     // Don't mark as complete so it can retry next time
   }
 }
@@ -494,6 +614,12 @@ export async function refreshAppContent(): Promise<RefreshResult> {
       await runSlugMigration(currentLocale);
     }
 
+    // Check if we need to run historical facts migration for existing users
+    // This is a one-time migration to backfill historical facts
+    if (await needsHistoricalMigration()) {
+      await runHistoricalMigration(currentLocale);
+    }
+
     // Get current user preferences
     const categories = await onboardingService.getSelectedCategories();
 
@@ -516,6 +642,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
         since_updated: lastFactUpdatedAt,
         limit: API_SETTINGS.FACTS_BATCH_SIZE,
         include_questions: true,
+        include_historical: true,
       });
 
       if (response.facts.length > 0) {
@@ -530,6 +657,13 @@ export async function refreshAppContent(): Promise<RefreshResult> {
           category: fact.category,
           source_url: fact.source_url,
           image_url: fact.image_url,
+          is_historical: fact.is_historical ? 1 : 0,
+          event_month: fact.metadata?.month ?? undefined,
+          event_day: fact.metadata?.day ?? undefined,
+          event_year: fact.metadata?.event_year ?? undefined,
+          metadata: fact.metadata
+            ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+            : undefined,
           language: fact.language,
           created_at: fact.created_at,
           last_updated: fact.updated_at,

@@ -109,7 +109,8 @@ export async function fetchAllFacts(
         }
       },
       3, // max retries
-      true // include questions for trivia feature
+      true, // include questions for trivia feature
+      true // include historical facts
     );
 
     // Convert API facts to database facts format
@@ -123,6 +124,13 @@ export async function fetchAllFacts(
       category: fact.category,
       source_url: fact.source_url,
       image_url: fact.image_url,
+      is_historical: fact.is_historical ? 1 : 0,
+      event_month: fact.metadata?.month ?? undefined,
+      event_day: fact.metadata?.day ?? undefined,
+      event_year: fact.metadata?.event_year ?? undefined,
+      metadata: fact.metadata
+        ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+        : undefined,
       language: fact.language,
       created_at: fact.created_at,
       last_updated: fact.updated_at,

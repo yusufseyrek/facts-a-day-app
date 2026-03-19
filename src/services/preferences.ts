@@ -147,7 +147,8 @@ export async function handleLanguageChange(
         });
       },
       3, // maxRetries
-      true // includeQuestions
+      true, // includeQuestions
+      true // includeHistorical
     );
 
     // Stage 4: Process facts - update preserved ones, insert new ones
@@ -164,7 +165,8 @@ export async function handleLanguageChange(
           await db.runAsync(
             `
             UPDATE facts
-            SET slug = ?, title = ?, content = ?, summary = ?, language = ?
+            SET slug = ?, title = ?, content = ?, summary = ?, language = ?,
+                is_historical = ?, event_month = ?, event_day = ?, event_year = ?, metadata = ?
             WHERE id = ?
           `,
             [
@@ -173,6 +175,13 @@ export async function handleLanguageChange(
               fact.content,
               fact.summary || null,
               newLanguage,
+              fact.is_historical ? 1 : 0,
+              fact.metadata?.month ?? null,
+              fact.metadata?.day ?? null,
+              fact.metadata?.event_year ?? null,
+              fact.metadata
+                ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+                : null,
               fact.id,
             ]
           );
@@ -183,8 +192,9 @@ export async function handleLanguageChange(
             `
             INSERT INTO facts (
               id, slug, title, content, summary, category,
-              source_url, image_url, language, created_at, last_updated
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              source_url, image_url, is_historical, event_month, event_day, event_year, metadata,
+              language, created_at, last_updated
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
               slug = excluded.slug,
               title = excluded.title,
@@ -193,6 +203,11 @@ export async function handleLanguageChange(
               category = excluded.category,
               source_url = excluded.source_url,
               image_url = excluded.image_url,
+              is_historical = excluded.is_historical,
+              event_month = excluded.event_month,
+              event_day = excluded.event_day,
+              event_year = excluded.event_year,
+              metadata = excluded.metadata,
               language = excluded.language,
               last_updated = excluded.last_updated,
               scheduled_date = facts.scheduled_date,
@@ -208,6 +223,13 @@ export async function handleLanguageChange(
               fact.category || null,
               fact.source_url || null,
               fact.image_url || null,
+              fact.is_historical ? 1 : 0,
+              fact.metadata?.month ?? null,
+              fact.metadata?.day ?? null,
+              fact.metadata?.event_year ?? null,
+              fact.metadata
+                ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+                : null,
               fact.language,
               fact.created_at,
               fact.updated_at || fact.created_at,
@@ -359,7 +381,8 @@ export async function handleCategoriesChange(
         });
       },
       3, // maxRetries
-      true // includeQuestions
+      true, // includeQuestions
+      true // includeHistorical
     );
 
     // Stage 3: Process facts - update shown ones (keep shown_in_feed), insert new ones
@@ -376,7 +399,8 @@ export async function handleCategoriesChange(
             `
             UPDATE facts
             SET slug = ?, title = ?, content = ?, summary = ?, category = ?,
-                source_url = ?, image_url = ?, last_updated = ?
+                source_url = ?, image_url = ?, last_updated = ?,
+                is_historical = ?, event_month = ?, event_day = ?, event_year = ?, metadata = ?
             WHERE id = ?
           `,
             [
@@ -388,6 +412,13 @@ export async function handleCategoriesChange(
               fact.source_url || null,
               fact.image_url || null,
               fact.updated_at || fact.created_at,
+              fact.is_historical ? 1 : 0,
+              fact.metadata?.month ?? null,
+              fact.metadata?.day ?? null,
+              fact.metadata?.event_year ?? null,
+              fact.metadata
+                ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+                : null,
               fact.id,
             ]
           );
@@ -398,8 +429,9 @@ export async function handleCategoriesChange(
             `
             INSERT INTO facts (
               id, slug, title, content, summary, category,
-              source_url, image_url, language, created_at, last_updated
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              source_url, image_url, is_historical, event_month, event_day, event_year, metadata,
+              language, created_at, last_updated
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
               slug = excluded.slug,
               title = excluded.title,
@@ -408,6 +440,11 @@ export async function handleCategoriesChange(
               category = excluded.category,
               source_url = excluded.source_url,
               image_url = excluded.image_url,
+              is_historical = excluded.is_historical,
+              event_month = excluded.event_month,
+              event_day = excluded.event_day,
+              event_year = excluded.event_year,
+              metadata = excluded.metadata,
               language = excluded.language,
               last_updated = excluded.last_updated,
               scheduled_date = facts.scheduled_date,
@@ -423,6 +460,13 @@ export async function handleCategoriesChange(
               fact.category || null,
               fact.source_url || null,
               fact.image_url || null,
+              fact.is_historical ? 1 : 0,
+              fact.metadata?.month ?? null,
+              fact.metadata?.day ?? null,
+              fact.metadata?.event_year ?? null,
+              fact.metadata
+                ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+                : null,
               fact.language,
               fact.created_at,
               fact.updated_at || fact.created_at,

@@ -84,6 +84,11 @@ async function initializeSchema(): Promise<void> {
       category TEXT,
       source_url TEXT,
       image_url TEXT,
+      is_historical INTEGER DEFAULT 0,
+      event_month INTEGER,
+      event_day INTEGER,
+      event_year INTEGER,
+      metadata TEXT,
       language TEXT NOT NULL,
       created_at TEXT NOT NULL,
       last_updated TEXT,
@@ -301,6 +306,19 @@ async function initializeSchema(): Promise<void> {
   await db.execAsync('ALTER TABLE facts ADD COLUMN slug TEXT').catch(() => {
     // Column already exists, ignore error
   });
+
+  // Add historical fact columns for existing databases (migration)
+  await db.execAsync('ALTER TABLE facts ADD COLUMN is_historical INTEGER DEFAULT 0').catch(() => {});
+  await db.execAsync('ALTER TABLE facts ADD COLUMN event_month INTEGER').catch(() => {});
+  await db.execAsync('ALTER TABLE facts ADD COLUMN event_day INTEGER').catch(() => {});
+  await db.execAsync('ALTER TABLE facts ADD COLUMN event_year INTEGER').catch(() => {});
+  await db.execAsync('ALTER TABLE facts ADD COLUMN metadata TEXT').catch(() => {});
+
+  // Create composite index for "on this day" historical fact queries
+  // Must be after migrations so columns exist for existing databases
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS idx_facts_historical_date ON facts(is_historical, event_month, event_day);
+  `);
 }
 
 /**
@@ -425,6 +443,11 @@ export interface Fact {
   category?: string;
   source_url?: string;
   image_url?: string;
+  is_historical?: number; // 0 or 1
+  event_month?: number; // 1-12
+  event_day?: number; // 1-31
+  event_year?: number;
+  metadata?: string; // JSON: { original_event, country }
   language: string;
   created_at: string;
   last_updated?: string;
@@ -454,6 +477,11 @@ function mapFactsWithRelations(rows: any[]): FactWithRelations[] {
       category: row.category,
       source_url: row.source_url,
       image_url: row.image_url,
+      is_historical: row.is_historical,
+      event_month: row.event_month,
+      event_day: row.event_day,
+      event_year: row.event_year,
+      metadata: row.metadata,
       language: row.language,
       created_at: row.created_at,
       last_updated: row.last_updated,
@@ -496,8 +524,9 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
       await database.runAsync(
         `INSERT INTO facts (
           id, slug, title, content, summary, category,
-          source_url, image_url, language, created_at, last_updated
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          source_url, image_url, is_historical, event_month, event_day, event_year, metadata,
+          language, created_at, last_updated
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           slug = excluded.slug,
           title = excluded.title,
@@ -506,6 +535,11 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
           category = excluded.category,
           source_url = excluded.source_url,
           image_url = excluded.image_url,
+          is_historical = excluded.is_historical,
+          event_month = excluded.event_month,
+          event_day = excluded.event_day,
+          event_year = excluded.event_year,
+          metadata = excluded.metadata,
           language = excluded.language,
           last_updated = excluded.last_updated,
           scheduled_date = facts.scheduled_date,
@@ -520,6 +554,11 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
           fact.category || null,
           fact.source_url || null,
           fact.image_url || null,
+          fact.is_historical ?? 0,
+          fact.event_month ?? null,
+          fact.event_day ?? null,
+          fact.event_year ?? null,
+          fact.metadata || null,
           fact.language,
           fact.created_at,
           fact.last_updated || fact.created_at,

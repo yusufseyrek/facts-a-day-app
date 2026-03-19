@@ -145,6 +145,13 @@ export default function FactDetailModal() {
           // Map API response to FactWithRelations
           factData = {
             ...apiResponse,
+            is_historical: apiResponse.is_historical ? 1 : 0,
+            event_month: apiResponse.metadata?.month,
+            event_day: apiResponse.metadata?.day,
+            event_year: apiResponse.metadata?.event_year,
+            metadata: apiResponse.metadata
+              ? JSON.stringify({ original_event: apiResponse.metadata.original_event, country: apiResponse.metadata.country })
+              : undefined,
             last_updated: apiResponse.updated_at,
             categoryData,
           };

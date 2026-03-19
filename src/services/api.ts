@@ -58,6 +58,14 @@ export interface QuestionResponse {
   difficulty: number;
 }
 
+export interface FactMetadata {
+  month: number;
+  day: number;
+  event_year: number;
+  original_event: string;
+  country: string;
+}
+
 export interface FactResponse {
   id: number;
   slug?: string;
@@ -67,6 +75,8 @@ export interface FactResponse {
   category?: string;
   source_url?: string;
   image_url?: string;
+  is_historical: boolean;
+  metadata: FactMetadata | null;
   language: string;
   created_at: string;
   updated_at?: string; // API returns updated_at (mapped to last_updated in DB)
@@ -91,6 +101,7 @@ export interface GetFactsParams {
   batch_size?: number;
   since_updated?: string;
   include_questions?: boolean;
+  include_historical?: boolean;
 }
 
 export interface FeedbackRequest {
@@ -344,6 +355,10 @@ export async function getFacts(params: GetFactsParams): Promise<FactsResponse> {
     queryParams.append('include_questions', 'true');
   }
 
+  if (params.include_historical) {
+    queryParams.append('include_historical', 'true');
+  }
+
   const endpoint = `/api/facts?${queryParams.toString()}`;
   return makeRequest<FactsResponse>(endpoint);
 }
@@ -356,7 +371,8 @@ export async function getAllFacts(
   language: string,
   categories?: string,
   onProgress?: (downloaded: number, total: number) => void,
-  includeQuestions?: boolean
+  includeQuestions?: boolean,
+  includeHistorical?: boolean
 ): Promise<FactResponse[]> {
   const batchSize = API_SETTINGS.FACTS_BATCH_SIZE;
   const concurrency = 3;
@@ -372,6 +388,7 @@ export async function getAllFacts(
         offset,
         batch_size: batchSize,
         include_questions: includeQuestions,
+        include_historical: includeHistorical,
       })
     )
   );
@@ -435,14 +452,15 @@ export async function getAllFactsWithRetry(
   categories?: string,
   onProgress?: (downloaded: number, total: number) => void,
   maxRetries = 3,
-  includeQuestions?: boolean
+  includeQuestions?: boolean,
+  includeHistorical?: boolean
 ): Promise<FactResponse[]> {
   let attempt = 0;
   let lastError: Error | null = null;
 
   while (attempt < maxRetries) {
     try {
-      return await getAllFacts(language, categories, onProgress, includeQuestions);
+      return await getAllFacts(language, categories, onProgress, includeQuestions, includeHistorical);
     } catch (error) {
       lastError = error as Error;
       attempt++;
