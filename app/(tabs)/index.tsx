@@ -459,148 +459,148 @@ function HomeScreen() {
               scrollEventThrottle={16}
             >
               {/* Category Story Buttons */}
-            <YStack paddingBottom={spacing.lg}>
-              <CategoryStoryButtons />
-            </YStack>
-
-            {/* Fresh Facts Section (1:1 square carousel) */}
-            {hasFreshFacts && (
-              <>
-                <YStack
-                  width="100%"
-                  maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
-                  alignSelf="center"
-                  paddingHorizontal={spacing.lg}
-                  paddingBottom={spacing.sm}
-                >
-                  <Text.Title fontSize={typography.fontSize.body}>{t('freshFacts')}</Text.Title>
-                </YStack>
-
-                <View
-                  style={{
-                    height: freshFactsCardHeight + spacing.xxl,
-                    width: '100%',
-                  }}
-                >
-                  <FlashList
-                    ref={freshFactsListRef}
-                    data={freshFacts}
-                    renderItem={renderFreshFactsItem}
-                    keyExtractor={freshFactsKeyExtractor}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    snapToInterval={carouselSnapInterval}
-                    decelerationRate="fast"
-                    disableIntervalMomentum
-                    ItemSeparatorComponent={carouselSeparator}
-                    contentContainerStyle={{
-                      paddingHorizontal: listInset,
-                    }}
-                    drawDistance={carouselCardWidth}
-                    onScroll={handleFreshFactsScroll}
-                    scrollEventThrottle={16}
-                  />
-                </View>
-              </>
-            )}
-
-            {/* Inline ad between sections */}
-            {ADS_ENABLED && !isPremium && hasFreshFacts && (
-              <YStack
-                width="100%"
-                maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
-                alignSelf="center"
-                paddingHorizontal={spacing.lg}
-                paddingTop={spacing.lg}
-              >
-                <InlineNativeAd />
+              <YStack paddingBottom={spacing.lg}>
+                <CategoryStoryButtons />
               </YStack>
-            )}
 
-            {/* On This Day Section (thumbnail cards) */}
-            {hasOnThisDayFacts && (
-              <>
+              {/* Fresh Facts Section (1:1 square carousel) */}
+              {hasFreshFacts && (
+                <>
+                  <YStack
+                    width="100%"
+                    maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
+                    alignSelf="center"
+                    paddingHorizontal={spacing.lg}
+                    paddingBottom={spacing.sm}
+                  >
+                    <Text.Title fontSize={typography.fontSize.body}>{t('freshFacts')}</Text.Title>
+                  </YStack>
+
+                  <View
+                    style={{
+                      height: freshFactsCardHeight + spacing.xxl,
+                      width: '100%',
+                    }}
+                  >
+                    <FlashList
+                      ref={freshFactsListRef}
+                      data={freshFacts}
+                      renderItem={renderFreshFactsItem}
+                      keyExtractor={freshFactsKeyExtractor}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      snapToInterval={carouselSnapInterval}
+                      decelerationRate="fast"
+                      disableIntervalMomentum
+                      ItemSeparatorComponent={carouselSeparator}
+                      contentContainerStyle={{
+                        paddingHorizontal: listInset,
+                      }}
+                      drawDistance={carouselCardWidth}
+                      onScroll={handleFreshFactsScroll}
+                      scrollEventThrottle={16}
+                    />
+                  </View>
+                </>
+              )}
+
+              {/* Inline ad between sections */}
+              {ADS_ENABLED && !isPremium && hasFreshFacts && (
                 <YStack
                   width="100%"
                   maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
                   alignSelf="center"
                   paddingHorizontal={spacing.lg}
-                  paddingVertical={spacing.sm}
+                  paddingBottom={spacing.md}
                 >
-                  <Text.Title fontSize={typography.fontSize.body}>
-                    {onThisDayIsWeekFallback ? t('thisWeekInHistory') : t('onThisDay')}
-                  </Text.Title>
+                  <InlineNativeAd />
                 </YStack>
+              )}
 
-                <View
-                  style={{
-                    height: onThisDayListHeight,
-                    width: '100%',
-                  }}
-                >
-                  <FlashList
-                    ref={onThisDayListRef}
-                    data={onThisDayFacts}
-                    renderItem={renderOnThisDayItem}
-                    keyExtractor={onThisDayKeyExtractor}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    snapToInterval={carouselSnapInterval}
-                    decelerationRate="fast"
-                    disableIntervalMomentum
-                    ItemSeparatorComponent={carouselSeparator}
-                    contentContainerStyle={{
-                      paddingHorizontal: listInset,
+              {/* On This Day Section (thumbnail cards) */}
+              {hasOnThisDayFacts && (
+                <>
+                  <YStack
+                    width="100%"
+                    maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
+                    alignSelf="center"
+                    paddingHorizontal={spacing.lg}
+                    paddingVertical={spacing.sm}
+                  >
+                    <Text.Title fontSize={typography.fontSize.body}>
+                      {onThisDayIsWeekFallback ? t('thisWeekInHistory') : t('onThisDay')}
+                    </Text.Title>
+                  </YStack>
+
+                  <View
+                    style={{
+                      height: onThisDayListHeight,
+                      width: '100%',
                     }}
-                    drawDistance={carouselCardWidth}
-                    onScroll={handleOnThisDayScroll}
-                    scrollEventThrottle={16}
-                  />
-                </View>
-              </>
-            )}
+                  >
+                    <FlashList
+                      ref={onThisDayListRef}
+                      data={onThisDayFacts}
+                      renderItem={renderOnThisDayItem}
+                      keyExtractor={onThisDayKeyExtractor}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      snapToInterval={carouselSnapInterval}
+                      decelerationRate="fast"
+                      disableIntervalMomentum
+                      ItemSeparatorComponent={carouselSeparator}
+                      contentContainerStyle={{
+                        paddingHorizontal: listInset,
+                      }}
+                      drawDistance={carouselCardWidth}
+                      onScroll={handleOnThisDayScroll}
+                      scrollEventThrottle={16}
+                    />
+                  </View>
+                </>
+              )}
 
-            {/* Worth Knowing Section (3:2 carousel) */}
-            {hasWorthKnowingFacts && (
-              <>
-                <YStack
-                  width="100%"
-                  maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
-                  alignSelf="center"
-                  paddingHorizontal={spacing.lg}
-                  paddingVertical={spacing.sm}
-                >
-                  <Text.Title fontSize={typography.fontSize.body}>{t('worthKnowing')}</Text.Title>
-                </YStack>
+              {/* Worth Knowing Section (3:2 carousel) */}
+              {hasWorthKnowingFacts && (
+                <>
+                  <YStack
+                    width="100%"
+                    maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
+                    alignSelf="center"
+                    paddingHorizontal={spacing.lg}
+                    paddingVertical={spacing.sm}
+                  >
+                    <Text.Title fontSize={typography.fontSize.body}>{t('worthKnowing')}</Text.Title>
+                  </YStack>
 
-                <View
-                  style={{
-                    height: worthKnowingCardHeight + spacing.md * 2 + spacing.sm,
-                    width: '100%',
-                  }}
-                >
-                  <FlashList
-                    ref={worthKnowingListRef}
-                    data={worthKnowingFacts}
-                    renderItem={renderWorthKnowingItem}
-                    keyExtractor={worthKnowingKeyExtractor}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    snapToInterval={carouselSnapInterval}
-                    decelerationRate="fast"
-                    disableIntervalMomentum
-                    ItemSeparatorComponent={carouselSeparator}
-                    contentContainerStyle={{
-                      paddingHorizontal: listInset,
+                  <View
+                    style={{
+                      height: worthKnowingCardHeight + spacing.md * 2 + spacing.sm,
+                      width: '100%',
                     }}
-                    drawDistance={carouselCardWidth}
-                    onScroll={handleWorthKnowingScroll}
-                    scrollEventThrottle={16}
-                  />
-                </View>
-              </>
-            )}
-          </ScrollView>
+                  >
+                    <FlashList
+                      ref={worthKnowingListRef}
+                      data={worthKnowingFacts}
+                      renderItem={renderWorthKnowingItem}
+                      keyExtractor={worthKnowingKeyExtractor}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      snapToInterval={carouselSnapInterval}
+                      decelerationRate="fast"
+                      disableIntervalMomentum
+                      ItemSeparatorComponent={carouselSeparator}
+                      contentContainerStyle={{
+                        paddingHorizontal: listInset,
+                      }}
+                      drawDistance={carouselCardWidth}
+                      onScroll={handleWorthKnowingScroll}
+                      scrollEventThrottle={16}
+                    />
+                  </View>
+                </>
+              )}
+            </ScrollView>
           </>
         )}
 
