@@ -354,9 +354,9 @@ export function FactModal({
   const handleSourcePress = useCallback(
     (url: string) => {
       trackSourceLinkClick({ factId: fact.id, domain: extractDomain(url) });
-      openInAppBrowser(url, { theme });
+      openInAppBrowser(url, { theme, translateTo: locale });
     },
-    [fact.id, theme]
+    [fact.id, theme, locale]
   );
 
   let categoryForBadge: string | Category | null = null;
