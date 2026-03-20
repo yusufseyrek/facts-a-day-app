@@ -33,6 +33,7 @@ export type SyncSource =
   | 'time_change'
   | 'language_change'
   | 'categories_change'
+  | 'background_task'
   | 'unknown';
 
 export interface SyncResult {
@@ -40,12 +41,6 @@ export interface SyncResult {
   count: number;
   skipped?: boolean;
   repaired?: boolean;
-  error?: string;
-}
-
-export interface ScheduleResult {
-  success: boolean;
-  count: number;
   error?: string;
 }
 
@@ -74,7 +69,6 @@ export interface SyncLogEntry {
 // ============================================================================
 
 let _syncLock: Promise<SyncResult> | null = null;
-let _scheduleLock: Promise<ScheduleResult> | null = null;
 
 // ============================================================================
 // SYNC LOGGING
@@ -399,7 +393,7 @@ function shouldPreloadImage(scheduledDate: Date): boolean {
   const daysUntilNotification = Math.ceil(
     (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
   );
-  return daysUntilNotification <= NOTIFICATION_SETTINGS.DAYS_TO_PRELOAD_IMAGES;
+  return daysUntilNotification <= NOTIFICATION_SETTINGS.DAYS_AHEAD;
 }
 
 /**
@@ -444,7 +438,7 @@ export async function preloadUpcomingNotificationImages(_locale: SupportedLocale
 
       const daysUntil = Math.ceil((triggerDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-      if (daysUntil <= NOTIFICATION_SETTINGS.DAYS_TO_PRELOAD_IMAGES && daysUntil > 0) {
+      if (daysUntil <= NOTIFICATION_SETTINGS.DAYS_AHEAD && daysUntil > 0) {
         const factId = notification.content.data?.factId as number | undefined;
 
         if (factId) {
@@ -936,73 +930,143 @@ async function syncOsWithDb(
 }
 
 // ============================================================================
-// TOP UP FROM DB
+// SMART FACT SELECTION
 // ============================================================================
 
 /**
- * Top up notifications by adding more facts to empty future slots
+ * Select facts for notification slots using a 3-tier priority system:
+ * 1. Historical facts matching each slot's calendar date (1 per unique day)
+ * 2. Recently created facts (newest first)
+ * 3. Random facts (fallback)
+ *
+ * Returns facts aligned with the given slots array (same length, same order).
  */
-async function topUpFromDb(
-  preferredTimes: Date[],
-  locale: SupportedLocale,
-  existingCount: number
-): Promise<number> {
-  const needed = NOTIFICATION_SETTINGS.MAX_SCHEDULED - existingCount;
-  if (needed <= 0) return 0;
+async function selectSmartFactsForSlots(
+  slots: TimeSlot[],
+  locale: SupportedLocale
+): Promise<database.FactWithRelations[]> {
+  if (slots.length === 0) return [];
 
-  // Get the latest scheduled date to continue from
-  const latestScheduledDateStr = await database.getLatestScheduledDate(locale);
-  const startAfterDate = latestScheduledDateStr ? new Date(latestScheduledDateStr) : undefined;
+  const usedIds = new Set<number>();
 
-  // Get new facts to schedule
-  const facts = await database.getRandomUnscheduledFacts(needed, locale);
-  if (facts.length === 0) return 0;
-
-  // Generate time slots for new facts
-  const slots = generateTimeSlots(preferredTimes, facts.length, startAfterDate);
-
-  let scheduledCount = 0;
-
-  // Assign facts to slots in DB (OS sync happens after)
-  for (let i = 0; i < Math.min(facts.length, slots.length); i++) {
-    try {
-      await database.markFactAsScheduled(
-        facts[i].id,
-        slots[i].date.toISOString(),
-        null // notification_id will be set by syncOsWithDb
-      );
-      scheduledCount++;
-    } catch {
-      // Skip on error
+  // Extract unique calendar days from slots
+  const uniqueDays = new Map<string, { month: number; day: number }>();
+  for (const slot of slots) {
+    const month = slot.date.getMonth() + 1;
+    const day = slot.date.getDate();
+    const key = `${month}-${day}`;
+    if (!uniqueDays.has(key)) {
+      uniqueDays.set(key, { month, day });
     }
   }
 
-  return scheduledCount;
+  // Tier 1: Historical facts (1 per unique calendar day)
+  const historicalByDay = new Map<string, database.FactWithRelations>();
+  if (uniqueDays.size > 0) {
+    const historicalFacts = await database.getUnscheduledHistoricalFactsForDates(
+      Array.from(uniqueDays.values()),
+      locale
+    );
+    for (const fact of historicalFacts) {
+      const key = `${fact.event_month}-${fact.event_day}`;
+      historicalByDay.set(key, fact);
+      usedIds.add(fact.id);
+    }
+    if (__DEV__ && historicalFacts.length > 0) {
+      console.log(`🔔 Smart selection: ${historicalFacts.length} historical facts`);
+    }
+  }
+
+  // Count how many slots will be filled by historical facts (1 per unique day)
+  const remainingAfterHistorical = slots.length - historicalByDay.size;
+
+  // Tier 2: Recent facts (newest by created_at)
+  let recentFacts: database.FactWithRelations[] = [];
+  if (remainingAfterHistorical > 0) {
+    recentFacts = await database.getRecentUnscheduledFacts(
+      remainingAfterHistorical,
+      locale,
+      Array.from(usedIds)
+    );
+    for (const fact of recentFacts) {
+      usedIds.add(fact.id);
+    }
+    if (__DEV__ && recentFacts.length > 0) {
+      console.log(`🔔 Smart selection: ${recentFacts.length} recent facts`);
+    }
+  }
+
+  const remainingAfterRecent = remainingAfterHistorical - recentFacts.length;
+
+  // Tier 3: Random facts (fallback)
+  let randomFacts: database.FactWithRelations[] = [];
+  if (remainingAfterRecent > 0) {
+    // Get random facts excluding already-selected IDs
+    const allRandom = await database.getRandomUnscheduledFactsWithFallback(
+      remainingAfterRecent + usedIds.size,
+      locale
+    );
+    randomFacts = allRandom.filter((f) => !usedIds.has(f.id)).slice(0, remainingAfterRecent);
+    if (__DEV__ && randomFacts.length > 0) {
+      console.log(`🔔 Smart selection: ${randomFacts.length} random facts`);
+    }
+  }
+
+  // Build a queue of non-historical facts (recent first, then random)
+  const fillQueue = [...recentFacts, ...randomFacts];
+  let fillIndex = 0;
+
+  // Assign facts to slots: historical facts get placed on their matching day,
+  // remaining slots get filled from the queue in order
+  const usedHistoricalDays = new Set<string>();
+  const result: database.FactWithRelations[] = [];
+
+  for (const slot of slots) {
+    const dayKey = `${slot.date.getMonth() + 1}-${slot.date.getDate()}`;
+    const historicalFact = historicalByDay.get(dayKey);
+
+    if (historicalFact && !usedHistoricalDays.has(dayKey)) {
+      // Assign historical fact (1 per day)
+      result.push(historicalFact);
+      usedHistoricalDays.add(dayKey);
+    } else if (fillIndex < fillQueue.length) {
+      // Fill from recent/random queue
+      result.push(fillQueue[fillIndex]);
+      fillIndex++;
+    }
+    // If we run out of facts, result will be shorter than slots (handled by caller)
+  }
+
+  return result;
 }
 
 // ============================================================================
-// METHOD A: SYNC NOTIFICATION SCHEDULE
+// ENSURE NOTIFICATION SCHEDULE (unified scheduling)
 // ============================================================================
 
 /**
- * Sync notification schedule - called on app open, foreground, notification received
+ * Unified notification scheduling function that handles:
+ * - Health check: validates existing schedule against preferred times
+ * - Repair: full reschedule if schedule is invalid
+ * - Top-up: fills unfilled slots for the next DAYS_AHEAD days
+ * - Smart selection: historical → recent → random fact priority
  *
- * Flow:
- * 1. Mark delivered facts as shown (preserve for feed)
- * 2. Check permissions - if not granted, clear and return
- * 3. Get user's preferred times
- * 4. Get DB's future scheduled facts
- * 5. Validate schedule against preferred times - if invalid, full reschedule
- * 6. Top up if count < 64
- * 7. Sync OS to match DB
+ * Idempotent: calling twice is safe (second call sees all slots filled, does nothing).
+ *
+ * @param locale User's locale
+ * @param source What triggered this call (for logging)
+ * @param options.forceReschedule Clear existing schedule and rebuild from scratch
+ * @param options.skipOsSync Skip OS notification sync (for fast DB-only path)
+ * @param options.skipToday Skip scheduling for today (onboarding: immediate fact covers today)
  */
-export async function syncNotificationSchedule(
+export async function ensureNotificationSchedule(
   locale: SupportedLocale,
-  source: SyncSource = 'unknown'
+  source: SyncSource = 'unknown',
+  options?: { forceReschedule?: boolean; skipOsSync?: boolean; skipToday?: boolean }
 ): Promise<SyncResult> {
-  // Concurrency guard: if a sync is already running, wait for it and skip
+  // Concurrency guard: if already running, wait for it and skip
   if (_syncLock) {
-    console.log(`🔔 [${source}] Sync already in progress, waiting...`);
+    console.log(`🔔 [${source}] Ensure already in progress, waiting...`);
     try {
       const existing = await _syncLock;
       return { ...existing, skipped: true };
@@ -1011,7 +1075,7 @@ export async function syncNotificationSchedule(
     }
   }
 
-  const impl = _syncNotificationScheduleImpl(locale, source);
+  const impl = _ensureNotificationScheduleImpl(locale, source, options);
   _syncLock = impl;
   try {
     return await impl;
@@ -1020,25 +1084,24 @@ export async function syncNotificationSchedule(
   }
 }
 
-async function _syncNotificationScheduleImpl(
+async function _ensureNotificationScheduleImpl(
   locale: SupportedLocale,
-  source: SyncSource
+  source: SyncSource,
+  options?: { forceReschedule?: boolean; skipOsSync?: boolean; skipToday?: boolean }
 ): Promise<SyncResult> {
   const logEntry: SyncLogEntry = {
     timestamp: new Date().toISOString(),
     source,
-    action: 'sync',
+    action: options?.forceReschedule ? 'schedule' : 'sync',
   };
 
   try {
-    // Step 1: Always mark delivered facts as shown first
+    // Step 1: Mark delivered facts as shown
     await database.markDeliveredFactsAsShown(locale);
 
     // Step 2: Check permissions
     const { status } = await Notifications.getPermissionsAsync();
-
     if (status !== 'granted') {
-      // Cancel all from OS and clear DB
       await clearNotificationSchedule(locale, { completely: true });
       logEntry.skipped = true;
       logEntry.osCountAfter = 0;
@@ -1046,215 +1109,166 @@ async function _syncNotificationScheduleImpl(
       return { success: true, count: 0, skipped: true };
     }
 
-    // Step 3: Get user's preferred times
+    // Step 3: Get preferred times
     const onboardingService = await import('./onboarding');
     const notificationTimeStrings = await onboardingService.getNotificationTimes();
-
     if (!notificationTimeStrings || notificationTimeStrings.length === 0) {
       logEntry.skipped = true;
       await appendSyncLog(logEntry);
       return { success: true, count: 0, skipped: true };
     }
-
     const preferredTimes = notificationTimeStrings.map((t) => new Date(t));
 
-    // Step 4: Get DB's future scheduled facts
-    const dbScheduled = await database.getFutureScheduledFactsWithNotificationIds(locale);
+    logEntry.osCountBefore = await getScheduledNotificationsCount();
+
+    // Step 4: Get current DB schedule
+    let dbScheduled = await database.getFutureScheduledFactsWithNotificationIds(locale);
     logEntry.dbCount = dbScheduled.length;
-    logEntry.osCountBefore = await getScheduledNotificationsCount();
 
-    // Step 5: Check if schedule is valid according to preferred times
-    const valid = isScheduleValid(dbScheduled, preferredTimes);
-    logEntry.scheduleValid = valid;
+    // Step 5: Validate schedule (unless force reschedule)
+    let forceReschedule = options?.forceReschedule ?? false;
+    if (!forceReschedule) {
+      const valid = isScheduleValid(dbScheduled, preferredTimes);
+      logEntry.scheduleValid = valid;
+      if (!valid) {
+        console.log(`🔔 [${source}] Schedule invalid - triggering full reschedule`);
+        logEntry.action = 'reschedule';
+        forceReschedule = true;
+      }
+    }
 
-    if (!valid) {
-      // Schedule is invalid - full reschedule needed
-      console.log(`🔔 [${source}] Schedule invalid - triggering full reschedule`);
-      logEntry.action = 'reschedule';
-      const result = await scheduleNotifications(preferredTimes, locale, undefined, source);
+    // Step 6: If force reschedule, clear and reset
+    if (forceReschedule) {
+      await clearNotificationSchedule(locale, { completely: false });
+      dbScheduled = [];
       logEntry.repaired = true;
-      logEntry.osCountAfter = result.count;
-      await appendSyncLog(logEntry);
-      return { ...result, repaired: true };
     }
 
-    // Step 6: Top up if needed
-    let toppedUp = 0;
-    if (dbScheduled.length < NOTIFICATION_SETTINGS.MAX_SCHEDULED) {
-      toppedUp = await topUpFromDb(preferredTimes, locale, dbScheduled.length);
-      if (__DEV__ && toppedUp > 0) {
-        console.log(`🔔 [${source}] Topped up ${toppedUp} notifications`);
-      }
-    }
-    logEntry.toppedUp = toppedUp;
-
-    // Step 7: Sync OS to match DB
-    const syncResult = await syncOsWithDb(locale);
-    if (__DEV__ && (syncResult.synced > 0 || syncResult.cancelled > 0)) {
-      console.log(
-        `🔔 [${source}] OS sync: ${syncResult.synced} scheduled, ${syncResult.cancelled} cancelled`
-      );
-    }
-
-    // Preload images for upcoming notifications
-    await preloadUpcomingNotificationImages(locale);
-
-    const finalCount = await getScheduledNotificationsCount();
-    logEntry.osCountAfter = finalCount;
-    await appendSyncLog(logEntry);
-    return { success: true, count: finalCount };
-  } catch (error) {
-    console.error(`🔔 [${source}] Error syncing notification schedule:`, error);
-    logEntry.error = error instanceof Error ? error.message : 'Unknown error';
-    await appendSyncLog(logEntry);
-    return {
-      success: false,
-      count: 0,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-// ============================================================================
-// METHOD B: SCHEDULE NOTIFICATIONS
-// ============================================================================
-
-/**
- * Schedule notifications - called on onboarding or when user changes notification times
- *
- * Flow:
- * 1. Clear future schedules from both DB and OS
- * 2. Get unscheduled facts (up to 64)
- * 3. Generate time slots based on preferred times
- * 4. Assign facts to slots in DB
- * 5. Sync OS to match DB
- */
-export async function scheduleNotifications(
-  times: Date[],
-  locale: SupportedLocale,
-  options?: { skipToday?: boolean; skipOsSync?: boolean },
-  source: SyncSource = 'unknown'
-): Promise<ScheduleResult> {
-  // Concurrency guard: if scheduling is already running, wait for it
-  if (_scheduleLock) {
-    console.log(`🔔 [${source}] Schedule already in progress, waiting...`);
-    try {
-      return await _scheduleLock;
-    } catch {
-      return { success: false, count: 0 };
-    }
-  }
-
-  const impl = _scheduleNotificationsImpl(times, locale, options, source);
-  _scheduleLock = impl;
-  try {
-    return await impl;
-  } finally {
-    _scheduleLock = null;
-  }
-}
-
-async function _scheduleNotificationsImpl(
-  times: Date[],
-  locale: SupportedLocale,
-  options?: { skipToday?: boolean; skipOsSync?: boolean },
-  source: SyncSource = 'unknown'
-): Promise<ScheduleResult> {
-  const logEntry: SyncLogEntry = {
-    timestamp: new Date().toISOString(),
-    source,
-    action: 'schedule',
-  };
-
-  try {
-    // Check permissions first
-    const { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') {
-      logEntry.error = 'permission_not_granted';
-      await appendSyncLog(logEntry);
-      return {
-        success: false,
-        count: 0,
-        error: 'Notification permission not granted',
-      };
-    }
-
-    if (times.length === 0) {
-      logEntry.error = 'no_times_provided';
-      await appendSyncLog(logEntry);
-      return {
-        success: false,
-        count: 0,
-        error: 'No notification times provided',
-      };
-    }
-
-    logEntry.osCountBefore = await getScheduledNotificationsCount();
-
-    // Step 1: Clear future schedules from both DB and OS
-    await clearNotificationSchedule(locale, { completely: false });
-
-    // Step 2: Get unscheduled facts (up to 64)
-    const facts = await database.getRandomUnscheduledFacts(
-      NOTIFICATION_SETTINGS.MAX_SCHEDULED,
-      locale
-    );
-
-    if (facts.length === 0) {
-      logEntry.error = 'no_facts_available';
-      await appendSyncLog(logEntry);
-      return {
-        success: false,
-        count: 0,
-        error: 'No facts available for scheduling',
-      };
-    }
-
-    // Step 3: Generate time slots for all facts
-    // When skipToday is set (e.g., after showImmediateFact during onboarding),
-    // start scheduling from tomorrow to avoid duplicating today's fact
-    let startAfterDate: Date | undefined;
-    if (options?.skipToday) {
-      startAfterDate = new Date();
-      startAfterDate.setHours(23, 59, 59, 999);
-    }
-    const slots = generateTimeSlots(times, facts.length, startAfterDate);
-
-    // Step 4: Assign facts to slots in DB
-    for (let i = 0; i < facts.length && i < slots.length; i++) {
-      try {
-        await database.markFactAsScheduled(
-          facts[i].id,
-          slots[i].date.toISOString(),
-          null // notification_id will be set by syncOsWithDb
-        );
-      } catch {
-        // Skip on error
+    // Step 7: Trim excess — clear facts scheduled beyond DAYS_AHEAD
+    const daysAhead = NOTIFICATION_SETTINGS.DAYS_AHEAD;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() + daysAhead + 1);
+    cutoffDate.setHours(0, 0, 0, 0);
+    const trimmed = await database.clearScheduledFactsBeyondDate(cutoffDate.toISOString());
+    if (trimmed > 0) {
+      // Re-fetch DB schedule after trimming
+      dbScheduled = await database.getFutureScheduledFactsWithNotificationIds(locale);
+      if (__DEV__) {
+        console.log(`🔔 [${source}] Trimmed ${trimmed} facts scheduled beyond ${daysAhead} days`);
       }
     }
 
-    // Step 5: Sync OS to match DB (skip for fast onboarding path)
+    // Step 8: Find unfilled slots for the next DAYS_AHEAD days
+    const sortedTimes = sortTimesByTimeOfDay(preferredTimes);
+    const now = new Date();
+
+    // Build a map of existing scheduled facts by date key
+    const scheduledByDay = new Map<string, number>();
+    for (const fact of dbScheduled) {
+      const d = new Date(fact.scheduled_date);
+      const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+      scheduledByDay.set(key, (scheduledByDay.get(key) || 0) + 1);
+    }
+
+    // Determine which slots are unfilled
+    const startDay = options?.skipToday ? 1 : 0;
+    const unfilledSlots: TimeSlot[] = [];
+    const maxToSchedule = NOTIFICATION_SETTINGS.MAX_SCHEDULED - dbScheduled.length;
+
+    for (let dayOffset = startDay; dayOffset <= daysAhead; dayOffset++) {
+      const dayDate = new Date(now);
+      dayDate.setDate(dayDate.getDate() + dayOffset);
+      const dayKey = `${dayDate.getFullYear()}-${(dayDate.getMonth() + 1).toString().padStart(2, '0')}-${dayDate.getDate().toString().padStart(2, '0')}`;
+
+      const existingForDay = scheduledByDay.get(dayKey) || 0;
+      const slotsNeeded = sortedTimes.length - existingForDay;
+
+      if (slotsNeeded <= 0) continue;
+
+      // Generate specific time slots for this day
+      for (const time of sortedTimes) {
+        if (unfilledSlots.length >= maxToSchedule) break;
+
+        const slotDate = new Date(dayDate);
+        slotDate.setHours(time.getHours(), time.getMinutes(), 0, 0);
+
+        // Skip slots in the past
+        if (slotDate <= now) continue;
+
+        // Check if this specific time slot already has a fact scheduled
+        const alreadyScheduled = dbScheduled.some((f) => {
+          const fDate = new Date(f.scheduled_date);
+          return (
+            Math.abs(fDate.getTime() - slotDate.getTime()) < NOTIFICATION_SETTINGS.TIME_TOLERANCE_MS
+          );
+        });
+
+        if (!alreadyScheduled) {
+          unfilledSlots.push({
+            date: slotDate,
+            hour: time.getHours(),
+            minute: time.getMinutes(),
+          });
+        }
+      }
+    }
+
+    // Step 8: Smart fact selection for unfilled slots
+    let scheduledCount = 0;
+    if (unfilledSlots.length > 0) {
+      const facts = await selectSmartFactsForSlots(unfilledSlots, locale);
+
+      // Step 9: Assign facts to slots in DB
+      for (let i = 0; i < facts.length && i < unfilledSlots.length; i++) {
+        try {
+          await database.markFactAsScheduled(
+            facts[i].id,
+            unfilledSlots[i].date.toISOString(),
+            null // notification_id will be set by syncOsWithDb
+          );
+          scheduledCount++;
+        } catch {
+          // Skip on error
+        }
+      }
+
+      if (__DEV__ && scheduledCount > 0) {
+        console.log(`🔔 [${source}] Scheduled ${scheduledCount} new notifications`);
+      }
+    }
+    logEntry.toppedUp = scheduledCount;
+
+    // Step 10: Sync OS with DB (unless skipOsSync)
     if (!options?.skipOsSync) {
-      await syncOsWithDb(locale);
+      const syncResult = await syncOsWithDb(locale);
+      if (__DEV__ && (syncResult.synced > 0 || syncResult.cancelled > 0)) {
+        console.log(
+          `🔔 [${source}] OS sync: ${syncResult.synced} scheduled, ${syncResult.cancelled} cancelled`
+        );
+      }
+
+      // Step 11: Preload images
       await preloadUpcomingNotificationImages(locale);
     }
 
-    const scheduledCount = Math.min(facts.length, slots.length);
     const finalCount = options?.skipOsSync
-      ? scheduledCount
+      ? dbScheduled.length + scheduledCount
       : await getScheduledNotificationsCount();
     logEntry.osCountAfter = options?.skipOsSync ? 0 : finalCount;
-    logEntry.dbCount = scheduledCount;
+    logEntry.dbCount = dbScheduled.length + scheduledCount;
     await appendSyncLog(logEntry);
 
-    console.log(`🔔 [${source}] Scheduled ${finalCount} notifications`);
+    if (scheduledCount > 0 || forceReschedule) {
+      console.log(`🔔 [${source}] Ensure complete: ${finalCount} total notifications`);
+    }
 
     return {
-      success: finalCount > 0,
+      success: true,
       count: finalCount,
+      repaired: forceReschedule || undefined,
     };
   } catch (error) {
-    console.error(`🔔 [${source}] Error scheduling notifications:`, error);
+    console.error(`🔔 [${source}] Error ensuring notification schedule:`, error);
     logEntry.error = error instanceof Error ? error.message : 'Unknown error';
     await appendSyncLog(logEntry);
     return {
@@ -1263,84 +1277,6 @@ async function _scheduleNotificationsImpl(
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
-}
-
-// ============================================================================
-// CONVENIENCE FUNCTIONS (for backward compatibility)
-// ============================================================================
-
-/**
- * Schedule initial notifications (for onboarding with single time)
- * @deprecated Use scheduleNotifications instead
- */
-export async function scheduleInitialNotifications(
-  notificationTime: Date,
-  locale: SupportedLocale
-): Promise<ScheduleResult> {
-  return scheduleNotifications([notificationTime], locale);
-}
-
-/**
- * Reschedule all notifications with a new time
- * @deprecated Use scheduleNotifications instead
- */
-export async function rescheduleNotifications(
-  newTime: Date,
-  locale: SupportedLocale
-): Promise<ScheduleResult> {
-  return scheduleNotifications([newTime], locale);
-}
-
-/**
- * Reschedule all notifications with multiple times per day
- * @deprecated Use scheduleNotifications instead
- */
-export async function rescheduleNotificationsMultiple(
-  times: Date[],
-  locale: SupportedLocale
-): Promise<ScheduleResult> {
-  return scheduleNotifications(times, locale);
-}
-
-/**
- * Check and top up notifications
- * @deprecated Use syncNotificationSchedule instead
- */
-export async function checkAndTopUpNotifications(locale: SupportedLocale): Promise<SyncResult> {
-  return syncNotificationSchedule(locale);
-}
-
-/**
- * Refresh notification schedule (single time)
- * @deprecated Use syncNotificationSchedule instead
- */
-export async function refreshNotificationSchedule(
-  notificationTime: Date,
-  locale: SupportedLocale
-): Promise<ScheduleResult> {
-  return syncNotificationSchedule(locale);
-}
-
-/**
- * Refresh notification schedule (multiple times)
- * @deprecated Use syncNotificationSchedule instead
- */
-export async function refreshNotificationScheduleMultiple(
-  times: Date[],
-  locale: SupportedLocale
-): Promise<ScheduleResult> {
-  return syncNotificationSchedule(locale);
-}
-
-/**
- * Clear all scheduled notifications
- * @deprecated Use clearNotificationSchedule instead
- */
-export async function clearAllScheduledNotifications(
-  clearPastScheduledDates: boolean = false,
-  locale?: SupportedLocale
-): Promise<void> {
-  await clearNotificationSchedule(locale || 'en', { completely: clearPastScheduledDates });
 }
 
 // ============================================================================
@@ -1364,16 +1300,41 @@ export async function showImmediateFact(
   locale: SupportedLocale
 ): Promise<{ success: boolean; fact?: database.FactWithRelations; error?: string }> {
   try {
-    const facts = await database.getRandomUnscheduledFacts(1, locale);
+    let fact: database.FactWithRelations | undefined;
 
-    if (facts.length === 0) {
+    // Tier 1: Try historical fact for today
+    const now = new Date();
+    const historical = await database.getUnscheduledHistoricalFactsForDates(
+      [{ month: now.getMonth() + 1, day: now.getDate() }],
+      locale
+    );
+    if (historical.length > 0) {
+      fact = historical[0];
+    }
+
+    // Tier 2: Try recent fact
+    if (!fact) {
+      const recent = await database.getRecentUnscheduledFacts(1, locale);
+      if (recent.length > 0) {
+        fact = recent[0];
+      }
+    }
+
+    // Tier 3: Random fallback
+    if (!fact) {
+      const random = await database.getRandomUnscheduledFacts(1, locale);
+      if (random.length > 0) {
+        fact = random[0];
+      }
+    }
+
+    if (!fact) {
       return {
         success: false,
         error: 'No facts available to show',
       };
     }
 
-    const fact = facts[0];
     await database.markFactAsShownWithDate(fact.id, new Date().toISOString());
 
     return {

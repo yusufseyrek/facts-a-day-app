@@ -273,19 +273,15 @@ export async function handleLanguageChange(
       message: 'Setting up notifications...',
     });
 
-    // Get notification times (supports multiple times for premium users)
-    const notificationTimes = await onboardingService.getNotificationTimes();
-    if (notificationTimes && notificationTimes.length > 0) {
-      const times = notificationTimes.map((t) => new Date(t));
-
-      // Clear all existing notifications and reschedule with new language
-      await notificationService.scheduleNotifications(
-        times,
-        newLanguage,
-        undefined,
-        'language_change'
-      );
-    }
+    // Reschedule notifications in new language (DB only, fast)
+    await notificationService.ensureNotificationSchedule(newLanguage, 'language_change', {
+      forceReschedule: true,
+      skipOsSync: true,
+    });
+    // Fire-and-forget: sync DB schedule to OS (downloads images, etc.)
+    notificationService.ensureNotificationSchedule(newLanguage, 'language_change').catch((e) => {
+      console.error('Post-language-change notification sync failed:', e);
+    });
 
     onProgress?.({
       stage: 'complete',
@@ -511,19 +507,15 @@ export async function handleCategoriesChange(
       message: 'Updating notifications...',
     });
 
-    // Get notification times (supports multiple times for premium users)
-    const notificationTimes = await onboardingService.getNotificationTimes();
-    if (notificationTimes && notificationTimes.length > 0) {
-      const times = notificationTimes.map((t) => new Date(t));
-
-      // Clear all existing notifications and reschedule with new facts
-      await notificationService.scheduleNotifications(
-        times,
-        currentLanguage,
-        undefined,
-        'categories_change'
-      );
-    }
+    // Reschedule notifications with new category selection (DB only, fast)
+    await notificationService.ensureNotificationSchedule(currentLanguage, 'categories_change', {
+      forceReschedule: true,
+      skipOsSync: true,
+    });
+    // Fire-and-forget: sync DB schedule to OS (downloads images, etc.)
+    notificationService.ensureNotificationSchedule(currentLanguage, 'categories_change').catch((e) => {
+      console.error('Post-categories-change notification sync failed:', e);
+    });
 
     onProgress?.({
       stage: 'complete',

@@ -17,6 +17,8 @@ import { PRECACHE } from '../config/images';
 import { refreshAppContent, getStoredLocale } from './contentRefresh';
 import { loadDailyFeedSections } from './dailyFeed';
 import { preCacheOfflineImages } from './images';
+import { ensureNotificationSchedule } from './notifications';
+import type { SupportedLocale } from '../i18n/translations';
 
 const BACKGROUND_SYNC_TASK = 'FACTS_BACKGROUND_SYNC';
 
@@ -36,6 +38,12 @@ TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
 
     // 3. Pre-cache images (capped for background time limit)
     await preCacheOfflineImages(PRECACHE.BACKGROUND_BATCH_SIZE);
+
+    // 4. Ensure notification schedule is healthy (smart selection, top-up)
+    if (locale) {
+      await ensureNotificationSchedule(locale as SupportedLocale, 'background_task');
+    }
+
     console.log('✅ Background sync completed');
 
     return result.success

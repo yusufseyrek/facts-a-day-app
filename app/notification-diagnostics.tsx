@@ -19,10 +19,8 @@ import {
   getSyncLog,
   clearSyncLog,
   scheduleTestNotification,
-  syncNotificationSchedule,
-  scheduleNotifications,
+  ensureNotificationSchedule,
 } from '../src/services/notifications';
-import * as onboardingService from '../src/services/onboarding';
 import { hexColors, useTheme } from '../src/theme';
 import { useResponsive } from '../src/utils/useResponsive';
 
@@ -69,13 +67,7 @@ export default function NotificationDiagnosticsScreen() {
     try {
       setLoading(true);
       const locale = getLocale();
-      const timeStrings = await onboardingService.getNotificationTimes();
-      if (timeStrings.length === 0) {
-        Alert.alert('Error', 'No notification times saved');
-        return;
-      }
-      const times = timeStrings.map((t) => new Date(t));
-      const result = await scheduleNotifications(times, locale, undefined, 'unknown');
+      const result = await ensureNotificationSchedule(locale, 'unknown', { forceReschedule: true });
       Alert.alert('Rescheduled', `Scheduled ${result.count} notifications.\nSuccess: ${result.success}${result.error ? `\nError: ${result.error}` : ''}`);
       await loadData();
     } catch (error) {
@@ -89,7 +81,7 @@ export default function NotificationDiagnosticsScreen() {
     try {
       setLoading(true);
       const locale = getLocale();
-      const result = await syncNotificationSchedule(locale, 'unknown');
+      const result = await ensureNotificationSchedule(locale, 'unknown');
       Alert.alert('Synced', `Count: ${result.count}\nSuccess: ${result.success}\nRepaired: ${result.repaired ?? false}\nSkipped: ${result.skipped ?? false}${result.error ? `\nError: ${result.error}` : ''}`);
       await loadData();
     } catch (error) {

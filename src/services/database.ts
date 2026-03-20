@@ -839,6 +839,234 @@ export async function getRandomUnscheduledFactsWithFallback(
 }
 
 /**
+ * Get unscheduled historical facts matching specific month/day pairs.
+ * Returns at most 1 fact per unique (month, day) pair, picked randomly within each group.
+ */
+export async function getUnscheduledHistoricalFactsForDates(
+  dates: Array<{ month: number; day: number }>,
+  language: string
+): Promise<FactWithRelations[]> {
+  if (dates.length === 0) return [];
+
+  const database = await openDatabase();
+
+  // Build OR conditions for each unique date
+  const uniqueDates = new Map<string, { month: number; day: number }>();
+  for (const d of dates) {
+    uniqueDates.set(`${d.month}-${d.day}`, d);
+  }
+
+  const conditions = Array.from(uniqueDates.values())
+    .map(() => '(f.event_month = ? AND f.event_day = ?)')
+    .join(' OR ');
+  const params: (string | number)[] = [language];
+  for (const d of uniqueDates.values()) {
+    params.push(d.month, d.day);
+  }
+
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    WHERE f.language = ? AND f.is_historical = 1
+      AND f.scheduled_date IS NULL
+      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
+      AND (${conditions})
+    ORDER BY RANDOM()`,
+    params
+  );
+
+  const facts = mapFactsWithRelations(result);
+
+  // Deduplicate: pick 1 per unique (month, day)
+  const seen = new Set<string>();
+  return facts.filter((f) => {
+    const key = `${f.event_month}-${f.event_day}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * Get unscheduled facts ordered by creation date (newest first).
+ * Excludes historical facts, already-selected IDs, and facts the user has already opened.
+ */
+export async function getRecentUnscheduledFacts(
+  limit: number,
+  language: string,
+  excludeIds: number[] = []
+): Promise<FactWithRelations[]> {
+  const database = await openDatabase();
+  const excludePlaceholders = excludeIds.length > 0 ? excludeIds.map(() => '?').join(',') : null;
+  const excludeClause = excludePlaceholders ? `AND f.id NOT IN (${excludePlaceholders})` : '';
+
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
+    WHERE f.language = ?
+      AND f.scheduled_date IS NULL
+      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
+      AND (f.is_historical IS NULL OR f.is_historical = 0)
+      AND fi.fact_id IS NULL
+      ${excludeClause}
+    ORDER BY f.created_at DESC
+    LIMIT ?`,
+    [language, ...excludeIds, limit]
+  );
+  return mapFactsWithRelations(result);
+}
+
+/**
+ * Get the most recently created non-historical facts.
+ */
+export async function getLatestFacts(
+  limit: number,
+  language: string
+): Promise<FactWithRelations[]> {
+  const database = await openDatabase();
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    WHERE f.language = ? AND (f.is_historical IS NULL OR f.is_historical = 0)
+    ORDER BY f.created_at DESC
+    LIMIT ?`,
+    [language, limit]
+  );
+  return mapFactsWithRelations(result);
+}
+
+/**
+ * Get random non-historical facts, excluding specific IDs.
+ */
+export async function getRandomWorthKnowingFacts(
+  limit: number,
+  language: string,
+  excludeIds: number[] = []
+): Promise<FactWithRelations[]> {
+  const database = await openDatabase();
+  const excludePlaceholders = excludeIds.length > 0 ? excludeIds.map(() => '?').join(',') : null;
+  const excludeClause = excludePlaceholders ? `AND f.id NOT IN (${excludePlaceholders})` : '';
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    WHERE f.language = ? AND (f.is_historical IS NULL OR f.is_historical = 0)
+      ${excludeClause}
+    ORDER BY RANDOM()
+    LIMIT ?`,
+    [language, ...excludeIds, limit]
+  );
+  return mapFactsWithRelations(result);
+}
+
+/**
+ * Get historical facts that happened on today's month and day.
+ */
+export async function getOnThisDayFacts(
+  language: string
+): Promise<FactWithRelations[]> {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const database = await openDatabase();
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    WHERE f.language = ? AND f.is_historical = 1
+      AND f.event_month = ? AND f.event_day = ?
+    ORDER BY f.event_year ASC`,
+    [language, month, day]
+  );
+  return mapFactsWithRelations(result);
+}
+
+/**
+ * Get historical facts from nearby dates (±3 days) when today has none.
+ * Handles month boundaries correctly by computing actual calendar dates.
+ */
+export async function getThisWeekInHistoryFacts(
+  language: string
+): Promise<FactWithRelations[]> {
+  const now = new Date();
+  const todayMonth = now.getMonth() + 1;
+  const todayDay = now.getDate();
+
+  // Compute (month, day) pairs for ±3 days, excluding today
+  const pairs: [number, number][] = [];
+  for (let offset = -3; offset <= 3; offset++) {
+    if (offset === 0) continue;
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+    pairs.push([d.getMonth() + 1, d.getDate()]);
+  }
+
+  const conditions = pairs.map(() => '(f.event_month = ? AND f.event_day = ?)').join(' OR ');
+  const params: (string | number)[] = [language];
+  for (const [m, d] of pairs) {
+    params.push(m, d);
+  }
+
+  const database = await openDatabase();
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    WHERE f.language = ? AND f.is_historical = 1
+      AND (${conditions})
+    ORDER BY ABS(f.event_month * 31 + f.event_day - ${todayMonth * 31 + todayDay}) ASC,
+             f.event_year ASC`,
+    params
+  );
+  return mapFactsWithRelations(result);
+}
+
+/**
  * Mark a fact as scheduled with notification details
  * @param factId The ID of the fact
  * @param scheduledDate The scheduled date in ISO format
@@ -951,6 +1179,19 @@ export async function clearAllScheduledFactsCompletely(): Promise<void> {
   await database.runAsync(
     'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE (shown_in_feed IS NULL OR shown_in_feed = 0)'
   );
+}
+
+/**
+ * Clear facts scheduled beyond a cutoff date, freeing them back into the unscheduled pool.
+ * Used to trim excess far-future schedules (e.g., after switching from 64-day to 7-day horizon).
+ */
+export async function clearScheduledFactsBeyondDate(cutoffDate: string): Promise<number> {
+  const database = await openDatabase();
+  const result = await database.runAsync(
+    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ? AND (shown_in_feed IS NULL OR shown_in_feed = 0)',
+    [cutoffDate]
+  );
+  return result.changes;
 }
 
 /**

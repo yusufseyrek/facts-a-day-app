@@ -192,8 +192,16 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       const timeStrings = times.map((t) => t.toISOString());
       await onboardingService.setNotificationTimes(timeStrings);
 
-      // Reschedule notifications with the new times
-      const result = await notificationService.scheduleNotifications(times, locale, undefined, 'time_change');
+      // Reschedule notification slots in DB (fast), OS sync happens in background
+      const result = await notificationService.ensureNotificationSchedule(locale, 'time_change', {
+        forceReschedule: true,
+        skipOsSync: true,
+      });
+
+      // Fire-and-forget: sync DB schedule to OS (downloads images, etc.)
+      notificationService.ensureNotificationSchedule(locale, 'time_change').catch((e) => {
+        console.error('Post-time-change notification sync failed:', e);
+      });
 
       // Update parent component with the first time (for backward compatibility)
       if (onTimeChange) {

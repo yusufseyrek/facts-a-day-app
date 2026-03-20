@@ -65,6 +65,7 @@ export default function Categories() {
   const buttonOpacity = useRef(new Animated.Value(0)).current;
   const buttonTranslateY = useRef(new Animated.Value(30)).current;
   const categoryAnimations = useRef<Animated.Value[]>([]).current;
+  const [enterAnimDone, setEnterAnimDone] = useState(false);
 
   // Run enter animations when categories are loaded
   useEffect(() => {
@@ -109,7 +110,7 @@ export default function Categories() {
             })
           )
         ),
-      ]).start();
+      ]).start(() => setEnterAnimDone(true));
 
       // Button animation (parallel with grid)
       Animated.parallel([
@@ -169,13 +170,18 @@ export default function Categories() {
   // Get category limits based on premium status
   const categoryLimits = isPremium ? CATEGORY_LIMITS.PREMIUM : CATEGORY_LIMITS.FREE;
 
+  // Use a ref so the toggleCategory closure always reads the latest limits,
+  // even when CategoryCard's React.memo prevents re-renders (stale onPress).
+  const categoryLimitsRef = useRef(categoryLimits);
+  categoryLimitsRef.current = categoryLimits;
+
   const toggleCategory = (slug: string) => {
     setSelectedCategories((prev) => {
       if (prev.includes(slug)) {
         return prev.filter((s) => s !== slug);
       }
       // Enforce max limit based on premium status
-      if (prev.length >= categoryLimits.max) {
+      if (prev.length >= categoryLimitsRef.current.max) {
         return prev;
       }
       return [...prev, slug];
@@ -300,6 +306,29 @@ export default function Categories() {
                     const catIndex = getCategoryIndex(rowIndex, colIndex);
                     const animValue = categoryAnimations[catIndex];
 
+                    const card = (
+                      <CategoryCard
+                        icon={getLucideIcon(category.icon, iconSize)}
+                        label={category.name}
+                        colorHex={category.color_hex}
+                        selected={selectedCategories.includes(category.slug)}
+                        onPress={() => toggleCategory(category.slug)}
+                        labelFontSize={labelFontSize}
+                        disabled={
+                          !selectedCategories.includes(category.slug) &&
+                          selectedCategories.length >= categoryLimits.max
+                        }
+                      />
+                    );
+
+                    if (enterAnimDone) {
+                      return (
+                        <View key={category.slug} style={{ flex: 1 }}>
+                          {card}
+                        </View>
+                      );
+                    }
+
                     return (
                       <Animated.View
                         key={category.slug}
@@ -326,18 +355,7 @@ export default function Categories() {
                           ],
                         }}
                       >
-                        <CategoryCard
-                          icon={getLucideIcon(category.icon, iconSize)}
-                          label={category.name}
-                          colorHex={category.color_hex}
-                          selected={selectedCategories.includes(category.slug)}
-                          onPress={() => toggleCategory(category.slug)}
-                          labelFontSize={labelFontSize}
-                          disabled={
-                            !selectedCategories.includes(category.slug) &&
-                            selectedCategories.length >= categoryLimits.max
-                          }
-                        />
+                        {card}
                       </Animated.View>
                     );
                   })}

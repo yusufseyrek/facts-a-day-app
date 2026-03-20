@@ -40,6 +40,7 @@ const CategoryCardComponent = ({
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const checkmarkAnim = useRef(new Animated.Value(selected ? 1 : 0)).current;
   const isFirstRender = useRef(true);
+  const runningAnims = useRef<Animated.CompositeAnimation[]>([]);
 
   // Animate on selection change
   useEffect(() => {
@@ -50,8 +51,12 @@ const CategoryCardComponent = ({
       return;
     }
 
+    // Stop any in-flight animations to prevent conflicts
+    runningAnims.current.forEach((a) => a.stop());
+    runningAnims.current = [];
+
     // Scale bounce animation
-    Animated.sequence([
+    const bounce = Animated.sequence([
       Animated.timing(scaleAnim, {
         toValue: 0.92,
         duration: 80,
@@ -64,15 +69,20 @@ const CategoryCardComponent = ({
         friction: 10,
         useNativeDriver: true,
       }),
-    ]).start();
+    ]);
 
-    // Checkmark animation - fast and snappy
-    Animated.timing(checkmarkAnim, {
+    // Checkmark animation — use simple easing (no overshoot) so opacity
+    // never goes below 0 on deselect
+    const checkmark = Animated.timing(checkmarkAnim, {
       toValue: selected ? 1 : 0,
-      duration: 80,
-      easing: Easing.out(Easing.back(1.5)),
+      duration: 120,
+      easing: Easing.out(Easing.quad),
       useNativeDriver: true,
-    }).start();
+    });
+
+    runningAnims.current = [bounce, checkmark];
+    bounce.start();
+    checkmark.start();
   }, [selected]);
 
   // Get neon color for this category - prefer colorHex from DB, fallback to theme-based
@@ -109,12 +119,14 @@ const CategoryCardComponent = ({
         scale: checkmarkAnim.interpolate({
           inputRange: [0, 1],
           outputRange: [0.5, 1],
+          extrapolate: 'clamp',
         }),
       },
       {
         rotate: checkmarkAnim.interpolate({
           inputRange: [0, 1],
           outputRange: ['-45deg', '0deg'],
+          extrapolate: 'clamp',
         }),
       },
     ],

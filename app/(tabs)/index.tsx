@@ -17,13 +17,11 @@ import Animated, {
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { Lightbulb } from '@tamagui/lucide-icons';
-import * as Notifications from 'expo-notifications';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { YStack } from 'tamagui';
 
 import {
-  ContentContainer,
   EmptyState,
   LoadingContainer,
   ScreenContainer,
@@ -35,7 +33,7 @@ import { ReadingStreakIndicator } from '../../src/components/badges/ReadingStrea
 import { CategoryStoryButtons } from '../../src/components/CategoryStoryButtons';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { PopularFactCard } from '../../src/components/PopularFactCard';
-import { HOME_FEED, LAYOUT, PAYWALL_PROMPT } from '../../src/config/app';
+import { ADS_ENABLED, LAYOUT, PAYWALL_PROMPT } from '../../src/config/app';
 import { usePreloadedData, usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
@@ -53,7 +51,6 @@ import {
   RefreshStatus,
 } from '../../src/services/contentRefresh';
 import { loadDailyFeedSections } from '../../src/services/dailyFeed';
-import * as database from '../../src/services/database';
 import { preCacheOfflineImages } from '../../src/services/images';
 import { onNetworkChange } from '../../src/services/network';
 import { shouldShowPaywall } from '../../src/services/paywallTiming';
@@ -70,16 +67,12 @@ function HomeScreen() {
   const router = useRouter();
   const { isPremium } = usePremium();
   const { spacing, typography, config, screenWidth, iconSizes } = useResponsive();
-  const {
-    consumePreloadedFacts,
-    consumePreloadedRecommendations,
-    signalHomeScreenReady,
-    signalCarouselImageReady,
-  } = usePreloadedData();
+  const { signalHomeScreenReady } = usePreloadedData();
 
-  const [todaysFacts, setTodaysFacts] = useState<FactWithRelations[]>([]);
-  const [popularFacts, setPopularFacts] = useState<FactWithRelations[]>([]);
+  const [freshFacts, setFreshFacts] = useState<FactWithRelations[]>([]);
   const [worthKnowingFacts, setWorthKnowingFacts] = useState<FactWithRelations[]>([]);
+  const [onThisDayFacts, setOnThisDayFacts] = useState<FactWithRelations[]>([]);
+  const [onThisDayIsWeekFallback, setOnThisDayIsWeekFallback] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [readingStreak, setReadingStreak] = useState(0);
@@ -101,13 +94,12 @@ function HomeScreen() {
     width: `${preCacheWidth.value}%` as any,
   }));
 
-  // Track if we've consumed preloaded data (only once)
-  const consumedPreloadedDataRef = useRef(false);
   const preCacheDateRef = useRef<string | null>(null);
   const paywallCheckRef = useRef(false);
   const scrollViewRef = useRef<ScrollView>(null);
-  const popularListRef = useRef<FlashListRef<FactWithRelations>>(null);
+  const freshFactsListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const worthKnowingListRef = useRef<FlashListRef<FactWithRelations>>(null);
+  const onThisDayListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const scrollYRef = useRef(0);
 
   // Register scroll-to-top handler
@@ -116,50 +108,19 @@ function HomeScreen() {
     useCallback(() => {
       if (scrollYRef.current <= 0) {
         // Already at top — reset carousels to index 0
-        popularListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        freshFactsListRef.current?.scrollToOffset({ offset: 0, animated: true });
         worthKnowingListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        onThisDayListRef.current?.scrollToOffset({ offset: 0, animated: true });
       } else {
         scrollViewRef.current?.scrollTo({ y: 0, animated: true });
       }
     }, [])
   );
 
-  // On first focus, show preloaded splash data instantly while async DB loads.
-  // Functional setState preserves data already loaded by mount effects
-  // (during deep link cold start, mount effects run before first focus).
-  // On every focus, reload from DB to ensure accurate data.
   useFocusEffect(
     useCallback(() => {
-      if (!consumedPreloadedDataRef.current) {
-        consumedPreloadedDataRef.current = true;
-        const facts = consumePreloadedFacts();
-        const recs = consumePreloadedRecommendations();
-        if (facts && facts.length > 0) {
-          const today = getLocalDateString();
-          const todayItems = facts.filter((f) =>
-            f.scheduled_date
-              ? getLocalDateString(new Date(f.scheduled_date)) === today
-              : f.shown_in_feed === 1
-          );
-          if (todayItems.length > 0) {
-            setTodaysFacts((prev) => (prev.length > 0 ? prev : todayItems));
-            setInitialLoading(false);
-            signalHomeScreenReady();
-          }
-          if (recs && recs.length > 0) {
-            setPopularFacts((prev) =>
-              prev.length > 0 ? prev : recs.slice(0, HOME_FEED.POPULAR_COUNT)
-            );
-            setWorthKnowingFacts((prev) =>
-              prev.length > 0 ? prev : recs.slice(HOME_FEED.POPULAR_COUNT)
-            );
-          }
-        }
-      }
-
-      loadTodaysFacts();
       // Load feed sections, then trigger image pre-caching once
-      Promise.all([loadFeedSections(true)]).then(() => {
+      loadFeedSections(true).then(() => {
         const today = getLocalDateString();
         if (preCacheDateRef.current !== today) {
           preCacheDateRef.current = today;
@@ -189,34 +150,12 @@ function HomeScreen() {
         }, PAYWALL_PROMPT.DELAY_MS);
         return () => clearTimeout(timer);
       }
-    }, [locale, t, consumePreloadedFacts, isPremium])
+    }, [locale, t, isPremium])
   );
-
-  // Auto-refresh feed when new notifications are received
-  useEffect(() => {
-    const subscription = Notifications.addNotificationReceivedListener(async (notification) => {
-      const factId = notification.request.content.data.factId;
-      if (factId) {
-        try {
-          await database.markFactAsShown(factId as number);
-          const { syncNotificationSchedule } = await import('../../src/services/notifications');
-          const { getLocaleFromCode } = await import('../../src/i18n');
-          const Localization = await import('expo-localization');
-          const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
-          await syncNotificationSchedule(getLocaleFromCode(deviceLocale), 'notification_received');
-        } catch {
-          // Ignore notification setup errors
-        }
-        loadTodaysFacts();
-      }
-    });
-    return () => subscription.remove();
-  }, []);
 
   // Auto-refresh feed when content is updated from API
   useEffect(() => {
     const unsubscribe = onFeedRefresh(() => {
-      loadTodaysFacts();
       loadFeedSections(true);
     });
     return () => unsubscribe();
@@ -225,8 +164,7 @@ function HomeScreen() {
   // Auto-refresh feed when preferences change
   useEffect(() => {
     const unsubscribe = onPreferenceFeedRefresh(() => {
-      loadTodaysFacts();
-      loadFeedSections();
+      loadFeedSections(false, true);
     });
     return () => unsubscribe();
   }, []);
@@ -236,8 +174,8 @@ function HomeScreen() {
     const unsubscribe = onNetworkChange((connected) => {
       if (connected) {
         preCacheOfflineImages(undefined, setPreCacheProgress)
-            .then(() => setTimeout(() => setPreCacheProgress(null), 1000))
-            .catch(() => setPreCacheProgress(null));
+          .then(() => setTimeout(() => setPreCacheProgress(null), 1000))
+          .catch(() => setPreCacheProgress(null));
       }
     });
     return () => unsubscribe();
@@ -251,31 +189,10 @@ function HomeScreen() {
 
   // Signal home screen ready when showing empty state
   useEffect(() => {
-    if (!initialLoading && todaysFacts.length === 0) {
+    if (!initialLoading && freshFacts.length === 0 && onThisDayFacts.length === 0) {
       signalHomeScreenReady();
     }
-  }, [initialLoading, todaysFacts.length, signalHomeScreenReady]);
-
-  const loadTodaysFacts = useCallback(
-    async (isRefresh = false) => {
-      try {
-        if (isRefresh) setRefreshing(true);
-
-        // Mark today's facts as shown and also mark delivered facts
-        await database.markTodaysFactsAsShown(locale);
-        await database.markDeliveredFactsAsShown(locale);
-
-        const facts = await database.getTodaysFacts(locale);
-        setTodaysFacts(facts);
-      } catch {
-        // Ignore fact loading errors
-      } finally {
-        setInitialLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [locale]
-  );
+  }, [initialLoading, freshFacts.length, onThisDayFacts.length, signalHomeScreenReady]);
 
   const handleFactPress = useCallback(
     (
@@ -298,18 +215,32 @@ function HomeScreen() {
   // onlyIfEmpty: skip update if section already has data (prevents reshuffling on tab focus)
   // Uses daily feed cache to lock sections for the day (consistent offline experience)
   const loadFeedSections = useCallback(
-    async (onlyIfEmpty?: boolean) => {
+    async (onlyIfEmpty?: boolean, forceRefresh?: boolean) => {
       try {
-        const { popular, worthKnowing } = await loadDailyFeedSections(locale);
+        const {
+          freshFacts: fresh,
+          worthKnowing,
+          onThisDay,
+          onThisDayIsWeekFallback: isWeek,
+        } = await loadDailyFeedSections(locale, forceRefresh);
         if (onlyIfEmpty) {
-          setPopularFacts((prev) => (prev.length > 0 ? prev : popular));
+          setFreshFacts((prev) => (prev.length > 0 ? prev : fresh));
           setWorthKnowingFacts((prev) => (prev.length > 0 ? prev : worthKnowing));
+          setOnThisDayFacts((prev) => {
+            if (prev.length > 0) return prev;
+            setOnThisDayIsWeekFallback(isWeek);
+            return onThisDay;
+          });
         } else {
-          setPopularFacts(popular);
+          setFreshFacts(fresh);
           setWorthKnowingFacts(worthKnowing);
+          setOnThisDayFacts(onThisDay);
+          setOnThisDayIsWeekFallback(isWeek);
         }
       } catch {
         // silently ignore
+      } finally {
+        setInitialLoading(false);
       }
     },
     [locale]
@@ -323,9 +254,9 @@ function HomeScreen() {
     } catch {
       // Ignore refresh errors
     }
-    await loadTodaysFacts(false);
-    await loadFeedSections();
-  }, [loadTodaysFacts, loadFeedSections]);
+    await loadFeedSections(false, true);
+    setRefreshing(false);
+  }, [loadFeedSections]);
 
   const refreshControl = useMemo(
     () => <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
@@ -339,148 +270,103 @@ function HomeScreen() {
   // Horizontal inset so FlashList cards align within content area (centers on tablets)
   const listInset = (screenWidth - contentWidth) / 2 + spacing.md;
 
-  // Today's facts carousel sizing - left-aligned, square cards with next card peeking
-  const todayCardWidth = contentWidth - spacing.lg * 2 - spacing.xl;
-  const todayCardGap = spacing.sm;
-  const todaySnapInterval = todayCardWidth + todayCardGap;
-  const [todayActiveIndex, setTodayActiveIndex] = useState(0);
-
-  const todayActiveIndexRef = useRef(0);
-  const handleTodayScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const offsetX = event.nativeEvent.contentOffset.x;
-      const index = Math.max(0, Math.min(Math.round(offsetX / todaySnapInterval), todaysFacts.length - 1));
-      setTodayActiveIndex(index);
-      if (index !== todayActiveIndexRef.current) {
-        todayActiveIndexRef.current = index;
-        trackCarouselSwipe({
-          section: 'today',
-          index,
-          factId: todaysFacts[index]?.id,
-        });
-      }
-    },
-    [todaySnapInterval, todaysFacts]
-  );
-
-  const todayCarouselFactIds = useMemo(() => todaysFacts.map((f) => f.id), [todaysFacts]);
-  const firstImageSignalledRef = useRef(false);
-
-  const renderTodayItem = useCallback(
-    ({ item, index }: { item: FactWithRelations; index: number }) => {
-      const handleImageReady =
-        index === 0 && !firstImageSignalledRef.current
-          ? () => {
-              firstImageSignalledRef.current = true;
-              signalCarouselImageReady();
-            }
-          : undefined;
-      return (
-        <View style={{ width: todayCardWidth, paddingVertical: spacing.md }}>
-          <ImageFactCard
-            title={item.title || item.content.substring(0, 80) + '...'}
-            imageUrl={item.image_url!}
-            factId={item.id}
-            category={item.categoryData || item.category}
-            categorySlug={item.categoryData?.slug || item.category}
-            onPress={() => handleFactPress(item, 'home_today', todayCarouselFactIds, index)}
-            aspectRatio={5 / 4}
-            cardWidth={todayCardWidth}
-            onImageReady={handleImageReady}
-          />
-        </View>
-      );
-    },
-    [todayCardWidth, handleFactPress, todayCarouselFactIds, signalCarouselImageReady]
-  );
-
-  const todayKeyExtractor = useCallback((item: FactWithRelations) => `today-${item.id}`, []);
-
-  // Popular section (16:9 carousel) sizing
+  // Carousel card sizing
   const isWideScreen = screenWidth > LAYOUT.MAX_CONTENT_WIDTH;
-  const popularCardWidth = isWideScreen
+  const carouselCardWidth = isWideScreen
     ? contentWidth - spacing.lg * 2
     : contentWidth * config.cardWidthMultiplier;
-  const popularCardGap = spacing.sm;
-  const popularSnapInterval = popularCardWidth + popularCardGap;
-  const popularCardHeight = popularCardWidth * (2 / 3);
-  const popularCarouselFactIds = useMemo(() => popularFacts.map((f) => f.id), [popularFacts]);
+  const carouselCardGap = spacing.sm;
+  const carouselSnapInterval = carouselCardWidth + carouselCardGap;
 
-  const popularActiveIndexRef = useRef(0);
+  // Fresh Facts section (1:1 square cards)
+  const freshFactsCardHeight = carouselCardWidth; // 1:1 aspect ratio
+  const freshFactsIds = useMemo(() => freshFacts.map((f) => f.id), [freshFacts]);
 
-  const handlePopularScroll = useCallback(
+  const freshFactsActiveIndexRef = useRef(0);
+  const handleFreshFactsScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetX = event.nativeEvent.contentOffset.x;
-      const index = Math.round(offsetX / popularSnapInterval);
-      if (index !== popularActiveIndexRef.current) {
-        popularActiveIndexRef.current = index;
+      const index = Math.round(offsetX / carouselSnapInterval);
+      if (index !== freshFactsActiveIndexRef.current) {
+        freshFactsActiveIndexRef.current = index;
         trackCarouselSwipe({
-          section: 'popular',
+          section: 'fresh_facts',
           index,
-          factId: popularFacts[index]?.id,
+          factId: freshFacts[index]?.id,
         });
       }
     },
-    [popularSnapInterval, popularFacts]
+    [carouselSnapInterval, freshFacts]
   );
 
-  const renderPopularCarouselItem = useCallback(
+  const renderFreshFactsItem = useCallback(
     ({ item }: { item: FactWithRelations }) => {
-      const factIndex = popularCarouselFactIds.indexOf(item.id);
+      const factIndex = freshFactsIds.indexOf(item.id);
       return (
-        <View style={{ width: popularCardWidth, paddingVertical: spacing.md }}>
+        <View style={{ width: carouselCardWidth, paddingBottom: spacing.md }}>
           <ImageFactCard
             title={item.title || item.content.substring(0, 80) + '...'}
             imageUrl={item.image_url!}
             factId={item.id}
             category={item.categoryData || item.category}
             categorySlug={item.categoryData?.slug || item.category}
-            onPress={() => handleFactPress(item, 'home_popular', popularCarouselFactIds, factIndex)}
-            cardWidth={popularCardWidth}
-            aspectRatio={3 / 2}
+            onPress={() => handleFactPress(item, 'home_fresh_facts', freshFactsIds, factIndex)}
+            cardWidth={carouselCardWidth}
+            aspectRatio={1}
           />
         </View>
       );
     },
-    [popularCardWidth, handleFactPress, popularCarouselFactIds, spacing.md]
+    [carouselCardWidth, handleFactPress, freshFactsIds, spacing.md]
   );
 
-  const popularCarouselKeyExtractor = useCallback(
-    (item: FactWithRelations) => `popular-${item.id}`,
-    []
+  const freshFactsKeyExtractor = useCallback((item: FactWithRelations) => `fresh-${item.id}`, []);
+
+  // On This Day section (PopularFactCard thumbnail cards)
+  const onThisDayIds = useMemo(() => onThisDayFacts.map((f) => f.id), [onThisDayFacts]);
+  const onThisDayListHeight = iconSizes.heroLg + spacing.md * 2 + spacing.md * 2;
+
+  const onThisDayActiveIndexRef = useRef(0);
+  const handleOnThisDayScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const index = Math.round(offsetX / carouselSnapInterval);
+      if (index !== onThisDayActiveIndexRef.current) {
+        onThisDayActiveIndexRef.current = index;
+        trackCarouselSwipe({
+          section: 'on_this_day',
+          index,
+          factId: onThisDayFacts[index]?.id,
+        });
+      }
+    },
+    [carouselSnapInterval, onThisDayFacts]
   );
 
-  // Worth knowing section (thumbnail cards) sizing
-  const worthKnowingCardWidth = isWideScreen
-    ? contentWidth - spacing.lg * 2
-    : contentWidth * config.cardWidthMultiplier;
-  const worthKnowingCardGap = spacing.sm;
-  const worthKnowingFactIds = useMemo(
-    () => worthKnowingFacts.map((f) => f.id),
-    [worthKnowingFacts]
-  );
-
-  const renderWorthKnowingItem = useCallback(
+  const renderOnThisDayItem = useCallback(
     ({ item, index }: { item: FactWithRelations; index: number }) => (
-      <View style={{ paddingVertical: spacing.md }}>
+      <View style={{ paddingBottom: spacing.md }}>
         <PopularFactCard
           fact={item}
-          cardWidth={worthKnowingCardWidth}
-          onPress={() => handleFactPress(item, 'home_worth_knowing', worthKnowingFactIds, index)}
+          cardWidth={carouselCardWidth}
+          onPress={() => handleFactPress(item, 'home_on_this_day', onThisDayIds, index)}
         />
       </View>
     ),
-    [worthKnowingCardWidth, handleFactPress, worthKnowingFactIds, spacing.md]
+    [carouselCardWidth, handleFactPress, onThisDayIds, spacing.md]
   );
 
-  const worthKnowingKeyExtractor = useCallback((item: FactWithRelations) => `wk-${item.id}`, []);
+  const onThisDayKeyExtractor = useCallback((item: FactWithRelations) => `otd-${item.id}`, []);
+
+  // Worth Knowing section (3:2 image cards)
+  const worthKnowingCardHeight = carouselCardWidth * (2 / 3);
+  const worthKnowingIds = useMemo(() => worthKnowingFacts.map((f) => f.id), [worthKnowingFacts]);
 
   const worthKnowingActiveIndexRef = useRef(0);
-  const worthKnowingSnapInterval = worthKnowingCardWidth + worthKnowingCardGap;
   const handleWorthKnowingScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetX = event.nativeEvent.contentOffset.x;
-      const index = Math.round(offsetX / worthKnowingSnapInterval);
+      const index = Math.round(offsetX / carouselSnapInterval);
       if (index !== worthKnowingActiveIndexRef.current) {
         worthKnowingActiveIndexRef.current = index;
         trackCarouselSwipe({
@@ -490,28 +376,40 @@ function HomeScreen() {
         });
       }
     },
-    [worthKnowingSnapInterval, worthKnowingFacts]
+    [carouselSnapInterval, worthKnowingFacts]
   );
 
-  // Separators for horizontal FlashLists
-  const todaySeparator = useCallback(
-    () => <View style={{ width: todayCardGap }} />,
-    [todayCardGap]
-  );
-  const popularSeparator = useCallback(
-    () => <View style={{ width: popularCardGap }} />,
-    [popularCardGap]
-  );
-  const worthKnowingSeparator = useCallback(
-    () => <View style={{ width: worthKnowingCardGap }} />,
-    [worthKnowingCardGap]
+  const renderWorthKnowingItem = useCallback(
+    ({ item }: { item: FactWithRelations }) => {
+      const factIndex = worthKnowingIds.indexOf(item.id);
+      return (
+        <View style={{ width: carouselCardWidth, paddingBottom: spacing.md }}>
+          <ImageFactCard
+            title={item.title || item.content.substring(0, 80) + '...'}
+            imageUrl={item.image_url!}
+            factId={item.id}
+            category={item.categoryData || item.category}
+            categorySlug={item.categoryData?.slug || item.category}
+            onPress={() => handleFactPress(item, 'home_worth_knowing', worthKnowingIds, factIndex)}
+            cardWidth={carouselCardWidth}
+            aspectRatio={3 / 2}
+          />
+        </View>
+      );
+    },
+    [carouselCardWidth, handleFactPress, worthKnowingIds, spacing.md]
   );
 
-  // Worth knowing card height for FlashList container (thumbnail + card padding + outer shadow padding)
-  const worthKnowingListHeight = iconSizes.heroLg + spacing.md * 2 + spacing.md * 2;
+  const worthKnowingKeyExtractor = useCallback((item: FactWithRelations) => `wk-${item.id}`, []);
+
+  // Separator for horizontal FlashLists
+  const carouselSeparator = useCallback(
+    () => <View style={{ width: carouselCardGap }} />,
+    [carouselCardGap]
+  );
 
   // Loading state
-  if (initialLoading && todaysFacts.length === 0) {
+  if (initialLoading && freshFacts.length === 0) {
     return (
       <ScreenContainer edges={['top']}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
@@ -522,10 +420,10 @@ function HomeScreen() {
     );
   }
 
-  const hasTodaysFacts = todaysFacts.length > 0;
-  const hasPopularFacts = popularFacts.length > 0;
+  const hasFreshFacts = freshFacts.length > 0;
   const hasWorthKnowingFacts = worthKnowingFacts.length > 0;
-  const hasAnyContent = hasTodaysFacts || hasPopularFacts || hasWorthKnowingFacts;
+  const hasOnThisDayFacts = onThisDayFacts.length > 0;
+  const hasAnyContent = hasFreshFacts || hasWorthKnowingFacts || hasOnThisDayFacts;
 
   return (
     <ScreenContainer edges={['top']}>
@@ -535,17 +433,8 @@ function HomeScreen() {
         {!hasAnyContent ? (
           <EmptyState title={t('emptyStateTitle')} description={t('emptyStateDescription')} />
         ) : (
-          <ScrollView
-            ref={scrollViewRef}
-            refreshControl={refreshControl}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: spacing.xl }}
-            onScroll={(e) => {
-              scrollYRef.current = e.nativeEvent.contentOffset.y;
-            }}
-            scrollEventThrottle={16}
-          >
-            {/* Title */}
+          <>
+            {/* Title - fixed above scroll */}
             <Animated.View entering={FadeIn.duration(300)}>
               <ScreenHeader
                 icon={<Lightbulb size={iconSizes.lg} color={colors.primary} />}
@@ -560,13 +449,22 @@ function HomeScreen() {
               />
             </Animated.View>
 
-            {/* Category Story Buttons */}
+            <ScrollView
+              ref={scrollViewRef}
+              refreshControl={refreshControl}
+              showsVerticalScrollIndicator={false}
+              onScroll={(e) => {
+                scrollYRef.current = e.nativeEvent.contentOffset.y;
+              }}
+              scrollEventThrottle={16}
+            >
+              {/* Category Story Buttons */}
             <YStack paddingBottom={spacing.lg}>
               <CategoryStoryButtons />
             </YStack>
 
-            {/* Fact of the Day */}
-            {hasTodaysFacts && (
+            {/* Fresh Facts Section (1:1 square carousel) */}
+            {hasFreshFacts && (
               <>
                 <YStack
                   width="100%"
@@ -575,135 +473,94 @@ function HomeScreen() {
                   paddingHorizontal={spacing.lg}
                   paddingBottom={spacing.sm}
                 >
-                  <Text.Title fontSize={typography.fontSize.title}>
-                    {todaysFacts.length > 1 ? t('factsOfTheDay') : t('factOfTheDay')}
-                  </Text.Title>
-                </YStack>
-
-                {todaysFacts.length === 1 ? (
-                  <ContentContainer>
-                    <ImageFactCard
-                      title={
-                        todaysFacts[0].title || todaysFacts[0].content.substring(0, 80) + '...'
-                      }
-                      imageUrl={todaysFacts[0].image_url!}
-                      factId={todaysFacts[0].id}
-                      category={todaysFacts[0].categoryData || todaysFacts[0].category}
-                      categorySlug={todaysFacts[0].categoryData?.slug || todaysFacts[0].category}
-                      onPress={() => handleFactPress(todaysFacts[0], 'home_today')}
-                      aspectRatio={5 / 4}
-                      cardWidth={contentWidth}
-                      onImageReady={signalCarouselImageReady}
-                    />
-                  </ContentContainer>
-                ) : (
-                  <YStack>
-                    <View
-                      style={{
-                        height: todayCardWidth * (4 / 5) + spacing.md * 3,
-                        width: '100%',
-                      }}
-                    >
-                      <FlashList
-                        data={todaysFacts}
-                        renderItem={renderTodayItem}
-                        keyExtractor={todayKeyExtractor}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        snapToInterval={todaySnapInterval}
-                        decelerationRate="fast"
-                        ItemSeparatorComponent={todaySeparator}
-                        contentContainerStyle={{
-                          paddingHorizontal: listInset,
-                        }}
-                        onScroll={handleTodayScroll}
-                        scrollEventThrottle={16}
-                      />
-                    </View>
-
-                    {/* Pagination dots */}
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: spacing.xs,
-                        marginTop: -spacing.sm,
-                      }}
-                    >
-                      {todaysFacts.map((_, index) => {
-                        const dotSize = index === todayActiveIndex ? spacing.sm : spacing.sm - 2;
-                        return (
-                          <View
-                            key={index}
-                            style={{
-                              width: dotSize,
-                              height: dotSize,
-                              borderRadius: 100,
-                              backgroundColor:
-                                index === todayActiveIndex ? colors.primary : colors.border,
-                            }}
-                          />
-                        );
-                      })}
-                    </View>
-                  </YStack>
-                )}
-              </>
-            )}
-
-            {/* Inline ad after Fact of the Day */}
-            {!isPremium && hasTodaysFacts && (
-              <ContentContainer>
-                <YStack paddingTop={spacing.lg}>
-                  <InlineNativeAd />
-                </YStack>
-              </ContentContainer>
-            )}
-
-            {/* Popular Section (3:2 carousel) */}
-            {hasPopularFacts && (
-              <>
-                <YStack
-                  width="100%"
-                  maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
-                  alignSelf="center"
-                  paddingHorizontal={spacing.lg}
-                  paddingTop={spacing.xl}
-                  paddingBottom={spacing.sm}
-                >
-                  <Text.Title fontSize={typography.fontSize.body}>{t('popular')}</Text.Title>
+                  <Text.Title fontSize={typography.fontSize.body}>{t('freshFacts')}</Text.Title>
                 </YStack>
 
                 <View
                   style={{
-                    height: popularCardHeight + spacing.md * 2 + spacing.sm,
+                    height: freshFactsCardHeight + spacing.xxl,
                     width: '100%',
                   }}
                 >
                   <FlashList
-                    ref={popularListRef}
-                    data={popularFacts}
-                    renderItem={renderPopularCarouselItem}
-                    keyExtractor={popularCarouselKeyExtractor}
+                    ref={freshFactsListRef}
+                    data={freshFacts}
+                    renderItem={renderFreshFactsItem}
+                    keyExtractor={freshFactsKeyExtractor}
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    snapToInterval={popularSnapInterval}
+                    snapToInterval={carouselSnapInterval}
                     decelerationRate="fast"
                     disableIntervalMomentum
-                    ItemSeparatorComponent={popularSeparator}
+                    ItemSeparatorComponent={carouselSeparator}
                     contentContainerStyle={{
                       paddingHorizontal: listInset,
                     }}
-                    drawDistance={popularCardWidth}
-                    onScroll={handlePopularScroll}
+                    drawDistance={carouselCardWidth}
+                    onScroll={handleFreshFactsScroll}
                     scrollEventThrottle={16}
                   />
                 </View>
               </>
             )}
 
-            {/* Worth Knowing Section (thumbnail cards) */}
+            {/* Inline ad between sections */}
+            {ADS_ENABLED && !isPremium && hasFreshFacts && (
+              <YStack
+                width="100%"
+                maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
+                alignSelf="center"
+                paddingHorizontal={spacing.lg}
+                paddingTop={spacing.lg}
+              >
+                <InlineNativeAd />
+              </YStack>
+            )}
+
+            {/* On This Day Section (thumbnail cards) */}
+            {hasOnThisDayFacts && (
+              <>
+                <YStack
+                  width="100%"
+                  maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
+                  alignSelf="center"
+                  paddingHorizontal={spacing.lg}
+                  paddingVertical={spacing.sm}
+                >
+                  <Text.Title fontSize={typography.fontSize.body}>
+                    {onThisDayIsWeekFallback ? t('thisWeekInHistory') : t('onThisDay')}
+                  </Text.Title>
+                </YStack>
+
+                <View
+                  style={{
+                    height: onThisDayListHeight,
+                    width: '100%',
+                  }}
+                >
+                  <FlashList
+                    ref={onThisDayListRef}
+                    data={onThisDayFacts}
+                    renderItem={renderOnThisDayItem}
+                    keyExtractor={onThisDayKeyExtractor}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    snapToInterval={carouselSnapInterval}
+                    decelerationRate="fast"
+                    disableIntervalMomentum
+                    ItemSeparatorComponent={carouselSeparator}
+                    contentContainerStyle={{
+                      paddingHorizontal: listInset,
+                    }}
+                    drawDistance={carouselCardWidth}
+                    onScroll={handleOnThisDayScroll}
+                    scrollEventThrottle={16}
+                  />
+                </View>
+              </>
+            )}
+
+            {/* Worth Knowing Section (3:2 carousel) */}
             {hasWorthKnowingFacts && (
               <>
                 <YStack
@@ -711,15 +568,14 @@ function HomeScreen() {
                   maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
                   alignSelf="center"
                   paddingHorizontal={spacing.lg}
-                  paddingTop={spacing.xl}
-                  paddingBottom={spacing.sm}
+                  paddingVertical={spacing.sm}
                 >
                   <Text.Title fontSize={typography.fontSize.body}>{t('worthKnowing')}</Text.Title>
                 </YStack>
 
                 <View
                   style={{
-                    height: worthKnowingListHeight,
+                    height: worthKnowingCardHeight + spacing.md * 2 + spacing.sm,
                     width: '100%',
                   }}
                 >
@@ -730,14 +586,14 @@ function HomeScreen() {
                     keyExtractor={worthKnowingKeyExtractor}
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    snapToInterval={worthKnowingSnapInterval}
+                    snapToInterval={carouselSnapInterval}
                     decelerationRate="fast"
                     disableIntervalMomentum
-                    ItemSeparatorComponent={worthKnowingSeparator}
+                    ItemSeparatorComponent={carouselSeparator}
                     contentContainerStyle={{
                       paddingHorizontal: listInset,
                     }}
-                    drawDistance={worthKnowingCardWidth}
+                    drawDistance={carouselCardWidth}
                     onScroll={handleWorthKnowingScroll}
                     scrollEventThrottle={16}
                   />
@@ -745,6 +601,7 @@ function HomeScreen() {
               </>
             )}
           </ScrollView>
+          </>
         )}
 
         {backgroundRefreshStatus === 'locale-change' && (

@@ -23,7 +23,7 @@ import { showAppOpenAdOnForeground } from '../src/components/ads/AppOpenAd';
 import { AppCheckBlockingScreen } from '../src/components/AppCheckBlockingScreen';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { SplashOverlay } from '../src/components/SplashOverlay';
-import { STORAGE_KEYS, TIMING } from '../src/config/app';
+import { DEV_FORCE_PREMIUM, STORAGE_KEYS, TIMING } from '../src/config/app';
 import { isAppCheckInitFailed, subscribeAppCheckFailure } from '../src/config/appCheckState';
 import {
   enableCrashlyticsConsoleLogging,
@@ -139,8 +139,9 @@ const CustomLightTheme = {
 };
 
 // Skip PremiumProvider on emulators in dev mode — IAP can't work without a real store
+// Exception: when DEV_FORCE_PREMIUM is on, always mount PremiumProvider so usePremium() works
 function IAPSafeProvider({ children }: { children: React.ReactNode }) {
-  if (__DEV__ && !Device.isDevice) {
+  if (__DEV__ && !Device.isDevice && !DEV_FORCE_PREMIUM) {
     return <>{children}</>;
   }
   return <PremiumProvider>{children}</PremiumProvider>;
@@ -216,7 +217,7 @@ function AppContent() {
             const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
             console.log('🔔 Notification opened, syncing schedule...');
             notificationService
-              .syncNotificationSchedule(getLocaleFromCode(deviceLocale), 'notification_tap')
+              .ensureNotificationSchedule(getLocaleFromCode(deviceLocale), 'notification_tap')
               .catch((error) => {
                 console.error('Notification sync after open failed:', error);
               });
@@ -370,7 +371,7 @@ export default function RootLayout() {
         Notifications.setBadgeCountAsync(0);
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
         notificationService
-          .syncNotificationSchedule(getLocaleFromCode(deviceLocale), 'foreground')
+          .ensureNotificationSchedule(getLocaleFromCode(deviceLocale), 'foreground')
           .catch((error) => {
             console.error('Notification sync failed:', error);
           });
@@ -540,17 +541,10 @@ export default function RootLayout() {
         // No locale change — normal startup flow
         // Pre-load facts + recommendations in parallel
         try {
-          const [facts, { popular: popularRecs, worthKnowing: worthKnowingRecs }] =
-            await Promise.all([
-              (async () => {
-                await database.markDeliveredFactsAsShown(locale);
-                return database.getFactsGroupedByDate(locale);
-              })(),
-              loadDailyFeedSections(locale),
-            ]);
-
-          setPreloadedFactsBeforeMount(facts);
-          setPreloadedRecommendationsBeforeMount([...popularRecs, ...worthKnowingRecs]);
+          await Promise.all([
+            database.markDeliveredFactsAsShown(locale),
+            loadDailyFeedSections(locale),
+          ]);
         } catch (error) {
           console.error('Failed to pre-load home screen data:', error);
         }
@@ -585,7 +579,7 @@ export default function RootLayout() {
       Notifications.setBadgeCountAsync(0);
 
       // Sync notification schedule — fire-and-forget
-      notificationService.syncNotificationSchedule(locale, 'cold_start').catch((error) => {
+      notificationService.ensureNotificationSchedule(locale, 'cold_start').catch((error) => {
         console.error('Notification sync failed:', error);
       });
 

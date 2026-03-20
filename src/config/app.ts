@@ -6,6 +6,12 @@
  */
 
 /**
+ * Set to true to simulate premium experience in dev builds.
+ * Only works when __DEV__ is true.
+ */
+export const DEV_FORCE_PREMIUM = __DEV__ && false;
+
+/**
  * Ads configuration
  */
 export const ADS_ENABLED = !__DEV__;
@@ -135,10 +141,10 @@ export const DISPLAY_LIMITS = {
  * Home feed section item counts
  */
 export const HOME_FEED = {
-  /** Number of 16:9 cards in the Popular carousel */
-  POPULAR_COUNT: 10,
-  /** Number of thumbnail cards in the Worth Knowing section */
-  WORTH_KNOWING_COUNT: 5,
+  /** Number of cards in the Fresh Facts carousel */
+  FRESH_FACTS_COUNT: 10,
+  /** Number of cards in the Worth Knowing carousel */
+  WORTH_KNOWING_COUNT: 10,
 } as const;
 
 /**
@@ -159,8 +165,8 @@ export const LAYOUT = {
 export const NOTIFICATION_SETTINGS = {
   /** iOS limit for scheduled notifications */
   MAX_SCHEDULED: 64,
-  /** Number of days to preload notification images in advance */
-  DAYS_TO_PRELOAD_IMAGES: 14,
+  /** Number of days ahead to schedule notifications (and preload images) */
+  DAYS_AHEAD: 7,
   /** Directory name for notification images (appended to documentDirectory) */
   IMAGES_DIR_NAME: 'notification-images/',
   /** Time tolerance for comparing OS and DB notification times (milliseconds) */

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { endConnection, hasActiveSubscriptions, initConnection } from 'expo-iap';
 
-import { SUBSCRIPTION } from '../config/app';
+import { DEV_FORCE_PREMIUM, SUBSCRIPTION } from '../config/app';
 
 import { getIsConnected } from './network';
 import { getIsPremium, setIsPremium } from './premiumState';
@@ -45,6 +45,8 @@ export const endIAPConnection = async (): Promise<void> => {
  * Returns true if user is premium.
  */
 export const checkAndUpdatePremiumStatus = async (): Promise<boolean> => {
+  if (DEV_FORCE_PREMIUM) return true;
+
   try {
     // Don't verify with store when offline — trust cached status
     if (!getIsConnected()) {

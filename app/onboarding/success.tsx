@@ -402,7 +402,7 @@ export default function OnboardingSuccessScreen() {
 
       // Fire-and-forget: sync DB-scheduled notifications to OS
       // Runs during success animation while user transitions to home screen
-      notificationService.syncNotificationSchedule(locale, 'cold_start').catch((error) => {
+      notificationService.ensureNotificationSchedule(locale, 'cold_start').catch((error) => {
         console.error('Post-onboarding notification sync failed:', error);
       });
 

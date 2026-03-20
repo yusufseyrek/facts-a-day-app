@@ -10,7 +10,7 @@ import {
   useIAP,
 } from 'expo-iap';
 
-import { SUBSCRIPTION } from '../config/app';
+import { DEV_FORCE_PREMIUM, SUBSCRIPTION } from '../config/app';
 import { setAnalyticsUserProperty } from '../config/firebase';
 import {
   trackSubscriptionPurchased,
@@ -48,6 +48,21 @@ const PremiumContext = createContext<PremiumContextType>({
 export const usePremium = () => useContext(PremiumContext);
 
 export function PremiumProvider({ children }: { children: React.ReactNode }) {
+  // Dev shortcut: skip all IAP logic and force premium
+  if (DEV_FORCE_PREMIUM) {
+    return (
+      <PremiumContext.Provider
+        value={{ isPremium: true, isLoading: false, subscriptions: [], restorePurchases: async () => true }}
+      >
+        {children}
+      </PremiumContext.Provider>
+    );
+  }
+
+  return <IAPPremiumProvider>{children}</IAPPremiumProvider>;
+}
+
+function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
   // Initialize from in-memory state (already set by _layout.tsx from cache)
   const [isPremium, setIsPremium] = useState(getPremiumState);
   const [isLoading, setIsLoading] = useState(true);

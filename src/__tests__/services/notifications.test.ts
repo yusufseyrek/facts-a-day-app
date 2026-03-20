@@ -2,8 +2,7 @@ import * as database from '../../services/database';
 // Import after setup mocks
 import {
   __testing,
-  scheduleNotifications,
-  syncNotificationSchedule,
+  ensureNotificationSchedule,
 } from '../../services/notifications';
 import { createFactWithRelations, createPreferredTime, futureDate } from '../helpers/factories';
 
@@ -310,59 +309,35 @@ describe('notifications — integration', () => {
     dbMock.clearAllScheduledFactsCompletely.mockResolvedValue(undefined);
     dbMock.getFutureScheduledFactsWithNotificationIds.mockResolvedValue([]);
     dbMock.getRandomUnscheduledFacts.mockResolvedValue([]);
-    dbMock.getLatestScheduledDate.mockResolvedValue(null);
+    dbMock.getRandomUnscheduledFactsWithFallback.mockResolvedValue([]);
+    dbMock.getUnscheduledHistoricalFactsForDates.mockResolvedValue([]);
+    dbMock.getRecentUnscheduledFacts.mockResolvedValue([]);
   });
 
-  describe('syncNotificationSchedule', () => {
+  describe('ensureNotificationSchedule', () => {
     it('marks delivered facts then checks permission', async () => {
       Notifications.getPermissionsAsync.mockResolvedValue({ status: 'denied' });
-      const result = await syncNotificationSchedule('en');
+      const result = await ensureNotificationSchedule('en');
       expect(dbMock.markDeliveredFactsAsShown).toHaveBeenCalledWith('en');
       expect(result.success).toBe(true);
       expect(result.skipped).toBe(true);
     });
 
-    // syncNotificationSchedule uses dynamic import() for onboarding which
+    // ensureNotificationSchedule uses dynamic import() for onboarding which
     // doesn't work in Jest CJS mode. Tests below verify error handling.
     it('handles dynamic import failure gracefully', async () => {
-      const result = await syncNotificationSchedule('en');
+      const result = await ensureNotificationSchedule('en');
       // In test env, dynamic import fails → caught → returns error result
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
-  });
 
-  describe('scheduleNotifications', () => {
-    it('clears, gets facts, assigns slots, syncs OS', async () => {
-      const times = [createPreferredTime(9, 0)];
-      const facts = [createFactWithRelations({ id: 1 }), createFactWithRelations({ id: 2 })];
-      dbMock.getRandomUnscheduledFacts.mockResolvedValue(facts);
-      dbMock.markFactAsScheduled.mockResolvedValue(undefined as any);
-      dbMock.getFutureScheduledFactsWithNotificationIds.mockResolvedValue([]);
-      dbMock.getFactById.mockImplementation(async (id) => facts.find((f) => f.id === id) || null);
-      dbMock.updateNotificationId.mockResolvedValue(undefined as any);
-
-      Notifications.getAllScheduledNotificationsAsync.mockResolvedValue([]);
-      Notifications.scheduleNotificationAsync.mockResolvedValue('notif-1');
-
-      const result = await scheduleNotifications(times, 'en');
-      expect(result.success).toBeDefined();
-      expect(dbMock.markFactAsScheduled).toHaveBeenCalledTimes(2);
-    });
-
-    it('returns error when no facts available', async () => {
-      const times = [createPreferredTime(9, 0)];
-      dbMock.getRandomUnscheduledFacts.mockResolvedValue([]);
-
-      const result = await scheduleNotifications(times, 'en');
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('No facts');
-    });
-
-    it('returns error when permission not granted', async () => {
+    it('clears schedule when permission denied', async () => {
       Notifications.getPermissionsAsync.mockResolvedValue({ status: 'denied' });
-      const result = await scheduleNotifications([createPreferredTime(9, 0)], 'en');
-      expect(result.success).toBe(false);
+      const result = await ensureNotificationSchedule('en');
+      expect(result.success).toBe(true);
+      expect(result.skipped).toBe(true);
+      expect(dbMock.clearAllScheduledFactsCompletely).toHaveBeenCalled();
     });
   });
 });

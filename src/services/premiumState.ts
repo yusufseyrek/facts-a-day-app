@@ -1,4 +1,4 @@
-import { ADS_ENABLED } from '../config/app';
+import { ADS_ENABLED, DEV_FORCE_PREMIUM } from '../config/app';
 
 let _isPremium = false;
 
@@ -6,7 +6,7 @@ export const setIsPremium = (value: boolean): void => {
   _isPremium = value;
 };
 
-export const getIsPremium = (): boolean => _isPremium;
+export const getIsPremium = (): boolean => DEV_FORCE_PREMIUM || _isPremium;
 
 /** Returns true if ads should be shown (user is not premium and ads are enabled) */
 export const shouldShowAds = (): boolean => !_isPremium && ADS_ENABLED;

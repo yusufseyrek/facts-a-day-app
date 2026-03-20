@@ -239,7 +239,8 @@ export default function NotificationsScreen() {
       }
 
       // Schedule notifications starting from tomorrow (today is covered by the immediate fact)
-      const result = await notificationService.scheduleNotifications(notificationTimes, locale, {
+      const result = await notificationService.ensureNotificationSchedule(locale, 'unknown', {
+        forceReschedule: true,
         skipToday: true,
         skipOsSync: true,
       });
