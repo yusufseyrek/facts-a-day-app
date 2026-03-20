@@ -36,9 +36,11 @@ import {
   PreloadedDataProvider,
   PremiumProvider,
   ScrollToTopProvider,
+  setFeedLoadPending,
   setLocaleRefreshPending,
   setPreloadedFactsBeforeMount,
   signalLocaleRefreshDone,
+  waitForFeedLoaded,
   useOnboarding,
 } from '../src/contexts';
 import { getLocaleFromCode, I18nProvider } from '../src/i18n';
@@ -493,11 +495,12 @@ export default function RootLayout() {
 
       if (localeStatus.changed) {
         // Locale changed (OS cold-restarted the app)
-        // Gate the splash so it stays visible during refresh + app open ad.
+        // Gate the splash so it stays visible during refresh.
         setLocaleRefreshPending();
 
-        // Pre-load home screen data with OLD language first so the home screen
-        // can mount and signal ready (required for splash overlay flow)
+        // Pre-load home screen data so the home screen can mount and signal ready
+        // (required for splash overlay flow). Uses new locale — DB may be empty,
+        // but that's fine; the splash stays gated until locale refresh is done.
         try {
           await database.markDeliveredFactsAsShown(locale);
           const facts = await database.getFactsGroupedByDate(locale);
@@ -518,23 +521,32 @@ export default function RootLayout() {
           }
         }
 
-        // Run content refresh — splash stays visible because localeRefreshPromise is pending
+        // Run content refresh — splash stays visible because localeRefreshPromise is pending.
+        // handleLanguageChange emits onPreferenceFeedRefresh during this call, which may
+        // resolve a previous feedLoadedPromise. We reset it below before our own trigger.
+        await contentRefresh.refreshAppContent();
+
+        // Pre-populate the daily feed cache so the home screen's loadFeedSections
+        // gets a fast cache hit when it processes the feed refresh event below.
         try {
-          await contentRefresh.refreshAppContent();
+          await loadDailyFeedSections(locale, true);
         } catch (error) {
-          console.error('Language change refresh failed:', error);
+          console.error('Failed to pre-populate daily feed cache:', error);
         }
 
-        // Re-load home screen data with new language
-        try {
-          await database.markDeliveredFactsAsShown(locale);
-          const facts = await database.getFactsGroupedByDate(locale);
-          setPreloadedFactsBeforeMount(facts);
-        } catch (error) {
-          console.error('Failed to re-load home screen data:', error);
-        }
+        // Reset the feed load gate. Any earlier signalFeedLoaded() calls (from
+        // onPreferenceFeedRefresh during refreshAppContent) are now stale.
+        // The home screen's onFeedRefresh handler will resolve this new promise
+        // after it finishes loading from the pre-populated cache.
+        setFeedLoadPending();
 
-        // Now let splash fade out
+        // Tell the home screen to reload from the now-populated cache.
+        contentRefresh.triggerFeedRefresh();
+
+        // Wait for the home screen to finish loading feed data (5s timeout fallback).
+        await waitForFeedLoaded();
+
+        // Now let splash fade out — home screen has data in its state.
         signalLocaleRefreshDone();
       } else {
         // No locale change — normal startup flow

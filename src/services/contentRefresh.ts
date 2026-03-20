@@ -17,6 +17,29 @@ const QUESTIONS_MIGRATION_KEY = '@questions_migration_v1';
 const SLUG_MIGRATION_KEY = '@slug_migration_v1';
 const HISTORICAL_MIGRATION_KEY = '@historical_migration_v1';
 
+// Flag: when true, the home screen should force-refresh on next focus
+let feedRefreshPending = false;
+
+/**
+ * Mark that a feed refresh is needed (e.g. after preference changes).
+ * The home screen checks this flag on focus and clears it after refreshing.
+ */
+export function markFeedRefreshPending(): void {
+  feedRefreshPending = true;
+}
+
+/**
+ * Check and clear the pending feed refresh flag.
+ * Returns true if a refresh was pending.
+ */
+export function consumeFeedRefreshPending(): boolean {
+  if (feedRefreshPending) {
+    feedRefreshPending = false;
+    return true;
+  }
+  return false;
+}
+
 // Event listeners for feed refresh
 type FeedRefreshListener = () => void;
 const feedRefreshListeners: Set<FeedRefreshListener> = new Set();
@@ -88,7 +111,7 @@ export function onFeedRefresh(listener: FeedRefreshListener): () => void {
 /**
  * Emit feed refresh event to all listeners
  */
-function emitFeedRefresh(): void {
+export function emitFeedRefresh(): void {
   feedRefreshListeners.forEach((listener) => {
     try {
       listener();

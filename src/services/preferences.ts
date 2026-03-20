@@ -11,6 +11,7 @@
  */
 
 import * as api from './api';
+import { emitFeedRefresh as emitContentFeedRefresh, markFeedRefreshPending } from './contentRefresh';
 import * as database from './database';
 import * as notificationService from './notifications';
 import * as onboardingService from './onboarding';
@@ -302,6 +303,8 @@ export async function handleLanguageChange(
 
     // Notify listeners to refresh the feed with new language content
     emitFeedRefresh();
+    emitContentFeedRefresh();
+    markFeedRefreshPending();
 
     return { success: true, factsCount: allFacts.length };
   } catch (error) {
@@ -486,6 +489,27 @@ export async function handleCategoriesChange(
 
     console.log(`Updated ${updatedCount} shown facts, inserted ${insertedCount} new facts`);
 
+    // Delete all facts from removed categories (including shown ones), except favorites.
+    // This runs AFTER insertion so the API can't re-insert facts from removed categories.
+    const placeholders = newCategories.map(() => '?').join(',');
+    await db.runAsync(
+      `
+      DELETE FROM facts
+      WHERE category NOT IN (${placeholders})
+        AND id NOT IN (SELECT fact_id FROM favorites)
+    `,
+      newCategories
+    );
+
+    // Clean up orphaned questions from deleted facts
+    await db.runAsync(`
+      DELETE FROM questions
+      WHERE fact_id NOT IN (SELECT id FROM facts)
+    `);
+
+    // Clear daily feed cache so it rebuilds from updated DB state
+    await database.clearDailyFeedCache();
+
     // Fire-and-forget: insert questions in background (not needed for home feed)
     insertQuestionsInBackground(newFacts);
 
@@ -515,6 +539,8 @@ export async function handleCategoriesChange(
 
     // Notify listeners to refresh the feed with new category content
     emitFeedRefresh();
+    emitContentFeedRefresh();
+    markFeedRefreshPending();
 
     return { success: true, factsCount: newFacts.length };
   } catch (error) {

@@ -627,3 +627,28 @@ async function _preCacheOfflineImagesInner(
     failed,
   };
 }
+
+/**
+ * Cache images for the given facts (fire-and-forget friendly).
+ * Skips facts without images and facts already in the local cache.
+ * Used by loadDailyFeedSections() to cache feed images as part of feed curation.
+ */
+export async function cacheFactImages(
+  facts: Array<{ id: number; image_url?: string | null }>
+): Promise<void> {
+  const uncached: Array<{ id: number; image_url: string }> = [];
+  for (const fact of facts) {
+    if (!fact.image_url) continue;
+    if (getCachedFactImageSync(fact.id)) continue;
+    uncached.push({ id: fact.id, image_url: fact.image_url });
+  }
+  if (uncached.length === 0) return;
+
+  const concurrency = PRECACHE.CONCURRENCY;
+  for (let i = 0; i < uncached.length; i += concurrency) {
+    const batch = uncached.slice(i, i + concurrency);
+    await Promise.allSettled(
+      batch.map((fact) => downloadImage(fact.image_url, fact.id))
+    );
+  }
+}

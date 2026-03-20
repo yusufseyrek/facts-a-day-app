@@ -8,6 +8,7 @@ import {
   getThisWeekInHistoryFacts,
   setDailyFeedCache,
 } from './database';
+import { cacheFactImages } from './images';
 
 import type { FactWithRelations } from './database';
 
@@ -54,9 +55,8 @@ export async function loadDailyFeedSections(
       getDailyFeedCache('on_this_day', locale),
     ]);
   } else {
-    // Worth knowing stays locked for the day even on force refresh
-    // so image caching works and the section is usable offline
-    worthKnowingCached = await getDailyFeedCache('worth_knowing', locale);
+    // Force refresh: re-fetch all sections from DB.
+    // Stale cache IDs (e.g. from deleted category facts) are replaced.
   }
 
   const needsFresh = freshCached.length === 0;
@@ -112,6 +112,9 @@ export async function loadDailyFeedSections(
       }
     }
   }
+
+  // Cache feed images in the background for offline reading
+  cacheFactImages([...freshFacts, ...worthKnowing, ...onThisDay]).catch(() => {});
 
   return {
     freshFacts,

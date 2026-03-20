@@ -34,7 +34,7 @@ import { CategoryStoryButtons, CategoryStoryButtonsRef } from '../../src/compone
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { PopularFactCard } from '../../src/components/PopularFactCard';
 import { ADS_ENABLED, LAYOUT, PAYWALL_PROMPT } from '../../src/config/app';
-import { usePreloadedData, usePremium, useScrollToTopHandler } from '../../src/contexts';
+import { signalFeedLoaded, usePreloadedData, usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
@@ -47,6 +47,7 @@ import {
   forceRefreshContent,
   getRefreshStatus,
   onFeedRefresh,
+  consumeFeedRefreshPending,
   onRefreshStatusChange,
   RefreshStatus,
 } from '../../src/services/contentRefresh';
@@ -54,7 +55,6 @@ import { loadDailyFeedSections } from '../../src/services/dailyFeed';
 import { preCacheOfflineImages } from '../../src/services/images';
 import { onNetworkChange } from '../../src/services/network';
 import { shouldShowPaywall } from '../../src/services/paywallTiming';
-import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -121,8 +121,9 @@ function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      // Load feed sections, then trigger image pre-caching once
-      loadFeedSections(true).then(() => {
+      // Force-refresh if preferences changed while away, otherwise only load if empty
+      const forceRefresh = consumeFeedRefreshPending();
+      loadFeedSections(!forceRefresh, forceRefresh).then(() => {
         const today = getLocalDateString();
         if (preCacheDateRef.current !== today) {
           preCacheDateRef.current = today;
@@ -155,18 +156,15 @@ function HomeScreen() {
     }, [locale, t, isPremium])
   );
 
-  // Auto-refresh feed when content is updated from API
+  // Auto-refresh feed when facts change (content sync, preference changes)
   useEffect(() => {
-    const unsubscribe = onFeedRefresh(() => {
-      loadFeedSections(true);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Auto-refresh feed when preferences change
-  useEffect(() => {
-    const unsubscribe = onPreferenceFeedRefresh(() => {
-      loadFeedSections(false, true);
+    const unsubscribe = onFeedRefresh(async () => {
+      await loadFeedSections(false, true);
+      // Reset carousel scroll positions so indices match visible items
+      freshFactsListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      worthKnowingListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      onThisDayListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      signalFeedLoaded();
     });
     return () => unsubscribe();
   }, []);
@@ -475,7 +473,7 @@ function HomeScreen() {
                     paddingHorizontal={spacing.lg}
                     paddingBottom={spacing.sm}
                   >
-                    <Text.Title fontSize={typography.fontSize.body}>{t('freshFacts')}</Text.Title>
+                    <Text.Title fontSize={typography.fontSize.body}>{t('newlyAdded')}</Text.Title>
                   </YStack>
 
                   <View

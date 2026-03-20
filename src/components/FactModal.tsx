@@ -354,7 +354,7 @@ export function FactModal({
   const handleSourcePress = useCallback(
     (url: string) => {
       trackSourceLinkClick({ factId: fact.id, domain: extractDomain(url) });
-      openInAppBrowser(url, { theme, translateTo: locale });
+      openInAppBrowser(url, { theme, translateTo: locale === 'en' ? undefined : locale });
     },
     [fact.id, theme, locale]
   );
@@ -933,7 +933,7 @@ export function FactModal({
               >
                 {categoryForBadge && (
                   <Animated.View style={{ opacity: categoryBadgeOpacity }}>
-                    <CategoryBadge category={categoryForBadge} factId={fact.id} />
+                    <CategoryBadge category={categoryForBadge} />
                   </Animated.View>
                 )}
                 {(fact.last_updated || fact.created_at) && (

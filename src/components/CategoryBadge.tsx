@@ -13,8 +13,6 @@ import type { Category } from '../services/database';
 
 interface CategoryBadgeProps {
   category: string | Category;
-  /** Fact ID displayed as identifier in the badge */
-  factId?: number;
   /**
    * Font family to use for the badge text.
    * Use FONT_FAMILIES constants (e.g., FONT_FAMILIES.semibold)
@@ -27,7 +25,6 @@ interface CategoryBadgeProps {
 
 export function CategoryBadge({
   category,
-  factId,
   fontFamily,
   fontSize,
   compact,
@@ -68,7 +65,7 @@ export function CategoryBadge({
         fontFamily={fontFamily || FONT_FAMILIES.semibold}
         fontSize={fontSize}
       >
-        {factId != null ? `${displayName}#${factId}` : displayName}
+        {displayName}
       </Text.Caption>
     </XStack>
   );

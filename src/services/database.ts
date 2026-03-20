@@ -3450,6 +3450,14 @@ export async function clearStaleFeedCache(): Promise<void> {
 }
 
 /**
+ * Clear all daily feed cache entries (used after preference changes)
+ */
+export async function clearDailyFeedCache(): Promise<void> {
+  const database = await openDatabase();
+  await database.runAsync('DELETE FROM daily_feed_cache');
+}
+
+/**
  * Get fact IDs and image URLs for pre-caching
  * Covers: fact of the day, popular + worth knowing (daily feed), next 20 story facts (unseen first), and favorites
  *

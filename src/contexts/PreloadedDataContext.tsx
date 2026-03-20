@@ -20,6 +20,13 @@ let carouselImageReadyPromise: Promise<void> | null = null;
 let localeRefreshResolve: (() => void) | null = null;
 let localeRefreshPromise: Promise<void> | null = null;
 
+// Module-level promise for feed loaded gate
+// Used by _layout.tsx to wait for the home screen to finish loading feed data
+// before releasing the splash. NOT added to waitForHomeScreenReady() because
+// the promise can be resolved (and nulled) before the SplashOverlay mounts.
+let feedLoadedResolve: (() => void) | null = null;
+let feedLoadedPromise: Promise<void> | null = null;
+
 export function setPreloadedFactsBeforeMount(facts: FactWithRelations[]) {
   preloadedFactsStorage = facts;
   // Create a promise that will resolve when home screen signals ready
@@ -58,6 +65,43 @@ export function signalLocaleRefreshDone(): void {
     localeRefreshResolve = null;
     localeRefreshPromise = null;
   }
+}
+
+/**
+ * Call during locale change to gate the splash until the home screen
+ * has finished loading feed data into its state.
+ */
+export function setFeedLoadPending(): void {
+  feedLoadedPromise = new Promise((resolve) => {
+    feedLoadedResolve = resolve;
+  });
+}
+
+/**
+ * Signal that the home screen has finished loading feed data.
+ * Called from the home screen's onFeedRefresh handler.
+ */
+export function signalFeedLoaded(): void {
+  if (feedLoadedResolve) {
+    feedLoadedResolve();
+    feedLoadedResolve = null;
+    feedLoadedPromise = null;
+  }
+}
+
+/**
+ * Wait for the home screen to finish loading feed data.
+ * Used by _layout.tsx to block before releasing the splash.
+ * Returns immediately if no feed load is pending.
+ */
+export function waitForFeedLoaded(): Promise<void> {
+  if (feedLoadedPromise) {
+    return Promise.race([
+      feedLoadedPromise,
+      new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+    ]);
+  }
+  return Promise.resolve();
 }
 
 // Called by SplashOverlay to wait for home screen to be ready

@@ -271,7 +271,7 @@ const ImageFactCardComponent = ({
           <View style={[cardWrapperStyle, styles.imageContainer, styles.offlineCard]}>
             {category && (
               <View style={{ marginBottom: spacing.sm }}>
-                <CategoryBadge category={category} factId={factId} />
+                <CategoryBadge category={category} />
               </View>
             )}
             <Text.Title color="#FFFFFF" numberOfLines={config.maxLines} style={styles.titleShadow}>
@@ -357,7 +357,7 @@ const ImageFactCardComponent = ({
             {/* Category badge */}
             {category && (
               <View style={[styles.badgeContainer, badgePositionStyle]}>
-                <CategoryBadge category={category} factId={factId} />
+                <CategoryBadge category={category} />
               </View>
             )}
 

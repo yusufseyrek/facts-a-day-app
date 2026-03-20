@@ -43,7 +43,7 @@ import { FeedManagementModal } from '../../src/components/settings/FeedManagemen
 import { ThemePickerModal } from '../../src/components/settings/ThemePickerModal';
 import { TimePickerModal } from '../../src/components/settings/TimePickerModal';
 import { SettingsRow } from '../../src/components/SettingsRow';
-import { LAYOUT, SUBSCRIPTION } from '../../src/config/app';
+import { DEV_SETTINGS_ENABLED, LAYOUT, SUBSCRIPTION } from '../../src/config/app';
 import { useOnboarding, usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { TranslationKeys } from '../../src/i18n/translations';
@@ -116,8 +116,7 @@ export default function SettingsPage() {
   }, []);
   useScrollToTopHandler('settings', scrollToTop);
 
-  // Check if running in development mode
-  const isDevelopment = __DEV__;
+  const isDevelopment = DEV_SETTINGS_ENABLED;
 
   // Use white icons in dark mode for better contrast
   const iconColor = theme === 'dark' ? '#FFFFFF' : hexColors[theme].text;
