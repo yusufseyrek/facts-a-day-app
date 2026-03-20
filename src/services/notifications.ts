@@ -935,7 +935,7 @@ async function syncOsWithDb(
 
 /**
  * Select facts for notification slots using a 3-tier priority system:
- * 1. Historical facts matching each slot's calendar date (1 per unique day)
+ * 1. Historical facts matching each slot's calendar date (as many as available, up to slot count per day)
  * 2. Recently created facts (newest first)
  * 3. Random facts (fallback)
  *
@@ -949,36 +949,51 @@ async function selectSmartFactsForSlots(
 
   const usedIds = new Set<number>();
 
-  // Extract unique calendar days from slots
+  // Count slots per calendar day and extract unique days
+  const slotsPerDay = new Map<string, number>();
   const uniqueDays = new Map<string, { month: number; day: number }>();
   for (const slot of slots) {
     const month = slot.date.getMonth() + 1;
     const day = slot.date.getDate();
     const key = `${month}-${day}`;
+    slotsPerDay.set(key, (slotsPerDay.get(key) || 0) + 1);
     if (!uniqueDays.has(key)) {
       uniqueDays.set(key, { month, day });
     }
   }
 
-  // Tier 1: Historical facts (1 per unique calendar day)
-  const historicalByDay = new Map<string, database.FactWithRelations>();
+  // Tier 1: Historical facts (as many as available per day, capped to slot count)
+  const historicalByDay = new Map<string, database.FactWithRelations[]>();
+  let totalHistorical = 0;
   if (uniqueDays.size > 0) {
-    const historicalFacts = await database.getUnscheduledHistoricalFactsForDates(
+    const allHistorical = await database.getAllUnscheduledHistoricalFactsForDates(
       Array.from(uniqueDays.values()),
       locale
     );
-    for (const fact of historicalFacts) {
+
+    // Group by day key
+    const grouped = new Map<string, database.FactWithRelations[]>();
+    for (const fact of allHistorical) {
       const key = `${fact.event_month}-${fact.event_day}`;
-      historicalByDay.set(key, fact);
-      usedIds.add(fact.id);
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)!.push(fact);
     }
-    if (__DEV__ && historicalFacts.length > 0) {
-      console.log(`🔔 Smart selection: ${historicalFacts.length} historical facts`);
+
+    // Cap to slots per day, track usedIds
+    for (const [dayKey, facts] of grouped) {
+      const maxForDay = slotsPerDay.get(dayKey) || 0;
+      const capped = facts.slice(0, maxForDay);
+      historicalByDay.set(dayKey, capped);
+      totalHistorical += capped.length;
+      for (const f of capped) usedIds.add(f.id);
+    }
+
+    if (__DEV__ && totalHistorical > 0) {
+      console.log(`🔔 Smart selection: ${totalHistorical} historical facts`);
     }
   }
 
-  // Count how many slots will be filled by historical facts (1 per unique day)
-  const remainingAfterHistorical = slots.length - historicalByDay.size;
+  const remainingAfterHistorical = slots.length - totalHistorical;
 
   // Tier 2: Recent facts (newest by created_at)
   let recentFacts: database.FactWithRelations[] = [];
@@ -1001,7 +1016,6 @@ async function selectSmartFactsForSlots(
   // Tier 3: Random facts (fallback)
   let randomFacts: database.FactWithRelations[] = [];
   if (remainingAfterRecent > 0) {
-    // Get random facts excluding already-selected IDs
     const allRandom = await database.getRandomUnscheduledFactsWithFallback(
       remainingAfterRecent + usedIds.size,
       locale
@@ -1016,21 +1030,19 @@ async function selectSmartFactsForSlots(
   const fillQueue = [...recentFacts, ...randomFacts];
   let fillIndex = 0;
 
-  // Assign facts to slots: historical facts get placed on their matching day,
-  // remaining slots get filled from the queue in order
-  const usedHistoricalDays = new Set<string>();
+  // Assign facts to slots: historical facts for matching day first, then fill queue
+  const historicalIndex = new Map<string, number>();
   const result: database.FactWithRelations[] = [];
 
   for (const slot of slots) {
     const dayKey = `${slot.date.getMonth() + 1}-${slot.date.getDate()}`;
-    const historicalFact = historicalByDay.get(dayKey);
+    const dayFacts = historicalByDay.get(dayKey) || [];
+    const idx = historicalIndex.get(dayKey) || 0;
 
-    if (historicalFact && !usedHistoricalDays.has(dayKey)) {
-      // Assign historical fact (1 per day)
-      result.push(historicalFact);
-      usedHistoricalDays.add(dayKey);
+    if (idx < dayFacts.length) {
+      result.push(dayFacts[idx]);
+      historicalIndex.set(dayKey, idx + 1);
     } else if (fillIndex < fillQueue.length) {
-      // Fill from recent/random queue
       result.push(fillQueue[fillIndex]);
       fillIndex++;
     }
@@ -1155,6 +1167,27 @@ async function _ensureNotificationScheduleImpl(
       dbScheduled = await database.getFutureScheduledFactsWithNotificationIds(locale);
       if (__DEV__) {
         console.log(`🔔 [${source}] Trimmed ${trimmed} facts scheduled beyond ${daysAhead} days`);
+      }
+    }
+
+    // Step 7.5: Detect and clear stale notifications (user already opened these facts)
+    const staleFacts = await database.getStaleScheduledFacts(locale);
+    if (staleFacts.length > 0) {
+      for (const stale of staleFacts) {
+        if (stale.notification_id) {
+          try {
+            await Notifications.cancelScheduledNotificationAsync(stale.notification_id);
+          } catch {
+            // Ignore — may already be gone from OS
+          }
+        }
+      }
+      await database.clearScheduledFactsByIds(staleFacts.map((f) => f.id));
+      dbScheduled = await database.getFutureScheduledFactsWithNotificationIds(locale);
+      if (__DEV__) {
+        console.log(
+          `🔔 [${source}] Cleared ${staleFacts.length} stale notifications (user already opened)`
+        );
       }
     }
 

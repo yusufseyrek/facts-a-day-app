@@ -896,6 +896,55 @@ export async function getUnscheduledHistoricalFactsForDates(
 }
 
 /**
+ * Get ALL unscheduled historical facts for the given dates (no 1-per-day cap).
+ * Also excludes facts the user has already interacted with.
+ */
+export async function getAllUnscheduledHistoricalFactsForDates(
+  dates: Array<{ month: number; day: number }>,
+  language: string
+): Promise<FactWithRelations[]> {
+  if (dates.length === 0) return [];
+
+  const database = await openDatabase();
+
+  const uniqueDates = new Map<string, { month: number; day: number }>();
+  for (const d of dates) {
+    uniqueDates.set(`${d.month}-${d.day}`, d);
+  }
+
+  const conditions = Array.from(uniqueDates.values())
+    .map(() => '(f.event_month = ? AND f.event_day = ?)')
+    .join(' OR ');
+  const params: (string | number)[] = [language];
+  for (const d of uniqueDates.values()) {
+    params.push(d.month, d.day);
+  }
+
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
+    WHERE f.language = ? AND f.is_historical = 1
+      AND f.scheduled_date IS NULL
+      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
+      AND fi.fact_id IS NULL
+      AND (${conditions})
+    ORDER BY RANDOM()`,
+    params
+  );
+
+  return mapFactsWithRelations(result);
+}
+
+/**
  * Get unscheduled facts ordered by creation date (newest first).
  * Excludes historical facts, already-selected IDs, and facts the user has already opened.
  */
@@ -1190,6 +1239,45 @@ export async function clearScheduledFactsBeyondDate(cutoffDate: string): Promise
   const result = await database.runAsync(
     'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ? AND (shown_in_feed IS NULL OR shown_in_feed = 0)',
     [cutoffDate]
+  );
+  return result.changes;
+}
+
+/**
+ * Get future-scheduled facts that the user has already opened/viewed in-app.
+ * These notifications are stale and should be replaced.
+ */
+export async function getStaleScheduledFacts(
+  language: string
+): Promise<Array<{ id: number; notification_id: string | null; scheduled_date: string }>> {
+  const database = await openDatabase();
+  const now = new Date().toISOString();
+
+  return database.getAllAsync<{ id: number; notification_id: string | null; scheduled_date: string }>(
+    `SELECT f.id, f.notification_id, f.scheduled_date
+    FROM facts f
+    INNER JOIN fact_interactions fi ON fi.fact_id = f.id
+    WHERE f.scheduled_date > ?
+      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
+      AND f.language = ?
+      AND (fi.story_viewed_at IS NOT NULL OR fi.detail_opened_at IS NOT NULL)
+    ORDER BY f.scheduled_date ASC`,
+    [now, language]
+  );
+}
+
+/**
+ * Clear scheduling for specific fact IDs (release them back to the unscheduled pool).
+ */
+export async function clearScheduledFactsByIds(factIds: number[]): Promise<number> {
+  if (factIds.length === 0) return 0;
+  const database = await openDatabase();
+  const placeholders = factIds.map(() => '?').join(',');
+  const result = await database.runAsync(
+    `UPDATE facts SET scheduled_date = NULL, notification_id = NULL
+     WHERE id IN (${placeholders})
+       AND (shown_in_feed IS NULL OR shown_in_feed = 0)`,
+    factIds
   );
   return result.changes;
 }
