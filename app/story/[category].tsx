@@ -24,6 +24,7 @@ import { FavoriteButton } from '../../src/components/FavoriteButton';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { NATIVE_ADS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
+import { useResolvedImageUri } from '../../src/hooks/useResolvedImageUri';
 import { useTranslation } from '../../src/i18n';
 import { showStoryInterstitial } from '../../src/services/adManager';
 import {
@@ -36,7 +37,6 @@ import {
 } from '../../src/services/analytics';
 import { checkAndAwardBadges, popModalScreen, pushModalScreen } from '../../src/services/badges';
 import * as database from '../../src/services/database';
-import { useResolvedImageUri } from '../../src/hooks/useResolvedImageUri';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { hexColors, useTheme } from '../../src/theme';
 import {

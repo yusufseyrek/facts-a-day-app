@@ -11,12 +11,12 @@
  */
 
 import * as api from './api';
-import type { FactResponse } from './api';
 import * as database from './database';
 import * as notificationService from './notifications';
 import * as onboardingService from './onboarding';
 
 import type { SupportedLocale } from '../i18n/translations';
+import type { FactResponse } from './api';
 
 // Feed refresh listeners for preference changes
 type FeedRefreshListener = () => void;

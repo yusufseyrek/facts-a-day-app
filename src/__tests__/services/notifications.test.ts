@@ -4,7 +4,7 @@ import {
   __testing,
   ensureNotificationSchedule,
 } from '../../services/notifications';
-import { createFactWithRelations, createPreferredTime, futureDate } from '../helpers/factories';
+import { createPreferredTime, futureDate } from '../helpers/factories';
 
 const {
   generateTimeSlots,

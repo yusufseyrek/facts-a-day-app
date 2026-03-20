@@ -10,6 +10,8 @@ import {
   useIAP,
 } from 'expo-iap';
 
+import { preloadAppOpenAd } from '../components/ads/AppOpenAd';
+import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
 import { DEV_FORCE_PREMIUM, SUBSCRIPTION } from '../config/app';
 import { setAnalyticsUserProperty } from '../config/firebase';
 import {
@@ -17,8 +19,6 @@ import {
   trackSubscriptionRestored,
   trackSubscriptionStatusChanged,
 } from '../services/analytics';
-import { preloadAppOpenAd } from '../components/ads/AppOpenAd';
-import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
 import { getIsConnected } from '../services/network';
 import {
   getIsPremium as getPremiumState,

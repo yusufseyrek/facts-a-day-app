@@ -13,13 +13,13 @@ import { ContentContainer } from '../src/components/ScreenLayout';
 import { FONT_FAMILIES, Text } from '../src/components/Typography';
 import { getLocaleFromCode } from '../src/i18n';
 import {
+  clearSyncLog,
   type DiagnosticsState,
-  type SyncLogEntry,
+  ensureNotificationSchedule,
   getNotificationDiagnostics,
   getSyncLog,
-  clearSyncLog,
   scheduleTestNotification,
-  ensureNotificationSchedule,
+  type SyncLogEntry,
 } from '../src/services/notifications';
 import { hexColors, useTheme } from '../src/theme';
 import { useResponsive } from '../src/utils/useResponsive';

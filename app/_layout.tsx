@@ -38,7 +38,6 @@ import {
   ScrollToTopProvider,
   setLocaleRefreshPending,
   setPreloadedFactsBeforeMount,
-  setPreloadedRecommendationsBeforeMount,
   signalLocaleRefreshDone,
   useOnboarding,
 } from '../src/contexts';
@@ -46,8 +45,8 @@ import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
 import { initAnalytics } from '../src/services/analytics';
 import { registerBackgroundSync } from '../src/services/backgroundSync';
-import { loadDailyFeedSections } from '../src/services/dailyFeed';
 import * as contentRefresh from '../src/services/contentRefresh';
+import { loadDailyFeedSections } from '../src/services/dailyFeed';
 import * as database from '../src/services/database';
 import { ensureImagesDirExists } from '../src/services/images';
 import { startNetworkMonitoring } from '../src/services/network';

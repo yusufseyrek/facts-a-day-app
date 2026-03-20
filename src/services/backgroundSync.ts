@@ -14,10 +14,11 @@ import * as TaskManager from 'expo-task-manager';
 
 import { PRECACHE } from '../config/images';
 
-import { refreshAppContent, getStoredLocale } from './contentRefresh';
+import { getStoredLocale,refreshAppContent } from './contentRefresh';
 import { loadDailyFeedSections } from './dailyFeed';
 import { preCacheOfflineImages } from './images';
 import { ensureNotificationSchedule } from './notifications';
+
 import type { SupportedLocale } from '../i18n/translations';
 
 const BACKGROUND_SYNC_TASK = 'FACTS_BACKGROUND_SYNC';

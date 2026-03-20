@@ -17,6 +17,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { XStack, YStack } from 'tamagui';
 
+import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { useTranslation } from '../i18n';
 import { trackSourceLinkClick } from '../services/analytics';
 import { onFactViewed } from '../services/appReview';
@@ -26,7 +27,6 @@ import {
   markFactDetailOpened,
   markFactDetailRead,
 } from '../services/database';
-import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { getCachedFactImageSync } from '../services/images';
 import { getIsConnected } from '../services/network';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';

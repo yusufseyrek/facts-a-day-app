@@ -1,16 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-
-import { useFocusEffect } from '@react-navigation/native';
-import { FlashList } from '@shopify/flash-list';
-import { Shuffle } from '@tamagui/lucide-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+
+import { useFocusEffect } from '@react-navigation/native';
+import { FlashList, FlashListRef } from '@shopify/flash-list';
+import { Shuffle } from '@tamagui/lucide-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 
 import { useTranslation } from '../i18n';
 import * as database from '../services/database';
@@ -32,7 +32,11 @@ interface CategoryItem {
   isMix?: boolean;
 }
 
-export function CategoryStoryButtons() {
+export interface CategoryStoryButtonsRef {
+  scrollToStart: () => void;
+}
+
+export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(function CategoryStoryButtons(_props, ref) {
   const { t, locale } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
@@ -43,8 +47,16 @@ export function CategoryStoryButtons() {
   const circleSize = iconSizes.heroLg;
   const iconSize = iconSizes.lg;
 
+  const flashListRef = useRef<FlashListRef<CategoryItem>>(null);
+
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [unseenStatus, setUnseenStatus] = useState<Record<string, boolean>>({});
+
+  useImperativeHandle(ref, () => ({
+    scrollToStart: () => {
+      flashListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    },
+  }));
 
   useEffect(() => {
     loadCategories();
@@ -169,6 +181,7 @@ export function CategoryStoryButtons() {
   return (
     <View style={{ height: listHeight, width: '100%' }}>
       <FlashList
+        ref={flashListRef}
         data={categories}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
@@ -181,7 +194,7 @@ export function CategoryStoryButtons() {
       />
     </View>
   );
-}
+});
 
 /**
  * Lighten a hex color by a given amount (0–1)

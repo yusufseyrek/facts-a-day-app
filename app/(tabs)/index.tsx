@@ -30,7 +30,7 @@ import {
 } from '../../src/components';
 import { InlineNativeAd } from '../../src/components/ads/InlineNativeAd';
 import { ReadingStreakIndicator } from '../../src/components/badges/ReadingStreakIndicator';
-import { CategoryStoryButtons } from '../../src/components/CategoryStoryButtons';
+import { CategoryStoryButtons, CategoryStoryButtonsRef } from '../../src/components/CategoryStoryButtons';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { PopularFactCard } from '../../src/components/PopularFactCard';
 import { ADS_ENABLED, LAYOUT, PAYWALL_PROMPT } from '../../src/config/app';
@@ -100,6 +100,7 @@ function HomeScreen() {
   const freshFactsListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const worthKnowingListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const onThisDayListRef = useRef<FlashListRef<FactWithRelations>>(null);
+  const storyButtonsRef = useRef<CategoryStoryButtonsRef>(null);
   const scrollYRef = useRef(0);
 
   // Register scroll-to-top handler
@@ -111,6 +112,7 @@ function HomeScreen() {
         freshFactsListRef.current?.scrollToOffset({ offset: 0, animated: true });
         worthKnowingListRef.current?.scrollToOffset({ offset: 0, animated: true });
         onThisDayListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        storyButtonsRef.current?.scrollToStart();
       } else {
         scrollViewRef.current?.scrollTo({ y: 0, animated: true });
       }
@@ -460,7 +462,7 @@ function HomeScreen() {
             >
               {/* Category Story Buttons */}
               <YStack paddingBottom={spacing.lg}>
-                <CategoryStoryButtons />
+                <CategoryStoryButtons ref={storyButtonsRef} />
               </YStack>
 
               {/* Fresh Facts Section (1:1 square carousel) */}
