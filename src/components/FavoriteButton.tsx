@@ -32,7 +32,7 @@ const FavoriteButtonComponent = ({
   const { iconSizes, spacing } = useResponsive();
   const heartColor = theme === 'dark' ? hexColors.dark.neonRed : hexColors.light.neonRed;
   const iconSize = iconSizes.sm;
-  const containerSize = iconSize + spacing.md;
+  const containerSize = iconSize + spacing.sm;
 
   const [isFavorited, setIsFavorited] = useState(false);
   const heartScale = useSharedValue(1);
