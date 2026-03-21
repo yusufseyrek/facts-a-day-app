@@ -9,7 +9,7 @@
  * Set to true to show developer settings section in the Settings screen.
  * Only works when __DEV__ is true.
  */
-export const DEV_SETTINGS_ENABLED = true;
+export const DEV_SETTINGS_ENABLED = __DEV__;
 
 /**
  * Ads configuration
