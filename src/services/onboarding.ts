@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import * as api from './api';
 import * as db from './database';
+import { extractQuestions } from './questions';
 
 // AsyncStorage keys
 export const ONBOARDING_COMPLETE_KEY = '@onboarding_complete';
@@ -136,33 +137,17 @@ export async function fetchAllFacts(
       last_updated: fact.updated_at,
     }));
 
-    // Extract questions from facts for trivia feature
-    const dbQuestions: db.Question[] = [];
-    for (const fact of facts) {
-      if (fact.questions && fact.questions.length > 0) {
-        for (const question of fact.questions) {
-          dbQuestions.push({
-            id: question.id,
-            fact_id: fact.id,
-            question_type: question.question_type,
-            question_text: question.question_text,
-            correct_answer: question.correct_answer,
-            wrong_answers: question.wrong_answers ? JSON.stringify(question.wrong_answers) : null,
-            explanation: question.explanation,
-            difficulty: question.difficulty,
-          });
-        }
-      }
-    }
-
     // Store facts in database
-    console.log(`Storing ${dbFacts.length} facts in database...`);
+    console.log(`📋 [Onboarding] Storing ${dbFacts.length} facts (language="${language}", historical=${dbFacts.filter(f => f.is_historical === 1).length}, non-historical=${dbFacts.filter(f => f.is_historical !== 1).length})`);
     await db.insertFacts(dbFacts);
+    console.log(`📋 [Onboarding] Facts stored successfully`);
 
-    // Store questions in database for trivia feature
+    // Insert questions before returning — must complete before home screen loads
+    // to avoid concurrent SQLite transactions (setDailyFeedCache vs insertQuestions)
+    const dbQuestions = extractQuestions(facts);
     if (dbQuestions.length > 0) {
-      console.log(`Storing ${dbQuestions.length} questions in database...`);
       await db.insertQuestions(dbQuestions);
+      console.log(`🧠 Inserted ${dbQuestions.length} questions for trivia`);
     }
 
     return { success: true, count: dbFacts.length };

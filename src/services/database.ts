@@ -990,6 +990,18 @@ export async function getLatestFacts(
   language: string
 ): Promise<FactWithRelations[]> {
   const database = await openDatabase();
+
+  // Debug: check total facts in DB
+  const countResult = await database.getFirstAsync<{ total: number; lang_match: number; non_hist: number }>(
+    `SELECT
+      COUNT(*) as total,
+      SUM(CASE WHEN language = ? THEN 1 ELSE 0 END) as lang_match,
+      SUM(CASE WHEN (is_historical IS NULL OR is_historical = 0) AND language = ? THEN 1 ELSE 0 END) as non_hist
+    FROM facts`,
+    [language, language]
+  );
+  console.log(`📋 [DB] getLatestFacts: language="${language}", limit=${limit} | DB has: total=${countResult?.total}, lang_match=${countResult?.lang_match}, non_hist=${countResult?.non_hist}`);
+
   const result = await database.getAllAsync<any>(
     `SELECT
       f.*,
@@ -1006,6 +1018,7 @@ export async function getLatestFacts(
     LIMIT ?`,
     [language, limit]
   );
+  console.log(`📋 [DB] getLatestFacts returned ${result.length} rows`);
   return mapFactsWithRelations(result);
 }
 
@@ -3202,6 +3215,9 @@ export async function getFactsForStory(
     LEFT JOIN categories c ON f.category = c.slug
     LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
     WHERE f.category = ? AND f.language = ?
+      AND (f.is_historical IS NULL OR f.is_historical = 0)
+      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
+      AND f.id NOT IN (SELECT fact_id FROM daily_feed_cache WHERE cached_date = date('now', 'localtime'))
     ORDER BY is_viewed ASC, COALESCE(f.last_updated, f.created_at) DESC`,
     [category, language]
   );
@@ -3233,6 +3249,9 @@ export async function getFactsForMixedStory(
     LEFT JOIN categories c ON f.category = c.slug
     LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
     WHERE f.category IN (${placeholders}) AND f.language = ?
+      AND (f.is_historical IS NULL OR f.is_historical = 0)
+      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
+      AND f.id NOT IN (SELECT fact_id FROM daily_feed_cache WHERE cached_date = date('now', 'localtime'))
     ORDER BY is_viewed ASC, COALESCE(f.last_updated, f.created_at) DESC`,
     [...categorySlugs, language]
   );
@@ -3257,6 +3276,9 @@ export async function getUnseenStoryStatus(
      WHERE f.category IN (${placeholders})
        AND f.language = ?
        AND fi.story_viewed_at IS NULL
+       AND (f.is_historical IS NULL OR f.is_historical = 0)
+       AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
+       AND f.id NOT IN (SELECT fact_id FROM daily_feed_cache WHERE cached_date = date('now', 'localtime'))
      GROUP BY f.category`,
     [...categorySlugs, language]
   );
@@ -3423,8 +3445,7 @@ export async function setDailyFeedCache(section: string, factIds: number[]): Pro
   const today = todayResult?.today || new Date().toISOString().split('T')[0];
 
   // Atomic: clear old + insert new in a single transaction
-  await database.execAsync('BEGIN TRANSACTION');
-  try {
+  await database.withTransactionAsync(async () => {
     await database.runAsync('DELETE FROM daily_feed_cache WHERE section = ?', [section]);
     for (let i = 0; i < factIds.length; i++) {
       await database.runAsync(
@@ -3432,11 +3453,7 @@ export async function setDailyFeedCache(section: string, factIds: number[]): Pro
         [section, factIds[i], today, i]
       );
     }
-    await database.execAsync('COMMIT');
-  } catch (e) {
-    await database.execAsync('ROLLBACK');
-    throw e;
-  }
+  });
 }
 
 /**

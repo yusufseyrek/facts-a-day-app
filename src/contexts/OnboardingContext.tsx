@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useState } from 'react';
 
+import { markFeedRefreshPending } from '../services/contentRefresh';
 import * as onboardingService from '../services/onboarding';
 
 import type { SupportedLocale } from '../i18n';
@@ -193,6 +194,8 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
         );
 
         if (result.success) {
+          // Signal home screen to force-refresh on next focus
+          markFeedRefreshPending();
           setState((prev) => ({
             ...prev,
             isDownloadingFacts: false,

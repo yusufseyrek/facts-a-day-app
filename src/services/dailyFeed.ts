@@ -48,12 +48,15 @@ export async function loadDailyFeedSections(
   let worthKnowingCached: FactWithRelations[] = [];
   let onThisDayCached: FactWithRelations[] = [];
 
+  console.log(`📋 [DailyFeed] loadDailyFeedSections called: locale="${locale}", forceRefresh=${forceRefresh}`);
+
   if (!forceRefresh) {
     [freshCached, worthKnowingCached, onThisDayCached] = await Promise.all([
       getDailyFeedCache('fresh_facts', locale),
       getDailyFeedCache('worth_knowing', locale),
       getDailyFeedCache('on_this_day', locale),
     ]);
+    console.log(`📋 [DailyFeed] Cache: fresh=${freshCached.length}, worthKnowing=${worthKnowingCached.length}, onThisDay=${onThisDayCached.length}`);
   } else {
     // Force refresh: re-fetch all sections from DB.
     // Stale cache IDs (e.g. from deleted category facts) are replaced.
@@ -75,7 +78,9 @@ export async function loadDailyFeedSections(
   // Fetch fresh facts first (needed to exclude from worth knowing)
   let freshFacts = freshCached;
   if (needsFresh) {
+    console.log(`📋 [DailyFeed] Fetching fresh facts: locale="${locale}", limit=${HOME_FEED.FRESH_FACTS_COUNT}`);
     const freshFetched = await getLatestFacts(HOME_FEED.FRESH_FACTS_COUNT, locale);
+    console.log(`📋 [DailyFeed] getLatestFacts returned ${freshFetched.length} facts`);
     if (freshFetched.length > 0) {
       await setDailyFeedCache('fresh_facts', freshFetched.map((f) => f.id));
       freshFacts = freshFetched;

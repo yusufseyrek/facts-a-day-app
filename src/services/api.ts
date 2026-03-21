@@ -428,6 +428,7 @@ export async function getAllFacts(
           offset,
           batch_size: batchSize,
           include_questions: includeQuestions,
+          include_historical: includeHistorical,
         })
       )
     );

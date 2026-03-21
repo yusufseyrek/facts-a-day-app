@@ -8,6 +8,7 @@ import { getLocaleFromCode, SupportedLocale } from '../i18n';
 import * as api from './api';
 import * as db from './database';
 import * as onboardingService from './onboarding';
+import { extractQuestions } from './questions';
 import * as preferencesService from './preferences';
 
 // AsyncStorage keys
@@ -26,6 +27,7 @@ let feedRefreshPending = false;
  */
 export function markFeedRefreshPending(): void {
   feedRefreshPending = true;
+  console.log('📋 [FeedRefresh] markFeedRefreshPending called — flag is now TRUE');
 }
 
 /**
@@ -33,11 +35,12 @@ export function markFeedRefreshPending(): void {
  * Returns true if a refresh was pending.
  */
 export function consumeFeedRefreshPending(): boolean {
+  const was = feedRefreshPending;
   if (feedRefreshPending) {
     feedRefreshPending = false;
-    return true;
   }
-  return false;
+  console.log(`📋 [FeedRefresh] consumeFeedRefreshPending called — was=${was}, now=${feedRefreshPending}`);
+  return was;
 }
 
 // Event listeners for feed refresh
@@ -315,26 +318,8 @@ async function runQuestionsMigration(locale: SupportedLocale): Promise<void> {
       true // includeQuestions
     );
 
-    // Extract questions from facts
-    const dbQuestions: db.Question[] = [];
-    for (const fact of facts) {
-      if (fact.questions && fact.questions.length > 0) {
-        for (const question of fact.questions) {
-          dbQuestions.push({
-            id: question.id,
-            fact_id: fact.id,
-            question_type: question.question_type,
-            question_text: question.question_text,
-            correct_answer: question.correct_answer,
-            wrong_answers: question.wrong_answers ? JSON.stringify(question.wrong_answers) : null,
-            explanation: question.explanation,
-            difficulty: question.difficulty,
-          });
-        }
-      }
-    }
-
-    // Insert questions into database
+    // Extract and insert questions
+    const dbQuestions = extractQuestions(facts);
     if (dbQuestions.length > 0) {
       await db.insertQuestions(dbQuestions);
       console.log(`✅ Migration complete: Added ${dbQuestions.length} questions for trivia`);
@@ -522,24 +507,7 @@ async function runHistoricalMigration(locale: SupportedLocale): Promise<void> {
     await db.insertFacts(dbFacts);
 
     // Extract and insert questions
-    const dbQuestions: db.Question[] = [];
-    for (const fact of facts) {
-      if (fact.questions && fact.questions.length > 0) {
-        for (const question of fact.questions) {
-          dbQuestions.push({
-            id: question.id,
-            fact_id: fact.id,
-            question_type: question.question_type,
-            question_text: question.question_text,
-            correct_answer: question.correct_answer,
-            wrong_answers: question.wrong_answers ? JSON.stringify(question.wrong_answers) : null,
-            explanation: question.explanation,
-            difficulty: question.difficulty,
-          });
-        }
-      }
-    }
-
+    const dbQuestions = extractQuestions(facts);
     if (dbQuestions.length > 0) {
       await db.insertQuestions(dbQuestions);
     }
@@ -658,20 +626,42 @@ export async function refreshAppContent(): Promise<RefreshResult> {
     if (lastFactUpdatedAt) {
       // Fetch only new or updated facts using since_updated parameter
       // Include questions for trivia feature
+      // Paginate to ensure all updates are fetched (not just the first batch)
       const categoriesParam = categories.join(',');
-      const response = await api.getFacts({
+      const batchSize = API_SETTINGS.FACTS_BATCH_SIZE;
+      let offset = 0;
+      const allIncrementalFacts: api.FactResponse[] = [];
+
+      let response = await api.getFacts({
         language: currentLocale,
         categories: categoriesParam,
         since_updated: lastFactUpdatedAt,
-        limit: API_SETTINGS.FACTS_BATCH_SIZE,
+        limit: batchSize,
+        offset,
         include_questions: true,
         include_historical: true,
       });
 
-      if (response.facts.length > 0) {
+      allIncrementalFacts.push(...response.facts);
+
+      while (response.pagination.has_more) {
+        offset += batchSize;
+        response = await api.getFacts({
+          language: currentLocale,
+          categories: categoriesParam,
+          since_updated: lastFactUpdatedAt,
+          limit: batchSize,
+          offset,
+          include_questions: true,
+          include_historical: true,
+        });
+        allIncrementalFacts.push(...response.facts);
+      }
+
+      if (allIncrementalFacts.length > 0) {
         // Convert API facts to database format
         // Note: API returns `updated_at`, we map it to `last_updated` in DB
-        const dbFacts: db.Fact[] = response.facts.map((fact) => ({
+        const dbFacts: db.Fact[] = allIncrementalFacts.map((fact) => ({
           id: fact.id,
           slug: fact.slug,
           title: fact.title,
@@ -693,25 +683,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
         }));
 
         // Extract questions from facts for trivia feature
-        const dbQuestions: db.Question[] = [];
-        for (const fact of response.facts) {
-          if (fact.questions && fact.questions.length > 0) {
-            for (const question of fact.questions) {
-              dbQuestions.push({
-                id: question.id,
-                fact_id: fact.id,
-                question_type: question.question_type,
-                question_text: question.question_text,
-                correct_answer: question.correct_answer,
-                wrong_answers: question.wrong_answers
-                  ? JSON.stringify(question.wrong_answers)
-                  : null,
-                explanation: question.explanation,
-                difficulty: question.difficulty,
-              });
-            }
-          }
-        }
+        const dbQuestions = extractQuestions(allIncrementalFacts);
 
         // Check which facts already exist in database
         const factIds = dbFacts.map((f) => f.id);

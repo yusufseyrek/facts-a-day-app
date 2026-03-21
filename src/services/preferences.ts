@@ -15,6 +15,7 @@ import { emitFeedRefresh as emitContentFeedRefresh, markFeedRefreshPending } fro
 import * as database from './database';
 import * as notificationService from './notifications';
 import * as onboardingService from './onboarding';
+import { extractQuestions } from './questions';
 
 import type { SupportedLocale } from '../i18n/translations';
 import type { FactResponse } from './api';
@@ -48,36 +49,6 @@ function emitFeedRefresh(): void {
   });
 }
 
-/**
- * Extract questions from API facts and insert them in the background.
- * Questions are only needed for trivia, so they don't need to block the UI.
- */
-function insertQuestionsInBackground(facts: FactResponse[]): void {
-  const dbQuestions: database.Question[] = [];
-  for (const fact of facts) {
-    if (fact.questions && fact.questions.length > 0) {
-      for (const question of fact.questions) {
-        dbQuestions.push({
-          id: question.id,
-          fact_id: fact.id,
-          question_type: question.question_type,
-          question_text: question.question_text,
-          correct_answer: question.correct_answer,
-          wrong_answers: question.wrong_answers ? JSON.stringify(question.wrong_answers) : null,
-          explanation: question.explanation,
-          difficulty: question.difficulty,
-        });
-      }
-    }
-  }
-
-  if (dbQuestions.length > 0) {
-    database
-      .insertQuestions(dbQuestions)
-      .then(() => console.log(`🧠 Synced ${dbQuestions.length} questions for trivia`))
-      .catch((e) => console.error('Background question insertion failed:', e));
-  }
-}
 
 export interface RefreshProgress {
   stage: 'clearing' | 'translating' | 'downloading' | 'scheduling' | 'complete';
@@ -275,8 +246,13 @@ export async function handleLanguageChange(
 
     console.log(`Updated ${updatedCount} preserved facts, inserted ${insertedCount} new facts`);
 
-    // Fire-and-forget: insert questions in background (not needed for home feed)
-    insertQuestionsInBackground(allFacts);
+    // Insert questions before continuing — must complete before home feed loads
+    // to avoid concurrent SQLite transactions (setDailyFeedCache vs insertQuestions)
+    const dbQuestions = extractQuestions(allFacts);
+    if (dbQuestions.length > 0) {
+      await database.insertQuestions(dbQuestions);
+      console.log(`🧠 Inserted ${dbQuestions.length} questions for trivia`);
+    }
 
     // Stage 5: Reschedule notifications with new language
     onProgress?.({
@@ -510,8 +486,13 @@ export async function handleCategoriesChange(
     // Clear daily feed cache so it rebuilds from updated DB state
     await database.clearDailyFeedCache();
 
-    // Fire-and-forget: insert questions in background (not needed for home feed)
-    insertQuestionsInBackground(newFacts);
+    // Insert questions before continuing — must complete before home feed loads
+    // to avoid concurrent SQLite transactions (setDailyFeedCache vs insertQuestions)
+    const newQuestions = extractQuestions(newFacts);
+    if (newQuestions.length > 0) {
+      await database.insertQuestions(newQuestions);
+      console.log(`🧠 Inserted ${newQuestions.length} questions for trivia`);
+    }
 
     // Stage 4: Reschedule notifications (clear and reschedule with new facts)
     // After categories change, old scheduled facts were deleted, so we need a full reschedule

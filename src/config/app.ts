@@ -9,13 +9,13 @@
  * Set to true to simulate premium experience in dev builds.
  * Only works when __DEV__ is true.
  */
-export const DEV_FORCE_PREMIUM = __DEV__ && false;
+export const DEV_FORCE_PREMIUM = true;
 
 /**
  * Set to true to show developer settings section in the Settings screen.
  * Only works when __DEV__ is true.
  */
-export const DEV_SETTINGS_ENABLED = false;
+export const DEV_SETTINGS_ENABLED = true;
 
 /**
  * Ads configuration

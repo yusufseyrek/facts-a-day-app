@@ -123,6 +123,7 @@ function HomeScreen() {
     useCallback(() => {
       // Force-refresh if preferences changed while away, otherwise only load if empty
       const forceRefresh = consumeFeedRefreshPending();
+      console.log(`📋 [HomeScreen] useFocusEffect fired: forceRefresh=${forceRefresh}, onlyIfEmpty=${!forceRefresh}`);
       loadFeedSections(!forceRefresh, forceRefresh).then(() => {
         const today = getLocalDateString();
         if (preCacheDateRef.current !== today) {
@@ -223,6 +224,7 @@ function HomeScreen() {
           onThisDay,
           onThisDayIsWeekFallback: isWeek,
         } = await loadDailyFeedSections(locale, forceRefresh);
+        console.log(`📋 [HomeScreen] loadFeedSections result: fresh=${fresh.length}, worthKnowing=${worthKnowing.length}, onThisDay=${onThisDay.length}, onlyIfEmpty=${onlyIfEmpty}`);
         if (onlyIfEmpty) {
           setFreshFacts((prev) => (prev.length > 0 ? prev : fresh));
           setWorthKnowingFacts((prev) => (prev.length > 0 ? prev : worthKnowing));
@@ -237,14 +239,16 @@ function HomeScreen() {
           setOnThisDayFacts(onThisDay);
           setOnThisDayIsWeekFallback(isWeek);
         }
-      } catch {
-        // silently ignore
+      } catch (error) {
+        console.error('📋 [HomeScreen] loadFeedSections ERROR:', error);
       } finally {
         setInitialLoading(false);
       }
     },
     [locale]
   );
+
+
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
