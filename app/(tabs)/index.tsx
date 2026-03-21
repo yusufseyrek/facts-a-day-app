@@ -254,7 +254,10 @@ function HomeScreen() {
     } catch {
       // Ignore refresh errors
     }
-    await loadFeedSections(false, true);
+    // Reload from cache — don't force-refresh, which would re-roll random sections.
+    // If new facts were synced, refreshAppContent() already emits feedRefresh
+    // which triggers a force-refresh via the onFeedRefresh listener.
+    await loadFeedSections(false, false);
     setRefreshing(false);
   }, [loadFeedSections]);
 

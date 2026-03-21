@@ -31,10 +31,10 @@ TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
     // 1. Sync facts from API
     const result = await refreshAppContent();
 
-    // 2. Curate daily feed sections if not already done today
+    // 2. Curate daily feed sections (force refresh if new facts were synced)
     const locale = await getStoredLocale();
     if (locale) {
-      await loadDailyFeedSections(locale);
+      await loadDailyFeedSections(locale, result.updated.facts > 0);
     }
 
     // 3. Pre-cache images (capped for background time limit)
