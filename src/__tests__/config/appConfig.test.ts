@@ -1,13 +1,4 @@
-import { APP_CHECK, CATEGORY_LIMITS, DEV_FORCE_PREMIUM, DEV_SETTINGS_ENABLED, HINT_LIMITS, SUBSCRIPTION } from '../../config/app';
-
-// ---------------------------------------------------------------------------
-// DEV_FORCE_PREMIUM — must be false before shipping
-// ---------------------------------------------------------------------------
-describe('DEV_FORCE_PREMIUM', () => {
-  it('must be false so premium is not force-enabled in production builds', () => {
-    expect(DEV_FORCE_PREMIUM).toBe(false);
-  });
-});
+import { APP_CHECK, CATEGORY_LIMITS, DEV_SETTINGS_ENABLED, HINT_LIMITS, SUBSCRIPTION } from '../../config/app';
 
 // ---------------------------------------------------------------------------
 // DEV_SETTINGS_ENABLED — must be false before shipping

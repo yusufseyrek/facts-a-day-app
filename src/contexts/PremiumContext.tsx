@@ -12,7 +12,7 @@ import {
 
 import { preloadAppOpenAd } from '../components/ads/AppOpenAd';
 import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
-import { DEV_FORCE_PREMIUM, SUBSCRIPTION } from '../config/app';
+import { SUBSCRIPTION } from '../config/app';
 import { setAnalyticsUserProperty } from '../config/firebase';
 import {
   trackSubscriptionPurchased,
@@ -36,6 +36,7 @@ interface PremiumContextType {
   isLoading: boolean;
   subscriptions: ProductSubscription[];
   restorePurchases: () => Promise<boolean>;
+  devSetPremium: (status: boolean) => Promise<void>;
 }
 
 const PremiumContext = createContext<PremiumContextType>({
@@ -43,23 +44,55 @@ const PremiumContext = createContext<PremiumContextType>({
   isLoading: true,
   subscriptions: [],
   restorePurchases: async () => false,
+  devSetPremium: async () => {},
 });
 
 export const usePremium = () => useContext(PremiumContext);
 
 export function PremiumProvider({ children }: { children: React.ReactNode }) {
-  // Dev shortcut: skip all IAP logic and force premium
-  if (DEV_FORCE_PREMIUM) {
-    return (
-      <PremiumContext.Provider
-        value={{ isPremium: true, isLoading: false, subscriptions: [], restorePurchases: async () => true }}
-      >
-        {children}
-      </PremiumContext.Provider>
-    );
+  if (__DEV__) {
+    return <DevPremiumProvider>{children}</DevPremiumProvider>;
   }
-
   return <IAPPremiumProvider>{children}</IAPPremiumProvider>;
+}
+
+/**
+ * Dev-only provider: no real IAP, premium is toggled via devSetPremium.
+ * Paywall "Start Premium" calls devSetPremium(true), "Restore" calls devSetPremium(false).
+ */
+function DevPremiumProvider({ children }: { children: React.ReactNode }) {
+  const [isPremium, setIsPremium] = useState(getPremiumState);
+
+  const devSetPremium = useCallback(async (status: boolean) => {
+    setIsPremium(status);
+    setPremiumState(status);
+    await cachePremiumStatus(status);
+    await setAnalyticsUserProperty('is_premium', status ? 'true' : 'false');
+  }, []);
+
+  // Load cached status on mount
+  useEffect(() => {
+    getCachedPremiumStatus().then((cached) => {
+      if (cached) {
+        setIsPremium(true);
+        setPremiumState(true);
+      }
+    });
+  }, []);
+
+  return (
+    <PremiumContext.Provider
+      value={{
+        isPremium,
+        isLoading: false,
+        subscriptions: [],
+        restorePurchases: async () => { await devSetPremium(false); return false; },
+        devSetPremium,
+      }}
+    >
+      {children}
+    </PremiumContext.Provider>
+  );
 }
 
 function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
@@ -195,6 +228,10 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
     updatePremiumStatus(!!hasActive);
   }, [activeSubscriptions, connected, isLoading, updatePremiumStatus]);
 
+  const devSetPremium = useCallback(async (status: boolean) => {
+    await updatePremiumStatus(status);
+  }, [updatePremiumStatus]);
+
   const restorePurchases = useCallback(async (): Promise<boolean> => {
     try {
       await getAvailablePurchases();
@@ -223,6 +260,7 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         subscriptions,
         restorePurchases,
+        devSetPremium,
       }}
     >
       {children}

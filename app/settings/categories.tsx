@@ -43,6 +43,7 @@ export default function CategoriesSettings() {
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isFetchingFacts, setIsFetchingFacts] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const { typography, config, iconSizes, spacing } = useResponsive();
 
@@ -198,8 +199,10 @@ export default function CategoriesSettings() {
         selectedCategories,
         locale,
         (progress) => {
-          // Log progress (could show in UI later)
           console.log(`${progress.stage}: ${progress.percentage}% - ${progress.message}`);
+          if (progress.stage === 'downloading') {
+            setIsFetchingFacts(true);
+          }
         }
       );
 
@@ -230,11 +233,13 @@ export default function CategoriesSettings() {
       } else {
         Alert.alert(t('error'), result.error || t('failedToUpdateCategories'));
         setIsSaving(false);
+        setIsFetchingFacts(false);
       }
     } catch (error) {
       console.error('Error saving categories:', error);
       Alert.alert(t('error'), t('failedToSaveCategories'));
       setIsSaving(false);
+      setIsFetchingFacts(false);
     }
   };
 
@@ -396,7 +401,7 @@ export default function CategoriesSettings() {
               disabled={selectedCategories.length < categoryLimits.min || isSaving}
               loading={isSaving}
             >
-              {isSaving ? t('saving') : t('save')}
+              {isSaving ? (isFetchingFacts ? t('savingAndFetchingFacts') : t('saving')) : t('save')}
             </Button>
           </View>
         </Animated.View>

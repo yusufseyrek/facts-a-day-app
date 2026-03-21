@@ -13,7 +13,6 @@ import {
 } from '@expo-google-fonts/montserrat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import * as Device from 'expo-device';
 import * as Localization from 'expo-localization';
 import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -21,9 +20,10 @@ import * as SplashScreen from 'expo-splash-screen';
 
 import { showAppOpenAdOnForeground } from '../src/components/ads/AppOpenAd';
 import { AppCheckBlockingScreen } from '../src/components/AppCheckBlockingScreen';
+import { CategoryDowngradeEnforcer } from '../src/components/CategoryDowngradeEnforcer';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { SplashOverlay } from '../src/components/SplashOverlay';
-import { DEV_FORCE_PREMIUM, STORAGE_KEYS, TIMING } from '../src/config/app';
+import { STORAGE_KEYS, TIMING } from '../src/config/app';
 import { isAppCheckInitFailed, subscribeAppCheckFailure } from '../src/config/appCheckState';
 import {
   enableCrashlyticsConsoleLogging,
@@ -139,12 +139,7 @@ const CustomLightTheme = {
   },
 };
 
-// Skip PremiumProvider on emulators in dev mode — IAP can't work without a real store
-// Exception: when DEV_FORCE_PREMIUM is on, always mount PremiumProvider so usePremium() works
 function IAPSafeProvider({ children }: { children: React.ReactNode }) {
-  if (__DEV__ && !Device.isDevice && !DEV_FORCE_PREMIUM) {
-    return <>{children}</>;
-  }
   return <PremiumProvider>{children}</PremiumProvider>;
 }
 
@@ -234,8 +229,10 @@ function AppContent() {
   };
 
   return (
-    <Stack screenOptions={screenOptions}>
-      <Stack.Screen name="(tabs)" />
+    <>
+      <CategoryDowngradeEnforcer />
+      <Stack screenOptions={screenOptions}>
+        <Stack.Screen name="(tabs)" />
       <Stack.Screen name="onboarding" />
       <Stack.Screen
         name="fact/[id]"
@@ -273,7 +270,8 @@ function AppContent() {
           contentStyle: { backgroundColor },
         }}
       />
-    </Stack>
+      </Stack>
+    </>
   );
 }
 

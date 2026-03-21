@@ -111,6 +111,7 @@ export const translations = {
     errorAddingFacts: 'Fehler beim Hinzufügen von Fakten',
     save: 'Speichern',
     saving: 'Speichern...',
+    savingAndFetchingFacts: 'Fakten aktualisieren...',
     settingsUserPreferences: 'Benutzereinstellungen',
     settingsLanguage: 'Sprache',
     settingsThemeTitle: 'Design',
@@ -388,6 +389,13 @@ export const translations = {
     paywallLegalAgree: 'Mit dem Fortfahren akzeptierst du unsere',
     paywallLegalAnd: 'und',
 
+    // Downgrade Enforcement
+    downgradeTitle: 'Abonnement beendet',
+    downgradeMessage:
+      'Dein Premium-Abonnement ist abgelaufen. Kostenlose Konten können maximal %{max} Kategorien haben. Bitte aktualisiere deine Auswahl oder die App passt sie automatisch an.',
+    downgradeChooseCategories: 'Kategorien wählen',
+    downgradeAutoAdjust: 'Automatisch anpassen',
+
     // Badges / Achievements
     achievements: 'Erfolge',
     badgesEarned: 'Verdiente Abzeichen',
@@ -555,6 +563,7 @@ export const translations = {
     errorAddingFacts: 'Error Adding Facts',
     save: 'Save',
     saving: 'Saving...',
+    savingAndFetchingFacts: 'Updating facts...',
     settingsUserPreferences: 'User Preferences',
     settingsLanguage: 'Language',
     settingsThemeTitle: 'Theme',
@@ -828,6 +837,13 @@ export const translations = {
     paywallLegalAgree: 'By continuing, you agree to our',
     paywallLegalAnd: 'and',
 
+    // Downgrade Enforcement
+    downgradeTitle: 'Subscription Ended',
+    downgradeMessage:
+      'Your premium subscription has ended. Free accounts can have up to %{max} categories. Please update your selection or the app will automatically adjust for you.',
+    downgradeChooseCategories: 'Choose Categories',
+    downgradeAutoAdjust: 'Auto-Adjust',
+
     // Badges / Achievements
     achievements: 'Achievements',
     badgesEarned: 'Badges Earned',
@@ -996,6 +1012,7 @@ export const translations = {
     errorAddingFacts: 'Error al Agregar Datos',
     save: 'Guardar',
     saving: 'Guardando...',
+    savingAndFetchingFacts: 'Actualizando datos...',
     settingsUserPreferences: 'Preferencias de Usuario',
     settingsLanguage: 'Idioma',
     settingsThemeTitle: 'Tema',
@@ -1271,6 +1288,13 @@ export const translations = {
     paywallLegalAgree: 'Al continuar, aceptas nuestros',
     paywallLegalAnd: 'y',
 
+    // Downgrade Enforcement
+    downgradeTitle: 'Suscripción finalizada',
+    downgradeMessage:
+      'Tu suscripción premium ha finalizado. Las cuentas gratuitas pueden tener hasta %{max} categorías. Actualiza tu selección o la app se ajustará automáticamente.',
+    downgradeChooseCategories: 'Elegir categorías',
+    downgradeAutoAdjust: 'Ajuste automático',
+
     // Badges / Achievements
     achievements: 'Logros',
     badgesEarned: 'Insignias obtenidas',
@@ -1440,6 +1464,7 @@ export const translations = {
     errorAddingFacts: "Erreur lors de l'ajout des faits",
     save: 'Enregistrer',
     saving: 'Enregistrement...',
+    savingAndFetchingFacts: 'Mise à jour des faits...',
     settingsUserPreferences: 'Préférences Utilisateur',
     settingsLanguage: 'Langue',
     settingsThemeTitle: 'Thème',
@@ -1716,6 +1741,13 @@ export const translations = {
     paywallLegalAgree: 'En continuant, vous acceptez nos',
     paywallLegalAnd: 'et',
 
+    // Downgrade Enforcement
+    downgradeTitle: 'Abonnement terminé',
+    downgradeMessage:
+      'Votre abonnement premium est terminé. Les comptes gratuits peuvent avoir jusqu\'à %{max} catégories. Veuillez mettre à jour votre sélection ou l\'app s\'ajustera automatiquement.',
+    downgradeChooseCategories: 'Choisir les catégories',
+    downgradeAutoAdjust: 'Ajustement automatique',
+
     // Badges / Achievements
     achievements: 'Réalisations',
     badgesEarned: 'Badges obtenus',
@@ -1882,6 +1914,7 @@ export const translations = {
     errorAddingFacts: '豆知識の追加エラー',
     save: '保存',
     saving: '保存中...',
+    savingAndFetchingFacts: '豆知識を更新中...',
     settingsUserPreferences: 'ユーザー設定',
     settingsLanguage: '言語',
     settingsThemeTitle: 'テーマ',
@@ -2155,6 +2188,13 @@ export const translations = {
     paywallLegalAgree: '続行すると、以下に同意したことになります：',
     paywallLegalAnd: 'と',
 
+    // Downgrade Enforcement
+    downgradeTitle: 'サブスクリプション終了',
+    downgradeMessage:
+      'プレミアムサブスクリプションが終了しました。無料アカウントは最大%{max}カテゴリまで選択できます。カテゴリを更新するか、アプリが自動的に調整します。',
+    downgradeChooseCategories: 'カテゴリを選択',
+    downgradeAutoAdjust: '自動調整',
+
     // Badges / Achievements
     achievements: '実績',
     badgesEarned: '獲得バッジ',
@@ -2320,6 +2360,7 @@ export const translations = {
     errorAddingFacts: '정보 추가 오류',
     save: '저장',
     saving: '저장 중...',
+    savingAndFetchingFacts: '정보 업데이트 중...',
     settingsUserPreferences: '사용자 설정',
     settingsLanguage: '언어',
     settingsThemeTitle: '테마',
@@ -2593,6 +2634,13 @@ export const translations = {
     paywallLegalAgree: '계속하면 다음에 동의하게 됩니다:',
     paywallLegalAnd: '및',
 
+    // Downgrade Enforcement
+    downgradeTitle: '구독 종료',
+    downgradeMessage:
+      '프리미엄 구독이 종료되었습니다. 무료 계정은 최대 %{max}개의 카테고리를 선택할 수 있습니다. 카테고리를 업데이트하거나 앱이 자동으로 조정합니다.',
+    downgradeChooseCategories: '카테고리 선택',
+    downgradeAutoAdjust: '자동 조정',
+
     // Badges / Achievements
     achievements: '업적',
     badgesEarned: '획득한 배지',
@@ -2760,6 +2808,7 @@ export const translations = {
     errorAddingFacts: 'Bilgi Ekleme Hatası',
     save: 'Kaydet',
     saving: 'Kaydediliyor...',
+    savingAndFetchingFacts: 'Bilgiler güncelleniyor...',
     settingsUserPreferences: 'Kullanıcı Tercihleri',
     settingsLanguage: 'Dil',
     settingsThemeTitle: 'Tema',
@@ -3033,6 +3082,13 @@ export const translations = {
     paywallLegalAgree: 'Devam ederek kabul edersiniz:',
     paywallLegalAnd: 've',
 
+    // Downgrade Enforcement
+    downgradeTitle: 'Abonelik Sona Erdi',
+    downgradeMessage:
+      'Premium aboneliğiniz sona erdi. Ücretsiz hesaplar en fazla %{max} kategori seçebilir. Lütfen seçiminizi güncelleyin veya uygulama otomatik olarak ayarlayacaktır.',
+    downgradeChooseCategories: 'Kategorileri Seç',
+    downgradeAutoAdjust: 'Otomatik Ayarla',
+
     // Badges / Achievements
     achievements: 'Başarılar',
     badgesEarned: 'Kazanılan Rozetler',
@@ -3197,6 +3253,7 @@ export const translations = {
     errorAddingFacts: '添加知识时出错',
     save: '保存',
     saving: '保存中...',
+    savingAndFetchingFacts: '正在更新知识...',
     settingsUserPreferences: '用户偏好',
     settingsLanguage: '语言',
     settingsThemeTitle: '主题',
@@ -3467,6 +3524,13 @@ export const translations = {
     paywallPrivacy: '隐私',
     paywallLegalAgree: '继续即表示您同意我们的',
     paywallLegalAnd: '和',
+
+    // Downgrade Enforcement
+    downgradeTitle: '订阅已结束',
+    downgradeMessage:
+      '您的高级订阅已结束。免费账户最多可选择%{max}个分类。请更新您的选择，否则应用将自动调整。',
+    downgradeChooseCategories: '选择分类',
+    downgradeAutoAdjust: '自动调整',
 
     // Badges / Achievements
     achievements: '成就',
