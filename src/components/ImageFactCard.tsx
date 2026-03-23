@@ -213,11 +213,11 @@ const ImageFactCardComponent = ({
   };
   const badgePositionStyle = {
     top: spacing.md,
-    right: spacing.md,
+    left: spacing.md,
   };
   const favoritePositionStyle = {
     top: spacing.md,
-    left: spacing.md,
+    right: spacing.md,
   };
   const contentOverlayStyle = {
     paddingHorizontal: spacing.lg,

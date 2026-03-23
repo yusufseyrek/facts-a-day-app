@@ -93,6 +93,7 @@ const FavoriteButtonComponent = ({
           color={isFavorited ? heartColor : '#FFFFFF'}
           fill={isFavorited ? heartColor : 'none'}
           style={styles.iconShadow}
+          marginTop={spacing.xs / 2}
         />
       </Animated.View>
     </Pressable>
