@@ -14,38 +14,27 @@ import { usePremium } from '../../contexts/PremiumContext';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { shouldShowAds } from '../../services/premiumState';
 
-type BannerAdPosition = 'home' | 'fact-modal';
-
 type CollapsiblePlacement = 'top' | 'bottom';
 
 interface BannerAdProps {
-  position: BannerAdPosition;
   onAdLoadChange?: (loaded: boolean) => void;
   collapsible?: CollapsiblePlacement;
 }
 
-const getAdUnitId = (position: BannerAdPosition): string => {
+const getAdUnitId = (): string => {
   const isIOS = Platform.OS === 'ios';
   const config = Constants.expoConfig?.extra;
   const testId = TestIds.BANNER;
 
   if (isIOS) {
-    return position === 'home'
-      ? config?.ADMOB_IOS_MAIN_BANNER_ID || testId
-      : config?.ADMOB_IOS_FACT_DETAIL_BANNER_ID || testId;
+    return config?.ADMOB_IOS_BANNER_ID || testId;
   }
-  return position === 'home'
-    ? config?.ADMOB_ANDROID_MAIN_BANNER_ID || testId
-    : config?.ADMOB_ANDROID_FACT_DETAIL_BANNER_ID || testId;
-};
-
-const getBannerSize = (_position: BannerAdPosition): BannerAdSize => {
-  return BannerAdSize.ANCHORED_ADAPTIVE_BANNER;
+  return config?.ADMOB_ANDROID_BANNER_ID || testId;
 };
 
 type AdState = 'loading' | 'loaded' | 'error';
 
-function BannerAdComponent({ position, onAdLoadChange, collapsible }: BannerAdProps) {
+function BannerAdComponent({ onAdLoadChange, collapsible }: BannerAdProps) {
   // Subscribe to premium context so component re-renders when premium status changes
   // (shouldShowAds() reads module-level state which doesn't trigger re-renders on its own)
   usePremium();
@@ -92,7 +81,7 @@ function BannerAdComponent({ position, onAdLoadChange, collapsible }: BannerAdPr
     });
     setAdState('loaded');
     setRetryCount(0);
-  }, [position]);
+  }, []);
 
   const handleAdFailedToLoad = useCallback(() => {
     LayoutAnimation.configureNext({
@@ -109,7 +98,7 @@ function BannerAdComponent({ position, onAdLoadChange, collapsible }: BannerAdPr
         setAdKey((prev) => prev + 1);
       }, delay);
     }
-  }, [position, retryCount]);
+  }, [retryCount]);
 
   if (!shouldShowAds() || canRequestAds === false || canRequestAds === null) {
     return null;
@@ -133,8 +122,8 @@ function BannerAdComponent({ position, onAdLoadChange, collapsible }: BannerAdPr
         <View style={styles.adWrapper}>
           <GoogleBannerAd
             key={adKey}
-            unitId={getAdUnitId(position)}
-            size={getBannerSize(position)}
+            unitId={getAdUnitId()}
+            size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
             requestOptions={{
               requestNonPersonalizedAdsOnly: requestNonPersonalized,
               keywords: AD_KEYWORDS,

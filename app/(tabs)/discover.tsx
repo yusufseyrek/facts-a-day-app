@@ -966,8 +966,7 @@ function DiscoverScreen() {
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       {renderHeader()}
       <YStack flex={1}>{renderContent()}</YStack>
-      {searchResults.length > 0 ||
-        (!selectedCategorySlug && <BannerAd position="home" collapsible="bottom" />)}
+      {searchResults.length > 0 || (!selectedCategorySlug && <BannerAd collapsible="bottom" />)}
     </ScreenContainer>
   );
 }

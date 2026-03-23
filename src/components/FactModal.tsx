@@ -1066,7 +1066,7 @@ export function FactModal({
       )}
 
       {/* Anchored Banner Ad at bottom */}
-      <BannerAd position="fact-modal" />
+      <BannerAd />
 
       <FactActions
         factId={fact.id}

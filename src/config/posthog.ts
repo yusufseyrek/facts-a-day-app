@@ -11,7 +11,7 @@ export const posthog = new PostHog('phc_tyEgTJkA94jLNlvCnUq5yKbT5krRiyyEiP9d81NQ
     autocapture: {
       uncaughtExceptions: true,
       unhandledRejections: true,
-      console: ['warn', 'error'],
+      console: ['log', 'warn', 'error'],
     },
   },
 });
