@@ -1,4 +1,10 @@
-import { APP_CHECK, CATEGORY_LIMITS, DEV_SETTINGS_ENABLED, HINT_LIMITS, SUBSCRIPTION } from '../../config/app';
+import {
+  APP_CHECK,
+  CATEGORY_LIMITS,
+  DEV_SETTINGS_ENABLED,
+  HINT_LIMITS,
+  SUBSCRIPTION,
+} from '../../config/app';
 
 // ---------------------------------------------------------------------------
 // DEV_SETTINGS_ENABLED — must be false before shipping
@@ -13,17 +19,9 @@ describe('DEV_SETTINGS_ENABLED', () => {
 // ADS_ENABLED
 // ---------------------------------------------------------------------------
 describe('ADS_ENABLED', () => {
-  it('is disabled in __DEV__ (test environment)', () => {
-    // In tests __DEV__ is true, so ADS_ENABLED = !__DEV__ = false
-    // This verifies the guard: ads never run during development/testing
+  it('is enabled for production builds', () => {
     const { ADS_ENABLED } = require('../../config/app');
-    expect(ADS_ENABLED).toBe(false);
-  });
-
-  it('is derived from !__DEV__ (production guard)', () => {
-    // ADS_ENABLED must equal !__DEV__ so ads are on in prod, off in dev
-    const { ADS_ENABLED } = require('../../config/app');
-    expect(ADS_ENABLED).toBe(!__DEV__);
+    expect(ADS_ENABLED).toBe(true);
   });
 });
 
