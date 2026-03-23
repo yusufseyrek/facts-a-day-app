@@ -50,17 +50,20 @@ export async function loadDailyFeedSections(
 
   console.log(`📋 [DailyFeed] loadDailyFeedSections called: locale="${locale}", forceRefresh=${forceRefresh}`);
 
+  // Always load worth_knowing and on_this_day from cache so they stay
+  // locked for the day.  forceRefresh only forces fresh_facts to re-fetch
+  // (preference changes clear the whole cache, so those sections still
+  // re-roll when needed).
+  [worthKnowingCached, onThisDayCached] = await Promise.all([
+    getDailyFeedCache('worth_knowing', locale),
+    getDailyFeedCache('on_this_day', locale),
+  ]);
+
   if (!forceRefresh) {
-    [freshCached, worthKnowingCached, onThisDayCached] = await Promise.all([
-      getDailyFeedCache('fresh_facts', locale),
-      getDailyFeedCache('worth_knowing', locale),
-      getDailyFeedCache('on_this_day', locale),
-    ]);
-    console.log(`📋 [DailyFeed] Cache: fresh=${freshCached.length}, worthKnowing=${worthKnowingCached.length}, onThisDay=${onThisDayCached.length}`);
-  } else {
-    // Force refresh: re-fetch all sections from DB.
-    // Stale cache IDs (e.g. from deleted category facts) are replaced.
+    freshCached = await getDailyFeedCache('fresh_facts', locale);
   }
+
+  console.log(`📋 [DailyFeed] Cache: fresh=${freshCached.length}, worthKnowing=${worthKnowingCached.length}, onThisDay=${onThisDayCached.length}, forceRefresh=${forceRefresh}`);
 
   const needsFresh = freshCached.length === 0;
   const needsWorthKnowing = worthKnowingCached.length === 0;
