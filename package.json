@@ -31,7 +31,7 @@
     "testMatch": [
       "**/__tests__/**/*.test.ts"
     ],
-    "testTimeout": 10000,
+    "testTimeout": 1e4,
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@shopify/flash-list|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|tamagui|@tamagui/.*|i18n-js|react-native-google-mobile-ads|react-native-reanimated|react-native-gesture-handler|react-native-screens|react-native-safe-area-context|react-native-worklets)"
     ],
@@ -87,7 +87,7 @@
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
-    "react-native-google-mobile-ads": "^16.2.1",
+    "react-native-google-mobile-ads": "^16.3.0",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "~4.16.0",

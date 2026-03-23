@@ -300,6 +300,72 @@
           },
           {
             "SKAdNetworkIdentifier": "su67r6k2v3.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "c3frkrj4fj.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "cg4yq2srnc.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "6xzpu9s2p8.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "g28c52eehv.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "523jb4fst2.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "ggvn48r87g.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "mls7yz5dvl.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "24t9a8vw3c.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "cj5566h2ga.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "9b89h5y424.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "ejvt5qm6ak.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "7fmhfwg9en.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "mtkv5xtk9e.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "7rz58n8ntl.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "7953jerfzd.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "qu637u8glc.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "kbmxgpxpgc.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "54nzkqm89y.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "9yg77x724h.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "n66cz3y3bx.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "r45fhb6rf7.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "xy9t38ct57.skadnetwork"
           }
         ]
       }
@@ -352,6 +418,7 @@
       "./plugins/withAppCheckAppAttest.js",
       "./plugins/withModularHeaders.js",
       "./plugins/withDisableAutoScreenReporting.js",
+      "./plugins/withAdMobMediation.js",
       [
         "react-native-google-mobile-ads",
         {
@@ -366,7 +433,7 @@
         {
           "android": {
             "kotlinVersion": "2.1.20",
-            "extraProguardRules": "-keep class com.google.android.gms.internal.consent_sdk.** { *; }"
+            "extraProguardRules": "-keep class com.google.android.gms.internal.consent_sdk.** { *; }\n-keep class com.google.ads.mediation.unity.** { *; }\n-keep class com.google.ads.mediation.ironsource.** { *; }\n-keep class com.google.ads.mediation.vungle.** { *; }"
           },
           "ios": {
             "deploymentTarget": "15.1",
