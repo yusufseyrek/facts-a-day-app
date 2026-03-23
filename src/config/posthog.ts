@@ -4,7 +4,7 @@ export const posthog = new PostHog('phc_tyEgTJkA94jLNlvCnUq5yKbT5krRiyyEiP9d81NQ
   host: 'https://eu.i.posthog.com',
   enableSessionReplay: true,
   sessionReplayConfig: {
-    maskAllTextInputs: true,
+    maskAllTextInputs: false,
     maskAllImages: false,
   },
   errorTracking: {
