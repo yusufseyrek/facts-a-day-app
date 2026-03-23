@@ -1,6 +1,6 @@
 /**
- * Firebase Analytics event tracking service
- * Provides typed functions for all analytics events in the app
+ * Analytics event tracking service
+ * Sends events to Firebase Analytics and selected events to PostHog
  */
 
 import { Platform } from 'react-native';
@@ -15,6 +15,7 @@ import {
   setAnalyticsUserProperty,
   setCrashlyticsAttribute,
 } from '../config/firebase';
+import { posthog } from '../config/posthog';
 import { getAppVersionInfo } from '../utils/appInfo';
 
 import { getNotificationTimes, getSelectedCategories } from './onboarding';
@@ -87,6 +88,20 @@ export const initAnalytics = async (): Promise<void> => {
     await setCrashlyticsAttribute('categories', categoriesValue);
     await setCrashlyticsAttribute('notif_times', notifTimesValue);
 
+    // Set PostHog super properties (attached to all events)
+    posthog.register({
+      platform,
+      os_version: osVersion,
+      device_brand: deviceBrand,
+      device_model: deviceModel,
+      app_version: appVersion,
+      build_number: buildNumber,
+      locale,
+      is_device: isDevice,
+      theme: themeValue,
+      categories: categoriesValue,
+    });
+
     if (__DEV__) {
       console.log('📊 Analytics & Crashlytics properties set:', {
         platform,
@@ -115,6 +130,7 @@ export const initAnalytics = async (): Promise<void> => {
 export const updateThemeProperty = async (theme: string): Promise<void> => {
   await setAnalyticsUserProperty('theme', theme);
   await setCrashlyticsAttribute('theme', theme);
+  posthog.register({ theme });
 };
 
 /**
@@ -125,6 +141,7 @@ export const updateCategoriesProperty = async (categories: string[]): Promise<vo
   const categoriesValue = categories.join(',') || 'none';
   await setAnalyticsUserProperty('categories', categoriesValue);
   await setCrashlyticsAttribute('categories', categoriesValue);
+  posthog.register({ categories: categoriesValue });
 };
 
 /**
@@ -149,6 +166,7 @@ export const updateNotificationProperty = async (times: Date[]): Promise<void> =
 
 export const trackScreenView = (screenName: string, screenClass?: string): void => {
   logScreenView(screenName, screenClass);
+  posthog.screen(screenName, { screen_class: screenClass ?? null });
 };
 
 // Screen name constants for consistency
@@ -190,6 +208,11 @@ export const trackGDPRConsentResult = (params: {
     can_request_ads: params.canRequestAds,
     gdpr_applies: params.gdprApplies,
   });
+  posthog.capture('gdpr_consent', {
+    status: params.status,
+    can_request_ads: params.canRequestAds,
+    gdpr_applies: params.gdprApplies,
+  });
 };
 
 /**
@@ -197,6 +220,7 @@ export const trackGDPRConsentResult = (params: {
  */
 export const trackATTPermissionResult = (status: string): void => {
   logEvent('app_att_permission', { status });
+  posthog.capture('att_permission', { status });
 };
 
 
@@ -209,16 +233,16 @@ export const trackATTPermissionResult = (status: string): void => {
  */
 export const trackOnboardingStart = (locale: string): void => {
   logEvent('app_onboarding_start', { locale });
+  posthog.capture('onboarding_start', { locale });
 };
 
 /**
  * Track when user selects categories and continues
  */
 export const trackOnboardingCategoriesSelected = (categories: string[]): void => {
-  logEvent('app_onboarding_categories', {
-    count: categories.length,
-    categories: categories.slice(0, 10).join(','), // Limit to 10 for param size
-  });
+  const props = { count: categories.length, categories: categories.slice(0, 10).join(',') };
+  logEvent('app_onboarding_categories', props);
+  posthog.capture('onboarding_categories_selected', props);
 };
 
 /**
@@ -226,6 +250,7 @@ export const trackOnboardingCategoriesSelected = (categories: string[]): void =>
  */
 export const trackOnboardingNotificationsEnabled = (timesCount: number): void => {
   logEvent('app_onboarding_notif_on', { times_count: timesCount });
+  posthog.capture('onboarding_notifications_enabled', { times_count: timesCount });
 };
 
 /**
@@ -233,6 +258,7 @@ export const trackOnboardingNotificationsEnabled = (timesCount: number): void =>
  */
 export const trackOnboardingNotificationsSkipped = (): void => {
   logEvent('app_onboarding_notif_skip', {});
+  posthog.capture('onboarding_notifications_skipped');
 };
 
 /**
@@ -243,11 +269,13 @@ export const trackOnboardingComplete = (params: {
   categoriesCount: number;
   notificationsEnabled: boolean;
 }): void => {
-  logEvent('app_onboarding_done', {
+  const props = {
     locale: params.locale,
     categories_count: params.categoriesCount,
     notifications_enabled: params.notificationsEnabled,
-  });
+  };
+  logEvent('app_onboarding_done', props);
+  posthog.capture('onboarding_complete', props);
 };
 
 // ============================================================================
@@ -280,6 +308,11 @@ export const trackFactView = (params: {
     category: params.category,
     source: params.source,
   });
+  posthog.capture('fact_viewed', {
+    fact_id: params.factId,
+    category: params.category,
+    source: params.source,
+  });
 };
 
 /**
@@ -287,6 +320,10 @@ export const trackFactView = (params: {
  */
 export const trackFactShare = (params: { factId: number; category: string }): void => {
   logEvent('app_fact_share', {
+    fact_id: params.factId,
+    category: params.category,
+  });
+  posthog.capture('fact_shared', {
     fact_id: params.factId,
     category: params.category,
   });
@@ -309,6 +346,12 @@ export const trackFactShareWithPlatform = (params: {
     platform: params.platform,
     success: params.success,
   });
+  posthog.capture('fact_shared', {
+    fact_id: params.factId,
+    category: params.category,
+    platform: params.platform,
+    success: params.success,
+  });
 };
 
 /**
@@ -316,6 +359,10 @@ export const trackFactShareWithPlatform = (params: {
  */
 export const trackFactFavoriteAdd = (params: { factId: number; category: string }): void => {
   logEvent('app_fact_fav_add', {
+    fact_id: params.factId,
+    category: params.category,
+  });
+  posthog.capture('fact_favorited', {
     fact_id: params.factId,
     category: params.category,
   });
@@ -329,6 +376,10 @@ export const trackFactFavoriteRemove = (params: { factId: number; category: stri
     fact_id: params.factId,
     category: params.category,
   });
+  posthog.capture('fact_unfavorited', {
+    fact_id: params.factId,
+    category: params.category,
+  });
 };
 
 /**
@@ -336,16 +387,16 @@ export const trackFactFavoriteRemove = (params: { factId: number; category: stri
  */
 export const trackFactReport = (factId: number): void => {
   logEvent('app_fact_report', { fact_id: factId });
+  posthog.capture('fact_reported', { fact_id: factId });
 };
 
 /**
  * Track when user clicks source link
  */
 export const trackSourceLinkClick = (params: { factId: number; domain: string }): void => {
-  logEvent('app_source_click', {
-    fact_id: params.factId,
-    domain: params.domain,
-  });
+  const props = { fact_id: params.factId, domain: params.domain };
+  logEvent('app_source_click', props);
+  posthog.capture('source_link_clicked', props);
 };
 
 // ============================================================================
@@ -360,21 +411,22 @@ export const trackSearch = (params: {
   resultsCount: number;
   categoryFilter?: string;
 }): void => {
-  logEvent('app_search', {
-    search_term: params.searchTerm.substring(0, 100), // Limit length
+  const props = {
+    search_term: params.searchTerm.substring(0, 100),
     results_count: params.resultsCount,
     category_filter: params.categoryFilter || '',
-  });
+  };
+  logEvent('app_search', props);
+  posthog.capture('search', props);
 };
 
 /**
  * Track category browse in Discover
  */
 export const trackCategoryBrowse = (params: { category: string; factsCount: number }): void => {
-  logEvent('app_category_browse', {
-    category: params.category,
-    facts_count: params.factsCount,
-  });
+  const props = { category: params.category, facts_count: params.factsCount };
+  logEvent('app_category_browse', props);
+  posthog.capture('category_browsed', props);
 };
 
 export type FeedRefreshSource = 'pull' | 'notification' | 'auto';
@@ -394,10 +446,8 @@ export const trackFeedRefresh = (source: FeedRefreshSource): void => {
  * Track theme change
  */
 export const trackThemeChange = (params: { from: string; to: string }): void => {
-  logEvent('app_theme_change', {
-    from: params.from,
-    to: params.to,
-  });
+  logEvent('app_theme_change', { from: params.from, to: params.to });
+  posthog.capture('theme_changed', { from: params.from, to: params.to });
 };
 
 /**
@@ -408,11 +458,13 @@ export const trackCategoriesUpdate = (params: {
   addedCount: number;
   removedCount: number;
 }): void => {
-  logEvent('app_categories_update', {
+  const props = {
     count: params.count,
     added_count: params.addedCount,
     removed_count: params.removedCount,
-  });
+  };
+  logEvent('app_categories_update', props);
+  posthog.capture('categories_updated', props);
 };
 
 /**
@@ -456,11 +508,13 @@ export const trackTriviaStart = (params: {
   questionCount: number;
   categorySlug?: string;
 }): void => {
-  logEvent('app_trivia_start', {
+  const props = {
     mode: params.mode,
     question_count: params.questionCount,
     category_slug: params.categorySlug || '',
-  });
+  };
+  logEvent('app_trivia_start', props);
+  posthog.capture('trivia_started', props);
 };
 
 /**
@@ -478,7 +532,7 @@ export const trackTriviaComplete = (params: {
   const accuracy =
     params.questionCount > 0 ? Math.round((params.correctCount / params.questionCount) * 100) : 0;
 
-  logEvent('app_trivia_complete', {
+  const props = {
     mode: params.mode,
     question_count: params.questionCount,
     correct_count: params.correctCount,
@@ -487,7 +541,9 @@ export const trackTriviaComplete = (params: {
     best_streak: params.bestStreak,
     time_expired: params.timeExpired,
     category_slug: params.categorySlug || '',
-  });
+  };
+  logEvent('app_trivia_complete', props);
+  posthog.capture('trivia_completed', props);
 };
 
 /**
@@ -499,12 +555,14 @@ export const trackTriviaExit = (params: {
   totalQuestions: number;
   categorySlug?: string;
 }): void => {
-  logEvent('app_trivia_exit', {
+  const props = {
     mode: params.mode,
     questions_answered: params.questionsAnswered,
     total_questions: params.totalQuestions,
     category_slug: params.categorySlug || '',
-  });
+  };
+  logEvent('app_trivia_exit', props);
+  posthog.capture('trivia_exited', props);
 };
 
 /**
@@ -515,11 +573,13 @@ export const trackTriviaResultsView = (params: {
   sessionId: number;
   categorySlug?: string;
 }): void => {
-  logEvent('app_trivia_results_view', {
+  const props = {
     mode: params.mode,
     session_id: params.sessionId,
     category_slug: params.categorySlug || '',
-  });
+  };
+  logEvent('app_trivia_results_view', props);
+  posthog.capture('trivia_results_viewed', props);
 };
 
 /**
@@ -531,12 +591,14 @@ export const trackTriviaHintClick = (params: {
   source: 'free' | 'rewarded_ad';
   categorySlug?: string;
 }): void => {
-  logEvent('app_trivia_hint_click', {
+  const props = {
     mode: params.mode,
     question_index: params.questionIndex,
     source: params.source,
     category_slug: params.categorySlug || '',
-  });
+  };
+  logEvent('app_trivia_hint_click', props);
+  posthog.capture('trivia_hint_clicked', props);
 };
 
 /**
@@ -609,9 +671,8 @@ export const trackTriviaViewFactClick = (params: {
  * Track when a subscription is purchased
  */
 export const trackSubscriptionPurchased = (params: { productId: string }): void => {
-  logEvent('app_subscription_purchased', {
-    product_id: params.productId,
-  });
+  logEvent('app_subscription_purchased', { product_id: params.productId });
+  posthog.capture('subscription_purchased', { product_id: params.productId });
 };
 
 /**
@@ -619,6 +680,7 @@ export const trackSubscriptionPurchased = (params: { productId: string }): void 
  */
 export const trackSubscriptionRestored = (): void => {
   logEvent('app_subscription_restored', {});
+  posthog.capture('subscription_restored');
 };
 
 /**
@@ -626,6 +688,7 @@ export const trackSubscriptionRestored = (): void => {
  */
 export const trackPaywallViewed = (source: string): void => {
   logEvent('app_paywall_viewed', { source });
+  posthog.capture('paywall_viewed', { source });
 };
 
 /**
@@ -633,6 +696,7 @@ export const trackPaywallViewed = (source: string): void => {
  */
 export const trackPaywallDismissed = (source: string): void => {
   logEvent('app_paywall_dismissed', { source });
+  posthog.capture('paywall_dismissed', { source });
 };
 
 /**
@@ -640,6 +704,7 @@ export const trackPaywallDismissed = (source: string): void => {
  */
 export const trackSubscriptionStatusChanged = (isPremium: boolean): void => {
   logEvent('app_subscription_status_changed', { is_premium: isPremium });
+  posthog.capture('subscription_status_changed', { is_premium: isPremium });
 };
 
 // ============================================================================
@@ -653,12 +718,14 @@ export const trackSubscriptionStatusChanged = (isPremium: boolean): void => {
 export const trackAppUpdate = (): void => {
   const { platform, appVersion, buildNumber, platformBuildId } = getAppVersionInfo();
 
-  logEvent('app_update', {
+  const props = {
     platform,
     app_version: appVersion,
     build_number: buildNumber,
     platform_build_id: platformBuildId,
-  });
+  };
+  logEvent('app_update', props);
+  posthog.capture('app_updated', props);
 };
 
 // ============================================================================
@@ -670,11 +737,13 @@ export const trackStoryOpen = (params: {
   factCount: number;
   isMix: boolean;
 }): void => {
-  logEvent('app_story_open', {
+  const props = {
     category: params.category,
     fact_count: params.factCount,
     is_mix: params.isMix,
-  });
+  };
+  logEvent('app_story_open', props);
+  posthog.capture('story_opened', props);
 };
 
 export const trackStoryFactView = (params: {
@@ -682,18 +751,15 @@ export const trackStoryFactView = (params: {
   category: string;
   index: number;
 }): void => {
-  logEvent('app_story_fact_view', {
-    fact_id: params.factId,
-    category: params.category,
-    index: params.index,
-  });
+  const props = { fact_id: params.factId, category: params.category, index: params.index };
+  logEvent('app_story_fact_view', props);
+  posthog.capture('story_fact_viewed', props);
 };
 
 export const trackStoryReadMore = (params: { factId: number; category: string }): void => {
-  logEvent('app_story_read_more', {
-    fact_id: params.factId,
-    category: params.category,
-  });
+  const props = { fact_id: params.factId, category: params.category };
+  logEvent('app_story_read_more', props);
+  posthog.capture('story_read_more', props);
 };
 
 export const trackStoryClose = (params: {
@@ -701,11 +767,13 @@ export const trackStoryClose = (params: {
   factsViewed: number;
   totalFacts: number;
 }): void => {
-  logEvent('app_story_close', {
+  const props = {
     category: params.category,
     facts_viewed: params.factsViewed,
     total_facts: params.totalFacts,
-  });
+  };
+  logEvent('app_story_close', props);
+  posthog.capture('story_closed', props);
 };
 
 // ============================================================================
@@ -741,9 +809,7 @@ export const trackCarouselSwipe = (params: {
   index: number;
   factId?: number;
 }): void => {
-  logEvent('app_carousel_swipe', {
-    section: params.section,
-    index: params.index,
-    fact_id: params.factId || 0,
-  });
+  const props = { section: params.section, index: params.index, fact_id: params.factId || 0 };
+  logEvent('app_carousel_swipe', props);
+  posthog.capture('carousel_swiped', props);
 };

@@ -18,6 +18,8 @@ import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
+import { PostHogErrorBoundary, PostHogProvider } from 'posthog-react-native';
+
 import { showAppOpenAdOnForeground } from '../src/components/ads/AppOpenAd';
 import { AppCheckBlockingScreen } from '../src/components/AppCheckBlockingScreen';
 import { CategoryDowngradeEnforcer } from '../src/components/CategoryDowngradeEnforcer';
@@ -30,6 +32,7 @@ import {
   initializeFirebase,
   retryAppCheckInit,
 } from '../src/config/firebase';
+import { posthog } from '../src/config/posthog';
 import {
   BadgeToastProvider,
   OnboardingProvider,
@@ -640,23 +643,27 @@ export default function RootLayout() {
           {appCheckFailed && (
             <AppCheckBlockingScreen onRetry={handleAppCheckRetry} isRetrying={isRetryingAppCheck} />
           )}
-          <I18nProvider>
-            <PreloadedDataProvider>
-              <OnboardingProvider initialComplete={initialOnboardingStatus}>
-                <IAPSafeProvider>
-                  <ScrollToTopProvider>
-                    <AppThemeProvider>
-                      <NavigationThemeWrapper>
-                        <BadgeToastProvider>
-                          <AppContent />
-                        </BadgeToastProvider>
-                      </NavigationThemeWrapper>
-                    </AppThemeProvider>
-                  </ScrollToTopProvider>
-                </IAPSafeProvider>
-              </OnboardingProvider>
-            </PreloadedDataProvider>
-          </I18nProvider>
+          <PostHogProvider client={posthog}>
+            <PostHogErrorBoundary>
+            <I18nProvider>
+              <PreloadedDataProvider>
+                <OnboardingProvider initialComplete={initialOnboardingStatus}>
+                  <IAPSafeProvider>
+                    <ScrollToTopProvider>
+                      <AppThemeProvider>
+                        <NavigationThemeWrapper>
+                          <BadgeToastProvider>
+                            <AppContent />
+                          </BadgeToastProvider>
+                        </NavigationThemeWrapper>
+                      </AppThemeProvider>
+                    </ScrollToTopProvider>
+                  </IAPSafeProvider>
+                </OnboardingProvider>
+              </PreloadedDataProvider>
+            </I18nProvider>
+            </PostHogErrorBoundary>
+          </PostHogProvider>
         </SafeAreaProvider>
       </ErrorBoundary>
       {showSplashOverlay && <SplashOverlay onHidden={() => setShowSplashOverlay(false)} />}
