@@ -63,6 +63,7 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
   const textColor = isDark ? '#FFFFFF' : colors.text;
   const secondaryTextColor = colors.textSecondary;
   const mutedTextColor = colors.textMuted;
+  const warningColor = colors.warning;
 
   const handleAnswer = useCallback(
     (answer: string) => {
@@ -267,7 +268,7 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
                 </Text.Caption>
               )
             ) : (
-              <Text.Caption fontFamily={FONT_FAMILIES.medium} color={mutedTextColor}>
+              <Text.Caption fontFamily={FONT_FAMILIES.medium} color={warningColor}>
                 {t('chooseAnOption')}
               </Text.Caption>
             )}
