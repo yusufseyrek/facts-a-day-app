@@ -16,10 +16,10 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-import { Lightbulb } from '@tamagui/lucide-icons';
+import { BookOpen, CalendarDays, Lightbulb, Sparkles } from '@tamagui/lucide-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
 import {
   EmptyState,
@@ -616,15 +616,18 @@ function HomeScreen() {
               {/* Fresh Facts Section (1:1 square carousel) */}
               {hasFreshFacts && (
                 <>
-                  <YStack
+                  <XStack
                     width="100%"
                     maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
                     alignSelf="center"
                     paddingHorizontal={spacing.lg}
                     paddingBottom={spacing.sm}
+                    alignItems="center"
+                    gap={spacing.sm}
                   >
+                    <Sparkles size={iconSizes.sm} color={colors.primary} />
                     <Text.Title fontSize={typography.fontSize.body}>{t('newlyAdded')}</Text.Title>
-                  </YStack>
+                  </XStack>
 
                   <View
                     style={{
@@ -670,17 +673,20 @@ function HomeScreen() {
               {/* On This Day Section (thumbnail cards) */}
               {hasOnThisDayFacts && (
                 <>
-                  <YStack
+                  <XStack
                     width="100%"
                     maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
                     alignSelf="center"
                     paddingHorizontal={spacing.lg}
                     paddingBottom={spacing.sm}
+                    alignItems="center"
+                    gap={spacing.sm}
                   >
+                    <CalendarDays size={iconSizes.sm} color={colors.primary} />
                     <Text.Title fontSize={typography.fontSize.body}>
                       {onThisDayIsWeekFallback ? t('thisWeekInHistory') : t('onThisDay')}
                     </Text.Title>
-                  </YStack>
+                  </XStack>
 
                   <View
                     style={{
@@ -713,15 +719,18 @@ function HomeScreen() {
               {/* Worth Knowing Section (3:2 carousel) */}
               {hasWorthKnowingFacts && (
                 <>
-                  <YStack
+                  <XStack
                     width="100%"
                     maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
                     alignSelf="center"
                     paddingHorizontal={spacing.lg}
                     paddingBottom={spacing.sm}
+                    alignItems="center"
+                    gap={spacing.sm}
                   >
+                    <BookOpen size={iconSizes.sm} color={colors.primary} />
                     <Text.Title fontSize={typography.fontSize.body}>{t('worthKnowing')}</Text.Title>
-                  </YStack>
+                  </XStack>
 
                   <View
                     style={{

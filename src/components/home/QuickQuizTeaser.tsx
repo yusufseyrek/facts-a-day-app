@@ -201,7 +201,7 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
         </XStack>
 
         {/* Question */}
-        <Text.Body fontFamily={FONT_FAMILIES.medium} color={textColor} numberOfLines={3}>
+        <Text.Body fontFamily={FONT_FAMILIES.medium} color={textColor}>
           {question.question_text}
         </Text.Body>
 
@@ -281,7 +281,8 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
                   disabled={selectedAnswer === null}
                   style={({ pressed }) => [
                     { flex: 1 },
-                    pressed && selectedAnswer !== null && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+                    pressed &&
+                      selectedAnswer !== null && { opacity: 0.8, transform: [{ scale: 0.98 }] },
                   ]}
                 >
                   <XStack
@@ -309,7 +310,8 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
                 disabled={selectedAnswer === null}
                 style={({ pressed }) => [
                   { flex: 1 },
-                  pressed && selectedAnswer !== null && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+                  pressed &&
+                    selectedAnswer !== null && { opacity: 0.8, transform: [{ scale: 0.98 }] },
                 ]}
               >
                 <XStack
