@@ -191,7 +191,7 @@ const CategoryCarouselComponent = forwardRef<CategoryCarouselRef, CategoryCarous
     if (facts.length === 0) return null;
 
     return (
-      <YStack marginBottom={spacing.lg}>
+      <YStack>
         {/* Section title */}
         <YStack
           width="100%"

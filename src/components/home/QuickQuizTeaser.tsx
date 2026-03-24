@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { BarChart3, ChevronRight, Eye, Zap } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
@@ -253,11 +253,11 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
           </YStack>
         )}
 
-        {/* Feedback + Actions */}
-        {selectedAnswer !== null && (
-          <Animated.View entering={FadeInDown.duration(300).delay(300)}>
-            <YStack gap={spacing.sm}>
-              {isCorrect ? (
+        {/* Feedback + Actions — persists after first answer to prevent layout jumps */}
+        {answeredCount > 0 && (
+          <YStack gap={spacing.sm}>
+            {selectedAnswer !== null && isCorrect !== null ? (
+              isCorrect ? (
                 <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={successColor}>
                   {t('greatYouGotIt')}
                 </Text.Caption>
@@ -265,61 +265,69 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
                 <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={errorColor}>
                   {t('wrongTryAgain')}
                 </Text.Caption>
-              )}
+              )
+            ) : (
+              <Text.Caption fontFamily={FONT_FAMILIES.medium} color={mutedTextColor}>
+                {t('chooseAnOption')}
+              </Text.Caption>
+            )}
 
-              <XStack gap={spacing.sm}>
-                {/* Results */}
-                {answeredCount >= 2 && (
-                  <Pressable
-                    onPress={handleResults}
-                    style={({ pressed }) => [
-                      { flex: 1 },
-                      pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
-                    ]}
-                  >
-                    <XStack
-                      backgroundColor={colors.surface}
-                      height={buttonHeight}
-                      borderRadius={radius.sm}
-                      borderWidth={1}
-                      borderColor={borderColor}
-                      alignItems="center"
-                      justifyContent="center"
-                      gap={spacing.xs}
-                    >
-                      <BarChart3 size={iconSizes.sm} color={secondaryTextColor} />
-                      <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={secondaryTextColor}>
-                        {t('seeResults')}
-                      </Text.Caption>
-                    </XStack>
-                  </Pressable>
-                )}
-
-                {/* Next */}
+            <XStack gap={spacing.sm}>
+              {/* Results */}
+              {answeredCount >= 2 && (
                 <Pressable
-                  onPress={handleNext}
+                  onPress={handleResults}
+                  disabled={selectedAnswer === null}
                   style={({ pressed }) => [
                     { flex: 1 },
-                    pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+                    pressed && selectedAnswer !== null && { opacity: 0.8, transform: [{ scale: 0.98 }] },
                   ]}
                 >
                   <XStack
-                    backgroundColor={primaryColor}
+                    backgroundColor={colors.surface}
                     height={buttonHeight}
                     borderRadius={radius.sm}
+                    borderWidth={1}
+                    borderColor={borderColor}
                     alignItems="center"
                     justifyContent="center"
                     gap={spacing.xs}
+                    opacity={selectedAnswer !== null ? 1 : 0.4}
                   >
-                    <Text.Caption fontFamily={FONT_FAMILIES.semibold} color="#FFFFFF">
-                      {t('nextQuestion')}
+                    <BarChart3 size={iconSizes.sm} color={secondaryTextColor} />
+                    <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={secondaryTextColor}>
+                      {t('seeResults')}
                     </Text.Caption>
-                    <ChevronRight size={iconSizes.sm} color="#FFFFFF" />
                   </XStack>
                 </Pressable>
-              </XStack>
-            </YStack>
-          </Animated.View>
+              )}
+
+              {/* Next */}
+              <Pressable
+                onPress={handleNext}
+                disabled={selectedAnswer === null}
+                style={({ pressed }) => [
+                  { flex: 1 },
+                  pressed && selectedAnswer !== null && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+                ]}
+              >
+                <XStack
+                  backgroundColor={primaryColor}
+                  height={buttonHeight}
+                  borderRadius={radius.sm}
+                  alignItems="center"
+                  justifyContent="center"
+                  gap={spacing.xs}
+                  opacity={selectedAnswer !== null ? 1 : 0.4}
+                >
+                  <Text.Caption fontFamily={FONT_FAMILIES.semibold} color="#FFFFFF">
+                    {t('nextQuestion')}
+                  </Text.Caption>
+                  <ChevronRight size={iconSizes.sm} color="#FFFFFF" />
+                </XStack>
+              </Pressable>
+            </XStack>
+          </YStack>
         )}
       </YStack>
     </Animated.View>
