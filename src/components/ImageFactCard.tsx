@@ -383,7 +383,7 @@ const ImageFactCardComponent = ({
             )}
 
             {/* Favorite button */}
-            <View style={[styles.badgeContainer, favoritePositionStyle]}>
+            <View style={[styles.badgeContainer, _favoritePositionStyle]}>
               <FavoriteButton
                 factId={factId}
                 imageUrl={imageUrl}
@@ -470,6 +470,7 @@ export const ImageFactCard = React.memo(ImageFactCardComponent, (prevProps, next
     prevProps.aspectRatio === nextProps.aspectRatio &&
     prevProps.cardWidth === nextProps.cardWidth &&
     prevProps.TitleComponent === nextProps.TitleComponent &&
-    prevProps.contentOverlayStyle === nextProps.contentOverlayStyle
+    prevProps.contentOverlayStyle === nextProps.contentOverlayStyle &&
+    prevProps.favoritePositionStyle === nextProps.favoritePositionStyle
   );
 });

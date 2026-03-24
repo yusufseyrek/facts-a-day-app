@@ -38,7 +38,7 @@ import { CategoryCarousel, CategoryCarouselRef } from '../../src/components/home
 import { QuickQuizTeaser } from '../../src/components/home/QuickQuizTeaser';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { CompactFactCard } from '../../src/components/CompactFactCard';
-import { ADS_ENABLED, HOME_FEED, LAYOUT, PAYWALL_PROMPT } from '../../src/config/app';
+import { ADS_ENABLED, HOME_FEED, LAYOUT, NATIVE_ADS, PAYWALL_PROMPT } from '../../src/config/app';
 import {
   signalFeedLoaded,
   usePreloadedData,
@@ -661,7 +661,7 @@ function HomeScreen() {
                   maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
                   alignSelf="center"
                   paddingHorizontal={spacing.md}
-                  paddingBottom={spacing.md}
+                  paddingBottom={spacing.xl}
                 >
                   <InlineNativeAd />
                 </YStack>
@@ -675,7 +675,7 @@ function HomeScreen() {
                     maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
                     alignSelf="center"
                     paddingHorizontal={spacing.lg}
-                    paddingVertical={spacing.sm}
+                    paddingBottom={spacing.sm}
                   >
                     <Text.Title fontSize={typography.fontSize.body}>
                       {onThisDayIsWeekFallback ? t('thisWeekInHistory') : t('onThisDay')}
@@ -762,7 +762,7 @@ function HomeScreen() {
                     maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
                     alignSelf: 'center',
                     paddingHorizontal: spacing.md,
-                    paddingBottom: spacing.xs,
+                    paddingBottom: spacing.lg,
                   }}
                 >
                   <QuickQuizTeaser
@@ -784,41 +784,42 @@ function HomeScreen() {
                   maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
                   alignSelf="center"
                   paddingHorizontal={spacing.md}
-                  paddingVertical={spacing.lg}
+                  paddingBottom={spacing.xl}
                 >
                   <InlineNativeAd />
                 </YStack>
               )}
 
-              {/* Category Carousels */}
-              {categoryCarousels.map(({ category, facts }) => (
-                <CategoryCarousel
-                  key={category.slug}
-                  ref={(r) => {
-                    if (r) categoryCarouselRefs.current.set(category.slug, r);
-                    else categoryCarouselRefs.current.delete(category.slug);
-                  }}
-                  category={category}
-                  facts={facts}
-                  onFactPress={(fact, source, factIds, index) =>
-                    handleFactPress(fact, source, factIds, index)
-                  }
-                  onCtaPress={handleCategoryCta}
-                />
+              {/* Category Carousels with inline ads */}
+              {categoryCarousels.map(({ category, facts }, index) => (
+                <React.Fragment key={category.slug}>
+                  <CategoryCarousel
+                    ref={(r) => {
+                      if (r) categoryCarouselRefs.current.set(category.slug, r);
+                      else categoryCarouselRefs.current.delete(category.slug);
+                    }}
+                    category={category}
+                    facts={facts}
+                    onFactPress={(fact, source, factIds, factIndex) =>
+                      handleFactPress(fact, source, factIds, factIndex)
+                    }
+                    onCtaPress={handleCategoryCta}
+                  />
+                  {ADS_ENABLED &&
+                    !isPremium &&
+                    (index + 1) % NATIVE_ADS.CATEGORY_CAROUSEL_AD_INTERVAL === 0 && (
+                      <YStack
+                        width="100%"
+                        maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
+                        alignSelf="center"
+                        paddingHorizontal={spacing.md}
+                        paddingBottom={spacing.xl}
+                      >
+                        <InlineNativeAd />
+                      </YStack>
+                    )}
+                </React.Fragment>
               ))}
-
-              {/* Inline ad below categories */}
-              {ADS_ENABLED && !isPremium && (
-                <YStack
-                  width="100%"
-                  maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
-                  alignSelf="center"
-                  paddingHorizontal={spacing.md}
-                  paddingBottom={spacing.lg}
-                >
-                  <InlineNativeAd />
-                </YStack>
-              )}
             </ScrollView>
           </>
         )}

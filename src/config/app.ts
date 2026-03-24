@@ -78,6 +78,8 @@ export const NATIVE_ADS = {
     FAVORITES: 1,
     STORY: 3,
   },
+  /** Show an inline ad every N category carousels on the home screen */
+  CATEGORY_CAROUSEL_AD_INTERVAL: 3,
 } as const;
 
 export const AD_RETRY = {
