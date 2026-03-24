@@ -1,16 +1,16 @@
 import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
-import { NativeScrollEvent, NativeSyntheticEvent, Pressable, View } from 'react-native';
+import { NativeScrollEvent, NativeSyntheticEvent, Pressable, StyleSheet, View } from 'react-native';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { ChevronRight } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
 import { LAYOUT } from '../../config/app';
 import { useTranslation } from '../../i18n';
 import { trackCarouselSwipe } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
-import { getContrastColor } from '../../utils/colors';
+import { darkenColor, getContrastColor } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
 
@@ -104,19 +104,23 @@ const CategoryCarouselComponent = forwardRef<CategoryCarouselRef, CategoryCarous
         if ('id' in item && item.id === CATEGORY_CTA_ID) {
           const categoryColor = category.color_hex || colors.primary;
           const ctaTextColor = getContrastColor(categoryColor);
+          const iconBg = ctaTextColor === '#000000' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)';
           return (
             <View style={{ width: cardWidth }}>
               <Pressable
                 onPress={() => onCtaPress(category.slug)}
-                style={({ pressed }) => ({
-                  height: cardHeight,
-                  borderRadius: radius.md,
-                  overflow: 'hidden',
-                  opacity: pressed ? 0.85 : 1,
-                })}
+                style={({ pressed }) => [
+                  ctaShadowStyles.wrapper,
+                  {
+                    height: cardHeight,
+                    borderRadius: radius.md,
+                    overflow: 'hidden',
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
               >
                 <LinearGradient
-                  colors={[categoryColor + 'CC', categoryColor]}
+                  colors={[categoryColor, darkenColor(categoryColor, 0.25)]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{
@@ -127,8 +131,36 @@ const CategoryCarouselComponent = forwardRef<CategoryCarouselRef, CategoryCarous
                     gap: spacing.sm,
                   }}
                 >
-                  {getLucideIcon(category.icon, iconSizes.xl, ctaTextColor)}
-                  <Text.Label color={ctaTextColor} style={{ textAlign: 'center' }}>
+                  {/* Decorative circle */}
+                  <View
+                    pointerEvents="none"
+                    style={{
+                      position: 'absolute',
+                      top: -cardWidth * 0.25,
+                      left: -cardWidth * 0.25,
+                      width: cardWidth * 1.15,
+                      height: cardWidth * 1.15,
+                      borderRadius: cardWidth * 0.6,
+                      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                    }}
+                  />
+                  <View
+                    style={{
+                      width: iconSizes.xl * 1.6,
+                      height: iconSizes.xl * 1.6,
+                      borderRadius: radius.md,
+                      backgroundColor: iconBg,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    {getLucideIcon(category.icon, iconSizes.xl, ctaTextColor)}
+                  </View>
+                  <Text.Label
+                    color={ctaTextColor}
+                    fontFamily={FONT_FAMILIES.semibold}
+                    style={{ textAlign: 'center' }}
+                  >
                     {t('viewAll')}
                   </Text.Label>
                   <ChevronRight size={iconSizes.md} color={ctaTextColor + 'B3'} />
@@ -192,15 +224,18 @@ const CategoryCarouselComponent = forwardRef<CategoryCarouselRef, CategoryCarous
     return (
       <YStack>
         {/* Section title */}
-        <YStack
+        <XStack
           width="100%"
           maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
           alignSelf="center"
           paddingHorizontal={spacing.lg}
           paddingBottom={spacing.sm}
+          alignItems="center"
+          gap={spacing.sm}
         >
+          {getLucideIcon(category.icon, iconSizes.sm, category.color_hex || colors.primary)}
           <Text.Title fontSize={typography.fontSize.body}>{category.name}</Text.Title>
-        </YStack>
+        </XStack>
 
         {/* Carousel */}
         <View
@@ -234,3 +269,13 @@ const CategoryCarouselComponent = forwardRef<CategoryCarouselRef, CategoryCarous
 );
 
 export const CategoryCarousel = React.memo(CategoryCarouselComponent);
+
+const ctaShadowStyles = StyleSheet.create({
+  wrapper: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+});
