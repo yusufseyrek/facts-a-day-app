@@ -10,6 +10,7 @@ import { LAYOUT } from '../../config/app';
 import { useTranslation } from '../../i18n';
 import { trackCarouselSwipe } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
+import { getContrastColor } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
 
@@ -102,6 +103,7 @@ const CategoryCarouselComponent = forwardRef<CategoryCarouselRef, CategoryCarous
         // CTA card
         if ('id' in item && item.id === CATEGORY_CTA_ID) {
           const categoryColor = category.color_hex || colors.primary;
+          const ctaTextColor = getContrastColor(categoryColor);
           return (
             <View style={{ width: cardWidth }}>
               <Pressable
@@ -125,16 +127,11 @@ const CategoryCarouselComponent = forwardRef<CategoryCarouselRef, CategoryCarous
                     gap: spacing.sm,
                   }}
                 >
-                  {getLucideIcon(category.icon, iconSizes.hero, '#FFFFFF')}
-                  <Text.Title
-                    color="#FFFFFF"
-                    fontSize={typography.fontSize.label}
-                    fontFamily={FONT_FAMILIES.bold}
-                    style={{ textAlign: 'center' }}
-                  >
+                  {getLucideIcon(category.icon, iconSizes.xl, ctaTextColor)}
+                  <Text.Label color={ctaTextColor} style={{ textAlign: 'center' }}>
                     {t('viewAll')}
-                  </Text.Title>
-                  <ChevronRight size={iconSizes.sm} color="rgba(255,255,255,0.7)" />
+                  </Text.Label>
+                  <ChevronRight size={iconSizes.md} color={ctaTextColor + 'B3'} />
                 </LinearGradient>
               </Pressable>
             </View>
@@ -161,6 +158,8 @@ const CategoryCarouselComponent = forwardRef<CategoryCarouselRef, CategoryCarous
               cardWidth={cardWidth}
               aspectRatio={1}
               TitleComponent={Text.Label}
+              contentOverlayStyle={{ padding: spacing.md }}
+              favoritePositionStyle={{ top: spacing.sm, right: spacing.sm }}
             />
           </View>
         );

@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  Animated,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from 'react-native';
 
 import { RefreshCw } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
@@ -35,6 +43,9 @@ interface ImageFactCardProps {
   cardWidth?: number;
   /** Optional text component for the title. Receives the same props as Text.Title. Defaults to Text.Title. */
   TitleComponent?: React.ComponentType<any>;
+  /** Optional style override for the content overlay (title area at the bottom) */
+  contentOverlayStyle?: ViewStyle;
+  favoritePositionStyle?: ViewStyle;
 }
 
 const ImageFactCardComponent = ({
@@ -49,6 +60,8 @@ const ImageFactCardComponent = ({
   aspectRatio,
   cardWidth: cardWidthProp,
   TitleComponent,
+  contentOverlayStyle,
+  favoritePositionStyle,
 }: ImageFactCardProps) => {
   const { screenWidth, spacing, radius, config } = useResponsive();
 
@@ -220,15 +233,18 @@ const ImageFactCardComponent = ({
     top: spacing.md,
     left: spacing.md,
   };
-  const favoritePositionStyle = {
+  const defaultFavoritePositionStyle = {
     top: spacing.md,
     right: spacing.md,
   };
-  const contentOverlayStyle = {
+  const defaultContentOverlayStyle = {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     paddingTop: spacing.xl * 1.5,
   };
+
+  const _favoritePositionStyle = favoritePositionStyle || defaultFavoritePositionStyle;
+  const _contentOverlayStyle = contentOverlayStyle || defaultContentOverlayStyle;
 
   // Recycling key that includes retry count to force expo-image to re-attempt loading
   // This is important for Android where timing issues cause initial render failures
@@ -376,13 +392,9 @@ const ImageFactCardComponent = ({
             </View>
 
             {/* Content overlay */}
-            <View style={[styles.contentOverlay, contentOverlayStyle]}>
+            <View style={[styles.contentOverlay, _contentOverlayStyle]}>
               {/* Title */}
-              <Title
-                color="#FFFFFF"
-                numberOfLines={config.maxLines}
-                style={styles.titleShadow}
-              >
+              <Title color="#FFFFFF" numberOfLines={config.maxLines} style={styles.titleShadow}>
                 {title}
               </Title>
             </View>
@@ -457,6 +469,7 @@ export const ImageFactCard = React.memo(ImageFactCardComponent, (prevProps, next
     prevProps.isTablet === nextProps.isTablet &&
     prevProps.aspectRatio === nextProps.aspectRatio &&
     prevProps.cardWidth === nextProps.cardWidth &&
-    prevProps.TitleComponent === nextProps.TitleComponent
+    prevProps.TitleComponent === nextProps.TitleComponent &&
+    prevProps.contentOverlayStyle === nextProps.contentOverlayStyle
   );
 });
