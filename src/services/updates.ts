@@ -32,7 +32,7 @@ async function setAppCheckHeaders(): Promise<void> {
       Updates.setUpdateRequestHeadersOverride({
         'X-Firebase-AppCheck': token,
       });
-      console.log('📦 App Check header set for update request');
+      if (__DEV__) console.log('📦 App Check header set for update request');
     } else {
       console.warn('📦 No App Check token available for update request');
     }
@@ -120,38 +120,44 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
     // Set App Check headers for authenticated update requests
     await setAppCheckHeaders();
 
-    console.log('📦 ========== UPDATE CHECK START ==========');
-    console.log('📦 Runtime Version:', getRuntimeVersion());
-    console.log('📦 Platform:', Platform.OS);
-    console.log('📦 Update URL:', Constants.expoConfig?.updates?.url);
-    console.log('📦 Current Update ID:', Updates.updateId);
-    console.log('📦 Is Embedded Launch:', Updates.isEmbeddedLaunch);
-    console.log('📦 Is Enabled:', Updates.isEnabled);
-    console.log('📦 Channel:', Updates.channel);
+    if (__DEV__) {
+      console.log('📦 ========== UPDATE CHECK START ==========');
+      console.log('📦 Runtime Version:', getRuntimeVersion());
+      console.log('📦 Platform:', Platform.OS);
+      console.log('📦 Update URL:', Constants.expoConfig?.updates?.url);
+      console.log('📦 Current Update ID:', Updates.updateId);
+      console.log('📦 Is Embedded Launch:', Updates.isEmbeddedLaunch);
+      console.log('📦 Is Enabled:', Updates.isEnabled);
+      console.log('📦 Channel:', Updates.channel);
+    }
 
     // Log the current manifest if available
     const currentManifest = (Updates as any).manifest;
-    if (currentManifest) {
+    if (__DEV__ && currentManifest) {
       console.log('📦 Current manifest ID:', currentManifest.id);
       console.log('📦 Current manifest createdAt:', currentManifest.createdAt);
     }
 
     const update = await Updates.checkForUpdateAsync();
 
-    console.log('📦 ========== CHECK RESULT ==========');
-    console.log('📦 isAvailable:', update.isAvailable);
-    console.log('📦 reason:', (update as any).reason || 'none');
-    console.log('📦 isRollBackToEmbedded:', (update as any).isRollBackToEmbedded);
+    if (__DEV__) {
+      console.log('📦 ========== CHECK RESULT ==========');
+      console.log('📦 isAvailable:', update.isAvailable);
+      console.log('📦 reason:', (update as any).reason || 'none');
+      console.log('📦 isRollBackToEmbedded:', (update as any).isRollBackToEmbedded);
+    }
 
     if (update.manifest) {
       const manifest = update.manifest as any;
-      console.log('📦 Server manifest ID:', manifest.id);
-      console.log('📦 Server manifest createdAt:', manifest.createdAt);
-      console.log('📦 Server manifest runtimeVersion:', manifest.runtimeVersion);
-      // Log launchAsset info which is critical for the bundle URL
-      if (manifest.launchAsset) {
-        console.log('📦 Server launchAsset URL:', manifest.launchAsset.url);
-        console.log('📦 Server launchAsset key:', manifest.launchAsset.key);
+      if (__DEV__) {
+        console.log('📦 Server manifest ID:', manifest.id);
+        console.log('📦 Server manifest createdAt:', manifest.createdAt);
+        console.log('📦 Server manifest runtimeVersion:', manifest.runtimeVersion);
+        // Log launchAsset info which is critical for the bundle URL
+        if (manifest.launchAsset) {
+          console.log('📦 Server launchAsset URL:', manifest.launchAsset.url);
+          console.log('📦 Server launchAsset key:', manifest.launchAsset.key);
+        }
       }
     }
 
@@ -160,15 +166,17 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
       (update as any).reason || (update.isAvailable ? 'update_available' : 'unknown');
 
     if (update.isAvailable) {
-      console.log('📦 ✓ Update available!');
+      if (__DEV__) console.log('📦 ✓ Update available!');
       return {
         type: 'update-available',
         manifest: update.manifest as Updates.Manifest,
       };
     }
 
-    console.log('📦 ✗ No update available, reason:', lastCheckReason);
-    console.log('📦 ========== UPDATE CHECK END ==========');
+    if (__DEV__) {
+      console.log('📦 ✗ No update available, reason:', lastCheckReason);
+      console.log('📦 ========== UPDATE CHECK END ==========');
+    }
     return { type: 'no-update' };
   } catch (error) {
     console.error('📦 ========== UPDATE CHECK ERROR ==========');
@@ -193,31 +201,35 @@ export async function downloadAndApplyUpdate(): Promise<UpdateDownloadResult> {
     // Set App Check headers for authenticated asset downloads
     await setAppCheckHeaders();
 
-    console.log('📦 Starting update download...');
-    console.log('📦 Before fetch - Update ID:', Updates.updateId);
-    console.log('📦 Before fetch - Is Embedded:', Updates.isEmbeddedLaunch);
+    if (__DEV__) {
+      console.log('📦 Starting update download...');
+      console.log('📦 Before fetch - Update ID:', Updates.updateId);
+      console.log('📦 Before fetch - Is Embedded:', Updates.isEmbeddedLaunch);
+    }
 
     const result = await Updates.fetchUpdateAsync();
 
-    console.log('📦 Fetch completed');
-    console.log('📦 Fetch result isNew:', result.isNew);
-    console.log('📦 Fetch result manifest:', JSON.stringify(result.manifest, null, 2));
+    if (__DEV__) {
+      console.log('📦 Fetch completed');
+      console.log('📦 Fetch result isNew:', result.isNew);
+      console.log('📦 Fetch result manifest:', JSON.stringify(result.manifest, null, 2));
+    }
 
     if (result.isNew) {
       // Add a small delay to ensure the update is fully persisted to disk
       // This helps prevent race conditions where reloadAsync is called before
       // the native module has finished writing the update
-      console.log('📦 Update is new, waiting for persistence...');
+      if (__DEV__) console.log('📦 Update is new, waiting for persistence...');
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      console.log('📦 Update ready to apply');
+      if (__DEV__) console.log('📦 Update ready to apply');
       return {
         type: 'success',
         manifest: result.manifest as Updates.Manifest,
       };
     }
 
-    console.log('📦 Update was not new');
+    if (__DEV__) console.log('📦 Update was not new');
     return {
       type: 'error',
       error: new Error('No new update was downloaded'),
@@ -242,23 +254,27 @@ export async function downloadAndApplyUpdate(): Promise<UpdateDownloadResult> {
  * 3. The runtime version matches between embedded and downloaded update
  */
 export async function reloadApp(): Promise<void> {
-  console.log('📦 ========== RELOAD START ==========');
-  console.log('📦 Current Update ID before reload:', Updates.updateId);
-  console.log('📦 Is Embedded before reload:', Updates.isEmbeddedLaunch);
+  if (__DEV__) {
+    console.log('📦 ========== RELOAD START ==========');
+    console.log('📦 Current Update ID before reload:', Updates.updateId);
+    console.log('📦 Is Embedded before reload:', Updates.isEmbeddedLaunch);
+  }
 
   // Log native state before reload
   try {
     const logs = await getNativeLogEntries(60000); // Last minute
-    console.log('📦 Recent native logs:');
-    logs.slice(-5).forEach((l) => console.log(`📦   ${l.code}: ${l.message}`));
+    if (__DEV__) {
+      console.log('📦 Recent native logs:');
+      logs.slice(-5).forEach((l) => console.log(`📦   ${l.code}: ${l.message}`));
+    }
   } catch (logError) {
-    console.log('📦 Could not read native logs:', logError);
+    if (__DEV__) console.log('📦 Could not read native logs:', logError);
   }
 
   // Add a longer delay to ensure the update is fully written to disk
   // This is important because fetchUpdateAsync might return before
   // the native module has completely finished persisting the update
-  console.log('📦 Waiting for update to be fully persisted...');
+  if (__DEV__) console.log('📦 Waiting for update to be fully persisted...');
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   // Get the correct background color based on user's theme preference
@@ -267,8 +283,10 @@ export async function reloadApp(): Promise<void> {
   // Track the app update before reload
   trackAppUpdate();
 
-  console.log('📦 Calling reloadAsync...');
-  console.log('📦 ========== RELOAD EXECUTING ==========');
+  if (__DEV__) {
+    console.log('📦 Calling reloadAsync...');
+    console.log('📦 ========== RELOAD EXECUTING ==========');
+  }
   await Updates.reloadAsync({
     reloadScreenOptions: {
       backgroundColor,
@@ -283,30 +301,34 @@ export async function reloadApp(): Promise<void> {
  * and logs more details for debugging persistent update issues
  */
 export async function forceReloadWithVerification(): Promise<void> {
-  console.log('📦 ========== FORCE RELOAD WITH VERIFICATION ==========');
+  if (__DEV__) console.log('📦 ========== FORCE RELOAD WITH VERIFICATION ==========');
 
   // Log current state
   const currentId = Updates.updateId;
   const isEmbedded = Updates.isEmbeddedLaunch;
   const manifest = (Updates as any).manifest;
 
-  console.log('📦 Current state:');
-  console.log('📦   Update ID:', currentId);
-  console.log('📦   Is Embedded:', isEmbedded);
-  console.log('📦   Manifest ID:', manifest?.id);
-  console.log('📦   Manifest createdAt:', manifest?.createdAt);
+  if (__DEV__) {
+    console.log('📦 Current state:');
+    console.log('📦   Update ID:', currentId);
+    console.log('📦   Is Embedded:', isEmbedded);
+    console.log('📦   Manifest ID:', manifest?.id);
+    console.log('📦   Manifest createdAt:', manifest?.createdAt);
+  }
 
   // Wait longer for any async operations to complete
-  console.log('📦 Extended wait for persistence (2s)...');
+  if (__DEV__) console.log('📦 Extended wait for persistence (2s)...');
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
   // Read native logs
   try {
     const logs = await getNativeLogEntries(120000); // Last 2 minutes
-    console.log('📦 Native logs before reload:');
-    logs.forEach((l) => console.log(`📦   [${l.level}] ${l.code}: ${l.message}`));
+    if (__DEV__) {
+      console.log('📦 Native logs before reload:');
+      logs.forEach((l) => console.log(`📦   [${l.level}] ${l.code}: ${l.message}`));
+    }
   } catch {
-    console.log('📦 Could not read native logs');
+    if (__DEV__) console.log('📦 Could not read native logs');
   }
 
   // Get the correct background color based on user's theme preference
@@ -315,7 +337,7 @@ export async function forceReloadWithVerification(): Promise<void> {
   // Track the app update before reload
   trackAppUpdate();
 
-  console.log('📦 Executing reload...');
+  if (__DEV__) console.log('📦 Executing reload...');
   await Updates.reloadAsync({
     reloadScreenOptions: {
       backgroundColor,
@@ -424,22 +446,24 @@ export function addUpdateStateChangeListener(
  */
 export function logUpdateStatus(): void {
   const info = getUpdateInfo();
-  console.log('📦 ========== CURRENT UPDATE STATUS ==========');
-  console.log(`📦 Runtime Version: ${info.runtimeVersion}`);
-  console.log(`📦 Update ID: ${info.updateId || 'none (embedded)'}`);
-  console.log(`📦 Channel: ${info.channel || 'default'}`);
-  console.log(`📦 Is Embedded Launch: ${info.isEmbedded}`);
-  console.log(`📦 Platform: ${Platform.OS}`);
-  console.log(`📦 Update URL: ${Constants.expoConfig?.updates?.url || 'not set'}`);
-  console.log(`📦 Updates Enabled: ${Updates.isEnabled}`);
+  if (__DEV__) {
+    console.log('📦 ========== CURRENT UPDATE STATUS ==========');
+    console.log(`📦 Runtime Version: ${info.runtimeVersion}`);
+    console.log(`📦 Update ID: ${info.updateId || 'none (embedded)'}`);
+    console.log(`📦 Channel: ${info.channel || 'default'}`);
+    console.log(`📦 Is Embedded Launch: ${info.isEmbedded}`);
+    console.log(`📦 Platform: ${Platform.OS}`);
+    console.log(`📦 Update URL: ${Constants.expoConfig?.updates?.url || 'not set'}`);
+    console.log(`📦 Updates Enabled: ${Updates.isEnabled}`);
 
-  // Log manifest details if available
-  const manifest = (Updates as any).manifest;
-  if (manifest) {
-    console.log(`📦 Manifest ID: ${manifest.id}`);
-    console.log(`📦 Manifest Created At: ${manifest.createdAt}`);
+    // Log manifest details if available
+    const manifest = (Updates as any).manifest;
+    if (manifest) {
+      console.log(`📦 Manifest ID: ${manifest.id}`);
+      console.log(`📦 Manifest Created At: ${manifest.createdAt}`);
+    }
+    console.log('📦 =============================================');
   }
-  console.log('📦 =============================================');
 }
 
 /**

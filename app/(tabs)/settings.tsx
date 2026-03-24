@@ -463,10 +463,10 @@ export default function SettingsPage() {
 
   const handleTestNotification = async () => {
     try {
-      console.log('🔔 Starting test notification...');
+      if (__DEV__) console.log('🔔 Starting test notification...');
 
       const { status } = await Notifications.getPermissionsAsync();
-      console.log('📱 Permission status:', status);
+      if (__DEV__) console.log('📱 Permission status:', status);
 
       if (status !== 'granted') {
         Alert.alert(t('notificationPermissionRequired'), t('notificationPermissionMessage'), [
@@ -476,7 +476,7 @@ export default function SettingsPage() {
       }
 
       const facts = await database.getRandomUnscheduledFacts(1, locale);
-      console.log('📚 Facts found:', facts.length);
+      if (__DEV__) console.log('📚 Facts found:', facts.length);
 
       if (facts.length === 0) {
         Alert.alert(t('noFactAvailable'), t('noFactsAvailableForTest'), [
@@ -486,7 +486,7 @@ export default function SettingsPage() {
       }
 
       const fact = facts[0];
-      console.log('✅ Using fact:', fact.id, '-', fact.content.substring(0, 50) + '...');
+      if (__DEV__) console.log('✅ Using fact:', fact.id, '-', fact.content.substring(0, 50) + '...');
 
       const content = await buildNotificationContent(fact, locale);
       // Add isTest flag to data
@@ -501,7 +501,7 @@ export default function SettingsPage() {
         },
       });
 
-      console.log('✅ Notification scheduled with ID:', notificationId);
+      if (__DEV__) console.log('✅ Notification scheduled with ID:', notificationId);
 
       Alert.alert(t('testNotificationScheduled'), t('testNotificationIn5Seconds'), [
         { text: t('ok'), style: 'default' },
@@ -574,11 +574,11 @@ export default function SettingsPage() {
 
   const handleAdd10RandomFacts = async () => {
     try {
-      console.log('📚 Adding 10 random facts with past dates for feed testing...');
+      if (__DEV__) console.log('📚 Adding 10 random facts with past dates for feed testing...');
 
       // Get 10 random unscheduled facts
       const facts = await database.getRandomUnscheduledFacts(10, locale);
-      console.log('📚 Unscheduled facts found:', facts.length);
+      if (__DEV__) console.log('📚 Unscheduled facts found:', facts.length);
 
       if (facts.length === 0) {
         Alert.alert(t('noFactAvailable'), t('noFactsAvailable'), [
@@ -587,7 +587,7 @@ export default function SettingsPage() {
         return;
       }
 
-      console.log(`📚 Adding ${facts.length} facts with random past dates...`);
+      if (__DEV__) console.log(`📚 Adding ${facts.length} facts with random past dates...`);
 
       const now = new Date();
 
@@ -611,7 +611,7 @@ export default function SettingsPage() {
 
         await database.markFactAsScheduled(fact.id, scheduledDate.toISOString(), notificationId);
 
-        console.log(
+        if (__DEV__) console.log(
           `✅ Added fact ${fact.id} with date ${scheduledDate.toISOString().split('T')[0]}`
         );
       }
@@ -640,7 +640,7 @@ export default function SettingsPage() {
 
   const handleScheduleDuplicateNotifications = async () => {
     try {
-      console.log('🐛 Creating buggy notification schedule to test repair...');
+      if (__DEV__) console.log('🐛 Creating buggy notification schedule to test repair...');
 
       const { status } = await Notifications.getPermissionsAsync();
       if (status !== 'granted') {
@@ -651,13 +651,13 @@ export default function SettingsPage() {
       }
 
       // Step 1: Clear all existing notifications from OS and DB
-      console.log('🐛 Clearing existing notifications...');
+      if (__DEV__) console.log('🐛 Clearing existing notifications...');
       await Notifications.cancelAllScheduledNotificationsAsync();
       await database.clearAllScheduledFactsCompletely();
 
       // Step 2: Get enough facts to fill up to 64 notifications
       const facts = await database.getRandomUnscheduledFacts(64, locale);
-      console.log('📚 Facts found:', facts.length);
+      if (__DEV__) console.log('📚 Facts found:', facts.length);
 
       if (facts.length < 64) {
         Alert.alert(
@@ -677,7 +677,7 @@ export default function SettingsPage() {
       // For next 34 days, schedule 1 notification per day (34 total)
       // Total: 64 notifications
 
-      console.log('🐛 Scheduling with duplicates for first 10 days...');
+      if (__DEV__) console.log('🐛 Scheduling with duplicates for first 10 days...');
 
       // First 10 days: 3 notifications each (this is the bug scenario)
       for (let day = 1; day <= 10; day++) {
@@ -711,7 +711,7 @@ export default function SettingsPage() {
       }
 
       // Next 34 days: 1 notification each (normal)
-      console.log('🐛 Scheduling normal notifications for remaining days...');
+      if (__DEV__) console.log('🐛 Scheduling normal notifications for remaining days...');
       for (let day = 11; day <= 44 && factIndex < facts.length; day++) {
         const fact = facts[factIndex];
         const scheduledDate = new Date(now);
@@ -736,10 +736,12 @@ export default function SettingsPage() {
 
       // Verify
       const osCount = await Notifications.getAllScheduledNotificationsAsync();
-      console.log(
-        `🐛 Created buggy schedule: ${scheduledCount} notifications (OS: ${osCount.length})`
-      );
-      console.log('🐛 Days 1-10 have 3 notifications each (bug), days 11-44 have 1 each (normal)');
+      if (__DEV__) {
+        console.log(
+          `🐛 Created buggy schedule: ${scheduledCount} notifications (OS: ${osCount.length})`
+        );
+        console.log('🐛 Days 1-10 have 3 notifications each (bug), days 11-44 have 1 each (normal)');
+      }
 
       Alert.alert(
         'Buggy Schedule Created',

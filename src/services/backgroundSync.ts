@@ -26,7 +26,7 @@ const BACKGROUND_SYNC_TASK = 'FACTS_BACKGROUND_SYNC';
 // Define the task at module level (required by expo-task-manager)
 TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
   try {
-    console.log('🔄 Background sync started');
+    if (__DEV__) console.log('🔄 Background sync started');
 
     // 1. Sync facts from API
     const result = await refreshAppContent();
@@ -45,7 +45,7 @@ TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
       await ensureNotificationSchedule(locale as SupportedLocale, 'background_task');
     }
 
-    console.log('✅ Background sync completed');
+    if (__DEV__) console.log('✅ Background sync completed');
 
     return result.success
       ? BackgroundTask.BackgroundTaskResult.Success
@@ -64,7 +64,7 @@ export async function registerBackgroundSync(): Promise<void> {
   try {
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_SYNC_TASK);
     if (isRegistered) {
-      console.log('ℹ️ Background sync task already registered');
+      if (__DEV__) console.log('ℹ️ Background sync task already registered');
       return;
     }
 
@@ -72,7 +72,7 @@ export async function registerBackgroundSync(): Promise<void> {
       minimumInterval: 15, // 15 min minimum (OS decides actual timing)
     });
 
-    console.log('✅ Background sync task registered');
+    if (__DEV__) console.log('✅ Background sync task registered');
   } catch (error) {
     console.error('❌ Failed to register background sync:', error);
   }
@@ -86,7 +86,7 @@ export async function unregisterBackgroundSync(): Promise<void> {
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_SYNC_TASK);
     if (isRegistered) {
       await BackgroundTask.unregisterTaskAsync(BACKGROUND_SYNC_TASK);
-      console.log('✅ Background sync task unregistered');
+      if (__DEV__) console.log('✅ Background sync task unregistered');
     }
   } catch (error) {
     console.error('❌ Failed to unregister background sync:', error);

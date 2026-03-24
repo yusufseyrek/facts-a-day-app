@@ -27,7 +27,7 @@ let feedRefreshPending = false;
  */
 export function markFeedRefreshPending(): void {
   feedRefreshPending = true;
-  console.log('📋 [FeedRefresh] markFeedRefreshPending called — flag is now TRUE');
+  if (__DEV__) console.log('📋 [FeedRefresh] markFeedRefreshPending called — flag is now TRUE');
 }
 
 /**
@@ -39,7 +39,7 @@ export function consumeFeedRefreshPending(): boolean {
   if (feedRefreshPending) {
     feedRefreshPending = false;
   }
-  console.log(`📋 [FeedRefresh] consumeFeedRefreshPending called — was=${was}, now=${feedRefreshPending}`);
+  if (__DEV__) console.log(`📋 [FeedRefresh] consumeFeedRefreshPending called — was=${was}, now=${feedRefreshPending}`);
   return was;
 }
 
@@ -90,7 +90,7 @@ export function getRefreshStatus(): RefreshStatus {
  */
 function emitRefreshStatus(status: RefreshStatus): void {
   currentRefreshStatus = status;
-  console.log(`📊 Refresh status: ${status}`);
+  if (__DEV__) console.log(`📊 Refresh status: ${status}`);
   refreshStatusListeners.forEach((listener) => {
     try {
       listener(status);
@@ -203,7 +203,7 @@ export async function getStoredLocale(): Promise<string | null> {
 async function saveCurrentLocale(locale: string): Promise<void> {
   try {
     await AsyncStorage.setItem(STORED_LOCALE_KEY, locale);
-    console.log(`📍 Stored locale saved: ${locale}`);
+    if (__DEV__) console.log(`📍 Stored locale saved: ${locale}`);
   } catch (error) {
     console.error('Error saving current locale:', error);
   }
@@ -303,7 +303,7 @@ async function needsQuestionsMigration(): Promise<boolean> {
 
     // If we have facts but no questions, we need migration
     if (questionsCount === 0) {
-      console.log(`📊 Migration needed: ${factsCount} facts, ${questionsCount} questions`);
+      if (__DEV__) console.log(`📊 Migration needed: ${factsCount} facts, ${questionsCount} questions`);
       return true;
     }
 
@@ -322,11 +322,11 @@ async function needsQuestionsMigration(): Promise<boolean> {
  */
 async function runQuestionsMigration(locale: SupportedLocale): Promise<void> {
   try {
-    console.log('🔄 Running questions migration for existing facts...');
+    if (__DEV__) console.log('🔄 Running questions migration for existing facts...');
 
     const categories = await onboardingService.getSelectedCategories();
     if (categories.length === 0) {
-      console.log('No categories selected, skipping migration');
+      if (__DEV__) console.log('No categories selected, skipping migration');
       await AsyncStorage.setItem(QUESTIONS_MIGRATION_KEY, 'true');
       return;
     }
@@ -344,9 +344,9 @@ async function runQuestionsMigration(locale: SupportedLocale): Promise<void> {
     const dbQuestions = extractQuestions(facts);
     if (dbQuestions.length > 0) {
       await db.insertQuestions(dbQuestions);
-      console.log(`✅ Migration complete: Added ${dbQuestions.length} questions for trivia`);
+      if (__DEV__) console.log(`✅ Migration complete: Added ${dbQuestions.length} questions for trivia`);
     } else {
-      console.log('No questions found in API response');
+      console.warn('No questions found in API response');
     }
 
     // Mark migration as complete
@@ -377,7 +377,7 @@ async function needsSlugMigration(): Promise<boolean> {
     );
 
     if ((result?.count || 0) > 0) {
-      console.log(`📊 Slug migration needed: ${result?.count} facts without slug`);
+      if (__DEV__) console.log(`📊 Slug migration needed: ${result?.count} facts without slug`);
       return true;
     }
 
@@ -396,11 +396,11 @@ async function needsSlugMigration(): Promise<boolean> {
  */
 async function runSlugMigration(locale: SupportedLocale): Promise<void> {
   try {
-    console.log('🔄 Running slug migration - re-downloading all facts...');
+    if (__DEV__) console.log('🔄 Running slug migration - re-downloading all facts...');
 
     const categories = await onboardingService.getSelectedCategories();
     if (categories.length === 0) {
-      console.log('No categories selected, skipping slug migration');
+      if (__DEV__) console.log('No categories selected, skipping slug migration');
       await AsyncStorage.setItem(SLUG_MIGRATION_KEY, 'true');
       return;
     }
@@ -439,7 +439,7 @@ async function runSlugMigration(locale: SupportedLocale): Promise<void> {
     // Insert/update facts (preserves scheduling info via ON CONFLICT)
     await db.insertFacts(dbFacts);
 
-    console.log(`✅ Slug migration complete: Updated ${dbFacts.length} facts`);
+    if (__DEV__) console.log(`✅ Slug migration complete: Updated ${dbFacts.length} facts`);
     await AsyncStorage.setItem(SLUG_MIGRATION_KEY, 'true');
   } catch (error) {
     console.error('❌ Slug migration failed:', error);
@@ -471,7 +471,7 @@ async function needsHistoricalMigration(): Promise<boolean> {
     }
 
     // Facts exist but migration hasn't run — we need to re-fetch with historical included
-    console.log('📊 Historical migration needed: re-fetching all facts with historical data');
+    if (__DEV__) console.log('📊 Historical migration needed: re-fetching all facts with historical data');
     return true;
   } catch (error) {
     console.error('Error checking historical migration:', error);
@@ -486,11 +486,11 @@ async function needsHistoricalMigration(): Promise<boolean> {
  */
 async function runHistoricalMigration(locale: SupportedLocale): Promise<void> {
   try {
-    console.log('🔄 Running historical migration - re-downloading all facts with historical data...');
+    if (__DEV__) console.log('🔄 Running historical migration - re-downloading all facts with historical data...');
 
     const categories = await onboardingService.getSelectedCategories();
     if (categories.length === 0) {
-      console.log('No categories selected, skipping historical migration');
+      if (__DEV__) console.log('No categories selected, skipping historical migration');
       await AsyncStorage.setItem(HISTORICAL_MIGRATION_KEY, 'true');
       return;
     }
@@ -534,7 +534,7 @@ async function runHistoricalMigration(locale: SupportedLocale): Promise<void> {
       await db.insertQuestions(dbQuestions);
     }
 
-    console.log(`✅ Historical migration complete: Synced ${dbFacts.length} facts`);
+    if (__DEV__) console.log(`✅ Historical migration complete: Synced ${dbFacts.length} facts`);
     await AsyncStorage.setItem(HISTORICAL_MIGRATION_KEY, 'true');
   } catch (error) {
     console.error('❌ Historical migration failed:', error);
@@ -562,7 +562,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
   };
 
   try {
-    console.log('🔄 Starting background content refresh...');
+    if (__DEV__) console.log('🔄 Starting background content refresh...');
 
     // Check if locale has changed since last app open
     const localeStatus = await hasLocaleChanged();
@@ -570,7 +570,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
 
     if (localeStatus.changed) {
       // Locale has changed - trigger full refresh with new language
-      console.log(
+      if (__DEV__) console.log(
         `🌍 Locale changed from "${localeStatus.storedLocale}" to "${currentLocale}" - triggering full refresh...`
       );
 
@@ -593,7 +593,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
 
         result.success = true;
         result.updated.facts = languageChangeResult.factsCount || 0;
-        console.log(`✅ Locale change refresh completed: ${result.updated.facts} facts updated`);
+        if (__DEV__) console.log(`✅ Locale change refresh completed: ${result.updated.facts} facts updated`);
       } else {
         console.error('❌ Locale change refresh failed:', languageChangeResult.error);
         result.error = languageChangeResult.error;
@@ -612,7 +612,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
     // Also save current locale if this is the first time (storedLocale is null)
     if (localeStatus.storedLocale === null) {
       await saveCurrentLocale(currentLocale);
-      console.log(`📍 First app open - stored locale: ${currentLocale}`);
+      if (__DEV__) console.log(`📍 First app open - stored locale: ${currentLocale}`);
     }
 
     // Check if we need to run questions migration for existing users
@@ -723,23 +723,23 @@ export async function refreshAppContent(): Promise<RefreshResult> {
         // Insert questions (INSERT OR REPLACE handles duplicates)
         if (dbQuestions.length > 0) {
           await db.insertQuestions(dbQuestions);
-          console.log(`🧠 Synced ${dbQuestions.length} questions for trivia`);
+          if (__DEV__) console.log(`🧠 Synced ${dbQuestions.length} questions for trivia`);
         }
 
         // Log new and updated facts separately with IDs
         if (newFacts.length > 0) {
           const newIds = newFacts.map((f) => f.id).join(', ');
-          console.log(`✨ Fetched ${newFacts.length} new facts: [${newIds}]`);
+          if (__DEV__) console.log(`✨ Fetched ${newFacts.length} new facts: [${newIds}]`);
         }
         if (updatedFacts.length > 0) {
           const updatedIds = updatedFacts.map((f) => f.id).join(', ');
-          console.log(`🔄 Updated ${updatedFacts.length} facts: [${updatedIds}]`);
+          if (__DEV__) console.log(`🔄 Updated ${updatedFacts.length} facts: [${updatedIds}]`);
         }
 
         // Notify listeners to refresh the feed
         emitFeedRefresh();
       } else {
-        console.log('✅ No new or updated facts available');
+        if (__DEV__) console.log('✅ No new or updated facts available');
       }
     }
 
@@ -747,7 +747,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
     await updateLastRefreshTime();
 
     result.success = true;
-    console.log('✅ Background content refresh completed successfully');
+    if (__DEV__) console.log('✅ Background content refresh completed successfully');
   } catch (error) {
     console.error('❌ Content refresh failed:', error);
     result.error = error instanceof Error ? error.message : 'Unknown error';

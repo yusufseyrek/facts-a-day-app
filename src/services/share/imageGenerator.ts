@@ -24,20 +24,22 @@ export async function generateShareCard(
   factId: number
 ): Promise<GeneratedShareCard | null> {
   try {
-    console.log('[ImageGen] Starting capture for factId:', factId);
-    console.log('[ImageGen] ViewShot ref exists:', !!viewShotRef.current);
+    if (__DEV__) {
+      console.log('[ImageGen] Starting capture for factId:', factId);
+      console.log('[ImageGen] ViewShot ref exists:', !!viewShotRef.current);
+    }
 
     // Ensure directory exists
     const dirInfo = await FileSystem.getInfoAsync(SHARE_IMAGES_DIR);
-    console.log('[ImageGen] Directory exists:', dirInfo.exists);
+    if (__DEV__) console.log('[ImageGen] Directory exists:', dirInfo.exists);
     if (!dirInfo.exists) {
       await FileSystem.makeDirectoryAsync(SHARE_IMAGES_DIR, { intermediates: true });
-      console.log('[ImageGen] Created directory');
+      if (__DEV__) console.log('[ImageGen] Created directory');
     }
 
     // Capture the view
     const uri = await viewShotRef.current?.capture?.();
-    console.log('[ImageGen] Capture URI:', uri);
+    if (__DEV__) console.log('[ImageGen] Capture URI:', uri);
     if (!uri) {
       console.warn('[ImageGen] ViewShot capture returned undefined');
       return null;
@@ -45,20 +47,20 @@ export async function generateShareCard(
 
     // Verify capture file exists
     const captureInfo = await FileSystem.getInfoAsync(uri);
-    console.log('[ImageGen] Capture file exists:', captureInfo.exists);
+    if (__DEV__) console.log('[ImageGen] Capture file exists:', captureInfo.exists);
 
     // Generate unique filename
     const filename = `share-card-${factId}-${Date.now()}.${SHARE_IMAGE_FORMAT}`;
     const destUri = `${SHARE_IMAGES_DIR}${filename}`;
-    console.log('[ImageGen] Destination:', destUri);
+    if (__DEV__) console.log('[ImageGen] Destination:', destUri);
 
     // Copy to cache directory
     await FileSystem.copyAsync({ from: uri, to: destUri });
-    console.log('[ImageGen] Copy completed');
+    if (__DEV__) console.log('[ImageGen] Copy completed');
 
     // Verify destination file exists
     const destInfo = await FileSystem.getInfoAsync(destUri);
-    console.log('[ImageGen] Destination file exists:', destInfo.exists);
+    if (__DEV__) console.log('[ImageGen] Destination file exists:', destInfo.exists);
 
     return {
       uri: destUri,

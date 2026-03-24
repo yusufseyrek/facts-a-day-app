@@ -181,7 +181,7 @@ export default function CategoriesSettings() {
   const handleSave = async () => {
     // Check if categories have changed
     if (!hasChanges()) {
-      console.log('No changes detected, navigating back without saving');
+      if (__DEV__) console.log('No changes detected, navigating back without saving');
       router.back();
       return;
     }
@@ -199,7 +199,7 @@ export default function CategoriesSettings() {
         selectedCategories,
         locale,
         (progress) => {
-          console.log(`${progress.stage}: ${progress.percentage}% - ${progress.message}`);
+          if (__DEV__) console.log(`${progress.stage}: ${progress.percentage}% - ${progress.message}`);
           if (progress.stage === 'downloading') {
             setIsFetchingFacts(true);
           }
@@ -207,7 +207,7 @@ export default function CategoriesSettings() {
       );
 
       if (result.success) {
-        console.log(`Successfully refreshed with ${result.factsCount} facts`);
+        if (__DEV__) console.log(`Successfully refreshed with ${result.factsCount} facts`);
 
         // Track categories update and update user property
         const addedCount = selectedCategories.filter(

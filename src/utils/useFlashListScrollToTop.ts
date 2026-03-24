@@ -16,7 +16,7 @@ export function smartScrollToTop(
   const { instantJumpThreshold, preRenderItemCount } = SCROLL_TO_TOP_SETTINGS;
   const shouldAnimate = scrollOffset < instantJumpThreshold;
 
-  if (debug) {
+  if (__DEV__ && debug) {
     console.log(
       `[${screenId}:ScrollToTop] offset:`,
       Math.round(scrollOffset),
@@ -65,7 +65,7 @@ export function useFlashListScrollToTop({
   const handleScroll = useCallback(
     (event: ScrollEvent) => {
       scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
-      if (debug) {
+      if (__DEV__ && debug) {
         console.log(`[${screenId}:Scroll] offset:`, Math.round(scrollOffsetRef.current));
       }
     },
@@ -98,7 +98,7 @@ export function createScrollHandler(
 ) {
   return (event: ScrollEvent) => {
     (scrollOffsetRef as { current: number }).current = event.nativeEvent.contentOffset.y;
-    if (debug) {
+    if (__DEV__ && debug) {
       console.log(`[${screenId}:Scroll] offset:`, Math.round(event.nativeEvent.contentOffset.y));
     }
   };

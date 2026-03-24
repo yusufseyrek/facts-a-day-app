@@ -50,11 +50,11 @@ export interface InitializationResult {
 export async function initializeOnboarding(deviceLanguage: string): Promise<InitializationResult> {
   try {
     // Fetch metadata with device language for translations
-    console.log('Fetching metadata...');
+    if (__DEV__) console.log('Fetching metadata...');
     const metadata = await api.getMetadata(deviceLanguage);
 
     // Store metadata in database
-    console.log('Storing metadata in database...');
+    if (__DEV__) console.log('Storing metadata in database...');
     await db.openDatabase();
     await db.insertCategories(metadata.categories);
 
@@ -95,7 +95,7 @@ export async function fetchAllFacts(
     const categoriesParam = categories.join(',');
 
     // Fetch all facts with retry logic (include questions for trivia feature)
-    console.log('Fetching facts with questions...', { language, categories: categoriesParam });
+    if (__DEV__) console.log('Fetching facts with questions...', { language, categories: categoriesParam });
 
     const facts = await api.getAllFactsWithRetry(
       language,
@@ -138,16 +138,16 @@ export async function fetchAllFacts(
     }));
 
     // Store facts in database
-    console.log(`📋 [Onboarding] Storing ${dbFacts.length} facts (language="${language}", historical=${dbFacts.filter(f => f.is_historical === 1).length}, non-historical=${dbFacts.filter(f => f.is_historical !== 1).length})`);
+    if (__DEV__) console.log(`📋 [Onboarding] Storing ${dbFacts.length} facts (language="${language}", historical=${dbFacts.filter(f => f.is_historical === 1).length}, non-historical=${dbFacts.filter(f => f.is_historical !== 1).length})`);
     await db.insertFacts(dbFacts);
-    console.log(`📋 [Onboarding] Facts stored successfully`);
+    if (__DEV__) console.log(`📋 [Onboarding] Facts stored successfully`);
 
     // Insert questions before returning — must complete before home screen loads
     // to avoid concurrent SQLite transactions (setDailyFeedCache vs insertQuestions)
     const dbQuestions = extractQuestions(facts);
     if (dbQuestions.length > 0) {
       await db.insertQuestions(dbQuestions);
-      console.log(`🧠 Inserted ${dbQuestions.length} questions for trivia`);
+      if (__DEV__) console.log(`🧠 Inserted ${dbQuestions.length} questions for trivia`);
     }
 
     return { success: true, count: dbFacts.length };
@@ -198,7 +198,7 @@ export async function completeOnboarding(preferences: OnboardingPreferences): Pr
     // Mark onboarding as complete
     await setOnboardingComplete();
 
-    console.log('Onboarding completed successfully');
+    if (__DEV__) console.log('Onboarding completed successfully');
   } catch (error) {
     console.error('Error completing onboarding:', error);
     throw error;
@@ -251,7 +251,7 @@ export async function getNotificationTimes(): Promise<string[]> {
 export async function setSelectedCategories(categories: string[]): Promise<void> {
   try {
     await AsyncStorage.setItem(SELECTED_CATEGORIES_KEY, JSON.stringify(categories));
-    console.log('Selected categories updated:', categories);
+    if (__DEV__) console.log('Selected categories updated:', categories);
   } catch (error) {
     console.error('Error setting selected categories:', error);
     throw error;
@@ -264,7 +264,7 @@ export async function setSelectedCategories(categories: string[]): Promise<void>
 export async function setNotificationTime(time: Date): Promise<void> {
   try {
     await AsyncStorage.setItem(NOTIFICATION_TIME_KEY, time.toISOString());
-    console.log('Notification time updated:', time.toISOString());
+    if (__DEV__) console.log('Notification time updated:', time.toISOString());
   } catch (error) {
     console.error('Error setting notification time:', error);
     throw error;
@@ -283,7 +283,7 @@ export async function setNotificationTimes(times: string[]): Promise<void> {
       await AsyncStorage.setItem(NOTIFICATION_TIME_KEY, times[0]);
     }
 
-    console.log('Notification times updated:', times);
+    if (__DEV__) console.log('Notification times updated:', times);
   } catch (error) {
     console.error('Error setting notification times:', error);
     throw error;
@@ -302,7 +302,7 @@ export async function resetOnboarding(): Promise<void> {
     await AsyncStorage.removeItem(NOTIFICATION_TIME_KEY);
     await AsyncStorage.removeItem(NOTIFICATION_TIMES_KEY);
     await db.clearDatabase();
-    console.log('Onboarding reset successfully');
+    if (__DEV__) console.log('Onboarding reset successfully');
   } catch (error) {
     console.error('Error resetting onboarding:', error);
     throw error;

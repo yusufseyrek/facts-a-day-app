@@ -72,7 +72,7 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
   useEffect(() => {
     if (!badge) return;
 
-    console.log('🏅 [BadgeToast] Showing toast for:', badge.name, badge.star);
+    if (__DEV__) console.log('🏅 [BadgeToast] Showing toast for:', badge.name, badge.star);
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 

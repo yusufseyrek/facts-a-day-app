@@ -224,7 +224,7 @@ export default function OnboardingSuccessScreen() {
   }, []);
 
   const checkConsentRequired = async () => {
-    console.log('checkConsentRequired started, ADS_ENABLED:', ADS_ENABLED);
+    if (__DEV__) console.log('checkConsentRequired started, ADS_ENABLED:', ADS_ENABLED);
 
     if (!ADS_ENABLED) {
       // Ads disabled, skip to animation
@@ -236,28 +236,28 @@ export default function OnboardingSuccessScreen() {
     try {
       // Check if GDPR consent is required (user is in EEA/UK)
       const gdprRequired = await isConsentRequired();
-      console.log('isConsentRequired (GDPR) returned:', gdprRequired);
+      if (__DEV__) console.log('isConsentRequired (GDPR) returned:', gdprRequired);
 
       if (gdprRequired) {
         // GDPR consent is required (EEA/UK user), show GDPR soft message
-        console.log('Showing GDPR consent screen');
+        if (__DEV__) console.log('Showing GDPR consent screen');
         setScreenState('consent');
       } else if (Platform.OS === 'ios') {
         // Non-EEA iOS user: skip soft message, run consent flow directly for ATT
-        console.log('Non-EEA iOS user, running consent flow directly for ATT...');
+        if (__DEV__) console.log('Non-EEA iOS user, running consent flow directly for ATT...');
         setScreenState('processing');
         const result = await completeConsentFlow();
-        console.log('Consent flow completed:', result);
+        if (__DEV__) console.log('Consent flow completed:', result);
         setScreenState('animation');
         setShouldRunAnimations(true);
       } else {
         // Android user outside EEA, no consent screens needed
         // Still need to run completeConsentFlow() so gatherConsent() is called,
         // which is required for canRequestAds to become true on fresh installs.
-        console.log('Non-EEA Android user, running consent flow directly...');
+        if (__DEV__) console.log('Non-EEA Android user, running consent flow directly...');
         setScreenState('processing');
         const result = await completeConsentFlow();
-        console.log('Consent flow completed:', result);
+        if (__DEV__) console.log('Consent flow completed:', result);
         setScreenState('animation');
         setShouldRunAnimations(true);
       }
@@ -434,7 +434,7 @@ export default function OnboardingSuccessScreen() {
     try {
       // Run the complete consent flow (shows GDPR consent + ATT dialog)
       const result = await completeConsentFlow();
-      console.log('Consent flow completed:', result);
+      if (__DEV__) console.log('Consent flow completed:', result);
     } catch (error) {
       console.error('Error during consent flow:', error);
     }

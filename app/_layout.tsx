@@ -214,7 +214,7 @@ function AppContent() {
 
             // Sync notification schedule (check/repair/top-up)
             const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
-            console.log('🔔 Notification opened, syncing schedule...');
+            if (__DEV__) console.log('🔔 Notification opened, syncing schedule...');
             notificationService
               .ensureNotificationSchedule(getLocaleFromCode(deviceLocale), 'notification_tap')
               .catch((error) => {
@@ -304,10 +304,10 @@ export default function RootLayout() {
   useEffect(() => {
     // Check initial state (init may have completed before React mounts)
     const initialFailed = isAppCheckInitFailed();
-    console.log(`[AppCheck UI] Initial failure state: ${initialFailed}`);
+    if (__DEV__) console.log(`[AppCheck UI] Initial failure state: ${initialFailed}`);
     setAppCheckFailed(initialFailed);
     const unsubscribe = subscribeAppCheckFailure((failed) => {
-      console.log(`[AppCheck UI] Failure state changed: ${failed}`);
+      if (__DEV__) console.log(`[AppCheck UI] Failure state changed: ${failed}`);
       setAppCheckFailed(failed);
     });
     return unsubscribe;
@@ -359,7 +359,7 @@ export default function RootLayout() {
       ) {
         // If an update was downloaded previously, reload the app immediately
         if (pendingUpdateRef.current) {
-          console.log('📦 Pending OTA update detected on foreground, reloading app...');
+          if (__DEV__) console.log('📦 Pending OTA update detected on foreground, reloading app...');
           pendingUpdateRef.current = false;
           try {
             await updates.reloadApp();
@@ -369,7 +369,7 @@ export default function RootLayout() {
           }
         }
 
-        console.log('📱 App entered foreground, syncing notifications...');
+        if (__DEV__) console.log('📱 App entered foreground, syncing notifications...');
         Notifications.setBadgeCountAsync(0);
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
         notificationService
@@ -384,12 +384,12 @@ export default function RootLayout() {
         });
 
         // Check for OTA updates when app enters foreground
-        console.log('📦 Checking for OTA updates on foreground...');
+        if (__DEV__) console.log('📦 Checking for OTA updates on foreground...');
         updates
           .checkAndDownloadUpdate()
           .then((result) => {
             if (result.updateAvailable && result.downloaded) {
-              console.log('📦 OTA update downloaded, marking as pending for next foreground');
+              if (__DEV__) console.log('📦 OTA update downloaded, marking as pending for next foreground');
               pendingUpdateRef.current = true;
             }
           })
@@ -415,12 +415,12 @@ export default function RootLayout() {
     const checkForUpdates = () => {
       // Only check when app is in foreground
       if (AppState.currentState === 'active') {
-        console.log('📦 Periodic OTA update check...');
+        if (__DEV__) console.log('📦 Periodic OTA update check...');
         updates
           .checkAndDownloadUpdate()
           .then((result) => {
             if (result.updateAvailable && result.downloaded) {
-              console.log('📦 OTA update downloaded, marking as pending for next foreground');
+              if (__DEV__) console.log('📦 OTA update downloaded, marking as pending for next foreground');
               pendingUpdateRef.current = true;
             }
           })
@@ -600,7 +600,7 @@ export default function RootLayout() {
         .checkAndDownloadUpdate()
         .then((result) => {
           if (result.updateAvailable && result.downloaded) {
-            console.log(
+            if (__DEV__) console.log(
               '📦 OTA update downloaded on cold start, marking as pending for next foreground'
             );
             pendingUpdateRef.current = true;

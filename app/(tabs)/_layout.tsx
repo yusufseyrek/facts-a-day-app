@@ -68,7 +68,7 @@ function AnimatedTabButton({
     (e: any) => {
       // Check if this tab is already the current tab
       const isCurrentTab = tabName === currentTab;
-      console.log(
+      if (__DEV__) console.log(
         `📜 Tab pressed: ${tabName}, currentTab: ${currentTab}, isCurrentTab: ${isCurrentTab}`
       );
       if (isCurrentTab && tabName) {

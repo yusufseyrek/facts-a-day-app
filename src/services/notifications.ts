@@ -1078,7 +1078,7 @@ export async function ensureNotificationSchedule(
 ): Promise<SyncResult> {
   // Concurrency guard: if already running, wait for it and skip
   if (_syncLock) {
-    console.log(`🔔 [${source}] Ensure already in progress, waiting...`);
+    if (__DEV__) console.log(`🔔 [${source}] Ensure already in progress, waiting...`);
     try {
       const existing = await _syncLock;
       return { ...existing, skipped: true };
@@ -1143,7 +1143,7 @@ async function _ensureNotificationScheduleImpl(
       const valid = isScheduleValid(dbScheduled, preferredTimes);
       logEntry.scheduleValid = valid;
       if (!valid) {
-        console.log(`🔔 [${source}] Schedule invalid - triggering full reschedule`);
+        if (__DEV__) console.log(`🔔 [${source}] Schedule invalid - triggering full reschedule`);
         logEntry.action = 'reschedule';
         forceReschedule = true;
       }
@@ -1292,7 +1292,7 @@ async function _ensureNotificationScheduleImpl(
     await appendSyncLog(logEntry);
 
     if (scheduledCount > 0 || forceReschedule) {
-      console.log(`🔔 [${source}] Ensure complete: ${finalCount} total notifications`);
+      if (__DEV__) console.log(`🔔 [${source}] Ensure complete: ${finalCount} total notifications`);
     }
 
     return {

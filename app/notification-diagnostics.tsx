@@ -103,8 +103,10 @@ export default function NotificationDiagnosticsScreen() {
   const handleDumpTriggers = async () => {
     const allNotifs = await Notifications.getAllScheduledNotificationsAsync();
     for (const notif of allNotifs.slice(0, 5)) {
-      console.log('🔔 RAW TRIGGER:', JSON.stringify(notif.trigger, null, 2));
-      console.log('🔔 RAW TRIGGER KEYS:', Object.keys(notif.trigger ?? {}));
+      if (__DEV__) {
+        console.log('🔔 RAW TRIGGER:', JSON.stringify(notif.trigger, null, 2));
+        console.log('🔔 RAW TRIGGER KEYS:', Object.keys(notif.trigger ?? {}));
+      }
     }
     Alert.alert('Dumped', `Logged ${Math.min(allNotifs.length, 5)} triggers to console.`);
   };

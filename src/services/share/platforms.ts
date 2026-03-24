@@ -90,14 +90,16 @@ export async function shareGeneral(
     // Android: Use expo-sharing for images
     if (imageUri) {
       const isAvailable = await Sharing.isAvailableAsync();
-      console.log('[Share] Android - Sharing available:', isAvailable);
-      console.log('[Share] Android - Image URI:', imageUri);
+      if (__DEV__) {
+        console.log('[Share] Android - Sharing available:', isAvailable);
+        console.log('[Share] Android - Image URI:', imageUri);
+      }
 
       if (isAvailable) {
         // Verify file exists - use full URI (FileSystem works better with file:// prefix)
         const fileUri = ensureFileUri(imageUri);
         const fileInfo = await FileSystem.getInfoAsync(fileUri);
-        console.log('[Share] Android - File exists:', fileInfo.exists);
+        if (__DEV__) console.log('[Share] Android - File exists:', fileInfo.exists);
 
         if (fileInfo.exists) {
           await Sharing.shareAsync(fileUri, {
@@ -112,7 +114,7 @@ export async function shareGeneral(
     }
 
     // Fallback to text-only
-    console.log('[Share] Android - Falling back to text-only share');
+    if (__DEV__) console.log('[Share] Android - Falling back to text-only share');
     await RNShare.share({ message: text, title });
     return { success: true, platform: 'general' };
   } catch (error) {

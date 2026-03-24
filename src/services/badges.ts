@@ -73,7 +73,7 @@ export interface BadgeWithStatus {
  * Returns the list of newly earned badges (for toast display).
  */
 export async function checkAndAwardBadges(): Promise<NewlyEarnedBadge[]> {
-  console.log('🏅 [Badge] checkAndAwardBadges called');
+  if (__DEV__) console.log('🏅 [Badge] checkAndAwardBadges called');
   try {
     const db = await openDatabase();
     const earned = await getEarnedBadges();
@@ -85,7 +85,7 @@ export async function checkAndAwardBadges(): Promise<NewlyEarnedBadge[]> {
 
     for (const badge of BADGE_DEFINITIONS) {
       const progress = progressMap.get(badge.id) || 0;
-      if (progress > 0) {
+      if (__DEV__ && progress > 0) {
         console.log(
           `🏅 [Badge] ${badge.id}: progress=${progress}, thresholds=${badge.stars.map((s) => s.threshold).join(',')}`
         );
@@ -96,7 +96,7 @@ export async function checkAndAwardBadges(): Promise<NewlyEarnedBadge[]> {
         if (earnedSet.has(key)) continue;
 
         if (progress >= starDef.threshold) {
-          console.log(`🏅 [Badge] EARNED: ${badge.id} ${starDef.star}!`);
+          if (__DEV__) console.log(`🏅 [Badge] EARNED: ${badge.id} ${starDef.star}!`);
           await db.runAsync(
             `INSERT OR IGNORE INTO user_badges (badge_id, star, earned_at) VALUES (?, ?, ?)`,
             [badge.id, starDef.star, now]
@@ -108,7 +108,7 @@ export async function checkAndAwardBadges(): Promise<NewlyEarnedBadge[]> {
 
     if (newlyEarned.length > 0) {
       invalidateBadgeCache();
-      console.log(`🏅 [Badge] Queued ${newlyEarned.length} toasts`);
+      if (__DEV__) console.log(`🏅 [Badge] Queued ${newlyEarned.length} toasts`);
       _pendingToasts.push(...newlyEarned);
     }
 
@@ -125,7 +125,7 @@ export function triggerTestBadgeToast(): void {
   const stars: BadgeStar[] = ['star1', 'star2', 'star3'];
   const star = stars[Math.floor(Math.random() * stars.length)];
   _pendingToasts.push({ badgeId: def.id, star, definition: def });
-  console.log(`🏅 [Badge] Test toast queued: ${def.id} (${star})`);
+  if (__DEV__) console.log(`🏅 [Badge] Test toast queued: ${def.id} (${star})`);
 }
 
 /**

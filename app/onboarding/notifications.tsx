@@ -202,10 +202,10 @@ export default function NotificationsScreen() {
       }
 
       // Mark one fact as shown immediately for new users
-      console.log('🎯 Calling showImmediateFact with locale:', locale);
+      if (__DEV__) console.log('🎯 Calling showImmediateFact with locale:', locale);
       const immediateFactResult = await notificationService.showImmediateFact(locale);
       if (immediateFactResult.success) {
-        console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
+        if (__DEV__) console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
       } else {
         console.error('❌ Failed to mark immediate fact:', immediateFactResult.error);
       }
@@ -230,10 +230,10 @@ export default function NotificationsScreen() {
       }
 
       // Mark one fact as shown immediately for new users (BEFORE scheduling)
-      console.log('🎯 Calling showImmediateFact with locale:', locale);
+      if (__DEV__) console.log('🎯 Calling showImmediateFact with locale:', locale);
       const immediateFactResult = await notificationService.showImmediateFact(locale);
       if (immediateFactResult.success) {
-        console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
+        if (__DEV__) console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
       } else {
         console.error('❌ Failed to mark immediate fact:', immediateFactResult.error);
       }
@@ -247,7 +247,7 @@ export default function NotificationsScreen() {
 
       if (result.success) {
         // Successfully scheduled notifications - navigate to success screen
-        console.log(`Scheduled ${result.count} notifications`);
+        if (__DEV__) console.log(`Scheduled ${result.count} notifications`);
 
         // Track that notifications were enabled
         trackOnboardingNotificationsEnabled(notificationTimes.length);

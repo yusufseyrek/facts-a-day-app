@@ -120,7 +120,7 @@ export default function PaywallScreen() {
     try {
       const restored = await restorePurchases();
       if (!restored) {
-        console.log('No active subscription found to restore');
+        if (__DEV__) console.log('No active subscription found to restore');
       }
     } catch (error) {
       console.error('Restore error:', error);

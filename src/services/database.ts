@@ -23,13 +23,13 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
   // Start initialization
   dbInitPromise = (async () => {
     try {
-      console.log('🔄 Initializing database...');
+      if (__DEV__) console.log('🔄 Initializing database...');
 
       const database = await SQLite.openDatabaseAsync(DATABASE_NAME);
 
       // Log the database path for testing
       const dbPath = `${FileSystem.Paths.document.uri}SQLite/${DATABASE_NAME}`;
-      console.log('📁 Database path:', dbPath);
+      if (__DEV__) console.log('📁 Database path:', dbPath);
 
       // Enable foreign key constraints for CASCADE deletes to work
       await database.execAsync('PRAGMA foreign_keys = ON;');
@@ -39,7 +39,7 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
 
       await initializeSchema();
 
-      console.log('✅ Database initialized successfully');
+      if (__DEV__) console.log('✅ Database initialized successfully');
       return database;
     } catch (error) {
       console.error('❌ Database initialization failed:', error);
@@ -357,7 +357,7 @@ export async function clearFutureAndUnscheduledFacts(): Promise<void> {
     [now]
   );
 
-  console.log('Cleared future and unscheduled facts');
+  if (__DEV__) console.log('Cleared future and unscheduled facts');
 }
 
 /**
@@ -1006,7 +1006,7 @@ export async function getLatestFacts(
     FROM facts`,
     [language, language]
   );
-  console.log(`📋 [DB] getLatestFacts: language="${language}", limit=${limit} | DB has: total=${countResult?.total}, lang_match=${countResult?.lang_match}, non_hist=${countResult?.non_hist}`);
+  if (__DEV__) console.log(`📋 [DB] getLatestFacts: language="${language}", limit=${limit} | DB has: total=${countResult?.total}, lang_match=${countResult?.lang_match}, non_hist=${countResult?.non_hist}`);
 
   const result = await database.getAllAsync<any>(
     `SELECT
@@ -1024,7 +1024,7 @@ export async function getLatestFacts(
     LIMIT ?`,
     [language, limit]
   );
-  console.log(`📋 [DB] getLatestFacts returned ${result.length} rows`);
+  if (__DEV__) console.log(`📋 [DB] getLatestFacts returned ${result.length} rows`);
   return mapFactsWithRelations(result);
 }
 
@@ -1483,7 +1483,7 @@ export async function hasExcessNotificationsPerDay(
   const result = await database.getAllAsync<{ local_date: string; count: number }>(query, params);
 
   if (result.length > 0) {
-    console.log(
+    if (__DEV__) console.log(
       `🔔 Found ${result.length} days with excess notifications:`,
       result.map((r) => `${r.local_date}: ${r.count}/${expectedPerDay}`).join(', ')
     );
@@ -1556,7 +1556,7 @@ export async function hasIncorrectNotificationsPerDay(
 
   const needsRepair = excessDays > 0 || deficitDays > 0;
 
-  if (needsRepair) {
+  if (needsRepair && __DEV__) {
     console.log(
       `🔔 Found ${excessDays} days with excess and ${deficitDays} days with deficit notifications:`
     );

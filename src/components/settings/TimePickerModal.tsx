@@ -210,10 +210,10 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
       // Check if scheduling failed due to permission issues
       if (!result.success && result.error?.includes('permission')) {
-        console.log('Notification scheduling failed due to permission, but times were saved');
+        console.warn('Notification scheduling failed due to permission, but times were saved');
         // Still show success - times were saved, just notifications couldn't be scheduled
       } else if (result.success) {
-        console.log(`Successfully rescheduled ${result.count} notifications`);
+        if (__DEV__) console.log(`Successfully rescheduled ${result.count} notifications`);
       }
 
       // Track notification time change and update user property

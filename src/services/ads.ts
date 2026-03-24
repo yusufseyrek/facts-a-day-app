@@ -32,15 +32,15 @@ export const isConsentRequired = async (): Promise<boolean> => {
   try {
     // Request info update to get current consent status
     const consentInfo = await AdsConsent.requestInfoUpdate();
-    console.log('Consent info:', consentInfo);
+    if (__DEV__) console.log('Consent info:', consentInfo);
 
     // Check if GDPR specifically applies (user is in EEA/UK)
     const gdprApplies = await AdsConsent.getGdprApplies();
-    console.log('GDPR applies:', gdprApplies);
+    if (__DEV__) console.log('GDPR applies:', gdprApplies);
 
     // Only require soft message if GDPR applies AND consent status is REQUIRED
     const required = gdprApplies && consentInfo.status === AdsConsentStatus.REQUIRED;
-    console.log('GDPR consent required:', required);
+    if (__DEV__) console.log('GDPR consent required:', required);
     return required;
   } catch (error) {
     console.error('Error checking if consent is required:', error);
@@ -65,7 +65,7 @@ export const requestGDPRConsent = async (): Promise<{
     // - Shows the consent form if required
     // - Returns the final consent status
     const consentInfo = await AdsConsent.gatherConsent();
-    console.log('Consent gathered:', consentInfo);
+    if (__DEV__) console.log('Consent gathered:', consentInfo);
 
     // Track GDPR consent result
     const gdprApplies = await AdsConsent.getGdprApplies();
@@ -102,7 +102,7 @@ export const requestGDPRConsent = async (): Promise<{
  * Returns true if tracking is authorized
  */
 export const requestATTPermission = async (): Promise<boolean> => {
-  console.log('requestATTPermission called, platform:', Platform.OS);
+  if (__DEV__) console.log('requestATTPermission called, platform:', Platform.OS);
 
   if (Platform.OS !== 'ios') {
     // ATT is iOS only, return true for other platforms
@@ -116,28 +116,30 @@ export const requestATTPermission = async (): Promise<boolean> => {
 
     try {
       const gdprApplies = await AdsConsent.getGdprApplies();
-      console.log('ATT check - GDPR applies:', gdprApplies);
+      if (__DEV__) console.log('ATT check - GDPR applies:', gdprApplies);
 
       if (gdprApplies) {
         // Check purpose consents - purpose one is "Store and/or access information on a device"
         const purposeConsents = await AdsConsent.getPurposeConsents();
         const hasConsentForPurposeOne = purposeConsents.startsWith('1');
-        console.log(
-          'ATT check - purpose consents:',
-          purposeConsents,
-          'has purpose one:',
-          hasConsentForPurposeOne
-        );
+        if (__DEV__) {
+          console.log(
+            'ATT check - purpose consents:',
+            purposeConsents,
+            'has purpose one:',
+            hasConsentForPurposeOne
+          );
+        }
 
         if (!hasConsentForPurposeOne) {
           // User hasn't consented to purpose one, don't request ATT
-          console.log('GDPR applies and no consent for purpose one, skipping ATT');
+          if (__DEV__) console.log('GDPR applies and no consent for purpose one, skipping ATT');
           shouldRequestATT = false;
         }
       }
     } catch (gdprError) {
       // If we can't determine GDPR status, still try to show ATT for non-EEA users
-      console.log('Could not determine GDPR status, proceeding with ATT:', gdprError);
+      if (__DEV__) console.log('Could not determine GDPR status, proceeding with ATT:', gdprError);
     }
 
     if (!shouldRequestATT) {
@@ -145,9 +147,9 @@ export const requestATTPermission = async (): Promise<boolean> => {
     }
 
     // Request ATT permission - this shows the native iOS dialog
-    console.log('Requesting ATT permission dialog...');
+    if (__DEV__) console.log('Requesting ATT permission dialog...');
     const { status } = await requestTrackingPermissionsAsync();
-    console.log('ATT permission status:', status);
+    if (__DEV__) console.log('ATT permission status:', status);
 
     // Track ATT permission result
     trackATTPermissionResult(status);
@@ -167,12 +169,12 @@ export const requestATTPermission = async (): Promise<boolean> => {
  */
 export const initializeAdsSDK = async (): Promise<boolean> => {
   if (!shouldInitializeAdsSdk()) {
-    console.log('Ads are disabled, skipping SDK initialization');
+    if (__DEV__) console.log('Ads are disabled, skipping SDK initialization');
     return false;
   }
 
   if (isSDKInitialized) {
-    console.log('Ads SDK already initialized');
+    if (__DEV__) console.log('Ads SDK already initialized');
     return true;
   }
 
@@ -180,11 +182,11 @@ export const initializeAdsSDK = async (): Promise<boolean> => {
     // Check if we can request ads
     const consentInfo = await AdsConsent.getConsentInfo();
     if (!consentInfo.canRequestAds) {
-      console.log('Cannot request ads - no consent');
+      if (__DEV__) console.log('Cannot request ads - no consent');
       return false;
     }
 
-    console.log('Initializing Google Mobile Ads SDK...');
+    if (__DEV__) console.log('Initializing Google Mobile Ads SDK...');
 
     // Configure ad request settings for general audience
     await mobileAds().setRequestConfiguration({
@@ -196,17 +198,19 @@ export const initializeAdsSDK = async (): Promise<boolean> => {
     const adapterStatuses = await mobileAds().initialize();
 
     // Log adapter statuses for debugging
-    console.log('=== Ad Adapter Statuses ===');
-    for (const [adapterName, status] of Object.entries(adapterStatuses)) {
-      console.log(`${adapterName}: ${JSON.stringify(status)}`);
+    if (__DEV__) {
+      console.log('=== Ad Adapter Statuses ===');
+      for (const [adapterName, status] of Object.entries(adapterStatuses)) {
+        console.log(`${adapterName}: ${JSON.stringify(status)}`);
+      }
+      console.log('===========================');
     }
-    console.log('===========================');
 
     isSDKInitialized = true;
-    console.log('Google Mobile Ads SDK initialized successfully');
-
-    // Track successful SDK initialization
-    console.log('Ads SDK initialized successfully');
+    if (__DEV__) {
+      console.log('Google Mobile Ads SDK initialized successfully');
+      console.log('Ads SDK initialized successfully');
+    }
 
     // Preload interstitial and app open ads only for non-premium users
     if (shouldShowAds()) {
@@ -225,7 +229,6 @@ export const initializeAdsSDK = async (): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error('Failed to initialize Google Mobile Ads SDK:', error);
-    console.log('Ads SDK initialization failed');
     return false;
   }
 };
@@ -241,16 +244,16 @@ export const completeConsentFlow = async (): Promise<{
   attConsent: boolean;
   sdkInitialized: boolean;
 }> => {
-  console.log('Starting consent flow...');
+  if (__DEV__) console.log('Starting consent flow...');
 
   // Step 1: GDPR Consent
   const gdprResult = await requestGDPRConsent();
   const gdprConsent = gdprResult.canRequestAds;
-  console.log('GDPR consent result:', gdprResult.status, 'canRequestAds:', gdprConsent);
+  if (__DEV__) console.log('GDPR consent result:', gdprResult.status, 'canRequestAds:', gdprConsent);
 
   // Step 2: ATT Permission (iOS only)
   const attConsent = await requestATTPermission();
-  console.log('ATT consent result:', attConsent);
+  if (__DEV__) console.log('ATT consent result:', attConsent);
 
   // Step 3: Initialize SDK if we can request ads
   let sdkInitialized = false;
@@ -258,7 +261,7 @@ export const completeConsentFlow = async (): Promise<{
     sdkInitialized = await initializeAdsSDK();
   }
 
-  console.log('Consent flow complete:', { gdprConsent, attConsent, sdkInitialized });
+  if (__DEV__) console.log('Consent flow complete:', { gdprConsent, attConsent, sdkInitialized });
 
   return {
     gdprConsent,
@@ -280,18 +283,18 @@ export const isAdsSDKInitialized = (): boolean => {
  */
 export const openAdDebugMenu = async (): Promise<void> => {
   if (!shouldInitializeAdsSdk()) {
-    console.log('Ads are disabled, cannot open debug menu');
+    if (__DEV__) console.log('Ads are disabled, cannot open debug menu');
     return;
   }
 
   if (!isSDKInitialized) {
-    console.log('SDK not initialized, cannot open debug menu');
+    if (__DEV__) console.log('SDK not initialized, cannot open debug menu');
     return;
   }
 
   try {
     await mobileAds().openAdInspector();
-    console.log('Ad Inspector opened');
+    if (__DEV__) console.log('Ad Inspector opened');
   } catch (error) {
     console.error('Failed to open Ad Inspector:', error);
   }

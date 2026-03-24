@@ -217,7 +217,7 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
     if (!hasActive && getPremiumState()) {
       isCachedPremiumWithinGracePeriod().then((withinGrace) => {
         if (withinGrace) {
-          console.log('activeSubscriptions empty but cache is recent — keeping premium');
+          if (__DEV__) console.log('activeSubscriptions empty but cache is recent — keeping premium');
           return;
         }
         updatePremiumStatus(false);

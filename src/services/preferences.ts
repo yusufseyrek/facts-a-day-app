@@ -39,7 +39,7 @@ export function onPreferenceFeedRefresh(listener: FeedRefreshListener): () => vo
  * Emit feed refresh event to all listeners after preference changes
  */
 function emitFeedRefresh(): void {
-  console.log('📢 Emitting feed refresh after preference change');
+  if (__DEV__) console.log('📢 Emitting feed refresh after preference change');
   feedRefreshListeners.forEach((listener) => {
     try {
       listener();
@@ -118,7 +118,7 @@ export async function handleLanguageChange(
       [now]
     );
 
-    console.log(`Preserving ${factsToPreserve.length} facts (delivered, favorited, or shown)`);
+    if (__DEV__) console.log(`Preserving ${factsToPreserve.length} facts (delivered, favorited, or shown)`);
 
     // Stage 2: Fetch translated metadata
     onProgress?.({
@@ -156,7 +156,7 @@ export async function handleLanguageChange(
     );
 
     // Stage 4: Process facts - update preserved ones, insert new ones
-    console.log(`Processing ${allFacts.length} facts`);
+    if (__DEV__) console.log(`Processing ${allFacts.length} facts`);
 
     const preservedIds = new Set(factsToPreserve.map((f: { id: number }) => f.id));
     let updatedCount = 0;
@@ -244,14 +244,14 @@ export async function handleLanguageChange(
       }
     });
 
-    console.log(`Updated ${updatedCount} preserved facts, inserted ${insertedCount} new facts`);
+    if (__DEV__) console.log(`Updated ${updatedCount} preserved facts, inserted ${insertedCount} new facts`);
 
     // Insert questions before continuing — must complete before home feed loads
     // to avoid concurrent SQLite transactions (setDailyFeedCache vs insertQuestions)
     const dbQuestions = extractQuestions(allFacts);
     if (dbQuestions.length > 0) {
       await database.insertQuestions(dbQuestions);
-      console.log(`🧠 Inserted ${dbQuestions.length} questions for trivia`);
+      if (__DEV__) console.log(`🧠 Inserted ${dbQuestions.length} questions for trivia`);
     }
 
     // Stage 5: Reschedule notifications with new language
@@ -346,7 +346,7 @@ export async function handleCategoriesChange(
     );
     const shownIds = new Set(shownFacts.map((f: { id: number }) => f.id));
 
-    console.log(`Preserving ${shownIds.size} shown facts`);
+    if (__DEV__) console.log(`Preserving ${shownIds.size} shown facts`);
 
     // Stage 2: Download new facts
     onProgress?.({
@@ -372,7 +372,7 @@ export async function handleCategoriesChange(
     );
 
     // Stage 3: Process facts - update shown ones (keep shown_in_feed), insert new ones
-    console.log(`Processing ${newFacts.length} facts`);
+    if (__DEV__) console.log(`Processing ${newFacts.length} facts`);
 
     let updatedCount = 0;
     let insertedCount = 0;
@@ -463,7 +463,7 @@ export async function handleCategoriesChange(
       }
     });
 
-    console.log(`Updated ${updatedCount} shown facts, inserted ${insertedCount} new facts`);
+    if (__DEV__) console.log(`Updated ${updatedCount} shown facts, inserted ${insertedCount} new facts`);
 
     // Delete all facts from removed categories (including shown ones), except favorites.
     // This runs AFTER insertion so the API can't re-insert facts from removed categories.
@@ -491,7 +491,7 @@ export async function handleCategoriesChange(
     const newQuestions = extractQuestions(newFacts);
     if (newQuestions.length > 0) {
       await database.insertQuestions(newQuestions);
-      console.log(`🧠 Inserted ${newQuestions.length} questions for trivia`);
+      if (__DEV__) console.log(`🧠 Inserted ${newQuestions.length} questions for trivia`);
     }
 
     // Stage 4: Reschedule notifications (clear and reschedule with new facts)

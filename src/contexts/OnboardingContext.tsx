@@ -269,7 +269,7 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
       // Update local state immediately (synchronous) to prevent navigation race condition
       setState((prev) => ({ ...prev, isOnboardingComplete: true }));
 
-      console.log('Onboarding completed successfully');
+      if (__DEV__) console.log('Onboarding completed successfully');
     } catch (error) {
       console.error('Error completing onboarding:', error);
       throw error;
@@ -303,7 +303,7 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
 
       setLastLocaleUsed(null);
 
-      console.log('Onboarding state reset successfully');
+      if (__DEV__) console.log('Onboarding state reset successfully');
     } catch (error) {
       console.error('Error resetting onboarding:', error);
       throw error;

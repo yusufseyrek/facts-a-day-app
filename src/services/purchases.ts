@@ -18,7 +18,7 @@ const PREMIUM_CACHED_AT_KEY = '@factsaday_premium_cached_at';
 export const initIAPConnection = async (): Promise<void> => {
   try {
     await initConnection();
-    console.log('IAP connection initialized');
+    if (__DEV__) console.log('IAP connection initialized');
   } catch (error) {
     // Expected to fail on emulators/simulators without Play Store or StoreKit
     if (__DEV__) {
@@ -61,7 +61,7 @@ export const checkAndUpdatePremiumStatus = async (): Promise<boolean> => {
     // StoreKit can return false during init before it has synced, or when
     // the app is backgrounded mid-check.
     if (wasPremium && !isActive && (await isCachedPremiumWithinGracePeriod())) {
-      console.log('Store returned non-premium but cache is recent — keeping premium');
+      if (__DEV__) console.log('Store returned non-premium but cache is recent — keeping premium');
       return true;
     }
 
@@ -69,7 +69,7 @@ export const checkAndUpdatePremiumStatus = async (): Promise<boolean> => {
     await cachePremiumStatus(isActive);
 
     if (wasPremium && !isActive) {
-      console.log('Premium expired — image cache will expire via TTL');
+      if (__DEV__) console.log('Premium expired — image cache will expire via TTL');
     }
 
     return isActive;

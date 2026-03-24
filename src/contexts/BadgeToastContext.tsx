@@ -38,7 +38,7 @@ export function BadgeToastProvider({ children }: { children: React.ReactNode }) 
       // Always consume from the service queue into our local queue
       const pending = consumePendingBadgeToasts();
       if (pending.length > 0) {
-        console.log(`🏅 [BadgeToast] Consumed ${pending.length} pending toasts`);
+        if (__DEV__) console.log(`🏅 [BadgeToast] Consumed ${pending.length} pending toasts`);
         queueRef.current.push(...pending);
       }
 

@@ -131,9 +131,10 @@ function isMacOS(): boolean {
  * On macOS: Uses Debug provider (App Attest is NOT supported on macOS)
  */
 export async function initializeAppCheckService() {
-  console.log(
-    `[AppCheck] initializeAppCheckService called — __DEV__=${__DEV__}, STRICT_MODE=${APP_CHECK.STRICT_MODE_ENABLED}, alreadyInit=${isAppCheckInitialized()}`
-  );
+  if (__DEV__)
+    console.log(
+      `[AppCheck] initializeAppCheckService called — __DEV__=${__DEV__}, STRICT_MODE=${APP_CHECK.STRICT_MODE_ENABLED}, alreadyInit=${isAppCheckInitialized()}`
+    );
 
   if (isAppCheckInitialized()) {
     resolveAppCheckReady();
@@ -153,9 +154,10 @@ export async function initializeAppCheckService() {
     // failure is detected and the blocking screen can be shown.
     const useDebugProvider = __DEV__ || isMac;
 
-    console.log(
-      `[AppCheck] isIOS=${isIOS}, isRealDevice=${isRealDevice}, isMac=${isMac}, useDebugProvider=${useDebugProvider}`
-    );
+    if (__DEV__)
+      console.log(
+        `[AppCheck] isIOS=${isIOS}, isRealDevice=${isRealDevice}, isMac=${isMac}, useDebugProvider=${useDebugProvider}`
+      );
 
     // Determine provider names
     const iosProvider = useDebugProvider ? 'debug' : 'appAttest';
@@ -168,11 +170,11 @@ export async function initializeAppCheckService() {
       if (isMac) {
         // Use pre-registered token for macOS production builds
         debugToken = MACOS_DEBUG_TOKEN;
-        console.log('🖥️ App Check: Running on macOS - using pre-registered debug token');
+        if (__DEV__) console.log('🖥️ App Check: Running on macOS - using pre-registered debug token');
       } else {
         // Use dynamically generated token for simulators/emulators in development
         debugToken = await getOrCreateDebugToken();
-        console.log(`🔑 App Check Debug Token: ${debugToken}`);
+        if (__DEV__) console.log(`🔑 App Check Debug Token: ${debugToken}`);
       }
     }
 
@@ -219,9 +221,10 @@ export async function initializeAppCheckService() {
         }
 
         setAppCheckInitialized(true);
-        console.log(
-          `[AppCheck] Init SUCCESS — provider=${providerName}, isInitialized=${isAppCheckInitialized()}`
-        );
+        if (__DEV__)
+          console.log(
+            `[AppCheck] Init SUCCESS — provider=${providerName}, isInitialized=${isAppCheckInitialized()}`
+          );
 
         // Eagerly fetch and cache the first token so it's available
         // before the first API request fires (closes the timing gap
@@ -264,9 +267,9 @@ export async function initializeAppCheckService() {
 
           if (firstToken) {
             primeTokenCache(firstToken);
-            console.log('[AppCheck] First token obtained and cached');
+            if (__DEV__) console.log('[AppCheck] First token obtained and cached');
           } else {
-            console.log('[AppCheck] Could not obtain first token');
+            if (__DEV__) console.log('[AppCheck] Could not obtain first token');
             // Don't roll back appCheckInitialized — the SDK IS initialized.
             // Start background retry to get the token while the app proceeds.
             if (APP_CHECK.STRICT_MODE_ENABLED && !__DEV__) {
@@ -283,7 +286,7 @@ export async function initializeAppCheckService() {
                 startAttestationFailedRetry(providerName, lastTokenError);
               } else if (lastTokenError.includes('Too many attempts')) {
                 // Rate limited — don't retry, don't block, proceed without token
-                console.log('[AppCheck] Rate limited — proceeding without token');
+                if (__DEV__) console.log('[AppCheck] Rate limited — proceeding without token');
               } else {
                 // Transient error — full background retry with exponential backoff
                 startBackgroundTokenRetry(providerName);
@@ -293,7 +296,7 @@ export async function initializeAppCheckService() {
         } catch (prefetchError) {
           const prefetchMsg =
             prefetchError instanceof Error ? prefetchError.message : String(prefetchError);
-          console.log(`[AppCheck] First token prefetch threw: ${prefetchMsg}`);
+          if (__DEV__) console.log(`[AppCheck] First token prefetch threw: ${prefetchMsg}`);
           // Don't roll back — start background retry instead
           if (APP_CHECK.STRICT_MODE_ENABLED && !__DEV__) {
             logEvent('app_check_failed', {
@@ -306,7 +309,7 @@ export async function initializeAppCheckService() {
             if (prefetchMsg.includes('App attestation failed')) {
               startAttestationFailedRetry(providerName, prefetchMsg);
             } else if (prefetchMsg.includes('Too many attempts')) {
-              console.log('[AppCheck] Rate limited — proceeding without token');
+              if (__DEV__) console.log('[AppCheck] Rate limited — proceeding without token');
             } else {
               startBackgroundTokenRetry(providerName);
             }
@@ -314,11 +317,11 @@ export async function initializeAppCheckService() {
         }
 
         // Success - exit the retry loop
-        console.log('[AppCheck] Init loop completed successfully, breaking');
+        if (__DEV__) console.log('[AppCheck] Init loop completed successfully, breaking');
         break;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        console.log(`[AppCheck] Init attempt FAILED: ${lastError.message}`);
+        if (__DEV__) console.log(`[AppCheck] Init attempt FAILED: ${lastError.message}`);
 
         // Log error on each attempt
         const errorMessage = lastError.message;
@@ -362,22 +365,23 @@ export async function initializeAppCheckService() {
     // This prevents API calls from hanging forever
     resolveAppCheckReady();
 
-    console.log(
-      `[AppCheck] FINALLY — isInitialized=${isAppCheckInitialized()}, __DEV__=${__DEV__}, STRICT_MODE=${APP_CHECK.STRICT_MODE_ENABLED}`
-    );
+    if (__DEV__)
+      console.log(
+        `[AppCheck] FINALLY — isInitialized=${isAppCheckInitialized()}, __DEV__=${__DEV__}, STRICT_MODE=${APP_CHECK.STRICT_MODE_ENABLED}`
+      );
 
     // If init failed in production with strict mode, set failure flag for blocking screen
     // but only when the device is online — offline failures are not a security concern
     if (!isAppCheckInitialized() && !__DEV__ && APP_CHECK.STRICT_MODE_ENABLED) {
       const online = await isDeviceOnline();
       if (online) {
-        console.log('[AppCheck] Setting appCheckInitFailed = true (blocking screen will show)');
+        if (__DEV__) console.log('[AppCheck] Setting appCheckInitFailed = true (blocking screen will show)');
         setAppCheckInitFailed(true);
       } else {
-        console.log('[AppCheck] Device is offline — skipping blocking screen');
+        if (__DEV__) console.log('[AppCheck] Device is offline — skipping blocking screen');
       }
     } else {
-      console.log(`[AppCheck] NOT setting failure flag — init succeeded or conditions not met`);
+      if (__DEV__) console.log(`[AppCheck] NOT setting failure flag — init succeeded or conditions not met`);
     }
   }
 }
@@ -641,7 +645,7 @@ export function testCrashlytics() {
  */
 function startAttestationFailedRetry(providerName: string, originalError: string) {
   (async () => {
-    console.log('[AppCheck] Attestation failed — one quick retry in 3s...');
+    if (__DEV__) console.log('[AppCheck] Attestation failed — one quick retry in 3s...');
     await new Promise((r) => setTimeout(r, APP_CHECK.ATTESTATION_FAILED_RETRY_MS));
 
     try {
@@ -649,7 +653,7 @@ function startAttestationFailedRetry(providerName: string, originalError: string
       const result = await getAppCheckTokenFn(appCheckInstance, false);
       if (result.token && result.token.trim().length > 0) {
         primeTokenCache(result.token);
-        console.log('[AppCheck] Quick retry succeeded — token obtained');
+        if (__DEV__) console.log('[AppCheck] Quick retry succeeded — token obtained');
         logEvent('app_check_bg_retry_success', {
           attempt: 1,
           error_type: 'attestation_failed',
@@ -659,7 +663,7 @@ function startAttestationFailedRetry(providerName: string, originalError: string
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      console.log('[AppCheck] Quick retry also failed:', msg);
+      if (__DEV__) console.log('[AppCheck] Quick retry also failed:', msg);
     }
 
     // Quick retry failed — block if online
@@ -696,7 +700,7 @@ function startBackgroundTokenRetry(providerName: string) {
         const result = await getAppCheckTokenFn(appCheckInstance, false);
         if (result.token && result.token.trim().length > 0) {
           primeTokenCache(result.token);
-          console.log(`[AppCheck] Background retry ${i + 1} succeeded — token obtained`);
+          if (__DEV__) console.log(`[AppCheck] Background retry ${i + 1} succeeded — token obtained`);
           logEvent('app_check_bg_retry_success', {
             attempt: i + 1,
             delay_ms: delays[i],
@@ -706,7 +710,7 @@ function startBackgroundTokenRetry(providerName: string) {
         }
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        console.log(`[AppCheck] Background retry ${i + 1} failed: ${msg}`);
+        if (__DEV__) console.log(`[AppCheck] Background retry ${i + 1} failed: ${msg}`);
 
         // Stop if rate-limited or attestation permanently failed
         if (msg.includes('Too many attempts') || msg.includes('App attestation failed')) {

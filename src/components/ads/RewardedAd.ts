@@ -36,7 +36,7 @@ let cleanupLoadListeners: (() => void) | null = null;
 // Initialize and load the rewarded ad with consent-based personalization
 const loadRewardedAd = async () => {
   if (isLoading) {
-    console.log('📺 Rewarded ad already loading, skipping duplicate call');
+    if (__DEV__) console.log('📺 Rewarded ad already loading, skipping duplicate call');
     return;
   }
 
@@ -49,7 +49,7 @@ const loadRewardedAd = async () => {
   adLoadFailed = false;
   isLoading = true;
 
-  console.log('📺 Loading rewarded ad with unit ID:', adUnitId);
+  if (__DEV__) console.log('📺 Loading rewarded ad with unit ID:', adUnitId);
 
   const nonPersonalized = await shouldRequestNonPersonalizedAdsOnly();
 
@@ -59,7 +59,7 @@ const loadRewardedAd = async () => {
   });
 
   const unsubLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
-    console.log('Rewarded ad loaded');
+    if (__DEV__) console.log('Rewarded ad loaded');
     adLoadFailed = false;
     isLoading = false;
   });
@@ -71,7 +71,7 @@ const loadRewardedAd = async () => {
   });
 
   const unsubClosed = rewarded.addAdEventListener(AdEventType.CLOSED, () => {
-    console.log('Rewarded ad closed - preloading next');
+    if (__DEV__) console.log('Rewarded ad closed - preloading next');
     // Preload next ad after this one is closed
     loadRewardedAd();
   });
@@ -95,7 +95,7 @@ const waitForAdToLoad = async (timeoutMs: number = 5000): Promise<boolean> => {
 
   if (adLoadFailed) {
     // Reset flag and try loading again instead of giving up
-    console.log('⚠️ Previous rewarded ad load failed, retrying...');
+    if (__DEV__) console.log('⚠️ Previous rewarded ad load failed, retrying...');
     await loadRewardedAd();
   } else if (!rewarded && !isLoading) {
     await loadRewardedAd();
@@ -107,7 +107,7 @@ const waitForAdToLoad = async (timeoutMs: number = 5000): Promise<boolean> => {
   }
 
   if (adLoadFailed) {
-    console.log('⚠️ Rewarded ad failed to load on retry');
+    if (__DEV__) console.log('⚠️ Rewarded ad failed to load on retry');
     return false;
   }
 
@@ -120,7 +120,7 @@ const waitForAdToLoad = async (timeoutMs: number = 5000): Promise<boolean> => {
     let resolved = false;
 
     const loadedListener = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
-      console.log('✅ Rewarded ad loaded successfully while waiting');
+      if (__DEV__) console.log('✅ Rewarded ad loaded successfully while waiting');
       cleanup();
       resolve(true);
     });
@@ -132,7 +132,7 @@ const waitForAdToLoad = async (timeoutMs: number = 5000): Promise<boolean> => {
     });
 
     const timeout = setTimeout(() => {
-      console.log('⏱️ Rewarded ad load timeout reached');
+      if (__DEV__) console.log('⏱️ Rewarded ad load timeout reached');
       cleanup();
       resolve(false);
     }, timeoutMs);
@@ -163,7 +163,7 @@ export const showRewardedAd = async (): Promise<boolean> => {
   try {
     const { canRequestAds } = await AdsConsent.getConsentInfo();
     if (!canRequestAds) {
-      console.log('⚠️ Cannot show rewarded ad - no consent');
+      if (__DEV__) console.log('⚠️ Cannot show rewarded ad - no consent');
       return false;
     }
   } catch (error) {
@@ -171,21 +171,21 @@ export const showRewardedAd = async (): Promise<boolean> => {
     return false;
   }
 
-  console.log('📺 Attempting to show rewarded ad...');
+  if (__DEV__) console.log('📺 Attempting to show rewarded ad...');
 
   // Wait for ad to load if not ready (also retries on previous failure)
   if (!rewarded || !rewarded.loaded) {
-    console.log('⏳ Rewarded ad not loaded yet, waiting...');
+    if (__DEV__) console.log('⏳ Rewarded ad not loaded yet, waiting...');
     const loaded = await waitForAdToLoad(5000);
     if (!loaded) {
-      console.log('⚠️ Rewarded ad did not load in time, skipping');
+      if (__DEV__) console.log('⚠️ Rewarded ad did not load in time, skipping');
       return false;
     }
   }
 
   if (rewarded && rewarded.loaded) {
     try {
-      console.log('🎬 Showing rewarded ad...');
+      if (__DEV__) console.log('🎬 Showing rewarded ad...');
 
       // iOS delay to prevent view controller conflicts
       if (Platform.OS === 'ios') {
@@ -218,13 +218,13 @@ export const showRewardedAd = async (): Promise<boolean> => {
         const rewardListener = rewarded!.addAdEventListener(
           RewardedAdEventType.EARNED_REWARD,
           () => {
-            console.log('✅ Rewarded ad - reward earned');
+            if (__DEV__) console.log('✅ Rewarded ad - reward earned');
             rewardEarned = true;
           }
         );
 
         const closeListener = rewarded!.addAdEventListener(AdEventType.CLOSED, () => {
-          console.log('✅ Rewarded ad closed');
+          if (__DEV__) console.log('✅ Rewarded ad closed');
           cleanup();
           resolve(rewardEarned);
         });
@@ -256,7 +256,7 @@ export const showRewardedAd = async (): Promise<boolean> => {
       return false;
     }
   } else {
-    console.log('⚠️ Rewarded ad still not loaded, loading for next time');
+    if (__DEV__) console.log('⚠️ Rewarded ad still not loaded, loading for next time');
     loadRewardedAd().catch(console.error);
     return false;
   }
@@ -274,17 +274,17 @@ export const isRewardedAdLoaded = (): boolean => {
  * Note: Available for all users including premium (for extra trivia hints)
  */
 export const preloadRewardedAd = async () => {
-  console.log('📺 Preloading rewarded ad...');
+  if (__DEV__) console.log('📺 Preloading rewarded ad...');
 
   if (!canShowRewardedAds()) {
-    console.log('⚠️ Rewarded ad preload skipped - ads disabled');
+    if (__DEV__) console.log('⚠️ Rewarded ad preload skipped - ads disabled');
     return;
   }
 
   try {
     const { canRequestAds } = await AdsConsent.getConsentInfo();
     if (!canRequestAds) {
-      console.log('⚠️ Cannot preload rewarded ad - no consent');
+      if (__DEV__) console.log('⚠️ Cannot preload rewarded ad - no consent');
       return;
     }
   } catch (error) {

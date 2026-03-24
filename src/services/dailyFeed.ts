@@ -48,7 +48,7 @@ export async function loadDailyFeedSections(
   let worthKnowingCached: FactWithRelations[] = [];
   let onThisDayCached: FactWithRelations[] = [];
 
-  console.log(`📋 [DailyFeed] loadDailyFeedSections called: locale="${locale}", forceRefresh=${forceRefresh}`);
+  if (__DEV__) console.log(`📋 [DailyFeed] loadDailyFeedSections called: locale="${locale}", forceRefresh=${forceRefresh}`);
 
   // Always load worth_knowing and on_this_day from cache so they stay
   // locked for the day.  forceRefresh only forces fresh_facts to re-fetch
@@ -63,7 +63,7 @@ export async function loadDailyFeedSections(
     freshCached = await getDailyFeedCache('fresh_facts', locale);
   }
 
-  console.log(`📋 [DailyFeed] Cache: fresh=${freshCached.length}, worthKnowing=${worthKnowingCached.length}, onThisDay=${onThisDayCached.length}, forceRefresh=${forceRefresh}`);
+  if (__DEV__) console.log(`📋 [DailyFeed] Cache: fresh=${freshCached.length}, worthKnowing=${worthKnowingCached.length}, onThisDay=${onThisDayCached.length}, forceRefresh=${forceRefresh}`);
 
   const needsFresh = freshCached.length === 0;
   const needsWorthKnowing = worthKnowingCached.length === 0;
@@ -81,9 +81,9 @@ export async function loadDailyFeedSections(
   // Fetch fresh facts first (needed to exclude from worth knowing)
   let freshFacts = freshCached;
   if (needsFresh) {
-    console.log(`📋 [DailyFeed] Fetching fresh facts: locale="${locale}", limit=${HOME_FEED.FRESH_FACTS_COUNT}`);
+    if (__DEV__) console.log(`📋 [DailyFeed] Fetching fresh facts: locale="${locale}", limit=${HOME_FEED.FRESH_FACTS_COUNT}`);
     const freshFetched = await getLatestFacts(HOME_FEED.FRESH_FACTS_COUNT, locale);
-    console.log(`📋 [DailyFeed] getLatestFacts returned ${freshFetched.length} facts`);
+    if (__DEV__) console.log(`📋 [DailyFeed] getLatestFacts returned ${freshFetched.length} facts`);
     if (freshFetched.length > 0) {
       await setDailyFeedCache('fresh_facts', freshFetched.map((f) => f.id));
       freshFacts = freshFetched;

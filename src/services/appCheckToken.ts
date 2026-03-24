@@ -142,7 +142,7 @@ async function fetchNewToken(): Promise<string | null> {
       console.warn('⚠️ App Check: getToken returned invalid/empty token');
       // Return cached token if available and not actually expired
       if (cachedToken && tokenExpirationMs && Date.now() < tokenExpirationMs) {
-        console.log('🔒 App Check: Using cached token as fallback');
+        if (__DEV__) console.log('🔒 App Check: Using cached token as fallback');
         return cachedToken;
       }
       return null;
@@ -169,7 +169,7 @@ async function fetchNewToken(): Promise<string | null> {
     // Log token expiration info
     const expiresIn = Math.round((tokenExpirationMs - Date.now()) / 1000 / 60);
     const expirationDate = new Date(tokenExpirationMs).toISOString();
-    console.log(`🔒 App Check: Token obtained, expires in ${expiresIn} min (${expirationDate})`);
+    if (__DEV__) console.log(`🔒 App Check: Token obtained, expires in ${expiresIn} min (${expirationDate})`);
 
     // Cache the token
     cachedToken = token;
@@ -278,7 +278,7 @@ export async function forceRefreshAppCheckToken(): Promise<string | null> {
     // Log token expiration info
     const expiresIn = Math.round((tokenExpirationMs - Date.now()) / 1000 / 60);
     const expirationDate = new Date(tokenExpirationMs).toISOString();
-    console.log(`🔒 App Check: Token refreshed, expires in ${expiresIn} min (${expirationDate})`);
+    if (__DEV__) console.log(`🔒 App Check: Token refreshed, expires in ${expiresIn} min (${expirationDate})`);
 
     cachedToken = token;
 

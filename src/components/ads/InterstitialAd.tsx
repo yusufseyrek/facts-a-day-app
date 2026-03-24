@@ -42,7 +42,7 @@ const loadInterstitialAd = async () => {
 
   // Set up event listeners
   interstitial.addAdEventListener(AdEventType.LOADED, () => {
-    console.log('Interstitial ad loaded');
+    if (__DEV__) console.log('Interstitial ad loaded');
     adLoadFailed = false;
   });
 
@@ -52,7 +52,7 @@ const loadInterstitialAd = async () => {
   });
 
   interstitial.addAdEventListener(AdEventType.CLOSED, () => {
-    console.log('Interstitial ad closed');
+    if (__DEV__) console.log('Interstitial ad closed');
     // Preload next ad
     loadInterstitialAd();
   });
@@ -115,7 +115,7 @@ const waitForAdToLoad = async (timeoutMs: number = 3000): Promise<boolean> => {
 
   // If ad already failed to load (e.g., no-fill), skip waiting
   if (adLoadFailed) {
-    console.log('⚠️ Ad already failed to load, skipping wait');
+    if (__DEV__) console.log('⚠️ Ad already failed to load, skipping wait');
     return false;
   }
 
@@ -126,14 +126,14 @@ const waitForAdToLoad = async (timeoutMs: number = 3000): Promise<boolean> => {
 
   // Check again after loading attempt - if it failed immediately, don't wait
   if (adLoadFailed) {
-    console.log('⚠️ Ad failed to load immediately, skipping wait');
+    if (__DEV__) console.log('⚠️ Ad failed to load immediately, skipping wait');
     return false;
   }
 
   return new Promise((resolve) => {
     // Set up timeout (reduced from 5s to 3s for better UX)
     const timeout = setTimeout(() => {
-      console.log('⏱️ Ad load timeout reached');
+      if (__DEV__) console.log('⏱️ Ad load timeout reached');
       resolve(false);
     }, timeoutMs);
 
@@ -142,7 +142,7 @@ const waitForAdToLoad = async (timeoutMs: number = 3000): Promise<boolean> => {
       const loadedListener = interstitial.addAdEventListener(AdEventType.LOADED, () => {
         clearTimeout(timeout);
         loadedListener(); // Remove listener
-        console.log('✅ Ad loaded successfully while waiting');
+        if (__DEV__) console.log('✅ Ad loaded successfully while waiting');
         resolve(true);
       });
 
@@ -170,7 +170,7 @@ export const showInterstitialAd = async (): Promise<void> => {
   try {
     const { canRequestAds } = await AdsConsent.getConsentInfo();
     if (!canRequestAds) {
-      console.log('⚠️ Cannot show interstitial ad - no consent');
+      if (__DEV__) console.log('⚠️ Cannot show interstitial ad - no consent');
       return;
     }
   } catch (error) {
@@ -178,27 +178,27 @@ export const showInterstitialAd = async (): Promise<void> => {
     return;
   }
 
-  console.log('📺 Attempting to show interstitial ad...');
+  if (__DEV__) console.log('📺 Attempting to show interstitial ad...');
 
   // If ad already failed to load, skip immediately without waiting
   if (adLoadFailed) {
-    console.log('⚠️ Ad already failed to load (no-fill), skipping immediately');
+    if (__DEV__) console.log('⚠️ Ad already failed to load (no-fill), skipping immediately');
     return;
   }
 
   // If ad not loaded yet, wait for it (with timeout)
   if (!interstitial || !interstitial.loaded) {
-    console.log('⏳ Ad not loaded yet, waiting...');
+    if (__DEV__) console.log('⏳ Ad not loaded yet, waiting...');
     const loaded = await waitForAdToLoad(3000); // Wait up to 3 seconds
     if (!loaded) {
-      console.log('⚠️ Ad did not load in time, skipping');
+      if (__DEV__) console.log('⚠️ Ad did not load in time, skipping');
       return;
     }
   }
 
   if (interstitial && interstitial.loaded) {
     try {
-      console.log('🎬 Showing interstitial ad...');
+      if (__DEV__) console.log('🎬 Showing interstitial ad...');
 
       // Delay to ensure any dismissing modals/view controllers are fully gone
       // React Native Modal fade animation takes ~300ms, wait longer to be safe
@@ -222,7 +222,7 @@ export const showInterstitialAd = async (): Promise<void> => {
         };
 
         const closeListener = interstitial!.addAdEventListener(AdEventType.CLOSED, () => {
-          console.log('✅ Interstitial ad closed');
+          if (__DEV__) console.log('✅ Interstitial ad closed');
           cleanup();
         });
 
@@ -249,7 +249,7 @@ export const showInterstitialAd = async (): Promise<void> => {
     }
   } else {
     // If ad still not loaded, load it for next time
-    console.log('⚠️ Ad still not loaded, loading for next time');
+    if (__DEV__) console.log('⚠️ Ad still not loaded, loading for next time');
     loadInterstitialAd().catch(console.error);
   }
 };
@@ -265,7 +265,7 @@ export const preloadInterstitialAd = async () => {
   try {
     const { canRequestAds } = await AdsConsent.getConsentInfo();
     if (!canRequestAds) {
-      console.log('⚠️ Cannot preload interstitial ad - no consent');
+      if (__DEV__) console.log('⚠️ Cannot preload interstitial ad - no consent');
       return;
     }
   } catch (error) {

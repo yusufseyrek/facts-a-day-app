@@ -39,7 +39,7 @@ let pendingLoadPromise: Promise<boolean> | null = null;
 const loadAppOpenAd = (): Promise<boolean> => {
   // If already loading, return existing promise so callers can await it
   if (pendingLoadPromise) {
-    console.log('🚀 App open ad already loading, returning existing promise');
+    if (__DEV__) console.log('🚀 App open ad already loading, returning existing promise');
     return pendingLoadPromise;
   }
 
@@ -50,7 +50,7 @@ const loadAppOpenAd = (): Promise<boolean> => {
       cleanupLoadListeners = null;
     }
 
-    console.log('🚀 Loading app open ad with unit ID:', adUnitId);
+    if (__DEV__) console.log('🚀 Loading app open ad with unit ID:', adUnitId);
 
     const nonPersonalized = await shouldRequestNonPersonalizedAdsOnly();
 
@@ -61,7 +61,7 @@ const loadAppOpenAd = (): Promise<boolean> => {
 
     const loaded = await new Promise<boolean>((resolve) => {
       const unsubLoaded = appOpenAd!.addAdEventListener(AdEventType.LOADED, () => {
-        console.log('✅ App open ad loaded');
+        if (__DEV__) console.log('✅ App open ad loaded');
         adLoadedTimestamp = Date.now();
         unsubLoaded();
         unsubError();
@@ -82,7 +82,7 @@ const loadAppOpenAd = (): Promise<boolean> => {
     if (loaded) {
       // Set up CLOSED listener to preload next ad after dismissal
       const unsubClosed = appOpenAd!.addAdEventListener(AdEventType.CLOSED, () => {
-        console.log('App open ad closed - preloading next');
+        if (__DEV__) console.log('App open ad closed - preloading next');
         loadAppOpenAd().catch(console.error);
       });
 
@@ -123,11 +123,11 @@ const ensureAdLoaded = async (): Promise<boolean> => {
 
   // If expired, we need a fresh load
   if (appOpenAd?.loaded && isAdExpired()) {
-    console.log('⚠️ App open ad expired, reloading');
+    if (__DEV__) console.log('⚠️ App open ad expired, reloading');
   }
 
   // Load (or await in-progress load)
-  console.log('🔄 App open ad not ready, loading on-demand...');
+  if (__DEV__) console.log('🔄 App open ad not ready, loading on-demand...');
   return await loadAppOpenAd();
 };
 
@@ -145,7 +145,7 @@ export const showAppOpenAdForLocaleChange = async (): Promise<boolean> => {
   try {
     const { canRequestAds } = await AdsConsent.getConsentInfo();
     if (!canRequestAds) {
-      console.log('⚠️ Cannot show app open ad - no consent');
+      if (__DEV__) console.log('⚠️ Cannot show app open ad - no consent');
       return false;
     }
   } catch (error) {
@@ -156,12 +156,12 @@ export const showAppOpenAdForLocaleChange = async (): Promise<boolean> => {
   // Ensure ad is loaded (waits for in-progress load or starts new one)
   const adReady = await ensureAdLoaded();
   if (!adReady || !appOpenAd?.loaded) {
-    console.log('⚠️ App open ad failed to load, skipping');
+    if (__DEV__) console.log('⚠️ App open ad failed to load, skipping');
     return false;
   }
 
   try {
-    console.log('🚀 Showing app open ad for locale change...');
+    if (__DEV__) console.log('🚀 Showing app open ad for locale change...');
 
     // iOS delay to prevent view controller conflicts
     if (Platform.OS === 'ios') {
@@ -186,8 +186,10 @@ export const showAppOpenAdForLocaleChange = async (): Promise<boolean> => {
       };
 
       const closeListener = appOpenAd!.addAdEventListener(AdEventType.CLOSED, () => {
-        console.log('✅ App open ad closed');
-        console.log('App open ad dismissed');
+        if (__DEV__) {
+          console.log('✅ App open ad closed');
+          console.log('App open ad dismissed');
+        }
         cleanup();
         resolve(true);
       });
@@ -258,7 +260,7 @@ export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
   }
 
   try {
-    console.log('🚀 Showing app open ad on foreground...');
+    if (__DEV__) console.log('🚀 Showing app open ad on foreground...');
 
     // iOS delay to prevent view controller conflicts
     if (Platform.OS === 'ios') {
@@ -283,8 +285,10 @@ export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
       };
 
       const closeListener = appOpenAd!.addAdEventListener(AdEventType.CLOSED, () => {
-        console.log('✅ App open ad closed (foreground)');
-        console.log('App open ad dismissed');
+        if (__DEV__) {
+          console.log('✅ App open ad closed (foreground)');
+          console.log('App open ad dismissed');
+        }
         cleanup();
         resolve(true);
       });
@@ -325,17 +329,17 @@ export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
  * Preload app open ad (call this when app starts)
  */
 export const preloadAppOpenAd = async () => {
-  console.log('🚀 Preloading app open ad...');
+  if (__DEV__) console.log('🚀 Preloading app open ad...');
 
   if (!shouldShowAds()) {
-    console.log('⚠️ App open ad preload skipped - ads disabled');
+    if (__DEV__) console.log('⚠️ App open ad preload skipped - ads disabled');
     return;
   }
 
   try {
     const { canRequestAds } = await AdsConsent.getConsentInfo();
     if (!canRequestAds) {
-      console.log('⚠️ Cannot preload app open ad - no consent');
+      if (__DEV__) console.log('⚠️ Cannot preload app open ad - no consent');
       return;
     }
   } catch (error) {
