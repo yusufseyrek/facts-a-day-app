@@ -22,8 +22,9 @@ import {
   Hash,
   Shuffle,
   Trophy,
+  Zap,
 } from '@tamagui/lucide-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
@@ -450,6 +451,8 @@ function SessionCard({
         return t('dailyTrivia');
       case 'mixed':
         return t('mixedTrivia');
+      case 'quick':
+        return t('quickQuiz');
       default:
         return t('trivia');
     }
@@ -474,7 +477,7 @@ function SessionCard({
       );
     }
 
-    const IconComponent = session.trivia_mode === 'daily' ? Calendar : Shuffle;
+    const IconComponent = session.trivia_mode === 'daily' ? Calendar : session.trivia_mode === 'quick' ? Zap : Shuffle;
     const iconColor = primaryColor;
 
     return (
@@ -547,6 +550,7 @@ export default function PerformanceScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
+  const params = useLocalSearchParams<{ sessionId?: string }>();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
   const { config, iconSizes, spacing, radius, media } = useResponsive();
@@ -594,6 +598,15 @@ export default function PerformanceScreen() {
       loadData();
     }, [loadData])
   );
+
+  // Auto-open session results when navigated with sessionId param
+  const autoOpenedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (params.sessionId && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      handleSessionClick(Number(params.sessionId));
+    }
+  }, [params.sessionId]);
 
   // Handle session click to show results
   const handleSessionClick = useCallback(async (sessionId: number) => {
@@ -689,6 +702,7 @@ export default function PerformanceScreen() {
         showBackButton={true}
         showReturnButton={false}
         unavailableQuestionIds={selectedSession.unavailableQuestionIds}
+        hideTimeAndStreak={selectedSession.trivia_mode === 'quick'}
       />
     );
   }

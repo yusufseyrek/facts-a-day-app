@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useFocusEffect } from '@react-navigation/native';
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
-import { Calendar, ChevronLeft, ChevronRight, Shuffle } from '@tamagui/lucide-icons';
+import { Calendar, ChevronLeft, ChevronRight, Shuffle, Zap } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -156,6 +156,8 @@ function SessionCard({
         return t('dailyTrivia');
       case 'mixed':
         return t('mixedTrivia');
+      case 'quick':
+        return t('quickQuiz');
       default:
         return t('trivia');
     }
@@ -180,7 +182,7 @@ function SessionCard({
       );
     }
 
-    const IconComponent = session.trivia_mode === 'daily' ? Calendar : Shuffle;
+    const IconComponent = session.trivia_mode === 'daily' ? Calendar : session.trivia_mode === 'quick' ? Zap : Shuffle;
     const iconColor = primaryColor;
 
     return (

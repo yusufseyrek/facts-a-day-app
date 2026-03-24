@@ -37,7 +37,7 @@ import { TIME_PER_QUESTION } from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
 
 import type { TriviaMode } from '../../src/services/analytics';
-import type { QuestionWithFact } from '../../src/services/database';
+import type { QuestionWithFact, TriviaSessionWithCategory } from '../../src/services/database';
 
 interface TriviaGameState {
   questions: QuestionWithFact[];
@@ -58,8 +58,11 @@ export default function TriviaGameScreen() {
     type: string;
     categorySlug?: string;
     categoryName?: string;
+    sessionId?: string;
   }>();
   const isDark = theme === 'dark';
+  const triviaMode: TriviaMode =
+    params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : params.type === 'quick' ? 'quick' : 'mixed';
 
   const [loading, setLoading] = useState(true);
   const [showingAd, setShowingAd] = useState(false);
@@ -140,8 +143,22 @@ export default function TriviaGameScreen() {
     }
   }, [params.type, t]);
 
-  // Load questions on mount and check hint availability
+  // Session review mode: load a saved session and show results directly
+  const [reviewSession, setReviewSession] = useState<TriviaSessionWithCategory | null>(null);
+
   useEffect(() => {
+    if (params.sessionId) {
+      triviaService.getSessionById(Number(params.sessionId)).then((session) => {
+        if (session) {
+          setReviewSession(session);
+          setLoading(false);
+        }
+      }).catch((err) => {
+          console.error('[TriviaGame] Failed to load session for review:', err);
+          setLoading(false);
+        });
+      return;
+    }
     loadQuestions();
     checkHintAvailability();
     trackScreenView(Screens.TRIVIA_GAME);
@@ -241,8 +258,6 @@ export default function TriviaGameScreen() {
       setLoading(false);
 
       // Track trivia start
-      const triviaMode: TriviaMode =
-        params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
       trackTriviaStart({
         mode: triviaMode,
         questionCount: questions.length,
@@ -255,10 +270,12 @@ export default function TriviaGameScreen() {
   };
 
   const handleTimeExpired = useCallback(async () => {
-    // Show interstitial ad before showing results
-    setShowingAd(true);
-    await showTriviaResultsInterstitial();
-    setShowingAd(false);
+    // Show interstitial ad before showing results (skip for quick quiz)
+    if (params.type !== 'quick') {
+      setShowingAd(true);
+      await showTriviaResultsInterstitial();
+      setShowingAd(false);
+    }
 
     // Calculate results for session save including best streak
     let correctCount = 0;
@@ -278,10 +295,6 @@ export default function TriviaGameScreen() {
         currentStreak = 0;
       }
     }
-
-    // Determine trivia mode for session saving
-    const triviaMode =
-      params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
 
     // Time expired means all time was used
     const elapsedTime = gameState.totalTime;
@@ -354,8 +367,6 @@ export default function TriviaGameScreen() {
   const handleExitConfirmed = () => {
     setShowExitModal(false);
     // Track trivia exit
-    const triviaMode: TriviaMode =
-      params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
     const answeredCount = Object.keys(gameState.answers).length;
     trackTriviaExit({
       mode: triviaMode,
@@ -454,8 +465,6 @@ export default function TriviaGameScreen() {
   const handleOpenFact = useCallback(() => {
     if (currentQuestion?.fact?.id) {
       // Track view fact button click
-      const triviaMode: TriviaMode =
-        params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
       trackTriviaViewFactClick({
         mode: triviaMode,
         factId: currentQuestion.fact.id,
@@ -479,8 +488,6 @@ export default function TriviaGameScreen() {
     if (!currentQuestion || !canUseExplanation) return;
 
     // Track hint button click
-    const triviaMode: TriviaMode =
-      params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
     trackTriviaHintClick({
       mode: triviaMode,
       questionIndex: gameState.currentQuestionIndex,
@@ -510,9 +517,6 @@ export default function TriviaGameScreen() {
   // Handle watching a rewarded ad to unlock a hint
   const handleWatchAdForHint = useCallback(async () => {
     if (!currentQuestion || showingRewardedAd) return;
-
-    const triviaMode: TriviaMode =
-      params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
 
     trackTriviaHintClick({
       mode: triviaMode,
@@ -551,10 +555,12 @@ export default function TriviaGameScreen() {
   ]);
 
   const finishQuiz = async () => {
-    // Show interstitial ad before showing results
-    setShowingAd(true);
-    await showTriviaResultsInterstitial();
-    setShowingAd(false);
+    // Show interstitial ad before showing results (skip for quick quiz)
+    if (params.type !== 'quick') {
+      setShowingAd(true);
+      await showTriviaResultsInterstitial();
+      setShowingAd(false);
+    }
 
     // Calculate results including best streak
     let correctCount = 0;
@@ -579,10 +585,6 @@ export default function TriviaGameScreen() {
         currentStreak = 0;
       }
     }
-
-    // Determine trivia mode for session saving
-    const triviaMode =
-      params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : 'mixed';
 
     // Calculate elapsed time
     const elapsedTime = gameState.totalTime - timeRemaining;
@@ -694,6 +696,39 @@ export default function TriviaGameScreen() {
 
     return { correct, wrong, unanswered, bestStreak, elapsedTime };
   };
+
+  // Session review mode — show saved session results
+  if (reviewSession && reviewSession.questions && reviewSession.answers) {
+    const wrongCount = reviewSession.total_questions - reviewSession.correct_answers;
+    return (
+      <TriviaResults
+        correctAnswers={reviewSession.correct_answers}
+        totalQuestions={reviewSession.total_questions}
+        wrongCount={wrongCount}
+        unansweredCount={0}
+        timeExpired={false}
+        elapsedTime={reviewSession.elapsed_time || 0}
+        bestStreak={reviewSession.best_streak || 0}
+        questions={reviewSession.questions}
+        answers={reviewSession.answers}
+        onClose={handleClose}
+        isDark={isDark}
+        t={t}
+        triviaModeBadge={getTriviaModeBadge({
+          mode: reviewSession.trivia_mode,
+          categoryName: reviewSession.category?.name,
+          categoryIcon: reviewSession.category?.icon,
+          categoryColor: reviewSession.category?.color_hex,
+          isDark,
+          t,
+        })}
+        showBackButton={true}
+        showReturnButton={false}
+        unavailableQuestionIds={reviewSession.unavailableQuestionIds}
+        hideTimeAndStreak={reviewSession.trivia_mode === 'quick'}
+      />
+    );
+  }
 
   // Results view
   if (gameState.isFinished) {

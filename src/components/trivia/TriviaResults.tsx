@@ -66,6 +66,8 @@ export interface TriviaResultsProps {
   showReturnButton?: boolean;
   // IDs of questions that are no longer in the database
   unavailableQuestionIds?: number[];
+  // Hide time and streak stat cards (e.g. for quick quiz)
+  hideTimeAndStreak?: boolean;
 }
 
 // Horizontal progress bar component
@@ -432,6 +434,7 @@ export function TriviaResults({
   showBackButton = false,
   showReturnButton = true,
   unavailableQuestionIds = [],
+  hideTimeAndStreak = false,
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -772,6 +775,7 @@ export function TriviaResults({
             </Animated.View>
 
             {/* Stats Cards */}
+            {!hideTimeAndStreak && (
             <Animated.View entering={FadeInDown.delay(100).duration(400)}>
               <XStack
                 paddingHorizontal={spacing.lg}
@@ -842,6 +846,7 @@ export function TriviaResults({
                 </YStack>
               </XStack>
             </Animated.View>
+            )}
 
             {/* Native Ad */}
             <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>

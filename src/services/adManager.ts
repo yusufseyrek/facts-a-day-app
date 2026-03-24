@@ -73,6 +73,20 @@ export const showStoryInterstitial = async (): Promise<void> => {
  * Shows ad every N fact views (configured in INTERSTITIAL_ADS.FACTS_BETWEEN_ADS)
  * with a cooldown timer between ads
  */
+/**
+ * Show interstitial ad during quick quiz (no cooldown check)
+ */
+export const showQuickQuizInterstitial = async (): Promise<void> => {
+  if (!shouldShowAds()) return;
+
+  try {
+    await showInterstitialAd();
+    trackInterstitialShown('quick_quiz');
+  } catch (error) {
+    console.error('Error showing quick quiz interstitial:', error);
+  }
+};
+
 export const maybeShowFactViewInterstitial = async (): Promise<void> => {
   if (!shouldShowAds()) {
     return;

@@ -1988,7 +1988,7 @@ export interface QuestionAttempt {
   question_id: number;
   is_correct: number; // 0 or 1
   answered_at: string;
-  trivia_mode: 'daily' | 'category' | 'mixed';
+  trivia_mode: 'daily' | 'category' | 'mixed' | 'quick';
 }
 
 export interface DailyTriviaProgress {
@@ -2258,7 +2258,7 @@ function mapQuestionsWithFact(rows: any[]): QuestionWithFact[] {
 export async function recordQuestionAttempt(
   questionId: number,
   isCorrect: boolean,
-  triviaMode: 'daily' | 'category' | 'mixed',
+  triviaMode: 'daily' | 'category' | 'mixed' | 'quick',
   triviaSessionId?: number
 ): Promise<void> {
   const database = await openDatabase();
@@ -2720,7 +2720,7 @@ export async function getFactsForQuestions(questionIds: number[]): Promise<FactW
 
 export interface TriviaSession {
   id: number;
-  trivia_mode: 'daily' | 'category' | 'mixed';
+  trivia_mode: 'daily' | 'category' | 'mixed' | 'quick';
   category_slug: string | null;
   total_questions: number;
   correct_answers: number;
@@ -2759,7 +2759,7 @@ export interface TriviaSessionWithCategory extends TriviaSession {
  *   - correct: boolean indicating if this answer was correct
  */
 export async function saveTriviaSession(
-  triviaMode: 'daily' | 'category' | 'mixed',
+  triviaMode: 'daily' | 'category' | 'mixed' | 'quick',
   totalQuestions: number,
   correctAnswers: number,
   categorySlug?: string,
@@ -3472,6 +3472,51 @@ export async function clearStaleFeedCache(): Promise<void> {
 export async function clearDailyFeedCache(): Promise<void> {
   const database = await openDatabase();
   await database.runAsync('DELETE FROM daily_feed_cache');
+}
+
+/**
+ * Get the cached quiz question ID for today (stored in daily_feed_cache with section='quick_quiz').
+ * Returns null if no cached question exists for today.
+ */
+export async function getCachedQuizQuestionId(): Promise<number | null> {
+  const database = await openDatabase();
+  const row = await database.getFirstAsync<{ fact_id: number }>(
+    `SELECT fact_id FROM daily_feed_cache
+     WHERE section = 'quick_quiz' AND cached_date = date('now', 'localtime')
+     LIMIT 1`
+  );
+  return row?.fact_id ?? null;
+}
+
+/**
+ * Cache a quiz question ID for today (reuses daily_feed_cache table).
+ * Cleared automatically by clearStaleFeedCache() and clearDailyFeedCache().
+ */
+export async function setCachedQuizQuestionId(questionId: number): Promise<void> {
+  const database = await openDatabase();
+  const todayResult = await database.getFirstAsync<{ today: string }>(
+    "SELECT date('now', 'localtime') as today"
+  );
+  const today = todayResult?.today || new Date().toISOString().split('T')[0];
+  await database.runAsync('DELETE FROM daily_feed_cache WHERE section = ?', ['quick_quiz']);
+  await database.runAsync(
+    'INSERT INTO daily_feed_cache (section, fact_id, cached_date, display_order) VALUES (?, ?, ?, 0)',
+    ['quick_quiz', questionId, today]
+  );
+}
+
+/**
+ * Count distinct facts the user has viewed or opened today.
+ * Uses range comparison to leverage existing indexes on story_viewed_at and detail_opened_at.
+ */
+export async function getFactsReadTodayCount(): Promise<number> {
+  const database = await openDatabase();
+  const row = await database.getFirstAsync<{ count: number }>(
+    `SELECT COUNT(DISTINCT fact_id) as count FROM fact_interactions
+     WHERE story_viewed_at >= datetime('now', 'localtime', 'start of day')
+        OR detail_opened_at >= datetime('now', 'localtime', 'start of day')`
+  );
+  return row?.count ?? 0;
 }
 
 /**

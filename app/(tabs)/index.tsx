@@ -30,16 +30,27 @@ import {
 } from '../../src/components';
 import { InlineNativeAd } from '../../src/components/ads/InlineNativeAd';
 import { ReadingStreakIndicator } from '../../src/components/badges/ReadingStreakIndicator';
-import { CategoryStoryButtons, CategoryStoryButtonsRef } from '../../src/components/CategoryStoryButtons';
+import {
+  CategoryStoryButtons,
+  CategoryStoryButtonsRef,
+} from '../../src/components/CategoryStoryButtons';
+import { QuickQuizTeaser } from '../../src/components/home/QuickQuizTeaser';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
-import { PopularFactCard } from '../../src/components/PopularFactCard';
+import { CompactFactCard } from '../../src/components/CompactFactCard';
 import { ADS_ENABLED, LAYOUT, PAYWALL_PROMPT } from '../../src/config/app';
-import { signalFeedLoaded, usePreloadedData, usePremium, useScrollToTopHandler } from '../../src/contexts';
+import {
+  signalFeedLoaded,
+  usePreloadedData,
+  usePremium,
+  useScrollToTopHandler,
+} from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
   trackCarouselSwipe,
   trackFeedRefresh,
+  trackQuickQuizAnswer,
+  trackQuickQuizSessionComplete,
   trackScreenView,
 } from '../../src/services/analytics';
 import { getReadingStreak, isModalScreenActive } from '../../src/services/badges';
@@ -52,14 +63,23 @@ import {
   RefreshStatus,
 } from '../../src/services/contentRefresh';
 import { loadDailyFeedSections } from '../../src/services/dailyFeed';
+import { invalidateBadgeCache } from '../../src/services/badgeCache';
 import { preCacheOfflineImages } from '../../src/services/images';
 import { onNetworkChange } from '../../src/services/network';
 import { shouldShowPaywall } from '../../src/services/paywallTiming';
+import { setPendingQuizSessionId } from '../../src/services/quizSession';
+import {
+  getRandomQuestionForQuiz,
+  getShuffledAnswers,
+  isDailyTriviaCompleted,
+  recordAnswer,
+  saveSessionResult,
+} from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { FactViewSource } from '../../src/services/analytics';
-import type { FactWithRelations } from '../../src/services/database';
+import type { FactWithRelations, QuestionWithFact } from '../../src/services/database';
 
 function HomeScreen() {
   const { theme } = useTheme();
@@ -80,6 +100,11 @@ function HomeScreen() {
     getRefreshStatus()
   );
   const [preCacheProgress, setPreCacheProgress] = useState<number | null>(null);
+
+  // Quick Quiz state
+  const [quizQuestion, setQuizQuestion] = useState<QuestionWithFact | null>(null);
+  const [quizShuffledAnswers, setQuizShuffledAnswers] = useState<string[]>([]);
+  const [dailyTriviaComplete, setDailyTriviaComplete] = useState(false);
   const preCacheWidth = useSharedValue(0);
 
   useEffect(() => {
@@ -97,6 +122,7 @@ function HomeScreen() {
   const preCacheDateRef = useRef<string | null>(null);
   const paywallCheckRef = useRef(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const quizYRef = useRef(0);
   const freshFactsListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const worthKnowingListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const onThisDayListRef = useRef<FlashListRef<FactWithRelations>>(null);
@@ -123,7 +149,6 @@ function HomeScreen() {
     useCallback(() => {
       // Force-refresh if preferences changed while away, otherwise only load if empty
       const forceRefresh = consumeFeedRefreshPending();
-      console.log(`📋 [HomeScreen] useFocusEffect fired: forceRefresh=${forceRefresh}, onlyIfEmpty=${!forceRefresh}`);
       loadFeedSections(!forceRefresh, forceRefresh).then(() => {
         const today = getLocalDateString();
         if (preCacheDateRef.current !== today) {
@@ -136,6 +161,21 @@ function HomeScreen() {
       getReadingStreak()
         .then(setReadingStreak)
         .catch(() => {});
+
+      // Load quiz teaser + progress stats (cached, fast)
+      Promise.all([getRandomQuestionForQuiz(locale), isDailyTriviaCompleted()])
+        .then(([question, completed]) => {
+          setDailyTriviaComplete(completed);
+          // Only shuffle answers when a new question is loaded (not on tab re-focus)
+          setQuizQuestion((prev) => {
+            if (question && question.id !== prev?.id) {
+              setQuizShuffledAnswers(getShuffledAnswers(question));
+            }
+            return question;
+          });
+        })
+        .catch(() => {});
+
       trackScreenView(Screens.HOME);
 
       // Auto-show paywall for free users (once every N days)
@@ -224,7 +264,6 @@ function HomeScreen() {
           onThisDay,
           onThisDayIsWeekFallback: isWeek,
         } = await loadDailyFeedSections(locale, forceRefresh);
-        console.log(`📋 [HomeScreen] loadFeedSections result: fresh=${fresh.length}, worthKnowing=${worthKnowing.length}, onThisDay=${onThisDay.length}, onlyIfEmpty=${onlyIfEmpty}`);
         if (onlyIfEmpty) {
           setFreshFacts((prev) => (prev.length > 0 ? prev : fresh));
           setWorthKnowingFacts((prev) => (prev.length > 0 ? prev : worthKnowing));
@@ -248,7 +287,58 @@ function HomeScreen() {
     [locale]
   );
 
+  const scrollQuizIntoView = useCallback(() => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: quizYRef.current, animated: true });
+    }, 50);
+  }, []);
 
+  const handleQuizAnswer = useCallback(
+    (questionId: number, isCorrect: boolean) => {
+      const questionType = quizQuestion?.question_type || 'multiple_choice';
+      trackQuickQuizAnswer({ questionId, isCorrect, questionType });
+      recordAnswer(questionId, isCorrect, 'quick').catch(() => {});
+      invalidateBadgeCache();
+      scrollQuizIntoView();
+    },
+    [quizQuestion, scrollQuizIntoView]
+  );
+
+  const handleQuizResults = useCallback(
+    async (questions: QuestionWithFact[], answers: Record<number, string>, correct: number) => {
+      trackQuickQuizSessionComplete({ questionCount: questions.length, correctCount: correct });
+      try {
+        const sessionId = await saveSessionResult(
+          'quick',
+          questions.length,
+          correct,
+          undefined,
+          undefined,
+          undefined,
+          questions,
+          answers
+        );
+        setPendingQuizSessionId(sessionId);
+        router.navigate('/(tabs)/trivia');
+      } catch {
+        // Fallback: navigate to trivia tab
+        router.push('/(tabs)/trivia');
+      }
+    },
+    [router]
+  );
+
+  const handleQuizRetry = useCallback(() => {
+    getRandomQuestionForQuiz(locale, true)
+      .then((question) => {
+        if (question) {
+          setQuizQuestion(question);
+          setQuizShuffledAnswers(getShuffledAnswers(question));
+        }
+      })
+      .catch(() => {});
+    scrollQuizIntoView();
+  }, [locale, scrollQuizIntoView]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -262,6 +352,9 @@ function HomeScreen() {
     // If new facts were synced, refreshAppContent() already emits feedRefresh
     // which triggers a force-refresh via the onFeedRefresh listener.
     await loadFeedSections(false, false);
+    isDailyTriviaCompleted()
+      .then(setDailyTriviaComplete)
+      .catch(() => {});
     setRefreshing(false);
   }, [loadFeedSections]);
 
@@ -329,7 +422,7 @@ function HomeScreen() {
 
   const freshFactsKeyExtractor = useCallback((item: FactWithRelations) => `fresh-${item.id}`, []);
 
-  // On This Day section (PopularFactCard thumbnail cards)
+  // On This Day section (CompactFactCard thumbnail cards)
   const onThisDayIds = useMemo(() => onThisDayFacts.map((f) => f.id), [onThisDayFacts]);
   const onThisDayListHeight = iconSizes.heroLg + spacing.md * 2 + spacing.md * 2;
 
@@ -353,7 +446,7 @@ function HomeScreen() {
   const renderOnThisDayItem = useCallback(
     ({ item, index }: { item: FactWithRelations; index: number }) => (
       <View style={{ paddingBottom: spacing.md }}>
-        <PopularFactCard
+        <CompactFactCard
           fact={item}
           cardWidth={carouselCardWidth}
           onPress={() => handleFactPress(item, 'home_on_this_day', onThisDayIds, index)}
@@ -512,12 +605,12 @@ function HomeScreen() {
               )}
 
               {/* Inline ad between sections */}
-              {ADS_ENABLED && !isPremium && hasFreshFacts && (
+              {ADS_ENABLED && !isPremium && (
                 <YStack
                   width="100%"
                   maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
                   alignSelf="center"
-                  paddingHorizontal={spacing.lg}
+                  paddingHorizontal={spacing.md}
                   paddingBottom={spacing.md}
                 >
                   <InlineNativeAd />
@@ -606,6 +699,45 @@ function HomeScreen() {
                     />
                   </View>
                 </>
+              )}
+
+              {/* Quick Quiz Teaser */}
+              {quizQuestion && (
+                <View
+                  onLayout={(e) => {
+                    quizYRef.current = e.nativeEvent.layout.y;
+                  }}
+                  style={{
+                    width: '100%',
+                    maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
+                    alignSelf: 'center',
+                    paddingHorizontal: spacing.md,
+                    paddingBottom: spacing.md,
+                  }}
+                >
+                  <QuickQuizTeaser
+                    question={quizQuestion}
+                    shuffledAnswers={quizShuffledAnswers}
+                    isDailyTriviaCompleted={dailyTriviaComplete}
+                    isDark={theme === 'dark'}
+                    onAnswered={handleQuizAnswer}
+                    onRetry={handleQuizRetry}
+                    onResults={handleQuizResults}
+                    t={t}
+                  />
+                </View>
+              )}
+              {/* Inline ad below quiz */}
+              {ADS_ENABLED && !isPremium && (
+                <YStack
+                  width="100%"
+                  maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
+                  alignSelf="center"
+                  paddingHorizontal={spacing.md}
+                  paddingVertical={spacing.lg}
+                >
+                  <InlineNativeAd />
+                </YStack>
               )}
             </ScrollView>
           </>

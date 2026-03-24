@@ -29,6 +29,7 @@ import { useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
+import { consumePendingQuizSessionId } from '../../src/services/quizSession';
 import * as triviaService from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
@@ -118,7 +119,13 @@ export default function TriviaScreen() {
     useCallback(() => {
       trackScreenView(Screens.TRIVIA || 'Trivia');
       loadTriviaData();
-    }, [loadTriviaData])
+
+      // Check if we need to open a quick quiz session result
+      const pendingSessionId = consumePendingQuizSessionId();
+      if (pendingSessionId !== null) {
+        router.push(`/trivia/performance?sessionId=${pendingSessionId}`);
+      }
+    }, [loadTriviaData, router])
   );
 
   useEffect(() => {

@@ -14,13 +14,13 @@ import { FONT_FAMILIES, Text } from './Typography';
 
 import type { FactWithRelations } from '../services/database';
 
-interface PopularFactCardProps {
+interface CompactFactCardProps {
   fact: FactWithRelations;
   onPress: () => void;
   cardWidth: number;
 }
 
-const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardProps) => {
+const CompactFactCardComponent = ({ fact, onPress, cardWidth }: CompactFactCardProps) => {
   const { theme } = useTheme();
   const { spacing, radius, iconSizes, typography } = useResponsive();
   const colors = hexColors[theme];
@@ -43,6 +43,7 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
   const isPermanentlyFailed = !imageLoaded && renderRetryCount >= IMAGE_RETRY.MAX_RENDER_ATTEMPTS;
 
   // Watchdog: if expo-image doesn't call onError/onLoad after a render retry, force-advance
+  const imageErrorRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const renderWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (renderRetryCount === 0 || imageLoaded || isPermanentlyFailed) return;
@@ -65,7 +66,7 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
 
     if (renderRetryCount < IMAGE_RETRY.MAX_RENDER_ATTEMPTS) {
       retryPendingRef.current = true;
-      setTimeout(() => {
+      imageErrorRetryRef.current = setTimeout(() => {
         retryPendingRef.current = false;
         setRenderRetryCount((prev) => prev + 1);
       }, IMAGE_RETRY.RENDER_DELAY);
@@ -81,6 +82,9 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
     setRenderRetryCount(0);
     setImageLoaded(false);
     retryPendingRef.current = false;
+    return () => {
+      if (imageErrorRetryRef.current) clearTimeout(imageErrorRetryRef.current);
+    };
   }, [fact.id]);
 
   const handleRetryFromError = useCallback(() => {
@@ -139,7 +143,7 @@ const PopularFactCardComponent = ({ fact, onPress, cardWidth }: PopularFactCardP
           styles.card,
           {
             borderRadius: radius.lg,
-            backgroundColor: colors.surface,
+            backgroundColor: colors.cardBackground,
             padding: spacing.md,
             gap: spacing.md,
           },
@@ -238,6 +242,10 @@ const styles = StyleSheet.create({
   },
 });
 
-export const PopularFactCard = React.memo(PopularFactCardComponent, (prevProps, nextProps) => {
-  return prevProps.fact.id === nextProps.fact.id && prevProps.cardWidth === nextProps.cardWidth;
+export const CompactFactCard = React.memo(CompactFactCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.fact.id === nextProps.fact.id &&
+    prevProps.cardWidth === nextProps.cardWidth &&
+    prevProps.onPress === nextProps.onPress
+  );
 });

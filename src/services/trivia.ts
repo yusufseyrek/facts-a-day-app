@@ -140,6 +140,45 @@ export async function getDailyStreak(): Promise<number> {
   return database.getAnyTriviaStreak();
 }
 
+// ====== HOME SCREEN QUIZ ======
+
+/**
+ * Get a single random question for the home screen quiz teaser.
+ * Uses daily_feed_cache to lock the question for the day.
+ * Falls back to a random unanswered question if no daily trivia questions exist.
+ */
+export async function getRandomQuestionForQuiz(
+  language: string,
+  skipCache = false
+): Promise<QuestionWithFact | null> {
+  // Check daily cache first (unless retrying for a new question)
+  if (!skipCache) {
+    const cachedId = await database.getCachedQuizQuestionId();
+    if (cachedId !== null) {
+      const cached = await database.getQuestionsByIds([cachedId]);
+      if (cached.length > 0) return cached[0];
+      // Cached question was deleted — fall through to pick a new one
+    }
+  }
+
+  // Try daily trivia questions first
+  const dailyQuestions = await getDailyTriviaQuestions(language);
+  if (dailyQuestions.length > 0) {
+    const pick = dailyQuestions[Math.floor(Math.random() * dailyQuestions.length)];
+    await database.setCachedQuizQuestionId(pick.id);
+    return pick;
+  }
+
+  // Fallback: any random unanswered question
+  const random = await database.getRandomUnansweredQuestions(1, language);
+  if (random.length > 0) {
+    await database.setCachedQuizQuestionId(random[0].id);
+    return random[0];
+  }
+
+  return null;
+}
+
 // ====== MIXED TRIVIA ======
 
 /**
@@ -218,7 +257,7 @@ export async function isCategoryComplete(categorySlug: string, language: string)
 export async function recordAnswer(
   questionId: number,
   isCorrect: boolean,
-  triviaMode: 'daily' | 'category' | 'mixed',
+  triviaMode: 'daily' | 'category' | 'mixed' | 'quick',
   triviaSessionId?: number
 ): Promise<void> {
   await database.recordQuestionAttempt(questionId, isCorrect, triviaMode, triviaSessionId);
@@ -437,7 +476,7 @@ export function isTextAnswerCorrect(question: Question, selectedAnswer: string):
  *   This will be converted to answer indexes with correctness info for storage
  */
 export async function saveSessionResult(
-  triviaMode: 'daily' | 'category' | 'mixed',
+  triviaMode: 'daily' | 'category' | 'mixed' | 'quick',
   totalQuestions: number,
   correctAnswers: number,
   categorySlug?: string,

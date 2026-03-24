@@ -56,6 +56,15 @@ export function getTriviaModeBadge(options: TriviaModeBadgeOptions): TriviaModeB
     };
   }
 
+  // Quick mode (home screen quiz teaser)
+  if (mode === 'quick') {
+    return {
+      label: t('quickQuiz') || 'Quick Quiz',
+      icon: 'zap',
+      color: isDark ? hexColors.dark.accent : hexColors.light.accent,
+    };
+  }
+
   // Default fallback
   return {
     label: t('trivia') || 'Trivia',
