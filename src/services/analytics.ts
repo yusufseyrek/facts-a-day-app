@@ -288,6 +288,7 @@ export type FactViewSource =
   | 'home_worth_knowing'
   | 'home_fresh_facts'
   | 'home_on_this_day'
+  | `home_category_${string}`
   | 'discover_search'
   | 'discover_category'
   | 'favorites'

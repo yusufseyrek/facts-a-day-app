@@ -147,6 +147,8 @@ export const HOME_FEED = {
   FRESH_FACTS_COUNT: 10,
   /** Number of cards in the Worth Knowing carousel */
   WORTH_KNOWING_COUNT: 10,
+  /** Number of cards per category carousel on the home screen */
+  CATEGORY_CAROUSEL_COUNT: 10,
 } as const;
 
 /**

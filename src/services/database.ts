@@ -627,11 +627,15 @@ export async function getFactById(id: number): Promise<FactWithRelations | null>
 
 export async function getFactsByCategory(
   category: string,
-  language?: string
+  language?: string,
+  limit?: number
 ): Promise<FactWithRelations[]> {
   const database = await openDatabase();
+  const limitClause = limit ? ' LIMIT ?' : '';
 
   if (language) {
+    const params: any[] = [category, language];
+    if (limit) params.push(limit);
     const result = await database.getAllAsync<any>(
       `SELECT
         f.*,
@@ -644,12 +648,14 @@ export async function getFactsByCategory(
       FROM facts f
       LEFT JOIN categories c ON f.category = c.slug
       WHERE f.category = ? AND f.language = ?
-      ORDER BY RANDOM()`,
-      [category, language]
+      ORDER BY RANDOM()${limitClause}`,
+      params
     );
     return mapFactsWithRelations(result);
   }
 
+  const params: any[] = [category];
+  if (limit) params.push(limit);
   const result = await database.getAllAsync<any>(
     `SELECT
       f.*,
@@ -662,8 +668,8 @@ export async function getFactsByCategory(
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.category = ?
-    ORDER BY RANDOM()`,
-    [category]
+    ORDER BY RANDOM()${limitClause}`,
+    params
   );
   return mapFactsWithRelations(result);
 }

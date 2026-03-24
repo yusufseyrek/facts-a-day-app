@@ -33,6 +33,8 @@ interface ImageFactCardProps {
   aspectRatio?: number;
   /** Optional explicit card width for height calculation (e.g., in carousels where card is narrower than screen) */
   cardWidth?: number;
+  /** Optional text component for the title. Receives the same props as Text.Title. Defaults to Text.Title. */
+  TitleComponent?: React.ComponentType<any>;
 }
 
 const ImageFactCardComponent = ({
@@ -46,6 +48,7 @@ const ImageFactCardComponent = ({
   onImageReady,
   aspectRatio,
   cardWidth: cardWidthProp,
+  TitleComponent,
 }: ImageFactCardProps) => {
   const { screenWidth, spacing, radius, config } = useResponsive();
 
@@ -125,6 +128,8 @@ const ImageFactCardComponent = ({
 
   // Track if we're currently waiting for a retry (prevent duplicate error handling)
   const retryPendingRef = useRef(false);
+
+  const Title = TitleComponent || Text.Title;
 
   // Calculate card height based on aspect ratio
   // Use a smaller aspect ratio for tablets so cards aren't too tall
@@ -274,9 +279,9 @@ const ImageFactCardComponent = ({
                 <CategoryBadge category={category} />
               </View>
             )}
-            <Text.Title color="#FFFFFF" numberOfLines={config.maxLines} style={styles.titleShadow}>
+            <Title color="#FFFFFF" numberOfLines={config.maxLines} style={styles.titleShadow}>
               {title}
-            </Text.Title>
+            </Title>
           </View>
         </Pressable>
       </Animated.View>
@@ -373,13 +378,13 @@ const ImageFactCardComponent = ({
             {/* Content overlay */}
             <View style={[styles.contentOverlay, contentOverlayStyle]}>
               {/* Title */}
-              <Text.Title
+              <Title
                 color="#FFFFFF"
                 numberOfLines={config.maxLines}
                 style={styles.titleShadow}
               >
                 {title}
-              </Text.Title>
+              </Title>
             </View>
           </View>
         </View>
@@ -451,6 +456,7 @@ export const ImageFactCard = React.memo(ImageFactCardComponent, (prevProps, next
     prevProps.categorySlug === nextProps.categorySlug &&
     prevProps.isTablet === nextProps.isTablet &&
     prevProps.aspectRatio === nextProps.aspectRatio &&
-    prevProps.cardWidth === nextProps.cardWidth
+    prevProps.cardWidth === nextProps.cardWidth &&
+    prevProps.TitleComponent === nextProps.TitleComponent
   );
 });

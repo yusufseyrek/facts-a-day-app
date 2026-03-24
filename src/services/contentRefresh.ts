@@ -132,6 +132,28 @@ export function triggerFeedRefresh(): void {
   emitFeedRefresh();
 }
 
+// ============================================================================
+// Cross-tab Discover category selection
+// ============================================================================
+
+let pendingDiscoverCategory: string | null = null;
+
+/**
+ * Set a category slug to be consumed by the Discover screen on next focus.
+ */
+export function setPendingDiscoverCategory(slug: string): void {
+  pendingDiscoverCategory = slug;
+}
+
+/**
+ * Consume and clear the pending category slug. Returns null if none is pending.
+ */
+export function consumePendingDiscoverCategory(): string | null {
+  const slug = pendingDiscoverCategory;
+  pendingDiscoverCategory = null;
+  return slug;
+}
+
 export interface RefreshResult {
   success: boolean;
   updated: {

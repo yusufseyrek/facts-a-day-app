@@ -43,6 +43,7 @@ import * as database from '../../src/services/database';
 import { getCachedFactImageSync } from '../../src/services/images';
 import { getIsConnected } from '../../src/services/network';
 import { getSelectedCategories } from '../../src/services/onboarding';
+import { consumePendingDiscoverCategory } from '../../src/services/contentRefresh';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
 import { darkenColor, getContrastColor } from '../../src/utils/colors';
@@ -444,6 +445,16 @@ function DiscoverScreen() {
       }
     },
     [selectedCategorySlug, locale]
+  );
+
+  // Consume pending category selection from home screen CTA on focus
+  useFocusEffect(
+    useCallback(() => {
+      const pendingSlug = consumePendingDiscoverCategory();
+      if (pendingSlug) {
+        handleCategoryPress(pendingSlug);
+      }
+    }, [handleCategoryPress])
   );
 
   // Get selected category object

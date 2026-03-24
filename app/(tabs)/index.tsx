@@ -34,10 +34,11 @@ import {
   CategoryStoryButtons,
   CategoryStoryButtonsRef,
 } from '../../src/components/CategoryStoryButtons';
+import { CategoryCarousel, CategoryCarouselRef } from '../../src/components/home/CategoryCarousel';
 import { QuickQuizTeaser } from '../../src/components/home/QuickQuizTeaser';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { CompactFactCard } from '../../src/components/CompactFactCard';
-import { ADS_ENABLED, LAYOUT, PAYWALL_PROMPT } from '../../src/config/app';
+import { ADS_ENABLED, HOME_FEED, LAYOUT, PAYWALL_PROMPT } from '../../src/config/app';
 import {
   signalFeedLoaded,
   usePreloadedData,
@@ -61,7 +62,10 @@ import {
   consumeFeedRefreshPending,
   onRefreshStatusChange,
   RefreshStatus,
+  setPendingDiscoverCategory,
 } from '../../src/services/contentRefresh';
+import { getAllCategories, getFactsByCategory } from '../../src/services/database';
+import { getSelectedCategories } from '../../src/services/onboarding';
 import { loadDailyFeedSections } from '../../src/services/dailyFeed';
 import { invalidateBadgeCache } from '../../src/services/badgeCache';
 import { preCacheOfflineImages } from '../../src/services/images';
@@ -99,6 +103,9 @@ function HomeScreen() {
     getRefreshStatus()
   );
   const [preCacheProgress, setPreCacheProgress] = useState<number | null>(null);
+  const [categoryCarousels, setCategoryCarousels] = useState<
+    { category: import('../../src/services/database').Category; facts: FactWithRelations[] }[]
+  >([]);
 
   // Quick Quiz state
   const [quizQuestion, setQuizQuestion] = useState<QuestionWithFact | null>(null);
@@ -125,6 +132,7 @@ function HomeScreen() {
   const worthKnowingListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const onThisDayListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const storyButtonsRef = useRef<CategoryStoryButtonsRef>(null);
+  const categoryCarouselRefs = useRef<Map<string, CategoryCarouselRef>>(new Map());
   const scrollYRef = useRef(0);
 
   // Register scroll-to-top handler
@@ -137,16 +145,60 @@ function HomeScreen() {
         worthKnowingListRef.current?.scrollToOffset({ offset: 0, animated: true });
         onThisDayListRef.current?.scrollToOffset({ offset: 0, animated: true });
         storyButtonsRef.current?.scrollToStart();
+        categoryCarouselRefs.current.forEach((ref) => ref.scrollToStart());
       } else {
         scrollViewRef.current?.scrollTo({ y: 0, animated: true });
       }
     }, [])
   );
 
+  const categoryCarouselsLoadedRef = useRef(false);
+
+  const loadCategoryCarousels = useCallback(
+    async (forceRefresh?: boolean) => {
+      if (!forceRefresh && categoryCarouselsLoadedRef.current) return;
+      try {
+        const [selectedSlugs, allCategories] = await Promise.all([
+          getSelectedCategories(),
+          getAllCategories(),
+        ]);
+        const categoryMap = new Map(allCategories.map((c) => [c.slug, c]));
+        const results = await Promise.all(
+          selectedSlugs.map(async (slug) => {
+            const category = categoryMap.get(slug);
+            if (!category) return null;
+            const facts = await getFactsByCategory(slug, locale, HOME_FEED.CATEGORY_CAROUSEL_COUNT);
+            if (facts.length === 0) return null;
+            return { category, facts };
+          })
+        );
+        setCategoryCarousels(
+          results.filter(Boolean) as {
+            category: import('../../src/services/database').Category;
+            facts: FactWithRelations[];
+          }[]
+        );
+        categoryCarouselsLoadedRef.current = true;
+      } catch (error) {
+        console.error('📋 [HomeScreen] loadCategoryCarousels ERROR:', error);
+      }
+    },
+    [locale]
+  );
+
+  const handleCategoryCta = useCallback(
+    (slug: string) => {
+      setPendingDiscoverCategory(slug);
+      router.navigate('/(tabs)/discover');
+    },
+    [router]
+  );
+
   useFocusEffect(
     useCallback(() => {
       // Force-refresh if preferences changed while away, otherwise only load if empty
       const forceRefresh = consumeFeedRefreshPending();
+      loadCategoryCarousels(forceRefresh);
       loadFeedSections(!forceRefresh, forceRefresh).then(() => {
         const today = getLocalDateString();
         if (preCacheDateRef.current !== today) {
@@ -202,6 +254,9 @@ function HomeScreen() {
       freshFactsListRef.current?.scrollToOffset({ offset: 0, animated: false });
       worthKnowingListRef.current?.scrollToOffset({ offset: 0, animated: false });
       onThisDayListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      // Reload category carousels with new content
+      categoryCarouselsLoadedRef.current = false;
+      loadCategoryCarousels(true);
       signalFeedLoaded();
     });
     return () => unsubscribe();
@@ -517,7 +572,8 @@ function HomeScreen() {
   const hasFreshFacts = freshFacts.length > 0;
   const hasWorthKnowingFacts = worthKnowingFacts.length > 0;
   const hasOnThisDayFacts = onThisDayFacts.length > 0;
-  const hasAnyContent = hasFreshFacts || hasWorthKnowingFacts || hasOnThisDayFacts;
+  const hasAnyContent =
+    hasFreshFacts || hasWorthKnowingFacts || hasOnThisDayFacts || categoryCarousels.length > 0;
 
   return (
     <ScreenContainer edges={['top']}>
@@ -720,6 +776,7 @@ function HomeScreen() {
                   />
                 </View>
               )}
+
               {/* Inline ad below quiz */}
               {ADS_ENABLED && !isPremium && (
                 <YStack
@@ -728,6 +785,36 @@ function HomeScreen() {
                   alignSelf="center"
                   paddingHorizontal={spacing.md}
                   paddingVertical={spacing.lg}
+                >
+                  <InlineNativeAd />
+                </YStack>
+              )}
+
+              {/* Category Carousels */}
+              {categoryCarousels.map(({ category, facts }) => (
+                <CategoryCarousel
+                  key={category.slug}
+                  ref={(r) => {
+                    if (r) categoryCarouselRefs.current.set(category.slug, r);
+                    else categoryCarouselRefs.current.delete(category.slug);
+                  }}
+                  category={category}
+                  facts={facts}
+                  onFactPress={(fact, source, factIds, index) =>
+                    handleFactPress(fact, source, factIds, index)
+                  }
+                  onCtaPress={handleCategoryCta}
+                />
+              ))}
+
+              {/* Inline ad below categories */}
+              {ADS_ENABLED && !isPremium && (
+                <YStack
+                  width="100%"
+                  maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
+                  alignSelf="center"
+                  paddingHorizontal={spacing.md}
+                  paddingBottom={spacing.lg}
                 >
                   <InlineNativeAd />
                 </YStack>
