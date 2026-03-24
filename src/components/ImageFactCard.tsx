@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Animated,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { Platform, Pressable, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { RefreshCw } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
@@ -65,14 +66,17 @@ const ImageFactCardComponent = ({
 }: ImageFactCardProps) => {
   const { screenWidth, spacing, radius, config } = useResponsive();
 
-  // Use a ref for the scale animation - this persists across renders
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  // Scale animation using Reanimated (runs on UI thread)
+  const scaleAnim = useSharedValue(1);
+  const scaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scaleAnim.value }],
+  }));
 
   // Ref to track press delay timeout - prevents animation during scroll
   const pressDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Shimmer animation for loading state
-  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  // Shimmer animation using Reanimated (runs on UI thread)
+  const shimmerOpacity = useSharedValue(0.3);
 
   // Track if image has loaded successfully
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -115,29 +119,24 @@ const ImageFactCardComponent = ({
     };
   }, [renderRetryCount, imageLoaded, isPermanentlyFailed]);
 
-  // Run shimmer animation when loading
+  // Shimmer animated style
+  const shimmerStyle = useAnimatedStyle(() => ({
+    opacity: shimmerOpacity.value,
+  }));
+
+  // Run shimmer animation when loading (Reanimated - UI thread)
   useEffect(() => {
     if (showLoadingState) {
-      const animation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(shimmerAnim, {
-            toValue: 1,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(shimmerAnim, {
-            toValue: 0,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-        ])
+      shimmerOpacity.value = withRepeat(
+        withSequence(withTiming(0.6, { duration: 1500 }), withTiming(0.3, { duration: 1500 })),
+        -1,
+        false
       );
-      animation.start();
-      return () => animation.stop();
     } else {
-      shimmerAnim.setValue(0);
+      cancelAnimation(shimmerOpacity);
+      shimmerOpacity.value = 0;
     }
-  }, [showLoadingState, shimmerAnim]);
+  }, [showLoadingState]);
 
   // Track if we're currently waiting for a retry (prevent duplicate error handling)
   const retryPendingRef = useRef(false);
@@ -153,35 +152,21 @@ const ImageFactCardComponent = ({
 
   // Delay press animation to avoid triggering during scroll
   const handlePressIn = useCallback(() => {
-    // Clear any existing timeout
     if (pressDelayRef.current) {
       clearTimeout(pressDelayRef.current);
     }
-    // Delay the animation - if user starts scrolling, pressOut will cancel it
     pressDelayRef.current = setTimeout(() => {
-      Animated.spring(scaleAnim, {
-        toValue: 0.96,
-        useNativeDriver: true,
-        friction: 8,
-        tension: 100,
-      }).start();
+      scaleAnim.value = withSpring(0.96, { damping: 8, stiffness: 100 });
     }, 100);
-  }, [scaleAnim]);
+  }, []);
 
   const handlePressOut = useCallback(() => {
-    // Cancel pending animation if user was scrolling
     if (pressDelayRef.current) {
       clearTimeout(pressDelayRef.current);
       pressDelayRef.current = null;
     }
-    // Always reset scale to 1
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      friction: 8,
-      tension: 40,
-    }).start();
-  }, [scaleAnim]);
+    scaleAnim.value = withSpring(1, { damping: 8, stiffness: 40 });
+  }, []);
 
   // Handle image render error — retry by re-rendering (fixes Android timing issues)
   const handleImageError = useCallback(() => {
@@ -276,8 +261,11 @@ const ImageFactCardComponent = ({
       <Animated.View
         style={[
           styles.shadowWrapper,
-          { borderRadius: radius.lg, marginBottom: spacing.md, transform: [{ scale: scaleAnim }] },
+          { borderRadius: radius.lg, marginBottom: spacing.md },
+          scaleStyle,
         ]}
+        shouldRasterizeIOS={true}
+        renderToHardwareTextureAndroid={true}
       >
         <Pressable
           onPress={onPress}
@@ -308,8 +296,11 @@ const ImageFactCardComponent = ({
     <Animated.View
       style={[
         styles.shadowWrapper,
-        { borderRadius: radius.lg, marginBottom: spacing.md, transform: [{ scale: scaleAnim }] },
+        { borderRadius: radius.lg, marginBottom: spacing.md },
+        scaleStyle,
       ]}
+      shouldRasterizeIOS={true}
+      renderToHardwareTextureAndroid={true}
     >
       <Pressable
         onPress={onPress}
@@ -342,16 +333,7 @@ const ImageFactCardComponent = ({
             {/* Loading shimmer overlay */}
             {showLoadingState && (
               <Animated.View
-                style={[
-                  StyleSheet.absoluteFill,
-                  styles.shimmerOverlay,
-                  {
-                    opacity: shimmerAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.3, 0.6],
-                    }),
-                  },
-                ]}
+                style={[StyleSheet.absoluteFill, styles.shimmerOverlay, shimmerStyle]}
                 pointerEvents="none"
               />
             )}
@@ -421,9 +403,9 @@ const styles = StyleSheet.create({
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: 4,
     // Android shadow
-    elevation: 8,
+    elevation: 4,
   },
   imageContainer: {
     overflow: 'hidden',

@@ -1,5 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { RefreshCw } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
@@ -28,7 +33,10 @@ const CompactFactCardComponent = ({ fact, onPress, cardWidth }: CompactFactCardP
   // Thumbnail size scales with device: 64 on phone, 96 on tablet
   const thumbnailSize = iconSizes.heroLg;
 
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useSharedValue(1);
+  const scaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scaleAnim.value }],
+  }));
   const pressDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -104,36 +112,29 @@ const CompactFactCardComponent = ({ fact, onPress, cardWidth }: CompactFactCardP
   const handlePressIn = useCallback(() => {
     if (pressDelayRef.current) clearTimeout(pressDelayRef.current);
     pressDelayRef.current = setTimeout(() => {
-      Animated.spring(scaleAnim, {
-        toValue: 0.97,
-        useNativeDriver: true,
-        friction: 8,
-        tension: 100,
-      }).start();
+      scaleAnim.value = withSpring(0.97, { damping: 8, stiffness: 100 });
     }, 100);
-  }, [scaleAnim]);
+  }, []);
 
   const handlePressOut = useCallback(() => {
     if (pressDelayRef.current) {
       clearTimeout(pressDelayRef.current);
       pressDelayRef.current = null;
     }
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      friction: 8,
-      tension: 40,
-    }).start();
-  }, [scaleAnim]);
+    scaleAnim.value = withSpring(1, { damping: 8, stiffness: 40 });
+  }, []);
 
   const shadowStyle = theme === 'dark' ? styles.shadowDark : styles.shadowLight;
 
   return (
     <Animated.View
       style={[
-        { transform: [{ scale: scaleAnim }], width: cardWidth, borderRadius: radius.lg },
+        { width: cardWidth, borderRadius: radius.lg },
         shadowStyle,
+        scaleStyle,
       ]}
+      shouldRasterizeIOS={true}
+      renderToHardwareTextureAndroid={true}
     >
       <Pressable
         onPress={onPress}
@@ -245,7 +246,6 @@ const styles = StyleSheet.create({
 export const CompactFactCard = React.memo(CompactFactCardComponent, (prevProps, nextProps) => {
   return (
     prevProps.fact.id === nextProps.fact.id &&
-    prevProps.cardWidth === nextProps.cardWidth &&
-    prevProps.onPress === nextProps.onPress
+    prevProps.cardWidth === nextProps.cardWidth
   );
 });

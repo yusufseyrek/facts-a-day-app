@@ -9,12 +9,12 @@
  * Set to true to show developer settings section in the Settings screen.
  * Only works when __DEV__ is true.
  */
-export const DEV_SETTINGS_ENABLED = true;
+export const DEV_SETTINGS_ENABLED = false;
 
 /**
  * Ads configuration
  */
-export const ADS_ENABLED = true;
+export const ADS_ENABLED = false;
 
 /**
  * App Check settings for Firebase App Check initialization
@@ -80,6 +80,8 @@ export const NATIVE_ADS = {
   },
   /** Show an inline ad every N category carousels on the home screen */
   CATEGORY_CAROUSEL_AD_INTERVAL: 3,
+  /** Duration (ms) to block prev/next navigation when a native ad is shown in trivia */
+  TRIVIA_NAV_LOCK_DURATION_MS: 1500,
 } as const;
 
 export const AD_RETRY = {

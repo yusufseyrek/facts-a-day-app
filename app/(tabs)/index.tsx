@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  InteractionManager,
   NativeScrollEvent,
   NativeSyntheticEvent,
   RefreshControl,
@@ -107,6 +108,9 @@ function HomeScreen() {
     { category: import('../../src/services/database').Category; facts: FactWithRelations[] }[]
   >([]);
 
+  // Stagger category carousel mounting for performance
+  const [visibleCarouselCount, setVisibleCarouselCount] = useState(2);
+
   // Quick Quiz state
   const [quizQuestion, setQuizQuestion] = useState<QuestionWithFact | null>(null);
   const [quizShuffledAnswers, setQuizShuffledAnswers] = useState<string[]>([]);
@@ -196,10 +200,13 @@ function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      // Force-refresh if preferences changed while away, otherwise only load if empty
+      // CRITICAL: Load visible content immediately
       const forceRefresh = consumeFeedRefreshPending();
       loadCategoryCarousels(forceRefresh);
-      loadFeedSections(!forceRefresh, forceRefresh).then(() => {
+      loadFeedSections(!forceRefresh, forceRefresh);
+
+      // DEFERRED: Non-visible work runs after animations/interactions settle
+      const task = InteractionManager.runAfterInteractions(() => {
         const today = getLocalDateString();
         if (preCacheDateRef.current !== today) {
           preCacheDateRef.current = today;
@@ -207,29 +214,29 @@ function HomeScreen() {
             .then(() => setTimeout(() => setPreCacheProgress(null), 1000))
             .catch(() => setPreCacheProgress(null));
         }
+
+        getReadingStreak()
+          .then(setReadingStreak)
+          .catch(() => {});
+
+        getRandomQuestionForQuiz(locale)
+          .then((question) => {
+            setQuizQuestion((prev) => {
+              if (question && question.id !== prev?.id) {
+                setQuizShuffledAnswers(getShuffledAnswers(question));
+              }
+              return question;
+            });
+          })
+          .catch(() => {});
+
+        trackScreenView(Screens.HOME);
       });
-      getReadingStreak()
-        .then(setReadingStreak)
-        .catch(() => {});
-
-      // Load quiz teaser + progress stats (cached, fast)
-      getRandomQuestionForQuiz(locale)
-        .then((question) => {
-          // Only shuffle answers when a new question is loaded (not on tab re-focus)
-          setQuizQuestion((prev) => {
-            if (question && question.id !== prev?.id) {
-              setQuizShuffledAnswers(getShuffledAnswers(question));
-            }
-            return question;
-          });
-        })
-        .catch(() => {});
-
-      trackScreenView(Screens.HOME);
 
       // Auto-show paywall for free users (once every N days)
+      let timer: ReturnType<typeof setTimeout> | undefined;
       if (!isPremium && !paywallCheckRef.current) {
-        const timer = setTimeout(async () => {
+        timer = setTimeout(async () => {
           try {
             if (isModalScreenActive()) return;
             const should = await shouldShowPaywall();
@@ -241,8 +248,12 @@ function HomeScreen() {
             // silently ignore paywall check errors
           }
         }, PAYWALL_PROMPT.DELAY_MS);
-        return () => clearTimeout(timer);
       }
+
+      return () => {
+        task.cancel();
+        if (timer) clearTimeout(timer);
+      };
     }, [locale, t, isPremium])
   );
 
@@ -279,6 +290,21 @@ function HomeScreen() {
     const unsubscribe = onRefreshStatusChange(setBackgroundRefreshStatus);
     return () => unsubscribe();
   }, []);
+
+  // Incrementally mount category carousels to reduce initial render cost
+  useEffect(() => {
+    if (visibleCarouselCount < categoryCarousels.length) {
+      const id = requestAnimationFrame(() => {
+        setVisibleCarouselCount((prev) => Math.min(prev + 1, categoryCarousels.length));
+      });
+      return () => cancelAnimationFrame(id);
+    }
+  }, [visibleCarouselCount, categoryCarousels.length]);
+
+  // Reset visible count when carousels change (e.g. after refresh)
+  useEffect(() => {
+    setVisibleCarouselCount(2);
+  }, [categoryCarousels]);
 
   // Signal home screen ready when showing empty state
   useEffect(() => {
@@ -427,6 +453,24 @@ function HomeScreen() {
   const carouselCardGap = spacing.sm;
   const carouselSnapInterval = carouselCardWidth + carouselCardGap;
 
+  // Memoized styles to avoid re-creating objects during render
+  const flashListContentStyle = useMemo(
+    () => ({ paddingHorizontal: listInset }),
+    [listInset]
+  );
+  const carouselItemStyle = useMemo(
+    () => ({ width: carouselCardWidth, paddingBottom: spacing.md }),
+    [carouselCardWidth, spacing.md]
+  );
+  const compactItemStyle = useMemo(
+    () => ({ paddingBottom: spacing.md }),
+    [spacing.md]
+  );
+  const separatorStyle = useMemo(
+    () => ({ width: carouselCardGap }),
+    [carouselCardGap]
+  );
+
   // Fresh Facts section (1:1 square cards)
   const freshFactsCardHeight = carouselCardWidth; // 1:1 aspect ratio
   const freshFactsIds = useMemo(() => freshFacts.map((f) => f.id), [freshFacts]);
@@ -452,7 +496,7 @@ function HomeScreen() {
     ({ item }: { item: FactWithRelations }) => {
       const factIndex = freshFactsIds.indexOf(item.id);
       return (
-        <View style={{ width: carouselCardWidth, paddingBottom: spacing.md }}>
+        <View style={carouselItemStyle}>
           <ImageFactCard
             title={item.title || item.content.substring(0, 80) + '...'}
             imageUrl={item.image_url!}
@@ -494,7 +538,7 @@ function HomeScreen() {
 
   const renderOnThisDayItem = useCallback(
     ({ item, index }: { item: FactWithRelations; index: number }) => (
-      <View style={{ paddingBottom: spacing.md }}>
+      <View style={compactItemStyle}>
         <CompactFactCard
           fact={item}
           cardWidth={carouselCardWidth}
@@ -532,7 +576,7 @@ function HomeScreen() {
     ({ item }: { item: FactWithRelations }) => {
       const factIndex = worthKnowingIds.indexOf(item.id);
       return (
-        <View style={{ width: carouselCardWidth, paddingBottom: spacing.md }}>
+        <View style={carouselItemStyle}>
           <ImageFactCard
             title={item.title || item.content.substring(0, 80) + '...'}
             imageUrl={item.image_url!}
@@ -553,8 +597,8 @@ function HomeScreen() {
 
   // Separator for horizontal FlashLists
   const carouselSeparator = useCallback(
-    () => <View style={{ width: carouselCardGap }} />,
-    [carouselCardGap]
+    () => <View style={separatorStyle} />,
+    [separatorStyle]
   );
 
   // Loading state
@@ -646,9 +690,7 @@ function HomeScreen() {
                       decelerationRate="fast"
                       disableIntervalMomentum
                       ItemSeparatorComponent={carouselSeparator}
-                      contentContainerStyle={{
-                        paddingHorizontal: listInset,
-                      }}
+                      contentContainerStyle={flashListContentStyle}
                       drawDistance={carouselCardWidth}
                       onScroll={handleFreshFactsScroll}
                       scrollEventThrottle={16}
@@ -705,9 +747,7 @@ function HomeScreen() {
                       decelerationRate="fast"
                       disableIntervalMomentum
                       ItemSeparatorComponent={carouselSeparator}
-                      contentContainerStyle={{
-                        paddingHorizontal: listInset,
-                      }}
+                      contentContainerStyle={flashListContentStyle}
                       drawDistance={carouselCardWidth}
                       onScroll={handleOnThisDayScroll}
                       scrollEventThrottle={16}
@@ -749,9 +789,7 @@ function HomeScreen() {
                       decelerationRate="fast"
                       disableIntervalMomentum
                       ItemSeparatorComponent={carouselSeparator}
-                      contentContainerStyle={{
-                        paddingHorizontal: listInset,
-                      }}
+                      contentContainerStyle={flashListContentStyle}
                       drawDistance={carouselCardWidth}
                       onScroll={handleWorthKnowingScroll}
                       scrollEventThrottle={16}
@@ -799,8 +837,8 @@ function HomeScreen() {
                 </YStack>
               )}
 
-              {/* Category Carousels with inline ads */}
-              {categoryCarousels.map(({ category, facts }, index) => (
+              {/* Category Carousels with inline ads (staggered mount) */}
+              {categoryCarousels.slice(0, visibleCarouselCount).map(({ category, facts }, index) => (
                 <React.Fragment key={category.slug}>
                   <CategoryCarousel
                     ref={(r) => {

@@ -171,9 +171,7 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
             >
               <XStack alignItems="center" gap={spacing.xs}>
                 <Eye size={iconSizes.xs} color={primaryColor} />
-                <Text.Tiny fontFamily={FONT_FAMILIES.medium} color={primaryColor}>
-                  {t('viewFact')}
-                </Text.Tiny>
+                <Text.Caption color={primaryColor}>{t('viewFact')}</Text.Caption>
               </XStack>
             </Pressable>
           )}

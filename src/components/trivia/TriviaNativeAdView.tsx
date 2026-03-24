@@ -1,5 +1,11 @@
-import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import {
+  Animated as RNAnimated,
+  Easing,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 import {
   NativeAd,
   NativeAdView,
@@ -9,6 +15,7 @@ import {
 } from 'react-native-google-mobile-ads';
 import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Circle, Svg } from 'react-native-svg';
 
 import { ChevronLeft, ChevronRight, Timer, X } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
@@ -19,6 +26,8 @@ import { XStack, YStack } from 'tamagui';
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
+
+const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
 
 type TranslationFunction = (key: any, params?: any) => string;
 
@@ -32,6 +41,8 @@ export interface TriviaNativeAdViewProps {
   onExit: () => void;
   isDark: boolean;
   t: TranslationFunction;
+  navLocked: boolean;
+  navLockDuration: number;
 }
 
 const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.45)', 'rgba(0, 0, 0, 0.85)'] as const;
@@ -47,6 +58,8 @@ export function TriviaNativeAdView({
   onExit,
   isDark,
   t,
+  navLocked,
+  navLockDuration,
 }: TriviaNativeAdViewProps) {
   const insets = useSafeAreaInsets();
   const { borderWidths, media, typography, iconSizes, spacing, radius } = useResponsive();
@@ -222,10 +235,14 @@ export function TriviaNativeAdView({
       >
         {/* Previous button */}
         <Pressable
-          onPress={() => handlePressWithHaptics(onPrevQuestion)}
+          onPress={() => !navLocked && handlePressWithHaptics(onPrevQuestion)}
+          disabled={navLocked}
           role="button"
           aria-label={t('a11y_previousButton')}
-          style={({ pressed }) => [pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
+          style={({ pressed }) => [
+            navLocked && { opacity: 0.4 },
+            !navLocked && pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+          ]}
         >
           <XStack
             backgroundColor={primaryColor}
@@ -241,12 +258,14 @@ export function TriviaNativeAdView({
 
         {/* Next button */}
         <Pressable
-          onPress={() => handlePressWithHaptics(onContinue)}
+          onPress={() => !navLocked && handlePressWithHaptics(onContinue)}
+          disabled={navLocked}
           role="button"
           aria-label={t('a11y_nextButton')}
           style={({ pressed }) => [
             { flex: 1 },
-            pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+            navLocked && { opacity: 0.4 },
+            !navLocked && pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
           ]}
         >
           <XStack
@@ -257,16 +276,73 @@ export function TriviaNativeAdView({
             alignItems="center"
             gap={spacing.sm}
           >
-            <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
-              {t('nextQuestion')}
-            </Text.Body>
-            <ChevronRight size={typography.fontSize.title} color="#FFFFFF" />
+            {navLocked ? (
+              <CircularProgress duration={navLockDuration} size={iconSizes.lg} />
+            ) : (
+              <>
+                <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+                  {t('nextQuestion')}
+                </Text.Body>
+                <ChevronRight size={typography.fontSize.title} color="#FFFFFF" />
+              </>
+            )}
           </XStack>
         </Pressable>
       </XStack>
     </View>
   );
 }
+
+const CircularProgress = React.memo(
+  ({ duration, size }: { duration: number; size: number }) => {
+    const strokeWidth = 2.5;
+    const r = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * r;
+    const progress = useRef(new RNAnimated.Value(0)).current;
+
+    useEffect(() => {
+      progress.setValue(0);
+      RNAnimated.timing(progress, {
+        toValue: 1,
+        duration,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      }).start();
+    }, [duration]);
+
+    const strokeDashoffset = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [circumference, 0],
+    });
+
+    return (
+      <Svg width={size} height={size}>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke="rgba(255,255,255,0.25)"
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+        <AnimatedCircle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke="rgba(255,255,255,0.85)"
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={strokeDashoffset}
+          rotation="-90"
+          origin={`${size / 2}, ${size / 2}`}
+        />
+      </Svg>
+    );
+  }
+);
+CircularProgress.displayName = 'CircularProgress';
 
 const styles = StyleSheet.create({
   contentOverlay: {

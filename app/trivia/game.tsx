@@ -34,6 +34,7 @@ import {
 } from '../../src/services/analytics';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
+import { NATIVE_ADS } from '../../src/config/app';
 import { hexColors, useTheme } from '../../src/theme';
 
 import type { TriviaMode } from '../../src/services/analytics';
@@ -83,6 +84,10 @@ export default function TriviaGameScreen() {
   const [showingNativeAd, setShowingNativeAd] = useState(false);
   const [nativeAdShown, setNativeAdShown] = useState(false);
   const { nativeAd } = useNativeAd({ aspectRatio: NativeMediaAspectRatio.PORTRAIT });
+
+  // Ad navigation lock - block prev/next buttons briefly when native ad is shown
+  const [adNavLocked, setAdNavLocked] = useState(false);
+  const adNavLockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Hint state
   const [canUseExplanation, setCanUseExplanation] = useState(false);
@@ -217,6 +222,16 @@ export default function TriviaGameScreen() {
     showingRewardedAd,
     showingNativeAd,
   ]);
+
+  // Cleanup ad nav lock timer on unmount
+  useEffect(() => {
+    return () => {
+      if (adNavLockTimer.current) {
+        clearTimeout(adNavLockTimer.current);
+        adNavLockTimer.current = null;
+      }
+    };
+  }, []);
 
   // Update progress bar animation
   useEffect(() => {
@@ -413,6 +428,13 @@ export default function TriviaGameScreen() {
     ) {
       setShowingNativeAd(true);
       setNativeAdShown(true);
+      // Lock navigation buttons briefly
+      setAdNavLocked(true);
+      if (adNavLockTimer.current) clearTimeout(adNavLockTimer.current);
+      adNavLockTimer.current = setTimeout(() => {
+        setAdNavLocked(false);
+        adNavLockTimer.current = null;
+      }, NATIVE_ADS.TRIVIA_NAV_LOCK_DURATION_MS);
       return;
     }
 
@@ -772,6 +794,8 @@ export default function TriviaGameScreen() {
           onExit={handleExitConfirm}
           isDark={isDark}
           t={t}
+          navLocked={adNavLocked}
+          navLockDuration={NATIVE_ADS.TRIVIA_NAV_LOCK_DURATION_MS}
         />
         <TriviaExitModal
           visible={showExitModal}

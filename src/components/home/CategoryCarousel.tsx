@@ -73,6 +73,11 @@ const CategoryCarouselComponent = forwardRef<CategoryCarouselRef, CategoryCarous
     // Card height: 1:1 square
     const cardHeight = cardWidth;
 
+    const flashListContentStyle = useMemo(
+      () => ({ paddingHorizontal: listInset }),
+      [listInset]
+    );
+
     const factIds = useMemo(() => facts.map((f) => f.id), [facts]);
 
     const data: CarouselItem[] = useMemo(
@@ -106,7 +111,11 @@ const CategoryCarouselComponent = forwardRef<CategoryCarouselRef, CategoryCarous
           const ctaTextColor = getContrastColor(categoryColor);
           const iconBg = ctaTextColor === '#000000' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)';
           return (
-            <View style={{ width: cardWidth }}>
+            <View
+              style={{ width: cardWidth }}
+              shouldRasterizeIOS={true}
+              renderToHardwareTextureAndroid={true}
+            >
               <Pressable
                 onPress={() => onCtaPress(category.slug)}
                 style={({ pressed }) => [
@@ -255,9 +264,7 @@ const CategoryCarouselComponent = forwardRef<CategoryCarouselRef, CategoryCarous
             decelerationRate="fast"
             disableIntervalMomentum
             ItemSeparatorComponent={itemSeparator}
-            contentContainerStyle={{
-              paddingHorizontal: listInset,
-            }}
+            contentContainerStyle={flashListContentStyle}
             drawDistance={cardWidth}
             onScroll={handleScroll}
             scrollEventThrottle={16}
