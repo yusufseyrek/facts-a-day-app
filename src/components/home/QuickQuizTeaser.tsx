@@ -2,11 +2,12 @@ import React, { useCallback, useRef, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
-import { BarChart3, Check, ChevronRight, Eye, Zap } from '@tamagui/lucide-icons';
+import { BarChart3, ChevronRight, Eye, Zap } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { XStack, YStack } from 'tamagui';
 
+import { INTERSTITIAL_ADS } from '../../config/app';
 import { showQuickQuizInterstitial } from '../../services/adManager';
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
@@ -18,7 +19,6 @@ import type { TranslationKeys } from '../../i18n/translations';
 interface QuickQuizTeaserProps {
   question: QuestionWithFact | null;
   shuffledAnswers: string[];
-  isDailyTriviaCompleted: boolean;
   isDark: boolean;
   onAnswered: (questionId: number, isCorrect: boolean) => void;
   onRetry: () => void;
@@ -33,7 +33,6 @@ interface QuickQuizTeaserProps {
 export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
   question,
   shuffledAnswers,
-  isDailyTriviaCompleted,
   isDark,
   onAnswered,
   onRetry,
@@ -43,7 +42,6 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
   const router = useRouter();
   const { spacing, radius, iconSizes, media } = useResponsive();
 
-  const iconContainerSize = iconSizes.xl;
   const smallIconContainerSize = iconSizes.lg;
   const buttonHeight = media.buttonHeight * 0.7;
 
@@ -90,7 +88,7 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
 
       // Show interstitial ad every 10 answers
       answeredSinceAdRef.current += 1;
-      if (answeredSinceAdRef.current >= 10) {
+      if (answeredSinceAdRef.current >= INTERSTITIAL_ADS.QUICK_QUIZ_ANSWERS_BETWEEN_ADS) {
         answeredSinceAdRef.current = 0;
         showQuickQuizInterstitial().catch(() => {});
       }
@@ -131,45 +129,6 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
   // Don't render if no question available
   if (!question) return null;
 
-  // Completed state
-  if (isDailyTriviaCompleted && selectedAnswer === null) {
-    return (
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[shadowStyles.card, { borderRadius: radius.md }]}
-      >
-        <XStack
-          backgroundColor={cardBg}
-          padding={spacing.lg}
-          borderRadius={radius.md}
-          borderWidth={1}
-          borderColor={successColor}
-          alignItems="center"
-          gap={spacing.md}
-        >
-          <YStack
-            width={iconContainerSize}
-            height={iconContainerSize}
-            borderRadius={iconContainerSize / 2}
-            backgroundColor={successColor}
-            justifyContent="center"
-            alignItems="center"
-          >
-            <Check size={iconSizes.md} color="#FFFFFF" />
-          </YStack>
-          <YStack flex={1}>
-            <Text.Label fontFamily={FONT_FAMILIES.semibold} color={textColor}>
-              {t('quickQuiz')}
-            </Text.Label>
-            <Text.Caption color={secondaryTextColor} marginTop={2}>
-              {t('dailyTriviaCompleted')}
-            </Text.Caption>
-          </YStack>
-        </XStack>
-      </Animated.View>
-    );
-  }
-
   const isTrueFalse = question.question_type === 'true_false';
 
   return (
@@ -206,6 +165,7 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
           {question.fact_id && (
             <Pressable
               onPress={handleSeeFact}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               style={({ pressed }) => [pressed && { opacity: 0.7 }]}
             >
               <XStack alignItems="center" gap={spacing.xs}>

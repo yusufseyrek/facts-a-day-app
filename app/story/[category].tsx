@@ -26,7 +26,6 @@ import { NATIVE_ADS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
 import { useResolvedImageUri } from '../../src/hooks/useResolvedImageUri';
 import { useTranslation } from '../../src/i18n';
-import { showStoryInterstitial } from '../../src/services/adManager';
 import {
   Screens,
   trackScreenView,
@@ -297,7 +296,6 @@ export default function StoryScreen() {
       factsViewed: viewedFactIds.current.size,
       totalFacts: facts.length,
     });
-    await showStoryInterstitial();
     router.back();
   }, [router, category, facts.length]);
 

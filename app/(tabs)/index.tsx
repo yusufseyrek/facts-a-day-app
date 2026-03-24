@@ -71,7 +71,6 @@ import { setPendingQuizSessionId } from '../../src/services/quizSession';
 import {
   getRandomQuestionForQuiz,
   getShuffledAnswers,
-  isDailyTriviaCompleted,
   recordAnswer,
   saveSessionResult,
 } from '../../src/services/trivia';
@@ -104,7 +103,6 @@ function HomeScreen() {
   // Quick Quiz state
   const [quizQuestion, setQuizQuestion] = useState<QuestionWithFact | null>(null);
   const [quizShuffledAnswers, setQuizShuffledAnswers] = useState<string[]>([]);
-  const [dailyTriviaComplete, setDailyTriviaComplete] = useState(false);
   const preCacheWidth = useSharedValue(0);
 
   useEffect(() => {
@@ -163,9 +161,8 @@ function HomeScreen() {
         .catch(() => {});
 
       // Load quiz teaser + progress stats (cached, fast)
-      Promise.all([getRandomQuestionForQuiz(locale), isDailyTriviaCompleted()])
-        .then(([question, completed]) => {
-          setDailyTriviaComplete(completed);
+      getRandomQuestionForQuiz(locale)
+        .then((question) => {
           // Only shuffle answers when a new question is loaded (not on tab re-focus)
           setQuizQuestion((prev) => {
             if (question && question.id !== prev?.id) {
@@ -352,9 +349,6 @@ function HomeScreen() {
     // If new facts were synced, refreshAppContent() already emits feedRefresh
     // which triggers a force-refresh via the onFeedRefresh listener.
     await loadFeedSections(false, false);
-    isDailyTriviaCompleted()
-      .then(setDailyTriviaComplete)
-      .catch(() => {});
     setRefreshing(false);
   }, [loadFeedSections]);
 
@@ -668,14 +662,14 @@ function HomeScreen() {
                     maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
                     alignSelf="center"
                     paddingHorizontal={spacing.lg}
-                    paddingVertical={spacing.sm}
+                    paddingBottom={spacing.sm}
                   >
                     <Text.Title fontSize={typography.fontSize.body}>{t('worthKnowing')}</Text.Title>
                   </YStack>
 
                   <View
                     style={{
-                      height: worthKnowingCardHeight + spacing.md * 2 + spacing.sm,
+                      height: worthKnowingCardHeight + spacing.md * 2,
                       width: '100%',
                     }}
                   >
@@ -712,13 +706,12 @@ function HomeScreen() {
                     maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
                     alignSelf: 'center',
                     paddingHorizontal: spacing.md,
-                    paddingBottom: spacing.md,
+                    paddingBottom: spacing.xs,
                   }}
                 >
                   <QuickQuizTeaser
                     question={quizQuestion}
                     shuffledAnswers={quizShuffledAnswers}
-                    isDailyTriviaCompleted={dailyTriviaComplete}
                     isDark={theme === 'dark'}
                     onAnswered={handleQuizAnswer}
                     onRetry={handleQuizRetry}

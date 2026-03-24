@@ -161,15 +161,7 @@ export async function getRandomQuestionForQuiz(
     }
   }
 
-  // Try daily trivia questions first
-  const dailyQuestions = await getDailyTriviaQuestions(language);
-  if (dailyQuestions.length > 0) {
-    const pick = dailyQuestions[Math.floor(Math.random() * dailyQuestions.length)];
-    await database.setCachedQuizQuestionId(pick.id);
-    return pick;
-  }
-
-  // Fallback: any random unanswered question
+  // Pick a random unanswered question from the entire pool
   const random = await database.getRandomUnansweredQuestions(1, language);
   if (random.length > 0) {
     await database.setCachedQuizQuestionId(random[0].id);
