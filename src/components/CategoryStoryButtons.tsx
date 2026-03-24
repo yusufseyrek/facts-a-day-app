@@ -1,10 +1,6 @@
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useFocusEffect } from '@react-navigation/native';
 import { FlashList, FlashListRef } from '@shopify/flash-list';
@@ -36,165 +32,167 @@ export interface CategoryStoryButtonsRef {
   scrollToStart: () => void;
 }
 
-export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(function CategoryStoryButtons(_props, ref) {
-  const { t, locale } = useTranslation();
-  const { theme } = useTheme();
-  const router = useRouter();
-  const { spacing, iconSizes, borderWidths, typography } = useResponsive();
-  const colors = hexColors[theme];
+export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
+  function CategoryStoryButtons(_props, ref) {
+    const { t, locale } = useTranslation();
+    const { theme } = useTheme();
+    const router = useRouter();
+    const { spacing, iconSizes, borderWidths, typography } = useResponsive();
+    const colors = hexColors[theme];
 
-  // Responsive circle and icon sizes: 64/28 on phone, 96/42 on tablet
-  const circleSize = iconSizes.heroLg;
-  const iconSize = iconSizes.lg;
+    // Responsive circle and icon sizes: 64/28 on phone, 96/42 on tablet
+    const circleSize = iconSizes.heroLg;
+    const iconSize = iconSizes.lg;
 
-  const flashListRef = useRef<FlashListRef<CategoryItem>>(null);
+    const flashListRef = useRef<FlashListRef<CategoryItem>>(null);
 
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [unseenStatus, setUnseenStatus] = useState<Record<string, boolean>>({});
+    const [categories, setCategories] = useState<CategoryItem[]>([]);
+    const [unseenStatus, setUnseenStatus] = useState<Record<string, boolean>>({});
 
-  useImperativeHandle(ref, () => ({
-    scrollToStart: () => {
-      flashListRef.current?.scrollToOffset({ offset: 0, animated: true });
-    },
-  }));
+    useImperativeHandle(ref, () => ({
+      scrollToStart: () => {
+        flashListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      },
+    }));
 
-  useEffect(() => {
-    loadCategories();
-    return onPreferenceFeedRefresh(() => {
+    useEffect(() => {
       loadCategories();
-    });
-  }, []);
-
-  // Refresh unseen status when screen is focused (returning from story)
-  useFocusEffect(
-    useCallback(() => {
-      loadUnseenStatus();
-    }, [locale])
-  );
-
-  const loadCategories = async () => {
-    try {
-      const selectedSlugs = await getSelectedCategories();
-      const allCategories = await database.getAllCategories();
-
-      // Build a map for quick lookup
-      const categoryMap = new Map<string, Category>();
-      allCategories.forEach((cat) => categoryMap.set(cat.slug, cat));
-
-      // Build items from user's selected categories
-      const items: CategoryItem[] = [];
-      for (const slug of selectedSlugs) {
-        const cat = categoryMap.get(slug);
-        if (cat) {
-          items.push({
-            slug: cat.slug,
-            name: cat.name,
-            icon: cat.icon,
-            color_hex: cat.color_hex,
-          });
-        }
-      }
-
-      // Load unseen status
-      const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
-      setUnseenStatus(status);
-
-      // Sort categories: unseen (has new facts) first
-      items.sort((a, b) => {
-        const aUnseen = status[a.slug] ? 0 : 1;
-        const bUnseen = status[b.slug] ? 0 : 1;
-        return aUnseen - bUnseen;
+      return onPreferenceFeedRefresh(() => {
+        loadCategories();
       });
+    }, []);
 
-      // Prepend Mix button
-      setCategories([{ slug: 'mix', name: t('mix'), isMix: true }, ...items]);
-    } catch {
-      // Ignore errors
-    }
-  };
+    // Refresh unseen status when screen is focused (returning from story)
+    useFocusEffect(
+      useCallback(() => {
+        loadUnseenStatus();
+      }, [locale])
+    );
 
-  const loadUnseenStatus = async () => {
-    try {
-      const selectedSlugs = await getSelectedCategories();
-      const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
-      setUnseenStatus(status);
+    const loadCategories = async () => {
+      try {
+        const selectedSlugs = await getSelectedCategories();
+        const allCategories = await database.getAllCategories();
 
-      // Re-sort categories by unseen status
-      setCategories((prev) => {
-        const mix = prev.find((c) => c.isMix);
-        const rest = prev.filter((c) => !c.isMix);
-        rest.sort((a, b) => {
+        // Build a map for quick lookup
+        const categoryMap = new Map<string, Category>();
+        allCategories.forEach((cat) => categoryMap.set(cat.slug, cat));
+
+        // Build items from user's selected categories
+        const items: CategoryItem[] = [];
+        for (const slug of selectedSlugs) {
+          const cat = categoryMap.get(slug);
+          if (cat) {
+            items.push({
+              slug: cat.slug,
+              name: cat.name,
+              icon: cat.icon,
+              color_hex: cat.color_hex,
+            });
+          }
+        }
+
+        // Load unseen status
+        const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
+        setUnseenStatus(status);
+
+        // Sort categories: unseen (has new facts) first
+        items.sort((a, b) => {
           const aUnseen = status[a.slug] ? 0 : 1;
           const bUnseen = status[b.slug] ? 0 : 1;
           return aUnseen - bUnseen;
         });
-        return mix ? [mix, ...rest] : rest;
-      });
-    } catch {
-      // Ignore errors
-    }
-  };
 
-  const handlePress = useCallback(
-    (item: CategoryItem) => {
-      router.push(`/story/${item.slug}`);
-    },
-    [router]
-  );
+        // Prepend Mix button
+        setCategories([{ slug: 'mix', name: t('mix'), isMix: true }, ...items]);
+      } catch {
+        // Ignore errors
+      }
+    };
 
-  const renderItem = useCallback(
-    ({ item }: { item: CategoryItem }) => {
-      // Mix button has unseen if ANY category has unseen
-      const hasUnseen = item.isMix
-        ? Object.values(unseenStatus).some(Boolean)
-        : (unseenStatus[item.slug] ?? true);
+    const loadUnseenStatus = async () => {
+      try {
+        const selectedSlugs = await getSelectedCategories();
+        const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
+        setUnseenStatus(status);
 
-      return (
-        <CategoryButton
-          item={item}
-          hasUnseen={hasUnseen}
-          primaryColor={colors.primary}
-          textColor={colors.text}
-          surfaceColor={colors.surface}
-          borderColor={colors.border}
-          onPress={() => handlePress(item)}
-          circleSize={circleSize}
-          iconSize={iconSize}
-          borderWidth={borderWidths.medium}
-          labelMarginTop={spacing.xs}
-          labelFontSize={typography.fontSize.tiny}
+        // Re-sort categories by unseen status
+        setCategories((prev) => {
+          const mix = prev.find((c) => c.isMix);
+          const rest = prev.filter((c) => !c.isMix);
+          rest.sort((a, b) => {
+            const aUnseen = status[a.slug] ? 0 : 1;
+            const bUnseen = status[b.slug] ? 0 : 1;
+            return aUnseen - bUnseen;
+          });
+          return mix ? [mix, ...rest] : rest;
+        });
+      } catch {
+        // Ignore errors
+      }
+    };
+
+    const handlePress = useCallback(
+      (item: CategoryItem) => {
+        router.push(`/story/${item.slug}`);
+      },
+      [router]
+    );
+
+    const renderItem = useCallback(
+      ({ item }: { item: CategoryItem }) => {
+        // Mix button has unseen if ANY category has unseen
+        const hasUnseen = item.isMix
+          ? Object.values(unseenStatus).some(Boolean)
+          : (unseenStatus[item.slug] ?? true);
+
+        return (
+          <CategoryButton
+            item={item}
+            hasUnseen={hasUnseen}
+            primaryColor={colors.primary}
+            textColor={colors.text}
+            surfaceColor={colors.surface}
+            borderColor={colors.border}
+            onPress={() => handlePress(item)}
+            circleSize={circleSize}
+            iconSize={iconSize}
+            borderWidth={borderWidths.medium}
+            labelMarginTop={spacing.xs}
+            labelFontSize={typography.fontSize.tiny}
+          />
+        );
+      },
+      [colors, handlePress, circleSize, iconSize, borderWidths, spacing, typography, unseenStatus]
+    );
+
+    const keyExtractor = useCallback((item: CategoryItem) => item.slug, []);
+
+    // Height for horizontal FlashList container: circle + label margin + label line
+    const listHeight = circleSize + spacing.xs + typography.fontSize.tiny * 2;
+
+    const itemSeparator = useCallback(() => <View style={{ width: spacing.md }} />, [spacing.md]);
+
+    if (categories.length === 0) return null;
+
+    return (
+      <View style={{ width: '100%' }}>
+        <FlashList
+          ref={flashListRef}
+          data={categories}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          ItemSeparatorComponent={itemSeparator}
+          contentContainerStyle={{
+            paddingHorizontal: spacing.lg,
+          }}
         />
-      );
-    },
-    [colors, handlePress, circleSize, iconSize, borderWidths, spacing, typography, unseenStatus]
-  );
-
-  const keyExtractor = useCallback((item: CategoryItem) => item.slug, []);
-
-  // Height for horizontal FlashList container: circle + label margin + label line
-  const listHeight = circleSize + spacing.xs + typography.fontSize.tiny * 2;
-
-  const itemSeparator = useCallback(() => <View style={{ width: spacing.md }} />, [spacing.md]);
-
-  if (categories.length === 0) return null;
-
-  return (
-    <View style={{ height: listHeight, width: '100%' }}>
-      <FlashList
-        ref={flashListRef}
-        data={categories}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        ItemSeparatorComponent={itemSeparator}
-        contentContainerStyle={{
-          paddingHorizontal: spacing.lg,
-        }}
-      />
-    </View>
-  );
-});
+      </View>
+    );
+  }
+);
 
 /**
  * Lighten a hex color by a given amount (0–1)
