@@ -263,7 +263,8 @@ export function FactModal({
   // Initialize with in-memory cache or remote URL to preserve layout
   // When offline, only use locally cached images — don't fall back to remote URLs
   // that will never load (avoids showing a placeholder for nothing)
-  const initialImageUri = getCachedFactImageSync(fact.id) || (getIsConnected() ? fact.image_url : null);
+  const initialImageUri =
+    getCachedFactImageSync(fact.id) || (getIsConnected() ? fact.image_url : null);
   const resolvedImageUri = useResolvedImageUri(fact.id, fact.image_url, initialImageUri);
 
   const imageUri = notificationImageUri || resolvedImageUri;
@@ -391,6 +392,7 @@ export function FactModal({
       ? media.buttonHeight + media.searchInputHeight
       : media.searchInputHeight + spacing.xxl + insets.top;
   const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
+  const headerCollapseAmount = Math.max(0, headerHeight - minHeaderHeight);
 
   // Header background appears when image starts to be covered (for images) or early for no image
   const HEADER_BG_TRANSITION = hasImage ? IMAGE_HEIGHT - headerHeight : 100;
@@ -554,6 +556,53 @@ export function FactModal({
       })
     : 1;
 
+  // Header collapse - after title slide-up and border animations complete,
+  // push the header upward to reduce its visible height to minHeaderHeight.
+  // A compensating translateY on the content keeps the title at its screen position.
+  const TITLE_ANIM_END = HEADER_BG_TRANSITION + headerTitleStartY;
+  const BORDER_ANIM_END = BADGE_SCROLL_THRESHOLD + spacing.xl * 2;
+  const HEADER_COLLAPSE_START = Math.max(TITLE_ANIM_END, BORDER_ANIM_END);
+
+  const headerCollapseTranslateY =
+    hasImage && headerCollapseAmount > 0
+      ? scrollY.interpolate({
+          inputRange: [
+            Math.max(0, HEADER_COLLAPSE_START - 1),
+            HEADER_COLLAPSE_START,
+            HEADER_COLLAPSE_START + headerCollapseAmount,
+          ],
+          outputRange: [0, 0, -headerCollapseAmount],
+          extrapolate: 'clamp',
+        })
+      : 0;
+
+  const headerContentCompensateY =
+    hasImage && headerCollapseAmount > 0
+      ? scrollY.interpolate({
+          inputRange: [
+            Math.max(0, HEADER_COLLAPSE_START - 1),
+            HEADER_COLLAPSE_START,
+            HEADER_COLLAPSE_START + headerCollapseAmount,
+          ],
+          outputRange: [0, 0, headerCollapseAmount],
+          extrapolate: 'clamp',
+        })
+      : 0;
+
+  // Title fades out earlier than the header finishes collapsing
+  const headerTitleCollapseOpacity =
+    hasImage && headerCollapseAmount > 0
+      ? scrollY.interpolate({
+          inputRange: [
+            Math.max(0, HEADER_COLLAPSE_START - 1),
+            HEADER_COLLAPSE_START,
+            HEADER_COLLAPSE_START + headerCollapseAmount * 0.5,
+          ],
+          outputRange: [1, 1, 0],
+          extrapolate: 'clamp',
+        })
+      : 1;
+
   const factTitle = fact.title || fact.content.substring(0, 60) + '...';
 
   // Announce modal opening to screen readers
@@ -592,6 +641,7 @@ export function FactModal({
           zIndex: 100,
           opacity: headerOpacity,
           minHeight: headerHeight,
+          transform: [{ translateY: headerCollapseTranslateY }],
           ...Platform.select({
             ios: {
               shadowColor: '#000',
@@ -657,12 +707,15 @@ export function FactModal({
                   recyclingKey="modal-hero"
                 />
               </Animated.View>
-              {/* Overlay for better text readability */}
+              {/* Overlay for better text readability - fades out during header collapse */}
               <Animated.View
                 style={[
                   StyleSheet.absoluteFill,
                   {
-                    opacity: fadeOpacity,
+                    opacity:
+                      hasImage && headerCollapseAmount > 0
+                        ? Animated.multiply(fadeOpacity, headerTitleCollapseOpacity)
+                        : fadeOpacity,
                     backgroundColor:
                       theme === 'dark' ? 'rgba(0, 0, 0, 0.35)' : 'rgba(255, 255, 255, 0.5)',
                   },
@@ -682,37 +735,44 @@ export function FactModal({
               ]}
             />
           )}
-          {/* Header content */}
-          <XStack
-            position="absolute"
-            top={0}
-            left={0}
-            right={0}
-            zIndex={100}
-            alignItems="center"
-            justifyContent="space-between"
-            paddingHorizontal={spacing.xl}
-            pointerEvents="box-none"
+          {/* Header content - wrapper compensates for header collapse */}
+          <Animated.View
             style={{
-              paddingTop: basePaddingTop,
-              minHeight: headerHeight,
-              paddingBottom: basePaddingBottom,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
               zIndex: 101,
-              alignItems: 'center',
+              transform: [{ translateY: headerContentCompensateY }],
             }}
+            pointerEvents="box-none"
           >
-            <HeaderTitleContainer pointerEvents="none">
-              <Animated.View
-                style={{
-                  flex: 1,
-                  paddingRight: iconSizes.xl + spacing.xs,
-                  transform: [{ translateY: headerTitleTranslateY }],
-                }}
-              >
-                <Text.Headline>{factTitle}</Text.Headline>
-              </Animated.View>
-            </HeaderTitleContainer>
-          </XStack>
+            <XStack
+              alignItems="center"
+              justifyContent="space-between"
+              paddingHorizontal={spacing.xl}
+              pointerEvents="box-none"
+              style={{
+                paddingTop: basePaddingTop,
+                minHeight: headerHeight,
+                paddingBottom: basePaddingBottom,
+                alignItems: 'center',
+              }}
+            >
+              <HeaderTitleContainer pointerEvents="none">
+                <Animated.View
+                  style={{
+                    flex: 1,
+                    paddingRight: iconSizes.xl + spacing.xs,
+                    opacity: headerTitleCollapseOpacity,
+                    transform: [{ translateY: headerTitleTranslateY }],
+                  }}
+                >
+                  <Text.Headline>{factTitle}</Text.Headline>
+                </Animated.View>
+              </HeaderTitleContainer>
+            </XStack>
+          </Animated.View>
           {/* Animated border bottom when category badge is hidden */}
           {categoryColor && (
             <Animated.View
