@@ -9,12 +9,12 @@
  * Set to true to show developer settings section in the Settings screen.
  * Only works when __DEV__ is true.
  */
-export const DEV_SETTINGS_ENABLED = true;
+export const DEV_SETTINGS_ENABLED = false;
 
 /**
  * Ads configuration
  */
-export const ADS_ENABLED = false;
+export const ADS_ENABLED = true;
 
 /**
  * App Check settings for Firebase App Check initialization
