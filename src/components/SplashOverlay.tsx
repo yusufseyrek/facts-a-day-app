@@ -20,7 +20,7 @@ const SPLASH_BACKGROUND = '#0A1628';
 const LOGO_SIZE = 200;
 
 // Animation timing
-const DELAY_DURATION = 250;
+const DELAY_DURATION = 1000;
 const FADE_DURATION = 350;
 
 interface SplashOverlayProps {

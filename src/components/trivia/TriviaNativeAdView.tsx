@@ -1,11 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  Animated as RNAnimated,
-  Easing,
-  Pressable,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Animated as RNAnimated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import {
   NativeAd,
   NativeAdView,
@@ -227,12 +221,7 @@ export function TriviaNativeAdView({
       </View>
 
       {/* Navigation buttons - same as TriviaGameView */}
-      <XStack
-        paddingHorizontal={spacing.lg}
-        paddingTop={spacing.md}
-        paddingBottom={spacing.lg}
-        gap={spacing.md}
-      >
+      <XStack paddingHorizontal={spacing.lg} paddingTop={spacing.md} gap={spacing.md}>
         {/* Previous button */}
         <Pressable
           onPress={() => !navLocked && handlePressWithHaptics(onPrevQuestion)}
@@ -293,55 +282,53 @@ export function TriviaNativeAdView({
   );
 }
 
-const CircularProgress = React.memo(
-  ({ duration, size }: { duration: number; size: number }) => {
-    const strokeWidth = 2.5;
-    const r = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * r;
-    const progress = useRef(new RNAnimated.Value(0)).current;
+const CircularProgress = React.memo(({ duration, size }: { duration: number; size: number }) => {
+  const strokeWidth = 2.5;
+  const r = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * r;
+  const progress = useRef(new RNAnimated.Value(0)).current;
 
-    useEffect(() => {
-      progress.setValue(0);
-      RNAnimated.timing(progress, {
-        toValue: 1,
-        duration,
-        easing: Easing.linear,
-        useNativeDriver: false,
-      }).start();
-    }, [duration]);
+  useEffect(() => {
+    progress.setValue(0);
+    RNAnimated.timing(progress, {
+      toValue: 1,
+      duration,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    }).start();
+  }, [duration]);
 
-    const strokeDashoffset = progress.interpolate({
-      inputRange: [0, 1],
-      outputRange: [circumference, 0],
-    });
+  const strokeDashoffset = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [circumference, 0],
+  });
 
-    return (
-      <Svg width={size} height={size}>
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke="rgba(255,255,255,0.25)"
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-        <AnimatedCircle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke="rgba(255,255,255,0.85)"
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={strokeDashoffset}
-          rotation="-90"
-          origin={`${size / 2}, ${size / 2}`}
-        />
-      </Svg>
-    );
-  }
-);
+  return (
+    <Svg width={size} height={size}>
+      <Circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        stroke="rgba(255,255,255,0.25)"
+        strokeWidth={strokeWidth}
+        fill="none"
+      />
+      <AnimatedCircle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        stroke="rgba(255,255,255,0.85)"
+        strokeWidth={strokeWidth}
+        fill="none"
+        strokeLinecap="round"
+        strokeDasharray={`${circumference} ${circumference}`}
+        strokeDashoffset={strokeDashoffset}
+        rotation="-90"
+        origin={`${size / 2}, ${size / 2}`}
+      />
+    </Svg>
+  );
+});
 CircularProgress.displayName = 'CircularProgress';
 
 const styles = StyleSheet.create({

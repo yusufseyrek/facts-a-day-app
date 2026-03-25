@@ -140,7 +140,7 @@ function UnavailableQuestionCard({
   cardHeight?: number;
   onCardLayout?: (height: number) => void;
 }) {
-  const { typography, spacing, radius, iconSizes } = useResponsive();
+  const { typography, spacing, radius, iconSizes, media } = useResponsive();
   const cardBackground = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
@@ -604,7 +604,7 @@ export function TriviaResults({
         flex: 1,
         backgroundColor: bgColor,
         paddingTop: insets.top,
-        paddingBottom: showReturnButton ? insets.bottom + spacing.md : 0,
+        paddingBottom: showReturnButton ? insets.bottom : 0,
       }}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -776,76 +776,78 @@ export function TriviaResults({
 
             {/* Stats Cards */}
             {!hideTimeAndStreak && (
-            <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-              <XStack
-                paddingHorizontal={spacing.lg}
-                paddingTop={spacing.lg}
-                gap={spacing.md}
-                justifyContent="center"
-              >
-                {/* Duration Card */}
-                <YStack
-                  flex={1}
-                  backgroundColor={cardBackground}
-                  paddingVertical={spacing.lg}
-                  paddingHorizontal={spacing.md}
-                  borderRadius={radius.lg}
-                  alignItems="center"
-                  gap={spacing.xs}
+              <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+                <XStack
+                  paddingHorizontal={spacing.lg}
+                  paddingTop={spacing.lg}
+                  gap={spacing.md}
+                  justifyContent="center"
                 >
-                  <View
-                    style={{
-                      width: statsIconSize,
-                      height: statsIconSize,
-                      borderRadius: statsIconSize / 2,
-                      backgroundColor: isDark
-                        ? 'rgba(0, 163, 204, 0.15)'
-                        : 'rgba(0, 119, 168, 0.1)',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
+                  {/* Duration Card */}
+                  <YStack
+                    flex={1}
+                    backgroundColor={cardBackground}
+                    paddingVertical={spacing.lg}
+                    paddingHorizontal={spacing.md}
+                    borderRadius={radius.lg}
+                    alignItems="center"
+                    gap={spacing.xs}
                   >
-                    <Timer size={iconSizes.md} color={primaryColor} />
-                  </View>
-                  <Text.Caption color={secondaryTextColor} marginTop={spacing.xs}>
-                    {t('timeSpent') || 'Time Spent'}
-                  </Text.Caption>
-                  <Text.Headline fontFamily={FONT_FAMILIES.bold} color={textColor}>
-                    {formatTime(elapsedTime)}
-                  </Text.Headline>
-                </YStack>
+                    <View
+                      style={{
+                        width: statsIconSize,
+                        height: statsIconSize,
+                        borderRadius: statsIconSize / 2,
+                        backgroundColor: isDark
+                          ? 'rgba(0, 163, 204, 0.15)'
+                          : 'rgba(0, 119, 168, 0.1)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Timer size={iconSizes.md} color={primaryColor} />
+                    </View>
+                    <Text.Caption color={secondaryTextColor} marginTop={spacing.xs}>
+                      {t('timeSpent') || 'Time Spent'}
+                    </Text.Caption>
+                    <Text.Headline fontFamily={FONT_FAMILIES.bold} color={textColor}>
+                      {formatTime(elapsedTime)}
+                    </Text.Headline>
+                  </YStack>
 
-                {/* Streak Card */}
-                <YStack
-                  flex={1}
-                  backgroundColor={cardBackground}
-                  paddingVertical={spacing.lg}
-                  paddingHorizontal={spacing.md}
-                  borderRadius={radius.lg}
-                  alignItems="center"
-                  gap={spacing.xs}
-                >
-                  <View
-                    style={{
-                      width: statsIconSize,
-                      height: statsIconSize,
-                      borderRadius: statsIconSize / 2,
-                      backgroundColor: isDark ? 'rgba(255, 140, 0, 0.15)' : 'rgba(204, 85, 0, 0.1)',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
+                  {/* Streak Card */}
+                  <YStack
+                    flex={1}
+                    backgroundColor={cardBackground}
+                    paddingVertical={spacing.lg}
+                    paddingHorizontal={spacing.md}
+                    borderRadius={radius.lg}
+                    alignItems="center"
+                    gap={spacing.xs}
                   >
-                    <Flame size={typography.fontSize.title} color={accentColor} />
-                  </View>
-                  <Text.Caption color={secondaryTextColor} marginTop={spacing.xs}>
-                    {t('currentStreak') || 'Current Streak'}
-                  </Text.Caption>
-                  <Text.Headline fontFamily={FONT_FAMILIES.bold} color={textColor}>
-                    {bestStreak}x
-                  </Text.Headline>
-                </YStack>
-              </XStack>
-            </Animated.View>
+                    <View
+                      style={{
+                        width: statsIconSize,
+                        height: statsIconSize,
+                        borderRadius: statsIconSize / 2,
+                        backgroundColor: isDark
+                          ? 'rgba(255, 140, 0, 0.15)'
+                          : 'rgba(204, 85, 0, 0.1)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Flame size={typography.fontSize.title} color={accentColor} />
+                    </View>
+                    <Text.Caption color={secondaryTextColor} marginTop={spacing.xs}>
+                      {t('currentStreak') || 'Current Streak'}
+                    </Text.Caption>
+                    <Text.Headline fontFamily={FONT_FAMILIES.bold} color={textColor}>
+                      {bestStreak}x
+                    </Text.Headline>
+                  </YStack>
+                </XStack>
+              </Animated.View>
             )}
 
             {/* Native Ad */}
@@ -936,9 +938,8 @@ export function TriviaResults({
           <YStack
             width="100%"
             maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
-            paddingHorizontal={spacing.xl}
+            paddingHorizontal={spacing.lg}
             paddingTop={spacing.md}
-            paddingBottom={spacing.md}
             backgroundColor={bgColor as any}
           >
             <Pressable
@@ -947,7 +948,7 @@ export function TriviaResults({
             >
               <XStack
                 backgroundColor={primaryColor}
-                paddingVertical={spacing.lg}
+                height={media.buttonHeight}
                 borderRadius={radius.lg}
                 justifyContent="center"
                 alignItems="center"

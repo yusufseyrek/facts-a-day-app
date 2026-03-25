@@ -205,7 +205,8 @@ export default function NotificationsScreen() {
       if (__DEV__) console.log('🎯 Calling showImmediateFact with locale:', locale);
       const immediateFactResult = await notificationService.showImmediateFact(locale);
       if (immediateFactResult.success) {
-        if (__DEV__) console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
+        if (__DEV__)
+          console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
       } else {
         console.error('❌ Failed to mark immediate fact:', immediateFactResult.error);
       }
@@ -233,7 +234,8 @@ export default function NotificationsScreen() {
       if (__DEV__) console.log('🎯 Calling showImmediateFact with locale:', locale);
       const immediateFactResult = await notificationService.showImmediateFact(locale);
       if (immediateFactResult.success) {
-        if (__DEV__) console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
+        if (__DEV__)
+          console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
       } else {
         console.error('❌ Failed to mark immediate fact:', immediateFactResult.error);
       }
@@ -280,7 +282,7 @@ export default function NotificationsScreen() {
   return (
     <Container>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <ContentContainer padding={spacing.xl} gap={spacing.xl}>
+      <ContentContainer padding={spacing.lg} gap={spacing.xl}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <Animated.View
             style={{

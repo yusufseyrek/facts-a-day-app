@@ -228,7 +228,8 @@ export default function Categories() {
       <Container>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <YStack
-          padding={spacing.xl}
+          paddingHorizontal={spacing.lg}
+          paddingTop={spacing.lg}
           gap={spacing.xl}
           flex={1}
           justifyContent="center"
@@ -247,7 +248,8 @@ export default function Categories() {
       <Container>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <YStack
-          padding={spacing.xl}
+          paddingHorizontal={spacing.lg}
+          paddingTop={spacing.lg}
           gap={spacing.lg}
           flex={1}
           justifyContent="center"
@@ -275,7 +277,7 @@ export default function Categories() {
   return (
     <Container>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <YStack padding={spacing.xl} gap={spacing.xl} flex={1}>
+      <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} gap={spacing.md} flex={1}>
         <Animated.View
           style={{
             opacity: headerOpacity,
@@ -380,7 +382,7 @@ export default function Categories() {
             transform: [{ translateY: buttonTranslateY }],
           }}
         >
-          <YStack gap={spacing.md} style={{ paddingTop: spacing.md }}>
+          <YStack gap={spacing.md}>
             <Button
               onPress={handleContinue}
               disabled={selectedCategories.length < categoryLimits.min}

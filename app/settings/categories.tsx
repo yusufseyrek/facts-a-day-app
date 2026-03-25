@@ -199,7 +199,8 @@ export default function CategoriesSettings() {
         selectedCategories,
         locale,
         (progress) => {
-          if (__DEV__) console.log(`${progress.stage}: ${progress.percentage}% - ${progress.message}`);
+          if (__DEV__)
+            console.log(`${progress.stage}: ${progress.percentage}% - ${progress.message}`);
           if (progress.stage === 'downloading') {
             setIsFetchingFacts(true);
           }
@@ -259,7 +260,8 @@ export default function CategoriesSettings() {
       <Container>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <YStack
-          padding={spacing.xl}
+          paddingHorizontal={spacing.lg}
+          paddingTop={spacing.lg}
           gap={spacing.xl}
           flex={1}
           justifyContent="center"
@@ -285,7 +287,7 @@ export default function CategoriesSettings() {
         message={t('categoriesUpdated')}
         onHide={handleSuccessToastHide}
       />
-      <YStack padding={spacing.xl} gap={spacing.xl} flex={1}>
+      <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} gap={spacing.xl} flex={1}>
         <Animated.View
           style={{
             opacity: headerOpacity,
@@ -395,7 +397,7 @@ export default function CategoriesSettings() {
             transform: [{ translateY: buttonTranslateY }],
           }}
         >
-          <View style={{ paddingTop: spacing.md }}>
+          <View>
             <Button
               onPress={handleSave}
               disabled={selectedCategories.length < categoryLimits.min || isSaving}

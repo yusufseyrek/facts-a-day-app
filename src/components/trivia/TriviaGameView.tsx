@@ -434,31 +434,34 @@ export function TriviaGameView({
                     )}
 
                   {/* Hint Used - No free hint, no ad option */}
-                  {hasExplanation && !showExplanation && !canUseExplanation && !canWatchAdForHint && (
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        backgroundColor: `${secondaryTextColor}30`,
-                        paddingHorizontal: spacing.md,
-                        paddingVertical: spacing.sm,
-                        borderRadius: radius.full,
-                        alignItems: 'center',
-                        gap: spacing.xs,
-                        opacity: 0.8,
-                      }}
-                    >
-                      <Lightbulb size={typography.fontSize.caption} color={secondaryTextColor} />
-                      <RNText
+                  {hasExplanation &&
+                    !showExplanation &&
+                    !canUseExplanation &&
+                    !canWatchAdForHint && (
+                      <View
                         style={{
-                          fontFamily: FONT_FAMILIES.semibold,
-                          fontSize: typography.fontSize.caption,
-                          color: secondaryTextColor,
+                          flexDirection: 'row',
+                          backgroundColor: `${secondaryTextColor}30`,
+                          paddingHorizontal: spacing.md,
+                          paddingVertical: spacing.sm,
+                          borderRadius: radius.full,
+                          alignItems: 'center',
+                          gap: spacing.xs,
+                          opacity: 0.8,
                         }}
                       >
-                        {t('hintUsedToday') || 'Hint used'}
-                      </RNText>
-                    </View>
-                  )}
+                        <Lightbulb size={typography.fontSize.caption} color={secondaryTextColor} />
+                        <RNText
+                          style={{
+                            fontFamily: FONT_FAMILIES.semibold,
+                            fontSize: typography.fontSize.caption,
+                            color: secondaryTextColor,
+                          }}
+                        >
+                          {t('hintUsedToday') || 'Hint used'}
+                        </RNText>
+                      </View>
+                    )}
                 </XStack>
 
                 {/* Explanation Display */}
@@ -497,155 +500,150 @@ export function TriviaGameView({
 
           {/* Answers */}
           <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.sm} gap={spacing.md}>
-          {isTrueFalse ? (
-            // True/False - side by side radio style
-            <XStack gap={spacing.md}>
-              {shuffledAnswers.map((answer, index) => {
-                const isSelected = selectedAnswer === answer;
+            {isTrueFalse ? (
+              // True/False - side by side radio style
+              <XStack gap={spacing.md}>
+                {shuffledAnswers.map((answer, index) => {
+                  const isSelected = selectedAnswer === answer;
 
-                let optionBg: string = surfaceColor;
-                let optionBorder: string = borderColor;
+                  let optionBg: string = surfaceColor;
+                  let optionBorder: string = borderColor;
 
-                if (isSelected) {
-                  optionBg = isDark ? 'rgba(0, 163, 204, 0.2)' : 'rgba(0, 119, 168, 0.15)';
-                  optionBorder = primaryColor;
-                }
+                  if (isSelected) {
+                    optionBg = isDark ? 'rgba(0, 163, 204, 0.2)' : 'rgba(0, 119, 168, 0.15)';
+                    optionBorder = primaryColor;
+                  }
 
-                return (
-                  <Pressable
-                    key={answer}
-                    role="button"
-                    aria-label={answer === 'True' ? t('a11y_trueAnswer') : t('a11y_falseAnswer')}
-                    style={({ pressed }) => [
-                      { flex: 1 },
-                      pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
-                    ]}
-                    onPress={() => handlePressWithHaptics(() => onAnswerSelect(answer))}
-                  >
-                    <Animated.View entering={FadeInUp.delay(index * 50).duration(200)}>
-                      <YStack
-                        backgroundColor={optionBg as any}
-                        borderWidth={2}
-                        borderColor={optionBorder as any}
-                        paddingVertical={spacing.md}
-                        borderRadius={radius.md}
-                        alignItems="center"
-                        justifyContent="center"
-                        gap={spacing.xs}
-                      >
-                        {/* Radio circle */}
-                        <View
-                          style={{
-                            width: radioSize,
-                            height: radioSize,
-                            borderRadius: radioSize / 2,
-                            borderWidth: 2,
-                            borderColor: isSelected ? primaryColor : borderColor,
-                            backgroundColor: isSelected ? primaryColor : 'transparent',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                          }}
+                  return (
+                    <Pressable
+                      key={answer}
+                      role="button"
+                      aria-label={answer === 'True' ? t('a11y_trueAnswer') : t('a11y_falseAnswer')}
+                      style={({ pressed }) => [
+                        { flex: 1 },
+                        pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+                      ]}
+                      onPress={() => handlePressWithHaptics(() => onAnswerSelect(answer))}
+                    >
+                      <Animated.View entering={FadeInUp.delay(index * 50).duration(200)}>
+                        <YStack
+                          backgroundColor={optionBg as any}
+                          borderWidth={2}
+                          borderColor={optionBorder as any}
+                          paddingVertical={spacing.md}
+                          borderRadius={radius.md}
+                          alignItems="center"
+                          justifyContent="center"
+                          gap={spacing.xs}
                         >
-                          {isSelected && (
-                            <View
-                              style={{
-                                width: radioSize / 3,
-                                height: radioSize / 3,
-                                borderRadius: radioSize / 6,
-                                backgroundColor: '#FFFFFF',
-                              }}
-                            />
-                          )}
-                        </View>
-                        <Text.Body fontFamily={FONT_FAMILIES.semibold} color={textColor}>
-                          {getDisplayAnswer(answer)}
-                        </Text.Body>
-                      </YStack>
-                    </Animated.View>
-                  </Pressable>
-                );
-              })}
-            </XStack>
-          ) : (
-            // Multiple choice - list with letter badges
-            <YStack gap={spacing.xs}>
-              {shuffledAnswers.map((answer, index) => {
-                const isSelected = selectedAnswer === answer;
+                          {/* Radio circle */}
+                          <View
+                            style={{
+                              width: radioSize,
+                              height: radioSize,
+                              borderRadius: radioSize / 2,
+                              borderWidth: 2,
+                              borderColor: isSelected ? primaryColor : borderColor,
+                              backgroundColor: isSelected ? primaryColor : 'transparent',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}
+                          >
+                            {isSelected && (
+                              <View
+                                style={{
+                                  width: radioSize / 3,
+                                  height: radioSize / 3,
+                                  borderRadius: radioSize / 6,
+                                  backgroundColor: '#FFFFFF',
+                                }}
+                              />
+                            )}
+                          </View>
+                          <Text.Body fontFamily={FONT_FAMILIES.semibold} color={textColor}>
+                            {getDisplayAnswer(answer)}
+                          </Text.Body>
+                        </YStack>
+                      </Animated.View>
+                    </Pressable>
+                  );
+                })}
+              </XStack>
+            ) : (
+              // Multiple choice - list with letter badges
+              <YStack gap={spacing.xs}>
+                {shuffledAnswers.map((answer, index) => {
+                  const isSelected = selectedAnswer === answer;
 
-                let optionBg: string = surfaceColor;
-                let optionBorder: string = borderColor;
-                let badgeBg: string = isDark ? hexColors.dark.border : hexColors.light.border;
-                let badgeText: string = secondaryTextColor;
+                  let optionBg: string = surfaceColor;
+                  let optionBorder: string = borderColor;
+                  let badgeBg: string = isDark ? hexColors.dark.border : hexColors.light.border;
+                  let badgeText: string = secondaryTextColor;
 
-                if (isSelected) {
-                  optionBg = isDark ? 'rgba(0, 163, 204, 0.2)' : 'rgba(0, 119, 168, 0.15)';
-                  optionBorder = primaryColor;
-                  badgeBg = primaryColor;
-                  badgeText = '#FFFFFF';
-                }
+                  if (isSelected) {
+                    optionBg = isDark ? 'rgba(0, 163, 204, 0.2)' : 'rgba(0, 119, 168, 0.15)';
+                    optionBorder = primaryColor;
+                    badgeBg = primaryColor;
+                    badgeText = '#FFFFFF';
+                  }
 
-                return (
-                  <Pressable
-                    key={answer}
-                    role="button"
-                    aria-label={answer}
-                    style={({ pressed }) => [
-                      pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
-                    ]}
-                    onPress={() => handlePressWithHaptics(() => onAnswerSelect(answer))}
-                  >
-                    <Animated.View entering={FadeInUp.delay(index * 50).duration(200)}>
-                      <XStack
-                        backgroundColor={optionBg as any}
-                        borderWidth={1.5}
-                        borderColor={optionBorder as any}
-                        paddingVertical={spacing.sm}
-                        paddingHorizontal={spacing.md}
-                        borderRadius={radius.md}
-                        alignItems="center"
-                        gap={spacing.sm}
-                      >
-                        {/* Letter badge */}
-                        <View
-                          style={{
-                            width: letterBadgeSize,
-                            height: letterBadgeSize,
-                            borderRadius: letterBadgeSize / 2,
-                            backgroundColor: badgeBg,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                          }}
+                  return (
+                    <Pressable
+                      key={answer}
+                      role="button"
+                      aria-label={answer}
+                      style={({ pressed }) => [
+                        pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+                      ]}
+                      onPress={() => handlePressWithHaptics(() => onAnswerSelect(answer))}
+                    >
+                      <Animated.View entering={FadeInUp.delay(index * 50).duration(200)}>
+                        <XStack
+                          backgroundColor={optionBg as any}
+                          borderWidth={1.5}
+                          borderColor={optionBorder as any}
+                          paddingVertical={spacing.sm}
+                          paddingHorizontal={spacing.md}
+                          borderRadius={radius.md}
+                          alignItems="center"
+                          gap={spacing.sm}
                         >
-                          <Text.Label fontFamily={FONT_FAMILIES.bold} color={badgeText}>
-                            {letterLabels[index]}
+                          {/* Letter badge */}
+                          <View
+                            style={{
+                              width: letterBadgeSize,
+                              height: letterBadgeSize,
+                              borderRadius: letterBadgeSize / 2,
+                              backgroundColor: badgeBg,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <Text.Label fontFamily={FONT_FAMILIES.bold} color={badgeText}>
+                              {letterLabels[index]}
+                            </Text.Label>
+                          </View>
+
+                          {/* Answer text */}
+                          <Text.Label
+                            lineHeight={typography.lineHeight.label * 1.2}
+                            flex={1}
+                            color={textColor}
+                          >
+                            {answer}
                           </Text.Label>
-                        </View>
-
-                        {/* Answer text */}
-                        <Text.Label
-                          lineHeight={typography.lineHeight.label * 1.2}
-                          flex={1}
-                          color={textColor}
-                        >
-                          {answer}
-                        </Text.Label>
-                      </XStack>
-                    </Animated.View>
-                  </Pressable>
-                );
-              })}
-            </YStack>
-          )}
-        </YStack>
+                        </XStack>
+                      </Animated.View>
+                    </Pressable>
+                  );
+                })}
+              </YStack>
+            )}
+          </YStack>
         </ScrollView>
 
         {/* Navigation buttons */}
-        <XStack
-          paddingHorizontal={spacing.lg}
-          paddingTop={spacing.md}
-          paddingBottom={spacing.lg}
-          gap={spacing.md}
-        >
+        <XStack paddingHorizontal={spacing.lg} paddingTop={spacing.md} gap={spacing.md}>
           {/* Previous button */}
           <Pressable
             onPress={() => currentQuestionIndex > 0 && handlePressWithHaptics(onPrevQuestion)}
