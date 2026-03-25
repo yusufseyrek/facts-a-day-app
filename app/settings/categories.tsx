@@ -287,7 +287,7 @@ export default function CategoriesSettings() {
         message={t('categoriesUpdated')}
         onHide={handleSuccessToastHide}
       />
-      <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} gap={spacing.xl} flex={1}>
+      <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} gap={spacing.md} flex={1}>
         <Animated.View
           style={{
             opacity: headerOpacity,

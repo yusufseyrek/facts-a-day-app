@@ -282,7 +282,7 @@ export default function NotificationsScreen() {
   return (
     <Container>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <ContentContainer padding={spacing.lg} gap={spacing.xl}>
+      <ContentContainer padding={spacing.lg} gap={spacing.md}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <Animated.View
             style={{
