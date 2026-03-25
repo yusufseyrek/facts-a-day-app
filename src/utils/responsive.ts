@@ -70,6 +70,7 @@ const phoneMedia = {
   chipClearButtonSize: 20,
   categoryIconContainerSize: 48,
   answerLabelWidth: 70,
+  compactCardThumbnailSize: 84,
 } as const;
 
 export const media = {

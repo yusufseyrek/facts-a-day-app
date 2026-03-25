@@ -113,12 +113,16 @@ export function TriviaNativeAdView({
             position: 'absolute',
             left: 0,
             right: 0,
-            paddingBottom: spacing.xs,
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'center',
           }}
         >
-          <Text.Body fontFamily={FONT_FAMILIES.bold} color={textColor} numberOfLines={1}>
+          <Text.Body
+            paddingLeft={spacing.lg * 4}
+            fontFamily={FONT_FAMILIES.bold}
+            color={textColor}
+            numberOfLines={1}
+          >
             {triviaTitle}
           </Text.Body>
         </View>

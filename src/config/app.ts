@@ -80,6 +80,8 @@ export const NATIVE_ADS = {
   },
   /** Show an inline ad every N category carousels on the home screen */
   CATEGORY_CAROUSEL_AD_INTERVAL: 3,
+  /** Show a native ad every N questions in trivia */
+  TRIVIA_AD_QUESTION_INTERVAL: 4,
   /** Duration (ms) to block prev/next navigation when a native ad is shown in trivia */
   TRIVIA_NAV_LOCK_DURATION_MS: 1500,
 } as const;

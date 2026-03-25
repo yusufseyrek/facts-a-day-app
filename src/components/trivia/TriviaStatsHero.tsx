@@ -72,7 +72,7 @@ function CircularProgress({
       </Svg>
       {/* Percentage text in center */}
       <YStack position="absolute" alignItems="center" justifyContent="center">
-        <Text.Label fontFamily={FONT_FAMILIES.bold} color={textColor}>
+        <Text.Label flex={1} fontFamily={FONT_FAMILIES.bold} color={textColor}>
           {percentage}%
         </Text.Label>
       </YStack>
@@ -124,7 +124,9 @@ export function TriviaStatsHero({
     <YStack padding={spacing.lg} gap={spacing.md}>
       {/* Header */}
       <XStack justifyContent="space-between" alignItems="center">
-        <Text.Title color={textColor}>{t('yourPerformance')}</Text.Title>
+        <Text.Title flex={1} color={textColor}>
+          {t('yourPerformance')}
+        </Text.Title>
         {hasData && (
           <XStack alignItems="center" gap={2}>
             <Text.Label color={primaryColor}>{t('details')}</Text.Label>

@@ -20,7 +20,6 @@ import { Text } from '../../src/components/Typography';
 import { usePremium } from '../../src/contexts/PremiumContext';
 import { useNativeAd } from '../../src/hooks/useNativeAd';
 import { useTranslation } from '../../src/i18n';
-import { showTriviaResultsInterstitial } from '../../src/services/adManager';
 import {
   Screens,
   trackRewardedAdResult,
@@ -63,7 +62,13 @@ export default function TriviaGameScreen() {
   }>();
   const isDark = theme === 'dark';
   const triviaMode: TriviaMode =
-    params.type === 'daily' ? 'daily' : params.type === 'category' ? 'category' : params.type === 'quick' ? 'quick' : 'mixed';
+    params.type === 'daily'
+      ? 'daily'
+      : params.type === 'category'
+        ? 'category'
+        : params.type === 'quick'
+          ? 'quick'
+          : 'mixed';
 
   const [loading, setLoading] = useState(true);
   const [showingAd, setShowingAd] = useState(false);
@@ -79,11 +84,17 @@ export default function TriviaGameScreen() {
     totalTime: 0,
   });
 
-  // Native ad state - show at the midpoint of the quiz
-  const nativeAdIndex = Math.ceil(gameState.questions.length / 2);
+  // Native ad state - show every N questions (or midpoint if fewer questions than interval)
+  const questionCount = gameState.questions.length;
+  const adInterval =
+    questionCount > 0 && questionCount < NATIVE_ADS.TRIVIA_AD_QUESTION_INTERVAL
+      ? Math.ceil(questionCount / 2)
+      : NATIVE_ADS.TRIVIA_AD_QUESTION_INTERVAL;
   const [showingNativeAd, setShowingNativeAd] = useState(false);
-  const [nativeAdShown, setNativeAdShown] = useState(false);
-  const { nativeAd } = useNativeAd({ aspectRatio: NativeMediaAspectRatio.PORTRAIT });
+  const [nativeAdShownIndices, setNativeAdShownIndices] = useState<Set<number>>(new Set());
+  const [nativeAdRequestKey, setNativeAdRequestKey] = useState('trivia-0');
+  const pendingAdNextIndex = useRef<number>(0);
+  const { nativeAd } = useNativeAd({ aspectRatio: NativeMediaAspectRatio.PORTRAIT, requestKey: nativeAdRequestKey });
 
   // Ad navigation lock - block prev/next buttons briefly when native ad is shown
   const [adNavLocked, setAdNavLocked] = useState(false);
@@ -153,12 +164,15 @@ export default function TriviaGameScreen() {
 
   useEffect(() => {
     if (params.sessionId) {
-      triviaService.getSessionById(Number(params.sessionId)).then((session) => {
-        if (session) {
-          setReviewSession(session);
-          setLoading(false);
-        }
-      }).catch((err) => {
+      triviaService
+        .getSessionById(Number(params.sessionId))
+        .then((session) => {
+          if (session) {
+            setReviewSession(session);
+            setLoading(false);
+          }
+        })
+        .catch((err) => {
           console.error('[TriviaGame] Failed to load session for review:', err);
           setLoading(false);
         });
@@ -285,13 +299,6 @@ export default function TriviaGameScreen() {
   };
 
   const handleTimeExpired = useCallback(async () => {
-    // Show interstitial ad before showing results (skip for quick quiz)
-    if (params.type !== 'quick') {
-      setShowingAd(true);
-      await showTriviaResultsInterstitial();
-      setShowingAd(false);
-    }
-
     // Calculate results for session save including best streak
     let correctCount = 0;
     let currentStreak = 0;
@@ -419,15 +426,17 @@ export default function TriviaGameScreen() {
   const handleNextQuestion = () => {
     const nextIndex = gameState.currentQuestionIndex + 1;
 
-    // Show native ad after the 5th question (index 4 -> next is 5)
+    // Show native ad every 3 questions (after Q3, Q6, Q9, etc.)
     if (
-      nextIndex === nativeAdIndex &&
-      !nativeAdShown &&
+      nextIndex > 0 &&
+      nextIndex % adInterval === 0 &&
+      !nativeAdShownIndices.has(nextIndex) &&
       nativeAd &&
       nextIndex < gameState.questions.length
     ) {
+      pendingAdNextIndex.current = nextIndex;
       setShowingNativeAd(true);
-      setNativeAdShown(true);
+      setNativeAdShownIndices((prev) => new Set(prev).add(nextIndex));
       // Lock navigation buttons briefly
       setAdNavLocked(true);
       if (adNavLockTimer.current) clearTimeout(adNavLockTimer.current);
@@ -465,8 +474,10 @@ export default function TriviaGameScreen() {
     questionKey.current += 1;
     setGameState((prev) => ({
       ...prev,
-      currentQuestionIndex: nativeAdIndex,
+      currentQuestionIndex: pendingAdNextIndex.current,
     }));
+    // Request a fresh ad for the next slot
+    setNativeAdRequestKey(`trivia-${pendingAdNextIndex.current}`);
   };
 
   const handleNativeAdPrev = () => {
@@ -577,13 +588,6 @@ export default function TriviaGameScreen() {
   ]);
 
   const finishQuiz = async () => {
-    // Show interstitial ad before showing results (skip for quick quiz)
-    if (params.type !== 'quick') {
-      setShowingAd(true);
-      await showTriviaResultsInterstitial();
-      setShowingAd(false);
-    }
-
     // Calculate results including best streak
     let correctCount = 0;
     let currentStreak = 0;
@@ -780,7 +784,7 @@ export default function TriviaGameScreen() {
     );
   }
 
-  // Native ad view - shown after 5th question
+  // Native ad view - shown every 3 questions
   if (showingNativeAd && nativeAd) {
     return (
       <>

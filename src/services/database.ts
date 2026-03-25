@@ -679,6 +679,32 @@ export async function getFactsByCategory(
   return mapFactsWithRelations(result);
 }
 
+export async function getRelatedFacts(
+  category: string,
+  excludeId: number,
+  language: string,
+  limit: number = 6
+): Promise<FactWithRelations[]> {
+  const database = await openDatabase();
+  const result = await database.getAllAsync<any>(
+    `SELECT
+      f.*,
+      c.id as category_id,
+      c.name as category_name,
+      c.slug as category_slug,
+      c.description as category_description,
+      c.icon as category_icon,
+      c.color_hex as category_color_hex
+    FROM facts f
+    LEFT JOIN categories c ON f.category = c.slug
+    WHERE f.category = ? AND f.language = ? AND f.id != ?
+    ORDER BY RANDOM()
+    LIMIT ?`,
+    [category, language, excludeId, limit]
+  );
+  return mapFactsWithRelations(result);
+}
+
 export async function getRandomFact(language?: string): Promise<FactWithRelations | null> {
   const database = await openDatabase();
 

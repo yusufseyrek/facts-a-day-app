@@ -197,6 +197,10 @@ export default function FactDetailModal() {
     setCurrentIndex(currentIndex - 1);
   }, [factIds, currentIndex]);
 
+  const handleRelatedFactPress = useCallback((factId: number) => {
+    loadFact(factId, true);
+  }, []);
+
   if (loading) {
     return (
       <View
@@ -238,6 +242,8 @@ export default function FactDetailModal() {
       hasPrevious={hasPrevious}
       currentIndex={factIds ? currentIndex : undefined}
       totalCount={totalCount}
+      source={source}
+      onRelatedFactPress={handleRelatedFactPress}
     />
   );
 }

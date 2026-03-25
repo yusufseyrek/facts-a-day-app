@@ -90,7 +90,7 @@ function HomeScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { isPremium } = usePremium();
-  const { spacing, typography, config, screenWidth, iconSizes } = useResponsive();
+  const { spacing, typography, config, screenWidth, iconSizes, media } = useResponsive();
   const { signalHomeScreenReady } = usePreloadedData();
 
   const [freshFacts, setFreshFacts] = useState<FactWithRelations[]>([]);
@@ -454,22 +454,13 @@ function HomeScreen() {
   const carouselSnapInterval = carouselCardWidth + carouselCardGap;
 
   // Memoized styles to avoid re-creating objects during render
-  const flashListContentStyle = useMemo(
-    () => ({ paddingHorizontal: listInset }),
-    [listInset]
-  );
+  const flashListContentStyle = useMemo(() => ({ paddingHorizontal: listInset }), [listInset]);
   const carouselItemStyle = useMemo(
     () => ({ width: carouselCardWidth, paddingBottom: spacing.md }),
     [carouselCardWidth, spacing.md]
   );
-  const compactItemStyle = useMemo(
-    () => ({ paddingBottom: spacing.md }),
-    [spacing.md]
-  );
-  const separatorStyle = useMemo(
-    () => ({ width: carouselCardGap }),
-    [carouselCardGap]
-  );
+  const compactItemStyle = useMemo(() => ({ paddingBottom: spacing.md }), [spacing.md]);
+  const separatorStyle = useMemo(() => ({ width: carouselCardGap }), [carouselCardGap]);
 
   // Fresh Facts section (1:1 square cards)
   const freshFactsCardHeight = carouselCardWidth; // 1:1 aspect ratio
@@ -517,7 +508,7 @@ function HomeScreen() {
 
   // On This Day section (CompactFactCard thumbnail cards)
   const onThisDayIds = useMemo(() => onThisDayFacts.map((f) => f.id), [onThisDayFacts]);
-  const onThisDayListHeight = iconSizes.heroLg + spacing.md * 2 + spacing.md * 2;
+  const onThisDayListHeight = media.compactCardThumbnailSize + spacing.md * 2 + spacing.md * 2;
 
   const onThisDayActiveIndexRef = useRef(0);
   const handleOnThisDayScroll = useCallback(
@@ -542,6 +533,7 @@ function HomeScreen() {
         <CompactFactCard
           fact={item}
           cardWidth={carouselCardWidth}
+          titleLines={3}
           onPress={() => handleFactPress(item, 'home_on_this_day', onThisDayIds, index)}
         />
       </View>
@@ -596,10 +588,7 @@ function HomeScreen() {
   const worthKnowingKeyExtractor = useCallback((item: FactWithRelations) => `wk-${item.id}`, []);
 
   // Separator for horizontal FlashLists
-  const carouselSeparator = useCallback(
-    () => <View style={separatorStyle} />,
-    [separatorStyle]
-  );
+  const carouselSeparator = useCallback(() => <View style={separatorStyle} />, [separatorStyle]);
 
   // Loading state
   if (initialLoading && freshFacts.length === 0) {
@@ -838,35 +827,37 @@ function HomeScreen() {
               )}
 
               {/* Category Carousels with inline ads (staggered mount) */}
-              {categoryCarousels.slice(0, visibleCarouselCount).map(({ category, facts }, index) => (
-                <React.Fragment key={category.slug}>
-                  <CategoryCarousel
-                    ref={(r) => {
-                      if (r) categoryCarouselRefs.current.set(category.slug, r);
-                      else categoryCarouselRefs.current.delete(category.slug);
-                    }}
-                    category={category}
-                    facts={facts}
-                    onFactPress={(fact, source, factIds, factIndex) =>
-                      handleFactPress(fact, source, factIds, factIndex)
-                    }
-                    onCtaPress={handleCategoryCta}
-                  />
-                  {ADS_ENABLED &&
-                    !isPremium &&
-                    (index + 1) % NATIVE_ADS.CATEGORY_CAROUSEL_AD_INTERVAL === 0 && (
-                      <YStack
-                        width="100%"
-                        maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
-                        alignSelf="center"
-                        paddingHorizontal={spacing.md}
-                        paddingBottom={spacing.xl}
-                      >
-                        <InlineNativeAd />
-                      </YStack>
-                    )}
-                </React.Fragment>
-              ))}
+              {categoryCarousels
+                .slice(0, visibleCarouselCount)
+                .map(({ category, facts }, index) => (
+                  <React.Fragment key={category.slug}>
+                    <CategoryCarousel
+                      ref={(r) => {
+                        if (r) categoryCarouselRefs.current.set(category.slug, r);
+                        else categoryCarouselRefs.current.delete(category.slug);
+                      }}
+                      category={category}
+                      facts={facts}
+                      onFactPress={(fact, source, factIds, factIndex) =>
+                        handleFactPress(fact, source, factIds, factIndex)
+                      }
+                      onCtaPress={handleCategoryCta}
+                    />
+                    {ADS_ENABLED &&
+                      !isPremium &&
+                      (index + 1) % NATIVE_ADS.CATEGORY_CAROUSEL_AD_INTERVAL === 0 && (
+                        <YStack
+                          width="100%"
+                          maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
+                          alignSelf="center"
+                          paddingHorizontal={spacing.md}
+                          paddingBottom={spacing.xl}
+                        >
+                          <InlineNativeAd />
+                        </YStack>
+                      )}
+                  </React.Fragment>
+                ))}
             </ScrollView>
           </>
         )}

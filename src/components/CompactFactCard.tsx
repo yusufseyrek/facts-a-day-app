@@ -1,10 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { RefreshCw } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
@@ -22,16 +18,23 @@ import type { FactWithRelations } from '../services/database';
 interface CompactFactCardProps {
   fact: FactWithRelations;
   onPress: () => void;
-  cardWidth: number;
+  cardWidth?: number;
+  hideCategoryBadge?: boolean;
+  titleLines?: number;
 }
 
-const CompactFactCardComponent = ({ fact, onPress, cardWidth }: CompactFactCardProps) => {
+const CompactFactCardComponent = ({
+  fact,
+  onPress,
+  cardWidth,
+  hideCategoryBadge,
+  titleLines = 2,
+}: CompactFactCardProps) => {
   const { theme } = useTheme();
-  const { spacing, radius, iconSizes, typography } = useResponsive();
+  const { spacing, radius, media, typography } = useResponsive();
   const colors = hexColors[theme];
 
-  // Thumbnail size scales with device: 64 on phone, 96 on tablet
-  const thumbnailSize = iconSizes.heroLg;
+  const thumbnailSize = media.compactCardThumbnailSize;
 
   const scaleAnim = useSharedValue(1);
   const scaleStyle = useAnimatedStyle(() => ({
@@ -101,10 +104,7 @@ const CompactFactCardComponent = ({ fact, onPress, cardWidth }: CompactFactCardP
     retryPendingRef.current = false;
   }, []);
 
-  const imageSource = useMemo(
-    () => (resolvedUri ? { uri: resolvedUri } : null),
-    [resolvedUri]
-  );
+  const imageSource = useMemo(() => (resolvedUri ? { uri: resolvedUri } : null), [resolvedUri]);
 
   const mountTimestamp = useRef(Date.now()).current;
   const recyclingKey = `popular-${fact.id}-${mountTimestamp}-${renderRetryCount}`;
@@ -128,11 +128,7 @@ const CompactFactCardComponent = ({ fact, onPress, cardWidth }: CompactFactCardP
 
   return (
     <Animated.View
-      style={[
-        { width: cardWidth, borderRadius: radius.lg },
-        shadowStyle,
-        scaleStyle,
-      ]}
+      style={[{ width: cardWidth ?? '100%', borderRadius: radius.lg }, shadowStyle, scaleStyle]}
       shouldRasterizeIOS={true}
       renderToHardwareTextureAndroid={true}
     >
@@ -187,10 +183,14 @@ const CompactFactCardComponent = ({ fact, onPress, cardWidth }: CompactFactCardP
 
         {/* Text content */}
         <View style={[styles.textContainer, { height: thumbnailSize, gap: spacing.xs }]}>
-          <Text.Label numberOfLines={2} color={colors.text} fontFamily={FONT_FAMILIES.bold}>
+          <Text.Label
+            numberOfLines={titleLines}
+            color={colors.text}
+            fontFamily={FONT_FAMILIES.bold}
+          >
             {fact.title}
           </Text.Label>
-          {(fact.categoryData || fact.category) && (
+          {!hideCategoryBadge && (fact.categoryData || fact.category) && (
             <CategoryBadge
               category={fact.categoryData || fact.category!}
               fontSize={typography.fontSize.tiny}
@@ -244,8 +244,5 @@ const styles = StyleSheet.create({
 });
 
 export const CompactFactCard = React.memo(CompactFactCardComponent, (prevProps, nextProps) => {
-  return (
-    prevProps.fact.id === nextProps.fact.id &&
-    prevProps.cardWidth === nextProps.cardWidth
-  );
+  return prevProps.fact.id === nextProps.fact.id && prevProps.cardWidth === nextProps.cardWidth;
 });

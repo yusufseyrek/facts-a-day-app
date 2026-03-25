@@ -24,6 +24,7 @@ import { onFactViewed } from '../services/appReview';
 import { checkAndAwardBadges, popModalScreen, pushModalScreen } from '../services/badges';
 import {
   addFactDetailTimeSpent,
+  getRelatedFacts,
   markFactDetailOpened,
   markFactDetailRead,
 } from '../services/database';
@@ -37,6 +38,7 @@ import { useResponsive } from '../utils/useResponsive';
 import { BannerAd } from './ads';
 import { CategoryBadge } from './CategoryBadge';
 import { FactActions } from './FactActions';
+import { RelatedFacts } from './RelatedFacts';
 import { FONT_FAMILIES, Text } from './Typography';
 
 import type { Category, FactWithRelations } from '../services/database';
@@ -50,6 +52,8 @@ interface FactModalProps {
   hasPrevious?: boolean;
   currentIndex?: number;
   totalCount?: number;
+  source?: string;
+  onRelatedFactPress?: (factId: number) => void;
 }
 
 // Styled components without static responsive values - use inline props with useResponsive()
@@ -98,6 +102,8 @@ export function FactModal({
   hasPrevious,
   currentIndex,
   totalCount,
+  source,
+  onRelatedFactPress,
 }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
@@ -129,6 +135,27 @@ export function FactModal({
   // `displayedImageUri` is the last successfully loaded image — it stays on screen
   // as a "back" layer while the new image loads on the "front" layer.
   const [displayedImageUri, setDisplayedImageUri] = useState<string | null>(null);
+
+  // Related facts for the current fact's category
+  const [relatedFacts, setRelatedFacts] = useState<FactWithRelations[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRelatedFacts([]);
+
+    const categorySlug = fact.categoryData?.slug || fact.category;
+    if (!categorySlug) return;
+
+    getRelatedFacts(categorySlug, fact.id, locale, 3)
+      .then((facts) => {
+        if (!cancelled) setRelatedFacts(facts);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fact.id, fact.category, fact.categoryData?.slug, locale]);
 
   // Shimmer animation for loading placeholder
   const shimmerAnim = useRef(new Animated.Value(0)).current;
@@ -181,7 +208,7 @@ export function FactModal({
 
   // Track fact view for app review prompt and interstitial ads
   useEffect(() => {
-    onFactViewed();
+    onFactViewed(source);
   }, [fact.id]);
 
   // Track detail interactions
@@ -1031,20 +1058,51 @@ export function FactModal({
 
             {/* Source link */}
             {fact.source_url && (
-              <Pressable
-                onPress={() => handleSourcePress(fact.source_url!)}
-                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-              >
-                <XStack alignItems="center" gap={spacing.xs}>
-                  <ExternalLink
-                    size={iconSizes.xs}
-                    color={theme === 'dark' ? hexColors.dark.textMuted : hexColors.light.textMuted}
-                  />
-                  <Text.Caption color="$textMuted" numberOfLines={1}>
-                    {extractDomain(fact.source_url)}
-                  </Text.Caption>
-                </XStack>
-              </Pressable>
+              <View style={{ alignSelf: 'flex-start' }}>
+                <Pressable
+                  onPress={() => handleSourcePress(fact.source_url!)}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  style={({ pressed }) => ({
+                    opacity: pressed ? 0.6 : 1,
+                    backgroundColor: pressed
+                      ? theme === 'dark'
+                        ? 'rgba(255,255,255,0.05)'
+                        : 'rgba(0,0,0,0.03)'
+                      : 'transparent',
+                    borderRadius: radius.sm,
+                    padding: spacing.sm,
+                  })}
+                >
+                  <XStack alignItems="center" gap={spacing.sm}>
+                    <ExternalLink
+                      size={iconSizes.sm}
+                      color={
+                        theme === 'dark'
+                          ? hexColors.dark.textSecondary
+                          : hexColors.light.textSecondary
+                      }
+                    />
+                    <Text.Label
+                      color="$textSecondary"
+                      numberOfLines={1}
+                      fontFamily={FONT_FAMILIES.regular}
+                    >
+                      {extractDomain(fact.source_url)}
+                    </Text.Label>
+                  </XStack>
+                </Pressable>
+              </View>
+            )}
+
+            {/* Related Facts */}
+            {relatedFacts.length > 0 && onRelatedFactPress && (
+              <RelatedFacts
+                facts={relatedFacts}
+                onFactPress={onRelatedFactPress}
+                categoryColor={categoryColor}
+                categoryName={fact.categoryData?.name || slugToTitleCase(fact.category || '')}
+                containerWidth={containerWidth}
+              />
             )}
           </YStack>
         </Animated.View>

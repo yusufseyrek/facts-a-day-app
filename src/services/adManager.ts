@@ -8,6 +8,9 @@ import { shouldShowAds } from './premiumState';
 /** Timestamp of the last interstitial ad shown (ms) */
 let lastInterstitialShownAt = 0;
 
+/** When true, the next non-notification fact view should show a deferred interstitial */
+let deferredFactViewInterstitial = false;
+
 /**
  * Check if enough time has passed since the last interstitial
  */
@@ -54,17 +57,37 @@ export const showQuickQuizInterstitial = (): Promise<boolean> =>
   maybeShowInterstitial('quick_quiz');
 
 /**
- * Show interstitial ad based on fact view count (respects cooldown)
- * Shows ad every N fact views (configured in INTERSTITIAL_ADS.FACTS_BETWEEN_ADS)
+ * Show interstitial ad based on fact view count (respects cooldown).
+ * Shows ad every N fact views (configured in INTERSTITIAL_ADS.FACTS_BETWEEN_ADS).
+ *
+ * When `skipThisTime` is true (e.g. fact opened from a notification where an app-open
+ * ad was already shown), the interstitial is deferred to the next non-skipped fact view.
  */
-export const maybeShowFactViewInterstitial = async (): Promise<void> => {
+export const maybeShowFactViewInterstitial = async (opts?: {
+  skipThisTime?: boolean;
+}): Promise<void> => {
   if (!shouldShowAds()) return;
 
   try {
-    const viewCount = await getFactsViewedCount();
+    const skipThisTime = opts?.skipThisTime ?? false;
 
-    if (viewCount > 0 && viewCount % INTERSTITIAL_ADS.FACTS_BETWEEN_ADS === 0) {
+    // A previous view was skipped — show the deferred ad on this (non-notification) view
+    if (deferredFactViewInterstitial && !skipThisTime) {
+      deferredFactViewInterstitial = false;
       await maybeShowInterstitial('fact_view');
+      return;
+    }
+
+    const viewCount = await getFactsViewedCount();
+    const isAtBoundary =
+      viewCount > 0 && viewCount % INTERSTITIAL_ADS.FACTS_BETWEEN_ADS === 0;
+
+    if (isAtBoundary) {
+      if (skipThisTime) {
+        deferredFactViewInterstitial = true;
+      } else {
+        await maybeShowInterstitial('fact_view');
+      }
     }
   } catch (error) {
     console.error('Error showing fact view interstitial:', error);

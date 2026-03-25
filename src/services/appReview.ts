@@ -183,14 +183,14 @@ export async function resetReviewTracking(): Promise<void> {
  * - Shows interstitial ad if threshold reached
  * - Shows app review prompt if conditions are met
  */
-export async function onFactViewed(): Promise<void> {
+export async function onFactViewed(source?: string): Promise<void> {
   try {
     const shouldShowReview = await trackFactView();
 
     // Check and show interstitial ad based on view count
     // Import dynamically to avoid circular dependency
     const { maybeShowFactViewInterstitial } = await import('./adManager');
-    await maybeShowFactViewInterstitial();
+    await maybeShowFactViewInterstitial({ skipThisTime: source === 'notification' });
 
     if (shouldShowReview) {
       // Small delay to avoid interrupting the user experience
