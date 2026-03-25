@@ -31,8 +31,13 @@ export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
       const dbPath = `${FileSystem.Paths.document.uri}SQLite/${DATABASE_NAME}`;
       if (__DEV__) console.log('📁 Database path:', dbPath);
 
-      // Enable foreign key constraints for CASCADE deletes to work
-      await database.execAsync('PRAGMA foreign_keys = ON;');
+      // WAL mode allows concurrent reads during writes and persists to the
+      // database file. busy_timeout makes SQLite retry for up to 5s instead
+      // of immediately failing with SQLITE_BUSY on lock contention.
+      // foreign_keys enables CASCADE deletes.
+      await database.execAsync(
+        'PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000; PRAGMA foreign_keys = ON;'
+      );
 
       // Set the db variable before running schema
       db = database;
