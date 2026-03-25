@@ -10,8 +10,8 @@ import {
 import Constants from 'expo-constants';
 
 import { AD_KEYWORDS, ADS_ENABLED, NATIVE_ADS } from '../config/app';
+import { usePremium } from '../contexts/PremiumContext';
 import { shouldRequestNonPersonalizedAdsOnly } from '../services/adsConsent';
-import { shouldShowAds } from '../services/premiumState';
 
 const getNativeAdUnitId = (): string => {
   const config = Constants.expoConfig?.extra;
@@ -32,6 +32,7 @@ interface UseNativeAdOptions {
 
 export function useNativeAd(options: UseNativeAdOptions = {}) {
   const { skip = false, aspectRatio = NativeMediaAspectRatio.LANDSCAPE, requestKey } = options;
+  const { isPremium } = usePremium();
   const [nativeAd, setNativeAd] = useState<NativeAd | null>(null);
   const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<Error | null>(null);
@@ -39,8 +40,9 @@ export function useNativeAd(options: UseNativeAdOptions = {}) {
 
   useEffect(() => {
     // Don't load native ads if skipped, ads are disabled, or user is premium
-    if (skip || !ADS_ENABLED || !NATIVE_ADS.ACTIVE || !shouldShowAds()) {
+    if (skip || !ADS_ENABLED || !NATIVE_ADS.ACTIVE || isPremium) {
       setIsLoading(false);
+      setNativeAd(null);
       return;
     }
 
@@ -90,7 +92,7 @@ export function useNativeAd(options: UseNativeAdOptions = {}) {
         nativeAdRef.current = null;
       }
     };
-  }, [requestKey]);
+  }, [requestKey, isPremium]);
 
   return { nativeAd, isLoading, error };
 }
