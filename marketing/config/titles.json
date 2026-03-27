@@ -1,34 +1,34 @@
 {
   "screenshots": {
     "01_home": {
-      "en": "Discover Fun Facts\nEvery Day",
-      "de": "Entdecke spannende\nFakten jeden Tag",
-      "es": "Datos curiosos\ncada día",
-      "fr": "Découvrez des faits\namusants chaque jour",
-      "ja": "毎日おもしろい\n雑学を発見",
-      "ko": "매일 재미있는\n상식을 발견하세요",
-      "tr": "Her gün eğlenceli\nbilgiler keşfet",
+      "en": "Discover Real Facts\nEvery Day",
+      "de": "Entdecke echte Fakten\njeden Tag",
+      "es": "Descubre datos reales\ncada día",
+      "fr": "Découvrez des faits\nréels chaque jour",
+      "ja": "毎日リアルな\n雑学を発見",
+      "ko": "매일 실제\n상식을 발견하세요",
+      "tr": "Her gün gerçek\nbilgiler keşfet",
       "zh": "每天发现\n有趣的冷知识"
     },
     "02_fact_detail": {
-      "en": "Amazing Stories\nIn Every Fact",
-      "de": "Tolle Geschichten\nin jedem Fakt",
-      "es": "Historias increíbles\nen cada dato",
-      "fr": "Histoires incroyables\ndans chaque fait",
-      "ja": "驚きの物語が\nすべての事実に",
-      "ko": "모든 사실 속\n놀라운 이야기",
-      "tr": "Her bilgide\nşaşırtıcı hikayeler",
-      "zh": "每个事实中\n令人惊叹的故事"
+      "en": "Sourced From Real\nNews & Articles",
+      "de": "Aus echten Nachrichten\n& Artikeln",
+      "es": "De noticias y\nartículos reales",
+      "fr": "Tirés de vraies\nactualités & articles",
+      "ja": "実際のニュースや\n記事が情報源",
+      "ko": "실제 뉴스와\n기사에서 엄선",
+      "tr": "Gerçek haberler ve\nmakalelerden",
+      "zh": "来自真实新闻\n和文章"
     },
     "03_story": {
-      "en": "Did You Know?\nMind-Blowing Facts",
-      "de": "Wusstest du das?\nVerblüffende Fakten",
-      "es": "¿Sabías que...?\nDatos sorprendentes",
-      "fr": "Le saviez-vous ?\nFaits incroyables",
-      "ja": "知ってた？\n驚きの豆知識",
-      "ko": "알고 있었나요?\n놀라운 상식",
-      "tr": "Biliyor muydun?\nŞaşırtıcı gerçekler",
-      "zh": "你知道吗？\n令人惊叹的冷知识"
+      "en": "Did You Know?\nFascinating Insights",
+      "de": "Wusstest du das?\nFaszinierende Einblicke",
+      "es": "¿Sabías que...?\nDatos fascinantes",
+      "fr": "Le saviez-vous ?\nAperçus fascinants",
+      "ja": "知ってた？\n興味深い洞察",
+      "ko": "알고 있었나요?\n흥미로운 통찰",
+      "tr": "Biliyor muydun?\nİlginç bilgiler",
+      "zh": "你知道吗？\n引人入胜的洞察"
     },
     "04_discover": {
       "en": "Explore Science,\nHistory & More",
@@ -51,34 +51,34 @@
       "zh": "满足好奇心的\n主题"
     },
     "06_trivia": {
-      "en": "Brain Quiz:\nTest Your IQ",
-      "de": "Gehirn-Quiz:\nTeste deinen IQ",
-      "es": "Quiz Mental:\nPon a prueba tu IQ",
-      "fr": "Quiz Cérébral :\nTestez votre QI",
-      "ja": "脳トレクイズ：\nIQを試そう",
-      "ko": "두뇌 퀴즈:\nIQ를 테스트하세요",
-      "tr": "Beyin Quizi:\nIQ'nu test et",
-      "zh": "脑力问答：\n测试你的IQ"
+      "en": "Knowledge Quiz:\nTest What You Know",
+      "de": "Wissens-Quiz:\nTeste dein Wissen",
+      "es": "Quiz de Conocimiento:\nPrueba lo que sabes",
+      "fr": "Quiz Connaissances :\nTestez votre savoir",
+      "ja": "知識クイズ：\n学んだことをテスト",
+      "ko": "지식 퀴즈:\n배운 것을 테스트",
+      "tr": "Bilgi Quizi:\nNe öğrendin, göster",
+      "zh": "知识问答：\n测试你的所学"
     },
     "07_trivia_game": {
-      "en": "Fun Trivia\nGame Modes",
-      "de": "Unterhaltsame\nQuiz-Spielmodi",
-      "es": "Modos de\ntrivia divertidos",
-      "fr": "Modes de\njeu trivia amusants",
-      "ja": "楽しい\nトリビアモード",
-      "ko": "재미있는\n트리비아 모드",
-      "tr": "Eğlenceli\ntrivia oyun modları",
-      "zh": "趣味\n问答游戏模式"
+      "en": "3 Trivia Modes\nTo Challenge You",
+      "de": "3 Trivia-Modi\ndie dich fordern",
+      "es": "3 modos de trivia\npara desafiarte",
+      "fr": "3 modes trivia\npour vous défier",
+      "ja": "3つのトリビアモードで\n挑戦しよう",
+      "ko": "3가지 트리비아\n모드로 도전",
+      "tr": "3 trivia modu\nseni bekliyor",
+      "zh": "3种问答模式\n挑战你自己"
     },
     "08_trivia_performance": {
-      "en": "Track Your Streak\n& Get Smarter",
-      "de": "Verfolge deine Serie\n& werde schlauer",
-      "es": "Sigue tu racha\ny sé más listo",
-      "fr": "Suivez votre série\n& progressez",
-      "ja": "連続記録を追跡して\nもっと賢くなろう",
-      "ko": "연속 기록을 추적하고\n더 똑똑해지세요",
-      "tr": "Serini takip et\nve daha zeki ol",
-      "zh": "追踪连续记录\n变得更聪明"
+      "en": "Track Your Streak\n& Keep Learning",
+      "de": "Verfolge deine Serie\n& lerne weiter",
+      "es": "Sigue tu racha\ny sigue aprendiendo",
+      "fr": "Suivez votre série\n& apprenez chaque jour",
+      "ja": "連続記録を追跡して\n学び続けよう",
+      "ko": "연속 기록을 추적하고\n계속 배우세요",
+      "tr": "Serini takip et\nve öğrenmeye devam",
+      "zh": "追踪连续记录\n持续学习"
     },
     "09_trivia_results": {
       "en": "Earn Badges &\nCelebrate Wins",

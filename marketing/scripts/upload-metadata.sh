@@ -348,6 +348,106 @@ get_or_create_localization() {
     echo "$loc_id"
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# App Store Connect API - App Info Operations (name & subtitle)
+# ─────────────────────────────────────────────────────────────────────────────
+
+get_app_info_id() {
+    local app_id="$1"
+    local response
+    response=$(asc_api GET "/apps/$app_id/appInfos")
+
+    # Prefer the editable appInfo (PREPARE_FOR_SUBMISSION) over the live one
+    local app_info_id
+    app_info_id=$(echo "$response" | jq -r '.data[] | select(.attributes.appStoreState == "PREPARE_FOR_SUBMISSION" or .attributes.state == "PREPARE_FOR_SUBMISSION") | .id' | head -1)
+
+    if [ -n "$app_info_id" ]; then
+        echo "$app_info_id"
+        return 0
+    fi
+
+    # Fall back to first available appInfo
+    echo "$response" | jq -r '.data[0].id // empty'
+}
+
+get_or_create_app_info_localization() {
+    local app_info_id="$1"
+    local locale="$2"
+
+    local response
+    response=$(asc_api GET "/appInfos/$app_info_id/appInfoLocalizations")
+
+    local loc_id
+    loc_id=$(echo "$response" | jq -r ".data[] | select(.attributes.locale == \"$locale\") | .id" | head -1)
+
+    if [ -n "$loc_id" ]; then
+        echo "$loc_id"
+        return 0
+    fi
+
+    echo "  Creating new app info localization for $locale..." >&2
+    local create_data='{
+        "data": {
+            "type": "appInfoLocalizations",
+            "attributes": {
+                "locale": "'"$locale"'"
+            },
+            "relationships": {
+                "appInfo": {
+                    "data": {
+                        "type": "appInfos",
+                        "id": "'"$app_info_id"'"
+                    }
+                }
+            }
+        }
+    }'
+
+    response=$(asc_api POST "/appInfoLocalizations" "$create_data")
+
+    local error_msg
+    error_msg=$(echo "$response" | jq -r '.errors[0].detail // .errors[0].title // empty' 2>/dev/null)
+    if [ -n "$error_msg" ]; then
+        echo "  Error creating app info localization: $error_msg" >&2
+    fi
+
+    loc_id=$(echo "$response" | jq -r '.data.id // empty')
+    echo "$loc_id"
+}
+
+update_app_info_localization() {
+    local loc_id="$1"
+    local name="$2"
+    local subtitle="$3"
+
+    local update_data
+    update_data=$(jq -n \
+        --arg name "$name" \
+        --arg subtitle "$subtitle" \
+        '{
+            "data": {
+                "type": "appInfoLocalizations",
+                "id": "'"$loc_id"'",
+                "attributes": {
+                    "name": $name,
+                    "subtitle": $subtitle
+                }
+            }
+        }')
+
+    local response
+    response=$(asc_api PATCH "/appInfoLocalizations/$loc_id" "$update_data")
+
+    local error_msg
+    error_msg=$(echo "$response" | jq -r '.errors[0].detail // .errors[0].title // empty' 2>/dev/null)
+    if [ -n "$error_msg" ]; then
+        echo "    Error: $error_msg" >&2
+        return 1
+    fi
+
+    return 0
+}
+
 # Update app store version localization metadata
 update_version_localization() {
     local loc_id="$1"
@@ -555,7 +655,16 @@ upload_ios_metadata() {
         return 1
     fi
     success "Found editable version: $version_id"
-    
+
+    # Get app info ID (for name & subtitle)
+    local app_info_id
+    app_info_id=$(get_app_info_id "$app_id")
+    if [ -z "$app_info_id" ]; then
+        error "Could not find app info for app: $app_id"
+        return 1
+    fi
+    success "Found app info: $app_info_id"
+
     echo ""
     info "Uploading metadata..."
     
@@ -578,22 +687,43 @@ upload_ios_metadata() {
             continue
         fi
         
-        local description keywords whats_new promo_text
+        local name subtitle description keywords whats_new promo_text
+        name=$(echo "$metadata" | jq -r '.name // empty')
+        subtitle=$(echo "$metadata" | jq -r '.subtitle // empty')
         description=$(echo "$metadata" | jq -r '.description // empty')
         keywords=$(echo "$metadata" | jq -r '.keywords // empty')
         whats_new=$(echo "$metadata" | jq -r '.whatsNew // empty')
         promo_text=$(echo "$metadata" | jq -r '.promotionalText // empty')
 
+        # Update app info localization (name & subtitle)
+        local app_info_loc_id
+        app_info_loc_id=$(get_or_create_app_info_localization "$app_info_id" "$store_locale")
+
+        if [ -z "$app_info_loc_id" ]; then
+            error "  Could not get/create app info localization for $store_locale"
+            ((failed++))
+            continue
+        fi
+
+        info "  Updating app name & subtitle..."
+        if update_app_info_localization "$app_info_loc_id" "$name" "$subtitle"; then
+            success "    Name: $name"
+            success "    Subtitle: $subtitle"
+        else
+            error "  Failed to update name & subtitle for $store_locale"
+            ((failed++))
+        fi
+
         # Update version localization (description, keywords, etc.)
         local loc_id
         loc_id=$(get_or_create_localization "$version_id" "$store_locale")
-        
+
         if [ -z "$loc_id" ]; then
             error "  Could not get/create localization for $store_locale"
             ((failed++))
             continue
         fi
-        
+
         info "  Updating version metadata..."
         if update_version_localization "$loc_id" "$description" "$keywords" "$whats_new" "$promo_text"; then
             success "    Description: $(echo "$description" | head -c 50)..."
