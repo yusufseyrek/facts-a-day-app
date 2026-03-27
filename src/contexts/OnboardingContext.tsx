@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 
 import { markFeedRefreshPending } from '../services/contentRefresh';
 import * as onboardingService from '../services/onboarding';
@@ -80,6 +80,13 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
   });
 
   const [lastLocaleUsed, setLastLocaleUsed] = useState<SupportedLocale | null>(null);
+
+  // Promise-based download completion tracking (replaces polling)
+  const downloadCompleteRef = useRef<{
+    promise: Promise<void>;
+    resolve: () => void;
+    reject: (error: Error) => void;
+  } | null>(null);
 
   // ===== Selection Methods =====
 
@@ -174,6 +181,15 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
         return false;
       }
 
+      // Create a promise that waitForDownloadComplete can await
+      let resolveDownload: () => void;
+      let rejectDownload: (error: Error) => void;
+      const promise = new Promise<void>((res, rej) => {
+        resolveDownload = res;
+        rejectDownload = rej;
+      });
+      downloadCompleteRef.current = { promise, resolve: resolveDownload!, reject: rejectDownload! };
+
       setState((prev) => ({
         ...prev,
         isDownloadingFacts: true,
@@ -206,13 +222,16 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
             },
             downloadError: null,
           }));
+          downloadCompleteRef.current?.resolve();
           return true;
         } else {
+          const errorMsg = result.error || 'Failed to download facts';
           setState((prev) => ({
             ...prev,
             isDownloadingFacts: false,
-            downloadError: result.error || 'Failed to download facts',
+            downloadError: errorMsg,
           }));
+          downloadCompleteRef.current?.reject(new Error(errorMsg));
           return false;
         }
       } catch (error) {
@@ -222,6 +241,7 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
           isDownloadingFacts: false,
           downloadError: errorMessage,
         }));
+        downloadCompleteRef.current?.reject(new Error(errorMessage));
         return false;
       }
     },
@@ -229,33 +249,15 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
   );
 
   const waitForDownloadComplete = useCallback(async (): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      // If not downloading, check for errors and return immediately
-      if (!state.isDownloadingFacts) {
-        if (state.downloadError) {
-          reject(new Error(state.downloadError));
-        } else {
-          resolve();
-        }
-        return;
-      }
-
-      // Poll every 100ms until download completes
-      const checkInterval = setInterval(() => {
-        setState((currentState) => {
-          if (!currentState.isDownloadingFacts) {
-            clearInterval(checkInterval);
-            if (currentState.downloadError) {
-              reject(new Error(currentState.downloadError));
-            } else {
-              resolve();
-            }
-          }
-          return currentState;
-        });
-      }, 100);
-    });
-  }, [state.isDownloadingFacts, state.downloadError]);
+    // If a download promise exists, await it
+    if (downloadCompleteRef.current) {
+      return downloadCompleteRef.current.promise;
+    }
+    // No download in progress or already completed
+    if (state.downloadError) {
+      throw new Error(state.downloadError);
+    }
+  }, [state.downloadError]);
 
   // ===== Complete Onboarding =====
 

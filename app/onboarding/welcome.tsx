@@ -232,7 +232,7 @@ export default function WelcomeScreen() {
         width: screenWidth,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: spacing.md,
+        paddingBottom: spacing.lg,
       }}
     >
       <FactImageCard item={item} size={cardSize} theme={theme} />
@@ -268,8 +268,23 @@ export default function WelcomeScreen() {
           </Animated.View>
         </YStack>
 
-        {/* Center content: card carousel + dots + notification mockup */}
-        <YStack flex={1} justifyContent="center" gap={spacing.xl}>
+        {/* Center content: notification mockup + card carousel + dots */}
+        <YStack>
+          {/* Notification mockup */}
+          <Animated.View
+            style={{
+              height: notifFixedHeight,
+              opacity: notifAnim,
+              transform: [{ translateY: notifSlide }],
+            }}
+          >
+            <MockNotificationCard
+              appName={t('appName')}
+              timeLabel={mockTimeLabel}
+              factText={facts[activeIndex]?.title ?? facts[0].title}
+            />
+          </Animated.View>
+
           {/* Carousel */}
           <Animated.View
             style={{
@@ -314,21 +329,6 @@ export default function WelcomeScreen() {
                 />
               ))}
             </XStack>
-          </Animated.View>
-
-          {/* Notification mockup */}
-          <Animated.View
-            style={{
-              height: notifFixedHeight,
-              opacity: notifAnim,
-              transform: [{ translateY: notifSlide }],
-            }}
-          >
-            <MockNotificationCard
-              appName={t('appName')}
-              timeLabel={mockTimeLabel}
-              factText={facts[activeIndex]?.title ?? facts[0].title}
-            />
           </Animated.View>
         </YStack>
 

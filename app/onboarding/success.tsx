@@ -15,14 +15,14 @@ import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { completeConsentFlow, isConsentRequired } from '../../src/services/ads';
 import { Screens, trackOnboardingComplete, trackScreenView } from '../../src/services/analytics';
+import { consumeFeedRefreshPending } from '../../src/services/contentRefresh';
+import { setOnboardingPreloadedFeed } from '../../src/contexts/PreloadedDataContext';
 import { loadDailyFeedSections } from '../../src/services/dailyFeed';
 import * as database from '../../src/services/database';
 import * as notificationService from '../../src/services/notifications';
 import { getNotificationTimes } from '../../src/services/onboarding';
 import { getNeonColors, hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
-
-type ScreenState = 'loading' | 'animation' | 'consent';
 
 const Container = styled(SafeAreaView, {
   flex: 1,
@@ -225,7 +225,8 @@ const NAVIGATE_DELAY_MS = 3000;
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { screenWidth, typography, iconSizes, spacing, radius, borderWidths } = useResponsive();
+  const { screenWidth, typography, iconSizes, spacing, radius, borderWidths, media } =
+    useResponsive();
   const router = useRouter();
   const {
     completeOnboarding,
@@ -235,12 +236,12 @@ export default function OnboardingSuccessScreen() {
     waitForDownloadComplete,
   } = useOnboarding();
 
-  const [screenState, setScreenState] = useState<ScreenState>('loading');
-  const [consentChecked, setConsentChecked] = useState(false);
+  const [showConsent, setShowConsent] = useState(false);
+  const [consentDone, setConsentDone] = useState(false);
   const [consentLoading, setConsentLoading] = useState(false);
   const [showSlowMessage, setShowSlowMessage] = useState(false);
-  const [isFinishing, setIsFinishing] = useState(false);
   const [flowComplete, setFlowComplete] = useState(false);
+  const [overallProgress, setOverallProgress] = useState(0);
 
   // Responsive icon container size — derives from heroLg icon + padding
   const iconContainerSize = iconSizes.heroLg * 2 + spacing.md;
@@ -273,53 +274,102 @@ export default function OnboardingSuccessScreen() {
     runFlow();
   }, []);
 
+  const consentResolveRef = useRef<(() => void) | null>(null);
+
   const runFlow = async () => {
+    // Step 1: Handle consent first (download continues in background)
     try {
-      // Step 1: Handle consent FIRST (before animation)
       await handleConsent();
-
-      // Step 2: Consent done — switch to animation screen
-      setConsentChecked(true);
-      setScreenState('animation');
-
-      // Step 3: Wait for download if still in progress
-      if (isDownloadingFacts) {
-        await waitForDownloadComplete();
-      }
-
-      setFlowComplete(true);
-
-      // Step 4: Finish onboarding
-      await finishOnboarding();
     } catch (error) {
-      console.error('Error in success flow:', error);
-      setConsentChecked(true);
-      setScreenState('animation');
-      setFlowComplete(true);
-      await finishOnboarding();
+      console.error('Error in consent:', error);
     }
+
+    // Step 2: Animation is now visible — start the minimum display timer
+    const animationTimer = new Promise<void>((resolve) => setTimeout(resolve, NAVIGATE_DELAY_MS));
+
+    // Wait for download if still in progress (progress bar + slow message shown during this)
+    const downloadAndSave = (async () => {
+      try {
+        if (isDownloadingFacts) {
+          await waitForDownloadComplete();
+        }
+        setOverallProgress(0.85);
+        await completeOnboarding();
+        setOverallProgress(0.95);
+      } catch (error) {
+        console.error('Error completing onboarding:', error);
+        try {
+          await completeOnboarding();
+        } catch {}
+      }
+    })();
+
+    // Pre-load home screen data as soon as download + save finishes
+    const homePreload = downloadAndSave.then(async () => {
+      try {
+        const [feedSections] = await Promise.all([
+          loadDailyFeedSections(locale, true),
+          database.getAllCategories(),
+          database.getUnseenStoryStatus(selectedCategories, locale),
+        ]);
+        // Store feed data at module level so home screen can consume it synchronously
+        setOnboardingPreloadedFeed(feedSections);
+        // Clear the flag so home screen doesn't re-query the DB
+        consumeFeedRefreshPending();
+      } catch (error) {
+        console.error('Failed to pre-load home screen data:', error);
+      }
+    });
+
+    // Fire-and-forget after download + save
+    downloadAndSave.then(() => {
+      notificationService.ensureNotificationSchedule(locale, 'cold_start').catch((error) => {
+        console.error('Post-onboarding notification sync failed:', error);
+      });
+
+      getNotificationTimes().then((notificationTimes) => {
+        trackOnboardingComplete({
+          locale,
+          categoriesCount: selectedCategories.length,
+          notificationsEnabled: notificationTimes !== null && notificationTimes.length > 0,
+        });
+      });
+    });
+
+    // Wait for animation timer, download+save, AND home preload
+    await Promise.all([animationTimer, homePreload]);
+
+    setFlowComplete(true);
+    setOverallProgress(1);
+
+    // Brief pause to let home screen render with preloaded data
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    router.replace('/');
   };
 
   const handleConsent = async () => {
-    if (!ADS_ENABLED) return;
+    if (!ADS_ENABLED) {
+      setConsentDone(true);
+      return;
+    }
 
     try {
       const gdprRequired = await isConsentRequired();
 
       if (gdprRequired) {
-        setScreenState('consent');
+        setShowConsent(true);
         await new Promise<void>((resolve) => {
           consentResolveRef.current = resolve;
         });
+        setShowConsent(false);
       } else {
         await completeConsentFlow();
       }
     } catch (error) {
       console.error('Error checking consent:', error);
     }
+    setConsentDone(true);
   };
-
-  const consentResolveRef = useRef<(() => void) | null>(null);
 
   const handleConsentContinue = async () => {
     setConsentLoading(true);
@@ -331,55 +381,11 @@ export default function OnboardingSuccessScreen() {
     consentResolveRef.current?.();
   };
 
-  const finishOnboarding = async () => {
-    if (isFinishing) return;
-    setIsFinishing(true);
-
-    try {
-      await completeOnboarding();
-
-      // Fire-and-forget: sync notifications to OS
-      notificationService.ensureNotificationSchedule(locale, 'cold_start').catch((error) => {
-        console.error('Post-onboarding notification sync failed:', error);
-      });
-
-      // Track completion
-      const notificationTimes = await getNotificationTimes();
-      const notificationsEnabled = notificationTimes !== null && notificationTimes.length > 0;
-      trackOnboardingComplete({
-        locale,
-        categoriesCount: selectedCategories.length,
-        notificationsEnabled,
-      });
-
-      // Pre-load home screen data in background while animation plays
-      Promise.all([
-        loadDailyFeedSections(locale, true),
-        database.getAllCategories(),
-        database.getUnseenStoryStatus(selectedCategories, locale),
-      ]).catch((error) => {
-        console.error('Failed to pre-load home screen data:', error);
-      });
-
-      // Navigate to main app after showing success animation
-      setTimeout(() => {
-        router.replace('/');
-      }, NAVIGATE_DELAY_MS);
-    } catch (error) {
-      console.error('Error completing onboarding:', error);
-      setTimeout(() => {
-        router.replace('/');
-      }, NAVIGATE_DELAY_MS);
-    }
-  };
-
   // === Animation values ===
   const iconDropAnim = useRef(new Animated.Value(0)).current;
   const iconPulseAnim = useRef(new Animated.Value(1)).current;
   const mainIconRotate = useRef(new Animated.Value(0)).current;
   const mainIconOpacity = useRef(new Animated.Value(0)).current;
-  const consentOpacity = useRef(new Animated.Value(1)).current;
-
   const titleWords = t('allSet').split(' ');
   const wordAnimations = useRef(
     titleWords.map(() => ({
@@ -394,12 +400,9 @@ export default function OnboardingSuccessScreen() {
   const progressOpacity = useRef(new Animated.Value(0)).current;
   const slowMessageOpacity = useRef(new Animated.Value(0)).current;
 
-  // Start animations only when transitioning TO animation (not on initial mount)
-  const animationsStarted = useRef(false);
+  // Start animations after consent flow completes (or immediately if no consent needed)
   useEffect(() => {
-    if (screenState !== 'animation' || animationsStarted.current) return;
-    if (!consentChecked) return;
-    animationsStarted.current = true;
+    if (!consentDone) return;
 
     Animated.sequence([
       // Phase 1: Icon drop with bounce
@@ -491,7 +494,7 @@ export default function OnboardingSuccessScreen() {
         }),
       ])
     ).start();
-  }, [screenState, consentChecked]);
+  }, [consentDone]);
 
   // Animate slow message in/out
   useEffect(() => {
@@ -525,54 +528,58 @@ export default function OnboardingSuccessScreen() {
   const lightColors = [hexColors.light.background, '#E0F7FF', '#D0EFFF'] as const;
   const gradientColors = theme === 'dark' ? darkColors : lightColors;
 
-  // Download progress for the progress bar (0–1)
-  const currentProgress = flowComplete ? 1 : (downloadProgress?.percentage ?? 0) / 100;
+  // Composite progress: 0–80% download, 80–95% onboarding save, 95–100% home preload
+  const downloadPortion = (downloadProgress?.percentage ?? 0) / 100;
+  const currentProgress = flowComplete ? 1 : Math.max(downloadPortion * 0.8, overallProgress);
 
-  // Consent screen
+  // Consent screen — shown as full screen before animation
   const renderConsentScreen = () => (
-    <Animated.View style={{ flex: 1, opacity: consentOpacity }}>
-      <YStack
-        padding={spacing.xl}
-        gap={spacing.lg}
-        flex={1}
-        justifyContent="center"
-        alignItems="center"
-      >
-        <YStack alignItems="center" gap={spacing.lg} paddingHorizontal={spacing.md}>
-          <YStack
-            width={consentIconSize}
-            height={consentIconSize}
-            borderRadius={radius.full}
-            backgroundColor={theme === 'dark' ? '$primaryLight' : '#D4F1FF'}
-            alignItems="center"
-            justifyContent="center"
-            marginBottom={spacing.md}
-          >
-            <Gift
-              size={iconSizes.hero}
+    <YStack
+      padding={spacing.xl}
+      gap={spacing.lg}
+      flex={1}
+      justifyContent="center"
+      alignItems="center"
+    >
+      <YStack alignItems="center" gap={spacing.lg} paddingHorizontal={spacing.md}>
+        <YStack
+          width={consentIconSize}
+          height={consentIconSize}
+          borderRadius={radius.full}
+          backgroundColor={theme === 'dark' ? '$primaryLight' : '#D4F1FF'}
+          alignItems="center"
+          justifyContent="center"
+          marginBottom={spacing.md}
+        >
+          <Gift
+            size={iconSizes.hero}
+            color={theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.neonCyan}
+            strokeWidth={2}
+          />
+        </YStack>
+        <Text.Headline textAlign="center" color="$text" letterSpacing={-0.5}>
+          {t('adsConsentTitle')}
+        </Text.Headline>
+        <Text.Body textAlign="center" color="$textSecondary">
+          {t('adsConsentMessage')}
+        </Text.Body>
+        <YStack
+          width="100%"
+          paddingTop={spacing.lg}
+          justifyContent="center"
+          height={media.buttonHeight}
+        >
+          {consentLoading ? (
+            <ActivityIndicator
+              size="large"
               color={theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.neonCyan}
-              strokeWidth={2}
             />
-          </YStack>
-          <Text.Headline textAlign="center" color="$text" letterSpacing={-0.5}>
-            {t('adsConsentTitle')}
-          </Text.Headline>
-          <Text.Body textAlign="center" color="$textSecondary">
-            {t('adsConsentMessage')}
-          </Text.Body>
-          <YStack width="100%" paddingTop={spacing.lg}>
-            {consentLoading ? (
-              <ActivityIndicator
-                size="large"
-                color={theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.neonCyan}
-              />
-            ) : (
-              <Button onPress={handleConsentContinue}>{t('adsConsentButton')}</Button>
-            )}
-          </YStack>
+          ) : (
+            <Button onPress={handleConsentContinue}>{t('adsConsentButton')}</Button>
+          )}
         </YStack>
       </YStack>
-    </Animated.View>
+    </YStack>
   );
 
   // Animation screen (progress bar reflects download)
@@ -725,8 +732,7 @@ export default function OnboardingSuccessScreen() {
       >
         <Container>
           <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-          {screenState === 'consent' && renderConsentScreen()}
-          {screenState === 'animation' && renderAnimationScreen()}
+          {showConsent ? renderConsentScreen() : consentDone && renderAnimationScreen()}
         </Container>
       </LinearGradient>
     </Animated.View>

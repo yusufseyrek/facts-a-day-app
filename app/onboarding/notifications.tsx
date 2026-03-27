@@ -38,8 +38,6 @@ const Header = styled(YStack, {
 });
 
 const IconContainer = styled(XStack, {
-  width: 120,
-  height: 120,
   borderRadius: 9999,
   backgroundColor: '$primaryLight',
   alignItems: 'center',
@@ -237,15 +235,18 @@ export default function NotificationsScreen() {
     <Container>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <ContentContainer paddingHorizontal={spacing.lg} paddingTop={spacing.lg} gap={spacing.md}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <Animated.View
-            style={{
-              opacity: progressOpacity,
-              transform: [{ translateY: progressTranslateY }],
-            }}
-          >
-            <ProgressIndicator currentStep={3} totalSteps={3} />
-          </Animated.View>
+        <Animated.View
+          style={{
+            opacity: progressOpacity,
+            transform: [{ translateY: progressTranslateY }],
+          }}
+        >
+          <ProgressIndicator currentStep={3} totalSteps={3} />
+        </Animated.View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+        >
           <YStack
             gap={spacing.md}
             paddingBottom={spacing.xl}
@@ -259,8 +260,11 @@ export default function NotificationsScreen() {
                   transform: [{ scale: iconScale }, { rotate: bellRotate }],
                 }}
               >
-                <IconContainer>
-                  <Bell size={iconSizes.heroLg} color={hexColors.light.primary} />
+                <IconContainer
+                  width={iconSizes.hero + spacing.xl}
+                  height={iconSizes.hero + spacing.xl}
+                >
+                  <Bell size={iconSizes.hero} color={hexColors.light.primary} />
                 </IconContainer>
               </Animated.View>
 
@@ -305,13 +309,7 @@ export default function NotificationsScreen() {
           }}
         >
           <YStack gap={spacing.md} alignItems="center">
-            <Button
-              onPress={handleEnableNotifications}
-              loading={isScheduling}
-              disabled={isScheduling}
-            >
-              {isScheduling ? t('gettingAppReady') : t('enableNotifications')}
-            </Button>
+            <Button onPress={handleEnableNotifications}>{t('enableNotifications')}</Button>
             <Pressable
               disabled={isScheduling}
               onPress={proceedWithoutNotifications}

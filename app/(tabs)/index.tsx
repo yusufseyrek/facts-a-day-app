@@ -41,6 +41,7 @@ import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { CompactFactCard } from '../../src/components/CompactFactCard';
 import { ADS_ENABLED, HOME_FEED, LAYOUT, NATIVE_ADS, PAYWALL_PROMPT } from '../../src/config/app';
 import {
+  consumeOnboardingPreloadedFeed,
   signalFeedLoaded,
   usePreloadedData,
   usePremium,
@@ -336,12 +337,15 @@ function HomeScreen() {
   const loadFeedSections = useCallback(
     async (onlyIfEmpty?: boolean, forceRefresh?: boolean) => {
       try {
+        // Check for data pre-loaded during onboarding (synchronous, no DB hit)
+        const preloaded = consumeOnboardingPreloadedFeed();
         const {
           freshFacts: fresh,
           worthKnowing,
           onThisDay,
           onThisDayIsWeekFallback: isWeek,
-        } = await loadDailyFeedSections(locale, forceRefresh);
+        } = preloaded ?? await loadDailyFeedSections(locale, forceRefresh);
+
         if (onlyIfEmpty) {
           setFreshFacts((prev) => (prev.length > 0 ? prev : fresh));
           setWorthKnowingFacts((prev) => (prev.length > 0 ? prev : worthKnowing));

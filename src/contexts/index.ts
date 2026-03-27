@@ -1,9 +1,11 @@
 export { BadgeToastProvider } from './BadgeToastContext';
 export { OnboardingProvider, useOnboarding } from './OnboardingContext';
 export {
+  consumeOnboardingPreloadedFeed,
   PreloadedDataProvider,
   setFeedLoadPending,
   setLocaleRefreshPending,
+  setOnboardingPreloadedFeed,
   setPreloadedFactsBeforeMount,
   setPreloadedRecommendationsBeforeMount,
   signalFeedLoaded,
