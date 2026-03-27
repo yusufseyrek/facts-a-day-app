@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Platform, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -39,13 +39,26 @@ export function SplashOverlay({ onHidden }: SplashOverlayProps) {
     });
   }, []);
 
-  // When image is laid out, wait then hide native splash
-  const handleImageLayout = useCallback(() => {
+  // When image is loaded and decoded, hide native splash
+  const handleImageLoaded = useCallback(() => {
     if (!imageReady) {
-      global.requestAnimationFrame(() => {
+      const hideNativeSplash = () => {
         SplashScreen.hide();
         setImageReady(true);
-      });
+      };
+
+      if (Platform.OS === 'android') {
+        // Android needs extra frames after decode for GPU compositing
+        global.requestAnimationFrame(() => {
+          global.requestAnimationFrame(() => {
+            hideNativeSplash();
+          });
+        });
+      } else {
+        global.requestAnimationFrame(() => {
+          hideNativeSplash();
+        });
+      }
     }
   }, [imageReady]);
 
@@ -76,7 +89,7 @@ export function SplashOverlay({ onHidden }: SplashOverlayProps) {
           source={splashIcon}
           style={styles.logo}
           resizeMode="contain"
-          onLayout={handleImageLayout}
+          onLoad={handleImageLoaded}
         />
       </View>
     </Animated.View>
