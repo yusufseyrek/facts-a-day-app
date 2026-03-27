@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import mobileAds, {
   AdsConsent,
+  AdsConsentDebugGeography,
   AdsConsentStatus,
   MaxAdContentRating,
 } from 'react-native-google-mobile-ads';
@@ -31,7 +32,9 @@ export const isConsentRequired = async (): Promise<boolean> => {
 
   try {
     // Request info update to get current consent status
-    const consentInfo = await AdsConsent.requestInfoUpdate();
+    const consentInfo = await AdsConsent.requestInfoUpdate({
+      debugGeography: __DEV__ ? AdsConsentDebugGeography.EEA : AdsConsentDebugGeography.DISABLED,
+    });
     if (__DEV__) console.log('Consent info:', consentInfo);
 
     // Check if GDPR specifically applies (user is in EEA/UK)
@@ -64,7 +67,9 @@ export const requestGDPRConsent = async (): Promise<{
     // - Requests consent info update
     // - Shows the consent form if required
     // - Returns the final consent status
-    const consentInfo = await AdsConsent.gatherConsent();
+    const consentInfo = await AdsConsent.gatherConsent({
+      debugGeography: __DEV__ ? AdsConsentDebugGeography.EEA : AdsConsentDebugGeography.DISABLED,
+    });
     if (__DEV__) console.log('Consent gathered:', consentInfo);
 
     // Track GDPR consent result
@@ -249,7 +254,8 @@ export const completeConsentFlow = async (): Promise<{
   // Step 1: GDPR Consent
   const gdprResult = await requestGDPRConsent();
   const gdprConsent = gdprResult.canRequestAds;
-  if (__DEV__) console.log('GDPR consent result:', gdprResult.status, 'canRequestAds:', gdprConsent);
+  if (__DEV__)
+    console.log('GDPR consent result:', gdprResult.status, 'canRequestAds:', gdprConsent);
 
   // Step 2: ATT Permission (iOS only)
   const attConsent = await requestATTPermission();

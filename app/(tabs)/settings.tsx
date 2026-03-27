@@ -455,6 +455,9 @@ export default function SettingsPage() {
       // Clear cached images on disk
       const { clearAllCachedImages } = await import('../../src/services/images');
       await clearAllCachedImages();
+      // Reset ad consent state so GDPR/ATT prompts show again
+      const { AdsConsent } = await import('react-native-google-mobile-ads');
+      AdsConsent.reset();
       router.replace('/onboarding');
     } catch (error) {
       console.error('Error resetting onboarding:', error);

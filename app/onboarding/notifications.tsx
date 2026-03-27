@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Easing, ScrollView } from 'react-native';
+import { Alert, Animated, Easing, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
@@ -52,12 +52,13 @@ const TimePickerContainer = styled(YStack, {
   borderColor: '$border',
 });
 
+const SECONDARY_HITSLOP = { top: 12, bottom: 12, left: 24, right: 24 };
+
 export default function NotificationsScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const { notificationTimes, setNotificationTimes, isDownloadingFacts, waitForDownloadComplete } =
-    useOnboarding();
+  const { notificationTimes, setNotificationTimes } = useOnboarding();
   const [isScheduling, setIsScheduling] = useState(false);
 
   // Responsive sizing - hook handles tablet detection
@@ -176,71 +177,29 @@ export default function NotificationsScreen() {
 
       if (status !== 'granted') {
         // Permission denied - proceed without notifications
-        await proceedWithoutNotifications();
+        proceedWithoutNotifications();
         return;
       }
 
-      // Step 2: Permission granted - now start scheduling process
+      // Step 2: Permission granted - schedule notifications (DB-only, OS sync on success screen)
       await scheduleNotificationsAndProceed();
     } catch (error) {
       console.error('Error requesting notification permissions:', error);
       // On error, still allow continuing without notifications
-      await proceedWithoutNotifications();
+      proceedWithoutNotifications();
     }
   };
 
-  const proceedWithoutNotifications = async () => {
-    setIsScheduling(true);
-
-    // Track that notifications were skipped
+  const proceedWithoutNotifications = () => {
     trackOnboardingNotificationsSkipped();
-
-    try {
-      // Wait for facts download to complete if still in progress
-      if (isDownloadingFacts) {
-        await waitForDownloadComplete();
-      }
-
-      // Mark one fact as shown immediately for new users
-      if (__DEV__) console.log('🎯 Calling showImmediateFact with locale:', locale);
-      const immediateFactResult = await notificationService.showImmediateFact(locale);
-      if (immediateFactResult.success) {
-        if (__DEV__)
-          console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
-      } else {
-        console.error('❌ Failed to mark immediate fact:', immediateFactResult.error);
-      }
-
-      // Navigate to success screen without scheduling notifications
-      router.push('/onboarding/success');
-    } catch (error) {
-      console.error('Error proceeding without notifications:', error);
-      setIsScheduling(false);
-      // Still try to proceed even on error
-      router.push('/onboarding/success');
-    }
+    router.push('/onboarding/success');
   };
 
   const scheduleNotificationsAndProceed = async () => {
     setIsScheduling(true);
 
     try {
-      // Wait for facts download to complete if still in progress
-      if (isDownloadingFacts) {
-        await waitForDownloadComplete();
-      }
-
-      // Mark one fact as shown immediately for new users (BEFORE scheduling)
-      if (__DEV__) console.log('🎯 Calling showImmediateFact with locale:', locale);
-      const immediateFactResult = await notificationService.showImmediateFact(locale);
-      if (immediateFactResult.success) {
-        if (__DEV__)
-          console.log('✅ Successfully marked immediate fact:', immediateFactResult.fact?.id);
-      } else {
-        console.error('❌ Failed to mark immediate fact:', immediateFactResult.error);
-      }
-
-      // Schedule notifications starting from tomorrow (today is covered by the immediate fact)
+      // Schedule notifications (DB-only, OS sync happens on success screen)
       const result = await notificationService.ensureNotificationSchedule(locale, 'unknown', {
         forceReschedule: true,
         skipToday: true,
@@ -248,15 +207,10 @@ export default function NotificationsScreen() {
       });
 
       if (result.success) {
-        // Successfully scheduled notifications - navigate to success screen
         if (__DEV__) console.log(`Scheduled ${result.count} notifications`);
-
-        // Track that notifications were enabled
         trackOnboardingNotificationsEnabled(notificationTimes.length);
-
         router.push('/onboarding/success');
       } else {
-        // Failed to schedule notifications - show error
         setIsScheduling(false);
         Alert.alert(t('notificationSchedulingFailed'), t('notificationSchedulingFailedMessage'), [
           { text: t('ok'), style: 'default' },
@@ -282,7 +236,7 @@ export default function NotificationsScreen() {
   return (
     <Container>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <ContentContainer padding={spacing.lg} gap={spacing.md}>
+      <ContentContainer paddingHorizontal={spacing.lg} paddingTop={spacing.lg} gap={spacing.md}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <Animated.View
             style={{
@@ -290,7 +244,7 @@ export default function NotificationsScreen() {
               transform: [{ translateY: progressTranslateY }],
             }}
           >
-            <ProgressIndicator currentStep={2} totalSteps={2} />
+            <ProgressIndicator currentStep={3} totalSteps={3} />
           </Animated.View>
           <YStack
             gap={spacing.md}
@@ -350,13 +304,23 @@ export default function NotificationsScreen() {
             transform: [{ translateY: buttonTranslateY }],
           }}
         >
-          <Button
-            onPress={handleEnableNotifications}
-            loading={isScheduling}
-            disabled={isScheduling}
-          >
-            {isScheduling ? t('gettingAppReady') : t('enableNotifications')}
-          </Button>
+          <YStack gap={spacing.md} alignItems="center">
+            <Button
+              onPress={handleEnableNotifications}
+              loading={isScheduling}
+              disabled={isScheduling}
+            >
+              {isScheduling ? t('gettingAppReady') : t('enableNotifications')}
+            </Button>
+            <Pressable
+              disabled={isScheduling}
+              onPress={proceedWithoutNotifications}
+              hitSlop={SECONDARY_HITSLOP}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            >
+              <Text.Caption color="$textSecondary">{t('maybeLater')}</Text.Caption>
+            </Pressable>
+          </YStack>
         </Animated.View>
       </ContentContainer>
     </Container>

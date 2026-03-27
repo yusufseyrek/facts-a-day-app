@@ -284,7 +284,7 @@ export default function Categories() {
             transform: [{ translateY: headerTranslateY }],
           }}
         >
-          <ProgressIndicator currentStep={1} totalSteps={2} />
+          <ProgressIndicator currentStep={2} totalSteps={3} />
 
           <YStack gap={spacing.sm} style={{ marginTop: spacing.xl }}>
             <Text.Headline>{t('whatInterestsYou')}</Text.Headline>
@@ -382,7 +382,7 @@ export default function Categories() {
             transform: [{ translateY: buttonTranslateY }],
           }}
         >
-          <YStack gap={spacing.md}>
+          <YStack gap={spacing.md} alignItems="center">
             <Button
               onPress={handleContinue}
               disabled={selectedCategories.length < categoryLimits.min}
@@ -390,7 +390,12 @@ export default function Categories() {
               {t('continue')}
             </Button>
             {SUBSCRIPTION.ENABLED && !isPremium && (
-              <Pressable onPress={handleRestorePurchases} disabled={isRestoring}>
+              <Pressable
+                onPress={handleRestorePurchases}
+                disabled={isRestoring}
+                hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
+                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+              >
                 <Text.Caption color="$textSecondary" textAlign="center">
                   {isRestoring ? t('loading') : t('paywallRestore')}
                 </Text.Caption>

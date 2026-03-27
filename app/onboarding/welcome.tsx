@@ -1,0 +1,379 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, FlatList, Platform, StyleSheet, View, ViewToken } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { styled } from '@tamagui/core';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { XStack, YStack } from 'tamagui';
+
+import {
+  Button,
+  FONT_FAMILIES,
+  MockNotificationCard,
+  ProgressIndicator,
+  Text,
+} from '../../src/components';
+import { IMAGE_PLACEHOLDER } from '../../src/config/images';
+import { sampleFacts, type SampleFact } from '../../src/config/sampleFacts';
+import { useOnboarding } from '../../src/contexts';
+import { useTranslation } from '../../src/i18n';
+import { Screens, trackScreenView } from '../../src/services/analytics';
+import { hexColors, useTheme } from '../../src/theme';
+import { useResponsive } from '../../src/utils/useResponsive';
+
+import type { SupportedLocale } from '../../src/i18n';
+
+const Container = styled(SafeAreaView, {
+  flex: 1,
+  backgroundColor: '$background',
+});
+
+// Gradient for text legibility over images
+const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.85)'] as const;
+const gradientLocations = [0.3, 0.55, 1] as const;
+
+const placeholder = { blurhash: IMAGE_PLACEHOLDER.DEFAULT_BLURHASH };
+
+/** Immersive 1:1 fact card with image, gradient, category badge, and title */
+const FactImageCard = ({
+  item,
+  size,
+  theme,
+}: {
+  item: SampleFact;
+  size: number;
+  theme: 'light' | 'dark';
+}) => {
+  const { spacing, radius, config } = useResponsive();
+
+  return (
+    <View
+      style={[
+        styles.cardShadow,
+        {
+          width: size,
+          height: size,
+          borderRadius: radius.lg,
+          shadowOpacity: 0.5,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.cardContainer,
+          {
+            borderRadius: radius.lg,
+            borderColor: theme === 'dark' ? '#222222' : '#dfdfdf',
+          },
+        ]}
+      >
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          placeholder={placeholder}
+          transition={300}
+          cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
+        />
+
+        {/* Gradient overlay */}
+        <LinearGradient
+          colors={gradientColors}
+          locations={gradientLocations}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+
+        {/* Category badge */}
+        <View style={[styles.badge, { top: spacing.md, left: spacing.md }]}>
+          <XStack
+            paddingHorizontal={spacing.md}
+            paddingVertical={spacing.xs}
+            borderRadius={radius.full}
+            style={{ backgroundColor: item.categoryColor }}
+          >
+            <Text.Caption color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+              {item.category}
+            </Text.Caption>
+          </XStack>
+        </View>
+
+        {/* Title */}
+        <View style={[styles.titleArea, { padding: spacing.lg }]}>
+          <Text.Title color="#FFFFFF" numberOfLines={config.maxLines} style={styles.titleShadow}>
+            {item.title}
+          </Text.Title>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+export default function WelcomeScreen() {
+  const { theme } = useTheme();
+  const { t, locale } = useTranslation();
+  const router = useRouter();
+  const { screenWidth, spacing, iconSizes } = useResponsive();
+
+  const [activeIndex, setActiveIndex] = useState(0);
+  const { isInitialized, isInitializing, initializationError, initializeOnboarding } =
+    useOnboarding();
+
+  const facts = sampleFacts[locale as SupportedLocale] ?? sampleFacts.en;
+
+  // Derive card size from responsive spacing
+  const cardSize = screenWidth - spacing.xxl * 2;
+
+  // Dot dimensions from spacing scale
+  const dotSize = spacing.sm;
+  const activeDotWidth = spacing.xl;
+
+  // Pre-fetch metadata (categories) while user browses the carousel
+  // so the categories screen loads instantly
+  useEffect(() => {
+    if (!isInitialized && !isInitializing && !initializationError) {
+      initializeOnboarding(locale as SupportedLocale);
+    }
+  }, [isInitialized, isInitializing, initializationError, locale, initializeOnboarding]);
+
+  // === Entrance animations ===
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const titleAnim = useRef(new Animated.Value(0)).current;
+  const cardAnim = useRef(new Animated.Value(0)).current;
+  const cardScale = useRef(new Animated.Value(0.92)).current;
+  const dotsAnim = useRef(new Animated.Value(0)).current;
+  const notifAnim = useRef(new Animated.Value(0)).current;
+  const notifSlide = useRef(new Animated.Value(spacing.xl)).current;
+  const buttonAnim = useRef(new Animated.Value(0)).current;
+  const buttonSlide = useRef(new Animated.Value(spacing.xxl)).current;
+
+  const hasTracked = useRef(false);
+  useEffect(() => {
+    if (!hasTracked.current) {
+      hasTracked.current = true;
+      trackScreenView(Screens.ONBOARDING_WELCOME);
+    }
+
+    const stagger = (
+      delay: number,
+      opacity: Animated.Value,
+      extras?: Animated.CompositeAnimation[]
+    ) =>
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 350,
+          delay,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        ...(extras ?? []),
+      ]);
+
+    // Orchestrated entrance
+    Animated.parallel([
+      stagger(0, progressAnim),
+      stagger(120, titleAnim),
+      stagger(250, cardAnim, [
+        Animated.spring(cardScale, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          delay: 250,
+          useNativeDriver: true,
+        }),
+      ]),
+      stagger(450, dotsAnim),
+      stagger(550, notifAnim, [
+        Animated.spring(notifSlide, {
+          toValue: 0,
+          tension: 50,
+          friction: 8,
+          delay: 550,
+          useNativeDriver: true,
+        }),
+      ]),
+      stagger(650, buttonAnim, [
+        Animated.spring(buttonSlide, {
+          toValue: 0,
+          tension: 50,
+          friction: 8,
+          delay: 650,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, []);
+
+  // === Carousel viewability ===
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    if (viewableItems.length > 0 && viewableItems[0].index != null) {
+      setActiveIndex(viewableItems[0].index);
+    }
+  }).current;
+
+  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+
+  // Format first notification time for the mockup
+  const mockTimeLabel = useMemo(() => {
+    const d = new Date();
+    d.setHours(9, 0, 0, 0); // Default 9:00 AM
+    const h = d.getHours() % 12 || 12;
+    const ampm = d.getHours() >= 12 ? 'PM' : 'AM';
+    return `${h}:00 ${ampm}`;
+  }, []);
+
+  const renderItem = ({ item }: { item: SampleFact }) => (
+    <View
+      style={{
+        width: screenWidth,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: spacing.md,
+      }}
+    >
+      <FactImageCard item={item} size={cardSize} theme={theme} />
+    </View>
+  );
+
+  // Notification mockup fixed height — header line + body (2 lines) + padding + gap
+  const notifFixedHeight = iconSizes.xxl + spacing.lg * 4;
+
+  return (
+    <Container>
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+      <YStack
+        flex={1}
+        justifyContent="space-between"
+        paddingHorizontal={spacing.lg}
+        paddingTop={spacing.lg}
+        paddingBottom={spacing.lg + spacing.md}
+      >
+        {/* Header: progress + title */}
+        <YStack gap={spacing.md}>
+          <Animated.View style={{ opacity: progressAnim }}>
+            <ProgressIndicator currentStep={1} totalSteps={3} />
+          </Animated.View>
+
+          <Animated.View style={{ opacity: titleAnim, marginTop: spacing.sm }}>
+            <YStack gap={spacing.xs} alignItems="center">
+              <Text.Headline textAlign="center">{t('learnSomethingNew')}</Text.Headline>
+              <Text.Body textAlign="center" color="$textSecondary">
+                {t('hereIsWhatYouGet')}
+              </Text.Body>
+            </YStack>
+          </Animated.View>
+        </YStack>
+
+        {/* Center content: card carousel + dots + notification mockup */}
+        <YStack flex={1} justifyContent="center" gap={spacing.xl}>
+          {/* Carousel */}
+          <Animated.View
+            style={{
+              opacity: cardAnim,
+              transform: [{ scale: cardScale }],
+              marginHorizontal: -spacing.lg, // bleed to screen edges for FlatList
+            }}
+          >
+            <FlatList
+              data={facts}
+              renderItem={renderItem}
+              keyExtractor={(_, index) => index.toString()}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={screenWidth}
+              decelerationRate="fast"
+              onViewableItemsChanged={onViewableItemsChanged}
+              viewabilityConfig={viewabilityConfig}
+            />
+          </Animated.View>
+
+          {/* Dot pagination */}
+          <Animated.View style={{ opacity: dotsAnim }}>
+            <XStack justifyContent="center" gap={spacing.sm}>
+              {facts.map((_, index) => (
+                <View
+                  key={index}
+                  style={{
+                    height: dotSize,
+                    borderRadius: dotSize / 2,
+                    width: index === activeIndex ? activeDotWidth : dotSize,
+                    backgroundColor:
+                      index === activeIndex
+                        ? theme === 'dark'
+                          ? hexColors.dark.neonCyan
+                          : hexColors.light.primary
+                        : theme === 'dark'
+                          ? 'rgba(255,255,255,0.2)'
+                          : 'rgba(0,0,0,0.12)',
+                  }}
+                />
+              ))}
+            </XStack>
+          </Animated.View>
+
+          {/* Notification mockup */}
+          <Animated.View
+            style={{
+              height: notifFixedHeight,
+              opacity: notifAnim,
+              transform: [{ translateY: notifSlide }],
+            }}
+          >
+            <MockNotificationCard
+              appName={t('appName')}
+              timeLabel={mockTimeLabel}
+              factText={facts[activeIndex]?.title ?? facts[0].title}
+            />
+          </Animated.View>
+        </YStack>
+
+        {/* CTA button */}
+        <Animated.View
+          style={{
+            opacity: buttonAnim,
+            transform: [{ translateY: buttonSlide }],
+          }}
+        >
+          <Button onPress={() => router.push('/onboarding/categories')}>
+            {t('chooseYourInterests')}
+          </Button>
+        </Animated.View>
+      </YStack>
+    </Container>
+  );
+}
+
+const styles = StyleSheet.create({
+  cardShadow: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  cardContainer: {
+    flex: 1,
+    overflow: 'hidden',
+    backgroundColor: '#1a1a2e',
+    borderWidth: 1,
+  },
+  badge: {
+    position: 'absolute',
+    zIndex: 10,
+  },
+  titleArea: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  titleShadow: {
+    textShadowColor: 'rgba(0, 0, 0, 0.9)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 12,
+  },
+});

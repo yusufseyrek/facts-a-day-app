@@ -1313,12 +1313,9 @@ async function _ensureNotificationScheduleImpl(
 }
 
 // ============================================================================
-// IMMEDIATE FACT (for onboarding)
+// TESTING
 // ============================================================================
 
-/**
- * Mark one random fact as shown immediately in feed for new users
- */
 // Expose pure private functions for unit testing
 export const __testing = {
   generateTimeSlots,
@@ -1328,62 +1325,6 @@ export const __testing = {
   getTypeHintForExtension,
   processInBatches,
 };
-
-export async function showImmediateFact(
-  locale: SupportedLocale
-): Promise<{ success: boolean; fact?: database.FactWithRelations; error?: string }> {
-  try {
-    let fact: database.FactWithRelations | undefined;
-
-    // Tier 1: Try historical fact for today
-    const now = new Date();
-    const historical = await database.getUnscheduledHistoricalFactsForDates(
-      [{ month: now.getMonth() + 1, day: now.getDate() }],
-      locale
-    );
-    if (historical.length > 0) {
-      fact = historical[0];
-    }
-
-    // Tier 2: Try recent fact
-    if (!fact) {
-      const recent = await database.getRecentUnscheduledFacts(1, locale);
-      if (recent.length > 0) {
-        fact = recent[0];
-      }
-    }
-
-    // Tier 3: Random fallback
-    if (!fact) {
-      const random = await database.getRandomUnscheduledFacts(1, locale);
-      if (random.length > 0) {
-        fact = random[0];
-      }
-    }
-
-    if (!fact) {
-      return {
-        success: false,
-        error: 'No facts available to show',
-      };
-    }
-
-    await database.markFactAsShownWithDate(fact.id, new Date().toISOString());
-
-    return {
-      success: true,
-      fact,
-    };
-  } catch (error) {
-    if (__DEV__) {
-      console.error('Error showing immediate fact:', error);
-    }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
 
 // ============================================================================
 // DIAGNOSTICS

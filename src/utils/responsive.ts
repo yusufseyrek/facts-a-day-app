@@ -183,6 +183,7 @@ const phoneIconSizes = {
   md: 24,
   lg: 28,
   xl: 32,
+  xxl: 40,
   hero: 48,
   heroLg: 64,
   heroXl: 96,

@@ -1,5 +1,10 @@
 export const translations = {
   de: {
+    // Onboarding - Welcome
+    learnSomethingNew: 'Lerne jeden Tag etwas Neues',
+    hereIsWhatYouGet: 'Das erwartet dich jeden Tag',
+    chooseYourInterests: 'Wähle deine Interessen',
+
     // Onboarding - Categories
     whatInterestsYou: 'Was interessiert dich?',
     selectCategoriesMinimum: 'Wähle mindestens 5 Kategorien aus, die du erkunden möchtest',
@@ -54,6 +59,8 @@ export const translations = {
     checkInternetConnection:
       'Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut',
     oneMoment: 'Dies dauert nur einen Moment...',
+    settingUpExperience: 'Einen Moment, wir richten die App ein...',
+    maybeLater: 'Vielleicht später',
 
     // Main App
     home: 'Startseite',
@@ -466,6 +473,11 @@ export const translations = {
     badge_endurance_goal: '%{count} Fragen beantworten',
   },
   en: {
+    // Onboarding - Welcome
+    learnSomethingNew: 'Learn something new every day',
+    hereIsWhatYouGet: "Here's what you'll get every day",
+    chooseYourInterests: 'Choose Your Interests',
+
     // Onboarding - Categories
     whatInterestsYou: 'What interests you?',
     selectCategoriesMinimum: "Select at least 5 categories you'd like to explore",
@@ -516,6 +528,8 @@ export const translations = {
     welcomeToApp: 'Welcome to Facts A Day!',
     checkInternetConnection: 'Please check your internet connection and try again',
     oneMoment: 'This will only take a moment...',
+    settingUpExperience: 'Hang tight, we\'re setting up the app...',
+    maybeLater: 'Maybe Later',
 
     // Main App
     home: 'Home',
@@ -924,6 +938,11 @@ export const translations = {
     badge_endurance_goal: 'Answer %{count} questions',
   },
   es: {
+    // Onboarding - Welcome
+    learnSomethingNew: 'Aprende algo nuevo cada día',
+    hereIsWhatYouGet: 'Esto es lo que recibirás cada día',
+    chooseYourInterests: 'Elige tus intereses',
+
     // Onboarding - Categories
     whatInterestsYou: '¿Qué te interesa?',
     selectCategoriesMinimum: 'Selecciona al menos 5 categorías que te gustaría explorar',
@@ -975,6 +994,8 @@ export const translations = {
     welcomeToApp: '¡Bienvenido a Conocimiento Diario!',
     checkInternetConnection: 'Por favor verifica tu conexión a internet e intenta nuevamente',
     oneMoment: 'Esto solo tomará un momento...',
+    settingUpExperience: 'Un momento, estamos configurando la app...',
+    maybeLater: 'Quizás después',
 
     // Main App
     home: 'Inicio',
@@ -1385,6 +1406,11 @@ export const translations = {
     badge_endurance_goal: 'Responder %{count} preguntas',
   },
   fr: {
+    // Onboarding - Welcome
+    learnSomethingNew: 'Apprenez quelque chose de nouveau chaque jour',
+    hereIsWhatYouGet: 'Voici ce que vous recevrez chaque jour',
+    chooseYourInterests: 'Choisissez vos centres d\'intérêt',
+
     // Onboarding - Categories
     whatInterestsYou: "Qu'est-ce qui vous intéresse?",
     selectCategoriesMinimum: 'Sélectionnez au moins 5 catégories que vous aimeriez explorer',
@@ -1437,6 +1463,8 @@ export const translations = {
     welcomeToApp: 'Bienvenue sur Savoir Quotidien!',
     checkInternetConnection: 'Veuillez vérifier votre connexion internet et réessayer',
     oneMoment: "Cela ne prendra qu'un instant...",
+    settingUpExperience: "Un instant, nous configurons l'application...",
+    maybeLater: 'Peut-être plus tard',
 
     // Main App
     home: 'Accueil',
@@ -1848,6 +1876,11 @@ export const translations = {
     badge_endurance_goal: 'Répondre à %{count} questions',
   },
   ja: {
+    // Onboarding - Welcome
+    learnSomethingNew: '毎日新しいことを学ぼう',
+    hereIsWhatYouGet: '毎日届く内容はこちら',
+    chooseYourInterests: '興味を選ぼう',
+
     // Onboarding - Categories
     whatInterestsYou: '何に興味がありますか？',
     selectCategoriesMinimum: '探索したいカテゴリーを少なくとも5つ選択してください',
@@ -1897,6 +1930,8 @@ export const translations = {
     welcomeToApp: '毎日の知識へようこそ！',
     checkInternetConnection: 'インターネット接続を確認して、もう一度お試しください',
     oneMoment: 'これは少しだけ時間がかかります...',
+    settingUpExperience: 'もう少しお待ちください、アプリを設定中です...',
+    maybeLater: 'あとで',
 
     // Main App
     home: 'ホーム',
@@ -2305,6 +2340,11 @@ export const translations = {
     badge_endurance_goal: '%{count}問に回答する',
   },
   ko: {
+    // Onboarding - Welcome
+    learnSomethingNew: '매일 새로운 것을 배워보세요',
+    hereIsWhatYouGet: '매일 이런 내용을 받게 됩니다',
+    chooseYourInterests: '관심사 선택하기',
+
     // Onboarding - Categories
     whatInterestsYou: '무엇에 관심이 있으신가요?',
     selectCategoriesMinimum: '탐색하고 싶은 카테고리를 최소 5개 선택하세요',
@@ -2353,6 +2393,8 @@ export const translations = {
     welcomeToApp: '매일 지식에 오신 것을 환영합니다!',
     checkInternetConnection: '인터넷 연결을 확인하고 다시 시도하세요',
     oneMoment: '잠시만 기다려 주세요...',
+    settingUpExperience: '잠시만요, 앱을 설정하고 있어요...',
+    maybeLater: '나중에',
 
     // Main App
     home: '홈',
@@ -2761,6 +2803,11 @@ export const translations = {
     badge_endurance_goal: '%{count}개 질문 답변',
   },
   tr: {
+    // Onboarding - Welcome
+    learnSomethingNew: 'Her gün yeni bir şey öğren',
+    hereIsWhatYouGet: 'Her gün seni böyle bilgiler bekliyor',
+    chooseYourInterests: 'İlgi Alanlarını Seç',
+
     // Onboarding - Categories
     whatInterestsYou: 'İlginizi çeken nedir?',
     selectCategoriesMinimum: 'Keşfetmek istediğiniz en az 5 kategori seçin',
@@ -2811,6 +2858,8 @@ export const translations = {
     welcomeToApp: "Günlük Bilgi'ye Hoş Geldiniz!",
     checkInternetConnection: 'Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin',
     oneMoment: 'Bu sadece bir dakika sürecek...',
+    settingUpExperience: 'Bir saniye, uygulamayı hazırlıyoruz...',
+    maybeLater: 'Belki sonra',
 
     // Main App
     home: 'Ana Sayfa',
@@ -3219,6 +3268,11 @@ export const translations = {
     badge_endurance_goal: '%{count} soru cevapla',
   },
   zh: {
+    // Onboarding - Welcome
+    learnSomethingNew: '每天学习新知识',
+    hereIsWhatYouGet: '这是你每天会收到的内容',
+    chooseYourInterests: '选择你的兴趣',
+
     // Onboarding - Categories
     whatInterestsYou: '你对什么感兴趣？',
     selectCategoriesMinimum: '选择至少5个您想要探索的类别',
@@ -3266,6 +3320,8 @@ export const translations = {
     welcomeToApp: '欢迎来到 每日知识！',
     checkInternetConnection: '请检查您的网络连接并重试',
     oneMoment: '这只需要一会儿...',
+    settingUpExperience: '稍等片刻，我们正在设置应用...',
+    maybeLater: '以后再说',
 
     // Main App
     home: '首页',

@@ -10,6 +10,7 @@ export { EmptyState } from './EmptyState';
 export { ErrorBoundary } from './ErrorBoundary';
 export { FactActions } from './FactActions';
 export { FactModal } from './FactModal';
+export { MockNotificationCard } from './MockNotificationCard';
 export { MultiTimePicker } from './MultiTimePicker';
 export { SettingsRow } from './SettingsRow';
 export { SplashOverlay } from './SplashOverlay';

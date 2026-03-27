@@ -182,6 +182,7 @@ export const Screens = {
   FAVORITES: 'Favorites',
   SETTINGS: 'Settings',
   FACT_DETAIL: 'FactDetail',
+  ONBOARDING_WELCOME: 'OnboardingWelcome',
   ONBOARDING_CATEGORIES: 'OnboardingCategories',
   ONBOARDING_NOTIFICATIONS: 'OnboardingNotifications',
   ONBOARDING_SUCCESS: 'OnboardingSuccess',

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, Easing, Platform, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
@@ -15,22 +15,18 @@ import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { completeConsentFlow, isConsentRequired } from '../../src/services/ads';
 import { Screens, trackOnboardingComplete, trackScreenView } from '../../src/services/analytics';
+import { loadDailyFeedSections } from '../../src/services/dailyFeed';
+import * as database from '../../src/services/database';
 import * as notificationService from '../../src/services/notifications';
 import { getNotificationTimes } from '../../src/services/onboarding';
 import { getNeonColors, hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
-const { width: screenWidth } = Dimensions.get('window');
-
-// Flow: loading -> consent (if GDPR required) -> processing -> animation -> navigate
-// Non-EEA iOS users go directly: loading -> processing -> animation (ATT shown during processing)
-type ScreenState = 'loading' | 'consent' | 'processing' | 'animation';
+type ScreenState = 'loading' | 'animation' | 'consent';
 
 const Container = styled(SafeAreaView, {
   flex: 1,
 });
-
-// ContentContainer, IconContainer, ConsentIconContainer now use inline props with useResponsive() for dynamic spacing
 
 // Particle component for confetti effect
 const Particle = ({ delay, index }: { delay: number; index: number }) => {
@@ -76,7 +72,6 @@ const Particle = ({ delay, index }: { delay: number; index: number }) => {
     outputRange: ['0deg', `${360 + Math.random() * 360}deg`],
   });
 
-  // Use neon colors for particles
   const neonColors = getNeonColors(theme);
   const colors = [
     neonColors.cyan,
@@ -87,7 +82,6 @@ const Particle = ({ delay, index }: { delay: number; index: number }) => {
     neonColors.orange,
   ];
   const particleColor = colors[index % colors.length];
-
   const ParticleIcon = index % 3 === 0 ? Star : Sparkle;
 
   return (
@@ -104,11 +98,19 @@ const Particle = ({ delay, index }: { delay: number; index: number }) => {
 };
 
 // Ring pulse animation component
-const PulseRing = ({ delay, theme }: { delay: number; theme: 'light' | 'dark' }) => {
+const PulseRing = ({
+  delay,
+  theme,
+  size,
+  borderWidth,
+}: {
+  delay: number;
+  theme: 'light' | 'dark';
+  size: number;
+  borderWidth: number;
+}) => {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
-
-  // Use neon cyan for pulse ring
   const ringColor = theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.neonCyan;
 
   useEffect(() => {
@@ -147,10 +149,10 @@ const PulseRing = ({ delay, theme }: { delay: number; theme: 'light' | 'dark' })
     <Animated.View
       style={{
         position: 'absolute',
-        width: 140,
-        height: 140,
-        borderRadius: 70,
-        borderWidth: 2,
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth,
         borderColor: ringColor,
         transform: [{ scale: scaleAnim }],
         opacity: opacityAnim,
@@ -159,22 +161,35 @@ const PulseRing = ({ delay, theme }: { delay: number; theme: 'light' | 'dark' })
   );
 };
 
-// Progress bar component
-const ProgressBar = ({ duration, theme }: { duration: number; theme: 'light' | 'dark' }) => {
-  const widthAnim = useRef(new Animated.Value(0)).current;
-
-  // Use neon cyan for progress bar
+// Progress bar — driven by real download progress (0–1)
+const ProgressBar = ({
+  progress,
+  theme,
+  barWidth,
+  barHeight,
+  barRadius,
+  marginTop,
+}: {
+  progress: number;
+  theme: 'light' | 'dark';
+  barWidth: number;
+  barHeight: number;
+  barRadius: number;
+  marginTop: number;
+}) => {
+  const initialProgress = useRef(progress).current;
+  const widthAnim = useRef(new Animated.Value(initialProgress)).current;
   const barColor = theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.neonCyan;
   const bgColor = theme === 'dark' ? 'rgba(0, 212, 255, 0.1)' : 'rgba(0, 153, 204, 0.1)';
 
   useEffect(() => {
     Animated.timing(widthAnim, {
-      toValue: 1,
-      duration: duration,
-      easing: Easing.linear,
+      toValue: progress,
+      duration: 400,
+      easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
-  }, []);
+  }, [progress]);
 
   const width = widthAnim.interpolate({
     inputRange: [0, 1],
@@ -184,12 +199,12 @@ const ProgressBar = ({ duration, theme }: { duration: number; theme: 'light' | '
   return (
     <View
       style={{
-        width: screenWidth * 0.6,
-        height: 3,
+        width: barWidth,
+        height: barHeight,
         backgroundColor: bgColor,
-        borderRadius: 1.5,
+        borderRadius: barRadius,
         overflow: 'hidden',
-        marginTop: 40,
+        marginTop,
       }}
     >
       <Animated.View
@@ -197,88 +212,174 @@ const ProgressBar = ({ duration, theme }: { duration: number; theme: 'light' | '
           width,
           height: '100%',
           backgroundColor: barColor,
-          borderRadius: 1.5,
+          borderRadius: barRadius,
         }}
       />
     </View>
   );
 };
 
+const SLOW_DOWNLOAD_THRESHOLD_MS = 5000;
+const NAVIGATE_DELAY_MS = 3000;
+
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, iconSizes, spacing, radius } = useResponsive();
+  const { screenWidth, typography, iconSizes, spacing, radius, borderWidths } = useResponsive();
   const router = useRouter();
-  const { completeOnboarding, selectedCategories } = useOnboarding();
+  const {
+    completeOnboarding,
+    selectedCategories,
+    isDownloadingFacts,
+    downloadProgress,
+    waitForDownloadComplete,
+  } = useOnboarding();
 
-  // Screen state: loading -> consent (if required) -> processing -> animation -> navigate
   const [screenState, setScreenState] = useState<ScreenState>('loading');
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [consentLoading, setConsentLoading] = useState(false);
+  const [showSlowMessage, setShowSlowMessage] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
+  const [flowComplete, setFlowComplete] = useState(false);
 
-  // Track if animations should run
-  const [shouldRunAnimations, setShouldRunAnimations] = useState(false);
+  // Responsive icon container size — derives from heroLg icon + padding
+  const iconContainerSize = iconSizes.heroLg * 2 + spacing.md;
+  const iconAreaSize = iconContainerSize + spacing.xl * 2;
+  const consentIconSize = iconSizes.hero + spacing.xl;
 
-  // Check if consent is required on mount and track screen view
+  // Slow download timer — starts on mount, shows message if still downloading after threshold
+  const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    checkConsentRequired();
-    trackScreenView(Screens.ONBOARDING_SUCCESS);
+    slowTimerRef.current = setTimeout(() => {
+      if (!flowComplete) {
+        setShowSlowMessage(true);
+      }
+    }, SLOW_DOWNLOAD_THRESHOLD_MS);
+    return () => {
+      if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
+    };
   }, []);
 
-  const checkConsentRequired = async () => {
-    if (__DEV__) console.log('checkConsentRequired started, ADS_ENABLED:', ADS_ENABLED);
-
-    if (!ADS_ENABLED) {
-      // Ads disabled, skip to animation
-      setScreenState('animation');
-      setShouldRunAnimations(true);
-      return;
+  // Hide slow message once flow completes
+  useEffect(() => {
+    if (flowComplete) {
+      setShowSlowMessage(false);
     }
+  }, [flowComplete]);
 
+  // Track screen view and kick off the flow
+  useEffect(() => {
+    trackScreenView(Screens.ONBOARDING_SUCCESS);
+    runFlow();
+  }, []);
+
+  const runFlow = async () => {
     try {
-      // Check if GDPR consent is required (user is in EEA/UK)
-      const gdprRequired = await isConsentRequired();
-      if (__DEV__) console.log('isConsentRequired (GDPR) returned:', gdprRequired);
+      // Step 1: Handle consent FIRST (before animation)
+      await handleConsent();
 
-      if (gdprRequired) {
-        // GDPR consent is required (EEA/UK user), show GDPR soft message
-        if (__DEV__) console.log('Showing GDPR consent screen');
-        setScreenState('consent');
-      } else if (Platform.OS === 'ios') {
-        // Non-EEA iOS user: skip soft message, run consent flow directly for ATT
-        if (__DEV__) console.log('Non-EEA iOS user, running consent flow directly for ATT...');
-        setScreenState('processing');
-        const result = await completeConsentFlow();
-        if (__DEV__) console.log('Consent flow completed:', result);
-        setScreenState('animation');
-        setShouldRunAnimations(true);
-      } else {
-        // Android user outside EEA, no consent screens needed
-        // Still need to run completeConsentFlow() so gatherConsent() is called,
-        // which is required for canRequestAds to become true on fresh installs.
-        if (__DEV__) console.log('Non-EEA Android user, running consent flow directly...');
-        setScreenState('processing');
-        const result = await completeConsentFlow();
-        if (__DEV__) console.log('Consent flow completed:', result);
-        setScreenState('animation');
-        setShouldRunAnimations(true);
-      }
-    } catch (error) {
-      console.error('Error checking consent requirement:', error);
-      // On error, skip to animation
+      // Step 2: Consent done — switch to animation screen
+      setConsentChecked(true);
       setScreenState('animation');
-      setShouldRunAnimations(true);
+
+      // Step 3: Wait for download if still in progress
+      if (isDownloadingFacts) {
+        await waitForDownloadComplete();
+      }
+
+      setFlowComplete(true);
+
+      // Step 4: Finish onboarding
+      await finishOnboarding();
+    } catch (error) {
+      console.error('Error in success flow:', error);
+      setConsentChecked(true);
+      setScreenState('animation');
+      setFlowComplete(true);
+      await finishOnboarding();
     }
   };
 
-  // Animation values for success screen
+  const handleConsent = async () => {
+    if (!ADS_ENABLED) return;
+
+    try {
+      const gdprRequired = await isConsentRequired();
+
+      if (gdprRequired) {
+        setScreenState('consent');
+        await new Promise<void>((resolve) => {
+          consentResolveRef.current = resolve;
+        });
+      } else {
+        await completeConsentFlow();
+      }
+    } catch (error) {
+      console.error('Error checking consent:', error);
+    }
+  };
+
+  const consentResolveRef = useRef<(() => void) | null>(null);
+
+  const handleConsentContinue = async () => {
+    setConsentLoading(true);
+    try {
+      await completeConsentFlow();
+    } catch (error) {
+      console.error('Error during consent flow:', error);
+    }
+    consentResolveRef.current?.();
+  };
+
+  const finishOnboarding = async () => {
+    if (isFinishing) return;
+    setIsFinishing(true);
+
+    try {
+      await completeOnboarding();
+
+      // Fire-and-forget: sync notifications to OS
+      notificationService.ensureNotificationSchedule(locale, 'cold_start').catch((error) => {
+        console.error('Post-onboarding notification sync failed:', error);
+      });
+
+      // Track completion
+      const notificationTimes = await getNotificationTimes();
+      const notificationsEnabled = notificationTimes !== null && notificationTimes.length > 0;
+      trackOnboardingComplete({
+        locale,
+        categoriesCount: selectedCategories.length,
+        notificationsEnabled,
+      });
+
+      // Pre-load home screen data in background while animation plays
+      Promise.all([
+        loadDailyFeedSections(locale, true),
+        database.getAllCategories(),
+        database.getUnseenStoryStatus(selectedCategories, locale),
+      ]).catch((error) => {
+        console.error('Failed to pre-load home screen data:', error);
+      });
+
+      // Navigate to main app after showing success animation
+      setTimeout(() => {
+        router.replace('/');
+      }, NAVIGATE_DELAY_MS);
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      setTimeout(() => {
+        router.replace('/');
+      }, NAVIGATE_DELAY_MS);
+    }
+  };
+
+  // === Animation values ===
   const iconDropAnim = useRef(new Animated.Value(0)).current;
   const iconPulseAnim = useRef(new Animated.Value(1)).current;
   const mainIconRotate = useRef(new Animated.Value(0)).current;
   const mainIconOpacity = useRef(new Animated.Value(0)).current;
-
-  // Animation values for consent screen
   const consentOpacity = useRef(new Animated.Value(1)).current;
 
-  // Text animations
   const titleWords = t('allSet').split(' ');
   const wordAnimations = useRef(
     titleWords.map(() => ({
@@ -289,14 +390,17 @@ export default function OnboardingSuccessScreen() {
   ).current;
 
   const subtextOpacity = useRef(new Animated.Value(0)).current;
-  const subtextTranslateY = useRef(new Animated.Value(20)).current;
+  const subtextTranslateY = useRef(new Animated.Value(spacing.xl)).current;
   const progressOpacity = useRef(new Animated.Value(0)).current;
+  const slowMessageOpacity = useRef(new Animated.Value(0)).current;
 
-  // Run success animations when animation screen is shown
+  // Start animations only when transitioning TO animation (not on initial mount)
+  const animationsStarted = useRef(false);
   useEffect(() => {
-    if (!shouldRunAnimations) return;
+    if (screenState !== 'animation' || animationsStarted.current) return;
+    if (!consentChecked) return;
+    animationsStarted.current = true;
 
-    // Start all animations
     Animated.sequence([
       // Phase 1: Icon drop with bounce
       Animated.parallel([
@@ -318,9 +422,8 @@ export default function OnboardingSuccessScreen() {
           useNativeDriver: true,
         }),
       ]),
-      // Phase 2: Start pulse animation
+      // Phase 2: Title + subtitle + progress bar
       Animated.parallel([
-        // Word-by-word title reveal
         ...wordAnimations.map((wordAnim, index) =>
           Animated.parallel([
             Animated.spring(wordAnim.opacity, {
@@ -344,7 +447,6 @@ export default function OnboardingSuccessScreen() {
             }),
           ])
         ),
-        // Subtitle animation
         Animated.sequence([
           Animated.delay(titleWords.length * 100 + 200),
           Animated.parallel([
@@ -361,7 +463,6 @@ export default function OnboardingSuccessScreen() {
             }),
           ]),
         ]),
-        // Show progress bar
         Animated.sequence([
           Animated.delay(1000),
           Animated.timing(progressOpacity, {
@@ -373,7 +474,7 @@ export default function OnboardingSuccessScreen() {
       ]),
     ]).start();
 
-    // Continuous pulse animation
+    // Continuous pulse
     Animated.loop(
       Animated.sequence([
         Animated.timing(iconPulseAnim, {
@@ -390,96 +491,46 @@ export default function OnboardingSuccessScreen() {
         }),
       ])
     ).start();
+  }, [screenState, consentChecked]);
 
-    // Complete onboarding and navigate after animation
-    finishOnboarding();
-  }, [shouldRunAnimations]);
+  // Animate slow message in/out
+  useEffect(() => {
+    Animated.timing(slowMessageOpacity, {
+      toValue: showSlowMessage ? 1 : 0,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+  }, [showSlowMessage]);
 
-  const finishOnboarding = async () => {
-    try {
-      // Complete onboarding (save preferences)
-      await completeOnboarding();
-
-      // Fire-and-forget: sync DB-scheduled notifications to OS
-      // Runs during success animation while user transitions to home screen
-      notificationService.ensureNotificationSchedule(locale, 'cold_start').catch((error) => {
-        console.error('Post-onboarding notification sync failed:', error);
-      });
-
-      // Track onboarding complete event
-      const notificationTimes = await getNotificationTimes();
-      const notificationsEnabled = notificationTimes !== null && notificationTimes.length > 0;
-      trackOnboardingComplete({
-        locale,
-        categoriesCount: selectedCategories.length,
-        notificationsEnabled,
-      });
-
-      // Navigate to main app after showing success message
-      setTimeout(() => {
-        router.replace('/');
-      }, 3000);
-    } catch (error) {
-      console.error('Error completing onboarding:', error);
-      // Even on error, navigate to main app
-      setTimeout(() => {
-        router.replace('/');
-      }, 3000);
-    }
-  };
-
-  const handleConsentContinue = async () => {
-    setScreenState('processing');
-
-    try {
-      // Run the complete consent flow (shows GDPR consent + ATT dialog)
-      const result = await completeConsentFlow();
-      if (__DEV__) console.log('Consent flow completed:', result);
-    } catch (error) {
-      console.error('Error during consent flow:', error);
-    }
-
-    // After consent flow, show success animation
-    setScreenState('animation');
-    setShouldRunAnimations(true);
-  };
-
-  // Icon animations
+  // Icon interpolations
   const iconTranslateY = iconDropAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [-100, 0],
   });
-
-  // Create separate scale values
   const iconDropScale = iconDropAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1],
   });
-
   const iconRotate = mainIconRotate.interpolate({
     inputRange: [0, 1],
     outputRange: ['-180deg', '0deg'],
   });
 
-  // Generate particles
   const particles = useMemo(
     () => Array.from({ length: 15 }, (_, i) => <Particle key={i} index={i} delay={300 + i * 50} />),
     []
   );
 
-  // Gradient colors based on theme - using neon palette
   const darkColors = [hexColors.dark.background, '#0F1E36', '#1A3D5C'] as const;
   const lightColors = [hexColors.light.background, '#E0F7FF', '#D0EFFF'] as const;
   const gradientColors = theme === 'dark' ? darkColors : lightColors;
 
-  // Render consent screen
+  // Download progress for the progress bar (0–1)
+  const currentProgress = flowComplete ? 1 : (downloadProgress?.percentage ?? 0) / 100;
+
+  // Consent screen
   const renderConsentScreen = () => (
-    <Animated.View
-      style={{
-        flex: 1,
-        opacity: consentOpacity,
-      }}
-    >
+    <Animated.View style={{ flex: 1, opacity: consentOpacity }}>
       <YStack
         padding={spacing.xl}
         gap={spacing.lg}
@@ -488,12 +539,11 @@ export default function OnboardingSuccessScreen() {
         alignItems="center"
       >
         <YStack alignItems="center" gap={spacing.lg} paddingHorizontal={spacing.md}>
-          {/* Icon */}
           <YStack
-            width={100}
-            height={100}
+            width={consentIconSize}
+            height={consentIconSize}
             borderRadius={radius.full}
-            backgroundColor="$primaryLight"
+            backgroundColor={theme === 'dark' ? '$primaryLight' : '#D4F1FF'}
             alignItems="center"
             justifyContent="center"
             marginBottom={spacing.md}
@@ -504,66 +554,28 @@ export default function OnboardingSuccessScreen() {
               strokeWidth={2}
             />
           </YStack>
-
-          {/* Title */}
           <Text.Headline textAlign="center" color="$text" letterSpacing={-0.5}>
             {t('adsConsentTitle')}
           </Text.Headline>
-
-          {/* Message */}
           <Text.Body textAlign="center" color="$textSecondary">
             {t('adsConsentMessage')}
           </Text.Body>
-
-          {/* Button */}
           <YStack width="100%" paddingTop={spacing.lg}>
-            <Button onPress={handleConsentContinue}>{t('adsConsentButton')}</Button>
+            {consentLoading ? (
+              <ActivityIndicator
+                size="large"
+                color={theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.neonCyan}
+              />
+            ) : (
+              <Button onPress={handleConsentContinue}>{t('adsConsentButton')}</Button>
+            )}
           </YStack>
         </YStack>
       </YStack>
     </Animated.View>
   );
 
-  // Render loading screen (checking consent requirement)
-  const renderLoadingScreen = () => (
-    <YStack
-      padding={spacing.xl}
-      gap={spacing.lg}
-      flex={1}
-      justifyContent="center"
-      alignItems="center"
-    >
-      <YStack alignItems="center" gap={spacing.lg}>
-        <ActivityIndicator
-          size="large"
-          color={theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.neonCyan}
-        />
-      </YStack>
-    </YStack>
-  );
-
-  // Render processing screen
-  const renderProcessingScreen = () => (
-    <YStack
-      padding={spacing.xl}
-      gap={spacing.lg}
-      flex={1}
-      justifyContent="center"
-      alignItems="center"
-    >
-      <YStack alignItems="center" gap={spacing.lg}>
-        <ActivityIndicator
-          size="large"
-          color={theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.neonCyan}
-        />
-        <Text.Body textAlign="center" color="$textSecondary">
-          {t('oneMoment')}
-        </Text.Body>
-      </YStack>
-    </YStack>
-  );
-
-  // Render success animation screen
+  // Animation screen (progress bar reflects download)
   const renderAnimationScreen = () => (
     <YStack
       padding={spacing.xl}
@@ -574,16 +586,34 @@ export default function OnboardingSuccessScreen() {
     >
       <YStack alignItems="center" gap={spacing.xl}>
         {/* Icon with particles and pulse rings */}
-        <View style={{ width: 200, height: 200, alignItems: 'center', justifyContent: 'center' }}>
-          {/* Pulse rings */}
-          <PulseRing delay={0} theme={theme} />
-          <PulseRing delay={1000} theme={theme} />
-          <PulseRing delay={2000} theme={theme} />
-
-          {/* Particles */}
+        <View
+          style={{
+            width: iconAreaSize,
+            height: iconAreaSize,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <PulseRing
+            delay={0}
+            theme={theme}
+            size={iconContainerSize}
+            borderWidth={borderWidths.medium}
+          />
+          <PulseRing
+            delay={1000}
+            theme={theme}
+            size={iconContainerSize}
+            borderWidth={borderWidths.medium}
+          />
+          <PulseRing
+            delay={2000}
+            theme={theme}
+            size={iconContainerSize}
+            borderWidth={borderWidths.medium}
+          />
           {particles}
 
-          {/* Main animated icon */}
           <Animated.View
             style={{
               opacity: mainIconOpacity,
@@ -593,22 +623,18 @@ export default function OnboardingSuccessScreen() {
                 { rotate: iconRotate },
               ],
               shadowColor: theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.neonCyan,
-              shadowOffset: { width: 0, height: 10 },
+              shadowOffset: { width: 0, height: spacing.sm },
               shadowOpacity: theme === 'dark' ? 0.4 : 0.2,
-              shadowRadius: 20,
+              shadowRadius: spacing.xl,
               elevation: 10,
             }}
           >
-            <Animated.View
-              style={{
-                transform: [{ scale: iconPulseAnim }],
-              }}
-            >
+            <Animated.View style={{ transform: [{ scale: iconPulseAnim }] }}>
               <YStack
-                width={140}
-                height={140}
+                width={iconContainerSize}
+                height={iconContainerSize}
                 borderRadius={radius.full}
-                backgroundColor="$primaryLight"
+                backgroundColor={theme === 'dark' ? '$primaryLight' : '#D4F1FF'}
                 alignItems="center"
                 justifyContent="center"
                 marginBottom={spacing.lg}
@@ -623,7 +649,7 @@ export default function OnboardingSuccessScreen() {
           </Animated.View>
         </View>
 
-        {/* Animated title - word by word */}
+        {/* Animated title — word by word */}
         <XStack gap={spacing.sm} alignItems="center">
           {titleWords.map((word, index) => (
             <Animated.View
@@ -641,7 +667,7 @@ export default function OnboardingSuccessScreen() {
                 fontFamily={FONT_FAMILIES.extrabold}
                 textAlign="center"
                 color="$text"
-                letterSpacing={-1}
+                letterSpacing={typography.letterSpacing.display}
                 lineHeight={typography.lineHeight.display}
               >
                 {word}
@@ -655,7 +681,6 @@ export default function OnboardingSuccessScreen() {
           style={{
             opacity: subtextOpacity,
             transform: [{ translateY: subtextTranslateY }],
-            maxWidth: '90%',
           }}
         >
           <Text.Body
@@ -668,32 +693,42 @@ export default function OnboardingSuccessScreen() {
           </Text.Body>
         </Animated.View>
 
-        {/* Progress bar */}
-        <Animated.View style={{ opacity: progressOpacity }}>
-          <ProgressBar duration={2000} theme={theme} />
+        {/* Progress bar — real download progress */}
+        <Animated.View style={{ opacity: progressOpacity, alignItems: 'center' }}>
+          <ProgressBar
+            progress={currentProgress}
+            theme={theme}
+            barWidth={screenWidth * 0.6}
+            barHeight={borderWidths.thick}
+            barRadius={borderWidths.thin}
+            marginTop={spacing.xxl}
+          />
+
+          {/* Slow download message — fades in after 5s */}
+          <Animated.View style={{ opacity: slowMessageOpacity, marginTop: spacing.lg }}>
+            <Text.Body textAlign="center" color="$textSecondary">
+              {t('settingUpExperience')}
+            </Text.Body>
+          </Animated.View>
         </Animated.View>
       </YStack>
     </YStack>
   );
 
   return (
-    <>
-      <Animated.View style={{ flex: 1 }}>
-        <LinearGradient
-          colors={gradientColors}
-          style={{ flex: 1 }}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <Container>
-            <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-            {screenState === 'loading' && renderLoadingScreen()}
-            {screenState === 'consent' && renderConsentScreen()}
-            {screenState === 'processing' && renderProcessingScreen()}
-            {screenState === 'animation' && renderAnimationScreen()}
-          </Container>
-        </LinearGradient>
-      </Animated.View>
-    </>
+    <Animated.View style={{ flex: 1 }}>
+      <LinearGradient
+        colors={gradientColors}
+        style={{ flex: 1 }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <Container>
+          <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+          {screenState === 'consent' && renderConsentScreen()}
+          {screenState === 'animation' && renderAnimationScreen()}
+        </Container>
+      </LinearGradient>
+    </Animated.View>
   );
 }
