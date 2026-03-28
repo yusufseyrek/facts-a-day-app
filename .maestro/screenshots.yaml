@@ -1,8 +1,8 @@
 # Main Screenshot Orchestration Flow
 # Runs all screen flows in sequence to capture promotional screenshots
 #
-# IMPORTANT: Use the screenshots.sh script for proper folder structure!
-#   ./scripts/screenshots.sh --ios --locale en
+# IMPORTANT: Use the capture.sh script for proper folder structure!
+#   ./marketing/scripts/capture.sh --ios --locale en
 #
 # The OUTPUT_DIR env var MUST be passed via -e flag
 
@@ -15,25 +15,29 @@ appId: dev.seyrek.factsaday
     clearState: false
     clearKeychain: false
     arguments:
-      AppleLanguages: "(${LOCALE})"
-      AppleLocale: "${FULL_LOCALE}"
+      AppleLanguages: '(${LOCALE})'
+      AppleLocale: '${FULL_LOCALE}'
+
+# Wait for locale change and app restart to settle
+- waitForAnimationToEnd:
+    timeout: 20000
 
 # Wait for app to fully load (tab bar visible)
 - extendedWaitUntil:
     visible:
-      id: "tab-home"
-    timeout: 15000
+      id: 'tab-home'
+    timeout: 20000
 
 # Wait for initial content to load (facts should appear)
 - extendedWaitUntil:
     visible:
-      id: "fact-card-.*"
-    timeout: 15000
+      id: 'fact-card-.*'
+    timeout: 20000
 
 # Extended wait for all animations, image loading, and list settling
 # This prevents kAXErrorInvalidUIElement errors from FlashList recycling
 - waitForAnimationToEnd:
-    timeout: 4000
+    timeout: 5000
 
 # Run all screen flows in sequence
 # Flows assume state from previous flow for efficiency
@@ -70,4 +74,4 @@ appId: dev.seyrek.factsaday
 
 # Return to home
 - tapOn:
-    id: "tab-home"
+    id: 'tab-home'

@@ -16,6 +16,7 @@ import {
   ProgressIndicator,
   Text,
 } from '../../src/components';
+import { LAYOUT } from '../../src/config/app';
 import { IMAGE_PLACEHOLDER } from '../../src/config/images';
 import { sampleFacts, type SampleFact } from '../../src/config/sampleFacts';
 import { useOnboarding } from '../../src/contexts';
@@ -116,7 +117,7 @@ export default function WelcomeScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const { screenWidth, spacing, iconSizes } = useResponsive();
+  const { screenWidth, screenHeight, spacing, iconSizes, isTablet } = useResponsive();
 
   const [activeIndex, setActiveIndex] = useState(0);
   const { isInitialized, isInitializing, initializationError, initializeOnboarding } =
@@ -124,8 +125,17 @@ export default function WelcomeScreen() {
 
   const facts = sampleFacts[locale as SupportedLocale] ?? sampleFacts.en;
 
+  // Landscape detection for tablets
+  const isLandscape = isTablet && screenWidth > screenHeight;
+
+  // On tablets, carousel/notification are 70% of max content width, centered.
+  // On phones, the carousel bleeds to screen edges so its width equals screenWidth.
+  const carouselWidth = isTablet
+    ? LAYOUT.MAX_CONTENT_WIDTH * 0.7
+    : screenWidth;
+
   // Derive card size from responsive spacing
-  const cardSize = screenWidth - spacing.xxl * 2;
+  const cardSize = carouselWidth - spacing.xxl * 2;
 
   // Dot dimensions from spacing scale
   const dotSize = spacing.sm;
@@ -229,9 +239,10 @@ export default function WelcomeScreen() {
   const renderItem = ({ item }: { item: SampleFact }) => (
     <View
       style={{
-        width: screenWidth,
+        width: carouselWidth,
         alignItems: 'center',
         justifyContent: 'center',
+        paddingTop: spacing.sm,
         paddingBottom: spacing.lg,
       }}
     >
@@ -252,7 +263,7 @@ export default function WelcomeScreen() {
         paddingTop={spacing.lg}
         paddingBottom={spacing.lg + spacing.md}
       >
-        {/* Header: progress + title */}
+        {/* Header: progress (full width) + title */}
         <YStack gap={spacing.md}>
           <Animated.View style={{ opacity: progressAnim }}>
             <ProgressIndicator currentStep={1} totalSteps={3} />
@@ -269,70 +280,148 @@ export default function WelcomeScreen() {
         </YStack>
 
         {/* Center content: notification mockup + card carousel + dots */}
-        <YStack>
-          {/* Notification mockup */}
-          <Animated.View
-            style={{
-              height: notifFixedHeight,
-              opacity: notifAnim,
-              transform: [{ translateY: notifSlide }],
-            }}
-          >
-            <MockNotificationCard
-              appName={t('appName')}
-              timeLabel={mockTimeLabel}
-              factText={facts[activeIndex]?.title ?? facts[0].title}
-            />
-          </Animated.View>
+        {isLandscape ? (
+          /* Landscape tablet: notification and carousel side by side */
+          <XStack alignSelf="center" alignItems="center" gap={spacing.xl} flex={1}>
+            {/* Left: Notification mockup */}
+            <Animated.View
+              style={{
+                width: carouselWidth,
+                opacity: notifAnim,
+                transform: [{ translateY: notifSlide }],
+              }}
+            >
+              <MockNotificationCard
+                appName={t('appName')}
+                timeLabel={mockTimeLabel}
+                factText={facts[activeIndex]?.title ?? facts[0].title}
+              />
+            </Animated.View>
 
-          {/* Carousel */}
-          <Animated.View
-            style={{
-              opacity: cardAnim,
-              transform: [{ scale: cardScale }],
-              marginHorizontal: -spacing.lg, // bleed to screen edges for FlatList
-            }}
-          >
-            <FlatList
-              data={facts}
-              renderItem={renderItem}
-              keyExtractor={(_, index) => index.toString()}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={screenWidth}
-              decelerationRate="fast"
-              onViewableItemsChanged={onViewableItemsChanged}
-              viewabilityConfig={viewabilityConfig}
-            />
-          </Animated.View>
-
-          {/* Dot pagination */}
-          <Animated.View style={{ opacity: dotsAnim }}>
-            <XStack justifyContent="center" gap={spacing.sm}>
-              {facts.map((_, index) => (
-                <View
-                  key={index}
-                  style={{
-                    height: dotSize,
-                    borderRadius: dotSize / 2,
-                    width: index === activeIndex ? activeDotWidth : dotSize,
-                    backgroundColor:
-                      index === activeIndex
-                        ? theme === 'dark'
-                          ? hexColors.dark.neonCyan
-                          : hexColors.light.primary
-                        : theme === 'dark'
-                          ? 'rgba(255,255,255,0.2)'
-                          : 'rgba(0,0,0,0.12)',
-                  }}
+            {/* Right: Carousel + dots */}
+            <YStack alignItems="center">
+              <Animated.View
+                style={{
+                  width: carouselWidth,
+                  opacity: cardAnim,
+                  transform: [{ scale: cardScale }],
+                }}
+              >
+                <FlatList
+                  data={facts}
+                  renderItem={renderItem}
+                  keyExtractor={(_, index) => index.toString()}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  snapToInterval={carouselWidth}
+                  decelerationRate="fast"
+                  onViewableItemsChanged={onViewableItemsChanged}
+                  viewabilityConfig={viewabilityConfig}
                 />
-              ))}
-            </XStack>
-          </Animated.View>
-        </YStack>
+              </Animated.View>
 
-        {/* CTA button */}
+              {/* Dot pagination */}
+              <Animated.View style={{ opacity: dotsAnim }}>
+                <XStack justifyContent="center" gap={spacing.sm}>
+                  {facts.map((_, index) => (
+                    <View
+                      key={index}
+                      style={{
+                        height: dotSize,
+                        borderRadius: dotSize / 2,
+                        width: index === activeIndex ? activeDotWidth : dotSize,
+                        backgroundColor:
+                          index === activeIndex
+                            ? theme === 'dark'
+                              ? hexColors.dark.neonCyan
+                              : hexColors.light.primary
+                            : theme === 'dark'
+                              ? 'rgba(255,255,255,0.2)'
+                              : 'rgba(0,0,0,0.12)',
+                      }}
+                    />
+                  ))}
+                </XStack>
+              </Animated.View>
+            </YStack>
+          </XStack>
+        ) : (
+          /* Portrait (phones + portrait tablets): stacked vertically */
+          <YStack
+            {...(isTablet && {
+              maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
+              alignSelf: 'center' as const,
+              alignItems: 'center' as const,
+            })}
+            width="100%"
+          >
+            {/* Notification mockup */}
+            <Animated.View
+              style={{
+                ...(isTablet && { width: carouselWidth, alignSelf: 'center' }),
+                height: notifFixedHeight,
+                opacity: notifAnim,
+                transform: [{ translateY: notifSlide }],
+              }}
+            >
+              <MockNotificationCard
+                appName={t('appName')}
+                timeLabel={mockTimeLabel}
+                factText={facts[activeIndex]?.title ?? facts[0].title}
+              />
+            </Animated.View>
+
+            {/* Carousel */}
+            <Animated.View
+              style={{
+                ...(isTablet && { width: carouselWidth, alignSelf: 'center' }),
+                opacity: cardAnim,
+                transform: [{ scale: cardScale }],
+                marginHorizontal: isTablet ? 0 : -spacing.lg, // bleed to screen edges on phones only
+              }}
+            >
+              <FlatList
+                data={facts}
+                renderItem={renderItem}
+                keyExtractor={(_, index) => index.toString()}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={carouselWidth}
+                decelerationRate="fast"
+                onViewableItemsChanged={onViewableItemsChanged}
+                viewabilityConfig={viewabilityConfig}
+              />
+            </Animated.View>
+
+            {/* Dot pagination */}
+            <Animated.View style={{ opacity: dotsAnim }}>
+              <XStack justifyContent="center" gap={spacing.sm}>
+                {facts.map((_, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      height: dotSize,
+                      borderRadius: dotSize / 2,
+                      width: index === activeIndex ? activeDotWidth : dotSize,
+                      backgroundColor:
+                        index === activeIndex
+                          ? theme === 'dark'
+                            ? hexColors.dark.neonCyan
+                            : hexColors.light.primary
+                          : theme === 'dark'
+                            ? 'rgba(255,255,255,0.2)'
+                            : 'rgba(0,0,0,0.12)',
+                    }}
+                  />
+                ))}
+              </XStack>
+            </Animated.View>
+          </YStack>
+        )}
+
+        {/* CTA button (full width) */}
         <Animated.View
           style={{
             opacity: buttonAnim,
