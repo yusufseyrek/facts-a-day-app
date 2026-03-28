@@ -2,7 +2,7 @@
   "ios": {
     "CFBundleDisplayName": "Savoir du Jour",
     "CFBundleName": "Savoir du Jour",
-    "NSHumanReadableCopyright": "Fun Facts & Quiz Cérébral"
+    "NSHumanReadableCopyright": "Faits Vérifiés & Quiz du Jour"
   },
   "android": {
     "app_name": "Savoir du Jour"

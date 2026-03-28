@@ -2,7 +2,7 @@
   "ios": {
     "CFBundleDisplayName": "Günlük Bilgi",
     "CFBundleName": "Günlük Bilgi",
-    "NSHumanReadableCopyright": "Bilgi Oyunu & Beyin Quizi"
+    "NSHumanReadableCopyright": "Gerçek Kaynaklı Bilgi & Quiz"
   },
   "android": {
     "app_name": "Günlük Bilgi"

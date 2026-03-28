@@ -2,7 +2,7 @@
   "ios": {
     "CFBundleDisplayName": "Täglich Wissen",
     "CFBundleName": "Täglich Wissen",
-    "NSHumanReadableCopyright": "Fun Facts & Gehirn-Quizspiel"
+    "NSHumanReadableCopyright": "Ausgewählte Fakten & Trivia"
   },
   "android": {
     "app_name": "Täglich Wissen"

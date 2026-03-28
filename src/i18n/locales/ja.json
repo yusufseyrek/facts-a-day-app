@@ -2,7 +2,7 @@
   "ios": {
     "CFBundleDisplayName": "毎日の雑学",
     "CFBundleName": "毎日の雑学",
-    "NSHumanReadableCopyright": "雑学 · 脳トレクイズゲーム"
+    "NSHumanReadableCopyright": "厳選された雑学 & デイリートリビア"
   },
   "android": {
     "app_name": "毎日の雑学"
