@@ -2,8 +2,8 @@
   "screenshots": {
     "01_home": {
       "en": "Discover Real Facts\nEvery Day",
-      "de": "Entdecke echte Fakten\njeden Tag",
-      "es": "Descubre datos reales\ncada día",
+      "de": "Entdecke Fakten\njeden Tag",
+      "es": "Descubre datos\nreales cada día",
       "fr": "Découvrez des faits\nréels chaque jour",
       "ja": "毎日リアルな\n雑学を発見",
       "ko": "매일 실제\n상식을 발견하세요",
@@ -12,9 +12,9 @@
     },
     "02_fact_detail": {
       "en": "Sourced From Real\nNews & Articles",
-      "de": "Aus echten Nachrichten\n& Artikeln",
+      "de": "Aus echten News\n& Artikeln",
       "es": "De noticias y\nartículos reales",
-      "fr": "Tirés de vraies\nactualités & articles",
+      "fr": "Tirés de vraies\nactualités & infos",
       "ja": "実際のニュースや\n記事が情報源",
       "ko": "실제 뉴스와\n기사에서 엄선",
       "tr": "Gerçek haberler ve\nmakalelerden",
@@ -22,7 +22,7 @@
     },
     "03_story": {
       "en": "Did You Know?\nFascinating Insights",
-      "de": "Wusstest du das?\nFaszinierende Einblicke",
+      "de": "Wusstest du das?\nSpannende Einblicke",
       "es": "¿Sabías que...?\nDatos fascinantes",
       "fr": "Le saviez-vous ?\nAperçus fascinants",
       "ja": "知ってた？\n興味深い洞察",
@@ -37,7 +37,7 @@
       "fr": "Explorez science,\nhistoire et plus",
       "ja": "科学・歴史など\n幅広く探求",
       "ko": "과학, 역사\n그리고 더 많은 주제",
-      "tr": "Bilim, tarih ve\ndaha fazlasını keşfet",
+      "tr": "Bilim, tarih ve\ndaha fazlasını gör",
       "zh": "探索科学、历史\n等更多主题"
     },
     "05_category_browse": {
@@ -53,7 +53,7 @@
     "06_trivia": {
       "en": "Knowledge Quiz:\nTest What You Know",
       "de": "Wissens-Quiz:\nTeste dein Wissen",
-      "es": "Quiz de Conocimiento:\nPrueba lo que sabes",
+      "es": "Quiz de Sabiduría:\nPrueba lo que sabes",
       "fr": "Quiz Connaissances :\nTestez votre savoir",
       "ja": "知識クイズ：\n学んだことをテスト",
       "ko": "지식 퀴즈:\n배운 것을 테스트",
@@ -65,7 +65,7 @@
       "de": "3 Trivia-Modi\ndie dich fordern",
       "es": "3 modos de trivia\npara desafiarte",
       "fr": "3 modes trivia\npour vous défier",
-      "ja": "3つのトリビアモードで\n挑戦しよう",
+      "ja": "3つのモードで\n挑戦しよう",
       "ko": "3가지 트리비아\n모드로 도전",
       "tr": "3 trivia modu\nseni bekliyor",
       "zh": "3种问答模式\n挑战你自己"
@@ -74,7 +74,7 @@
       "en": "Track Your Streak\n& Keep Learning",
       "de": "Verfolge deine Serie\n& lerne weiter",
       "es": "Sigue tu racha\ny sigue aprendiendo",
-      "fr": "Suivez votre série\n& apprenez chaque jour",
+      "fr": "Suivez votre série\n& apprenez encore",
       "ja": "連続記録を追跡して\n学び続けよう",
       "ko": "연속 기록을 추적하고\n계속 배우세요",
       "tr": "Serini takip et\nve öğrenmeye devam",
@@ -87,7 +87,7 @@
       "fr": "Gagnez des badges\n& célébrez",
       "ja": "バッジを獲得して\n勝利を祝おう",
       "ko": "배지를 획득하고\n승리를 축하하세요",
-      "tr": "Rozet kazan\nve başarılarını kutla",
+      "tr": "Rozet kazan\nve başarını kutla",
       "zh": "赢取徽章\n庆祝每次胜利"
     },
     "10_favorites": {
@@ -102,16 +102,16 @@
     }
   },
   "screenshot_gradients": {
-    "01_home": "indigo",
-    "02_fact_detail": "ocean",
+    "01_home": "midnight",
+    "02_fact_detail": "midnight",
     "03_story": "midnight",
-    "04_discover": "sunset",
-    "05_category_browse": "aurora",
-    "06_trivia": "candy",
-    "07_trivia_game": "royal",
-    "08_trivia_performance": "emerald",
-    "09_trivia_results": "flame",
-    "10_favorites": "berry"
+    "04_discover": "midnight",
+    "05_category_browse": "midnight",
+    "06_trivia": "midnight",
+    "07_trivia_game": "midnight",
+    "08_trivia_performance": "midnight",
+    "09_trivia_results": "midnight",
+    "10_favorites": "midnight"
   },
   "gradients": {
     "default": ["#6366f1", "#8b5cf6", "#d946ef"],
