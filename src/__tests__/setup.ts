@@ -123,6 +123,11 @@ jest.mock('react-native-google-mobile-ads', () => ({
     getConsentInfo: jest.fn().mockResolvedValue({ canRequestAds: true }),
     getPurposeConsents: jest.fn().mockResolvedValue('11'),
   },
+  AdsConsentDebugGeography: {
+    DISABLED: 0,
+    EEA: 1,
+    NOT_EEA: 2,
+  },
   AdsConsentStatus: {
     UNKNOWN: 'UNKNOWN',
     REQUIRED: 'REQUIRED',
