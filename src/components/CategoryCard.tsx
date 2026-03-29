@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, Pressable } from 'react-native';
+import { Animated, Easing, Pressable, Text as RNText } from 'react-native';
 
 import { Check } from '@tamagui/lucide-icons';
 import { YStack } from 'tamagui';
@@ -9,7 +9,7 @@ import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { getContrastColor } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
 
-import { FONT_FAMILIES, Text } from './Typography';
+import { FONT_FAMILIES } from './Typography';
 
 export interface CategoryCardProps {
   icon: React.ReactNode;
@@ -189,16 +189,22 @@ const CategoryCardComponent = ({
                   })
                 : icon}
             </YStack>
-            <YStack alignItems="center" justifyContent="center" paddingHorizontal={spacing.xs}>
-              <Text.Label
-                fontFamily={FONT_FAMILIES.semibold}
-                color={selected ? contrastColor : '$text'}
-                textAlign="center"
-                fontSize={labelFontSize ?? typography.fontSize.caption}
-                numberOfLines={2}
+            <YStack alignItems="center" justifyContent="center" paddingHorizontal={spacing.sm}>
+              <RNText
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.65}
+                maxFontSizeMultiplier={1.3}
+                style={{
+                  fontFamily: FONT_FAMILIES.semibold,
+                  color: selected ? contrastColor : theme === 'dark' ? hexColors.dark.text : hexColors.light.text,
+                  textAlign: 'center',
+                  fontSize: labelFontSize ?? typography.fontSize.caption,
+                  lineHeight: (labelFontSize ?? typography.fontSize.caption) * 1.3,
+                }}
               >
                 {label}
-              </Text.Label>
+              </RNText>
             </YStack>
           </YStack>
         </Animated.View>
