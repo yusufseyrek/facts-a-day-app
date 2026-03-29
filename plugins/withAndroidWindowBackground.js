@@ -31,7 +31,8 @@ function withAndroidWindowBackground(
       const colorsPath = path.join(resPath, "values", "colors.xml");
       if (fs.existsSync(colorsPath)) {
         let colorsContent = fs.readFileSync(colorsPath, "utf-8");
-        
+
+        // Set windowBackground
         if (colorsContent.includes('name="windowBackground"')) {
           colorsContent = colorsContent.replace(
             /<color name="windowBackground">.*<\/color>/,
@@ -43,7 +44,20 @@ function withAndroidWindowBackground(
             `  <color name="windowBackground">${lightBackgroundColor}</color>\n</resources>`
           );
         }
-        
+
+        // Set activityBackground (used by styles.xml android:windowBackground)
+        if (colorsContent.includes('name="activityBackground"')) {
+          colorsContent = colorsContent.replace(
+            /<color name="activityBackground">.*<\/color>/,
+            `<color name="activityBackground">${lightBackgroundColor}</color>`
+          );
+        } else {
+          colorsContent = colorsContent.replace(
+            "</resources>",
+            `  <color name="activityBackground">${lightBackgroundColor}</color>\n</resources>`
+          );
+        }
+
         fs.writeFileSync(colorsPath, colorsContent, "utf-8");
       }
 
@@ -58,24 +72,39 @@ function withAndroidWindowBackground(
       let nightColorsContent;
       if (fs.existsSync(nightColorsPath)) {
         nightColorsContent = fs.readFileSync(nightColorsPath, "utf-8");
-        
+
         if (nightColorsContent.includes("<resources/>")) {
-          nightColorsContent = `<resources>\n  <color name="windowBackground">${darkBackgroundColor}</color>\n</resources>`;
-        } else if (nightColorsContent.includes('name="windowBackground"')) {
-          nightColorsContent = nightColorsContent.replace(
-            /<color name="windowBackground">.*<\/color>/,
-            `<color name="windowBackground">${darkBackgroundColor}</color>`
-          );
+          nightColorsContent = `<resources>\n  <color name="windowBackground">${darkBackgroundColor}</color>\n  <color name="activityBackground">${darkBackgroundColor}</color>\n</resources>`;
         } else {
-          nightColorsContent = nightColorsContent.replace(
-            "</resources>",
-            `  <color name="windowBackground">${darkBackgroundColor}</color>\n</resources>`
-          );
+          // windowBackground
+          if (nightColorsContent.includes('name="windowBackground"')) {
+            nightColorsContent = nightColorsContent.replace(
+              /<color name="windowBackground">.*<\/color>/,
+              `<color name="windowBackground">${darkBackgroundColor}</color>`
+            );
+          } else {
+            nightColorsContent = nightColorsContent.replace(
+              "</resources>",
+              `  <color name="windowBackground">${darkBackgroundColor}</color>\n</resources>`
+            );
+          }
+          // activityBackground
+          if (nightColorsContent.includes('name="activityBackground"')) {
+            nightColorsContent = nightColorsContent.replace(
+              /<color name="activityBackground">.*<\/color>/,
+              `<color name="activityBackground">${darkBackgroundColor}</color>`
+            );
+          } else {
+            nightColorsContent = nightColorsContent.replace(
+              "</resources>",
+              `  <color name="activityBackground">${darkBackgroundColor}</color>\n</resources>`
+            );
+          }
         }
       } else {
-        nightColorsContent = `<resources>\n  <color name="windowBackground">${darkBackgroundColor}</color>\n</resources>`;
+        nightColorsContent = `<resources>\n  <color name="windowBackground">${darkBackgroundColor}</color>\n  <color name="activityBackground">${darkBackgroundColor}</color>\n</resources>`;
       }
-      
+
       fs.writeFileSync(nightColorsPath, nightColorsContent, "utf-8");
 
       // 3. Update styles.xml to use the windowBackground color
