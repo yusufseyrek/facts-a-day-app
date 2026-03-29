@@ -414,10 +414,9 @@ export function FactModal({
   const basePaddingTop = Platform.OS === 'ios' ? spacing.xl : insets.top;
   const basePaddingBottom = spacing.xl;
   const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight;
-  const minHeaderHeight =
-    Platform.OS === 'ios'
-      ? media.buttonHeight + media.searchInputHeight
-      : media.searchInputHeight + spacing.xxl + insets.top;
+  // Min header height = same as a 2-line title header
+  const twoLinesTitleHeight = typography.lineHeight.headline * 2;
+  const minHeaderHeight = basePaddingTop + basePaddingBottom + twoLinesTitleHeight - spacing.sm;
   const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
   const headerCollapseAmount = Math.max(0, headerHeight - minHeaderHeight);
 
@@ -425,12 +424,18 @@ export function FactModal({
   const HEADER_BG_TRANSITION = hasImage ? IMAGE_HEIGHT - headerHeight : 100;
 
   // Track scroll position for gesture handling
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+  const collapseEndRef = useRef(0);
   React.useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
       currentScrollY.current = value;
+      if (headerCollapseAmount > 0 && collapseEndRef.current > 0) {
+        const collapsed = value >= collapseEndRef.current;
+        if (collapsed !== isHeaderCollapsed) setIsHeaderCollapsed(collapsed);
+      }
     });
     return () => scrollY.removeListener(id);
-  }, [scrollY]);
+  }, [scrollY, headerCollapseAmount, isHeaderCollapsed]);
 
   // Fade-in animation for text content on navigation
   const textFadeAnim = useRef(new Animated.Value(1)).current;
@@ -462,11 +467,13 @@ export function FactModal({
     extrapolateRight: 'clamp',
   });
 
-  // Image parallax - moves image down to show center portion
-  // At transition: scroll = IMAGE_HEIGHT - headerHeight
-  // Visible portion = headerHeight, we want to show center
-  // To center: translateY = (IMAGE_HEIGHT - headerHeight) / 2
-  const centeredTranslateY = hasImage ? (IMAGE_HEIGHT - headerHeight) / 2 : 0;
+  // Image parallax - moves image down to show upper portion
+  // At transition point, visible area = (diff - centeredTranslateY) from image top
+  // How far from the top of the image to show (0 = top edge, 0.5 = center, 1 = bottom)
+  const IMAGE_VERTICAL_ANCHOR = 0.13;
+  const centeredTranslateY = hasImage
+    ? (1 - IMAGE_VERTICAL_ANCHOR) * (IMAGE_HEIGHT - headerHeight)
+    : 0;
   const imageTranslateY = scrollY.interpolate({
     inputRange: [-100, 0, HEADER_BG_TRANSITION],
     outputRange: [-50, 0, centeredTranslateY], // At transition, show center portion
@@ -535,10 +542,11 @@ export function FactModal({
       })
     : 0;
 
-  // Header background image position - shows the center portion of the image
-  // To center the image in the header: translate up by (IMAGE_HEIGHT - headerHeight) / 2
-  // This aligns the center of the image with the center of the header
-  const headerImageTranslateY = hasImage ? -(IMAGE_HEIGHT - headerHeight) / 2 : 0;
+  // Header background image position - shows the upper portion of the image
+  // Must match body parallax anchor point
+  const headerImageTranslateY = hasImage
+    ? -IMAGE_VERTICAL_ANCHOR * (IMAGE_HEIGHT - headerHeight)
+    : 0;
   const fadedImageTranslateY = hasImage
     ? scrollY.interpolate({
         inputRange: [-100, 0, HEADER_BG_TRANSITION, HEADER_BG_TRANSITION + 1000],
@@ -589,6 +597,7 @@ export function FactModal({
   const TITLE_ANIM_END = HEADER_BG_TRANSITION + headerTitleStartY;
   const BORDER_ANIM_END = BADGE_SCROLL_THRESHOLD + spacing.xl * 2;
   const HEADER_COLLAPSE_START = Math.max(TITLE_ANIM_END, BORDER_ANIM_END);
+  collapseEndRef.current = HEADER_COLLAPSE_START + headerCollapseAmount;
 
   const headerCollapseTranslateY =
     hasImage && headerCollapseAmount > 0
@@ -615,20 +624,6 @@ export function FactModal({
           extrapolate: 'clamp',
         })
       : 0;
-
-  // Title fades out earlier than the header finishes collapsing
-  const headerTitleCollapseOpacity =
-    hasImage && headerCollapseAmount > 0
-      ? scrollY.interpolate({
-          inputRange: [
-            Math.max(0, HEADER_COLLAPSE_START - 1),
-            HEADER_COLLAPSE_START,
-            HEADER_COLLAPSE_START + headerCollapseAmount * 0.5,
-          ],
-          outputRange: [1, 1, 0],
-          extrapolate: 'clamp',
-        })
-      : 1;
 
   const factTitle = fact.title || fact.content.substring(0, 60) + '...';
 
@@ -739,10 +734,7 @@ export function FactModal({
                 style={[
                   StyleSheet.absoluteFill,
                   {
-                    opacity:
-                      hasImage && headerCollapseAmount > 0
-                        ? Animated.multiply(fadeOpacity, headerTitleCollapseOpacity)
-                        : fadeOpacity,
+                    opacity: fadeOpacity,
                     backgroundColor:
                       theme === 'dark' ? 'rgba(0, 0, 0, 0.35)' : 'rgba(255, 255, 255, 0.5)',
                   },
@@ -790,12 +782,14 @@ export function FactModal({
                 <Animated.View
                   style={{
                     flex: 1,
+                    minHeight: titleHeight,
                     paddingRight: iconSizes.xl + spacing.xs,
-                    opacity: headerTitleCollapseOpacity,
                     transform: [{ translateY: headerTitleTranslateY }],
                   }}
                 >
-                  <Text.Headline>{factTitle}</Text.Headline>
+                  <Text.Headline numberOfLines={isHeaderCollapsed ? 2 : undefined}>
+                    {factTitle}
+                  </Text.Headline>
                 </Animated.View>
               </HeaderTitleContainer>
             </XStack>
