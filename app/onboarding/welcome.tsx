@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, FlatList, Platform, StyleSheet, View, ViewToken } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Animated, Easing, FlatList, StyleSheet, View, ViewToken } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
 import { Image } from 'expo-image';
@@ -72,12 +72,11 @@ const FactImageCard = ({
         ]}
       >
         <Image
-          source={{ uri: item.imageUrl }}
+          source={item.image}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           placeholder={placeholder}
           transition={300}
-          cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
         />
 
         {/* Gradient overlay */}
@@ -119,6 +118,7 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const { screenWidth, screenHeight, spacing, iconSizes, isTablet } = useResponsive();
 
+  const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
   const { isInitialized, isInitializing, initializationError, initializeOnboarding } =
     useOnboarding();
@@ -134,12 +134,29 @@ export default function WelcomeScreen() {
     ? LAYOUT.MAX_CONTENT_WIDTH * 0.7
     : screenWidth;
 
-  // Derive card size from responsive spacing
-  const cardSize = carouselWidth - spacing.xxl * 2;
-
   // Dot dimensions from spacing scale
   const dotSize = spacing.sm;
   const activeDotWidth = spacing.xl;
+
+  // Notification mockup fixed height — header line + body (2 lines) + padding + gap
+  const notifFixedHeight = iconSizes.xxl + spacing.lg * 4;
+
+  // Derive card size from width, capped by available height on small screens
+  const widthBasedCardSize = carouselWidth - spacing.xxl * 2;
+  const safeHeight = screenHeight - insets.top - insets.bottom;
+  // Reserve: outer padding + header + button + dots + carousel item padding + notification + breathing room
+  const reservedHeight =
+    spacing.lg * 2 + spacing.md + // outer YStack padding (top + bottom)
+    100 + // header estimate (progress + title + subtitle)
+    60 + // CTA button height + marginTop
+    dotSize + spacing.lg + // dots row + gap
+    spacing.sm + spacing.lg + // carousel item padding (top + bottom)
+    notifFixedHeight + // notification mockup
+    spacing.xl * 4; // breathing room between header/notif, notif/carousel, carousel/dots, dots/button
+  const maxCardFromHeight = safeHeight - reservedHeight;
+  const cardSize = isTablet
+    ? widthBasedCardSize
+    : Math.min(widthBasedCardSize, Math.max(180, maxCardFromHeight));
 
   // Pre-fetch metadata (categories) while user browses the carousel
   // so the categories screen loads instantly
@@ -250,9 +267,6 @@ export default function WelcomeScreen() {
     </View>
   );
 
-  // Notification mockup fixed height — header line + body (2 lines) + padding + gap
-  const notifFixedHeight = iconSizes.xxl + spacing.lg * 4;
-
   return (
     <Container>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
@@ -308,6 +322,7 @@ export default function WelcomeScreen() {
                 }}
               >
                 <FlatList
+                  key={carouselWidth}
                   data={facts}
                   renderItem={renderItem}
                   keyExtractor={(_, index) => index.toString()}
@@ -349,6 +364,9 @@ export default function WelcomeScreen() {
         ) : (
           /* Portrait (phones + portrait tablets): stacked vertically */
           <YStack
+            flex={1}
+            justifyContent="center"
+            gap={spacing.md}
             {...(isTablet && {
               maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
               alignSelf: 'center' as const,
@@ -426,6 +444,7 @@ export default function WelcomeScreen() {
           style={{
             opacity: buttonAnim,
             transform: [{ translateY: buttonSlide }],
+            marginTop: spacing.xl,
           }}
         >
           <Button onPress={() => router.push('/onboarding/categories')}>
