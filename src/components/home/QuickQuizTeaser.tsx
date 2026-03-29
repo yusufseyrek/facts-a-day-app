@@ -284,18 +284,18 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
                   ]}
                 >
                   <XStack
-                    backgroundColor={colors.surface}
+                    backgroundColor="transparent"
                     height={buttonHeight}
                     borderRadius={radius.sm}
                     borderWidth={1}
-                    borderColor={borderColor}
+                    borderColor={primaryColor}
                     alignItems="center"
                     justifyContent="center"
                     gap={spacing.xs}
                     opacity={selectedAnswer !== null ? 1 : 0.4}
                   >
-                    <BarChart3 size={iconSizes.sm} color={secondaryTextColor} />
-                    <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={secondaryTextColor}>
+                    <BarChart3 size={iconSizes.sm} color={primaryColor} />
+                    <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={primaryColor}>
                       {t('seeResults')}
                     </Text.Caption>
                   </XStack>
