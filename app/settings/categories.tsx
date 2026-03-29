@@ -12,6 +12,7 @@ import { Button, CategoryCard, SuccessToast, Text } from '../../src/components';
 import { CATEGORY_LIMITS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
+import { showRewardedAd } from '../../src/components/ads/RewardedAd';
 import { showSettingsInterstitial } from '../../src/services/adManager';
 import {
   Screens,
@@ -184,6 +185,12 @@ export default function CategoriesSettings() {
       if (__DEV__) console.log('No changes detected, navigating back without saving');
       router.back();
       return;
+    }
+
+    // Non-premium users must watch a rewarded ad to update categories
+    if (!isPremium) {
+      const rewarded = await showRewardedAd();
+      if (!rewarded) return;
     }
 
     setIsSaving(true);
@@ -403,7 +410,13 @@ export default function CategoriesSettings() {
               disabled={selectedCategories.length < categoryLimits.min || isSaving}
               loading={isSaving}
             >
-              {isSaving ? (isFetchingFacts ? t('savingAndFetchingFacts') : t('saving')) : t('save')}
+              {isSaving
+                ? isFetchingFacts
+                  ? t('savingAndFetchingFacts')
+                  : t('saving')
+                : !isPremium && hasChanges()
+                  ? t('watchAdToSave')
+                  : t('save')}
             </Button>
           </View>
         </Animated.View>
