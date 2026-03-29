@@ -4,7 +4,7 @@ import { AdEventType, AdsConsent, InterstitialAd, TestIds } from 'react-native-g
 
 import Constants from 'expo-constants';
 
-import { AD_KEYWORDS } from '../../config/app';
+import { AD_KEYWORDS, INTERSTITIAL_ADS } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { shouldShowAds } from '../../services/premiumState';
 
@@ -257,7 +257,7 @@ export const showInterstitialAd = async (): Promise<void> => {
 // Preload interstitial ad (call this when app starts)
 export const preloadInterstitialAd = async () => {
   // Don't preload ads if globally disabled
-  if (!shouldShowAds()) {
+  if (!shouldShowAds() || !INTERSTITIAL_ADS.ENABLED) {
     return;
   }
 
