@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
@@ -534,12 +534,14 @@ export default function OnboardingSuccessScreen() {
 
   // Consent screen — shown as full screen before animation
   const renderConsentScreen = () => (
-    <YStack
-      padding={spacing.xl}
-      gap={spacing.lg}
-      flex={1}
-      justifyContent="center"
-      alignItems="center"
+    <ScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: spacing.xl,
+      }}
+      showsVerticalScrollIndicator={false}
     >
       <YStack alignItems="center" gap={spacing.lg} paddingHorizontal={spacing.md}>
         <YStack
@@ -579,7 +581,7 @@ export default function OnboardingSuccessScreen() {
           )}
         </YStack>
       </YStack>
-    </YStack>
+    </ScrollView>
   );
 
   // Animation screen (progress bar reflects download)
