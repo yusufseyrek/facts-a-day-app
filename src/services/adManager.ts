@@ -25,6 +25,7 @@ const isCooldownElapsed = (): boolean => {
  * Returns true if an ad was shown.
  */
 const maybeShowInterstitial = async (source: InterstitialSource): Promise<boolean> => {
+  if (!INTERSTITIAL_ADS.ENABLED) return false;
   if (!shouldShowAds()) return false;
   if (!isCooldownElapsed()) return false;
 
@@ -66,6 +67,7 @@ export const showQuickQuizInterstitial = (): Promise<boolean> =>
 export const maybeShowFactViewInterstitial = async (opts?: {
   skipThisTime?: boolean;
 }): Promise<void> => {
+  if (!INTERSTITIAL_ADS.ENABLED) return;
   if (!shouldShowAds()) return;
 
   try {

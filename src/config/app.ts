@@ -40,6 +40,8 @@ export const APP_CHECK = {
  * Interstitial ad settings
  */
 export const INTERSTITIAL_ADS = {
+  /** Whether interstitial ads are enabled */
+  ENABLED: false,
   /** Number of fact views between interstitial ads */
   FACTS_BETWEEN_ADS: 5,
   /** Minimum seconds between interstitial ads (cooldown) */
