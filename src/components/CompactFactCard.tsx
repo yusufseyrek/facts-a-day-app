@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { RefreshCw } from '@tamagui/lucide-icons';
+import { ChevronRight, RefreshCw } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
@@ -20,7 +20,9 @@ interface CompactFactCardProps {
   onPress: () => void;
   cardWidth?: number;
   hideCategoryBadge?: boolean;
+  showChevron?: boolean;
   titleLines?: number;
+  imageSize?: number;
 }
 
 const CompactFactCardComponent = ({
@@ -28,13 +30,15 @@ const CompactFactCardComponent = ({
   onPress,
   cardWidth,
   hideCategoryBadge,
+  showChevron,
+  imageSize,
   titleLines = 2,
 }: CompactFactCardProps) => {
   const { theme } = useTheme();
-  const { spacing, radius, media, typography } = useResponsive();
+  const { spacing, radius, media, typography, iconSizes } = useResponsive();
   const colors = hexColors[theme];
 
-  const thumbnailSize = media.compactCardThumbnailSize;
+  const thumbnailSize = imageSize ?? media.compactCardThumbnailSize;
 
   const scaleAnim = useSharedValue(1);
   const scaleStyle = useAnimatedStyle(() => ({
@@ -182,7 +186,7 @@ const CompactFactCardComponent = ({
         </View>
 
         {/* Text content */}
-        <View style={[styles.textContainer, { height: thumbnailSize, gap: spacing.xs }]}>
+        <View style={[styles.textContainer, { gap: spacing.xs }]}>
           <Text.Label
             numberOfLines={titleLines}
             color={colors.text}
@@ -198,6 +202,8 @@ const CompactFactCardComponent = ({
             />
           )}
         </View>
+
+        {showChevron && <ChevronRight size={iconSizes.md} color={colors.primary} />}
       </Pressable>
     </Animated.View>
   );

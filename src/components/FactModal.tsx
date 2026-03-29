@@ -1094,6 +1094,7 @@ export function FactModal({
                 facts={relatedFacts}
                 onFactPress={onRelatedFactPress}
                 categoryColor={categoryColor}
+                categoryIcon={fact.categoryData?.icon}
                 categoryName={fact.categoryData?.name || slugToTitleCase(fact.category || '')}
                 containerWidth={containerWidth}
               />

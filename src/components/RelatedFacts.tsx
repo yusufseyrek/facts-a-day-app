@@ -3,6 +3,7 @@ import { View } from 'react-native';
 
 import { useTranslation } from '../i18n';
 import { hexColors, useTheme } from '../theme';
+import { getLucideIcon } from '../utils/iconMapper';
 import { useResponsive } from '../utils/useResponsive';
 
 import { CompactFactCard } from './CompactFactCard';
@@ -14,6 +15,7 @@ interface RelatedFactsProps {
   facts: FactWithRelations[];
   onFactPress: (factId: number) => void;
   categoryColor: string | null;
+  categoryIcon?: string;
   categoryName: string;
   containerWidth: number;
 }
@@ -22,12 +24,13 @@ const RelatedFactsComponent = ({
   facts,
   onFactPress,
   categoryColor,
+  categoryIcon,
   categoryName,
   containerWidth,
 }: RelatedFactsProps) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { spacing, borderWidths } = useResponsive();
+  const { spacing, borderWidths, media, iconSizes } = useResponsive();
   const colors = hexColors[theme];
 
   if (facts.length === 0) return null;
@@ -41,20 +44,26 @@ const RelatedFactsComponent = ({
       {/* Separator */}
       <View
         style={{
-          height: borderWidths.hairline,
+          height: borderWidths.thin,
           backgroundColor: separatorColor,
           marginBottom: spacing.xl,
         }}
       />
 
       {/* Section header */}
-      <Text.Body
-        color="$textSecondary"
-        fontFamily={FONT_FAMILIES.bold}
-        style={{ marginBottom: spacing.md }}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          marginBottom: spacing.md,
+        }}
       >
-        {t('relatedFacts', { category: categoryName })}
-      </Text.Body>
+        {getLucideIcon(categoryIcon, iconSizes.sm, categoryColor || colors.textSecondary)}
+        <Text.Body color="$textSecondary" fontFamily={FONT_FAMILIES.bold}>
+          {t('relatedFacts', { category: categoryName })}
+        </Text.Body>
+      </View>
 
       {/* Vertical card list */}
       <View style={{ gap: spacing.md }}>
@@ -63,8 +72,11 @@ const RelatedFactsComponent = ({
             key={fact.id}
             fact={fact}
             onPress={() => onFactPress(fact.id)}
-            cardWidth={Math.round(containerWidth * 0.85)}
+            // cardWidth={Math.round(containerWidth)}
             titleLines={3}
+            imageSize={media.compactCardThumbnailSize * 0.85}
+            hideCategoryBadge
+            showChevron
           />
         ))}
       </View>
