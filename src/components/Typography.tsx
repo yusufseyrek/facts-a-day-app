@@ -3,6 +3,10 @@ import { TextStyle } from 'react-native';
 
 import { GetProps, Text as TamaguiText } from '@tamagui/core';
 
+import {
+  maxFontSizeMultipliers,
+  DEFAULT_MAX_FONT_SIZE_MULTIPLIER,
+} from '../utils/responsive';
 import { useResponsive } from '../utils/useResponsive';
 
 /**
@@ -88,6 +92,7 @@ export interface TextProps extends Omit<BaseTextProps, 'style'> {
   children: React.ReactNode;
   style?: TextStyle;
   preset?: TextPreset;
+  maxFontSizeMultiplier?: number;
 }
 
 /**
@@ -109,6 +114,7 @@ const TextBase = React.memo(
     fontFamily: customFontFamily,
     fontWeight: customFontWeight,
     color: customColor,
+    maxFontSizeMultiplier: customMaxFontSizeMultiplier,
     style,
     ...props
   }: TextProps) => {
@@ -130,10 +136,14 @@ const TextBase = React.memo(
     const fontFamily = customFontFamily ?? presetStyles?.fontFamily;
     const fontWeight = customFontWeight ?? presetStyles?.fontWeight;
     const color = customColor ?? presetStyles?.color;
+    const resolvedMaxFontSizeMultiplier =
+      customMaxFontSizeMultiplier ??
+      (preset ? maxFontSizeMultipliers[preset] : DEFAULT_MAX_FONT_SIZE_MULTIPLIER);
 
     return (
       <TamaguiText
         userSelect="text"
+        maxFontSizeMultiplier={resolvedMaxFontSizeMultiplier}
         fontSize={fontSize}
         lineHeight={lineHeight}
         letterSpacing={letterSpacing}

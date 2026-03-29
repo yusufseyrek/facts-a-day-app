@@ -2,6 +2,7 @@ import React, { Component, ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { recordError } from '../config/firebase';
+import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { hexColors } from '../theme';
 
 import { FONT_FAMILIES } from './Typography';
@@ -93,14 +94,14 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <View style={styles.container}>
           <View style={styles.content}>
-            <Text style={styles.emoji}>😔</Text>
-            <Text style={styles.title}>Oops! Something went wrong</Text>
-            <Text style={styles.body}>We&apos;ve been notified and will fix this soon.</Text>
+            <Text maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER} style={styles.emoji}>😔</Text>
+            <Text maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER} style={styles.title}>Oops! Something went wrong</Text>
+            <Text maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER} style={styles.body}>We&apos;ve been notified and will fix this soon.</Text>
 
             {__DEV__ && this.state.error && (
               <View style={styles.errorDetails}>
-                <Text style={styles.errorLabel}>Error Details (Dev Only):</Text>
-                <Text style={styles.errorText}>{this.state.error.toString()}</Text>
+                <Text maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER} style={styles.errorLabel}>Error Details (Dev Only):</Text>
+                <Text maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER} style={styles.errorText}>{this.state.error.toString()}</Text>
               </View>
             )}
 
@@ -108,7 +109,7 @@ export class ErrorBoundary extends Component<Props, State> {
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
               onPress={this.resetError}
             >
-              <Text style={styles.buttonText}>Try Again</Text>
+              <Text maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER} style={styles.buttonText}>Try Again</Text>
             </Pressable>
           </View>
         </View>

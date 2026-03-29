@@ -7,6 +7,7 @@ import { YStack } from 'tamagui';
 import { useTranslation } from '../i18n/useTranslation';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { getContrastColor } from '../utils/colors';
+import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { useResponsive } from '../utils/useResponsive';
 
 import { FONT_FAMILIES } from './Typography';
@@ -194,7 +195,7 @@ const CategoryCardComponent = ({
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.65}
-                maxFontSizeMultiplier={1.3}
+                maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER}
                 style={{
                   fontFamily: FONT_FAMILIES.semibold,
                   color: selected ? contrastColor : theme === 'dark' ? hexColors.dark.text : hexColors.light.text,

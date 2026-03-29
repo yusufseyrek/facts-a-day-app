@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { i18n } from '../i18n/config';
+import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 
 import { FONT_FAMILIES } from './Typography';
 
@@ -21,9 +22,9 @@ export function AppCheckBlockingScreen({ onRetry, isRetrying }: AppCheckBlocking
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.content}>
-        <Text style={styles.emoji}>🛡️</Text>
-        <Text style={styles.title}>{i18n.t('appCheckFailedTitle')}</Text>
-        <Text style={styles.message}>{i18n.t('appCheckFailedMessage')}</Text>
+        <Text maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER} style={styles.emoji}>🛡️</Text>
+        <Text maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER} style={styles.title}>{i18n.t('appCheckFailedTitle')}</Text>
+        <Text maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER} style={styles.message}>{i18n.t('appCheckFailedMessage')}</Text>
 
         <Pressable
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
@@ -33,7 +34,7 @@ export function AppCheckBlockingScreen({ onRetry, isRetrying }: AppCheckBlocking
           {isRetrying ? (
             <ActivityIndicator color="#FFFFFF" size="small" />
           ) : (
-            <Text style={styles.buttonText}>{i18n.t('tryAgain')}</Text>
+            <Text maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER} style={styles.buttonText}>{i18n.t('tryAgain')}</Text>
           )}
         </Pressable>
       </View>

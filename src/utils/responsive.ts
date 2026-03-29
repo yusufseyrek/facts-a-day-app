@@ -138,6 +138,33 @@ export const typography = {
 } as const;
 
 // ============================================================================
+// MAX FONT SIZE MULTIPLIER
+// ============================================================================
+
+/**
+ * Maximum font size multiplier per text preset.
+ * Caps how much system font scaling affects each text role.
+ * Higher values = more scaling allowed (better accessibility, more layout risk).
+ * 1.0 = no system scaling at all.
+ */
+export const maxFontSizeMultipliers: Record<string, number> = {
+  hero: 1.0, // 48px base — already huge, no scaling needed
+  display: 1.1, // 32px base — minimal tolerance
+  headline: 1.15, // 25px base — slight scaling OK
+  title: 1.2, // 22px base — moderate cap
+  body: 1.35, // 17px base — most generous for readability
+  label: 1.2, // 14px base — tight layouts (buttons, forms)
+  caption: 1.35, // 12px base — small text benefits from scaling
+  tiny: 1.4, // 11px base — smallest, most benefit
+} as const;
+
+/**
+ * Default maxFontSizeMultiplier for text without a preset.
+ * Applied when Text is used with custom fontSize but no preset.
+ */
+export const DEFAULT_MAX_FONT_SIZE_MULTIPLIER = 1.3;
+
+// ============================================================================
 // SPACING
 // ============================================================================
 

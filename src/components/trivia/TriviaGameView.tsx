@@ -16,6 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { LAYOUT } from '../../config/app';
+import { maxFontSizeMultipliers } from '../../utils/responsive';
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
@@ -353,6 +354,7 @@ export function TriviaGameView({
                       >
                         <BookOpen size={typography.fontSize.caption} color={primaryColor} />
                         <RNText
+                          maxFontSizeMultiplier={maxFontSizeMultipliers.label}
                           style={{
                             fontFamily: FONT_FAMILIES.semibold,
                             fontSize: typography.fontSize.caption,
@@ -386,6 +388,7 @@ export function TriviaGameView({
                       >
                         <Lightbulb size={typography.fontSize.caption} color={accentColor} />
                         <RNText
+                          maxFontSizeMultiplier={maxFontSizeMultipliers.label}
                           style={{
                             fontFamily: FONT_FAMILIES.semibold,
                             fontSize: typography.fontSize.caption,
@@ -425,6 +428,7 @@ export function TriviaGameView({
                         >
                           <Lightbulb size={typography.fontSize.caption} color={accentColor} />
                           <RNText
+                            maxFontSizeMultiplier={maxFontSizeMultipliers.label}
                             style={{
                               fontFamily: FONT_FAMILIES.semibold,
                               fontSize: typography.fontSize.caption,
@@ -456,6 +460,7 @@ export function TriviaGameView({
                       >
                         <Lightbulb size={typography.fontSize.caption} color={secondaryTextColor} />
                         <RNText
+                          maxFontSizeMultiplier={maxFontSizeMultipliers.label}
                           style={{
                             fontFamily: FONT_FAMILIES.semibold,
                             fontSize: typography.fontSize.caption,

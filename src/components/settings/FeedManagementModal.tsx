@@ -12,6 +12,8 @@ import {
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 
 import { FlashList } from '@shopify/flash-list';
+
+import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../../utils/responsive';
 import { Calendar, Check, Edit3, RefreshCw, Search, Trash2, X } from '@tamagui/lucide-icons';
 
 import { useTranslation } from '../../i18n';
@@ -495,6 +497,7 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({ visibl
             <View style={[dynamicStyles.searchContainer, { backgroundColor: colors.surface }]}>
               <Search size={iconSizes.md} color={colors.textSecondary} />
               <TextInput
+                maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER}
                 style={[dynamicStyles.searchInput, { color: colors.text }]}
                 placeholder="Search facts..."
                 placeholderTextColor={colors.textSecondary}
@@ -595,6 +598,7 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({ visibl
                   Edit the title for screenshots
                 </Text.Caption>
                 <TextInput
+                  maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER}
                   style={[
                     dynamicStyles.titleInput,
                     {

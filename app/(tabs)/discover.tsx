@@ -11,6 +11,8 @@ import {
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { useFocusEffect } from '@react-navigation/native';
+
+import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../../src/utils/responsive';
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { styled, View } from '@tamagui/core';
 import { Search, X } from '@tamagui/lucide-icons';
@@ -635,6 +637,7 @@ function DiscoverScreen() {
               </Pressable>
             )}
             <SearchInput
+              maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER}
               ref={searchInputRef}
               value={searchQuery}
               onChangeText={handleSearchChange}
