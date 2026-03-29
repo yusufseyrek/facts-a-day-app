@@ -22,6 +22,7 @@ import {
   FONT_FAMILIES,
   LoadingContainer,
   ScreenContainer,
+  ScreenHeader,
   Text,
   useIconColor,
 } from '../../src/components';
@@ -440,25 +441,21 @@ export default function FavoritesScreen() {
           </XStack>
         </Animated.View>
       ) : (
-        <XStack
-          padding={spacing.lg}
+        <ScreenHeader
+          icon={<Heart size={iconSizes.lg} color={iconColor} />}
+          title={t('favorites')}
           paddingBottom={spacing.sm}
-          alignItems="center"
-          gap={spacing.sm}
-        >
-          <XStack height={media.searchInputHeight} alignItems="center" flex={1} gap={spacing.sm}>
-            <Heart size={iconSizes.lg} color={iconColor} />
-            <Text.Headline flex={1}>{t('favorites')}</Text.Headline>
-          </XStack>
-          <Pressable onPress={openSearch} hitSlop={8}>
-            <Search
-              size={iconSizes.lg}
-              color={
-                theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
-              }
-            />
-          </Pressable>
-        </XStack>
+          rightElement={
+            <Pressable onPress={openSearch} hitSlop={8}>
+              <Search
+                size={iconSizes.lg}
+                color={
+                  theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
+                }
+              />
+            </Pressable>
+          }
+        />
       )}
 
       {/* Category Filter Chips */}

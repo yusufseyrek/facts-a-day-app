@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   Ban,
-  Brain,
   Check,
   Crown,
   Infinity as InfinityIcon,
@@ -40,7 +39,7 @@ export default function PaywallScreen() {
   const { t, locale } = useTranslation();
   const { spacing, radius, iconSizes, media, borderWidths } = useResponsive();
   const tc = paywallThemeColors[theme];
-  const { isPremium, subscriptions, restorePurchases, devSetPremium } = usePremium();
+  const { isPremium, subscriptions, cachedPrices, restorePurchases, devSetPremium } = usePremium();
   const { requestPurchase } = useIAP();
 
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -53,11 +52,15 @@ export default function PaywallScreen() {
   }, []);
 
   useEffect(() => {
-    if (subscriptions.length > 0 && !selectedPlan) {
+    if (selectedPlan) return;
+    if (subscriptions.length > 0) {
       const monthly = subscriptions.find((s) => s.id.includes('monthly'));
       setSelectedPlan(monthly?.id || subscriptions[0].id);
+    } else if (cachedPrices.length > 0) {
+      const monthly = cachedPrices.find((c) => c.id.includes('monthly'));
+      setSelectedPlan(monthly?.id || cachedPrices[0].id);
     }
-  }, [subscriptions, selectedPlan]);
+  }, [subscriptions, cachedPrices, selectedPlan]);
 
   useEffect(() => {
     if (isPremium) {
@@ -147,7 +150,9 @@ export default function PaywallScreen() {
 
   const getDisplayPrice = (productId: string): string => {
     const sub = subscriptions.find((s) => s.id === productId);
-    return sub?.displayPrice || '---';
+    if (sub?.displayPrice) return sub.displayPrice;
+    const cached = cachedPrices.find((c) => c.id === productId);
+    return cached?.displayPrice || '---';
   };
 
   const isWeekly = (productId: string) => productId.includes('weekly');
@@ -156,16 +161,16 @@ export default function PaywallScreen() {
   // Derived responsive sizes
   const closeBtnSize = iconSizes.lg + spacing.sm;
   const closeBtnRadius = closeBtnSize / 2;
-  const crownCircleSize = iconSizes.heroLg + radius.md;
+  const crownCircleSize = iconSizes.hero;
   const crownCircleRadius = crownCircleSize / 2;
-  const crownGlowSize = crownCircleSize + spacing.xxl + spacing.xs;
+  const crownGlowSize = crownCircleSize + spacing.xl;
   const crownGlowRadius = crownGlowSize / 2;
-  const featureIconSize = iconSizes.xl + spacing.sm;
-  const featureIconRadius = featureIconSize / 2;
   const checkCircleSize = iconSizes.md;
   const checkCircleRadius = checkCircleSize / 2;
 
-  const featureIconColor = '#78350F'; // Dark amber for better contrast on gold gradients
+  const featureIconColor = '#78350F';
+  const featureIconSize = iconSizes.xl + spacing.sm;
+  const featureIconRadius = featureIconSize / 2;
 
   const features = [
     {
@@ -181,22 +186,16 @@ export default function PaywallScreen() {
       gradient: [PAYWALL_GOLD.primary, PAYWALL_GOLD.light] as const,
     },
     {
+      icon: <WifiOff size={iconSizes.md} color={featureIconColor} />,
+      title: t('paywallFeatureOfflineSupport'),
+      description: t('paywallFeatureOfflineCombinedDesc'),
+      gradient: [PAYWALL_GOLD.dark, PAYWALL_GOLD.badge] as const,
+    },
+    {
       icon: <Lightbulb size={iconSizes.md} color={featureIconColor} />,
       title: t('paywallFeatureHints'),
       description: t('paywallFeatureHintsDesc'),
       gradient: ['#FF8C00', PAYWALL_GOLD.badge] as const,
-    },
-    {
-      icon: <WifiOff size={iconSizes.md} color={featureIconColor} />,
-      title: t('paywallFeatureOffline'),
-      description: t('paywallFeatureOfflineDesc'),
-      gradient: [PAYWALL_GOLD.dark, PAYWALL_GOLD.badge] as const,
-    },
-    {
-      icon: <Brain size={iconSizes.md} color={featureIconColor} />,
-      title: t('paywallFeatureOfflineTrivia'),
-      description: t('paywallFeatureOfflineTriviaDesc'),
-      gradient: [PAYWALL_GOLD.primary, PAYWALL_GOLD.badge] as const,
     },
   ];
 
@@ -270,21 +269,12 @@ export default function PaywallScreen() {
           borderRadius: radius.lg,
           borderWidth: 1,
           borderColor: tc.featureBorder,
-          paddingVertical: spacing.md,
+          paddingVertical: spacing.sm,
           paddingHorizontal: spacing.md,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.08,
           shadowRadius: 8,
-        },
-        featureGlow: {
-          position: 'absolute',
-          top: -spacing.xs,
-          left: -spacing.xs,
-          right: -spacing.xs,
-          bottom: -spacing.xs,
-          borderRadius: radius.lg + spacing.xs,
-          opacity: 0.15,
         },
         planCard: {
           alignItems: 'center',
@@ -426,7 +416,7 @@ export default function PaywallScreen() {
       >
         {/* Crown + Title */}
         <Animated.View entering={FadeInDown.duration(500)}>
-          <YStack alignItems="center" gap={spacing.sm} marginBottom={spacing.lg}>
+          <YStack alignItems="center" gap={spacing.xs} marginBottom={spacing.md}>
             <View style={dynamicStyles.crownContainer}>
               <View style={dynamicStyles.crownGlowRing} />
               <LinearGradient
@@ -435,21 +425,21 @@ export default function PaywallScreen() {
                 end={{ x: 1, y: 0 }}
                 style={dynamicStyles.crownCircle}
               >
-                <Crown size={iconSizes.hero - spacing.sm} color="#FFFFFF" fill="#FFFFFF" />
+                <Crown size={iconSizes.lg} color="#FFFFFF" fill="#FFFFFF" />
               </LinearGradient>
             </View>
 
-            <Text.Display textAlign="center" color={tc.title}>
+            <Text.Headline textAlign="center" color={tc.title}>
               {t('paywallTitle')}
-            </Text.Display>
-            <Text.Body textAlign="center" color={tc.subtitle}>
+            </Text.Headline>
+            <Text.Caption textAlign="center" color={tc.subtitle}>
               {t('paywallSubtitle')}
-            </Text.Body>
+            </Text.Caption>
           </YStack>
         </Animated.View>
 
         {/* Features */}
-        <YStack gap={spacing.md} marginBottom={spacing.xl} marginHorizontal={spacing.lg}>
+        <YStack gap={spacing.sm} marginBottom={spacing.lg} marginHorizontal={spacing.lg}>
           {features.map((feature, index) => (
             <Animated.View key={index} entering={FadeInDown.delay(120 + index * 80).duration(500)}>
               <View style={dynamicStyles.featureCard}>

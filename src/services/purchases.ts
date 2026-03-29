@@ -125,3 +125,35 @@ export const isCachedPremiumWithinGracePeriod = async (): Promise<boolean> => {
     return false;
   }
 };
+
+// --- Subscription price caching ---
+
+const SUBSCRIPTION_CACHE_KEY = '@factsaday_subscription_cache';
+
+export interface CachedSubscription {
+  id: string;
+  displayPrice: string;
+}
+
+/**
+ * Cache subscription product info (id + displayPrice) for instant paywall display.
+ */
+export const cacheSubscriptions = async (subs: CachedSubscription[]): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify(subs));
+  } catch (error) {
+    console.error('Failed to cache subscriptions:', error);
+  }
+};
+
+/**
+ * Read cached subscription products. Returns empty array if none cached.
+ */
+export const getCachedSubscriptions = async (): Promise<CachedSubscription[]> => {
+  try {
+    const value = await AsyncStorage.getItem(SUBSCRIPTION_CACHE_KEY);
+    return value ? JSON.parse(value) : [];
+  } catch {
+    return [];
+  }
+};

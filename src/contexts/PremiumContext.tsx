@@ -27,7 +27,10 @@ import {
 } from '../services/premiumState';
 import {
   cachePremiumStatus,
+  cacheSubscriptions,
+  type CachedSubscription,
   getCachedPremiumStatus,
+  getCachedSubscriptions,
   isCachedPremiumWithinGracePeriod,
 } from '../services/purchases';
 
@@ -35,6 +38,7 @@ interface PremiumContextType {
   isPremium: boolean;
   isLoading: boolean;
   subscriptions: ProductSubscription[];
+  cachedPrices: CachedSubscription[];
   restorePurchases: () => Promise<boolean>;
   devSetPremium: (status: boolean) => Promise<void>;
 }
@@ -43,6 +47,7 @@ const PremiumContext = createContext<PremiumContextType>({
   isPremium: false,
   isLoading: true,
   subscriptions: [],
+  cachedPrices: [],
   restorePurchases: async () => false,
   devSetPremium: async () => {},
 });
@@ -86,6 +91,7 @@ function DevPremiumProvider({ children }: { children: React.ReactNode }) {
         isPremium,
         isLoading: false,
         subscriptions: [],
+        cachedPrices: [],
         restorePurchases: async () => { await devSetPremium(false); return false; },
         devSetPremium,
       }}
@@ -99,6 +105,7 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
   // Initialize from in-memory state (already set by _layout.tsx from cache)
   const [isPremium, setIsPremium] = useState(getPremiumState);
   const [isLoading, setIsLoading] = useState(true);
+  const [cachedPrices, setCachedPrices] = useState<CachedSubscription[]>([]);
   const updatePremiumRef = useRef<(status: boolean) => Promise<void>>(undefined);
 
   const {
@@ -161,13 +168,19 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Load cached status immediately for fast cold start
+  // Load cached status and prices immediately for fast cold start
   useEffect(() => {
     const loadInitialStatus = async () => {
-      const cached = await getCachedPremiumStatus();
+      const [cached, prices] = await Promise.all([
+        getCachedPremiumStatus(),
+        getCachedSubscriptions(),
+      ]);
       if (cached) {
         setIsPremium(true);
         setPremiumState(true);
+      }
+      if (prices.length > 0) {
+        setCachedPrices(prices);
       }
     };
     loadInitialStatus();
@@ -199,6 +212,14 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
 
     init();
   }, [connected]);
+
+  // Cache subscription prices for instant paywall display on next launch
+  useEffect(() => {
+    if (subscriptions.length > 0) {
+      const toCache = subscriptions.map((s) => ({ id: s.id, displayPrice: s.displayPrice }));
+      cacheSubscriptions(toCache);
+    }
+  }, [subscriptions]);
 
   // React to activeSubscriptions changes (only after initial load completes)
   // When offline, trust cached premium status — don't let empty store response override it
@@ -259,6 +280,7 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
         isPremium,
         isLoading,
         subscriptions,
+        cachedPrices,
         restorePurchases,
         devSetPremium,
       }}

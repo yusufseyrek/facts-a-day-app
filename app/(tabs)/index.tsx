@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-import { BookOpen, CalendarDays, Lightbulb, Sparkles } from '@tamagui/lucide-icons';
+import { BookOpen, CalendarDays, Crown, Lightbulb, Sparkles } from '@tamagui/lucide-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -344,7 +344,7 @@ function HomeScreen() {
           worthKnowing,
           onThisDay,
           onThisDayIsWeekFallback: isWeek,
-        } = preloaded ?? await loadDailyFeedSections(locale, forceRefresh);
+        } = preloaded ?? (await loadDailyFeedSections(locale, forceRefresh));
 
         if (onlyIfEmpty) {
           setFreshFacts((prev) => (prev.length > 0 ? prev : fresh));
@@ -624,7 +624,22 @@ function HomeScreen() {
             {/* Title - fixed above scroll */}
             <Animated.View entering={FadeIn.duration(300)}>
               <ScreenHeader
-                icon={<Lightbulb size={iconSizes.lg} color={colors.primary} />}
+                icon={
+                  <View style={{ position: 'relative', width: iconSizes.lg, height: iconSizes.lg }}>
+                    <Lightbulb position="absolute" size={iconSizes.lg} color={colors.primary} />
+                    {isPremium && (
+                      <Crown
+                        position="absolute"
+                        size={iconSizes.xs}
+                        color="#DAA520"
+                        fill="#DAA520"
+                        top={-iconSizes.sm / 2}
+                        left={iconSizes.sm / 2}
+                        transform={[{ rotate: '16deg' }]}
+                      />
+                    )}
+                  </View>
+                }
                 title={t('appName')}
                 paddingBottom={spacing.sm}
                 rightElement={
