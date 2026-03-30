@@ -1,5 +1,4 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-
 import {
   ErrorCode,
   finishTransaction as finishTransactionModule,
@@ -216,7 +215,7 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
   // Cache subscription prices for instant paywall display on next launch
   useEffect(() => {
     if (subscriptions.length > 0) {
-      const toCache = subscriptions.map((s) => ({ id: s.id, displayPrice: s.displayPrice }));
+      const toCache = subscriptions.map((s) => ({ id: s.id, displayPrice: s.displayPrice, price: s.price ?? null }));
       cacheSubscriptions(toCache);
     }
   }, [subscriptions]);

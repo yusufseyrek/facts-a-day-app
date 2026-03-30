@@ -22,6 +22,8 @@ import { XStack, YStack } from 'tamagui';
 import { Text } from '../src/components';
 import { FONT_FAMILIES } from '../src/components/Typography';
 import { SUBSCRIPTION } from '../src/config/app';
+
+const { PAYWALL_PRODUCT_IDS } = SUBSCRIPTION;
 import { usePremium } from '../src/contexts';
 import { useTranslation } from '../src/i18n';
 import { trackPaywallDismissed, trackPaywallViewed } from '../src/services/analytics';
@@ -54,11 +56,11 @@ export default function PaywallScreen() {
   useEffect(() => {
     if (selectedPlan) return;
     if (subscriptions.length > 0) {
-      const monthly = subscriptions.find((s) => s.id.includes('monthly'));
-      setSelectedPlan(monthly?.id || subscriptions[0].id);
+      const annual = subscriptions.find((s) => s.id.includes('annual'));
+      setSelectedPlan(annual?.id || subscriptions[0].id);
     } else if (cachedPrices.length > 0) {
-      const monthly = cachedPrices.find((c) => c.id.includes('monthly'));
-      setSelectedPlan(monthly?.id || cachedPrices[0].id);
+      const annual = cachedPrices.find((c) => c.id.includes('annual'));
+      setSelectedPlan(annual?.id || cachedPrices[0].id);
     }
   }, [subscriptions, cachedPrices, selectedPlan]);
 
@@ -155,8 +157,57 @@ export default function PaywallScreen() {
     return cached?.displayPrice || '---';
   };
 
-  const isWeekly = (productId: string) => productId.includes('weekly');
-  const isMonthly = (productId: string) => productId.includes('monthly');
+  const isAnnual = (productId: string) => productId.includes('annual');
+
+  /**
+   * Parse a localized price string like "$14.99", "14,99 €", "￥1,580" into a number.
+   * Handles both comma-decimal (14,99) and comma-thousand (1,580.00) formats.
+   */
+  const parseDisplayPrice = (displayPrice: string): number | null => {
+    const digits = displayPrice.replace(/[^\d.,]/g, '');
+    // If last separator is a comma with ≤2 digits after it, treat comma as decimal
+    const commaDecimal = digits.match(/^([\d.]*),(\d{1,2})$/);
+    if (commaDecimal) {
+      const parsed = parseFloat(commaDecimal[1].replace(/\./g, '') + '.' + commaDecimal[2]);
+      return isNaN(parsed) ? null : parsed;
+    }
+    // Otherwise treat dots/commas as thousand separators except the last dot
+    const parsed = parseFloat(digits.replace(/,/g, ''));
+    return isNaN(parsed) ? null : parsed;
+  };
+
+  /**
+   * Get numeric price for a product from live subscriptions or cached prices.
+   * Checks sub.price, subscriptionOffers, then parses displayPrice as fallback.
+   */
+  const getNumericPrice = (productId: string): number | null => {
+    const sub = subscriptions.find((s) => s.id === productId);
+    if (sub) {
+      if (sub.price != null) return sub.price;
+      const offerPrice = sub.subscriptionOffers?.[0]?.price;
+      if (offerPrice != null) return offerPrice;
+      return parseDisplayPrice(sub.displayPrice);
+    }
+    const cached = cachedPrices.find((c) => c.id === productId);
+    if (cached) {
+      if (cached.price != null) return cached.price;
+      return parseDisplayPrice(cached.displayPrice);
+    }
+    return null;
+  };
+
+  /**
+   * Dynamically calculate annual savings percentage compared to monthly.
+   * Returns null if prices are unavailable.
+   */
+  const annualSavingsPercent = useMemo(() => {
+    const monthlyPrice = getNumericPrice('factsaday_premium_monthly');
+    const annualPrice = getNumericPrice('factsaday_premium_annually');
+    if (monthlyPrice == null || annualPrice == null || monthlyPrice <= 0) return null;
+    const yearlyAtMonthlyRate = monthlyPrice * 12;
+    const savings = Math.round(((yearlyAtMonthlyRate - annualPrice) / yearlyAtMonthlyRate) * 100);
+    return savings > 0 ? savings : null;
+  }, [subscriptions, cachedPrices]);
 
   // Derived responsive sizes
   const closeBtnSize = iconSizes.lg + spacing.sm;
@@ -467,10 +518,9 @@ export default function PaywallScreen() {
         {/* Plan selector */}
         <Animated.View entering={FadeInDown.delay(240).duration(500)}>
           <XStack gap={spacing.sm} marginBottom={spacing.lg} marginHorizontal={spacing.lg}>
-            {SUBSCRIPTION.PRODUCT_IDS.map((productId) => {
+            {PAYWALL_PRODUCT_IDS.map((productId) => {
               const selected = selectedPlan === productId;
-              const monthly = isMonthly(productId);
-              const weekly = isWeekly(productId);
+              const annual = isAnnual(productId);
 
               return (
                 <Pressable
@@ -481,7 +531,7 @@ export default function PaywallScreen() {
                   <View
                     style={[dynamicStyles.planCard, selected && dynamicStyles.planCardSelected]}
                   >
-                    {monthly && (
+                    {annual && (
                       <View style={dynamicStyles.bestValueBadge}>
                         <LinearGradient
                           colors={[PAYWALL_GOLD.badge, PAYWALL_GOLD.dark]}
@@ -490,7 +540,9 @@ export default function PaywallScreen() {
                           style={dynamicStyles.bestValueGradient}
                         >
                           <Text.Tiny color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
-                            {t('paywallBestValue')}
+                            {annualSavingsPercent
+                              ? t('paywallSavePercent', { percent: annualSavingsPercent })
+                              : t('paywallBestValue')}
                           </Text.Tiny>
                         </LinearGradient>
                       </View>
@@ -498,7 +550,7 @@ export default function PaywallScreen() {
 
                     {/* Plan Icon */}
                     <View style={dynamicStyles.planIconContainer}>
-                      {monthly ? (
+                      {annual ? (
                         <Crown
                           size={iconSizes.sm}
                           color={PAYWALL_GOLD.primary}
@@ -515,7 +567,7 @@ export default function PaywallScreen() {
                         fontFamily={FONT_FAMILIES.semibold}
                         color={selected ? tc.planSelectedTitle : tc.planPeriod}
                       >
-                        {weekly ? t('paywallWeekly') : t('paywallMonthly')}
+                        {annual ? t('paywallAnnual') : t('paywallMonthly')}
                       </Text.Label>
                     </View>
 
@@ -531,18 +583,18 @@ export default function PaywallScreen() {
                       alignSelf="stretch"
                       textAlign="center"
                     >
-                      {weekly ? t('paywallPerWeek') : t('paywallPerMonth')}
+                      {annual ? t('paywallPerYear') : t('paywallPerMonth')}
                     </Text.Caption>
 
-                    {/* Savings Badge for Monthly / Flexible Badge for Weekly */}
+                    {/* Flexible Badge for Monthly / Free Trial for Annual */}
                     <View
-                      style={[dynamicStyles.savingsBadge, !monthly && dynamicStyles.flexibleBadge]}
+                      style={[dynamicStyles.savingsBadge, !annual && dynamicStyles.flexibleBadge]}
                     >
                       <Text.Tiny
-                        color={monthly ? PAYWALL_GOLD.badge : tc.planPeriod}
+                        color={annual ? PAYWALL_GOLD.badge : tc.planPeriod}
                         fontFamily={FONT_FAMILIES.semibold}
                       >
-                        {monthly ? t('paywallSavePercent') : t('paywallFlexible')}
+                        {annual ? t('paywallFreeTrial') : t('paywallFlexible')}
                       </Text.Tiny>
                     </View>
 

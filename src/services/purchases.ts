@@ -133,6 +133,7 @@ const SUBSCRIPTION_CACHE_KEY = '@factsaday_subscription_cache';
 export interface CachedSubscription {
   id: string;
   displayPrice: string;
+  price: number | null;
 }
 
 /**

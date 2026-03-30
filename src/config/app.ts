@@ -9,7 +9,7 @@
  * Set to true to show developer settings section in the Settings screen.
  * Only works when __DEV__ is true.
  */
-export const DEV_SETTINGS_ENABLED = false;
+export const DEV_SETTINGS_ENABLED = true;
 
 /**
  * Ads configuration
@@ -218,7 +218,13 @@ export const SUBSCRIPTION = {
   /** Whether subscriptions are enabled on this platform */
   ENABLED: true,
   /** Product IDs for subscription plans (must match App Store Connect / Google Play Console) */
-  PRODUCT_IDS: ['factsaday_premium_weekly', 'factsaday_premium_monthly'],
+  PRODUCT_IDS: [
+    'factsaday_premium_weekly',
+    'factsaday_premium_monthly',
+    'factsaday_premium_annually',
+  ],
+  /** Product IDs visible on the paywall (excludes legacy plans still valid for existing subscribers) */
+  PAYWALL_PRODUCT_IDS: ['factsaday_premium_monthly', 'factsaday_premium_annually'],
   /** AsyncStorage key for caching premium status */
   PREMIUM_STORAGE_KEY: '@factsaday_premium_status',
 } as const;

@@ -493,8 +493,9 @@ export const trackInterstitialShown = (source: InterstitialSource): void => {
 /**
  * Track when App Open ad is shown (impression)
  */
-export const trackAppOpenAdShown = (): void => {
-  logEvent('app_open_ad_shown', {});
+export const trackAppOpenAdShown = (source: 'foreground' | 'locale_change'): void => {
+  logEvent('app_open_ad_shown', { source });
+  posthog.capture('app_open_ad_shown', { source });
 };
 
 // ============================================================================

@@ -179,7 +179,7 @@ export function MultiTimePicker({
           pressStyle={{ opacity: 0.7, scale: 0.98 }}
           onPress={handleAddTime}
         >
-          <Plus size={iconSizes.lg} color={hexColors.light.primary} />
+          <Plus size={iconSizes.md} color={hexColors.light.primary} />
           <Text.Label
             color="$primary"
             numberOfLines={1}
