@@ -241,6 +241,7 @@ export default function BadgesScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        overScrollMode="never"
         contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom: spacing.xxl }}
       >
         {loading ? (

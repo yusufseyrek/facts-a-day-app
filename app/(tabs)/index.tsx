@@ -655,6 +655,7 @@ function HomeScreen() {
               ref={scrollViewRef}
               refreshControl={refreshControl}
               showsVerticalScrollIndicator={false}
+              overScrollMode="never"
               onScroll={(e) => {
                 scrollYRef.current = e.nativeEvent.contentOffset.y;
               }}
@@ -694,6 +695,7 @@ function HomeScreen() {
                       keyExtractor={freshFactsKeyExtractor}
                       horizontal
                       showsHorizontalScrollIndicator={false}
+                      overScrollMode="never"
                       snapToInterval={carouselSnapInterval}
                       decelerationRate="fast"
                       disableIntervalMomentum
@@ -751,6 +753,7 @@ function HomeScreen() {
                       keyExtractor={onThisDayKeyExtractor}
                       horizontal
                       showsHorizontalScrollIndicator={false}
+                      overScrollMode="never"
                       snapToInterval={carouselSnapInterval}
                       decelerationRate="fast"
                       disableIntervalMomentum
@@ -793,6 +796,7 @@ function HomeScreen() {
                       keyExtractor={worthKnowingKeyExtractor}
                       horizontal
                       showsHorizontalScrollIndicator={false}
+                      overScrollMode="never"
                       snapToInterval={carouselSnapInterval}
                       decelerationRate="fast"
                       disableIntervalMomentum

@@ -542,6 +542,7 @@ export default function OnboardingSuccessScreen() {
         padding: spacing.xl,
       }}
       showsVerticalScrollIndicator={false}
+      overScrollMode="never"
     >
       <YStack alignItems="center" gap={spacing.lg} paddingHorizontal={spacing.md}>
         <YStack

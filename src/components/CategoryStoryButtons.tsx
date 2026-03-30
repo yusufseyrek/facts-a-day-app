@@ -184,6 +184,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
           keyExtractor={keyExtractor}
           horizontal
           showsHorizontalScrollIndicator={false}
+          overScrollMode="never"
           ItemSeparatorComponent={itemSeparator}
           contentContainerStyle={{
             paddingHorizontal: spacing.lg,

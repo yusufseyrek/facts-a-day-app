@@ -264,6 +264,7 @@ export function TriviaGameView({
           style={{ flex: 1 }}
           contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
+          overScrollMode="never"
           bounces={true}
         >
           {/* Question container with min height */}

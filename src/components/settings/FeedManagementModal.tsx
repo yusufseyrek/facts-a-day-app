@@ -533,6 +533,7 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({ visibl
                 renderItem={renderFactItem}
                 contentContainerStyle={dynamicStyles.listContent}
                 showsVerticalScrollIndicator={false}
+                overScrollMode="never"
               />
             )}
 

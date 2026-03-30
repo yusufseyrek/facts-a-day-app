@@ -464,6 +464,7 @@ export default function FavoritesScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            overScrollMode="never"
             contentContainerStyle={{
               paddingHorizontal: spacing.lg,
               paddingBottom: spacing.md,

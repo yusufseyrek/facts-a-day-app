@@ -260,6 +260,7 @@ const CategoryCarouselComponent = forwardRef<CategoryCarouselRef, CategoryCarous
             keyExtractor={keyExtractor}
             horizontal
             showsHorizontalScrollIndicator={false}
+            overScrollMode="never"
             snapToInterval={snapInterval}
             decelerationRate="fast"
             disableIntervalMomentum

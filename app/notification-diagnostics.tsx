@@ -148,6 +148,7 @@ export default function NotificationDiagnosticsScreen() {
 
       <ScrollView
         style={styles.scroll}
+        overScrollMode="never"
         contentContainerStyle={{ paddingBottom: insets.bottom + 40, paddingHorizontal: spacing.lg }}
       >
         <ContentContainer>

@@ -734,7 +734,7 @@ function DiscoverScreen() {
       }
 
       return (
-        <ScrollView ref={categoryGridRef} showsVerticalScrollIndicator={false}>
+        <ScrollView ref={categoryGridRef} showsVerticalScrollIndicator={false} overScrollMode="never">
           <CategoriesContainer
             paddingHorizontal={spacing.lg}
             paddingBottom={spacing.md}

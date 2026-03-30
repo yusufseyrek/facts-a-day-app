@@ -144,6 +144,7 @@ export function ReportFactModal({
                   alignItems: 'center',
                   paddingVertical: spacing.lg,
                 }}
+                overScrollMode="never"
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
                 bounces={false}

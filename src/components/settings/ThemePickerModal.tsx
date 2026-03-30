@@ -168,7 +168,7 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({ visible, onC
                     </Pressable>
                   </View>
 
-                  <ScrollView style={styles.scrollView}>
+                  <ScrollView style={styles.scrollView} overScrollMode="never">
                     <View style={dynamicStyles.optionsContainer}>
                       {themeOptions.map((option) => {
                         const isSelected = themeMode === option.value;

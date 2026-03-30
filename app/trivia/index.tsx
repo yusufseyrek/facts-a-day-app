@@ -284,6 +284,7 @@ export default function TriviaScreen() {
         <ScrollView
           ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
+          overScrollMode="never"
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => loadTriviaData(true)} />
           }

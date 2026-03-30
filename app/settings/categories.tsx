@@ -322,7 +322,7 @@ export default function CategoriesSettings() {
         </Animated.View>
 
         <Animated.View style={{ flex: 1, opacity: gridOpacity }}>
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView showsVerticalScrollIndicator={false} overScrollMode="never">
             <View style={{ flex: 1, gap: spacing.md }}>
               {rows.map((row, rowIndex) => (
                 <XStack key={`row-${rowIndex}`} gap={spacing.md} justifyContent="space-between">

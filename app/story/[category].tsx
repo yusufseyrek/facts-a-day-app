@@ -346,6 +346,7 @@ export default function StoryScreen() {
         decelerationRate="fast"
         disableIntervalMomentum
         showsVerticalScrollIndicator={false}
+        overScrollMode="never"
         scrollEnabled={!scrollLocked}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}

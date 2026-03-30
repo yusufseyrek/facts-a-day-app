@@ -1076,6 +1076,7 @@ export default function SettingsPage() {
       <SectionList
         ref={listRef}
         sections={sections}
+        overScrollMode="never"
         keyExtractor={(item) => item.id}
         renderSectionHeader={({ section: { title }, section }) => {
           const sectionIndex = sections.findIndex((s) => s.title === section.title);

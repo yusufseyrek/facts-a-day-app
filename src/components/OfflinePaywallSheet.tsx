@@ -170,7 +170,7 @@ export function OfflinePaywallSheet() {
         {/* Handle */}
         <View style={dynamicStyles.handle} />
 
-        <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+        <ScrollView showsVerticalScrollIndicator={false} bounces={false} overScrollMode="never">
           {/* Offline banner */}
           <View style={dynamicStyles.offlineBanner}>
             <XStack alignItems="center" gap={spacing.md}>

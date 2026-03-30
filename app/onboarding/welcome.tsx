@@ -329,6 +329,7 @@ export default function WelcomeScreen() {
                   horizontal
                   pagingEnabled
                   showsHorizontalScrollIndicator={false}
+                  overScrollMode="never"
                   snapToInterval={carouselWidth}
                   decelerationRate="fast"
                   onViewableItemsChanged={onViewableItemsChanged}
@@ -406,6 +407,7 @@ export default function WelcomeScreen() {
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
+                overScrollMode="never"
                 snapToInterval={carouselWidth}
                 decelerationRate="fast"
                 onViewableItemsChanged={onViewableItemsChanged}

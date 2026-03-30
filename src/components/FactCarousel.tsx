@@ -261,6 +261,7 @@ export const FactCarousel = React.memo(
               keyExtractor={keyExtractor}
               horizontal
               showsHorizontalScrollIndicator={false}
+              overScrollMode="never"
               snapToInterval={snapInterval}
               decelerationRate="fast"
               ItemSeparatorComponent={itemSeparator}

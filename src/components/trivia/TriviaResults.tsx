@@ -652,6 +652,7 @@ export function TriviaResults({
       <ScrollView
         ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
+        overScrollMode="never"
         onScrollEndDrag={handleVerticalScroll}
       >
         <YStack width="100%" alignItems="center">
@@ -882,6 +883,7 @@ export function TriviaResults({
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
+              overScrollMode="never"
               contentContainerStyle={{
                 paddingHorizontal: listInset,
                 gap: CARD_GAP,

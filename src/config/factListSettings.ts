@@ -49,6 +49,8 @@ export const FLASH_LIST_SETTINGS = {
   bounces: true,
   /** Prevents momentum from carrying scroll past the nearest snap point */
   disableIntervalMomentum: true,
+  /** Disable Android 12+ stretch overscroll that reveals white background on Samsung/Motorola */
+  overScrollMode: 'never' as const,
 } as const;
 
 /**

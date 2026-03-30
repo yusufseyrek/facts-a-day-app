@@ -742,6 +742,7 @@ export default function PerformanceScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        overScrollMode="never"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />}
       >
         <ContentContainer>
@@ -822,6 +823,7 @@ export default function PerformanceScreen() {
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
+                    overScrollMode="never"
                     contentContainerStyle={{ gap: spacing.xs }}
                   >
                     {BADGE_DEFINITIONS.filter((b) => b.category === 'quiz')

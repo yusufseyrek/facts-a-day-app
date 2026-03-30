@@ -231,6 +231,7 @@ export default function CategoriesAccuracyScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        overScrollMode="never"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />}
         contentContainerStyle={{
           paddingBottom: insets.bottom + spacing.xl,

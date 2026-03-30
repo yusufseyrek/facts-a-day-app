@@ -245,6 +245,7 @@ export default function NotificationsScreen() {
         </Animated.View>
         <ScrollView
           showsVerticalScrollIndicator={false}
+          overScrollMode="never"
           contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
         >
           <YStack

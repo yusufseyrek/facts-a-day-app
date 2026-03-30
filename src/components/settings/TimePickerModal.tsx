@@ -439,6 +439,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                     style={styles.scrollContent}
                     contentContainerStyle={styles.scrollContentContainer}
                     showsVerticalScrollIndicator={true}
+                    overScrollMode="never"
                     nestedScrollEnabled={true}
                     keyboardShouldPersistTaps="handled"
                   >
