@@ -202,7 +202,7 @@ export const showAppOpenAdForLocaleChange = async (): Promise<boolean> => {
       });
     });
 
-    trackAppOpenAdShown();
+    trackAppOpenAdShown('locale_change');
     await appOpenAd!.show();
     const result = await adCompletedPromise;
 
@@ -301,7 +301,7 @@ export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
       });
     });
 
-    trackAppOpenAdShown();
+    trackAppOpenAdShown('foreground');
     await appOpenAd!.show();
     const result = await adCompletedPromise;
 

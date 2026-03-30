@@ -321,17 +321,19 @@ const CategoryButton = React.memo(
             )}
           </View>
         </Animated.View>
-        <Text.Caption
+        <Text.Tiny
+          numberOfLines={1}
           color={textColor}
+          adjustsFontSizeToFit
           fontFamily={FONT_FAMILIES.medium}
           style={{
             marginTop: labelMarginTop,
             textAlign: 'center',
-            fontSize: labelFontSize,
+            textAlignVertical: 'center',
           }}
         >
           {item.name}
-        </Text.Caption>
+        </Text.Tiny>
       </Pressable>
     );
   }
