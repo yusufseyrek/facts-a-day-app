@@ -322,10 +322,13 @@ const CategoryButton = React.memo(
           </View>
         </Animated.View>
         <Text.Caption
-          numberOfLines={1}
           color={textColor}
           fontFamily={FONT_FAMILIES.medium}
-          style={{ marginTop: labelMarginTop, textAlign: 'center', fontSize: labelFontSize }}
+          style={{
+            marginTop: labelMarginTop,
+            textAlign: 'center',
+            fontSize: labelFontSize,
+          }}
         >
           {item.name}
         </Text.Caption>

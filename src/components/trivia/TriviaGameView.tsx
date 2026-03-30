@@ -701,7 +701,7 @@ export function TriviaGameView({
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
-                  <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+                  <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold} numberOfLines={1} adjustsFontSizeToFit>
                     {currentQuestionIndex + 1 >= totalQuestions
                       ? t('seeResults')
                       : t('nextQuestion')}

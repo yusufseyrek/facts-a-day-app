@@ -512,7 +512,7 @@ function HomeScreen() {
 
   // On This Day section (CompactFactCard thumbnail cards)
   const onThisDayIds = useMemo(() => onThisDayFacts.map((f) => f.id), [onThisDayFacts]);
-  const onThisDayListHeight = media.compactCardThumbnailSize + spacing.md * 2 + spacing.md * 2;
+  // const onThisDayListHeight = media.compactCardThumbnailSize + spacing.md * 2 + spacing.md * 2;
 
   const onThisDayActiveIndexRef = useRef(0);
   const handleOnThisDayScroll = useCallback(
@@ -742,7 +742,6 @@ function HomeScreen() {
 
                   <View
                     style={{
-                      height: onThisDayListHeight,
                       width: '100%',
                     }}
                   >

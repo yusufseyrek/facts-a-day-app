@@ -3,10 +3,7 @@ import { TextStyle } from 'react-native';
 
 import { GetProps, Text as TamaguiText } from '@tamagui/core';
 
-import {
-  maxFontSizeMultipliers,
-  DEFAULT_MAX_FONT_SIZE_MULTIPLIER,
-} from '../utils/responsive';
+import { maxFontSizeMultipliers, DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { useResponsive } from '../utils/useResponsive';
 
 /**
@@ -151,6 +148,8 @@ const TextBase = React.memo(
         fontWeight={fontWeight as BaseTextProps['fontWeight']}
         color={color}
         style={style}
+        // Fix for cut words
+        paddingHorizontal={1}
         {...props}
       >
         {children}

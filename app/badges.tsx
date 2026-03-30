@@ -280,7 +280,12 @@ export default function BadgesScreen() {
                 >
                   {streak}
                 </Text.Title>
-                <Text.Tiny color={colors.textMuted} fontFamily={FONT_FAMILIES.medium}>
+                <Text.Tiny
+                  color={colors.textMuted}
+                  numberOfLines={2}
+                  fontFamily={FONT_FAMILIES.medium}
+                  textAlign="center"
+                >
                   {t('readingStreak')}
                 </Text.Tiny>
               </YStack>
@@ -315,7 +320,12 @@ export default function BadgesScreen() {
                 >
                   {quizStreakCount}
                 </Text.Title>
-                <Text.Tiny color={colors.textMuted} fontFamily={FONT_FAMILIES.medium}>
+                <Text.Tiny
+                  color={colors.textMuted}
+                  numberOfLines={2}
+                  textAlign="center"
+                  fontFamily={FONT_FAMILIES.medium}
+                >
                   {t('quizStreak')}
                 </Text.Tiny>
               </YStack>
@@ -351,7 +361,12 @@ export default function BadgesScreen() {
                 >
                   {totalEarned}
                 </Text.Title>
-                <Text.Tiny color={colors.textMuted} fontFamily={FONT_FAMILIES.medium}>
+                <Text.Tiny
+                  color={colors.textMuted}
+                  numberOfLines={2}
+                  fontFamily={FONT_FAMILIES.medium}
+                  textAlign="center"
+                >
                   {t('badgesEarned')}
                 </Text.Tiny>
               </YStack>

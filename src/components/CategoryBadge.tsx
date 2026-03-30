@@ -23,12 +23,7 @@ interface CategoryBadgeProps {
   compact?: boolean;
 }
 
-export function CategoryBadge({
-  category,
-  fontFamily,
-  fontSize,
-  compact,
-}: CategoryBadgeProps) {
+export function CategoryBadge({ category, fontFamily, fontSize, compact }: CategoryBadgeProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { spacing, radius } = useResponsive();
@@ -54,7 +49,6 @@ export function CategoryBadge({
 
   return (
     <XStack
-      paddingHorizontal={compact ? spacing.sm : spacing.md}
       paddingVertical={compact ? 2 : spacing.xs}
       borderRadius={radius.full}
       alignSelf="flex-start"
@@ -64,6 +58,7 @@ export function CategoryBadge({
         color={contrastColor}
         fontFamily={fontFamily || FONT_FAMILIES.semibold}
         fontSize={fontSize}
+        paddingHorizontal={compact ? spacing.sm : spacing.md}
       >
         {displayName}
       </Text.Caption>

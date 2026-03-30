@@ -295,7 +295,12 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
                     opacity={selectedAnswer !== null ? 1 : 0.4}
                   >
                     <BarChart3 size={iconSizes.sm} color={primaryColor} />
-                    <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={primaryColor}>
+                    <Text.Caption
+                      fontFamily={FONT_FAMILIES.semibold}
+                      color={primaryColor}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                    >
                       {t('seeResults')}
                     </Text.Caption>
                   </XStack>
@@ -321,7 +326,11 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
                   gap={spacing.xs}
                   opacity={selectedAnswer !== null ? 1 : 0.4}
                 >
-                  <Text.Caption fontFamily={FONT_FAMILIES.semibold} color="#FFFFFF">
+                  <Text.Caption
+                    adjustsFontSizeToFit
+                    fontFamily={FONT_FAMILIES.semibold}
+                    color="#FFFFFF"
+                  >
                     {t('nextQuestion')}
                   </Text.Caption>
                   <ChevronRight size={iconSizes.sm} color="#FFFFFF" />

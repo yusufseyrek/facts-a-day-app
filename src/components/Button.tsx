@@ -54,12 +54,12 @@ export function Button({
       {loading ? (
         <XStack gap={spacing.sm} alignItems="center">
           <ActivityIndicator size="small" color="#FFFFFF" />
-          <Text.Label color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+          <Text.Label color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold} numberOfLines={1} adjustsFontSizeToFit>
             {children}
           </Text.Label>
         </XStack>
       ) : (
-        <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+        <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold} numberOfLines={1} adjustsFontSizeToFit>
           {children}
         </Text.Body>
       )}

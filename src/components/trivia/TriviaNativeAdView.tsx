@@ -273,7 +273,7 @@ export function TriviaNativeAdView({
               <CircularProgress duration={navLockDuration} size={iconSizes.lg} />
             ) : (
               <>
-                <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+                <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold} numberOfLines={1} adjustsFontSizeToFit>
                   {t('nextQuestion')}
                 </Text.Body>
                 <ChevronRight size={typography.fontSize.title} color="#FFFFFF" />

@@ -180,9 +180,14 @@ export function MultiTimePicker({
           onPress={handleAddTime}
         >
           <Plus size={iconSizes.lg} color={hexColors.light.primary} />
-          <Text.Body color="$primary" fontFamily={FONT_FAMILIES.bold}>
+          <Text.Label
+            color="$primary"
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            fontFamily={FONT_FAMILIES.bold}
+          >
             {t('addAnotherTime')}
-          </Text.Body>
+          </Text.Label>
         </XStack>
       )}
 
