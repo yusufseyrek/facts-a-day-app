@@ -415,8 +415,8 @@ export function FactModal({
   const basePaddingBottom = spacing.xl;
   const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight;
   // Min header height = same as a 2-line title header
-  const twoLinesTitleHeight = typography.lineHeight.headline * 2;
-  const minHeaderHeight = basePaddingTop + basePaddingBottom + twoLinesTitleHeight - spacing.sm;
+  const threeLinesTitleHeight = typography.lineHeight.headline * 3;
+  const minHeaderHeight = basePaddingTop + basePaddingBottom + threeLinesTitleHeight - spacing.sm;
   const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
   const headerCollapseAmount = Math.max(0, headerHeight - minHeaderHeight);
 
@@ -787,7 +787,7 @@ export function FactModal({
                     transform: [{ translateY: headerTitleTranslateY }],
                   }}
                 >
-                  <Text.Headline numberOfLines={isHeaderCollapsed ? 2 : undefined}>
+                  <Text.Headline numberOfLines={isHeaderCollapsed ? 3 : undefined}>
                     {factTitle}
                   </Text.Headline>
                 </Animated.View>
