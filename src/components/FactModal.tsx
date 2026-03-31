@@ -437,27 +437,40 @@ export function FactModal({
     return () => scrollY.removeListener(id);
   }, [scrollY, headerCollapseAmount, isHeaderCollapsed]);
 
-  // Fade-in animation for text content on navigation
-  const textFadeAnim = useRef(new Animated.Value(1)).current;
+  // Fade animation for the entire scroll content (image + text) on navigation.
+  // Hides everything first so scroll-to-top and image swap happen invisibly,
+  // then fades in the new state. Uses JS-driven animation so setValue(0) takes
+  // effect synchronously — no bridge race condition.
+  const contentFadeAnim = useRef(new Animated.Value(1)).current;
   const isFirstRender = useRef(true);
 
-  // Reset scroll position and animate text when fact changes (next/prev navigation)
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+      scrollY.setValue(0);
+      currentScrollY.current = 0;
+      return;
+    }
+
+    contentFadeAnim.stopAnimation();
+    contentFadeAnim.setValue(0);
+
+    // Scroll to top while hidden — user can't see the jump
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
     scrollY.setValue(0);
     currentScrollY.current = 0;
 
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    // Instantly hide text, then fade in (synced with expo-image transition)
-    textFadeAnim.setValue(0);
-    Animated.timing(textFadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    // Short delay so the image swap settles before we fade in
+    const timer = setTimeout(() => {
+      Animated.timing(contentFadeAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: false,
+      }).start();
+    }, 50);
+
+    return () => clearTimeout(timer);
   }, [fact.id]);
 
   // Image scale - stays at 1, no scaling
@@ -825,163 +838,164 @@ export function FactModal({
         removeClippedSubviews={Platform.OS === 'android'}
         stickyHeaderIndices={!hasImage ? [0] : undefined}
       >
-        {/* First child: Hero Image (has-image) or Sticky Title (no-image) */}
-        {hasImage ? (
-          <Animated.View
-            style={{
-              position: 'relative',
-              overflow: 'hidden',
-              width: IMAGE_WIDTH,
-              height: IMAGE_HEIGHT,
-              opacity: bodyImageOpacity,
-            }}
-          >
+        <Animated.View
+          style={{ opacity: contentFadeAnim }}
+          needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+        >
+          {/* First child: Hero Image (has-image) or Sticky Title (no-image) */}
+          {hasImage ? (
             <Animated.View
               style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                transform: [{ scale: imageScale }, { translateY: imageTranslateY }],
+                position: 'relative',
+                overflow: 'hidden',
+                width: IMAGE_WIDTH,
+                height: IMAGE_HEIGHT,
+                opacity: bodyImageOpacity,
               }}
             >
-              {/* Back layer: last successfully loaded image (prevents flash during swap) */}
-              {displayedImageUri && displayedImageUri !== imageUri && (
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  transform: [{ scale: imageScale }, { translateY: imageTranslateY }],
+                }}
+              >
+                {/* Back layer: last successfully loaded image (prevents flash during swap) */}
+                {displayedImageUri && displayedImageUri !== imageUri && (
+                  <Image
+                    source={{ uri: displayedImageUri }}
+                    aria-hidden
+                    style={{
+                      ...StyleSheet.absoluteFillObject,
+                      width: IMAGE_WIDTH,
+                      height: isTablet ? IMAGE_HEIGHT : IMAGE_WIDTH,
+                    }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    recyclingKey="modal-main-back"
+                  />
+                )}
+                {/* Front layer: current/loading image */}
                 <Image
-                  source={{ uri: displayedImageUri }}
-                  aria-hidden
+                  source={{ uri: imageUri! }}
+                  aria-label={t('a11y_factImage', { title: factTitle })}
+                  role="img"
                   style={{
-                    ...StyleSheet.absoluteFillObject,
                     width: IMAGE_WIDTH,
                     height: isTablet ? IMAGE_HEIGHT : IMAGE_WIDTH,
                   }}
                   contentFit="cover"
                   cachePolicy="memory-disk"
-                  recyclingKey="modal-main-back"
+                  transition={displayedImageUri ? 150 : 200}
+                  recyclingKey="modal-main"
+                  placeholder={
+                    !displayedImageUri && !isImageLoaded
+                      ? { blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }
+                      : undefined
+                  }
+                  onLoad={() => {
+                    setIsImageLoaded(true);
+                    setDisplayedImageUri(imageUri);
+                  }}
+                  onError={() => setIsImageError(true)}
                 />
-              )}
-              {/* Front layer: current/loading image */}
-              <Image
-                source={{ uri: imageUri! }}
-                aria-label={t('a11y_factImage', { title: factTitle })}
-                role="img"
+              </Animated.View>
+              {/* Gradient overlay */}
+              <LinearGradient
+                colors={['rgba(0,0,0,0.5)', 'transparent', 'transparent']}
                 style={{
-                  width: IMAGE_WIDTH,
-                  height: isTablet ? IMAGE_HEIGHT : IMAGE_WIDTH,
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: media.buttonHeight + media.tabBarHeight,
                 }}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={displayedImageUri ? 150 : 200}
-                recyclingKey="modal-main"
-                placeholder={
-                  !displayedImageUri && !isImageLoaded
-                    ? { blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }
-                    : undefined
-                }
-                onLoad={() => {
-                  setIsImageLoaded(true);
-                  setDisplayedImageUri(imageUri);
-                }}
-                onError={() => setIsImageError(true)}
+                pointerEvents="none"
               />
-            </Animated.View>
-            {/* Gradient overlay */}
-            <LinearGradient
-              colors={['rgba(0,0,0,0.5)', 'transparent', 'transparent']}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: media.buttonHeight + media.tabBarHeight,
-              }}
-              pointerEvents="none"
-            />
-            {/* Image Loading / Error Placeholder (absolute overlay inside hero) */}
-            {showImagePlaceholder && (
-              <TouchableOpacity
-                activeOpacity={isImageFailed ? 0.7 : 1}
-                onPress={
-                  isImageFailed
-                    ? () => {
-                        setIsImageError(false);
-                        setIsImageLoaded(false);
-                      }
-                    : undefined
-                }
-                disabled={!isImageFailed}
-                style={{
-                  ...StyleSheet.absoluteFillObject,
-                  backgroundColor: theme === 'dark' ? '#1a1a2e' : '#e8e8f0',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {/* Shimmer only during active loading */}
-                {isActivelyLoading && (
-                  <Animated.View
-                    style={[
-                      StyleSheet.absoluteFill,
-                      {
-                        backgroundColor: theme === 'dark' ? '#2d2d44' : '#d0d0e0',
-                        opacity: shimmerAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.3, 0.6],
-                        }),
-                      },
-                    ]}
-                  />
-                )}
-                <View style={{ alignItems: 'center', gap: spacing.sm }}>
-                  {isImageFailed ? (
-                    <RefreshCw
-                      size={iconSizes.xl}
-                      color={theme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.25)'}
-                    />
-                  ) : (
-                    <ImagePlus
-                      size={iconSizes.xl}
-                      color={theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'}
+              {/* Image Loading / Error Placeholder (absolute overlay inside hero) */}
+              {showImagePlaceholder && (
+                <TouchableOpacity
+                  activeOpacity={isImageFailed ? 0.7 : 1}
+                  onPress={
+                    isImageFailed
+                      ? () => {
+                          setIsImageError(false);
+                          setIsImageLoaded(false);
+                        }
+                      : undefined
+                  }
+                  disabled={!isImageFailed}
+                  style={{
+                    ...StyleSheet.absoluteFillObject,
+                    backgroundColor: theme === 'dark' ? '#1a1a2e' : '#e8e8f0',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {/* Shimmer only during active loading */}
+                  {isActivelyLoading && (
+                    <Animated.View
+                      style={[
+                        StyleSheet.absoluteFill,
+                        {
+                          backgroundColor: theme === 'dark' ? '#2d2d44' : '#d0d0e0',
+                          opacity: shimmerAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.3, 0.6],
+                          }),
+                        },
+                      ]}
                     />
                   )}
-                </View>
-              </TouchableOpacity>
-            )}
-          </Animated.View>
-        ) : (
-          <View
-            style={{
-              backgroundColor: theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface,
-              paddingTop: spacing.xl,
-              paddingHorizontal: spacing.xl,
-              paddingBottom: spacing.md,
-              borderBottomWidth: categoryColor ? borderWidths.heavy : 0,
-              borderBottomColor: categoryColor || 'transparent',
-            }}
-          >
-            <View style={{ paddingRight: iconSizes.xl + spacing.xs }}>
-              <Text.Headline
-                role="heading"
-                onTextLayout={(e) => {
-                  const lines = e.nativeEvent.lines;
-                  const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
-                  if (totalHeight > 0 && totalHeight !== titleHeight) {
-                    setTitleHeight(totalHeight);
-                  }
-                }}
-              >
-                {factTitle}
-              </Text.Headline>
+                  <View style={{ alignItems: 'center', gap: spacing.sm }}>
+                    {isImageFailed ? (
+                      <RefreshCw
+                        size={iconSizes.xl}
+                        color={theme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.25)'}
+                      />
+                    ) : (
+                      <ImagePlus
+                        size={iconSizes.xl}
+                        color={theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'}
+                      />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              )}
+            </Animated.View>
+          ) : (
+            <View
+              style={{
+                backgroundColor:
+                  theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface,
+                paddingTop: spacing.xl,
+                paddingHorizontal: spacing.xl,
+                paddingBottom: spacing.md,
+                borderBottomWidth: categoryColor ? borderWidths.heavy : 0,
+                borderBottomColor: categoryColor || 'transparent',
+              }}
+            >
+              <View style={{ paddingRight: iconSizes.xl + spacing.xs }}>
+                <Text.Headline
+                  role="heading"
+                  onTextLayout={(e) => {
+                    const lines = e.nativeEvent.lines;
+                    const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
+                    if (totalHeight > 0 && totalHeight !== titleHeight) {
+                      setTitleHeight(totalHeight);
+                    }
+                  }}
+                >
+                  {factTitle}
+                </Text.Headline>
+              </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Content Section */}
-        <Animated.View
-          style={{ opacity: textFadeAnim }}
-          needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-        >
+          {/* Content Section */}
           <YStack padding={spacing.xl} gap={spacing.md}>
             {/* Title - shown in content only when has image (no-image uses sticky title above) */}
             {hasImage && (
