@@ -5,7 +5,7 @@ import { BADGE_SVG_MAP } from '../../utils/badgeSvgs';
 
 function makeGrayscale(xml: string): string {
   const filterDef =
-    '<defs><filter id="__gs"><feColorMatrix type="saturate" values="0"/></filter></defs>';
+    '<defs><filter id="__gs"><feColorMatrix type="saturate" values="0.07"/></filter></defs>';
   return xml
     .replace(/(<svg[^>]*>)/, `$1${filterDef}<g filter="url(#__gs)">`)
     .replace(/<\/svg>\s*$/, '</g></svg>');
