@@ -978,7 +978,10 @@ export function FactModal({
         )}
 
         {/* Content Section */}
-        <Animated.View style={{ opacity: textFadeAnim }}>
+        <Animated.View
+          style={{ opacity: textFadeAnim }}
+          needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+        >
           <YStack padding={spacing.xl} gap={spacing.md}>
             {/* Title - shown in content only when has image (no-image uses sticky title above) */}
             {hasImage && (
