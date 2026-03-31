@@ -85,11 +85,6 @@ export async function checkAndAwardBadges(): Promise<NewlyEarnedBadge[]> {
 
     for (const badge of BADGE_DEFINITIONS) {
       const progress = progressMap.get(badge.id) || 0;
-      if (__DEV__ && progress > 0) {
-        console.log(
-          `🏅 [Badge] ${badge.id}: progress=${progress}, thresholds=${badge.stars.map((s) => s.threshold).join(',')}`
-        );
-      }
 
       for (const starDef of badge.stars) {
         const key = `${badge.id}:${starDef.star}`;

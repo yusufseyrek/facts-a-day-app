@@ -1,7 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import {
   Animated as RNAnimated,
-  InteractionManager,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -160,12 +159,12 @@ export default function BadgesScreen() {
         fetchBadgeData(cancelled, true);
       } else {
         setLoading(true);
-        const task = InteractionManager.runAfterInteractions(() => {
+        const idleId = requestIdleCallback(() => {
           fetchBadgeData(cancelled, false);
         });
         return () => {
           cancelled.current = true;
-          task.cancel();
+          cancelIdleCallback(idleId);
         };
       }
 

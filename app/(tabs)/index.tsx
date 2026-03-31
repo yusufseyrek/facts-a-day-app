@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  InteractionManager,
   NativeScrollEvent,
   NativeSyntheticEvent,
   RefreshControl,
@@ -206,8 +205,8 @@ function HomeScreen() {
       loadCategoryCarousels(forceRefresh);
       loadFeedSections(!forceRefresh, forceRefresh);
 
-      // DEFERRED: Non-visible work runs after animations/interactions settle
-      const task = InteractionManager.runAfterInteractions(() => {
+      // DEFERRED: Non-visible work runs when JS thread is idle
+      const idleId = requestIdleCallback(() => {
         const today = getLocalDateString();
         if (preCacheDateRef.current !== today) {
           preCacheDateRef.current = today;
@@ -252,10 +251,10 @@ function HomeScreen() {
       }
 
       return () => {
-        task.cancel();
+        cancelIdleCallback(idleId);
         if (timer) clearTimeout(timer);
       };
-    }, [locale, t, isPremium])
+    }, [locale, isPremium])
   );
 
   // Auto-refresh feed when facts change (content sync, preference changes)

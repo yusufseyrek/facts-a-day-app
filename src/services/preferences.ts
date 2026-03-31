@@ -485,6 +485,9 @@ export async function handleCategoriesChange(
 
     // Clear daily feed cache so it rebuilds from updated DB state
     await database.clearDailyFeedCache();
+    // Also clear in-memory feed cache
+    const { invalidateFeedMemoryCache } = await import('./dailyFeed');
+    invalidateFeedMemoryCache();
 
     // Insert questions before continuing — must complete before home feed loads
     // to avoid concurrent SQLite transactions (setDailyFeedCache vs insertQuestions)
