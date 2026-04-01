@@ -281,10 +281,7 @@ export default function WelcomeScreen() {
 
           <Animated.View style={{ opacity: titleAnim, marginTop: spacing.sm }}>
             <YStack gap={spacing.xs} alignItems="center">
-              <Text.Headline textAlign="center">{t('learnSomethingNew')}</Text.Headline>
-              <Text.Body textAlign="center" color="$textSecondary">
-                {t('hereIsWhatYouGet')}
-              </Text.Body>
+              <Text.Headline textAlign="center">{t('hereIsWhatYouGet')}</Text.Headline>
             </YStack>
           </Animated.View>
         </YStack>

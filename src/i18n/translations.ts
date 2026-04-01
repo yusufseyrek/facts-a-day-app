@@ -1,7 +1,6 @@
 export const translations = {
   de: {
     // Onboarding - Welcome
-    learnSomethingNew: 'Lerne jeden Tag etwas Neues',
     hereIsWhatYouGet: 'Das erwartet dich jeden Tag',
     chooseYourInterests: 'Wähle deine Interessen',
 
@@ -480,7 +479,6 @@ export const translations = {
   },
   en: {
     // Onboarding - Welcome
-    learnSomethingNew: 'Learn something new every day',
     hereIsWhatYouGet: "Here's what you'll get every day",
     chooseYourInterests: 'Choose Your Interests',
 
@@ -951,7 +949,6 @@ export const translations = {
   },
   es: {
     // Onboarding - Welcome
-    learnSomethingNew: 'Aprende algo nuevo cada día',
     hereIsWhatYouGet: 'Esto es lo que recibirás cada día',
     chooseYourInterests: 'Elige tus intereses',
 
@@ -1425,7 +1422,6 @@ export const translations = {
   },
   fr: {
     // Onboarding - Welcome
-    learnSomethingNew: 'Apprenez quelque chose de nouveau chaque jour',
     hereIsWhatYouGet: 'Voici ce que vous recevrez chaque jour',
     chooseYourInterests: 'Choisissez vos centres d\'intérêt',
 
@@ -1901,7 +1897,6 @@ export const translations = {
   },
   ja: {
     // Onboarding - Welcome
-    learnSomethingNew: '毎日新しいことを学ぼう',
     hereIsWhatYouGet: '毎日届く内容はこちら',
     chooseYourInterests: '興味を選ぼう',
 
@@ -2371,7 +2366,6 @@ export const translations = {
   },
   ko: {
     // Onboarding - Welcome
-    learnSomethingNew: '매일 새로운 것을 배워보세요',
     hereIsWhatYouGet: '매일 이런 내용을 받게 됩니다',
     chooseYourInterests: '관심사 선택하기',
 
@@ -2840,7 +2834,6 @@ export const translations = {
   },
   tr: {
     // Onboarding - Welcome
-    learnSomethingNew: 'Her gün yeni bir şey öğren',
     hereIsWhatYouGet: 'Her gün seni böyle bilgiler bekliyor',
     chooseYourInterests: 'İlgi Alanlarını Seç',
 
@@ -3311,7 +3304,6 @@ export const translations = {
   },
   zh: {
     // Onboarding - Welcome
-    learnSomethingNew: '每天学习新知识',
     hereIsWhatYouGet: '这是你每天会收到的内容',
     chooseYourInterests: '选择你的兴趣',
 
