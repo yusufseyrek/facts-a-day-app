@@ -593,6 +593,8 @@ export default function PaywallScreen() {
                       <Text.Tiny
                         color={annual ? PAYWALL_GOLD.badge : tc.planPeriod}
                         fontFamily={FONT_FAMILIES.semibold}
+                        adjustsFontSizeToFit
+                        numberOfLines={1}
                       >
                         {annual ? t('paywallFreeTrial') : t('paywallFlexible')}
                       </Text.Tiny>
