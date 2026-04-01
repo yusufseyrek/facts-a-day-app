@@ -404,8 +404,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    // Android shadow
-    elevation: 4,
+    // Android: elevation causes thick border artifact inside animated opacity parents
+    elevation: Platform.OS === 'android' ? 0 : 4,
   },
   imageContainer: {
     overflow: 'hidden',
