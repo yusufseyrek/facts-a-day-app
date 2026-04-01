@@ -88,7 +88,7 @@ export function TriviaExitModal({
 
         {/* Modal Content */}
         <Animated.View
-          entering={FadeInUp.duration(300).springify()}
+          entering={FadeInUp.duration(150)}
           style={{
             width: screenWidth - spacing.md * 2,
             maxWidth: LAYOUT.MAX_CONTENT_WIDTH,

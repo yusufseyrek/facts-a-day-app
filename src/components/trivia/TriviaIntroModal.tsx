@@ -148,7 +148,7 @@ export function TriviaIntroModal({
         />
 
         <Animated.View
-          entering={FadeInUp.duration(300).springify()}
+          entering={FadeInUp.duration(150)}
           style={{
             width: '100%',
             maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
