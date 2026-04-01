@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Easing, Pressable, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
 import { Bell } from '@tamagui/lucide-icons';
@@ -9,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { Button, MultiTimePicker, ProgressIndicator, Text } from '../../src/components';
+import { Button, MultiTimePicker, ProgressIndicator, ScreenContainer, Text } from '../../src/components';
 import { LAYOUT } from '../../src/config/app';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
@@ -22,11 +21,6 @@ import {
 import * as notificationService from '../../src/services/notifications';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
-
-const Container = styled(SafeAreaView, {
-  flex: 1,
-  backgroundColor: '$background',
-});
 
 const ContentContainer = styled(YStack, {
   flex: 1,
@@ -232,9 +226,9 @@ export default function NotificationsScreen() {
   });
 
   return (
-    <Container>
+    <ScreenContainer>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <ContentContainer paddingHorizontal={spacing.lg} paddingTop={spacing.lg} gap={spacing.md}>
+      <ContentContainer paddingHorizontal={spacing.lg} paddingTop={spacing.lg} paddingBottom={spacing.sm} gap={spacing.md}>
         <Animated.View
           style={{
             opacity: progressOpacity,
@@ -322,6 +316,6 @@ export default function NotificationsScreen() {
           </YStack>
         </Animated.View>
       </ContentContainer>
-    </Container>
+    </ScreenContainer>
   );
 }

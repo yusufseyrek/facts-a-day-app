@@ -1,14 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Easing, Pressable, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { styled, View } from '@tamagui/core';
+import { View } from '@tamagui/core';
 import { ArrowLeft } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { Button, CategoryCard, SuccessToast, Text } from '../../src/components';
+import { Button, CategoryCard, ScreenContainer, SuccessToast, Text } from '../../src/components';
 import { CATEGORY_LIMITS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
@@ -27,10 +26,6 @@ import { hexColors, useTheme } from '../../src/theme';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
 
-const Container = styled(SafeAreaView, {
-  flex: 1,
-  backgroundColor: '$background',
-});
 
 // Content styled components now use inline props with useResponsive() for dynamic spacing
 
@@ -264,7 +259,7 @@ export default function CategoriesSettings() {
 
   if (isLoading) {
     return (
-      <Container>
+      <ScreenContainer>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <YStack
           paddingHorizontal={spacing.lg}
@@ -277,7 +272,7 @@ export default function CategoriesSettings() {
           <ActivityIndicator size="large" color={hexColors.light.primary} />
           <Text.Body>{t('loadingCategories')}</Text.Body>
         </YStack>
-      </Container>
+      </ScreenContainer>
     );
   }
 
@@ -287,14 +282,14 @@ export default function CategoriesSettings() {
   };
 
   return (
-    <Container>
+    <ScreenContainer>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <SuccessToast
         visible={showSuccessToast}
         message={t('categoriesUpdated')}
         onHide={handleSuccessToastHide}
       />
-      <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} gap={spacing.md} flex={1}>
+      <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} paddingBottom={spacing.sm} gap={spacing.md} flex={1}>
         <Animated.View
           style={{
             opacity: headerOpacity,
@@ -421,6 +416,6 @@ export default function CategoriesSettings() {
           </View>
         </Animated.View>
       </YStack>
-    </Container>
+    </ScreenContainer>
   );
 }

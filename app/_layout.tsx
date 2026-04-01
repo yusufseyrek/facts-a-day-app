@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 
 import {
   Montserrat_400Regular,
@@ -639,7 +639,7 @@ export default function RootLayout() {
   return (
     <View style={{ flex: 1, backgroundColor: '#0A1628' }} onLayout={onLayoutRootView}>
       <ErrorBoundary>
-        <SafeAreaProvider>
+        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
           {appCheckFailed && (
             <AppCheckBlockingScreen onRetry={handleAppCheckRetry} isRetrying={isRetryingAppCheck} />
           )}

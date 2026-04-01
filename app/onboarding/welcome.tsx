@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, FlatList, StyleSheet, View, ViewToken } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { styled } from '@tamagui/core';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -27,10 +26,7 @@ import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { SupportedLocale } from '../../src/i18n';
 
-const Container = styled(SafeAreaView, {
-  flex: 1,
-  backgroundColor: '$background',
-});
+import { ScreenContainer } from '../../src/components';
 
 // Gradient for text legibility over images
 const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.85)'] as const;
@@ -268,14 +264,14 @@ export default function WelcomeScreen() {
   );
 
   return (
-    <Container>
+    <ScreenContainer>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <YStack
         flex={1}
         justifyContent="space-between"
         paddingHorizontal={spacing.lg}
         paddingTop={spacing.lg}
-        paddingBottom={spacing.lg + spacing.md}
+        paddingBottom={spacing.lg + spacing.md + spacing.sm}
       >
         {/* Header: progress (full width) + title */}
         <YStack gap={spacing.md}>
@@ -454,7 +450,7 @@ export default function WelcomeScreen() {
           </Button>
         </Animated.View>
       </YStack>
-    </Container>
+    </ScreenContainer>
   );
 }
 

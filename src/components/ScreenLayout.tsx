@@ -1,5 +1,6 @@
 import React from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, ViewStyle } from 'react-native';
+import { SafeAreaView, SafeAreaViewProps } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
 import { XStack, YStack, YStackProps } from 'tamagui';
@@ -12,11 +13,25 @@ import { Text } from './Typography';
 
 /**
  * ScreenContainer - Main container for all screens
- * Wraps content in SafeAreaView with proper background
+ * Uses SafeAreaView directly (not via Tamagui styled()) to ensure
+ * native safe-area insets are applied correctly on all Android devices.
  */
-export const ScreenContainer = styled(SafeAreaView, {
-  flex: 1,
-  backgroundColor: '$background',
+export function ScreenContainer({
+  style,
+  children,
+  ...props
+}: SafeAreaViewProps) {
+  const { theme } = useTheme();
+  const bg = hexColors[theme].background;
+  return (
+    <SafeAreaView style={[scStyles.container, { backgroundColor: bg }, style as ViewStyle]} {...props}>
+      {children}
+    </SafeAreaView>
+  );
+}
+
+const scStyles = StyleSheet.create({
+  container: { flex: 1 },
 });
 
 interface ScreenHeaderProps {

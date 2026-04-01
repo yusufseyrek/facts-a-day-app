@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Easing, Pressable, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { styled, View } from '@tamagui/core';
+import { View } from '@tamagui/core';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { Button, CategoryCard, ProgressIndicator, Text } from '../../src/components';
+import { Button, CategoryCard, ProgressIndicator, ScreenContainer, Text } from '../../src/components';
 import { CATEGORY_LIMITS, SUBSCRIPTION } from '../../src/config/app';
 import { useOnboarding, usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
@@ -23,11 +22,6 @@ import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { SupportedLocale } from '../../src/i18n';
-
-const Container = styled(SafeAreaView, {
-  flex: 1,
-  backgroundColor: '$background',
-});
 
 // These components now use inline props with useResponsive() for dynamic spacing
 
@@ -225,7 +219,7 @@ export default function Categories() {
   // Show loading while initializing or loading categories
   if (isInitializing || (!isInitialized && !initializationError) || isLoading) {
     return (
-      <Container>
+      <ScreenContainer>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <YStack
           paddingHorizontal={spacing.lg}
@@ -238,14 +232,14 @@ export default function Categories() {
           <ActivityIndicator size="large" color={hexColors.light.primary} />
           <Text.Body>{isInitializing ? t('settingUpApp') : t('loadingCategories')}</Text.Body>
         </YStack>
-      </Container>
+      </ScreenContainer>
     );
   }
 
   // Show error if initialization failed
   if (initializationError) {
     return (
-      <Container>
+      <ScreenContainer>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <YStack
           paddingHorizontal={spacing.lg}
@@ -265,7 +259,7 @@ export default function Categories() {
             {t('tryAgain')}
           </Button>
         </YStack>
-      </Container>
+      </ScreenContainer>
     );
   }
 
@@ -275,9 +269,9 @@ export default function Categories() {
   };
 
   return (
-    <Container>
+    <ScreenContainer>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} gap={spacing.md} flex={1}>
+      <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} paddingBottom={spacing.sm} gap={spacing.md} flex={1}>
         <Animated.View
           style={{
             opacity: headerOpacity,
@@ -404,6 +398,6 @@ export default function Categories() {
           </YStack>
         </Animated.View>
       </YStack>
-    </Container>
+    </ScreenContainer>
   );
 }

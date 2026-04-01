@@ -142,7 +142,7 @@ export function TriviaGameView({
         flex: 1,
         backgroundColor: bgColor,
         paddingTop: insets.top,
-        paddingBottom: insets.bottom,
+        paddingBottom: insets.bottom + spacing.sm,
         alignItems: 'center',
       }}
     >

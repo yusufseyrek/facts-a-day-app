@@ -604,7 +604,7 @@ export function TriviaResults({
         flex: 1,
         backgroundColor: bgColor,
         paddingTop: insets.top,
-        paddingBottom: showReturnButton ? insets.bottom : 0,
+        paddingBottom: showReturnButton ? insets.bottom + spacing.sm : 0,
       }}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />

@@ -1,15 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { styled } from '@tamagui/core';
 import { CheckCircle, Gift, Sparkle, Star } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { Button, FONT_FAMILIES, Text } from '../../src/components';
+import { Button, FONT_FAMILIES, ScreenContainer, Text } from '../../src/components';
 import { ADS_ENABLED } from '../../src/config/app';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
@@ -23,10 +21,6 @@ import * as notificationService from '../../src/services/notifications';
 import { getNotificationTimes } from '../../src/services/onboarding';
 import { getNeonColors, hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
-
-const Container = styled(SafeAreaView, {
-  flex: 1,
-});
 
 // Particle component for confetti effect
 const Particle = ({ delay, index }: { delay: number; index: number }) => {
@@ -540,6 +534,7 @@ export default function OnboardingSuccessScreen() {
         justifyContent: 'center',
         alignItems: 'center',
         padding: spacing.xl,
+        paddingBottom: spacing.xl + spacing.sm,
       }}
       showsVerticalScrollIndicator={false}
       overScrollMode="never"
@@ -733,10 +728,10 @@ export default function OnboardingSuccessScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <Container>
+        <ScreenContainer>
           <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
           {showConsent ? renderConsentScreen() : consentDone && renderAnimationScreen()}
-        </Container>
+        </ScreenContainer>
       </LinearGradient>
     </Animated.View>
   );

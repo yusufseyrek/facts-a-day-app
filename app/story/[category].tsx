@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Dimensions,
   Easing,
   Platform,
   Pressable,
@@ -57,10 +58,17 @@ export default function StoryScreen() {
   const router = useRouter();
   const { locale } = useTranslation();
   const { theme } = useTheme();
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const { width: screenWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { spacing, iconSizes, radius } = useResponsive();
   const colors = hexColors[theme];
+
+  // Dimensions.get('screen').height returns the full physical screen height
+  // including the area behind system bars. Unlike useWindowDimensions().height,
+  // this is consistent across Android versions and OEM skins (e.g. Xiaomi/MIUI)
+  // where the window height may incorrectly exclude the nav bar with edgeToEdge.
+  // See: https://github.com/facebook/react-native/issues/41918
+  const screenHeight = Dimensions.get('screen').height;
 
   const { isPremium } = usePremium();
 
@@ -357,7 +365,7 @@ export default function StoryScreen() {
         style={[
           styles.closeButtonContainer,
           {
-            top: insets.top + spacing.sm,
+            top: insets.top + spacing.xl,
             right: spacing.lg,
           },
         ]}
@@ -383,7 +391,10 @@ export default function StoryScreen() {
       {/* Scroll hint — circular progress on ad pause, bouncing chevron otherwise */}
       {currentIndex < storyDataWithAds.length - 1 &&
         (scrollLocked ? (
-          <View style={[styles.scrollHint, { bottom: spacing.sm }]} pointerEvents="none">
+          <View
+            style={[styles.scrollHint, { bottom: insets.bottom + spacing.sm }]}
+            pointerEvents="none"
+          >
             <CircularProgress progress={adPauseProgress} size={iconSizes.lg} />
           </View>
         ) : (
@@ -391,7 +402,7 @@ export default function StoryScreen() {
             style={[
               styles.scrollHint,
               {
-                bottom: spacing.sm,
+                bottom: insets.bottom + spacing.sm,
                 opacity: hintOpacity,
                 transform: [{ translateY: hintTranslateY }],
               },
@@ -563,7 +574,7 @@ const StoryPage = React.memo(
             left: 0,
             right: 0,
             paddingHorizontal: spacing.xl,
-            paddingBottom: insets.bottom + spacing.xl,
+            paddingBottom: insets.bottom + spacing.xxl * 2,
             gap: spacing.sm,
           }}
         >
