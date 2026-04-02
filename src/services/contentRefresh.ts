@@ -9,7 +9,8 @@ import * as api from './api';
 import * as db from './database';
 import * as onboardingService from './onboarding';
 import { extractQuestions } from './questions';
-import * as preferencesService from './preferences';
+// Lazy-imported to break require cycle (contentRefresh ↔ preferences)
+const getPreferencesService = () => require('./preferences') as typeof import('./preferences');
 
 // AsyncStorage keys
 const LAST_CONTENT_REFRESH_KEY = '@last_content_refresh';
@@ -54,6 +55,25 @@ const refreshStatusListeners: Set<RefreshStatusListener> = new Set();
 
 // Track current refresh status so new subscribers get the current state immediately
 let currentRefreshStatus: RefreshStatus = 'idle';
+
+// Active refresh promise for deduplication.
+// When refreshAppContent() is called while one is already in flight,
+// the second caller joins the existing promise instead of starting a
+// concurrent refresh (which would cause SQLite transaction conflicts).
+let activeRefreshPromise: Promise<RefreshResult> | null = null;
+
+/**
+ * Wait for any in-flight content refresh to finish before proceeding.
+ * Used by operations that also write to the database (e.g. category changes)
+ * to avoid concurrent SQLite transaction conflicts.
+ */
+export async function waitForActiveRefresh(): Promise<void> {
+  if (activeRefreshPromise) {
+    if (__DEV__) console.log('⏳ Waiting for active content refresh to finish...');
+    await activeRefreshPromise.catch(() => {}); // ignore errors, just wait
+    if (__DEV__) console.log('✅ Active content refresh finished, proceeding');
+  }
+}
 
 /**
  * Subscribe to refresh status changes
@@ -552,7 +572,20 @@ async function runHistoricalMigration(locale: SupportedLocale): Promise<void> {
  * If locale changed: triggers full refresh (fetch all facts, insert/update)
  * and shows an interstitial ad
  */
-export async function refreshAppContent(): Promise<RefreshResult> {
+export function refreshAppContent(): Promise<RefreshResult> {
+  if (activeRefreshPromise) {
+    if (__DEV__) console.log('🔄 Refresh already in progress — joining existing refresh');
+    return activeRefreshPromise;
+  }
+
+  activeRefreshPromise = refreshAppContentInternal().finally(() => {
+    activeRefreshPromise = null;
+  });
+
+  return activeRefreshPromise;
+}
+
+async function refreshAppContentInternal(): Promise<RefreshResult> {
   const result: RefreshResult = {
     success: false,
     updated: {
@@ -580,7 +613,7 @@ export async function refreshAppContent(): Promise<RefreshResult> {
       // Load and show app open ad alongside content refresh
       // Both run in parallel - ad displays while content downloads
       const [languageChangeResult] = await Promise.all([
-        preferencesService.handleLanguageChange(currentLocale),
+        getPreferencesService().handleLanguageChange(currentLocale),
         showAppOpenAdForLocaleChange().catch((error) => {
           console.error('Failed to show app open ad for locale change:', error);
         }),

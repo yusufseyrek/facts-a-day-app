@@ -308,6 +308,11 @@ export async function handleCategoriesChange(
   onProgress?: (progress: RefreshProgress) => void
 ): Promise<RefreshResult> {
   try {
+    // Wait for any in-flight content refresh to avoid concurrent SQLite transactions.
+    // Uses dynamic import to avoid require cycle (contentRefresh ↔ preferences).
+    const { waitForActiveRefresh } = await import('./contentRefresh');
+    await waitForActiveRefresh();
+
     const now = new Date().toISOString();
 
     // Stage 1: Clear future and unscheduled facts (preserve favorites and shown)
