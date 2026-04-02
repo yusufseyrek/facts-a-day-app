@@ -525,19 +525,43 @@ export async function getCachedImagesSize(): Promise<number> {
  * Checks local cache first (with retry), falls back to remote URL only when online.
  * Returns null when offline and no cached image exists.
  */
+/**
+ * Invalidate all cached image data for a specific fact.
+ * Called when a fact's image_url changes so the next resolve fetches the new image.
+ */
+export async function invalidateFactImageCache(factId: number): Promise<void> {
+  // Clear in-memory caches
+  fileExistenceCache.delete(factId);
+  const knownExt = knownExtensions.get(factId);
+  knownExtensions.delete(factId);
+  pendingExistenceChecks.delete(factId);
+  pendingDownloads.delete(factId);
+
+  // Delete disk files — try known extension first, fall back to all extensions
+  const extensions = knownExt ? [knownExt] : ['webp', 'jpg', 'jpeg', 'png', 'gif'];
+  await Promise.all(
+    extensions.map((ext) =>
+      FileSystem.deleteAsync(`${FACT_IMAGES_DIR}fact-${factId}.${ext}`, {
+        idempotent: true,
+      }).catch(() => {})
+    )
+  );
+}
+
 export async function resolveFactImageUri(
   factId: number,
   remoteUrl: string | undefined | null
 ): Promise<string | null> {
-  // Try local cache
-  const localUri = await getCachedFactImage(factId);
-
-  if (localUri) return localUri;
-
-  // Fall back to remote URL only when online
+  // When online, prefer the remote URL so expo-image resolves by URL.
+  // Local disk cache files keep a fixed path per factId, so expo-image's
+  // internal memory/disk cache can serve a stale decoded image even after
+  // the file is replaced. Using the remote URL avoids this: a new URL
+  // guarantees expo-image fetches the new image.
   if (remoteUrl && getIsConnected()) return remoteUrl;
 
-  return null;
+  // Offline: fall back to local disk cache
+  const localUri = await getCachedFactImage(factId);
+  return localUri;
 }
 
 /**

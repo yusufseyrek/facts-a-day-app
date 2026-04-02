@@ -521,6 +521,20 @@ function mapSingleFactWithRelations(row: any): FactWithRelations {
 export async function insertFacts(facts: Fact[]): Promise<void> {
   const database = await openDatabase();
 
+  // Snapshot existing image URLs so we can detect changes after upsert
+  const incomingIds = facts.map((f) => f.id);
+  const oldImageUrls = new Map<number, string | null>();
+  if (incomingIds.length > 0) {
+    const placeholders = incomingIds.map(() => '?').join(',');
+    const existing = await database.getAllAsync<{ id: number; image_url: string | null }>(
+      `SELECT id, image_url FROM facts WHERE id IN (${placeholders})`,
+      incomingIds
+    );
+    for (const row of existing) {
+      oldImageUrls.set(row.id, row.image_url);
+    }
+  }
+
   // Use transaction for better performance with batch inserts
   await database.withTransactionAsync(async () => {
     for (const fact of facts) {
@@ -571,6 +585,19 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
       );
     }
   });
+
+  // Invalidate image cache for facts whose image_url changed
+  const changedIds = facts.filter((f) => {
+    const oldUrl = oldImageUrls.get(f.id);
+    return oldUrl !== undefined && oldUrl !== (f.image_url || null);
+  }).map((f) => f.id);
+
+  if (changedIds.length > 0) {
+    // Dynamic import to avoid circular dependency (images.ts imports from database.ts)
+    const { invalidateFactImageCache } = await import('./images');
+    await Promise.all(changedIds.map((id) => invalidateFactImageCache(id)));
+    if (__DEV__) console.log(`🖼️ Invalidated image cache for ${changedIds.length} facts: [${changedIds.join(', ')}]`);
+  }
 }
 
 export async function getAllFacts(language?: string): Promise<FactWithRelations[]> {

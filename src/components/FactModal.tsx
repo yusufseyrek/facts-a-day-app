@@ -286,12 +286,14 @@ export function FactModal({
     };
   }, [fact.id, fact.image_url]);
 
-  // Use notification image → local cache (with retry) → remote URL (online only)
-  // Initialize with in-memory cache or remote URL to preserve layout
+  // Use notification image → remote URL (online) → local cache (offline)
+  // When online, prefer remote URL so expo-image resolves by URL (avoids stale
+  // decoded images cached against fixed local file paths).
   // When offline, only use locally cached images — don't fall back to remote URLs
   // that will never load (avoids showing a placeholder for nothing)
-  const initialImageUri =
-    getCachedFactImageSync(fact.id) || (getIsConnected() ? fact.image_url : null);
+  const initialImageUri = getIsConnected()
+    ? fact.image_url || getCachedFactImageSync(fact.id)
+    : getCachedFactImageSync(fact.id);
   const resolvedImageUri = useResolvedImageUri(fact.id, fact.image_url, initialImageUri);
 
   const imageUri = notificationImageUri || resolvedImageUri;
