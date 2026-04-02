@@ -336,6 +336,15 @@ main() {
 
     cd "$PROJECT_ROOT"
 
+    # Run tests before publishing
+    print_step "Running tests..."
+    if bun run test; then
+        print_success "All tests passed!"
+    else
+        print_error "Tests failed. Aborting OTA update."
+        exit 1
+    fi
+
     if [ "$platform" = "all" ]; then
         publish_platform "ios" "$message"
         publish_platform "android" "$message"
