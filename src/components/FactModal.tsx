@@ -416,7 +416,7 @@ export function FactModal({
 
   // Calculate dynamic header height first (needed for transition calculations)
   const basePaddingTop = Platform.OS === 'ios' ? spacing.xl : insets.top;
-  const basePaddingBottom = spacing.lg;
+  const basePaddingBottom = spacing.xl;
   const titleLines = titleHeight / typography.lineHeight.headline;
   const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight;
   const maxTitleHeight = typography.lineHeight.headline * Math.min(titleLines, 3);
@@ -781,7 +781,7 @@ export function FactModal({
             <XStack
               alignItems="center"
               justifyContent="space-between"
-              paddingHorizontal={spacing.lg}
+              paddingHorizontal={spacing.xl}
               pointerEvents="box-none"
               style={{
                 paddingTop: basePaddingTop,
@@ -799,7 +799,11 @@ export function FactModal({
                     transform: [{ translateY: headerTitleTranslateY }],
                   }}
                 >
-                  <Text.Headline numberOfLines={isHeaderCollapsed ? 3 : undefined}>
+                  {/* Back/Header layer title */}
+                  <Text.Headline
+                    adjustsFontSizeToFit
+                    numberOfLines={isHeaderCollapsed ? 3 : undefined}
+                  >
                     {factTitle}
                   </Text.Headline>
                 </Animated.View>
@@ -996,7 +1000,7 @@ export function FactModal({
           )}
 
           {/* Content Section */}
-          <YStack padding={spacing.lg} gap={spacing.md}>
+          <YStack padding={spacing.xl} gap={spacing.md}>
             {/* Title - shown in content only when has image (no-image uses sticky title above) */}
             {hasImage && (
               <Animated.View
@@ -1005,6 +1009,7 @@ export function FactModal({
                   paddingRight: iconSizes.xl + spacing.xs,
                 }}
               >
+                {/* Front layer title */}
                 <Text.Headline
                   role="heading"
                   onTextLayout={(e) => {
