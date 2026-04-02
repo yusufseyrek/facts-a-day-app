@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -32,7 +33,7 @@ import { getCachedFactImageSync } from '../services/images';
 import { getIsConnected } from '../services/network';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
-import { openInAppBrowser } from '../utils/browser';
+import { getTranslatedUrl } from '../utils/browser';
 import { useResponsive } from '../utils/useResponsive';
 
 import { BannerAd } from './ads';
@@ -384,9 +385,10 @@ export function FactModal({
   const handleSourcePress = useCallback(
     (url: string) => {
       trackSourceLinkClick({ factId: fact.id, domain: extractDomain(url) });
-      openInAppBrowser(url, { theme, translateTo: locale === 'en' ? undefined : locale });
+      const finalUrl = locale !== 'en' ? getTranslatedUrl(url, locale) : url;
+      Linking.openURL(finalUrl);
     },
-    [fact.id, theme, locale]
+    [fact.id, locale]
   );
 
   let categoryForBadge: string | Category | null = null;
