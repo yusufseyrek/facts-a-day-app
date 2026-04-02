@@ -429,6 +429,7 @@ export function FactModal({
 
   // Track scroll position for gesture handling
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+  const collapsedTitleOpacity = useRef(new Animated.Value(0)).current;
   const collapseEndRef = useRef(0);
   React.useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -440,6 +441,15 @@ export function FactModal({
     });
     return () => scrollY.removeListener(id);
   }, [scrollY, headerCollapseAmount, isHeaderCollapsed]);
+
+  // Cross-fade between full title and collapsed (numberOfLines) title
+  useEffect(() => {
+    Animated.timing(collapsedTitleOpacity, {
+      toValue: isHeaderCollapsed ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isHeaderCollapsed]);
 
   // Fade animation for the entire scroll content (image + text) on navigation.
   // Hides everything first so scroll-to-top and image swap happen invisibly,
@@ -799,13 +809,32 @@ export function FactModal({
                     transform: [{ translateY: headerTitleTranslateY }],
                   }}
                 >
-                  {/* Back/Header layer title */}
-                  <Text.Headline
-                    adjustsFontSizeToFit
-                    numberOfLines={isHeaderCollapsed ? 3 : undefined}
+                  {/* Full title — matches content title, fades out when collapsed */}
+                  <Animated.View
+                    style={{
+                      opacity: collapsedTitleOpacity.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 0],
+                      }),
+                    }}
                   >
-                    {factTitle}
-                  </Text.Headline>
+                    <Text.Headline>{factTitle}</Text.Headline>
+                  </Animated.View>
+                  {/* Collapsed title — numberOfLines + adjustsFontSizeToFit, fades in when collapsed */}
+                  <Animated.View
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      opacity: collapsedTitleOpacity,
+                      paddingRight: iconSizes.xl + spacing.xs,
+                    }}
+                  >
+                    <Text.Headline adjustsFontSizeToFit numberOfLines={3}>
+                      {factTitle}
+                    </Text.Headline>
+                  </Animated.View>
                 </Animated.View>
               </HeaderTitleContainer>
             </XStack>
