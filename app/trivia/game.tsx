@@ -558,15 +558,17 @@ export default function TriviaGameScreen() {
       categorySlug: params.categorySlug,
     });
 
-    trackRewardedAdShown({
-      mode: triviaMode,
-      questionIndex: gameState.currentQuestionIndex,
-      categorySlug: params.categorySlug,
-    });
-
     setShowingRewardedAd(true);
     const rewarded = await showRewardedAd();
     setShowingRewardedAd(false);
+
+    if (rewarded) {
+      trackRewardedAdShown({
+        mode: triviaMode,
+        questionIndex: gameState.currentQuestionIndex,
+        categorySlug: params.categorySlug,
+      });
+    }
 
     trackRewardedAdResult({
       mode: triviaMode,

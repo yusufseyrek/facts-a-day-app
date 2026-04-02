@@ -513,13 +513,11 @@ export default function RootLayout() {
         // Let the JS splash overlay mount (replaces native splash)
         setInitialOnboardingStatus(isComplete);
 
-        // Initialize ads SDK (needed before loading app open ad) - skip for premium users
-        if (!cachedPremium) {
-          try {
-            await initializeAdsForReturningUser();
-          } catch (error) {
-            console.error('Failed to initialize ads for locale change:', error);
-          }
+        // Initialize ads SDK (needed before loading app open ad)
+        try {
+          await initializeAdsForReturningUser();
+        } catch (error) {
+          console.error('Failed to initialize ads for locale change:', error);
         }
 
         // Run content refresh — splash stays visible because localeRefreshPromise is pending.
@@ -565,11 +563,9 @@ export default function RootLayout() {
         setInitialOnboardingStatus(isComplete);
 
         // ── Phase 3: Background tasks (fire-and-forget) ──
-        if (!cachedPremium) {
-          initializeAdsForReturningUser().catch((error) => {
-            console.error('Failed to initialize ads for returning user:', error);
-          });
-        }
+        initializeAdsForReturningUser().catch((error) => {
+          console.error('Failed to initialize ads for returning user:', error);
+        });
 
         contentRefresh.refreshAppContent().catch((error) => {
           console.error('Background refresh failed:', error);
