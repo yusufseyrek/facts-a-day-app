@@ -414,7 +414,7 @@ export function FactModal({
 
   // Calculate dynamic header height first (needed for transition calculations)
   const basePaddingTop = Platform.OS === 'ios' ? spacing.xl : insets.top;
-  const basePaddingBottom = spacing.xl;
+  const basePaddingBottom = spacing.lg;
   const titleLines = titleHeight / typography.lineHeight.headline;
   const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight;
   const maxTitleHeight = typography.lineHeight.headline * Math.min(titleLines, 3);
@@ -528,18 +528,13 @@ export function FactModal({
     extrapolate: 'clamp',
   });
 
-  // const tabletMagicNumber = isTablet ? 10 : 0;
-
-  const tabletMagicNumber = 0;
-
   // Header title translateY - slides up from bottom of header as scrollY increases
   // Animation starts when header becomes visible (at HEADER_BG_TRANSITION)
   // Account for centering offset when header is clamped to minimum height
   // When clamped, extra space is distributed above/below title due to alignItems: "center"
   const clampedExtraSpace = Math.max(0, headerHeight - dynamicHeaderHeight);
   const centeringOffset = clampedExtraSpace / 2;
-  const headerTitleStartY =
-    headerHeight - basePaddingTop + basePaddingBottom + tabletMagicNumber - centeringOffset; // Start from bottom of header, adjusted for centering
+  const headerTitleStartY = headerHeight - basePaddingTop + basePaddingBottom - centeringOffset; // Start from bottom of header, adjusted for centering
 
   // Continuous animation: translateY decreases (moves up) as scrollY increases
   // The title starts moving up when header becomes visible and continues to move up as user scrolls
@@ -784,7 +779,7 @@ export function FactModal({
             <XStack
               alignItems="center"
               justifyContent="space-between"
-              paddingHorizontal={spacing.xl}
+              paddingHorizontal={spacing.lg}
               pointerEvents="box-none"
               style={{
                 paddingTop: basePaddingTop,
@@ -999,7 +994,7 @@ export function FactModal({
           )}
 
           {/* Content Section */}
-          <YStack padding={spacing.xl} gap={spacing.md}>
+          <YStack padding={spacing.lg} gap={spacing.md}>
             {/* Title - shown in content only when has image (no-image uses sticky title above) */}
             {hasImage && (
               <Animated.View
