@@ -416,7 +416,7 @@ export function FactModal({
   const titleLines = titleHeight / typography.lineHeight.headline;
   const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight;
   const maxTitleHeight = typography.lineHeight.headline * Math.min(titleLines, 3);
-  const minHeaderHeight = basePaddingTop + basePaddingBottom + maxTitleHeight - spacing.sm;
+  const minHeaderHeight = basePaddingTop + basePaddingBottom + maxTitleHeight;
   const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
   const headerCollapseAmount = Math.max(0, headerHeight - minHeaderHeight);
 
@@ -819,6 +819,7 @@ export function FactModal({
                 backgroundColor: categoryColor,
                 opacity: headerBorderOpacity,
                 transform: [{ scaleX: headerBorderScaleX }],
+                zIndex: 999,
               }}
               pointerEvents="none"
             />
