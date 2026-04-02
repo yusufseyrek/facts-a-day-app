@@ -413,10 +413,10 @@ export function FactModal({
   // Calculate dynamic header height first (needed for transition calculations)
   const basePaddingTop = Platform.OS === 'ios' ? spacing.xl : insets.top;
   const basePaddingBottom = spacing.xl;
+  const titleLines = titleHeight / typography.lineHeight.headline;
   const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight;
-  // Min header height = same as a 2-line title header
-  const threeLinesTitleHeight = typography.lineHeight.headline * 3;
-  const minHeaderHeight = basePaddingTop + basePaddingBottom + threeLinesTitleHeight - spacing.sm;
+  const maxTitleHeight = typography.lineHeight.headline * Math.min(titleLines, 3);
+  const minHeaderHeight = basePaddingTop + basePaddingBottom + maxTitleHeight - spacing.sm;
   const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
   const headerCollapseAmount = Math.max(0, headerHeight - minHeaderHeight);
 
@@ -466,7 +466,7 @@ export function FactModal({
       Animated.timing(contentFadeAnim, {
         toValue: 1,
         duration: 100,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }).start();
     }, 50);
 
