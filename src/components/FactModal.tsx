@@ -832,7 +832,11 @@ export function FactModal({
                       paddingRight: iconSizes.xl + spacing.xs,
                     }}
                   >
-                    <Text.Headline adjustsFontSizeToFit numberOfLines={endTitleLines}>
+                    <Text.Headline
+                      style={{ fontFamily: undefined, fontWeight: 700 }}
+                      adjustsFontSizeToFit
+                      numberOfLines={endTitleLines}
+                    >
                       {factTitle}
                     </Text.Headline>
                   </Animated.View>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextStyle } from 'react-native';
+import { Platform, TextStyle } from 'react-native';
 
 import { GetProps, Text as TamaguiText } from '@tamagui/core';
 
@@ -131,7 +131,13 @@ const TextBase = React.memo(
     const letterSpacing =
       customLetterSpacing ?? presetStyles?.letterSpacing ?? responsiveLetterSpacing;
     const fontFamily = customFontFamily ?? presetStyles?.fontFamily;
-    const fontWeight = customFontWeight ?? presetStyles?.fontWeight;
+    // On Android, setting fontWeight alongside a custom fontFamily causes the
+    // system to ignore the custom font. The weight is already encoded in the
+    // font file name (e.g. Montserrat_700Bold), so we skip fontWeight there.
+    const fontWeight =
+      Platform.OS === 'android' && fontFamily
+        ? undefined
+        : (customFontWeight ?? presetStyles?.fontWeight);
     const color = customColor ?? presetStyles?.color;
     const resolvedMaxFontSizeMultiplier =
       customMaxFontSizeMultiplier ??

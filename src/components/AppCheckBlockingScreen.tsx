@@ -62,7 +62,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
     fontFamily: FONT_FAMILIES.bold,
     color: '#FFFFFF',
     textAlign: 'center',
@@ -91,7 +90,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 14,
-    fontWeight: '600',
     fontFamily: FONT_FAMILIES.semibold,
     color: '#FFFFFF',
     textAlign: 'center',
