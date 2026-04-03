@@ -418,8 +418,9 @@ export function FactModal({
   const basePaddingTop = Platform.OS === 'ios' ? spacing.xl : insets.top;
   const basePaddingBottom = spacing.xl;
   const titleLines = titleHeight / typography.lineHeight.headline;
+  const endTitleLines = Math.min(titleLines, 3);
   const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight;
-  const maxTitleHeight = typography.lineHeight.headline * Math.min(titleLines, 3);
+  const maxTitleHeight = typography.lineHeight.headline * endTitleLines;
   const minHeaderHeight = basePaddingTop + basePaddingBottom + maxTitleHeight;
   const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
   const headerCollapseAmount = Math.max(0, headerHeight - minHeaderHeight);
@@ -831,7 +832,7 @@ export function FactModal({
                       paddingRight: iconSizes.xl + spacing.xs,
                     }}
                   >
-                    <Text.Headline adjustsFontSizeToFit numberOfLines={3}>
+                    <Text.Headline adjustsFontSizeToFit numberOfLines={endTitleLines}>
                       {factTitle}
                     </Text.Headline>
                   </Animated.View>
