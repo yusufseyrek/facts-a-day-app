@@ -2,7 +2,7 @@ import PostHog from 'posthog-react-native';
 
 export const posthog = new PostHog('phc_tyEgTJkA94jLNlvCnUq5yKbT5krRiyyEiP9d81NQz9d', {
   host: 'https://eu.i.posthog.com',
-  disabled: __DEV__,
+  disabled: true, // Disable PostHog for now, can be enabled later for analytics
   enableSessionReplay: true,
   sessionReplayConfig: {
     maskAllTextInputs: false,
