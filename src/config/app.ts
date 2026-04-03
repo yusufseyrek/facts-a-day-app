@@ -152,11 +152,11 @@ export const DISPLAY_LIMITS = {
  */
 export const HOME_FEED = {
   /** Number of cards in the Fresh Facts carousel */
-  FRESH_FACTS_COUNT: 10,
+  FRESH_FACTS_COUNT: 25,
   /** Number of cards in the Worth Knowing carousel */
-  WORTH_KNOWING_COUNT: 10,
+  WORTH_KNOWING_COUNT: 15,
   /** Number of cards per category carousel on the home screen */
-  CATEGORY_CAROUSEL_COUNT: 10,
+  CATEGORY_CAROUSEL_COUNT: 6,
 } as const;
 
 /**

@@ -416,7 +416,7 @@ export function FactModal({
 
   // Calculate dynamic header height first (needed for transition calculations)
   const basePaddingTop = Platform.OS === 'ios' ? spacing.xl : insets.top;
-  const basePaddingBottom = spacing.xl;
+  const basePaddingBottom = spacing.lg;
   const titleLines = titleHeight / typography.lineHeight.headline;
   const endTitleLines = Math.min(titleLines, 3);
   const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight;
@@ -1034,7 +1034,7 @@ export function FactModal({
           )}
 
           {/* Content Section */}
-          <YStack padding={spacing.xl} gap={spacing.md}>
+          <YStack padding={spacing.xl} paddingTop={spacing.lg} gap={spacing.md}>
             {/* Title - shown in content only when has image (no-image uses sticky title above) */}
             {hasImage && (
               <Animated.View
