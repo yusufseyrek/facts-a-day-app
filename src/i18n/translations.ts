@@ -57,8 +57,8 @@ export const translations = {
     welcomeToApp: 'Willkommen bei Täglich Wissen!',
     checkInternetConnection:
       'Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut',
-    oneMoment: 'Dies dauert nur einen Moment...',
-    settingUpExperience: 'Einen Moment, wir richten die App ein...',
+    oneMoment: 'Nur einen Moment...',
+    settingUpExperience: 'Wir holen die neuesten Fakten für dich...',
     maybeLater: 'Vielleicht später',
 
     // Main App
@@ -531,8 +531,8 @@ export const translations = {
     allSet: 'All Set!',
     welcomeToApp: 'Welcome to Facts A Day!',
     checkInternetConnection: 'Please check your internet connection and try again',
-    oneMoment: 'This will only take a moment...',
-    settingUpExperience: 'Hang tight, we\'re setting up the app...',
+    oneMoment: 'Just a moment...',
+    settingUpExperience: 'We\'re fetching the latest facts for you...',
     maybeLater: 'Maybe Later',
 
     // Main App
@@ -1002,8 +1002,8 @@ export const translations = {
     allSet: '¡Todo Listo!',
     welcomeToApp: '¡Bienvenido a Conocimiento Diario!',
     checkInternetConnection: 'Por favor verifica tu conexión a internet e intenta nuevamente',
-    oneMoment: 'Esto solo tomará un momento...',
-    settingUpExperience: 'Un momento, estamos configurando la app...',
+    oneMoment: 'Solo un momento...',
+    settingUpExperience: 'Estamos obteniendo los últimos datos para ti...',
     maybeLater: 'Quizás después',
 
     // Main App
@@ -1476,8 +1476,8 @@ export const translations = {
     allSet: 'Tout est Prêt!',
     welcomeToApp: 'Bienvenue sur Savoir Quotidien!',
     checkInternetConnection: 'Veuillez vérifier votre connexion internet et réessayer',
-    oneMoment: "Cela ne prendra qu'un instant...",
-    settingUpExperience: "Un instant, nous configurons l'application...",
+    oneMoment: "Juste un instant...",
+    settingUpExperience: "Nous récupérons les derniers faits pour vous...",
     maybeLater: 'Peut-être plus tard',
 
     // Main App
@@ -1948,8 +1948,8 @@ export const translations = {
     allSet: '準備完了！',
     welcomeToApp: '毎日の知識へようこそ！',
     checkInternetConnection: 'インターネット接続を確認して、もう一度お試しください',
-    oneMoment: 'これは少しだけ時間がかかります...',
-    settingUpExperience: 'もう少しお待ちください、アプリを設定中です...',
+    oneMoment: '少々お待ちください...',
+    settingUpExperience: '最新のファクトを取得しています...',
     maybeLater: 'あとで',
 
     // Main App
@@ -2416,8 +2416,8 @@ export const translations = {
     allSet: '모두 완료!',
     welcomeToApp: '매일 지식에 오신 것을 환영합니다!',
     checkInternetConnection: '인터넷 연결을 확인하고 다시 시도하세요',
-    oneMoment: '잠시만 기다려 주세요...',
-    settingUpExperience: '잠시만요, 앱을 설정하고 있어요...',
+    oneMoment: '잠시만요...',
+    settingUpExperience: '최신 팩트를 가져오고 있어요...',
     maybeLater: '나중에',
 
     // Main App
@@ -2886,8 +2886,8 @@ export const translations = {
     allSet: 'Hazırsınız!',
     welcomeToApp: "Günlük Bilgi'ye Hoş Geldiniz!",
     checkInternetConnection: 'Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin',
-    oneMoment: 'Bu sadece bir dakika sürecek...',
-    settingUpExperience: 'Bir saniye, uygulamayı hazırlıyoruz...',
+    oneMoment: 'Bir saniye...',
+    settingUpExperience: 'En güncel bilgileri senin için getiriyoruz...',
     maybeLater: 'Belki sonra',
 
     // Main App
@@ -3353,8 +3353,8 @@ export const translations = {
     allSet: '一切就绪！',
     welcomeToApp: '欢迎来到 每日知识！',
     checkInternetConnection: '请检查您的网络连接并重试',
-    oneMoment: '这只需要一会儿...',
-    settingUpExperience: '稍等片刻，我们正在设置应用...',
+    oneMoment: '稍等片刻...',
+    settingUpExperience: '正在为你获取最新的知识...',
     maybeLater: '以后再说',
 
     // Main App
