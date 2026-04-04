@@ -80,6 +80,8 @@ export const NATIVE_ADS = {
     FAVORITES: 1,
     STORY: 3,
   },
+  /** Show an inline ad every N items in the Keep Reading list */
+  KEEP_READING_AD_INTERVAL: 5,
   /** Show an inline ad every N category carousels on the home screen */
   CATEGORY_CAROUSEL_AD_INTERVAL: 3,
   /** Show a native ad every N questions in trivia */
@@ -151,8 +153,10 @@ export const DISPLAY_LIMITS = {
  * Home feed section item counts
  */
 export const HOME_FEED = {
-  /** Number of cards in the Fresh Facts carousel */
-  FRESH_FACTS_COUNT: 25,
+  /** Number of cards in the Latest carousel */
+  LATEST_COUNT: 10,
+  /** Number of facts per page in the Keep Reading section (infinite scroll) */
+  KEEP_READING_PAGE_SIZE: 20,
   /** Number of cards in the Worth Knowing carousel */
   WORTH_KNOWING_COUNT: 15,
   /** Number of cards per category carousel on the home screen */

@@ -110,9 +110,9 @@ export async function loadDailyFeedSections(
   if (needsFresh) {
     if (__DEV__)
       console.log(
-        `📋 [DailyFeed] Fetching fresh facts: locale="${locale}", limit=${HOME_FEED.FRESH_FACTS_COUNT}`
+        `📋 [DailyFeed] Fetching fresh facts: locale="${locale}", limit=${HOME_FEED.LATEST_COUNT}`
       );
-    const freshFetched = await getLatestFacts(HOME_FEED.FRESH_FACTS_COUNT, locale);
+    const freshFetched = await getLatestFacts(HOME_FEED.LATEST_COUNT, locale);
     if (__DEV__) console.log(`📋 [DailyFeed] getLatestFacts returned ${freshFetched.length} facts`);
     if (freshFetched.length > 0) {
       await setDailyFeedCache(

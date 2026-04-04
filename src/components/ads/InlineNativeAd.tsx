@@ -1,31 +1,45 @@
 import React, { memo } from 'react';
 import { View } from 'react-native';
+import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
+import { LAYOUT } from '../../config/app';
 import { useNativeAd } from '../../hooks/useNativeAd';
 import { useResponsive } from '../../utils/useResponsive';
 
 import { NativeAdCard } from './NativeAdCard';
 
-const INLINE_HEIGHT_RATIO_PHONE = 0.35;
-const INLINE_HEIGHT_RATIO_TABLET = 0.25;
-
-interface InlineNativeAdProps {
-  /** Override the default height. Defaults to screenWidth * 0.35 (phone) or 0.25 (tablet). */
-  cardHeight?: number;
+/** Map aspect ratio enum to a width/height multiplier */
+function getHeightRatio(aspectRatio: NativeMediaAspectRatio): number {
+  switch (aspectRatio) {
+    case NativeMediaAspectRatio.LANDSCAPE:
+      return 9 / 16;
+    case NativeMediaAspectRatio.PORTRAIT:
+      return 4 / 3;
+    case NativeMediaAspectRatio.SQUARE:
+      return 1;
+    case NativeMediaAspectRatio.ANY:
+    default:
+      return 9 / 16;
+  }
 }
 
-function InlineNativeAdComponent({ cardHeight: cardHeightProp }: InlineNativeAdProps) {
-  const { screenWidth, radius, isTablet } = useResponsive();
-  const { nativeAd, isLoading, error } = useNativeAd();
+interface InlineNativeAdProps {
+  /** Override the default height. When set, aspectRatio is ignored for sizing. */
+  cardHeight?: number;
+  /** Preferred media aspect ratio. Affects both the ad request and the component height. Defaults to LANDSCAPE. */
+  aspectRatio?: NativeMediaAspectRatio;
+}
 
-  // Don't render anything until we have an ad ready
+function InlineNativeAdComponent({ cardHeight: cardHeightProp, aspectRatio = NativeMediaAspectRatio.LANDSCAPE }: InlineNativeAdProps) {
+  const { screenWidth, radius } = useResponsive();
+  const { nativeAd, isLoading, error } = useNativeAd({ aspectRatio });
+
   if (!nativeAd || isLoading || error) {
     return null;
   }
 
-  const cardHeight =
-    cardHeightProp ??
-    screenWidth * (isTablet ? INLINE_HEIGHT_RATIO_TABLET : INLINE_HEIGHT_RATIO_PHONE);
+  const contentWidth = Math.min(screenWidth, LAYOUT.MAX_CONTENT_WIDTH);
+  const cardHeight = cardHeightProp ?? contentWidth * getHeightRatio(aspectRatio);
 
   return (
     <View style={{ height: cardHeight, overflow: 'hidden', borderRadius: radius.lg }}>

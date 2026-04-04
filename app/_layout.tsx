@@ -18,6 +18,7 @@ import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
+import { QueryClientProvider } from '@tanstack/react-query';
 import { PostHogErrorBoundary, PostHogProvider } from 'posthog-react-native';
 
 import { showAppOpenAdOnForeground } from '../src/components/ads/AppOpenAd';
@@ -33,6 +34,7 @@ import {
   retryAppCheckInit,
 } from '../src/config/firebase';
 import { posthog } from '../src/config/posthog';
+import { queryClient } from '../src/config/queryClient';
 import {
   BadgeToastProvider,
   OnboardingProvider,
@@ -52,6 +54,7 @@ import { initAnalytics } from '../src/services/analytics';
 import { registerBackgroundSync } from '../src/services/backgroundSync';
 import * as contentRefresh from '../src/services/contentRefresh';
 import { loadDailyFeedSections } from '../src/services/dailyFeed';
+import { homeKeys } from '../src/hooks/queryKeys';
 import * as database from '../src/services/database';
 import { ensureImagesDirExists } from '../src/services/images';
 import { startNetworkMonitoring } from '../src/services/network';
@@ -528,7 +531,8 @@ export default function RootLayout() {
         // Pre-populate the daily feed cache so the home screen's loadFeedSections
         // gets a fast cache hit when it processes the feed refresh event below.
         try {
-          await loadDailyFeedSections(locale, true);
+          const feedSections = await loadDailyFeedSections(locale, true);
+          queryClient.setQueryData(homeKeys.dailyFeed(locale), feedSections);
         } catch (error) {
           console.error('Failed to pre-populate daily feed cache:', error);
         }
@@ -551,10 +555,12 @@ export default function RootLayout() {
         // No locale change — normal startup flow
         // Pre-load facts + recommendations in parallel
         try {
-          await Promise.all([
+          const [, feedSections] = await Promise.all([
             database.markDeliveredFactsAsShown(locale),
             loadDailyFeedSections(locale),
           ]);
+          // Pre-populate React Query cache so home screen gets instant data
+          queryClient.setQueryData(homeKeys.dailyFeed(locale), feedSections);
         } catch (error) {
           console.error('Failed to pre-load home screen data:', error);
         }
@@ -642,6 +648,7 @@ export default function RootLayout() {
           <PostHogProvider client={posthog}>
             <PostHogErrorBoundary>
             <I18nProvider>
+              <QueryClientProvider client={queryClient}>
               <PreloadedDataProvider>
                 <OnboardingProvider initialComplete={initialOnboardingStatus}>
                   <IAPSafeProvider>
@@ -657,6 +664,7 @@ export default function RootLayout() {
                   </IAPSafeProvider>
                 </OnboardingProvider>
               </PreloadedDataProvider>
+              </QueryClientProvider>
             </I18nProvider>
             </PostHogErrorBoundary>
           </PostHogProvider>

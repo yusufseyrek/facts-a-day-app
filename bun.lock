@@ -15,6 +15,7 @@
         "@shopify/flash-list": "2.0.2",
         "@tamagui/core": "^1.136.2",
         "@tamagui/lucide-icons": "^1.136.2",
+        "@tanstack/react-query": "^5.96.2",
         "expo": "~54.0.33",
         "expo-application": "~7.0.8",
         "expo-background-task": "~1.0.10",
@@ -814,6 +815,10 @@
     "@tamagui/web": ["@tamagui/web@1.141.5", "", { "dependencies": { "@tamagui/compose-refs": "1.141.5", "@tamagui/constants": "1.141.5", "@tamagui/helpers": "1.141.5", "@tamagui/is-equal-shallow": "1.141.5", "@tamagui/normalize-css-color": "1.141.5", "@tamagui/timer": "1.141.5", "@tamagui/types": "1.141.5", "@tamagui/use-did-finish-ssr": "1.141.5", "@tamagui/use-event": "1.141.5", "@tamagui/use-force-update": "1.141.5" }, "peerDependencies": { "react": "*", "react-dom": "*", "react-native": "*" } }, "sha512-GMI4kYYVjy51fKVooq2Wt21aMQoyKLMl89W2lU6KQJ6ipFMirWO3LWA+KFnS7ME3O3Kh2h+IjMfIdpp++db6tQ=="],
 
     "@tamagui/z-index-stack": ["@tamagui/z-index-stack@1.141.5", "", { "peerDependencies": { "react": "*" } }, "sha512-h9qqz/HsTiF9hou8FnFYkB1UaZV3bZFU7aWrZdvTIDQTdPU+4jKSvnWhR68K5xGRGkthQ2R9cFnFIrlwIt+efA=="],
+
+    "@tanstack/query-core": ["@tanstack/query-core@5.96.2", "", {}, "sha512-hzI6cTVh4KNRk8UtoIBS7Lv9g6BnJPXvBKsvYH1aGWvv0347jT3BnSvztOE+kD76XGvZnRC/t6qdW1CaIfwCeA=="],
+
+    "@tanstack/react-query": ["@tanstack/react-query@5.96.2", "", { "dependencies": { "@tanstack/query-core": "5.96.2" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-sYyzzJT4G0g02azzJ8o55VFFV31XvFpdUpG+unxS0vSaYsJnSPKGoI6WdPwUucJL1wpgGfwfmntNX/Ub1uOViA=="],
 
     "@tootallnate/once": ["@tootallnate/once@2.0.0", "", {}, "sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A=="],
 

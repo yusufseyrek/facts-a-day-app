@@ -31,7 +31,7 @@
     "testMatch": [
       "**/__tests__/**/*.test.ts"
     ],
-    "testTimeout": 10000,
+    "testTimeout": 1e4,
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@shopify/flash-list|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|tamagui|@tamagui/.*|i18n-js|react-native-google-mobile-ads|react-native-reanimated|react-native-gesture-handler|react-native-screens|react-native-safe-area-context|react-native-worklets)"
     ],
@@ -53,6 +53,7 @@
     "@shopify/flash-list": "2.0.2",
     "@tamagui/core": "^1.136.2",
     "@tamagui/lucide-icons": "^1.136.2",
+    "@tanstack/react-query": "^5.96.2",
     "expo": "~54.0.33",
     "expo-application": "~7.0.8",
     "expo-background-task": "~1.0.10",
