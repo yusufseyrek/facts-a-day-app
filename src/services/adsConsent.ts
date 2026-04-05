@@ -30,7 +30,6 @@ export const canShowPersonalizedAds = async (): Promise<boolean> => {
 
     // GDPR applies, check the user's actual choices
     const userChoices = await AdsConsent.getUserChoices();
-    if (__DEV__) console.log('User consent choices:', userChoices);
 
     // Check if user has consented to personalized ads
     // selectPersonalisedAds is the key choice for showing personalized ads

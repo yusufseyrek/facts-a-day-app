@@ -101,23 +101,6 @@ export const initAnalytics = async (): Promise<void> => {
       theme: themeValue,
       categories: categoriesValue,
     });
-
-    if (__DEV__) {
-      console.log('📊 Analytics & Crashlytics properties set:', {
-        platform,
-        os_version: osVersion,
-        device_brand: deviceBrand,
-        device_model: deviceModel,
-        app_version: appVersion,
-        build_number: buildNumber,
-        platform_build_id: platformBuildId,
-        locale,
-        is_device: isDevice,
-        theme: themeValue,
-        categories: categoriesValue,
-        notif_times: notifTimesValue,
-      });
-    }
   } catch (error) {
     console.error('Failed to initialize analytics:', error);
   }

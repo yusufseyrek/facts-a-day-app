@@ -442,31 +442,6 @@ export function addUpdateStateChangeListener(
 }
 
 /**
- * Log current update status for debugging
- */
-export function logUpdateStatus(): void {
-  const info = getUpdateInfo();
-  if (__DEV__) {
-    console.log('📦 ========== CURRENT UPDATE STATUS ==========');
-    console.log(`📦 Runtime Version: ${info.runtimeVersion}`);
-    console.log(`📦 Update ID: ${info.updateId || 'none (embedded)'}`);
-    console.log(`📦 Channel: ${info.channel || 'default'}`);
-    console.log(`📦 Is Embedded Launch: ${info.isEmbedded}`);
-    console.log(`📦 Platform: ${Platform.OS}`);
-    console.log(`📦 Update URL: ${Constants.expoConfig?.updates?.url || 'not set'}`);
-    console.log(`📦 Updates Enabled: ${Updates.isEnabled}`);
-
-    // Log manifest details if available
-    const manifest = (Updates as any).manifest;
-    if (manifest) {
-      console.log(`📦 Manifest ID: ${manifest.id}`);
-      console.log(`📦 Manifest Created At: ${manifest.createdAt}`);
-    }
-    console.log('📦 =============================================');
-  }
-}
-
-/**
  * Get detailed current update info including manifest data
  * Useful for verifying which update is currently running
  */

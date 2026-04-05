@@ -109,15 +109,6 @@ try {
   console.error('Failed to prevent splash screen auto-hide:', error);
 }
 
-// Log update status on app start for debugging OTA issues
-try {
-  if (!__DEV__) {
-    updates.logUpdateStatus();
-  }
-} catch (error) {
-  console.error('Failed to log update status:', error);
-}
-
 // Custom dark theme with our app's colors
 const CustomDarkTheme = {
   ...DarkTheme,
@@ -473,10 +464,6 @@ export default function RootLayout() {
       // ── Phase 2: Returning user flow ──
       if (!isComplete) {
         setInitialOnboardingStatus(false);
-
-        if (__DEV__) {
-          updates.logUpdateStatus();
-        }
         return;
       }
 
@@ -609,10 +596,6 @@ export default function RootLayout() {
         .catch((error) => {
           console.error('OTA update check failed:', error);
         });
-
-      if (__DEV__) {
-        updates.logUpdateStatus();
-      }
     } catch (error) {
       console.error('Failed to initialize app:', error);
       // Recover from error to prevent blank screen
