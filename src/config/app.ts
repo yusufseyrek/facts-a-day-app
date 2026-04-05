@@ -206,12 +206,9 @@ export const APP_STORE_ID = '6755321394';
 export const PLAY_STORE_ID = 'dev.seyrek.factsaday';
 
 /**
- * Category selection limits by user tier
+ * Minimum number of categories a user must select.
  */
-export const CATEGORY_LIMITS = {
-  FREE: { min: 3, max: Infinity },
-  PREMIUM: { min: 3, max: Infinity },
-} as const;
+export const MINIMUM_CATEGORIES = 3;
 
 /**
  * Subscription / Premium settings

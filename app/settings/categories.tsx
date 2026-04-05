@@ -8,7 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { Button, CategoryCard, ScreenContainer, SuccessToast, Text } from '../../src/components';
-import { CATEGORY_LIMITS } from '../../src/config/app';
+import { MINIMUM_CATEGORIES } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { showRewardedAd } from '../../src/components/ads/RewardedAd';
@@ -153,22 +153,10 @@ export default function CategoriesSettings() {
     return !sortedSelected.every((cat, i) => cat === sortedInitial[i]);
   };
 
-  // Get category limits based on premium status
-  const categoryLimits = isPremium ? CATEGORY_LIMITS.PREMIUM : CATEGORY_LIMITS.FREE;
-
-  // Use a ref so the toggleCategory closure always reads the latest limits,
-  // even when CategoryCard's React.memo prevents re-renders (stale onPress).
-  const categoryLimitsRef = useRef(categoryLimits);
-  categoryLimitsRef.current = categoryLimits;
-
   const toggleCategory = (slug: string) => {
     setSelectedCategories((prev) => {
       if (prev.includes(slug)) {
         return prev.filter((s) => s !== slug);
-      }
-      // Enforce max limit for non-premium users
-      if (prev.length >= categoryLimitsRef.current.max) {
-        return prev;
       }
       return [...prev, slug];
     });
@@ -309,9 +297,7 @@ export default function CategoriesSettings() {
               </YStack>
             </XStack>
             <Text.Body color="$textSecondary" fontSize={secondaryFontSize}>
-              {isPremium
-                ? t('categoryLimitPremium', { min: categoryLimits.min })
-                : t('categoryLimitFree', { min: categoryLimits.min, max: categoryLimits.max })}
+              {t('categoryMinimumInfo', { min: MINIMUM_CATEGORIES })}
             </Text.Body>
           </YStack>
         </Animated.View>
@@ -333,10 +319,6 @@ export default function CategoriesSettings() {
                         selected={selectedCategories.includes(category.slug)}
                         onPress={() => toggleCategory(category.slug)}
                         labelFontSize={labelFontSize}
-                        disabled={
-                          !selectedCategories.includes(category.slug) &&
-                          selectedCategories.length >= categoryLimits.max
-                        }
                       />
                     );
 
@@ -402,7 +384,7 @@ export default function CategoriesSettings() {
           <View>
             <Button
               onPress={handleSave}
-              disabled={selectedCategories.length < categoryLimits.min || isSaving}
+              disabled={selectedCategories.length < MINIMUM_CATEGORIES || isSaving}
               loading={isSaving}
             >
               {isSaving

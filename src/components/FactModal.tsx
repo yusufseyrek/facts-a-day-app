@@ -413,12 +413,13 @@ export function FactModal({
   }, [categoryForBadge, theme]);
 
   const hasImage = !!imageUri && !isImageError;
+  const titleResizeThresholdLine = 3;
 
   // Calculate dynamic header height first (needed for transition calculations)
   const basePaddingTop = Platform.OS === 'ios' ? spacing.xl : insets.top;
   const basePaddingBottom = spacing.lg;
-  const titleLines = titleHeight / typography.lineHeight.headline;
-  const endTitleLines = Math.min(titleLines, 3);
+  const titleLines = Math.round(titleHeight / typography.lineHeight.headline);
+  const endTitleLines = Math.min(titleLines, titleResizeThresholdLine);
   const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight;
   const maxTitleHeight = typography.lineHeight.headline * endTitleLines;
   const minHeaderHeight = basePaddingTop + basePaddingBottom + maxTitleHeight;
@@ -435,7 +436,11 @@ export function FactModal({
   React.useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
       currentScrollY.current = value;
-      if (headerCollapseAmount > 0 && collapseEndRef.current > 0) {
+      if (
+        headerCollapseAmount > 0 &&
+        collapseEndRef.current > 0 &&
+        titleLines > titleResizeThresholdLine // should collapse
+      ) {
         const collapsed = value >= collapseEndRef.current;
         if (collapsed !== isHeaderCollapsed) setIsHeaderCollapsed(collapsed);
       }
@@ -618,7 +623,7 @@ export function FactModal({
   // push the header upward to reduce its visible height to minHeaderHeight.
   // A compensating translateY on the content keeps the title at its screen position.
   const TITLE_ANIM_END = HEADER_BG_TRANSITION + headerTitleStartY;
-  const BORDER_ANIM_END = BADGE_SCROLL_THRESHOLD + spacing.xl * 2;
+  const BORDER_ANIM_END = BADGE_SCROLL_THRESHOLD + spacing.xxl;
   const HEADER_COLLAPSE_START = Math.max(TITLE_ANIM_END, BORDER_ANIM_END);
   collapseEndRef.current = HEADER_COLLAPSE_START + headerCollapseAmount;
 

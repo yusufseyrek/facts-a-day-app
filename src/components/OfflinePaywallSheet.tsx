@@ -7,7 +7,6 @@ import {
   Ban,
   Brain,
   Crown,
-  Infinity as InfinityIcon,
   Lightbulb,
   WifiOff,
 } from '@tamagui/lucide-icons';
@@ -52,11 +51,6 @@ export function OfflinePaywallSheet() {
       icon: <Ban size={iconSizes.sm} color={featureIconColor} />,
       title: t('paywallFeatureNoAds'),
       gradient: [PAYWALL_GOLD.dark, PAYWALL_GOLD.primary] as const,
-    },
-    {
-      icon: <InfinityIcon size={iconSizes.sm} color={featureIconColor} />,
-      title: t('paywallFeatureUnlimitedCategories'),
-      gradient: [PAYWALL_GOLD.primary, PAYWALL_GOLD.light] as const,
     },
     {
       icon: <Lightbulb size={iconSizes.sm} color={featureIconColor} />,

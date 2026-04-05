@@ -7,7 +7,6 @@ import {
   Ban,
   Check,
   Crown,
-  Infinity as InfinityIcon,
   Lightbulb,
   Sparkles,
   WifiOff,
@@ -230,13 +229,7 @@ export default function PaywallScreen() {
       description: t('paywallFeatureNoAdsDesc'),
       gradient: [PAYWALL_GOLD.dark, PAYWALL_GOLD.primary] as const,
     },
-    {
-      icon: <InfinityIcon size={iconSizes.md} color={featureIconColor} />,
-      title: t('paywallFeatureUnlimitedCategories'),
-      description: t('paywallFeatureUnlimitedCategoriesDesc'),
-      gradient: [PAYWALL_GOLD.primary, PAYWALL_GOLD.light] as const,
-    },
-    {
+{
       icon: <WifiOff size={iconSizes.md} color={featureIconColor} />,
       title: t('paywallFeatureOfflineSupport'),
       description: t('paywallFeatureOfflineCombinedDesc'),

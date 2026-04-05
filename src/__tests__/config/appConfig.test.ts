@@ -1,8 +1,8 @@
 import {
   APP_CHECK,
-  CATEGORY_LIMITS,
   DEV_SETTINGS_ENABLED,
   HINT_LIMITS,
+  MINIMUM_CATEGORIES,
   SUBSCRIPTION,
 } from '../../config/app';
 
@@ -45,10 +45,6 @@ describe('APP_CHECK', () => {
 // Premium tier config values
 // ---------------------------------------------------------------------------
 describe('premium tier config', () => {
-  it('gives premium users unlimited category selection', () => {
-    expect(CATEGORY_LIMITS.PREMIUM.max).toBe(Infinity);
-  });
-
   it('gives premium users more hints than free users', () => {
     expect(HINT_LIMITS.PREMIUM).toBeGreaterThan(HINT_LIMITS.FREE);
   });
@@ -60,8 +56,7 @@ describe('premium tier config', () => {
     }
   });
 
-  it('enforces a minimum category selection for both tiers', () => {
-    expect(CATEGORY_LIMITS.FREE.min).toBeGreaterThanOrEqual(1);
-    expect(CATEGORY_LIMITS.PREMIUM.min).toBeGreaterThanOrEqual(1);
+  it('enforces a minimum category selection', () => {
+    expect(MINIMUM_CATEGORIES).toBeGreaterThanOrEqual(1);
   });
 });

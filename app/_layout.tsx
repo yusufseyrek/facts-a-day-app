@@ -23,7 +23,6 @@ import { PostHogErrorBoundary, PostHogProvider } from 'posthog-react-native';
 
 import { showAppOpenAdOnForeground } from '../src/components/ads/AppOpenAd';
 import { AppCheckBlockingScreen } from '../src/components/AppCheckBlockingScreen';
-import { CategoryDowngradeEnforcer } from '../src/components/CategoryDowngradeEnforcer';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { SplashOverlay } from '../src/components/SplashOverlay';
 import { STORAGE_KEYS, TIMING } from '../src/config/app';
@@ -236,7 +235,6 @@ function AppContent() {
 
   return (
     <>
-      <CategoryDowngradeEnforcer />
       <Stack screenOptions={screenOptions}>
         <Stack.Screen name="(tabs)" />
       <Stack.Screen name="onboarding" />

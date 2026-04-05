@@ -7,7 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { Button, CategoryCard, ProgressIndicator, ScreenContainer, Text } from '../../src/components';
-import { CATEGORY_LIMITS, SUBSCRIPTION } from '../../src/config/app';
+import { MINIMUM_CATEGORIES, SUBSCRIPTION } from '../../src/config/app';
 import { useOnboarding, usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
@@ -161,22 +161,10 @@ export default function Categories() {
     }
   };
 
-  // Get category limits based on premium status
-  const categoryLimits = isPremium ? CATEGORY_LIMITS.PREMIUM : CATEGORY_LIMITS.FREE;
-
-  // Use a ref so the toggleCategory closure always reads the latest limits,
-  // even when CategoryCard's React.memo prevents re-renders (stale onPress).
-  const categoryLimitsRef = useRef(categoryLimits);
-  categoryLimitsRef.current = categoryLimits;
-
   const toggleCategory = (slug: string) => {
     setSelectedCategories((prev) => {
       if (prev.includes(slug)) {
         return prev.filter((s) => s !== slug);
-      }
-      // Enforce max limit based on premium status
-      if (prev.length >= categoryLimitsRef.current.max) {
-        return prev;
       }
       return [...prev, slug];
     });
@@ -309,12 +297,7 @@ export default function Categories() {
           <YStack gap={spacing.sm} style={{ marginTop: spacing.xl }}>
             <Text.Headline>{t('whatInterestsYou')}</Text.Headline>
             <Text.Body color="$textSecondary">
-              {isPremium
-                ? t('categoryLimitPremium', { min: CATEGORY_LIMITS.PREMIUM.min })
-                : t('categoryLimitFree', {
-                    min: CATEGORY_LIMITS.FREE.min,
-                    max: CATEGORY_LIMITS.FREE.max,
-                  })}
+              {t('categoryMinimumInfo', { min: MINIMUM_CATEGORIES })}
             </Text.Body>
           </YStack>
         </Animated.View>
@@ -336,10 +319,6 @@ export default function Categories() {
                         selected={selectedCategories.includes(category.slug)}
                         onPress={() => toggleCategory(category.slug)}
                         labelFontSize={labelFontSize}
-                        disabled={
-                          !selectedCategories.includes(category.slug) &&
-                          selectedCategories.length >= categoryLimits.max
-                        }
                       />
                     );
 
@@ -405,7 +384,7 @@ export default function Categories() {
           <YStack gap={spacing.md} alignItems="center">
             <Button
               onPress={handleContinue}
-              disabled={selectedCategories.length < categoryLimits.min}
+              disabled={selectedCategories.length < MINIMUM_CATEGORIES}
             >
               {t('continue')}
             </Button>

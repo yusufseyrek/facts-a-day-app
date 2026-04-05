@@ -7,8 +7,7 @@ export const translations = {
     // Onboarding - Categories
     whatInterestsYou: 'Was interessiert dich?',
     selectCategoriesMinimum: 'Wähle mindestens 5 Kategorien aus, die du erkunden möchtest',
-    categoryLimitFree: 'Wähle %{min} bis %{max} Kategorien zum Erkunden',
-    categoryLimitPremium: 'Wähle mindestens %{min} Kategorien (unbegrenzt)',
+    categoryMinimumInfo: 'Wähle mindestens %{min} Kategorien aus',
     selectAll: 'Alle auswählen',
     deselectAll: 'Auswahl aufheben',
     loadingCategories: 'Kategorien werden geladen...',
@@ -383,8 +382,6 @@ export const translations = {
     paywallSubtitle: 'Schalte das volle Erlebnis frei',
     paywallFeatureNoAds: 'Alle Werbung entfernen',
     paywallFeatureNoAdsDesc: 'Keine Banner, keine Unterbrechungen',
-    paywallFeatureUnlimitedCategories: 'Unbegrenzte Kategorien',
-    paywallFeatureUnlimitedCategoriesDesc: 'Wähle so viele Themen, wie du möchtest',
     paywallFeatureHints: 'Tägliche Trivia-Hinweise',
     paywallFeatureHintsDesc: 'Erhalte täglich 3 kostenlose Hinweise',
     paywallFeatureOffline: 'Offline lesen',
@@ -415,11 +412,6 @@ export const translations = {
     paywallLegalAnd: 'und',
 
     // Downgrade Enforcement
-    downgradeTitle: 'Abonnement beendet',
-    downgradeMessage:
-      'Dein Premium-Abonnement ist abgelaufen. Kostenlose Konten können maximal %{max} Kategorien haben. Bitte aktualisiere deine Auswahl oder die App passt sie automatisch an.',
-    downgradeChooseCategories: 'Kategorien wählen',
-    downgradeAutoAdjust: 'Automatisch anpassen',
 
     // Badges / Achievements
     achievements: 'Erfolge',
@@ -488,8 +480,7 @@ export const translations = {
     // Onboarding - Categories
     whatInterestsYou: 'What interests you?',
     selectCategoriesMinimum: "Select at least 5 categories you'd like to explore",
-    categoryLimitFree: 'Select %{min} to %{max} categories to explore',
-    categoryLimitPremium: 'Select at least %{min} categories (unlimited)',
+    categoryMinimumInfo: 'Select at least %{min} categories',
     selectAll: 'Select All',
     deselectAll: 'Deselect All',
     loadingCategories: 'Loading categories...',
@@ -856,8 +847,6 @@ export const translations = {
     paywallSubtitle: 'Unlock the full experience',
     paywallFeatureNoAds: 'Remove Ads',
     paywallFeatureNoAdsDesc: 'No banners, no interruptions',
-    paywallFeatureUnlimitedCategories: 'Unlimited Categories',
-    paywallFeatureUnlimitedCategoriesDesc: 'Select as many topics as you want',
     paywallFeatureHints: 'Daily Trivia Hints',
     paywallFeatureHintsDesc: 'Get 3 free hints every day',
     paywallFeatureOffline: 'Offline Reading',
@@ -888,11 +877,6 @@ export const translations = {
     paywallLegalAnd: 'and',
 
     // Downgrade Enforcement
-    downgradeTitle: 'Subscription Ended',
-    downgradeMessage:
-      'Your premium subscription has ended. Free accounts can have up to %{max} categories. Please update your selection or the app will automatically adjust for you.',
-    downgradeChooseCategories: 'Choose Categories',
-    downgradeAutoAdjust: 'Auto-Adjust',
 
     // Badges / Achievements
     achievements: 'Achievements',
@@ -961,8 +945,7 @@ export const translations = {
     // Onboarding - Categories
     whatInterestsYou: '¿Qué te interesa?',
     selectCategoriesMinimum: 'Selecciona al menos 5 categorías que te gustaría explorar',
-    categoryLimitFree: 'Selecciona %{min} a %{max} categorías para explorar',
-    categoryLimitPremium: 'Selecciona al menos %{min} categorías (ilimitado)',
+    categoryMinimumInfo: 'Selecciona al menos %{min} categorías',
     selectAll: 'Seleccionar todo',
     deselectAll: 'Deseleccionar todo',
     loadingCategories: 'Cargando categorías...',
@@ -1332,8 +1315,6 @@ export const translations = {
     paywallSubtitle: 'Desbloquea la experiencia completa',
     paywallFeatureNoAds: 'Eliminar todos los anuncios',
     paywallFeatureNoAdsDesc: 'Sin banners, sin interrupciones',
-    paywallFeatureUnlimitedCategories: 'Categorías ilimitadas',
-    paywallFeatureUnlimitedCategoriesDesc: 'Selecciona tantos temas como quieras',
     paywallFeatureHints: 'Pistas diarias de trivia',
     paywallFeatureHintsDesc: 'Obtén 3 pistas gratis cada día',
     paywallFeatureOffline: 'Lectura sin conexión',
@@ -1364,11 +1345,6 @@ export const translations = {
     paywallLegalAnd: 'y',
 
     // Downgrade Enforcement
-    downgradeTitle: 'Suscripción finalizada',
-    downgradeMessage:
-      'Tu suscripción premium ha finalizado. Las cuentas gratuitas pueden tener hasta %{max} categorías. Actualiza tu selección o la app se ajustará automáticamente.',
-    downgradeChooseCategories: 'Elegir categorías',
-    downgradeAutoAdjust: 'Ajuste automático',
 
     // Badges / Achievements
     achievements: 'Logros',
@@ -1437,8 +1413,7 @@ export const translations = {
     // Onboarding - Categories
     whatInterestsYou: "Qu'est-ce qui vous intéresse?",
     selectCategoriesMinimum: 'Sélectionnez au moins 5 catégories que vous aimeriez explorer',
-    categoryLimitFree: 'Sélectionnez %{min} à %{max} catégories à explorer',
-    categoryLimitPremium: 'Sélectionnez au moins %{min} catégories (illimité)',
+    categoryMinimumInfo: 'Sélectionnez au moins %{min} catégories',
     selectAll: 'Tout sélectionner',
     deselectAll: 'Tout désélectionner',
     loadingCategories: 'Chargement des catégories...',
@@ -1810,8 +1785,6 @@ export const translations = {
     paywallSubtitle: "Débloquez l'expérience complète",
     paywallFeatureNoAds: 'Supprimer toutes les publicités',
     paywallFeatureNoAdsDesc: 'Pas de bannières, pas de coupures',
-    paywallFeatureUnlimitedCategories: 'Catégories illimitées',
-    paywallFeatureUnlimitedCategoriesDesc: 'Sélectionnez autant de sujets que vous voulez',
     paywallFeatureHints: 'Indices quotidiens de trivia',
     paywallFeatureHintsDesc: '3 indices gratuits chaque jour',
     paywallFeatureOffline: 'Lecture hors ligne',
@@ -1842,11 +1815,6 @@ export const translations = {
     paywallLegalAnd: 'et',
 
     // Downgrade Enforcement
-    downgradeTitle: 'Abonnement terminé',
-    downgradeMessage:
-      'Votre abonnement premium est terminé. Les comptes gratuits peuvent avoir jusqu\'à %{max} catégories. Veuillez mettre à jour votre sélection ou l\'app s\'ajustera automatiquement.',
-    downgradeChooseCategories: 'Choisir les catégories',
-    downgradeAutoAdjust: 'Ajustement automatique',
 
     // Badges / Achievements
     achievements: 'Réalisations',
@@ -1915,8 +1883,7 @@ export const translations = {
     // Onboarding - Categories
     whatInterestsYou: '何に興味がありますか？',
     selectCategoriesMinimum: '探索したいカテゴリーを少なくとも5つ選択してください',
-    categoryLimitFree: '%{min}〜%{max}個のカテゴリーを選択してください',
-    categoryLimitPremium: '少なくとも%{min}個のカテゴリーを選択（無制限）',
+    categoryMinimumInfo: '少なくとも%{min}個のカテゴリーを選択してください',
     selectAll: 'すべて選択',
     deselectAll: 'すべて解除',
     loadingCategories: 'カテゴリーを読み込んでいます...',
@@ -2282,8 +2249,6 @@ export const translations = {
     paywallSubtitle: 'すべての機能をアンロック',
     paywallFeatureNoAds: 'すべての広告を削除',
     paywallFeatureNoAdsDesc: 'バナーも中断もなし',
-    paywallFeatureUnlimitedCategories: '無制限のカテゴリ',
-    paywallFeatureUnlimitedCategoriesDesc: '好きなだけトピックを選択',
     paywallFeatureHints: '毎日のトリビアヒント',
     paywallFeatureHintsDesc: '毎日3つの無料ヒント',
     paywallFeatureOffline: 'オフライン読書',
@@ -2314,11 +2279,6 @@ export const translations = {
     paywallLegalAnd: 'と',
 
     // Downgrade Enforcement
-    downgradeTitle: 'サブスクリプション終了',
-    downgradeMessage:
-      'プレミアムサブスクリプションが終了しました。無料アカウントは最大%{max}カテゴリまで選択できます。カテゴリを更新するか、アプリが自動的に調整します。',
-    downgradeChooseCategories: 'カテゴリを選択',
-    downgradeAutoAdjust: '自動調整',
 
     // Badges / Achievements
     achievements: '実績',
@@ -2387,8 +2347,7 @@ export const translations = {
     // Onboarding - Categories
     whatInterestsYou: '무엇에 관심이 있으신가요?',
     selectCategoriesMinimum: '탐색하고 싶은 카테고리를 최소 5개 선택하세요',
-    categoryLimitFree: '탐색할 카테고리를 %{min}에서 %{max}개 선택하세요',
-    categoryLimitPremium: '최소 %{min}개 카테고리 선택 (무제한)',
+    categoryMinimumInfo: '최소 %{min}개 카테고리를 선택하세요',
     selectAll: '모두 선택',
     deselectAll: '모두 해제',
     loadingCategories: '카테고리를 로드하는 중...',
@@ -2753,8 +2712,6 @@ export const translations = {
     paywallSubtitle: '전체 경험을 잠금 해제하세요',
     paywallFeatureNoAds: '모든 광고 제거',
     paywallFeatureNoAdsDesc: '배너 없음, 중단 없음',
-    paywallFeatureUnlimitedCategories: '무제한 카테고리',
-    paywallFeatureUnlimitedCategoriesDesc: '원하는 만큼 주제를 선택하세요',
     paywallFeatureHints: '매일 트리비아 힌트',
     paywallFeatureHintsDesc: '매일 3개의 무료 힌트',
     paywallFeatureOffline: '오프라인 읽기',
@@ -2785,11 +2742,6 @@ export const translations = {
     paywallLegalAnd: '및',
 
     // Downgrade Enforcement
-    downgradeTitle: '구독 종료',
-    downgradeMessage:
-      '프리미엄 구독이 종료되었습니다. 무료 계정은 최대 %{max}개의 카테고리를 선택할 수 있습니다. 카테고리를 업데이트하거나 앱이 자동으로 조정합니다.',
-    downgradeChooseCategories: '카테고리 선택',
-    downgradeAutoAdjust: '자동 조정',
 
     // Badges / Achievements
     achievements: '업적',
@@ -2858,8 +2810,7 @@ export const translations = {
     // Onboarding - Categories
     whatInterestsYou: 'İlginizi çeken nedir?',
     selectCategoriesMinimum: 'Keşfetmek istediğiniz en az 5 kategori seçin',
-    categoryLimitFree: 'Keşfetmek için %{min} ile %{max} arası kategori seçin',
-    categoryLimitPremium: 'En az %{min} kategori seçin (sınırsız)',
+    categoryMinimumInfo: 'En az %{min} kategori seçin',
     selectAll: 'Tümünü Seç',
     deselectAll: 'Seçimi Kaldır',
     loadingCategories: 'Kategoriler yükleniyor...',
@@ -3226,8 +3177,6 @@ export const translations = {
     paywallSubtitle: 'Tam deneyimin kilidini aç',
     paywallFeatureNoAds: 'Tüm reklamları kaldır',
     paywallFeatureNoAdsDesc: 'Banner yok, kesinti yok',
-    paywallFeatureUnlimitedCategories: 'Sınırsız Kategori',
-    paywallFeatureUnlimitedCategoriesDesc: 'İstediğin kadar konu seç',
     paywallFeatureHints: 'Günlük Trivia İpuçları',
     paywallFeatureHintsDesc: 'Her gün 3 ücretsiz ipucu',
     paywallFeatureOffline: 'Çevrimdışı Okuma',
@@ -3258,11 +3207,6 @@ export const translations = {
     paywallLegalAnd: 've',
 
     // Downgrade Enforcement
-    downgradeTitle: 'Abonelik Sona Erdi',
-    downgradeMessage:
-      'Premium aboneliğiniz sona erdi. Ücretsiz hesaplar en fazla %{max} kategori seçebilir. Lütfen seçiminizi güncelleyin veya uygulama otomatik olarak ayarlayacaktır.',
-    downgradeChooseCategories: 'Kategorileri Seç',
-    downgradeAutoAdjust: 'Otomatik Ayarla',
 
     // Badges / Achievements
     achievements: 'Başarılar',
@@ -3331,8 +3275,7 @@ export const translations = {
     // Onboarding - Categories
     whatInterestsYou: '你对什么感兴趣？',
     selectCategoriesMinimum: '选择至少5个您想要探索的类别',
-    categoryLimitFree: '选择%{min}至%{max}个类别进行探索',
-    categoryLimitPremium: '选择至少%{min}个类别（无限制）',
+    categoryMinimumInfo: '选择至少%{min}个类别',
     selectAll: '全选',
     deselectAll: '取消全选',
     loadingCategories: '正在加载类别...',
@@ -3694,8 +3637,6 @@ export const translations = {
     paywallSubtitle: '解锁完整体验',
     paywallFeatureNoAds: '移除所有广告',
     paywallFeatureNoAdsDesc: '无横幅，无打扰',
-    paywallFeatureUnlimitedCategories: '无限分类',
-    paywallFeatureUnlimitedCategoriesDesc: '选择任意数量的主题',
     paywallFeatureHints: '每日问答提示',
     paywallFeatureHintsDesc: '每天获得3个免费提示',
     paywallFeatureOffline: '离线阅读',
@@ -3726,11 +3667,6 @@ export const translations = {
     paywallLegalAnd: '和',
 
     // Downgrade Enforcement
-    downgradeTitle: '订阅已结束',
-    downgradeMessage:
-      '您的高级订阅已结束。免费账户最多可选择%{max}个分类。请更新您的选择，否则应用将自动调整。',
-    downgradeChooseCategories: '选择分类',
-    downgradeAutoAdjust: '自动调整',
 
     // Badges / Achievements
     achievements: '成就',
