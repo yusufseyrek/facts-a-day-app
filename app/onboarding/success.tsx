@@ -8,13 +8,14 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { Button, FONT_FAMILIES, ScreenContainer, Text } from '../../src/components';
-import { ADS_ENABLED } from '../../src/config/app';
+import { ADS_ENABLED, HOME_FEED } from '../../src/config/app';
+import { queryClient } from '../../src/config/queryClient';
 import { useOnboarding } from '../../src/contexts';
+import { homeKeys } from '../../src/hooks/queryKeys';
 import { useTranslation } from '../../src/i18n';
 import { completeConsentFlow, isConsentRequired } from '../../src/services/ads';
 import { Screens, trackOnboardingComplete, trackScreenView } from '../../src/services/analytics';
 import { consumeFeedRefreshPending } from '../../src/services/contentRefresh';
-import { setOnboardingPreloadedFeed } from '../../src/contexts/PreloadedDataContext';
 import { loadDailyFeedSections } from '../../src/services/dailyFeed';
 import * as database from '../../src/services/database';
 import * as notificationService from '../../src/services/notifications';
@@ -155,112 +156,30 @@ const PulseRing = ({
   );
 };
 
-// Progress bar — driven by real download progress (0–1)
-const ProgressBar = ({
-  progress,
-  theme,
-  barWidth,
-  barHeight,
-  barRadius,
-  marginTop,
-}: {
-  progress: number;
-  theme: 'light' | 'dark';
-  barWidth: number;
-  barHeight: number;
-  barRadius: number;
-  marginTop: number;
-}) => {
-  const initialProgress = useRef(progress).current;
-  const widthAnim = useRef(new Animated.Value(initialProgress)).current;
-  const barColor = theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.neonCyan;
-  const bgColor = theme === 'dark' ? 'rgba(0, 212, 255, 0.1)' : 'rgba(0, 153, 204, 0.1)';
-
-  useEffect(() => {
-    Animated.timing(widthAnim, {
-      toValue: progress,
-      duration: 400,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [progress]);
-
-  const width = widthAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
-
-  return (
-    <View
-      style={{
-        width: barWidth,
-        height: barHeight,
-        backgroundColor: bgColor,
-        borderRadius: barRadius,
-        overflow: 'hidden',
-        marginTop,
-      }}
-    >
-      <Animated.View
-        style={{
-          width,
-          height: '100%',
-          backgroundColor: barColor,
-          borderRadius: barRadius,
-        }}
-      />
-    </View>
-  );
-};
-
-const SLOW_DOWNLOAD_THRESHOLD_MS = 5000;
 const NAVIGATE_DELAY_MS = 3000;
 
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { screenWidth, typography, iconSizes, spacing, radius, borderWidths, media } =
+  const { typography, iconSizes, spacing, radius, borderWidths, media } =
     useResponsive();
   const router = useRouter();
   const {
     completeOnboarding,
     selectedCategories,
     isDownloadingFacts,
-    downloadProgress,
-    waitForDownloadComplete,
+    waitForFirstBatchReady,
   } = useOnboarding();
 
   const [showConsent, setShowConsent] = useState(false);
   const [consentDone, setConsentDone] = useState(false);
   const [consentLoading, setConsentLoading] = useState(false);
-  const [showSlowMessage, setShowSlowMessage] = useState(false);
   const [flowComplete, setFlowComplete] = useState(false);
-  const [overallProgress, setOverallProgress] = useState(0);
 
   // Responsive icon container size — derives from heroLg icon + padding
   const iconContainerSize = iconSizes.heroLg * 2 + spacing.md;
   const iconAreaSize = iconContainerSize + spacing.xl * 2;
   const consentIconSize = iconSizes.hero + spacing.xl;
-
-  // Slow download timer — starts on mount, shows message if still downloading after threshold
-  const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    slowTimerRef.current = setTimeout(() => {
-      if (!flowComplete) {
-        setShowSlowMessage(true);
-      }
-    }, SLOW_DOWNLOAD_THRESHOLD_MS);
-    return () => {
-      if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
-    };
-  }, []);
-
-  // Hide slow message once flow completes
-  useEffect(() => {
-    if (flowComplete) {
-      setShowSlowMessage(false);
-    }
-  }, [flowComplete]);
 
   // Track screen view and kick off the flow
   useEffect(() => {
@@ -281,15 +200,14 @@ export default function OnboardingSuccessScreen() {
     // Step 2: Animation is now visible — start the minimum display timer
     const animationTimer = new Promise<void>((resolve) => setTimeout(resolve, NAVIGATE_DELAY_MS));
 
-    // Wait for download if still in progress (progress bar + slow message shown during this)
+    // Wait for first batch to be ready (enough facts for home screen)
+    // Remaining facts continue downloading in the background
     const downloadAndSave = (async () => {
       try {
         if (isDownloadingFacts) {
-          await waitForDownloadComplete();
+          await waitForFirstBatchReady();
         }
-        setOverallProgress(0.85);
         await completeOnboarding();
-        setOverallProgress(0.95);
       } catch (error) {
         console.error('Error completing onboarding:', error);
         try {
@@ -306,8 +224,23 @@ export default function OnboardingSuccessScreen() {
           database.getAllCategories(),
           database.getUnseenStoryStatus(selectedCategories, locale),
         ]);
-        // Store feed data at module level so home screen can consume it synchronously
-        setOnboardingPreloadedFeed(feedSections);
+
+        // Pre-populate React Query cache so home screen gets instant data on mount
+        queryClient.setQueryData(homeKeys.dailyFeed(locale), feedSections);
+
+        // Also prime Keep Reading cache so it's available immediately
+        const latestIds = feedSections.freshFacts.slice(0, HOME_FEED.LATEST_COUNT).map((f) => f.id);
+        const keepReadingPage = await database.getLatestFactsPaginated(
+          HOME_FEED.KEEP_READING_PAGE_SIZE,
+          0,
+          locale,
+          latestIds
+        );
+        queryClient.setQueryData(homeKeys.keepReading(locale), {
+          pages: [keepReadingPage],
+          pageParams: [0],
+        });
+
         // Clear the flag so home screen doesn't re-query the DB
         consumeFeedRefreshPending();
       } catch (error) {
@@ -334,7 +267,6 @@ export default function OnboardingSuccessScreen() {
     await Promise.all([animationTimer, homePreload]);
 
     setFlowComplete(true);
-    setOverallProgress(1);
 
     // Brief pause to let home screen render with preloaded data
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -391,8 +323,6 @@ export default function OnboardingSuccessScreen() {
 
   const subtextOpacity = useRef(new Animated.Value(0)).current;
   const subtextTranslateY = useRef(new Animated.Value(spacing.xl)).current;
-  const progressOpacity = useRef(new Animated.Value(0)).current;
-  const slowMessageOpacity = useRef(new Animated.Value(0)).current;
 
   // Start animations after consent flow completes (or immediately if no consent needed)
   useEffect(() => {
@@ -460,14 +390,6 @@ export default function OnboardingSuccessScreen() {
             }),
           ]),
         ]),
-        Animated.sequence([
-          Animated.delay(1000),
-          Animated.timing(progressOpacity, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]),
       ]),
     ]).start();
 
@@ -489,15 +411,6 @@ export default function OnboardingSuccessScreen() {
       ])
     ).start();
   }, [consentDone]);
-
-  // Animate slow message in/out
-  useEffect(() => {
-    Animated.timing(slowMessageOpacity, {
-      toValue: showSlowMessage ? 1 : 0,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
-  }, [showSlowMessage]);
 
   // Icon interpolations
   const iconTranslateY = iconDropAnim.interpolate({
@@ -521,10 +434,6 @@ export default function OnboardingSuccessScreen() {
   const darkColors = [hexColors.dark.background, '#0F1E36', '#1A3D5C'] as const;
   const lightColors = [hexColors.light.background, '#E0F7FF', '#D0EFFF'] as const;
   const gradientColors = theme === 'dark' ? darkColors : lightColors;
-
-  // Composite progress: 0–80% download, 80–95% onboarding save, 95–100% home preload
-  const downloadPortion = (downloadProgress?.percentage ?? 0) / 100;
-  const currentProgress = flowComplete ? 1 : Math.max(downloadPortion * 0.8, overallProgress);
 
   // Consent screen — shown as full screen before animation
   const renderConsentScreen = () => (
@@ -698,24 +607,6 @@ export default function OnboardingSuccessScreen() {
           </Text.Body>
         </Animated.View>
 
-        {/* Progress bar — real download progress */}
-        <Animated.View style={{ opacity: progressOpacity, alignItems: 'center' }}>
-          <ProgressBar
-            progress={currentProgress}
-            theme={theme}
-            barWidth={screenWidth * 0.6}
-            barHeight={borderWidths.thick}
-            barRadius={borderWidths.thin}
-            marginTop={spacing.xxl}
-          />
-
-          {/* Slow download message — fades in after 5s */}
-          <Animated.View style={{ opacity: slowMessageOpacity, marginTop: spacing.lg }}>
-            <Text.Body textAlign="center" color="$textSecondary">
-              {t('settingUpExperience')}
-            </Text.Body>
-          </Animated.View>
-        </Animated.View>
       </YStack>
     </YStack>
   );

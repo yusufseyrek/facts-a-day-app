@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { HOME_FEED } from '../config/app';
-import { consumeOnboardingPreloadedFeed, usePreloadedData } from '../contexts';
+import { usePreloadedData } from '../contexts';
 import { loadDailyFeedSections } from '../services/dailyFeed';
 
 import { homeKeys } from './queryKeys';
@@ -24,11 +24,7 @@ export function useHomeFeed(locale: string): UseHomeFeedResult {
 
   const { data, isLoading } = useQuery<DailyFeedSections>({
     queryKey: homeKeys.dailyFeed(locale),
-    queryFn: async () => {
-      const preloaded = consumeOnboardingPreloadedFeed();
-      if (preloaded) return preloaded;
-      return loadDailyFeedSections(locale, false);
-    },
+    queryFn: () => loadDailyFeedSections(locale, false),
   });
 
   const allFreshFacts = data?.freshFacts ?? [];

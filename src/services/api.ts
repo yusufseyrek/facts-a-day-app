@@ -102,6 +102,8 @@ export interface GetFactsParams {
   since_updated?: string;
   include_questions?: boolean;
   include_historical?: boolean;
+  sort?: 'created_at_desc' | 'created_at_asc';
+  skip_count?: boolean;
 }
 
 export interface FeedbackRequest {
@@ -359,6 +361,14 @@ export async function getFacts(params: GetFactsParams): Promise<FactsResponse> {
     queryParams.append('include_historical', 'true');
   }
 
+  if (params.sort) {
+    queryParams.append('sort', params.sort);
+  }
+
+  if (params.skip_count) {
+    queryParams.append('skip_count', 'true');
+  }
+
   const endpoint = `/api/facts?${queryParams.toString()}`;
   return makeRequest<FactsResponse>(endpoint);
 }
@@ -475,6 +485,105 @@ export async function getAllFactsWithRetry(
   }
 
   throw lastError || new Error('Failed to fetch facts after multiple retries');
+}
+
+/**
+ * Fetch facts incrementally, writing each batch to DB via callback as it arrives.
+ * Phase 1: Single request for the latest facts (small, fast) → onBatchReady → unblock user
+ * Phase 2: Remaining facts in concurrent batches → onBatchReady per group → until done
+ */
+export async function fetchFactsIncrementally(params: {
+  language: string;
+  categories?: string;
+  initialBatchSize: number;
+  remainingBatchSize: number;
+  concurrency: number;
+  includeQuestions?: boolean;
+  includeHistorical?: boolean;
+  onBatchReady: (facts: FactResponse[], isInitialBatch: boolean) => Promise<void>;
+  onProgress?: (downloaded: number, total: number) => void;
+}): Promise<{ total: number }> {
+  const {
+    language,
+    categories,
+    initialBatchSize,
+    remainingBatchSize,
+    concurrency,
+    includeQuestions,
+    includeHistorical,
+    onBatchReady,
+    onProgress,
+  } = params;
+
+  // Phase 1: Fetch initial batch (latest facts, sorted newest first)
+
+  const initialResponse = await getFacts({
+    language,
+    categories,
+    limit: initialBatchSize,
+    offset: 0,
+    sort: 'created_at_desc',
+    include_questions: includeQuestions,
+    include_historical: includeHistorical,
+  });
+
+  const total = initialResponse.pagination.total;
+  let downloaded = initialResponse.facts.length;
+
+  // Write initial batch to DB via callback
+  await onBatchReady(initialResponse.facts, true);
+
+  if (onProgress) {
+    onProgress(downloaded, total);
+  }
+
+  // Phase 2: Fetch remaining facts in concurrent batches
+  let nextOffset = initialBatchSize;
+
+  while (nextOffset < total) {
+    const batchOffsets: number[] = [];
+    for (let i = 0; i < concurrency && nextOffset < total; i++) {
+      batchOffsets.push(nextOffset);
+      nextOffset += remainingBatchSize;
+    }
+
+    const responses = await Promise.all(
+      batchOffsets.map((offset) =>
+        getFacts({
+          language,
+          categories,
+          limit: remainingBatchSize,
+          offset,
+          sort: 'created_at_desc',
+          include_questions: includeQuestions,
+          include_historical: includeHistorical,
+          skip_count: true,
+        })
+      )
+    );
+
+    // Write each response individually to keep transactions small
+    // and avoid blocking other DB operations (e.g. home screen preload)
+    let groupEmpty = true;
+    for (const response of responses) {
+      if (response.facts.length === 0) continue;
+      groupEmpty = false;
+      downloaded += response.facts.length;
+
+      await onBatchReady(response.facts, false);
+    }
+
+    if (groupEmpty) break;
+
+    if (onProgress) {
+      onProgress(downloaded, total);
+    }
+
+    // If any response returned fewer facts than requested, we're done
+    if (responses.some((r) => r.facts.length < remainingBatchSize)) break;
+  }
+
+  return { total };
 }
 
 /**

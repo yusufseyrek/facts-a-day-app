@@ -9,12 +9,12 @@
  * Set to true to show developer settings section in the Settings screen.
  * Only works when __DEV__ is true.
  */
-export const DEV_SETTINGS_ENABLED = false;
+export const DEV_SETTINGS_ENABLED = true;
 
 /**
  * Ads configuration
  */
-export const ADS_ENABLED = true;
+export const ADS_ENABLED = false;
 
 /**
  * App Check settings for Firebase App Check initialization
@@ -209,7 +209,7 @@ export const PLAY_STORE_ID = 'dev.seyrek.factsaday';
  * Category selection limits by user tier
  */
 export const CATEGORY_LIMITS = {
-  FREE: { min: 3, max: 7 },
+  FREE: { min: 3, max: Infinity },
   PREMIUM: { min: 3, max: Infinity },
 } as const;
 
@@ -247,4 +247,8 @@ export const PAYWALL_PROMPT = {
 export const API_SETTINGS = {
   /** Batch size for fetching facts from the server */
   FACTS_BATCH_SIZE: 1000,
+  /** Initial batch size for onboarding (latest facts, enough for home screen) */
+  INITIAL_BATCH_SIZE: 500,
+  /** Number of concurrent requests for remaining batches */
+  BATCH_CONCURRENCY: 3,
 } as const;

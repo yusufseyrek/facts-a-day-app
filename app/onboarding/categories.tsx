@@ -278,7 +278,33 @@ export default function Categories() {
             transform: [{ translateY: headerTranslateY }],
           }}
         >
-          <ProgressIndicator currentStep={2} totalSteps={3} />
+          <ProgressIndicator
+            currentStep={2}
+            totalSteps={3}
+            rightElement={
+              <Pressable
+                onPress={() => {
+                  const allSelected = categories.length > 0 && selectedCategories.length === categories.length;
+                  if (allSelected) {
+                    setSelectedCategories([]);
+                  } else {
+                    setSelectedCategories(categories.map((c) => c.slug));
+                  }
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
+                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+              >
+                <Text.Caption
+                  color={theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.primary}
+                  fontWeight="600"
+                >
+                  {categories.length > 0 && selectedCategories.length === categories.length
+                    ? t('deselectAll')
+                    : t('selectAll')}
+                </Text.Caption>
+              </Pressable>
+            }
+          />
 
           <YStack gap={spacing.sm} style={{ marginTop: spacing.xl }}>
             <Text.Headline>{t('whatInterestsYou')}</Text.Headline>

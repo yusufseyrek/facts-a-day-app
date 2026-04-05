@@ -6,6 +6,25 @@ const DATABASE_NAME = 'factsaday.db';
 let db: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
+// Mutex for serializing write transactions.
+// expo-sqlite shares a single connection — concurrent withTransactionAsync
+// calls cause "cannot start a transaction within a transaction" errors.
+// This queue ensures only one transaction runs at a time.
+let txQueue: Promise<void> = Promise.resolve();
+
+async function withSerializedTransaction(fn: (db: SQLite.SQLiteDatabase) => Promise<void>): Promise<void> {
+  const database = await openDatabase();
+  const prev = txQueue;
+  let release: () => void;
+  txQueue = new Promise<void>((res) => { release = res; });
+  try {
+    await prev;
+    await database.withTransactionAsync(() => fn(database));
+  } finally {
+    release!();
+  }
+}
+
 /**
  * Initialize and open the database
  */
@@ -535,12 +554,12 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
     }
   }
 
-  // Use transaction for better performance with batch inserts
-  await database.withTransactionAsync(async () => {
+  // Use serialized transaction for better performance with batch inserts
+  await withSerializedTransaction(async (db) => {
     for (const fact of facts) {
       // Use INSERT ... ON CONFLICT to explicitly preserve local columns
       // (scheduled_date, notification_id, shown_in_feed) when updating existing facts from API
-      await database.runAsync(
+      await db.runAsync(
         `INSERT INTO facts (
           id, slug, title, content, summary, category,
           source_url, image_url, is_historical, event_month, event_day, event_year, metadata,
@@ -2113,11 +2132,9 @@ export interface DailyTriviaProgress {
 export async function insertQuestions(questions: Question[]): Promise<void> {
   if (questions.length === 0) return;
 
-  const database = await openDatabase();
-
-  await database.withTransactionAsync(async () => {
+  await withSerializedTransaction(async (db) => {
     for (const question of questions) {
-      await database.runAsync(
+      await db.runAsync(
         `INSERT OR REPLACE INTO questions (
           id, fact_id, question_type, question_text, correct_answer,
           wrong_answers, explanation, difficulty
@@ -3325,8 +3342,7 @@ export async function getFactsForStory(
     WHERE f.category = ? AND f.language = ?
       AND (f.is_historical IS NULL OR f.is_historical = 0)
       AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
-      AND f.id NOT IN (SELECT fact_id FROM daily_feed_cache WHERE cached_date = date('now', 'localtime'))
-    ORDER BY is_viewed ASC, COALESCE(f.last_updated, f.created_at) DESC`,
+    ORDER BY is_viewed ASC, COALESCE(f.last_updated, f.created_at) ASC`,
     [category, language]
   );
   return mapFactsWithRelations(result);
@@ -3359,8 +3375,7 @@ export async function getFactsForMixedStory(
     WHERE f.category IN (${placeholders}) AND f.language = ?
       AND (f.is_historical IS NULL OR f.is_historical = 0)
       AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
-      AND f.id NOT IN (SELECT fact_id FROM daily_feed_cache WHERE cached_date = date('now', 'localtime'))
-    ORDER BY is_viewed ASC, COALESCE(f.last_updated, f.created_at) DESC`,
+    ORDER BY is_viewed ASC, COALESCE(f.last_updated, f.created_at) ASC`,
     [...categorySlugs, language]
   );
   return mapFactsWithRelations(result);
@@ -3386,8 +3401,7 @@ export async function getUnseenStoryStatus(
        AND fi.story_viewed_at IS NULL
        AND (f.is_historical IS NULL OR f.is_historical = 0)
        AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
-       AND f.id NOT IN (SELECT fact_id FROM daily_feed_cache WHERE cached_date = date('now', 'localtime'))
-     GROUP BY f.category`,
+      GROUP BY f.category`,
     [...categorySlugs, language]
   );
 
@@ -3510,79 +3524,6 @@ export async function clearAllShownInFeed(): Promise<void> {
 // ====== DAILY FEED CACHE ======
 
 /**
- * Get cached facts for a daily feed section (fresh_facts / on_this_day)
- * Returns facts for today only; returns empty array if cache is stale
- */
-export async function getDailyFeedCache(
-  section: string,
-  language: string
-): Promise<FactWithRelations[]> {
-  const database = await openDatabase();
-
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex
-    FROM daily_feed_cache dfc
-    INNER JOIN facts f ON dfc.fact_id = f.id
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE dfc.section = ?
-      AND dfc.cached_date = date('now', 'localtime')
-      AND f.language = ?
-    ORDER BY dfc.display_order ASC`,
-    [section, language]
-  );
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Store today's feed section facts in the daily cache
- */
-export async function setDailyFeedCache(section: string, factIds: number[]): Promise<void> {
-  const database = await openDatabase();
-
-  // Use SQLite's localtime to match getDailyFeedCache query (avoids UTC/local date mismatch)
-  const todayResult = await database.getFirstAsync<{ today: string }>(
-    "SELECT date('now', 'localtime') as today"
-  );
-  const today = todayResult?.today || new Date().toISOString().split('T')[0];
-
-  // Atomic: clear old + insert new in a single transaction
-  await database.withTransactionAsync(async () => {
-    await database.runAsync('DELETE FROM daily_feed_cache WHERE section = ?', [section]);
-    for (let i = 0; i < factIds.length; i++) {
-      await database.runAsync(
-        'INSERT INTO daily_feed_cache (section, fact_id, cached_date, display_order) VALUES (?, ?, ?, ?)',
-        [section, factIds[i], today, i]
-      );
-    }
-  });
-}
-
-/**
- * Clear stale daily feed cache entries (older than today)
- */
-export async function clearStaleFeedCache(): Promise<void> {
-  const database = await openDatabase();
-  await database.runAsync(
-    "DELETE FROM daily_feed_cache WHERE cached_date < date('now', 'localtime')"
-  );
-}
-
-/**
- * Clear all daily feed cache entries (used after preference changes)
- */
-export async function clearDailyFeedCache(): Promise<void> {
-  const database = await openDatabase();
-  await database.runAsync('DELETE FROM daily_feed_cache');
-}
-
-/**
  * Get the cached quiz question ID for today (stored in daily_feed_cache with section='quick_quiz').
  * Returns null if no cached question exists for today.
  */
@@ -3597,8 +3538,7 @@ export async function getCachedQuizQuestionId(): Promise<number | null> {
 }
 
 /**
- * Cache a quiz question ID for today (reuses daily_feed_cache table).
- * Cleared automatically by clearStaleFeedCache() and clearDailyFeedCache().
+ * Cache a quiz question ID for today (uses daily_feed_cache table).
  */
 export async function setCachedQuizQuestionId(questionId: number): Promise<void> {
   const database = await openDatabase();
@@ -3629,10 +3569,7 @@ export async function getFactsReadTodayCount(): Promise<number> {
 
 /**
  * Get fact IDs and image URLs for pre-caching
- * Covers: fact of the day, popular + worth knowing (daily feed), next 20 story facts (unseen first), and favorites
- *
- * No language filter needed — the DB only contains facts for the user's active locale,
- * and daily_feed_cache already references the correct fact IDs.
+ * Covers: fact of the day, next 20 story facts (unseen first), and favorites
  */
 export async function getFactsForOfflineCache(): Promise<
   Array<{ id: number; image_url: string }>
@@ -3644,12 +3581,6 @@ export async function getFactsForOfflineCache(): Promise<
     `SELECT DISTINCT f.id, f.image_url FROM facts f
      WHERE f.image_url IS NOT NULL AND f.image_url != ''
        AND date(f.scheduled_date, 'localtime') = date('now', 'localtime')`
-  );
-
-  const feedCacheFacts = await database.getAllAsync<{ id: number; image_url: string }>(
-    `SELECT DISTINCT f.id, f.image_url FROM facts f
-     WHERE f.image_url IS NOT NULL AND f.image_url != ''
-       AND f.id IN (SELECT fact_id FROM daily_feed_cache WHERE cached_date = date('now', 'localtime'))`
   );
 
   // Story view: next 20 facts in mix story order (unseen first, then newest)
@@ -3674,7 +3605,7 @@ export async function getFactsForOfflineCache(): Promise<
   // Deduplicate
   const seen = new Set<number>();
   const result: Array<{ id: number; image_url: string }> = [];
-  for (const fact of [...todayFacts, ...feedCacheFacts, ...storyFacts, ...favoriteFacts]) {
+  for (const fact of [...todayFacts, ...storyFacts, ...favoriteFacts]) {
     if (!seen.has(fact.id)) {
       seen.add(fact.id);
       result.push(fact);

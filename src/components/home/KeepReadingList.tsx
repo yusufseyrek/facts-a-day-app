@@ -39,10 +39,10 @@ const IMAGE_SCALE = 1.25;
 interface KeepReadingItemProps {
   fact: FactWithRelations;
   onPress: () => void;
-  showSeparator: boolean;
+  isOdd: boolean;
 }
 
-const KeepReadingItem = React.memo(({ fact, onPress, showSeparator }: KeepReadingItemProps) => {
+const KeepReadingItem = React.memo(({ fact, onPress, isOdd }: KeepReadingItemProps) => {
   const { theme } = useTheme();
   const { spacing, media } = useResponsive();
   const colors = hexColors[theme];
@@ -52,57 +52,45 @@ const KeepReadingItem = React.memo(({ fact, onPress, showSeparator }: KeepReadin
   const categoryName = fact.categoryData?.name;
 
   return (
-    <>
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.item,
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.item,
+        {
+          padding: spacing.xl,
+          backgroundColor: isOdd ? `${colors.cardBackground}70` : 'transparent',
+          opacity: pressed ? 0.7 : 1,
+        },
+      ]}
+    >
+      <View style={[styles.textContainer, { marginRight: spacing.lg }]}>
+        {categoryName && (
+          <Text.Label
+            color={fact.categoryData?.color_hex ?? '$textSecondary'}
+            marginBottom={spacing.xs}
+          >
+            {categoryName}
+          </Text.Label>
+        )}
+        <Text.Body color="$text" numberOfLines={4} fontFamily={FONT_FAMILIES.semibold}>
+          {fact.title}
+        </Text.Body>
+      </View>
+      <Image
+        source={resolvedUri ? { uri: resolvedUri } : undefined}
+        style={[
+          styles.image,
           {
-            padding: spacing.xl,
-            opacity: pressed ? 0.7 : 1,
+            width: imageSize,
+            height: imageSize,
+            borderRadius: spacing.sm,
+            backgroundColor: colors.border,
           },
         ]}
-      >
-        <View style={[styles.textContainer, { marginRight: spacing.lg }]}>
-          {categoryName && (
-            <Text.Label
-              color={fact.categoryData?.color_hex ?? '$textSecondary'}
-              marginBottom={spacing.xs}
-            >
-              {categoryName}
-            </Text.Label>
-          )}
-          <Text.Body color="$text" numberOfLines={4} fontFamily={FONT_FAMILIES.semibold}>
-            {fact.title}
-          </Text.Body>
-        </View>
-        <Image
-          source={resolvedUri ? { uri: resolvedUri } : undefined}
-          style={[
-            styles.image,
-            {
-              width: imageSize,
-              height: imageSize,
-              borderRadius: spacing.sm,
-              backgroundColor: colors.border,
-            },
-          ]}
-          contentFit="cover"
-          transition={200}
-        />
-      </Pressable>
-      {showSeparator && (
-        <View
-          style={[
-            styles.separator,
-            {
-              backgroundColor: colors.border,
-              marginHorizontal: spacing.lg,
-            },
-          ]}
-        />
-      )}
-    </>
+        contentFit="cover"
+        transition={200}
+      />
+    </Pressable>
   );
 });
 
@@ -150,7 +138,7 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
     }, [facts, isPremium]);
 
     const renderItem = useCallback(
-      ({ item, index }: { item: KeepReadingRow; index: number }) => {
+      ({ item }: { item: KeepReadingRow }) => {
         const content =
           item.type === 'ad' ? (
             <View style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.md }}>
@@ -160,13 +148,13 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
             <KeepReadingItem
               fact={item.fact}
               onPress={() => onFactPress(item.fact, item.index)}
-              showSeparator={index < items.length - 1 && items[index + 1]?.type !== 'ad'}
+              isOdd={item.index % 2 === 0}
             />
           );
 
         return <View style={centeredStyle}>{content}</View>;
       },
-      [onFactPress, items, spacing.md]
+      [onFactPress, spacing.md]
     );
 
     const keyExtractor = useCallback((item: KeepReadingRow) => {
@@ -228,8 +216,5 @@ const styles = StyleSheet.create({
   },
   image: {
     overflow: 'hidden',
-  },
-  separator: {
-    height: 1,
   },
 });

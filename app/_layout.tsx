@@ -581,8 +581,6 @@ export default function RootLayout() {
       // Wait for IAP to finish (has been running in parallel since Phase 2 start)
       await iapPromise;
 
-      // Clean up stale daily feed cache entries (older than today)
-      database.clearStaleFeedCache().catch(() => {});
 
       // Register background sync for all users (fact sync)
       registerBackgroundSync().catch((error) => {

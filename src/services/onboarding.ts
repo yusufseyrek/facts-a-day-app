@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { API_SETTINGS } from '../config/app';
+
 import * as api from './api';
 import * as db from './database';
 import { extractQuestions } from './questions';
@@ -83,24 +85,72 @@ export interface FetchFactsResult {
 }
 
 /**
- * Fetch all facts based on preferences and store in database
+ * Convert API facts to database format
+ */
+function mapFactsToDb(facts: api.FactResponse[]): db.Fact[] {
+  return facts.map((fact) => ({
+    id: fact.id,
+    slug: fact.slug,
+    title: fact.title,
+    content: fact.content,
+    summary: fact.summary,
+    category: fact.category,
+    source_url: fact.source_url,
+    image_url: fact.image_url,
+    is_historical: fact.is_historical ? 1 : 0,
+    event_month: fact.metadata?.month ?? undefined,
+    event_day: fact.metadata?.day ?? undefined,
+    event_year: fact.metadata?.event_year ?? undefined,
+    metadata: fact.metadata
+      ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+      : undefined,
+    language: fact.language,
+    created_at: fact.created_at,
+    last_updated: fact.updated_at,
+  }));
+}
+
+/**
+ * Fetch all facts incrementally and store each batch in database as it arrives.
+ * The first batch (latest 500 facts) is written to DB and signals readiness
+ * so the user can proceed to the home screen while remaining facts download.
  */
 export async function fetchAllFacts(
   language: string,
   categories: string[],
-  onProgress?: (progress: FetchFactsProgress) => void
+  onProgress?: (progress: FetchFactsProgress) => void,
+  onFirstBatchReady?: () => void
 ): Promise<FetchFactsResult> {
   try {
-    // Convert categories array to comma-separated string
     const categoriesParam = categories.join(',');
 
-    // Fetch all facts with retry logic (include questions for trivia feature)
-    if (__DEV__) console.log('Fetching facts with questions...', { language, categories: categoriesParam });
+    let totalInserted = 0;
 
-    const facts = await api.getAllFactsWithRetry(
+    const result = await api.fetchFactsIncrementally({
       language,
-      categoriesParam,
-      (downloaded, total) => {
+      categories: categoriesParam,
+      initialBatchSize: API_SETTINGS.INITIAL_BATCH_SIZE,
+      remainingBatchSize: API_SETTINGS.FACTS_BATCH_SIZE,
+      concurrency: API_SETTINGS.BATCH_CONCURRENCY,
+      includeQuestions: true,
+      includeHistorical: true,
+      onBatchReady: async (facts, isInitialBatch) => {
+        const dbFacts = mapFactsToDb(facts);
+
+        await db.insertFacts(dbFacts);
+
+        const dbQuestions = extractQuestions(facts);
+        if (dbQuestions.length > 0) {
+          await db.insertQuestions(dbQuestions);
+        }
+
+        totalInserted += dbFacts.length;
+
+        if (isInitialBatch) {
+          onFirstBatchReady?.();
+        }
+      },
+      onProgress: (downloaded, total) => {
         if (onProgress) {
           onProgress({
             downloaded,
@@ -109,48 +159,9 @@ export async function fetchAllFacts(
           });
         }
       },
-      3, // max retries
-      true, // include questions for trivia feature
-      true // include historical facts
-    );
+    });
 
-    // Convert API facts to database facts format
-    // Note: API returns `updated_at`, we map it to `last_updated` in DB
-    const dbFacts: db.Fact[] = facts.map((fact) => ({
-      id: fact.id,
-      slug: fact.slug,
-      title: fact.title,
-      content: fact.content,
-      summary: fact.summary,
-      category: fact.category,
-      source_url: fact.source_url,
-      image_url: fact.image_url,
-      is_historical: fact.is_historical ? 1 : 0,
-      event_month: fact.metadata?.month ?? undefined,
-      event_day: fact.metadata?.day ?? undefined,
-      event_year: fact.metadata?.event_year ?? undefined,
-      metadata: fact.metadata
-        ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
-        : undefined,
-      language: fact.language,
-      created_at: fact.created_at,
-      last_updated: fact.updated_at,
-    }));
-
-    // Store facts in database
-    if (__DEV__) console.log(`📋 [Onboarding] Storing ${dbFacts.length} facts (language="${language}", historical=${dbFacts.filter(f => f.is_historical === 1).length}, non-historical=${dbFacts.filter(f => f.is_historical !== 1).length})`);
-    await db.insertFacts(dbFacts);
-    if (__DEV__) console.log(`📋 [Onboarding] Facts stored successfully`);
-
-    // Insert questions before returning — must complete before home screen loads
-    // to avoid concurrent SQLite transactions (setDailyFeedCache vs insertQuestions)
-    const dbQuestions = extractQuestions(facts);
-    if (dbQuestions.length > 0) {
-      await db.insertQuestions(dbQuestions);
-      if (__DEV__) console.log(`🧠 Inserted ${dbQuestions.length} questions for trivia`);
-    }
-
-    return { success: true, count: dbFacts.length };
+    return { success: true, count: totalInserted };
   } catch (error) {
     console.error('Fetch facts error:', error);
     return {

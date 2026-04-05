@@ -776,6 +776,92 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
       }
     }
 
+    // Step 3: Detect incomplete initial download and backfill missing facts
+    // When onboarding downloads newest-first, if the background download was
+    // interrupted (app killed, network lost), the local DB has the latest facts
+    // but is missing older ones. Delta sync (Step 2) won't catch these because
+    // MAX(last_updated) is already recent. Compare local count vs API total.
+    try {
+      const categoriesForBackfill = categories.join(',');
+      const localCount = await db.getFactsCount(currentLocale);
+
+      const countResponse = await api.getFacts({
+        language: currentLocale,
+        categories: categoriesForBackfill,
+        limit: 1,
+        offset: 0,
+        include_historical: true,
+      });
+      const apiTotal = countResponse.pagination.total;
+
+      if (__DEV__) console.log(`📋 [ContentRefresh] Fact count check: local=${localCount}, API=${apiTotal}`);
+
+      if (localCount < apiTotal) {
+        const missing = apiTotal - localCount;
+        console.log(`📋 [ContentRefresh] Local DB has ${localCount}/${apiTotal} facts — backfilling ${missing} missing`);
+
+        let backfillOffset = 0;
+        const backfillBatchSize = API_SETTINGS.FACTS_BATCH_SIZE;
+
+        while (backfillOffset < apiTotal) {
+          const backfillResponse = await api.getFacts({
+            language: currentLocale,
+            categories: categoriesForBackfill,
+            limit: backfillBatchSize,
+            offset: backfillOffset,
+            include_questions: true,
+            include_historical: true,
+            skip_count: true,
+          });
+
+          if (backfillResponse.facts.length === 0) break;
+
+          if (__DEV__) console.log(`📋 [ContentRefresh] Backfill batch: offset=${backfillOffset}, got ${backfillResponse.facts.length} facts`);
+
+          const backfillDbFacts: db.Fact[] = backfillResponse.facts.map((fact) => ({
+            id: fact.id,
+            slug: fact.slug,
+            title: fact.title,
+            content: fact.content,
+            summary: fact.summary,
+            category: fact.category,
+            source_url: fact.source_url,
+            image_url: fact.image_url,
+            is_historical: fact.is_historical ? 1 : 0,
+            event_month: fact.metadata?.month ?? undefined,
+            event_day: fact.metadata?.day ?? undefined,
+            event_year: fact.metadata?.event_year ?? undefined,
+            metadata: fact.metadata
+              ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+              : undefined,
+            language: fact.language,
+            created_at: fact.created_at,
+            last_updated: fact.updated_at,
+          }));
+
+          await db.insertFacts(backfillDbFacts);
+
+          const backfillQuestions = extractQuestions(backfillResponse.facts);
+          if (backfillQuestions.length > 0) {
+            await db.insertQuestions(backfillQuestions);
+          }
+
+          result.updated.facts += backfillResponse.facts.length;
+          backfillOffset += backfillBatchSize;
+
+          if (!backfillResponse.pagination.has_more) break;
+        }
+
+        if (__DEV__) console.log(`📋 [ContentRefresh] Backfill complete`);
+        emitFeedRefresh();
+      } else {
+        if (__DEV__) console.log(`📋 [ContentRefresh] Fact count matches — no backfill needed`);
+      }
+    } catch (backfillError) {
+      // Backfill is best-effort — don't fail the entire refresh
+      console.error('📋 [ContentRefresh] Backfill failed:', backfillError);
+    }
+
     // Update last refresh timestamp
     await updateLastRefreshTime();
 

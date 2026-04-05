@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 
-import { markFeedRefreshPending } from '../services/contentRefresh';
+import { emitFeedRefresh, markFeedRefreshPending } from '../services/contentRefresh';
 import * as onboardingService from '../services/onboarding';
 
 import type { SupportedLocale } from '../i18n';
@@ -42,6 +42,7 @@ interface OnboardingContextType extends OnboardingState {
   // Facts download
   downloadFacts: (locale: SupportedLocale) => Promise<boolean>;
   waitForDownloadComplete: () => Promise<void>;
+  waitForFirstBatchReady: () => Promise<void>;
 
   // Complete onboarding
   completeOnboarding: () => Promise<void>;
@@ -86,6 +87,12 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
     promise: Promise<void>;
     resolve: () => void;
     reject: (error: Error) => void;
+  } | null>(null);
+
+  // Promise-based first batch readiness tracking
+  const firstBatchReadyRef = useRef<{
+    promise: Promise<void>;
+    resolve: () => void;
   } | null>(null);
 
   // ===== Selection Methods =====
@@ -190,6 +197,13 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
       });
       downloadCompleteRef.current = { promise, resolve: resolveDownload!, reject: rejectDownload! };
 
+      // Create a promise that waitForFirstBatchReady can await
+      let resolveFirstBatch: () => void;
+      const firstBatchPromise = new Promise<void>((res) => {
+        resolveFirstBatch = res;
+      });
+      firstBatchReadyRef.current = { promise: firstBatchPromise, resolve: resolveFirstBatch! };
+
       setState((prev) => ({
         ...prev,
         isDownloadingFacts: true,
@@ -206,11 +220,17 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
               ...prev,
               downloadProgress: progress,
             }));
+          },
+          () => {
+            // Signal first batch ready
+            firstBatchReadyRef.current?.resolve();
           }
         );
 
         if (result.success) {
-          // Signal home screen to force-refresh on next focus
+          // Emit feed refresh so home screen re-renders with all data
+          // (including historical facts for On This Day that arrived in later batches)
+          emitFeedRefresh();
           markFeedRefreshPending();
           setState((prev) => ({
             ...prev,
@@ -259,6 +279,13 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
     }
   }, [state.downloadError]);
 
+  const waitForFirstBatchReady = useCallback(async (): Promise<void> => {
+    if (firstBatchReadyRef.current) {
+      return firstBatchReadyRef.current.promise;
+    }
+    // No download in progress or first batch already completed
+  }, []);
+
   // ===== Complete Onboarding =====
 
   const completeOnboarding = useCallback(async (): Promise<void> => {
@@ -271,7 +298,6 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
       // Update local state immediately (synchronous) to prevent navigation race condition
       setState((prev) => ({ ...prev, isOnboardingComplete: true }));
 
-      if (__DEV__) console.log('Onboarding completed successfully');
     } catch (error) {
       console.error('Error completing onboarding:', error);
       throw error;
@@ -323,6 +349,7 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
     retryInitialization,
     downloadFacts,
     waitForDownloadComplete,
+    waitForFirstBatchReady,
     completeOnboarding,
     resetOnboarding,
   };

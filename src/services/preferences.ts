@@ -246,8 +246,6 @@ export async function handleLanguageChange(
 
     if (__DEV__) console.log(`Updated ${updatedCount} preserved facts, inserted ${insertedCount} new facts`);
 
-    // Insert questions before continuing — must complete before home feed loads
-    // to avoid concurrent SQLite transactions (setDailyFeedCache vs insertQuestions)
     const dbQuestions = extractQuestions(allFacts);
     if (dbQuestions.length > 0) {
       await database.insertQuestions(dbQuestions);
@@ -488,14 +486,9 @@ export async function handleCategoriesChange(
       WHERE fact_id NOT IN (SELECT id FROM facts)
     `);
 
-    // Clear daily feed cache so it rebuilds from updated DB state
-    await database.clearDailyFeedCache();
-    // Also clear in-memory feed cache
+    // Clear in-memory feed cache so it rebuilds from updated DB state
     const { invalidateFeedMemoryCache } = await import('./dailyFeed');
     invalidateFeedMemoryCache();
-
-    // Insert questions before continuing — must complete before home feed loads
-    // to avoid concurrent SQLite transactions (setDailyFeedCache vs insertQuestions)
     const newQuestions = extractQuestions(newFacts);
     if (newQuestions.length > 0) {
       await database.insertQuestions(newQuestions);

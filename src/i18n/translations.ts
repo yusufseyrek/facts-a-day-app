@@ -9,6 +9,8 @@ export const translations = {
     selectCategoriesMinimum: 'Wähle mindestens 5 Kategorien aus, die du erkunden möchtest',
     categoryLimitFree: 'Wähle %{min} bis %{max} Kategorien zum Erkunden',
     categoryLimitPremium: 'Wähle mindestens %{min} Kategorien (unbegrenzt)',
+    selectAll: 'Alle auswählen',
+    deselectAll: 'Auswahl aufheben',
     loadingCategories: 'Kategorien werden geladen...',
 
     // Common
@@ -488,6 +490,8 @@ export const translations = {
     selectCategoriesMinimum: "Select at least 5 categories you'd like to explore",
     categoryLimitFree: 'Select %{min} to %{max} categories to explore',
     categoryLimitPremium: 'Select at least %{min} categories (unlimited)',
+    selectAll: 'Select All',
+    deselectAll: 'Deselect All',
     loadingCategories: 'Loading categories...',
 
     // Common
@@ -959,6 +963,8 @@ export const translations = {
     selectCategoriesMinimum: 'Selecciona al menos 5 categorías que te gustaría explorar',
     categoryLimitFree: 'Selecciona %{min} a %{max} categorías para explorar',
     categoryLimitPremium: 'Selecciona al menos %{min} categorías (ilimitado)',
+    selectAll: 'Seleccionar todo',
+    deselectAll: 'Deseleccionar todo',
     loadingCategories: 'Cargando categorías...',
 
     // Common
@@ -1433,6 +1439,8 @@ export const translations = {
     selectCategoriesMinimum: 'Sélectionnez au moins 5 catégories que vous aimeriez explorer',
     categoryLimitFree: 'Sélectionnez %{min} à %{max} catégories à explorer',
     categoryLimitPremium: 'Sélectionnez au moins %{min} catégories (illimité)',
+    selectAll: 'Tout sélectionner',
+    deselectAll: 'Tout désélectionner',
     loadingCategories: 'Chargement des catégories...',
 
     // Common
@@ -1909,6 +1917,8 @@ export const translations = {
     selectCategoriesMinimum: '探索したいカテゴリーを少なくとも5つ選択してください',
     categoryLimitFree: '%{min}〜%{max}個のカテゴリーを選択してください',
     categoryLimitPremium: '少なくとも%{min}個のカテゴリーを選択（無制限）',
+    selectAll: 'すべて選択',
+    deselectAll: 'すべて解除',
     loadingCategories: 'カテゴリーを読み込んでいます...',
 
     // Common
@@ -2379,6 +2389,8 @@ export const translations = {
     selectCategoriesMinimum: '탐색하고 싶은 카테고리를 최소 5개 선택하세요',
     categoryLimitFree: '탐색할 카테고리를 %{min}에서 %{max}개 선택하세요',
     categoryLimitPremium: '최소 %{min}개 카테고리 선택 (무제한)',
+    selectAll: '모두 선택',
+    deselectAll: '모두 해제',
     loadingCategories: '카테고리를 로드하는 중...',
 
     // Common
@@ -2848,6 +2860,8 @@ export const translations = {
     selectCategoriesMinimum: 'Keşfetmek istediğiniz en az 5 kategori seçin',
     categoryLimitFree: 'Keşfetmek için %{min} ile %{max} arası kategori seçin',
     categoryLimitPremium: 'En az %{min} kategori seçin (sınırsız)',
+    selectAll: 'Tümünü Seç',
+    deselectAll: 'Seçimi Kaldır',
     loadingCategories: 'Kategoriler yükleniyor...',
 
     // Common
@@ -3319,6 +3333,8 @@ export const translations = {
     selectCategoriesMinimum: '选择至少5个您想要探索的类别',
     categoryLimitFree: '选择%{min}至%{max}个类别进行探索',
     categoryLimitPremium: '选择至少%{min}个类别（无限制）',
+    selectAll: '全选',
+    deselectAll: '取消全选',
     loadingCategories: '正在加载类别...',
 
     // Common

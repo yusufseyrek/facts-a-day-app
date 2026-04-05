@@ -1,26 +1,11 @@
 import { createContext, type ReactNode, useCallback, useContext, useRef } from 'react';
 
-import type { DailyFeedSections } from '../services/dailyFeed';
 import type { FactWithRelations } from '../services/database';
 
 // Module-level storage for preloaded data
 // This allows setting data before React providers mount
 let preloadedFactsStorage: FactWithRelations[] | null = null;
 let preloadedRecommendationsStorage: FactWithRelations[] | null = null;
-
-// Module-level storage for onboarding-preloaded daily feed
-// Set by success screen, consumed by home screen on first mount
-let onboardingFeedStorage: DailyFeedSections | null = null;
-
-export function setOnboardingPreloadedFeed(feed: DailyFeedSections): void {
-  onboardingFeedStorage = feed;
-}
-
-export function consumeOnboardingPreloadedFeed(): DailyFeedSections | null {
-  const feed = onboardingFeedStorage;
-  onboardingFeedStorage = null;
-  return feed;
-}
 
 // Module-level promise for home screen ready signal
 let homeScreenReadyResolve: (() => void) | null = null;

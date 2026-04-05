@@ -187,11 +187,14 @@ function HomeScreen() {
       // Ignore
     }
     try {
-      const sections = await loadDailyFeedSections(locale, false);
+      const sections = await loadDailyFeedSections(locale, true);
       queryClient.setQueryData(homeKeys.dailyFeed(locale), sections);
     } catch {
       // Ignore
     }
+    // Invalidate Keep Reading and streak so they refetch from DB
+    queryClient.invalidateQueries({ queryKey: homeKeys.keepReading(locale) });
+    queryClient.invalidateQueries({ queryKey: homeKeys.readingStreak() });
     setRefreshing(false);
   }, [locale]);
 
@@ -437,6 +440,7 @@ function HomeScreen() {
           alignSelf="center"
           paddingHorizontal={spacing.lg}
           paddingTop={spacing.md}
+          paddingBottom={spacing.sm}
           alignItems="center"
           gap={spacing.sm}
         >
@@ -452,7 +456,11 @@ function HomeScreen() {
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
 
       <YStack flex={1}>
-        {!hasAnyContent ? (
+        {isLoading ? (
+          <LoadingContainer>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </LoadingContainer>
+        ) : !hasAnyContent ? (
           <EmptyState title={t('emptyStateTitle')} description={t('emptyStateDescription')} />
         ) : (
           <>
