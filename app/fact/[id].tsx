@@ -179,7 +179,7 @@ export default function FactDetailModal() {
     trackFactView({
       factId: factData.id,
       category: categorySlug,
-      source: source || 'home_today',
+      source: source || 'home_latest',
     });
   };
 

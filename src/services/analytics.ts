@@ -284,12 +284,9 @@ export const trackOnboardingComplete = (params: {
 // ============================================================================
 
 export type FactViewSource =
-  | 'home_today'
-  | 'home_popular'
-  | 'home_worth_knowing'
-  | 'home_fresh_facts'
+  | 'home_latest'
+  | 'home_keep_reading'
   | 'home_on_this_day'
-  | `home_category_${string}`
   | 'discover_search'
   | 'discover_category'
   | 'favorites'
@@ -803,7 +800,7 @@ export const trackBadgeDetailView = (params: {
 // Carousel Events
 // ============================================================================
 
-export type CarouselSection = 'today' | 'popular' | 'worth_knowing' | 'fresh_facts' | 'on_this_day';
+export type CarouselSection = 'latest' | 'on_this_day';
 
 /**
  * Track when user swipes to a new card in a home screen carousel

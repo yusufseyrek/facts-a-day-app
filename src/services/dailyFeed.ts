@@ -4,7 +4,6 @@ import {
   getDailyFeedCache,
   getLatestFacts,
   getOnThisDayFacts,
-  getRandomWorthKnowingFacts,
   getThisWeekInHistoryFacts,
   setDailyFeedCache,
 } from './database';
@@ -14,7 +13,6 @@ import type { FactWithRelations } from './database';
 
 export interface DailyFeedSections {
   freshFacts: FactWithRelations[];
-  worthKnowing: FactWithRelations[];
   onThisDay: FactWithRelations[];
   /** true when onThisDay contains nearby-date facts instead of exact-date */
   onThisDayIsWeekFallback: boolean;
@@ -45,7 +43,8 @@ function isWeekFallback(facts: FactWithRelations[]): boolean {
 }
 
 /**
- * Load Fresh Facts, Worth Knowing, and On This Day sections for the given locale.
+ * Load Latest Facts and On This Day sections for the given locale.
+ * Latest Facts are shown in the home screen carousel.
  * Checks the daily cache first; fetches from DB only for sections that are missing.
  * If no exact-date historical facts exist, falls back to ±3 days ("This Week in History").
  * Sections are locked for the rest of the day.
@@ -69,17 +68,12 @@ export async function loadDailyFeedSections(
   }
 
   let freshCached: FactWithRelations[] = [];
-  let worthKnowingCached: FactWithRelations[] = [];
   let onThisDayCached: FactWithRelations[] = [];
 
-  // Always load worth_knowing and on_this_day from cache so they stay
-  // locked for the day.  forceRefresh only forces fresh_facts to re-fetch
-  // (preference changes clear the whole cache, so those sections still
-  // re-roll when needed).
-  [worthKnowingCached, onThisDayCached] = await Promise.all([
-    getDailyFeedCache('worth_knowing', locale),
-    getDailyFeedCache('on_this_day', locale),
-  ]);
+  // Always load on_this_day from cache so it stays locked for the day.
+  // forceRefresh only forces latest facts to re-fetch (preference changes
+  // clear the whole cache, so on_this_day still re-rolls when needed).
+  onThisDayCached = await getDailyFeedCache('on_this_day', locale);
 
   if (!forceRefresh) {
     freshCached = await getDailyFeedCache('fresh_facts', locale);
@@ -87,17 +81,15 @@ export async function loadDailyFeedSections(
 
   if (__DEV__)
     console.log(
-      `📋 [DailyFeed] Cache: fresh=${freshCached.length}, worthKnowing=${worthKnowingCached.length}, onThisDay=${onThisDayCached.length}, forceRefresh=${forceRefresh}`
+      `📋 [DailyFeed] Cache: fresh=${freshCached.length}, onThisDay=${onThisDayCached.length}, forceRefresh=${forceRefresh}`
     );
 
   const needsFresh = freshCached.length === 0;
-  const needsWorthKnowing = worthKnowingCached.length === 0;
   const needsOnThisDay = onThisDayCached.length === 0;
 
-  if (!needsFresh && !needsWorthKnowing && !needsOnThisDay) {
+  if (!needsFresh && !needsOnThisDay) {
     const sections: DailyFeedSections = {
       freshFacts: freshCached,
-      worthKnowing: worthKnowingCached,
       onThisDay: onThisDayCached,
       onThisDayIsWeekFallback: isWeekFallback(onThisDayCached),
     };
@@ -105,12 +97,12 @@ export async function loadDailyFeedSections(
     return sections;
   }
 
-  // Fetch fresh facts first (needed to exclude from worth knowing)
+  // Fetch latest facts
   let freshFacts = freshCached;
   if (needsFresh) {
     if (__DEV__)
       console.log(
-        `📋 [DailyFeed] Fetching fresh facts: locale="${locale}", limit=${HOME_FEED.LATEST_COUNT}`
+        `📋 [DailyFeed] Fetching latest facts: locale="${locale}", limit=${HOME_FEED.LATEST_COUNT}`
       );
     const freshFetched = await getLatestFacts(HOME_FEED.LATEST_COUNT, locale);
     if (__DEV__) console.log(`📋 [DailyFeed] getLatestFacts returned ${freshFetched.length} facts`);
@@ -123,27 +115,10 @@ export async function loadDailyFeedSections(
     }
   }
 
-  // Fetch worth knowing and on this day in parallel
-  const freshIds = freshFacts.map((f) => f.id);
-  const [worthKnowingFetched, onThisDayFetched] = await Promise.all([
-    needsWorthKnowing
-      ? getRandomWorthKnowingFacts(HOME_FEED.WORTH_KNOWING_COUNT, locale, freshIds)
-      : Promise.resolve([]),
-    needsOnThisDay ? getOnThisDayFacts(locale) : Promise.resolve([]),
-  ]);
-
-  let worthKnowing = worthKnowingCached;
+  // Fetch on this day facts
   let onThisDay = onThisDayCached;
-
-  if (needsWorthKnowing && worthKnowingFetched.length > 0) {
-    await setDailyFeedCache(
-      'worth_knowing',
-      worthKnowingFetched.map((f) => f.id)
-    );
-    worthKnowing = worthKnowingFetched;
-  }
-
   if (needsOnThisDay) {
+    const onThisDayFetched = await getOnThisDayFacts(locale);
     if (onThisDayFetched.length > 0) {
       await setDailyFeedCache(
         'on_this_day',
@@ -164,11 +139,10 @@ export async function loadDailyFeedSections(
   }
 
   // Cache feed images in the background for offline reading
-  cacheFactImages([...freshFacts, ...worthKnowing, ...onThisDay]).catch(() => {});
+  cacheFactImages([...freshFacts, ...onThisDay]).catch(() => {});
 
   const sections: DailyFeedSections = {
     freshFacts,
-    worthKnowing,
     onThisDay,
     onThisDayIsWeekFallback: isWeekFallback(onThisDay),
   };

@@ -528,8 +528,8 @@ export default function RootLayout() {
         // resolve a previous feedLoadedPromise. We reset it below before our own trigger.
         await contentRefresh.refreshAppContent();
 
-        // Pre-populate the daily feed cache so the home screen's loadFeedSections
-        // gets a fast cache hit when it processes the feed refresh event below.
+        // Pre-populate the daily feed cache and React Query so the home screen's
+        // useHomeFeed hook gets an instant cache hit when it mounts.
         try {
           const feedSections = await loadDailyFeedSections(locale, true);
           queryClient.setQueryData(homeKeys.dailyFeed(locale), feedSections);
@@ -553,7 +553,7 @@ export default function RootLayout() {
         signalLocaleRefreshDone();
       } else {
         // No locale change — normal startup flow
-        // Pre-load facts + recommendations in parallel
+        // Pre-load latest facts and daily feed sections
         try {
           const [, feedSections] = await Promise.all([
             database.markDeliveredFactsAsShown(locale),

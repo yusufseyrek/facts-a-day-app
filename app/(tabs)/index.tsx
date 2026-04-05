@@ -199,7 +199,7 @@ function HomeScreen() {
   const keepReadingIds = useMemo(() => keepReadingFacts.map((f) => f.id), [keepReadingFacts]);
   const handleKeepReadingPress = useCallback(
     (fact: FactWithRelations, index: number) => {
-      handleFactPress(fact, 'home_popular', keepReadingIds, index);
+      handleFactPress(fact, 'home_keep_reading', keepReadingIds, index);
     },
     [handleFactPress, keepReadingIds]
   );
@@ -240,7 +240,7 @@ function HomeScreen() {
       if (index !== latestActiveIndexRef.current) {
         latestActiveIndexRef.current = index;
         trackCarouselSwipe({
-          section: 'fresh_facts',
+          section: 'latest',
           index,
           factId: latestFacts[index]?.id,
         });
@@ -260,7 +260,7 @@ function HomeScreen() {
             factId={item.id}
             category={item.categoryData || item.category}
             categorySlug={item.categoryData?.slug || item.category}
-            onPress={() => handleFactPress(item, 'home_fresh_facts', latestFactIds, factIndex)}
+            onPress={() => handleFactPress(item, 'home_latest', latestFactIds, factIndex)}
             cardWidth={carouselCardWidth}
             aspectRatio={1}
           />

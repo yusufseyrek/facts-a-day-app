@@ -157,8 +157,6 @@ export const HOME_FEED = {
   LATEST_COUNT: 10,
   /** Number of facts per page in the Keep Reading section (infinite scroll) */
   KEEP_READING_PAGE_SIZE: 20,
-  /** Number of cards in the Worth Knowing carousel */
-  WORTH_KNOWING_COUNT: 15,
   /** Number of cards per category carousel on the home screen */
   CATEGORY_CAROUSEL_COUNT: 6,
 } as const;

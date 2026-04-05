@@ -1088,8 +1088,8 @@ export async function getLatestFacts(
 
 /**
  * Get the most recently created non-historical facts with pagination.
- * Used for infinite scroll in the popular section.
- * Can exclude specific fact IDs (e.g. facts already shown in highlights).
+ * Used for infinite scroll in the Keep Reading section.
+ * Can exclude specific fact IDs (e.g. facts already shown in the Latest carousel).
  */
 export async function getLatestFactsPaginated(
   limit: number,
@@ -3510,7 +3510,7 @@ export async function clearAllShownInFeed(): Promise<void> {
 // ====== DAILY FEED CACHE ======
 
 /**
- * Get cached facts for a daily feed section (popular / worth_knowing)
+ * Get cached facts for a daily feed section (fresh_facts / on_this_day)
  * Returns facts for today only; returns empty array if cache is stale
  */
 export async function getDailyFeedCache(
