@@ -232,9 +232,8 @@ export default function OnboardingSuccessScreen() {
         const latestIds = feedSections.freshFacts.slice(0, HOME_FEED.LATEST_COUNT).map((f) => f.id);
         const keepReadingPage = await database.getLatestFactsPaginated(
           HOME_FEED.KEEP_READING_PAGE_SIZE,
-          0,
-          locale,
-          latestIds
+          HOME_FEED.LATEST_COUNT,
+          locale
         );
         queryClient.setQueryData(homeKeys.keepReading(locale), {
           pages: [keepReadingPage],

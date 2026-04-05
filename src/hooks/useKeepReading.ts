@@ -16,18 +16,14 @@ interface UseKeepReadingResult {
   isFetchingNextPage: boolean;
 }
 
-export function useKeepReading(
-  locale: string,
-  latestFactIds: number[]
-): UseKeepReadingResult {
+export function useKeepReading(locale: string): UseKeepReadingResult {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: homeKeys.keepReading(locale),
     queryFn: ({ pageParam = 0 }) =>
       getLatestFactsPaginated(
         HOME_FEED.KEEP_READING_PAGE_SIZE,
-        pageParam,
-        locale,
-        latestFactIds
+        HOME_FEED.LATEST_COUNT + pageParam,
+        locale
       ),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {

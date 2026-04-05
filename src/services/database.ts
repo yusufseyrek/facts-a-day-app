@@ -1108,26 +1108,13 @@ export async function getLatestFacts(
 /**
  * Get the most recently created non-historical facts with pagination.
  * Used for infinite scroll in the Keep Reading section.
- * Can exclude specific fact IDs (e.g. facts already shown in the Latest carousel).
  */
 export async function getLatestFactsPaginated(
   limit: number,
   offset: number,
-  language: string,
-  excludeIds?: number[]
+  language: string
 ): Promise<FactWithRelations[]> {
   const database = await openDatabase();
-
-  let excludeClause = '';
-  const params: (string | number)[] = [language];
-
-  if (excludeIds && excludeIds.length > 0) {
-    const placeholders = excludeIds.map(() => '?').join(',');
-    excludeClause = `AND f.id NOT IN (${placeholders})`;
-    params.push(...excludeIds);
-  }
-
-  params.push(limit, offset);
 
   const result = await database.getAllAsync<any>(
     `SELECT
@@ -1141,10 +1128,9 @@ export async function getLatestFactsPaginated(
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.language = ? AND (f.is_historical IS NULL OR f.is_historical = 0)
-    ${excludeClause}
     ORDER BY f.created_at DESC
     LIMIT ? OFFSET ?`,
-    params
+    [language, limit, offset]
   );
   return mapFactsWithRelations(result);
 }

@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-import { BookOpen, CalendarDays, Crown, Lightbulb, Sparkles } from '@tamagui/lucide-icons';
+import { BookOpen, CalendarDays, Crown, Lightbulb, Newspaper } from '@tamagui/lucide-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -71,7 +71,7 @@ function HomeScreen() {
     facts: keepReadingFacts,
     fetchNextPage,
     isFetchingNextPage,
-  } = useKeepReading(locale, latestFactIds);
+  } = useKeepReading(locale);
   const { streak } = useReadingStreak();
 
   // Remaining local state
@@ -348,7 +348,7 @@ function HomeScreen() {
             alignItems="center"
             gap={spacing.sm}
           >
-            <Sparkles size={iconSizes.sm} color={colors.primary} />
+            <Newspaper size={iconSizes.sm} color={colors.primary} />
             <Text.Title fontSize={typography.fontSize.body}>{t('latest')}</Text.Title>
           </XStack>
 
