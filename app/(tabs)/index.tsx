@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
+
 import { FlashListRef } from '@shopify/flash-list';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -18,7 +19,6 @@ import {
   HomeHeader,
   HomeListHeader,
   LocaleChangeOverlay,
-  PreCacheProgressBar,
 } from '../../src/components/home';
 import { KeepReadingList } from '../../src/components/home/KeepReadingList';
 import { PAYWALL_PROMPT } from '../../src/config/app';
@@ -38,6 +38,7 @@ import {
 import { isModalScreenActive } from '../../src/services/badges';
 import { consumeFeedRefreshPending, forceRefreshContent } from '../../src/services/contentRefresh';
 import { loadDailyFeedSections } from '../../src/services/dailyFeed';
+import { setGlobalProgress, clearGlobalProgress } from '../../src/services/globalProgress';
 import { preCacheOfflineImages } from '../../src/services/images';
 import { shouldShowPaywall } from '../../src/services/paywallTiming';
 import { hexColors, useTheme } from '../../src/theme';
@@ -59,7 +60,6 @@ function HomeScreen() {
 
   // Local state
   const [refreshing, setRefreshing] = useState(false);
-  const [preCacheProgress, setPreCacheProgress] = useState<number | null>(null);
 
   // Refs
   const preCacheDateRef = useRef<string | null>(null);
@@ -71,8 +71,7 @@ function HomeScreen() {
 
   const { backgroundRefreshStatus } = useHomeFeedEvents(
     locale,
-    { latestListRef, onThisDayListRef },
-    setPreCacheProgress
+    { latestListRef, onThisDayListRef }
   );
 
   // Scroll-to-top handler for tab re-tap
@@ -97,9 +96,9 @@ function HomeScreen() {
         const today = getLocalDateString();
         if (preCacheDateRef.current !== today) {
           preCacheDateRef.current = today;
-          preCacheOfflineImages(undefined, setPreCacheProgress)
-            .then(() => setTimeout(() => setPreCacheProgress(null), 1000))
-            .catch(() => setPreCacheProgress(null));
+          preCacheOfflineImages(undefined, setGlobalProgress)
+            .then(() => setTimeout(clearGlobalProgress, 1000))
+            .catch(clearGlobalProgress);
         }
         trackScreenView(Screens.HOME);
       });
@@ -241,7 +240,6 @@ function HomeScreen() {
         )}
 
         <LocaleChangeOverlay status={backgroundRefreshStatus} />
-        <PreCacheProgressBar progress={preCacheProgress} />
       </YStack>
     </ScreenContainer>
   );

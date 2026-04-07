@@ -54,6 +54,7 @@ import { triggerTestBadgeToast } from '../../src/services/badges';
 import * as database from '../../src/services/database';
 import { clearAllCachedImages, getCachedImagesSize } from '../../src/services/images';
 import { buildNotificationContent } from '../../src/services/notifications';
+import { onFeedRefresh } from '../../src/services/contentRefresh';
 import * as onboardingService from '../../src/services/onboarding';
 import { cleanupShareCards } from '../../src/services/share';
 import { clearHintUsage } from '../../src/services/trivia';
@@ -395,6 +396,18 @@ export default function SettingsPage() {
       loadImageCacheSize();
     }, [])
   );
+
+  // Reload preferences when premium status changes (downgrade removes premium categories)
+  useEffect(() => {
+    loadPreferences();
+  }, [isPremium]);
+
+  // Reload preferences when feed refreshes (e.g. after downgrade cleanup completes)
+  useEffect(() => {
+    return onFeedRefresh(() => {
+      loadPreferences();
+    });
+  }, []);
 
   // Listen for app state changes (when user returns from system settings)
   useEffect(() => {

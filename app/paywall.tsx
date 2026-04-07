@@ -8,11 +8,12 @@ import {
   Check,
   Crown,
   Lightbulb,
+  Lock,
   Sparkles,
   WifiOff,
   X,
 } from '@tamagui/lucide-icons';
-import { ErrorCode, useIAP } from 'expo-iap';
+import { ErrorCode, type MutationRequestPurchaseArgs, useIAP } from 'expo-iap';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -31,6 +32,19 @@ import { PAYWALL_GOLD, paywallThemeColors, useTheme } from '../src/theme';
 import { openInAppBrowser } from '../src/utils/browser';
 import { useResponsive } from '../src/utils/useResponsive';
 
+/**
+ * Wrapper around useIAP that suppresses init connection failures.
+ * During onboarding or on simulators, IAP is unavailable — this prevents crashes.
+ */
+function useSafeIAP() {
+  const iap = useIAP({
+    onError: (error) => {
+      if (__DEV__) console.warn('IAP error (non-fatal):', error.message);
+    },
+  });
+  return iap;
+}
+
 export default function PaywallScreen() {
   const router = useRouter();
   const { source: sourceParam } = useLocalSearchParams<{ source?: string }>();
@@ -41,7 +55,7 @@ export default function PaywallScreen() {
   const { spacing, radius, iconSizes, media, borderWidths } = useResponsive();
   const tc = paywallThemeColors[theme];
   const { isPremium, subscriptions, cachedPrices, restorePurchases, devSetPremium } = usePremium();
-  const { requestPurchase } = useIAP();
+  const { requestPurchase } = useSafeIAP();
 
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
@@ -223,6 +237,12 @@ export default function PaywallScreen() {
   const featureIconRadius = featureIconSize / 2;
 
   const features = [
+    {
+      icon: <Lock size={iconSizes.md} color={featureIconColor} />,
+      title: t('paywallFeaturePremiumCategories'),
+      description: t('paywallFeaturePremiumCategoriesDesc'),
+      gradient: [PAYWALL_GOLD.primary, PAYWALL_GOLD.light] as const,
+    },
     {
       icon: <Ban size={iconSizes.md} color={featureIconColor} />,
       title: t('paywallFeatureNoAds'),

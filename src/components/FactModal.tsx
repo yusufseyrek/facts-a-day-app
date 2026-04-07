@@ -413,49 +413,15 @@ export function FactModal({
   }, [categoryForBadge, theme]);
 
   const hasImage = !!imageUri && !isImageError;
-  const titleResizeThresholdLine = 3;
 
-  // Calculate dynamic header height first (needed for transition calculations)
+  // Header height = padding + measured title height
   const basePaddingTop = Platform.OS === 'ios' ? spacing.xl : insets.top;
   const basePaddingBottom = spacing.lg;
-  const titleLines = Math.round(titleHeight / typography.lineHeight.headline);
-  const endTitleLines = Math.min(titleLines, titleResizeThresholdLine);
-  const dynamicHeaderHeight = basePaddingTop + basePaddingBottom + titleHeight;
-  const maxTitleHeight = typography.lineHeight.headline * endTitleLines;
-  const minHeaderHeight = basePaddingTop + basePaddingBottom + maxTitleHeight;
-  const headerHeight = Math.max(dynamicHeaderHeight, minHeaderHeight);
-  const headerCollapseAmount = Math.max(0, headerHeight - minHeaderHeight);
+  const headerHeight = basePaddingTop + basePaddingBottom + titleHeight;
 
   // Header background appears when image starts to be covered (for images) or early for no image
   const HEADER_BG_TRANSITION = hasImage ? IMAGE_HEIGHT - headerHeight : 100;
 
-  // Track scroll position for gesture handling
-  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
-  const collapsedTitleOpacity = useRef(new Animated.Value(0)).current;
-  const collapseEndRef = useRef(0);
-  React.useEffect(() => {
-    const id = scrollY.addListener(({ value }) => {
-      currentScrollY.current = value;
-      if (
-        headerCollapseAmount > 0 &&
-        collapseEndRef.current > 0 &&
-        titleLines > titleResizeThresholdLine // should collapse
-      ) {
-        const collapsed = value >= collapseEndRef.current;
-        if (collapsed !== isHeaderCollapsed) setIsHeaderCollapsed(collapsed);
-      }
-    });
-    return () => scrollY.removeListener(id);
-  }, [scrollY, headerCollapseAmount, isHeaderCollapsed]);
-
-  // Cross-fade between full title and collapsed (numberOfLines) title
-  useEffect(() => {
-    Animated.timing(collapsedTitleOpacity, {
-      toValue: isHeaderCollapsed ? 1 : 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [isHeaderCollapsed]);
 
   // Fade animation for the entire scroll content (image + text) on navigation.
   // Hides everything first so scroll-to-top and image swap happen invisibly,
@@ -547,12 +513,7 @@ export function FactModal({
   });
 
   // Header title translateY - slides up from bottom of header as scrollY increases
-  // Animation starts when header becomes visible (at HEADER_BG_TRANSITION)
-  // Account for centering offset when header is clamped to minimum height
-  // When clamped, extra space is distributed above/below title due to alignItems: "center"
-  const clampedExtraSpace = Math.max(0, headerHeight - dynamicHeaderHeight);
-  const centeringOffset = clampedExtraSpace / 2;
-  const headerTitleStartY = headerHeight - basePaddingTop + basePaddingBottom - centeringOffset; // Start from bottom of header, adjusted for centering
+  const headerTitleStartY = headerHeight - basePaddingTop + basePaddingBottom;
 
   // Continuous animation: translateY decreases (moves up) as scrollY increases
   // The title starts moving up when header becomes visible and continues to move up as user scrolls
@@ -619,39 +580,6 @@ export function FactModal({
       })
     : 1;
 
-  // Header collapse - after title slide-up and border animations complete,
-  // push the header upward to reduce its visible height to minHeaderHeight.
-  // A compensating translateY on the content keeps the title at its screen position.
-  const TITLE_ANIM_END = HEADER_BG_TRANSITION + headerTitleStartY;
-  const BORDER_ANIM_END = BADGE_SCROLL_THRESHOLD + spacing.xxl;
-  const HEADER_COLLAPSE_START = Math.max(TITLE_ANIM_END, BORDER_ANIM_END);
-  collapseEndRef.current = HEADER_COLLAPSE_START + headerCollapseAmount;
-
-  const headerCollapseTranslateY =
-    hasImage && headerCollapseAmount > 0
-      ? scrollY.interpolate({
-          inputRange: [
-            Math.max(0, HEADER_COLLAPSE_START - 1),
-            HEADER_COLLAPSE_START,
-            HEADER_COLLAPSE_START + headerCollapseAmount,
-          ],
-          outputRange: [0, 0, -headerCollapseAmount],
-          extrapolate: 'clamp',
-        })
-      : 0;
-
-  const headerContentCompensateY =
-    hasImage && headerCollapseAmount > 0
-      ? scrollY.interpolate({
-          inputRange: [
-            Math.max(0, HEADER_COLLAPSE_START - 1),
-            HEADER_COLLAPSE_START,
-            HEADER_COLLAPSE_START + headerCollapseAmount,
-          ],
-          outputRange: [0, 0, headerCollapseAmount],
-          extrapolate: 'clamp',
-        })
-      : 0;
 
   const factTitle = fact.title || fact.content.substring(0, 60) + '...';
 
@@ -691,7 +619,7 @@ export function FactModal({
           zIndex: 100,
           opacity: headerOpacity,
           minHeight: headerHeight,
-          transform: [{ translateY: headerCollapseTranslateY }],
+          transform: [],
           ...Platform.select({
             ios: {
               shadowColor: '#000',
@@ -790,7 +718,7 @@ export function FactModal({
               left: 0,
               right: 0,
               zIndex: 101,
-              transform: [{ translateY: headerContentCompensateY }],
+              transform: [],
             }}
             pointerEvents="box-none"
           >
@@ -815,36 +743,7 @@ export function FactModal({
                     transform: [{ translateY: headerTitleTranslateY }],
                   }}
                 >
-                  {/* Full title — matches content title, fades out when collapsed */}
-                  <Animated.View
-                    style={{
-                      opacity: collapsedTitleOpacity.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [1, 0],
-                      }),
-                    }}
-                  >
-                    <Text.Headline>{factTitle}</Text.Headline>
-                  </Animated.View>
-                  {/* Collapsed title — numberOfLines + adjustsFontSizeToFit, fades in when collapsed */}
-                  <Animated.View
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      opacity: collapsedTitleOpacity,
-                      paddingRight: iconSizes.xl + spacing.xs,
-                    }}
-                  >
-                    <Text.Headline
-                      style={{ fontFamily: undefined, fontWeight: 700 }}
-                      adjustsFontSizeToFit
-                      numberOfLines={endTitleLines}
-                    >
-                      {factTitle}
-                    </Text.Headline>
-                  </Animated.View>
+                  <Text.Headline>{factTitle}</Text.Headline>
                 </Animated.View>
               </HeaderTitleContainer>
             </XStack>

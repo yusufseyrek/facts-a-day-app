@@ -26,6 +26,25 @@ export const hexToRgba = (hexColor: string, opacity: number): string => {
   return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${opacity})`;
 };
 
+/** Convert hex color to hue (0-360) for sorting by color. */
+export const hexToHue = (hex?: string | null): number => {
+  if (!hex) return 0;
+  const rgb = parseHex(hex);
+  if (!rgb) return 0;
+  const r = rgb[0] / 255;
+  const g = rgb[1] / 255;
+  const b = rgb[2] / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  if (d === 0) return 0;
+  let h: number;
+  if (max === r) h = ((g - b) / d) % 6;
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  return ((h * 60) + 360) % 360;
+};
+
 export const darkenColor = (hex: string, amount: number): string => {
   const rgb = parseHex(hex);
   if (!rgb) return hex;

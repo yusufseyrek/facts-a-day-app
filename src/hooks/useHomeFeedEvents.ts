@@ -9,6 +9,7 @@ import {
   type RefreshStatus,
 } from '../services/contentRefresh';
 import { loadDailyFeedSections } from '../services/dailyFeed';
+import { clearGlobalProgress, setGlobalProgress } from '../services/globalProgress';
 import { preCacheOfflineImages } from '../services/images';
 import { onNetworkChange } from '../services/network';
 import { signalFeedLoaded } from '../contexts';
@@ -29,8 +30,7 @@ interface UseHomeFeedEventsResult {
 
 export function useHomeFeedEvents(
   locale: string,
-  refs: CarouselRefs,
-  setPreCacheProgress: (progress: number | null) => void
+  refs: CarouselRefs
 ): UseHomeFeedEventsResult {
   const queryClient = useQueryClient();
   const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(
@@ -57,13 +57,13 @@ export function useHomeFeedEvents(
   useEffect(() => {
     const unsubscribe = onNetworkChange((connected) => {
       if (connected) {
-        preCacheOfflineImages(undefined, setPreCacheProgress)
-          .then(() => setTimeout(() => setPreCacheProgress(null), 1000))
-          .catch(() => setPreCacheProgress(null));
+        preCacheOfflineImages(undefined, setGlobalProgress)
+          .then(() => setTimeout(clearGlobalProgress, 1000))
+          .catch(clearGlobalProgress);
       }
     });
     return () => unsubscribe();
-  }, [setPreCacheProgress]);
+  }, []);
 
   // Subscribe to background refresh status
   useEffect(() => {

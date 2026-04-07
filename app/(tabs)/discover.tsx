@@ -48,7 +48,7 @@ import { getSelectedCategories } from '../../src/services/onboarding';
 import { consumePendingDiscoverCategory } from '../../src/services/contentRefresh';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
-import { darkenColor, getContrastColor } from '../../src/utils/colors';
+import { darkenColor, getContrastColor, hexToHue } from '../../src/utils/colors';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import {
   insertNativeAds,
@@ -313,8 +313,10 @@ function DiscoverScreen() {
       const selectedSlugs = await getSelectedCategories();
       const allCategories = await database.getAllCategories();
 
-      // Filter to only include user's selected categories
-      const filteredCategories = allCategories.filter((cat) => selectedSlugs.includes(cat.slug));
+      // Filter to only include user's selected categories, sorted by hue
+      const filteredCategories = allCategories
+        .filter((cat) => selectedSlugs.includes(cat.slug))
+        .sort((a, b) => hexToHue(a.color_hex) - hexToHue(b.color_hex));
       setUserCategories(filteredCategories);
 
       // Load facts counts for each category

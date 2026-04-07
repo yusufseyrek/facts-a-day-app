@@ -18,6 +18,7 @@ import {
 } from '../../src/services/analytics';
 import * as db from '../../src/services/database';
 import { hexColors, useTheme } from '../../src/theme';
+import { hexToHue } from '../../src/utils/colors';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -153,6 +154,7 @@ export default function Categories() {
   const loadCategories = async () => {
     try {
       const categoriesFromDb = await db.getAllCategories();
+      categoriesFromDb.sort((a, b) => hexToHue(a.color_hex) - hexToHue(b.color_hex));
       setCategories(categoriesFromDb);
     } catch (error) {
       console.error('Error loading categories:', error);
@@ -161,12 +163,16 @@ export default function Categories() {
     }
   };
 
-  const toggleCategory = (slug: string) => {
+  const toggleCategory = (category: db.Category) => {
+    if (!isPremium && category.is_premium) {
+      // Don't open paywall during onboarding — IAP isn't initialized yet
+      return;
+    }
     setSelectedCategories((prev) => {
-      if (prev.includes(slug)) {
-        return prev.filter((s) => s !== slug);
+      if (prev.includes(category.slug)) {
+        return prev.filter((s) => s !== category.slug);
       }
-      return [...prev, slug];
+      return [...prev, category.slug];
     });
   };
 
@@ -272,11 +278,15 @@ export default function Categories() {
             rightElement={
               <Pressable
                 onPress={() => {
-                  const allSelected = categories.length > 0 && selectedCategories.length === categories.length;
+                  const selectableCategories = isPremium
+                    ? categories
+                    : categories.filter((c) => !c.is_premium);
+                  const allSelected = selectableCategories.length > 0 &&
+                    selectableCategories.every((c) => selectedCategories.includes(c.slug));
                   if (allSelected) {
                     setSelectedCategories([]);
                   } else {
-                    setSelectedCategories(categories.map((c) => c.slug));
+                    setSelectedCategories(selectableCategories.map((c) => c.slug));
                   }
                 }}
                 hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
@@ -286,9 +296,15 @@ export default function Categories() {
                   color={theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.primary}
                   fontWeight="600"
                 >
-                  {categories.length > 0 && selectedCategories.length === categories.length
-                    ? t('deselectAll')
-                    : t('selectAll')}
+                  {(() => {
+                    const selectable = isPremium
+                      ? categories
+                      : categories.filter((c) => !c.is_premium);
+                    return selectable.length > 0 &&
+                      selectable.every((c) => selectedCategories.includes(c.slug))
+                      ? t('deselectAll')
+                      : t('selectAll');
+                  })()}
                 </Text.Caption>
               </Pressable>
             }
@@ -311,14 +327,17 @@ export default function Categories() {
                     const catIndex = getCategoryIndex(rowIndex, colIndex);
                     const animValue = categoryAnimations[catIndex];
 
+                    const isLocked = !isPremium && !!category.is_premium;
+
                     const card = (
                       <CategoryCard
                         icon={getLucideIcon(category.icon, iconSize)}
                         label={category.name}
                         colorHex={category.color_hex}
-                        selected={selectedCategories.includes(category.slug)}
-                        onPress={() => toggleCategory(category.slug)}
+                        selected={!isLocked && selectedCategories.includes(category.slug)}
+                        onPress={() => toggleCategory(category)}
                         labelFontSize={labelFontSize}
+                        locked={isLocked}
                       />
                     );
 

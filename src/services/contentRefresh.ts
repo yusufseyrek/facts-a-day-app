@@ -8,7 +8,6 @@ import { getLocaleFromCode, SupportedLocale } from '../i18n';
 import * as api from './api';
 import * as db from './database';
 import * as onboardingService from './onboarding';
-import { getIsPremium } from './premiumState';
 import { extractQuestions } from './questions';
 // Lazy-imported to break require cycle (contentRefresh ↔ preferences)
 const getPreferencesService = () => require('./preferences') as typeof import('./preferences');
@@ -671,7 +670,7 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
     const categories = await onboardingService.getSelectedCategories();
 
     // Step 1: Fetch and update metadata (categories)
-    const metadata = await api.getMetadata(currentLocale, getIsPremium());
+    const metadata = await api.getMetadata(currentLocale);
 
     await db.insertCategories(metadata.categories);
     result.updated.categories = metadata.categories.length;

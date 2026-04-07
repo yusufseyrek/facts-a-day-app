@@ -32,6 +32,7 @@ import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { consumePendingQuizSessionId } from '../../src/services/quizSession';
 import * as triviaService from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
+import { hexToHue } from '../../src/utils/colors';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { CategoryWithProgress } from '../../src/services/trivia';
@@ -104,7 +105,12 @@ export default function TriviaScreen() {
         setIsDailyCompleted(dailyCompleted);
         setMixedQuestionsCount(mixedCount);
         setOverallStats(stats);
-        setCategoriesWithProgress(categories);
+        // Sort by color hue, but push categories with 0 questions to the end
+        const sorted = [...categories].sort((a, b) => {
+          if ((a.total > 0) !== (b.total > 0)) return b.total > 0 ? 1 : -1;
+          return hexToHue(a.color_hex) - hexToHue(b.color_hex);
+        });
+        setCategoriesWithProgress(sorted);
       } catch (error) {
         console.error('Error loading trivia data:', error);
       } finally {

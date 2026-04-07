@@ -13,14 +13,12 @@ import { preloadAppOpenAd } from '../components/ads/AppOpenAd';
 import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
 import { SUBSCRIPTION } from '../config/app';
 import { setAnalyticsUserProperty } from '../config/firebase';
-import * as api from '../services/api';
 import {
   trackSubscriptionPurchased,
   trackSubscriptionRestored,
   trackSubscriptionStatusChanged,
 } from '../services/analytics';
-import { getStoredLocale, emitFeedRefresh } from '../services/contentRefresh';
-import * as db from '../services/database';
+import { getStoredLocale } from '../services/contentRefresh';
 import { getIsConnected } from '../services/network';
 import { handlePremiumDowngrade } from '../services/premiumDowngrade';
 import {
@@ -70,12 +68,22 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
  */
 function DevPremiumProvider({ children }: { children: React.ReactNode }) {
   const [isPremium, setIsPremium] = useState(getPremiumState);
+  const lastKnownStatusRef = useRef<boolean | null>(null);
 
   const devSetPremium = useCallback(async (status: boolean) => {
+    const wasPremium = lastKnownStatusRef.current;
     setIsPremium(status);
     setPremiumState(status);
     await cachePremiumStatus(status);
     await setAnalyticsUserProperty('is_premium', status ? 'true' : 'false');
+
+    // Handle downgrade: deselect premium categories and delete their facts
+    if (wasPremium === true && !status) {
+      getStoredLocale().then((locale) => {
+        handlePremiumDowngrade(locale || 'en').catch(console.error);
+      });
+    }
+    lastKnownStatusRef.current = status;
   }, []);
 
   // Load cached status on mount
@@ -84,6 +92,9 @@ function DevPremiumProvider({ children }: { children: React.ReactNode }) {
       if (cached) {
         setIsPremium(true);
         setPremiumState(true);
+        lastKnownStatusRef.current = true;
+      } else {
+        lastKnownStatusRef.current = false;
       }
     });
   }, []);
@@ -139,21 +150,9 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
         preloadAppOpenAd().catch(console.error);
       }
       if (!status) {
-        // Downgrade: remove premium categories and data
+        // Downgrade: deselect premium categories and delete their facts
         getStoredLocale().then((locale) => {
           handlePremiumDowngrade(locale || 'en').catch(console.error);
-        });
-      }
-      if (status) {
-        // Upgrade: fetch premium categories so they're immediately available
-        getStoredLocale().then(async (locale) => {
-          try {
-            const metadata = await api.getMetadata(locale || 'en', true);
-            await db.insertCategories(metadata.categories);
-            emitFeedRefresh();
-          } catch (e) {
-            console.error('Failed to fetch premium categories on upgrade:', e);
-          }
         });
       }
     }

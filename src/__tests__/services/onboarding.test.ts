@@ -87,7 +87,7 @@ describe('onboarding service', () => {
       const result = await initializeOnboarding('en');
 
       expect(result.success).toBe(true);
-      expect(apiMock.getMetadata).toHaveBeenCalledWith('en', undefined);
+      expect(apiMock.getMetadata).toHaveBeenCalledWith('en');
       expect(dbMock.openDatabase).toHaveBeenCalled();
       expect(dbMock.insertCategories).toHaveBeenCalledWith(mockCategories);
     });

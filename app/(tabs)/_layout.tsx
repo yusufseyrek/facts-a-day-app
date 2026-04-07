@@ -15,6 +15,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Brain, Compass, Heart, Lightbulb, Settings } from '@tamagui/lucide-icons';
 import { Tabs, usePathname } from 'expo-router';
 
+import { GlobalProgressBar } from '../../src/components/GlobalProgressBar';
 import { OfflinePaywallSheet } from '../../src/components/OfflinePaywallSheet';
 import { useScrollToTop } from '../../src/contexts';
 import { useOfflineAccess } from '../../src/hooks/useOfflineAccess';
@@ -207,7 +208,12 @@ function TriviaTabIcon({
 }
 
 function CustomTabBar(props: BottomTabBarProps) {
-  return <BottomTabBar {...props} />;
+  return (
+    <>
+      <GlobalProgressBar />
+      <BottomTabBar {...props} />
+    </>
+  );
 }
 
 const styles = StyleSheet.create({

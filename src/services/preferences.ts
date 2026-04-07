@@ -15,7 +15,6 @@ import { emitFeedRefresh as emitContentFeedRefresh, markFeedRefreshPending } fro
 import * as database from './database';
 import * as notificationService from './notifications';
 import * as onboardingService from './onboarding';
-import { getIsPremium } from './premiumState';
 import { extractQuestions } from './questions';
 
 import type { SupportedLocale } from '../i18n/translations';
@@ -128,7 +127,7 @@ export async function handleLanguageChange(
       message: 'Loading categories...',
     });
 
-    const metadata = await api.getMetadata(newLanguage, getIsPremium());
+    const metadata = await api.getMetadata(newLanguage);
     await database.insertCategories(metadata.categories);
 
     // Stage 3: Download ALL facts to find translations for delivered ones + new facts

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Pressable, Text as RNText } from 'react-native';
 
-import { Check } from '@tamagui/lucide-icons';
+import { Check, Crown, Lock } from '@tamagui/lucide-icons';
 import { YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n/useTranslation';
@@ -21,6 +21,7 @@ export interface CategoryCardProps {
   onPress: () => void;
   labelFontSize?: number;
   disabled?: boolean;
+  locked?: boolean;
 }
 
 const CategoryCardComponent = ({
@@ -32,6 +33,7 @@ const CategoryCardComponent = ({
   onPress,
   labelFontSize,
   disabled = false,
+  locked = false,
 }: CategoryCardProps) => {
   const { theme } = useTheme();
   const { spacing, radius, typography, iconSizes } = useResponsive();
@@ -150,12 +152,12 @@ const CategoryCardComponent = ({
 
   return (
     <Pressable
-      onPress={disabled ? undefined : onPress}
+      onPress={disabled && !locked ? undefined : onPress}
       role="button"
       aria-label={t('a11y_categoryCard', { category: label })}
-      aria-disabled={disabled}
+      aria-disabled={disabled && !locked}
       style={{ flex: 1 }}
-      disabled={disabled}
+      disabled={disabled && !locked}
     >
       {({ pressed }) => (
         <Animated.View
@@ -173,15 +175,31 @@ const CategoryCardComponent = ({
             alignItems="center"
             justifyContent="center"
             gap={spacing.sm}
-            opacity={disabled ? 0.4 : pressed ? 0.85 : 1}
+            opacity={disabled && !locked ? 0.4 : locked ? 0.65 : pressed ? 0.85 : 1}
             style={{
               backgroundColor,
               borderColor,
             }}
           >
-            <Animated.View style={[checkmarkContainerStyle, checkmarkStyle]}>
-              <Check size={iconSizes.sm} color={contrastColor} strokeWidth={3} />
-            </Animated.View>
+            {locked ? (
+              <YStack
+                position="absolute"
+                top={spacing.sm}
+                right={spacing.sm}
+                width={iconSizes.md}
+                height={iconSizes.md}
+                borderRadius={radius.full}
+                alignItems="center"
+                justifyContent="center"
+                backgroundColor={theme === 'dark' ? '#FFFFFF15' : '#00000010'}
+              >
+                <Lock size={iconSizes.xs} color={theme === 'dark' ? '#FFFFFF70' : '#00000050'} strokeWidth={2.5} />
+              </YStack>
+            ) : (
+              <Animated.View style={[checkmarkContainerStyle, checkmarkStyle]}>
+                <Check size={iconSizes.sm} color={contrastColor} strokeWidth={3} />
+              </Animated.View>
+            )}
             <YStack alignItems="center" justifyContent="center">
               {React.isValidElement(icon)
                 ? React.cloneElement(icon as React.ReactElement<any>, {
@@ -222,7 +240,8 @@ export const CategoryCard = React.memo(CategoryCardComponent, (prevProps, nextPr
     prevProps.colorHex === nextProps.colorHex &&
     prevProps.selected === nextProps.selected &&
     prevProps.labelFontSize === nextProps.labelFontSize &&
-    prevProps.disabled === nextProps.disabled
+    prevProps.disabled === nextProps.disabled &&
+    prevProps.locked === nextProps.locked
     // Don't compare icon and onPress as they may be recreated but functionally equivalent
   );
 });

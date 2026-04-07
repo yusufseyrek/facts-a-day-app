@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Easing, Pressable, ScrollView } from 'react-native';
+import { ActivityIndicator, Animated, Easing, Pressable, ScrollView } from 'react-native';
 
 import { View } from '@tamagui/core';
 import { ArrowLeft } from '@tamagui/lucide-icons';
@@ -20,9 +20,11 @@ import {
   updateCategoriesProperty,
 } from '../../src/services/analytics';
 import * as db from '../../src/services/database';
+import { clearGlobalProgress, setGlobalProgress } from '../../src/services/globalProgress';
 import * as onboardingService from '../../src/services/onboarding';
 import * as preferencesService from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
+import { hexToHue } from '../../src/utils/colors';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -38,8 +40,6 @@ export default function CategoriesSettings() {
   const [initialCategories, setInitialCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isFetchingFacts, setIsFetchingFacts] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const { typography, config, iconSizes, spacing } = useResponsive();
 
@@ -130,8 +130,9 @@ export default function CategoriesSettings() {
 
   const loadData = async () => {
     try {
-      // Load categories from database
+      // Load categories from database, sorted by color hue
       const categoriesFromDb = await db.getAllCategories();
+      categoriesFromDb.sort((a, b) => hexToHue(a.color_hex) - hexToHue(b.color_hex));
       setCategories(categoriesFromDb);
 
       // Load current selection from AsyncStorage
@@ -153,19 +154,21 @@ export default function CategoriesSettings() {
     return !sortedSelected.every((cat, i) => cat === sortedInitial[i]);
   };
 
-  const toggleCategory = (slug: string) => {
+  const toggleCategory = (category: db.Category) => {
+    if (!isPremium && category.is_premium) {
+      router.push('/paywall');
+      return;
+    }
     setSelectedCategories((prev) => {
-      if (prev.includes(slug)) {
-        return prev.filter((s) => s !== slug);
+      if (prev.includes(category.slug)) {
+        return prev.filter((s) => s !== category.slug);
       }
-      return [...prev, slug];
+      return [...prev, category.slug];
     });
   };
 
   const handleSave = async () => {
-    // Check if categories have changed
     if (!hasChanges()) {
-      if (__DEV__) console.log('No changes detected, navigating back without saving');
       router.back();
       return;
     }
@@ -176,67 +179,32 @@ export default function CategoriesSettings() {
       if (!rewarded) return;
     }
 
-    setIsSaving(true);
-    try {
-      // Show interstitial ad in parallel with save operations
-      const adPromise = showSettingsInterstitial();
+    // Save selection and show toast (navigates back when toast hides)
+    await onboardingService.setSelectedCategories(selectedCategories);
 
-      // Save selected categories
-      await onboardingService.setSelectedCategories(selectedCategories);
+    // Track analytics
+    const addedCount = selectedCategories.filter(
+      (cat) => !initialCategories.includes(cat)
+    ).length;
+    const removedCount = initialCategories.filter(
+      (cat) => !selectedCategories.includes(cat)
+    ).length;
+    trackCategoriesUpdate({ count: selectedCategories.length, addedCount, removedCount });
+    updateCategoriesProperty(selectedCategories);
 
-      // Trigger data refresh with progress tracking
-      const result = await preferencesService.handleCategoriesChange(
-        selectedCategories,
-        locale,
-        (progress) => {
-          if (__DEV__)
-            console.log(`${progress.stage}: ${progress.percentage}% - ${progress.message}`);
-          if (progress.stage === 'downloading') {
-            setIsFetchingFacts(true);
-          }
-        }
-      );
+    setShowSuccessToast(true);
 
-      if (result.success) {
-        if (__DEV__) console.log(`Successfully refreshed with ${result.factsCount} facts`);
-
-        // Track categories update and update user property
-        const addedCount = selectedCategories.filter(
-          (cat) => !initialCategories.includes(cat)
-        ).length;
-        const removedCount = initialCategories.filter(
-          (cat) => !selectedCategories.includes(cat)
-        ).length;
-        trackCategoriesUpdate({
-          count: selectedCategories.length,
-          addedCount,
-          removedCount,
-        });
-        updateCategoriesProperty(selectedCategories);
-
-        // Wait for ad to close before showing success toast (prevents view controller conflicts)
-        await adPromise;
-
-        // Show success toast
-        setTimeout(() => {
-          setShowSuccessToast(true);
-        }, 100);
-      } else {
-        Alert.alert(t('error'), result.error || t('failedToUpdateCategories'));
-        setIsSaving(false);
-        setIsFetchingFacts(false);
-      }
-    } catch (error) {
-      console.error('Error saving categories:', error);
-      Alert.alert(t('error'), t('failedToSaveCategories'));
-      setIsSaving(false);
-      setIsFetchingFacts(false);
-    }
-  };
-
-  const handleSuccessToastHide = () => {
-    setShowSuccessToast(false);
-    router.back();
+    // Fire-and-forget: refresh data in background with global progress bar
+    showSettingsInterstitial();
+    preferencesService
+      .handleCategoriesChange(selectedCategories, locale, (progress) => {
+        setGlobalProgress(progress.percentage / 100);
+      })
+      .then(() => setTimeout(clearGlobalProgress, 1000))
+      .catch((error) => {
+        console.error('Background category refresh failed:', error);
+        clearGlobalProgress();
+      });
   };
 
   // Split categories into rows
@@ -275,7 +243,10 @@ export default function CategoriesSettings() {
       <SuccessToast
         visible={showSuccessToast}
         message={t('categoriesUpdated')}
-        onHide={handleSuccessToastHide}
+        onHide={() => {
+          setShowSuccessToast(false);
+          router.back();
+        }}
       />
       <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} paddingBottom={spacing.sm} gap={spacing.md} flex={1}>
         <Animated.View
@@ -295,6 +266,37 @@ export default function CategoriesSettings() {
               <YStack gap={spacing.sm} flex={1}>
                 <Text.Headline>{t('settingsCategories')}</Text.Headline>
               </YStack>
+              <Pressable
+                onPress={() => {
+                  const selectable = isPremium
+                    ? categories
+                    : categories.filter((c) => !c.is_premium);
+                  const allSelected = selectable.length > 0 &&
+                    selectable.every((c) => selectedCategories.includes(c.slug));
+                  if (allSelected) {
+                    setSelectedCategories([]);
+                  } else {
+                    setSelectedCategories(selectable.map((c) => c.slug));
+                  }
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
+                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+              >
+                <Text.Caption
+                  color={theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.primary}
+                  fontWeight="600"
+                >
+                  {(() => {
+                    const selectable = isPremium
+                      ? categories
+                      : categories.filter((c) => !c.is_premium);
+                    return selectable.length > 0 &&
+                      selectable.every((c) => selectedCategories.includes(c.slug))
+                      ? t('deselectAll')
+                      : t('selectAll');
+                  })()}
+                </Text.Caption>
+              </Pressable>
             </XStack>
             <Text.Body color="$textSecondary" fontSize={secondaryFontSize}>
               {t('categoryMinimumInfo', { min: MINIMUM_CATEGORIES })}
@@ -311,14 +313,17 @@ export default function CategoriesSettings() {
                     const catIndex = getCategoryIndex(rowIndex, colIndex);
                     const animValue = categoryAnimations[catIndex];
 
+                    const isLocked = !isPremium && !!category.is_premium;
+
                     const card = (
                       <CategoryCard
                         icon={getLucideIcon(category.icon, iconSize)}
                         label={category.name}
                         colorHex={category.color_hex}
-                        selected={selectedCategories.includes(category.slug)}
-                        onPress={() => toggleCategory(category.slug)}
+                        selected={!isLocked && selectedCategories.includes(category.slug)}
+                        onPress={() => toggleCategory(category)}
                         labelFontSize={labelFontSize}
+                        locked={isLocked}
                       />
                     );
 
@@ -384,16 +389,9 @@ export default function CategoriesSettings() {
           <View>
             <Button
               onPress={handleSave}
-              disabled={selectedCategories.length < MINIMUM_CATEGORIES || isSaving}
-              loading={isSaving}
+              disabled={selectedCategories.length < MINIMUM_CATEGORIES}
             >
-              {isSaving
-                ? isFetchingFacts
-                  ? t('savingAndFetchingFacts')
-                  : t('saving')
-                : !isPremium && hasChanges()
-                  ? t('watchAdToSave')
-                  : t('save')}
+              {!isPremium && hasChanges() ? t('watchAdToSave') : t('save')}
             </Button>
           </View>
         </Animated.View>
