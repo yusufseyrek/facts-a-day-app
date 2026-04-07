@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { getIsConnected } from '../services/network';
+import { ImagePlaceholder } from './ImagePlaceholder';
 import { useResponsive } from '../utils/useResponsive';
 
 import { CategoryBadge } from './CategoryBadge';
@@ -64,7 +65,7 @@ const ImageFactCardComponent = ({
   contentOverlayStyle,
   favoritePositionStyle,
 }: ImageFactCardProps) => {
-  const { screenWidth, spacing, radius, config } = useResponsive();
+  const { screenWidth, spacing, radius, config, iconSizes } = useResponsive();
 
   // Scale animation using Reanimated (runs on UI thread)
   const scaleAnim = useSharedValue(1);
@@ -278,6 +279,20 @@ const ImageFactCardComponent = ({
           role="button"
         >
           <View style={[cardWrapperStyle, styles.imageContainer, styles.offlineCard]}>
+            <View style={StyleSheet.absoluteFill}>
+              <ImagePlaceholder
+                width={baseWidth}
+                height={cardHeight}
+                iconSize={cardHeight * 0.6}
+                categoryIcon={typeof category === 'object' ? category?.icon : undefined}
+                categoryColor={typeof category === 'object' ? category?.color_hex : undefined}
+              />
+            </View>
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            />
             {category && (
               <View style={{ marginBottom: spacing.sm }}>
                 <CategoryBadge category={category} />
@@ -315,38 +330,48 @@ const ImageFactCardComponent = ({
         <View style={cardWrapperStyle}>
           {/* Image Container */}
           <View style={[styles.imageContainer, imageContainerStyle]}>
-            {/* Image */}
-            <Image
-              source={imageSource}
-              aria-hidden={true}
-              style={imageStyle}
-              contentFit="cover"
-              cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
-              transition={0}
-              placeholder={placeholder}
-              onError={handleImageError}
-              onLoad={handleImageLoad}
-              recyclingKey={recyclingKey}
-              priority="high"
-            />
-
-            {/* Loading shimmer overlay */}
-            {showLoadingState && (
-              <Animated.View
-                style={[StyleSheet.absoluteFill, styles.shimmerOverlay, shimmerStyle]}
-                pointerEvents="none"
-              />
-            )}
-
-            {/* Error overlay with retry — shown when all retries exhausted */}
-            {isPermanentlyFailed && (
-              <TouchableOpacity
-                style={[StyleSheet.absoluteFill, styles.errorOverlay]}
-                onPress={handleRetryFromError}
-                activeOpacity={0.7}
-              >
-                <RefreshCw size={32} color="rgba(255, 255, 255, 0.6)" />
-              </TouchableOpacity>
+            {/* Image or placeholder */}
+            {imageSource ? (
+              <>
+                <Image
+                  source={imageSource}
+                  aria-hidden={true}
+                  style={imageStyle}
+                  contentFit="cover"
+                  cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
+                  transition={0}
+                  placeholder={placeholder}
+                  onError={handleImageError}
+                  onLoad={handleImageLoad}
+                  recyclingKey={recyclingKey}
+                  priority="high"
+                />
+                {showLoadingState && (
+                  <Animated.View
+                    style={[StyleSheet.absoluteFill, styles.shimmerOverlay, shimmerStyle]}
+                    pointerEvents="none"
+                  />
+                )}
+                {isPermanentlyFailed && (
+                  <TouchableOpacity
+                    style={[StyleSheet.absoluteFill, styles.errorOverlay]}
+                    onPress={handleRetryFromError}
+                    activeOpacity={0.7}
+                  >
+                    <RefreshCw size={32} color="rgba(255, 255, 255, 0.6)" />
+                  </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <View style={StyleSheet.absoluteFill}>
+                <ImagePlaceholder
+                  width={baseWidth}
+                  height={cardHeight}
+                  iconSize={cardHeight * 0.6}
+                  categoryIcon={typeof category === 'object' ? category?.icon : undefined}
+                  categoryColor={typeof category === 'object' ? category?.color_hex : undefined}
+                />
+              </View>
             )}
 
             {/* Dark gradient overlay for text legibility */}
@@ -375,7 +400,6 @@ const ImageFactCardComponent = ({
 
             {/* Content overlay */}
             <View style={[styles.contentOverlay, _contentOverlayStyle]}>
-              {/* Title */}
               <Title color="#FFFFFF" numberOfLines={config.maxLines} style={styles.titleShadow}>
                 {title}
               </Title>
@@ -409,7 +433,6 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     overflow: 'hidden',
-    backgroundColor: '#1a1a2e', // Dark base that matches the shimmer
   },
   shimmerOverlay: {
     backgroundColor: '#2d2d44', // Subtle shimmer color

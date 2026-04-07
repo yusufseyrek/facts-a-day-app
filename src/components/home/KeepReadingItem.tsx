@@ -6,6 +6,7 @@ import { Image } from 'expo-image';
 import { useResolvedImageUri } from '../../hooks/useResolvedImageUri';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { ImagePlaceholder } from '../ImagePlaceholder';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { FactWithRelations } from '../../services/database';
@@ -49,7 +50,7 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
         },
       ]}
     >
-      <View style={[styles.textContainer, { marginRight: spacing.lg }]}>
+      <View style={[styles.textContainer, { marginRight: spacing.md }]}>
         {categoryName && (
           <Text.Label
             color={fact.categoryData?.color_hex ?? '$textSecondary'}
@@ -58,24 +59,34 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
             {categoryName}
           </Text.Label>
         )}
-        <Text.Body color="$text" numberOfLines={4} fontFamily={FONT_FAMILIES.semibold}>
+        <Text.Body color="$text" numberOfLines={5} fontFamily={FONT_FAMILIES.semibold}>
           {fact.title}
         </Text.Body>
       </View>
-      <Image
-        source={resolvedUri ? { uri: resolvedUri } : undefined}
-        style={[
-          styles.image,
-          {
-            width: imageSize,
-            height: imageSize,
-            borderRadius: spacing.sm,
-            backgroundColor: colors.border,
-          },
-        ]}
-        contentFit="cover"
-        transition={200}
-      />
+      {resolvedUri ? (
+        <Image
+          source={{ uri: resolvedUri }}
+          style={[
+            styles.image,
+            {
+              width: imageSize,
+              height: imageSize,
+              borderRadius: spacing.sm,
+            },
+          ]}
+          contentFit="cover"
+          transition={200}
+        />
+      ) : (
+        <ImagePlaceholder
+          width={imageSize}
+          height={imageSize}
+          borderRadius={spacing.sm}
+          iconSize={imageSize * 0.4}
+          categoryIcon={fact.categoryData?.icon}
+          categoryColor={fact.categoryData?.color_hex}
+        />
+      )}
     </Pressable>
   );
 });

@@ -785,12 +785,48 @@ export function FactModal({
         removeClippedSubviews={Platform.OS === 'android'}
         stickyHeaderIndices={!hasImage ? [0] : undefined}
       >
+        {/* Sticky title for no-image layout (direct child at index 0 for stickyHeaderIndices) */}
+        {!hasImage && (
+          <Animated.View
+            style={{ opacity: contentFadeAnim }}
+            needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+          >
+            <View
+              style={{
+                backgroundColor:
+                  theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface,
+                paddingTop: spacing.xl,
+                paddingHorizontal: spacing.xl,
+                paddingBottom: spacing.md,
+                borderBottomWidth: categoryColor ? borderWidths.heavy : 0,
+                borderBottomColor: categoryColor || 'transparent',
+              }}
+            >
+              <View style={{ paddingRight: iconSizes.xl + spacing.xs }}>
+                <Text.Headline
+                  role="heading"
+                  onTextLayout={(e) => {
+                    const lines = e.nativeEvent.lines;
+                    const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
+                    if (totalHeight > 0 && totalHeight !== titleHeight) {
+                      setTitleHeight(totalHeight);
+                    }
+                  }}
+                >
+                  {factTitle}
+                </Text.Headline>
+              </View>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Main content: hero image (if any) + text content */}
         <Animated.View
           style={{ opacity: contentFadeAnim }}
           needsOffscreenAlphaCompositing={Platform.OS === 'android'}
         >
-          {/* First child: Hero Image (has-image) or Sticky Title (no-image) */}
-          {hasImage ? (
+          {/* Hero Image */}
+          {hasImage && (
             <Animated.View
               style={{
                 position: 'relative',
@@ -913,33 +949,6 @@ export function FactModal({
                 </TouchableOpacity>
               )}
             </Animated.View>
-          ) : (
-            <View
-              style={{
-                backgroundColor:
-                  theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface,
-                paddingTop: spacing.xl,
-                paddingHorizontal: spacing.xl,
-                paddingBottom: spacing.md,
-                borderBottomWidth: categoryColor ? borderWidths.heavy : 0,
-                borderBottomColor: categoryColor || 'transparent',
-              }}
-            >
-              <View style={{ paddingRight: iconSizes.xl + spacing.xs }}>
-                <Text.Headline
-                  role="heading"
-                  onTextLayout={(e) => {
-                    const lines = e.nativeEvent.lines;
-                    const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
-                    if (totalHeight > 0 && totalHeight !== titleHeight) {
-                      setTitleHeight(totalHeight);
-                    }
-                  }}
-                >
-                  {factTitle}
-                </Text.Headline>
-              </View>
-            </View>
           )}
 
           {/* Content Section */}
@@ -952,7 +961,6 @@ export function FactModal({
                   paddingRight: iconSizes.xl + spacing.xs,
                 }}
               >
-                {/* Front layer title */}
                 <Text.Headline
                   role="heading"
                   onTextLayout={(e) => {

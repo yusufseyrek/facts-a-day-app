@@ -11,6 +11,7 @@ import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
 import { CategoryBadge } from './CategoryBadge';
+import { ImagePlaceholder } from './ImagePlaceholder';
 import { FONT_FAMILIES, Text } from './Typography';
 
 import type { FactWithRelations } from '../services/database';
@@ -158,30 +159,42 @@ const CompactFactCardComponent = ({
               borderRadius: radius.md,
               width: thumbnailSize,
               height: thumbnailSize,
-              backgroundColor: colors.border,
             },
           ]}
         >
-          <Image
-            source={imageSource}
-            style={styles.thumbnailImage}
-            contentFit="cover"
-            cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
-            placeholder={placeholder}
-            transition={0}
-            priority="normal"
-            onError={handleImageError}
-            onLoad={handleImageLoad}
-            recyclingKey={recyclingKey}
-          />
-          {isPermanentlyFailed && (
-            <TouchableOpacity
-              style={[StyleSheet.absoluteFill, styles.errorOverlay]}
-              onPress={handleRetryFromError}
-              activeOpacity={0.7}
-            >
-              <RefreshCw size={18} color="rgba(255, 255, 255, 0.6)" />
-            </TouchableOpacity>
+          {imageSource ? (
+            <>
+              <Image
+                source={imageSource}
+                style={styles.thumbnailImage}
+                contentFit="cover"
+                cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
+                placeholder={placeholder}
+                transition={0}
+                priority="normal"
+                onError={handleImageError}
+                onLoad={handleImageLoad}
+                recyclingKey={recyclingKey}
+              />
+              {isPermanentlyFailed && (
+                <TouchableOpacity
+                  style={[StyleSheet.absoluteFill, styles.errorOverlay]}
+                  onPress={handleRetryFromError}
+                  activeOpacity={0.7}
+                >
+                  <RefreshCw size={18} color="rgba(255, 255, 255, 0.6)" />
+                </TouchableOpacity>
+              )}
+            </>
+          ) : (
+            <ImagePlaceholder
+              width={thumbnailSize}
+              height={thumbnailSize}
+              borderRadius={radius.md}
+              iconSize={thumbnailSize * 0.4}
+              categoryIcon={fact.categoryData?.icon}
+              categoryColor={fact.categoryData?.color_hex}
+            />
           )}
         </View>
 

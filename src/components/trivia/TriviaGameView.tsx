@@ -337,8 +337,8 @@ export function TriviaGameView({
                   justifyContent="center"
                   alignItems="center"
                 >
-                  {/* View Fact Button */}
-                  {currentQuestion.fact?.id && onOpenFact && (
+                  {/* View Fact Button — disabled, may re-enable later */}
+                  {/* {currentQuestion.fact?.id && onOpenFact && (
                     <Pressable
                       onPress={() => handlePressWithHaptics(onOpenFact)}
                       role="button"
@@ -366,7 +366,7 @@ export function TriviaGameView({
                         </RNText>
                       </XStack>
                     </Pressable>
-                  )}
+                  )} */}
 
                   {/* Show Explanation Button - Free hint available */}
                   {hasExplanation && onShowExplanation && !showExplanation && canUseExplanation && (
