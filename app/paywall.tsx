@@ -14,7 +14,7 @@ import {
   WifiOff,
   X,
 } from '@tamagui/lucide-icons';
-import { ErrorCode, type MutationRequestPurchaseArgs, useIAP } from 'expo-iap';
+import { ErrorCode, useIAP } from 'expo-iap';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';

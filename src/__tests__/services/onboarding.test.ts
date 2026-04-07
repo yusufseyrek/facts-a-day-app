@@ -140,8 +140,19 @@ describe('onboarding service', () => {
       },
     ];
 
+    /**
+     * Helper: mock fetchFactsIncrementally to invoke onBatchReady with the
+     * given facts (simulating a single-batch download).
+     */
+    function mockIncrementalFetch(facts: api.FactResponse[]) {
+      apiMock.fetchFactsIncrementally.mockImplementation(async (params: any) => {
+        await params.onBatchReady(facts, true);
+        return { total: facts.length };
+      });
+    }
+
     it('fetches facts and stores them in database', async () => {
-      apiMock.getAllFactsWithRetry.mockResolvedValue(mockApiFacts);
+      mockIncrementalFetch(mockApiFacts);
       dbMock.insertFacts.mockResolvedValue(undefined);
       dbMock.insertQuestions.mockResolvedValue(undefined);
 
@@ -149,13 +160,13 @@ describe('onboarding service', () => {
 
       expect(result.success).toBe(true);
       expect(result.count).toBe(2);
-      expect(apiMock.getAllFactsWithRetry).toHaveBeenCalledWith(
-        'en',
-        'science,history',
-        expect.any(Function),
-        3,
-        true,
-        true
+      expect(apiMock.fetchFactsIncrementally).toHaveBeenCalledWith(
+        expect.objectContaining({
+          language: 'en',
+          categories: 'science,history',
+          includeQuestions: true,
+          includeHistorical: true,
+        })
       );
       expect(dbMock.insertFacts).toHaveBeenCalledWith(
         expect.arrayContaining([
@@ -166,7 +177,7 @@ describe('onboarding service', () => {
     });
 
     it('maps is_historical boolean to integer for DB', async () => {
-      apiMock.getAllFactsWithRetry.mockResolvedValue(mockApiFacts);
+      mockIncrementalFetch(mockApiFacts);
       dbMock.insertFacts.mockResolvedValue(undefined);
       dbMock.insertQuestions.mockResolvedValue(undefined);
 
@@ -178,7 +189,7 @@ describe('onboarding service', () => {
     });
 
     it('maps metadata fields correctly', async () => {
-      apiMock.getAllFactsWithRetry.mockResolvedValue(mockApiFacts);
+      mockIncrementalFetch(mockApiFacts);
       dbMock.insertFacts.mockResolvedValue(undefined);
       dbMock.insertQuestions.mockResolvedValue(undefined);
 
@@ -196,7 +207,7 @@ describe('onboarding service', () => {
     });
 
     it('maps updated_at to last_updated', async () => {
-      apiMock.getAllFactsWithRetry.mockResolvedValue(mockApiFacts);
+      mockIncrementalFetch(mockApiFacts);
       dbMock.insertFacts.mockResolvedValue(undefined);
       dbMock.insertQuestions.mockResolvedValue(undefined);
 
@@ -208,13 +219,12 @@ describe('onboarding service', () => {
 
     it('reports progress via callback', async () => {
       const progressCb = jest.fn();
-      apiMock.getAllFactsWithRetry.mockImplementation(
-        async (_lang, _cats, onProgress) => {
-          onProgress?.(5, 10);
-          onProgress?.(10, 10);
-          return mockApiFacts;
-        }
-      );
+      apiMock.fetchFactsIncrementally.mockImplementation(async (params: any) => {
+        params.onProgress?.(5, 10);
+        params.onProgress?.(10, 10);
+        await params.onBatchReady(mockApiFacts, true);
+        return { total: 10 };
+      });
       dbMock.insertFacts.mockResolvedValue(undefined);
       dbMock.insertQuestions.mockResolvedValue(undefined);
 
@@ -225,7 +235,7 @@ describe('onboarding service', () => {
     });
 
     it('returns error on API failure', async () => {
-      apiMock.getAllFactsWithRetry.mockRejectedValue(new Error('timeout'));
+      apiMock.fetchFactsIncrementally.mockRejectedValue(new Error('timeout'));
 
       const result = await fetchAllFacts('en', ['science']);
 
@@ -238,7 +248,7 @@ describe('onboarding service', () => {
       const mockQuestions = [{ id: 1, fact_id: 1, question_text: 'What?' }];
       extractQuestions.mockReturnValue(mockQuestions);
 
-      apiMock.getAllFactsWithRetry.mockResolvedValue(mockApiFacts);
+      mockIncrementalFetch(mockApiFacts);
       dbMock.insertFacts.mockResolvedValue(undefined);
       dbMock.insertQuestions.mockResolvedValue(undefined);
 
