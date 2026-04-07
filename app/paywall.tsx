@@ -9,6 +9,7 @@ import {
   Crown,
   Lightbulb,
   Lock,
+  PartyPopper,
   Sparkles,
   WifiOff,
   X,
@@ -19,7 +20,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { Text } from '../src/components';
+import { SuccessToast, Text } from '../src/components';
 import { FONT_FAMILIES } from '../src/components/Typography';
 import { SUBSCRIPTION } from '../src/config/app';
 
@@ -28,7 +29,7 @@ import { usePremium } from '../src/contexts';
 import { useTranslation } from '../src/i18n';
 import { trackPaywallDismissed, trackPaywallViewed } from '../src/services/analytics';
 import { markPaywallShown } from '../src/services/paywallTiming';
-import { PAYWALL_GOLD, paywallThemeColors, useTheme } from '../src/theme';
+import { hexColors, PAYWALL_GOLD, paywallThemeColors, useTheme } from '../src/theme';
 import { openInAppBrowser } from '../src/utils/browser';
 import { useResponsive } from '../src/utils/useResponsive';
 
@@ -77,11 +78,13 @@ export default function PaywallScreen() {
     }
   }, [subscriptions, cachedPrices, selectedPlan]);
 
+  const [showPremiumToast, setShowPremiumToast] = useState(false);
+
   useEffect(() => {
     if (isPremium) {
-      router.back();
+      setShowPremiumToast(true);
     }
-  }, [isPremium, router]);
+  }, [isPremium]);
 
   const handleClose = () => {
     trackPaywallDismissed(source);
@@ -456,6 +459,15 @@ export default function PaywallScreen() {
   return (
     <View style={dynamicStyles.container}>
       <StatusBar style={tc.statusBar} />
+      <SuccessToast
+        visible={showPremiumToast}
+        message={t('premiumActivated')}
+        icon={<PartyPopper size={iconSizes.xl} color={hexColors[theme].success} />}
+        onHide={() => {
+          setShowPremiumToast(false);
+          router.back();
+        }}
+      />
 
       {/* Full-screen gradient background */}
       <LinearGradient colors={[...tc.bg]} style={StyleSheet.absoluteFill} />

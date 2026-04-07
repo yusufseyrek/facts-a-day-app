@@ -14,6 +14,8 @@ interface SuccessToastProps {
   /** Duration in milliseconds before auto-hide (default: 1500) */
   duration?: number;
   onHide?: () => void;
+  /** Custom icon to replace the default CheckCircle */
+  icon?: React.ReactNode;
 }
 
 export const SuccessToast: React.FC<SuccessToastProps> = ({
@@ -21,6 +23,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
   message,
   duration = 1500,
   onHide,
+  icon,
 }) => {
   const { theme } = useTheme();
   const { spacing, radius, iconSizes } = useResponsive();
@@ -137,7 +140,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
           ]}
         >
           <View style={[iconContainerStyle, { backgroundColor: `${successColor}20` }]}>
-            <CheckCircle size={iconSizes.xl} color={successColor} />
+            {icon || <CheckCircle size={iconSizes.xl} color={successColor} />}
           </View>
           <Text.Label textAlign="center" color={textColor}>
             {message}

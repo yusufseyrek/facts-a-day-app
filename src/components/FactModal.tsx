@@ -13,9 +13,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
-import { Calendar, ExternalLink, ImagePlus, RefreshCw, X } from '@tamagui/lucide-icons';
+import { Calendar, Crown, ExternalLink, ImagePlus, RefreshCw, X } from '@tamagui/lucide-icons';
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { XStack, YStack } from 'tamagui';
 
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
@@ -25,6 +27,7 @@ import { onFactViewed } from '../services/appReview';
 import { checkAndAwardBadges, popModalScreen, pushModalScreen } from '../services/badges';
 import {
   addFactDetailTimeSpent,
+  deleteFact,
   getRelatedFacts,
   markFactDetailOpened,
   markFactDetailRead,
@@ -36,6 +39,9 @@ import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { getTranslatedUrl } from '../utils/browser';
 import { useResponsive } from '../utils/useResponsive';
 
+import { usePremium } from '../contexts';
+import { getIsPremium } from '../services/premiumState';
+import { PAYWALL_GOLD } from '../theme/paywallColors';
 import { BannerAd } from './ads';
 import { CategoryBadge } from './CategoryBadge';
 import { FactActions } from './FactActions';
@@ -108,6 +114,7 @@ export function FactModal({
 }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
+  const { isPremium } = usePremium();
   const {
     typography,
     spacing,
@@ -422,7 +429,6 @@ export function FactModal({
   // Header background appears when image starts to be covered (for images) or early for no image
   const HEADER_BG_TRANSITION = hasImage ? IMAGE_HEIGHT - headerHeight : 100;
 
-
   // Fade animation for the entire scroll content (image + text) on navigation.
   // Hides everything first so scroll-to-top and image swap happen invisibly,
   // then fades in the new state. Uses JS-driven animation so setValue(0) takes
@@ -579,7 +585,6 @@ export function FactModal({
         extrapolate: 'clamp',
       })
     : 1;
-
 
   const factTitle = fact.title || fact.content.substring(0, 60) + '...';
 
@@ -1156,6 +1161,130 @@ export function FactModal({
         currentIndex={currentIndex}
         totalCount={totalCount}
       />
+
+      {/* Premium content gate — blurs everything for free users viewing premium facts */}
+      {!isPremium && !!fact.categoryData?.is_premium && (
+        <PremiumGateOverlay factId={fact.id} onClose={onClose} />
+      )}
+    </View>
+  );
+}
+
+function PremiumGateOverlay({ factId, onClose }: { factId: number; onClose: () => void }) {
+  const { theme } = useTheme();
+  const { t } = useTranslation();
+  const router = useRouter();
+  const { spacing, radius, iconSizes, media, maxModalWidth } = useResponsive();
+  const isDark = theme === 'dark';
+
+  // Delete the premium fact when the overlay unmounts (user closes without upgrading)
+  useEffect(() => {
+    return () => {
+      if (!getIsPremium()) {
+        deleteFact(factId).catch(() => {});
+      }
+    };
+  }, [factId]);
+
+  return (
+    <View style={StyleSheet.absoluteFill}>
+      {Platform.OS === 'ios' ? (
+        <BlurView intensity={50} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+      ) : (
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)' },
+          ]}
+        />
+      )}
+      <View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.2)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: spacing.xl,
+        }}
+      >
+        <View
+          style={{
+            alignItems: 'center',
+            gap: spacing.lg,
+            padding: spacing.xl,
+            borderRadius: radius.xl,
+            backgroundColor: isDark ? 'rgba(20,20,30,0.9)' : 'rgba(255,255,255,0.95)',
+            maxWidth: maxModalWidth * 0.9,
+            width: '100%',
+            ...Platform.select({
+              ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: spacing.sm },
+                shadowOpacity: 0.3,
+                shadowRadius: spacing.lg,
+              },
+              android: {
+                elevation: 12,
+              },
+            }),
+          }}
+        >
+          <Crown size={iconSizes.hero} color={PAYWALL_GOLD.primary} fill={PAYWALL_GOLD.primary} />
+          <Text.Title textAlign="center" color="$text">
+            {t('paywallFeaturePremiumCategories')}
+          </Text.Title>
+          <Text.Body textAlign="center" color="$textSecondary">
+            {t('paywallFeaturePremiumCategoriesDesc')}
+          </Text.Body>
+          <Pressable
+            onPress={() => router.push('/paywall')}
+            style={({ pressed }) => ({
+              alignSelf: 'center',
+              overflow: 'hidden',
+              borderRadius: radius.xl,
+              opacity: pressed ? 0.85 : 1,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
+              ...Platform.select({
+                ios: {
+                  shadowColor: PAYWALL_GOLD.primary,
+                  shadowOffset: { width: 0, height: spacing.xs },
+                  shadowOpacity: 0.4,
+                  shadowRadius: spacing.md,
+                },
+                android: {
+                  elevation: 8,
+                },
+              }),
+            })}
+          >
+            <LinearGradient
+              colors={[PAYWALL_GOLD.dark, PAYWALL_GOLD.primary, PAYWALL_GOLD.light]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{
+                // paddingVertical: spacing.md,
+                paddingHorizontal: spacing.xl,
+                alignItems: 'center',
+                height: media.buttonHeight * 0.9,
+                justifyContent: 'center',
+              }}
+            >
+              <Text.Label color="#000000" fontFamily={FONT_FAMILIES.semibold}>
+                {t('unlockPremium')}
+              </Text.Label>
+            </LinearGradient>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              onClose();
+            }}
+            hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: spacing.lg, right: spacing.lg }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.5 : 0.7 })}
+          >
+            <Text.Caption color="$textSecondary">{t('goBack')}</Text.Caption>
+          </Pressable>
+        </View>
+      </View>
     </View>
   );
 }

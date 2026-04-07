@@ -475,6 +475,11 @@ export async function deletePremiumCategories(): Promise<void> {
   await database.runAsync('DELETE FROM categories WHERE is_premium = 1');
 }
 
+export async function deleteFact(factId: number): Promise<void> {
+  const database = await openDatabase();
+  await database.runAsync('DELETE FROM facts WHERE id = ? AND id NOT IN (SELECT fact_id FROM favorites)', [factId]);
+}
+
 export async function deleteFactsByCategorySlugs(slugs: string[]): Promise<void> {
   if (slugs.length === 0) return;
   const database = await openDatabase();
@@ -552,6 +557,7 @@ function mapFactsWithRelations(rows: any[]): FactWithRelations[] {
         description: row.category_description,
         icon: row.category_icon,
         color_hex: row.category_color_hex,
+        is_premium: row.category_is_premium,
       };
     }
 
@@ -678,7 +684,8 @@ export async function getAllFacts(language?: string): Promise<FactWithRelations[
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     ORDER BY RANDOM()`
@@ -696,7 +703,8 @@ export async function getFactById(id: number): Promise<FactWithRelations | null>
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.id = ?`,
@@ -744,7 +752,8 @@ export async function getFactsByCategory(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.category = ?
@@ -769,7 +778,8 @@ export async function getRelatedFacts(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.category = ? AND f.language = ? AND f.id != ?
@@ -811,7 +821,8 @@ export async function getRandomFact(language?: string): Promise<FactWithRelation
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     ORDER BY RANDOM()
@@ -831,7 +842,8 @@ export async function getRandomFactNotInFeed(language: string): Promise<FactWith
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.language = ? AND f.shown_in_feed = 0
@@ -907,7 +919,8 @@ export async function getRandomUnscheduledFacts(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.scheduled_date IS NULL AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
@@ -939,7 +952,8 @@ export async function getRandomUnscheduledFactsWithFallback(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.language = ? AND f.scheduled_date IS NULL
@@ -984,7 +998,8 @@ export async function getUnscheduledHistoricalFactsForDates(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.language = ? AND f.is_historical = 1
@@ -1040,7 +1055,8 @@ export async function getAllUnscheduledHistoricalFactsForDates(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
@@ -1077,7 +1093,8 @@ export async function getRecentUnscheduledFacts(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
@@ -1122,7 +1139,8 @@ export async function getLatestFacts(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.language = ? AND (f.is_historical IS NULL OR f.is_historical = 0)
@@ -1153,7 +1171,8 @@ export async function getLatestFactsPaginated(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.language = ? AND (f.is_historical IS NULL OR f.is_historical = 0)
@@ -1183,7 +1202,8 @@ export async function getRandomWorthKnowingFacts(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.language = ? AND (f.is_historical IS NULL OR f.is_historical = 0)
@@ -1213,7 +1233,8 @@ export async function getOnThisDayFacts(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.language = ? AND f.is_historical = 1
@@ -1258,7 +1279,8 @@ export async function getThisWeekInHistoryFacts(
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.language = ? AND f.is_historical = 1
@@ -1955,7 +1977,8 @@ export async function getTodaysFacts(language: string): Promise<FactWithRelation
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE date(f.scheduled_date, 'localtime') = date('now', 'localtime')
@@ -2031,7 +2054,8 @@ export async function getFactsGroupedByDate(language?: string): Promise<FactWith
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE (
@@ -2092,7 +2116,8 @@ export async function searchFacts(query: string, language?: string): Promise<Fac
       c.slug as category_slug,
       c.description as category_description,
       c.icon as category_icon,
-      c.color_hex as category_color_hex
+      c.color_hex as category_color_hex,
+      c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
     WHERE (

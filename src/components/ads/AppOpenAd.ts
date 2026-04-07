@@ -6,6 +6,7 @@ import Constants from 'expo-constants';
 import { AD_KEYWORDS, APP_OPEN_ADS } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { trackAppOpenAdShown } from '../../services/analytics';
+import { isModalScreenActive } from '../../services/badges';
 import { shouldShowAds } from '../../services/premiumState';
 
 // Get App Open Ad Unit ID based on platform
@@ -233,6 +234,11 @@ export const showAppOpenAdForLocaleChange = async (): Promise<boolean> => {
  */
 export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
   if (!shouldShowAds()) {
+    return false;
+  }
+
+  // Don't show over modals (fact detail, paywall) — causes view controller conflicts
+  if (isModalScreenActive()) {
     return false;
   }
 
