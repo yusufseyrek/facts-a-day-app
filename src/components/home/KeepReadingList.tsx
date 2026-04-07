@@ -1,26 +1,49 @@
-import React, { useCallback, forwardRef, useMemo } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import React, { forwardRef, useCallback, useMemo } from 'react';
+import { ActivityIndicator, RefreshControl, View } from 'react-native';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-import { Image } from 'expo-image';
-
 import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { ADS_ENABLED, LAYOUT, NATIVE_ADS } from '../../config/app';
-import { useResolvedImageUri } from '../../hooks/useResolvedImageUri';
-import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { InlineNativeAd } from '../ads/InlineNativeAd';
-import { FONT_FAMILIES, Text } from '../Typography';
+
+import { KeepReadingItem } from './KeepReadingItem';
 
 import type { FactWithRelations } from '../../services/database';
 
 // ---------- Item types for mixed list ----------
+
 type KeepReadingRow =
   | { type: 'fact'; fact: FactWithRelations; index: number }
   | { type: 'ad'; key: string };
 
+function interleaveAds(facts: FactWithRelations[], isPremium: boolean): KeepReadingRow[] {
+  const rows: KeepReadingRow[] = [];
+  for (let i = 0; i < facts.length; i++) {
+    rows.push({ type: 'fact', fact: facts[i], index: i });
+    if (
+      ADS_ENABLED &&
+      !isPremium &&
+      (i + 1) % NATIVE_ADS.KEEP_READING_AD_INTERVAL === 0 &&
+      i < facts.length - 1
+    ) {
+      rows.push({ type: 'ad', key: `kr-ad-${i}` });
+    }
+  }
+  return rows;
+}
+
+// ---------- Centered wrapper ----------
+
+const centeredStyle = {
+  maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
+  width: '100%' as const,
+  alignSelf: 'center' as const,
+};
+
 // ---------- Props ----------
+
 interface KeepReadingListProps {
   facts: FactWithRelations[];
   onFactPress: (fact: FactWithRelations, index: number) => void;
@@ -33,77 +56,8 @@ interface KeepReadingListProps {
   ListHeaderComponent: React.ReactElement;
 }
 
-// ---------- Item component ----------
-const IMAGE_SCALE = 1.25;
-
-interface KeepReadingItemProps {
-  fact: FactWithRelations;
-  onPress: () => void;
-  isOdd: boolean;
-}
-
-const KeepReadingItem = React.memo(({ fact, onPress, isOdd }: KeepReadingItemProps) => {
-  const { theme } = useTheme();
-  const { spacing, media } = useResponsive();
-  const colors = hexColors[theme];
-  const resolvedUri = useResolvedImageUri(fact.id, fact.image_url);
-
-  const imageSize = Math.round(media.compactCardThumbnailSize * IMAGE_SCALE);
-  const categoryName = fact.categoryData?.name;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.item,
-        {
-          padding: spacing.xl,
-          backgroundColor: isOdd ? `${colors.cardBackground}70` : 'transparent',
-          opacity: pressed ? 0.7 : 1,
-        },
-      ]}
-    >
-      <View style={[styles.textContainer, { marginRight: spacing.lg }]}>
-        {categoryName && (
-          <Text.Label
-            color={fact.categoryData?.color_hex ?? '$textSecondary'}
-            marginBottom={spacing.xs}
-          >
-            {categoryName}
-          </Text.Label>
-        )}
-        <Text.Body color="$text" numberOfLines={4} fontFamily={FONT_FAMILIES.semibold}>
-          {fact.title}
-        </Text.Body>
-      </View>
-      <Image
-        source={resolvedUri ? { uri: resolvedUri } : undefined}
-        style={[
-          styles.image,
-          {
-            width: imageSize,
-            height: imageSize,
-            borderRadius: spacing.sm,
-            backgroundColor: colors.border,
-          },
-        ]}
-        contentFit="cover"
-        transition={200}
-      />
-    </Pressable>
-  );
-});
-
-KeepReadingItem.displayName = 'KeepReadingItem';
-
-// ---------- Centering wrapper applied once in renderItem ----------
-const centeredStyle = {
-  maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
-  width: '100%' as const,
-  alignSelf: 'center' as const,
-};
-
 // ---------- Main list ----------
+
 export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepReadingListProps>(
   function KeepReadingList(
     {
@@ -121,33 +75,20 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
   ) {
     const { spacing } = useResponsive();
 
-    const items = useMemo(() => {
-      const result: KeepReadingRow[] = [];
-      facts.forEach((fact, i) => {
-        result.push({ type: 'fact', fact, index: i });
-        if (
-          ADS_ENABLED &&
-          !isPremium &&
-          (i + 1) % NATIVE_ADS.KEEP_READING_AD_INTERVAL === 0 &&
-          i < facts.length - 1
-        ) {
-          result.push({ type: 'ad', key: `kr-ad-${i}` });
-        }
-      });
-      return result;
-    }, [facts, isPremium]);
+    const items = useMemo(() => interleaveAds(facts, isPremium), [facts, isPremium]);
 
     const renderItem = useCallback(
       ({ item }: { item: KeepReadingRow }) => {
         const content =
           item.type === 'ad' ? (
-            <View style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.md }}>
+            <View style={{ padding: spacing.md }}>
               <InlineNativeAd aspectRatio={NativeMediaAspectRatio.LANDSCAPE} />
             </View>
           ) : (
             <KeepReadingItem
               fact={item.fact}
-              onPress={() => onFactPress(item.fact, item.index)}
+              index={item.index}
+              onPress={onFactPress}
               isOdd={item.index % 2 === 0}
             />
           );
@@ -158,8 +99,7 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
     );
 
     const keyExtractor = useCallback((item: KeepReadingRow) => {
-      if (item.type === 'ad') return item.key;
-      return `kr-${item.fact.id}`;
+      return item.type === 'ad' ? item.key : `kr-${item.fact.id}`;
     }, []);
 
     const getItemType = useCallback((item: KeepReadingRow) => item.type, []);
@@ -205,16 +145,3 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
     );
   }
 );
-
-const styles = StyleSheet.create({
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  textContainer: {
-    flex: 1,
-  },
-  image: {
-    overflow: 'hidden',
-  },
-});

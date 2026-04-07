@@ -12,8 +12,15 @@ import { getApp } from '@react-native-firebase/app';
 import getAppCheck, {
   getToken as getAppCheckTokenFn,
   initializeAppCheck,
-  ReactNativeFirebaseAppCheckProvider,
 } from '@react-native-firebase/app-check';
+
+// @react-native-firebase/app-check v24 exports ReactNativeFirebaseAppCheckProvider
+// as type-only from its barrel, but the runtime class exists in the module.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { ReactNativeFirebaseAppCheckProvider } = require('@react-native-firebase/app-check') as {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ReactNativeFirebaseAppCheckProvider: any;
+};
 import {
   crash,
   getCrashlytics,

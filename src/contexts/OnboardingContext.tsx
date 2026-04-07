@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useRef, useState } from 
 
 import { emitFeedRefresh, markFeedRefreshPending } from '../services/contentRefresh';
 import * as onboardingService from '../services/onboarding';
+import { getIsPremium } from '../services/premiumState';
 
 import type { SupportedLocale } from '../i18n';
 
@@ -142,7 +143,7 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
     setLastLocaleUsed(locale);
 
     try {
-      const result = await onboardingService.initializeOnboarding(locale);
+      const result = await onboardingService.initializeOnboarding(locale, getIsPremium());
 
       if (result.success) {
         setState((prev) => ({

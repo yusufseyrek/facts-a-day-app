@@ -13,12 +13,16 @@ import { preloadAppOpenAd } from '../components/ads/AppOpenAd';
 import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
 import { SUBSCRIPTION } from '../config/app';
 import { setAnalyticsUserProperty } from '../config/firebase';
+import * as api from '../services/api';
 import {
   trackSubscriptionPurchased,
   trackSubscriptionRestored,
   trackSubscriptionStatusChanged,
 } from '../services/analytics';
+import { getStoredLocale, emitFeedRefresh } from '../services/contentRefresh';
+import * as db from '../services/database';
 import { getIsConnected } from '../services/network';
+import { handlePremiumDowngrade } from '../services/premiumDowngrade';
 import {
   getIsPremium as getPremiumState,
   setIsPremium as setPremiumState,
@@ -129,10 +133,28 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
     if (lastKnownStatusRef.current !== null && lastKnownStatusRef.current !== status) {
       trackSubscriptionStatusChanged(status);
 
-      // When user loses premium, preload ads so they're ready immediately
+      // When user loses premium, preload ads and clean up premium categories
       if (!status && shouldShowAds()) {
         preloadInterstitialAd();
         preloadAppOpenAd().catch(console.error);
+      }
+      if (!status) {
+        // Downgrade: remove premium categories and data
+        getStoredLocale().then((locale) => {
+          handlePremiumDowngrade(locale || 'en').catch(console.error);
+        });
+      }
+      if (status) {
+        // Upgrade: fetch premium categories so they're immediately available
+        getStoredLocale().then(async (locale) => {
+          try {
+            const metadata = await api.getMetadata(locale || 'en', true);
+            await db.insertCategories(metadata.categories);
+            emitFeedRefresh();
+          } catch (e) {
+            console.error('Failed to fetch premium categories on upgrade:', e);
+          }
+        });
       }
     }
     lastKnownStatusRef.current = status;

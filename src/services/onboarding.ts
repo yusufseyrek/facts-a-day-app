@@ -49,11 +49,11 @@ export interface InitializationResult {
 /**
  * Initialize onboarding: fetch metadata from API
  */
-export async function initializeOnboarding(deviceLanguage: string): Promise<InitializationResult> {
+export async function initializeOnboarding(deviceLanguage: string, includePremium?: boolean): Promise<InitializationResult> {
   try {
     // Fetch metadata with device language for translations
     if (__DEV__) console.log('Fetching metadata...');
-    const metadata = await api.getMetadata(deviceLanguage);
+    const metadata = await api.getMetadata(deviceLanguage, includePremium);
 
     // Store metadata in database
     if (__DEV__) console.log('Storing metadata in database...');

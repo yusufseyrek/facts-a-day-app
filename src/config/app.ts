@@ -14,7 +14,7 @@ export const DEV_SETTINGS_ENABLED = true;
 /**
  * Ads configuration
  */
-export const ADS_ENABLED = false;
+export const ADS_ENABLED = true;
 
 /**
  * App Check settings for Firebase App Check initialization

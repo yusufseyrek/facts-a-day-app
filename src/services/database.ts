@@ -93,7 +93,8 @@ async function initializeSchema(): Promise<void> {
       slug TEXT UNIQUE NOT NULL,
       description TEXT,
       icon TEXT,
-      color_hex TEXT
+      color_hex TEXT,
+      is_premium INTEGER DEFAULT 0
     );
   `);
 
@@ -338,6 +339,9 @@ async function initializeSchema(): Promise<void> {
   await db.execAsync('ALTER TABLE facts ADD COLUMN event_year INTEGER').catch(() => {});
   await db.execAsync('ALTER TABLE facts ADD COLUMN metadata TEXT').catch(() => {});
 
+  // Premium categories migration
+  await db.execAsync('ALTER TABLE categories ADD COLUMN is_premium INTEGER DEFAULT 0').catch(() => {});
+
   // Create composite index for "on this day" historical fact queries
   // Must be after migrations so columns exist for existing databases
   await db.execAsync(`
@@ -421,6 +425,7 @@ export interface Category {
   description?: string;
   icon?: string;
   color_hex?: string;
+  is_premium?: number | boolean;
 }
 
 export async function insertCategories(categories: Category[]): Promise<void> {
@@ -428,8 +433,8 @@ export async function insertCategories(categories: Category[]): Promise<void> {
 
   for (const category of categories) {
     await database.runAsync(
-      `INSERT OR REPLACE INTO categories (id, name, slug, description, icon, color_hex)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT OR REPLACE INTO categories (id, name, slug, description, icon, color_hex, is_premium)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         category.id,
         category.name,
@@ -437,6 +442,7 @@ export async function insertCategories(categories: Category[]): Promise<void> {
         category.description || null,
         category.icon || null,
         category.color_hex || null,
+        category.is_premium ?? 0,
       ]
     );
   }
@@ -454,6 +460,29 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
     slug,
   ]);
   return result;
+}
+
+export async function getPremiumCategorySlugs(): Promise<string[]> {
+  const database = await openDatabase();
+  const rows = await database.getAllAsync<{ slug: string }>(
+    'SELECT slug FROM categories WHERE is_premium = 1'
+  );
+  return rows.map((r) => r.slug);
+}
+
+export async function deletePremiumCategories(): Promise<void> {
+  const database = await openDatabase();
+  await database.runAsync('DELETE FROM categories WHERE is_premium = 1');
+}
+
+export async function deleteFactsByCategorySlugs(slugs: string[]): Promise<void> {
+  if (slugs.length === 0) return;
+  const database = await openDatabase();
+  const placeholders = slugs.map(() => '?').join(',');
+  await database.runAsync(
+    `DELETE FROM facts WHERE category IN (${placeholders}) AND id NOT IN (SELECT fact_id FROM favorites)`,
+    slugs
+  );
 }
 
 // ====== FACTS ======

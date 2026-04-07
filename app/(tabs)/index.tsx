@@ -1,41 +1,37 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, NativeScrollEvent, NativeSyntheticEvent, View } from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeOut,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
-import { FlashList, FlashListRef } from '@shopify/flash-list';
-import { BookOpen, CalendarDays, Crown, Lightbulb, Newspaper } from '@tamagui/lucide-icons';
+import { FlashListRef } from '@shopify/flash-list';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
+import { YStack } from 'tamagui';
 
 import {
   EmptyState,
   LoadingContainer,
   ScreenContainer,
-  ScreenHeader,
-  Text,
 } from '../../src/components';
-import { InlineNativeAd } from '../../src/components/ads/InlineNativeAd';
-import { ReadingStreakIndicator } from '../../src/components/badges/ReadingStreakIndicator';
 import {
-  CategoryStoryButtons,
   CategoryStoryButtonsRef,
 } from '../../src/components/CategoryStoryButtons';
+import {
+  HomeHeader,
+  HomeListHeader,
+  LocaleChangeOverlay,
+  PreCacheProgressBar,
+} from '../../src/components/home';
 import { KeepReadingList } from '../../src/components/home/KeepReadingList';
-import { ImageFactCard } from '../../src/components/ImageFactCard';
-import { CompactFactCard } from '../../src/components/CompactFactCard';
-import { ADS_ENABLED, LAYOUT, PAYWALL_PROMPT } from '../../src/config/app';
+import { PAYWALL_PROMPT } from '../../src/config/app';
+import { queryClient } from '../../src/config/queryClient';
 import { usePremium, useScrollToTopHandler } from '../../src/contexts';
+import { homeKeys } from '../../src/hooks/queryKeys';
+import { useHomeFeed } from '../../src/hooks/useHomeFeed';
+import { useHomeFeedEvents } from '../../src/hooks/useHomeFeedEvents';
+import { useKeepReading } from '../../src/hooks/useKeepReading';
+import { useReadingStreak } from '../../src/hooks/useReadingStreak';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
-  trackCarouselSwipe,
   trackFeedRefresh,
   trackScreenView,
 } from '../../src/services/analytics';
@@ -45,52 +41,25 @@ import { loadDailyFeedSections } from '../../src/services/dailyFeed';
 import { preCacheOfflineImages } from '../../src/services/images';
 import { shouldShowPaywall } from '../../src/services/paywallTiming';
 import { hexColors, useTheme } from '../../src/theme';
-import { useResponsive } from '../../src/utils/useResponsive';
-import { useHomeFeed } from '../../src/hooks/useHomeFeed';
-import { useKeepReading } from '../../src/hooks/useKeepReading';
-import { useReadingStreak } from '../../src/hooks/useReadingStreak';
-import { useHomeFeedEvents } from '../../src/hooks/useHomeFeedEvents';
-import { homeKeys } from '../../src/hooks/queryKeys';
-import { queryClient } from '../../src/config/queryClient';
 
 import type { FactViewSource } from '../../src/services/analytics';
 import type { FactWithRelations } from '../../src/services/database';
-import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 function HomeScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { isPremium } = usePremium();
-  const { spacing, typography, config, screenWidth, iconSizes } = useResponsive();
 
   // Data hooks
   const { latestFacts, latestFactIds, onThisDayFacts, onThisDayIsWeekFallback, isLoading } =
     useHomeFeed(locale);
-  const {
-    facts: keepReadingFacts,
-    fetchNextPage,
-    isFetchingNextPage,
-  } = useKeepReading(locale);
+  const { facts: keepReadingFacts, fetchNextPage, isFetchingNextPage } = useKeepReading(locale);
   const { streak } = useReadingStreak();
 
-  // Remaining local state
+  // Local state
   const [refreshing, setRefreshing] = useState(false);
   const [preCacheProgress, setPreCacheProgress] = useState<number | null>(null);
-
-  const preCacheWidth = useSharedValue(0);
-
-  useEffect(() => {
-    if (preCacheProgress !== null) {
-      preCacheWidth.value = withTiming(preCacheProgress * 100, { duration: 300 });
-    } else {
-      preCacheWidth.value = 0;
-    }
-  }, [preCacheProgress]);
-
-  const preCacheBarStyle = useAnimatedStyle(() => ({
-    width: `${preCacheWidth.value}%` as any,
-  }));
 
   // Refs
   const preCacheDateRef = useRef<string | null>(null);
@@ -99,7 +68,6 @@ function HomeScreen() {
   const latestListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const onThisDayListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const storyButtonsRef = useRef<CategoryStoryButtonsRef>(null);
-  const scrollYRef = useRef(0);
 
   const { backgroundRefreshStatus } = useHomeFeedEvents(
     locale,
@@ -107,7 +75,7 @@ function HomeScreen() {
     setPreCacheProgress
   );
 
-  // Register scroll-to-top handler
+  // Scroll-to-top handler for tab re-tap
   useScrollToTopHandler(
     'index',
     useCallback(() => {
@@ -116,10 +84,10 @@ function HomeScreen() {
     }, [])
   );
 
+  // Focus effect: pending feed refresh, image pre-cache, paywall check
   useFocusEffect(
     useCallback(() => {
-      const forceRefresh = consumeFeedRefreshPending();
-      if (forceRefresh) {
+      if (consumeFeedRefreshPending()) {
         loadDailyFeedSections(locale, true).then((sections) => {
           queryClient.setQueryData(homeKeys.dailyFeed(locale), sections);
         });
@@ -133,7 +101,6 @@ function HomeScreen() {
             .then(() => setTimeout(() => setPreCacheProgress(null), 1000))
             .catch(() => setPreCacheProgress(null));
         }
-
         trackScreenView(Screens.HOME);
       });
 
@@ -142,8 +109,7 @@ function HomeScreen() {
         timer = setTimeout(async () => {
           try {
             if (isModalScreenActive()) return;
-            const should = await shouldShowPaywall();
-            if (should) {
+            if (await shouldShowPaywall()) {
               paywallCheckRef.current = true;
               router.push('/paywall?source=auto');
             }
@@ -160,6 +126,7 @@ function HomeScreen() {
     }, [locale, isPremium])
   );
 
+  // Fact press handler
   const handleFactPress = useCallback(
     (
       fact: FactWithRelations,
@@ -178,6 +145,7 @@ function HomeScreen() {
     [router]
   );
 
+  // Pull-to-refresh
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     trackFeedRefresh('pull');
@@ -192,7 +160,6 @@ function HomeScreen() {
     } catch {
       // Ignore
     }
-    // Invalidate Keep Reading and streak so they refetch from DB
     queryClient.invalidateQueries({ queryKey: homeKeys.keepReading(locale) });
     queryClient.invalidateQueries({ queryKey: homeKeys.readingStreak() });
     setRefreshing(false);
@@ -207,111 +174,9 @@ function HomeScreen() {
     [handleFactPress, keepReadingIds]
   );
 
-  const handleScroll = useCallback((y: number) => {
-    scrollYRef.current = y;
+  const handleScroll = useCallback((_y: number) => {
+    // Reserved for future scroll-dependent behavior (e.g. header collapse)
   }, []);
-
-  const colors = hexColors[theme];
-
-  // Layout calculations
-  const contentWidth = Math.min(screenWidth, LAYOUT.MAX_CONTENT_WIDTH);
-  const listInset = (screenWidth - contentWidth) / 2 + spacing.md;
-  const isWideScreen = screenWidth > LAYOUT.MAX_CONTENT_WIDTH;
-  const carouselCardWidth = isWideScreen
-    ? contentWidth - spacing.lg * 2
-    : contentWidth * config.cardWidthMultiplier;
-  const carouselCardGap = spacing.sm;
-  const carouselSnapInterval = carouselCardWidth + carouselCardGap;
-
-  // Memoized styles
-  const flashListContentStyle = useMemo(() => ({ paddingHorizontal: listInset }), [listInset]);
-  const carouselItemStyle = useMemo(
-    () => ({ width: carouselCardWidth, paddingBottom: spacing.md }),
-    [carouselCardWidth, spacing.md]
-  );
-  const compactItemStyle = useMemo(() => ({ paddingBottom: spacing.md }), [spacing.md]);
-  const separatorStyle = useMemo(() => ({ width: carouselCardGap }), [carouselCardGap]);
-
-  // Latest section
-  const latestCardHeight = carouselCardWidth;
-
-  const latestActiveIndexRef = useRef(0);
-  const handleLatestScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const offsetX = event.nativeEvent.contentOffset.x;
-      const index = Math.round(offsetX / carouselSnapInterval);
-      if (index !== latestActiveIndexRef.current) {
-        latestActiveIndexRef.current = index;
-        trackCarouselSwipe({
-          section: 'latest',
-          index,
-          factId: latestFacts[index]?.id,
-        });
-      }
-    },
-    [carouselSnapInterval, latestFacts]
-  );
-
-  const renderLatestItem = useCallback(
-    ({ item }: { item: FactWithRelations }) => {
-      const factIndex = latestFactIds.indexOf(item.id);
-      return (
-        <View style={carouselItemStyle}>
-          <ImageFactCard
-            title={item.title || item.content.substring(0, 80) + '...'}
-            imageUrl={item.image_url!}
-            factId={item.id}
-            category={item.categoryData || item.category}
-            categorySlug={item.categoryData?.slug || item.category}
-            onPress={() => handleFactPress(item, 'home_latest', latestFactIds, factIndex)}
-            cardWidth={carouselCardWidth}
-            aspectRatio={1}
-          />
-        </View>
-      );
-    },
-    [carouselCardWidth, handleFactPress, latestFactIds, spacing.md]
-  );
-
-  const latestKeyExtractor = useCallback((item: FactWithRelations) => `lt-${item.id}`, []);
-
-  // On This Day section
-  const onThisDayIds = useMemo(() => onThisDayFacts.map((f) => f.id), [onThisDayFacts]);
-
-  const onThisDayActiveIndexRef = useRef(0);
-  const handleOnThisDayScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const offsetX = event.nativeEvent.contentOffset.x;
-      const index = Math.round(offsetX / carouselSnapInterval);
-      if (index !== onThisDayActiveIndexRef.current) {
-        onThisDayActiveIndexRef.current = index;
-        trackCarouselSwipe({
-          section: 'on_this_day',
-          index,
-          factId: onThisDayFacts[index]?.id,
-        });
-      }
-    },
-    [carouselSnapInterval, onThisDayFacts]
-  );
-
-  const renderOnThisDayItem = useCallback(
-    ({ item, index }: { item: FactWithRelations; index: number }) => (
-      <View style={compactItemStyle}>
-        <CompactFactCard
-          fact={item}
-          cardWidth={carouselCardWidth}
-          titleLines={3}
-          onPress={() => handleFactPress(item, 'home_on_this_day', onThisDayIds, index)}
-        />
-      </View>
-    ),
-    [carouselCardWidth, handleFactPress, onThisDayIds, spacing.md]
-  );
-
-  const onThisDayKeyExtractor = useCallback((item: FactWithRelations) => `otd-${item.id}`, []);
-
-  const carouselSeparator = useCallback(() => <View style={separatorStyle} />, [separatorStyle]);
 
   // Loading state
   if (isLoading && latestFacts.length === 0) {
@@ -325,130 +190,22 @@ function HomeScreen() {
     );
   }
 
-  const hasLatestFacts = latestFacts.length > 0;
-  const hasOnThisDayFacts = onThisDayFacts.length > 0;
-  const hasAnyContent = hasLatestFacts || hasOnThisDayFacts;
+  const hasAnyContent = latestFacts.length > 0 || onThisDayFacts.length > 0;
 
-  // All upper sections rendered as the FlashList header
+  // Compose list header from extracted components
   const listHeader = (
-    <>
-      {/* Category Story Buttons */}
-      <YStack paddingBottom={spacing.lg}>
-        <CategoryStoryButtons ref={storyButtonsRef} />
-      </YStack>
-      {/* Latest Section (1:1 square carousel) */}
-      {hasLatestFacts && (
-        <>
-          <XStack
-            width="100%"
-            maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
-            alignSelf="center"
-            paddingHorizontal={spacing.lg}
-            paddingBottom={spacing.sm}
-            alignItems="center"
-            gap={spacing.sm}
-          >
-            <Newspaper size={iconSizes.sm} color={colors.primary} />
-            <Text.Title fontSize={typography.fontSize.body}>{t('latest')}</Text.Title>
-          </XStack>
-
-          <View
-            style={{
-              height: latestCardHeight + spacing.xxl,
-              width: '100%',
-            }}
-          >
-            <FlashList
-              ref={latestListRef}
-              data={latestFacts}
-              renderItem={renderLatestItem}
-              keyExtractor={latestKeyExtractor}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              overScrollMode="never"
-              snapToInterval={carouselSnapInterval}
-              decelerationRate="fast"
-              disableIntervalMomentum
-              ItemSeparatorComponent={carouselSeparator}
-              contentContainerStyle={flashListContentStyle}
-              drawDistance={carouselCardWidth}
-              onScroll={handleLatestScroll}
-              scrollEventThrottle={16}
-            />
-          </View>
-        </>
-      )}
-
-      {/* On This Day Section (thumbnail cards) */}
-      {hasOnThisDayFacts && (
-        <>
-          <XStack
-            width="100%"
-            maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
-            alignSelf="center"
-            paddingHorizontal={spacing.lg}
-            paddingBottom={spacing.sm}
-            alignItems="center"
-            gap={spacing.sm}
-          >
-            <CalendarDays size={iconSizes.sm} color={colors.primary} />
-            <Text.Title fontSize={typography.fontSize.body}>
-              {onThisDayIsWeekFallback ? t('thisWeekInHistory') : t('onThisDay')}
-            </Text.Title>
-          </XStack>
-
-          <View style={{ width: '100%' }}>
-            <FlashList
-              ref={onThisDayListRef}
-              data={onThisDayFacts}
-              renderItem={renderOnThisDayItem}
-              keyExtractor={onThisDayKeyExtractor}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              overScrollMode="never"
-              snapToInterval={carouselSnapInterval}
-              decelerationRate="fast"
-              disableIntervalMomentum
-              ItemSeparatorComponent={carouselSeparator}
-              contentContainerStyle={flashListContentStyle}
-              drawDistance={carouselCardWidth}
-              onScroll={handleOnThisDayScroll}
-              scrollEventThrottle={16}
-            />
-          </View>
-        </>
-      )}
-
-      {/* Inline ad between sections */}
-      {ADS_ENABLED && !isPremium && (
-        <YStack
-          width="100%"
-          maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
-          alignSelf="center"
-          paddingHorizontal={spacing.md}
-          paddingBottom={spacing.xl}
-        >
-          <InlineNativeAd aspectRatio={NativeMediaAspectRatio.LANDSCAPE} />
-        </YStack>
-      )}
-
-      {/* Keep Reading section header */}
-      {keepReadingFacts.length > 0 && (
-        <XStack
-          width="100%"
-          maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
-          alignSelf="center"
-          paddingHorizontal={spacing.lg}
-          paddingTop={spacing.md}
-          paddingBottom={spacing.sm}
-          alignItems="center"
-          gap={spacing.sm}
-        >
-          <BookOpen size={iconSizes.sm} color={colors.primary} />
-          <Text.Title fontSize={typography.fontSize.body}>{t('keepReading')}</Text.Title>
-        </XStack>
-      )}
-    </>
+    <HomeListHeader
+      latestFacts={latestFacts}
+      latestFactIds={latestFactIds}
+      onThisDayFacts={onThisDayFacts}
+      onThisDayIsWeekFallback={onThisDayIsWeekFallback}
+      keepReadingCount={keepReadingFacts.length}
+      isPremium={isPremium}
+      onFactPress={handleFactPress}
+      storyButtonsRef={storyButtonsRef}
+      latestListRef={latestListRef}
+      onThisDayListRef={onThisDayListRef}
+    />
   );
 
   return (
@@ -458,40 +215,14 @@ function HomeScreen() {
       <YStack flex={1}>
         {isLoading ? (
           <LoadingContainer>
-            <ActivityIndicator size="large" color={colors.primary} />
+            <ActivityIndicator size="large" color={hexColors[theme].primary} />
           </LoadingContainer>
         ) : !hasAnyContent ? (
           <EmptyState title={t('emptyStateTitle')} description={t('emptyStateDescription')} />
         ) : (
           <>
-            {/* Title - fixed above scroll */}
-            <Animated.View entering={FadeIn.duration(300)}>
-              <ScreenHeader
-                icon={
-                  <View style={{ position: 'relative', width: iconSizes.lg, height: iconSizes.lg }}>
-                    <Lightbulb position="absolute" size={iconSizes.lg} color={colors.primary} />
-                    {isPremium && (
-                      <Crown
-                        position="absolute"
-                        size={iconSizes.xs}
-                        color="#DAA520"
-                        fill="#DAA520"
-                        top={-iconSizes.sm / 2}
-                        left={iconSizes.sm / 2}
-                        transform={[{ rotate: '16deg' }]}
-                      />
-                    )}
-                  </View>
-                }
-                title={t('appName')}
-                paddingBottom={spacing.sm}
-                rightElement={
-                  <ReadingStreakIndicator streak={streak} onPress={() => router.push('/badges')} />
-                }
-              />
-            </Animated.View>
+            <HomeHeader isPremium={isPremium} streak={streak} />
 
-            {/* Single vertical FlashList — upper sections in header, keep reading items recycled */}
             <View style={{ flex: 1 }}>
               <KeepReadingList
                 ref={keepReadingListRef}
@@ -509,45 +240,8 @@ function HomeScreen() {
           </>
         )}
 
-        {backgroundRefreshStatus === 'locale-change' && (
-          <YStack
-            position="absolute"
-            top={0}
-            left={0}
-            right={0}
-            bottom={0}
-            justifyContent="center"
-            alignItems="center"
-            backgroundColor="$background"
-            zIndex={100}
-            gap={spacing.lg}
-          >
-            <ActivityIndicator size="large" color={hexColors[theme].primary} />
-            <Text.Body color="$textSecondary">{t('updatingLanguage')}</Text.Body>
-          </YStack>
-        )}
-
-        {/* Image pre-cache progress bar */}
-        {preCacheProgress !== null && (
-          <Animated.View
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(400)}
-            style={{
-              height: 2,
-              backgroundColor: colors.border,
-            }}
-          >
-            <Animated.View
-              style={[
-                {
-                  height: 2,
-                  backgroundColor: colors.primary,
-                },
-                preCacheBarStyle,
-              ]}
-            />
-          </Animated.View>
-        )}
+        <LocaleChangeOverlay status={backgroundRefreshStatus} />
+        <PreCacheProgressBar progress={preCacheProgress} />
       </YStack>
     </ScreenContainer>
   );

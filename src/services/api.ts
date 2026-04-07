@@ -35,6 +35,7 @@ export interface Category {
   description: string;
   icon: string;
   color_hex: string;
+  is_premium: boolean;
 }
 
 export interface Language {
@@ -294,8 +295,12 @@ export const __testing = { fetchWithTimeout, retryWithBackoff };
  * Get metadata (categories, languages, content types)
  * Optionally specify language to get translated metadata
  */
-export async function getMetadata(language?: string): Promise<MetadataResponse> {
-  const endpoint = language ? `/api/metadata?language=${language}` : '/api/metadata';
+export async function getMetadata(language?: string, includePremium?: boolean): Promise<MetadataResponse> {
+  const params = new URLSearchParams();
+  if (language) params.append('language', language);
+  if (includePremium) params.append('includePremium', '1');
+  const query = params.toString();
+  const endpoint = query ? `/api/metadata?${query}` : '/api/metadata';
   return makeRequest<MetadataResponse>(endpoint);
 }
 
