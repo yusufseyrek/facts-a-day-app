@@ -27,6 +27,8 @@ interface StoryNativeAdCardProps {
   onAdFailed?: () => void;
   onAdLoaded?: () => void;
   nativeAd?: NativeAd;
+  /** Unique key to trigger a new ad request (handles FlashList view recycling). */
+  requestKey?: string;
 }
 
 const gradientColors = ['transparent', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)'] as const;
@@ -38,6 +40,7 @@ function StoryNativeAdCardComponent({
   onAdFailed,
   onAdLoaded,
   nativeAd: nativeAdProp,
+  requestKey,
 }: StoryNativeAdCardProps) {
   const isPortrait = screenHeight > screenWidth;
   const {
@@ -47,6 +50,7 @@ function StoryNativeAdCardComponent({
   } = useNativeAd({
     skip: !!nativeAdProp,
     aspectRatio: isPortrait ? NativeMediaAspectRatio.PORTRAIT : NativeMediaAspectRatio.LANDSCAPE,
+    requestKey,
   });
   const nativeAd = nativeAdProp ?? nativeAdFromHook;
   const { t } = useTranslation();

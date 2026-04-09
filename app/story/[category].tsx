@@ -315,6 +315,7 @@ export default function StoryScreen() {
             <StoryNativeAdCard
               screenWidth={screenWidth}
               screenHeight={screenHeight}
+              requestKey={item.key}
               onAdFailed={() => handleAdFailed(item.key)}
             />
           </View>

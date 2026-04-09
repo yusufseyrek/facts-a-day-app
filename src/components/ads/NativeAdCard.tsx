@@ -28,6 +28,8 @@ interface NativeAdCardProps {
   onAdLoaded?: () => void;
   /** Pre-loaded native ad (when provided, skips internal useNativeAd hook) */
   nativeAd?: NativeAd;
+  /** Unique key to trigger a new ad request (handles FlashList view recycling). */
+  requestKey?: string;
 }
 
 const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.45)', 'rgba(0, 0, 0, 0.85)'] as const;
@@ -39,8 +41,9 @@ function NativeAdCardComponent({
   onAdFailed,
   onAdLoaded,
   nativeAd: nativeAdProp,
+  requestKey,
 }: NativeAdCardProps) {
-  const { nativeAd: nativeAdFromHook, isLoading, error } = useNativeAd({ skip: !!nativeAdProp });
+  const { nativeAd: nativeAdFromHook, isLoading, error } = useNativeAd({ skip: !!nativeAdProp, requestKey });
   const nativeAd = nativeAdProp ?? nativeAdFromHook;
   const { screenWidth, spacing, radius, config } = useResponsive();
   const { t } = useTranslation();

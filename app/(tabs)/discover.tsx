@@ -515,7 +515,7 @@ function DiscoverScreen() {
       if (isNativeAdPlaceholder(item)) {
         return (
           <ContentContainer>
-            <NativeAdCard />
+            <NativeAdCard requestKey={item.key} />
           </ContentContainer>
         );
       }
@@ -540,7 +540,7 @@ function DiscoverScreen() {
       if (isNativeAdPlaceholder(item)) {
         return (
           <ContentContainer>
-            <NativeAdCard />
+            <NativeAdCard requestKey={item.key} />
           </ContentContainer>
         );
       }

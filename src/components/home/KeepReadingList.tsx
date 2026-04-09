@@ -82,7 +82,10 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
         const content =
           item.type === 'ad' ? (
             <View style={{ padding: spacing.md }}>
-              <InlineNativeAd aspectRatio={NativeMediaAspectRatio.LANDSCAPE} />
+              <InlineNativeAd
+                aspectRatio={NativeMediaAspectRatio.LANDSCAPE}
+                requestKey={item.key}
+              />
             </View>
           ) : (
             <KeepReadingItem

@@ -289,7 +289,7 @@ export default function FavoritesScreen() {
       if (isNativeAdPlaceholder(item)) {
         return (
           <ContentContainer>
-            <NativeAdCard />
+            <NativeAdCard requestKey={item.key} />
           </ContentContainer>
         );
       }

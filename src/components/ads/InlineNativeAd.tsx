@@ -28,11 +28,13 @@ interface InlineNativeAdProps {
   cardHeight?: number;
   /** Preferred media aspect ratio. Affects both the ad request and the component height. Defaults to LANDSCAPE. */
   aspectRatio?: NativeMediaAspectRatio;
+  /** Unique key to trigger a new ad request (handles FlashList view recycling). */
+  requestKey?: string;
 }
 
-function InlineNativeAdComponent({ cardHeight: cardHeightProp, aspectRatio = NativeMediaAspectRatio.LANDSCAPE }: InlineNativeAdProps) {
+function InlineNativeAdComponent({ cardHeight: cardHeightProp, aspectRatio = NativeMediaAspectRatio.LANDSCAPE, requestKey }: InlineNativeAdProps) {
   const { screenWidth, radius } = useResponsive();
-  const { nativeAd, isLoading, error } = useNativeAd({ aspectRatio });
+  const { nativeAd, isLoading, error } = useNativeAd({ aspectRatio, requestKey });
 
   if (!nativeAd || isLoading || error) {
     return null;
