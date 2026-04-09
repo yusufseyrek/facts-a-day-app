@@ -26,9 +26,7 @@ const mockDb = sqlite.__mockDb;
 // ─── Import after mocks ───
 import {
   BADGE_DEFINITIONS,
-  getBadgeDefinition,
   STAR_COLORS,
-  TOTAL_POSSIBLE_BADGES,
 } from '../../config/badges';
 import {
   checkAndAwardBadges,
@@ -174,8 +172,9 @@ describe('Badge Configuration Integrity', () => {
     expect(quiz).toHaveLength(8);
   });
 
-  it('TOTAL_POSSIBLE_BADGES equals 42 (14 badges x 3 stars)', () => {
-    expect(TOTAL_POSSIBLE_BADGES).toBe(42);
+  it('total possible badges equals 42 (14 badges x 3 stars)', () => {
+    const total = BADGE_DEFINITIONS.reduce((sum, badge) => sum + badge.stars.length, 0);
+    expect(total).toBe(42);
   });
 
   it('every badge has a unique id', () => {
@@ -188,19 +187,6 @@ describe('Badge Configuration Integrity', () => {
       expect(badge.icon).toBeTruthy();
       expect(typeof badge.icon).toBe('string');
     }
-  });
-
-  describe('getBadgeDefinition', () => {
-    it('returns the correct badge for a valid id', () => {
-      const badge = getBadgeDefinition('curious_reader');
-      expect(badge).toBeDefined();
-      expect(badge!.id).toBe('curious_reader');
-      expect(badge!.category).toBe('reading');
-    });
-
-    it('returns undefined for an unknown id', () => {
-      expect(getBadgeDefinition('nonexistent_badge')).toBeUndefined();
-    });
   });
 
   describe('STAR_COLORS', () => {

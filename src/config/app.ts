@@ -82,8 +82,6 @@ export const NATIVE_ADS = {
   },
   /** Show an inline ad every N items in the Keep Reading list */
   KEEP_READING_AD_INTERVAL: 5,
-  /** Show an inline ad every N category carousels on the home screen */
-  CATEGORY_CAROUSEL_AD_INTERVAL: 3,
   /** Show a native ad every N questions in trivia */
   TRIVIA_AD_QUESTION_INTERVAL: 4,
   /** Duration (ms) to block prev/next navigation when a native ad is shown in trivia */
@@ -158,7 +156,7 @@ export const HOME_FEED = {
   /** Number of cards in the Latest carousel */
   LATEST_COUNT: 10,
   /** Number of facts per page in the Keep Reading section (infinite scroll) */
-  KEEP_READING_PAGE_SIZE: 20,
+  KEEP_READING_PAGE_SIZE: 5,
   /** Number of cards per category carousel on the home screen */
   CATEGORY_CAROUSEL_COUNT: 6,
 } as const;

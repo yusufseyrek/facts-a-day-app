@@ -1,4 +1,3 @@
-import React from 'react';
 import { Modal, Platform, Pressable } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 

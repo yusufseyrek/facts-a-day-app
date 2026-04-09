@@ -1,4 +1,3 @@
-import React from 'react';
 
 import { Lightbulb } from '@tamagui/lucide-icons';
 import { YStack } from 'tamagui';

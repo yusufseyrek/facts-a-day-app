@@ -1,4 +1,3 @@
-import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Check, ChevronRight, Shuffle, Zap } from '@tamagui/lucide-icons';

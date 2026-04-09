@@ -161,6 +161,7 @@ function HomeScreen() {
     queryClient.invalidateQueries({ queryKey: homeKeys.keepReading(locale) });
     queryClient.invalidateQueries({ queryKey: homeKeys.readingStreak() });
     setRefreshing(false);
+    keepReadingListRef.current?.scrollToOffset({ offset: 0, animated: false });
   }, [locale]);
 
   // Keep Reading press handler
@@ -190,20 +191,31 @@ function HomeScreen() {
 
   const hasAnyContent = latestFacts.length > 0 || onThisDayFacts.length > 0;
 
-  // Compose list header from extracted components
-  const listHeader = (
-    <HomeListHeader
-      latestFacts={latestFacts}
-      latestFactIds={latestFactIds}
-      onThisDayFacts={onThisDayFacts}
-      onThisDayIsWeekFallback={onThisDayIsWeekFallback}
-      keepReadingCount={keepReadingFacts.length}
-      isPremium={isPremium}
-      onFactPress={handleFactPress}
-      storyButtonsRef={storyButtonsRef}
-      latestListRef={latestListRef}
-      onThisDayListRef={onThisDayListRef}
-    />
+  // Compose list header from extracted components (memoized to prevent FlashList re-layout)
+  const listHeader = useMemo(
+    () => (
+      <HomeListHeader
+        latestFacts={latestFacts}
+        latestFactIds={latestFactIds}
+        onThisDayFacts={onThisDayFacts}
+        onThisDayIsWeekFallback={onThisDayIsWeekFallback}
+        keepReadingCount={keepReadingFacts.length}
+        isPremium={isPremium}
+        onFactPress={handleFactPress}
+        storyButtonsRef={storyButtonsRef}
+        latestListRef={latestListRef}
+        onThisDayListRef={onThisDayListRef}
+      />
+    ),
+    [
+      latestFacts,
+      latestFactIds,
+      onThisDayFacts,
+      onThisDayIsWeekFallback,
+      keepReadingFacts.length,
+      isPremium,
+      handleFactPress,
+    ]
   );
 
   return (

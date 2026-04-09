@@ -1,7 +1,7 @@
 import { hexColors } from './hexColors';
 
-export type NeonColor = 'cyan' | 'orange' | 'magenta' | 'green' | 'purple' | 'yellow' | 'red';
-export type ThemeMode = 'light' | 'dark';
+type NeonColor = 'cyan' | 'orange' | 'magenta' | 'green' | 'purple' | 'yellow' | 'red';
+type ResolvedTheme = 'light' | 'dark';
 
 // Neon color mappings
 const neonColorMap = {
@@ -38,14 +38,14 @@ const neonColorMap = {
 /**
  * Get neon color value by name and theme
  */
-export const getNeonColor = (color: NeonColor, theme: ThemeMode): string => {
+export const getNeonColor = (color: NeonColor, theme: ResolvedTheme): string => {
   return neonColorMap[color][theme];
 };
 
 /**
  * Get all neon colors for a theme
  */
-export const getNeonColors = (theme: ThemeMode) => {
+export const getNeonColors = (theme: ResolvedTheme) => {
   return {
     cyan: neonColorMap.cyan[theme],
     orange: neonColorMap.orange[theme],
@@ -89,7 +89,7 @@ const categoryNeonColors: Record<string, NeonColor> = {
  * Get neon color for a category
  * Falls back to cyan if category not found
  */
-export const getCategoryNeonColor = (categorySlug: string, theme: ThemeMode): string => {
+export const getCategoryNeonColor = (categorySlug: string, theme: ResolvedTheme): string => {
   const neonColor = categoryNeonColors[categorySlug.toLowerCase()] || 'cyan';
   return getNeonColor(neonColor, theme);
 };

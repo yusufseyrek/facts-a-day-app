@@ -50,10 +50,3 @@ export function getLucideIcon(
  */
 export type LucideIconName = keyof typeof LucideIcons;
 
-/**
- * Check if an icon name exists in Lucide
- */
-export function isValidLucideIcon(iconName: string): boolean {
-  const pascalCaseName = kebabToPascalCase(iconName);
-  return pascalCaseName in LucideIcons;
-}

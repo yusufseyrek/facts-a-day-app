@@ -6,32 +6,11 @@
 import { config } from '../utils/responsive';
 
 /**
- * Image prefetch settings to prevent network saturation and memory leaks
- */
-export const PREFETCH_SETTINGS = {
-  /** Maximum size of prefetch tracking set before clearing (prevents memory leaks) */
-  maxCacheSize: 100,
-  /** Maximum concurrent image downloads (prevents network saturation) */
-  maxConcurrent: 4,
-  /** Maximum images to prefetch initially when loading a list (covers ~2 screens) */
-  maxInitialPrefetch: 4,
-} as const;
-
-/**
  * Card aspect ratios - imported from images.ts for single source of truth
  */
-export const CARD_ASPECT_RATIOS = {
+const CARD_ASPECT_RATIOS = {
   phone: config.phone.cardAspectRatio,
   tablet: config.tablet.cardAspectRatio,
-} as const;
-
-/**
- * FlashList item types for heterogeneous lists with section headers
- */
-export const FLASH_LIST_ITEM_TYPES = {
-  SECTION_HEADER: 'sectionHeader',
-  FACT_ITEM: 'factItem',
-  NATIVE_AD: 'nativeAd',
 } as const;
 
 /**

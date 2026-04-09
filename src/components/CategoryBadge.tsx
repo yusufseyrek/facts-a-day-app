@@ -1,4 +1,3 @@
-import React from 'react';
 
 import { XStack } from 'tamagui';
 

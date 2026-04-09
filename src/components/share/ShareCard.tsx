@@ -4,7 +4,7 @@
  * This component is rendered off-screen and captured using ViewShot
  */
 
-import React, { forwardRef } from 'react';
+import { forwardRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 

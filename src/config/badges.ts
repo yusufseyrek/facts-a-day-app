@@ -38,8 +38,6 @@ export interface BadgeDefinition {
   stars: BadgeStarDefinition[];
 }
 
-export const LOCKED_OPACITY = 0.35;
-
 // ============================================
 // STAR DISPLAY SYSTEM
 // ============================================
@@ -199,14 +197,3 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
     ],
   },
 ];
-
-// Helper to get a badge definition by ID
-export function getBadgeDefinition(badgeId: string): BadgeDefinition | undefined {
-  return BADGE_DEFINITIONS.find((b) => b.id === badgeId);
-}
-
-// Total possible earned badges (sum of all stars)
-export const TOTAL_POSSIBLE_BADGES = BADGE_DEFINITIONS.reduce(
-  (sum, badge) => sum + badge.stars.length,
-  0
-);

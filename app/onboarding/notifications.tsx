@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Easing, Pressable, ScrollView } from 'react-native';
 
 import { styled } from '@tamagui/core';

@@ -59,10 +59,3 @@ export async function openInAppBrowser(
   }
 }
 
-/**
- * Dismisses the in-app browser if it's currently open.
- * This is a no-op on Android as Chrome Custom Tabs don't support programmatic dismissal.
- */
-export function dismissBrowser(): void {
-  WebBrowser.dismissBrowser();
-}

@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { LayoutAnimation, Platform, StyleSheet, View } from 'react-native';
 import {
   AdsConsent,

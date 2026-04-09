@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import Animated, {
   FadeIn,

@@ -87,19 +87,3 @@ export function useFlashListScrollToTop({
   };
 }
 
-/**
- * Creates a scroll handler that tracks offset in a ref.
- * Use with smartScrollToTop for screens with multiple FlashLists.
- */
-export function createScrollHandler(
-  scrollOffsetRef: RefObject<number>,
-  debug = false,
-  screenId = ''
-) {
-  return (event: ScrollEvent) => {
-    (scrollOffsetRef as { current: number }).current = event.nativeEvent.contentOffset.y;
-    if (__DEV__ && debug) {
-      console.log(`[${screenId}:Scroll] offset:`, Math.round(event.nativeEvent.contentOffset.y));
-    }
-  };
-}

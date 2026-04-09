@@ -32,4 +32,4 @@ export {
 } from './deepLinks';
 
 // Image generation utilities
-export { cleanupShareCards, generateShareCard, getShareImagesDir } from './imageGenerator';
+export { cleanupShareCards, generateShareCard } from './imageGenerator';

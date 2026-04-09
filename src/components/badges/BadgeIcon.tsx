@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { SvgXml } from 'react-native-svg';
 
 import { BADGE_SVG_MAP } from '../../utils/badgeSvgs';

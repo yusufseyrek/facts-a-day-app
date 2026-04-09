@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, ScrollView, View } from 'react-native';
 
 import { CheckCircle, Gift, Sparkle, Star } from '@tamagui/lucide-icons';

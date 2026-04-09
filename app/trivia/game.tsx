@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, View } from 'react-native';
 import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 import { useSharedValue, withTiming } from 'react-native-reanimated';

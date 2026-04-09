@@ -3,7 +3,7 @@
  * Bottom sheet modal for selecting share destination
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
