@@ -25,7 +25,12 @@ import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { useTranslation } from '../i18n';
 import { trackSourceLinkClick } from '../services/analytics';
 import { onFactViewed, onStreakMilestone, scheduleSatisfactionPrompt } from '../services/appReview';
-import { checkAndAwardBadges, getReadingStreak, popModalScreen, pushModalScreen } from '../services/badges';
+import {
+  checkAndAwardBadges,
+  getReadingStreak,
+  popModalScreen,
+  pushModalScreen,
+} from '../services/badges';
 import {
   addFactDetailTimeSpent,
   deleteFact,
@@ -1014,7 +1019,11 @@ export function FactModal({
 
             {/* Summary */}
             {fact.summary && (
-              <Text.Body color="$text" fontFamily={FONT_FAMILIES.semibold}>
+              <Text.Body
+                color="$text"
+                fontFamily={FONT_FAMILIES.semibold}
+                marginBottom={typography.fontSize.body}
+              >
                 {fact.summary}
               </Text.Body>
             )}
