@@ -18,7 +18,7 @@ import getAppCheck, {
 // as type-only from its barrel, but the runtime class exists in the module.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ReactNativeFirebaseAppCheckProvider } = require('@react-native-firebase/app-check') as {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   ReactNativeFirebaseAppCheckProvider: any;
 };
 import {

@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+
 import {
   ErrorCode,
   finishTransaction as finishTransactionModule,
@@ -27,9 +28,9 @@ import {
   shouldShowAds,
 } from '../services/premiumState';
 import {
+  type CachedSubscription,
   cachePremiumStatus,
   cacheSubscriptions,
-  type CachedSubscription,
   getCachedPremiumStatus,
   getCachedSubscriptions,
   isCachedPremiumWithinGracePeriod,

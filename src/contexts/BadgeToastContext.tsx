@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 
 import { BadgeUnlockToast } from '../components/badges/BadgeUnlockToast';
 import { useTranslation } from '../i18n';
+import { onBadgeEarned, scheduleSatisfactionPrompt } from '../services/appReview';
 import {
   consumePendingBadgeToasts,
   isModalScreenActive,
@@ -54,6 +55,16 @@ export function BadgeToastProvider({ children }: { children: React.ReactNode }) 
   const handleHide = useCallback(() => {
     showingRef.current = false;
     setCurrent(null);
+
+    // After badge toast hides, check if we should show satisfaction prompt
+    onBadgeEarned()
+      .then((result) => {
+        if (result === 'show_satisfaction') {
+          scheduleSatisfactionPrompt();
+        }
+      })
+      .catch(() => {});
+
     // Show next after a short delay
     setTimeout(() => {
       if (!isModalScreenActive() && queueRef.current.length > 0) {

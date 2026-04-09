@@ -105,10 +105,12 @@ export const STORAGE_KEYS = {
   NOTIFICATION_TRACK: 'last_processed_notification_id',
   /** Key for tracking number of facts viewed (for app review) */
   FACTS_VIEWED_COUNT: '@facts_viewed_count',
-  /** Key for tracking if review has been requested */
-  REVIEW_REQUESTED: '@review_requested',
   /** Key for tracking last review prompt timestamp */
   LAST_REVIEW_PROMPT: '@last_review_prompt',
+  /** Timestamps of all review prompts shown (JSON array of epoch ms) */
+  REVIEW_PROMPT_HISTORY: '@review_prompt_history',
+  /** Last satisfaction pre-prompt timestamp */
+  LAST_SATISFACTION_PROMPT: '@last_satisfaction_prompt',
   /** Key for tracking the last date explanation hint was used in trivia */
   EXPLANATION_HINT_LAST_USED: '@explanation_hint_last_used',
   /** Key for tracking the number of hints used today */
@@ -193,10 +195,20 @@ export const NOTIFICATION_SETTINGS = {
  * App review prompt settings
  */
 export const APP_REVIEW = {
-  /** Number of facts to view before prompting for review */
-  FACTS_THRESHOLD: 10,
-  /** Minimum days between review prompts */
-  MIN_DAYS_BETWEEN_PROMPTS: 15,
+  /** Minimum facts viewed before any review prompt is eligible */
+  MIN_FACTS_VIEWED: 15,
+  /** Minimum distinct days of app usage before any review prompt */
+  MIN_USAGE_DAYS: 3,
+  /** Minimum days between review prompts (cooldown) */
+  COOLDOWN_DAYS: 90,
+  /** Maximum review prompts per rolling 365-day period (iOS enforces 3) */
+  MAX_PROMPTS_PER_YEAR: 3,
+  /** Minimum trivia accuracy (%) to qualify as a "good score" trigger */
+  GOOD_TRIVIA_SCORE_PERCENT: 70,
+  /** Streak milestones (in days) that can trigger review prompts */
+  STREAK_MILESTONES: [7, 30, 60, 90] as readonly number[],
+  /** Minimum favorites count to consider as engaged user */
+  MIN_FAVORITES_FOR_TRIGGER: 5,
 } as const;
 
 /**
@@ -204,6 +216,7 @@ export const APP_REVIEW = {
  */
 export const APP_STORE_ID = '6755321394';
 export const PLAY_STORE_ID = 'dev.seyrek.factsaday';
+export const SUPPORT_EMAIL = 'factsadayapp@gmail.com';
 
 /**
  * Minimum number of categories a user must select.

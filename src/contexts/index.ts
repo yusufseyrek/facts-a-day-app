@@ -13,4 +13,5 @@ export {
   waitForHomeScreenReady,
 } from './PreloadedDataContext';
 export { PremiumProvider, usePremium } from './PremiumContext';
+export { ReviewPromptProvider } from './ReviewPromptContext';
 export { ScrollToTopProvider, useScrollToTop, useScrollToTopHandler } from './ScrollToTopContext';

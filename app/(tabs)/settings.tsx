@@ -13,6 +13,7 @@ import {
   FileText,
   Globe,
   Grid,
+  Heart,
   Palette,
   Plus,
   RotateCcw,
@@ -49,12 +50,12 @@ import { useTranslation } from '../../src/i18n';
 import { TranslationKeys } from '../../src/i18n/translations';
 import { openAdDebugMenu } from '../../src/services/ads';
 import { Screens, trackScreenView } from '../../src/services/analytics';
-import { requestReview } from '../../src/services/appReview';
+import { requestReview, scheduleSatisfactionPrompt } from '../../src/services/appReview';
 import { triggerTestBadgeToast } from '../../src/services/badges';
+import { onFeedRefresh } from '../../src/services/contentRefresh';
 import * as database from '../../src/services/database';
 import { clearAllCachedImages, getCachedImagesSize } from '../../src/services/images';
 import { buildNotificationContent } from '../../src/services/notifications';
-import { onFeedRefresh } from '../../src/services/contentRefresh';
 import * as onboardingService from '../../src/services/onboarding';
 import { cleanupShareCards } from '../../src/services/share';
 import { clearHintUsage } from '../../src/services/trivia';
@@ -502,7 +503,8 @@ export default function SettingsPage() {
       }
 
       const fact = facts[0];
-      if (__DEV__) console.log('✅ Using fact:', fact.id, '-', fact.content.substring(0, 50) + '...');
+      if (__DEV__)
+        console.log('✅ Using fact:', fact.id, '-', fact.content.substring(0, 50) + '...');
 
       const content = await buildNotificationContent(fact, locale);
       // Add isTest flag to data
@@ -627,9 +629,10 @@ export default function SettingsPage() {
 
         await database.markFactAsScheduled(fact.id, scheduledDate.toISOString(), notificationId);
 
-        if (__DEV__) console.log(
-          `✅ Added fact ${fact.id} with date ${scheduledDate.toISOString().split('T')[0]}`
-        );
+        if (__DEV__)
+          console.log(
+            `✅ Added fact ${fact.id} with date ${scheduledDate.toISOString().split('T')[0]}`
+          );
       }
 
       // Show success message
@@ -756,7 +759,9 @@ export default function SettingsPage() {
         console.log(
           `🐛 Created buggy schedule: ${scheduledCount} notifications (OS: ${osCount.length})`
         );
-        console.log('🐛 Days 1-10 have 3 notifications each (bug), days 11-44 have 1 each (normal)');
+        console.log(
+          '🐛 Days 1-10 have 3 notifications each (bug), days 11-44 have 1 each (normal)'
+        );
       }
 
       Alert.alert(
@@ -871,45 +876,10 @@ export default function SettingsPage() {
       title: t('developerSettings'),
       data: [
         {
-          id: 'otaUpdate',
-          label: isCheckingUpdate ? 'Checking for updates...' : 'OTA Update',
-          value: updateInfo
-            ? updateInfo.isEmbedded
-              ? `Embedded (v${updateInfo.runtimeVersion})`
-              : `${updateInfo.updateId?.slice(0, 8) ?? 'Embedded'}... (v${updateInfo.runtimeVersion})`
-            : 'Loading...',
-          icon: <Download size={iconSizes.md} color={iconColor} />,
-          onPress: handleCheckForUpdates,
-        },
-        {
-          id: 'manageFeed',
-          label: 'Manage Feed (Screenshots)',
-          icon: <Camera size={iconSizes.md} color={iconColor} />,
-          onPress: () => setShowFeedManagementModal(true),
-        },
-        {
-          id: 'add10Facts',
-          label: t('add10RandomFacts'),
-          icon: <Plus size={iconSizes.md} color={iconColor} />,
-          onPress: handleAdd10RandomFacts,
-        },
-        {
-          id: 'markStoriesViewed',
-          label: 'Mark All Stories Viewed',
-          icon: <CircleCheck size={iconSizes.md} color={iconColor} />,
-          onPress: handleMarkAllStoriesViewed,
-        },
-        {
           id: 'testNotification',
           label: t('testNotification'),
           icon: <TestTube size={iconSizes.md} color={iconColor} />,
           onPress: handleTestNotification,
-        },
-        {
-          id: 'duplicateNotifications',
-          label: 'Schedule Duplicate Notifications',
-          icon: <Bug size={iconSizes.md} color={iconColor} />,
-          onPress: handleScheduleDuplicateNotifications,
         },
         {
           id: 'notificationDiagnostics',
@@ -930,7 +900,14 @@ export default function SettingsPage() {
           icon: <Trophy size={iconSizes.md} color={iconColor} />,
           onPress: () => {
             triggerTestBadgeToast();
-            Alert.alert('Badge toast queued', 'A test badge toast will appear shortly.');
+          },
+        },
+        {
+          id: 'testSatisfactionModal',
+          label: 'Test Satisfaction Modal',
+          icon: <Heart size={iconSizes.md} color={iconColor} />,
+          onPress: () => {
+            scheduleSatisfactionPrompt();
           },
         },
         {

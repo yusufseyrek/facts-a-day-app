@@ -17,11 +17,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { getIsConnected } from '../services/network';
-import { ImagePlaceholder } from './ImagePlaceholder';
 import { useResponsive } from '../utils/useResponsive';
 
 import { CategoryBadge } from './CategoryBadge';
 import { FavoriteButton } from './FavoriteButton';
+import { ImagePlaceholder } from './ImagePlaceholder';
 import { Text } from './Typography';
 
 import type { ImageSource } from 'expo-image';

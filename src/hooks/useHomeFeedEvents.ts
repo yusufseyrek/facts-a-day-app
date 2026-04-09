@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { useQueryClient } from '@tanstack/react-query';
 
+import { signalFeedLoaded } from '../contexts';
 import {
   getRefreshStatus,
   onFeedRefresh,
@@ -12,7 +13,6 @@ import { loadDailyFeedSections } from '../services/dailyFeed';
 import { clearGlobalProgress, setGlobalProgress } from '../services/globalProgress';
 import { preCacheOfflineImages } from '../services/images';
 import { onNetworkChange } from '../services/network';
-import { signalFeedLoaded } from '../contexts';
 
 import { homeKeys } from './queryKeys';
 

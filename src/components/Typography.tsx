@@ -3,7 +3,7 @@ import { Platform, TextStyle } from 'react-native';
 
 import { GetProps, Text as TamaguiText } from '@tamagui/core';
 
-import { maxFontSizeMultipliers, DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
+import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER,maxFontSizeMultipliers } from '../utils/responsive';
 import { useResponsive } from '../utils/useResponsive';
 
 /**

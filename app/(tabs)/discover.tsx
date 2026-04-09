@@ -11,8 +11,6 @@ import {
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { useFocusEffect } from '@react-navigation/native';
-
-import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../../src/utils/responsive';
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { styled, View } from '@tamagui/core';
 import { Search, X } from '@tamagui/lucide-icons';
@@ -41,11 +39,11 @@ import {
   trackScreenView,
   trackSearch,
 } from '../../src/services/analytics';
+import { consumePendingDiscoverCategory } from '../../src/services/contentRefresh';
 import * as database from '../../src/services/database';
 import { getCachedFactImageSync } from '../../src/services/images';
 import { getIsConnected } from '../../src/services/network';
 import { getSelectedCategories } from '../../src/services/onboarding';
-import { consumePendingDiscoverCategory } from '../../src/services/contentRefresh';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
 import { hexColors, useTheme } from '../../src/theme';
 import { darkenColor, getContrastColor, hexToHue } from '../../src/utils/colors';
@@ -55,6 +53,7 @@ import {
   isNativeAdPlaceholder,
   type NativeAdPlaceholder,
 } from '../../src/utils/insertNativeAds';
+import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../../src/utils/responsive';
 import { smartScrollToTop } from '../../src/utils/useFlashListScrollToTop';
 import { useResponsive } from '../../src/utils/useResponsive';
 

@@ -20,11 +20,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { XStack, YStack } from 'tamagui';
 
+import { usePremium } from '../contexts';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { useTranslation } from '../i18n';
 import { trackSourceLinkClick } from '../services/analytics';
-import { onFactViewed } from '../services/appReview';
-import { checkAndAwardBadges, popModalScreen, pushModalScreen } from '../services/badges';
+import { onFactViewed, onStreakMilestone, scheduleSatisfactionPrompt } from '../services/appReview';
+import { checkAndAwardBadges, getReadingStreak, popModalScreen, pushModalScreen } from '../services/badges';
 import {
   addFactDetailTimeSpent,
   deleteFact,
@@ -35,13 +36,12 @@ import {
 import { getCachedFactImageSync } from '../services/images';
 import { getIsConnected } from '../services/network';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
+import { getIsPremium } from '../services/premiumState';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
+import { PAYWALL_GOLD } from '../theme/paywallColors';
 import { getTranslatedUrl } from '../utils/browser';
 import { useResponsive } from '../utils/useResponsive';
 
-import { usePremium } from '../contexts';
-import { getIsPremium } from '../services/premiumState';
-import { PAYWALL_GOLD } from '../theme/paywallColors';
 import { BannerAd } from './ads';
 import { CategoryBadge } from './CategoryBadge';
 import { FactActions } from './FactActions';
@@ -228,6 +228,13 @@ export function FactModal({
   useEffect(() => {
     markFactDetailOpened(fact.id)
       .then(() => checkAndAwardBadges())
+      .then(() => getReadingStreak())
+      .then((streak) => onStreakMilestone(streak))
+      .then((result) => {
+        if (result === 'show_satisfaction') {
+          scheduleSatisfactionPrompt();
+        }
+      })
       .catch(() => {});
     mountTimeRef.current = Date.now();
     hasMarkedRead.current = false;

@@ -15,9 +15,10 @@ import {
   ProgressIndicator,
   Text,
 } from '../../src/components';
+import { ScreenContainer } from '../../src/components';
 import { LAYOUT } from '../../src/config/app';
 import { IMAGE_PLACEHOLDER } from '../../src/config/images';
-import { sampleFacts, type SampleFact } from '../../src/config/sampleFacts';
+import { type SampleFact,sampleFacts } from '../../src/config/sampleFacts';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
@@ -25,8 +26,6 @@ import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { SupportedLocale } from '../../src/i18n';
-
-import { ScreenContainer } from '../../src/components';
 
 // Gradient for text legibility over images
 const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.85)'] as const;

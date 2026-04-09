@@ -1,7 +1,7 @@
 import { showInterstitialAd } from '../components/ads/InterstitialAd';
 import { INTERSTITIAL_ADS } from '../config/app';
 
-import { trackInterstitialShown, type InterstitialSource } from './analytics';
+import { type InterstitialSource,trackInterstitialShown } from './analytics';
 import { getFactsViewedCount } from './appReview';
 import { shouldShowAds } from './premiumState';
 

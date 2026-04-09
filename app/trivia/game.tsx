@@ -17,6 +17,7 @@ import {
   TriviaResults,
 } from '../../src/components/trivia';
 import { Text } from '../../src/components/Typography';
+import { NATIVE_ADS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts/PremiumContext';
 import { useNativeAd } from '../../src/hooks/useNativeAd';
 import { useTranslation } from '../../src/i18n';
@@ -31,9 +32,9 @@ import {
   trackTriviaStart,
   trackTriviaViewFactClick,
 } from '../../src/services/analytics';
+import { onTriviaCompleted, scheduleSatisfactionPrompt } from '../../src/services/appReview';
 import * as triviaService from '../../src/services/trivia';
 import { TIME_PER_QUESTION } from '../../src/services/trivia';
-import { NATIVE_ADS } from '../../src/config/app';
 import { hexColors, useTheme } from '../../src/theme';
 
 import type { TriviaMode } from '../../src/services/analytics';
@@ -655,6 +656,16 @@ export default function TriviaGameScreen() {
         categorySlug: params.categorySlug,
       });
       trackScreenView(Screens.TRIVIA_RESULTS);
+
+      // Check for review prompt after good trivia score
+      const accuracy = Math.round((correctCount / gameState.questions.length) * 100);
+      onTriviaCompleted(accuracy)
+        .then((result) => {
+          if (result === 'show_satisfaction') {
+            setTimeout(() => scheduleSatisfactionPrompt(), 2000);
+          }
+        })
+        .catch(() => {});
     } catch (error) {
       console.error('Error saving trivia results:', error);
       // Still show results even if saving fails

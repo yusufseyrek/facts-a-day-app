@@ -1,9 +1,9 @@
 import React from 'react';
+import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { FlashListRef } from '@shopify/flash-list';
 import { BookOpen } from '@tamagui/lucide-icons';
 import { YStack } from 'tamagui';
-import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { ADS_ENABLED, LAYOUT } from '../../config/app';
 import { useTranslation } from '../../i18n';

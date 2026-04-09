@@ -1,4 +1,5 @@
 import { trackFactFavoriteAdd, trackFactFavoriteRemove } from './analytics';
+import { onFavoriteMilestone, scheduleSatisfactionPrompt } from './appReview';
 import { checkAndAwardBadges } from './badges';
 import * as database from './database';
 import { downloadImage } from './images';
@@ -19,6 +20,18 @@ export async function performFavoriteToggle(
   if (newStatus) {
     trackFactFavoriteAdd({ factId, category: categorySlug });
     checkAndAwardBadges().catch(() => {});
+
+    // Check review prompt on favorite milestones
+    database
+      .getFavoritesCount()
+      .then((count) => onFavoriteMilestone(count))
+      .then((result) => {
+        if (result === 'show_satisfaction') {
+          scheduleSatisfactionPrompt();
+        }
+      })
+      .catch(() => {});
+
     if (imageUrl) {
       downloadImage(imageUrl, factId).catch(() => {});
     }

@@ -11,12 +11,11 @@ import {
 } from 'react-native';
 
 import { X } from '@tamagui/lucide-icons';
-
-import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n';
 import { hexColors, useTheme } from '../theme';
+import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { useResponsive } from '../utils/useResponsive';
 
 import { Button } from './Button';

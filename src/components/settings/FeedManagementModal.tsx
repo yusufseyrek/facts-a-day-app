@@ -12,14 +12,13 @@ import {
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 
 import { FlashList } from '@shopify/flash-list';
-
-import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../../utils/responsive';
 import { Calendar, Check, Edit3, RefreshCw, Search, Trash2, X } from '@tamagui/lucide-icons';
 
 import { useTranslation } from '../../i18n';
 import { triggerFeedRefresh } from '../../services/contentRefresh';
 import * as database from '../../services/database';
 import { hexColors, useTheme } from '../../theme';
+import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../../utils/responsive';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
 

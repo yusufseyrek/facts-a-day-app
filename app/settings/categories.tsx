@@ -8,10 +8,10 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { Button, CategoryCard, ScreenContainer, SuccessToast, Text } from '../../src/components';
+import { showRewardedAd } from '../../src/components/ads/RewardedAd';
 import { MINIMUM_CATEGORIES } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { showRewardedAd } from '../../src/components/ads/RewardedAd';
 import { showSettingsInterstitial } from '../../src/services/adManager';
 import {
   Screens,

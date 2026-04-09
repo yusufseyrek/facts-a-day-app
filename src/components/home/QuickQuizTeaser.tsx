@@ -13,8 +13,8 @@ import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
 
-import type { QuestionWithFact } from '../../services/database';
 import type { TranslationKeys } from '../../i18n/translations';
+import type { QuestionWithFact } from '../../services/database';
 
 interface QuickQuizTeaserProps {
   question: QuestionWithFact | null;

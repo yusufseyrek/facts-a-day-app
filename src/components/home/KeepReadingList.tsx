@@ -1,8 +1,8 @@
 import React, { forwardRef, useCallback, useMemo } from 'react';
 import { ActivityIndicator, RefreshControl, View } from 'react-native';
+import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { ADS_ENABLED, LAYOUT, NATIVE_ADS } from '../../config/app';
 import { useResponsive } from '../../utils/useResponsive';

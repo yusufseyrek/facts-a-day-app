@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
-
 import { FlashListRef } from '@shopify/flash-list';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -38,7 +37,7 @@ import {
 import { isModalScreenActive } from '../../src/services/badges';
 import { consumeFeedRefreshPending, forceRefreshContent } from '../../src/services/contentRefresh';
 import { loadDailyFeedSections } from '../../src/services/dailyFeed';
-import { setGlobalProgress, clearGlobalProgress } from '../../src/services/globalProgress';
+import { clearGlobalProgress,setGlobalProgress } from '../../src/services/globalProgress';
 import { preCacheOfflineImages } from '../../src/services/images';
 import { shouldShowPaywall } from '../../src/services/paywallTiming';
 import { hexColors, useTheme } from '../../src/theme';

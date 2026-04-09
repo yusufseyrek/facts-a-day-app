@@ -1,5 +1,4 @@
 import type { ImageSource } from 'expo-image';
-
 import type { SupportedLocale } from '../i18n';
 
 export interface SampleFact {

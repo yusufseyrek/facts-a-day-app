@@ -2,8 +2,8 @@ import React, { Component, ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { recordError } from '../config/firebase';
-import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { hexColors } from '../theme';
+import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 
 import { FONT_FAMILIES } from './Typography';
 

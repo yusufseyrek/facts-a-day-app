@@ -3,63 +3,179 @@ import { Linking, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as StoreReview from 'expo-store-review';
 
-import { APP_REVIEW, APP_STORE_ID, PLAY_STORE_ID, STORAGE_KEYS } from '../config/app';
+import { APP_REVIEW, APP_STORE_ID, PLAY_STORE_ID, STORAGE_KEYS, SUPPORT_EMAIL } from '../config/app';
 
-/**
- * Track that a fact has been viewed
- * Returns true if review prompt should be shown
- */
-export async function trackFactView(): Promise<boolean> {
+// ---------------------------------------------------------------------------
+// Satisfaction prompt queue (consumed by ReviewPromptProvider)
+// ---------------------------------------------------------------------------
+
+let _pendingSatisfactionPrompt = false;
+
+export function scheduleSatisfactionPrompt(): void {
+  _pendingSatisfactionPrompt = true;
+}
+
+export function hasPendingSatisfactionPrompt(): boolean {
+  const val = _pendingSatisfactionPrompt;
+  _pendingSatisfactionPrompt = false; // consume
+  return val;
+}
+
+// ---------------------------------------------------------------------------
+// Eligibility checks
+// ---------------------------------------------------------------------------
+
+async function getPromptHistory(): Promise<number[]> {
   try {
-    // Always increment view count (used for interstitial ads too)
-    const currentCount = await getFactsViewedCount();
-    const newCount = currentCount + 1;
-    await AsyncStorage.setItem(STORAGE_KEYS.FACTS_VIEWED_COUNT, newCount.toString());
-
-    // Check if review has already been requested
-    const reviewRequested = await AsyncStorage.getItem(STORAGE_KEYS.REVIEW_REQUESTED);
-    if (reviewRequested === 'true') {
-      return false; // Don't show again if already requested once
-    }
-
-    // Check if we've prompted recently
-    const lastPromptDate = await AsyncStorage.getItem(STORAGE_KEYS.LAST_REVIEW_PROMPT);
-    if (lastPromptDate) {
-      const daysSinceLastPrompt =
-        (Date.now() - parseInt(lastPromptDate, 10)) / (1000 * 60 * 60 * 24);
-      if (daysSinceLastPrompt < APP_REVIEW.MIN_DAYS_BETWEEN_PROMPTS) {
-        return false; // Too soon to prompt again
-      }
-    }
-
-    // Check if threshold reached
-    if (newCount >= APP_REVIEW.FACTS_THRESHOLD) {
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    if (__DEV__) {
-      console.error('Error tracking fact view:', error);
-    }
-    return false;
+    const raw = await AsyncStorage.getItem(STORAGE_KEYS.REVIEW_PROMPT_HISTORY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
   }
 }
 
-/**
- * Get the current count of facts viewed
- */
-export async function getFactsViewedCount(): Promise<number> {
+async function getDistinctUsageDays(): Promise<number> {
   try {
-    const count = await AsyncStorage.getItem(STORAGE_KEYS.FACTS_VIEWED_COUNT);
-    return count ? parseInt(count, 10) : 0;
-  } catch (error) {
-    if (__DEV__) {
-      console.error('Error getting facts viewed count:', error);
-    }
+    const { openDatabase } = await import('./database');
+    const db = await openDatabase();
+    const result = await db.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(DISTINCT view_date) as count FROM (
+         SELECT date(story_viewed_at, 'localtime') as view_date
+         FROM fact_interactions WHERE story_viewed_at IS NOT NULL
+         UNION
+         SELECT date(detail_opened_at, 'localtime') as view_date
+         FROM fact_interactions WHERE detail_opened_at IS NOT NULL
+       )`
+    );
+    return result?.count ?? 0;
+  } catch {
     return 0;
   }
 }
+
+/**
+ * Check all preconditions before any review prompt can fire.
+ */
+async function isReviewEligible(): Promise<boolean> {
+  try {
+    // 1. Cooldown check
+    const lastPrompt = await AsyncStorage.getItem(STORAGE_KEYS.LAST_REVIEW_PROMPT);
+    if (lastPrompt) {
+      const daysSince = (Date.now() - parseInt(lastPrompt, 10)) / (1000 * 60 * 60 * 24);
+      if (daysSince < APP_REVIEW.COOLDOWN_DAYS) {
+        return false;
+      }
+    }
+
+    // 2. Yearly cap check
+    const history = await getPromptHistory();
+    const oneYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
+    const promptsThisYear = history.filter((ts) => ts > oneYearAgo).length;
+    if (promptsThisYear >= APP_REVIEW.MAX_PROMPTS_PER_YEAR) {
+      return false;
+    }
+
+    // 3. Minimum engagement: facts viewed
+    const factsViewed = await getFactsViewedCount();
+    if (factsViewed < APP_REVIEW.MIN_FACTS_VIEWED) {
+      return false;
+    }
+
+    // 4. Minimum engagement: distinct usage days
+    const usageDays = await getDistinctUsageDays();
+    if (usageDays < APP_REVIEW.MIN_USAGE_DAYS) {
+      return false;
+    }
+
+    // 5. StoreReview availability
+    const isAvailable = await StoreReview.isAvailableAsync();
+    if (!isAvailable) {
+      return false;
+    }
+
+    const canRequest = await StoreReview.hasAction();
+    if (!canRequest) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    if (__DEV__) {
+      console.error('Error checking review eligibility:', error);
+    }
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Trigger entry points — each returns whether to show the satisfaction modal
+// ---------------------------------------------------------------------------
+
+type TriggerResult = 'show_satisfaction' | 'skip';
+
+export async function onBadgeEarned(): Promise<TriggerResult> {
+  const eligible = await isReviewEligible();
+  return eligible ? 'show_satisfaction' : 'skip';
+}
+
+export async function onTriviaCompleted(accuracy: number): Promise<TriggerResult> {
+  if (accuracy < APP_REVIEW.GOOD_TRIVIA_SCORE_PERCENT) {
+    return 'skip';
+  }
+  const eligible = await isReviewEligible();
+  return eligible ? 'show_satisfaction' : 'skip';
+}
+
+export async function onStreakMilestone(streakCount: number): Promise<TriggerResult> {
+  if (!APP_REVIEW.STREAK_MILESTONES.includes(streakCount)) {
+    return 'skip';
+  }
+  const eligible = await isReviewEligible();
+  return eligible ? 'show_satisfaction' : 'skip';
+}
+
+export async function onFavoriteMilestone(totalFavorites: number): Promise<TriggerResult> {
+  if (totalFavorites < APP_REVIEW.MIN_FAVORITES_FOR_TRIGGER || totalFavorites % 5 !== 0) {
+    return 'skip';
+  }
+  const eligible = await isReviewEligible();
+  return eligible ? 'show_satisfaction' : 'skip';
+}
+
+// ---------------------------------------------------------------------------
+// Recording
+// ---------------------------------------------------------------------------
+
+export async function recordReviewPromptShown(): Promise<void> {
+  try {
+    const now = Date.now();
+    await AsyncStorage.setItem(STORAGE_KEYS.LAST_REVIEW_PROMPT, now.toString());
+
+    const history = await getPromptHistory();
+    history.push(now);
+    await AsyncStorage.setItem(STORAGE_KEYS.REVIEW_PROMPT_HISTORY, JSON.stringify(history));
+  } catch (error) {
+    if (__DEV__) {
+      console.error('Error recording review prompt:', error);
+    }
+  }
+}
+
+export async function recordSatisfactionPromptShown(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.LAST_SATISFACTION_PROMPT, Date.now().toString());
+    // Also update cooldown so we don't re-prompt too soon
+    await AsyncStorage.setItem(STORAGE_KEYS.LAST_REVIEW_PROMPT, Date.now().toString());
+  } catch (error) {
+    if (__DEV__) {
+      console.error('Error recording satisfaction prompt:', error);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Core review actions
+// ---------------------------------------------------------------------------
 
 /**
  * Get the store URL for the app
@@ -73,7 +189,6 @@ function getStoreUrl(): string {
 
 /**
  * Open the app store page directly
- * Used as fallback when in-app review isn't available
  */
 export async function openStoreForReview(): Promise<boolean> {
   try {
@@ -82,14 +197,7 @@ export async function openStoreForReview(): Promise<boolean> {
 
     if (canOpen) {
       await Linking.openURL(url);
-      if (__DEV__) {
-        console.log('Opened store page for review');
-      }
       return true;
-    }
-
-    if (__DEV__) {
-      console.log('Cannot open store URL:', url);
     }
     return false;
   } catch (error) {
@@ -101,55 +209,38 @@ export async function openStoreForReview(): Promise<boolean> {
 }
 
 /**
- * Show the native app review prompt
- * If fallbackToStore is true and in-app review isn't available, opens the store page
- * Returns true if successfully shown (either in-app or store page), false otherwise
+ * Show the native app review prompt.
+ * If fallbackToStore is true and in-app review isn't available, opens the store page.
  */
 export async function requestReview(fallbackToStore: boolean = false): Promise<boolean> {
   try {
-    // Check if review functionality is available
     const isAvailable = await StoreReview.isAvailableAsync();
     if (!isAvailable) {
-      if (__DEV__) {
-        console.log('Store review is not available on this device');
-      }
-      // Fallback to opening store page if requested
       if (fallbackToStore) {
         return await openStoreForReview();
       }
       return false;
     }
 
-    // Check if we can request review (iOS has limits)
     const canRequest = await StoreReview.hasAction();
     if (!canRequest) {
-      if (__DEV__) {
-        console.log('Cannot request review at this time');
-      }
-      // Fallback to opening store page if requested
       if (fallbackToStore) {
         return await openStoreForReview();
       }
       return false;
     }
 
-    // Show the review prompt
     await StoreReview.requestReview();
-
-    // Mark as requested and update last prompt date
-    await AsyncStorage.setItem(STORAGE_KEYS.REVIEW_REQUESTED, 'true');
-    await AsyncStorage.setItem(STORAGE_KEYS.LAST_REVIEW_PROMPT, Date.now().toString());
+    await recordReviewPromptShown();
 
     if (__DEV__) {
       console.log('Review prompt shown successfully');
     }
-
     return true;
   } catch (error) {
     if (__DEV__) {
       console.error('Error requesting review:', error);
     }
-    // Fallback to opening store page on error if requested
     if (fallbackToStore) {
       return await openStoreForReview();
     }
@@ -158,14 +249,78 @@ export async function requestReview(fallbackToStore: boolean = false): Promise<b
 }
 
 /**
- * Reset review tracking (for testing purposes)
+ * Open feedback email for users who aren't enjoying the app
  */
+export async function openFeedbackEmail(): Promise<void> {
+  try {
+    const subject = encodeURIComponent('Facts A Day Feedback');
+    const url = `mailto:${SUPPORT_EMAIL}?subject=${subject}`;
+    await Linking.openURL(url);
+  } catch (error) {
+    if (__DEV__) {
+      console.error('Error opening feedback email:', error);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Fact view tracking (simplified — no longer triggers review)
+// ---------------------------------------------------------------------------
+
+/**
+ * Get the current count of facts viewed
+ */
+export async function getFactsViewedCount(): Promise<number> {
+  try {
+    const count = await AsyncStorage.getItem(STORAGE_KEYS.FACTS_VIEWED_COUNT);
+    return count ? parseInt(count, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Track that a fact has been viewed (increment counter only).
+ */
+export async function trackFactView(): Promise<void> {
+  try {
+    const currentCount = await getFactsViewedCount();
+    await AsyncStorage.setItem(STORAGE_KEYS.FACTS_VIEWED_COUNT, (currentCount + 1).toString());
+  } catch (error) {
+    if (__DEV__) {
+      console.error('Error tracking fact view:', error);
+    }
+  }
+}
+
+/**
+ * Handle fact viewed event — increment counter and maybe show interstitial ad.
+ * Review prompts are no longer triggered from here.
+ */
+export async function onFactViewed(source?: string): Promise<void> {
+  try {
+    await trackFactView();
+
+    const { maybeShowFactViewInterstitial } = await import('./adManager');
+    await maybeShowFactViewInterstitial({ skipThisTime: source === 'notification' });
+  } catch (error) {
+    if (__DEV__) {
+      console.error('Error in onFactViewed:', error);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Testing utility
+// ---------------------------------------------------------------------------
+
 export async function resetReviewTracking(): Promise<void> {
   try {
     await AsyncStorage.multiRemove([
       STORAGE_KEYS.FACTS_VIEWED_COUNT,
-      STORAGE_KEYS.REVIEW_REQUESTED,
       STORAGE_KEYS.LAST_REVIEW_PROMPT,
+      STORAGE_KEYS.REVIEW_PROMPT_HISTORY,
+      STORAGE_KEYS.LAST_SATISFACTION_PROMPT,
     ]);
     if (__DEV__) {
       console.log('Review tracking reset');
@@ -173,34 +328,6 @@ export async function resetReviewTracking(): Promise<void> {
   } catch (error) {
     if (__DEV__) {
       console.error('Error resetting review tracking:', error);
-    }
-  }
-}
-
-/**
- * Handle fact viewed event
- * - Increments view count
- * - Shows interstitial ad if threshold reached
- * - Shows app review prompt if conditions are met
- */
-export async function onFactViewed(source?: string): Promise<void> {
-  try {
-    const shouldShowReview = await trackFactView();
-
-    // Check and show interstitial ad based on view count
-    // Import dynamically to avoid circular dependency
-    const { maybeShowFactViewInterstitial } = await import('./adManager');
-    await maybeShowFactViewInterstitial({ skipThisTime: source === 'notification' });
-
-    if (shouldShowReview) {
-      // Small delay to avoid interrupting the user experience
-      setTimeout(async () => {
-        await requestReview();
-      }, 1000);
-    }
-  } catch (error) {
-    if (__DEV__) {
-      console.error('Error checking and requesting review:', error);
     }
   }
 }

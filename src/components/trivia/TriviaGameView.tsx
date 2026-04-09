@@ -16,8 +16,8 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { LAYOUT } from '../../config/app';
-import { maxFontSizeMultipliers } from '../../utils/responsive';
 import { hexColors } from '../../theme';
+import { maxFontSizeMultipliers } from '../../utils/responsive';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
 

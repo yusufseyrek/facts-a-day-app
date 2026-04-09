@@ -13,12 +13,11 @@ import {
 } from '@expo-google-fonts/montserrat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { QueryClientProvider } from '@tanstack/react-query';
 import * as Localization from 'expo-localization';
 import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-
-import { QueryClientProvider } from '@tanstack/react-query';
 import { PostHogErrorBoundary, PostHogProvider } from 'posthog-react-native';
 
 import { showAppOpenAdOnForeground } from '../src/components/ads/AppOpenAd';
@@ -39,21 +38,22 @@ import {
   OnboardingProvider,
   PreloadedDataProvider,
   PremiumProvider,
+  ReviewPromptProvider,
   ScrollToTopProvider,
   setFeedLoadPending,
   setLocaleRefreshPending,
   setPreloadedFactsBeforeMount,
   signalLocaleRefreshDone,
-  waitForFeedLoaded,
   useOnboarding,
+  waitForFeedLoaded,
 } from '../src/contexts';
+import { homeKeys } from '../src/hooks/queryKeys';
 import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
 import { initAnalytics } from '../src/services/analytics';
 import { registerBackgroundSync } from '../src/services/backgroundSync';
 import * as contentRefresh from '../src/services/contentRefresh';
 import { loadDailyFeedSections } from '../src/services/dailyFeed';
-import { homeKeys } from '../src/hooks/queryKeys';
 import * as database from '../src/services/database';
 import { ensureImagesDirExists } from '../src/services/images';
 import { startNetworkMonitoring } from '../src/services/network';
@@ -634,9 +634,11 @@ export default function RootLayout() {
                     <ScrollToTopProvider>
                       <AppThemeProvider>
                         <NavigationThemeWrapper>
-                          <BadgeToastProvider>
-                            <AppContent />
-                          </BadgeToastProvider>
+                          <ReviewPromptProvider>
+                            <BadgeToastProvider>
+                              <AppContent />
+                            </BadgeToastProvider>
+                          </ReviewPromptProvider>
                         </NavigationThemeWrapper>
                       </AppThemeProvider>
                     </ScrollToTopProvider>

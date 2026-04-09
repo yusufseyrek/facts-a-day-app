@@ -13,7 +13,6 @@ import { hexColors, useTheme } from '../../theme';
 import { darkenColor, getContrastColor } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
-
 import { ImageFactCard } from '../ImageFactCard';
 import { FONT_FAMILIES, Text } from '../Typography';
 
