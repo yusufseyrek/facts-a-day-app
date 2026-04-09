@@ -35,7 +35,7 @@ export function SatisfactionModal({
   loveItText,
   notReallyText,
 }: SatisfactionModalProps) {
-  const { screenWidth, maxModalWidth, typography, spacing, radius, iconSizes } = useResponsive();
+  const { maxModalWidth, typography, spacing, radius, iconSizes } = useResponsive();
 
   const bgColor = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
@@ -57,7 +57,7 @@ export function SatisfactionModal({
       <YStack flex={1} justifyContent="center" alignItems="center" padding={spacing.md}>
         {Platform.OS === 'ios' ? (
           <BlurView
-            intensity={isDark ? 50 : 70}
+            intensity={35}
             tint={isDark ? 'dark' : 'light'}
             style={{
               position: 'absolute',

@@ -3,7 +3,6 @@ import React from 'react';
 import { XStack } from 'tamagui';
 
 import { LAYOUT } from '../../config/app';
-import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { Text } from '../Typography';
 

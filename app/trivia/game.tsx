@@ -72,7 +72,7 @@ export default function TriviaGameScreen() {
           : 'mixed';
 
   const [loading, setLoading] = useState(true);
-  const [showingAd, setShowingAd] = useState(false);
+  const [showingAd, _setShowingAd] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
   const [showUnansweredModal, setShowUnansweredModal] = useState(false);
   const [unansweredCount, setUnansweredCount] = useState(0);

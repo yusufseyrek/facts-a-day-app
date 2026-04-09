@@ -10,6 +10,7 @@ import * as db from './database';
 import * as onboardingService from './onboarding';
 import { extractQuestions } from './questions';
 // Lazy-imported to break require cycle (contentRefresh ↔ preferences)
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const getPreferencesService = () => require('./preferences') as typeof import('./preferences');
 
 // AsyncStorage keys

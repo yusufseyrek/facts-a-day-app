@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Pressable, Text as RNText } from 'react-native';
 
-import { Check, Crown, Lock } from '@tamagui/lucide-icons';
+import { Check, Lock } from '@tamagui/lucide-icons';
 import { YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n/useTranslation';

@@ -169,7 +169,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     const keyExtractor = useCallback((item: CategoryItem) => item.slug, []);
 
     // Height for horizontal FlashList container: circle + label margin + label line
-    const listHeight = circleSize + spacing.xs + typography.fontSize.tiny * 2;
+    const _listHeight = circleSize + spacing.xs + typography.fontSize.tiny * 2;
 
     const itemSeparator = useCallback(() => <View style={{ width: spacing.md }} />, [spacing.md]);
 
@@ -223,7 +223,7 @@ const CategoryButton = React.memo(
     iconSize,
     borderWidth,
     labelMarginTop,
-    labelFontSize,
+    labelFontSize: _labelFontSize,
   }: {
     item: CategoryItem;
     hasUnseen: boolean;

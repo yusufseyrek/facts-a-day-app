@@ -9,11 +9,17 @@ export interface SampleFact {
 }
 
 // Bundled images — available offline, no network required
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const NATURE_IMAGE = require('../../assets/onboarding/nature.webp') as ImageSource;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const SPACE_IMAGE = require('../../assets/onboarding/space.webp') as ImageSource;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const CULTURE_IMAGE = require('../../assets/onboarding/culture.webp') as ImageSource;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const HISTORY_IMAGE = require('../../assets/onboarding/history.webp') as ImageSource;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const FOOD_IMAGE = require('../../assets/onboarding/food.webp') as ImageSource;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const TECHNOLOGY_IMAGE = require('../../assets/onboarding/technology.webp') as ImageSource;
 
 const NATURE_COLOR = '#8BC34A';

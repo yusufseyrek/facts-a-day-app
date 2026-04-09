@@ -61,7 +61,7 @@ export const QuickQuizTeaser = React.memo(function QuickQuizTeaser({
   const cardBg = colors.cardBackground;
   const borderColor = colors.border;
   const textColor = isDark ? '#FFFFFF' : colors.text;
-  const secondaryTextColor = colors.textSecondary;
+  const _secondaryTextColor = colors.textSecondary;
   const mutedTextColor = colors.textMuted;
   const warningColor = colors.warning;
 

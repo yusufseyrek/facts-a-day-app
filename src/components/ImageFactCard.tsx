@@ -65,7 +65,7 @@ const ImageFactCardComponent = ({
   contentOverlayStyle,
   favoritePositionStyle,
 }: ImageFactCardProps) => {
-  const { screenWidth, spacing, radius, config, iconSizes } = useResponsive();
+  const { screenWidth, spacing, radius, config } = useResponsive();
 
   // Scale animation using Reanimated (runs on UI thread)
   const scaleAnim = useSharedValue(1);

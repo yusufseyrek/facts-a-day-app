@@ -26,7 +26,7 @@ const RelatedFactsComponent = ({
   categoryColor,
   categoryIcon,
   categoryName,
-  containerWidth,
+  containerWidth: _containerWidth,
 }: RelatedFactsProps) => {
   const { theme } = useTheme();
   const { t } = useTranslation();

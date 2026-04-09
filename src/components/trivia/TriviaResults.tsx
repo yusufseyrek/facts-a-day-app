@@ -140,7 +140,7 @@ function UnavailableQuestionCard({
   cardHeight?: number;
   onCardLayout?: (height: number) => void;
 }) {
-  const { typography, spacing, radius, iconSizes, media } = useResponsive();
+  const { typography, spacing, radius, iconSizes } = useResponsive();
   const cardBackground = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;

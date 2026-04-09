@@ -18,7 +18,6 @@ import * as onboardingService from './onboarding';
 import { extractQuestions } from './questions';
 
 import type { SupportedLocale } from '../i18n/translations';
-import type { FactResponse } from './api';
 
 // Feed refresh listeners for preference changes
 type FeedRefreshListener = () => void;

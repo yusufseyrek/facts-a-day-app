@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BookOpen, ChevronLeft, ChevronRight, Lightbulb, Timer, X } from '@tamagui/lucide-icons';
+import { ChevronLeft, ChevronRight, Lightbulb, Timer, X } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
@@ -74,7 +74,7 @@ export function TriviaGameView({
   onExit,
   isDark,
   t,
-  onOpenFact,
+  onOpenFact: _onOpenFact,
   onShowExplanation,
   canUseExplanation = false,
   showExplanation = false,

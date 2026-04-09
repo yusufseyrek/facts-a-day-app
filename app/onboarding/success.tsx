@@ -174,7 +174,7 @@ export default function OnboardingSuccessScreen() {
   const [showConsent, setShowConsent] = useState(false);
   const [consentDone, setConsentDone] = useState(false);
   const [consentLoading, setConsentLoading] = useState(false);
-  const [flowComplete, setFlowComplete] = useState(false);
+  const [_flowComplete, setFlowComplete] = useState(false);
 
   // Responsive icon container size — derives from heroLg icon + padding
   const iconContainerSize = iconSizes.heroLg * 2 + spacing.md;
@@ -212,7 +212,7 @@ export default function OnboardingSuccessScreen() {
         console.error('Error completing onboarding:', error);
         try {
           await completeOnboarding();
-        } catch {}
+        } catch { /* ignore */ }
       }
     })();
 
@@ -229,7 +229,7 @@ export default function OnboardingSuccessScreen() {
         queryClient.setQueryData(homeKeys.dailyFeed(locale), feedSections);
 
         // Also prime Keep Reading cache so it's available immediately
-        const latestIds = feedSections.freshFacts.slice(0, HOME_FEED.LATEST_COUNT).map((f) => f.id);
+        const _latestIds = feedSections.freshFacts.slice(0, HOME_FEED.LATEST_COUNT).map((f) => f.id);
         const keepReadingPage = await database.getLatestFactsPaginated(
           HOME_FEED.KEEP_READING_PAGE_SIZE,
           HOME_FEED.LATEST_COUNT,

@@ -22,6 +22,7 @@ module.exports = [
       'eslint.config.js',
       'plugins/**',
       'marketing/**',
+      'build/**',
     ],
   },
 
@@ -61,6 +62,8 @@ module.exports = [
         URLSearchParams: 'readonly',
         requestAnimationFrame: 'readonly',
         cancelAnimationFrame: 'readonly',
+        requestIdleCallback: 'readonly',
+        cancelIdleCallback: 'readonly',
         atob: 'readonly',
         btoa: 'readonly',
         // React Native specific

@@ -18,7 +18,7 @@ import * as onboardingService from './onboarding';
  * Note: Premium categories remain in the local DB so they can be shown
  * as locked in the category picker (conversion opportunity).
  */
-export async function handlePremiumDowngrade(locale: string): Promise<void> {
+export async function handlePremiumDowngrade(_locale: string): Promise<void> {
   try {
     const premiumSlugs = await db.getPremiumCategorySlugs();
     if (premiumSlugs.length === 0) return;

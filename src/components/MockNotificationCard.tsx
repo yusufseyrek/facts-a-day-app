@@ -49,6 +49,7 @@ export function MockNotificationCard({ appName, timeLabel, factText }: MockNotif
         {/* App icon — vertically centered */}
         <View style={{ justifyContent: 'center' }}>
           <Image
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             source={require('../../assets/icon.png')}
             style={{
               width: appIconSize,

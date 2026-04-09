@@ -4,18 +4,13 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import {
   Bell,
-  Bug,
-  Camera,
-  CircleCheck,
   Crown,
-  Download,
   Eye,
   FileText,
   Globe,
   Grid,
   Heart,
   Palette,
-  Plus,
   RotateCcw,
   Search,
   Settings,
@@ -286,7 +281,7 @@ export default function SettingsPage() {
   };
 
   // Manually check for OTA updates
-  const handleCheckForUpdates = async () => {
+  const _handleCheckForUpdates = async () => {
     // First fetch manifest directly to compare
     const manifestInfo = await fetchManifestDirectly();
     const debugInfo = getUpdateDebugInfo();
@@ -590,7 +585,7 @@ export default function SettingsPage() {
     ]);
   };
 
-  const handleAdd10RandomFacts = async () => {
+  const _handleAdd10RandomFacts = async () => {
     try {
       if (__DEV__) console.log('📚 Adding 10 random facts with past dates for feed testing...');
 
@@ -646,7 +641,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleMarkAllStoriesViewed = async () => {
+  const _handleMarkAllStoriesViewed = async () => {
     try {
       const count = await database.markAllFactsViewedInStory(locale);
       Alert.alert('Stories Marked Viewed', `${count} facts marked as viewed in story`, [
@@ -657,7 +652,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleScheduleDuplicateNotifications = async () => {
+  const _handleScheduleDuplicateNotifications = async () => {
     try {
       if (__DEV__) console.log('🐛 Creating buggy notification schedule to test repair...');
 

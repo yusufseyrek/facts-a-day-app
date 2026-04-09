@@ -126,7 +126,7 @@ export async function fetchAllFacts(
 
     let totalInserted = 0;
 
-    const result = await api.fetchFactsIncrementally({
+    const _result = await api.fetchFactsIncrementally({
       language,
       categories: categoriesParam,
       initialBatchSize: API_SETTINGS.INITIAL_BATCH_SIZE,

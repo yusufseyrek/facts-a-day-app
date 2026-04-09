@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-unused-styles */
 import React, { useMemo } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
