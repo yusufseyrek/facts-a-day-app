@@ -6,19 +6,9 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { YStack } from 'tamagui';
 
-import {
-  EmptyState,
-  LoadingContainer,
-  ScreenContainer,
-} from '../../src/components';
-import {
-  CategoryStoryButtonsRef,
-} from '../../src/components/CategoryStoryButtons';
-import {
-  HomeHeader,
-  HomeListHeader,
-  LocaleChangeOverlay,
-} from '../../src/components/home';
+import { EmptyState, LoadingContainer, ScreenContainer } from '../../src/components';
+import { CategoryStoryButtonsRef } from '../../src/components/CategoryStoryButtons';
+import { HomeHeader, HomeListHeader, LocaleChangeOverlay } from '../../src/components/home';
 import { KeepReadingList } from '../../src/components/home/KeepReadingList';
 import { PAYWALL_PROMPT } from '../../src/config/app';
 import { queryClient } from '../../src/config/queryClient';
@@ -29,15 +19,11 @@ import { useHomeFeedEvents } from '../../src/hooks/useHomeFeedEvents';
 import { useKeepReading } from '../../src/hooks/useKeepReading';
 import { useReadingStreak } from '../../src/hooks/useReadingStreak';
 import { useTranslation } from '../../src/i18n';
-import {
-  Screens,
-  trackFeedRefresh,
-  trackScreenView,
-} from '../../src/services/analytics';
+import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
 import { isModalScreenActive } from '../../src/services/badges';
 import { consumeFeedRefreshPending, forceRefreshContent } from '../../src/services/contentRefresh';
 import { loadDailyFeedSections } from '../../src/services/dailyFeed';
-import { clearGlobalProgress,setGlobalProgress } from '../../src/services/globalProgress';
+import { clearGlobalProgress, setGlobalProgress } from '../../src/services/globalProgress';
 import { preCacheOfflineImages } from '../../src/services/images';
 import { shouldShowPaywall } from '../../src/services/paywallTiming';
 import { hexColors, useTheme } from '../../src/theme';
@@ -68,10 +54,10 @@ function HomeScreen() {
   const onThisDayListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const storyButtonsRef = useRef<CategoryStoryButtonsRef>(null);
 
-  const { backgroundRefreshStatus } = useHomeFeedEvents(
-    locale,
-    { latestListRef, onThisDayListRef }
-  );
+  const { backgroundRefreshStatus } = useHomeFeedEvents(locale, {
+    latestListRef,
+    onThisDayListRef,
+  });
 
   // Scroll-to-top handler for tab re-tap
   useScrollToTopHandler(

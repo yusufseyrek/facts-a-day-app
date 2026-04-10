@@ -71,6 +71,7 @@ const phoneMedia = {
   categoryIconContainerSize: 48,
   answerLabelWidth: 70,
   compactCardThumbnailSize: 84,
+  keepReadingImageSize: 105,
 } as const;
 
 export const media = {

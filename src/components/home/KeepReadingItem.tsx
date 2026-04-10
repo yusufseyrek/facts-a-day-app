@@ -11,8 +11,6 @@ import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { FactWithRelations } from '../../services/database';
 
-const IMAGE_SCALE = 1.25;
-
 interface KeepReadingItemProps {
   fact: FactWithRelations;
   index: number;
@@ -31,7 +29,7 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
   const colors = hexColors[theme];
   const resolvedUri = useResolvedImageUri(fact.id, fact.image_url);
 
-  const imageSize = Math.round(media.compactCardThumbnailSize * IMAGE_SCALE);
+  const imageSize = media.keepReadingImageSize;
   const categoryName = fact.categoryData?.name;
 
   const handlePress = useCallback(() => {
