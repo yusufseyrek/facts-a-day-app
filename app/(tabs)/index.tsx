@@ -161,7 +161,6 @@ function HomeScreen() {
     queryClient.invalidateQueries({ queryKey: homeKeys.keepReading(locale) });
     queryClient.invalidateQueries({ queryKey: homeKeys.readingStreak() });
     setRefreshing(false);
-    keepReadingListRef.current?.scrollToOffset({ offset: 0, animated: false });
   }, [locale]);
 
   // Keep Reading press handler

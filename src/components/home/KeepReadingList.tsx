@@ -135,6 +135,7 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         getItemType={getItemType}
+        maintainVisibleContentPosition={{ disabled: true }}
         ListHeaderComponent={ListHeaderComponent}
         ListFooterComponent={listFooter}
         refreshControl={refreshControl}
