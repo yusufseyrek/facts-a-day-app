@@ -48,6 +48,8 @@ interface ImageFactCardProps {
   /** Optional style override for the content overlay (title area at the bottom) */
   contentOverlayStyle?: ViewStyle;
   favoritePositionStyle?: ViewStyle;
+  /** Optional override for the title's number of lines. Defaults to config.maxLines. */
+  titleNumberOfLines?: number;
 }
 
 const ImageFactCardComponent = ({
@@ -64,6 +66,7 @@ const ImageFactCardComponent = ({
   TitleComponent,
   contentOverlayStyle,
   favoritePositionStyle,
+  titleNumberOfLines,
 }: ImageFactCardProps) => {
   const { screenWidth, spacing, radius, config } = useResponsive();
 
@@ -298,7 +301,7 @@ const ImageFactCardComponent = ({
                 <CategoryBadge category={category} />
               </View>
             )}
-            <Title color="#FFFFFF" numberOfLines={config.maxLines} style={styles.titleShadow}>
+            <Title color="#FFFFFF" numberOfLines={titleNumberOfLines ?? config.maxLines} style={styles.titleShadow}>
               {title}
             </Title>
           </View>
@@ -400,7 +403,7 @@ const ImageFactCardComponent = ({
 
             {/* Content overlay */}
             <View style={[styles.contentOverlay, _contentOverlayStyle]}>
-              <Title color="#FFFFFF" numberOfLines={config.maxLines} style={styles.titleShadow}>
+              <Title color="#FFFFFF" numberOfLines={titleNumberOfLines ?? config.maxLines} style={styles.titleShadow}>
                 {title}
               </Title>
             </View>
@@ -476,6 +479,7 @@ export const ImageFactCard = React.memo(ImageFactCardComponent, (prevProps, next
     prevProps.cardWidth === nextProps.cardWidth &&
     prevProps.TitleComponent === nextProps.TitleComponent &&
     prevProps.contentOverlayStyle === nextProps.contentOverlayStyle &&
-    prevProps.favoritePositionStyle === nextProps.favoritePositionStyle
+    prevProps.favoritePositionStyle === nextProps.favoritePositionStyle &&
+    prevProps.titleNumberOfLines === nextProps.titleNumberOfLines
   );
 });

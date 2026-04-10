@@ -19,7 +19,12 @@ import type { FactWithRelations } from '../../services/database';
 interface LatestCarouselProps {
   facts: FactWithRelations[];
   factIds: number[];
-  onFactPress: (fact: FactWithRelations, source: FactViewSource, factIds: number[], index: number) => void;
+  onFactPress: (
+    fact: FactWithRelations,
+    source: FactViewSource,
+    factIds: number[],
+    index: number
+  ) => void;
   listRef?: React.RefObject<FlashListRef<FactWithRelations> | null>;
 }
 
@@ -79,6 +84,7 @@ export const LatestCarousel = React.memo(function LatestCarousel({
             onPress={() => onFactPress(item, 'home_latest', factIds, factIndex)}
             cardWidth={cardWidth}
             aspectRatio={1}
+            titleNumberOfLines={5}
           />
         </View>
       );
