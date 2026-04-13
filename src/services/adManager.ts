@@ -1,15 +1,13 @@
-import { showInterstitialAd } from '../components/ads/InterstitialAd';
-import { INTERSTITIAL_ADS } from '../config/app';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { type InterstitialSource,trackInterstitialShown } from './analytics';
-import { getFactsViewedCount } from './appReview';
+import { showInterstitialAd } from '../components/ads/InterstitialAd';
+import { INTERSTITIAL_ADS, STORAGE_KEYS } from '../config/app';
+
+import { type InterstitialSource, trackInterstitialShown } from './analytics';
 import { shouldShowAds } from './premiumState';
 
 /** Timestamp of the last interstitial ad shown (ms) */
 let lastInterstitialShownAt = 0;
-
-/** When true, the next non-notification fact view should show a deferred interstitial */
-let deferredFactViewInterstitial = false;
 
 /**
  * Check if enough time has passed since the last interstitial
@@ -41,57 +39,54 @@ const maybeShowInterstitial = async (source: InterstitialSource): Promise<boolea
 };
 
 /**
- * Show interstitial ad during settings changes (respects cooldown)
+ * Increment a persistent integer counter in AsyncStorage and return the new value.
  */
-export const showSettingsInterstitial = (): Promise<boolean> => maybeShowInterstitial('settings');
+const incrementCounter = async (key: string): Promise<number> => {
+  const raw = await AsyncStorage.getItem(key);
+  const next = (raw ? parseInt(raw, 10) || 0 : 0) + 1;
+  await AsyncStorage.setItem(key, next.toString());
+  return next;
+};
 
 /**
- * Show interstitial ad before trivia results (respects cooldown)
+ * Show interstitial ad after a trivia game completion.
+ * Fires every Nth completion (configured in INTERSTITIAL_ADS.TRIVIAS_BETWEEN_ADS)
+ * and respects the global cooldown.
  */
-export const showTriviaResultsInterstitial = (): Promise<boolean> =>
-  maybeShowInterstitial('trivia_results');
-
-/**
- * Show interstitial ad during quick quiz (respects cooldown)
- */
-export const showQuickQuizInterstitial = (): Promise<boolean> =>
-  maybeShowInterstitial('quick_quiz');
-
-/**
- * Show interstitial ad based on fact view count (respects cooldown).
- * Shows ad every N fact views (configured in INTERSTITIAL_ADS.FACTS_BETWEEN_ADS).
- *
- * When `skipThisTime` is true (e.g. fact opened from a notification where an app-open
- * ad was already shown), the interstitial is deferred to the next non-skipped fact view.
- */
-export const maybeShowFactViewInterstitial = async (opts?: {
-  skipThisTime?: boolean;
-}): Promise<void> => {
-  if (!INTERSTITIAL_ADS.ENABLED) return;
-  if (!shouldShowAds()) return;
+export const maybeShowTriviaResultsInterstitial = async (): Promise<boolean> => {
+  if (!INTERSTITIAL_ADS.ENABLED) return false;
+  if (!shouldShowAds()) return false;
 
   try {
-    const skipThisTime = opts?.skipThisTime ?? false;
-
-    // A previous view was skipped — show the deferred ad on this (non-notification) view
-    if (deferredFactViewInterstitial && !skipThisTime) {
-      deferredFactViewInterstitial = false;
-      await maybeShowInterstitial('fact_view');
-      return;
+    const count = await incrementCounter(STORAGE_KEYS.TRIVIAS_COMPLETED_COUNT);
+    if (count > 0 && count % INTERSTITIAL_ADS.TRIVIAS_BETWEEN_ADS === 0) {
+      return await maybeShowInterstitial('trivia_results');
     }
-
-    const viewCount = await getFactsViewedCount();
-    const isAtBoundary =
-      viewCount > 0 && viewCount % INTERSTITIAL_ADS.FACTS_BETWEEN_ADS === 0;
-
-    if (isAtBoundary) {
-      if (skipThisTime) {
-        deferredFactViewInterstitial = true;
-      } else {
-        await maybeShowInterstitial('fact_view');
-      }
-    }
+    return false;
   } catch (error) {
-    console.error('Error showing fact view interstitial:', error);
+    console.error('Error showing trivia results interstitial:', error);
+    return false;
   }
 };
+
+/**
+ * Show interstitial ad after a category-save action.
+ * Fires every Nth save (configured in INTERSTITIAL_ADS.CATEGORY_CHANGES_BETWEEN_ADS)
+ * and respects the global cooldown.
+ */
+export const maybeShowCategoryChangeInterstitial = async (): Promise<boolean> => {
+  if (!INTERSTITIAL_ADS.ENABLED) return false;
+  if (!shouldShowAds()) return false;
+
+  try {
+    const count = await incrementCounter(STORAGE_KEYS.CATEGORY_CHANGES_COUNT);
+    if (count > 0 && count % INTERSTITIAL_ADS.CATEGORY_CHANGES_BETWEEN_ADS === 0) {
+      return await maybeShowInterstitial('settings');
+    }
+    return false;
+  } catch (error) {
+    console.error('Error showing category change interstitial:', error);
+    return false;
+  }
+};
+

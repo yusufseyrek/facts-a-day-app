@@ -56,10 +56,11 @@ export function getTriviaModeBadge(options: TriviaModeBadgeOptions): TriviaModeB
     };
   }
 
-  // Quick mode (home screen quiz teaser)
+  // Quick mode (legacy: home screen quiz teaser, removed feature).
+  // Kept so historical session-history entries with trivia_mode='quick' still render.
   if (mode === 'quick') {
     return {
-      label: t('quickQuiz') || 'Quick Quiz',
+      label: 'Quick Quiz',
       icon: 'zap',
       color: isDark ? hexColors.dark.accent : hexColors.light.accent,
     };

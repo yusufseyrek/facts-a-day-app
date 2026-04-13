@@ -157,7 +157,8 @@ function SessionCard({
       case 'mixed':
         return t('mixedTrivia');
       case 'quick':
-        return t('quickQuiz');
+        // Legacy mode (Quick Quiz feature removed); historical sessions still render.
+        return 'Quick Quiz';
       default:
         return t('trivia');
     }

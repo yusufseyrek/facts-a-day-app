@@ -140,37 +140,6 @@ export async function getDailyStreak(): Promise<number> {
   return database.getAnyTriviaStreak();
 }
 
-// ====== HOME SCREEN QUIZ ======
-
-/**
- * Get a single random question for the home screen quiz teaser.
- * Uses daily_feed_cache to lock the question for the day.
- * Falls back to a random unanswered question if no daily trivia questions exist.
- */
-export async function getRandomQuestionForQuiz(
-  language: string,
-  skipCache = false
-): Promise<QuestionWithFact | null> {
-  // Check daily cache first (unless retrying for a new question)
-  if (!skipCache) {
-    const cachedId = await database.getCachedQuizQuestionId();
-    if (cachedId !== null) {
-      const cached = await database.getQuestionsByIds([cachedId]);
-      if (cached.length > 0) return cached[0];
-      // Cached question was deleted — fall through to pick a new one
-    }
-  }
-
-  // Pick a random unanswered question from the entire pool
-  const random = await database.getRandomUnansweredQuestions(1, language);
-  if (random.length > 0) {
-    await database.setCachedQuizQuestionId(random[0].id);
-    return random[0];
-  }
-
-  return null;
-}
-
 // ====== MIXED TRIVIA ======
 
 /**

@@ -8,11 +8,10 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { Button, CategoryCard, ScreenContainer, SuccessToast, Text } from '../../src/components';
-import { showRewardedAd } from '../../src/components/ads/RewardedAd';
 import { MINIMUM_CATEGORIES } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
-import { showSettingsInterstitial } from '../../src/services/adManager';
+import { maybeShowCategoryChangeInterstitial } from '../../src/services/adManager';
 import {
   Screens,
   trackCategoriesUpdate,
@@ -40,6 +39,7 @@ export default function CategoriesSettings() {
   const [initialCategories, setInitialCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const { typography, config, iconSizes, spacing } = useResponsive();
 
@@ -173,38 +173,41 @@ export default function CategoriesSettings() {
       return;
     }
 
-    // Non-premium users must watch a rewarded ad to update categories
-    if (!isPremium) {
-      const rewarded = await showRewardedAd();
-      if (!rewarded) return;
+    setIsSaving(true);
+    try {
+      // 1. Persist the selection
+      await onboardingService.setSelectedCategories(selectedCategories);
+
+      // 2. Track analytics
+      const addedCount = selectedCategories.filter(
+        (cat) => !initialCategories.includes(cat)
+      ).length;
+      const removedCount = initialCategories.filter(
+        (cat) => !selectedCategories.includes(cat)
+      ).length;
+      trackCategoriesUpdate({ count: selectedCategories.length, addedCount, removedCount });
+      updateCategoriesProperty(selectedCategories);
+
+      // 3. Fire-and-forget: refresh data in background with global progress bar
+      preferencesService
+        .handleCategoriesChange(selectedCategories, locale, (progress) => {
+          setGlobalProgress(progress.percentage / 100);
+        })
+        .then(() => setTimeout(clearGlobalProgress, 1000))
+        .catch((error) => {
+          console.error('Background category refresh failed:', error);
+          clearGlobalProgress();
+        });
+
+      // 4. Show interstitial (respects cadence + cooldown). Awaited so the
+      //    success toast doesn't collide with the ad's view-controller presentation.
+      await maybeShowCategoryChangeInterstitial().catch(() => {});
+    } finally {
+      setIsSaving(false);
     }
 
-    // Save selection and show toast (navigates back when toast hides)
-    await onboardingService.setSelectedCategories(selectedCategories);
-
-    // Track analytics
-    const addedCount = selectedCategories.filter(
-      (cat) => !initialCategories.includes(cat)
-    ).length;
-    const removedCount = initialCategories.filter(
-      (cat) => !selectedCategories.includes(cat)
-    ).length;
-    trackCategoriesUpdate({ count: selectedCategories.length, addedCount, removedCount });
-    updateCategoriesProperty(selectedCategories);
-
+    // 5. Show success toast — its onHide navigates back.
     setShowSuccessToast(true);
-
-    // Fire-and-forget: refresh data in background with global progress bar
-    showSettingsInterstitial();
-    preferencesService
-      .handleCategoriesChange(selectedCategories, locale, (progress) => {
-        setGlobalProgress(progress.percentage / 100);
-      })
-      .then(() => setTimeout(clearGlobalProgress, 1000))
-      .catch((error) => {
-        console.error('Background category refresh failed:', error);
-        clearGlobalProgress();
-      });
   };
 
   // Split categories into rows
@@ -390,8 +393,9 @@ export default function CategoriesSettings() {
             <Button
               onPress={handleSave}
               disabled={selectedCategories.length < MINIMUM_CATEGORIES}
+              loading={isSaving}
             >
-              {!isPremium && hasChanges() ? t('watchAdToSave') : t('save')}
+              {t('save')}
             </Button>
           </View>
         </Animated.View>

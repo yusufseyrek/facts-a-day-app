@@ -13,6 +13,8 @@ import { AD_KEYWORDS } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { canShowRewardedAds } from '../../services/premiumState';
 
+import { suppressNextForegroundAppOpenAd } from './AppOpenAd';
+
 // Get Rewarded Ad Unit ID based on platform
 const getRewardedAdUnitId = (): string => {
   const isIOS = Platform.OS === 'ios';
@@ -236,6 +238,10 @@ export const showRewardedAd = async (): Promise<boolean> => {
           resolve(false);
         });
       });
+
+      // Suppress the next foreground app-open ad — same Android Activity issue
+      // as interstitials (see AppOpenAd.ts for details).
+      suppressNextForegroundAppOpenAd();
 
       await rewarded.show();
       const result = await adCompletedPromise;

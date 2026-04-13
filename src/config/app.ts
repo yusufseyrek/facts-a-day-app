@@ -41,13 +41,13 @@ export const APP_CHECK = {
  */
 export const INTERSTITIAL_ADS = {
   /** Whether interstitial ads are enabled */
-  ENABLED: false,
-  /** Number of fact views between interstitial ads */
-  FACTS_BETWEEN_ADS: 5,
+  ENABLED: true,
+  /** Number of completed trivia games between interstitial ads */
+  TRIVIAS_BETWEEN_ADS: 2,
+  /** Number of category-save actions between interstitial ads */
+  CATEGORY_CHANGES_BETWEEN_ADS: 1,
   /** Minimum seconds between interstitial ads (cooldown) */
-  COOLDOWN_SECONDS: 300,
-  /** Number of quick quiz answers between interstitial ads */
-  QUICK_QUIZ_ANSWERS_BETWEEN_ADS: 10,
+  COOLDOWN_SECONDS: 3,
 } as const;
 
 /**
@@ -115,6 +115,10 @@ export const STORAGE_KEYS = {
   EXPLANATION_HINT_COUNT: '@explanation_hint_count',
   /** Key for tracking last paywall prompt timestamp */
   PAYWALL_LAST_SHOWN: '@paywall_last_shown',
+  /** Key for tracking number of completed trivia games (for interstitial cadence) */
+  TRIVIAS_COMPLETED_COUNT: '@trivias_completed_count',
+  /** Key for tracking number of category-save actions (for interstitial cadence) */
+  CATEGORY_CHANGES_COUNT: '@category_changes_count',
 } as const;
 
 /**

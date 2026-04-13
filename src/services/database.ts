@@ -3561,38 +3561,6 @@ export async function clearAllShownInFeed(): Promise<void> {
   );
 }
 
-// ====== DAILY FEED CACHE ======
-
-/**
- * Get the cached quiz question ID for today (stored in daily_feed_cache with section='quick_quiz').
- * Returns null if no cached question exists for today.
- */
-export async function getCachedQuizQuestionId(): Promise<number | null> {
-  const database = await openDatabase();
-  const row = await database.getFirstAsync<{ fact_id: number }>(
-    `SELECT fact_id FROM daily_feed_cache
-     WHERE section = 'quick_quiz' AND cached_date = date('now', 'localtime')
-     LIMIT 1`
-  );
-  return row?.fact_id ?? null;
-}
-
-/**
- * Cache a quiz question ID for today (uses daily_feed_cache table).
- */
-export async function setCachedQuizQuestionId(questionId: number): Promise<void> {
-  const database = await openDatabase();
-  const todayResult = await database.getFirstAsync<{ today: string }>(
-    "SELECT date('now', 'localtime') as today"
-  );
-  const today = todayResult?.today || new Date().toISOString().split('T')[0];
-  await database.runAsync('DELETE FROM daily_feed_cache WHERE section = ?', ['quick_quiz']);
-  await database.runAsync(
-    'INSERT INTO daily_feed_cache (section, fact_id, cached_date, display_order) VALUES (?, ?, ?, 0)',
-    ['quick_quiz', questionId, today]
-  );
-}
-
 /**
  * Count distinct facts the user has viewed or opened today.
  * Uses range comparison to leverage existing indexes on story_viewed_at and detail_opened_at.

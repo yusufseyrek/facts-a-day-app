@@ -25,6 +25,28 @@ const adUnitId = getAppOpenAdUnitId();
 let appOpenAd: AppOpenAd | null = null;
 let adLoadedTimestamp: number = 0;
 let lastAppOpenAdShownAt: number = 0;
+/**
+ * On Android, full-screen ads (interstitial, rewarded) run in a separate Activity.
+ * When that Activity closes the app's MainActivity resumes, causing a false
+ * background→foreground transition that would immediately fire an app-open ad.
+ *
+ * Instead of a time-window we use a boolean flag:
+ *  1. Set `true` before showing any full-screen ad.
+ *  2. On the next foreground transition, if the flag is `true` we skip the
+ *     app-open ad and reset the flag so subsequent real foregrounds work normally.
+ *
+ * This is the pattern recommended in invertase/react-native-google-mobile-ads#102.
+ */
+let skipNextForegroundAppOpenAd = false;
+
+/**
+ * Call this before showing any full-screen ad (interstitial, rewarded) so the
+ * false foreground event caused by that ad's Activity closing does not trigger
+ * an app-open ad.
+ */
+export const suppressNextForegroundAppOpenAd = (): void => {
+  skipNextForegroundAppOpenAd = true;
+};
 
 // Store unsubscribe functions for current listeners
 let cleanupLoadListeners: (() => void) | null = null;
@@ -242,8 +264,19 @@ export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
     return false;
   }
 
-  // Enforce cooldown
   const now = Date.now();
+
+  // Suppress if another full-screen ad was just shown — Android briefly
+  // backgrounds the app when that ad's Activity closes, which would otherwise
+  // double up with an app-open ad. Reset the flag so the next real foreground
+  // transition works normally.
+  if (skipNextForegroundAppOpenAd) {
+    if (__DEV__) console.log('⏭️ Skipping foreground app-open ad — full-screen ad just shown');
+    skipNextForegroundAppOpenAd = false;
+    return false;
+  }
+
+  // Enforce cooldown
   if (now - lastAppOpenAdShownAt < APP_OPEN_ADS.FOREGROUND_COOLDOWN_MS) {
     return false;
   }

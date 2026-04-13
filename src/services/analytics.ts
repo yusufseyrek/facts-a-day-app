@@ -460,7 +460,7 @@ export const trackNotificationTimeChange = (timesCount: number): void => {
 // Ads Events
 // ============================================================================
 
-export type InterstitialSource = 'fact_view' | 'settings' | 'content_refresh' | 'trivia_results' | 'quick_quiz';
+export type InterstitialSource = 'settings' | 'content_refresh' | 'trivia_results';
 
 /**
  * Track when interstitial ad is shown
@@ -798,35 +798,3 @@ export const trackCarouselSwipe = (params: {
   posthog.capture('carousel_swiped', props);
 };
 
-// ============================================================================
-// Home Quick Quiz
-// ============================================================================
-
-export const trackQuickQuizAnswer = (params: {
-  questionId: number;
-  isCorrect: boolean;
-  questionType: string;
-}): void => {
-  const props = {
-    question_id: params.questionId,
-    is_correct: params.isCorrect,
-    question_type: params.questionType,
-  };
-  logEvent('app_quick_quiz_answer', props);
-  posthog.capture('quick_quiz_answered', props);
-};
-
-export const trackQuickQuizSessionComplete = (params: {
-  questionCount: number;
-  correctCount: number;
-}): void => {
-  const accuracy =
-    params.questionCount > 0 ? Math.round((params.correctCount / params.questionCount) * 100) : 0;
-  const props = {
-    question_count: params.questionCount,
-    correct_count: params.correctCount,
-    accuracy,
-  };
-  logEvent('app_quick_quiz_session_complete', props);
-  posthog.capture('quick_quiz_session_completed', props);
-};

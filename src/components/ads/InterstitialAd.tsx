@@ -8,6 +8,8 @@ import { AD_KEYWORDS, INTERSTITIAL_ADS } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { shouldShowAds } from '../../services/premiumState';
 
+import { suppressNextForegroundAppOpenAd } from './AppOpenAd';
+
 // Get Interstitial Ad Unit ID based on platform
 const getInterstitialAdUnitId = (): string => {
   const isIOS = Platform.OS === 'ios';
@@ -232,6 +234,12 @@ export const showInterstitialAd = async (): Promise<void> => {
           cleanup();
         });
       });
+
+      // Suppress the next foreground app-open ad. On Android the interstitial
+      // runs in its own Activity; when it closes, MainActivity resumes and
+      // triggers a false foreground transition. The boolean flag persists
+      // until consumed, so no race condition or timing window to worry about.
+      suppressNextForegroundAppOpenAd();
 
       // Show the ad
       await interstitial.show();
