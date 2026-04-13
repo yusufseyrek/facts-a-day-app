@@ -45,9 +45,9 @@ export const INTERSTITIAL_ADS = {
   /** Number of completed trivia games between interstitial ads */
   TRIVIAS_BETWEEN_ADS: 2,
   /** Number of category-save actions between interstitial ads */
-  CATEGORY_CHANGES_BETWEEN_ADS: 1,
+  CATEGORY_CHANGES_BETWEEN_ADS: 3,
   /** Minimum seconds between interstitial ads (cooldown) */
-  COOLDOWN_SECONDS: 3,
+  COOLDOWN_SECONDS: 300,
 } as const;
 
 /**

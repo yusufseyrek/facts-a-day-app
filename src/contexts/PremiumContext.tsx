@@ -200,6 +200,8 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
         setIsPremium(true);
         setPremiumState(true);
       }
+      // Seed lastKnownStatusRef so a later transition to false can trigger downgrade cleanup.
+      lastKnownStatusRef.current = !!cached;
       if (prices.length > 0) {
         setCachedPrices(prices);
       }

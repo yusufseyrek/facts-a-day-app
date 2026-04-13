@@ -87,7 +87,7 @@ export function TriviaNativeAdView({
         flex: 1,
         backgroundColor: bgColor,
         paddingTop: insets.top,
-        paddingBottom: insets.bottom,
+        paddingBottom: insets.bottom + spacing.sm,
       }}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -273,7 +273,12 @@ export function TriviaNativeAdView({
               <CircularProgress duration={navLockDuration} size={iconSizes.lg} />
             ) : (
               <>
-                <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold} numberOfLines={1} adjustsFontSizeToFit>
+                <Text.Body
+                  color="#FFFFFF"
+                  fontFamily={FONT_FAMILIES.semibold}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
                   {t('nextQuestion')}
                 </Text.Body>
                 <ChevronRight size={typography.fontSize.title} color="#FFFFFF" />

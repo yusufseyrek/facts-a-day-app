@@ -388,6 +388,11 @@ export default function RootLayout() {
           .catch((error) => {
             console.error('OTA update check on foreground failed:', error);
           });
+
+        // Sync content from API — emitFeedRefresh() will auto-update home feed when new facts arrive.
+        contentRefresh.refreshAppContent().catch((error) => {
+          console.error('Foreground content refresh failed:', error);
+        });
       }
       appStateRef.current = nextAppState;
     };

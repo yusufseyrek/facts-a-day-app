@@ -89,7 +89,7 @@ export default function SettingsPage() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const { resetOnboarding } = useOnboarding();
-  const { isPremium, restorePurchases } = usePremium();
+  const { isPremium, restorePurchases, devSetPremium } = usePremium();
   const { iconSizes, spacing, isTablet } = useResponsive();
 
   // Track if this is the initial mount to prevent re-animation on tab focus
@@ -906,6 +906,22 @@ export default function SettingsPage() {
           },
         },
         {
+          id: 'devTogglePremium',
+          label: isPremium ? 'Dev: Disable Premium' : 'Dev: Enable Premium',
+          value: isPremium ? 'on' : 'off',
+          icon: <Crown size={iconSizes.md} color={isPremium ? '#FFD700' : iconColor} />,
+          onPress: async () => {
+            const next = !isPremium;
+            await devSetPremium(next);
+            Alert.alert(
+              next ? 'Premium enabled' : 'Premium disabled',
+              next
+                ? 'Premium is now ON. Restart the app to test cold-start behavior.'
+                : 'Premium is now OFF. handlePremiumDowngrade should run — premium categories should be removed.'
+            );
+          },
+        },
+        {
           id: 'resetOnboarding',
           label: t('resetOnboarding'),
           icon: <RotateCcw size={iconSizes.md} color={iconColor} />,
@@ -1008,6 +1024,7 @@ export default function SettingsPage() {
     isCheckingUpdate,
     isPremium,
     restorePurchases,
+    devSetPremium,
     router,
   ]);
 

@@ -1022,7 +1022,7 @@ export function FactModal({
               <Text.Body
                 color="$text"
                 fontFamily={FONT_FAMILIES.semibold}
-                marginBottom={typography.fontSize.body}
+                marginVertical={typography.fontSize.body}
               >
                 {fact.summary}
               </Text.Body>
