@@ -991,7 +991,7 @@ export function FactModal({
             {/* Category Badge & Date */}
             {(categoryForBadge || fact.last_updated || fact.created_at) && (
               <XStack
-                gap={spacing.sm}
+                paddingTop={spacing.md}
                 flexWrap="wrap"
                 alignItems="center"
                 justifyContent="space-between"
@@ -1023,6 +1023,7 @@ export function FactModal({
                 color="$text"
                 fontFamily={FONT_FAMILIES.semibold}
                 marginVertical={typography.fontSize.body}
+                fontSize={typography.fontSize.body * 1.1}
               >
                 {fact.summary}
               </Text.Body>
