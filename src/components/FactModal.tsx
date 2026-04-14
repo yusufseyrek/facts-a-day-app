@@ -991,7 +991,6 @@ export function FactModal({
             {/* Category Badge & Date */}
             {(categoryForBadge || fact.last_updated || fact.created_at) && (
               <XStack
-                paddingTop={spacing.md}
                 flexWrap="wrap"
                 alignItems="center"
                 justifyContent="space-between"
