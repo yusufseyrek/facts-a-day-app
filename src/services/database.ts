@@ -1073,6 +1073,37 @@ export async function getAllUnscheduledHistoricalFactsForDates(
 }
 
 /**
+ * Get the earliest (lowest id) unseen, unscheduled, non-historical facts for notification scheduling.
+ * Excludes historical facts, already-selected IDs, and facts the user has already opened.
+ * Used by the notification scheduler to drain the backlog FIFO instead of date-matching.
+ */
+export async function getEarliestUnseenFactsForScheduling(
+  limit: number,
+  language: string,
+  excludeIds: number[] = []
+): Promise<FactWithRelations[]> {
+  const database = await openDatabase();
+  const excludePlaceholders = excludeIds.length > 0 ? excludeIds.map(() => '?').join(',') : null;
+  const excludeClause = excludePlaceholders ? `AND f.id NOT IN (${excludePlaceholders})` : '';
+
+  const result = await database.getAllAsync<any>(
+    `SELECT f.*
+    FROM facts f
+    LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
+    WHERE f.language = ?
+      AND f.scheduled_date IS NULL
+      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
+      AND (f.is_historical IS NULL OR f.is_historical = 0)
+      AND fi.fact_id IS NULL
+      ${excludeClause}
+    ORDER BY f.id ASC
+    LIMIT ?`,
+    [language, ...excludeIds, limit]
+  );
+  return mapFactsWithRelations(result);
+}
+
+/**
  * Get unscheduled facts ordered by creation date (newest first).
  * Excludes historical facts, already-selected IDs, and facts the user has already opened.
  */

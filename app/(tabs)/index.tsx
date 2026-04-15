@@ -162,18 +162,6 @@ function HomeScreen() {
     // Reserved for future scroll-dependent behavior (e.g. header collapse)
   }, []);
 
-  // Loading state
-  if (isLoading && latestFacts.length === 0) {
-    return (
-      <ScreenContainer edges={['top']}>
-        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-        <LoadingContainer>
-          <ActivityIndicator size="large" color={hexColors.light.primary} />
-        </LoadingContainer>
-      </ScreenContainer>
-    );
-  }
-
   const hasAnyContent = latestFacts.length > 0 || onThisDayFacts.length > 0;
 
   // Compose list header from extracted components (memoized to prevent FlashList re-layout)

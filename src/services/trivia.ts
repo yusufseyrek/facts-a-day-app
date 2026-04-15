@@ -352,6 +352,24 @@ export function getStreakDisplay(streak: number): string {
 
 // ====== ANSWER INDEX HELPERS ======
 
+// Legacy-data shim: translations generated before migration 020 localized the
+// true_false correct_answer (e.g. "doğru", "verdadero"). New content stores
+// literal "true"/"false", but older rows in user caches may still be localized.
+const TRUE_LITERALS = new Set([
+  'true',
+  'wahr', 'richtig',       // de
+  'verdadero', 'cierto',   // es
+  'vrai',                  // fr
+  '正しい', '正解',         // ja
+  '참', '정답',             // ko
+  'doğru',                 // tr
+  '正确', '正確', '对', '是', // zh
+]);
+
+function isTrueLiteral(value: string): boolean {
+  return TRUE_LITERALS.has(value.trim().toLowerCase());
+}
+
 /**
  * Convert a selected answer text to its storage index
  * Used when saving session results
@@ -363,7 +381,7 @@ export function getStreakDisplay(streak: number): string {
 export function answerToIndex(question: Question, selectedAnswer: string): number {
   // For true/false questions
   if (question.question_type === 'true_false') {
-    return selectedAnswer.toLowerCase() === 'true' ? 0 : 1;
+    return isTrueLiteral(selectedAnswer) ? 0 : 1;
   }
 
   // For multiple choice: 0 = correct answer
@@ -408,8 +426,7 @@ export function indexToAnswer(question: Question, index: number): string {
  */
 export function isAnswerCorrect(question: Question, answerIndex: number): boolean {
   if (question.question_type === 'true_false') {
-    // For true/false: correct_answer is stored as "True" or "False"
-    const isCorrectTrue = question.correct_answer.toLowerCase() === 'true';
+    const isCorrectTrue = isTrueLiteral(question.correct_answer);
     return answerIndex === (isCorrectTrue ? 0 : 1);
   }
   // For multiple choice: 0 = correct answer

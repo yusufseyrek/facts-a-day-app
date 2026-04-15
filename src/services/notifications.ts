@@ -934,12 +934,11 @@ async function syncOsWithDb(
 // ============================================================================
 
 /**
- * Select facts for notification slots using a 3-tier priority system:
- * 1. Historical facts matching each slot's calendar date (as many as available, up to slot count per day)
- * 2. Recently created facts (newest first)
- * 3. Random facts (fallback)
+ * Select facts for notification slots using a 2-tier priority system:
+ * 1. Earliest unseen facts (lowest fact id first) — drains the backlog FIFO
+ * 2. Random facts (fallback when the unseen pool is exhausted)
  *
- * Returns facts aligned with the given slots array (same length, same order).
+ * Returns facts aligned with the given slots array by index (length ≤ slots.length).
  */
 async function selectSmartFactsForSlots(
   slots: TimeSlot[],
@@ -949,107 +948,34 @@ async function selectSmartFactsForSlots(
 
   const usedIds = new Set<number>();
 
-  // Count slots per calendar day and extract unique days
-  const slotsPerDay = new Map<string, number>();
-  const uniqueDays = new Map<string, { month: number; day: number }>();
-  for (const slot of slots) {
-    const month = slot.date.getMonth() + 1;
-    const day = slot.date.getDate();
-    const key = `${month}-${day}`;
-    slotsPerDay.set(key, (slotsPerDay.get(key) || 0) + 1);
-    if (!uniqueDays.has(key)) {
-      uniqueDays.set(key, { month, day });
-    }
+  // Tier 1: Earliest unseen facts (ORDER BY id ASC)
+  const earliestFacts = await database.getEarliestUnseenFactsForScheduling(
+    slots.length,
+    locale
+  );
+  for (const fact of earliestFacts) {
+    usedIds.add(fact.id);
+  }
+  if (__DEV__ && earliestFacts.length > 0) {
+    console.log(`🔔 Smart selection: ${earliestFacts.length} earliest-unseen facts`);
   }
 
-  // Tier 1: Historical facts (as many as available per day, capped to slot count)
-  const historicalByDay = new Map<string, database.FactWithRelations[]>();
-  let totalHistorical = 0;
-  if (uniqueDays.size > 0) {
-    const allHistorical = await database.getAllUnscheduledHistoricalFactsForDates(
-      Array.from(uniqueDays.values()),
-      locale
-    );
+  const remaining = slots.length - earliestFacts.length;
 
-    // Group by day key
-    const grouped = new Map<string, database.FactWithRelations[]>();
-    for (const fact of allHistorical) {
-      const key = `${fact.event_month}-${fact.event_day}`;
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key)!.push(fact);
-    }
-
-    // Cap to slots per day, track usedIds
-    for (const [dayKey, facts] of grouped) {
-      const maxForDay = slotsPerDay.get(dayKey) || 0;
-      const capped = facts.slice(0, maxForDay);
-      historicalByDay.set(dayKey, capped);
-      totalHistorical += capped.length;
-      for (const f of capped) usedIds.add(f.id);
-    }
-
-    if (__DEV__ && totalHistorical > 0) {
-      console.log(`🔔 Smart selection: ${totalHistorical} historical facts`);
-    }
-  }
-
-  const remainingAfterHistorical = slots.length - totalHistorical;
-
-  // Tier 2: Recent facts (newest by created_at)
-  let recentFacts: database.FactWithRelations[] = [];
-  if (remainingAfterHistorical > 0) {
-    recentFacts = await database.getRecentUnscheduledFacts(
-      remainingAfterHistorical,
-      locale,
-      Array.from(usedIds)
-    );
-    for (const fact of recentFacts) {
-      usedIds.add(fact.id);
-    }
-    if (__DEV__ && recentFacts.length > 0) {
-      console.log(`🔔 Smart selection: ${recentFacts.length} recent facts`);
-    }
-  }
-
-  const remainingAfterRecent = remainingAfterHistorical - recentFacts.length;
-
-  // Tier 3: Random facts (fallback)
+  // Tier 2: Random facts (fallback)
   let randomFacts: database.FactWithRelations[] = [];
-  if (remainingAfterRecent > 0) {
+  if (remaining > 0) {
     const allRandom = await database.getRandomUnscheduledFactsWithFallback(
-      remainingAfterRecent + usedIds.size,
+      remaining + usedIds.size,
       locale
     );
-    randomFacts = allRandom.filter((f) => !usedIds.has(f.id)).slice(0, remainingAfterRecent);
+    randomFacts = allRandom.filter((f) => !usedIds.has(f.id)).slice(0, remaining);
     if (__DEV__ && randomFacts.length > 0) {
       console.log(`🔔 Smart selection: ${randomFacts.length} random facts`);
     }
   }
 
-  // Build a queue of non-historical facts (recent first, then random)
-  const fillQueue = [...recentFacts, ...randomFacts];
-  let fillIndex = 0;
-
-  // Assign facts to slots: historical facts for matching day first, then fill queue
-  const historicalIndex = new Map<string, number>();
-  const result: database.FactWithRelations[] = [];
-
-  for (const slot of slots) {
-    const dayKey = `${slot.date.getMonth() + 1}-${slot.date.getDate()}`;
-    const dayFacts = historicalByDay.get(dayKey) || [];
-    const idx = historicalIndex.get(dayKey) || 0;
-
-    if (idx < dayFacts.length) {
-      result.push(dayFacts[idx]);
-      historicalIndex.set(dayKey, idx + 1);
-    } else if (fillIndex < fillQueue.length) {
-      result.push(fillQueue[fillIndex]);
-      fillIndex++;
-    }
-    // If we run out of facts, result will be shorter than slots (handled by caller)
-  }
-
-  return result;
+  return [...earliestFacts, ...randomFacts];
 }
 
 // ============================================================================

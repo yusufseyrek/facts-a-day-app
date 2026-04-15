@@ -311,7 +311,7 @@ describe('notifications — integration', () => {
     dbMock.getRandomUnscheduledFacts.mockResolvedValue([]);
     dbMock.getRandomUnscheduledFactsWithFallback.mockResolvedValue([]);
     dbMock.getUnscheduledHistoricalFactsForDates.mockResolvedValue([]);
-    dbMock.getRecentUnscheduledFacts.mockResolvedValue([]);
+    dbMock.getEarliestUnseenFactsForScheduling.mockResolvedValue([]);
   });
 
   describe('ensureNotificationSchedule', () => {
