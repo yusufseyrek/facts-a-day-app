@@ -47,7 +47,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.seyrek.factsaday",
-      "buildNumber": "89",
+      "buildNumber": "90",
       "googleServicesFile": "./google/GoogleService-Info.plist",
       "associatedDomains": [
         "applinks:factsaday.com"
@@ -381,7 +381,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "dev.seyrek.factsaday",
-      "versionCode": 89,
+      "versionCode": 90,
       "permissions": [
         "INTERNET",
         "RECEIVE_BOOT_COMPLETED",
