@@ -50,7 +50,6 @@ import type { FactWithRelations } from '../../src/services/database';
 
 type StoryListItem = FactWithRelations | NativeAdPlaceholder;
 
-const AD_PAUSE_DURATION = 1000;
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export default function StoryScreen() {
@@ -277,7 +276,7 @@ export default function StoryScreen() {
         adPauseProgress.setValue(0);
         Animated.timing(adPauseProgress, {
           toValue: 1,
-          duration: AD_PAUSE_DURATION,
+          duration: NATIVE_ADS.NAV_LOCK_DURATION_MS,
           easing: Easing.linear,
           useNativeDriver: false,
         }).start();
@@ -285,7 +284,7 @@ export default function StoryScreen() {
         adPauseTimer.current = setTimeout(() => {
           setScrollLocked(false);
           adPauseTimer.current = null;
-        }, AD_PAUSE_DURATION);
+        }, NATIVE_ADS.NAV_LOCK_DURATION_MS);
       }
     },
     [category, scrollLocked, adPauseProgress]

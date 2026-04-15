@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 
 import { ChevronRight, Trophy } from '@tamagui/lucide-icons';
@@ -25,7 +26,17 @@ export function ReadingBadgesStrip({ earnedBadgeIds }: ReadingBadgesStripProps) 
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
 
-  const readingBadges = BADGE_DEFINITIONS.filter((b) => b.category === 'reading');
+  const readingBadges = useMemo(
+    () =>
+      BADGE_DEFINITIONS.filter((b) => b.category === 'reading').sort((a, b) => {
+        const ae = earnedBadgeIds.has(a.id);
+        const be = earnedBadgeIds.has(b.id);
+        if (ae && !be) return -1;
+        if (!ae && be) return 1;
+        return 0;
+      }),
+    [earnedBadgeIds]
+  );
   const earnedCount = readingBadges.filter((b) => earnedBadgeIds.has(b.id)).length;
 
   return (
@@ -59,22 +70,14 @@ export function ReadingBadgesStrip({ earnedBadgeIds }: ReadingBadgesStripProps) 
           overScrollMode="never"
           contentContainerStyle={{ gap: spacing.xs }}
         >
-          {readingBadges
-            .sort((a, b) => {
-              const ae = earnedBadgeIds.has(a.id);
-              const be = earnedBadgeIds.has(b.id);
-              if (ae && !be) return -1;
-              if (!ae && be) return 1;
-              return 0;
-            })
-            .map((badge) => (
-              <BadgeIcon
-                key={badge.id}
-                badgeId={badge.id}
-                size={iconSizes.xl}
-                isUnlocked={earnedBadgeIds.has(badge.id)}
-              />
-            ))}
+          {readingBadges.map((badge) => (
+            <BadgeIcon
+              key={badge.id}
+              badgeId={badge.id}
+              size={iconSizes.xl}
+              isUnlocked={earnedBadgeIds.has(badge.id)}
+            />
+          ))}
         </ScrollView>
       </YStack>
     </Pressable>

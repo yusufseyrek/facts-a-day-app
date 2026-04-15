@@ -321,8 +321,10 @@ export const releaseSlot = (slotKey: string): void => {
 
 /**
  * Drop all ads and reset the pool. Use on premium upgrade or when ads become
- * disabled. Does not destroy ads that are still bound to slots with listeners
- * (they will be cleaned up by releaseSlot on the next render).
+ * disabled. Destroys every ad — both queued and bound — and notifies subscribed
+ * slots so they rerender into their failed-state spacer. Slots with no
+ * listeners are removed; slots with listeners remain (in `failed` state) until
+ * the consumer unsubscribes via releaseSlot.
  */
 export const resetPool = (): void => {
   while (readyQueue.length > 0) {

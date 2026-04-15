@@ -107,7 +107,7 @@ export default function TriviaScreen() {
         setOverallStats(stats);
         // Sort by color hue, but push categories with 0 questions to the end
         const sorted = [...categories].sort((a, b) => {
-          if (a.total > 0 !== b.total > 0) return b.total > 0 ? 1 : -1;
+          if ((a.total > 0) !== (b.total > 0)) return b.total > 0 ? 1 : -1;
           return hexToHue(a.color_hex) - hexToHue(b.color_hex);
         });
         setCategoriesWithProgress(sorted);

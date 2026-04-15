@@ -95,7 +95,10 @@ export default function TriviaGameScreen() {
   const [nativeAdShownIndices, setNativeAdShownIndices] = useState<Set<number>>(new Set());
   const [nativeAdRequestKey, setNativeAdRequestKey] = useState('trivia-0');
   const pendingAdNextIndex = useRef<number>(0);
-  const { nativeAd } = useNativeAd({ aspectRatio: NativeMediaAspectRatio.PORTRAIT, requestKey: nativeAdRequestKey });
+  const { nativeAd } = useNativeAd({
+    aspectRatio: NativeMediaAspectRatio.PORTRAIT,
+    requestKey: nativeAdRequestKey,
+  });
 
   // Ad navigation lock - block prev/next buttons briefly when native ad is shown
   const [adNavLocked, setAdNavLocked] = useState(false);
@@ -444,7 +447,7 @@ export default function TriviaGameScreen() {
       adNavLockTimer.current = setTimeout(() => {
         setAdNavLocked(false);
         adNavLockTimer.current = null;
-      }, NATIVE_ADS.TRIVIA_NAV_LOCK_DURATION_MS);
+      }, NATIVE_ADS.NAV_LOCK_DURATION_MS);
       return;
     }
 
@@ -817,7 +820,7 @@ export default function TriviaGameScreen() {
           isDark={isDark}
           t={t}
           navLocked={adNavLocked}
-          navLockDuration={NATIVE_ADS.TRIVIA_NAV_LOCK_DURATION_MS}
+          navLockDuration={NATIVE_ADS.NAV_LOCK_DURATION_MS}
         />
         <TriviaExitModal
           visible={showExitModal}
