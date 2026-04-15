@@ -2258,10 +2258,18 @@ export async function getQuestionsForDailyTrivia(
     FROM questions q
     INNER JOIN facts f ON q.fact_id = f.id
     LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
     WHERE f.shown_in_feed = 1
     AND f.scheduled_date LIKE ?
     AND f.language = ?
-    ORDER BY RANDOM()`,
+    ORDER BY
+      CASE
+        WHEN fi.detail_opened_at IS NOT NULL THEN 1
+        WHEN fi.story_viewed_at  IS NOT NULL THEN 2
+        WHEN f.shown_in_feed = 1             THEN 3
+        ELSE 4
+      END ASC,
+      RANDOM()`,
     [datePrefix + '%', language]
   );
 
@@ -2301,11 +2309,19 @@ export async function getRandomUnansweredQuestions(
     FROM questions q
     INNER JOIN facts f ON q.fact_id = f.id
     LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
     WHERE f.language = ?
     AND q.id NOT IN (
       SELECT DISTINCT question_id FROM question_attempts
     )
-    ORDER BY RANDOM()
+    ORDER BY
+      CASE
+        WHEN fi.detail_opened_at IS NOT NULL THEN 1
+        WHEN fi.story_viewed_at  IS NOT NULL THEN 2
+        WHEN f.shown_in_feed = 1             THEN 3
+        ELSE 4
+      END ASC,
+      RANDOM()
     LIMIT ?`,
     [language, limit]
   );
@@ -2347,10 +2363,11 @@ export async function getQuestionsForCategory(
 ): Promise<QuestionWithFact[]> {
   const database = await openDatabase();
 
-  // Get questions from ALL facts in the category (not just shown ones)
-  // Questions become available as soon as facts are downloaded
+  // Candidate pool is every fact in the category; ordering below prioritizes
+  // facts the user has engaged with (detail > story > shown) and falls back
+  // to unseen facts only when the pool of seen ones is exhausted.
   let query = `
-    SELECT 
+    SELECT
       q.*,
       f.id as fact_id,
       f.title as fact_title,
@@ -2370,6 +2387,7 @@ export async function getQuestionsForCategory(
     FROM questions q
     INNER JOIN facts f ON q.fact_id = f.id
     LEFT JOIN categories c ON f.category = c.slug
+    LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
     WHERE f.category = ?
     AND f.language = ?`;
 
@@ -2394,7 +2412,14 @@ export async function getQuestionsForCategory(
   }
 
   query += `
-    ORDER BY RANDOM()
+    ORDER BY
+      CASE
+        WHEN fi.detail_opened_at IS NOT NULL THEN 1
+        WHEN fi.story_viewed_at  IS NOT NULL THEN 2
+        WHEN f.shown_in_feed = 1             THEN 3
+        ELSE 4
+      END ASC,
+      RANDOM()
     LIMIT ?`;
 
   const result = await database.getAllAsync<any>(query, [categorySlug, language, limit]);
