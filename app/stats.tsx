@@ -136,7 +136,7 @@ export default function StatsScreen() {
           borderBottomColor={colors.border}
         >
           <BackButton onPress={() => router.back()} primaryColor={colors.primary} />
-          <Text.Title color={textColor}>{t('readingStatsTitle')}</Text.Title>
+          <Text.Title color={textColor}>{t('readingStats')}</Text.Title>
           <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />
         </XStack>
       </Animated.View>

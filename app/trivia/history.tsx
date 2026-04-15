@@ -183,7 +183,8 @@ function SessionCard({
       );
     }
 
-    const IconComponent = session.trivia_mode === 'daily' ? Calendar : session.trivia_mode === 'quick' ? Zap : Shuffle;
+    const IconComponent =
+      session.trivia_mode === 'daily' ? Calendar : session.trivia_mode === 'quick' ? Zap : Shuffle;
     const iconColor = primaryColor;
 
     return (
@@ -501,7 +502,6 @@ export default function ActivityHistoryScreen() {
         showBackButton={true}
         showReturnButton={false}
         unavailableQuestionIds={selectedSession.unavailableQuestionIds}
-        applyBottomInset={false}
       />
     );
   }

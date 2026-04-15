@@ -121,9 +121,9 @@ function HeroTile({
       <XStack alignItems="center" gap={spacing.sm}>
         <View
           style={{
-            width: iconSizes.lg,
-            height: iconSizes.lg,
-            borderRadius: radius.sm * 0.75,
+            width: iconSizes.xl,
+            height: iconSizes.xl,
+            borderRadius: radius.sm,
             backgroundColor: `${tile.color}20`,
             alignItems: 'center',
             justifyContent: 'center',

@@ -91,12 +91,16 @@ export async function handleLanguageChange(
     // - Not yet delivered (scheduled_date IS NULL OR scheduled_date > now)
     // - Not favorited
     // - Not shown in feed
+    // - Have no reading interaction (story view, detail open, or time spent).
+    //   Without this guard the ON DELETE CASCADE on fact_interactions.fact_id
+    //   would wipe the user's reading history whenever they switch language.
     await db.runAsync(
       `
       DELETE FROM facts
       WHERE (scheduled_date IS NULL OR scheduled_date > ?)
         AND id NOT IN (SELECT fact_id FROM favorites)
         AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+        AND id NOT IN (SELECT fact_id FROM fact_interactions)
     `,
       [now]
     );
@@ -108,12 +112,13 @@ export async function handleLanguageChange(
       WHERE fact_id NOT IN (SELECT id FROM facts)
     `);
 
-    // Get IDs of facts to update (delivered, favorited, or shown facts)
+    // Get IDs of facts to update (delivered, favorited, shown, or read).
     const factsToPreserve = await db.getAllAsync<{ id: number }>(
       `SELECT id FROM facts WHERE
         (scheduled_date IS NOT NULL AND scheduled_date <= ?)
         OR id IN (SELECT fact_id FROM favorites)
-        OR shown_in_feed = 1`,
+        OR shown_in_feed = 1
+        OR id IN (SELECT fact_id FROM fact_interactions)`,
       [now]
     );
 

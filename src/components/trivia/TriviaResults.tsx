@@ -68,9 +68,6 @@ export interface TriviaResultsProps {
   unavailableQuestionIds?: number[];
   // Hide time and streak stat cards (e.g. for quick quiz)
   hideTimeAndStreak?: boolean;
-  // When rendered inside a tab navigator, the tab bar already consumes the
-  // bottom safe area — set false to avoid double-padding under the banner ad.
-  applyBottomInset?: boolean;
 }
 
 // Horizontal progress bar component
@@ -438,7 +435,6 @@ export function TriviaResults({
   showReturnButton = true,
   unavailableQuestionIds = [],
   hideTimeAndStreak = false,
-  applyBottomInset = true,
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -934,8 +930,7 @@ export function TriviaResults({
 
       <View
         style={{
-          paddingBottom:
-            (applyBottomInset ? insets.bottom : 0) + (showReturnButton ? spacing.sm : 0),
+          paddingBottom: showReturnButton ? insets.bottom + spacing.sm : 0,
         }}
       >
         <BannerAd />
