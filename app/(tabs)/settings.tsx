@@ -3,6 +3,7 @@ import { Alert, AppState, Linking, Platform, SectionList } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import {
+  BarChart3,
   Bell,
   Crown,
   Eye,
@@ -799,6 +800,12 @@ export default function SettingsPage() {
     const generalSection: SettingsSection = {
       title: t('settingsGeneral'),
       data: [
+        {
+          id: 'readingStats',
+          label: t('readingStats'),
+          icon: <BarChart3 size={iconSizes.md} color={iconColor} />,
+          onPress: () => router.push('/stats'),
+        },
         {
           id: 'achievements',
           label: t('achievements'),

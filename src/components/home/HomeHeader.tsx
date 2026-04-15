@@ -45,7 +45,7 @@ export const HomeHeader = React.memo(function HomeHeader({ isPremium, streak }: 
         title={t('appName')}
         paddingBottom={spacing.sm}
         rightElement={
-          <ReadingStreakIndicator streak={streak} onPress={() => router.push('/badges')} />
+          <ReadingStreakIndicator streak={streak} onPress={() => router.push('/stats')} />
         }
       />
     </Animated.View>

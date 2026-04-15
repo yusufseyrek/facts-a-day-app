@@ -173,6 +173,7 @@ export const Screens = {
   STORY: 'Story',
   BADGES: 'Badges',
   BADGE_DETAIL: 'BadgeDetail',
+  READING_STATS: 'ReadingStats',
 } as const;
 
 // ============================================================================
