@@ -14,12 +14,10 @@ const CARD_ASPECT_RATIOS = {
 } as const;
 
 /**
- * FlashList-specific settings optimized for lists
- * FlashList uses a recycler approach which is more performant than FlatList/SectionList
+ * FlashList-specific settings optimized for lists.
+ * FlashList v2 auto-measures items, so no estimatedItemSize / overrideItemLayout size is needed.
  */
 export const FLASH_LIST_SETTINGS = {
-  /** Estimated item size for FlashList layout calculations (average card height ~220px) */
-  estimatedItemSize: 220,
   /** Draw distance determines how far ahead FlashList renders items (~2-3 items beyond viewport) */
   drawDistance: 600,
   /** Show vertical scroll indicator */

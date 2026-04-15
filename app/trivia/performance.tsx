@@ -29,7 +29,7 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { ContentContainer } from '../../src/components';
-import { InlineNativeAd } from '../../src/components/ads/InlineNativeAd';
+import { BannerAd } from '../../src/components/ads';
 import { BadgeIcon } from '../../src/components/badges/BadgeIcon';
 import { getTriviaModeBadge, TriviaResults } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
@@ -848,9 +848,6 @@ export default function PerformanceScreen() {
               </Pressable>
             </Animated.View>
 
-            {/* Native Ad */}
-            <InlineNativeAd />
-
             {/* Accuracy by Category */}
             {displayCategories.length > 0 && (
               <View>
@@ -930,6 +927,8 @@ export default function PerformanceScreen() {
           </YStack>
         </ContentContainer>
       </ScrollView>
+
+      <BannerAd />
 
       {/* Loading overlay for session fetch */}
       {loadingSession && (

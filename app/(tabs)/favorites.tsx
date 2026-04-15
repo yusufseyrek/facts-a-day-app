@@ -29,11 +29,12 @@ import {
 import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT, NATIVE_ADS } from '../../src/config/app';
-import { FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
+import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
 import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
+import { primePool } from '../../src/services/nativeAdPool';
 import { hexColors, useTheme } from '../../src/theme';
 import { getContrastColor } from '../../src/utils/colors';
 import {
@@ -107,7 +108,7 @@ export default function FavoritesScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const iconColor = useIconColor();
-  const { iconSizes, screenWidth, isTablet, spacing, radius, typography, media } = useResponsive();
+  const { iconSizes, spacing, radius, typography, media } = useResponsive();
   const { isPremium } = usePremium();
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
@@ -167,6 +168,7 @@ export default function FavoritesScreen() {
   useFocusEffect(
     useCallback(() => {
       trackScreenView(Screens.FAVORITES);
+      primePool();
       loadFavorites();
     }, [locale, loadFavorites])
   );
@@ -269,18 +271,10 @@ export default function FavoritesScreen() {
     return item.id.toString();
   }, []);
 
-  // Calculate exact item height for FlashList layout
-  const itemHeight = useMemo(
-    () => getImageCardHeight(screenWidth, isTablet, spacing.md),
-    [screenWidth, isTablet, spacing.md]
-  );
-
-  // Override item layout for exact dimensions
-  const overrideItemLayout = useCallback(
-    (layout: { span?: number; size?: number }) => {
-      layout.size = itemHeight;
-    },
-    [itemHeight]
+  // Split FlashList recycle pools so ad cells and fact cells never share a reusable view.
+  const getItemType = useCallback(
+    (item: FavoritesListItem) => (isNativeAdPlaceholder(item) ? 'ad' : 'fact'),
+    []
   );
 
   // Memoized renderItem
@@ -289,7 +283,7 @@ export default function FavoritesScreen() {
       if (isNativeAdPlaceholder(item)) {
         return (
           <ContentContainer>
-            <NativeAdCard requestKey={item.key} />
+            <NativeAdCard slotKey={item.key} />
           </ContentContainer>
         );
       }
@@ -545,10 +539,10 @@ export default function FavoritesScreen() {
             ref={listRef}
             data={filteredDataWithAds}
             keyExtractor={keyExtractor}
+            getItemType={getItemType}
             renderItem={renderItem}
             refreshControl={refreshControl}
             onScroll={handleScroll}
-            overrideItemLayout={overrideItemLayout}
             {...FLASH_LIST_SETTINGS}
           />
         )}

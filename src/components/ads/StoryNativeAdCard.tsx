@@ -14,9 +14,8 @@ import { ChevronRight } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { XStack } from 'tamagui';
 
-import { useNativeAd } from '../../hooks/useNativeAd';
+import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { useTranslation } from '../../i18n';
-import { trackNativeAdImpression } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
@@ -25,10 +24,10 @@ interface StoryNativeAdCardProps {
   screenWidth: number;
   screenHeight: number;
   onAdFailed?: () => void;
-  onAdLoaded?: () => void;
+  /** Pre-loaded native ad (skips the pool). */
   nativeAd?: NativeAd;
-  /** Unique key to trigger a new ad request (handles FlashList view recycling). */
-  requestKey?: string;
+  /** Stable slot key for pool-driven ads. Ignored when `nativeAd` is provided. */
+  slotKey?: string;
 }
 
 const gradientColors = ['transparent', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)'] as const;
@@ -38,21 +37,19 @@ function StoryNativeAdCardComponent({
   screenWidth,
   screenHeight,
   onAdFailed,
-  onAdLoaded,
   nativeAd: nativeAdProp,
-  requestKey,
+  slotKey,
 }: StoryNativeAdCardProps) {
   const isPortrait = screenHeight > screenWidth;
-  const {
-    nativeAd: nativeAdFromHook,
-    isLoading,
-    error,
-  } = useNativeAd({
-    skip: !!nativeAdProp,
-    aspectRatio: isPortrait ? NativeMediaAspectRatio.PORTRAIT : NativeMediaAspectRatio.LANDSCAPE,
-    requestKey,
-  });
-  const nativeAd = nativeAdProp ?? nativeAdFromHook;
+  const aspectRatio = isPortrait
+    ? NativeMediaAspectRatio.PORTRAIT
+    : NativeMediaAspectRatio.LANDSCAPE;
+
+  const { ad: nativeAdFromPool, status } = useAdForSlot(
+    nativeAdProp ? null : slotKey,
+    aspectRatio
+  );
+  const nativeAd = nativeAdProp ?? nativeAdFromPool;
   const { t } = useTranslation();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -60,21 +57,16 @@ function StoryNativeAdCardComponent({
   const colors = hexColors[theme];
 
   useEffect(() => {
-    if (!nativeAdProp && !isLoading && (error || !nativeAd)) {
-      if (error) console.warn('Native ad error:', String(error));
-      onAdFailed?.();
+    if (!nativeAdProp && status === 'failed' && onAdFailed) {
+      onAdFailed();
     }
-  }, [nativeAdProp, isLoading, error, nativeAd, onAdFailed]);
+  }, [nativeAdProp, status, onAdFailed]);
 
-  useEffect(() => {
-    if (nativeAd && (nativeAdProp || (!isLoading && !error))) {
-      trackNativeAdImpression();
-      onAdLoaded?.();
-    }
-  }, [nativeAd, nativeAdProp, isLoading, error, onAdLoaded]);
-
-  if (!nativeAd || (!nativeAdProp && (isLoading || error))) {
-    return null;
+  // Full-screen sized spacer while the pool is still loading — keeps the swipe
+  // list's layout stable. A no-fill (failed) slot is dropped by the parent via
+  // onAdFailed, so there's no long-lived empty page.
+  if (!nativeAd) {
+    return <View style={{ width: screenWidth, height: screenHeight }} pointerEvents="none" />;
   }
 
   return (

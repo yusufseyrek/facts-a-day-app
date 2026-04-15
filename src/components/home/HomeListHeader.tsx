@@ -1,15 +1,12 @@
 import React from 'react';
-import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { FlashListRef } from '@shopify/flash-list';
 import { BookOpen } from '@tamagui/lucide-icons';
 import { YStack } from 'tamagui';
 
-import { ADS_ENABLED, LAYOUT } from '../../config/app';
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
-import { InlineNativeAd } from '../ads/InlineNativeAd';
 import { CategoryStoryButtons, CategoryStoryButtonsRef } from '../CategoryStoryButtons';
 
 import { LatestCarousel } from './LatestCarousel';
@@ -26,7 +23,12 @@ interface HomeListHeaderProps {
   onThisDayIsWeekFallback: boolean;
   keepReadingCount: number;
   isPremium: boolean;
-  onFactPress: (fact: FactWithRelations, source: FactViewSource, factIds: number[], index: number) => void;
+  onFactPress: (
+    fact: FactWithRelations,
+    source: FactViewSource,
+    factIds: number[],
+    index: number
+  ) => void;
   storyButtonsRef: React.RefObject<CategoryStoryButtonsRef | null>;
   latestListRef: React.RefObject<FlashListRef<FactWithRelations> | null>;
   onThisDayListRef: React.RefObject<FlashListRef<FactWithRelations> | null>;
@@ -68,17 +70,6 @@ export const HomeListHeader = React.memo(function HomeListHeader({
         onFactPress={onFactPress}
         listRef={onThisDayListRef}
       />
-
-      {ADS_ENABLED && !isPremium && (
-        <YStack
-          width="100%"
-          maxWidth={LAYOUT.MAX_CONTENT_WIDTH}
-          alignSelf="center"
-          padding={spacing.md}
-        >
-          <InlineNativeAd aspectRatio={NativeMediaAspectRatio.LANDSCAPE} />
-        </YStack>
-      )}
 
       {keepReadingCount > 0 && (
         <SectionHeader

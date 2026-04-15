@@ -22,7 +22,7 @@ import {
   ScreenHeader,
   useIconColor,
 } from '../../src/components';
-import { InlineNativeAd } from '../../src/components/ads/InlineNativeAd';
+import { BannerAd } from '../../src/components/ads';
 import { TriviaGridCard, TriviaIntroModal, TriviaStatsHero } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { useScrollToTopHandler } from '../../src/contexts';
@@ -367,9 +367,6 @@ export default function TriviaScreen() {
                     </XStack>
                   </Animated.View>
 
-                  {/* Native Ad */}
-                  <InlineNativeAd />
-
                   {/* Category rows */}
                   {categoryRows.map((row, rowIndex) => (
                     <Animated.View
@@ -464,6 +461,8 @@ export default function TriviaScreen() {
             )}
           </ContentContainer>
         </ScrollView>
+
+        <BannerAd collapsible="bottom" />
       </YStack>
 
       {/* Trivia Intro Modal */}

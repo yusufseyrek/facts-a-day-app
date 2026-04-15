@@ -1,14 +1,21 @@
 import React, { useCallback, useMemo, useRef } from 'react';
 import { NativeScrollEvent, NativeSyntheticEvent, View } from 'react-native';
+import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { Newspaper } from '@tamagui/lucide-icons';
 
-import { LAYOUT } from '../../config/app';
+import { LAYOUT, NATIVE_ADS } from '../../config/app';
 import { useTranslation } from '../../i18n';
 import { trackCarouselSwipe } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  type NativeAdPlaceholder,
+} from '../../utils/insertNativeAds';
 import { useResponsive } from '../../utils/useResponsive';
+import { NativeAdCard } from '../ads/NativeAdCard';
 import { ImageFactCard } from '../ImageFactCard';
 
 import { SectionHeader } from './SectionHeader';
@@ -27,6 +34,8 @@ interface LatestCarouselProps {
   ) => void;
   listRef?: React.RefObject<FlashListRef<FactWithRelations> | null>;
 }
+
+type LatestRow = FactWithRelations | NativeAdPlaceholder;
 
 export const LatestCarousel = React.memo(function LatestCarousel({
   facts,
@@ -51,16 +60,26 @@ export const LatestCarousel = React.memo(function LatestCarousel({
 
   const activeIndexRef = useRef(0);
 
+  // Interleave native ad placeholders. Stable content-derived keys (from
+  // insertNativeAds) keep the ad pool binding stable across re-renders.
+  const data = useMemo<LatestRow[]>(
+    () => insertNativeAds(facts, NATIVE_ADS.FIRST_AD_INDEX.LATEST),
+    [facts]
+  );
+
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetX = event.nativeEvent.contentOffset.x;
       const index = Math.round(offsetX / snapInterval);
       if (index !== activeIndexRef.current) {
         activeIndexRef.current = index;
-        trackCarouselSwipe({ section: 'latest', index, factId: facts[index]?.id });
+        const item = data[index];
+        if (item && !isNativeAdPlaceholder(item)) {
+          trackCarouselSwipe({ section: 'latest', index, factId: item.id });
+        }
       }
     },
-    [snapInterval, facts]
+    [snapInterval, data]
   );
 
   const contentContainerStyle = useMemo(() => ({ paddingHorizontal: listInset }), [listInset]);
@@ -71,7 +90,19 @@ export const LatestCarousel = React.memo(function LatestCarousel({
   const separatorStyle = useMemo(() => ({ width: cardGap }), [cardGap]);
 
   const renderItem = useCallback(
-    ({ item }: { item: FactWithRelations }) => {
+    ({ item }: { item: LatestRow }) => {
+      if (isNativeAdPlaceholder(item)) {
+        return (
+          <View style={itemStyle}>
+            <NativeAdCard
+              cardWidth={cardWidth}
+              cardHeight={cardHeight}
+              slotKey={item.key}
+              aspectRatio={NativeMediaAspectRatio.SQUARE}
+            />
+          </View>
+        );
+      }
       const factIndex = factIds.indexOf(item.id);
       return (
         <View style={itemStyle}>
@@ -89,10 +120,20 @@ export const LatestCarousel = React.memo(function LatestCarousel({
         </View>
       );
     },
-    [cardWidth, onFactPress, factIds, itemStyle]
+    [cardWidth, cardHeight, onFactPress, factIds, itemStyle]
   );
 
-  const keyExtractor = useCallback((item: FactWithRelations) => `lt-${item.id}`, []);
+  const keyExtractor = useCallback(
+    (item: LatestRow) => (isNativeAdPlaceholder(item) ? item.key : `lt-${item.id}`),
+    []
+  );
+
+  // Split FlashList recycle pools so ad cells and fact cells never share a reusable view.
+  const getItemType = useCallback(
+    (item: LatestRow) => (isNativeAdPlaceholder(item) ? 'ad' : 'fact'),
+    []
+  );
+
   const ItemSeparator = useCallback(() => <View style={separatorStyle} />, [separatorStyle]);
 
   if (facts.length === 0) return null;
@@ -105,10 +146,11 @@ export const LatestCarousel = React.memo(function LatestCarousel({
       />
       <View style={{ height: cardHeight + spacing.xxl, width: '100%' }}>
         <FlashList
-          ref={listRef}
-          data={facts}
+          ref={listRef as unknown as React.RefObject<FlashListRef<LatestRow> | null>}
+          data={data}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
+          getItemType={getItemType}
           horizontal
           showsHorizontalScrollIndicator={false}
           overScrollMode="never"

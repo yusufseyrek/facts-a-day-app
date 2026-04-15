@@ -12,7 +12,6 @@ jest.mock('../../config/app', () => ({
   ...jest.requireActual('../../config/app'),
   NATIVE_ADS: {
     ACTIVE: true,
-    INTERVAL: 3,
     FIRST_AD_INDEX: { HOME_CAROUSEL: 1, DISCOVER: 1, FAVORITES: 1, STORY: 3 },
   },
 }));

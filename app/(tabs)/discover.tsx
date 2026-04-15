@@ -30,7 +30,7 @@ import { BannerAd } from '../../src/components/ads';
 import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
 import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT, NATIVE_ADS } from '../../src/config/app';
-import { FLASH_LIST_SETTINGS, getImageCardHeight } from '../../src/config/factListSettings';
+import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
 import { usePremium, useScrollToTopHandler } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import {
@@ -42,6 +42,7 @@ import {
 import { consumePendingDiscoverCategory } from '../../src/services/contentRefresh';
 import * as database from '../../src/services/database';
 import { getCachedFactImageSync } from '../../src/services/images';
+import { primePool } from '../../src/services/nativeAdPool';
 import { getIsConnected } from '../../src/services/network';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
@@ -180,8 +181,7 @@ function DiscoverScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { isTablet, screenWidth, typography, spacing, iconSizes, config, media, radius } =
-    useResponsive();
+  const { isTablet, typography, spacing, iconSizes, config, media, radius } = useResponsive();
   const { isPremium } = usePremium();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -302,6 +302,7 @@ function DiscoverScreen() {
   useFocusEffect(
     useCallback(() => {
       trackScreenView(Screens.DISCOVER);
+      primePool();
     }, [])
   );
 
@@ -490,19 +491,10 @@ function DiscoverScreen() {
     return item.id.toString();
   }, []);
 
-  // Calculate exact item height for FlashList layout
-  // Uses spacing.md from responsive hook to match ImageFactCard's marginBottom
-  const itemHeight = useMemo(
-    () => getImageCardHeight(screenWidth, isTablet, spacing.md),
-    [screenWidth, isTablet, spacing.md]
-  );
-
-  // Override item layout to give FlashList exact dimensions (helps with recycling issues)
-  const overrideItemLayout = useCallback(
-    (layout: { span?: number; size?: number }) => {
-      layout.size = itemHeight;
-    },
-    [itemHeight]
+  // Split FlashList recycle pools: ad cells and fact cells never share a reusable view.
+  const getItemType = useCallback(
+    (item: DiscoverListItem) => (isNativeAdPlaceholder(item) ? 'ad' : 'fact'),
+    []
   );
 
   // Compute fact ID lists for navigation
@@ -515,7 +507,7 @@ function DiscoverScreen() {
       if (isNativeAdPlaceholder(item)) {
         return (
           <ContentContainer>
-            <NativeAdCard requestKey={item.key} />
+            <NativeAdCard slotKey={item.key} />
           </ContentContainer>
         );
       }
@@ -531,7 +523,9 @@ function DiscoverScreen() {
         />
       );
     },
-    [isTablet, handleFactPress, selectedCategory, searchFactIds]
+    // Depend on the slug (primitive) rather than the Category object so renderItem
+    // does not churn when userCategories reloads with an identical selection.
+    [isTablet, handleFactPress, selectedCategory?.slug, searchFactIds]
   );
 
   // Memoized renderItem for category facts
@@ -540,7 +534,7 @@ function DiscoverScreen() {
       if (isNativeAdPlaceholder(item)) {
         return (
           <ContentContainer>
-            <NativeAdCard requestKey={item.key} />
+            <NativeAdCard slotKey={item.key} />
           </ContentContainer>
         );
       }
@@ -561,7 +555,8 @@ function DiscoverScreen() {
         />
       );
     },
-    [isTablet, handleFactPress, selectedCategory, categoryFactIds]
+    // See note on renderSearchItem above.
+    [isTablet, handleFactPress, selectedCategory?.slug, categoryFactIds]
   );
 
   // Memoized refresh controls
@@ -893,10 +888,10 @@ function DiscoverScreen() {
             ref={searchListRef}
             data={searchDataWithAds}
             keyExtractor={keyExtractor}
+            getItemType={getItemType}
             renderItem={renderSearchItem}
             refreshControl={searchRefreshControl}
             onScroll={handleSearchScroll}
-            overrideItemLayout={overrideItemLayout}
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -940,10 +935,10 @@ function DiscoverScreen() {
             ref={categoryListRef}
             data={categoryDataWithAds}
             keyExtractor={keyExtractor}
+            getItemType={getItemType}
             renderItem={renderCategoryItem}
             refreshControl={categoryRefreshControl}
             onScroll={handleCategoryScroll}
-            overrideItemLayout={overrideItemLayout}
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -967,12 +962,12 @@ function DiscoverScreen() {
     theme,
     t,
     keyExtractor,
+    getItemType,
     renderSearchItem,
     renderCategoryItem,
     searchRefreshControl,
     categoryRefreshControl,
     renderEmptyState,
-    overrideItemLayout,
     spacing,
   ]);
 

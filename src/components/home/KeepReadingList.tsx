@@ -28,7 +28,9 @@ function interleaveAds(facts: FactWithRelations[], isPremium: boolean): KeepRead
       (i + 1) % NATIVE_ADS.KEEP_READING_AD_INTERVAL === 0 &&
       i < facts.length - 1
     ) {
-      rows.push({ type: 'ad', key: `kr-ad-${i}` });
+      // Content-stable slot key: survives pagination so the ad pool can reuse
+      // the same NativeAd across list updates and FlashList recycling.
+      rows.push({ type: 'ad', key: `kr-ad-after-${facts[i].id}` });
     }
   }
   return rows;
@@ -84,7 +86,7 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
             <View style={{ padding: spacing.md }}>
               <InlineNativeAd
                 aspectRatio={NativeMediaAspectRatio.LANDSCAPE}
-                requestKey={item.key}
+                slotKey={item.key}
               />
             </View>
           ) : (
@@ -135,7 +137,6 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         getItemType={getItemType}
-        maintainVisibleContentPosition={{ disabled: true }}
         ListHeaderComponent={ListHeaderComponent}
         ListFooterComponent={listFooter}
         refreshControl={refreshControl}

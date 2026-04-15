@@ -108,9 +108,13 @@ const ImageFactCardComponent = ({
       return;
     }
 
-    if (renderWatchdogRef.current) clearTimeout(renderWatchdogRef.current);
+    if (renderWatchdogRef.current) {
+      clearTimeout(renderWatchdogRef.current);
+      renderWatchdogRef.current = null;
+    }
 
     renderWatchdogRef.current = setTimeout(() => {
+      renderWatchdogRef.current = null;
       if (retryPendingRef.current) return;
 
       if (renderRetryCount < IMAGE_RETRY.MAX_RENDER_ATTEMPTS) {
@@ -119,7 +123,10 @@ const ImageFactCardComponent = ({
     }, 3000);
 
     return () => {
-      if (renderWatchdogRef.current) clearTimeout(renderWatchdogRef.current);
+      if (renderWatchdogRef.current) {
+        clearTimeout(renderWatchdogRef.current);
+        renderWatchdogRef.current = null;
+      }
     };
   }, [renderRetryCount, imageLoaded, isPermanentlyFailed]);
 
@@ -235,11 +242,11 @@ const ImageFactCardComponent = ({
   const _favoritePositionStyle = favoritePositionStyle || defaultFavoritePositionStyle;
   const _contentOverlayStyle = contentOverlayStyle || defaultContentOverlayStyle;
 
-  // Recycling key that includes retry count to force expo-image to re-attempt loading
-  // This is important for Android where timing issues cause initial render failures
-  // Also includes a mount timestamp to prevent stale layout from recycled views
-  const mountTimestamp = useRef(Date.now()).current;
-  const recyclingKey = `fact-image-${factId}-${mountTimestamp}-${renderRetryCount}`;
+  // Content-stable recycling key. expo-image uses this to decide whether the
+  // decoded bitmap in a recycled view is still valid — keying it on fact id
+  // (plus retry count when we explicitly re-attempt) avoids re-decoding the
+  // same image on every FlashList recycle.
+  const recyclingKey = `fact-image-${factId}-${renderRetryCount}`;
 
   const pressableStyle = useMemo(
     () => ({

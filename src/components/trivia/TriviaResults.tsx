@@ -29,7 +29,7 @@ import { indexToAnswer, isTextAnswerCorrect } from '../../services/trivia';
 import { hexColors } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
-import { InlineNativeAd } from '../ads/InlineNativeAd';
+import { BannerAd } from '../ads';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { QuestionWithFact, StoredAnswer } from '../../services/database';
@@ -68,6 +68,9 @@ export interface TriviaResultsProps {
   unavailableQuestionIds?: number[];
   // Hide time and streak stat cards (e.g. for quick quiz)
   hideTimeAndStreak?: boolean;
+  // When rendered inside a tab navigator, the tab bar already consumes the
+  // bottom safe area — set false to avoid double-padding under the banner ad.
+  applyBottomInset?: boolean;
 }
 
 // Horizontal progress bar component
@@ -435,6 +438,7 @@ export function TriviaResults({
   showReturnButton = true,
   unavailableQuestionIds = [],
   hideTimeAndStreak = false,
+  applyBottomInset = true,
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -604,7 +608,6 @@ export function TriviaResults({
         flex: 1,
         backgroundColor: bgColor,
         paddingTop: insets.top,
-        paddingBottom: showReturnButton ? insets.bottom + spacing.sm : 0,
       }}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -851,11 +854,6 @@ export function TriviaResults({
               </Animated.View>
             )}
 
-            {/* Native Ad */}
-            <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
-              <InlineNativeAd />
-            </View>
-
             {/* Divider */}
             <View
               style={{
@@ -934,36 +932,45 @@ export function TriviaResults({
         </Animated.View>
       </ScrollView>
 
-      {/* Return button (shown for normal trivia flow) */}
-      {showReturnButton && (
-        <YStack width="100%" alignItems="center">
-          <YStack
-            width="100%"
-            maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
-            paddingHorizontal={spacing.lg}
-            paddingTop={spacing.md}
-            backgroundColor={bgColor as any}
-          >
-            <Pressable
-              onPress={onClose}
-              style={({ pressed }) => [pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
+      <View
+        style={{
+          paddingBottom:
+            (applyBottomInset ? insets.bottom : 0) + (showReturnButton ? spacing.sm : 0),
+        }}
+      >
+        <BannerAd />
+
+        {/* Return button (shown for normal trivia flow) */}
+        {showReturnButton && (
+          <YStack width="100%" alignItems="center">
+            <YStack
+              width="100%"
+              maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
+              paddingHorizontal={spacing.lg}
+              paddingTop={spacing.md}
+              backgroundColor={bgColor as any}
             >
-              <XStack
-                backgroundColor={primaryColor}
-                height={media.buttonHeight}
-                borderRadius={radius.lg}
-                justifyContent="center"
-                alignItems="center"
-                gap={spacing.sm}
+              <Pressable
+                onPress={onClose}
+                style={({ pressed }) => [pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
               >
-                <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
-                  {t('returnToTrivia') || 'Return to Trivia'}
-                </Text.Body>
-              </XStack>
-            </Pressable>
+                <XStack
+                  backgroundColor={primaryColor}
+                  height={media.buttonHeight}
+                  borderRadius={radius.lg}
+                  justifyContent="center"
+                  alignItems="center"
+                  gap={spacing.sm}
+                >
+                  <Text.Body color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+                    {t('returnToTrivia') || 'Return to Trivia'}
+                  </Text.Body>
+                </XStack>
+              </Pressable>
+            </YStack>
           </YStack>
-        </YStack>
-      )}
+        )}
+      </View>
     </View>
   );
 }

@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
+import { LAYOUT } from '../../config/app';
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
@@ -56,7 +57,7 @@ export function TriviaNativeAdView({
   navLockDuration,
 }: TriviaNativeAdViewProps) {
   const insets = useSafeAreaInsets();
-  const { borderWidths, media, typography, iconSizes, spacing, radius } = useResponsive();
+  const { borderWidths, isTablet, media, typography, iconSizes, spacing, radius } = useResponsive();
 
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
   const surfaceColor = isDark ? hexColors.dark.surface : hexColors.light.surface;
@@ -88,10 +89,18 @@ export function TriviaNativeAdView({
         backgroundColor: bgColor,
         paddingTop: insets.top,
         paddingBottom: insets.bottom + spacing.sm,
+        alignItems: 'center',
       }}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
+      <View
+        style={{
+          flex: 1,
+          width: '100%',
+          maxWidth: isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined,
+        }}
+      >
       {/* Header - identical to TriviaGameView */}
       <XStack
         paddingHorizontal={spacing.lg}
@@ -287,6 +296,7 @@ export function TriviaNativeAdView({
           </XStack>
         </Pressable>
       </XStack>
+      </View>
     </View>
   );
 }

@@ -7,7 +7,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useFocusEffect } from '@react-navigation/native';
@@ -17,7 +17,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { InlineNativeAd } from '../../src/components/ads/InlineNativeAd';
+import { BannerAd } from '../../src/components/ads';
 import { getTriviaModeBadge, TriviaResults } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { LAYOUT } from '../../src/config/app';
@@ -421,20 +421,14 @@ export default function ActivityHistoryScreen() {
       }
 
       return (
-        <Animated.View
-          entering={FadeInDown.delay(item.index * 30)
-            .duration(350)
-            .springify()}
-        >
-          <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
-            <SessionCard
-              session={item.session}
-              isDark={isDark}
-              t={t}
-              onPress={() => handleSessionClick(item.session.id)}
-            />
-          </View>
-        </Animated.View>
+        <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
+          <SessionCard
+            session={item.session}
+            isDark={isDark}
+            t={t}
+            onPress={() => handleSessionClick(item.session.id)}
+          />
+        </View>
       );
     },
     [isDark, t, handleSessionClick, spacing]
@@ -507,6 +501,7 @@ export default function ActivityHistoryScreen() {
         showBackButton={true}
         showReturnButton={false}
         unavailableQuestionIds={selectedSession.unavailableQuestionIds}
+        applyBottomInset={false}
       />
     );
   }
@@ -535,10 +530,7 @@ export default function ActivityHistoryScreen() {
         </XStack>
       </Animated.View>
 
-      <Animated.View
-        entering={FadeIn.delay(50).duration(400).springify()}
-        style={{ flex: 1, alignItems: 'center' }}
-      >
+      <View style={{ flex: 1, alignItems: 'center' }}>
         <View
           style={{
             flex: 1,
@@ -561,11 +553,6 @@ export default function ActivityHistoryScreen() {
               renderItem={renderItem}
               getItemType={getItemType}
               stickyHeaderIndices={stickyHeaderIndices}
-              ListHeaderComponent={
-                <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>
-                  <InlineNativeAd />
-                </View>
-              }
               refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
               }
@@ -576,7 +563,9 @@ export default function ActivityHistoryScreen() {
             />
           )}
         </View>
-      </Animated.View>
+      </View>
+
+      <BannerAd />
 
       {/* Loading overlay for session fetch */}
       {loadingSession && (

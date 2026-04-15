@@ -18,7 +18,7 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { ContentContainer } from '../../../src/components';
-import { InlineNativeAd } from '../../../src/components/ads/InlineNativeAd';
+import { BannerAd } from '../../../src/components/ads';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackScreenView } from '../../../src/services/analytics';
@@ -258,10 +258,6 @@ export default function CategoriesAccuracyScreen() {
                     ))}
                   </YStack>
                 </Animated.View>
-
-                <YStack marginTop={spacing.lg}>
-                  <InlineNativeAd />
-                </YStack>
               </>
             ) : (
               <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={100}>
@@ -275,6 +271,8 @@ export default function CategoriesAccuracyScreen() {
           </YStack>
         </ContentContainer>
       </ScrollView>
+
+      <BannerAd />
     </View>
   );
 }

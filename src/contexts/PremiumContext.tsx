@@ -20,6 +20,7 @@ import {
   trackSubscriptionStatusChanged,
 } from '../services/analytics';
 import { getStoredLocale } from '../services/contentRefresh';
+import { setPoolPremium } from '../services/nativeAdPool';
 import { getIsConnected } from '../services/network';
 import { handlePremiumDowngrade } from '../services/premiumDowngrade';
 import {
@@ -75,6 +76,7 @@ function DevPremiumProvider({ children }: { children: React.ReactNode }) {
     const wasPremium = lastKnownStatusRef.current;
     setIsPremium(status);
     setPremiumState(status);
+    setPoolPremium(status);
     await cachePremiumStatus(status);
     await setAnalyticsUserProperty('is_premium', status ? 'true' : 'false');
 
@@ -139,6 +141,7 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
   const updatePremiumStatus = useCallback(async (status: boolean) => {
     setIsPremium(status);
     setPremiumState(status);
+    setPoolPremium(status);
     await cachePremiumStatus(status);
     await setAnalyticsUserProperty('is_premium', status ? 'true' : 'false');
     // Only fire analytics on actual transitions, not initial load

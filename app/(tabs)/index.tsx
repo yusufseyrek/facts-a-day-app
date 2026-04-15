@@ -25,6 +25,7 @@ import { consumeFeedRefreshPending, forceRefreshContent } from '../../src/servic
 import { loadDailyFeedSections } from '../../src/services/dailyFeed';
 import { clearGlobalProgress, setGlobalProgress } from '../../src/services/globalProgress';
 import { preCacheOfflineImages } from '../../src/services/images';
+import { primePool } from '../../src/services/nativeAdPool';
 import { shouldShowPaywall } from '../../src/services/paywallTiming';
 import { hexColors, useTheme } from '../../src/theme';
 
@@ -76,6 +77,8 @@ function HomeScreen() {
           queryClient.setQueryData(homeKeys.dailyFeed(locale), sections);
         });
       }
+
+      primePool();
 
       const idleId = requestIdleCallback(() => {
         const today = getLocalDateString();

@@ -129,7 +129,7 @@ export default function StoryScreen() {
         facts,
         NATIVE_ADS.FIRST_AD_INDEX.STORY,
         undefined,
-        NATIVE_ADS.INTERVAL * 2
+        NATIVE_ADS.STORY_AD_INTERVAL
       ).filter((item) => !isNativeAdPlaceholder(item) || !failedAdKeys.has(item.key)),
     [facts, isPremium, failedAdKeys]
   );
@@ -311,14 +311,12 @@ export default function StoryScreen() {
     ({ item, index }: { item: StoryListItem; index: number }) => {
       if (isNativeAdPlaceholder(item)) {
         return (
-          <View style={{ width: screenWidth, height: screenHeight }}>
-            <StoryNativeAdCard
-              screenWidth={screenWidth}
-              screenHeight={screenHeight}
-              requestKey={item.key}
-              onAdFailed={() => handleAdFailed(item.key)}
-            />
-          </View>
+          <StoryNativeAdCard
+            screenWidth={screenWidth}
+            screenHeight={screenHeight}
+            slotKey={item.key}
+            onAdFailed={() => handleAdFailed(item.key)}
+          />
         );
       }
       return (
@@ -339,6 +337,12 @@ export default function StoryScreen() {
     []
   );
 
+  // Split FlashList recycle pools: ad pages and story pages never share a reusable view.
+  const getItemType = useCallback(
+    (item: StoryListItem) => (isNativeAdPlaceholder(item) ? 'ad' : 'fact'),
+    []
+  );
+
   if (loading || facts.length === 0) {
     return <View style={[styles.container, { backgroundColor: colors.background }]} />;
   }
@@ -350,6 +354,7 @@ export default function StoryScreen() {
         data={storyDataWithAds}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
+        getItemType={getItemType}
         snapToInterval={screenHeight}
         snapToAlignment="start"
         decelerationRate="fast"

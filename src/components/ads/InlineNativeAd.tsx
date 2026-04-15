@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { LAYOUT } from '../../config/app';
-import { useNativeAd } from '../../hooks/useNativeAd';
+import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { useResponsive } from '../../utils/useResponsive';
 
 import { NativeAdCard } from './NativeAdCard';
@@ -26,26 +26,26 @@ function getHeightRatio(aspectRatio: NativeMediaAspectRatio): number {
 interface InlineNativeAdProps {
   /** Override the default height. When set, aspectRatio is ignored for sizing. */
   cardHeight?: number;
-  /** Preferred media aspect ratio. Affects both the ad request and the component height. Defaults to LANDSCAPE. */
+  /** Preferred media aspect ratio. Affects the component height. Defaults to LANDSCAPE. */
   aspectRatio?: NativeMediaAspectRatio;
-  /** Unique key to trigger a new ad request (handles FlashList view recycling). */
-  requestKey?: string;
+  /** Stable slot key for pool-driven ads in a FlashList. */
+  slotKey?: string;
 }
 
-function InlineNativeAdComponent({ cardHeight: cardHeightProp, aspectRatio = NativeMediaAspectRatio.LANDSCAPE, requestKey }: InlineNativeAdProps) {
+function InlineNativeAdComponent({
+  cardHeight: cardHeightProp,
+  aspectRatio = NativeMediaAspectRatio.LANDSCAPE,
+  slotKey,
+}: InlineNativeAdProps) {
   const { screenWidth, radius } = useResponsive();
-  const { nativeAd, isLoading, error } = useNativeAd({ aspectRatio, requestKey });
-
-  if (!nativeAd || isLoading || error) {
-    return null;
-  }
+  const { ad } = useAdForSlot(slotKey, aspectRatio);
 
   const contentWidth = Math.min(screenWidth, LAYOUT.MAX_CONTENT_WIDTH);
   const cardHeight = cardHeightProp ?? contentWidth * getHeightRatio(aspectRatio);
 
   return (
     <View style={{ height: cardHeight, overflow: 'hidden', borderRadius: radius.lg }}>
-      <NativeAdCard cardHeight={cardHeight} nativeAd={nativeAd} />
+      {ad ? <NativeAdCard cardHeight={cardHeight} nativeAd={ad} /> : null}
     </View>
   );
 }

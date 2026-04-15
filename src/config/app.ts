@@ -71,21 +71,26 @@ export const APP_OPEN_ADS = {
 export const NATIVE_ADS = {
   /** Whether native feed ads are active */
   ACTIVE: true,
-  /** Show an ad every N items after the first ad */
-  INTERVAL: 4,
   /** Index of the first ad in each list (0-based) */
   FIRST_AD_INDEX: {
     HOME_CAROUSEL: 1,
+    LATEST: 3,
     DISCOVER: 1,
     FAVORITES: 1,
     STORY: 3,
   },
+  /** Show a native ad every N facts in the vertical story swipe view */
+  STORY_AD_INTERVAL: 6,
   /** Show an inline ad every N items in the Keep Reading list */
-  KEEP_READING_AD_INTERVAL: 5,
+  KEEP_READING_AD_INTERVAL: 6,
   /** Show a native ad every N questions in trivia */
   TRIVIA_AD_QUESTION_INTERVAL: 4,
   /** Duration (ms) to block prev/next navigation when a native ad is shown in trivia */
   TRIVIA_NAV_LOCK_DURATION_MS: 1500,
+  /** Maximum number of native ads kept alive by the shared pool across all feed lists */
+  POOL_SIZE: 4,
+  /** Refill the pool in the background once free capacity falls below this number */
+  POOL_REFILL_THRESHOLD: 2,
 } as const;
 
 export const AD_RETRY = {

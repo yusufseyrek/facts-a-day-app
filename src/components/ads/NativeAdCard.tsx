@@ -5,15 +5,15 @@ import {
   NativeAdView,
   NativeAsset,
   NativeAssetType,
+  NativeMediaAspectRatio,
   NativeMediaView,
 } from 'react-native-google-mobile-ads';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { XStack } from 'tamagui';
 
-import { useNativeAd } from '../../hooks/useNativeAd';
+import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { useTranslation } from '../../i18n';
-import { trackNativeAdImpression } from '../../services/analytics';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -22,14 +22,18 @@ interface NativeAdCardProps {
   cardWidth?: number;
   /** Fixed card height — overrides the default aspect-ratio-based height */
   cardHeight?: number;
-  /** Called when the native ad fails to load (e.g. no-fill) */
-  onAdFailed?: () => void;
-  /** Called when the native ad successfully loads */
-  onAdLoaded?: () => void;
-  /** Pre-loaded native ad (when provided, skips internal useNativeAd hook) */
+  /** Pre-loaded native ad (skips the pool). Used by callers that manage their own ad lifecycle. */
   nativeAd?: NativeAd;
-  /** Unique key to trigger a new ad request (handles FlashList view recycling). */
-  requestKey?: string;
+  /** Stable slot key for pool-driven ads in a FlashList. Ignored when `nativeAd` is passed. */
+  slotKey?: string;
+  /** Preferred media aspect ratio for the ad request. Defaults to LANDSCAPE. */
+  aspectRatio?: NativeMediaAspectRatio;
+  /**
+   * Fires when the pool reports a failure (no-fill, consent blocked, etc.) for this slot.
+   * Carousels use it to drop the ad cell; in-feed lists can ignore it and keep the sized
+   * spacer so the list layout never jumps.
+   */
+  onAdFailed?: () => void;
 }
 
 const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.45)', 'rgba(0, 0, 0, 0.85)'] as const;
@@ -38,37 +42,42 @@ const gradientLocations = [0.25, 0.55, 1] as const;
 function NativeAdCardComponent({
   cardWidth,
   cardHeight: cardHeightProp,
-  onAdFailed,
-  onAdLoaded,
   nativeAd: nativeAdProp,
-  requestKey,
+  slotKey,
+  aspectRatio = NativeMediaAspectRatio.LANDSCAPE,
+  onAdFailed,
 }: NativeAdCardProps) {
-  const { nativeAd: nativeAdFromHook, isLoading, error } = useNativeAd({ skip: !!nativeAdProp, requestKey });
-  const nativeAd = nativeAdProp ?? nativeAdFromHook;
+  const { ad: nativeAdFromPool, status } = useAdForSlot(
+    nativeAdProp ? null : slotKey,
+    aspectRatio
+  );
+  const nativeAd = nativeAdProp ?? nativeAdFromPool;
   const { screenWidth, spacing, radius, config } = useResponsive();
   const { t } = useTranslation();
 
   useEffect(() => {
-    if (!nativeAdProp && !isLoading && (error || !nativeAd)) {
-      onAdFailed?.();
+    if (!nativeAdProp && status === 'failed' && onAdFailed) {
+      onAdFailed();
     }
-  }, [nativeAdProp, isLoading, error, nativeAd, onAdFailed]);
-
-  useEffect(() => {
-    if (nativeAd && (nativeAdProp || (!isLoading && !error))) {
-      trackNativeAdImpression();
-      onAdLoaded?.();
-    }
-  }, [nativeAd, nativeAdProp, isLoading, error, onAdLoaded]);
-
-  if (!nativeAd || (!nativeAdProp && (isLoading || error))) {
-    return null;
-  }
+  }, [nativeAdProp, status, onAdFailed]);
 
   const cardHeight = cardHeightProp ?? screenWidth * config.cardAspectRatio;
-
-  // When nativeAd is passed as prop (inline usage), no margin needed since parent handles spacing
+  // Inline usage (InlineNativeAd) and carousel usage handle outer spacing themselves.
   const needsMargin = !nativeAdProp && !cardWidth;
+
+  // No ad yet (pool still loading, no-fill, premium, etc.) — render a sized
+  // spacer so the cell never collapses and the list never jumps.
+  if (!nativeAd) {
+    return (
+      <View
+        style={[
+          styles.spacer,
+          { height: cardHeight, marginBottom: needsMargin ? spacing.md : 0 },
+        ]}
+        pointerEvents="none"
+      />
+    );
+  }
 
   return (
     <NativeAdView
@@ -152,6 +161,9 @@ const styles = StyleSheet.create({
   imageContainer: {
     overflow: 'hidden',
     backgroundColor: '#1a1a2e',
+  },
+  spacer: {
+    backgroundColor: 'transparent',
   },
   badgeContainer: {
     position: 'absolute',
