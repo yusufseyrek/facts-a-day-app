@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 
 import { SatisfactionModal } from '../components/SatisfactionModal';
 import { useTranslation } from '../i18n';
+import { trackSatisfactionPromptShown } from '../services/analytics';
 import {
   hasPendingSatisfactionPrompt,
   openFeedbackEmail,
@@ -31,6 +32,7 @@ export function ReviewPromptProvider({ children }: { children: React.ReactNode }
       if (hasPendingSatisfactionPrompt()) {
         showingRef.current = true;
         setVisible(true);
+        trackSatisfactionPromptShown();
       }
     }, POLL_INTERVAL);
 

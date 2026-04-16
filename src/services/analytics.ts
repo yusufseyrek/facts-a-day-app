@@ -831,3 +831,15 @@ export const trackCarouselSwipe = (params: {
   posthog.capture('carousel_swiped', props);
 };
 
+// ============================================================================
+// App Review Events
+// ============================================================================
+
+/**
+ * Track when satisfaction modal is shown to the user
+ */
+export const trackSatisfactionPromptShown = (): void => {
+  logEvent('app_satisfaction_prompt_shown');
+  posthog.capture('satisfaction_prompt_shown');
+};
+
