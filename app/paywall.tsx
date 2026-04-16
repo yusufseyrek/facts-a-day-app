@@ -28,6 +28,7 @@ const { PAYWALL_PRODUCT_IDS } = SUBSCRIPTION;
 import { usePremium } from '../src/contexts';
 import { useTranslation } from '../src/i18n';
 import { trackPaywallDismissed, trackPaywallViewed } from '../src/services/analytics';
+import { getPremiumCategorySlugs } from '../src/services/database';
 import { markPaywallShown } from '../src/services/paywallTiming';
 import { hexColors, PAYWALL_GOLD, paywallThemeColors, useTheme } from '../src/theme';
 import { openInAppBrowser } from '../src/utils/browser';
@@ -61,10 +62,14 @@ export default function PaywallScreen() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [premiumCategoryCount, setPremiumCategoryCount] = useState(0);
 
   useEffect(() => {
     trackPaywallViewed(source);
     markPaywallShown();
+    getPremiumCategorySlugs()
+      .then((slugs) => setPremiumCategoryCount(slugs.length))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -243,7 +248,7 @@ export default function PaywallScreen() {
     {
       icon: <Lock size={iconSizes.md} color={featureIconColor} />,
       title: t('paywallFeaturePremiumCategories'),
-      description: t('paywallFeaturePremiumCategoriesDesc'),
+      description: t('paywallFeaturePremiumCategoriesDesc', { count: premiumCategoryCount }),
       gradient: [PAYWALL_GOLD.primary, PAYWALL_GOLD.light] as const,
     },
     {

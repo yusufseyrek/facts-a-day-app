@@ -18,6 +18,7 @@ import { useHomeFeed } from '../../src/hooks/useHomeFeed';
 import { useHomeFeedEvents } from '../../src/hooks/useHomeFeedEvents';
 import { useKeepReading } from '../../src/hooks/useKeepReading';
 import { useReadingStreak } from '../../src/hooks/useReadingStreak';
+import { useTrendingPremium } from '../../src/hooks/useTrendingPremium';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
 import { isModalScreenActive } from '../../src/services/badges';
@@ -43,6 +44,31 @@ function HomeScreen() {
     useHomeFeed(locale);
   const { facts: keepReadingFacts, fetchNextPage, isFetchingNextPage } = useKeepReading(locale);
   const { streak } = useReadingStreak();
+  const trendingPremiumFacts = useTrendingPremium(locale, isPremium);
+
+  // Merge trending premium facts into the latest carousel, sorted by created_at desc.
+  // Deduplicate by ID — premium facts viewed via the detail screen get saved to the
+  // local DB, so they can appear in both latestFacts and trendingPremiumFacts.
+  // Ensure the first item is always a free fact for free users.
+  const mergedLatestFacts = useMemo(() => {
+    if (trendingPremiumFacts.length === 0) return latestFacts;
+    const existingIds = new Set(latestFacts.map((f) => f.id));
+    const uniquePremium = trendingPremiumFacts.filter((f) => !existingIds.has(f.id));
+    const sorted = [...latestFacts, ...uniquePremium].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    const firstFreeIdx = sorted.findIndex((f) => !f.categoryData?.is_premium);
+    if (firstFreeIdx > 0) {
+      const [free] = sorted.splice(firstFreeIdx, 1);
+      sorted.unshift(free);
+    }
+    return sorted;
+  }, [latestFacts, trendingPremiumFacts]);
+
+  const mergedLatestFactIds = useMemo(
+    () => mergedLatestFacts.map((f) => f.id),
+    [mergedLatestFacts]
+  );
 
   // Local state
   const [refreshing, setRefreshing] = useState(false);
@@ -149,6 +175,7 @@ function HomeScreen() {
     }
     queryClient.invalidateQueries({ queryKey: homeKeys.keepReading(locale) });
     queryClient.invalidateQueries({ queryKey: homeKeys.readingStreak() });
+    queryClient.invalidateQueries({ queryKey: homeKeys.trendingPremium(locale) });
     setRefreshing(false);
   }, [locale]);
 
@@ -165,14 +192,14 @@ function HomeScreen() {
     // Reserved for future scroll-dependent behavior (e.g. header collapse)
   }, []);
 
-  const hasAnyContent = latestFacts.length > 0 || onThisDayFacts.length > 0;
+  const hasAnyContent = mergedLatestFacts.length > 0 || onThisDayFacts.length > 0;
 
   // Compose list header from extracted components (memoized to prevent FlashList re-layout)
   const listHeader = useMemo(
     () => (
       <HomeListHeader
-        latestFacts={latestFacts}
-        latestFactIds={latestFactIds}
+        latestFacts={mergedLatestFacts}
+        latestFactIds={mergedLatestFactIds}
         onThisDayFacts={onThisDayFacts}
         onThisDayIsWeekFallback={onThisDayIsWeekFallback}
         keepReadingCount={keepReadingFacts.length}
@@ -184,8 +211,8 @@ function HomeScreen() {
       />
     ),
     [
-      latestFacts,
-      latestFactIds,
+      mergedLatestFacts,
+      mergedLatestFactIds,
       onThisDayFacts,
       onThisDayIsWeekFallback,
       keepReadingFacts.length,

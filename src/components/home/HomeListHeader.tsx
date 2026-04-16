@@ -62,6 +62,7 @@ export const HomeListHeader = React.memo(function HomeListHeader({
         factIds={latestFactIds}
         onFactPress={onFactPress}
         listRef={latestListRef}
+        isPremium={isPremium}
       />
 
       <OnThisDayCarousel

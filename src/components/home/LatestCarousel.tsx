@@ -33,6 +33,7 @@ interface LatestCarouselProps {
     index: number
   ) => void;
   listRef?: React.RefObject<FlashListRef<FactWithRelations> | null>;
+  isPremium?: boolean;
 }
 
 type LatestRow = FactWithRelations | NativeAdPlaceholder;
@@ -42,6 +43,7 @@ export const LatestCarousel = React.memo(function LatestCarousel({
   factIds,
   onFactPress,
   listRef,
+  isPremium,
 }: LatestCarouselProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -104,6 +106,9 @@ export const LatestCarousel = React.memo(function LatestCarousel({
         );
       }
       const factIndex = factIds.indexOf(item.id);
+      const isFactPremiumLocked =
+        !isPremium &&
+        !!(typeof item.categoryData === 'object' && item.categoryData?.is_premium);
       return (
         <View style={itemStyle}>
           <ImageFactCard
@@ -116,11 +121,12 @@ export const LatestCarousel = React.memo(function LatestCarousel({
             cardWidth={cardWidth}
             aspectRatio={1}
             titleNumberOfLines={5}
+            isPremiumLocked={isFactPremiumLocked}
           />
         </View>
       );
     },
-    [cardWidth, cardHeight, onFactPress, factIds, itemStyle]
+    [cardWidth, cardHeight, onFactPress, factIds, itemStyle, isPremium]
   );
 
   const keyExtractor = useCallback(

@@ -621,6 +621,38 @@ export const trackRewardedAdResult = (params: {
 
 
 // ============================================================================
+// Premium Gate Ad Events
+// ============================================================================
+
+/**
+ * Track when a rewarded ad is shown from the premium fact gate
+ */
+export const trackPremiumGateAdShown = (params: {
+  factId: number;
+  categorySlug?: string;
+}): void => {
+  logEvent('app_premium_gate_ad_shown', {
+    fact_id: params.factId,
+    category_slug: params.categorySlug || '',
+  });
+};
+
+/**
+ * Track the result of a rewarded ad from the premium fact gate
+ */
+export const trackPremiumGateAdResult = (params: {
+  factId: number;
+  rewarded: boolean;
+  categorySlug?: string;
+}): void => {
+  logEvent('app_premium_gate_ad_result', {
+    fact_id: params.factId,
+    rewarded: params.rewarded,
+    category_slug: params.categorySlug || '',
+  });
+};
+
+// ============================================================================
 // Native Ad Events
 // ============================================================================
 

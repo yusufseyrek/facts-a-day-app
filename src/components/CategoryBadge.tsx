@@ -1,4 +1,5 @@
 
+import { Lock } from '@tamagui/lucide-icons';
 import { XStack } from 'tamagui';
 
 import { translateCategory, useTranslation } from '../i18n';
@@ -20,9 +21,11 @@ interface CategoryBadgeProps {
   fontSize?: number;
   /** Compact variant with reduced padding, suitable for inline use in cards */
   compact?: boolean;
+  /** Show a lock icon next to the category name */
+  showLock?: boolean;
 }
 
-export function CategoryBadge({ category, fontFamily, fontSize, compact }: CategoryBadgeProps) {
+export function CategoryBadge({ category, fontFamily, fontSize, compact, showLock }: CategoryBadgeProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { spacing, radius } = useResponsive();
@@ -49,15 +52,23 @@ export function CategoryBadge({ category, fontFamily, fontSize, compact }: Categ
   return (
     <XStack
       paddingVertical={compact ? 2 : spacing.xs}
+      paddingHorizontal={compact ? spacing.sm : spacing.md}
       borderRadius={radius.full}
       alignSelf="flex-start"
+      alignItems="center"
+      gap={showLock ? spacing.xs : 0}
       style={{ backgroundColor }}
     >
+      {showLock && (
+        <Lock
+          size={fontSize ? fontSize - 1 : 10}
+          color={contrastColor}
+        />
+      )}
       <Text.Caption
         color={contrastColor}
         fontFamily={fontFamily || FONT_FAMILIES.semibold}
         fontSize={fontSize}
-        paddingHorizontal={compact ? spacing.sm : spacing.md}
       >
         {displayName}
       </Text.Caption>

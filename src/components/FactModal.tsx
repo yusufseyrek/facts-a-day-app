@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
+  ActivityIndicator,
   Animated,
   Linking,
   Platform,
@@ -13,7 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
-import { Calendar, Crown, ExternalLink, ImagePlus, RefreshCw, X } from '@tamagui/lucide-icons';
+import { Calendar, Crown, ExternalLink, ImagePlus, Play, RefreshCw, X } from '@tamagui/lucide-icons';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,7 +24,7 @@ import { XStack, YStack } from 'tamagui';
 import { usePremium } from '../contexts';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { useTranslation } from '../i18n';
-import { trackSourceLinkClick } from '../services/analytics';
+import { trackPremiumGateAdResult, trackPremiumGateAdShown, trackSourceLinkClick } from '../services/analytics';
 import { onFactViewed, onStreakMilestone, scheduleSatisfactionPrompt } from '../services/appReview';
 import {
   checkAndAwardBadges,
@@ -34,6 +35,7 @@ import {
 import {
   addFactDetailTimeSpent,
   deleteFact,
+  getPremiumCategorySlugs,
   getRelatedFacts,
   markFactDetailOpened,
   markFactDetailRead,
@@ -42,6 +44,7 @@ import { getCachedFactImageSync } from '../services/images';
 import { getIsConnected } from '../services/network';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getIsPremium } from '../services/premiumState';
+import { showRewardedAd } from './ads/RewardedAd';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { PAYWALL_GOLD } from '../theme/paywallColors';
 import { getTranslatedUrl } from '../utils/browser';
@@ -139,6 +142,12 @@ export function FactModal({
   const currentScrollY = useRef(0);
   const [titleHeight, setTitleHeight] = useState<number>(typography.lineHeight.headline); // Default to 1 line height
   const [containerWidth, setContainerWidth] = useState(SCREEN_WIDTH); // Actual modal width
+  const [adUnlocked, setAdUnlocked] = useState(false);
+
+  // Reset ad unlock when navigating to a different fact
+  useEffect(() => {
+    setAdUnlocked(false);
+  }, [fact.id]);
 
   // Image loading state tracked via expo-image callbacks
   const [isImageLoaded, setIsImageLoaded] = useState(false);
@@ -1187,28 +1196,67 @@ export function FactModal({
       />
 
       {/* Premium content gate — blurs everything for free users viewing premium facts */}
-      {!isPremium && !!fact.categoryData?.is_premium && (
-        <PremiumGateOverlay factId={fact.id} onClose={onClose} />
+      {!isPremium && !adUnlocked && !!fact.categoryData?.is_premium && (
+        <PremiumGateOverlay
+          factId={fact.id}
+          categorySlug={fact.categoryData?.slug}
+          onClose={onClose}
+          onAdUnlock={() => setAdUnlocked(true)}
+        />
       )}
     </View>
   );
 }
 
-function PremiumGateOverlay({ factId, onClose }: { factId: number; onClose: () => void }) {
+function PremiumGateOverlay({
+  factId,
+  categorySlug,
+  onClose,
+  onAdUnlock,
+}: {
+  factId: number;
+  categorySlug?: string;
+  onClose: () => void;
+  onAdUnlock: () => void;
+}) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const router = useRouter();
   const { spacing, radius, iconSizes, media, maxModalWidth } = useResponsive();
   const isDark = theme === 'dark';
+  const [premiumCategoryCount, setPremiumCategoryCount] = useState(0);
+  const [isLoadingAd, setIsLoadingAd] = useState(false);
+  const adUnlockedRef = useRef(false);
 
-  // Delete the premium fact when the overlay unmounts (user closes without upgrading)
+  useEffect(() => {
+    getPremiumCategorySlugs()
+      .then((slugs) => setPremiumCategoryCount(slugs.length))
+      .catch(() => {});
+  }, []);
+
+  // Delete the premium fact when the overlay unmounts (user closes without upgrading or watching ad)
   useEffect(() => {
     return () => {
-      if (!getIsPremium()) {
+      if (!getIsPremium() && !adUnlockedRef.current) {
         deleteFact(factId).catch(() => {});
       }
     };
   }, [factId]);
+
+  const handleWatchAd = useCallback(async () => {
+    setIsLoadingAd(true);
+    try {
+      trackPremiumGateAdShown({ factId, categorySlug });
+      const rewarded = await showRewardedAd();
+      trackPremiumGateAdResult({ factId, rewarded, categorySlug });
+      if (rewarded) {
+        adUnlockedRef.current = true;
+        onAdUnlock();
+      }
+    } finally {
+      setIsLoadingAd(false);
+    }
+  }, [factId, categorySlug, onAdUnlock]);
 
   return (
     <View style={StyleSheet.absoluteFill}>
@@ -1255,10 +1303,10 @@ function PremiumGateOverlay({ factId, onClose }: { factId: number; onClose: () =
         >
           <Crown size={iconSizes.hero} color={PAYWALL_GOLD.primary} fill={PAYWALL_GOLD.primary} />
           <Text.Title textAlign="center" color="$text">
-            {t('paywallFeaturePremiumCategories')}
+            {t('premiumGateTitle')}
           </Text.Title>
           <Text.Body textAlign="center" color="$textSecondary">
-            {t('paywallFeaturePremiumCategoriesDesc')}
+            {t('premiumGateDescription', { count: premiumCategoryCount })}
           </Text.Body>
           <Pressable
             onPress={() => router.push('/paywall')}
@@ -1297,6 +1345,27 @@ function PremiumGateOverlay({ factId, onClose }: { factId: number; onClose: () =
                 {t('unlockPremium')}
               </Text.Label>
             </LinearGradient>
+          </Pressable>
+          <Pressable
+            onPress={handleWatchAd}
+            disabled={isLoadingAd}
+            style={({ pressed }) => ({
+              alignSelf: 'center',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.xs,
+              paddingVertical: spacing.sm,
+              opacity: isLoadingAd ? 0.5 : pressed ? 0.7 : 1,
+            })}
+          >
+            {isLoadingAd ? (
+              <ActivityIndicator size="small" color={PAYWALL_GOLD.primary} />
+            ) : (
+              <Play size={14} color={PAYWALL_GOLD.primary} fill={PAYWALL_GOLD.primary} />
+            )}
+            <Text.Caption color={PAYWALL_GOLD.primary} fontFamily={FONT_FAMILIES.semibold}>
+              {t('watchAdToRead')}
+            </Text.Caption>
           </Pressable>
           <Pressable
             onPress={() => {

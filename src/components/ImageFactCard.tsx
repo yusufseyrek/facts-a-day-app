@@ -10,7 +10,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { RefreshCw } from '@tamagui/lucide-icons';
+import { Crown, RefreshCw } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -50,6 +50,8 @@ interface ImageFactCardProps {
   favoritePositionStyle?: ViewStyle;
   /** Optional override for the title's number of lines. Defaults to config.maxLines. */
   titleNumberOfLines?: number;
+  /** When true, shows a gold crown icon instead of the favorite button */
+  isPremiumLocked?: boolean;
 }
 
 const ImageFactCardComponent = ({
@@ -67,6 +69,7 @@ const ImageFactCardComponent = ({
   contentOverlayStyle,
   favoritePositionStyle,
   titleNumberOfLines,
+  isPremiumLocked,
 }: ImageFactCardProps) => {
   const { screenWidth, spacing, radius, config } = useResponsive();
 
@@ -308,7 +311,11 @@ const ImageFactCardComponent = ({
                 <CategoryBadge category={category} />
               </View>
             )}
-            <Title color="#FFFFFF" numberOfLines={titleNumberOfLines ?? config.maxLines} style={styles.titleShadow}>
+            <Title
+              color="#FFFFFF"
+              numberOfLines={titleNumberOfLines ?? config.maxLines}
+              style={styles.titleShadow}
+            >
               {title}
             </Title>
           </View>
@@ -395,22 +402,32 @@ const ImageFactCardComponent = ({
             {/* Category badge */}
             {category && (
               <View style={[styles.badgeContainer, badgePositionStyle]}>
-                <CategoryBadge category={category} />
+                <CategoryBadge category={category} showLock={isPremiumLocked} />
               </View>
             )}
 
-            {/* Favorite button */}
+            {/* Favorite button or premium crown */}
             <View style={[styles.badgeContainer, _favoritePositionStyle]}>
-              <FavoriteButton
-                factId={factId}
-                imageUrl={imageUrl}
-                categorySlug={typeof category === 'string' ? category : category?.slug}
-              />
+              {isPremiumLocked ? (
+                <View style={styles.crownShadow}>
+                  <Crown size={22} color="#FFD700" fill="#FFD700" />
+                </View>
+              ) : (
+                <FavoriteButton
+                  factId={factId}
+                  imageUrl={imageUrl}
+                  categorySlug={typeof category === 'string' ? category : category?.slug}
+                />
+              )}
             </View>
 
             {/* Content overlay */}
             <View style={[styles.contentOverlay, _contentOverlayStyle]}>
-              <Title color="#FFFFFF" numberOfLines={titleNumberOfLines ?? config.maxLines} style={styles.titleShadow}>
+              <Title
+                color="#FFFFFF"
+                numberOfLines={titleNumberOfLines ?? config.maxLines}
+                style={styles.titleShadow}
+              >
                 {title}
               </Title>
             </View>
@@ -467,6 +484,14 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 10,
   },
+  crownShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    elevation: 6,
+    padding: 3,
+  },
   offlineCard: {
     padding: 20,
     justifyContent: 'flex-end',
@@ -487,6 +512,7 @@ export const ImageFactCard = React.memo(ImageFactCardComponent, (prevProps, next
     prevProps.TitleComponent === nextProps.TitleComponent &&
     prevProps.contentOverlayStyle === nextProps.contentOverlayStyle &&
     prevProps.favoritePositionStyle === nextProps.favoritePositionStyle &&
-    prevProps.titleNumberOfLines === nextProps.titleNumberOfLines
+    prevProps.titleNumberOfLines === nextProps.titleNumberOfLines &&
+    prevProps.isPremiumLocked === nextProps.isPremiumLocked
   );
 });
