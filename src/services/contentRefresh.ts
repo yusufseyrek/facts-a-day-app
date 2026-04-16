@@ -676,6 +676,15 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
     await db.insertCategories(metadata.categories);
     result.updated.categories = metadata.categories.length;
 
+    // If user is not premium, ensure no premium categories remain selected.
+    // This handles the case where a category was changed from free → premium
+    // on the backend while the user already had it selected.
+    const { getIsPremium } = require('./premiumState') as typeof import('./premiumState');
+    if (!getIsPremium()) {
+      const { reconcilePremiumCategories } = require('./premiumDowngrade') as typeof import('./premiumDowngrade');
+      await reconcilePremiumCategories();
+    }
+
     // Step 2: Fetch new or updated facts since last update
     const lastFactUpdatedAt = await getLastFactUpdatedAt();
 
