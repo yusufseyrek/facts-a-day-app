@@ -28,7 +28,7 @@ interface CategoryBadgeProps {
 export function CategoryBadge({ category, fontFamily, fontSize, compact, showLock }: CategoryBadgeProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { spacing, radius } = useResponsive();
+  const { spacing, radius, typography } = useResponsive();
 
   // Determine if category is a Category object or a string
   let displayName: string;
@@ -61,7 +61,7 @@ export function CategoryBadge({ category, fontFamily, fontSize, compact, showLoc
     >
       {showLock && (
         <Lock
-          size={fontSize ? fontSize - 1 : 10}
+          size={(fontSize || typography.fontSize.caption) - 1}
           color={contrastColor}
         />
       )}

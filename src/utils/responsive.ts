@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 import { LAYOUT } from '../config/app';
 import { IMAGE_DIMENSIONS } from '../config/images';
 
@@ -15,6 +17,34 @@ const scale = (value: number): number => Math.round(value * TABLET_MULTIPLIER);
  */
 const scaleObject = <T extends Record<string, number>>(obj: T): T => {
   return Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, scale(value)])) as T;
+};
+
+// ============================================================================
+// DISPLAY SIZE COMPENSATION (Android)
+// ============================================================================
+
+/**
+ * Android "Display Size" increases system density, shrinking the logical
+ * screen width (e.g. 393dp → 320dp). We detect this and scale down
+ * typography/spacing proportionally to prevent layout overflow.
+ * iOS Display Zoom is coarser (only 2 levels) and doesn't need this.
+ */
+const PHONE_REFERENCE_WIDTH = 360;
+const MIN_DISPLAY_SCALE = 0.85;
+
+export const getDisplaySizeScale = (screenWidth: number): number => {
+  if (Platform.OS !== 'android' || screenWidth >= PHONE_REFERENCE_WIDTH) return 1;
+  return Math.max(MIN_DISPLAY_SCALE, screenWidth / PHONE_REFERENCE_WIDTH);
+};
+
+export const applyDisplayScale = <T extends Record<string, number>>(
+  obj: T,
+  displayScale: number
+): T => {
+  if (displayScale === 1) return obj;
+  return Object.fromEntries(
+    Object.entries(obj).map(([key, value]) => [key, Math.round(value * displayScale)])
+  ) as T;
 };
 
 // ============================================================================

@@ -2,10 +2,12 @@ import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
 
 import {
+  applyDisplayScale,
   borderWidths as responsiveBorderWidths,
   config as responsiveConfig,
   getBorderWidths,
   getConfig,
+  getDisplaySizeScale,
   getIconSizes,
   getMaxModalWidth,
   getMedia,
@@ -65,25 +67,38 @@ export interface ResponsiveValues {
 
 /**
  * Hook for responsive typography and layout.
- * Returns fixed values for phone/tablet - no scaling.
- * Automatically updates when screen dimensions change (e.g., rotation).
+ * Returns phone/tablet values based on screen width, and on Android
+ * compensates for "Display Size" scaling to prevent layout overflow.
  */
 export const useResponsive = (): ResponsiveValues => {
   const { width, height } = useWindowDimensions();
 
   return useMemo(() => {
     const isTablet = isTabletDevice(width);
+    const displayScale = getDisplaySizeScale(width);
+
+    const typo = getTypography(width);
+    const sp = getSpacing(width);
+    const icons = getIconSizes(width);
+    const med = getMedia(width);
 
     return {
       screenWidth: width,
       screenHeight: height,
       isTablet,
       isLandscape: width > height,
-      typography: getTypography(width),
-      spacing: getSpacing(width),
-      iconSizes: getIconSizes(width),
+      typography:
+        displayScale === 1
+          ? typo
+          : {
+              fontSize: applyDisplayScale(typo.fontSize, displayScale),
+              lineHeight: applyDisplayScale(typo.lineHeight, displayScale),
+              letterSpacing: applyDisplayScale(typo.letterSpacing, displayScale),
+            },
+      spacing: applyDisplayScale(sp, displayScale),
+      iconSizes: applyDisplayScale(icons, displayScale),
       config: getConfig(width),
-      media: getMedia(width),
+      media: applyDisplayScale(med, displayScale),
       radius: getRadius(width),
       borderWidths: getBorderWidths(width),
       maxModalWidth: getMaxModalWidth(width),

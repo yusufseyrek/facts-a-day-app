@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus, View } from 'react-native';
+import { AppState, AppStateStatus, Text as RNText, TextInput, View } from 'react-native';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../src/utils/responsive';
+
+// Cap system font scaling globally — catches raw RN Text, Tamagui, and third-party libs.
+for (const Component of [RNText, TextInput]) {
+  const c = Component as { defaultProps?: Record<string, unknown> };
+  c.defaultProps = { ...c.defaultProps, maxFontSizeMultiplier: DEFAULT_MAX_FONT_SIZE_MULTIPLIER };
+}
 
 import {
   Montserrat_400Regular,
@@ -228,43 +236,43 @@ function AppContent() {
     <>
       <Stack screenOptions={screenOptions}>
         <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="onboarding" />
-      <Stack.Screen
-        name="fact/[id]"
-        options={{
-          presentation: 'modal',
-          headerShown: false,
-          contentStyle: { backgroundColor },
-        }}
-      />
-      <Stack.Screen
-        name="[locale]/fact/[id]"
-        options={{
-          // This route immediately redirects, so no UI needed
-          headerShown: false,
-          animation: 'none',
-        }}
-      />
-      <Stack.Screen
-        name="story/[category]"
-        options={{
-          presentation: 'fullScreenModal',
-          animation: 'slide_from_bottom',
-          headerShown: false,
-          gestureEnabled: true,
-          contentStyle: { backgroundColor },
-        }}
-      />
-      <Stack.Screen name="badges" options={{ headerShown: false }} />
-      <Stack.Screen name="trivia" options={{ gestureEnabled: false }} />
-      <Stack.Screen
-        name="paywall"
-        options={{
-          presentation: 'modal',
-          headerShown: false,
-          contentStyle: { backgroundColor },
-        }}
-      />
+        <Stack.Screen name="onboarding" />
+        <Stack.Screen
+          name="fact/[id]"
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+            contentStyle: { backgroundColor },
+          }}
+        />
+        <Stack.Screen
+          name="[locale]/fact/[id]"
+          options={{
+            // This route immediately redirects, so no UI needed
+            headerShown: false,
+            animation: 'none',
+          }}
+        />
+        <Stack.Screen
+          name="story/[category]"
+          options={{
+            presentation: 'fullScreenModal',
+            animation: 'slide_from_bottom',
+            headerShown: false,
+            gestureEnabled: true,
+            contentStyle: { backgroundColor },
+          }}
+        />
+        <Stack.Screen name="badges" options={{ headerShown: false }} />
+        <Stack.Screen name="trivia" options={{ gestureEnabled: false }} />
+        <Stack.Screen
+          name="paywall"
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+            contentStyle: { backgroundColor },
+          }}
+        />
       </Stack>
     </>
   );
@@ -351,7 +359,8 @@ export default function RootLayout() {
       ) {
         // If an update was downloaded previously, reload the app immediately
         if (pendingUpdateRef.current) {
-          if (__DEV__) console.log('📦 Pending OTA update detected on foreground, reloading app...');
+          if (__DEV__)
+            console.log('📦 Pending OTA update detected on foreground, reloading app...');
           pendingUpdateRef.current = false;
           try {
             await updates.reloadApp();
@@ -381,7 +390,8 @@ export default function RootLayout() {
           .checkAndDownloadUpdate()
           .then((result) => {
             if (result.updateAvailable && result.downloaded) {
-              if (__DEV__) console.log('📦 OTA update downloaded, marking as pending for next foreground');
+              if (__DEV__)
+                console.log('📦 OTA update downloaded, marking as pending for next foreground');
               pendingUpdateRef.current = true;
             }
           })
@@ -417,7 +427,8 @@ export default function RootLayout() {
           .checkAndDownloadUpdate()
           .then((result) => {
             if (result.updateAvailable && result.downloaded) {
-              if (__DEV__) console.log('📦 OTA update downloaded, marking as pending for next foreground');
+              if (__DEV__)
+                console.log('📦 OTA update downloaded, marking as pending for next foreground');
               pendingUpdateRef.current = true;
             }
           })
@@ -567,7 +578,6 @@ export default function RootLayout() {
       // Wait for IAP to finish (has been running in parallel since Phase 2 start)
       await iapPromise;
 
-
       // Register background sync for all users (fact sync)
       registerBackgroundSync().catch((error) => {
         console.error('Failed to register background sync:', error);
@@ -586,9 +596,10 @@ export default function RootLayout() {
         .checkAndDownloadUpdate()
         .then((result) => {
           if (result.updateAvailable && result.downloaded) {
-            if (__DEV__) console.log(
-              '📦 OTA update downloaded on cold start, marking as pending for next foreground'
-            );
+            if (__DEV__)
+              console.log(
+                '📦 OTA update downloaded on cold start, marking as pending for next foreground'
+              );
             pendingUpdateRef.current = true;
           } else if (result.error) {
             console.error('OTA update check failed:', result.error);
@@ -627,27 +638,27 @@ export default function RootLayout() {
           )}
           <PostHogProvider client={posthog}>
             <PostHogErrorBoundary>
-            <I18nProvider>
-              <QueryClientProvider client={queryClient}>
-              <PreloadedDataProvider>
-                <OnboardingProvider initialComplete={initialOnboardingStatus}>
-                  <IAPSafeProvider>
-                    <ScrollToTopProvider>
-                      <AppThemeProvider>
-                        <NavigationThemeWrapper>
-                          <ReviewPromptProvider>
-                            <BadgeToastProvider>
-                              <AppContent />
-                            </BadgeToastProvider>
-                          </ReviewPromptProvider>
-                        </NavigationThemeWrapper>
-                      </AppThemeProvider>
-                    </ScrollToTopProvider>
-                  </IAPSafeProvider>
-                </OnboardingProvider>
-              </PreloadedDataProvider>
-              </QueryClientProvider>
-            </I18nProvider>
+              <I18nProvider>
+                <QueryClientProvider client={queryClient}>
+                  <PreloadedDataProvider>
+                    <OnboardingProvider initialComplete={initialOnboardingStatus}>
+                      <IAPSafeProvider>
+                        <ScrollToTopProvider>
+                          <AppThemeProvider>
+                            <NavigationThemeWrapper>
+                              <ReviewPromptProvider>
+                                <BadgeToastProvider>
+                                  <AppContent />
+                                </BadgeToastProvider>
+                              </ReviewPromptProvider>
+                            </NavigationThemeWrapper>
+                          </AppThemeProvider>
+                        </ScrollToTopProvider>
+                      </IAPSafeProvider>
+                    </OnboardingProvider>
+                  </PreloadedDataProvider>
+                </QueryClientProvider>
+              </I18nProvider>
             </PostHogErrorBoundary>
           </PostHogProvider>
         </SafeAreaProvider>
