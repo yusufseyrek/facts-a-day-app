@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
 import { useTranslation } from '../i18n';
+import { onFeedRefresh } from '../services/contentRefresh';
 import * as database from '../services/database';
 import { getSelectedCategories } from '../services/onboarding';
 import { onPreferenceFeedRefresh } from '../services/preferences';
@@ -57,9 +58,16 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
     useEffect(() => {
       loadCategories();
-      return onPreferenceFeedRefresh(() => {
+      const unsubPreference = onPreferenceFeedRefresh(() => {
         loadCategories();
       });
+      const unsubFeed = onFeedRefresh(() => {
+        loadCategories();
+      });
+      return () => {
+        unsubPreference();
+        unsubFeed();
+      };
     }, []);
 
     // Refresh unseen status when screen is focused (returning from story)
