@@ -786,7 +786,7 @@ function isScheduleValid(
 
 /**
  * Clear notification schedule from both DB and OS
- * @param locale User's locale for marking delivered facts
+ * @param locale User's locale
  * @param options.completely If true, clears ALL scheduling data (for permission revoke)
  */
 export async function clearNotificationSchedule(

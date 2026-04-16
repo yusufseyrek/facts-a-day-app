@@ -829,34 +829,6 @@ export async function getRandomFact(language?: string): Promise<FactWithRelation
   return result ? mapSingleFactWithRelations(result) : null;
 }
 
-export async function getRandomFactNotInFeed(language: string): Promise<FactWithRelations | null> {
-  const database = await openDatabase();
-
-  const result = await database.getFirstAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.language = ? AND f.scheduled_date IS NULL
-    ORDER BY RANDOM()
-    LIMIT 1`,
-    [language]
-  );
-
-  // Fall back to any random fact if all facts not in feed are exhausted
-  if (!result) {
-    return getRandomFact(language);
-  }
-
-  return mapSingleFactWithRelations(result);
-}
 
 export async function getFactsCount(language?: string): Promise<number> {
   const database = await openDatabase();
@@ -2253,7 +2225,7 @@ export async function getQuestionsForCategory(
   const database = await openDatabase();
 
   // Candidate pool is every fact in the category; ordering below prioritizes
-  // facts the user has engaged with (detail > story > shown) and falls back
+  // facts the user has engaged with (detail > story) and falls back
   // to unseen facts only when the pool of seen ones is exhausted.
   let query = `
     SELECT
