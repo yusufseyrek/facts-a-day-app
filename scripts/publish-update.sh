@@ -86,6 +86,36 @@ check_api_key() {
     fi
 }
 
+# Track original version numbers for rollback on failure
+_original_ios_build_number=""
+_original_android_version_code=""
+
+# Revert iOS buildNumber in app.json
+revert_ios_build_number() {
+    if [ -n "$_original_ios_build_number" ]; then
+        local app_json="$PROJECT_ROOT/app.json"
+        jq --arg oldBuild "$_original_ios_build_number" '.expo.ios.buildNumber = $oldBuild' "$app_json" > "$app_json.tmp" && mv "$app_json.tmp" "$app_json"
+        print_warning "Reverted iOS buildNumber to $_original_ios_build_number"
+        _original_ios_build_number=""
+    fi
+}
+
+# Revert Android versionCode in app.json
+revert_android_version_code() {
+    if [ -n "$_original_android_version_code" ]; then
+        local app_json="$PROJECT_ROOT/app.json"
+        jq --argjson oldCode "$_original_android_version_code" '.expo.android.versionCode = $oldCode' "$app_json" > "$app_json.tmp" && mv "$app_json.tmp" "$app_json"
+        print_warning "Reverted Android versionCode to $_original_android_version_code"
+        _original_android_version_code=""
+    fi
+}
+
+# Revert all pending version changes
+revert_version_numbers() {
+    revert_ios_build_number
+    revert_android_version_code
+}
+
 # Increment iOS buildNumber in app.json
 increment_ios_build_number() {
     print_step "Incrementing iOS buildNumber..."
@@ -93,6 +123,9 @@ increment_ios_build_number() {
     local app_json="$PROJECT_ROOT/app.json"
     local current_build=$(jq -r '.expo.ios.buildNumber' "$app_json")
     local new_build=$((current_build + 1))
+
+    # Save original for rollback
+    _original_ios_build_number="$current_build"
 
     # Update app.json with new buildNumber (keeping it as a string)
     jq --arg newBuild "$new_build" '.expo.ios.buildNumber = $newBuild' "$app_json" > "$app_json.tmp" && mv "$app_json.tmp" "$app_json"
@@ -107,6 +140,9 @@ increment_android_version_code() {
     local app_json="$PROJECT_ROOT/app.json"
     local current_code=$(jq -r '.expo.android.versionCode' "$app_json")
     local new_code=$((current_code + 1))
+
+    # Save original for rollback
+    _original_android_version_code="$current_code"
 
     # Update app.json with new versionCode (as a number)
     jq --argjson newCode "$new_code" '.expo.android.versionCode = $newCode' "$app_json" > "$app_json.tmp" && mv "$app_json.tmp" "$app_json"
@@ -285,6 +321,9 @@ publish_platform() {
         increment_android_version_code
     fi
 
+    # Revert version number on any failure from this point
+    trap 'revert_version_numbers' ERR
+
     local runtime_version=$(get_runtime_version)
     local git_commit=$(get_git_commit)
     local api_base_url=$(get_api_base_url)
@@ -301,6 +340,7 @@ publish_platform() {
     if [ -z "$bundle_file" ]; then
         print_error "Bundle file not found for $platform"
         print_info "Expected location: $DIST_DIR/_expo/static/js/$platform/"
+        revert_version_numbers
         exit 1
     fi
 
@@ -309,6 +349,15 @@ publish_platform() {
 
     # Upload the update
     upload_update "$platform" "$message" "$runtime_version" "$git_commit" "$bundle_file" "$upload_endpoint" "$expo_client_config"
+
+    # Success — clear saved originals so they won't be reverted
+    if [ "$platform" = "ios" ]; then
+        _original_ios_build_number=""
+    elif [ "$platform" = "android" ]; then
+        _original_android_version_code=""
+    fi
+
+    trap - ERR
 }
 
 # Main script
