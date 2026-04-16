@@ -485,7 +485,9 @@ export async function deleteFactsByCategorySlugs(slugs: string[]): Promise<void>
   const database = await openDatabase();
   const placeholders = slugs.map(() => '?').join(',');
   await database.runAsync(
-    `DELETE FROM facts WHERE category IN (${placeholders}) AND id NOT IN (SELECT fact_id FROM favorites)`,
+    `DELETE FROM facts WHERE category IN (${placeholders})
+      AND id NOT IN (SELECT fact_id FROM favorites)
+      AND id NOT IN (SELECT fact_id FROM fact_interactions)`,
     slugs
   );
 }

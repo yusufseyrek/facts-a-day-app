@@ -618,6 +618,53 @@ async function getBadgeProgressValue(badgeId: string): Promise<number> {
   }
 }
 
+/**
+ * Compute current and best reading streaks in a single pass over one query.
+ * Replaces the old pattern of calling getReadingStreak() + getBestReadingStreak()
+ * separately, which ran the same heavy UNION twice.
+ */
+export async function getReadingStreaks(): Promise<{ current: number; best: number }> {
+  const db = await openDatabase();
+
+  const result = await db.getAllAsync<{ view_date: string }>(
+    `SELECT DISTINCT view_date FROM (
+       SELECT date(story_viewed_at, 'localtime') as view_date
+       FROM fact_interactions WHERE story_viewed_at IS NOT NULL
+       UNION
+       SELECT date(detail_opened_at, 'localtime') as view_date
+       FROM fact_interactions WHERE detail_opened_at IS NOT NULL
+     )
+     ORDER BY view_date ASC`
+  );
+
+  if (result.length === 0) return { current: 0, best: 0 };
+
+  const dates = result.map((r) => r.view_date);
+
+  // Single forward pass: compute best streak and locate current streak.
+  let best = 1;
+  let run = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const prev = new Date(dates[i - 1] + 'T12:00:00');
+    const curr = new Date(dates[i] + 'T12:00:00');
+    const diff = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 1) {
+      run++;
+      best = Math.max(best, run);
+    } else {
+      run = 1;
+    }
+  }
+
+  // Current streak: the last run must include today or yesterday.
+  const today = getLocalDateString();
+  const yesterday = getLocalDateString(new Date(new Date().setDate(new Date().getDate() - 1)));
+  const lastDate = dates[dates.length - 1];
+  const current = lastDate === today || lastDate === yesterday ? run : 0;
+
+  return { current, best };
+}
+
 // ============================================
 // HELPERS
 // ============================================

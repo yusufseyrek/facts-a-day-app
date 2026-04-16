@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { LayoutChangeEvent, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 
@@ -21,7 +21,10 @@ interface ActivityBarChartProps {
 const DAYS = 30;
 
 /** 30-day bar chart of facts-per-day. Renders only the tail 30. */
-export function ActivityBarChart({ activity, locale }: ActivityBarChartProps) {
+export const ActivityBarChart = React.memo(function ActivityBarChart({
+  activity,
+  locale,
+}: ActivityBarChartProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const { spacing, radius, typography, borderWidths, isTablet } = useResponsive();
@@ -61,11 +64,14 @@ export function ActivityBarChart({ activity, locale }: ActivityBarChartProps) {
   const chartWidth = barWidth * DAYS + barSpacing * (DAYS - 1);
 
   // Date markers rendered as a separate row so they never clip at the edges.
-  // Pick indexes that keep ~even spacing and always show the first and last day.
-  const markerIndexes = useMemo(() => [0, 7, 14, 21, DAYS - 1], []);
-  const markerLabels = markerIndexes
-    .map((idx) => (days[idx] ? { idx, label: formatShortDate(days[idx].date, locale) } : null))
-    .filter((m): m is { idx: number; label: string } => !!m);
+  const MARKER_INDEXES = [0, 7, 14, 21, DAYS - 1];
+  const markerLabels = useMemo(
+    () =>
+      MARKER_INDEXES.map((idx) =>
+        days[idx] ? { idx, label: formatShortDate(days[idx].date, locale) } : null
+      ).filter((m): m is { idx: number; label: string } => !!m),
+    [days, locale]
+  );
 
   const data = useMemo(
     () =>
@@ -91,7 +97,7 @@ export function ActivityBarChart({ activity, locale }: ActivityBarChartProps) {
             <>
               <View pointerEvents="none" style={{ width: chartWidth, alignSelf: 'flex-start' }}>
                 <BarChart
-                  key={`${theme}-${innerWidth}`}
+                  key={theme}
                   data={data}
                   barWidth={barWidth}
                   spacing={barSpacing}
@@ -108,8 +114,6 @@ export function ActivityBarChart({ activity, locale }: ActivityBarChartProps) {
                   noOfSections={4}
                   height={CHART_HEIGHT}
                   disableScroll
-                  isAnimated
-                  animationDuration={600}
                 />
               </View>
 
@@ -158,4 +162,4 @@ export function ActivityBarChart({ activity, locale }: ActivityBarChartProps) {
       </YStack>
     </YStack>
   );
-}
+});

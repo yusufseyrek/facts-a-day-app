@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { LayoutChangeEvent, Pressable, View } from 'react-native';
 
 import { XStack, YStack } from 'tamagui';
@@ -25,7 +25,7 @@ const ROWS = 7;
  * Rows are weekdays — row 0 = Sunday, row 6 = Saturday. Today is always in
  * the last column at its true weekday row.
  */
-export function HeatmapGrid({ activity, locale }: HeatmapGridProps) {
+export const HeatmapGrid = React.memo(function HeatmapGrid({ activity, locale }: HeatmapGridProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const { spacing, radius, typography, borderWidths, isTablet } = useResponsive();
@@ -45,54 +45,62 @@ export function HeatmapGrid({ activity, locale }: HeatmapGridProps) {
   const [selected, setSelected] = useState<DailyActivity | null>(null);
   const [cellSize, setCellSize] = useState(0);
 
-  // onLayout reports the card's border-box width; subtract its own horizontal
-  // padding to get the actual content area the grid + axis share.
   const cardPadding = spacing.lg;
-  const handleLayout = (e: LayoutChangeEvent) => {
-    const outer = e.nativeEvent.layout.width;
-    const contentWidth = outer - cardPadding * 2;
-    const gridWidth = contentWidth - axisWidth;
-    const size = Math.floor((gridWidth - (COLS - 1) * cellGap) / COLS);
-    if (size > 0 && size !== cellSize) setCellSize(size);
-  };
+  const handleLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      const outer = e.nativeEvent.layout.width;
+      const contentWidth = outer - cardPadding * 2;
+      const gridWidth = contentWidth - axisWidth;
+      const size = Math.floor((gridWidth - (COLS - 1) * cellGap) / COLS);
+      if (size > 0) setCellSize((prev) => (prev === size ? prev : size));
+    },
+    [cardPadding, axisWidth, cellGap]
+  );
 
   const maxCount = useMemo(() => Math.max(1, ...activity.map((a) => a.count)), [activity]);
 
-  const bucketFor = (count: number): 0 | 1 | 2 | 3 | 4 => {
-    if (count <= 0) return 0;
-    const ratio = count / maxCount;
-    if (ratio <= 0.25) return 1;
-    if (ratio <= 0.5) return 2;
-    if (ratio <= 0.75) return 3;
-    return 4;
-  };
+  const bucketFor = useCallback(
+    (count: number): 0 | 1 | 2 | 3 | 4 => {
+      if (count <= 0) return 0;
+      const ratio = count / maxCount;
+      if (ratio <= 0.25) return 1;
+      if (ratio <= 0.5) return 2;
+      if (ratio <= 0.75) return 3;
+      return 4;
+    },
+    [maxCount]
+  );
 
-  const bucketColors: Record<0 | 1 | 2 | 3 | 4, string> = {
-    0: isDark ? '#1A2E4A' : '#E3EDF8',
-    1: `${colors.primary}35`,
-    2: `${colors.primary}65`,
-    3: `${colors.primary}A0`,
-    4: colors.primary,
-  };
+  const bucketColors = useMemo<Record<0 | 1 | 2 | 3 | 4, string>>(
+    () => ({
+      0: isDark ? '#1A2E4A' : '#E3EDF8',
+      1: `${colors.primary}35`,
+      2: `${colors.primary}65`,
+      3: `${colors.primary}A0`,
+      4: colors.primary,
+    }),
+    [isDark, colors.primary]
+  );
 
-  // Weekday-align: today lands at bottom-right of the last column at its actual weekday.
-  const todayWeekday = new Date().getDay(); // 0=Sun..6=Sat
-  const endPad = 6 - todayWeekday;
-  const totalCells = COLS * ROWS;
-  const trimmed = activity.slice(-(totalCells - endPad));
-  const startPad = Math.max(0, totalCells - endPad - trimmed.length);
-  const padded: (DailyActivity | null)[] = [
-    ...Array(startPad).fill(null),
-    ...trimmed,
-    ...Array(endPad).fill(null),
-  ];
+  // Weekday-aligned grid data — only recomputes when activity changes.
+  const weeks = useMemo(() => {
+    const todayWeekday = new Date().getDay();
+    const endPad = 6 - todayWeekday;
+    const totalCells = COLS * ROWS;
+    const trimmed = activity.slice(-(totalCells - endPad));
+    const startPad = Math.max(0, totalCells - endPad - trimmed.length);
+    const padded: (DailyActivity | null)[] = [
+      ...Array(startPad).fill(null),
+      ...trimmed,
+      ...Array(endPad).fill(null),
+    ];
+    const cols: (DailyActivity | null)[][] = [];
+    for (let c = 0; c < COLS; c++) {
+      cols.push(padded.slice(c * ROWS, (c + 1) * ROWS));
+    }
+    return cols;
+  }, [activity]);
 
-  const weeks: (DailyActivity | null)[][] = [];
-  for (let c = 0; c < COLS; c++) {
-    weeks.push(padded.slice(c * ROWS, (c + 1) * ROWS));
-  }
-
-  // Month labels: one per column where the month flips vs the previous label.
   const monthLabels = useMemo<(string | null)[]>(() => {
     const out: (string | null)[] = Array(COLS).fill(null);
     let lastMonth: number | null = null;
@@ -110,7 +118,6 @@ export function HeatmapGrid({ activity, locale }: HeatmapGridProps) {
   }, [weeks, locale]);
 
   const weekdayLabels = useMemo<(string | null)[]>(() => {
-    // Show Mon, Wed, Fri to keep the axis uncluttered.
     const anchor = new Date(Date.UTC(2024, 0, 7)); // Sunday
     const labels: (string | null)[] = [];
     for (let d = 0; d < 7; d++) {
@@ -125,10 +132,10 @@ export function HeatmapGrid({ activity, locale }: HeatmapGridProps) {
     return labels;
   }, [locale]);
 
-  const handleSelect = (day: DailyActivity | null) => {
+  const handleSelect = useCallback((day: DailyActivity | null) => {
     if (!day) return;
     setSelected(day);
-  };
+  }, []);
 
   const caption = selected
     ? selected.count === 0
@@ -142,9 +149,10 @@ export function HeatmapGrid({ activity, locale }: HeatmapGridProps) {
     : t('statsHeatmapSubtitle');
 
   const columnWidth = cellSize > 0 ? cellSize : 0;
-  // Reserve at least the minimum height so the card doesn't collapse before layout.
   const gridMinHeight =
     cellSize > 0 ? cellSize * ROWS + cellGap * (ROWS - 1) : isTablet ? 200 : 140;
+
+  const selectedDate = selected?.date ?? null;
 
   return (
     <YStack gap={spacing.sm}>
@@ -216,22 +224,18 @@ export function HeatmapGrid({ activity, locale }: HeatmapGridProps) {
                     {week.map((day, ri) => {
                       const bucket = day ? bucketFor(day.count) : 0;
                       const fill = day ? bucketColors[bucket] : 'transparent';
-                      const isSelected = !!selected && !!day && selected.date === day.date;
-
                       return (
-                        <Pressable
+                        <HeatmapCell
                           key={ri}
-                          onPress={() => handleSelect(day)}
-                          hitSlop={2}
-                          style={{
-                            width: cellSize,
-                            height: cellSize,
-                            marginBottom: ri < ROWS - 1 ? cellGap : 0,
-                            borderRadius: cellBorderRadius,
-                            backgroundColor: fill,
-                            borderWidth: isSelected ? selectionBorderWidth : 0,
-                            borderColor: colors.primary,
-                          }}
+                          day={day}
+                          size={cellSize}
+                          gap={ri < ROWS - 1 ? cellGap : 0}
+                          borderRadius={cellBorderRadius}
+                          fill={fill}
+                          isSelected={!!day && day.date === selectedDate}
+                          selectionBorderWidth={selectionBorderWidth}
+                          selectionColor={colors.primary}
+                          onSelect={handleSelect}
                         />
                       );
                     })}
@@ -265,4 +269,43 @@ export function HeatmapGrid({ activity, locale }: HeatmapGridProps) {
       </YStack>
     </YStack>
   );
-}
+});
+
+/** Individual heatmap cell — memoized so tapping one cell doesn't re-render the other 97. */
+const HeatmapCell = React.memo(function HeatmapCell({
+  day,
+  size,
+  gap,
+  borderRadius,
+  fill,
+  isSelected,
+  selectionBorderWidth,
+  selectionColor,
+  onSelect,
+}: {
+  day: DailyActivity | null;
+  size: number;
+  gap: number;
+  borderRadius: number;
+  fill: string;
+  isSelected: boolean;
+  selectionBorderWidth: number;
+  selectionColor: string;
+  onSelect: (day: DailyActivity | null) => void;
+}) {
+  return (
+    <Pressable
+      onPress={() => onSelect(day)}
+      hitSlop={2}
+      style={{
+        width: size,
+        height: size,
+        marginBottom: gap,
+        borderRadius,
+        backgroundColor: fill,
+        borderWidth: isSelected ? selectionBorderWidth : 0,
+        borderColor: selectionColor,
+      }}
+    />
+  );
+});

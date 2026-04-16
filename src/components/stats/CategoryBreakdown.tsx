@@ -1,3 +1,4 @@
+import React from 'react';
 import { View } from 'react-native';
 
 import { XStack, YStack } from 'tamagui';
@@ -13,7 +14,9 @@ interface CategoryBreakdownProps {
   categories: CategoryStat[];
 }
 
-export function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
+export const CategoryBreakdown = React.memo(function CategoryBreakdown({
+  categories,
+}: CategoryBreakdownProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const { spacing, radius } = useResponsive();
@@ -82,4 +85,4 @@ export function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
       </YStack>
     </YStack>
   );
-}
+});

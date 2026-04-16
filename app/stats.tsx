@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated as RNAnimated,
@@ -29,15 +29,9 @@ import { StatsHero } from '../src/components/stats/StatsHero';
 import { FONT_FAMILIES, Text } from '../src/components/Typography';
 import { queryClient } from '../src/config/queryClient';
 import { statsKeys } from '../src/hooks/queryKeys';
-import {
-  useDailyReadingActivity,
-  useReadingHabits,
-  useReadingOverview,
-  useTopCategoriesRead,
-} from '../src/hooks/useReadingStats';
+import { useAllReadingStats } from '../src/hooks/useReadingStats';
 import { useTranslation } from '../src/i18n';
 import { Screens, trackScreenView } from '../src/services/analytics';
-import { getEarnedBadges } from '../src/services/badges';
 import { hexColors, useTheme } from '../src/theme';
 import { useResponsive } from '../src/utils/useResponsive';
 
@@ -51,24 +45,12 @@ export default function StatsScreen() {
   const isDark = theme === 'dark';
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
 
-  const overview = useReadingOverview();
-  const dailyActivity = useDailyReadingActivity(90);
-  const habits = useReadingHabits();
-  const topCategories = useTopCategoriesRead(5);
+  // Single batched query for all stats — 6 DB hits in parallel, one loading state.
+  const { data, isLoading } = useAllReadingStats();
 
-  const [earnedBadgeIds, setEarnedBadgeIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const viewShotRef = useRef<ViewShot>(null);
-
-  const loadEarnedBadges = useCallback(async () => {
-    try {
-      const badges = await getEarnedBadges();
-      setEarnedBadgeIds(new Set(badges.map((b) => b.badge_id)));
-    } catch {
-      // Badge progress is non-critical; fall back to an empty set.
-    }
-  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -76,47 +58,54 @@ export default function StatsScreen() {
     }, [])
   );
 
-  useEffect(() => {
-    loadEarnedBadges();
-  }, [loadEarnedBadges]);
-
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await queryClient.invalidateQueries({ queryKey: statsKeys.all });
-    await loadEarnedBadges();
     setRefreshing(false);
-  }, [loadEarnedBadges]);
+  }, []);
 
-  const handleShare = useCallback(async () => {
-    if (isSharing) return;
-    const current = viewShotRef.current;
-    if (!current || typeof current.capture !== 'function') return;
-    try {
-      setIsSharing(true);
-      const uri = await current.capture();
-      const available = await Sharing.isAvailableAsync();
-      if (available) {
-        await Sharing.shareAsync(uri, {
-          dialogTitle: t('statsShareTitle'),
-          mimeType: 'image/png',
-          UTI: 'public.png',
-        });
+  const handleShare = useCallback(() => {
+    if (isSharing || !data) return;
+    setIsSharing(true);
+  }, [isSharing, data]);
+
+  // When isSharing flips to true the ShareableStatsCard mounts. Wait one frame
+  // for ViewShot to lay out, then capture and share.
+  useEffect(() => {
+    if (!isSharing) return;
+    const id = requestAnimationFrame(async () => {
+      try {
+        const current = viewShotRef.current;
+        if (!current || typeof current.capture !== 'function') return;
+        const uri = await current.capture();
+        const available = await Sharing.isAvailableAsync();
+        if (available) {
+          await Sharing.shareAsync(uri, {
+            dialogTitle: t('statsShareTitle'),
+            mimeType: 'image/png',
+            UTI: 'public.png',
+          });
+        }
+      } catch (error) {
+        if (__DEV__) console.warn('Stats share failed', error);
+      } finally {
+        setIsSharing(false);
       }
-    } catch (error) {
-      if (__DEV__) console.warn('Stats share failed', error);
-    } finally {
-      setIsSharing(false);
-    }
+    });
+    return () => cancelAnimationFrame(id);
   }, [isSharing, t]);
 
-  const isInitialLoading = !overview.data && (overview.isLoading || dailyActivity.isLoading);
-  const overviewData = overview.data;
-  const activityData = dailyActivity.data ?? [];
+  const overview = data?.overview;
+  const activityData = data?.dailyActivity ?? [];
+  const earnedBadgeIds = useMemo(
+    () => new Set(data?.earnedBadges.map((b) => b.badge_id) ?? []),
+    [data?.earnedBadges]
+  );
+  const heatmapCounts = useMemo(() => activityData.map((d) => d.count), [activityData]);
+
   const hasAnyActivity =
-    !!overviewData &&
-    (overviewData.storiesViewed > 0 ||
-      overviewData.factsDeepRead > 0 ||
-      overviewData.currentStreak > 0);
+    !!overview &&
+    (overview.storiesViewed > 0 || overview.factsDeepRead > 0 || overview.currentStreak > 0);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -141,11 +130,11 @@ export default function StatsScreen() {
         </XStack>
       </Animated.View>
 
-      {isInitialLoading ? (
+      {isLoading && !data ? (
         <YStack flex={1} justifyContent="center" alignItems="center">
           <ActivityIndicator size="large" color={colors.primary} />
         </YStack>
-      ) : !hasAnyActivity || !overviewData ? (
+      ) : !hasAnyActivity || !overview ? (
         <EmptyState title={t('statsNoData')} description={t('statsNoDataDescription')} />
       ) : (
         <ScrollView
@@ -158,11 +147,11 @@ export default function StatsScreen() {
             <YStack marginVertical={spacing.lg} gap={spacing.xl}>
               <Section delay={50}>
                 <StatsHero
-                  storiesViewed={overviewData.storiesViewed}
-                  factsDeepRead={overviewData.factsDeepRead}
-                  totalSeconds={overviewData.totalSeconds}
-                  currentStreak={overviewData.currentStreak}
-                  longestStreak={overviewData.longestStreak}
+                  storiesViewed={overview.storiesViewed}
+                  factsDeepRead={overview.factsDeepRead}
+                  totalSeconds={overview.totalSeconds}
+                  currentStreak={overview.currentStreak}
+                  longestStreak={overview.longestStreak}
                 />
               </Section>
 
@@ -178,15 +167,15 @@ export default function StatsScreen() {
                 </Section>
               ) : null}
 
-              {habits.data?.hasData ? (
+              {data?.habits.hasData ? (
                 <Section delay={200}>
-                  <HabitsCard habits={habits.data} locale={locale} />
+                  <HabitsCard habits={data.habits} locale={locale} />
                 </Section>
               ) : null}
 
-              {topCategories.data && topCategories.data.length > 0 ? (
+              {data?.topCategories && data.topCategories.length > 0 ? (
                 <Section delay={250}>
-                  <CategoryBreakdown categories={topCategories.data} />
+                  <CategoryBreakdown categories={data.topCategories} />
                 </Section>
               ) : null}
 
@@ -226,17 +215,18 @@ export default function StatsScreen() {
         </ScrollView>
       )}
 
-      {overviewData ? (
+      {/* Lazy-mounted: only renders while the share flow is active. */}
+      {isSharing && overview ? (
         <ShareableStatsCard
           ref={viewShotRef}
           theme={theme}
-          storiesViewed={overviewData.storiesViewed}
-          factsDeepRead={overviewData.factsDeepRead}
-          totalSeconds={overviewData.totalSeconds}
-          currentStreak={overviewData.currentStreak}
-          longestStreak={overviewData.longestStreak}
-          heatmapCounts={activityData.map((d) => d.count)}
-          topCategoryName={topCategories.data?.[0]?.name ?? null}
+          storiesViewed={overview.storiesViewed}
+          factsDeepRead={overview.factsDeepRead}
+          totalSeconds={overview.totalSeconds}
+          currentStreak={overview.currentStreak}
+          longestStreak={overview.longestStreak}
+          heatmapCounts={heatmapCounts}
+          topCategoryName={data?.topCategories[0]?.name ?? null}
           t={t}
         />
       ) : null}

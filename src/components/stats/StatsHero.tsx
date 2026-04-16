@@ -1,3 +1,4 @@
+import React from 'react';
 import { View } from 'react-native';
 
 import { BookOpen, Clock, Eye, Flame } from '@tamagui/lucide-icons';
@@ -18,7 +19,7 @@ interface StatsHeroProps {
   longestStreak: number;
 }
 
-export function StatsHero({
+export const StatsHero = React.memo(function StatsHero({
   storiesViewed,
   factsDeepRead,
   totalSeconds,
@@ -88,7 +89,7 @@ export function StatsHero({
       </XStack>
     </YStack>
   );
-}
+});
 
 function HeroTile({
   tile,

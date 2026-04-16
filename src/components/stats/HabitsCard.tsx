@@ -1,3 +1,4 @@
+import React from 'react';
 import { View } from 'react-native';
 
 import { CalendarDays, Clock4, Hourglass } from '@tamagui/lucide-icons';
@@ -17,7 +18,7 @@ interface HabitsCardProps {
   locale: string;
 }
 
-export function HabitsCard({ habits, locale }: HabitsCardProps) {
+export const HabitsCard = React.memo(function HabitsCard({ habits, locale }: HabitsCardProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const { spacing, radius, iconSizes } = useResponsive();
@@ -92,4 +93,4 @@ export function HabitsCard({ habits, locale }: HabitsCardProps) {
       </YStack>
     </YStack>
   );
-}
+});

@@ -1,44 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 
-import {
-  getDailyReadingActivity,
-  getReadingHabits,
-  getReadingOverview,
-  getTopCategoriesRead,
-} from '../services/stats';
+import { getAllReadingStats } from '../services/stats';
 
 import { statsKeys } from './queryKeys';
 
-const FIVE_MINUTES = 1000 * 60 * 5;
+const STALE_TIME = 1000 * 60 * 5; // 5 minutes
 
-export function useReadingOverview() {
+/**
+ * Single hook that fetches all reading stats in one batched call.
+ * All 6 underlying DB queries run in parallel via Promise.all,
+ * and the screen gets a single loading / data / error transition.
+ */
+export function useAllReadingStats() {
   return useQuery({
-    queryKey: statsKeys.overview(),
-    queryFn: getReadingOverview,
-    staleTime: FIVE_MINUTES,
-  });
-}
-
-export function useDailyReadingActivity(days: number) {
-  return useQuery({
-    queryKey: statsKeys.dailyActivity(days),
-    queryFn: () => getDailyReadingActivity(days),
-    staleTime: FIVE_MINUTES,
-  });
-}
-
-export function useReadingHabits() {
-  return useQuery({
-    queryKey: statsKeys.habits(),
-    queryFn: getReadingHabits,
-    staleTime: FIVE_MINUTES,
-  });
-}
-
-export function useTopCategoriesRead(limit: number) {
-  return useQuery({
-    queryKey: statsKeys.topCategories(limit),
-    queryFn: () => getTopCategoriesRead(limit),
-    staleTime: FIVE_MINUTES,
+    queryKey: statsKeys.all,
+    queryFn: getAllReadingStats,
+    staleTime: STALE_TIME,
   });
 }

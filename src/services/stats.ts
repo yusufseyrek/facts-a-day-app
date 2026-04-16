@@ -7,8 +7,14 @@
  * detail_time_spent is stored in seconds (see addFactDetailTimeSpent in database.ts).
  */
 
-import { getBestReadingStreak, getReadingStreak } from './badges';
+import { getEarnedBadges, getReadingStreaks } from './badges';
 import { openDatabase } from './database';
+
+import type { EarnedBadge } from './badges';
+
+// ============================================
+// TYPES
+// ============================================
 
 export interface ReadingOverview {
   storiesViewed: number;
@@ -37,11 +43,21 @@ export interface CategoryStat {
   count: number;
 }
 
-/** Overview numbers for the stats hero. */
-export async function getReadingOverview(): Promise<ReadingOverview> {
-  const db = await openDatabase();
+export interface AllReadingStats {
+  overview: ReadingOverview;
+  dailyActivity: DailyActivity[];
+  habits: ReadingHabits;
+  topCategories: CategoryStat[];
+  earnedBadges: EarnedBadge[];
+}
 
-  const agg = await db.getFirstAsync<{
+// ============================================
+// INDIVIDUAL QUERIES
+// ============================================
+
+async function getOverviewAggregates() {
+  const db = await openDatabase();
+  return db.getFirstAsync<{
     stories_viewed: number;
     facts_deep_read: number;
     total_seconds: number;
@@ -52,26 +68,9 @@ export async function getReadingOverview(): Promise<ReadingOverview> {
        COALESCE(SUM(detail_time_spent), 0) AS total_seconds
      FROM fact_interactions`
   );
-
-  const [currentStreak, longestStreak] = await Promise.all([
-    getReadingStreak(),
-    getBestReadingStreak(),
-  ]);
-
-  return {
-    storiesViewed: agg?.stories_viewed ?? 0,
-    factsDeepRead: agg?.facts_deep_read ?? 0,
-    totalSeconds: agg?.total_seconds ?? 0,
-    currentStreak,
-    longestStreak,
-  };
 }
 
-/**
- * Per-day unique-fact counts for the last N days, padded to include days with zero activity.
- * Days are local dates (YYYY-MM-DD). Returned oldest → newest.
- */
-export async function getDailyReadingActivity(days: number): Promise<DailyActivity[]> {
+async function getDailyReadingActivity(days: number): Promise<DailyActivity[]> {
   const db = await openDatabase();
 
   const rows = await db.getAllAsync<{ d: string; c: number }>(
@@ -99,51 +98,42 @@ export async function getDailyReadingActivity(days: number): Promise<DailyActivi
   return out;
 }
 
-/** Derived habit insights from detail_opened_at timestamps. */
-export async function getReadingHabits(): Promise<ReadingHabits> {
+/**
+ * Habit insights in a single query. Uses scalar subqueries for top weekday /
+ * hour so the planner only scans `fact_interactions` once.
+ */
+async function getReadingHabits(): Promise<ReadingHabits> {
   const db = await openDatabase();
 
-  const weekdayRow = await db.getFirstAsync<{ weekday: number; c: number }>(
-    `SELECT CAST(strftime('%w', detail_opened_at, 'localtime') AS INTEGER) AS weekday,
-            COUNT(*) AS c
-     FROM fact_interactions
-     WHERE detail_opened_at IS NOT NULL
-     GROUP BY weekday
-     ORDER BY c DESC
-     LIMIT 1`
-  );
-
-  const hourRow = await db.getFirstAsync<{ hour: number; c: number }>(
-    `SELECT CAST(strftime('%H', detail_opened_at, 'localtime') AS INTEGER) AS hour,
-            COUNT(*) AS c
-     FROM fact_interactions
-     WHERE detail_opened_at IS NOT NULL
-     GROUP BY hour
-     ORDER BY c DESC
-     LIMIT 1`
-  );
-
-  const avgRow = await db.getFirstAsync<{ total: number; n: number }>(
-    `SELECT COALESCE(SUM(detail_time_spent), 0) AS total,
-            COUNT(CASE WHEN detail_time_spent > 0 THEN 1 END) AS n
+  const row = await db.getFirstAsync<{
+    top_weekday: number | null;
+    top_hour: number | null;
+    total_time: number;
+    time_count: number;
+  }>(
+    `SELECT
+       (SELECT CAST(strftime('%w', detail_opened_at, 'localtime') AS INTEGER)
+        FROM fact_interactions WHERE detail_opened_at IS NOT NULL
+        GROUP BY 1 ORDER BY COUNT(*) DESC LIMIT 1) AS top_weekday,
+       (SELECT CAST(strftime('%H', detail_opened_at, 'localtime') AS INTEGER)
+        FROM fact_interactions WHERE detail_opened_at IS NOT NULL
+        GROUP BY 1 ORDER BY COUNT(*) DESC LIMIT 1) AS top_hour,
+       COALESCE(SUM(detail_time_spent), 0) AS total_time,
+       COUNT(CASE WHEN detail_time_spent > 0 THEN 1 END) AS time_count
      FROM fact_interactions`
   );
 
-  const avg = avgRow && avgRow.n > 0 ? Math.round(avgRow.total / avgRow.n) : 0;
+  const avg = row && row.time_count > 0 ? Math.round(row.total_time / row.time_count) : 0;
 
   return {
-    topWeekday: weekdayRow?.weekday ?? null,
-    topHour: hourRow?.hour ?? null,
+    topWeekday: row?.top_weekday ?? null,
+    topHour: row?.top_hour ?? null,
     avgSecondsPerFact: avg,
-    hasData: !!weekdayRow || !!hourRow,
+    hasData: row?.top_weekday != null || row?.top_hour != null,
   };
 }
 
-/**
- * Top categories by deep-read count. Uses joined `categories` row for name/color
- * so display matches the rest of the app.
- */
-export async function getTopCategoriesRead(limit: number): Promise<CategoryStat[]> {
+async function getTopCategoriesRead(limit: number): Promise<CategoryStat[]> {
   const db = await openDatabase();
 
   const rows = await db.getAllAsync<{
@@ -172,6 +162,44 @@ export async function getTopCategoriesRead(limit: number): Promise<CategoryStat[
       count: r.n,
     }));
 }
+
+// ============================================
+// BATCHED ENTRY POINT
+// ============================================
+
+/**
+ * Fetch every stat the Reading Stats screen needs in a single call.
+ * All 6 independent queries run in parallel via Promise.all, so the total
+ * wall time is bounded by the slowest query — not the sum.
+ */
+export async function getAllReadingStats(): Promise<AllReadingStats> {
+  const [agg, streaks, dailyActivity, habits, topCategories, earnedBadges] = await Promise.all([
+    getOverviewAggregates(),
+    getReadingStreaks(),
+    getDailyReadingActivity(90),
+    getReadingHabits(),
+    getTopCategoriesRead(5),
+    getEarnedBadges(),
+  ]);
+
+  return {
+    overview: {
+      storiesViewed: agg?.stories_viewed ?? 0,
+      factsDeepRead: agg?.facts_deep_read ?? 0,
+      totalSeconds: agg?.total_seconds ?? 0,
+      currentStreak: streaks.current,
+      longestStreak: streaks.best,
+    },
+    dailyActivity,
+    habits,
+    topCategories,
+    earnedBadges,
+  };
+}
+
+// ============================================
+// HELPERS
+// ============================================
 
 function toLocalDateString(date: Date): string {
   const y = date.getFullYear();

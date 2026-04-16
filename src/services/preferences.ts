@@ -330,12 +330,14 @@ export async function handleCategoriesChange(
     // - Not yet delivered (scheduled_date IS NULL OR scheduled_date > now)
     // - Not favorited
     // - Not shown in feed
+    // - Not interacted with (preserve reading history to protect streaks/badges)
     await db.runAsync(
       `
       DELETE FROM facts
       WHERE (scheduled_date IS NULL OR scheduled_date > ?)
         AND id NOT IN (SELECT fact_id FROM favorites)
         AND (shown_in_feed IS NULL OR shown_in_feed = 0)
+        AND id NOT IN (SELECT fact_id FROM fact_interactions)
     `,
       [now]
     );
@@ -472,7 +474,8 @@ export async function handleCategoriesChange(
 
     if (__DEV__) console.log(`Updated ${updatedCount} shown facts, inserted ${insertedCount} new facts`);
 
-    // Delete all facts from removed categories (including shown ones), except favorites.
+    // Delete all facts from removed categories (including shown ones), except favorites
+    // and facts the user has interacted with (to preserve reading statistics/badges).
     // This runs AFTER insertion so the API can't re-insert facts from removed categories.
     const placeholders = newCategories.map(() => '?').join(',');
     await db.runAsync(
@@ -480,6 +483,7 @@ export async function handleCategoriesChange(
       DELETE FROM facts
       WHERE category NOT IN (${placeholders})
         AND id NOT IN (SELECT fact_id FROM favorites)
+        AND id NOT IN (SELECT fact_id FROM fact_interactions)
     `,
       newCategories
     );
