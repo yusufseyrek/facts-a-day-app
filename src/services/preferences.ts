@@ -90,16 +90,12 @@ export async function handleLanguageChange(
     // Delete facts that are:
     // - Not yet delivered (scheduled_date IS NULL OR scheduled_date > now)
     // - Not favorited
-    // - Not shown in feed
-    // - Have no reading interaction (story view, detail open, or time spent).
-    //   Without this guard the ON DELETE CASCADE on fact_interactions.fact_id
-    //   would wipe the user's reading history whenever they switch language.
+    // - Have no reading interaction (preserves streaks/badges via fact_interactions)
     await db.runAsync(
       `
       DELETE FROM facts
       WHERE (scheduled_date IS NULL OR scheduled_date > ?)
         AND id NOT IN (SELECT fact_id FROM favorites)
-        AND (shown_in_feed IS NULL OR shown_in_feed = 0)
         AND id NOT IN (SELECT fact_id FROM fact_interactions)
     `,
       [now]
@@ -112,17 +108,16 @@ export async function handleLanguageChange(
       WHERE fact_id NOT IN (SELECT id FROM facts)
     `);
 
-    // Get IDs of facts to update (delivered, favorited, shown, or read).
+    // Get IDs of facts to update (delivered, favorited, or read).
     const factsToPreserve = await db.getAllAsync<{ id: number }>(
       `SELECT id FROM facts WHERE
         (scheduled_date IS NOT NULL AND scheduled_date <= ?)
         OR id IN (SELECT fact_id FROM favorites)
-        OR shown_in_feed = 1
         OR id IN (SELECT fact_id FROM fact_interactions)`,
       [now]
     );
 
-    if (__DEV__) console.log(`Preserving ${factsToPreserve.length} facts (delivered, favorited, or shown)`);
+    if (__DEV__) console.log(`Preserving ${factsToPreserve.length} facts (delivered, favorited, or read)`);
 
     // Stage 2: Fetch translated metadata
     onProgress?.({
@@ -219,8 +214,7 @@ export async function handleLanguageChange(
               language = excluded.language,
               last_updated = excluded.last_updated,
               scheduled_date = facts.scheduled_date,
-              notification_id = facts.notification_id,
-              shown_in_feed = facts.shown_in_feed
+              notification_id = facts.notification_id
           `,
             [
               fact.id,
@@ -329,14 +323,12 @@ export async function handleCategoriesChange(
     // Delete facts that are:
     // - Not yet delivered (scheduled_date IS NULL OR scheduled_date > now)
     // - Not favorited
-    // - Not shown in feed
     // - Not interacted with (preserve reading history to protect streaks/badges)
     await db.runAsync(
       `
       DELETE FROM facts
       WHERE (scheduled_date IS NULL OR scheduled_date > ?)
         AND id NOT IN (SELECT fact_id FROM favorites)
-        AND (shown_in_feed IS NULL OR shown_in_feed = 0)
         AND id NOT IN (SELECT fact_id FROM fact_interactions)
     `,
       [now]
@@ -349,13 +341,14 @@ export async function handleCategoriesChange(
       WHERE fact_id NOT IN (SELECT id FROM facts)
     `);
 
-    // Get IDs of shown facts to preserve (keeps scheduling info intact)
-    const shownFacts = await db.getAllAsync<{ id: number }>(
-      `SELECT id FROM facts WHERE shown_in_feed = 1`
+    // Get IDs of delivered facts to preserve (keeps scheduling info intact)
+    const deliveredFacts = await db.getAllAsync<{ id: number }>(
+      `SELECT id FROM facts WHERE scheduled_date IS NOT NULL AND scheduled_date <= ?`,
+      [now]
     );
-    const shownIds = new Set(shownFacts.map((f: { id: number }) => f.id));
+    const deliveredIds = new Set(deliveredFacts.map((f: { id: number }) => f.id));
 
-    if (__DEV__) console.log(`Preserving ${shownIds.size} shown facts`);
+    if (__DEV__) console.log(`Preserving ${deliveredIds.size} delivered facts`);
 
     // Stage 2: Download new facts
     onProgress?.({
@@ -380,7 +373,7 @@ export async function handleCategoriesChange(
       true // includeHistorical
     );
 
-    // Stage 3: Process facts - update shown ones (keep shown_in_feed), insert new ones
+    // Stage 3: Process facts - update delivered ones (keep scheduling info), insert new ones
     if (__DEV__) console.log(`Processing ${newFacts.length} facts`);
 
     let updatedCount = 0;
@@ -388,8 +381,8 @@ export async function handleCategoriesChange(
 
     await db.withTransactionAsync(async () => {
       for (const fact of newFacts) {
-        if (shownIds.has(fact.id)) {
-          // Update existing shown fact (keep shown_in_feed, scheduled_date, notification_id)
+        if (deliveredIds.has(fact.id)) {
+          // Update existing delivered fact (keep scheduled_date, notification_id)
           await db.runAsync(
             `
             UPDATE facts
@@ -443,8 +436,7 @@ export async function handleCategoriesChange(
               language = excluded.language,
               last_updated = excluded.last_updated,
               scheduled_date = facts.scheduled_date,
-              notification_id = facts.notification_id,
-              shown_in_feed = facts.shown_in_feed
+              notification_id = facts.notification_id
           `,
             [
               fact.id,

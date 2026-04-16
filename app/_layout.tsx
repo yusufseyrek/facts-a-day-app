@@ -496,7 +496,6 @@ export default function RootLayout() {
         // (required for splash overlay flow). Uses new locale — DB may be empty,
         // but that's fine; the splash stays gated until locale refresh is done.
         try {
-          await database.markDeliveredFactsAsShown(locale);
           const facts = await database.getFactsGroupedByDate(locale);
           setPreloadedFactsBeforeMount(facts);
         } catch (error) {
@@ -545,10 +544,7 @@ export default function RootLayout() {
         // No locale change — normal startup flow
         // Pre-load latest facts and daily feed sections
         try {
-          const [, feedSections] = await Promise.all([
-            database.markDeliveredFactsAsShown(locale),
-            loadDailyFeedSections(locale),
-          ]);
+          const feedSections = await loadDailyFeedSections(locale);
           // Pre-populate React Query cache so home screen gets instant data
           queryClient.setQueryData(homeKeys.dailyFeed(locale), feedSections);
         } catch (error) {

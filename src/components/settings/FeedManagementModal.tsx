@@ -54,8 +54,7 @@ const FactItem = React.memo(
     radius,
   }: FactItemProps) => {
     const isInFeed =
-      fact.shown_in_feed === 1 ||
-      (fact.scheduled_date && new Date(fact.scheduled_date) <= new Date());
+      !!(fact.scheduled_date && new Date(fact.scheduled_date) <= new Date());
 
     const itemStyles = useMemo(
       () => ({
@@ -250,7 +249,6 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({ visibl
 
           const notificationId = `screenshot_${factId}_${Date.now()}_${index}`;
           await database.markFactAsScheduled(factId, scheduledDate.toISOString(), notificationId);
-          await database.markFactAsShown(factId);
           index++;
         }
 
@@ -283,7 +281,7 @@ export const FeedManagementModal: React.FC<FeedManagementModalProps> = ({ visibl
         onPress: async () => {
           setLoading(true);
           try {
-            await database.clearAllShownInFeed();
+            await database.clearAllSchedulingData();
             triggerFeedRefresh();
             Alert.alert('Success', 'Feed cleared');
             loadFacts();

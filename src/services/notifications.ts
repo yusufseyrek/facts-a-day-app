@@ -800,8 +800,6 @@ export async function clearNotificationSchedule(
     // Clear ALL scheduling data (used when permissions revoked)
     await database.clearAllScheduledFactsCompletely();
   } else {
-    // Mark delivered facts as shown first (preserve for feed)
-    await database.markDeliveredFactsAsShown(locale);
     // Clear only future scheduled facts
     await database.clearAllScheduledFacts();
   }
@@ -1034,10 +1032,7 @@ async function _ensureNotificationScheduleImpl(
   };
 
   try {
-    // Step 1: Mark delivered facts as shown
-    await database.markDeliveredFactsAsShown(locale);
-
-    // Step 2: Check permissions
+    // Step 1: Check permissions
     const { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted') {
       await clearNotificationSchedule(locale, { completely: true });

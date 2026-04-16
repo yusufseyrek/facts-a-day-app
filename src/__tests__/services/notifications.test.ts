@@ -304,7 +304,6 @@ describe('notifications — integration', () => {
     Notifications.getAllScheduledNotificationsAsync.mockResolvedValue([]);
     Notifications.scheduleNotificationAsync.mockResolvedValue('mock-id');
     Notifications.cancelAllScheduledNotificationsAsync.mockResolvedValue(undefined);
-    dbMock.markDeliveredFactsAsShown.mockResolvedValue(undefined as any);
     dbMock.clearAllScheduledFacts.mockResolvedValue(undefined);
     dbMock.clearAllScheduledFactsCompletely.mockResolvedValue(undefined);
     dbMock.getFutureScheduledFactsWithNotificationIds.mockResolvedValue([]);
@@ -315,10 +314,9 @@ describe('notifications — integration', () => {
   });
 
   describe('ensureNotificationSchedule', () => {
-    it('marks delivered facts then checks permission', async () => {
+    it('checks permission and skips if denied', async () => {
       Notifications.getPermissionsAsync.mockResolvedValue({ status: 'denied' });
       const result = await ensureNotificationSchedule('en');
-      expect(dbMock.markDeliveredFactsAsShown).toHaveBeenCalledWith('en');
       expect(result.success).toBe(true);
       expect(result.skipped).toBe(true);
     });

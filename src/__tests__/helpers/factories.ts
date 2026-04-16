@@ -18,7 +18,6 @@ export function createFact(overrides: Partial<Fact> = {}): Fact {
     last_updated: '2025-01-01T00:00:00.000Z',
     scheduled_date: undefined,
     notification_id: undefined,
-    shown_in_feed: 0,
     ...overrides,
   };
 }
@@ -65,7 +64,6 @@ export function createDbRow(overrides: Record<string, any> = {}): Record<string,
     last_updated: '2025-01-01T00:00:00.000Z',
     scheduled_date: null,
     notification_id: null,
-    shown_in_feed: 0,
     category_id: 1,
     category_name: 'Science',
     category_slug: 'science',

@@ -132,7 +132,6 @@ describe('database — insertFacts', () => {
     // Should preserve local columns
     expect(sql).toContain('scheduled_date = facts.scheduled_date');
     expect(sql).toContain('notification_id = facts.notification_id');
-    expect(sql).toContain('shown_in_feed = facts.shown_in_feed');
   });
 });
 
@@ -185,7 +184,6 @@ describe('database — getRandomUnscheduledFacts', () => {
 
     const sql = mockDb.getAllAsync.mock.calls[0][0];
     expect(sql).toContain('scheduled_date IS NULL');
-    expect(sql).toContain('shown_in_feed');
     expect(sql).toContain('ORDER BY RANDOM()');
     expect(sql).toContain('LIMIT');
   });
@@ -216,17 +214,4 @@ describe('database — getTodaysFacts', () => {
   });
 });
 
-describe('database — markDeliveredFactsAsShown', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
 
-  it('marks past scheduled facts as shown, filtering by language', async () => {
-    await database.markDeliveredFactsAsShown('en');
-
-    expect(mockDb.runAsync).toHaveBeenCalled();
-    const sql = mockDb.runAsync.mock.calls[0][0];
-    expect(sql).toContain('shown_in_feed');
-    expect(sql).toContain('language');
-  });
-});

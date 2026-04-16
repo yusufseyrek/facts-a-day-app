@@ -118,8 +118,7 @@ async function initializeSchema(): Promise<void> {
       created_at TEXT NOT NULL,
       last_updated TEXT,
       scheduled_date TEXT,
-      notification_id TEXT,
-      shown_in_feed INTEGER DEFAULT 0
+      notification_id TEXT
     );
   `);
 
@@ -513,7 +512,6 @@ export interface Fact {
   last_updated?: string;
   scheduled_date?: string; // ISO date string when fact is scheduled for notification
   notification_id?: string; // Notification ID from expo-notifications
-  shown_in_feed?: number; // 0 or 1, indicates if fact should be shown in feed immediately
 }
 
 /**
@@ -547,7 +545,6 @@ function mapFactsWithRelations(rows: any[]): FactWithRelations[] {
       last_updated: row.last_updated,
       scheduled_date: row.scheduled_date,
       notification_id: row.notification_id,
-      shown_in_feed: row.shown_in_feed,
     };
 
     // Map category data if present
@@ -595,7 +592,7 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
   await withSerializedTransaction(async (db) => {
     for (const fact of facts) {
       // Use INSERT ... ON CONFLICT to explicitly preserve local columns
-      // (scheduled_date, notification_id, shown_in_feed) when updating existing facts from API
+      // (scheduled_date, notification_id) when updating existing facts from API
       await db.runAsync(
         `INSERT INTO facts (
           id, slug, title, content, summary, category,
@@ -618,8 +615,7 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
           language = excluded.language,
           last_updated = excluded.last_updated,
           scheduled_date = facts.scheduled_date,
-          notification_id = facts.notification_id,
-          shown_in_feed = facts.shown_in_feed`,
+          notification_id = facts.notification_id`,
         [
           fact.id,
           fact.slug || null,
@@ -848,7 +844,7 @@ export async function getRandomFactNotInFeed(language: string): Promise<FactWith
       c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.language = ? AND f.shown_in_feed = 0
+    WHERE f.language = ? AND f.scheduled_date IS NULL
     ORDER BY RANDOM()
     LIMIT 1`,
     [language]
@@ -883,7 +879,7 @@ export async function getFactsCount(language?: string): Promise<number> {
 
 /**
  * Get random unscheduled facts for notification scheduling
- * Excludes facts that are already scheduled or marked as shown in feed
+ * Excludes facts that are already scheduled
  * @param limit Maximum number of facts to return
  * @param language Optional language filter
  */
@@ -905,7 +901,7 @@ export async function getRandomUnscheduledFacts(
         c.color_hex as category_color_hex
       FROM facts f
       LEFT JOIN categories c ON f.category = c.slug
-      WHERE f.language = ? AND f.scheduled_date IS NULL AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
+      WHERE f.language = ? AND f.scheduled_date IS NULL
       ORDER BY RANDOM()
       LIMIT ?`,
       [language, limit]
@@ -925,7 +921,7 @@ export async function getRandomUnscheduledFacts(
       c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.scheduled_date IS NULL AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
+    WHERE f.scheduled_date IS NULL
     ORDER BY RANDOM()
     LIMIT ?`,
     [limit]
@@ -935,7 +931,7 @@ export async function getRandomUnscheduledFacts(
 
 /**
  * Like getRandomUnscheduledFacts, but falls back to any unscheduled facts
- * (ignoring shown_in_feed) when the unshown pool is exhausted.
+ * when the pool is exhausted.
  */
 export async function getRandomUnscheduledFactsWithFallback(
   limit: number,
@@ -1006,7 +1002,6 @@ export async function getUnscheduledHistoricalFactsForDates(
     LEFT JOIN categories c ON f.category = c.slug
     WHERE f.language = ? AND f.is_historical = 1
       AND f.scheduled_date IS NULL
-      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
       AND (${conditions})
     ORDER BY RANDOM()`,
     params
@@ -1064,7 +1059,6 @@ export async function getAllUnscheduledHistoricalFactsForDates(
     LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
     WHERE f.language = ? AND f.is_historical = 1
       AND f.scheduled_date IS NULL
-      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
       AND fi.fact_id IS NULL
       AND (${conditions})
     ORDER BY RANDOM()`,
@@ -1094,7 +1088,6 @@ export async function getEarliestUnseenFactsForScheduling(
     LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
     WHERE f.language = ?
       AND f.scheduled_date IS NULL
-      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
       AND (f.is_historical IS NULL OR f.is_historical = 0)
       AND fi.fact_id IS NULL
       ${excludeClause}
@@ -1133,7 +1126,6 @@ export async function getRecentUnscheduledFacts(
     LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
     WHERE f.language = ?
       AND f.scheduled_date IS NULL
-      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
       AND (f.is_historical IS NULL OR f.is_historical = 0)
       AND fi.fact_id IS NULL
       ${excludeClause}
@@ -1356,61 +1348,6 @@ export async function clearFactScheduling(factId: number): Promise<void> {
 }
 
 /**
- * Mark a fact as shown in feed (for immediate display without scheduling)
- */
-export async function markFactAsShown(factId: number): Promise<void> {
-  const database = await openDatabase();
-  await database.runAsync('UPDATE facts SET shown_in_feed = 1 WHERE id = ?', [factId]);
-}
-
-/**
- * Mark a fact as shown in feed with a specific scheduled_date
- * Used for immediate display (e.g., after onboarding) to properly group by date in feed
- */
-export async function markFactAsShownWithDate(
-  factId: number,
-  scheduledDate: string
-): Promise<void> {
-  const database = await openDatabase();
-  await database.runAsync('UPDATE facts SET shown_in_feed = 1, scheduled_date = ? WHERE id = ?', [
-    scheduledDate,
-    factId,
-  ]);
-}
-
-/**
- * Mark all delivered facts as shown in feed
- * This ensures facts that were delivered while the app was closed get marked as shown
- * @param language Optional language filter
- * @returns Number of facts marked as shown
- */
-export async function markDeliveredFactsAsShown(language?: string): Promise<number> {
-  const database = await openDatabase();
-  const now = new Date().toISOString();
-
-  if (language) {
-    const result = await database.runAsync(
-      `UPDATE facts SET shown_in_feed = 1
-       WHERE scheduled_date IS NOT NULL
-       AND scheduled_date <= ?
-       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
-       AND language = ?`,
-      [now, language]
-    );
-    return result.changes;
-  }
-
-  const result = await database.runAsync(
-    `UPDATE facts SET shown_in_feed = 1
-     WHERE scheduled_date IS NOT NULL
-     AND scheduled_date <= ?
-     AND (shown_in_feed IS NULL OR shown_in_feed = 0)`,
-    [now]
-  );
-  return result.changes;
-}
-
-/**
  * Clear all scheduled facts (reset all scheduling)
  * Only clears FUTURE scheduled facts (scheduled_date > now)
  * Preserves already-delivered facts so they appear in the correct date group in the feed
@@ -1420,7 +1357,7 @@ export async function clearAllScheduledFacts(): Promise<void> {
   const now = new Date().toISOString();
 
   await database.runAsync(
-    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ? AND (shown_in_feed IS NULL OR shown_in_feed = 0)',
+    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ?',
     [now]
   );
 }
@@ -1428,15 +1365,12 @@ export async function clearAllScheduledFacts(): Promise<void> {
 /**
  * Clear ALL scheduled facts completely (including past ones)
  * Used when notification permissions are revoked to sync DB with OS state
- * Facts with shown_in_feed = 1 will keep their scheduled_date for feed grouping
  */
 export async function clearAllScheduledFactsCompletely(): Promise<void> {
   const database = await openDatabase();
 
-  // Clear scheduling data for all facts that are NOT shown in feed
-  // (shown_in_feed facts should keep their scheduled_date for proper feed grouping)
   await database.runAsync(
-    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE (shown_in_feed IS NULL OR shown_in_feed = 0)'
+    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date IS NOT NULL'
   );
 }
 
@@ -1447,7 +1381,7 @@ export async function clearAllScheduledFactsCompletely(): Promise<void> {
 export async function clearScheduledFactsBeyondDate(cutoffDate: string): Promise<number> {
   const database = await openDatabase();
   const result = await database.runAsync(
-    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ? AND (shown_in_feed IS NULL OR shown_in_feed = 0)',
+    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ?',
     [cutoffDate]
   );
   return result.changes;
@@ -1468,7 +1402,6 @@ export async function getStaleScheduledFacts(
     FROM facts f
     INNER JOIN fact_interactions fi ON fi.fact_id = f.id
     WHERE f.scheduled_date > ?
-      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
       AND f.language = ?
       AND (fi.story_viewed_at IS NOT NULL OR fi.detail_opened_at IS NOT NULL)
     ORDER BY f.scheduled_date ASC`,
@@ -1485,8 +1418,7 @@ export async function clearScheduledFactsByIds(factIds: number[]): Promise<numbe
   const placeholders = factIds.map(() => '?').join(',');
   const result = await database.runAsync(
     `UPDATE facts SET scheduled_date = NULL, notification_id = NULL
-     WHERE id IN (${placeholders})
-       AND (shown_in_feed IS NULL OR shown_in_feed = 0)`,
+     WHERE id IN (${placeholders})`,
     factIds
   );
   return result.changes;
@@ -1543,8 +1475,8 @@ export async function getScheduledFactsCount(language?: string): Promise<number>
 }
 
 /**
- * Get count of future scheduled facts that are pending (not yet shown in feed)
- * These are facts with scheduled_date > now AND shown_in_feed = 0 or NULL
+ * Get count of future scheduled facts that are pending (not yet delivered)
+ * These are facts with scheduled_date > now
  */
 export async function getFutureScheduledFactsCount(language?: string): Promise<number> {
   const database = await openDatabase();
@@ -1554,7 +1486,6 @@ export async function getFutureScheduledFactsCount(language?: string): Promise<n
     const result = await database.getFirstAsync<{ count: number }>(
       `SELECT COUNT(*) as count FROM facts 
        WHERE scheduled_date > ? 
-       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
        AND language = ?`,
       [now, language]
     );
@@ -1562,9 +1493,8 @@ export async function getFutureScheduledFactsCount(language?: string): Promise<n
   }
 
   const result = await database.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(*) as count FROM facts 
-     WHERE scheduled_date > ? 
-     AND (shown_in_feed IS NULL OR shown_in_feed = 0)`,
+    `SELECT COUNT(*) as count FROM facts
+     WHERE scheduled_date > ?`,
     [now]
   );
   return result?.count || 0;
@@ -1583,7 +1513,6 @@ export async function getLatestScheduledDate(language?: string): Promise<string 
     const result = await database.getFirstAsync<{ max_date: string | null }>(
       `SELECT MAX(scheduled_date) as max_date FROM facts 
        WHERE scheduled_date > ? 
-       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
        AND language = ?`,
       [now, language]
     );
@@ -1591,9 +1520,8 @@ export async function getLatestScheduledDate(language?: string): Promise<string 
   }
 
   const result = await database.getFirstAsync<{ max_date: string | null }>(
-    `SELECT MAX(scheduled_date) as max_date FROM facts 
-     WHERE scheduled_date > ? 
-     AND (shown_in_feed IS NULL OR shown_in_feed = 0)`,
+    `SELECT MAX(scheduled_date) as max_date FROM facts
+     WHERE scheduled_date > ?`,
     [now]
   );
   return result?.max_date || null;
@@ -1618,7 +1546,6 @@ export async function getScheduledTimesForDate(
     const result = await database.getAllAsync<{ scheduled_date: string }>(
       `SELECT scheduled_date FROM facts 
        WHERE scheduled_date LIKE ? 
-       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
        AND language = ?
        ORDER BY scheduled_date ASC`,
       [datePrefix + '%', language]
@@ -1628,9 +1555,7 @@ export async function getScheduledTimesForDate(
 
   const result = await database.getAllAsync<{ scheduled_date: string }>(
     `SELECT scheduled_date FROM facts 
-     WHERE scheduled_date LIKE ? 
-     AND (shown_in_feed IS NULL OR shown_in_feed = 0)
-     ORDER BY scheduled_date ASC`,
+     WHERE scheduled_date LIKE ?      ORDER BY scheduled_date ASC`,
     [datePrefix + '%']
   );
   return result.map((r) => r.scheduled_date);
@@ -1656,7 +1581,6 @@ export async function hasExcessNotificationsPerDay(
     ? `SELECT date(scheduled_date, 'localtime') as local_date, COUNT(*) as count 
        FROM facts 
        WHERE scheduled_date > ? 
-       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
        AND notification_id IS NOT NULL
        AND language = ?
        GROUP BY local_date
@@ -1664,7 +1588,6 @@ export async function hasExcessNotificationsPerDay(
     : `SELECT date(scheduled_date, 'localtime') as local_date, COUNT(*) as count 
        FROM facts 
        WHERE scheduled_date > ? 
-       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
        AND notification_id IS NOT NULL
        GROUP BY local_date
        HAVING count > ?`;
@@ -1705,7 +1628,6 @@ export async function hasIncorrectNotificationsPerDay(
     ? `SELECT date(scheduled_date, 'localtime') as local_date, COUNT(*) as count 
        FROM facts 
        WHERE scheduled_date > ? 
-       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
        AND notification_id IS NOT NULL
        AND language = ?
        GROUP BY local_date
@@ -1713,7 +1635,6 @@ export async function hasIncorrectNotificationsPerDay(
     : `SELECT date(scheduled_date, 'localtime') as local_date, COUNT(*) as count 
        FROM facts 
        WHERE scheduled_date > ? 
-       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
        AND notification_id IS NOT NULL
        GROUP BY local_date
        ORDER BY local_date ASC`;
@@ -1782,7 +1703,6 @@ export async function getScheduledTimesInRange(
       `SELECT scheduled_date FROM facts 
        WHERE scheduled_date >= ? 
        AND scheduled_date < ?
-       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
        AND language = ?
        ORDER BY scheduled_date ASC`,
       [startIso, endIso, language]
@@ -1793,9 +1713,7 @@ export async function getScheduledTimesInRange(
   const result = await database.getAllAsync<{ scheduled_date: string }>(
     `SELECT scheduled_date FROM facts 
      WHERE scheduled_date >= ? 
-     AND scheduled_date < ?
-     AND (shown_in_feed IS NULL OR shown_in_feed = 0)
-     ORDER BY scheduled_date ASC`,
+     AND scheduled_date < ?     ORDER BY scheduled_date ASC`,
     [startIso, endIso]
   );
   return result.map((r) => r.scheduled_date);
@@ -1821,7 +1739,6 @@ export async function getFutureScheduledFactsWithNotificationIds(
     }>(
       `SELECT id, notification_id, scheduled_date FROM facts 
        WHERE scheduled_date > ? 
-       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
        AND language = ?
        ORDER BY scheduled_date ASC`,
       [now, language]
@@ -1834,9 +1751,7 @@ export async function getFutureScheduledFactsWithNotificationIds(
     scheduled_date: string;
   }>(
     `SELECT id, notification_id, scheduled_date FROM facts 
-     WHERE scheduled_date > ? 
-     AND (shown_in_feed IS NULL OR shown_in_feed = 0)
-     ORDER BY scheduled_date ASC`,
+     WHERE scheduled_date > ?      ORDER BY scheduled_date ASC`,
     [now]
   );
 }
@@ -2023,27 +1938,8 @@ export async function getTodaysFacts(language: string): Promise<FactWithRelation
 }
 
 /**
- * Mark today's scheduled facts as shown in feed
- * This ensures facts appear in the feed immediately after midnight
- * @param language Language filter
- * @returns Number of facts marked as shown
- */
-export async function markTodaysFactsAsShown(language: string): Promise<number> {
-  const database = await openDatabase();
-
-  const result = await database.runAsync(
-    `UPDATE facts SET shown_in_feed = 1
-     WHERE date(scheduled_date, 'localtime') = date('now', 'localtime')
-       AND (shown_in_feed IS NULL OR shown_in_feed = 0)
-       AND language = ?`,
-    [language]
-  );
-  return result.changes;
-}
-
-/**
- * Get facts that were already delivered via notifications or marked as shown
- * Returns facts from the past 30 days where (scheduled_date <= now OR shown_in_feed = 1), ordered by date descending
+ * Get facts that were already delivered via notifications
+ * Returns facts from the past 30 days where scheduled_date <= now, ordered by date descending
  */
 export async function getFactsGroupedByDate(language?: string): Promise<FactWithRelations[]> {
   const database = await openDatabase();
@@ -2068,10 +1964,7 @@ export async function getFactsGroupedByDate(language?: string): Promise<FactWith
         c.color_hex as category_color_hex
       FROM facts f
       LEFT JOIN categories c ON f.category = c.slug
-      WHERE (
-        (f.scheduled_date IS NOT NULL AND f.scheduled_date >= ? AND f.scheduled_date <= ?)
-        OR f.shown_in_feed = 1
-      )
+      WHERE f.scheduled_date IS NOT NULL AND f.scheduled_date >= ? AND f.scheduled_date <= ?
       AND f.language = ?
       ORDER BY COALESCE(f.scheduled_date, f.created_at) DESC`,
       [cutoffDate, now, language]
@@ -2091,10 +1984,7 @@ export async function getFactsGroupedByDate(language?: string): Promise<FactWith
       c.is_premium as category_is_premium
     FROM facts f
     LEFT JOIN categories c ON f.category = c.slug
-    WHERE (
-      (f.scheduled_date IS NOT NULL AND f.scheduled_date >= ? AND f.scheduled_date <= ?)
-      OR f.shown_in_feed = 1
-    )
+    WHERE f.scheduled_date IS NOT NULL AND f.scheduled_date >= ? AND f.scheduled_date <= ?
     ORDER BY COALESCE(f.scheduled_date, f.created_at) DESC`,
     [cutoffDate, now]
   );
@@ -2261,15 +2151,13 @@ export async function getQuestionsForDailyTrivia(
     INNER JOIN facts f ON q.fact_id = f.id
     LEFT JOIN categories c ON f.category = c.slug
     LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
-    WHERE f.shown_in_feed = 1
-    AND f.scheduled_date LIKE ?
+    WHERE f.scheduled_date LIKE ?
     AND f.language = ?
     ORDER BY
       CASE
         WHEN fi.detail_opened_at IS NOT NULL THEN 1
         WHEN fi.story_viewed_at  IS NOT NULL THEN 2
-        WHEN f.shown_in_feed = 1             THEN 3
-        ELSE 4
+        ELSE 3
       END ASC,
       RANDOM()`,
     [datePrefix + '%', language]
@@ -2320,8 +2208,7 @@ export async function getRandomUnansweredQuestions(
       CASE
         WHEN fi.detail_opened_at IS NOT NULL THEN 1
         WHEN fi.story_viewed_at  IS NOT NULL THEN 2
-        WHEN f.shown_in_feed = 1             THEN 3
-        ELSE 4
+        ELSE 3
       END ASC,
       RANDOM()
     LIMIT ?`,
@@ -2418,8 +2305,7 @@ export async function getQuestionsForCategory(
       CASE
         WHEN fi.detail_opened_at IS NOT NULL THEN 1
         WHEN fi.story_viewed_at  IS NOT NULL THEN 2
-        WHEN f.shown_in_feed = 1             THEN 3
-        ELSE 4
+        ELSE 3
       END ASC,
       RANDOM()
     LIMIT ?`;
@@ -2835,8 +2721,7 @@ export async function getDailyTriviaQuestionsCount(
     `SELECT COUNT(*) as count 
      FROM questions q
      INNER JOIN facts f ON q.fact_id = f.id
-     WHERE f.shown_in_feed = 1
-     AND f.scheduled_date LIKE ?
+     WHERE f.scheduled_date LIKE ?
      AND f.language = ?`,
     [datePrefix + '%', language]
   );
@@ -3439,7 +3324,7 @@ export async function getFactsForStory(
     LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
     WHERE f.category = ? AND f.language = ?
       AND (f.is_historical IS NULL OR f.is_historical = 0)
-      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
+      AND f.scheduled_date IS NULL
     ORDER BY is_viewed ASC, COALESCE(f.last_updated, f.created_at) ASC`,
     [category, language]
   );
@@ -3472,7 +3357,7 @@ export async function getFactsForMixedStory(
     LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
     WHERE f.category IN (${placeholders}) AND f.language = ?
       AND (f.is_historical IS NULL OR f.is_historical = 0)
-      AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
+      AND f.scheduled_date IS NULL
     ORDER BY is_viewed ASC, COALESCE(f.last_updated, f.created_at) ASC`,
     [...categorySlugs, language]
   );
@@ -3498,7 +3383,7 @@ export async function getUnseenStoryStatus(
        AND f.language = ?
        AND fi.story_viewed_at IS NULL
        AND (f.is_historical IS NULL OR f.is_historical = 0)
-       AND (f.shown_in_feed IS NULL OR f.shown_in_feed = 0)
+       AND f.scheduled_date IS NULL
       GROUP BY f.category`,
     [...categorySlugs, language]
   );
@@ -3609,13 +3494,13 @@ export async function updateFactTitle(factId: number, newTitle: string): Promise
 }
 
 /**
- * Clear all shown_in_feed flags and scheduled dates (DEV tool for screenshots)
+ * Clear all scheduled dates (DEV tool for screenshots)
  * This effectively clears the feed for fresh screenshot manipulation
  */
-export async function clearAllShownInFeed(): Promise<void> {
+export async function clearAllSchedulingData(): Promise<void> {
   const database = await openDatabase();
   await database.runAsync(
-    'UPDATE facts SET shown_in_feed = 0, scheduled_date = NULL, notification_id = NULL'
+    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL'
   );
 }
 
