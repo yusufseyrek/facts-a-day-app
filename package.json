@@ -1,6 +1,6 @@
 {
   "name": "facts-a-day-app",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
@@ -89,7 +89,7 @@
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-gifted-charts": "^1.4.76",
-    "react-native-google-mobile-ads": "^16.3.1",
+    "react-native-google-mobile-ads": "^16.3.2",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "~4.16.0",

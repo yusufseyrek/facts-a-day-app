@@ -51,7 +51,7 @@
         "react-native": "0.81.5",
         "react-native-gesture-handler": "~2.28.0",
         "react-native-gifted-charts": "^1.4.76",
-        "react-native-google-mobile-ads": "^16.3.1",
+        "react-native-google-mobile-ads": "^16.3.2",
         "react-native-reanimated": "~4.1.1",
         "react-native-safe-area-context": "^5.6.2",
         "react-native-screens": "~4.16.0",
@@ -1941,7 +1941,7 @@
 
     "react-native-gifted-charts": ["react-native-gifted-charts@1.4.76", "", { "dependencies": { "gifted-charts-core": "0.1.80" }, "peerDependencies": { "expo-linear-gradient": "*", "react": "*", "react-native": "*", "react-native-linear-gradient": "*", "react-native-svg": "*" }, "optionalPeers": ["expo-linear-gradient", "react-native-linear-gradient"] }, "sha512-GmaICcCouL7Z13KRfeVT6ngfQ2cByrVQ7TzWY8SPNUyQf+6/dZZ2+ySChNTsaFFhuwW2eTFBrDSz6HXBIzd0PA=="],
 
-    "react-native-google-mobile-ads": ["react-native-google-mobile-ads@16.3.1", "", { "dependencies": { "@iabtcf/core": "^1.5.6", "use-deep-compare-effect": "^1.8.1" }, "peerDependencies": { "expo": ">=47.0.0" }, "optionalPeers": ["expo"] }, "sha512-hFjxGYyVjCtaQHmwRMag3ZCSFgewzCDKsh7S/ppQlIUXvRlXQ7P9IAg7V4tx9L32mMSrO1SlDmL1Eken1gC/QA=="],
+    "react-native-google-mobile-ads": ["react-native-google-mobile-ads@16.3.2", "", { "dependencies": { "@iabtcf/core": "^1.5.6", "use-deep-compare-effect": "^1.8.1" }, "peerDependencies": { "expo": ">=47.0.0" }, "optionalPeers": ["expo"] }, "sha512-Deowdsg/e+eCBiSSCqf52qHQl22eeprCidy1PFx0qIr1dZIvmPBlZa0gJU4eO8zL5umeTCK7lJ8NZe4+kvZjkQ=="],
 
     "react-native-is-edge-to-edge": ["react-native-is-edge-to-edge@1.2.1", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-FLbPWl/MyYQWz+KwqOZsSyj2JmLKglHatd3xLZWskXOpRaio4LfEDEz8E/A6uD8QoTHW6Aobw1jbEwK7KMgR7Q=="],
 

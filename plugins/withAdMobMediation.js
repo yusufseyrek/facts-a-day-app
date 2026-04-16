@@ -18,7 +18,7 @@ const IOS_PODS = [
 
 // Android Gradle dependencies (pinned to versions compatible with Google Mobile Ads SDK 25.0.0)
 const ANDROID_DEPENDENCIES = [
-  "com.google.ads.mediation:ironsource:9.3.0.1",
+  "com.google.ads.mediation:ironsource:9.3.0.2",
   "com.google.ads.mediation:vungle:7.7.2.0",
   "com.unity3d.ads:unity-ads:4.17.0",
   "com.google.ads.mediation:unity:4.17.0.0",
