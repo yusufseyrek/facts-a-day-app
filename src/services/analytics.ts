@@ -276,7 +276,8 @@ export type FactViewSource =
   | 'favorites'
   | 'story'
   | 'notification'
-  | 'trivia_review';
+  | 'trivia_review'
+  | 'widget';
 
 /**
  * Track when user views a fact

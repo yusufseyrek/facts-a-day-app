@@ -6,6 +6,7 @@ import {
   getThisWeekInHistoryFacts,
 } from './database';
 import { cacheFactImages } from './images';
+import { updateWidgetData } from './widgetData';
 
 import type { FactWithRelations } from './database';
 
@@ -76,6 +77,9 @@ export async function loadDailyFeedSections(
   };
 
   _memoryCache = { date: today, locale, sections };
+
+  // Push fresh facts to home screen widgets
+  updateWidgetData([...freshFacts, ...onThisDay], locale).catch(() => {});
 
   return sections;
 }

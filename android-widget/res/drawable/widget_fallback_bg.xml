@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- Shown while the fact image is loading or missing.
+         App primary color @ 30% opacity to match iOS fallback. -->
+    <solid android:color="#4D00A3CC" />
+</shape>

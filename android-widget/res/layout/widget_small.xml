@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_flipper"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:flipInterval="10000"
+    android:autoStart="true"
+    android:measureAllChildren="false">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_fallback_bg">
+
+        <ImageView
+            android:id="@+id/widget_image_0"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/widget_gradient_overlay" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:id="@+id/widget_badge_0"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="9sp"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:background="@drawable/widget_badge_bg"
+                android:text="" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/widget_title_0"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:maxLines="5"
+                android:ellipsize="end"
+                android:shadowColor="#66000000"
+                android:shadowRadius="2"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:text="" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="6dp">
+
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_active" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <ImageView
+                    android:id="@+id/widget_bulb_0"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/widget_app_icon"
+                    android:contentDescription="@null" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_fallback_bg">
+
+        <ImageView
+            android:id="@+id/widget_image_1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/widget_gradient_overlay" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:id="@+id/widget_badge_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="9sp"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:background="@drawable/widget_badge_bg"
+                android:text="" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/widget_title_1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:maxLines="5"
+                android:ellipsize="end"
+                android:shadowColor="#66000000"
+                android:shadowRadius="2"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:text="" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="6dp">
+
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_active" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <ImageView
+                    android:id="@+id/widget_bulb_1"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/widget_app_icon"
+                    android:contentDescription="@null" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_fallback_bg">
+
+        <ImageView
+            android:id="@+id/widget_image_2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/widget_gradient_overlay" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:id="@+id/widget_badge_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="9sp"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:background="@drawable/widget_badge_bg"
+                android:text="" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/widget_title_2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:maxLines="5"
+                android:ellipsize="end"
+                android:shadowColor="#66000000"
+                android:shadowRadius="2"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:text="" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="6dp">
+
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_active" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <ImageView
+                    android:id="@+id/widget_bulb_2"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/widget_app_icon"
+                    android:contentDescription="@null" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_fallback_bg">
+
+        <ImageView
+            android:id="@+id/widget_image_3"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/widget_gradient_overlay" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:id="@+id/widget_badge_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="9sp"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:background="@drawable/widget_badge_bg"
+                android:text="" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/widget_title_3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:maxLines="5"
+                android:ellipsize="end"
+                android:shadowColor="#66000000"
+                android:shadowRadius="2"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:text="" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="6dp">
+
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_active" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <ImageView
+                    android:id="@+id/widget_bulb_3"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/widget_app_icon"
+                    android:contentDescription="@null" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_fallback_bg">
+
+        <ImageView
+            android:id="@+id/widget_image_4"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/widget_gradient_overlay" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:id="@+id/widget_badge_4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="9sp"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:background="@drawable/widget_badge_bg"
+                android:text="" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/widget_title_4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:maxLines="5"
+                android:ellipsize="end"
+                android:shadowColor="#66000000"
+                android:shadowRadius="2"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:text="" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="6dp">
+
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:layout_marginEnd="4dp" android:src="@drawable/widget_dot_inactive" android:contentDescription="@null" />
+        <ImageView android:layout_width="5dp" android:layout_height="5dp" android:src="@drawable/widget_dot_active" android:contentDescription="@null" />
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <ImageView
+                    android:id="@+id/widget_bulb_4"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/widget_app_icon"
+                    android:contentDescription="@null" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</ViewFlipper>
