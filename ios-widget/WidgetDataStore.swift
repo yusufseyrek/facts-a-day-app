@@ -7,6 +7,8 @@ struct WidgetFact: Codable {
     let categorySlug: String
     let categoryName: String
     let categoryColor: String
+    /// Black or white — whichever the JS layer computed as readable on `categoryColor`.
+    let categoryTextColor: String
     let deepLink: String
     let imageUrl: String?
 }

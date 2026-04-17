@@ -106,10 +106,11 @@ struct FactCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Top: category badge
+            // Top: category badge — text color is pre-computed on the JS side
+            // (black or white, whichever is readable on `categoryColor`).
             Text(fact.categoryName)
                 .font(.system(size: style.badgeSize, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(Color(dynamicHex: fact.categoryTextColor))
                 .padding(.horizontal, style.badgePadH)
                 .padding(.vertical, style.badgePadV)
                 .background(Capsule().fill(Color(dynamicHex: fact.categoryColor)))

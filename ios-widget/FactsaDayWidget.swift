@@ -123,10 +123,11 @@ struct FactTimelineProvider: TimelineProvider {
             date: Date(),
             fact: WidgetFact(
                 id: 0,
-                title: "Did you know? The first computer programmer was Ada Lovelace, who wrote the first algorithm in 1843.",
+                title: "The first computer programmer was Ada Lovelace, who wrote the first algorithm in 1843.",
                 categorySlug: "technology",
                 categoryName: "Technology",
                 categoryColor: "#A855F7",
+                categoryTextColor: "#FFFFFF",
                 deepLink: "factsaday://fact/0",
                 imageUrl: nil
             ),

@@ -88,6 +88,9 @@ abstract class FactWidgetBaseProvider : AppWidgetProvider() {
             views.setTextViewText(ids.title, fact.title)
             views.setTextViewText(ids.badge, fact.categoryName)
             tintBadge(views, ids.badge, parseColor(fact.categoryColor))
+            // Badge text color (black or white) is pre-computed on the JS side
+            // based on the luminance of `categoryColor`.
+            views.setTextColor(ids.badge, parseColor(fact.categoryTextColor))
 
             val bitmap: Bitmap? = WidgetDataStore.loadBitmap(context, fact.imageUrl)
             views.setImageViewBitmap(ids.image, bitmap) // null clears any prior bitmap

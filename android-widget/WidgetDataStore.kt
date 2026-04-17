@@ -27,6 +27,8 @@ data class WidgetFact(
     val categorySlug: String,
     val categoryName: String,
     val categoryColor: String,
+    /** Black or white — whichever the JS layer computed as readable on `categoryColor`. */
+    val categoryTextColor: String,
     val deepLink: String,
     val imageUrl: String?,
 )
@@ -61,6 +63,8 @@ object WidgetDataStore {
                         categorySlug = obj.getString("categorySlug"),
                         categoryName = obj.getString("categoryName"),
                         categoryColor = obj.getString("categoryColor"),
+                        categoryTextColor = if (obj.has("categoryTextColor") && !obj.isNull("categoryTextColor"))
+                            obj.getString("categoryTextColor") else "#FFFFFF",
                         deepLink = obj.getString("deepLink"),
                         imageUrl = if (obj.has("imageUrl") && !obj.isNull("imageUrl"))
                             obj.getString("imageUrl") else null,

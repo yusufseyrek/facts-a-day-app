@@ -15,6 +15,7 @@ import { Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { getCategoryNeonColor } from '../theme/glowStyles';
+import { getContrastColor } from '../utils/colors';
 
 import { setWidgetData, reloadWidgets } from '../native/WidgetBridge';
 
@@ -37,6 +38,8 @@ interface WidgetFact {
   categorySlug: string;
   categoryName: string;
   categoryColor: string;
+  /** Black or white — whichever is readable on `categoryColor`. */
+  categoryTextColor: string;
   deepLink: string;
   imageUrl?: string;
 }
@@ -61,12 +64,18 @@ async function resolveTheme(): Promise<'light' | 'dark'> {
 
 function toWidgetFact(f: FactWithRelations, theme: 'light' | 'dark'): WidgetFact {
   const categorySlug = f.categoryData?.slug || f.category || 'general';
+  // Prefer the DB-provided color_hex (synced from the API so it stays in sync
+  // with the rest of the app); fall back to the theme-based neon palette for
+  // categories that don't yet have a color set server-side.
+  const categoryColor =
+    f.categoryData?.color_hex || getCategoryNeonColor(categorySlug, theme);
   return {
     id: f.id,
     title: f.title || f.content.substring(0, 200),
     categorySlug,
     categoryName: f.categoryData?.name || categorySlug,
-    categoryColor: getCategoryNeonColor(categorySlug, theme),
+    categoryColor,
+    categoryTextColor: getContrastColor(categoryColor),
     deepLink: `factsaday://fact/${f.id}`,
     imageUrl: f.image_url,
   };
