@@ -877,6 +877,20 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
 
     result.success = true;
     if (__DEV__) console.log('✅ Background content refresh completed successfully');
+
+    // Push the latest facts to home-screen widgets. Dynamic import avoids a
+    // require cycle (widgetData → database → …). We do this after every
+    // successful refresh — both background-scheduled and app-foreground — so
+    // widgets stay fresh without depending on when the user opens the home tab.
+    try {
+      const locale = await getStoredLocale();
+      if (locale) {
+        const { refreshWidgetData } = await import('./widgetData');
+        await refreshWidgetData(locale);
+      }
+    } catch (widgetErr) {
+      if (__DEV__) console.error('Widget refresh after content sync failed:', widgetErr);
+    }
   } catch (error) {
     console.error('❌ Content refresh failed:', error);
     result.error = error instanceof Error ? error.message : 'Unknown error';

@@ -46,23 +46,30 @@ function HomeScreen() {
   const { streak } = useReadingStreak();
   const trendingPremiumFacts = useTrendingPremium(locale, isPremium);
 
-  // Merge trending premium facts into the latest carousel, sorted by created_at desc.
-  // Deduplicate by ID — premium facts viewed via the detail screen get saved to the
-  // local DB, so they can appear in both latestFacts and trendingPremiumFacts.
-  // Ensure the first item is always a free fact for free users.
+  // Merge trending premium facts into the latest carousel. Deduplicate by ID —
+  // premium facts viewed via the detail screen get saved to the local DB, so
+  // they can appear in both latestFacts and trendingPremiumFacts. Interleave
+  // free/premium 1:1 so premium facts don't clump together, and keep the list
+  // starting with a free fact for free users.
   const mergedLatestFacts = useMemo(() => {
     if (trendingPremiumFacts.length === 0) return latestFacts;
     const existingIds = new Set(latestFacts.map((f) => f.id));
     const uniquePremium = trendingPremiumFacts.filter((f) => !existingIds.has(f.id));
-    const sorted = [...latestFacts, ...uniquePremium].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-    const firstFreeIdx = sorted.findIndex((f) => !f.categoryData?.is_premium);
-    if (firstFreeIdx > 0) {
-      const [free] = sorted.splice(firstFreeIdx, 1);
-      sorted.unshift(free);
+    const combined = [...latestFacts, ...uniquePremium];
+    const isPremiumFact = (f: FactWithRelations) =>
+      !!(typeof f.categoryData === 'object' && f.categoryData?.is_premium);
+    const byDateDesc = (a: FactWithRelations, b: FactWithRelations) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    const free = combined.filter((f) => !isPremiumFact(f)).sort(byDateDesc);
+    const premium = combined.filter(isPremiumFact).sort(byDateDesc);
+    const interleaved: FactWithRelations[] = [];
+    let fi = 0;
+    let pi = 0;
+    while (fi < free.length || pi < premium.length) {
+      if (fi < free.length) interleaved.push(free[fi++]);
+      if (pi < premium.length) interleaved.push(premium[pi++]);
     }
-    return sorted;
+    return interleaved;
   }, [latestFacts, trendingPremiumFacts]);
 
   const mergedLatestFactIds = useMemo(

@@ -32,6 +32,8 @@ TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
     const result = await refreshAppContent();
 
     // 2. Curate daily feed sections (force refresh if new facts were synced)
+    //    refreshAppContent() above has already pushed the latest facts to
+    //    home-screen widgets — see the tail of refreshAppContentInternal().
     const locale = await getStoredLocale();
     if (locale) {
       await loadDailyFeedSections(locale, result.updated.facts > 0);
