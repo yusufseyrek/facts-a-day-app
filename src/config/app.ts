@@ -243,7 +243,7 @@ export const SUBSCRIPTION = {
     'factsaday_premium_annually',
   ],
   /** Product IDs visible on the paywall (excludes legacy plans still valid for existing subscribers) */
-  PAYWALL_PRODUCT_IDS: ['factsaday_premium_monthly', 'factsaday_premium_annually'],
+  PAYWALL_PRODUCT_IDS: ['factsaday_premium_weekly', 'factsaday_premium_monthly'],
   /** AsyncStorage key for caching premium status */
   PREMIUM_STORAGE_KEY: '@factsaday_premium_status',
 } as const;

@@ -75,11 +75,11 @@ export default function PaywallScreen() {
   useEffect(() => {
     if (selectedPlan) return;
     if (subscriptions.length > 0) {
-      const annual = subscriptions.find((s) => s.id.includes('annual'));
-      setSelectedPlan(annual?.id || subscriptions[0].id);
+      const monthly = subscriptions.find((s) => s.id.includes('monthly'));
+      setSelectedPlan(monthly?.id || subscriptions[0].id);
     } else if (cachedPrices.length > 0) {
-      const annual = cachedPrices.find((c) => c.id.includes('annual'));
-      setSelectedPlan(annual?.id || cachedPrices[0].id);
+      const monthly = cachedPrices.find((c) => c.id.includes('monthly'));
+      setSelectedPlan(monthly?.id || cachedPrices[0].id);
     }
   }, [subscriptions, cachedPrices, selectedPlan]);
 
@@ -178,8 +178,6 @@ export default function PaywallScreen() {
     return cached?.displayPrice || '---';
   };
 
-  const isAnnual = (productId: string) => productId.includes('annual');
-
   /**
    * Parse a localized price string like "$14.99", "14,99 €", "￥1,580" into a number.
    * Handles both comma-decimal (14,99) and comma-thousand (1,580.00) formats.
@@ -218,15 +216,16 @@ export default function PaywallScreen() {
   };
 
   /**
-   * Dynamically calculate annual savings percentage compared to monthly.
+   * Dynamically calculate monthly savings percentage compared to weekly.
+   * Weekly price x ~4.3 weeks vs monthly price.
    * Returns null if prices are unavailable.
    */
-  const annualSavingsPercent = useMemo(() => {
+  const monthlySavingsPercent = useMemo(() => {
+    const weeklyPrice = getNumericPrice('factsaday_premium_weekly');
     const monthlyPrice = getNumericPrice('factsaday_premium_monthly');
-    const annualPrice = getNumericPrice('factsaday_premium_annually');
-    if (monthlyPrice == null || annualPrice == null || monthlyPrice <= 0) return null;
-    const yearlyAtMonthlyRate = monthlyPrice * 12;
-    const savings = Math.round(((yearlyAtMonthlyRate - annualPrice) / yearlyAtMonthlyRate) * 100);
+    if (weeklyPrice == null || monthlyPrice == null || weeklyPrice <= 0) return null;
+    const monthlyAtWeeklyRate = weeklyPrice * (52 / 12);
+    const savings = Math.round(((monthlyAtWeeklyRate - monthlyPrice) / monthlyAtWeeklyRate) * 100);
     return savings > 0 ? savings : null;
   }, [subscriptions, cachedPrices]);
 
@@ -550,7 +549,8 @@ export default function PaywallScreen() {
           <XStack gap={spacing.sm} marginBottom={spacing.lg} marginHorizontal={spacing.lg}>
             {PAYWALL_PRODUCT_IDS.map((productId) => {
               const selected = selectedPlan === productId;
-              const annual = isAnnual(productId);
+              const monthly = productId.includes('monthly');
+              const weekly = productId.includes('weekly');
 
               return (
                 <Pressable
@@ -561,7 +561,7 @@ export default function PaywallScreen() {
                   <View
                     style={[dynamicStyles.planCard, selected && dynamicStyles.planCardSelected]}
                   >
-                    {annual && (
+                    {monthly && (
                       <View style={dynamicStyles.bestValueBadge}>
                         <LinearGradient
                           colors={[PAYWALL_GOLD.badge, PAYWALL_GOLD.dark]}
@@ -570,8 +570,8 @@ export default function PaywallScreen() {
                           style={dynamicStyles.bestValueGradient}
                         >
                           <Text.Tiny color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
-                            {annualSavingsPercent
-                              ? t('paywallSavePercent', { percent: annualSavingsPercent })
+                            {monthlySavingsPercent
+                              ? t('paywallSavePercent', { percent: monthlySavingsPercent })
                               : t('paywallBestValue')}
                           </Text.Tiny>
                         </LinearGradient>
@@ -580,7 +580,7 @@ export default function PaywallScreen() {
 
                     {/* Plan Icon */}
                     <View style={dynamicStyles.planIconContainer}>
-                      {annual ? (
+                      {monthly ? (
                         <Crown
                           size={iconSizes.sm}
                           color={PAYWALL_GOLD.primary}
@@ -597,7 +597,7 @@ export default function PaywallScreen() {
                         fontFamily={FONT_FAMILIES.semibold}
                         color={selected ? tc.planSelectedTitle : tc.planPeriod}
                       >
-                        {annual ? t('paywallAnnual') : t('paywallMonthly')}
+                        {weekly ? t('paywallWeekly') : t('paywallMonthly')}
                       </Text.Label>
                     </View>
 
@@ -613,20 +613,20 @@ export default function PaywallScreen() {
                       alignSelf="stretch"
                       textAlign="center"
                     >
-                      {annual ? t('paywallPerYear') : t('paywallPerMonth')}
+                      {weekly ? t('paywallPerWeek') : t('paywallPerMonth')}
                     </Text.Caption>
 
-                    {/* Flexible Badge for Monthly / Free Trial for Annual */}
+                    {/* Free Trial for Monthly / Flexible for Weekly */}
                     <View
-                      style={[dynamicStyles.savingsBadge, !annual && dynamicStyles.flexibleBadge]}
+                      style={[dynamicStyles.savingsBadge, weekly && dynamicStyles.flexibleBadge]}
                     >
                       <Text.Tiny
-                        color={annual ? PAYWALL_GOLD.badge : tc.planPeriod}
+                        color={monthly ? PAYWALL_GOLD.badge : tc.planPeriod}
                         fontFamily={FONT_FAMILIES.semibold}
                         adjustsFontSizeToFit
                         numberOfLines={1}
                       >
-                        {annual ? t('paywallFreeTrial') : t('paywallFlexible')}
+                        {monthly ? t('paywallFreeTrial') : t('paywallFlexible')}
                       </Text.Tiny>
                     </View>
 
