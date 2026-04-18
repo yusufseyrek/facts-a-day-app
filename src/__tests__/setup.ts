@@ -135,6 +135,16 @@ jest.mock('react-native-google-mobile-ads', () => ({
     OBTAINED: 'OBTAINED',
   },
   MaxAdContentRating: { G: 'G', PG: 'PG', T: 'T', MA: 'MA' },
+  NativeMediaAspectRatio: {
+    LANDSCAPE: 'landscape',
+    PORTRAIT: 'portrait',
+    SQUARE: 'square',
+    ANY: 'any',
+  },
+  NativeAd: {
+    createForAdRequest: jest.fn().mockResolvedValue({ destroy: jest.fn() }),
+  },
+  TestIds: { NATIVE: 'test-native' },
 }));
 
 // ── Internal services used as transitive deps ──

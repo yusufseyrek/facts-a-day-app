@@ -1,3 +1,12 @@
+/**
+ * @deprecated No longer used — all native-ad consumers now go through the
+ * pool via `useAdForSlot`. Kept here as a safety net in case a late-loading
+ * screen still references it; the file can be deleted once nothing imports
+ * from it.
+ *
+ * This hook bypasses the pool, its SDK-ready gate, and its retry-on-no-fill
+ * logic. Prefer `useAdForSlot(slotKey, aspectRatio)` for new code.
+ */
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import {

@@ -12,32 +12,45 @@ interface UseAdForSlotResult {
 }
 
 const EMPTY: UseAdForSlotResult = { ad: null, status: 'failed' };
+// Intentionally-paused state (no slot key provided by caller, or `enabled`
+// is false because the cell hasn't entered the viewport yet). Distinct from
+// `EMPTY` — callers listening for 'failed' must not treat an idle, not-yet-
+// subscribed cell as a terminal failure.
+const IDLE: UseAdForSlotResult = { ad: null, status: 'idle' };
 
 /**
  * Subscribe a list cell to the shared native ad pool. The same `slotKey`
  * always returns the same ad instance across FlashList recycles, so we do not
  * re-request ads while scrolling.
  *
- * `aspectRatio` controls how the ad request is issued. LANDSCAPE slots share
- * a preloaded queue; other aspect ratios (e.g. SQUARE for the Latest carousel)
- * fetch per-slot but still benefit from stable binding across recycles.
+ * `aspectRatio` picks which preloaded queue to drain. Slots requesting a
+ * non-pooled aspect are marked `failed`.
  *
- * Premium users short-circuit to `EMPTY` so ad cells render their
- * reserved-height spacer without attempting to load.
+ * `enabled` (default `true`) gates subscription — pass `false` for list cells
+ * that have been mounted by FlashList's drawDistance but not yet scrolled into
+ * view, so the pool doesn't burn inventory on slots the user may never see.
+ *
+ * Premium users short-circuit to `EMPTY` without subscribing.
  */
 export function useAdForSlot(
   slotKey: string | null | undefined,
-  aspectRatio: NativeMediaAspectRatio = NativeMediaAspectRatio.LANDSCAPE
+  aspectRatio: NativeMediaAspectRatio = NativeMediaAspectRatio.LANDSCAPE,
+  enabled: boolean = true
 ): UseAdForSlotResult {
   const { isPremium } = usePremium();
   const [state, setState] = useState<UseAdForSlotResult>(() => {
-    if (!slotKey || isPremium) return EMPTY;
+    if (isPremium) return EMPTY;
+    if (!slotKey || !enabled) return IDLE;
     return getSlot(slotKey, aspectRatio);
   });
 
   useEffect(() => {
-    if (!slotKey || isPremium) {
+    if (isPremium) {
       setState(EMPTY);
+      return;
+    }
+    if (!slotKey || !enabled) {
+      setState(IDLE);
       return;
     }
 
@@ -54,7 +67,7 @@ export function useAdForSlot(
     sync();
     const unsubscribe = subscribeSlot(slotKey, sync, aspectRatio);
     return unsubscribe;
-  }, [slotKey, isPremium, aspectRatio]);
+  }, [slotKey, isPremium, aspectRatio, enabled]);
 
   return state;
 }

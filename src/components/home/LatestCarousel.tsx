@@ -1,10 +1,17 @@
-import React, { useCallback, useMemo, useRef } from 'react';
-import { NativeScrollEvent, NativeSyntheticEvent, View } from 'react-native';
+import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
+import {
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  View,
+  type ViewStyle,
+  type ViewToken,
+} from 'react-native';
 import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { Newspaper } from '@tamagui/lucide-icons';
 
+import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { LAYOUT, NATIVE_ADS } from '../../config/app';
 import { useTranslation } from '../../i18n';
 import { trackCarouselSwipe } from '../../services/analytics';
@@ -38,6 +45,34 @@ interface LatestCarouselProps {
 
 type LatestRow = FactWithRelations | NativeAdPlaceholder;
 
+/**
+ * Subscribes the given slot to the ad pool only once `enabled` is `true` —
+ * the parent carousel flips that when the cell enters the viewport, so pool
+ * inventory isn't consumed for cells pre-mounted by FlashList's drawDistance
+ * but never scrolled to. Returns `null` (0-width cell) until an ad is bound.
+ */
+const LatestAdCell = memo(function LatestAdCell({
+  slotKey,
+  enabled,
+  cardWidth,
+  cardHeight,
+  itemStyle,
+}: {
+  slotKey: string;
+  enabled: boolean;
+  cardWidth: number;
+  cardHeight: number;
+  itemStyle: ViewStyle;
+}) {
+  const { ad } = useAdForSlot(slotKey, NativeMediaAspectRatio.SQUARE, enabled);
+  if (!ad) return null;
+  return (
+    <View style={itemStyle}>
+      <NativeAdCard cardWidth={cardWidth} cardHeight={cardHeight} nativeAd={ad} />
+    </View>
+  );
+});
+
 export const LatestCarousel = React.memo(function LatestCarousel({
   facts,
   factIds,
@@ -62,12 +97,42 @@ export const LatestCarousel = React.memo(function LatestCarousel({
 
   const activeIndexRef = useRef(0);
 
-  // Interleave native ad placeholders. Stable content-derived keys (from
-  // insertNativeAds) keep the ad pool binding stable across re-renders.
+  // Interleave native ad placeholders. Each placeholder is rendered by
+  // `LatestAdCell`, which returns `null` (0-width cell) until its pool slot
+  // has an ad — no wrapper, no cardWidth of empty space.
   const data = useMemo<LatestRow[]>(
     () => insertNativeAds(facts, NATIVE_ADS.FIRST_AD_INDEX.LATEST),
     [facts]
   );
+
+  // Sticky set of ad slot keys that have entered the viewport at least once.
+  // We only flip `enabled` on an ad cell once its placeholder has actually
+  // been visible, so the pool doesn't burn inventory on cells FlashList
+  // pre-mounts (via drawDistance) but the user never scrolls to.
+  const [viewedAdKeys, setViewedAdKeys] = useState<Set<string>>(() => new Set());
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      let newKeys: string[] | null = null;
+      for (const v of viewableItems) {
+        const item = v.item as LatestRow | undefined;
+        if (item && isNativeAdPlaceholder(item)) {
+          (newKeys ??= []).push(item.key);
+        }
+      }
+      if (!newKeys) return;
+      setViewedAdKeys((prev) => {
+        let next = prev;
+        for (const k of newKeys!) {
+          if (!next.has(k)) {
+            if (next === prev) next = new Set(prev);
+            next.add(k);
+          }
+        }
+        return next;
+      });
+    }
+  ).current;
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 1 }).current;
 
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -85,7 +150,7 @@ export const LatestCarousel = React.memo(function LatestCarousel({
   );
 
   const contentContainerStyle = useMemo(() => ({ paddingHorizontal: listInset }), [listInset]);
-  const itemStyle = useMemo(
+  const itemStyle = useMemo<ViewStyle>(
     () => ({ width: cardWidth, paddingBottom: spacing.md }),
     [cardWidth, spacing.md]
   );
@@ -95,14 +160,13 @@ export const LatestCarousel = React.memo(function LatestCarousel({
     ({ item }: { item: LatestRow }) => {
       if (isNativeAdPlaceholder(item)) {
         return (
-          <View style={itemStyle}>
-            <NativeAdCard
-              cardWidth={cardWidth}
-              cardHeight={cardHeight}
-              slotKey={item.key}
-              aspectRatio={NativeMediaAspectRatio.SQUARE}
-            />
-          </View>
+          <LatestAdCell
+            slotKey={item.key}
+            enabled={viewedAdKeys.has(item.key)}
+            cardWidth={cardWidth}
+            cardHeight={cardHeight}
+            itemStyle={itemStyle}
+          />
         );
       }
       const factIndex = factIds.indexOf(item.id);
@@ -126,7 +190,7 @@ export const LatestCarousel = React.memo(function LatestCarousel({
         </View>
       );
     },
-    [cardWidth, cardHeight, onFactPress, factIds, itemStyle, isPremium]
+    [cardWidth, cardHeight, onFactPress, factIds, itemStyle, isPremium, viewedAdKeys]
   );
 
   const keyExtractor = useCallback(
@@ -168,6 +232,11 @@ export const LatestCarousel = React.memo(function LatestCarousel({
           drawDistance={cardWidth}
           onScroll={handleScroll}
           scrollEventThrottle={16}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          // See KeepReadingList — FlashList needs `extraData` to re-invoke
+          // `renderItem` for already-mounted cells when `viewedAdKeys` changes.
+          extraData={viewedAdKeys}
         />
       </View>
     </>

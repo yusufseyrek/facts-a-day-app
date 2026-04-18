@@ -87,10 +87,6 @@ export const NATIVE_ADS = {
   TRIVIA_AD_QUESTION_INTERVAL: 4,
   /** Duration (ms) to block prev/next navigation when a native ad is shown in trivia */
   NAV_LOCK_DURATION_MS: 850,
-  /** Maximum number of native ads kept alive by the shared pool across all feed lists */
-  POOL_SIZE: 4,
-  /** Refill the pool in the background once free capacity falls below this number */
-  POOL_REFILL_THRESHOLD: 2,
 } as const;
 
 export const AD_RETRY = {

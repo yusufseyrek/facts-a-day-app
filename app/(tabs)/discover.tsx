@@ -473,17 +473,35 @@ function DiscoverScreen() {
   // Insert native ads into search results and category facts
   type DiscoverListItem = FactWithRelations | NativeAdPlaceholder;
 
-  // isPremium triggers re-computation to remove/add native ads
-  const searchDataWithAds = useMemo(
-    () => insertNativeAds(searchResults, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER),
-    [searchResults, isPremium]
-  );
+  // When an ad slot reports failure (no-fill / AdMob rate-limit), drop its
+  // placeholder so the list closes the gap rather than showing a spacer.
+  const [failedAdKeys, setFailedAdKeys] = useState<Set<string>>(() => new Set());
+  const handleAdFailed = useCallback((key: string) => {
+    setFailedAdKeys((prev) => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+  }, []);
 
   // isPremium triggers re-computation to remove/add native ads
-  const categoryDataWithAds = useMemo(
-    () => insertNativeAds(categoryFacts, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER),
-    [categoryFacts, isPremium]
-  );
+  const searchDataWithAds = useMemo(() => {
+    const withAds = insertNativeAds(searchResults, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER);
+    if (failedAdKeys.size === 0) return withAds;
+    return withAds.filter(
+      (item) => !(isNativeAdPlaceholder(item) && failedAdKeys.has(item.key))
+    );
+  }, [searchResults, isPremium, failedAdKeys]);
+
+  // isPremium triggers re-computation to remove/add native ads
+  const categoryDataWithAds = useMemo(() => {
+    const withAds = insertNativeAds(categoryFacts, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER);
+    if (failedAdKeys.size === 0) return withAds;
+    return withAds.filter(
+      (item) => !(isNativeAdPlaceholder(item) && failedAdKeys.has(item.key))
+    );
+  }, [categoryFacts, isPremium, failedAdKeys]);
 
   // Memoized keyExtractor
   const keyExtractor = useCallback((item: DiscoverListItem) => {
@@ -505,9 +523,10 @@ function DiscoverScreen() {
   const renderSearchItem = useCallback(
     ({ item }: ListRenderItemInfo<DiscoverListItem>) => {
       if (isNativeAdPlaceholder(item)) {
+        const adKey = item.key;
         return (
           <ContentContainer>
-            <NativeAdCard slotKey={item.key} />
+            <NativeAdCard slotKey={adKey} onAdFailed={() => handleAdFailed(adKey)} />
           </ContentContainer>
         );
       }
@@ -525,16 +544,17 @@ function DiscoverScreen() {
     },
     // Depend on the slug (primitive) rather than the Category object so renderItem
     // does not churn when userCategories reloads with an identical selection.
-    [isTablet, handleFactPress, selectedCategory?.slug, searchFactIds]
+    [isTablet, handleFactPress, selectedCategory?.slug, searchFactIds, handleAdFailed]
   );
 
   // Memoized renderItem for category facts
   const renderCategoryItem = useCallback(
     ({ item }: ListRenderItemInfo<DiscoverListItem>) => {
       if (isNativeAdPlaceholder(item)) {
+        const adKey = item.key;
         return (
           <ContentContainer>
-            <NativeAdCard slotKey={item.key} />
+            <NativeAdCard slotKey={adKey} onAdFailed={() => handleAdFailed(adKey)} />
           </ContentContainer>
         );
       }
@@ -556,7 +576,7 @@ function DiscoverScreen() {
       );
     },
     // See note on renderSearchItem above.
-    [isTablet, handleFactPress, selectedCategory?.slug, categoryFactIds]
+    [isTablet, handleFactPress, selectedCategory?.slug, categoryFactIds, handleAdFailed]
   );
 
   // Memoized refresh controls

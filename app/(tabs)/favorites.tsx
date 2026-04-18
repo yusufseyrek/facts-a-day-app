@@ -218,11 +218,23 @@ export default function FavoritesScreen() {
 
   // Insert native ads after filtering
   type FavoritesListItem = FactWithRelations | NativeAdPlaceholder;
-  const filteredDataWithAds = useMemo(
-    () => insertNativeAds(filteredFavorites, NATIVE_ADS.FIRST_AD_INDEX.FAVORITES),
+  const [failedAdKeys, setFailedAdKeys] = useState<Set<string>>(() => new Set());
+  const handleAdFailed = useCallback((key: string) => {
+    setFailedAdKeys((prev) => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+  }, []);
+  const filteredDataWithAds = useMemo(() => {
+    const withAds = insertNativeAds(filteredFavorites, NATIVE_ADS.FIRST_AD_INDEX.FAVORITES);
+    if (failedAdKeys.size === 0) return withAds;
+    return withAds.filter(
+      (item) => !(isNativeAdPlaceholder(item) && failedAdKeys.has(item.key))
+    );
     // isPremium triggers re-computation to remove/add native ads
-    [filteredFavorites, isPremium]
-  );
+  }, [filteredFavorites, isPremium, failedAdKeys]);
 
   const handleFactPress = useCallback(
     (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => {
@@ -281,9 +293,10 @@ export default function FavoritesScreen() {
   const renderItem = useCallback(
     ({ item }: { item: FavoritesListItem }) => {
       if (isNativeAdPlaceholder(item)) {
+        const adKey = item.key;
         return (
           <ContentContainer>
-            <NativeAdCard slotKey={item.key} />
+            <NativeAdCard slotKey={adKey} onAdFailed={() => handleAdFailed(adKey)} />
           </ContentContainer>
         );
       }
@@ -295,7 +308,7 @@ export default function FavoritesScreen() {
         />
       );
     },
-    [handleFactPress, filteredFactIds]
+    [handleFactPress, filteredFactIds, handleAdFailed]
   );
 
   // Memoized refresh control

@@ -28,11 +28,7 @@ interface NativeAdCardProps {
   slotKey?: string;
   /** Preferred media aspect ratio for the ad request. Defaults to LANDSCAPE. */
   aspectRatio?: NativeMediaAspectRatio;
-  /**
-   * Fires when the pool reports a failure (no-fill, consent blocked, etc.) for this slot.
-   * Carousels use it to drop the ad cell; in-feed lists can ignore it and keep the sized
-   * spacer so the list layout never jumps.
-   */
+  /** Fires when the pool reports a failure for this slot. Parent lists use this to drop the ad cell. */
   onAdFailed?: () => void;
 }
 
@@ -65,18 +61,11 @@ function NativeAdCardComponent({
   // Inline usage (InlineNativeAd) and carousel usage handle outer spacing themselves.
   const needsMargin = !nativeAdProp && !cardWidth;
 
-  // No ad yet (pool still loading, no-fill, premium, etc.) — render a sized
-  // spacer so the cell never collapses and the list never jumps.
+  // No ad bound yet (pool still loading, no-fill, premium, etc.) — render
+  // nothing. Parent lists that wired `onAdFailed` drop the cell on terminal
+  // failure; transient 'loading' windows are effectively invisible.
   if (!nativeAd) {
-    return (
-      <View
-        style={[
-          styles.spacer,
-          { height: cardHeight, marginBottom: needsMargin ? spacing.md : 0 },
-        ]}
-        pointerEvents="none"
-      />
-    );
+    return null;
   }
 
   return (
@@ -161,9 +150,6 @@ const styles = StyleSheet.create({
   imageContainer: {
     overflow: 'hidden',
     backgroundColor: '#1a1a2e',
-  },
-  spacer: {
-    backgroundColor: 'transparent',
   },
   badgeContainer: {
     position: 'absolute',

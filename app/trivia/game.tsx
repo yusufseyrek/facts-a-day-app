@@ -19,7 +19,7 @@ import {
 import { Text } from '../../src/components/Typography';
 import { NATIVE_ADS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts/PremiumContext';
-import { useNativeAd } from '../../src/hooks/useNativeAd';
+import { useAdForSlot } from '../../src/hooks/useAdForSlot';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
@@ -93,12 +93,11 @@ export default function TriviaGameScreen() {
       : NATIVE_ADS.TRIVIA_AD_QUESTION_INTERVAL;
   const [showingNativeAd, setShowingNativeAd] = useState(false);
   const [nativeAdShownIndices, setNativeAdShownIndices] = useState<Set<number>>(new Set());
-  const [nativeAdRequestKey, setNativeAdRequestKey] = useState('trivia-0');
+  // Unique slot key per question — forces a fresh pool binding for each ad
+  // break so we don't show the same creative twice in one session.
+  const [nativeAdSlotKey, setNativeAdSlotKey] = useState('trivia-0');
   const pendingAdNextIndex = useRef<number>(0);
-  const { nativeAd } = useNativeAd({
-    aspectRatio: NativeMediaAspectRatio.PORTRAIT,
-    requestKey: nativeAdRequestKey,
-  });
+  const { ad: nativeAd } = useAdForSlot(nativeAdSlotKey, NativeMediaAspectRatio.PORTRAIT);
 
   // Ad navigation lock - block prev/next buttons briefly when native ad is shown
   const [adNavLocked, setAdNavLocked] = useState(false);
@@ -480,8 +479,8 @@ export default function TriviaGameScreen() {
       ...prev,
       currentQuestionIndex: pendingAdNextIndex.current,
     }));
-    // Request a fresh ad for the next slot
-    setNativeAdRequestKey(`trivia-${pendingAdNextIndex.current}`);
+    // Request a fresh ad for the next slot (new pool slot key).
+    setNativeAdSlotKey(`trivia-${pendingAdNextIndex.current}`);
   };
 
   const handleNativeAdPrev = () => {

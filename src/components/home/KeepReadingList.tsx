@@ -1,5 +1,10 @@
-import React, { forwardRef, useCallback, useMemo } from 'react';
-import { ActivityIndicator, RefreshControl, View } from 'react-native';
+import React, { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  View,
+  type ViewToken,
+} from 'react-native';
 import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
@@ -77,7 +82,52 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
   ) {
     const { spacing } = useResponsive();
 
-    const items = useMemo(() => interleaveAds(facts, isPremium), [facts, isPremium]);
+    // Drop ad rows that the pool reports as 'failed' (no-fill / rate-limit)
+    // so the vertical list collapses the fixed-height InlineNativeAd spacer.
+    const [failedAdKeys, setFailedAdKeys] = useState<Set<string>>(() => new Set());
+    const handleAdFailed = useCallback((key: string) => {
+      setFailedAdKeys((prev) => {
+        if (prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.add(key);
+        return next;
+      });
+    }, []);
+
+    // Sticky set of ad slot keys that have entered the viewport at least once.
+    // Cells pre-mounted by FlashList's drawDistance stay `enabled={false}`
+    // until they're actually viewable, so the pool doesn't burn inventory on
+    // rows the user never scrolls to.
+    const [viewedAdKeys, setViewedAdKeys] = useState<Set<string>>(() => new Set());
+    const onViewableItemsChanged = useRef(
+      ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+        let newKeys: string[] | null = null;
+        for (const v of viewableItems) {
+          const item = v.item as KeepReadingRow | undefined;
+          if (item && item.type === 'ad') {
+            (newKeys ??= []).push(item.key);
+          }
+        }
+        if (!newKeys) return;
+        setViewedAdKeys((prev) => {
+          let next = prev;
+          for (const k of newKeys!) {
+            if (!next.has(k)) {
+              if (next === prev) next = new Set(prev);
+              next.add(k);
+            }
+          }
+          return next;
+        });
+      }
+    ).current;
+    const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 1 }).current;
+
+    const items = useMemo(() => {
+      const rows = interleaveAds(facts, isPremium);
+      if (failedAdKeys.size === 0) return rows;
+      return rows.filter((r) => !(r.type === 'ad' && failedAdKeys.has(r.key)));
+    }, [facts, isPremium, failedAdKeys]);
 
     const renderItem = useCallback(
       ({ item }: { item: KeepReadingRow }) => {
@@ -87,6 +137,8 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
               <InlineNativeAd
                 aspectRatio={NativeMediaAspectRatio.LANDSCAPE}
                 slotKey={item.key}
+                enabled={viewedAdKeys.has(item.key)}
+                onAdFailed={() => handleAdFailed(item.key)}
               />
             </View>
           ) : (
@@ -100,7 +152,7 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
 
         return <View style={centeredStyle}>{content}</View>;
       },
-      [onFactPress, spacing.md]
+      [onFactPress, spacing.md, handleAdFailed, viewedAdKeys]
     );
 
     const keyExtractor = useCallback((item: KeepReadingRow) => {
@@ -146,6 +198,13 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
         overScrollMode="never"
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        // Without `extraData`, FlashList won't re-invoke `renderItem` for
+        // already-mounted cells when `viewedAdKeys` changes — so an ad row
+        // mounted below the fold would stay `enabled={false}` forever even
+        // after scrolling into view.
+        extraData={viewedAdKeys}
       />
     );
   }

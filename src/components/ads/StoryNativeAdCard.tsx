@@ -62,12 +62,9 @@ function StoryNativeAdCardComponent({
     }
   }, [nativeAdProp, status, onAdFailed]);
 
-  // Full-screen sized spacer while the pool is still loading — keeps the swipe
-  // list's layout stable. A no-fill (failed) slot is dropped by the parent via
-  // onAdFailed, so there's no long-lived empty page.
-  if (!nativeAd) {
-    return <View style={{ width: screenWidth, height: screenHeight }} pointerEvents="none" />;
-  }
+  // No ad bound → render nothing. The parent story swipe view will call
+  // `onAdFailed` to skip this page on terminal failure.
+  if (!nativeAd) return null;
 
   return (
     <NativeAdView
