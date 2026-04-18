@@ -94,31 +94,22 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
       });
     }, []);
 
-    // Sticky set of ad slot keys that have entered the viewport at least once.
-    // Cells pre-mounted by FlashList's drawDistance stay `enabled={false}`
-    // until they're actually viewable, so the pool doesn't burn inventory on
-    // rows the user never scrolls to.
-    const [viewedAdKeys, setViewedAdKeys] = useState<Set<string>>(() => new Set());
+    // Index-based lookahead: enable ad rows whose data index is within
+    // `AD_LOOKAHEAD` of the furthest row the user has scrolled to. Gives the
+    // pool time to hand over a warm ad before the row enters the viewport,
+    // while capping waste — rows beyond the window stay disabled.
+    const AD_LOOKAHEAD = 5;
+    const [highestViewedIndex, setHighestViewedIndex] = useState(-1);
     const onViewableItemsChanged = useRef(
       ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-        let newKeys: string[] | null = null;
+        let maxIdx = -1;
         for (const v of viewableItems) {
-          const item = v.item as KeepReadingRow | undefined;
-          if (item && item.type === 'ad') {
-            (newKeys ??= []).push(item.key);
+          if (typeof v.index === 'number' && v.index > maxIdx) {
+            maxIdx = v.index;
           }
         }
-        if (!newKeys) return;
-        setViewedAdKeys((prev) => {
-          let next = prev;
-          for (const k of newKeys!) {
-            if (!next.has(k)) {
-              if (next === prev) next = new Set(prev);
-              next.add(k);
-            }
-          }
-          return next;
-        });
+        if (maxIdx < 0) return;
+        setHighestViewedIndex((prev) => (maxIdx > prev ? maxIdx : prev));
       }
     ).current;
     const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 1 }).current;
@@ -130,14 +121,14 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
     }, [facts, isPremium, failedAdKeys]);
 
     const renderItem = useCallback(
-      ({ item }: { item: KeepReadingRow }) => {
+      ({ item, index }: { item: KeepReadingRow; index: number }) => {
         const content =
           item.type === 'ad' ? (
             <View style={{ padding: spacing.md }}>
               <InlineNativeAd
                 aspectRatio={NativeMediaAspectRatio.LANDSCAPE}
                 slotKey={item.key}
-                enabled={viewedAdKeys.has(item.key)}
+                enabled={index <= highestViewedIndex + AD_LOOKAHEAD}
                 onAdFailed={() => handleAdFailed(item.key)}
               />
             </View>
@@ -152,7 +143,7 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
 
         return <View style={centeredStyle}>{content}</View>;
       },
-      [onFactPress, spacing.md, handleAdFailed, viewedAdKeys]
+      [onFactPress, spacing.md, handleAdFailed, highestViewedIndex]
     );
 
     const keyExtractor = useCallback((item: KeepReadingRow) => {
@@ -200,11 +191,9 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
         scrollEventThrottle={16}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
-        // Without `extraData`, FlashList won't re-invoke `renderItem` for
-        // already-mounted cells when `viewedAdKeys` changes — so an ad row
-        // mounted below the fold would stay `enabled={false}` forever even
-        // after scrolling into view.
-        extraData={viewedAdKeys}
+        // FlashList needs `extraData` to re-invoke `renderItem` for
+        // already-mounted cells when the lookahead frontier advances.
+        extraData={highestViewedIndex}
       />
     );
   }

@@ -105,31 +105,22 @@ export const LatestCarousel = React.memo(function LatestCarousel({
     [facts]
   );
 
-  // Sticky set of ad slot keys that have entered the viewport at least once.
-  // We only flip `enabled` on an ad cell once its placeholder has actually
-  // been visible, so the pool doesn't burn inventory on cells FlashList
-  // pre-mounts (via drawDistance) but the user never scrolls to.
-  const [viewedAdKeys, setViewedAdKeys] = useState<Set<string>>(() => new Set());
+  // Index-based lookahead: enable ad cells whose data index is within
+  // `AD_LOOKAHEAD` positions of the furthest data index the user has seen.
+  // Gives the pool time to bind a warm ad before the cell scrolls into view,
+  // while still capping waste — cells beyond the lookahead window stay dark.
+  const AD_LOOKAHEAD = 2;
+  const [highestViewedIndex, setHighestViewedIndex] = useState(-1);
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      let newKeys: string[] | null = null;
+      let maxIdx = -1;
       for (const v of viewableItems) {
-        const item = v.item as LatestRow | undefined;
-        if (item && isNativeAdPlaceholder(item)) {
-          (newKeys ??= []).push(item.key);
+        if (typeof v.index === 'number' && v.index > maxIdx) {
+          maxIdx = v.index;
         }
       }
-      if (!newKeys) return;
-      setViewedAdKeys((prev) => {
-        let next = prev;
-        for (const k of newKeys!) {
-          if (!next.has(k)) {
-            if (next === prev) next = new Set(prev);
-            next.add(k);
-          }
-        }
-        return next;
-      });
+      if (maxIdx < 0) return;
+      setHighestViewedIndex((prev) => (maxIdx > prev ? maxIdx : prev));
     }
   ).current;
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 1 }).current;
@@ -157,12 +148,12 @@ export const LatestCarousel = React.memo(function LatestCarousel({
   const separatorStyle = useMemo(() => ({ width: cardGap }), [cardGap]);
 
   const renderItem = useCallback(
-    ({ item }: { item: LatestRow }) => {
+    ({ item, index }: { item: LatestRow; index: number }) => {
       if (isNativeAdPlaceholder(item)) {
         return (
           <LatestAdCell
             slotKey={item.key}
-            enabled={viewedAdKeys.has(item.key)}
+            enabled={index <= highestViewedIndex + AD_LOOKAHEAD}
             cardWidth={cardWidth}
             cardHeight={cardHeight}
             itemStyle={itemStyle}
@@ -190,7 +181,7 @@ export const LatestCarousel = React.memo(function LatestCarousel({
         </View>
       );
     },
-    [cardWidth, cardHeight, onFactPress, factIds, itemStyle, isPremium, viewedAdKeys]
+    [cardWidth, cardHeight, onFactPress, factIds, itemStyle, isPremium, highestViewedIndex]
   );
 
   const keyExtractor = useCallback(
@@ -234,9 +225,9 @@ export const LatestCarousel = React.memo(function LatestCarousel({
           scrollEventThrottle={16}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
-          // See KeepReadingList — FlashList needs `extraData` to re-invoke
-          // `renderItem` for already-mounted cells when `viewedAdKeys` changes.
-          extraData={viewedAdKeys}
+          // FlashList needs `extraData` to re-invoke `renderItem` for
+          // already-mounted cells when the lookahead frontier advances.
+          extraData={highestViewedIndex}
         />
       </View>
     </>
