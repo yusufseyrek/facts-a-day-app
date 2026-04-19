@@ -4,13 +4,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  Ban,
-  Brain,
-  Crown,
-  Lightbulb,
-  WifiOff,
-} from '@tamagui/lucide-icons';
+import { Ban, Crown, Lightbulb, Lock, WifiOff } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { XStack, YStack } from 'tamagui';
@@ -39,19 +33,19 @@ export function OfflinePaywallSheet() {
 
   const features = [
     {
-      icon: <WifiOff size={iconSizes.sm} color={featureIconColor} />,
-      title: t('paywallFeatureOffline'),
-      gradient: [PAYWALL_GOLD.dark, PAYWALL_GOLD.badge] as const,
-    },
-    {
-      icon: <Brain size={iconSizes.sm} color={featureIconColor} />,
-      title: t('paywallFeatureOfflineTrivia'),
-      gradient: [PAYWALL_GOLD.primary, PAYWALL_GOLD.badge] as const,
+      icon: <Lock size={iconSizes.sm} color={featureIconColor} />,
+      title: t('paywallFeaturePremiumCategories'),
+      gradient: [PAYWALL_GOLD.primary, PAYWALL_GOLD.light] as const,
     },
     {
       icon: <Ban size={iconSizes.sm} color={featureIconColor} />,
       title: t('paywallFeatureNoAds'),
       gradient: [PAYWALL_GOLD.dark, PAYWALL_GOLD.primary] as const,
+    },
+    {
+      icon: <WifiOff size={iconSizes.sm} color={featureIconColor} />,
+      title: t('paywallFeatureOfflineSupport'),
+      gradient: [PAYWALL_GOLD.dark, PAYWALL_GOLD.badge] as const,
     },
     {
       icon: <Lightbulb size={iconSizes.sm} color={featureIconColor} />,
