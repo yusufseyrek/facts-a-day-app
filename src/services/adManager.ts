@@ -49,24 +49,11 @@ const incrementCounter = async (key: string): Promise<number> => {
 };
 
 /**
- * Show interstitial ad after a trivia game completion.
- * Fires every Nth completion (configured in INTERSTITIAL_ADS.TRIVIAS_BETWEEN_ADS)
- * and respects the global cooldown.
+ * Show interstitial ad after a trivia game completion (subject to the global cooldown).
+ * Caller is responsible for excluding daily trivia.
  */
 export const maybeShowTriviaResultsInterstitial = async (): Promise<boolean> => {
-  if (!INTERSTITIAL_ADS.ENABLED) return false;
-  if (!shouldShowAds()) return false;
-
-  try {
-    const count = await incrementCounter(STORAGE_KEYS.TRIVIAS_COMPLETED_COUNT);
-    if (count > 0 && count % INTERSTITIAL_ADS.TRIVIAS_BETWEEN_ADS === 0) {
-      return await maybeShowInterstitial('trivia_results');
-    }
-    return false;
-  } catch (error) {
-    console.error('Error showing trivia results interstitial:', error);
-    return false;
-  }
+  return maybeShowInterstitial('trivia_results');
 };
 
 /**

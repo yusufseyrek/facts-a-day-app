@@ -9,7 +9,7 @@
  * Set to true to show developer settings section in the Settings screen.
  * Only works when __DEV__ is true.
  */
-export const DEV_SETTINGS_ENABLED = false;
+export const DEV_SETTINGS_ENABLED = true;
 
 /**
  * Ads configuration
@@ -42,8 +42,6 @@ export const APP_CHECK = {
 export const INTERSTITIAL_ADS = {
   /** Whether interstitial ads are enabled */
   ENABLED: true,
-  /** Number of completed trivia games between interstitial ads */
-  TRIVIAS_BETWEEN_ADS: 2,
   /** Number of category-save actions between interstitial ads */
   CATEGORY_CHANGES_BETWEEN_ADS: 3,
   /** Minimum seconds between interstitial ads (cooldown) */
@@ -84,7 +82,7 @@ export const NATIVE_ADS = {
   /** Show an inline ad every N items in the Keep Reading list */
   KEEP_READING_AD_INTERVAL: 6,
   /** Show a native ad every N questions in trivia */
-  TRIVIA_AD_QUESTION_INTERVAL: 4,
+  TRIVIA_AD_QUESTION_INTERVAL: 6,
   /** Duration (ms) to block prev/next navigation when a native ad is shown in trivia */
   NAV_LOCK_DURATION_MS: 850,
 } as const;
@@ -116,8 +114,6 @@ export const STORAGE_KEYS = {
   EXPLANATION_HINT_COUNT: '@explanation_hint_count',
   /** Key for tracking last paywall prompt timestamp */
   PAYWALL_LAST_SHOWN: '@paywall_last_shown',
-  /** Key for tracking number of completed trivia games (for interstitial cadence) */
-  TRIVIAS_COMPLETED_COUNT: '@trivias_completed_count',
   /** Key for tracking number of category-save actions (for interstitial cadence) */
   CATEGORY_CHANGES_COUNT: '@category_changes_count',
 } as const;

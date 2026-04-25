@@ -18,7 +18,6 @@ import { useHomeFeed } from '../../src/hooks/useHomeFeed';
 import { useHomeFeedEvents } from '../../src/hooks/useHomeFeedEvents';
 import { useKeepReading } from '../../src/hooks/useKeepReading';
 import { useReadingStreak } from '../../src/hooks/useReadingStreak';
-import { useTrendingPremium } from '../../src/hooks/useTrendingPremium';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
 import { isModalScreenActive } from '../../src/services/badges';
@@ -44,38 +43,6 @@ function HomeScreen() {
     useHomeFeed(locale);
   const { facts: keepReadingFacts, fetchNextPage, isFetchingNextPage } = useKeepReading(locale);
   const { streak } = useReadingStreak();
-  const trendingPremiumFacts = useTrendingPremium(locale, isPremium);
-
-  // Merge trending premium facts into the latest carousel. Deduplicate by ID —
-  // premium facts viewed via the detail screen get saved to the local DB, so
-  // they can appear in both latestFacts and trendingPremiumFacts. Interleave
-  // free/premium 1:1 so premium facts don't clump together, and keep the list
-  // starting with a free fact for free users.
-  const mergedLatestFacts = useMemo(() => {
-    if (trendingPremiumFacts.length === 0) return latestFacts;
-    const existingIds = new Set(latestFacts.map((f) => f.id));
-    const uniquePremium = trendingPremiumFacts.filter((f) => !existingIds.has(f.id));
-    const combined = [...latestFacts, ...uniquePremium];
-    const isPremiumFact = (f: FactWithRelations) =>
-      !!(typeof f.categoryData === 'object' && f.categoryData?.is_premium);
-    const byDateDesc = (a: FactWithRelations, b: FactWithRelations) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    const free = combined.filter((f) => !isPremiumFact(f)).sort(byDateDesc);
-    const premium = combined.filter(isPremiumFact).sort(byDateDesc);
-    const interleaved: FactWithRelations[] = [];
-    let fi = 0;
-    let pi = 0;
-    while (fi < free.length || pi < premium.length) {
-      if (fi < free.length) interleaved.push(free[fi++]);
-      if (pi < premium.length) interleaved.push(premium[pi++]);
-    }
-    return interleaved;
-  }, [latestFacts, trendingPremiumFacts]);
-
-  const mergedLatestFactIds = useMemo(
-    () => mergedLatestFacts.map((f) => f.id),
-    [mergedLatestFacts]
-  );
 
   // Local state
   const [refreshing, setRefreshing] = useState(false);
@@ -182,7 +149,6 @@ function HomeScreen() {
     }
     queryClient.invalidateQueries({ queryKey: homeKeys.keepReading(locale) });
     queryClient.invalidateQueries({ queryKey: homeKeys.readingStreak() });
-    queryClient.invalidateQueries({ queryKey: homeKeys.trendingPremium(locale) });
     setRefreshing(false);
   }, [locale]);
 
@@ -199,14 +165,14 @@ function HomeScreen() {
     // Reserved for future scroll-dependent behavior (e.g. header collapse)
   }, []);
 
-  const hasAnyContent = mergedLatestFacts.length > 0 || onThisDayFacts.length > 0;
+  const hasAnyContent = latestFacts.length > 0 || onThisDayFacts.length > 0;
 
   // Compose list header from extracted components (memoized to prevent FlashList re-layout)
   const listHeader = useMemo(
     () => (
       <HomeListHeader
-        latestFacts={mergedLatestFacts}
-        latestFactIds={mergedLatestFactIds}
+        latestFacts={latestFacts}
+        latestFactIds={latestFactIds}
         onThisDayFacts={onThisDayFacts}
         onThisDayIsWeekFallback={onThisDayIsWeekFallback}
         keepReadingCount={keepReadingFacts.length}
@@ -218,8 +184,8 @@ function HomeScreen() {
       />
     ),
     [
-      mergedLatestFacts,
-      mergedLatestFactIds,
+      latestFacts,
+      latestFactIds,
       onThisDayFacts,
       onThisDayIsWeekFallback,
       keepReadingFacts.length,

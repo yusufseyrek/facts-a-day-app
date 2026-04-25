@@ -3,7 +3,6 @@ export const homeKeys = {
   dailyFeed: (locale: string) => ['home', 'dailyFeed', locale] as const,
   keepReading: (locale: string) => ['home', 'keepReading', locale] as const,
   readingStreak: () => ['home', 'readingStreak'] as const,
-  trendingPremium: (locale: string) => ['home', 'trendingPremium', locale] as const,
 };
 
 export const statsKeys = {

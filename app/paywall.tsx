@@ -8,7 +8,6 @@ import {
   Check,
   Crown,
   Lightbulb,
-  Lock,
   PartyPopper,
   Sparkles,
   WifiOff,
@@ -28,7 +27,6 @@ const { PAYWALL_PRODUCT_IDS } = SUBSCRIPTION;
 import { usePremium } from '../src/contexts';
 import { useTranslation } from '../src/i18n';
 import { trackPaywallDismissed, trackPaywallViewed } from '../src/services/analytics';
-import { getPremiumCategorySlugs } from '../src/services/database';
 import { markPaywallShown } from '../src/services/paywallTiming';
 import { hexColors, PAYWALL_GOLD, paywallThemeColors, useTheme } from '../src/theme';
 import { openInAppBrowser } from '../src/utils/browser';
@@ -62,14 +60,10 @@ export default function PaywallScreen() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const [premiumCategoryCount, setPremiumCategoryCount] = useState(0);
 
   useEffect(() => {
     trackPaywallViewed(source);
     markPaywallShown();
-    getPremiumCategorySlugs()
-      .then((slugs) => setPremiumCategoryCount(slugs.length))
-      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -244,12 +238,6 @@ export default function PaywallScreen() {
   const featureIconRadius = featureIconSize / 2;
 
   const features = [
-    {
-      icon: <Lock size={iconSizes.md} color={featureIconColor} />,
-      title: t('paywallFeaturePremiumCategories'),
-      description: t('paywallFeaturePremiumCategoriesDesc', { count: premiumCategoryCount }),
-      gradient: [PAYWALL_GOLD.primary, PAYWALL_GOLD.light] as const,
-    },
     {
       icon: <Ban size={iconSizes.md} color={featureIconColor} />,
       title: t('paywallFeatureNoAds'),
@@ -616,19 +604,19 @@ export default function PaywallScreen() {
                       {weekly ? t('paywallPerWeek') : t('paywallPerMonth')}
                     </Text.Caption>
 
-                    {/* Free Trial for Monthly / Flexible for Weekly */}
-                    <View
-                      style={[dynamicStyles.savingsBadge, weekly && dynamicStyles.flexibleBadge]}
-                    >
-                      <Text.Tiny
-                        color={monthly ? PAYWALL_GOLD.badge : tc.planPeriod}
-                        fontFamily={FONT_FAMILIES.semibold}
-                        adjustsFontSizeToFit
-                        numberOfLines={1}
-                      >
-                        {monthly ? t('paywallFreeTrial') : t('paywallFlexible')}
-                      </Text.Tiny>
-                    </View>
+                    {/* Flexible badge (weekly only) */}
+                    {weekly && (
+                      <View style={[dynamicStyles.savingsBadge, dynamicStyles.flexibleBadge]}>
+                        <Text.Tiny
+                          color={tc.planPeriod}
+                          fontFamily={FONT_FAMILIES.semibold}
+                          adjustsFontSizeToFit
+                          numberOfLines={1}
+                        >
+                          {t('paywallFlexible')}
+                        </Text.Tiny>
+                      </View>
+                    )}
 
                     {/* Check Circle */}
                     <View
