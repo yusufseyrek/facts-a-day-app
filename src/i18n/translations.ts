@@ -421,6 +421,14 @@ export const translations = {
     paywallPrivacy: 'Datenschutz',
     paywallLegalAgree: 'Mit dem Fortfahren akzeptierst du unsere',
     paywallLegalAnd: 'und',
+    paywallPremiumTag: 'PREMIUM',
+    paywallHubHeadline: 'Du bist im Lauf.',
+    paywallHubHeadlineAccent: 'Halte ihn.',
+    paywallHubSubtitle:
+      'Premium entfernt Werbung, lässt dich offline lesen und gibt dir täglich 3 Trivia-Hinweise.',
+    paywallStreakLabel: 'TAGES-SERIE',
+    paywallFactsReadLabel: 'FAKTEN GELESEN',
+    paywallPerWeekValue: '%{price} / Woche',
 
     // Downgrade Enforcement
 
@@ -929,6 +937,14 @@ export const translations = {
     paywallPrivacy: 'Privacy',
     paywallLegalAgree: 'By continuing, you agree to our',
     paywallLegalAnd: 'and',
+    paywallPremiumTag: 'PREMIUM',
+    paywallHubHeadline: "You're on a roll.",
+    paywallHubHeadlineAccent: 'Make it last.',
+    paywallHubSubtitle:
+      'Premium removes ads, lets you read offline, and gives you 3 trivia hints every day.',
+    paywallStreakLabel: 'DAY STREAK',
+    paywallFactsReadLabel: 'FACTS READ',
+    paywallPerWeekValue: '%{price} / week',
 
     // Downgrade Enforcement
 
@@ -1439,6 +1455,14 @@ export const translations = {
     paywallPrivacy: 'Privacidad',
     paywallLegalAgree: 'Al continuar, aceptas nuestros',
     paywallLegalAnd: 'y',
+    paywallPremiumTag: 'PREMIUM',
+    paywallHubHeadline: 'Llevas un buen ritmo.',
+    paywallHubHeadlineAccent: 'No lo pierdas.',
+    paywallHubSubtitle:
+      'Premium quita los anuncios, te permite leer sin conexión y te da 3 pistas de trivia al día.',
+    paywallStreakLabel: 'DÍAS SEGUIDOS',
+    paywallFactsReadLabel: 'DATOS LEÍDOS',
+    paywallPerWeekValue: '%{price} / semana',
 
     // Downgrade Enforcement
 
@@ -1952,6 +1976,14 @@ export const translations = {
     paywallPrivacy: 'Confidentialité',
     paywallLegalAgree: 'En continuant, vous acceptez nos',
     paywallLegalAnd: 'et',
+    paywallPremiumTag: 'PREMIUM',
+    paywallHubHeadline: 'Tu es sur ta lancée.',
+    paywallHubHeadlineAccent: 'Continue.',
+    paywallHubSubtitle:
+      'Premium supprime les pubs, te permet de lire hors-ligne et t’offre 3 indices de trivia par jour.',
+    paywallStreakLabel: 'JOURS DE SUITE',
+    paywallFactsReadLabel: 'FAITS LUS',
+    paywallPerWeekValue: '%{price} / semaine',
 
     // Downgrade Enforcement
 
@@ -2459,6 +2491,14 @@ export const translations = {
     paywallPrivacy: 'プライバシー',
     paywallLegalAgree: '続行すると、以下に同意したことになります：',
     paywallLegalAnd: 'と',
+    paywallPremiumTag: 'プレミアム',
+    paywallHubHeadline: '好調ですね。',
+    paywallHubHeadlineAccent: '続けましょう。',
+    paywallHubSubtitle:
+      'プレミアムなら広告なし、オフラインで読める、毎日3つのトリビアヒントが使えます。',
+    paywallStreakLabel: '連続日数',
+    paywallFactsReadLabel: '読んだ事実',
+    paywallPerWeekValue: '週あたり %{price}',
 
     // Downgrade Enforcement
 
@@ -2964,6 +3004,14 @@ export const translations = {
     paywallPrivacy: '개인정보',
     paywallLegalAgree: '계속하면 다음에 동의하게 됩니다:',
     paywallLegalAnd: '및',
+    paywallPremiumTag: '프리미엄',
+    paywallHubHeadline: '잘 하고 있어요.',
+    paywallHubHeadlineAccent: '이어가세요.',
+    paywallHubSubtitle:
+      '프리미엄은 광고를 제거하고, 오프라인 읽기를 지원하며, 매일 3개의 트리비아 힌트를 제공합니다.',
+    paywallStreakLabel: '연속 일수',
+    paywallFactsReadLabel: '읽은 사실',
+    paywallPerWeekValue: '주당 %{price}',
 
     // Downgrade Enforcement
 
@@ -3471,6 +3519,14 @@ export const translations = {
     paywallPrivacy: 'Gizlilik',
     paywallLegalAgree: 'Devam ederek kabul edersiniz:',
     paywallLegalAnd: 've',
+    paywallPremiumTag: 'PREMIUM',
+    paywallHubHeadline: 'Forma girdin.',
+    paywallHubHeadlineAccent: 'Devamını getir.',
+    paywallHubSubtitle:
+      'Premium reklamları kaldırır, çevrimdışı okumana izin verir ve her gün 3 trivia ipucu verir.',
+    paywallStreakLabel: 'GÜNLÜK SERİ',
+    paywallFactsReadLabel: 'OKUNAN BİLGİ',
+    paywallPerWeekValue: 'haftada %{price}',
 
     // Downgrade Enforcement
 
@@ -3973,6 +4029,13 @@ export const translations = {
     paywallPrivacy: '隐私',
     paywallLegalAgree: '继续即表示您同意我们的',
     paywallLegalAnd: '和',
+    paywallPremiumTag: '高级版',
+    paywallHubHeadline: '势头正好。',
+    paywallHubHeadlineAccent: '保持下去。',
+    paywallHubSubtitle: '高级版去除广告，支持离线阅读，每天提供 3 个问答提示。',
+    paywallStreakLabel: '连续天数',
+    paywallFactsReadLabel: '已读事实',
+    paywallPerWeekValue: '每周 %{price}',
 
     // Downgrade Enforcement
 

@@ -5,11 +5,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   Ban,
+  BookOpen,
   Check,
   Crown,
+  Flame,
   Lightbulb,
   PartyPopper,
-  Sparkles,
   WifiOff,
   X,
 } from '@tamagui/lucide-icons';
@@ -27,10 +28,14 @@ const { PAYWALL_PRODUCT_IDS } = SUBSCRIPTION;
 import { usePremium } from '../src/contexts';
 import { useTranslation } from '../src/i18n';
 import { trackPaywallDismissed, trackPaywallViewed } from '../src/services/analytics';
+import { getReadingStreak } from '../src/services/badges';
+import { openDatabase } from '../src/services/database';
 import { markPaywallShown } from '../src/services/paywallTiming';
 import { hexColors, PAYWALL_GOLD, paywallThemeColors, useTheme } from '../src/theme';
 import { openInAppBrowser } from '../src/utils/browser';
 import { useResponsive } from '../src/utils/useResponsive';
+
+const WEEKS_PER_MONTH = 52 / 12;
 
 /**
  * Wrapper around useIAP that suppresses init connection failures.
@@ -45,6 +50,41 @@ function useSafeIAP() {
   return iap;
 }
 
+/**
+ * Count of facts the user has touched (story views OR detail opens), unique by fact_id.
+ * Used to anchor the paywall headline ("X facts read"). Returns 0 on any error.
+ */
+async function getReadCount(): Promise<number> {
+  try {
+    const db = await openDatabase();
+    const row = await db.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(DISTINCT fact_id) as count
+       FROM fact_interactions
+       WHERE story_viewed_at IS NOT NULL OR detail_opened_at IS NOT NULL`
+    );
+    return row?.count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Format a numeric per-week value back into the same currency shape as the source price.
+ * "$4.99" + 1.15 → "$1.15"; "14,99 €" + 3.46 → "3,46 €"; "￥1,580" + 365 → "￥365".
+ */
+function formatPriceLike(sourceDisplay: string, value: number): string {
+  const numericMatch = sourceDisplay.match(/[\d.,]+/);
+  if (!numericMatch) return value.toFixed(2);
+  const numeric = numericMatch[0];
+  const startsWith = sourceDisplay.slice(0, numericMatch.index);
+  const endsWith = sourceDisplay.slice((numericMatch.index ?? 0) + numeric.length);
+
+  const usesCommaDecimal = /^[\d.]*,\d{1,2}$/.test(numeric);
+  const fixed = value.toFixed(2);
+  const formatted = usesCommaDecimal ? fixed.replace('.', ',') : fixed;
+  return `${startsWith}${formatted}${endsWith}`;
+}
+
 export default function PaywallScreen() {
   const router = useRouter();
   const { source: sourceParam } = useLocalSearchParams<{ source?: string }>();
@@ -52,8 +92,18 @@ export default function PaywallScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { t, locale } = useTranslation();
-  const { spacing, radius, iconSizes, media, borderWidths } = useResponsive();
+  const { spacing, radius, iconSizes, media, borderWidths, screenHeight } = useResponsive();
+
+  // Dynamic vertical breathing room: each 100pt of screen height past iPhone SE
+  // adds ~14pt of gap, clamped so iPhone SE stays tight and tablets don't go
+  // absurd. Anchored to 568pt (SE) → 0pt extra, 932pt (Pro Max) → ~50pt extra.
+  const extraHeight = Math.max(0, screenHeight - 568);
+  const breathingRoom = Math.min(40, Math.round(extraHeight * 0.08));
+  const statsTopGap = spacing.sm + Math.round(breathingRoom * 0.4);
+  const statsBottomGap = spacing.md + Math.round(breathingRoom * 0.7);
+  const headlineBottomGap = spacing.md + Math.round(breathingRoom * 0.6);
   const tc = paywallThemeColors[theme];
+  const isDark = theme === 'dark';
   const { isPremium, subscriptions, cachedPrices, restorePurchases, devSetPremium } = usePremium();
   const { requestPurchase } = useSafeIAP();
 
@@ -61,9 +111,25 @@ export default function PaywallScreen() {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
+  // Personal stats — drive the "you're on a roll" headline
+  const [streak, setStreak] = useState<number | null>(null);
+  const [factsRead, setFactsRead] = useState<number | null>(null);
+
   useEffect(() => {
     trackPaywallViewed(source);
     markPaywallShown();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.all([getReadingStreak(), getReadCount()]).then(([s, f]) => {
+      if (cancelled) return;
+      setStreak(s);
+      setFactsRead(f);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -218,45 +284,33 @@ export default function PaywallScreen() {
     const weeklyPrice = getNumericPrice('factsaday_premium_weekly');
     const monthlyPrice = getNumericPrice('factsaday_premium_monthly');
     if (weeklyPrice == null || monthlyPrice == null || weeklyPrice <= 0) return null;
-    const monthlyAtWeeklyRate = weeklyPrice * (52 / 12);
+    const monthlyAtWeeklyRate = weeklyPrice * WEEKS_PER_MONTH;
     const savings = Math.round(((monthlyAtWeeklyRate - monthlyPrice) / monthlyAtWeeklyRate) * 100);
     return savings > 0 ? savings : null;
   }, [subscriptions, cachedPrices]);
 
+  /**
+   * Effective per-week price for the monthly plan: monthly / 4.33 in source currency shape.
+   * Renders "$1.15 / week" style sub-line to make the value visceral.
+   */
+  const monthlyPerWeekDisplay = useMemo(() => {
+    const monthlyPrice = getNumericPrice('factsaday_premium_monthly');
+    const monthlyDisplay = getDisplayPrice('factsaday_premium_monthly');
+    if (monthlyPrice == null || monthlyDisplay === '---') return null;
+    const perWeek = monthlyPrice / WEEKS_PER_MONTH;
+    return formatPriceLike(monthlyDisplay, perWeek);
+  }, [subscriptions, cachedPrices]);
+
+  const showStats = (streak ?? 0) > 0 || (factsRead ?? 0) > 0;
+
   // Derived responsive sizes
   const closeBtnSize = iconSizes.lg + spacing.sm;
   const closeBtnRadius = closeBtnSize / 2;
-  const crownCircleSize = iconSizes.hero;
-  const crownCircleRadius = crownCircleSize / 2;
-  const crownGlowSize = crownCircleSize + spacing.xl;
-  const crownGlowRadius = crownGlowSize / 2;
-  const checkCircleSize = iconSizes.md;
-  const checkCircleRadius = checkCircleSize / 2;
-
-  const featureIconColor = '#78350F';
-  const featureIconSize = iconSizes.xl + spacing.sm;
-  const featureIconRadius = featureIconSize / 2;
-
-  const features = [
-    {
-      icon: <Ban size={iconSizes.md} color={featureIconColor} />,
-      title: t('paywallFeatureNoAds'),
-      description: t('paywallFeatureNoAdsDesc'),
-      gradient: [PAYWALL_GOLD.dark, PAYWALL_GOLD.primary] as const,
-    },
-{
-      icon: <WifiOff size={iconSizes.md} color={featureIconColor} />,
-      title: t('paywallFeatureOfflineSupport'),
-      description: t('paywallFeatureOfflineCombinedDesc'),
-      gradient: [PAYWALL_GOLD.dark, PAYWALL_GOLD.badge] as const,
-    },
-    {
-      icon: <Lightbulb size={iconSizes.md} color={featureIconColor} />,
-      title: t('paywallFeatureHints'),
-      description: t('paywallFeatureHintsDesc'),
-      gradient: ['#FF8C00', PAYWALL_GOLD.badge] as const,
-    },
-  ];
+  const wordmarkCrownSize = iconSizes.xs + 2;
+  const statIconCircleSize = iconSizes.xxl;
+  const statIconCircleRadius = statIconCircleSize / 2;
+  const benefitIconCircleSize = iconSizes.xl + spacing.xs;
+  const benefitIconCircleRadius = benefitIconCircleSize / 2;
 
   /* eslint-disable react-native/no-unused-styles -- styles used via dynamicStyles.* */
   const dynamicStyles = useMemo(
@@ -289,120 +343,122 @@ export default function PaywallScreen() {
         },
         scrollContent: {
           paddingBottom: spacing.md,
-          paddingTop: Platform.OS === 'ios' ? spacing.xl * 2 : insets.top + spacing.xl,
+          paddingTop: Platform.OS === 'ios' ? spacing.xxl + spacing.xl : insets.top + spacing.lg,
         },
-        crownContainer: {
-          width: crownCircleSize + radius.md,
-          height: crownCircleSize + radius.md,
-          alignItems: 'center',
-          justifyContent: 'center',
+        wordmarkRow: {
+          paddingHorizontal: spacing.xl,
+          paddingRight: spacing.xxxl + closeBtnSize,
+          marginBottom: statsTopGap,
         },
-        crownGlowRing: {
-          position: 'absolute',
-          width: crownGlowSize,
-          height: crownGlowSize,
-          borderRadius: crownGlowRadius,
-          backgroundColor: tc.crownGlow,
+        wordmarkDivider: {
+          width: 1,
+          height: spacing.md,
+          backgroundColor: tc.planBorder,
+          marginHorizontal: spacing.sm,
         },
-        crownCircle: {
-          width: crownCircleSize,
-          height: crownCircleSize,
-          borderRadius: crownCircleRadius,
-          alignItems: 'center',
-          justifyContent: 'center',
+        statsRow: {
+          marginHorizontal: spacing.xl,
+          marginBottom: statsBottomGap,
         },
-        featureIcon: {
-          width: featureIconSize,
-          height: featureIconSize,
-          borderRadius: featureIconRadius,
+        statCard: {
+          flex: 1,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.md,
+          borderRadius: radius.lg,
+          borderWidth: 1,
+        },
+        statStreakCard: {
+          backgroundColor: tc.featureBg,
+          borderColor: tc.featureBorder,
+        },
+        statNeutralCard: {
+          backgroundColor: tc.planBg,
+          borderColor: tc.planBorder,
+        },
+        statStreakIcon: {
+          width: statIconCircleSize,
+          height: statIconCircleSize,
+          borderRadius: statIconCircleRadius,
           alignItems: 'center',
           justifyContent: 'center',
           shadowColor: PAYWALL_GOLD.primary,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: isDark ? 0.4 : 0.3,
+          shadowRadius: 12,
           elevation: 6,
         },
-        featureCard: {
+        statNeutralIcon: {
+          width: statIconCircleSize,
+          height: statIconCircleSize,
+          borderRadius: statIconCircleRadius,
+          backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+          borderWidth: 1,
+          borderColor: tc.planBorder,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        headlineWrap: {
+          marginHorizontal: spacing.xl,
+          marginBottom: headlineBottomGap,
+        },
+        headlineAccentText: {
+          color: PAYWALL_GOLD.primary,
+          textShadowColor: isDark ? 'rgba(255,184,0,0.35)' : 'transparent',
+          textShadowOffset: { width: 0, height: 0 },
+          textShadowRadius: isDark ? 24 : 0,
+        },
+        benefitCard: {
           backgroundColor: tc.featureBg,
           borderRadius: radius.lg,
           borderWidth: 1,
           borderColor: tc.featureBorder,
-          paddingVertical: spacing.sm,
+          paddingVertical: spacing.sm + 2,
           paddingHorizontal: spacing.md,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 8,
+        },
+        benefitIcon: {
+          width: benefitIconCircleSize,
+          height: benefitIconCircleSize,
+          borderRadius: benefitIconCircleRadius,
+          backgroundColor: tc.featureIconBg,
+          borderWidth: 1,
+          borderColor: tc.featureBorder,
+          alignItems: 'center',
+          justifyContent: 'center',
         },
         planCard: {
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          paddingVertical: spacing.lg,
-          paddingHorizontal: spacing.sm,
-          borderRadius: radius.lg + borderWidths.medium,
-          borderWidth: borderWidths.medium,
+          flex: 1,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.md,
+          borderRadius: radius.lg,
+          borderWidth: borderWidths.thin,
           borderColor: tc.planBorder,
           backgroundColor: tc.planBg,
-          gap: 2,
+          minHeight: media.buttonHeight + spacing.lg,
         },
         planCardSelected: {
           borderColor: tc.planSelectedBorder,
           backgroundColor: tc.planSelectedBg,
-        },
-        planIconContainer: {
-          width: iconSizes.xl + spacing.xs,
-          height: iconSizes.xl + spacing.xs,
-          borderRadius: (iconSizes.xl + spacing.xs) / 2,
-          backgroundColor: tc.featureIconBg,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 2,
-        },
-        planTitle: {
-          marginBottom: 2,
+          shadowColor: PAYWALL_GOLD.primary,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: isDark ? 0.18 : 0.12,
+          shadowRadius: 24,
+          elevation: 4,
         },
         savingsBadge: {
-          paddingHorizontal: spacing.sm,
-          paddingVertical: 2,
-          borderRadius: radius.sm,
-          backgroundColor: tc.savingsBadgeBg,
-          marginTop: 2,
-        },
-        flexibleBadge: {
-          backgroundColor: tc.planBorder,
-        },
-        bestValueBadge: {
           position: 'absolute',
-          top: -radius.md,
-          alignSelf: 'center',
-          zIndex: 1,
-        },
-        bestValueGradient: {
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.xs + borderWidths.hairline,
-          borderRadius: radius.md,
-        },
-        checkCircle: {
-          width: checkCircleSize,
-          height: checkCircleSize,
-          borderRadius: checkCircleRadius,
-          borderWidth: borderWidths.medium,
-          borderColor: tc.checkBorder,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginTop: spacing.xs,
-        },
-        checkCircleSelected: {
-          borderColor: PAYWALL_GOLD.primary,
-          backgroundColor: PAYWALL_GOLD.primary,
+          top: -spacing.sm - 2,
+          right: spacing.md,
+          paddingHorizontal: spacing.sm,
+          paddingVertical: 3,
+          borderRadius: radius.sm - 2,
+          overflow: 'hidden',
         },
         ctaButton: {
           borderRadius: radius.xl + spacing.xs,
           overflow: 'hidden' as const,
           shadowColor: PAYWALL_GOLD.primary,
           shadowOffset: { width: 0, height: spacing.sm - borderWidths.medium },
-          shadowOpacity: 0.45,
+          shadowOpacity: isDark ? 0.45 : 0.3,
           shadowRadius: spacing.lg,
           elevation: 10,
         },
@@ -428,6 +484,7 @@ export default function PaywallScreen() {
       }),
     [
       tc,
+      isDark,
       spacing,
       radius,
       iconSizes,
@@ -436,17 +493,34 @@ export default function PaywallScreen() {
       borderWidths,
       closeBtnSize,
       closeBtnRadius,
-      crownCircleSize,
-      crownGlowSize,
-      crownGlowRadius,
-      crownCircleRadius,
-      featureIconSize,
-      featureIconRadius,
-      checkCircleSize,
-      checkCircleRadius,
+      statIconCircleSize,
+      statIconCircleRadius,
+      benefitIconCircleSize,
+      benefitIconCircleRadius,
+      statsTopGap,
+      statsBottomGap,
+      headlineBottomGap,
     ]
   );
   /* eslint-enable react-native/no-unused-styles */
+
+  const benefits = [
+    {
+      icon: <Ban size={iconSizes.sm} color={PAYWALL_GOLD.primary} />,
+      title: t('paywallFeatureNoAds'),
+      description: t('paywallFeatureNoAdsDesc'),
+    },
+    {
+      icon: <WifiOff size={iconSizes.sm} color={PAYWALL_GOLD.primary} />,
+      title: t('paywallFeatureOfflineSupport'),
+      description: t('paywallFeatureOfflineCombinedDesc'),
+    },
+    {
+      icon: <Lightbulb size={iconSizes.sm} color={PAYWALL_GOLD.primary} />,
+      title: t('paywallFeatureHints'),
+      description: t('paywallFeatureHintsDesc'),
+    },
+  ];
 
   return (
     <View style={dynamicStyles.container}>
@@ -464,7 +538,7 @@ export default function PaywallScreen() {
       {/* Full-screen gradient background */}
       <LinearGradient colors={[...tc.bg]} style={StyleSheet.absoluteFill} />
 
-      {/* Ambient golden glow behind crown */}
+      {/* Ambient golden glow */}
       <View style={dynamicStyles.ambientGlow}>
         <LinearGradient colors={[...tc.ambientGlow]} style={StyleSheet.absoluteFill} />
       </View>
@@ -482,59 +556,139 @@ export default function PaywallScreen() {
         contentContainerStyle={dynamicStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Crown + Title */}
-        <Animated.View entering={FadeInDown.duration(500)}>
-          <YStack alignItems="center" gap={spacing.xs} marginBottom={spacing.md}>
-            <View style={dynamicStyles.crownContainer}>
-              <View style={dynamicStyles.crownGlowRing} />
-              <LinearGradient
-                colors={[PAYWALL_GOLD.dark, PAYWALL_GOLD.primary, PAYWALL_GOLD.light]}
-                start={{ x: 0, y: 1 }}
-                end={{ x: 1, y: 0 }}
-                style={dynamicStyles.crownCircle}
-              >
-                <Crown size={iconSizes.lg} color="#FFFFFF" fill="#FFFFFF" />
-              </LinearGradient>
-            </View>
+        {/* Wordmark — crown · "Facts a Day" · "PREMIUM" pill */}
+        <Animated.View entering={FadeInDown.duration(400)}>
+          <XStack alignItems="center" gap={spacing.xs + 4} style={dynamicStyles.wordmarkRow}>
+            <Crown
+              size={wordmarkCrownSize}
+              color={PAYWALL_GOLD.primary}
+              fill={PAYWALL_GOLD.primary}
+            />
+            <Text.Label color={tc.title}>{t('appName')}</Text.Label>
+            <View style={dynamicStyles.wordmarkDivider} />
+            <Text.Tiny
+              fontFamily={FONT_FAMILIES.extrabold}
+              color={PAYWALL_GOLD.primary}
+              letterSpacing={1.6}
+            >
+              {t('paywallPremiumTag')}
+            </Text.Tiny>
+          </XStack>
+        </Animated.View>
 
-            <Text.Headline textAlign="center" color={tc.title}>
-              {t('paywallTitle')}
-            </Text.Headline>
-            <Text.Caption textAlign="center" color={tc.subtitle}>
-              {t('paywallSubtitle')}
-            </Text.Caption>
+        {/* Personal stats — streak (gold hero) + facts read (neutral) */}
+        {showStats && (
+          <Animated.View entering={FadeInDown.delay(80).duration(400)}>
+            <XStack gap={spacing.sm + 2} style={dynamicStyles.statsRow}>
+              <View style={[dynamicStyles.statCard, dynamicStyles.statStreakCard]}>
+                <XStack alignItems="center" gap={spacing.sm + 3}>
+                  <LinearGradient
+                    colors={[PAYWALL_GOLD.light, PAYWALL_GOLD.primary]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={dynamicStyles.statStreakIcon}
+                  >
+                    <Flame size={iconSizes.md} color="#78350F" fill="#78350F" />
+                  </LinearGradient>
+                  <YStack>
+                    <Text
+                      fontFamily={FONT_FAMILIES.extrabold}
+                      fontSize={24}
+                      lineHeight={26}
+                      letterSpacing={-0.5}
+                      color={tc.title}
+                    >
+                      {streak ?? 0}
+                    </Text>
+                    <Text.Tiny
+                      fontFamily={FONT_FAMILIES.bold}
+                      color={tc.featureDesc}
+                      letterSpacing={0.6}
+                      marginTop={spacing.xs}
+                    >
+                      {t('paywallStreakLabel')}
+                    </Text.Tiny>
+                  </YStack>
+                </XStack>
+              </View>
+
+              <View style={[dynamicStyles.statCard, dynamicStyles.statNeutralCard]}>
+                <XStack alignItems="center" gap={spacing.sm + 3}>
+                  <View style={dynamicStyles.statNeutralIcon}>
+                    <BookOpen size={iconSizes.sm} color={tc.featureDesc} />
+                  </View>
+                  <YStack>
+                    <Text
+                      fontFamily={FONT_FAMILIES.extrabold}
+                      fontSize={24}
+                      lineHeight={26}
+                      letterSpacing={-0.5}
+                      color={tc.title}
+                    >
+                      {factsRead ?? 0}
+                    </Text>
+                    <Text.Tiny
+                      fontFamily={FONT_FAMILIES.bold}
+                      color={tc.featureDesc}
+                      letterSpacing={0.6}
+                      marginTop={spacing.xs}
+                    >
+                      {t('paywallFactsReadLabel')}
+                    </Text.Tiny>
+                  </YStack>
+                </XStack>
+              </View>
+            </XStack>
+          </Animated.View>
+        )}
+
+        {/* Headline + subtitle */}
+        <Animated.View entering={FadeInDown.delay(140).duration(400)}>
+          <YStack gap={spacing.sm} style={dynamicStyles.headlineWrap}>
+            <Text
+              fontFamily={FONT_FAMILIES.extrabold}
+              fontSize={28}
+              lineHeight={32}
+              letterSpacing={-0.5}
+              color={tc.title}
+            >
+              {t('paywallHubHeadline')}
+              {'\n'}
+              <Text
+                fontFamily={FONT_FAMILIES.extrabold}
+                fontSize={28}
+                lineHeight={32}
+                letterSpacing={-0.5}
+                style={dynamicStyles.headlineAccentText}
+              >
+                {t('paywallHubHeadlineAccent')}
+              </Text>
+            </Text>
+            <Text.Caption color={tc.subtitle}>{t('paywallHubSubtitle')}</Text.Caption>
           </YStack>
         </Animated.View>
 
-        {/* Features */}
-        <YStack gap={spacing.sm} marginBottom={spacing.lg} marginHorizontal={spacing.lg}>
-          {features.map((feature, index) => (
-            <Animated.View key={index} entering={FadeInDown.delay(120 + index * 80).duration(500)}>
-              <View style={dynamicStyles.featureCard}>
+        {/* Benefits — quiet rows with gold-tinted icon disc + check */}
+        <YStack gap={spacing.sm} marginHorizontal={spacing.xl} marginBottom={spacing.xl}>
+          {benefits.map((b, i) => (
+            <Animated.View key={i} entering={FadeInDown.delay(200 + i * 70).duration(400)}>
+              <View style={dynamicStyles.benefitCard}>
                 <XStack alignItems="center" gap={spacing.md}>
-                  <LinearGradient
-                    colors={[...feature.gradient]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={dynamicStyles.featureIcon}
-                  >
-                    {feature.icon}
-                  </LinearGradient>
-                  <YStack flex={1} gap={2}>
-                    <Text.Body fontFamily={FONT_FAMILIES.semibold} color={tc.featureTitle}>
-                      {feature.title}
-                    </Text.Body>
-                    <Text.Caption color={tc.featureDesc}>{feature.description}</Text.Caption>
+                  <View style={dynamicStyles.benefitIcon}>{b.icon}</View>
+                  <YStack flex={1} gap={1}>
+                    <Text.Label color={tc.featureTitle}>{b.title}</Text.Label>
+                    <Text.Caption color={tc.featureDesc}>{b.description}</Text.Caption>
                   </YStack>
+                  <Check size={iconSizes.xs - 2} color={tc.featureDesc} strokeWidth={2.4} />
                 </XStack>
               </View>
             </Animated.View>
           ))}
         </YStack>
 
-        {/* Plan selector */}
-        <Animated.View entering={FadeInDown.delay(240).duration(500)}>
-          <XStack gap={spacing.sm} marginBottom={spacing.lg} marginHorizontal={spacing.lg}>
+        {/* Plans — compact, left-aligned. Crown inline on Monthly, SAVE badge top-right */}
+        <Animated.View entering={FadeInDown.delay(420).duration(400)}>
+          <XStack gap={spacing.sm + 2} marginHorizontal={spacing.xl} marginBottom={spacing.lg}>
             {PAYWALL_PRODUCT_IDS.map((productId) => {
               const selected = selectedPlan === productId;
               const monthly = productId.includes('monthly');
@@ -546,93 +700,73 @@ export default function PaywallScreen() {
                   onPress={() => setSelectedPlan(productId)}
                   style={dynamicStyles.planPressable}
                 >
-                  <View
-                    style={[dynamicStyles.planCard, selected && dynamicStyles.planCardSelected]}
-                  >
+                  <View style={[dynamicStyles.planCard, selected && dynamicStyles.planCardSelected]}>
                     {monthly && (
-                      <View style={dynamicStyles.bestValueBadge}>
+                      <View style={dynamicStyles.savingsBadge}>
                         <LinearGradient
                           colors={[PAYWALL_GOLD.badge, PAYWALL_GOLD.dark]}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 0 }}
-                          style={dynamicStyles.bestValueGradient}
-                        >
-                          <Text.Tiny color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
-                            {monthlySavingsPercent
-                              ? t('paywallSavePercent', { percent: monthlySavingsPercent })
-                              : t('paywallBestValue')}
-                          </Text.Tiny>
-                        </LinearGradient>
-                      </View>
-                    )}
-
-                    {/* Plan Icon */}
-                    <View style={dynamicStyles.planIconContainer}>
-                      {monthly ? (
-                        <Crown
-                          size={iconSizes.sm}
-                          color={PAYWALL_GOLD.primary}
-                          fill={PAYWALL_GOLD.primary}
+                          style={StyleSheet.absoluteFill}
                         />
-                      ) : (
-                        <Sparkles size={iconSizes.sm} color={PAYWALL_GOLD.primary} />
-                      )}
-                    </View>
-
-                    {/* Plan Title */}
-                    <View style={dynamicStyles.planTitle}>
-                      <Text.Label
-                        fontFamily={FONT_FAMILIES.semibold}
-                        color={selected ? tc.planSelectedTitle : tc.planPeriod}
-                      >
-                        {weekly ? t('paywallWeekly') : t('paywallMonthly')}
-                      </Text.Label>
-                    </View>
-
-                    {/* Price */}
-                    <Text.Display color={tc.planPrice} numberOfLines={1} adjustsFontSizeToFit>
-                      {getDisplayPrice(productId)}
-                    </Text.Display>
-
-                    {/* Period */}
-                    <Text.Caption
-                      color={tc.planPeriod}
-                      numberOfLines={1}
-                      alignSelf="stretch"
-                      textAlign="center"
-                    >
-                      {weekly ? t('paywallPerWeek') : t('paywallPerMonth')}
-                    </Text.Caption>
-
-                    {/* Flexible badge (weekly only) */}
-                    {weekly && (
-                      <View style={[dynamicStyles.savingsBadge, dynamicStyles.flexibleBadge]}>
                         <Text.Tiny
-                          color={tc.planPeriod}
-                          fontFamily={FONT_FAMILIES.semibold}
-                          adjustsFontSizeToFit
-                          numberOfLines={1}
+                          color="#FFFFFF"
+                          fontFamily={FONT_FAMILIES.extrabold}
+                          letterSpacing={0.5}
                         >
-                          {t('paywallFlexible')}
+                          {monthlySavingsPercent
+                            ? t('paywallSavePercent', { percent: monthlySavingsPercent })
+                            : t('paywallBestValue')}
                         </Text.Tiny>
                       </View>
                     )}
 
-                    {/* Check Circle */}
-                    <View
-                      style={[
-                        dynamicStyles.checkCircle,
-                        selected && dynamicStyles.checkCircleSelected,
-                      ]}
-                    >
-                      {selected && (
-                        <Check
-                          size={iconSizes.xs - borderWidths.medium}
-                          color="#FFFFFF"
-                          strokeWidth={3}
+                    <XStack alignItems="center" gap={spacing.xs + 2} marginBottom={spacing.xs}>
+                      {monthly && (
+                        <Crown
+                          size={iconSizes.xs - 2}
+                          color={selected ? tc.planSelectedTitle : tc.planPeriod}
+                          fill={selected ? tc.planSelectedTitle : tc.planPeriod}
                         />
                       )}
-                    </View>
+                      <Text.Tiny
+                        fontFamily={FONT_FAMILIES.extrabold}
+                        letterSpacing={0.8}
+                        color={selected && monthly ? tc.planSelectedTitle : tc.planPeriod}
+                      >
+                        {weekly ? t('paywallWeekly') : t('paywallMonthly')}
+                      </Text.Tiny>
+                    </XStack>
+
+                    <Text
+                      fontFamily={FONT_FAMILIES.extrabold}
+                      fontSize={22}
+                      lineHeight={26}
+                      letterSpacing={-0.5}
+                      color={tc.planPrice}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                    >
+                      {getDisplayPrice(productId)}
+                    </Text>
+
+                    {weekly && (
+                      <Text.Tiny color={tc.cancelText} marginTop={2}>
+                        {t('paywallPerWeek').replace(/^\//, '')}
+                      </Text.Tiny>
+                    )}
+
+                    {monthly && (
+                      <Text.Tiny
+                        color={selected ? tc.planSelectedTitle : tc.planPeriod}
+                        fontFamily={FONT_FAMILIES.semibold}
+                        marginTop={2}
+                      >
+                        {monthlyPerWeekDisplay
+                          ? t('paywallPerWeekValue', { price: monthlyPerWeekDisplay })
+                          : t('paywallPerMonth').replace(/^\//, '')}
+                      </Text.Tiny>
+                    )}
                   </View>
                 </Pressable>
               );
@@ -641,8 +775,8 @@ export default function PaywallScreen() {
         </Animated.View>
 
         {/* CTA + Footer */}
-        <Animated.View entering={FadeInUp.delay(360).duration(500)}>
-          <YStack gap={spacing.sm} marginHorizontal={spacing.lg} paddingBottom={spacing.lg}>
+        <Animated.View entering={FadeInUp.delay(500).duration(400)}>
+          <YStack gap={spacing.sm} marginHorizontal={spacing.xl} paddingBottom={spacing.lg}>
             <Pressable
               onPress={handlePurchase}
               disabled={(!selectedPlan && !__DEV__) || isPurchasing}
@@ -659,9 +793,9 @@ export default function PaywallScreen() {
                 style={dynamicStyles.ctaGradient}
               >
                 {isPurchasing ? (
-                  <ActivityIndicator size="small" color="#000000" />
+                  <ActivityIndicator size="small" color="#1A1A2E" />
                 ) : (
-                  <Text.Body fontFamily={FONT_FAMILIES.semibold} color="#000000">
+                  <Text.Body fontFamily={FONT_FAMILIES.extrabold} color="#1A1A2E">
                     {t('paywallStartPremium')}
                   </Text.Body>
                 )}
