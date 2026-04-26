@@ -4,7 +4,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Ban, Crown, Lightbulb, Lock, WifiOff } from '@tamagui/lucide-icons';
+import { Ban, Crown, Lightbulb, WifiOff } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { XStack, YStack } from 'tamagui';
@@ -32,11 +32,6 @@ export function OfflinePaywallSheet() {
   const featureIconSize = iconSizes.xl + spacing.sm;
 
   const features = [
-    {
-      icon: <Lock size={iconSizes.sm} color={featureIconColor} />,
-      title: t('paywallFeaturePremiumCategories'),
-      gradient: [PAYWALL_GOLD.primary, PAYWALL_GOLD.light] as const,
-    },
     {
       icon: <Ban size={iconSizes.sm} color={featureIconColor} />,
       title: t('paywallFeatureNoAds'),

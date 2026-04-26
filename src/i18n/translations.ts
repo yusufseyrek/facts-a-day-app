@@ -426,6 +426,10 @@ export const translations = {
     paywallHubHeadlineAccent: 'Halte ihn.',
     paywallHubSubtitle:
       'Premium entfernt Werbung, lässt dich offline lesen und gibt dir täglich 3 Trivia-Hinweise.',
+    paywallHubHeadlineNew: 'Mehr Fakten,',
+    paywallHubHeadlineNewAccent: 'mehr Aha.',
+    paywallHubSubtitleNew:
+      'Hol dir das volle Erlebnis: keine Werbung, Offline-Lesen und täglich 3 Trivia-Hinweise.',
     paywallStreakLabel: 'TAGES-SERIE',
     paywallFactsReadLabel: 'FAKTEN GELESEN',
     paywallPerWeekValue: '%{price} / Woche',
@@ -942,6 +946,10 @@ export const translations = {
     paywallHubHeadlineAccent: 'Make it last.',
     paywallHubSubtitle:
       'Premium removes ads, lets you read offline, and gives you 3 trivia hints every day.',
+    paywallHubHeadlineNew: 'Smarter days,',
+    paywallHubHeadlineNewAccent: 'fewer ads.',
+    paywallHubSubtitleNew:
+      'Get the full Facts a Day: no ads, offline reading, and 3 trivia hints every day.',
     paywallStreakLabel: 'DAY STREAK',
     paywallFactsReadLabel: 'FACTS READ',
     paywallPerWeekValue: '%{price} / week',
@@ -1460,6 +1468,10 @@ export const translations = {
     paywallHubHeadlineAccent: 'No lo pierdas.',
     paywallHubSubtitle:
       'Premium quita los anuncios, te permite leer sin conexión y te da 3 pistas de trivia al día.',
+    paywallHubHeadlineNew: 'Días más curiosos,',
+    paywallHubHeadlineNewAccent: 'sin anuncios.',
+    paywallHubSubtitleNew:
+      'Disfruta Facts a Day al máximo: sin anuncios, lectura sin conexión y 3 pistas de trivia al día.',
     paywallStreakLabel: 'DÍAS SEGUIDOS',
     paywallFactsReadLabel: 'DATOS LEÍDOS',
     paywallPerWeekValue: '%{price} / semana',
@@ -1981,6 +1993,10 @@ export const translations = {
     paywallHubHeadlineAccent: 'Continue.',
     paywallHubSubtitle:
       'Premium supprime les pubs, te permet de lire hors-ligne et t’offre 3 indices de trivia par jour.',
+    paywallHubHeadlineNew: 'Plus de faits,',
+    paywallHubHeadlineNewAccent: 'zéro pub.',
+    paywallHubSubtitleNew:
+      'Profite de Facts a Day en entier : sans pubs, lecture hors-ligne et 3 indices de trivia par jour.',
     paywallStreakLabel: 'JOURS DE SUITE',
     paywallFactsReadLabel: 'FAITS LUS',
     paywallPerWeekValue: '%{price} / semaine',
@@ -2496,6 +2512,10 @@ export const translations = {
     paywallHubHeadlineAccent: '続けましょう。',
     paywallHubSubtitle:
       'プレミアムなら広告なし、オフラインで読める、毎日3つのトリビアヒントが使えます。',
+    paywallHubHeadlineNew: '毎日の発見を、',
+    paywallHubHeadlineNewAccent: '広告なしで。',
+    paywallHubSubtitleNew:
+      'Facts a Dayをフルに楽しもう：広告なし、オフライン閲覧、毎日3つのトリビアヒント。',
     paywallStreakLabel: '連続日数',
     paywallFactsReadLabel: '読んだ事実',
     paywallPerWeekValue: '週あたり %{price}',
@@ -3009,6 +3029,10 @@ export const translations = {
     paywallHubHeadlineAccent: '이어가세요.',
     paywallHubSubtitle:
       '프리미엄은 광고를 제거하고, 오프라인 읽기를 지원하며, 매일 3개의 트리비아 힌트를 제공합니다.',
+    paywallHubHeadlineNew: '매일의 호기심을,',
+    paywallHubHeadlineNewAccent: '광고 없이.',
+    paywallHubSubtitleNew:
+      'Facts a Day를 온전히 즐기세요: 광고 없음, 오프라인 읽기, 매일 트리비아 힌트 3개.',
     paywallStreakLabel: '연속 일수',
     paywallFactsReadLabel: '읽은 사실',
     paywallPerWeekValue: '주당 %{price}',
@@ -3524,6 +3548,10 @@ export const translations = {
     paywallHubHeadlineAccent: 'Devamını getir.',
     paywallHubSubtitle:
       'Premium reklamları kaldırır, çevrimdışı okumana izin verir ve her gün 3 trivia ipucu verir.',
+    paywallHubHeadlineNew: 'Daha çok bilgi,',
+    paywallHubHeadlineNewAccent: 'sıfır reklam.',
+    paywallHubSubtitleNew:
+      'Facts a Day’in tamamı: reklamsız, çevrimdışı okuma ve her gün 3 trivia ipucu.',
     paywallStreakLabel: 'GÜNLÜK SERİ',
     paywallFactsReadLabel: 'OKUNAN BİLGİ',
     paywallPerWeekValue: 'haftada %{price}',
@@ -4033,6 +4061,9 @@ export const translations = {
     paywallHubHeadline: '势头正好。',
     paywallHubHeadlineAccent: '保持下去。',
     paywallHubSubtitle: '高级版去除广告，支持离线阅读，每天提供 3 个问答提示。',
+    paywallHubHeadlineNew: '每天涨知识，',
+    paywallHubHeadlineNewAccent: '没有广告。',
+    paywallHubSubtitleNew: '尽享完整版 Facts a Day：无广告、离线阅读、每天 3 个问答提示。',
     paywallStreakLabel: '连续天数',
     paywallFactsReadLabel: '已读事实',
     paywallPerWeekValue: '每周 %{price}',

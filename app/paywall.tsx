@@ -92,16 +92,7 @@ export default function PaywallScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { t, locale } = useTranslation();
-  const { spacing, radius, iconSizes, media, borderWidths, screenHeight } = useResponsive();
-
-  // Dynamic vertical breathing room: each 100pt of screen height past iPhone SE
-  // adds ~14pt of gap, clamped so iPhone SE stays tight and tablets don't go
-  // absurd. Anchored to 568pt (SE) → 0pt extra, 932pt (Pro Max) → ~50pt extra.
-  const extraHeight = Math.max(0, screenHeight - 568);
-  const breathingRoom = Math.min(40, Math.round(extraHeight * 0.08));
-  const statsTopGap = spacing.sm + Math.round(breathingRoom * 0.4);
-  const statsBottomGap = spacing.md + Math.round(breathingRoom * 0.7);
-  const headlineBottomGap = spacing.md + Math.round(breathingRoom * 0.6);
+  const { spacing, radius, iconSizes, media, borderWidths } = useResponsive();
   const tc = paywallThemeColors[theme];
   const isDark = theme === 'dark';
   const { isPremium, subscriptions, cachedPrices, restorePurchases, devSetPremium } = usePremium();
@@ -111,7 +102,8 @@ export default function PaywallScreen() {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
-  // Personal stats — drive the "you're on a roll" headline
+  // Personal stats — drive both the streak/facts-read tiles and the headline copy
+  // (returning vs. new user). null = still loading; show neither tiles nor "on a roll" copy.
   const [streak, setStreak] = useState<number | null>(null);
   const [factsRead, setFactsRead] = useState<number | null>(null);
 
@@ -342,13 +334,19 @@ export default function PaywallScreen() {
           justifyContent: 'center',
         },
         scrollContent: {
+          flexGrow: 1,
           paddingBottom: spacing.md,
-          paddingTop: Platform.OS === 'ios' ? spacing.xxl + spacing.xl : insets.top + spacing.lg,
+          paddingTop: spacing.md,
+        },
+        centerGroup: {
+          flex: 1,
+          justifyContent: 'space-around',
         },
         wordmarkRow: {
           paddingHorizontal: spacing.xl,
           paddingRight: spacing.xxxl + closeBtnSize,
-          marginBottom: statsTopGap,
+          paddingTop: Platform.OS === 'ios' ? spacing.xxl + spacing.xl : insets.top + spacing.lg,
+          marginBottom: spacing.lg,
         },
         wordmarkDivider: {
           width: 1,
@@ -358,7 +356,7 @@ export default function PaywallScreen() {
         },
         statsRow: {
           marginHorizontal: spacing.xl,
-          marginBottom: statsBottomGap,
+          marginBottom: spacing.xl,
         },
         statCard: {
           flex: 1,
@@ -399,7 +397,7 @@ export default function PaywallScreen() {
         },
         headlineWrap: {
           marginHorizontal: spacing.xl,
-          marginBottom: headlineBottomGap,
+          marginBottom: spacing.xxl,
         },
         headlineAccentText: {
           color: PAYWALL_GOLD.primary,
@@ -438,11 +436,16 @@ export default function PaywallScreen() {
         planCardSelected: {
           borderColor: tc.planSelectedBorder,
           backgroundColor: tc.planSelectedBg,
-          shadowColor: PAYWALL_GOLD.primary,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: isDark ? 0.18 : 0.12,
-          shadowRadius: 24,
-          elevation: 4,
+          // iOS-only soft glow. Android `elevation` renders an opaque drop-shadow
+          // that looks like a thick inner shadow on the translucent gold fill.
+          ...Platform.select({
+            ios: {
+              shadowColor: PAYWALL_GOLD.primary,
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: isDark ? 0.18 : 0.12,
+              shadowRadius: 24,
+            },
+          }),
         },
         savingsBadge: {
           position: 'absolute',
@@ -497,9 +500,6 @@ export default function PaywallScreen() {
       statIconCircleRadius,
       benefitIconCircleSize,
       benefitIconCircleRadius,
-      statsTopGap,
-      statsBottomGap,
-      headlineBottomGap,
     ]
   );
   /* eslint-enable react-native/no-unused-styles */
@@ -550,125 +550,131 @@ export default function PaywallScreen() {
         </View>
       </Pressable>
 
-      {/* Content */}
+      {/* Group 1 — Wordmark, pinned at the top */}
+      <Animated.View entering={FadeInDown.duration(400)}>
+        <XStack alignItems="center" gap={spacing.xs + 4} style={dynamicStyles.wordmarkRow}>
+          <Crown
+            size={wordmarkCrownSize}
+            color={PAYWALL_GOLD.primary}
+            fill={PAYWALL_GOLD.primary}
+          />
+          <Text.Label color={tc.title}>{t('appName')}</Text.Label>
+          <View style={dynamicStyles.wordmarkDivider} />
+          <Text.Tiny
+            fontFamily={FONT_FAMILIES.extrabold}
+            color={PAYWALL_GOLD.primary}
+            letterSpacing={1.6}
+          >
+            {t('paywallPremiumTag')}
+          </Text.Tiny>
+        </XStack>
+      </Animated.View>
+
+      {/* Groups 2 & 3 — center group fills the leftover area between title and the
+          bottom group; the bottom group (benefits + plans + CTA + footer) anchors to
+          the bottom. When content overflows the viewport, everything scrolls naturally. */}
       <Animated.ScrollView
         entering={FadeIn.duration(300)}
         contentContainerStyle={dynamicStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Wordmark — crown · "Facts a Day" · "PREMIUM" pill */}
-        <Animated.View entering={FadeInDown.duration(400)}>
-          <XStack alignItems="center" gap={spacing.xs + 4} style={dynamicStyles.wordmarkRow}>
-            <Crown
-              size={wordmarkCrownSize}
-              color={PAYWALL_GOLD.primary}
-              fill={PAYWALL_GOLD.primary}
-            />
-            <Text.Label color={tc.title}>{t('appName')}</Text.Label>
-            <View style={dynamicStyles.wordmarkDivider} />
-            <Text.Tiny
-              fontFamily={FONT_FAMILIES.extrabold}
-              color={PAYWALL_GOLD.primary}
-              letterSpacing={1.6}
-            >
-              {t('paywallPremiumTag')}
-            </Text.Tiny>
-          </XStack>
-        </Animated.View>
+        {/* Group 2 — Stats + headline, vertically centered in the leftover area */}
+        <View style={dynamicStyles.centerGroup}>
+          {showStats && (
+            <Animated.View entering={FadeInDown.delay(80).duration(400)}>
+              <XStack gap={spacing.sm + 2} style={dynamicStyles.statsRow}>
+                <View style={[dynamicStyles.statCard, dynamicStyles.statStreakCard]}>
+                  <XStack alignItems="center" gap={spacing.sm + 3}>
+                    <LinearGradient
+                      colors={[PAYWALL_GOLD.light, PAYWALL_GOLD.primary]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 0, y: 1 }}
+                      style={dynamicStyles.statStreakIcon}
+                    >
+                      <Flame size={iconSizes.md} color="#78350F" fill="#78350F" />
+                    </LinearGradient>
+                    <YStack>
+                      <Text
+                        fontFamily={FONT_FAMILIES.extrabold}
+                        fontSize={24}
+                        lineHeight={26}
+                        letterSpacing={-0.5}
+                        color={tc.title}
+                      >
+                        {streak ?? 0}
+                      </Text>
+                      <Text.Tiny
+                        fontFamily={FONT_FAMILIES.bold}
+                        color={tc.featureDesc}
+                        letterSpacing={0.6}
+                        marginTop={spacing.xs}
+                      >
+                        {t('paywallStreakLabel')}
+                      </Text.Tiny>
+                    </YStack>
+                  </XStack>
+                </View>
 
-        {/* Personal stats — streak (gold hero) + facts read (neutral) */}
-        {showStats && (
-          <Animated.View entering={FadeInDown.delay(80).duration(400)}>
-            <XStack gap={spacing.sm + 2} style={dynamicStyles.statsRow}>
-              <View style={[dynamicStyles.statCard, dynamicStyles.statStreakCard]}>
-                <XStack alignItems="center" gap={spacing.sm + 3}>
-                  <LinearGradient
-                    colors={[PAYWALL_GOLD.light, PAYWALL_GOLD.primary]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    style={dynamicStyles.statStreakIcon}
-                  >
-                    <Flame size={iconSizes.md} color="#78350F" fill="#78350F" />
-                  </LinearGradient>
-                  <YStack>
-                    <Text
-                      fontFamily={FONT_FAMILIES.extrabold}
-                      fontSize={24}
-                      lineHeight={26}
-                      letterSpacing={-0.5}
-                      color={tc.title}
-                    >
-                      {streak ?? 0}
-                    </Text>
-                    <Text.Tiny
-                      fontFamily={FONT_FAMILIES.bold}
-                      color={tc.featureDesc}
-                      letterSpacing={0.6}
-                      marginTop={spacing.xs}
-                    >
-                      {t('paywallStreakLabel')}
-                    </Text.Tiny>
-                  </YStack>
-                </XStack>
-              </View>
+                <View style={[dynamicStyles.statCard, dynamicStyles.statNeutralCard]}>
+                  <XStack alignItems="center" gap={spacing.sm + 3}>
+                    <View style={dynamicStyles.statNeutralIcon}>
+                      <BookOpen size={iconSizes.sm} color={tc.featureDesc} />
+                    </View>
+                    <YStack>
+                      <Text
+                        fontFamily={FONT_FAMILIES.extrabold}
+                        fontSize={24}
+                        lineHeight={26}
+                        letterSpacing={-0.5}
+                        color={tc.title}
+                      >
+                        {factsRead ?? 0}
+                      </Text>
+                      <Text.Tiny
+                        fontFamily={FONT_FAMILIES.bold}
+                        color={tc.featureDesc}
+                        letterSpacing={0.6}
+                        marginTop={spacing.xs}
+                      >
+                        {t('paywallFactsReadLabel')}
+                      </Text.Tiny>
+                    </YStack>
+                  </XStack>
+                </View>
+              </XStack>
+            </Animated.View>
+          )}
 
-              <View style={[dynamicStyles.statCard, dynamicStyles.statNeutralCard]}>
-                <XStack alignItems="center" gap={spacing.sm + 3}>
-                  <View style={dynamicStyles.statNeutralIcon}>
-                    <BookOpen size={iconSizes.sm} color={tc.featureDesc} />
-                  </View>
-                  <YStack>
-                    <Text
-                      fontFamily={FONT_FAMILIES.extrabold}
-                      fontSize={24}
-                      lineHeight={26}
-                      letterSpacing={-0.5}
-                      color={tc.title}
-                    >
-                      {factsRead ?? 0}
-                    </Text>
-                    <Text.Tiny
-                      fontFamily={FONT_FAMILIES.bold}
-                      color={tc.featureDesc}
-                      letterSpacing={0.6}
-                      marginTop={spacing.xs}
-                    >
-                      {t('paywallFactsReadLabel')}
-                    </Text.Tiny>
-                  </YStack>
-                </XStack>
-              </View>
-            </XStack>
-          </Animated.View>
-        )}
-
-        {/* Headline + subtitle */}
-        <Animated.View entering={FadeInDown.delay(140).duration(400)}>
-          <YStack gap={spacing.sm} style={dynamicStyles.headlineWrap}>
-            <Text
-              fontFamily={FONT_FAMILIES.extrabold}
-              fontSize={28}
-              lineHeight={32}
-              letterSpacing={-0.5}
-              color={tc.title}
-            >
-              {t('paywallHubHeadline')}
-              {'\n'}
+          {/* Headline + subtitle */}
+          <Animated.View entering={FadeInDown.delay(140).duration(400)}>
+            <YStack gap={spacing.sm} style={dynamicStyles.headlineWrap}>
               <Text
                 fontFamily={FONT_FAMILIES.extrabold}
                 fontSize={28}
                 lineHeight={32}
                 letterSpacing={-0.5}
-                style={dynamicStyles.headlineAccentText}
+                color={tc.title}
               >
-                {t('paywallHubHeadlineAccent')}
+                {showStats ? t('paywallHubHeadline') : t('paywallHubHeadlineNew')}
+                {'\n'}
+                <Text
+                  fontFamily={FONT_FAMILIES.extrabold}
+                  fontSize={28}
+                  lineHeight={32}
+                  letterSpacing={-0.5}
+                  style={dynamicStyles.headlineAccentText}
+                >
+                  {showStats ? t('paywallHubHeadlineAccent') : t('paywallHubHeadlineNewAccent')}
+                </Text>
               </Text>
-            </Text>
-            <Text.Caption color={tc.subtitle}>{t('paywallHubSubtitle')}</Text.Caption>
-          </YStack>
-        </Animated.View>
+              <Text.Caption color={tc.subtitle}>
+                {showStats ? t('paywallHubSubtitle') : t('paywallHubSubtitleNew')}
+              </Text.Caption>
+            </YStack>
+          </Animated.View>
+        </View>
 
-        {/* Benefits — quiet rows with gold-tinted icon disc + check */}
+        {/* Group 3 — Benefits + plans + CTA + footer, anchored to the bottom */}
         <YStack gap={spacing.sm} marginHorizontal={spacing.xl} marginBottom={spacing.xl}>
           {benefits.map((b, i) => (
             <Animated.View key={i} entering={FadeInDown.delay(200 + i * 70).duration(400)}>
@@ -700,7 +706,9 @@ export default function PaywallScreen() {
                   onPress={() => setSelectedPlan(productId)}
                   style={dynamicStyles.planPressable}
                 >
-                  <View style={[dynamicStyles.planCard, selected && dynamicStyles.planCardSelected]}>
+                  <View
+                    style={[dynamicStyles.planCard, selected && dynamicStyles.planCardSelected]}
+                  >
                     {monthly && (
                       <View style={dynamicStyles.savingsBadge}>
                         <LinearGradient
