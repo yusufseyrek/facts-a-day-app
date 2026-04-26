@@ -594,15 +594,13 @@ export default function PaywallScreen() {
                       <Flame size={iconSizes.md} color="#78350F" fill="#78350F" />
                     </LinearGradient>
                     <YStack>
-                      <Text
+                      <Text.Title
                         fontFamily={FONT_FAMILIES.extrabold}
-                        fontSize={24}
-                        lineHeight={26}
                         letterSpacing={-0.5}
                         color={tc.title}
                       >
                         {streak ?? 0}
-                      </Text>
+                      </Text.Title>
                       <Text.Tiny
                         fontFamily={FONT_FAMILIES.bold}
                         color={tc.featureDesc}
@@ -621,15 +619,13 @@ export default function PaywallScreen() {
                       <BookOpen size={iconSizes.sm} color={tc.featureDesc} />
                     </View>
                     <YStack>
-                      <Text
+                      <Text.Title
                         fontFamily={FONT_FAMILIES.extrabold}
-                        fontSize={24}
-                        lineHeight={26}
                         letterSpacing={-0.5}
                         color={tc.title}
                       >
                         {factsRead ?? 0}
-                      </Text>
+                      </Text.Title>
                       <Text.Tiny
                         fontFamily={FONT_FAMILIES.bold}
                         color={tc.featureDesc}
@@ -648,25 +644,21 @@ export default function PaywallScreen() {
           {/* Headline + subtitle */}
           <Animated.View entering={FadeInDown.delay(140).duration(400)}>
             <YStack gap={spacing.sm} style={dynamicStyles.headlineWrap}>
-              <Text
+              <Text.Headline
                 fontFamily={FONT_FAMILIES.extrabold}
-                fontSize={28}
-                lineHeight={32}
                 letterSpacing={-0.5}
                 color={tc.title}
               >
                 {showStats ? t('paywallHubHeadline') : t('paywallHubHeadlineNew')}
                 {'\n'}
-                <Text
+                <Text.Headline
                   fontFamily={FONT_FAMILIES.extrabold}
-                  fontSize={28}
-                  lineHeight={32}
                   letterSpacing={-0.5}
                   style={dynamicStyles.headlineAccentText}
                 >
                   {showStats ? t('paywallHubHeadlineAccent') : t('paywallHubHeadlineNewAccent')}
-                </Text>
-              </Text>
+                </Text.Headline>
+              </Text.Headline>
               <Text.Caption color={tc.subtitle}>
                 {showStats ? t('paywallHubSubtitle') : t('paywallHubSubtitleNew')}
               </Text.Caption>
@@ -746,17 +738,15 @@ export default function PaywallScreen() {
                       </Text.Tiny>
                     </XStack>
 
-                    <Text
+                    <Text.Title
                       fontFamily={FONT_FAMILIES.extrabold}
-                      fontSize={22}
-                      lineHeight={26}
                       letterSpacing={-0.5}
                       color={tc.planPrice}
                       numberOfLines={1}
                       adjustsFontSizeToFit
                     >
                       {getDisplayPrice(productId)}
-                    </Text>
+                    </Text.Title>
 
                     {weekly && (
                       <Text.Tiny color={tc.cancelText} marginTop={2}>
