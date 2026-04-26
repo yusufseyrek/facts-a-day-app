@@ -1,6 +1,6 @@
 {
   "name": "facts-a-day-app",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
@@ -31,7 +31,7 @@
     "testMatch": [
       "**/__tests__/**/*.test.ts"
     ],
-    "testTimeout": 1e4,
+    "testTimeout": 10000,
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@shopify/flash-list|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|tamagui|@tamagui/.*|i18n-js|react-native-google-mobile-ads|react-native-reanimated|react-native-gesture-handler|react-native-screens|react-native-safe-area-context|react-native-worklets)"
     ],
