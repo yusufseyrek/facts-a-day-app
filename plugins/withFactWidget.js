@@ -334,27 +334,13 @@ function withIOSWidgetTarget(config) {
           cfg.buildSettings.SKIP_INSTALL = 'YES';
           cfg.buildSettings.GENERATE_INFOPLIST_FILE = 'NO';
           // Version settings — must exactly match the main app's
-          // MARKETING_VERSION and CURRENT_PROJECT_VERSION or App Store
-          // submission will fail. Read them from the main target configs.
-          let mainMarketing = '1.0';
-          let mainBuild = '1';
-          for (const otherKey in configurations) {
-            const other = configurations[otherKey];
-            if (typeof other === 'object' &&
-                other.buildSettings &&
-                other.buildSettings.PRODUCT_BUNDLE_IDENTIFIER === `"${BUNDLE_ID}"` &&
-                other.name === cfg.name) {
-              if (other.buildSettings.MARKETING_VERSION) {
-                mainMarketing = other.buildSettings.MARKETING_VERSION;
-              }
-              if (other.buildSettings.CURRENT_PROJECT_VERSION) {
-                mainBuild = other.buildSettings.CURRENT_PROJECT_VERSION;
-              }
-              break;
-            }
-          }
-          cfg.buildSettings.MARKETING_VERSION = mainMarketing;
-          cfg.buildSettings.CURRENT_PROJECT_VERSION = mainBuild;
+          // CFBundleShortVersionString / CFBundleVersion or App Store
+          // submission will fail. Source from the Expo config (app.json),
+          // since Expo writes those values into the main app's Info.plist
+          // directly and leaves the pbxproj's MARKETING_VERSION /
+          // CURRENT_PROJECT_VERSION at their defaults.
+          cfg.buildSettings.MARKETING_VERSION = config.version || '1.0';
+          cfg.buildSettings.CURRENT_PROJECT_VERSION = String(config.ios?.buildNumber ?? '1');
         }
       }
     }
