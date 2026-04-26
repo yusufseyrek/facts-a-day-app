@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import { FlashListRef } from '@shopify/flash-list';
@@ -166,6 +166,22 @@ function HomeScreen() {
   }, []);
 
   const hasAnyContent = latestFacts.length > 0 || onThisDayFacts.length > 0;
+
+  // Snap the outer list to the top once initial content is in place. FlashList
+  // can drift when header sections (carousels, the Keep Reading section header)
+  // mount or grow asynchronously after the list itself, leaving the screen
+  // opened a bit scrolled.
+  const initialScrollResetRef = useRef(false);
+  useEffect(() => {
+    if (initialScrollResetRef.current) return;
+    if (isLoading || !hasAnyContent) return;
+    initialScrollResetRef.current = true;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        keepReadingListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      });
+    });
+  }, [isLoading, hasAnyContent]);
 
   // Compose list header from extracted components (memoized to prevent FlashList re-layout)
   const listHeader = useMemo(
