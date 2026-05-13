@@ -606,6 +606,9 @@ export default function PaywallScreen() {
                         color={tc.featureDesc}
                         letterSpacing={0.6}
                         marginTop={spacing.xs}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.75}
                       >
                         {t('paywallStreakLabel')}
                       </Text.Tiny>
@@ -631,6 +634,9 @@ export default function PaywallScreen() {
                         color={tc.featureDesc}
                         letterSpacing={0.6}
                         marginTop={spacing.xs}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.75}
                       >
                         {t('paywallFactsReadLabel')}
                       </Text.Tiny>

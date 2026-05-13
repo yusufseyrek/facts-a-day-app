@@ -9,6 +9,8 @@ import { onBadgeEarned, scheduleSatisfactionPrompt } from '../services/appReview
 import {
   consumePendingBadgeToasts,
   isModalScreenActive,
+  popBlockingOverlay,
+  pushBlockingOverlay,
   type NewlyEarnedBadge,
 } from '../services/badges';
 
@@ -20,16 +22,33 @@ export function BadgeToastProvider({ children }: { children: React.ReactNode }) 
   const [current, setCurrent] = useState<NewlyEarnedBadge | null>(null);
   const queueRef = useRef<NewlyEarnedBadge[]>([]);
   const showingRef = useRef(false);
+  const overlayHeldRef = useRef(false);
+
+  const acquireOverlay = useCallback(() => {
+    if (!overlayHeldRef.current) {
+      pushBlockingOverlay();
+      overlayHeldRef.current = true;
+    }
+  }, []);
+
+  const releaseOverlay = useCallback(() => {
+    if (overlayHeldRef.current) {
+      popBlockingOverlay();
+      overlayHeldRef.current = false;
+    }
+  }, []);
 
   const showNext = useCallback(() => {
     if (queueRef.current.length > 0) {
+      acquireOverlay();
       showingRef.current = true;
       setCurrent(queueRef.current.shift()!);
     } else {
+      releaseOverlay();
       showingRef.current = false;
       setCurrent(null);
     }
-  }, []);
+  }, [acquireOverlay, releaseOverlay]);
 
   // Poll for pending badge toasts — only show when no modal is active
   useEffect(() => {
@@ -53,6 +72,7 @@ export function BadgeToastProvider({ children }: { children: React.ReactNode }) 
   }, [showNext]);
 
   const handleHide = useCallback(() => {
+    releaseOverlay();
     showingRef.current = false;
     setCurrent(null);
 
@@ -71,7 +91,7 @@ export function BadgeToastProvider({ children }: { children: React.ReactNode }) 
         showNext();
       }
     }, 400);
-  }, [showNext]);
+  }, [releaseOverlay, showNext]);
 
   const badge = current
     ? {

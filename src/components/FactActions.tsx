@@ -25,10 +25,12 @@ import { shareService } from '../services/share';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
+import { FactAudioButton } from './FactAudioButton';
 import { ReportFactModal } from './ReportFactModal';
 import { ShareCard } from './share';
 import { Text } from './Typography';
 
+import type { FactAudioController } from '../hooks/useFactAudio';
 import type { Category } from '../services/database';
 
 interface FactActionsProps {
@@ -45,6 +47,8 @@ interface FactActionsProps {
   hasPrevious?: boolean;
   currentIndex?: number;
   totalCount?: number;
+  audioController?: FactAudioController;
+  audioCategoryColor?: string | null;
 }
 
 const Container = styled(YStack, {
@@ -131,6 +135,8 @@ export function FactActions({
   hasPrevious,
   currentIndex,
   totalCount,
+  audioController,
+  audioCategoryColor = null,
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -414,6 +420,11 @@ export function FactActions({
                 <ShareIcon size={iconSizes.lg} color={shareColor} />
               </Animated.View>
             </Pressable>
+
+            {/* Play / Audio Button — only rendered when this fact has audio */}
+            {audioController?.hasAudio && (
+              <FactAudioButton controller={audioController} categoryColor={audioCategoryColor} />
+            )}
 
             {/* Report Button */}
             <Pressable

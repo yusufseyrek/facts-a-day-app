@@ -46,8 +46,8 @@ import { useTranslation } from '../../src/i18n';
 import { TranslationKeys } from '../../src/i18n/translations';
 import { openAdDebugMenu } from '../../src/services/ads';
 import { Screens, trackScreenView } from '../../src/services/analytics';
-import { requestReview, scheduleSatisfactionPrompt } from '../../src/services/appReview';
-import { triggerTestBadgeToast } from '../../src/services/badges';
+import { requestReview } from '../../src/services/appReview';
+import { armDevDualTrigger, triggerTestBadgeToast } from '../../src/services/badges';
 import { onFeedRefresh } from '../../src/services/contentRefresh';
 import * as database from '../../src/services/database';
 import { clearAllCachedImages, getCachedImagesSize } from '../../src/services/images';
@@ -907,9 +907,14 @@ export default function SettingsPage() {
         {
           id: 'testSatisfactionModal',
           label: 'Test Satisfaction Modal',
+          value: 'badge + modal on fact close',
           icon: <Heart size={iconSizes.md} color={iconColor} />,
           onPress: () => {
-            scheduleSatisfactionPrompt();
+            armDevDualTrigger();
+            Alert.alert(
+              'Armed',
+              'Open any fact, then close it. A badge toast and the satisfaction modal will be queued together so you can verify the toast/modal overlap.'
+            );
           },
         },
         {

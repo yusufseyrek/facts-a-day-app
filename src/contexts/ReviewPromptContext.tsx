@@ -11,7 +11,7 @@ import {
   recordSatisfactionPromptShown,
   requestReview,
 } from '../services/appReview';
-import { isModalScreenActive } from '../services/badges';
+import { isBlockingOverlayActive, isModalScreenActive } from '../services/badges';
 import { useTheme } from '../theme/ThemeProvider';
 
 const POLL_INTERVAL = 500;
@@ -28,11 +28,11 @@ export function ReviewPromptProvider({ children }: { children: React.ReactNode }
       if (AppState.currentState !== 'active') return;
       if (showingRef.current) return;
       if (isModalScreenActive()) return;
+      if (isBlockingOverlayActive()) return;
 
       if (hasPendingSatisfactionPrompt()) {
         showingRef.current = true;
         setVisible(true);
-        trackSatisfactionPromptShown();
       }
     }, POLL_INTERVAL);
 
@@ -75,6 +75,7 @@ export function ReviewPromptProvider({ children }: { children: React.ReactNode }
         onLoveIt={handleLoveIt}
         onNotReally={handleNotReally}
         onDismiss={handleDismiss}
+        onShow={trackSatisfactionPromptShown}
         isDark={isDark}
         title={t('satisfactionTitle', { appName: t('appName') })}
         subtitle={t('satisfactionSubtitle')}

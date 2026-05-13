@@ -135,6 +135,7 @@ export default function FactDetailModal() {
           // Map API response to FactWithRelations
           factData = {
             ...apiResponse,
+            audio_url: apiResponse.audio_url || undefined,
             is_historical: apiResponse.is_historical ? 1 : 0,
             event_month: apiResponse.metadata?.month,
             event_day: apiResponse.metadata?.day,

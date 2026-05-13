@@ -63,6 +63,8 @@ import { registerBackgroundSync } from '../src/services/backgroundSync';
 import * as contentRefresh from '../src/services/contentRefresh';
 import { loadDailyFeedSections } from '../src/services/dailyFeed';
 import * as database from '../src/services/database';
+import { pruneAudioCacheIfOverLimit } from '../src/services/factAudio';
+import { runAudioMigrationIfNeeded } from '../src/services/factAudioMigration';
 import { ensureImagesDirExists } from '../src/services/images';
 import { startNetworkMonitoring } from '../src/services/network';
 import * as notificationService from '../src/services/notifications';
@@ -453,6 +455,7 @@ export default function RootLayout() {
       notificationService.configureNotifications();
       ensureImagesDirExists().catch(() => {});
       notificationService.cleanupOldNotificationImages().catch(() => {});
+      pruneAudioCacheIfOverLimit().catch(() => {});
 
       const dbPromise = Promise.race([
         database.openDatabase(),
@@ -572,6 +575,13 @@ export default function RootLayout() {
 
         contentRefresh.refreshAppContent().catch((error) => {
           console.error('Background refresh failed:', error);
+        });
+
+        // One-shot full refetch for existing installs upgrading to the
+        // audio-playback version — backfilled audio_url isn't picked up by
+        // the normal delta sync (intentionally; see backend audio writers).
+        runAudioMigrationIfNeeded().catch((error) => {
+          console.error('Audio migration failed:', error);
         });
       }
 

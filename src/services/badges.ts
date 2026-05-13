@@ -16,6 +16,7 @@ import { openDatabase } from './database';
 
 const _pendingToasts: NewlyEarnedBadge[] = [];
 let _modalScreenCount = 0;
+let _blockingOverlayCount = 0;
 
 /** Consume all pending badge toasts (returns and clears the queue). */
 export function consumePendingBadgeToasts(): NewlyEarnedBadge[] {
@@ -33,6 +34,23 @@ export function popModalScreen() {
 
 export function isModalScreenActive(): boolean {
   return _modalScreenCount > 0;
+}
+
+/**
+ * Track in-app overlays (e.g. badge unlock toast) that should suppress other
+ * modal-style UI from popping up underneath them. Distinct from
+ * pushModalScreen, which tracks route-level modal screens.
+ */
+export function pushBlockingOverlay() {
+  _blockingOverlayCount++;
+}
+
+export function popBlockingOverlay() {
+  _blockingOverlayCount = Math.max(0, _blockingOverlayCount - 1);
+}
+
+export function isBlockingOverlayActive(): boolean {
+  return _blockingOverlayCount > 0;
 }
 
 // ============================================
@@ -117,6 +135,21 @@ export function triggerTestBadgeToast(): void {
   const stars: BadgeStar[] = ['star1', 'star2', 'star3'];
   const star = stars[Math.floor(Math.random() * stars.length)];
   _pendingToasts.push({ badgeId: def.id, star, definition: def });
+}
+
+// Dev-only: arm a combined badge-toast + satisfaction-prompt trigger that
+// fires when the next FactModal closes. Used to reproduce the overlap between
+// the badge toast and the satisfaction modal in a deterministic way.
+let _devDualTriggerArmed = false;
+
+export function armDevDualTrigger(): void {
+  _devDualTriggerArmed = true;
+}
+
+export function consumeDevDualTrigger(): boolean {
+  const armed = _devDualTriggerArmed;
+  _devDualTriggerArmed = false;
+  return armed;
 }
 
 /**

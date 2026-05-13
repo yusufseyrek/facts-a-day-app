@@ -14,7 +14,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
-import { Calendar, Crown, ExternalLink, ImagePlus, Play, RefreshCw, X } from '@tamagui/lucide-icons';
+import {
+  Calendar,
+  Crown,
+  ExternalLink,
+  ImagePlus,
+  Play,
+  RefreshCw,
+  X,
+} from '@tamagui/lucide-icons';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,13 +32,19 @@ import { XStack, YStack } from 'tamagui';
 import { usePremium } from '../contexts';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { useTranslation } from '../i18n';
-import { trackPremiumGateAdResult, trackPremiumGateAdShown, trackSourceLinkClick } from '../services/analytics';
+import {
+  trackPremiumGateAdResult,
+  trackPremiumGateAdShown,
+  trackSourceLinkClick,
+} from '../services/analytics';
 import { onFactViewed, onStreakMilestone, scheduleSatisfactionPrompt } from '../services/appReview';
 import {
   checkAndAwardBadges,
+  consumeDevDualTrigger,
   getReadingStreak,
   popModalScreen,
   pushModalScreen,
+  triggerTestBadgeToast,
 } from '../services/badges';
 import {
   addFactDetailTimeSpent,
@@ -53,6 +67,7 @@ import { useResponsive } from '../utils/useResponsive';
 import { BannerAd } from './ads';
 import { CategoryBadge } from './CategoryBadge';
 import { FactActions } from './FactActions';
+import { useFactAudio } from '../hooks/useFactAudio';
 import { RelatedFacts } from './RelatedFacts';
 import { FONT_FAMILIES, Text } from './Typography';
 
@@ -255,6 +270,13 @@ export function FactModal({
     hasScrolledToBottom.current = false;
 
     return () => {
+      // Dev-only: arm a synthetic badge toast + satisfaction prompt when the
+      // user has tapped "Test Satisfaction Modal" in developer settings, so we
+      // can reproduce the toast/modal overlap deterministically.
+      if (__DEV__ && consumeDevDualTrigger()) {
+        triggerTestBadgeToast();
+        scheduleSatisfactionPrompt();
+      }
       // Track time spent on unmount
       const seconds = Math.round((Date.now() - mountTimeRef.current) / 1000);
       if (seconds > 0) {
@@ -609,6 +631,10 @@ export function FactModal({
 
   const factTitle = fact.title || fact.content.substring(0, 60) + '...';
 
+  // Shared audio controller — both the content-area button and the header
+  // button render from this single state so they stay in sync.
+  const audioController = useFactAudio(fact.id, fact.audio_url ?? null, locale);
+
   // Announce modal opening to screen readers
   useEffect(() => {
     // Small delay to ensure the modal is rendered
@@ -659,7 +685,10 @@ export function FactModal({
         pointerEvents="box-none"
       >
         <Animated.View
-          pointerEvents="none"
+          // box-none (not "none") so interactive children inside the header
+          // — like the play button — can receive taps. Decorative children
+          // (title, background image) set their own pointerEvents="none".
+          pointerEvents="box-none"
           style={{
             minHeight: headerHeight,
             overflow: 'hidden',
@@ -681,6 +710,7 @@ export function FactModal({
           {/* Faded background image behind header */}
           {hasImage && (
             <Animated.View
+              pointerEvents="none"
               style={{
                 position: 'absolute',
                 top: 0,
@@ -727,6 +757,7 @@ export function FactModal({
           {/* Solid background for header when no image */}
           {!hasImage && (
             <View
+              pointerEvents="none"
               style={[
                 StyleSheet.absoluteFill,
                 {
@@ -765,6 +796,8 @@ export function FactModal({
                   style={{
                     flex: 1,
                     minHeight: titleHeight,
+                    // X and play share the same right edge (different rows
+                    // within the header), so only reserve one button's width.
                     paddingRight: iconSizes.xl + spacing.xs,
                     transform: [{ translateY: headerTitleTranslateY }],
                   }}
@@ -823,19 +856,21 @@ export function FactModal({
                 borderBottomColor: categoryColor || 'transparent',
               }}
             >
-              <View style={{ paddingRight: iconSizes.xl + spacing.xs }}>
-                <Text.Headline
-                  role="heading"
-                  onTextLayout={(e) => {
-                    const lines = e.nativeEvent.lines;
-                    const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
-                    if (totalHeight > 0 && totalHeight !== titleHeight) {
-                      setTitleHeight(totalHeight);
-                    }
-                  }}
-                >
-                  {factTitle}
-                </Text.Headline>
+              <View style={{ position: 'relative' }}>
+                <View style={{ paddingRight: iconSizes.xl + spacing.xs }}>
+                  <Text.Headline
+                    role="heading"
+                    onTextLayout={(e) => {
+                      const lines = e.nativeEvent.lines;
+                      const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
+                      if (totalHeight > 0 && totalHeight !== titleHeight) {
+                        setTitleHeight(totalHeight);
+                      }
+                    }}
+                  >
+                    {factTitle}
+                  </Text.Headline>
+                </View>
               </View>
             </View>
           </Animated.View>
@@ -976,29 +1011,31 @@ export function FactModal({
           <YStack padding={spacing.xl} paddingTop={spacing.lg} gap={spacing.md}>
             {/* Title - shown in content only when has image (no-image uses sticky title above) */}
             {hasImage && (
-              <Animated.View
-                style={{
-                  opacity: contentTitleOpacity,
-                  paddingRight: iconSizes.xl + spacing.xs,
-                }}
-              >
-                <Text.Headline
-                  role="heading"
-                  onTextLayout={(e) => {
-                    const lines = e.nativeEvent.lines;
-                    const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
-                    if (totalHeight > 0 && totalHeight !== titleHeight) {
-                      setTitleHeight(totalHeight);
-                    }
+              <View style={{ position: 'relative' }}>
+                <Animated.View
+                  style={{
+                    opacity: contentTitleOpacity,
+                    paddingRight: iconSizes.xl + spacing.xs,
                   }}
                 >
-                  {factTitle}
-                </Text.Headline>
-              </Animated.View>
+                  <Text.Headline
+                    role="heading"
+                    onTextLayout={(e) => {
+                      const lines = e.nativeEvent.lines;
+                      const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
+                      if (totalHeight > 0 && totalHeight !== titleHeight) {
+                        setTitleHeight(totalHeight);
+                      }
+                    }}
+                  >
+                    {factTitle}
+                  </Text.Headline>
+                </Animated.View>
+              </View>
             )}
 
             {/* Category Badge & Date */}
-            {(categoryForBadge || fact.last_updated || fact.created_at) && (
+            {(categoryForBadge || fact.created_at) && (
               <XStack
                 flexWrap="wrap"
                 alignItems="center"
@@ -1010,14 +1047,14 @@ export function FactModal({
                     <CategoryBadge category={categoryForBadge} />
                   </Animated.View>
                 )}
-                {(fact.last_updated || fact.created_at) && (
+                {fact.created_at && (
                   <XStack alignItems="center" gap={spacing.xs}>
                     <Text.Body
                       fontSize={typography.fontSize.label}
                       color="$textSecondary"
                       fontFamily={FONT_FAMILIES.semibold}
                     >
-                      {formatLastUpdated(fact.last_updated || fact.created_at, locale)}
+                      {formatLastUpdated(fact.created_at, locale)}
                     </Text.Body>
                     <Calendar size={iconSizes.xs} color="$textSecondary" />
                   </XStack>
@@ -1106,7 +1143,10 @@ export function FactModal({
         <View
           style={{
             position: 'absolute',
-            top: (Platform.OS === 'ios' ? 0 : insets.top) + spacing.xl,
+            // basePaddingTop already accounts for safe area on Android
+            // (insets.top) and uses spacing.xl on iOS, so the X aligns with
+            // the header content top on both platforms.
+            top: basePaddingTop,
             right: spacing.xl,
             zIndex: 9999,
             ...Platform.select({
@@ -1144,7 +1184,7 @@ export function FactModal({
         <View
           style={{
             position: 'absolute',
-            top: spacing.xl,
+            top: basePaddingTop,
             right: spacing.xl,
             zIndex: 9999,
             ...Platform.select({
@@ -1193,6 +1233,8 @@ export function FactModal({
         hasPrevious={hasPrevious}
         currentIndex={currentIndex}
         totalCount={totalCount}
+        audioController={audioController}
+        audioCategoryColor={categoryColor}
       />
 
       {/* Premium content gate — blurs everything for free users viewing premium facts */}

@@ -109,6 +109,7 @@ async function initializeSchema(): Promise<void> {
       category TEXT,
       source_url TEXT,
       image_url TEXT,
+      audio_url TEXT,
       is_historical INTEGER DEFAULT 0,
       event_month INTEGER,
       event_day INTEGER,
@@ -341,6 +342,9 @@ async function initializeSchema(): Promise<void> {
   // Premium categories migration
   await db.execAsync('ALTER TABLE categories ADD COLUMN is_premium INTEGER DEFAULT 0').catch(() => {});
 
+  // Audio URL migration — fact-reading TTS audio served from R2
+  await db.execAsync('ALTER TABLE facts ADD COLUMN audio_url TEXT').catch(() => {});
+
   // Create composite index for "on this day" historical fact queries
   // Must be after migrations so columns exist for existing databases
   await db.execAsync(`
@@ -502,6 +506,7 @@ export interface Fact {
   category?: string;
   source_url?: string;
   image_url?: string;
+  audio_url?: string;
   is_historical?: number; // 0 or 1
   event_month?: number; // 1-12
   event_day?: number; // 1-31
@@ -535,6 +540,7 @@ function mapFactsWithRelations(rows: any[]): FactWithRelations[] {
       category: row.category,
       source_url: row.source_url,
       image_url: row.image_url,
+      audio_url: row.audio_url,
       is_historical: row.is_historical,
       event_month: row.event_month,
       event_day: row.event_day,
@@ -596,9 +602,9 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
       await db.runAsync(
         `INSERT INTO facts (
           id, slug, title, content, summary, category,
-          source_url, image_url, is_historical, event_month, event_day, event_year, metadata,
+          source_url, image_url, audio_url, is_historical, event_month, event_day, event_year, metadata,
           language, created_at, last_updated
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           slug = excluded.slug,
           title = excluded.title,
@@ -607,6 +613,7 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
           category = excluded.category,
           source_url = excluded.source_url,
           image_url = excluded.image_url,
+          audio_url = excluded.audio_url,
           is_historical = excluded.is_historical,
           event_month = excluded.event_month,
           event_day = excluded.event_day,
@@ -625,6 +632,7 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
           fact.category || null,
           fact.source_url || null,
           fact.image_url || null,
+          fact.audio_url || null,
           fact.is_historical ?? 0,
           fact.event_month ?? null,
           fact.event_day ?? null,

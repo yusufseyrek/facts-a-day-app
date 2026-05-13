@@ -16,6 +16,7 @@ interface SatisfactionModalProps {
   onLoveIt: () => void;
   onNotReally: () => void;
   onDismiss: () => void;
+  onShow?: () => void;
   isDark: boolean;
   title: string;
   subtitle: string;
@@ -28,6 +29,7 @@ export function SatisfactionModal({
   onLoveIt,
   onNotReally,
   onDismiss,
+  onShow,
   isDark,
   title,
   subtitle,
@@ -52,6 +54,7 @@ export function SatisfactionModal({
       animationType="fade"
       statusBarTranslucent
       onRequestClose={onDismiss}
+      onShow={onShow}
     >
       <YStack flex={1} justifyContent="center" alignItems="center" padding={spacing.md}>
         {Platform.OS === 'ios' ? (

@@ -97,6 +97,7 @@ function mapFactsToDb(facts: api.FactResponse[]): db.Fact[] {
     category: fact.category,
     source_url: fact.source_url,
     image_url: fact.image_url,
+    audio_url: fact.audio_url || undefined,
     is_historical: fact.is_historical ? 1 : 0,
     event_month: fact.metadata?.month ?? undefined,
     event_day: fact.metadata?.day ?? undefined,
@@ -208,6 +209,11 @@ export async function completeOnboarding(preferences: OnboardingPreferences): Pr
 
     // Mark onboarding as complete
     await setOnboardingComplete();
+
+    // Fresh installs already pull every fact (with audio_url) during
+    // onboarding, so flag the audio migration as done — no need to refetch
+    // on first post-onboarding launch. (Flag key mirrors factAudioMigration.ts.)
+    await AsyncStorage.setItem('@audio_migration_v1_done', '1').catch(() => {});
 
     if (__DEV__) console.log('Onboarding completed successfully');
   } catch (error) {

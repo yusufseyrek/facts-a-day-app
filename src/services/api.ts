@@ -76,6 +76,7 @@ export interface FactResponse {
   category?: string;
   source_url?: string;
   image_url?: string;
+  audio_url?: string | null;
   is_historical: boolean;
   metadata: FactMetadata | null;
   language: string;

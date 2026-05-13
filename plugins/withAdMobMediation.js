@@ -5,20 +5,18 @@ const path = require("path");
 /**
  * AdMob Mediation Adapters Configuration
  *
- * Adds ironSource, Liftoff Monetize (Vungle), and Unity Ads
+ * Adds Liftoff Monetize (Vungle) and Unity Ads
  * as mediation partners for Google AdMob.
  */
 
 // iOS CocoaPods dependencies (compatible with Google-Mobile-Ads-SDK 13.1.0)
 const IOS_PODS = [
-  "GoogleMobileAdsMediationIronSource",
   "GoogleMobileAdsMediationVungle",
   "GoogleMobileAdsMediationUnity",
 ];
 
 // Android Gradle dependencies (pinned to versions compatible with Google Mobile Ads SDK 25.0.0)
 const ANDROID_DEPENDENCIES = [
-  "com.google.ads.mediation:ironsource:9.3.0.2",
   "com.google.ads.mediation:vungle:7.7.2.0",
   "com.unity3d.ads:unity-ads:4.17.0",
   "com.google.ads.mediation:unity:4.17.0.0",
@@ -46,7 +44,7 @@ function withMediationPods(config) {
       let podfileContent = fs.readFileSync(podfilePath, "utf-8");
 
       // Check if mediation pods are already added
-      if (podfileContent.includes("GoogleMobileAdsMediationIronSource")) {
+      if (podfileContent.includes("GoogleMobileAdsMediationUnity")) {
         console.log(
           "[withAdMobMediation] Mediation pods already present in Podfile"
         );
@@ -69,7 +67,7 @@ function withMediationPods(config) {
 
         const insertion = `
 
-  # AdMob Mediation Adapters (ironSource, Liftoff/Vungle, Unity Ads)
+  # AdMob Mediation Adapters (Liftoff/Vungle, Unity Ads)
 ${mediationPods}`;
 
         podfileContent = beforeInsert + insertion + afterInsert;
@@ -112,7 +110,7 @@ function withMediationGradle(config) {
       let gradleContent = fs.readFileSync(buildGradlePath, "utf-8");
 
       // Check if mediation dependencies are already added
-      if (gradleContent.includes("com.google.ads.mediation:ironsource")) {
+      if (gradleContent.includes("com.google.ads.mediation:unity")) {
         console.log(
           "[withAdMobMediation] Mediation dependencies already present in build.gradle"
         );
@@ -132,7 +130,7 @@ function withMediationGradle(config) {
         ).join("\n");
 
         const insertion = `
-    // AdMob Mediation Adapters (ironSource, Liftoff/Vungle, Unity Ads)
+    // AdMob Mediation Adapters (Liftoff/Vungle, Unity Ads)
 ${mediationDeps}
 `;
 
