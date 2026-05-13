@@ -74,6 +74,14 @@ export function useFactAudio(
   const player = useAudioPlayer(resolvedSource || '');
   const status = useAudioPlayerStatus(player);
 
+  // Explicitly disable looping — we want playback to stop at end of audio,
+  // not auto-replay.
+  useEffect(() => {
+    try {
+      player.loop = false;
+    } catch {}
+  }, [player]);
+
   const [playbackState, setPlaybackState] = useState<PlaybackState>('idle');
   const [reduceMotion, setReduceMotion] = useState(false);
   const errorRevertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -95,6 +103,7 @@ export function useFactAudio(
     if (status.didJustFinish) {
       setPlaybackState('idle');
       try {
+        player.pause();
         player.seekTo(0);
       } catch {}
     }

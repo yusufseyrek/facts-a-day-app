@@ -25,9 +25,10 @@ export function FactAudioButton({ controller, categoryColor }: FactAudioButtonPr
 
   const { playbackState, progress, durationSeconds, currentSeconds, toggle } = controller;
 
-  // --- Geometry: total visual footprint == X close button (iconSizes.xl).
-  const SVG_SIZE = iconSizes.xl;
-  const RING_STROKE = borderWidths.medium;
+  // --- Geometry: total visual footprint == sibling action icons (iconSizes.lg).
+  // Stays in the same "weight class" as Heart/Share/Flag for visual rhythm.
+  const SVG_SIZE = iconSizes.lg;
+  const RING_STROKE = borderWidths.thin;
   const BUTTON_SIZE = SVG_SIZE - RING_STROKE * 2;
   const RADIUS = (SVG_SIZE - RING_STROKE) / 2;
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
@@ -84,7 +85,7 @@ export function FactAudioButton({ controller, categoryColor }: FactAudioButtonPr
     >
       {/* Progress ring (drawn behind / around the button face) */}
       <Svg width={SVG_SIZE} height={SVG_SIZE} style={StyleSheet.absoluteFill} pointerEvents="none">
-        <G rotation={-90} originX={SVG_SIZE / 2} originY={SVG_SIZE / 2}>
+        <G transform={`rotate(-90 ${SVG_SIZE / 2} ${SVG_SIZE / 2})`}>
           {/* Always-visible track (ghosted ring frame) */}
           <Circle
             cx={SVG_SIZE / 2}
