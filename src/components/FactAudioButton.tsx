@@ -1,6 +1,11 @@
-import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedProps } from 'react-native-reanimated';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import Animated, {
+  useAnimatedProps,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Circle, G } from 'react-native-svg';
 
 import { Pause, Play } from '@tamagui/lucide-icons';
@@ -15,28 +20,25 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface FactAudioButtonProps {
   controller: FactAudioController;
-  categoryColor: string | null;
 }
 
-export function FactAudioButton({ controller, categoryColor }: FactAudioButtonProps) {
+export function FactAudioButton({ controller }: FactAudioButtonProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { iconSizes, borderWidths, radius, spacing } = useResponsive();
+  const { iconSizes, borderWidths, spacing } = useResponsive();
   const isDark = theme === 'dark';
 
   const { playbackState, progress, durationSeconds, currentSeconds, toggle } = controller;
 
-  // --- Geometry: total visual footprint == sibling action icons (iconSizes.lg).
-  // Stays in the same "weight class" as Heart/Share/Flag for visual rhythm.
-  const SVG_SIZE = iconSizes.lg;
-  const RING_STROKE = borderWidths.thin;
-  const BUTTON_SIZE = SVG_SIZE - RING_STROKE * 2;
+  // Icon matches sibling action icons (Heart/Share/Flag) exactly. The SVG adds
+  // one spacing step around the icon so the progress ring has clear breathing room.
+  const ICON_SIZE = iconSizes.lg;
+  const SVG_SIZE = iconSizes.lg + spacing.sm;
+  const RING_STROKE = borderWidths.medium;
   const RADIUS = (SVG_SIZE - RING_STROKE) / 2;
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-  // Ring stays category-tinted; button face is neutral translucent.
-  const ringColor = categoryColor || (isDark ? hexColors.dark.primary : hexColors.light.primary);
-  const fillColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.3)';
+  const accentColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
 
   const animatedRingProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRCUMFERENCE * (1 - progress.value),
@@ -44,6 +46,16 @@ export function FactAudioButton({ controller, categoryColor }: FactAudioButtonPr
 
   const isPlaying = playbackState === 'playing';
   const isLoading = playbackState === 'loading';
+  const isIdle = playbackState === 'idle' || playbackState === 'error';
+
+  // Ring fades in once audio has been engaged (loading/playing/paused) and out
+  // again when we return to a clean idle state.
+  const ringOpacity = useSharedValue(0);
+  useEffect(() => {
+    ringOpacity.value = withTiming(isIdle ? 0 : 1, { duration: 220 });
+  }, [isIdle, ringOpacity]);
+
+  const ringStyle = useAnimatedStyle(() => ({ opacity: ringOpacity.value }));
 
   const percent = durationSeconds > 0 ? Math.round((currentSeconds / durationSeconds) * 100) : 0;
 
@@ -79,58 +91,44 @@ export function FactAudioButton({ controller, categoryColor }: FactAudioButtonPr
           height: SVG_SIZE,
           alignItems: 'center',
           justifyContent: 'center',
-          opacity: pressed ? 0.85 : 1,
-          transform: [{ scale: pressed ? 0.96 : 1 }],
+          opacity: pressed ? 0.8 : 1,
         },
       ]}
     >
-      {/* Progress ring (drawn behind / around the button face) */}
-      <Svg width={SVG_SIZE} height={SVG_SIZE} style={StyleSheet.absoluteFill} pointerEvents="none">
-        <G transform={`rotate(-90 ${SVG_SIZE / 2} ${SVG_SIZE / 2})`}>
-          {/* Always-visible track (ghosted ring frame) */}
-          <Circle
-            cx={SVG_SIZE / 2}
-            cy={SVG_SIZE / 2}
-            r={RADIUS}
-            stroke={ringColor}
-            strokeOpacity={0.35}
-            strokeWidth={RING_STROKE}
-            fill="transparent"
-          />
-          {/* Animated progress arc */}
-          <AnimatedCircle
-            cx={SVG_SIZE / 2}
-            cy={SVG_SIZE / 2}
-            r={RADIUS}
-            stroke={ringColor}
-            strokeWidth={RING_STROKE}
-            strokeLinecap="round"
-            fill="transparent"
-            strokeDasharray={CIRCUMFERENCE}
-            animatedProps={animatedRingProps}
-          />
-        </G>
-      </Svg>
+      <Animated.View style={[StyleSheet.absoluteFill, ringStyle]} pointerEvents="none">
+        <Svg width={SVG_SIZE} height={SVG_SIZE}>
+          <G transform={`rotate(-90 ${SVG_SIZE / 2} ${SVG_SIZE / 2})`}>
+            <Circle
+              cx={SVG_SIZE / 2}
+              cy={SVG_SIZE / 2}
+              r={RADIUS}
+              stroke={accentColor}
+              strokeOpacity={0.2}
+              strokeWidth={RING_STROKE}
+              fill="transparent"
+            />
+            <AnimatedCircle
+              cx={SVG_SIZE / 2}
+              cy={SVG_SIZE / 2}
+              r={RADIUS}
+              stroke={accentColor}
+              strokeWidth={RING_STROKE}
+              strokeLinecap="round"
+              fill="transparent"
+              strokeDasharray={CIRCUMFERENCE}
+              animatedProps={animatedRingProps}
+            />
+          </G>
+        </Svg>
+      </Animated.View>
 
-      {/* Inner circular button face (sits inside the ring) */}
-      <View
-        style={{
-          width: BUTTON_SIZE,
-          height: BUTTON_SIZE,
-          borderRadius: radius.full,
-          backgroundColor: fillColor,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {isLoading ? (
-          <ActivityIndicator size="small" color="#FFFFFF" />
-        ) : isPlaying ? (
-          <Pause size={iconSizes.sm} color="#FFFFFF" fill="#FFFFFF" />
-        ) : (
-          <Play size={iconSizes.sm} color="#FFFFFF" fill="#FFFFFF" />
-        )}
-      </View>
+      {isLoading ? (
+        <ActivityIndicator size="small" color={accentColor} />
+      ) : isPlaying ? (
+        <Pause size={ICON_SIZE} color={accentColor} fill={accentColor} />
+      ) : (
+        <Play size={ICON_SIZE} color={accentColor} fill={accentColor} />
+      )}
     </Pressable>
   );
 }

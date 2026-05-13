@@ -48,7 +48,6 @@ interface FactActionsProps {
   currentIndex?: number;
   totalCount?: number;
   audioController?: FactAudioController;
-  audioCategoryColor?: string | null;
 }
 
 const Container = styled(YStack, {
@@ -136,7 +135,6 @@ export function FactActions({
   currentIndex,
   totalCount,
   audioController,
-  audioCategoryColor = null,
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -422,9 +420,7 @@ export function FactActions({
             </Pressable>
 
             {/* Play / Audio Button — only rendered when this fact has audio */}
-            {audioController?.hasAudio && (
-              <FactAudioButton controller={audioController} categoryColor={audioCategoryColor} />
-            )}
+            {audioController?.hasAudio && <FactAudioButton controller={audioController} />}
 
             {/* Report Button */}
             <Pressable

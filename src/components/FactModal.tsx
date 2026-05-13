@@ -1235,7 +1235,6 @@ export function FactModal({
         currentIndex={currentIndex}
         totalCount={totalCount}
         audioController={audioController}
-        audioCategoryColor={categoryColor}
       />
 
       {/* Premium content gate — blurs everything for free users viewing premium facts */}
