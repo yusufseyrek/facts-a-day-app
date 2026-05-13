@@ -213,5 +213,3 @@ describe('database — getTodaysFacts', () => {
     expect(sql).toContain('localtime');
   });
 });
-
-

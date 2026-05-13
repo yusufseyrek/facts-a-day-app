@@ -20,6 +20,7 @@ import { trackNotificationTimeChange, updateNotificationProperty } from '../../s
 import * as notificationService from '../../services/notifications';
 import * as onboardingService from '../../services/onboarding';
 import { hexColors, useTheme } from '../../theme';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { Button } from '../Button';
 import { SuccessToast } from '../SuccessToast';
@@ -533,7 +534,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   overlayPressable: {

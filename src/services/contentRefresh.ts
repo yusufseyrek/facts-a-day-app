@@ -41,7 +41,10 @@ export function consumeFeedRefreshPending(): boolean {
   if (feedRefreshPending) {
     feedRefreshPending = false;
   }
-  if (__DEV__) console.log(`📋 [FeedRefresh] consumeFeedRefreshPending called — was=${was}, now=${feedRefreshPending}`);
+  if (__DEV__)
+    console.log(
+      `📋 [FeedRefresh] consumeFeedRefreshPending called — was=${was}, now=${feedRefreshPending}`
+    );
   return was;
 }
 
@@ -324,7 +327,8 @@ async function needsQuestionsMigration(): Promise<boolean> {
 
     // If we have facts but no questions, we need migration
     if (questionsCount === 0) {
-      if (__DEV__) console.log(`📊 Migration needed: ${factsCount} facts, ${questionsCount} questions`);
+      if (__DEV__)
+        console.log(`📊 Migration needed: ${factsCount} facts, ${questionsCount} questions`);
       return true;
     }
 
@@ -365,7 +369,8 @@ async function runQuestionsMigration(locale: SupportedLocale): Promise<void> {
     const dbQuestions = extractQuestions(facts);
     if (dbQuestions.length > 0) {
       await db.insertQuestions(dbQuestions);
-      if (__DEV__) console.log(`✅ Migration complete: Added ${dbQuestions.length} questions for trivia`);
+      if (__DEV__)
+        console.log(`✅ Migration complete: Added ${dbQuestions.length} questions for trivia`);
     } else {
       console.warn('No questions found in API response');
     }
@@ -451,7 +456,10 @@ async function runSlugMigration(locale: SupportedLocale): Promise<void> {
       event_day: fact.metadata?.day ?? undefined,
       event_year: fact.metadata?.event_year ?? undefined,
       metadata: fact.metadata
-        ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+        ? JSON.stringify({
+            original_event: fact.metadata.original_event,
+            country: fact.metadata.country,
+          })
         : undefined,
       language: fact.language,
       created_at: fact.created_at,
@@ -493,7 +501,8 @@ async function needsHistoricalMigration(): Promise<boolean> {
     }
 
     // Facts exist but migration hasn't run — we need to re-fetch with historical included
-    if (__DEV__) console.log('📊 Historical migration needed: re-fetching all facts with historical data');
+    if (__DEV__)
+      console.log('📊 Historical migration needed: re-fetching all facts with historical data');
     return true;
   } catch (error) {
     console.error('Error checking historical migration:', error);
@@ -508,7 +517,10 @@ async function needsHistoricalMigration(): Promise<boolean> {
  */
 async function runHistoricalMigration(locale: SupportedLocale): Promise<void> {
   try {
-    if (__DEV__) console.log('🔄 Running historical migration - re-downloading all facts with historical data...');
+    if (__DEV__)
+      console.log(
+        '🔄 Running historical migration - re-downloading all facts with historical data...'
+      );
 
     const categories = await onboardingService.getSelectedCategories();
     if (categories.length === 0) {
@@ -541,7 +553,10 @@ async function runHistoricalMigration(locale: SupportedLocale): Promise<void> {
       event_day: fact.metadata?.day ?? undefined,
       event_year: fact.metadata?.event_year ?? undefined,
       metadata: fact.metadata
-        ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+        ? JSON.stringify({
+            original_event: fact.metadata.original_event,
+            country: fact.metadata.country,
+          })
         : undefined,
       language: fact.language,
       created_at: fact.created_at,
@@ -606,9 +621,10 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
 
     if (localeStatus.changed) {
       // Locale has changed - trigger full refresh with new language
-      if (__DEV__) console.log(
-        `🌍 Locale changed from "${localeStatus.storedLocale}" to "${currentLocale}" - triggering full refresh...`
-      );
+      if (__DEV__)
+        console.log(
+          `🌍 Locale changed from "${localeStatus.storedLocale}" to "${currentLocale}" - triggering full refresh...`
+        );
 
       // Emit locale-change status for UI loading indicator
       emitRefreshStatus('locale-change');
@@ -629,7 +645,8 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
 
         result.success = true;
         result.updated.facts = languageChangeResult.factsCount || 0;
-        if (__DEV__) console.log(`✅ Locale change refresh completed: ${result.updated.facts} facts updated`);
+        if (__DEV__)
+          console.log(`✅ Locale change refresh completed: ${result.updated.facts} facts updated`);
       } else {
         console.error('❌ Locale change refresh failed:', languageChangeResult.error);
         result.error = languageChangeResult.error;
@@ -681,9 +698,15 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
     // If user is not premium, ensure no premium categories remain selected.
     // This handles the case where a category was changed from free → premium
     // on the backend while the user already had it selected.
+    // Sync requires break the circular dependency between contentRefresh and the
+    // premium-state / premium-downgrade modules; converting to dynamic `import()`
+    // would change the timing.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getIsPremium } = require('./premiumState') as typeof import('./premiumState');
     if (!getIsPremium()) {
-      const { reconcilePremiumCategories } = require('./premiumDowngrade') as typeof import('./premiumDowngrade');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { reconcilePremiumCategories } =
+        require('./premiumDowngrade') as typeof import('./premiumDowngrade');
       await reconcilePremiumCategories();
     }
 
@@ -743,7 +766,10 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
           event_day: fact.metadata?.day ?? undefined,
           event_year: fact.metadata?.event_year ?? undefined,
           metadata: fact.metadata
-            ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+            ? JSON.stringify({
+                original_event: fact.metadata.original_event,
+                country: fact.metadata.country,
+              })
             : undefined,
           language: fact.language,
           created_at: fact.created_at,
@@ -807,11 +833,14 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
       });
       const apiTotal = countResponse.pagination.total;
 
-      if (__DEV__) console.log(`📋 [ContentRefresh] Fact count check: local=${localCount}, API=${apiTotal}`);
+      if (__DEV__)
+        console.log(`📋 [ContentRefresh] Fact count check: local=${localCount}, API=${apiTotal}`);
 
       if (localCount < apiTotal) {
         const missing = apiTotal - localCount;
-        console.log(`📋 [ContentRefresh] Local DB has ${localCount}/${apiTotal} facts — backfilling ${missing} missing`);
+        console.log(
+          `📋 [ContentRefresh] Local DB has ${localCount}/${apiTotal} facts — backfilling ${missing} missing`
+        );
 
         let backfillOffset = 0;
         const backfillBatchSize = API_SETTINGS.FACTS_BATCH_SIZE;
@@ -829,7 +858,10 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
 
           if (backfillResponse.facts.length === 0) break;
 
-          if (__DEV__) console.log(`📋 [ContentRefresh] Backfill batch: offset=${backfillOffset}, got ${backfillResponse.facts.length} facts`);
+          if (__DEV__)
+            console.log(
+              `📋 [ContentRefresh] Backfill batch: offset=${backfillOffset}, got ${backfillResponse.facts.length} facts`
+            );
 
           const backfillDbFacts: db.Fact[] = backfillResponse.facts.map((fact) => ({
             id: fact.id,
@@ -846,7 +878,10 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
             event_day: fact.metadata?.day ?? undefined,
             event_year: fact.metadata?.event_year ?? undefined,
             metadata: fact.metadata
-              ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+              ? JSON.stringify({
+                  original_event: fact.metadata.original_event,
+                  country: fact.metadata.country,
+                })
               : undefined,
             language: fact.language,
             created_at: fact.created_at,

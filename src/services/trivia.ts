@@ -357,13 +357,20 @@ export function getStreakDisplay(streak: number): string {
 // literal "true"/"false", but older rows in user caches may still be localized.
 const TRUE_LITERALS = new Set([
   'true',
-  'wahr', 'richtig',       // de
-  'verdadero', 'cierto',   // es
-  'vrai',                  // fr
-  '正しい', '正解',         // ja
-  '참', '정답',             // ko
-  'doğru',                 // tr
-  '正确', '正確', '对', '是', // zh
+  'wahr',
+  'richtig', // de
+  'verdadero',
+  'cierto', // es
+  'vrai', // fr
+  '正しい',
+  '正解', // ja
+  '참',
+  '정답', // ko
+  'doğru', // tr
+  '正确',
+  '正確',
+  '对',
+  '是', // zh
 ]);
 
 function isTrueLiteral(value: string): boolean {

@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import ViewShot from 'react-native-view-shot';
+import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { XStack, YStack } from 'tamagui';
@@ -88,7 +88,7 @@ const PALETTES: Record<ThemeMode, Palette> = {
  * Off-screen composition captured via react-native-view-shot for the
  * "Share my stats" button.
  */
-export const ShareableStatsCard = forwardRef<ViewShot, ShareableStatsCardProps>(
+export const ShareableStatsCard = forwardRef<ViewShotRef, ShareableStatsCardProps>(
   function ShareableStatsCard(
     {
       theme,

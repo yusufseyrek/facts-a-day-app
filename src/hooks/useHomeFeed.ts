@@ -34,10 +34,7 @@ export function useHomeFeed(locale: string): UseHomeFeedResult {
     [allFreshFacts]
   );
 
-  const latestFactIds = useMemo(
-    () => latestFacts.map((f) => f.id),
-    [latestFacts]
-  );
+  const latestFactIds = useMemo(() => latestFacts.map((f) => f.id), [latestFacts]);
 
   const onThisDayFacts = data?.onThisDay ?? [];
   const onThisDayIsWeekFallback = data?.onThisDayIsWeekFallback ?? false;

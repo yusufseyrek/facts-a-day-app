@@ -6,7 +6,7 @@
 
 import { forwardRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import ViewShot from 'react-native-view-shot';
+import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -70,7 +70,7 @@ function getCategoryInfo(category: string | Category | undefined) {
   };
 }
 
-export const ShareCard = forwardRef<ViewShot, ShareCardProps>(({ fact }, ref) => {
+export const ShareCard = forwardRef<ViewShotRef, ShareCardProps>(({ fact }, ref) => {
   const title = fact.title || fact.content.substring(0, 200);
   const categoryInfo = getCategoryInfo(fact.category);
 

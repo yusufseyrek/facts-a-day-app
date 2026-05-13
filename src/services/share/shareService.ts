@@ -3,7 +3,7 @@
  * Main orchestration service for sharing facts
  */
 
-import ViewShot from 'react-native-view-shot';
+import { type ViewShotRef } from 'react-native-view-shot';
 
 import * as Haptics from 'expo-haptics';
 
@@ -38,13 +38,13 @@ const DEFAULT_OPTIONS: ShareOptions = {
  * Manages share operations and ViewShot reference
  */
 class ShareServiceImpl {
-  private viewShotRef: React.RefObject<ViewShot | null> | null = null;
+  private viewShotRef: React.RefObject<ViewShotRef | null> | null = null;
 
   /**
    * Set the ViewShot reference for image capture
    * Call this when the ShareCard component mounts
    */
-  setViewShotRef(ref: React.RefObject<ViewShot | null>): void {
+  setViewShotRef(ref: React.RefObject<ViewShotRef | null>): void {
     this.viewShotRef = ref;
   }
 

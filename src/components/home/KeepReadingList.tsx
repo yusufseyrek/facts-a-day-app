@@ -1,10 +1,5 @@
 import React, { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  RefreshControl,
-  View,
-  type ViewToken,
-} from 'react-native';
+import { ActivityIndicator, RefreshControl, View, type ViewToken } from 'react-native';
 import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
@@ -100,18 +95,16 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
     // while capping waste — rows beyond the window stay disabled.
     const AD_LOOKAHEAD = 5;
     const [highestViewedIndex, setHighestViewedIndex] = useState(-1);
-    const onViewableItemsChanged = useRef(
-      ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-        let maxIdx = -1;
-        for (const v of viewableItems) {
-          if (typeof v.index === 'number' && v.index > maxIdx) {
-            maxIdx = v.index;
-          }
+    const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      let maxIdx = -1;
+      for (const v of viewableItems) {
+        if (typeof v.index === 'number' && v.index > maxIdx) {
+          maxIdx = v.index;
         }
-        if (maxIdx < 0) return;
-        setHighestViewedIndex((prev) => (maxIdx > prev ? maxIdx : prev));
       }
-    ).current;
+      if (maxIdx < 0) return;
+      setHighestViewedIndex((prev) => (maxIdx > prev ? maxIdx : prev));
+    }).current;
     const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 1 }).current;
 
     const items = useMemo(() => {

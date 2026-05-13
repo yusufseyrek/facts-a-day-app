@@ -19,6 +19,7 @@ import { triggerFeedRefresh } from '../../services/contentRefresh';
 import * as database from '../../services/database';
 import { hexColors, useTheme } from '../../theme';
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../../utils/responsive';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -53,8 +54,7 @@ const FactItem = React.memo(
     spacing,
     radius,
   }: FactItemProps) => {
-    const isInFeed =
-      !!(fact.scheduled_date && new Date(fact.scheduled_date) <= new Date());
+    const isInFeed = !!(fact.scheduled_date && new Date(fact.scheduled_date) <= new Date());
 
     const itemStyles = useMemo(
       () => ({
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   checkbox: {

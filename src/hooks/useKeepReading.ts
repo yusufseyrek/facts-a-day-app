@@ -32,10 +32,7 @@ export function useKeepReading(locale: string): UseKeepReadingResult {
     },
   });
 
-  const facts = useMemo(
-    () => data?.pages.flat() ?? [],
-    [data]
-  );
+  const facts = useMemo(() => data?.pages.flat() ?? [], [data]);
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {

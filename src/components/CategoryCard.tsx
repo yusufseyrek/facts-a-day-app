@@ -193,7 +193,11 @@ const CategoryCardComponent = ({
                 justifyContent="center"
                 backgroundColor={theme === 'dark' ? '#FFFFFF15' : '#00000010'}
               >
-                <Lock size={iconSizes.xs} color={theme === 'dark' ? '#FFFFFF70' : '#00000050'} strokeWidth={2.5} />
+                <Lock
+                  size={iconSizes.xs}
+                  color={theme === 'dark' ? '#FFFFFF70' : '#00000050'}
+                  strokeWidth={2.5}
+                />
               </YStack>
             ) : (
               <Animated.View style={[checkmarkContainerStyle, checkmarkStyle]}>
@@ -216,7 +220,11 @@ const CategoryCardComponent = ({
                 maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER}
                 style={{
                   fontFamily: FONT_FAMILIES.semibold,
-                  color: selected ? contrastColor : theme === 'dark' ? hexColors.dark.text : hexColors.light.text,
+                  color: selected
+                    ? contrastColor
+                    : theme === 'dark'
+                      ? hexColors.dark.text
+                      : hexColors.light.text,
                   textAlign: 'center',
                   fontSize: labelFontSize ?? typography.fontSize.caption,
                   lineHeight: (labelFontSize ?? typography.fontSize.caption) * 1.3,

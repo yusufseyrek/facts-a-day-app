@@ -28,13 +28,10 @@ interface UseHomeFeedEventsResult {
   backgroundRefreshStatus: RefreshStatus;
 }
 
-export function useHomeFeedEvents(
-  locale: string,
-  refs: CarouselRefs
-): UseHomeFeedEventsResult {
+export function useHomeFeedEvents(locale: string, refs: CarouselRefs): UseHomeFeedEventsResult {
   const queryClient = useQueryClient();
-  const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(
-    () => getRefreshStatus()
+  const [backgroundRefreshStatus, setBackgroundRefreshStatus] = useState<RefreshStatus>(() =>
+    getRefreshStatus()
   );
 
   // Auto-refresh feed when facts change (content sync, preference changes)

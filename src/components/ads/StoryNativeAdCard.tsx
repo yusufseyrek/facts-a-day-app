@@ -45,10 +45,7 @@ function StoryNativeAdCardComponent({
     ? NativeMediaAspectRatio.PORTRAIT
     : NativeMediaAspectRatio.LANDSCAPE;
 
-  const { ad: nativeAdFromPool, status } = useAdForSlot(
-    nativeAdProp ? null : slotKey,
-    aspectRatio
-  );
+  const { ad: nativeAdFromPool, status } = useAdForSlot(nativeAdProp ? null : slotKey, aspectRatio);
   const nativeAd = nativeAdProp ?? nativeAdFromPool;
   const { t } = useTranslation();
   const { theme } = useTheme();

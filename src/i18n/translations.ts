@@ -1978,7 +1978,8 @@ export const translations = {
     paywallFeatureOfflineTrivia: 'Trivia hors ligne',
     paywallFeatureOfflineTriviaDesc: 'Jouez au trivia même sans internet',
     paywallFeaturePremiumCategories: 'Catégories Exclusives',
-    paywallFeaturePremiumCategoriesDesc: '%{count} thèmes premium comme Finance, Crime et Mythologie',
+    paywallFeaturePremiumCategoriesDesc:
+      '%{count} thèmes premium comme Finance, Crime et Mythologie',
     premiumGateTitle: 'Contenu Premium',
     premiumGateDescription:
       'Ce fait appartient à une catégorie premium. Débloquez premium pour accéder aux %{count} catégories exclusives.',
@@ -4065,8 +4066,7 @@ export const translations = {
     paywallFeaturePremiumCategories: '独家分类',
     paywallFeaturePremiumCategoriesDesc: '金融、犯罪、神话等%{count}个高级主题',
     premiumGateTitle: '高级内容',
-    premiumGateDescription:
-      '此事实属于高级分类。解锁高级版以访问全部%{count}个独家分类。',
+    premiumGateDescription: '此事实属于高级分类。解锁高级版以访问全部%{count}个独家分类。',
     unlockPremium: '解锁高级版',
     premiumActivated: '欢迎使用高级版！',
     offlineGateTitle: '您处于离线状态',

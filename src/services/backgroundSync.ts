@@ -14,7 +14,7 @@ import * as TaskManager from 'expo-task-manager';
 
 import { PRECACHE } from '../config/images';
 
-import { getStoredLocale,refreshAppContent } from './contentRefresh';
+import { getStoredLocale, refreshAppContent } from './contentRefresh';
 import { loadDailyFeedSections } from './dailyFeed';
 import { preCacheOfflineImages } from './images';
 import { ensureNotificationSchedule } from './notifications';

@@ -1,11 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import {
-  Animated as RNAnimated,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Animated as RNAnimated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BookOpen, ChevronLeft, Flame, Gamepad2, Trophy } from '@tamagui/lucide-icons';

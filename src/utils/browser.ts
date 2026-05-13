@@ -58,4 +58,3 @@ export async function openInAppBrowser(
     throw error;
   }
 }
-

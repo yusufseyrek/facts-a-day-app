@@ -1,9 +1,6 @@
 import * as database from '../../services/database';
 // Import after setup mocks
-import {
-  __testing,
-  ensureNotificationSchedule,
-} from '../../services/notifications';
+import { __testing, ensureNotificationSchedule } from '../../services/notifications';
 import { createPreferredTime, futureDate } from '../helpers/factories';
 
 const {

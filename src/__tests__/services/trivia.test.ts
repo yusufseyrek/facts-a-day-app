@@ -1,5 +1,6 @@
-import type { Question } from '../../services/database';
 import { answerToIndex, isAnswerCorrect, isTextAnswerCorrect } from '../../services/trivia';
+
+import type { Question } from '../../services/database';
 
 function tf(correct_answer: string): Question {
   return {

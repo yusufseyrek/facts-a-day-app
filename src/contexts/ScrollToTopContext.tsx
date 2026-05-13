@@ -24,7 +24,8 @@ export function ScrollToTopProvider({ children }: { children: React.ReactNode })
 
   const scrollToTop = useCallback((tabName: string) => {
     const scrollFn = scrollFunctionsRef.current.get(tabName);
-    if (__DEV__) console.log(`📜 ScrollToTop called for tab: ${tabName}, has handler: ${!!scrollFn}`);
+    if (__DEV__)
+      console.log(`📜 ScrollToTop called for tab: ${tabName}, has handler: ${!!scrollFn}`);
     if (scrollFn) {
       scrollFn();
     }

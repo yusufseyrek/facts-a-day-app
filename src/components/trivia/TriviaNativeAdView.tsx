@@ -101,201 +101,201 @@ export function TriviaNativeAdView({
           maxWidth: isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined,
         }}
       >
-      {/* Header - identical to TriviaGameView */}
-      <XStack
-        paddingHorizontal={spacing.lg}
-        alignItems="center"
-        justifyContent="space-between"
-        position="relative"
-      >
-        <Pressable
-          onPress={() => handlePressWithHaptics(onExit)}
-          hitSlop={12}
-          style={({ pressed }) => [{ zIndex: 1 }, pressed && { opacity: 0.6 }]}
-        >
-          <X size={iconSizes.lg} color={textColor} />
-        </Pressable>
-
-        {/* Trivia Mode Title - Centered */}
-        <View
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            alignItems: 'flex-start',
-            justifyContent: 'center',
-          }}
-        >
-          <Text.Body
-            paddingLeft={spacing.lg * 4}
-            fontFamily={FONT_FAMILIES.bold}
-            color={textColor}
-            numberOfLines={1}
-          >
-            {triviaTitle}
-          </Text.Body>
-        </View>
-
-        {/* Timer */}
+        {/* Header - identical to TriviaGameView */}
         <XStack
-          backgroundColor={surfaceColor}
-          paddingHorizontal={spacing.md}
-          paddingVertical={spacing.sm}
-          borderRadius={radius.full}
+          paddingHorizontal={spacing.lg}
           alignItems="center"
-          gap={spacing.sm}
-          zIndex={1}
+          justifyContent="space-between"
+          position="relative"
         >
-          <Timer
-            size={typography.fontSize.title}
-            color={timeRemaining < 30 ? errorColor : primaryColor}
-          />
-          <Text.Label
-            fontFamily={FONT_FAMILIES.bold}
-            color={timeRemaining < 30 ? errorColor : textColor}
+          <Pressable
+            onPress={() => handlePressWithHaptics(onExit)}
+            hitSlop={12}
+            style={({ pressed }) => [{ zIndex: 1 }, pressed && { opacity: 0.6 }]}
           >
-            {formatTime(timeRemaining)}
-          </Text.Label>
-        </XStack>
-      </XStack>
+            <X size={iconSizes.lg} color={textColor} />
+          </Pressable>
 
-      {/* Progress section - hide question index, show "Advertisement" instead of category */}
-      <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} gap={spacing.sm}>
-        <XStack justifyContent="flex-end" alignItems="center">
-          <Text.Label fontFamily={FONT_FAMILIES.semibold} color={secondaryTextColor}>
-            {t('sponsored') || 'Advertisement'}
-          </Text.Label>
-        </XStack>
-
-        {/* Progress bar */}
-        <View
-          style={{
-            height: borderWidths.extraHeavy,
-            backgroundColor: borderColor,
-            borderRadius: 3,
-            overflow: 'hidden',
-          }}
-        >
-          <Animated.View
-            style={[
-              {
-                height: '100%',
-                backgroundColor: primaryColor,
-                borderRadius: 3,
-              },
-              progressAnimatedStyle,
-            ]}
-          />
-        </View>
-      </YStack>
-
-      {/* Native Ad Content */}
-      <View style={{ flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
-        <NativeAdView nativeAd={nativeAd} style={{ flex: 1 }}>
+          {/* Trivia Mode Title - Centered */}
           <View
             style={{
-              flex: 1,
-              borderRadius: radius.xl,
-              overflow: 'hidden',
-              borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.1)',
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              alignItems: 'flex-start',
+              justifyContent: 'center',
             }}
           >
-            {/* Media content */}
-            <NativeMediaView resizeMode="cover" style={StyleSheet.absoluteFill} />
-
-            {/* Gradient overlay */}
-            <LinearGradient
-              colors={gradientColors}
-              locations={gradientLocations}
-              style={StyleSheet.absoluteFill}
-              pointerEvents="none"
-            />
-
-            {/* Headline */}
-            <View
-              style={[
-                styles.contentOverlay,
-                {
-                  paddingHorizontal: spacing.lg,
-                  paddingBottom: spacing.lg,
-                  paddingTop: spacing.xl * 1.5,
-                },
-              ]}
+            <Text.Body
+              paddingLeft={spacing.lg * 4}
+              fontFamily={FONT_FAMILIES.bold}
+              color={textColor}
+              numberOfLines={1}
             >
-              <NativeAsset assetType={NativeAssetType.HEADLINE}>
-                <Text.Title color="#FFFFFF" numberOfLines={3} style={styles.titleShadow}>
-                  {nativeAd.headline}
-                </Text.Title>
-              </NativeAsset>
-            </View>
+              {triviaTitle}
+            </Text.Body>
           </View>
-        </NativeAdView>
-      </View>
 
-      {/* Navigation buttons - same as TriviaGameView */}
-      <XStack paddingHorizontal={spacing.lg} paddingTop={spacing.md} gap={spacing.md}>
-        {/* Previous button */}
-        <Pressable
-          onPress={() => !navLocked && handlePressWithHaptics(onPrevQuestion)}
-          disabled={navLocked}
-          role="button"
-          aria-label={t('a11y_previousButton')}
-          style={({ pressed }) => [
-            navLocked && { opacity: 0.4 },
-            !navLocked && pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
-          ]}
-        >
+          {/* Timer */}
           <XStack
-            backgroundColor={primaryColor}
-            height={media.buttonHeight}
-            paddingHorizontal={spacing.lg}
-            borderRadius={radius.lg}
-            justifyContent="center"
-            alignItems="center"
-          >
-            <ChevronLeft size={iconSizes.lg} color="#FFFFFF" />
-          </XStack>
-        </Pressable>
-
-        {/* Next button */}
-        <Pressable
-          onPress={() => !navLocked && handlePressWithHaptics(onContinue)}
-          disabled={navLocked}
-          role="button"
-          aria-label={t('a11y_nextButton')}
-          style={({ pressed }) => [
-            { flex: 1 },
-            navLocked && { opacity: 0.4 },
-            !navLocked && pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
-          ]}
-        >
-          <XStack
-            backgroundColor={primaryColor}
-            height={media.buttonHeight}
-            borderRadius={radius.lg}
-            justifyContent="center"
+            backgroundColor={surfaceColor}
+            paddingHorizontal={spacing.md}
+            paddingVertical={spacing.sm}
+            borderRadius={radius.full}
             alignItems="center"
             gap={spacing.sm}
+            zIndex={1}
           >
-            {navLocked ? (
-              <CircularProgress duration={navLockDuration} size={iconSizes.lg} />
-            ) : (
-              <>
-                <Text.Body
-                  color="#FFFFFF"
-                  fontFamily={FONT_FAMILIES.semibold}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                >
-                  {t('nextQuestion')}
-                </Text.Body>
-                <ChevronRight size={typography.fontSize.title} color="#FFFFFF" />
-              </>
-            )}
+            <Timer
+              size={typography.fontSize.title}
+              color={timeRemaining < 30 ? errorColor : primaryColor}
+            />
+            <Text.Label
+              fontFamily={FONT_FAMILIES.bold}
+              color={timeRemaining < 30 ? errorColor : textColor}
+            >
+              {formatTime(timeRemaining)}
+            </Text.Label>
           </XStack>
-        </Pressable>
-      </XStack>
+        </XStack>
+
+        {/* Progress section - hide question index, show "Advertisement" instead of category */}
+        <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} gap={spacing.sm}>
+          <XStack justifyContent="flex-end" alignItems="center">
+            <Text.Label fontFamily={FONT_FAMILIES.semibold} color={secondaryTextColor}>
+              {t('sponsored') || 'Advertisement'}
+            </Text.Label>
+          </XStack>
+
+          {/* Progress bar */}
+          <View
+            style={{
+              height: borderWidths.extraHeavy,
+              backgroundColor: borderColor,
+              borderRadius: 3,
+              overflow: 'hidden',
+            }}
+          >
+            <Animated.View
+              style={[
+                {
+                  height: '100%',
+                  backgroundColor: primaryColor,
+                  borderRadius: 3,
+                },
+                progressAnimatedStyle,
+              ]}
+            />
+          </View>
+        </YStack>
+
+        {/* Native Ad Content */}
+        <View style={{ flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}>
+          <NativeAdView nativeAd={nativeAd} style={{ flex: 1 }}>
+            <View
+              style={{
+                flex: 1,
+                borderRadius: radius.xl,
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              {/* Media content */}
+              <NativeMediaView resizeMode="cover" style={StyleSheet.absoluteFill} />
+
+              {/* Gradient overlay */}
+              <LinearGradient
+                colors={gradientColors}
+                locations={gradientLocations}
+                style={StyleSheet.absoluteFill}
+                pointerEvents="none"
+              />
+
+              {/* Headline */}
+              <View
+                style={[
+                  styles.contentOverlay,
+                  {
+                    paddingHorizontal: spacing.lg,
+                    paddingBottom: spacing.lg,
+                    paddingTop: spacing.xl * 1.5,
+                  },
+                ]}
+              >
+                <NativeAsset assetType={NativeAssetType.HEADLINE}>
+                  <Text.Title color="#FFFFFF" numberOfLines={3} style={styles.titleShadow}>
+                    {nativeAd.headline}
+                  </Text.Title>
+                </NativeAsset>
+              </View>
+            </View>
+          </NativeAdView>
+        </View>
+
+        {/* Navigation buttons - same as TriviaGameView */}
+        <XStack paddingHorizontal={spacing.lg} paddingTop={spacing.md} gap={spacing.md}>
+          {/* Previous button */}
+          <Pressable
+            onPress={() => !navLocked && handlePressWithHaptics(onPrevQuestion)}
+            disabled={navLocked}
+            role="button"
+            aria-label={t('a11y_previousButton')}
+            style={({ pressed }) => [
+              navLocked && { opacity: 0.4 },
+              !navLocked && pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+            ]}
+          >
+            <XStack
+              backgroundColor={primaryColor}
+              height={media.buttonHeight}
+              paddingHorizontal={spacing.lg}
+              borderRadius={radius.lg}
+              justifyContent="center"
+              alignItems="center"
+            >
+              <ChevronLeft size={iconSizes.lg} color="#FFFFFF" />
+            </XStack>
+          </Pressable>
+
+          {/* Next button */}
+          <Pressable
+            onPress={() => !navLocked && handlePressWithHaptics(onContinue)}
+            disabled={navLocked}
+            role="button"
+            aria-label={t('a11y_nextButton')}
+            style={({ pressed }) => [
+              { flex: 1 },
+              navLocked && { opacity: 0.4 },
+              !navLocked && pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+            ]}
+          >
+            <XStack
+              backgroundColor={primaryColor}
+              height={media.buttonHeight}
+              borderRadius={radius.lg}
+              justifyContent="center"
+              alignItems="center"
+              gap={spacing.sm}
+            >
+              {navLocked ? (
+                <CircularProgress duration={navLockDuration} size={iconSizes.lg} />
+              ) : (
+                <>
+                  <Text.Body
+                    color="#FFFFFF"
+                    fontFamily={FONT_FAMILIES.semibold}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                  >
+                    {t('nextQuestion')}
+                  </Text.Body>
+                  <ChevronRight size={typography.fontSize.title} color="#FFFFFF" />
+                </>
+              )}
+            </XStack>
+          </Pressable>
+        </XStack>
       </View>
     </View>
   );

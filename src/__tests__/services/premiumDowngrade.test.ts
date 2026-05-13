@@ -27,11 +27,14 @@ jest.mock('react-native', () => ({
 
 import { Alert } from 'react-native';
 
-import * as db from '../../services/database';
-import * as onboardingService from '../../services/onboarding';
 import { emitFeedRefresh, markFeedRefreshPending } from '../../services/contentRefresh';
 import { invalidateFeedMemoryCache } from '../../services/dailyFeed';
-import { reconcilePremiumCategories, handlePremiumDowngrade } from '../../services/premiumDowngrade';
+import * as db from '../../services/database';
+import * as onboardingService from '../../services/onboarding';
+import {
+  handlePremiumDowngrade,
+  reconcilePremiumCategories,
+} from '../../services/premiumDowngrade';
 
 const dbMock = db as jest.Mocked<typeof db>;
 const onboardingMock = onboardingService as jest.Mocked<typeof onboardingService>;
@@ -71,14 +74,21 @@ describe('reconcilePremiumCategories', () => {
   it('deselects premium categories and cleans up facts', async () => {
     dbMock.getPremiumCategorySlugs.mockResolvedValue(['finance', 'cinema', 'anatomy']);
     onboardingMock.getSelectedCategories.mockResolvedValue([
-      'science', 'finance', 'history', 'cinema',
+      'science',
+      'finance',
+      'history',
+      'cinema',
     ]);
 
     const result = await reconcilePremiumCategories();
 
     expect(result).toBe(true);
     expect(onboardingMock.setSelectedCategories).toHaveBeenCalledWith(['science', 'history']);
-    expect(dbMock.deleteFactsByCategorySlugs).toHaveBeenCalledWith(['finance', 'cinema', 'anatomy']);
+    expect(dbMock.deleteFactsByCategorySlugs).toHaveBeenCalledWith([
+      'finance',
+      'cinema',
+      'anatomy',
+    ]);
   });
 
   it('cleans up orphaned questions after deleting facts', async () => {

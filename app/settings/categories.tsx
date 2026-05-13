@@ -27,7 +27,6 @@ import { hexToHue } from '../../src/utils/colors';
 import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
 
-
 // Content styled components now use inline props with useResponsive() for dynamic spacing
 
 export default function CategoriesSettings() {
@@ -251,7 +250,13 @@ export default function CategoriesSettings() {
           router.back();
         }}
       />
-      <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} paddingBottom={spacing.sm} gap={spacing.md} flex={1}>
+      <YStack
+        paddingHorizontal={spacing.lg}
+        paddingTop={spacing.lg}
+        paddingBottom={spacing.sm}
+        gap={spacing.md}
+        flex={1}
+      >
         <Animated.View
           style={{
             opacity: headerOpacity,
@@ -274,7 +279,8 @@ export default function CategoriesSettings() {
                   const selectable = isPremium
                     ? categories
                     : categories.filter((c) => !c.is_premium);
-                  const allSelected = selectable.length > 0 &&
+                  const allSelected =
+                    selectable.length > 0 &&
                     selectable.every((c) => selectedCategories.includes(c.slug));
                   if (allSelected) {
                     setSelectedCategories([]);

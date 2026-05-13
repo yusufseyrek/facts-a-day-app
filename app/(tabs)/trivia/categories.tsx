@@ -11,8 +11,8 @@ import {
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useFocusEffect } from '@react-navigation/native';
 import { ChevronLeft } from '@tamagui/lucide-icons';
+import { useFocusEffect } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';

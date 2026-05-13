@@ -76,4 +76,3 @@ export const maybeShowCategoryChangeInterstitial = async (): Promise<boolean> =>
     return false;
   }
 };
-

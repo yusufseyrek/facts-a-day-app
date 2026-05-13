@@ -161,15 +161,10 @@ const NAVIGATE_DELAY_MS = 3000;
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, iconSizes, spacing, radius, borderWidths, media } =
-    useResponsive();
+  const { typography, iconSizes, spacing, radius, borderWidths, media } = useResponsive();
   const router = useRouter();
-  const {
-    completeOnboarding,
-    selectedCategories,
-    isDownloadingFacts,
-    waitForFirstBatchReady,
-  } = useOnboarding();
+  const { completeOnboarding, selectedCategories, isDownloadingFacts, waitForFirstBatchReady } =
+    useOnboarding();
 
   const [showConsent, setShowConsent] = useState(false);
   const [consentDone, setConsentDone] = useState(false);
@@ -212,7 +207,9 @@ export default function OnboardingSuccessScreen() {
         console.error('Error completing onboarding:', error);
         try {
           await completeOnboarding();
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
     })();
 
@@ -229,7 +226,9 @@ export default function OnboardingSuccessScreen() {
         queryClient.setQueryData(homeKeys.dailyFeed(locale), feedSections);
 
         // Also prime Keep Reading cache so it's available immediately
-        const _latestIds = feedSections.freshFacts.slice(0, HOME_FEED.LATEST_COUNT).map((f) => f.id);
+        const _latestIds = feedSections.freshFacts
+          .slice(0, HOME_FEED.LATEST_COUNT)
+          .map((f) => f.id);
         const keepReadingPage = await database.getLatestFactsPaginated(
           HOME_FEED.KEEP_READING_PAGE_SIZE,
           HOME_FEED.LATEST_COUNT,
@@ -605,7 +604,6 @@ export default function OnboardingSuccessScreen() {
             {t('welcomeToApp')}
           </Text.Body>
         </Animated.View>
-
       </YStack>
     </YStack>
   );

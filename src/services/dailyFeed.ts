@@ -1,10 +1,6 @@
 import { HOME_FEED } from '../config/app';
 
-import {
-  getLatestFacts,
-  getOnThisDayFacts,
-  getThisWeekInHistoryFacts,
-} from './database';
+import { getLatestFacts, getOnThisDayFacts, getThisWeekInHistoryFacts } from './database';
 import { cacheFactImages } from './images';
 
 import type { FactWithRelations } from './database';
@@ -53,7 +49,12 @@ export async function loadDailyFeedSections(
 ): Promise<DailyFeedSections> {
   // Return in-memory cache if valid (same day + locale, not force-refreshing)
   const today = new Date().toISOString().split('T')[0];
-  if (!forceRefresh && _memoryCache && _memoryCache.date === today && _memoryCache.locale === locale) {
+  if (
+    !forceRefresh &&
+    _memoryCache &&
+    _memoryCache.date === today &&
+    _memoryCache.locale === locale
+  ) {
     return _memoryCache.sections;
   }
 

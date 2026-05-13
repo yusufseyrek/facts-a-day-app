@@ -16,15 +16,14 @@ import { Text } from './Typography';
  * Uses SafeAreaView directly (not via Tamagui styled()) to ensure
  * native safe-area insets are applied correctly on all Android devices.
  */
-export function ScreenContainer({
-  style,
-  children,
-  ...props
-}: SafeAreaViewProps) {
+export function ScreenContainer({ style, children, ...props }: SafeAreaViewProps) {
   const { theme } = useTheme();
   const bg = hexColors[theme].background;
   return (
-    <SafeAreaView style={[scStyles.container, { backgroundColor: bg }, style as ViewStyle]} {...props}>
+    <SafeAreaView
+      style={[scStyles.container, { backgroundColor: bg }, style as ViewStyle]}
+      {...props}
+    >
       {children}
     </SafeAreaView>
   );

@@ -313,10 +313,7 @@ describe('onboarding service', () => {
         notificationTime: time,
       });
 
-      expect(storageMock.setItem).toHaveBeenCalledWith(
-        NOTIFICATION_TIME_KEY,
-        time.toISOString()
-      );
+      expect(storageMock.setItem).toHaveBeenCalledWith(NOTIFICATION_TIME_KEY, time.toISOString());
     });
 
     it('prefers notificationTimes over notificationTime', async () => {
@@ -339,9 +336,9 @@ describe('onboarding service', () => {
     it('throws on storage error', async () => {
       storageMock.setItem.mockRejectedValue(new Error('storage full'));
 
-      await expect(
-        completeOnboarding({ selectedCategories: ['science'] })
-      ).rejects.toThrow('storage full');
+      await expect(completeOnboarding({ selectedCategories: ['science'] })).rejects.toThrow(
+        'storage full'
+      );
     });
   });
 

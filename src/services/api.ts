@@ -476,7 +476,13 @@ export async function getAllFactsWithRetry(
 
   while (attempt < maxRetries) {
     try {
-      return await getAllFacts(language, categories, onProgress, includeQuestions, includeHistorical);
+      return await getAllFacts(
+        language,
+        categories,
+        onProgress,
+        includeQuestions,
+        includeHistorical
+      );
     } catch (error) {
       lastError = error as Error;
       attempt++;

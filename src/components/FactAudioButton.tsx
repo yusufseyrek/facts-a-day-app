@@ -1,14 +1,15 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-
-import { Pause, Play } from '@tamagui/lucide-icons';
 import Animated, { useAnimatedProps } from 'react-native-reanimated';
 import Svg, { Circle, G } from 'react-native-svg';
 
-import type { FactAudioController } from '../hooks/useFactAudio';
+import { Pause, Play } from '@tamagui/lucide-icons';
+
 import { useTranslation } from '../i18n';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
+
+import type { FactAudioController } from '../hooks/useFactAudio';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 

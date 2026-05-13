@@ -45,7 +45,10 @@ export async function reconcilePremiumCategories(): Promise<boolean> {
   emitFeedRefresh();
   markFeedRefreshPending();
 
-  if (__DEV__) console.log(`reconcilePremiumCategories: deselected ${currentSelection.length - filteredSelection.length} premium categories`);
+  if (__DEV__)
+    console.log(
+      `reconcilePremiumCategories: deselected ${currentSelection.length - filteredSelection.length} premium categories`
+    );
   return true;
 }
 

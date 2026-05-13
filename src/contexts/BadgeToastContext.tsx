@@ -9,9 +9,9 @@ import { onBadgeEarned, scheduleSatisfactionPrompt } from '../services/appReview
 import {
   consumePendingBadgeToasts,
   isModalScreenActive,
+  type NewlyEarnedBadge,
   popBlockingOverlay,
   pushBlockingOverlay,
-  type NewlyEarnedBadge,
 } from '../services/badges';
 
 const POLL_INTERVAL = 500;

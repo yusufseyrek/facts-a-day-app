@@ -20,10 +20,10 @@ import {
   useFonts,
 } from '@expo-google-fonts/montserrat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import * as Localization from 'expo-localization';
 import * as Notifications from 'expo-notifications';
+import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { PostHogErrorBoundary, PostHogProvider } from 'posthog-react-native';
@@ -200,7 +200,7 @@ function AppContent() {
   const lastNotificationResponse = Notifications.useLastNotificationResponse();
   useEffect(() => {
     if (lastNotificationResponse) {
-      const factId = lastNotificationResponse.notification.request.content.data.factId;
+      const factId = lastNotificationResponse.notification.request.content.data?.factId;
       const notificationId = lastNotificationResponse.notification.request.identifier;
 
       // Only navigate if:

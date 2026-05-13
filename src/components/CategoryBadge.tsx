@@ -1,4 +1,3 @@
-
 import { Lock } from '@tamagui/lucide-icons';
 import { XStack } from 'tamagui';
 
@@ -25,7 +24,13 @@ interface CategoryBadgeProps {
   showLock?: boolean;
 }
 
-export function CategoryBadge({ category, fontFamily, fontSize, compact, showLock }: CategoryBadgeProps) {
+export function CategoryBadge({
+  category,
+  fontFamily,
+  fontSize,
+  compact,
+  showLock,
+}: CategoryBadgeProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { spacing, radius, typography } = useResponsive();
@@ -60,10 +65,7 @@ export function CategoryBadge({ category, fontFamily, fontSize, compact, showLoc
       style={{ backgroundColor }}
     >
       {showLock && (
-        <Lock
-          size={(fontSize || typography.fontSize.caption) - 1}
-          color={contrastColor}
-        />
+        <Lock size={(fontSize || typography.fontSize.caption) - 1} color={contrastColor} />
       )}
       <Text.Caption
         color={contrastColor}

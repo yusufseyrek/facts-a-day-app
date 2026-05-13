@@ -35,7 +35,7 @@ interface InsertNativeAdsOptions<T> {
   getAdKey?: (prevItem: T | null, adIndex: number) => string;
 }
 
-const defaultGetAdKey = <T,>(prevItem: T | null, adIndex: number): string => {
+const defaultGetAdKey = <T>(prevItem: T | null, adIndex: number): string => {
   if (prevItem && typeof prevItem === 'object' && 'id' in prevItem) {
     const id = (prevItem as { id: unknown }).id;
     if (id !== undefined && id !== null) {

@@ -10,10 +10,10 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BottomTabBar } from '@react-navigation/bottom-tabs';
-import { useFocusEffect } from '@react-navigation/native';
 import { Brain, Compass, Heart, Lightbulb, Settings } from '@tamagui/lucide-icons';
+import { useFocusEffect } from 'expo-router';
 import { Tabs, usePathname } from 'expo-router';
+import { BottomTabBar } from 'expo-router/build/react-navigation/bottom-tabs';
 
 import { GlobalProgressBar } from '../../src/components/GlobalProgressBar';
 import { OfflinePaywallSheet } from '../../src/components/OfflinePaywallSheet';
@@ -24,7 +24,10 @@ import * as triviaService from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
-import type { BottomTabBarButtonProps, BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import type {
+  BottomTabBarButtonProps,
+  BottomTabBarProps,
+} from 'expo-router/build/react-navigation/bottom-tabs';
 
 // Context to share current tab name with tab buttons
 const CurrentTabContext = createContext<string>('index');
@@ -69,9 +72,10 @@ function AnimatedTabButton({
     (e: any) => {
       // Check if this tab is already the current tab
       const isCurrentTab = tabName === currentTab;
-      if (__DEV__) console.log(
-        `📜 Tab pressed: ${tabName}, currentTab: ${currentTab}, isCurrentTab: ${isCurrentTab}`
-      );
+      if (__DEV__)
+        console.log(
+          `📜 Tab pressed: ${tabName}, currentTab: ${currentTab}, isCurrentTab: ${isCurrentTab}`
+        );
       if (isCurrentTab && tabName) {
         scrollToTop(tabName);
       }
@@ -302,7 +306,11 @@ export default function TabLayout() {
           options={{
             title: t('home'),
             tabBarIcon: ({ color, focused }) => (
-              <Lightbulb size={iconSizes.lg} color={color} strokeWidth={focused ? 2.5 : 1.5} />
+              <Lightbulb
+                size={iconSizes.lg}
+                color={color as string}
+                strokeWidth={focused ? 2.5 : 1.5}
+              />
             ),
             tabBarButton: (props) => (
               <AnimatedTabButton {...props} tabName="index" testID="tab-home" />
@@ -314,7 +322,11 @@ export default function TabLayout() {
           options={{
             title: t('discover'),
             tabBarIcon: ({ color, focused }) => (
-              <Compass size={iconSizes.lg} color={color} strokeWidth={focused ? 2.5 : 1.5} />
+              <Compass
+                size={iconSizes.lg}
+                color={color as string}
+                strokeWidth={focused ? 2.5 : 1.5}
+              />
             ),
             tabBarButton: (props) => (
               <AnimatedTabButton {...props} tabName="discover" testID="tab-discover" />
@@ -338,7 +350,11 @@ export default function TabLayout() {
           options={{
             title: t('favorites'),
             tabBarIcon: ({ color, focused }) => (
-              <Heart size={iconSizes.lg} color={color} strokeWidth={focused ? 2.5 : 1.5} />
+              <Heart
+                size={iconSizes.lg}
+                color={color as string}
+                strokeWidth={focused ? 2.5 : 1.5}
+              />
             ),
             tabBarButton: (props) => (
               <AnimatedTabButton {...props} tabName="favorites" testID="tab-favorites" />
@@ -350,7 +366,11 @@ export default function TabLayout() {
           options={{
             title: t('settings'),
             tabBarIcon: ({ color, focused }) => (
-              <Settings size={iconSizes.lg} color={color} strokeWidth={focused ? 2.5 : 1.5} />
+              <Settings
+                size={iconSizes.lg}
+                color={color as string}
+                strokeWidth={focused ? 2.5 : 1.5}
+              />
             ),
             tabBarButton: (props) => (
               <AnimatedTabButton {...props} tabName="settings" testID="tab-settings" />

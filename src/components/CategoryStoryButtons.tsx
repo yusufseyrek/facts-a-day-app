@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } 
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { useFocusEffect } from '@react-navigation/native';
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { Shuffle } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from 'expo-router';
 import { useRouter } from 'expo-router';
 
 import { useTranslation } from '../i18n';

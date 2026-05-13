@@ -130,7 +130,11 @@ export const FactCarousel = React.memo(
           if (isNativeAdPlaceholder(item)) {
             return (
               <View style={{ width: cardWidth }}>
-                <NativeAdCard cardWidth={cardWidth} slotKey={item.key} onAdFailed={() => handleAdFailed(item.key)} />
+                <NativeAdCard
+                  cardWidth={cardWidth}
+                  slotKey={item.key}
+                  onAdFailed={() => handleAdFailed(item.key)}
+                />
               </View>
             );
           }

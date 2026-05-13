@@ -42,7 +42,7 @@ export const hexToHue = (hex?: string | null): number => {
   if (max === r) h = ((g - b) / d) % 6;
   else if (max === g) h = (b - r) / d + 2;
   else h = (r - g) / d + 4;
-  return ((h * 60) + 360) % 360;
+  return (h * 60 + 360) % 360;
 };
 
 export const darkenColor = (hex: string, amount: number): string => {

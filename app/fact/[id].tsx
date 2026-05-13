@@ -141,7 +141,10 @@ export default function FactDetailModal() {
             event_day: apiResponse.metadata?.day,
             event_year: apiResponse.metadata?.event_year,
             metadata: apiResponse.metadata
-              ? JSON.stringify({ original_event: apiResponse.metadata.original_event, country: apiResponse.metadata.country })
+              ? JSON.stringify({
+                  original_event: apiResponse.metadata.original_event,
+                  country: apiResponse.metadata.country,
+                })
               : undefined,
             last_updated: apiResponse.updated_at,
             categoryData,

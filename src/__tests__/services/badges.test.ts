@@ -24,10 +24,7 @@ const sqlite = jest.requireMock('expo-sqlite');
 const mockDb = sqlite.__mockDb;
 
 // ─── Import after mocks ───
-import {
-  BADGE_DEFINITIONS,
-  STAR_COLORS,
-} from '../../config/badges';
+import { BADGE_DEFINITIONS, STAR_COLORS } from '../../config/badges';
 import {
   checkAndAwardBadges,
   consumePendingBadgeToasts,

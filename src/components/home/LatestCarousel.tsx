@@ -11,8 +11,8 @@ import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { Newspaper } from '@tamagui/lucide-icons';
 
-import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { LAYOUT, NATIVE_ADS } from '../../config/app';
+import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { useTranslation } from '../../i18n';
 import { trackCarouselSwipe } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
@@ -111,18 +111,16 @@ export const LatestCarousel = React.memo(function LatestCarousel({
   // while still capping waste — cells beyond the lookahead window stay dark.
   const AD_LOOKAHEAD = 2;
   const [highestViewedIndex, setHighestViewedIndex] = useState(-1);
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      let maxIdx = -1;
-      for (const v of viewableItems) {
-        if (typeof v.index === 'number' && v.index > maxIdx) {
-          maxIdx = v.index;
-        }
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    let maxIdx = -1;
+    for (const v of viewableItems) {
+      if (typeof v.index === 'number' && v.index > maxIdx) {
+        maxIdx = v.index;
       }
-      if (maxIdx < 0) return;
-      setHighestViewedIndex((prev) => (maxIdx > prev ? maxIdx : prev));
     }
-  ).current;
+    if (maxIdx < 0) return;
+    setHighestViewedIndex((prev) => (maxIdx > prev ? maxIdx : prev));
+  }).current;
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 1 }).current;
 
   const handleScroll = useCallback(
@@ -162,8 +160,7 @@ export const LatestCarousel = React.memo(function LatestCarousel({
       }
       const factIndex = factIds.indexOf(item.id);
       const isFactPremiumLocked =
-        !isPremium &&
-        !!(typeof item.categoryData === 'object' && item.categoryData?.is_premium);
+        !isPremium && !!(typeof item.categoryData === 'object' && item.categoryData?.is_premium);
       return (
         <View style={itemStyle}>
           <ImageFactCard

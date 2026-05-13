@@ -9,4 +9,5 @@ export {
   spacing,
   typography,
 } from './responsive';
+export { absoluteFillObject } from './styles';
 export { useResponsive } from './useResponsive';

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ViewShot from 'react-native-view-shot';
+import { type ViewShotRef } from 'react-native-view-shot';
 
 import { ChevronLeft, Share2 } from '@tamagui/lucide-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -50,7 +50,7 @@ export default function StatsScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  const viewShotRef = useRef<ViewShot>(null);
+  const viewShotRef = useRef<ViewShotRef>(null);
 
   useFocusEffect(
     useCallback(() => {

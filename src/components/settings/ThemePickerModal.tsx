@@ -7,6 +7,7 @@ import { Moon, Smartphone, Sun, X } from '@tamagui/lucide-icons';
 import { useTranslation } from '../../i18n';
 import { trackThemeChange, updateThemeProperty } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { Text } from '../Typography';
 
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   overlayPressable: {

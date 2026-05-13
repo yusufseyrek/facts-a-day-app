@@ -208,7 +208,6 @@ export const trackATTPermissionResult = (status: string): void => {
   posthog.capture('att_permission', { status });
 };
 
-
 // ============================================================================
 // Onboarding Events
 // ============================================================================
@@ -619,8 +618,6 @@ export const trackRewardedAdResult = (params: {
   });
 };
 
-
-
 // ============================================================================
 // Premium Gate Ad Events
 // ============================================================================
@@ -843,4 +840,3 @@ export const trackSatisfactionPromptShown = (): void => {
   logEvent('app_satisfaction_prompt_shown');
   posthog.capture('satisfaction_prompt_shown');
 };
-

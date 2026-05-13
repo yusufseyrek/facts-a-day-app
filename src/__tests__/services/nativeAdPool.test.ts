@@ -429,9 +429,7 @@ describe('nativeAdPool — retry behavior', () => {
     jest.useFakeTimers();
     try {
       mockCreateForAdRequest.mockImplementation(() =>
-        Promise.reject(
-          new Error("Too many recently failed requests for ad unit ID: 'xyz'")
-        )
+        Promise.reject(new Error("Too many recently failed requests for ad unit ID: 'xyz'"))
       );
 
       const { pool } = loadPool();

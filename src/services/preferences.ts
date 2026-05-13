@@ -11,7 +11,10 @@
  */
 
 import * as api from './api';
-import { emitFeedRefresh as emitContentFeedRefresh, markFeedRefreshPending } from './contentRefresh';
+import {
+  emitFeedRefresh as emitContentFeedRefresh,
+  markFeedRefreshPending,
+} from './contentRefresh';
 import * as database from './database';
 import * as notificationService from './notifications';
 import * as onboardingService from './onboarding';
@@ -47,7 +50,6 @@ function emitFeedRefresh(): void {
     }
   });
 }
-
 
 export interface RefreshProgress {
   stage: 'clearing' | 'translating' | 'downloading' | 'scheduling' | 'complete';
@@ -117,7 +119,8 @@ export async function handleLanguageChange(
       [now]
     );
 
-    if (__DEV__) console.log(`Preserving ${factsToPreserve.length} facts (delivered, favorited, or read)`);
+    if (__DEV__)
+      console.log(`Preserving ${factsToPreserve.length} facts (delivered, favorited, or read)`);
 
     // Stage 2: Fetch translated metadata
     onProgress?.({
@@ -183,7 +186,10 @@ export async function handleLanguageChange(
               fact.metadata?.day ?? null,
               fact.metadata?.event_year ?? null,
               fact.metadata
-                ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+                ? JSON.stringify({
+                    original_event: fact.metadata.original_event,
+                    country: fact.metadata.country,
+                  })
                 : null,
               fact.id,
             ]
@@ -230,7 +236,10 @@ export async function handleLanguageChange(
               fact.metadata?.day ?? null,
               fact.metadata?.event_year ?? null,
               fact.metadata
-                ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+                ? JSON.stringify({
+                    original_event: fact.metadata.original_event,
+                    country: fact.metadata.country,
+                  })
                 : null,
               fact.language,
               fact.created_at,
@@ -242,7 +251,8 @@ export async function handleLanguageChange(
       }
     });
 
-    if (__DEV__) console.log(`Updated ${updatedCount} preserved facts, inserted ${insertedCount} new facts`);
+    if (__DEV__)
+      console.log(`Updated ${updatedCount} preserved facts, inserted ${insertedCount} new facts`);
 
     const dbQuestions = extractQuestions(allFacts);
     if (dbQuestions.length > 0) {
@@ -405,7 +415,10 @@ export async function handleCategoriesChange(
               fact.metadata?.day ?? null,
               fact.metadata?.event_year ?? null,
               fact.metadata
-                ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+                ? JSON.stringify({
+                    original_event: fact.metadata.original_event,
+                    country: fact.metadata.country,
+                  })
                 : null,
               fact.id,
             ]
@@ -452,7 +465,10 @@ export async function handleCategoriesChange(
               fact.metadata?.day ?? null,
               fact.metadata?.event_year ?? null,
               fact.metadata
-                ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+                ? JSON.stringify({
+                    original_event: fact.metadata.original_event,
+                    country: fact.metadata.country,
+                  })
                 : null,
               fact.language,
               fact.created_at,
@@ -464,7 +480,8 @@ export async function handleCategoriesChange(
       }
     });
 
-    if (__DEV__) console.log(`Updated ${updatedCount} shown facts, inserted ${insertedCount} new facts`);
+    if (__DEV__)
+      console.log(`Updated ${updatedCount} shown facts, inserted ${insertedCount} new facts`);
 
     // Delete all facts from removed categories (including shown ones), except favorites
     // and facts the user has interacted with (to preserve reading statistics/badges).
@@ -509,9 +526,11 @@ export async function handleCategoriesChange(
       skipOsSync: true,
     });
     // Fire-and-forget: sync DB schedule to OS (downloads images, etc.)
-    notificationService.ensureNotificationSchedule(currentLanguage, 'categories_change').catch((e) => {
-      console.error('Post-categories-change notification sync failed:', e);
-    });
+    notificationService
+      .ensureNotificationSchedule(currentLanguage, 'categories_change')
+      .catch((e) => {
+        console.error('Post-categories-change notification sync failed:', e);
+      });
 
     onProgress?.({
       stage: 'complete',

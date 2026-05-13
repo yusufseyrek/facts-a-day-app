@@ -563,9 +563,7 @@ function extractTriggerDate(trigger: Notifications.NotificationTrigger | null): 
 
   // Direct date field (Android or some expo versions)
   if ('date' in trigger && trigger.date) {
-    return trigger.date instanceof Date
-      ? trigger.date
-      : new Date(trigger.date as number | string);
+    return trigger.date instanceof Date ? trigger.date : new Date(trigger.date as number | string);
   }
 
   // iOS CalendarNotificationTrigger with dateComponents
@@ -947,10 +945,7 @@ async function selectSmartFactsForSlots(
   const usedIds = new Set<number>();
 
   // Tier 1: Earliest unseen facts (ORDER BY id ASC)
-  const earliestFacts = await database.getEarliestUnseenFactsForScheduling(
-    slots.length,
-    locale
-  );
+  const earliestFacts = await database.getEarliestUnseenFactsForScheduling(slots.length, locale);
   for (const fact of earliestFacts) {
     usedIds.add(fact.id);
   }

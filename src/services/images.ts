@@ -671,8 +671,6 @@ export async function cacheFactImages(
   const concurrency = PRECACHE.CONCURRENCY;
   for (let i = 0; i < uncached.length; i += concurrency) {
     const batch = uncached.slice(i, i + concurrency);
-    await Promise.allSettled(
-      batch.map((fact) => downloadImage(fact.image_url, fact.id))
-    );
+    await Promise.allSettled(batch.map((fact) => downloadImage(fact.image_url, fact.id)));
   }
 }

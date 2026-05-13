@@ -14,7 +14,6 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import * as Localization from 'expo-localization';
 
 import { getLocaleFromCode } from '../i18n';
@@ -61,14 +60,10 @@ export async function runAudioMigrationIfNeeded(): Promise<void> {
 
   let progressShown = false;
   try {
-    const result = await fetchAllFacts(
-      locale,
-      categories,
-      ({ percentage }) => {
-        progressShown = true;
-        setGlobalProgress(Math.max(0.02, percentage / 100));
-      },
-    );
+    const result = await fetchAllFacts(locale, categories, ({ percentage }) => {
+      progressShown = true;
+      setGlobalProgress(Math.max(0.02, percentage / 100));
+    });
 
     if (result.success) {
       await markAudioMigrationDone();

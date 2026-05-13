@@ -8,10 +8,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
 import { styled } from '@tamagui/core';
 import { Heart, Search, X, XCircle } from '@tamagui/lucide-icons';
+import { useFocusEffect } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -230,9 +230,7 @@ export default function FavoritesScreen() {
   const filteredDataWithAds = useMemo(() => {
     const withAds = insertNativeAds(filteredFavorites, NATIVE_ADS.FIRST_AD_INDEX.FAVORITES);
     if (failedAdKeys.size === 0) return withAds;
-    return withAds.filter(
-      (item) => !(isNativeAdPlaceholder(item) && failedAdKeys.has(item.key))
-    );
+    return withAds.filter((item) => !(isNativeAdPlaceholder(item) && failedAdKeys.has(item.key)));
     // isPremium triggers re-computation to remove/add native ads
   }, [filteredFavorites, isPremium, failedAdKeys]);
 

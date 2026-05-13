@@ -11,6 +11,7 @@ import Animated, {
 import * as SplashScreen from 'expo-splash-screen';
 
 import { waitForHomeScreenReady } from '../contexts';
+import { absoluteFillObject } from '../utils/styles';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const splashIcon = require('../../assets/splash-icon.png');
@@ -49,13 +50,13 @@ export function SplashOverlay({ onHidden }: SplashOverlayProps) {
 
       if (Platform.OS === 'android') {
         // Android needs extra frames after decode for GPU compositing
-        global.requestAnimationFrame(() => {
-          global.requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
             hideNativeSplash();
           });
         });
       } else {
-        global.requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
           hideNativeSplash();
         });
       }
@@ -98,7 +99,7 @@ export function SplashOverlay({ onHidden }: SplashOverlayProps) {
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFillObject,
     backgroundColor: SPLASH_BACKGROUND,
     zIndex: 9999,
   },

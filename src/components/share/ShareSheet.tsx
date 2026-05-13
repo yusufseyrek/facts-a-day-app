@@ -19,7 +19,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ViewShot from 'react-native-view-shot';
+import { type ViewShotRef } from 'react-native-view-shot';
 
 import { Facebook, Instagram, MessageCircle, Share2, Twitter, X } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
@@ -29,6 +29,7 @@ import { useTranslation } from '../../i18n';
 import { shareService } from '../../services/share';
 import { PLATFORM_CONFIG } from '../../services/share/platforms';
 import { hexColors, useTheme } from '../../theme';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { Text } from '../Typography';
 
@@ -79,7 +80,7 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
   const [isSharing, setIsSharing] = useState(false);
   const [sharingPlatform, setSharingPlatform] = useState<SharePlatform | null>(null);
 
-  const viewShotRef = useRef<ViewShot>(null);
+  const viewShotRef = useRef<ViewShotRef>(null);
 
   // Animation values
   const translateY = useSharedValue(400);
@@ -268,7 +269,7 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
 
 const styles = StyleSheet.create({
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   sheet: {

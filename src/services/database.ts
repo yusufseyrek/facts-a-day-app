@@ -12,11 +12,15 @@ let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 // This queue ensures only one transaction runs at a time.
 let txQueue: Promise<void> = Promise.resolve();
 
-async function withSerializedTransaction(fn: (db: SQLite.SQLiteDatabase) => Promise<void>): Promise<void> {
+async function withSerializedTransaction(
+  fn: (db: SQLite.SQLiteDatabase) => Promise<void>
+): Promise<void> {
   const database = await openDatabase();
   const prev = txQueue;
   let release: () => void;
-  txQueue = new Promise<void>((res) => { release = res; });
+  txQueue = new Promise<void>((res) => {
+    release = res;
+  });
   try {
     await prev;
     await database.withTransactionAsync(() => fn(database));
@@ -333,14 +337,18 @@ async function initializeSchema(): Promise<void> {
   });
 
   // Add historical fact columns for existing databases (migration)
-  await db.execAsync('ALTER TABLE facts ADD COLUMN is_historical INTEGER DEFAULT 0').catch(() => {});
+  await db
+    .execAsync('ALTER TABLE facts ADD COLUMN is_historical INTEGER DEFAULT 0')
+    .catch(() => {});
   await db.execAsync('ALTER TABLE facts ADD COLUMN event_month INTEGER').catch(() => {});
   await db.execAsync('ALTER TABLE facts ADD COLUMN event_day INTEGER').catch(() => {});
   await db.execAsync('ALTER TABLE facts ADD COLUMN event_year INTEGER').catch(() => {});
   await db.execAsync('ALTER TABLE facts ADD COLUMN metadata TEXT').catch(() => {});
 
   // Premium categories migration
-  await db.execAsync('ALTER TABLE categories ADD COLUMN is_premium INTEGER DEFAULT 0').catch(() => {});
+  await db
+    .execAsync('ALTER TABLE categories ADD COLUMN is_premium INTEGER DEFAULT 0')
+    .catch(() => {});
 
   // Audio URL migration — fact-reading TTS audio served from R2
   await db.execAsync('ALTER TABLE facts ADD COLUMN audio_url TEXT').catch(() => {});
@@ -480,7 +488,10 @@ export async function deletePremiumCategories(): Promise<void> {
 
 export async function deleteFact(factId: number): Promise<void> {
   const database = await openDatabase();
-  await database.runAsync('DELETE FROM facts WHERE id = ? AND id NOT IN (SELECT fact_id FROM favorites)', [factId]);
+  await database.runAsync(
+    'DELETE FROM facts WHERE id = ? AND id NOT IN (SELECT fact_id FROM favorites)',
+    [factId]
+  );
 }
 
 export async function deleteFactsByCategorySlugs(slugs: string[]): Promise<void> {
@@ -647,16 +658,21 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
   });
 
   // Invalidate image cache for facts whose image_url changed
-  const changedIds = facts.filter((f) => {
-    const oldUrl = oldImageUrls.get(f.id);
-    return oldUrl !== undefined && oldUrl !== (f.image_url || null);
-  }).map((f) => f.id);
+  const changedIds = facts
+    .filter((f) => {
+      const oldUrl = oldImageUrls.get(f.id);
+      return oldUrl !== undefined && oldUrl !== (f.image_url || null);
+    })
+    .map((f) => f.id);
 
   if (changedIds.length > 0) {
     // Dynamic import to avoid circular dependency (images.ts imports from database.ts)
     const { invalidateFactImageCache } = await import('./images');
     await Promise.all(changedIds.map((id) => invalidateFactImageCache(id)));
-    if (__DEV__) console.log(`🖼️ Invalidated image cache for ${changedIds.length} facts: [${changedIds.join(', ')}]`);
+    if (__DEV__)
+      console.log(
+        `🖼️ Invalidated image cache for ${changedIds.length} facts: [${changedIds.join(', ')}]`
+      );
   }
 }
 
@@ -836,7 +852,6 @@ export async function getRandomFact(language?: string): Promise<FactWithRelation
   );
   return result ? mapSingleFactWithRelations(result) : null;
 }
-
 
 export async function getFactsCount(language?: string): Promise<number> {
   const database = await openDatabase();
@@ -1126,7 +1141,11 @@ export async function getLatestFacts(
   const database = await openDatabase();
 
   // Debug: check total facts in DB
-  const countResult = await database.getFirstAsync<{ total: number; lang_match: number; non_hist: number }>(
+  const countResult = await database.getFirstAsync<{
+    total: number;
+    lang_match: number;
+    non_hist: number;
+  }>(
     `SELECT
       COUNT(*) as total,
       SUM(CASE WHEN language = ? THEN 1 ELSE 0 END) as lang_match,
@@ -1134,7 +1153,10 @@ export async function getLatestFacts(
     FROM facts`,
     [language, language]
   );
-  if (__DEV__) console.log(`📋 [DB] getLatestFacts: language="${language}", limit=${limit} | DB has: total=${countResult?.total}, lang_match=${countResult?.lang_match}, non_hist=${countResult?.non_hist}`);
+  if (__DEV__)
+    console.log(
+      `📋 [DB] getLatestFacts: language="${language}", limit=${limit} | DB has: total=${countResult?.total}, lang_match=${countResult?.lang_match}, non_hist=${countResult?.non_hist}`
+    );
 
   const result = await database.getAllAsync<any>(
     `SELECT
@@ -1223,9 +1245,7 @@ export async function getRandomWorthKnowingFacts(
 /**
  * Get historical facts that happened on today's month and day.
  */
-export async function getOnThisDayFacts(
-  language: string
-): Promise<FactWithRelations[]> {
+export async function getOnThisDayFacts(language: string): Promise<FactWithRelations[]> {
   const now = new Date();
   const month = now.getMonth() + 1;
   const day = now.getDate();
@@ -1254,9 +1274,7 @@ export async function getOnThisDayFacts(
  * Get historical facts from nearby dates (±3 days) when today has none.
  * Handles month boundaries correctly by computing actual calendar dates.
  */
-export async function getThisWeekInHistoryFacts(
-  language: string
-): Promise<FactWithRelations[]> {
+export async function getThisWeekInHistoryFacts(language: string): Promise<FactWithRelations[]> {
   const now = new Date();
   const todayMonth = now.getMonth() + 1;
   const todayDay = now.getDate();
@@ -1377,7 +1395,11 @@ export async function getStaleScheduledFacts(
   const database = await openDatabase();
   const now = new Date().toISOString();
 
-  return database.getAllAsync<{ id: number; notification_id: string | null; scheduled_date: string }>(
+  return database.getAllAsync<{
+    id: number;
+    notification_id: string | null;
+    scheduled_date: string;
+  }>(
     `SELECT f.id, f.notification_id, f.scheduled_date
     FROM facts f
     INNER JOIN fact_interactions fi ON fi.fact_id = f.id
@@ -1577,10 +1599,11 @@ export async function hasExcessNotificationsPerDay(
   const result = await database.getAllAsync<{ local_date: string; count: number }>(query, params);
 
   if (result.length > 0) {
-    if (__DEV__) console.log(
-      `🔔 Found ${result.length} days with excess notifications:`,
-      result.map((r) => `${r.local_date}: ${r.count}/${expectedPerDay}`).join(', ')
-    );
+    if (__DEV__)
+      console.log(
+        `🔔 Found ${result.length} days with excess notifications:`,
+        result.map((r) => `${r.local_date}: ${r.count}/${expectedPerDay}`).join(', ')
+      );
     return true;
   }
 
@@ -3479,9 +3502,7 @@ export async function updateFactTitle(factId: number, newTitle: string): Promise
  */
 export async function clearAllSchedulingData(): Promise<void> {
   const database = await openDatabase();
-  await database.runAsync(
-    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL'
-  );
+  await database.runAsync('UPDATE facts SET scheduled_date = NULL, notification_id = NULL');
 }
 
 /**
@@ -3502,9 +3523,7 @@ export async function getFactsReadTodayCount(): Promise<number> {
  * Get fact IDs and image URLs for pre-caching
  * Covers: fact of the day, next 20 story facts (unseen first), and favorites
  */
-export async function getFactsForOfflineCache(): Promise<
-  Array<{ id: number; image_url: string }>
-> {
+export async function getFactsForOfflineCache(): Promise<Array<{ id: number; image_url: string }>> {
   const database = await openDatabase();
 
   // Query each source separately for logging

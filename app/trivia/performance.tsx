@@ -12,7 +12,6 @@ import {
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useFocusEffect } from '@react-navigation/native';
 import {
   Calendar,
   CheckCircle,
@@ -24,6 +23,7 @@ import {
   Trophy,
   Zap,
 } from '@tamagui/lucide-icons';
+import { useFocusEffect } from 'expo-router';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -478,7 +478,8 @@ function SessionCard({
       );
     }
 
-    const IconComponent = session.trivia_mode === 'daily' ? Calendar : session.trivia_mode === 'quick' ? Zap : Shuffle;
+    const IconComponent =
+      session.trivia_mode === 'daily' ? Calendar : session.trivia_mode === 'quick' ? Zap : Shuffle;
     const iconColor = primaryColor;
 
     return (

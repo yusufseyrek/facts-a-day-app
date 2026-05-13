@@ -8,7 +8,13 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { Button, MultiTimePicker, ProgressIndicator, ScreenContainer, Text } from '../../src/components';
+import {
+  Button,
+  MultiTimePicker,
+  ProgressIndicator,
+  ScreenContainer,
+  Text,
+} from '../../src/components';
 import { LAYOUT } from '../../src/config/app';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
@@ -228,7 +234,12 @@ export default function NotificationsScreen() {
   return (
     <ScreenContainer>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <ContentContainer paddingHorizontal={spacing.lg} paddingTop={spacing.lg} paddingBottom={spacing.sm} gap={spacing.md}>
+      <ContentContainer
+        paddingHorizontal={spacing.lg}
+        paddingTop={spacing.lg}
+        paddingBottom={spacing.sm}
+        gap={spacing.md}
+      >
         <Animated.View
           style={{
             opacity: progressOpacity,

@@ -14,10 +14,9 @@ import { Appearance } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { reloadWidgets, setWidgetData } from '../native/WidgetBridge';
 import { getCategoryNeonColor } from '../theme/glowStyles';
 import { getContrastColor } from '../utils/colors';
-
-import { setWidgetData, reloadWidgets } from '../native/WidgetBridge';
 
 import { getLatestFacts } from './database';
 import { getIsPremium } from './premiumState';
@@ -67,8 +66,7 @@ function toWidgetFact(f: FactWithRelations, theme: 'light' | 'dark'): WidgetFact
   // Prefer the DB-provided color_hex (synced from the API so it stays in sync
   // with the rest of the app); fall back to the theme-based neon palette for
   // categories that don't yet have a color set server-side.
-  const categoryColor =
-    f.categoryData?.color_hex || getCategoryNeonColor(categorySlug, theme);
+  const categoryColor = f.categoryData?.color_hex || getCategoryNeonColor(categorySlug, theme);
   return {
     id: f.id,
     title: f.title || f.content.substring(0, 200),

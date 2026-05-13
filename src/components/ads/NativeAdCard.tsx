@@ -43,10 +43,7 @@ function NativeAdCardComponent({
   aspectRatio = NativeMediaAspectRatio.LANDSCAPE,
   onAdFailed,
 }: NativeAdCardProps) {
-  const { ad: nativeAdFromPool, status } = useAdForSlot(
-    nativeAdProp ? null : slotKey,
-    aspectRatio
-  );
+  const { ad: nativeAdFromPool, status } = useAdForSlot(nativeAdProp ? null : slotKey, aspectRatio);
   const nativeAd = nativeAdProp ?? nativeAdFromPool;
   const { screenWidth, spacing, radius, config } = useResponsive();
   const { t } = useTranslation();

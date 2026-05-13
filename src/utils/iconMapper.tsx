@@ -49,4 +49,3 @@ export function getLucideIcon(
  * Type-safe Lucide icon names
  */
 export type LucideIconName = keyof typeof LucideIcons;
-

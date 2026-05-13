@@ -297,7 +297,6 @@ export function OnboardingProvider({ children, initialComplete = null }: Onboard
 
       // Update local state immediately (synchronous) to prevent navigation race condition
       setState((prev) => ({ ...prev, isOnboardingComplete: true }));
-
     } catch (error) {
       console.error('Error completing onboarding:', error);
       throw error;

@@ -13,7 +13,11 @@ interface ProgressIndicatorProps {
   rightElement?: React.ReactNode;
 }
 
-export function ProgressIndicator({ currentStep, totalSteps, rightElement }: ProgressIndicatorProps) {
+export function ProgressIndicator({
+  currentStep,
+  totalSteps,
+  rightElement,
+}: ProgressIndicatorProps) {
   const { spacing, radius, borderWidths } = useResponsive();
   const progress = (currentStep / totalSteps) * 100;
 

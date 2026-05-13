@@ -103,7 +103,10 @@ function mapFactsToDb(facts: api.FactResponse[]): db.Fact[] {
     event_day: fact.metadata?.day ?? undefined,
     event_year: fact.metadata?.event_year ?? undefined,
     metadata: fact.metadata
-      ? JSON.stringify({ original_event: fact.metadata.original_event, country: fact.metadata.country })
+      ? JSON.stringify({
+          original_event: fact.metadata.original_event,
+          country: fact.metadata.country,
+        })
       : undefined,
     language: fact.language,
     created_at: fact.created_at,

@@ -11,15 +11,10 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, AppState } from 'react-native';
+import { Easing, type SharedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
-import {
-  Easing,
-  type SharedValue,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
 
 import { cacheFactAudio, getLocalFactAudioPath } from '../services/factAudio';
 
@@ -45,7 +40,7 @@ export interface FactAudioController {
 export function useFactAudio(
   factId: number,
   audioUrl: string | null | undefined,
-  language: string,
+  language: string
 ): FactAudioController {
   const hasAudio = !!audioUrl;
 
@@ -79,7 +74,9 @@ export function useFactAudio(
   useEffect(() => {
     try {
       player.loop = false;
-    } catch {}
+    } catch {
+      // expo-audio throws transient errors when the player is being remounted; ignore.
+    }
   }, [player]);
 
   const [playbackState, setPlaybackState] = useState<PlaybackState>('idle');
@@ -87,7 +84,9 @@ export function useFactAudio(
   const errorRevertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => {});
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(setReduceMotion)
+      .catch(() => {});
   }, []);
 
   // Drive UI state from status.
@@ -96,16 +95,16 @@ export function useFactAudio(
     if (status.playing) {
       setPlaybackState('playing');
     } else if (status.isLoaded && (status.currentTime ?? 0) > 0) {
-      setPlaybackState((prev) =>
-        prev === 'loading' || prev === 'playing' ? 'paused' : prev,
-      );
+      setPlaybackState((prev) => (prev === 'loading' || prev === 'playing' ? 'paused' : prev));
     }
     if (status.didJustFinish) {
       setPlaybackState('idle');
       try {
         player.pause();
         player.seekTo(0);
-      } catch {}
+      } catch {
+        // expo-audio throws transient errors when the player is being remounted; ignore.
+      }
     }
   }, [
     hasAudio,
@@ -124,7 +123,9 @@ export function useFactAudio(
       if (next !== 'active') {
         try {
           player.pause();
-        } catch {}
+        } catch {
+          // expo-audio throws transient errors when the player is being remounted; ignore.
+        }
       }
     });
     return () => sub.remove();
@@ -136,7 +137,9 @@ export function useFactAudio(
       try {
         player.pause();
         player.remove();
-      } catch {}
+      } catch {
+        // expo-audio throws transient errors when the player is being remounted; ignore.
+      }
     };
   }, [player]);
 
@@ -153,10 +156,7 @@ export function useFactAudio(
       progress.value = 0;
       return;
     }
-    const next = Math.min(
-      1,
-      Math.max(0, (status.currentTime ?? 0) / status.duration),
-    );
+    const next = Math.min(1, Math.max(0, (status.currentTime ?? 0) / status.duration));
     progress.value = reduceMotion
       ? next
       : withTiming(next, { duration: 260, easing: Easing.linear });
@@ -166,7 +166,9 @@ export function useFactAudio(
     if (!hasAudio) return;
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch {}
+    } catch {
+      // expo-audio throws transient errors when the player is being remounted; ignore.
+    }
 
     try {
       if (playbackState === 'playing') {

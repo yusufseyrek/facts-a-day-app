@@ -18,7 +18,7 @@ import {
 import { ScreenContainer } from '../../src/components';
 import { LAYOUT } from '../../src/config/app';
 import { IMAGE_PLACEHOLDER } from '../../src/config/images';
-import { type SampleFact,sampleFacts } from '../../src/config/sampleFacts';
+import { type SampleFact, sampleFacts } from '../../src/config/sampleFacts';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
@@ -125,9 +125,7 @@ export default function WelcomeScreen() {
 
   // On tablets, carousel/notification are 70% of max content width, centered.
   // On phones, the carousel bleeds to screen edges so its width equals screenWidth.
-  const carouselWidth = isTablet
-    ? LAYOUT.MAX_CONTENT_WIDTH * 0.7
-    : screenWidth;
+  const carouselWidth = isTablet ? LAYOUT.MAX_CONTENT_WIDTH * 0.7 : screenWidth;
 
   // Dot dimensions from spacing scale
   const dotSize = spacing.sm;
@@ -141,11 +139,14 @@ export default function WelcomeScreen() {
   const safeHeight = screenHeight - insets.top - insets.bottom;
   // Reserve: outer padding + header + button + dots + carousel item padding + notification + breathing room
   const reservedHeight =
-    spacing.lg * 2 + spacing.md + // outer YStack padding (top + bottom)
+    spacing.lg * 2 +
+    spacing.md + // outer YStack padding (top + bottom)
     100 + // header estimate (progress + title + subtitle)
     60 + // CTA button height + marginTop
-    dotSize + spacing.lg + // dots row + gap
-    spacing.sm + spacing.lg + // carousel item padding (top + bottom)
+    dotSize +
+    spacing.lg + // dots row + gap
+    spacing.sm +
+    spacing.lg + // carousel item padding (top + bottom)
     notifFixedHeight + // notification mockup
     spacing.xl * 4; // breathing room between header/notif, notif/carousel, carousel/dots, dots/button
   const maxCardFromHeight = safeHeight - reservedHeight;

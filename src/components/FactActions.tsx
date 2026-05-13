@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ViewShot from 'react-native-view-shot';
+import { type ViewShotRef } from 'react-native-view-shot';
 
 import { styled } from '@tamagui/core';
 import { ChevronLeft, ChevronRight, Flag, Heart, Share as ShareIcon } from '@tamagui/lucide-icons';
@@ -158,7 +158,7 @@ export function FactActions({
   const showPosition = !!(totalCount && totalCount > 1 && currentIndex !== undefined);
 
   // ViewShot ref for capturing share card image
-  const viewShotRef = useRef<ViewShot>(null);
+  const viewShotRef = useRef<ViewShotRef>(null);
 
   // Set ViewShot ref on mount
   useEffect(() => {

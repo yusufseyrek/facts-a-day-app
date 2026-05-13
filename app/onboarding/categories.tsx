@@ -6,7 +6,13 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { Button, CategoryCard, ProgressIndicator, ScreenContainer, Text } from '../../src/components';
+import {
+  Button,
+  CategoryCard,
+  ProgressIndicator,
+  ScreenContainer,
+  Text,
+} from '../../src/components';
 import { MINIMUM_CATEGORIES, SUBSCRIPTION } from '../../src/config/app';
 import { useOnboarding, usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
@@ -265,7 +271,13 @@ export default function Categories() {
   return (
     <ScreenContainer>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} paddingBottom={spacing.sm} gap={spacing.md} flex={1}>
+      <YStack
+        paddingHorizontal={spacing.lg}
+        paddingTop={spacing.lg}
+        paddingBottom={spacing.sm}
+        gap={spacing.md}
+        flex={1}
+      >
         <Animated.View
           style={{
             opacity: headerOpacity,
@@ -281,7 +293,8 @@ export default function Categories() {
                   const selectableCategories = isPremium
                     ? categories
                     : categories.filter((c) => !c.is_premium);
-                  const allSelected = selectableCategories.length > 0 &&
+                  const allSelected =
+                    selectableCategories.length > 0 &&
                     selectableCategories.every((c) => selectedCategories.includes(c.slug));
                   if (allSelected) {
                     setSelectedCategories([]);

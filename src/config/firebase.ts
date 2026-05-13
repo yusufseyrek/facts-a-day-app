@@ -18,7 +18,6 @@ import getAppCheck, {
 // as type-only from its barrel, but the runtime class exists in the module.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ReactNativeFirebaseAppCheckProvider } = require('@react-native-firebase/app-check') as {
-   
   ReactNativeFirebaseAppCheckProvider: any;
 };
 import {
@@ -177,7 +176,8 @@ export async function initializeAppCheckService() {
       if (isMac) {
         // Use pre-registered token for macOS production builds
         debugToken = MACOS_DEBUG_TOKEN;
-        if (__DEV__) console.log('🖥️ App Check: Running on macOS - using pre-registered debug token');
+        if (__DEV__)
+          console.log('🖥️ App Check: Running on macOS - using pre-registered debug token');
       } else {
         // Use dynamically generated token for simulators/emulators in development
         debugToken = await getOrCreateDebugToken();
@@ -382,13 +382,15 @@ export async function initializeAppCheckService() {
     if (!isAppCheckInitialized() && !__DEV__ && APP_CHECK.STRICT_MODE_ENABLED) {
       const online = await isDeviceOnline();
       if (online) {
-        if (__DEV__) console.log('[AppCheck] Setting appCheckInitFailed = true (blocking screen will show)');
+        if (__DEV__)
+          console.log('[AppCheck] Setting appCheckInitFailed = true (blocking screen will show)');
         setAppCheckInitFailed(true);
       } else {
         if (__DEV__) console.log('[AppCheck] Device is offline — skipping blocking screen');
       }
     } else {
-      if (__DEV__) console.log(`[AppCheck] NOT setting failure flag — init succeeded or conditions not met`);
+      if (__DEV__)
+        console.log(`[AppCheck] NOT setting failure flag — init succeeded or conditions not met`);
     }
   }
 }
@@ -707,7 +709,8 @@ function startBackgroundTokenRetry(providerName: string) {
         const result = await getAppCheckTokenFn(appCheckInstance, false);
         if (result.token && result.token.trim().length > 0) {
           primeTokenCache(result.token);
-          if (__DEV__) console.log(`[AppCheck] Background retry ${i + 1} succeeded — token obtained`);
+          if (__DEV__)
+            console.log(`[AppCheck] Background retry ${i + 1} succeeded — token obtained`);
           logEvent('app_check_bg_retry_success', {
             attempt: i + 1,
             delay_ms: delays[i],

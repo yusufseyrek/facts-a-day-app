@@ -19,7 +19,12 @@ import type { FactWithRelations } from '../../services/database';
 interface OnThisDayCarouselProps {
   facts: FactWithRelations[];
   isWeekFallback: boolean;
-  onFactPress: (fact: FactWithRelations, source: FactViewSource, factIds: number[], index: number) => void;
+  onFactPress: (
+    fact: FactWithRelations,
+    source: FactViewSource,
+    factIds: number[],
+    index: number
+  ) => void;
   listRef?: React.RefObject<FlashListRef<FactWithRelations> | null>;
 }
 

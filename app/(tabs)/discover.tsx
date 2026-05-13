@@ -10,11 +10,11 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
-import { useFocusEffect } from '@react-navigation/native';
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { styled, View } from '@tamagui/core';
 import { Search, X } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -489,18 +489,14 @@ function DiscoverScreen() {
   const searchDataWithAds = useMemo(() => {
     const withAds = insertNativeAds(searchResults, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER);
     if (failedAdKeys.size === 0) return withAds;
-    return withAds.filter(
-      (item) => !(isNativeAdPlaceholder(item) && failedAdKeys.has(item.key))
-    );
+    return withAds.filter((item) => !(isNativeAdPlaceholder(item) && failedAdKeys.has(item.key)));
   }, [searchResults, isPremium, failedAdKeys]);
 
   // isPremium triggers re-computation to remove/add native ads
   const categoryDataWithAds = useMemo(() => {
     const withAds = insertNativeAds(categoryFacts, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER);
     if (failedAdKeys.size === 0) return withAds;
-    return withAds.filter(
-      (item) => !(isNativeAdPlaceholder(item) && failedAdKeys.has(item.key))
-    );
+    return withAds.filter((item) => !(isNativeAdPlaceholder(item) && failedAdKeys.has(item.key)));
   }, [categoryFacts, isPremium, failedAdKeys]);
 
   // Memoized keyExtractor
@@ -750,7 +746,11 @@ function DiscoverScreen() {
       }
 
       return (
-        <ScrollView ref={categoryGridRef} showsVerticalScrollIndicator={false} overScrollMode="never">
+        <ScrollView
+          ref={categoryGridRef}
+          showsVerticalScrollIndicator={false}
+          overScrollMode="never"
+        >
           <CategoriesContainer
             paddingHorizontal={spacing.lg}
             paddingBottom={spacing.md}

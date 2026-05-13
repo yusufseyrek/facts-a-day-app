@@ -69,7 +69,7 @@ function filenameFor(factId: number, language: string, remoteUrl: string): strin
 export async function getLocalFactAudioPath(
   factId: number,
   language: string,
-  remoteUrl: string,
+  remoteUrl: string
 ): Promise<string | null> {
   const filename = filenameFor(factId, language, remoteUrl);
   const path = `${AUDIO_DIR}${filename}`;
@@ -89,7 +89,7 @@ export async function getLocalFactAudioPath(
 export async function cacheFactAudio(
   factId: number,
   language: string,
-  remoteUrl: string,
+  remoteUrl: string
 ): Promise<string> {
   await ensureDir();
   const filename = filenameFor(factId, language, remoteUrl);
@@ -126,9 +126,9 @@ export async function pruneAudioCacheIfOverLimit(): Promise<void> {
         return {
           filename,
           path,
-          size: info.exists ? (info as { size?: number }).size ?? 0 : 0,
+          size: info.exists ? ((info as { size?: number }).size ?? 0) : 0,
         };
-      }),
+      })
     );
 
     const totalBytes = entries.reduce((sum, e) => sum + e.size, 0);

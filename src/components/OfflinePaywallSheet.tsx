@@ -11,6 +11,7 @@ import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n/useTranslation';
 import { PAYWALL_GOLD, paywallThemeColors, useTheme } from '../theme';
+import { absoluteFillObject } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
 import { FONT_FAMILIES, Text } from './Typography';
@@ -56,11 +57,11 @@ export function OfflinePaywallSheet() {
     () =>
       StyleSheet.create({
         overlay: {
-          ...StyleSheet.absoluteFillObject,
+          ...absoluteFillObject,
           zIndex: 1000,
         },
         backdrop: {
-          ...StyleSheet.absoluteFillObject,
+          ...absoluteFillObject,
           backgroundColor: 'rgba(0,0,0,0.5)',
         },
         sheet: {

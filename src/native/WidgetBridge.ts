@@ -8,7 +8,7 @@
  * The native module is registered by the withFactWidget config plugin.
  */
 
-import { NativeModules, Platform } from 'react-native';
+import { NativeModules } from 'react-native';
 
 interface WidgetBridgeModule {
   setWidgetData(jsonString: string): Promise<void>;

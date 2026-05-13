@@ -1,0 +1,111 @@
+diff --git a/node_modules/react-native-google-mobile-ads/.bun-tag-20c81ff8e2650c3e b/.bun-tag-20c81ff8e2650c3e
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/react-native-google-mobile-ads/.bun-tag-3c813a2589594a38 b/.bun-tag-3c813a2589594a38
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/react-native-google-mobile-ads/.bun-tag-5c51c74f2af0485f b/.bun-tag-5c51c74f2af0485f
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/react-native-google-mobile-ads/.bun-tag-fbb67211fad2407b b/.bun-tag-fbb67211fad2407b
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/ios/RNGoogleMobileAds/RNGoogleMobileAdsMediaView.mm b/ios/RNGoogleMobileAds/RNGoogleMobileAdsMediaView.mm
+index 7194fff332d52b5c3f3a1862a3432ca6034f409a..5c81887f4dc74621b60890504f49753998ce5532 100644
+--- a/ios/RNGoogleMobileAds/RNGoogleMobileAdsMediaView.mm
++++ b/ios/RNGoogleMobileAds/RNGoogleMobileAdsMediaView.mm
+@@ -52,11 +52,12 @@ @implementation RNGoogleMobileAdsMediaView {
+ 
+ - (instancetype)initWithFrame:(CGRect)frame {
+   if (self = [super initWithFrame:frame]) {
+-    static const auto defaultProps = std::make_shared<const RNGoogleMobileAdsBannerViewProps>();
++    static const auto defaultProps = std::make_shared<const RNGoogleMobileAdsMediaViewProps>();
+     _props = defaultProps;
+ 
+     _bridge = [RCTBridge currentBridge];
+-    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class];
++    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class]
++                        ?: [RNGoogleMobileAdsNativeModule sharedInstance];
+     _mediaView = [[GADMediaView alloc] init];
+     _contentMode = UIViewContentModeScaleAspectFill;
+     self.contentView = _mediaView;
+@@ -100,7 +101,8 @@ - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &
+ - (instancetype)initWithBridge:(RCTBridge *)bridge {
+   if (self = [super init]) {
+     _bridge = bridge;
+-    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class];
++    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class]
++                        ?: [RNGoogleMobileAdsNativeModule sharedInstance];
+     _mediaView = self;
+   }
+   return self;
+diff --git a/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.h b/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.h
+index b3c2de298be8c06c83005d5582df51215423016f..be0ae5938b6a2070098aa5b65433f4c55e77e62f 100644
+--- a/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.h
++++ b/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.h
+@@ -32,4 +32,10 @@
+ 
+ - (GADNativeAd *)nativeAdForResponseId:(NSString *)responseId;
+ 
++// Bridgeless-mode escape hatch: React Native 0.85+ no longer guarantees
++// [RCTBridge currentBridge] returns a non-nil bridge, so views that used to
++// fetch this module via moduleForClass: would resolve nil. Views now fall
++// back to this singleton, which captures the module instance on init.
+++ (instancetype)sharedInstance;
++
+ @end
+diff --git a/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.mm b/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.mm
+index e42c811c41af887ec3bc128f405bb7925588afe8..eedddfdbe1fc31c53765f014fceacd729df212aa 100644
+--- a/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.mm
++++ b/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeModule.mm
+@@ -38,12 +38,18 @@ - (void)dispose;
+ 
+ @end
+ 
++static __weak RNGoogleMobileAdsNativeModule *_RNGMASharedInstance = nil;
++
+ @implementation RNGoogleMobileAdsNativeModule {
+   NSMutableDictionary<NSString *, RNGMANativeAdHolder *> *_adHolders;
+ }
+ 
+ RCT_EXPORT_MODULE();
+ 
+++ (instancetype)sharedInstance {
++  return _RNGMASharedInstance;
++}
++
+ - (dispatch_queue_t)methodQueue {
+   return dispatch_get_main_queue();
+ }
+@@ -66,6 +72,7 @@ + (BOOL)requiresMainQueueSetup {
+ - (instancetype)init {
+   if (self = [super init]) {
+     _adHolders = [NSMutableDictionary dictionary];
++    _RNGMASharedInstance = self;
+   }
+   return self;
+ }
+diff --git a/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeView.mm b/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeView.mm
+index 1178da1c8c5d6712d6ab7ff3ab15b36490d29dfd..82e5026f290c3c4ec265635b2d37725dce9b4ba6 100644
+--- a/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeView.mm
++++ b/ios/RNGoogleMobileAds/RNGoogleMobileAdsNativeView.mm
+@@ -58,7 +58,8 @@ - (instancetype)initWithFrame:(CGRect)frame {
+     _props = defaultProps;
+ 
+     _bridge = [RCTBridge currentBridge];
+-    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class];
++    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class]
++                        ?: [RNGoogleMobileAdsNativeModule sharedInstance];
+     _nativeAdView = [[GADNativeAdView alloc] init];
+     self.contentView = _nativeAdView;
+   }
+@@ -127,7 +128,8 @@ - (UIView *)findViewByTag:(NSInteger)targetTag inView:(UIView *)parentView {
+ - (instancetype)initWithBridge:(RCTBridge *)bridge {
+   if (self = [super init]) {
+     _bridge = bridge;
+-    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class];
++    _nativeModule = [_bridge moduleForClass:RNGoogleMobileAdsNativeModule.class]
++                        ?: [RNGoogleMobileAdsNativeModule sharedInstance];
+     _nativeAdView = self;
+   }
+   return self;

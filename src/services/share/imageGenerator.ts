@@ -3,7 +3,7 @@
  * Captures share cards as images using ViewShot
  */
 
-import ViewShot from 'react-native-view-shot';
+import { type ViewShotRef } from 'react-native-view-shot';
 
 import * as FileSystem from 'expo-file-system/legacy';
 
@@ -20,7 +20,7 @@ const SHARE_IMAGES_DIR = `${FileSystem.documentDirectory}share-cards/`;
  * @returns Generated image data or null if capture failed
  */
 export async function generateShareCard(
-  viewShotRef: React.RefObject<ViewShot | null>,
+  viewShotRef: React.RefObject<ViewShotRef | null>,
   factId: number
 ): Promise<GeneratedShareCard | null> {
   try {

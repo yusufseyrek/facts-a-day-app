@@ -86,4 +86,3 @@ export function useFlashListScrollToTop({
     getScrollOffset: () => scrollOffsetRef.current,
   };
 }
-

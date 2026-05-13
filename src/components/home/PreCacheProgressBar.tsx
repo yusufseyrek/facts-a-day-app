@@ -40,9 +40,7 @@ export const PreCacheProgressBar = React.memo(function PreCacheProgressBar({
       exiting={FadeOut.duration(400)}
       style={{ height: 2, backgroundColor: colors.border }}
     >
-      <Animated.View
-        style={[{ height: 2, backgroundColor: colors.primary }, barStyle]}
-      />
+      <Animated.View style={[{ height: 2, backgroundColor: colors.primary }, barStyle]} />
     </Animated.View>
   );
 });

@@ -44,10 +44,7 @@ export default function NotificationDiagnosticsScreen() {
     setLoading(true);
     try {
       const locale = getLocale();
-      const [diag, log] = await Promise.all([
-        getNotificationDiagnostics(locale),
-        getSyncLog(),
-      ]);
+      const [diag, log] = await Promise.all([getNotificationDiagnostics(locale), getSyncLog()]);
       setDiagnostics(diag);
       setSyncLog(log);
     } catch (error) {
@@ -68,7 +65,10 @@ export default function NotificationDiagnosticsScreen() {
       setLoading(true);
       const locale = getLocale();
       const result = await ensureNotificationSchedule(locale, 'unknown', { forceReschedule: true });
-      Alert.alert('Rescheduled', `Scheduled ${result.count} notifications.\nSuccess: ${result.success}${result.error ? `\nError: ${result.error}` : ''}`);
+      Alert.alert(
+        'Rescheduled',
+        `Scheduled ${result.count} notifications.\nSuccess: ${result.success}${result.error ? `\nError: ${result.error}` : ''}`
+      );
       await loadData();
     } catch (error) {
       Alert.alert('Error', String(error));
@@ -82,7 +82,10 @@ export default function NotificationDiagnosticsScreen() {
       setLoading(true);
       const locale = getLocale();
       const result = await ensureNotificationSchedule(locale, 'unknown');
-      Alert.alert('Synced', `Count: ${result.count}\nSuccess: ${result.success}\nRepaired: ${result.repaired ?? false}\nSkipped: ${result.skipped ?? false}${result.error ? `\nError: ${result.error}` : ''}`);
+      Alert.alert(
+        'Synced',
+        `Count: ${result.count}\nSuccess: ${result.success}\nRepaired: ${result.repaired ?? false}\nSkipped: ${result.skipped ?? false}${result.error ? `\nError: ${result.error}` : ''}`
+      );
       await loadData();
     } catch (error) {
       Alert.alert('Error', String(error));
@@ -94,7 +97,10 @@ export default function NotificationDiagnosticsScreen() {
   const handleTestNotification = async () => {
     try {
       const id = await scheduleTestNotification();
-      Alert.alert('Scheduled', `Test notification scheduled for 30s from now.\nID: ${id.substring(0, 12)}...`);
+      Alert.alert(
+        'Scheduled',
+        `Test notification scheduled for 30s from now.\nID: ${id.substring(0, 12)}...`
+      );
     } catch (error) {
       Alert.alert('Error', String(error));
     }
@@ -136,7 +142,9 @@ export default function NotificationDiagnosticsScreen() {
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
 
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
+      <View
+        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
+      >
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <ChevronLeft size={24} color={colors.text} />
         </Pressable>
@@ -157,14 +165,22 @@ export default function NotificationDiagnosticsScreen() {
 
           {diagnostics ? (
             <YStack gap={spacing.sm}>
-              <InfoRow label="OS Notifications" value={String(diagnostics.osCount)} colors={colors} />
+              <InfoRow
+                label="OS Notifications"
+                value={String(diagnostics.osCount)}
+                colors={colors}
+              />
               <InfoRow label="DB Scheduled" value={String(diagnostics.dbCount)} colors={colors} />
               <InfoRow
                 label="Preferred Times"
-                value={diagnostics.preferredTimes.map((t) => {
-                  const d = new Date(t);
-                  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-                }).join(', ') || 'None'}
+                value={
+                  diagnostics.preferredTimes
+                    .map((t) => {
+                      const d = new Date(t);
+                      return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                    })
+                    .join(', ') || 'None'
+                }
                 colors={colors}
               />
               <InfoRow
@@ -202,7 +218,9 @@ export default function NotificationDiagnosticsScreen() {
                 </View>
               ))}
               {diagnostics.osNotifications.length === 0 && (
-                <Text.Caption color={colors.textSecondary}>No OS notifications scheduled</Text.Caption>
+                <Text.Caption color={colors.textSecondary}>
+                  No OS notifications scheduled
+                </Text.Caption>
               )}
 
               <SectionHeader title="Next 5 DB Scheduled" color={colors.text} />
@@ -212,7 +230,8 @@ export default function NotificationDiagnosticsScreen() {
                     {formatDate(f.scheduled_date)}
                   </Text.Caption>
                   <Text.Caption color={colors.text}>
-                    Fact #{f.id} | notif_id: {f.notification_id ? f.notification_id.substring(0, 12) + '...' : 'NULL'}
+                    Fact #{f.id} | notif_id:{' '}
+                    {f.notification_id ? f.notification_id.substring(0, 12) + '...' : 'NULL'}
                   </Text.Caption>
                 </View>
               ))}
@@ -253,12 +272,7 @@ export default function NotificationDiagnosticsScreen() {
               colors={colors}
               disabled={loading}
             />
-            <ActionButton
-              label="Refresh"
-              onPress={loadData}
-              colors={colors}
-              disabled={loading}
-            />
+            <ActionButton label="Refresh" onPress={loadData} colors={colors} disabled={loading} />
           </YStack>
 
           {/* Sync Log */}
@@ -275,30 +289,33 @@ export default function NotificationDiagnosticsScreen() {
             <Text.Caption color={colors.textSecondary}>No sync events recorded yet</Text.Caption>
           ) : (
             <YStack gap={spacing.xs}>
-              {[...syncLog].reverse().slice(0, 20).map((entry, i) => (
-                <View key={i} style={[styles.logEntry, { backgroundColor: colors.surface }]}>
-                  <View style={styles.logEntryHeader}>
-                    <Text.Caption color={colors.primary} fontFamily={FONT_FAMILIES.semibold}>
-                      {entry.action.toUpperCase()}
+              {[...syncLog]
+                .reverse()
+                .slice(0, 20)
+                .map((entry, i) => (
+                  <View key={i} style={[styles.logEntry, { backgroundColor: colors.surface }]}>
+                    <View style={styles.logEntryHeader}>
+                      <Text.Caption color={colors.primary} fontFamily={FONT_FAMILIES.semibold}>
+                        {entry.action.toUpperCase()}
+                      </Text.Caption>
+                      <Text.Caption color={colors.textSecondary}>
+                        {formatTimeAgo(entry.timestamp)}
+                      </Text.Caption>
+                    </View>
+                    <Text.Caption color={colors.text}>
+                      Source: {entry.source} | Valid:{' '}
+                      {entry.scheduleValid === undefined ? '-' : String(entry.scheduleValid)}
                     </Text.Caption>
                     <Text.Caption color={colors.textSecondary}>
-                      {formatTimeAgo(entry.timestamp)}
+                      OS: {entry.osCountBefore ?? '-'} → {entry.osCountAfter ?? '-'} | DB:{' '}
+                      {entry.dbCount ?? '-'}
+                      {entry.toppedUp ? ` | +${entry.toppedUp}` : ''}
+                      {entry.repaired ? ' | REPAIRED' : ''}
+                      {entry.skipped ? ' | SKIPPED' : ''}
                     </Text.Caption>
+                    {entry.error && <Text.Caption color="#EF4444">{entry.error}</Text.Caption>}
                   </View>
-                  <Text.Caption color={colors.text}>
-                    Source: {entry.source} | Valid: {entry.scheduleValid === undefined ? '-' : String(entry.scheduleValid)}
-                  </Text.Caption>
-                  <Text.Caption color={colors.textSecondary}>
-                    OS: {entry.osCountBefore ?? '-'} → {entry.osCountAfter ?? '-'} | DB: {entry.dbCount ?? '-'}
-                    {entry.toppedUp ? ` | +${entry.toppedUp}` : ''}
-                    {entry.repaired ? ' | REPAIRED' : ''}
-                    {entry.skipped ? ' | SKIPPED' : ''}
-                  </Text.Caption>
-                  {entry.error && (
-                    <Text.Caption color="#EF4444">{entry.error}</Text.Caption>
-                  )}
-                </View>
-              ))}
+                ))}
             </YStack>
           )}
         </ContentContainer>
@@ -329,10 +346,7 @@ function InfoRow({
   return (
     <View style={styles.infoRow}>
       <Text.Body color={colors.textSecondary}>{label}</Text.Body>
-      <Text.Body
-        color={highlight ? '#F59E0B' : colors.text}
-        fontFamily={FONT_FAMILIES.semibold}
-      >
+      <Text.Body color={highlight ? '#F59E0B' : colors.text} fontFamily={FONT_FAMILIES.semibold}>
         {value}
       </Text.Body>
     </View>
@@ -356,7 +370,11 @@ function ActionButton({
       disabled={disabled}
       style={[
         styles.actionButton,
-        { backgroundColor: colors.surface, borderColor: colors.border, opacity: disabled ? 0.5 : 1 },
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          opacity: disabled ? 0.5 : 1,
+        },
       ]}
     >
       <Text.Body color={colors.primary} fontFamily={FONT_FAMILIES.semibold}>

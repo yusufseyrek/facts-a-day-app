@@ -109,7 +109,10 @@ function DevPremiumProvider({ children }: { children: React.ReactNode }) {
         isLoading: false,
         subscriptions: [],
         cachedPrices: [],
-        restorePurchases: async () => { await devSetPremium(false); return false; },
+        restorePurchases: async () => {
+          await devSetPremium(false);
+          return false;
+        },
         devSetPremium,
       }}
     >
@@ -242,7 +245,11 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
   // Cache subscription prices for instant paywall display on next launch
   useEffect(() => {
     if (subscriptions.length > 0) {
-      const toCache = subscriptions.map((s) => ({ id: s.id, displayPrice: s.displayPrice, price: s.price ?? null }));
+      const toCache = subscriptions.map((s) => ({
+        id: s.id,
+        displayPrice: s.displayPrice,
+        price: s.price ?? null,
+      }));
       cacheSubscriptions(toCache);
     }
   }, [subscriptions]);
@@ -264,7 +271,8 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
     if (!hasActive && getPremiumState()) {
       isCachedPremiumWithinGracePeriod().then((withinGrace) => {
         if (withinGrace) {
-          if (__DEV__) console.log('activeSubscriptions empty but cache is recent — keeping premium');
+          if (__DEV__)
+            console.log('activeSubscriptions empty but cache is recent — keeping premium');
           return;
         }
         updatePremiumStatus(false);
@@ -275,9 +283,12 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
     updatePremiumStatus(!!hasActive);
   }, [activeSubscriptions, connected, isLoading, updatePremiumStatus]);
 
-  const devSetPremium = useCallback(async (status: boolean) => {
-    await updatePremiumStatus(status);
-  }, [updatePremiumStatus]);
+  const devSetPremium = useCallback(
+    async (status: boolean) => {
+      await updatePremiumStatus(status);
+    },
+    [updatePremiumStatus]
+  );
 
   const restorePurchases = useCallback(async (): Promise<boolean> => {
     try {

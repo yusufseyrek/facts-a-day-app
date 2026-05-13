@@ -30,6 +30,7 @@ import { useRouter } from 'expo-router';
 import { XStack, YStack } from 'tamagui';
 
 import { usePremium } from '../contexts';
+import { useFactAudio } from '../hooks/useFactAudio';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { useTranslation } from '../i18n';
 import {
@@ -58,16 +59,16 @@ import { getCachedFactImageSync } from '../services/images';
 import { getIsConnected } from '../services/network';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getIsPremium } from '../services/premiumState';
-import { showRewardedAd } from './ads/RewardedAd';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { PAYWALL_GOLD } from '../theme/paywallColors';
 import { getTranslatedUrl } from '../utils/browser';
+import { absoluteFillObject } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
+import { showRewardedAd } from './ads/RewardedAd';
 import { BannerAd } from './ads';
 import { CategoryBadge } from './CategoryBadge';
 import { FactActions } from './FactActions';
-import { useFactAudio } from '../hooks/useFactAudio';
 import { RelatedFacts } from './RelatedFacts';
 import { FONT_FAMILIES, Text } from './Typography';
 
@@ -908,7 +909,7 @@ export function FactModal({
                     source={{ uri: displayedImageUri }}
                     aria-hidden
                     style={{
-                      ...StyleSheet.absoluteFillObject,
+                      ...absoluteFillObject,
                       width: IMAGE_WIDTH,
                       height: isTablet ? IMAGE_HEIGHT : IMAGE_WIDTH,
                     }}
@@ -968,7 +969,7 @@ export function FactModal({
                   }
                   disabled={!isImageFailed}
                   style={{
-                    ...StyleSheet.absoluteFillObject,
+                    ...absoluteFillObject,
                     backgroundColor: theme === 'dark' ? '#1a1a2e' : '#e8e8f0',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1314,7 +1315,7 @@ function PremiumGateOverlay({
       )}
       <View
         style={{
-          ...StyleSheet.absoluteFillObject,
+          ...absoluteFillObject,
           backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.2)',
           justifyContent: 'center',
           alignItems: 'center',
