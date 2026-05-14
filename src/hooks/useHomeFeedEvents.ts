@@ -22,6 +22,7 @@ import type { FactWithRelations } from '../services/database';
 interface CarouselRefs {
   latestListRef: React.RefObject<FlashListRef<FactWithRelations> | null>;
   onThisDayListRef: React.RefObject<FlashListRef<FactWithRelations> | null>;
+  outerListRef: React.RefObject<FlashListRef<any> | null>;
 }
 
 interface UseHomeFeedEventsResult {
@@ -45,10 +46,20 @@ export function useHomeFeedEvents(locale: string, refs: CarouselRefs): UseHomeFe
       // Re-fetch keep reading and streak
       queryClient.invalidateQueries({ queryKey: homeKeys.keepReading(locale) });
       queryClient.invalidateQueries({ queryKey: homeKeys.readingStreak() });
+      // Snap the outer list to the top after the new header data renders.
+      // FlashList retains its scroll offset when ListHeaderComponent changes
+      // height (carousels growing, Keep Reading section header appearing),
+      // leaving the screen mid-scrolled. Two rAFs lets the new layout settle
+      // before we scroll.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          refs.outerListRef.current?.scrollToOffset({ offset: 0, animated: false });
+        });
+      });
       signalFeedLoaded();
     });
     return () => unsubscribe();
-  }, [locale, queryClient, refs.latestListRef, refs.onThisDayListRef]);
+  }, [locale, queryClient, refs.latestListRef, refs.onThisDayListRef, refs.outerListRef]);
 
   // Pre-cache images when network comes back online
   useEffect(() => {

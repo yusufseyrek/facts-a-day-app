@@ -58,6 +58,7 @@ function HomeScreen() {
   const { backgroundRefreshStatus } = useHomeFeedEvents(locale, {
     latestListRef,
     onThisDayListRef,
+    outerListRef: keepReadingListRef,
   });
 
   // Scroll-to-top handler for tab re-tap
@@ -75,6 +76,13 @@ function HomeScreen() {
       if (consumeFeedRefreshPending()) {
         loadDailyFeedSections(locale, true).then((sections) => {
           queryClient.setQueryData(homeKeys.dailyFeed(locale), sections);
+          // Match the post-refresh scroll reset in useHomeFeedEvents: header
+          // height can change when the new sections render, drifting the list.
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              keepReadingListRef.current?.scrollToOffset({ offset: 0, animated: false });
+            });
+          });
         });
       }
 
