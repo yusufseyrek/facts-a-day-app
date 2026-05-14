@@ -218,6 +218,13 @@ export async function completeOnboarding(preferences: OnboardingPreferences): Pr
     // on first post-onboarding launch. (Flag key mirrors factAudioMigration.ts.)
     await AsyncStorage.setItem('@audio_migration_v1_done', '1').catch(() => {});
 
+    // Fresh installs only see facts that currently exist on the server (the
+    // backend never returns deleted facts), so there is no historical
+    // deletion backlog to walk. Pin the deletion-sync cursor to "now" so
+    // the first refresh after onboarding only fetches *future* deletions.
+    // Key mirrors LAST_DELETED_SYNC_AT_KEY in contentRefresh.ts.
+    await AsyncStorage.setItem('@last_deleted_sync_at', new Date().toISOString()).catch(() => {});
+
     if (__DEV__) console.log('Onboarding completed successfully');
   } catch (error) {
     console.error('Error completing onboarding:', error);

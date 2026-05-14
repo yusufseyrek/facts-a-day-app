@@ -19,6 +19,10 @@ const STORED_LOCALE_KEY = '@stored_locale';
 const QUESTIONS_MIGRATION_KEY = '@questions_migration_v1';
 const SLUG_MIGRATION_KEY = '@slug_migration_v1';
 const HISTORICAL_MIGRATION_KEY = '@historical_migration_v1';
+// Cursor for incremental sync of deleted-fact IDs (see Step 2b in refreshAppContentInternal).
+// Set in completeOnboarding() to "now" for fresh installs; null for in-place upgrades
+// (those fall back to the epoch, which walks the full deletion log once for cleanup).
+const LAST_DELETED_SYNC_AT_KEY = '@last_deleted_sync_at';
 
 // Flag: when true, the home screen should force-refresh on next focus
 let feedRefreshPending = false;
@@ -815,6 +819,53 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
       }
     }
 
+    // Step 2b: Sync server-side deletions and clean up the local cache.
+    // /api/facts delta sync only carries adds/updates — without this step,
+    // any fact ever synced stays in local DB forever, even if the admin
+    // hard-deleted it. Must run BEFORE Step 3 (backfill): otherwise the
+    // count comparison would interpret the about-to-be-deleted facts as
+    // "present locally" and skip a backfill that's actually needed.
+    try {
+      let since = await AsyncStorage.getItem(LAST_DELETED_SYNC_AT_KEY);
+      if (!since) {
+        // First run after an in-place upgrade (fresh installs set this in
+        // completeOnboarding). Walk the full log once: payload is just ints.
+        since = '1970-01-01T00:00:00Z';
+      }
+
+      const allDeletedIds: number[] = [];
+      let cancelledTotal = 0;
+
+      while (true) {
+        const resp = await api.getDeletedFacts(since);
+        if (resp.deleted_ids.length > 0) {
+          const r = await db.deleteFactsByIds(resp.deleted_ids);
+          allDeletedIds.push(...resp.deleted_ids);
+          cancelledTotal += r.notificationsCancelled;
+        }
+        // Advance cursor using the SERVER's high_water_mark, never Date.now() —
+        // closes the race where a row inserted between query and now would be
+        // skipped on the next sync.
+        since = resp.high_water_mark;
+        await AsyncStorage.setItem(LAST_DELETED_SYNC_AT_KEY, since);
+        if (!resp.has_more) break;
+      }
+
+      if (allDeletedIds.length > 0) {
+        const deletedIdsStr = allDeletedIds.join(', ');
+        if (__DEV__) {
+          console.log(
+            `🗑️  Deleted ${allDeletedIds.length} facts: [${deletedIdsStr}] (cancelled ${cancelledTotal} notifications)`
+          );
+        }
+        emitFeedRefresh();
+      }
+    } catch (deletionErr) {
+      // Best-effort, matches backfill semantics. Cursor only advances on
+      // a successful batch, so a transient failure auto-retries next refresh.
+      console.error('🗑️  Deletion sync failed:', deletionErr);
+    }
+
     // Step 3: Detect incomplete initial download and backfill missing facts
     // When onboarding downloads newest-first, if the background download was
     // interrupted (app killed, network lost), the local DB has the latest facts
@@ -952,6 +1003,9 @@ export async function forceRefreshContent(): Promise<RefreshResult> {
   // Clear last refresh time to force refresh
   try {
     await AsyncStorage.removeItem(LAST_CONTENT_REFRESH_KEY);
+    // Also clear the deletion-sync cursor so the next refresh re-walks the
+    // full deletion log — useful if local state has drifted.
+    await AsyncStorage.removeItem(LAST_DELETED_SYNC_AT_KEY);
   } catch (error) {
     console.error('Error clearing refresh timestamp:', error);
   }

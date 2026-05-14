@@ -378,6 +378,22 @@ export async function getFacts(params: GetFactsParams): Promise<FactsResponse> {
   return makeRequest<FactsResponse>(endpoint);
 }
 
+export interface DeletedFactsResponse {
+  deleted_ids: number[];
+  high_water_mark: string;
+  has_more: boolean;
+}
+
+/**
+ * Get IDs of facts deleted on the server since `since` (ISO 8601).
+ * The mobile app calls this during refresh to remove stale facts from
+ * its local cache. The /api/facts delta sync only carries adds/updates.
+ */
+export async function getDeletedFacts(since: string): Promise<DeletedFactsResponse> {
+  const endpoint = `/api/facts/deleted?since=${encodeURIComponent(since)}`;
+  return makeRequest<DeletedFactsResponse>(endpoint);
+}
+
 /**
  * Fetch ALL facts in batches with concurrent requests
  * Fires 3 requests in parallel from the start for faster loading

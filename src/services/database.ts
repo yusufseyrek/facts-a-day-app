@@ -1,4 +1,5 @@
 import * as FileSystem from 'expo-file-system';
+import * as Notifications from 'expo-notifications';
 import * as SQLite from 'expo-sqlite';
 
 const DATABASE_NAME = 'factsaday.db';
@@ -492,6 +493,52 @@ export async function deleteFact(factId: number): Promise<void> {
     'DELETE FROM facts WHERE id = ? AND id NOT IN (SELECT fact_id FROM favorites)',
     [factId]
   );
+}
+
+/**
+ * Unconditionally remove every local trace of the given fact IDs:
+ * favorites, fact_interactions, the fact row itself, and any scheduled
+ * OS notification pointing at the fact. Used when the server has
+ * hard-deleted these facts and the local cache must catch up.
+ *
+ * Idempotent: IDs not present locally are simply no-ops, so this is
+ * safe to call with the full server-side deletion list.
+ */
+export async function deleteFactsByIds(ids: number[]): Promise<{
+  deleted: number;
+  notificationsCancelled: number;
+}> {
+  if (ids.length === 0) return { deleted: 0, notificationsCancelled: 0 };
+  const database = await openDatabase();
+  const placeholders = ids.map(() => '?').join(',');
+
+  // Capture notification_ids BEFORE the delete so we still know what to cancel.
+  // Notification cancellation runs outside the SQL transaction — it's an async
+  // native call and shouldn't sit inside withTransactionAsync.
+  const rows = await database.getAllAsync<{ id: number; notification_id: string | null }>(
+    `SELECT id, notification_id FROM facts WHERE id IN (${placeholders})`,
+    ids
+  );
+
+  let notificationsCancelled = 0;
+  for (const r of rows) {
+    if (r.notification_id) {
+      try {
+        await Notifications.cancelScheduledNotificationAsync(r.notification_id);
+        notificationsCancelled++;
+      } catch (e) {
+        if (__DEV__) console.warn('cancel notif failed for fact', r.id, e);
+      }
+    }
+  }
+
+  await withSerializedTransaction(async (db) => {
+    await db.runAsync(`DELETE FROM favorites WHERE fact_id IN (${placeholders})`, ids);
+    await db.runAsync(`DELETE FROM fact_interactions WHERE fact_id IN (${placeholders})`, ids);
+    await db.runAsync(`DELETE FROM facts WHERE id IN (${placeholders})`, ids);
+  });
+
+  return { deleted: rows.length, notificationsCancelled };
 }
 
 export async function deleteFactsByCategorySlugs(slugs: string[]): Promise<void> {
