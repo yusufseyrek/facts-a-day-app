@@ -1003,9 +1003,6 @@ export async function forceRefreshContent(): Promise<RefreshResult> {
   // Clear last refresh time to force refresh
   try {
     await AsyncStorage.removeItem(LAST_CONTENT_REFRESH_KEY);
-    // Also clear the deletion-sync cursor so the next refresh re-walks the
-    // full deletion log — useful if local state has drifted.
-    await AsyncStorage.removeItem(LAST_DELETED_SYNC_AT_KEY);
   } catch (error) {
     console.error('Error clearing refresh timestamp:', error);
   }
