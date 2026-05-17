@@ -89,11 +89,34 @@ export function useFactAudio(
       .catch(() => {});
   }, []);
 
-  // Drive UI state from status.
+  // Progress shared value — declared early so the factId reset effect can clear it.
+  const progress = useSharedValue(0);
+
+  // When the fact changes (prev/next in the modal), reset UI state immediately
+  // and stop the current player. Without explicit pause+seek, expo-audio keeps
+  // emitting `status.playing=true` briefly after the source swap, and the
+  // status-driven effect below would re-promote state back to 'playing'.
+  useEffect(() => {
+    setPlaybackState('idle');
+    progress.value = 0;
+    try {
+      player.pause();
+      player.seekTo(0);
+    } catch {
+      // expo-audio throws transient errors when the player is being remounted; ignore.
+    }
+  }, [factId, player, progress]);
+
+  // Drive UI state from status. The 'playing' branch intentionally does NOT
+  // promote 'idle' → 'playing': transitions into 'playing' originate from
+  // `toggle()` (which sets state synchronously). This guards against stale
+  // status updates from a prior fact's player overriding the reset above.
   useEffect(() => {
     if (!hasAudio || !status) return;
     if (status.playing) {
-      setPlaybackState('playing');
+      setPlaybackState((prev) =>
+        prev === 'loading' || prev === 'paused' || prev === 'playing' ? 'playing' : prev
+      );
     } else if (status.isLoaded && (status.currentTime ?? 0) > 0) {
       setPlaybackState((prev) => (prev === 'loading' || prev === 'playing' ? 'paused' : prev));
     }
@@ -150,7 +173,6 @@ export function useFactAudio(
   }, [resolvedSource, audioUrl, factId, language]);
 
   // Progress shared value driven from status.
-  const progress = useSharedValue(0);
   useEffect(() => {
     if (!status?.duration || status.duration <= 0) {
       progress.value = 0;

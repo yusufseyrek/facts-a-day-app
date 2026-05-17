@@ -34,7 +34,7 @@ export function FactAudioButton({ controller }: FactAudioButtonProps) {
   // one spacing step around the icon so the progress ring has clear breathing room.
   const ICON_SIZE = iconSizes.lg;
   const SVG_SIZE = iconSizes.lg + spacing.sm;
-  const RING_STROKE = borderWidths.medium;
+  const RING_STROKE = borderWidths.heavy;
   const RADIUS = (SVG_SIZE - RING_STROKE) / 2;
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 

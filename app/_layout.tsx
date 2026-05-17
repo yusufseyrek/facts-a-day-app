@@ -21,6 +21,7 @@ import {
 } from '@expo-google-fonts/montserrat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { setAudioModeAsync } from 'expo-audio';
 import * as Localization from 'expo-localization';
 import * as Notifications from 'expo-notifications';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
@@ -111,6 +112,13 @@ try {
 } catch (error) {
   console.error('Failed to start network monitoring:', error);
 }
+
+// Configure audio session so fact narration plays even when the iOS silent
+// switch is on (matches YouTube/Spotify behavior). Playback is always
+// user-initiated via the play button, so this isn't intrusive.
+setAudioModeAsync({ playsInSilentMode: true }).catch((error) => {
+  console.error('Failed to set audio mode:', error);
+});
 
 // Keep native splash visible until SplashOverlay is ready to take over
 try {
