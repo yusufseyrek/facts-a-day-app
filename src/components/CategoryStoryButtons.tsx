@@ -1,6 +1,13 @@
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { Shuffle } from '@tamagui/lucide-icons';
@@ -49,6 +56,11 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
     const [categories, setCategories] = useState<CategoryItem[]>([]);
     const [unseenStatus, setUnseenStatus] = useState<Record<string, boolean>>({});
+    // Distinguish "still loading" from "loaded but empty" so we can show
+    // a skeleton row at the correct height during the async load and avoid
+    // the layout shift where Latest/On-this-day render first and then jump
+    // down once categories arrive ~1s later.
+    const [loaded, setLoaded] = useState(false);
 
     useImperativeHandle(ref, () => ({
       scrollToStart: () => {
@@ -115,6 +127,8 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
         setCategories([{ slug: 'mix', name: t('mix'), isMix: true }, ...items]);
       } catch {
         // Ignore errors
+      } finally {
+        setLoaded(true);
       }
     };
 
@@ -176,32 +190,132 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
     const keyExtractor = useCallback((item: CategoryItem) => item.slug, []);
 
-    // Height for horizontal FlashList container: circle + label margin + label line
-    const _listHeight = circleSize + spacing.xs + typography.fontSize.tiny * 2;
+    // Height for horizontal FlashList container: circle + label margin + label line.
+    // Reserved on every render (including skeleton) so the row never collapses
+    // while data loads — that collapse was the source of the home-feed jump.
+    const rowHeight = circleSize + spacing.xs + typography.fontSize.tiny * 2;
+    const outerSize = circleSize + (borderWidths.medium + 1) * 2;
 
     const itemSeparator = useCallback(() => <View style={{ width: spacing.md }} />, [spacing.md]);
 
-    if (categories.length === 0) return null;
+    // After load completes with zero categories (user deselected everything,
+    // or both DB queries failed), collapse the row — same as the original behavior.
+    if (loaded && categories.length === 0) return null;
 
     return (
-      <View style={{ width: '100%' }}>
-        <FlashList
-          ref={flashListRef}
-          data={categories}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          overScrollMode="never"
-          ItemSeparatorComponent={itemSeparator}
-          contentContainerStyle={{
-            paddingHorizontal: spacing.lg,
-          }}
-        />
+      <View style={{ width: '100%', height: rowHeight }}>
+        {loaded ? (
+          <FlashList
+            ref={flashListRef}
+            data={categories}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            overScrollMode="never"
+            ItemSeparatorComponent={itemSeparator}
+            contentContainerStyle={{
+              paddingHorizontal: spacing.lg,
+            }}
+          />
+        ) : (
+          <CategoryRowSkeleton
+            count={6}
+            outerSize={outerSize}
+            labelMarginTop={spacing.xs}
+            labelHeight={typography.fontSize.tiny * 2}
+            paddingHorizontal={spacing.lg}
+            gap={spacing.md}
+            placeholderColor={colors.surface}
+          />
+        )}
       </View>
     );
   }
 );
+
+/**
+ * Placeholder row shown during the initial async load of selected categories.
+ * Renders at the same height as the real row so the carousels below don't
+ * shift down once the real data arrives.
+ */
+const CategoryRowSkeleton = React.memo(
+  ({
+    count,
+    outerSize,
+    labelMarginTop,
+    labelHeight,
+    paddingHorizontal,
+    gap,
+    placeholderColor,
+  }: {
+    count: number;
+    outerSize: number;
+    labelMarginTop: number;
+    labelHeight: number;
+    paddingHorizontal: number;
+    gap: number;
+    placeholderColor: string;
+  }) => {
+    // Single shared pulse value — every placeholder reads from it, so we run
+    // exactly one animation regardless of count.
+    const pulse = useSharedValue(0.5);
+    useEffect(() => {
+      pulse.value = withRepeat(
+        withTiming(1, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+        -1,
+        true
+      );
+    }, [pulse]);
+    const animatedStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
+
+    return (
+      <View
+        style={{
+          flexDirection: 'row',
+          paddingHorizontal,
+          alignItems: 'flex-start',
+        }}
+      >
+        {Array.from({ length: count }).map((_, i) => (
+          <View
+            key={i}
+            style={{
+              alignItems: 'center',
+              marginRight: i < count - 1 ? gap : 0,
+            }}
+          >
+            <Animated.View
+              style={[
+                {
+                  width: outerSize,
+                  height: outerSize,
+                  borderRadius: outerSize / 2,
+                  backgroundColor: placeholderColor,
+                },
+                animatedStyle,
+              ]}
+            />
+            <Animated.View
+              style={[
+                {
+                  marginTop: labelMarginTop,
+                  width: outerSize * 0.7,
+                  height: labelHeight * 0.4,
+                  borderRadius: 4,
+                  backgroundColor: placeholderColor,
+                },
+                animatedStyle,
+              ]}
+            />
+          </View>
+        ))}
+      </View>
+    );
+  }
+);
+
+CategoryRowSkeleton.displayName = 'CategoryRowSkeleton';
 
 /**
  * Lighten a hex color by a given amount (0–1)

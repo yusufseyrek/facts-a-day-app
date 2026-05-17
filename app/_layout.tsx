@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus, Text as RNText, TextInput, View } from 'react-native';
+import { AppState, AppStateStatus, Platform, Text as RNText, TextInput, View } from 'react-native';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../src/utils/responsive';
@@ -115,6 +115,20 @@ try {
 // Keep native splash visible until SplashOverlay is ready to take over
 try {
   SplashScreen.preventAutoHideAsync();
+  if (Platform.OS === 'ios') {
+    // iOS-only crossfade to mask the native→JS splash handoff.
+    SplashScreen.setOptions({ duration: 250, fade: true });
+  } else {
+    // Android v56 ALWAYS runs an alpha-0 exit animation over `duration` ms
+    // (see expo-splash-screen's SplashScreenManager.kt setOnExitAnimationListener).
+    // The default 400ms fade is where the white flash appears — during the
+    // crossfade the system swaps the activity theme from Theme.App.SplashScreen
+    // to AppTheme, and any default-color frame in that window becomes visible.
+    // Set duration to 0 so the splash is removed instantly (matching v3/SDK 54
+    // behavior). Our JS SplashOverlay is already painted underneath, so the
+    // handoff is invisible.
+    SplashScreen.setOptions({ duration: 0, fade: false });
+  }
 } catch (error) {
   console.error('Failed to prevent splash screen auto-hide:', error);
 }
@@ -631,48 +645,54 @@ export default function RootLayout() {
     // Nothing to do here - SplashOverlay handles the transition
   }, []);
 
-  // Render a minimal View while loading so expo-updates registers "content appeared".
-  // Without this, the native module never confirms the OTA update as successfully launched,
-  // and on next cold start it rolls back to the embedded bundle.
-  // The native splash screen is still visible on top, so users see no difference.
-  if (!isDbReady || initialOnboardingStatus === null || !fontsLoaded) {
-    return <View style={{ flex: 1, backgroundColor: '#0A1628' }} />;
-  }
+  // The root <View> renders unconditionally (even during loading) for two reasons:
+  //  1. expo-updates needs "content appeared" to confirm the OTA launch — without
+  //     it, the next cold start rolls back to the embedded bundle.
+  //  2. SplashOverlay must mount on first paint so its image starts decoding in
+  //     parallel with the heavy initialization work below. On Android (where the
+  //     native splash can't crossfade), the JS layer needs to be fully composited
+  //     BEFORE SplashScreen.hide() fires, otherwise the native→JS handoff blinks.
+  //     Mounting late (only in the success branch) was the cause of the blink.
+  // The provider tree mounts under the SplashOverlay once the app is ready, so
+  // the user never sees the seam.
+  const isAppReady = isDbReady && initialOnboardingStatus !== null && fontsLoaded;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0A1628' }} onLayout={onLayoutRootView}>
-      <ErrorBoundary>
-        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-          {appCheckFailed && (
-            <AppCheckBlockingScreen onRetry={handleAppCheckRetry} isRetrying={isRetryingAppCheck} />
-          )}
-          <PostHogProvider client={posthog}>
-            <PostHogErrorBoundary>
-              <I18nProvider>
-                <QueryClientProvider client={queryClient}>
-                  <PreloadedDataProvider>
-                    <OnboardingProvider initialComplete={initialOnboardingStatus}>
-                      <IAPSafeProvider>
-                        <ScrollToTopProvider>
-                          <AppThemeProvider>
-                            <NavigationThemeWrapper>
-                              <ReviewPromptProvider>
-                                <BadgeToastProvider>
-                                  <AppContent />
-                                </BadgeToastProvider>
-                              </ReviewPromptProvider>
-                            </NavigationThemeWrapper>
-                          </AppThemeProvider>
-                        </ScrollToTopProvider>
-                      </IAPSafeProvider>
-                    </OnboardingProvider>
-                  </PreloadedDataProvider>
-                </QueryClientProvider>
-              </I18nProvider>
-            </PostHogErrorBoundary>
-          </PostHogProvider>
-        </SafeAreaProvider>
-      </ErrorBoundary>
+      {isAppReady && (
+        <ErrorBoundary>
+          <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+            {appCheckFailed && (
+              <AppCheckBlockingScreen onRetry={handleAppCheckRetry} isRetrying={isRetryingAppCheck} />
+            )}
+            <PostHogProvider client={posthog}>
+              <PostHogErrorBoundary>
+                <I18nProvider>
+                  <QueryClientProvider client={queryClient}>
+                    <PreloadedDataProvider>
+                      <OnboardingProvider initialComplete={initialOnboardingStatus}>
+                        <IAPSafeProvider>
+                          <ScrollToTopProvider>
+                            <AppThemeProvider>
+                              <NavigationThemeWrapper>
+                                <ReviewPromptProvider>
+                                  <BadgeToastProvider>
+                                    <AppContent />
+                                  </BadgeToastProvider>
+                                </ReviewPromptProvider>
+                              </NavigationThemeWrapper>
+                            </AppThemeProvider>
+                          </ScrollToTopProvider>
+                        </IAPSafeProvider>
+                      </OnboardingProvider>
+                    </PreloadedDataProvider>
+                  </QueryClientProvider>
+                </I18nProvider>
+              </PostHogErrorBoundary>
+            </PostHogProvider>
+          </SafeAreaProvider>
+        </ErrorBoundary>
+      )}
       {showSplashOverlay && <SplashOverlay onHidden={() => setShowSplashOverlay(false)} />}
     </View>
   );

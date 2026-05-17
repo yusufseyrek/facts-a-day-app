@@ -449,7 +449,7 @@
           "backgroundColor": "#0A1628",
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
-          "resizeMode": "cover"
+          "resizeMode": "contain"
         }
       ],
       "expo-web-browser",
@@ -457,7 +457,13 @@
       "expo-router",
       "expo-sqlite",
       "expo-updates",
-      "./plugins/withAndroidWindowBackground.js",
+      [
+        "./plugins/withAndroidWindowBackground.js",
+        {
+          "lightBackgroundColor": "#0A1628",
+          "darkBackgroundColor": "#0A1628"
+        }
+      ],
       "expo-iap",
       "expo-task-manager",
       "expo-background-task",

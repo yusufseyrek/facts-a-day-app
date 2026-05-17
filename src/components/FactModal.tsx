@@ -172,7 +172,12 @@ export function FactModal({
   // Double-buffer: keep the previous image visible until the new one loads.
   // `displayedImageUri` is the last successfully loaded image — it stays on screen
   // as a "back" layer while the new image loads on the "front" layer.
-  const [displayedImageUri, setDisplayedImageUri] = useState<string | null>(null);
+  // Seed from the sync cache so the back layer renders on first paint when the
+  // image is already on disk — without this, expo-image v56 always shows the
+  // blurhash placeholder + transition fade even on cache hits.
+  const [displayedImageUri, setDisplayedImageUri] = useState<string | null>(
+    () => getCachedFactImageSync(fact.id)
+  );
 
   // Related facts for the current fact's category
   const [relatedFacts, setRelatedFacts] = useState<FactWithRelations[]>([]);
@@ -207,8 +212,10 @@ export function FactModal({
     }
   }, [fact.id]);
 
-  // Show placeholder when loading OR when error (before image loads)
-  const showImagePlaceholder = !!fact.image_url && !isImageLoaded;
+  // Show placeholder when loading OR when error (before image loads).
+  // Suppressed when a back-buffered image is already on screen — otherwise
+  // the shimmer overlay would flash on top of the cached image we just rendered.
+  const showImagePlaceholder = !!fact.image_url && !isImageLoaded && !displayedImageUri;
 
   // Show error state when image fails
   const isImageFailed = !!fact.image_url && isImageError && !isImageLoaded;
@@ -738,7 +745,10 @@ export function FactModal({
                   }}
                   contentFit="cover"
                   cachePolicy="memory-disk"
-                  transition={200}
+                  // Skip the fade when we already have the cached image —
+                  // expo-image v56 on Android otherwise visibly fades from
+                  // empty → image even on disk-cache hits.
+                  transition={displayedImageUri ? 0 : 200}
                   recyclingKey="modal-hero"
                 />
               </Animated.View>
@@ -929,7 +939,13 @@ export function FactModal({
                   }}
                   contentFit="cover"
                   cachePolicy="memory-disk"
-                  transition={displayedImageUri ? 150 : 200}
+                  // Same rationale as the hero above: with a back-buffered
+                  // cached image already on screen, fading the front layer in
+                  // produces a visible flash on Android (the two layers decode
+                  // from different sources — file:// vs remote disk-cached URL —
+                  // so any opacity transition between them is perceptible).
+                  // Fade only on a true first-time load (no cache hit).
+                  transition={displayedImageUri ? 0 : 200}
                   recyclingKey="modal-main"
                   placeholder={
                     !displayedImageUri && !isImageLoaded
