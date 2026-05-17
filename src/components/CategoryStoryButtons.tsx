@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { Shuffle } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -40,6 +41,44 @@ export interface CategoryStoryButtonsRef {
   scrollToStart: () => void;
 }
 
+// Module-level cache so the row renders the previous session's buttons
+// immediately on remount instead of flashing a skeleton while the async
+// load (AsyncStorage → SQLite → SQLite) runs. Keyed by locale because the
+// `name` field is localized.
+type CachedRow = { items: CategoryItem[]; unseenStatus: Record<string, boolean> };
+const CACHE_KEY_PREFIX = '@category_buttons_cache_v1_';
+const memCache = new Map<string, CachedRow>();
+const hydrationByLocale = new Map<string, Promise<CachedRow | null>>();
+
+function getCachedRowSync(locale: string): CachedRow | null {
+  return memCache.get(locale) ?? null;
+}
+
+function setCachedRow(locale: string, data: CachedRow): void {
+  memCache.set(locale, data);
+  AsyncStorage.setItem(CACHE_KEY_PREFIX + locale, JSON.stringify(data)).catch(() => {});
+}
+
+function hydrateCachedRow(locale: string): Promise<CachedRow | null> {
+  const existing = hydrationByLocale.get(locale);
+  if (existing) return existing;
+  const promise = (async () => {
+    const fromMem = memCache.get(locale);
+    if (fromMem) return fromMem;
+    try {
+      const raw = await AsyncStorage.getItem(CACHE_KEY_PREFIX + locale);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as CachedRow;
+      memCache.set(locale, parsed);
+      return parsed;
+    } catch {
+      return null;
+    }
+  })();
+  hydrationByLocale.set(locale, promise);
+  return promise;
+}
+
 export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
   function CategoryStoryButtons(_props, ref) {
     const { t, locale } = useTranslation();
@@ -54,13 +93,25 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
     const flashListRef = useRef<FlashListRef<CategoryItem>>(null);
 
-    const [categories, setCategories] = useState<CategoryItem[]>([]);
-    const [unseenStatus, setUnseenStatus] = useState<Record<string, boolean>>({});
-    // Distinguish "still loading" from "loaded but empty" so we can show
-    // a skeleton row at the correct height during the async load and avoid
-    // the layout shift where Latest/On-this-day render first and then jump
-    // down once categories arrive ~1s later.
-    const [loaded, setLoaded] = useState(false);
+    // Seed from the in-memory cache so re-mounts (tab switches, focus
+    // changes, etc.) within a session render the previous buttons
+    // immediately instead of flashing the skeleton.
+    const initialCache = getCachedRowSync(locale);
+    const [categories, setCategories] = useState<CategoryItem[]>(
+      () => initialCache?.items ?? []
+    );
+    const [unseenStatus, setUnseenStatus] = useState<Record<string, boolean>>(
+      () => initialCache?.unseenStatus ?? {}
+    );
+    // `loaded` gates skeleton vs real row. Treat a cache hit (mem or disk)
+    // as loaded so we never show the skeleton when we have buttons to show.
+    const [loaded, setLoaded] = useState<boolean>(() => initialCache !== null);
+
+    // Tracks the latest categories synchronously so loadUnseenStatus can
+    // recompute the sorted row without relying on a setState updater (which
+    // would force the cache-persist side effect into the updater body).
+    const categoriesRef = useRef(categories);
+    categoriesRef.current = categories;
 
     useImperativeHandle(ref, () => ({
       scrollToStart: () => {
@@ -69,6 +120,21 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     }));
 
     useEffect(() => {
+      let cancelled = false;
+
+      // First-mount-per-locale cold path: try the AsyncStorage cache while
+      // the live load runs in parallel. Whichever finishes first paints the
+      // row; the live load always wins the final state.
+      if (!getCachedRowSync(locale)) {
+        hydrateCachedRow(locale).then((disk) => {
+          if (cancelled || !disk) return;
+          if (getCachedRowSync(locale) !== disk) return; // a live load already wrote a newer entry
+          setCategories(disk.items);
+          setUnseenStatus(disk.unseenStatus);
+          setLoaded(true);
+        });
+      }
+
       loadCategories();
       const unsubPreference = onPreferenceFeedRefresh(() => {
         loadCategories();
@@ -77,6 +143,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
         loadCategories();
       });
       return () => {
+        cancelled = true;
         unsubPreference();
         unsubFeed();
       };
@@ -114,7 +181,6 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
         // Load unseen status
         const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
-        setUnseenStatus(status);
 
         // Sort categories: unseen (has new facts) first
         items.sort((a, b) => {
@@ -123,8 +189,14 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
           return aUnseen - bUnseen;
         });
 
-        // Prepend Mix button
-        setCategories([{ slug: 'mix', name: t('mix'), isMix: true }, ...items]);
+        const newItems: CategoryItem[] = [
+          { slug: 'mix', name: t('mix'), isMix: true },
+          ...items,
+        ];
+
+        setUnseenStatus(status);
+        setCategories(newItems);
+        setCachedRow(locale, { items: newItems, unseenStatus: status });
       } catch {
         // Ignore errors
       } finally {
@@ -136,19 +208,20 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
       try {
         const selectedSlugs = await getSelectedCategories();
         const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
-        setUnseenStatus(status);
 
-        // Re-sort categories by unseen status
-        setCategories((prev) => {
-          const mix = prev.find((c) => c.isMix);
-          const rest = prev.filter((c) => !c.isMix);
-          rest.sort((a, b) => {
-            const aUnseen = status[a.slug] ? 0 : 1;
-            const bUnseen = status[b.slug] ? 0 : 1;
-            return aUnseen - bUnseen;
-          });
-          return mix ? [mix, ...rest] : rest;
+        const prev = categoriesRef.current;
+        const mix = prev.find((c) => c.isMix);
+        const rest = prev.filter((c) => !c.isMix);
+        rest.sort((a, b) => {
+          const aUnseen = status[a.slug] ? 0 : 1;
+          const bUnseen = status[b.slug] ? 0 : 1;
+          return aUnseen - bUnseen;
         });
+        const newItems = mix ? [mix, ...rest] : rest;
+
+        setUnseenStatus(status);
+        setCategories(newItems);
+        setCachedRow(locale, { items: newItems, unseenStatus: status });
       } catch {
         // Ignore errors
       }

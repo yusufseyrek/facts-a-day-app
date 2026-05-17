@@ -480,35 +480,44 @@ export function FactModal({
   // Header background appears when image starts to be covered (for images) or early for no image
   const HEADER_BG_TRANSITION = hasImage ? IMAGE_HEIGHT - headerHeight : 100;
 
-  // Fade animation for the entire scroll content (image + text) on navigation.
-  // Hides everything first so scroll-to-top and image swap happen invisibly,
-  // then fades in the new state. Uses JS-driven animation so setValue(0) takes
-  // effect synchronously — no bridge race condition.
-  const contentFadeAnim = useRef(new Animated.Value(1)).current;
+  // Cover overlay for fact-to-fact navigation. Renders a solid-colored
+  // <Animated.View> on top of the content rather than fading the content
+  // itself. The previous approach (parent opacity animation on a wrapper with
+  // needsOffscreenAlphaCompositing) caused Android to re-composite the
+  // offscreen buffer on every subtree change during the fade — back-layer
+  // unmount, related-facts async refill, resolved-URI swap, etc. — each
+  // producing a visible flash stacked on top of the intended cross-fade.
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
   const isFirstRender = useRef(true);
+
+  // Snap the overlay to fully opaque the moment a new fact.id is observed —
+  // during render, so it commits atomically with the new content. Doing this
+  // in useEffect leaves one or two Android frames where the new content is
+  // visible uncovered before the effect runs.
+  const lastSeenFactIdRef = useRef(fact.id);
+  if (lastSeenFactIdRef.current !== fact.id) {
+    lastSeenFactIdRef.current = fact.id;
+    overlayOpacity.stopAnimation();
+    overlayOpacity.setValue(1);
+  }
 
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
-      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
-      scrollY.setValue(0);
-      currentScrollY.current = 0;
       return;
     }
 
-    contentFadeAnim.stopAnimation();
-    contentFadeAnim.setValue(0);
-
-    // Scroll to top while hidden — user can't see the jump
+    // Scroll to top under the cover — user can't see the jump
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
     scrollY.setValue(0);
     currentScrollY.current = 0;
 
-    // Short delay so the image swap settles before we fade in
+    // Brief hold so cascading state updates (related facts, resolved URI,
+    // image source decode) settle under the cover, then fade it away.
     const timer = setTimeout(() => {
-      Animated.timing(contentFadeAnim, {
-        toValue: 1,
-        duration: 100,
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 200,
         useNativeDriver: true,
       }).start();
     }, 50);
@@ -852,46 +861,38 @@ export function FactModal({
       >
         {/* Sticky title for no-image layout (direct child at index 0 for stickyHeaderIndices) */}
         {!hasImage && (
-          <Animated.View
-            style={{ opacity: contentFadeAnim }}
-            needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+          <View
+            style={{
+              backgroundColor:
+                theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface,
+              paddingTop: spacing.xl,
+              paddingHorizontal: spacing.xl,
+              paddingBottom: spacing.md,
+              borderBottomWidth: categoryColor ? borderWidths.heavy : 0,
+              borderBottomColor: categoryColor || 'transparent',
+            }}
           >
-            <View
-              style={{
-                backgroundColor:
-                  theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface,
-                paddingTop: spacing.xl,
-                paddingHorizontal: spacing.xl,
-                paddingBottom: spacing.md,
-                borderBottomWidth: categoryColor ? borderWidths.heavy : 0,
-                borderBottomColor: categoryColor || 'transparent',
-              }}
-            >
-              <View style={{ position: 'relative' }}>
-                <View style={{ paddingRight: iconSizes.xl + spacing.xs }}>
-                  <Text.Headline
-                    role="heading"
-                    onTextLayout={(e) => {
-                      const lines = e.nativeEvent.lines;
-                      const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
-                      if (totalHeight > 0 && totalHeight !== titleHeight) {
-                        setTitleHeight(totalHeight);
-                      }
-                    }}
-                  >
-                    {factTitle}
-                  </Text.Headline>
-                </View>
+            <View style={{ position: 'relative' }}>
+              <View style={{ paddingRight: iconSizes.xl + spacing.xs }}>
+                <Text.Headline
+                  role="heading"
+                  onTextLayout={(e) => {
+                    const lines = e.nativeEvent.lines;
+                    const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
+                    if (totalHeight > 0 && totalHeight !== titleHeight) {
+                      setTitleHeight(totalHeight);
+                    }
+                  }}
+                >
+                  {factTitle}
+                </Text.Headline>
               </View>
             </View>
-          </Animated.View>
+          </View>
         )}
 
         {/* Main content: hero image (if any) + text content */}
-        <Animated.View
-          style={{ opacity: contentFadeAnim }}
-          needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-        >
+        <View>
           {/* Hero Image */}
           {hasImage && (
             <Animated.View
@@ -1152,8 +1153,26 @@ export function FactModal({
               />
             )}
           </YStack>
-        </Animated.View>
+        </View>
       </Animated.ScrollView>
+
+      {/* Cover overlay during fact-to-fact navigation. Rendered on top of the
+          sticky header + scroll content but BELOW the close button, banner ad,
+          and action bar (those are rendered after this in the tree, so they
+          stay visible during the cover-and-reveal). */}
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor:
+            theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface,
+          opacity: overlayOpacity,
+        }}
+      />
 
       {/* Fixed Close Button - always visible for easy dismissal */}
       {hasImage && (

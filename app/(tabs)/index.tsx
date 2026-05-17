@@ -75,9 +75,14 @@ function HomeScreen() {
     useCallback(() => {
       if (consumeFeedRefreshPending()) {
         loadDailyFeedSections(locale, true).then((sections) => {
+          // Snap to top BEFORE the data swap so the new ListHeaderComponent
+          // commits around offset 0 instead of the previous scroll position
+          // (see useHomeFeedEvents for the full rationale).
+          keepReadingListRef.current?.scrollToOffset({ offset: 0, animated: false });
+          latestListRef.current?.scrollToOffset({ offset: 0, animated: false });
+          onThisDayListRef.current?.scrollToOffset({ offset: 0, animated: false });
           queryClient.setQueryData(homeKeys.dailyFeed(locale), sections);
-          // Match the post-refresh scroll reset in useHomeFeedEvents: header
-          // height can change when the new sections render, drifting the list.
+          // Fallback retry once the new layout has settled.
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
               keepReadingListRef.current?.scrollToOffset({ offset: 0, animated: false });

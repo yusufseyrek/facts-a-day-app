@@ -39,18 +39,20 @@ export function useHomeFeedEvents(locale: string, refs: CarouselRefs): UseHomeFe
   useEffect(() => {
     const unsubscribe = onFeedRefresh(async () => {
       const sections = await loadDailyFeedSections(locale, true);
-      queryClient.setQueryData(homeKeys.dailyFeed(locale), sections);
-      // Reset carousel scroll positions
+      // Snap to top BEFORE the data swap. FlashList tracks scroll offset in
+      // pixels — if we update the header data while the user is scrolled
+      // partway down, the new ListHeaderComponent commits around that same
+      // pixel offset, landing the viewport mid-Latest-carousel. Scrolling
+      // first means the next commit anchors at offset 0.
+      refs.outerListRef.current?.scrollToOffset({ offset: 0, animated: false });
       refs.latestListRef.current?.scrollToOffset({ offset: 0, animated: false });
       refs.onThisDayListRef.current?.scrollToOffset({ offset: 0, animated: false });
-      // Re-fetch keep reading and streak
+      queryClient.setQueryData(homeKeys.dailyFeed(locale), sections);
       queryClient.invalidateQueries({ queryKey: homeKeys.keepReading(locale) });
       queryClient.invalidateQueries({ queryKey: homeKeys.readingStreak() });
-      // Snap the outer list to the top after the new header data renders.
-      // FlashList retains its scroll offset when ListHeaderComponent changes
-      // height (carousels growing, Keep Reading section header appearing),
-      // leaving the screen mid-scrolled. Two rAFs lets the new layout settle
-      // before we scroll.
+      // Fallback after layout settles, in case the keep-reading refetch lands
+      // a few frames later with a different content height and FlashList
+      // drifts off offset 0 again.
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           refs.outerListRef.current?.scrollToOffset({ offset: 0, animated: false });
