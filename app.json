@@ -467,7 +467,12 @@
       "expo-iap",
       "expo-task-manager",
       "expo-background-task",
-      "expo-audio"
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": false
+        }
+      ]
     ]
   }
 }
