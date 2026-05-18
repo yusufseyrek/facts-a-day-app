@@ -145,13 +145,37 @@ function withIOSWidgetFiles(config) {
  * Add the WidgetKit extension target to the Xcode project (pbxproj).
  * Uses withXcodeProject to manipulate the project file via the xcode library.
  */
+/**
+ * Sync the widget extension's MARKETING_VERSION / CURRENT_PROJECT_VERSION to
+ * the values in app.json. App Store rejects submissions where an extension's
+ * CFBundleVersion drifts from the main app's, so this runs every prebuild —
+ * not just on first creation of the target — to keep them locked together.
+ */
+function syncWidgetVersionBuildSettings(xcodeProject, config) {
+  const configurations = xcodeProject.pbxXCBuildConfigurationSection();
+  for (const key in configurations) {
+    const cfg = configurations[key];
+    if (
+      typeof cfg === 'object' &&
+      cfg.buildSettings &&
+      cfg.buildSettings.PRODUCT_BUNDLE_IDENTIFIER === `"${WIDGET_BUNDLE_ID}"`
+    ) {
+      cfg.buildSettings.MARKETING_VERSION = config.version || '1.0';
+      cfg.buildSettings.CURRENT_PROJECT_VERSION = String(config.ios?.buildNumber ?? '1');
+    }
+  }
+}
+
 function withIOSWidgetTarget(config) {
   return withXcodeProject(config, (mod) => {
     const xcodeProject = mod.modResults;
 
-    // Check if the target already exists
+    // Check if the target already exists. Even when it does, we still need to
+    // re-sync the version build settings below so a bumped buildNumber in
+    // app.json propagates to the widget extension.
     const existingTarget = xcodeProject.pbxTargetByName(WIDGET_EXTENSION_NAME);
     if (existingTarget) {
+      syncWidgetVersionBuildSettings(xcodeProject, config);
       return mod;
     }
 
@@ -333,16 +357,15 @@ function withIOSWidgetTarget(config) {
           cfg.buildSettings.PRODUCT_NAME = `"$(TARGET_NAME)"`;
           cfg.buildSettings.SKIP_INSTALL = 'YES';
           cfg.buildSettings.GENERATE_INFOPLIST_FILE = 'NO';
-          // Version settings — must exactly match the main app's
-          // CFBundleShortVersionString / CFBundleVersion or App Store
-          // submission will fail. Source from the Expo config (app.json),
-          // since Expo writes those values into the main app's Info.plist
-          // directly and leaves the pbxproj's MARKETING_VERSION /
-          // CURRENT_PROJECT_VERSION at their defaults.
-          cfg.buildSettings.MARKETING_VERSION = config.version || '1.0';
-          cfg.buildSettings.CURRENT_PROJECT_VERSION = String(config.ios?.buildNumber ?? '1');
         }
       }
+
+      // Version settings — must exactly match the main app's
+      // CFBundleShortVersionString / CFBundleVersion or App Store submission
+      // will fail. Source from the Expo config (app.json), since Expo writes
+      // those values into the main app's Info.plist directly and leaves the
+      // pbxproj's MARKETING_VERSION / CURRENT_PROJECT_VERSION at their defaults.
+      syncWidgetVersionBuildSettings(xcodeProject, config);
     }
 
     return mod;
