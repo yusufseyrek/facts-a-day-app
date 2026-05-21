@@ -111,7 +111,14 @@ function extractDomain(url: string): string {
 
 function formatLastUpdated(dateString: string, locale: string): string {
   try {
-    const date = new Date(dateString);
+    // SQLite CURRENT_TIMESTAMP returns "YYYY-MM-DD HH:MM:SS" in UTC with no
+    // timezone marker. Hermes/V8 parse that non-ISO form as local time, which
+    // makes toLocaleString echo the UTC clock value. Normalize to ISO UTC so
+    // the device's local timezone offset is applied.
+    const normalized = /[zZ]|[+-]\d{2}:?\d{2}$/.test(dateString)
+      ? dateString
+      : dateString.replace(' ', 'T') + 'Z';
+    const date = new Date(normalized);
     return date.toLocaleString(locale, {
       year: 'numeric',
       month: 'short',
