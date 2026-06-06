@@ -273,26 +273,36 @@ async function getLastFactUpdatedAt(): Promise<string | null> {
 }
 
 /**
- * Get existing fact IDs from database
- * Used to determine which facts are new vs updated
+ * Fetch the stored `last_updated` for a set of fact IDs.
+ *
+ * Used to tell a *genuine* update (the backend bumped updated_at — new audio,
+ * image, slug, edited copy) apart from an unchanged row that the delta-sync
+ * boundary re-returned. Without this the refresh logs "Updated N facts" for
+ * every already-present id, which looks like a sync storm even when nothing
+ * actually changed. Returns a Map<id, last_updated | null>.
  */
-async function getExistingFactIds(factIds: number[]): Promise<number[]> {
+async function getExistingFactTimestamps(
+  factIds: number[]
+): Promise<Map<number, string | null>> {
+  const map = new Map<number, string | null>();
   if (factIds.length === 0) {
-    return [];
+    return map;
   }
 
   try {
     const database = await db.openDatabase();
-    // Create placeholders for IN clause
     const placeholders = factIds.map(() => '?').join(',');
-    const result = await database.getAllAsync<{ id: number }>(
-      `SELECT id FROM facts WHERE id IN (${placeholders})`,
+    const rows = await database.getAllAsync<{ id: number; last_updated: string | null }>(
+      `SELECT id, last_updated FROM facts WHERE id IN (${placeholders})`,
       factIds
     );
-    return result.map((row) => row.id);
+    for (const row of rows) {
+      map.set(row.id, row.last_updated);
+    }
+    return map;
   } catch (error) {
-    console.error('Error getting existing fact IDs:', error);
-    return [];
+    console.error('Error getting existing fact timestamps:', error);
+    return map;
   }
 }
 
@@ -783,18 +793,31 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
         // Extract questions from facts for trivia feature
         const dbQuestions = extractQuestions(allIncrementalFacts);
 
-        // Check which facts already exist in database
+        // Classify incoming facts against what's already stored. We compare the
+        // backend's update timestamp, not just id-presence: the delta-sync
+        // filter (COALESCE(updated_at,created_at) > since) is inclusive at the
+        // boundary, so a row can come back unchanged. Treating every present id
+        // as "updated" is what made the log read "🔄 Updated 4723 facts" when
+        // nothing had actually changed.
         const factIds = dbFacts.map((f) => f.id);
-        const existingFactIds = await getExistingFactIds(factIds);
-        const existingIdsSet = new Set(existingFactIds);
+        const existingTimestamps = await getExistingFactTimestamps(factIds);
 
-        // Separate new and updated facts
-        const newFacts = dbFacts.filter((f) => !existingIdsSet.has(f.id));
-        const updatedFacts = dbFacts.filter((f) => existingIdsSet.has(f.id));
+        const newFacts = dbFacts.filter((f) => !existingTimestamps.has(f.id));
+        const changedFacts = dbFacts.filter((f) => {
+          if (!existingTimestamps.has(f.id)) return false;
+          // Normalize both sides: rows written by older app builds may hold a
+          // space-form last_updated, while the incoming value is ISO-Z. Compare
+          // canonical forms so a format difference alone never reads as a change.
+          const stored = db.toIsoUtc(existingTimestamps.get(f.id) ?? undefined);
+          const incoming = db.toIsoUtc(f.last_updated);
+          return stored !== incoming;
+        });
+        const unchangedCount = dbFacts.length - newFacts.length - changedFacts.length;
 
-        // Insert new or updated facts (INSERT OR REPLACE handles duplicates)
+        // Insert new or updated facts (INSERT OR REPLACE handles duplicates).
+        // Unchanged rows are a harmless no-op rewrite; not worth a separate path.
         await db.insertFacts(dbFacts);
-        result.updated.facts = dbFacts.length;
+        result.updated.facts = newFacts.length + changedFacts.length;
 
         // Insert questions (INSERT OR REPLACE handles duplicates)
         if (dbQuestions.length > 0) {
@@ -802,18 +825,24 @@ async function refreshAppContentInternal(): Promise<RefreshResult> {
           if (__DEV__) console.log(`🧠 Synced ${dbQuestions.length} questions for trivia`);
         }
 
-        // Log new and updated facts separately with IDs
+        // Log what genuinely changed. Unchanged re-syncs get a single quiet
+        // line so a boundary re-fetch never looks like a storm again.
         if (newFacts.length > 0) {
           const newIds = newFacts.map((f) => f.id).join(', ');
           if (__DEV__) console.log(`✨ Fetched ${newFacts.length} new facts: [${newIds}]`);
         }
-        if (updatedFacts.length > 0) {
-          const updatedIds = updatedFacts.map((f) => f.id).join(', ');
-          if (__DEV__) console.log(`🔄 Updated ${updatedFacts.length} facts: [${updatedIds}]`);
+        if (changedFacts.length > 0) {
+          const updatedIds = changedFacts.map((f) => f.id).join(', ');
+          if (__DEV__) console.log(`🔄 Updated ${changedFacts.length} facts: [${updatedIds}]`);
+        }
+        if (__DEV__ && unchangedCount > 0 && newFacts.length === 0 && changedFacts.length === 0) {
+          console.log(`✅ Delta sync: ${unchangedCount} facts re-checked, none changed`);
         }
 
-        // Notify listeners to refresh the feed
-        emitFeedRefresh();
+        // Only nudge the feed when content actually changed.
+        if (newFacts.length > 0 || changedFacts.length > 0) {
+          emitFeedRefresh();
+        }
       } else {
         if (__DEV__) console.log('✅ No new or updated facts available');
       }

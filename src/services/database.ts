@@ -4,6 +4,30 @@ import * as SQLite from 'expo-sqlite';
 
 const DATABASE_NAME = 'factsaday.db';
 
+/**
+ * Normalize a timestamp to canonical ISO-8601 UTC (e.g. "2026-06-06T00:00:28Z").
+ *
+ * The backend serves two formats: `updated_at` as ISO-Z, but `created_at` as
+ * SQLite space-form ("2026-06-06 00:00:28", no 'T', no zone). We store
+ * `last_updated` and use MAX(last_updated) as the delta-sync cursor, so a
+ * space-form value would sort BELOW same-instant ISO-Z values (space 0x20 <
+ * 'T' 0x54) and pin the cursor in the past — making delta sync re-fetch and
+ * "update" facts that never changed. Normalizing on write keeps the cursor
+ * monotonic and comparable. Treats space-form as UTC (the backend stores UTC).
+ */
+export function toIsoUtc(ts: string | undefined | null): string | undefined {
+  if (!ts) return undefined;
+  // Already ISO with a zone designator — leave as-is.
+  if (ts.includes('T') && (ts.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(ts))) {
+    return ts;
+  }
+  // SQLite space-form "YYYY-MM-DD HH:MM:SS[.fff]" → ISO-Z (UTC).
+  const m = ts.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2}(?:\.\d+)?)$/);
+  if (m) return `${m[1]}T${m[2]}Z`;
+  // Unknown shape — return unchanged rather than risk corrupting it.
+  return ts;
+}
+
 let db: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -697,8 +721,11 @@ export async function insertFacts(facts: Fact[]): Promise<void> {
           fact.event_year ?? null,
           fact.metadata || null,
           fact.language,
-          fact.created_at,
-          fact.last_updated || fact.created_at,
+          toIsoUtc(fact.created_at) ?? fact.created_at,
+          // Cursor field for delta sync — always store canonical ISO-Z so
+          // MAX(last_updated) stays comparable to the backend's updated_at and
+          // never gets pinned in the past by a space-form created_at fallback.
+          toIsoUtc(fact.last_updated) ?? toIsoUtc(fact.created_at) ?? fact.created_at,
         ]
       );
     }

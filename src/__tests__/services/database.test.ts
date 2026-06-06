@@ -133,6 +133,66 @@ describe('database — insertFacts', () => {
     expect(sql).toContain('scheduled_date = facts.scheduled_date');
     expect(sql).toContain('notification_id = facts.notification_id');
   });
+
+  it('normalizes a space-form created_at fallback to ISO-Z for the cursor', async () => {
+    // The delta-sync bug trigger: a fact with no updated_at falls back to the
+    // backend's space-form created_at. If stored verbatim, MAX(last_updated)
+    // gets pinned below same-instant ISO-Z values and re-fetches everything.
+    const facts = [
+      createFact({
+        id: 300,
+        created_at: '2026-06-06 00:00:28', // space-form, no zone
+        last_updated: undefined, // force the fallback path
+      }),
+    ];
+
+    await database.insertFacts(facts);
+
+    const params = mockDb.runAsync.mock.calls[0][1] as unknown[];
+    // Param order ends with: ... language, created_at, last_updated.
+    const createdAt = params[params.length - 2];
+    const lastUpdated = params[params.length - 1];
+    expect(createdAt).toBe('2026-06-06T00:00:28Z');
+    expect(lastUpdated).toBe('2026-06-06T00:00:28Z');
+  });
+});
+
+describe('database — toIsoUtc', () => {
+  it('converts SQLite space-form to ISO-Z (UTC)', () => {
+    expect(database.toIsoUtc('2026-06-06 00:00:28')).toBe('2026-06-06T00:00:28Z');
+  });
+
+  it('preserves fractional seconds', () => {
+    expect(database.toIsoUtc('2026-06-06 00:00:28.627')).toBe(
+      '2026-06-06T00:00:28.627Z'
+    );
+  });
+
+  it('leaves an already-ISO-Z timestamp unchanged', () => {
+    expect(database.toIsoUtc('2026-06-06T00:01:25.627Z')).toBe(
+      '2026-06-06T00:01:25.627Z'
+    );
+  });
+
+  it('leaves an ISO timestamp with a numeric offset unchanged', () => {
+    expect(database.toIsoUtc('2026-06-06T00:01:25+03:00')).toBe(
+      '2026-06-06T00:01:25+03:00'
+    );
+  });
+
+  it('returns undefined for null/undefined/empty', () => {
+    expect(database.toIsoUtc(undefined)).toBeUndefined();
+    expect(database.toIsoUtc(null)).toBeUndefined();
+    expect(database.toIsoUtc('')).toBeUndefined();
+  });
+
+  it('orders a normalized space-form created_at correctly against ISO-Z', () => {
+    // The crux: after normalization, a created_at and a later updated_at on the
+    // same instant sort in true chronological order under string comparison.
+    const createdAt = database.toIsoUtc('2026-06-06 00:00:28')!;
+    const updatedAt = '2026-06-06T00:01:25.627Z';
+    expect(createdAt < updatedAt).toBe(true);
+  });
 });
 
 describe('database — insertCategories', () => {
