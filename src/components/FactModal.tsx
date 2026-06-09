@@ -369,36 +369,60 @@ export function FactModal({
 
   const imageUri = notificationImageUri || resolvedImageUri;
 
-  // Smart image availability check: local file / cache / network → safety timeout
+  // Smart image availability check: local file / cache / network → safety timeout.
+  //
+  // This is also the backstop for a real Android bug: two same-uri expo-image
+  // instances (modal-hero background + modal-main front) co-mount, and the
+  // front layer can silently drop BOTH its onLoad and onDisplay dispatches in
+  // the Glide race. isImageLoaded then never flips true, so the opaque
+  // placeholder overlay stays on top and the front image reads as blank —
+  // intermittently ("sometimes"), correlated with cache state. So whenever we
+  // can independently confirm the bitmap is available (local file, or in
+  // expo-image's disk cache), we clear the placeholder ourselves instead of
+  // waiting on a callback that may never come.
   useEffect(() => {
     if (!imageUri || isImageLoaded || isImageError) return;
 
     let cancelled = false;
     let safetyTimeoutId: ReturnType<typeof setTimeout>;
 
-    async function checkImageAvailability() {
-      // Local file URIs (from our cache) are always available — skip network checks
-      if (imageUri!.startsWith('file://')) return;
+    const reveal = () => {
+      if (cancelled) return;
+      setIsImageLoaded(true);
+      setDisplayedImageUri(imageUri);
+    };
 
-      // Check expo-image disk cache for remote URLs
+    async function checkImageAvailability() {
+      // Local file URIs (from our cache) are always available → reveal now.
+      if (imageUri!.startsWith('file://')) {
+        reveal();
+        return;
+      }
+
+      // Remote URL already in expo-image's disk cache → it will paint with no
+      // network; reveal now rather than risk a dropped callback.
       try {
         const cachePath = await Image.getCachePathAsync(imageUri!);
-        if (cachePath || cancelled) return;
+        if (cancelled) return;
+        if (cachePath) {
+          reveal();
+          return;
+        }
       } catch {
         // silently ignore cache check
       }
 
-      // Not cached — check network status
+      // Not cached — if offline, it can't load.
       if (!getIsConnected() && !cancelled) {
         setIsImageError(true);
         return;
       }
 
-      // Online but not cached — safety timeout for flaky network
+      // Online but not cached — give the network a moment, then assume the
+      // bitmap has painted and reveal (the background copy of the same uri
+      // proves it loads). A genuine load failure still fires onError → error UI.
       if (!cancelled) {
-        safetyTimeoutId = setTimeout(() => {
-          setIsImageError(true);
-        }, 8000);
+        safetyTimeoutId = setTimeout(reveal, 2500);
       }
     }
 
@@ -916,6 +940,43 @@ export function FactModal({
                 opacity: bodyImageOpacity,
               }}
             >
+              {/* Loading placeholder rendered BEHIND the image (not as an overlay
+                  on top). This is the structural fix for the Android same-uri
+                  race: even if the front image's onLoad/onDisplay callbacks are
+                  dropped, the decoded bitmap paints OVER this layer, so the
+                  image is never hidden by the placeholder. The error/retry UI
+                  (which is interactive and shown when there is genuinely no
+                  image) still renders on top, further below. */}
+              {showImagePlaceholder && !isImageFailed && (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    ...absoluteFillObject,
+                    backgroundColor: theme === 'dark' ? '#1a1a2e' : '#e8e8f0',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {isActivelyLoading && (
+                    <Animated.View
+                      style={[
+                        StyleSheet.absoluteFill,
+                        {
+                          backgroundColor: theme === 'dark' ? '#2d2d44' : '#d0d0e0',
+                          opacity: shimmerAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.3, 0.6],
+                          }),
+                        },
+                      ]}
+                    />
+                  )}
+                  <ImagePlus
+                    size={iconSizes.xl}
+                    color={theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'}
+                  />
+                </View>
+              )}
               <Animated.View
                 style={{
                   position: 'absolute',
@@ -997,19 +1058,16 @@ export function FactModal({
                 }}
                 pointerEvents="none"
               />
-              {/* Image Loading / Error Placeholder (absolute overlay inside hero) */}
-              {showImagePlaceholder && (
+              {/* Error / retry overlay — stays ON TOP because on a genuine load
+                  failure there is no image to show, and this control is tappable
+                  to retry. Only shown on error, never during normal loading. */}
+              {isImageFailed && (
                 <TouchableOpacity
-                  activeOpacity={isImageFailed ? 0.7 : 1}
-                  onPress={
-                    isImageFailed
-                      ? () => {
-                          setIsImageError(false);
-                          setIsImageLoaded(false);
-                        }
-                      : undefined
-                  }
-                  disabled={!isImageFailed}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setIsImageError(false);
+                    setIsImageLoaded(false);
+                  }}
                   style={{
                     ...absoluteFillObject,
                     backgroundColor: theme === 'dark' ? '#1a1a2e' : '#e8e8f0',
@@ -1017,34 +1075,10 @@ export function FactModal({
                     justifyContent: 'center',
                   }}
                 >
-                  {/* Shimmer only during active loading */}
-                  {isActivelyLoading && (
-                    <Animated.View
-                      style={[
-                        StyleSheet.absoluteFill,
-                        {
-                          backgroundColor: theme === 'dark' ? '#2d2d44' : '#d0d0e0',
-                          opacity: shimmerAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0.3, 0.6],
-                          }),
-                        },
-                      ]}
-                    />
-                  )}
-                  <View style={{ alignItems: 'center', gap: spacing.sm }}>
-                    {isImageFailed ? (
-                      <RefreshCw
-                        size={iconSizes.xl}
-                        color={theme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.25)'}
-                      />
-                    ) : (
-                      <ImagePlus
-                        size={iconSizes.xl}
-                        color={theme === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'}
-                      />
-                    )}
-                  </View>
+                  <RefreshCw
+                    size={iconSizes.xl}
+                    color={theme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.25)'}
+                  />
                 </TouchableOpacity>
               )}
             </Animated.View>
