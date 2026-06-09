@@ -5,16 +5,8 @@ jest.mock('../../services/contentRefresh', () => ({
   markFeedRefreshPending: jest.fn(),
 }));
 
-jest.mock('../../services/database', () => ({
-  getPremiumCategorySlugs: jest.fn().mockResolvedValue([]),
-  deleteFactsByCategorySlugs: jest.fn().mockResolvedValue(undefined),
-  openDatabase: jest.fn().mockResolvedValue({
-    runAsync: jest.fn().mockResolvedValue(undefined),
-  }),
-}));
-
-jest.mock('../../services/dailyFeed', () => ({
-  invalidateFeedMemoryCache: jest.fn(),
+jest.mock('../../services/api', () => ({
+  getMetadata: jest.fn(),
 }));
 
 jest.mock('../../config/app', () => ({
@@ -27,21 +19,44 @@ jest.mock('react-native', () => ({
 
 import { Alert } from 'react-native';
 
+import * as api from '../../services/api';
 import { emitFeedRefresh, markFeedRefreshPending } from '../../services/contentRefresh';
-import { invalidateFeedMemoryCache } from '../../services/dailyFeed';
-import * as db from '../../services/database';
 import * as onboardingService from '../../services/onboarding';
 import {
   handlePremiumDowngrade,
   reconcilePremiumCategories,
 } from '../../services/premiumDowngrade';
 
-const dbMock = db as jest.Mocked<typeof db>;
+const apiMock = api as jest.Mocked<typeof api>;
 const onboardingMock = onboardingService as jest.Mocked<typeof onboardingService>;
+
+/** Build a metadata response whose given slugs are premium. */
+function metadataWithPremium(premiumSlugs: string[]) {
+  const all = [
+    'science',
+    'history',
+    'nature',
+    'finance',
+    'cinema',
+    'anatomy',
+  ];
+  return {
+    categories: all.map((slug, i) => ({
+      id: i + 1,
+      name: slug,
+      slug,
+      description: '',
+      icon: 'star',
+      color_hex: '#000000',
+      is_premium: premiumSlugs.includes(slug),
+    })),
+    languages: [],
+  };
+}
 
 beforeEach(() => {
   jest.clearAllMocks();
-  dbMock.getPremiumCategorySlugs.mockResolvedValue([]);
+  apiMock.getMetadata.mockResolvedValue(metadataWithPremium([]) as any);
   onboardingMock.getSelectedCategories.mockResolvedValue([]);
   onboardingMock.setSelectedCategories = jest.fn().mockResolvedValue(undefined);
 });
@@ -50,19 +65,18 @@ beforeEach(() => {
 // reconcilePremiumCategories
 // ---------------------------------------------------------------------------
 describe('reconcilePremiumCategories', () => {
-  it('returns false when there are no premium categories in DB', async () => {
-    dbMock.getPremiumCategorySlugs.mockResolvedValue([]);
+  it('returns false when there are no premium categories', async () => {
+    apiMock.getMetadata.mockResolvedValue(metadataWithPremium([]) as any);
 
     const result = await reconcilePremiumCategories();
 
     expect(result).toBe(false);
     expect(onboardingMock.setSelectedCategories).not.toHaveBeenCalled();
-    expect(dbMock.deleteFactsByCategorySlugs).not.toHaveBeenCalled();
     expect(emitFeedRefresh).not.toHaveBeenCalled();
   });
 
   it('returns false when user has no premium categories selected', async () => {
-    dbMock.getPremiumCategorySlugs.mockResolvedValue(['finance', 'cinema']);
+    apiMock.getMetadata.mockResolvedValue(metadataWithPremium(['finance', 'cinema']) as any);
     onboardingMock.getSelectedCategories.mockResolvedValue(['science', 'history', 'nature']);
 
     const result = await reconcilePremiumCategories();
@@ -71,8 +85,10 @@ describe('reconcilePremiumCategories', () => {
     expect(onboardingMock.setSelectedCategories).not.toHaveBeenCalled();
   });
 
-  it('deselects premium categories and cleans up facts', async () => {
-    dbMock.getPremiumCategorySlugs.mockResolvedValue(['finance', 'cinema', 'anatomy']);
+  it('deselects premium categories from the selection', async () => {
+    apiMock.getMetadata.mockResolvedValue(
+      metadataWithPremium(['finance', 'cinema', 'anatomy']) as any
+    );
     onboardingMock.getSelectedCategories.mockResolvedValue([
       'science',
       'finance',
@@ -84,39 +100,20 @@ describe('reconcilePremiumCategories', () => {
 
     expect(result).toBe(true);
     expect(onboardingMock.setSelectedCategories).toHaveBeenCalledWith(['science', 'history']);
-    expect(dbMock.deleteFactsByCategorySlugs).toHaveBeenCalledWith([
-      'finance',
-      'cinema',
-      'anatomy',
-    ]);
   });
 
-  it('cleans up orphaned questions after deleting facts', async () => {
-    const mockRunAsync = jest.fn().mockResolvedValue(undefined);
-    dbMock.openDatabase.mockResolvedValue({ runAsync: mockRunAsync } as any);
-    dbMock.getPremiumCategorySlugs.mockResolvedValue(['finance']);
+  it('emits a feed refresh after deselecting', async () => {
+    apiMock.getMetadata.mockResolvedValue(metadataWithPremium(['finance']) as any);
     onboardingMock.getSelectedCategories.mockResolvedValue(['science', 'finance']);
 
     await reconcilePremiumCategories();
 
-    expect(mockRunAsync).toHaveBeenCalledWith(
-      'DELETE FROM questions WHERE fact_id NOT IN (SELECT id FROM facts)'
-    );
-  });
-
-  it('invalidates feed cache and emits refresh', async () => {
-    dbMock.getPremiumCategorySlugs.mockResolvedValue(['finance']);
-    onboardingMock.getSelectedCategories.mockResolvedValue(['science', 'finance']);
-
-    await reconcilePremiumCategories();
-
-    expect(invalidateFeedMemoryCache).toHaveBeenCalled();
     expect(emitFeedRefresh).toHaveBeenCalled();
     expect(markFeedRefreshPending).toHaveBeenCalled();
   });
 
   it('deselects all categories when all selected are premium', async () => {
-    dbMock.getPremiumCategorySlugs.mockResolvedValue(['finance', 'cinema']);
+    apiMock.getMetadata.mockResolvedValue(metadataWithPremium(['finance', 'cinema']) as any);
     onboardingMock.getSelectedCategories.mockResolvedValue(['finance', 'cinema']);
 
     const result = await reconcilePremiumCategories();
@@ -131,7 +128,7 @@ describe('reconcilePremiumCategories', () => {
 // ---------------------------------------------------------------------------
 describe('handlePremiumDowngrade', () => {
   it('does not alert when no categories were deselected', async () => {
-    dbMock.getPremiumCategorySlugs.mockResolvedValue([]);
+    apiMock.getMetadata.mockResolvedValue(metadataWithPremium([]) as any);
 
     await handlePremiumDowngrade('en');
 
@@ -139,8 +136,9 @@ describe('handlePremiumDowngrade', () => {
   });
 
   it('alerts when remaining selection is below minimum', async () => {
-    dbMock.getPremiumCategorySlugs.mockResolvedValue(['finance', 'cinema', 'anatomy']);
-    // First call from reconcilePremiumCategories, second from handlePremiumDowngrade
+    apiMock.getMetadata.mockResolvedValue(
+      metadataWithPremium(['finance', 'cinema', 'anatomy']) as any
+    );
     onboardingMock.getSelectedCategories
       .mockResolvedValueOnce(['science', 'finance', 'cinema', 'anatomy'])
       .mockResolvedValueOnce(['science']); // only 1 remaining — below MINIMUM_CATEGORIES (3)
@@ -154,7 +152,7 @@ describe('handlePremiumDowngrade', () => {
   });
 
   it('does not alert when remaining selection meets minimum', async () => {
-    dbMock.getPremiumCategorySlugs.mockResolvedValue(['finance']);
+    apiMock.getMetadata.mockResolvedValue(metadataWithPremium(['finance']) as any);
     onboardingMock.getSelectedCategories
       .mockResolvedValueOnce(['science', 'history', 'nature', 'finance'])
       .mockResolvedValueOnce(['science', 'history', 'nature']); // 3 remaining — meets minimum
@@ -165,7 +163,7 @@ describe('handlePremiumDowngrade', () => {
   });
 
   it('does not throw on errors', async () => {
-    dbMock.getPremiumCategorySlugs.mockRejectedValue(new Error('DB error'));
+    apiMock.getMetadata.mockRejectedValue(new Error('network error'));
 
     await expect(handlePremiumDowngrade('en')).resolves.toBeUndefined();
   });

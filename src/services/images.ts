@@ -16,9 +16,8 @@
 
 import * as FileSystem from 'expo-file-system/legacy';
 
-import { IMAGE_CACHE, IMAGE_DOWNLOAD_RETRY, PRECACHE } from '../config/images';
+import { IMAGE_CACHE, IMAGE_DOWNLOAD_RETRY } from '../config/images';
 
-import { getFactsForOfflineCache } from './database';
 import { getIsConnected } from './network';
 
 // Directory for cached fact images - uses documentDirectory for persistence
@@ -564,113 +563,3 @@ export async function resolveFactImageUri(
   return localUri;
 }
 
-/**
- * Pre-cache images for offline access.
- * Downloads images for: fact of the day, popular, worth knowing, and last 10 facts per category (story view).
- *
- * @param maxImages Optional cap on images to download (for background sessions)
- * @param onProgress Optional callback with progress 0-1
- * @returns Summary of pre-caching results
- */
-let _preCacheInProgress = false;
-
-export async function preCacheOfflineImages(
-  maxImages?: number,
-  onProgress?: (progress: number) => void
-): Promise<{ total: number; alreadyCached: number; downloaded: number; failed: number }> {
-  // Prevent concurrent pre-cache runs from fighting over progress state
-  if (_preCacheInProgress) {
-    return { total: 0, alreadyCached: 0, downloaded: 0, failed: 0 };
-  }
-  _preCacheInProgress = true;
-
-  try {
-    return await _preCacheOfflineImagesInner(maxImages, onProgress);
-  } finally {
-    _preCacheInProgress = false;
-  }
-}
-
-async function _preCacheOfflineImagesInner(
-  maxImages?: number,
-  onProgress?: (progress: number) => void
-): Promise<{ total: number; alreadyCached: number; downloaded: number; failed: number }> {
-  const factsToCache = await getFactsForOfflineCache();
-
-  let alreadyCached = 0;
-  let downloaded = 0;
-  let failed = 0;
-
-  // Filter to only uncached images
-  const uncached: Array<{ id: number; image_url: string }> = [];
-  for (const fact of factsToCache) {
-    const cached = await getCachedFactImage(fact.id);
-    if (cached) {
-      alreadyCached++;
-    } else {
-      uncached.push(fact);
-    }
-  }
-
-  // If everything is already cached, signal complete immediately
-  if (uncached.length === 0) {
-    onProgress?.(1);
-    return { total: factsToCache.length, alreadyCached, downloaded, failed };
-  }
-
-  // Apply max limit (for background sessions with limited time)
-  const toDownload = maxImages ? uncached.slice(0, maxImages) : uncached;
-
-  onProgress?.(0);
-  let completed = 0;
-
-  // Download with concurrency control
-  const concurrency = PRECACHE.CONCURRENCY;
-  for (let i = 0; i < toDownload.length; i += concurrency) {
-    const batch = toDownload.slice(i, i + concurrency);
-    const results = await Promise.allSettled(
-      batch.map((fact) => downloadImage(fact.image_url, fact.id))
-    );
-
-    for (let j = 0; j < results.length; j++) {
-      const result = results[j];
-      completed++;
-      if (result.status === 'fulfilled' && result.value) {
-        downloaded++;
-      } else {
-        failed++;
-      }
-    }
-    onProgress?.(completed / toDownload.length);
-  }
-
-  return {
-    total: factsToCache.length,
-    alreadyCached,
-    downloaded,
-    failed,
-  };
-}
-
-/**
- * Cache images for the given facts (fire-and-forget friendly).
- * Skips facts without images and facts already in the local cache.
- * Used by loadDailyFeedSections() to cache feed images as part of feed curation.
- */
-export async function cacheFactImages(
-  facts: Array<{ id: number; image_url?: string | null }>
-): Promise<void> {
-  const uncached: Array<{ id: number; image_url: string }> = [];
-  for (const fact of facts) {
-    if (!fact.image_url) continue;
-    if (getCachedFactImageSync(fact.id)) continue;
-    uncached.push({ id: fact.id, image_url: fact.image_url });
-  }
-  if (uncached.length === 0) return;
-
-  const concurrency = PRECACHE.CONCURRENCY;
-  for (let i = 0; i < uncached.length; i += concurrency) {
-    const batch = uncached.slice(i, i + concurrency);
-    await Promise.allSettled(batch.map((fact) => downloadImage(fact.image_url, fact.id)));
-  }
-}

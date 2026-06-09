@@ -1,98 +1,60 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
 
-import { showAppOpenAdForLocaleChange } from '../components/ads/AppOpenAd';
-import { API_SETTINGS } from '../config/app';
 import { getLocaleFromCode, SupportedLocale } from '../i18n';
 
-import * as api from './api';
-import * as db from './database';
-import * as onboardingService from './onboarding';
-import { extractQuestions } from './questions';
-// Lazy-imported to break require cycle (contentRefresh ↔ preferences)
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const getPreferencesService = () => require('./preferences') as typeof import('./preferences');
+/**
+ * Cross-screen feed-refresh signaling + locale-change detection.
+ *
+ * The heavy background sync engine (full fact download into local SQLite, delta
+ * sync, deletion sync, backfill, content migrations) was removed when the app
+ * moved to fetching facts on demand from the API. What remains is the
+ * lightweight event bus screens use to invalidate their React Query caches when
+ * preferences/locale change, plus the stored-locale helpers used at startup.
+ */
 
-// AsyncStorage keys
-const LAST_CONTENT_REFRESH_KEY = '@last_content_refresh';
 const STORED_LOCALE_KEY = '@stored_locale';
-const QUESTIONS_MIGRATION_KEY = '@questions_migration_v1';
-const SLUG_MIGRATION_KEY = '@slug_migration_v1';
-const HISTORICAL_MIGRATION_KEY = '@historical_migration_v1';
-// Cursor for incremental sync of deleted-fact IDs (see Step 2b in refreshAppContentInternal).
-// Set in completeOnboarding() to "now" for fresh installs; null for in-place upgrades
-// (those fall back to the epoch, which walks the full deletion log once for cleanup).
-const LAST_DELETED_SYNC_AT_KEY = '@last_deleted_sync_at';
 
-// Flag: when true, the home screen should force-refresh on next focus
+// ============================================================================
+// Feed-refresh pending flag (preference changes → home re-fetch on focus)
+// ============================================================================
+
 let feedRefreshPending = false;
 
-/**
- * Mark that a feed refresh is needed (e.g. after preference changes).
- * The home screen checks this flag on focus and clears it after refreshing.
- */
 export function markFeedRefreshPending(): void {
   feedRefreshPending = true;
-  if (__DEV__) console.log('📋 [FeedRefresh] markFeedRefreshPending called — flag is now TRUE');
 }
 
-/**
- * Check and clear the pending feed refresh flag.
- * Returns true if a refresh was pending.
- */
 export function consumeFeedRefreshPending(): boolean {
   const was = feedRefreshPending;
-  if (feedRefreshPending) {
-    feedRefreshPending = false;
-  }
-  if (__DEV__)
-    console.log(
-      `📋 [FeedRefresh] consumeFeedRefreshPending called — was=${was}, now=${feedRefreshPending}`
-    );
+  feedRefreshPending = false;
   return was;
 }
 
-// Event listeners for feed refresh
+// ============================================================================
+// Event listeners
+// ============================================================================
+
 type FeedRefreshListener = () => void;
 const feedRefreshListeners: Set<FeedRefreshListener> = new Set();
 
-// Event listeners for background refresh status (loading indicator)
 export type RefreshStatus = 'idle' | 'refreshing' | 'locale-change';
 type RefreshStatusListener = (status: RefreshStatus) => void;
 const refreshStatusListeners: Set<RefreshStatusListener> = new Set();
 
-// Track current refresh status so new subscribers get the current state immediately
 let currentRefreshStatus: RefreshStatus = 'idle';
 
-// Active refresh promise for deduplication.
-// When refreshAppContent() is called while one is already in flight,
-// the second caller joins the existing promise instead of starting a
-// concurrent refresh (which would cause SQLite transaction conflicts).
-let activeRefreshPromise: Promise<RefreshResult> | null = null;
-
 /**
- * Wait for any in-flight content refresh to finish before proceeding.
- * Used by operations that also write to the database (e.g. category changes)
- * to avoid concurrent SQLite transaction conflicts.
+ * No background refresh runs anymore, so there's never an in-flight refresh to
+ * wait on. Kept as a resolved no-op for callers that serialized DB writes
+ * against the old sync.
  */
 export async function waitForActiveRefresh(): Promise<void> {
-  if (activeRefreshPromise) {
-    if (__DEV__) console.log('⏳ Waiting for active content refresh to finish...');
-    await activeRefreshPromise.catch(() => {}); // ignore errors, just wait
-    if (__DEV__) console.log('✅ Active content refresh finished, proceeding');
-  }
+  // no-op
 }
 
-/**
- * Subscribe to refresh status changes
- * Used to show loading indicators in the UI
- * Immediately emits current status to new subscribers
- */
 export function onRefreshStatusChange(listener: RefreshStatusListener): () => void {
   refreshStatusListeners.add(listener);
-
-  // Immediately emit current status to new subscriber
-  // This ensures late subscribers (like home screen mounting after refresh started) get the current state
   if (currentRefreshStatus !== 'idle') {
     try {
       listener(currentRefreshStatus);
@@ -100,25 +62,18 @@ export function onRefreshStatusChange(listener: RefreshStatusListener): () => vo
       console.error('Error in refresh status listener (initial emit):', error);
     }
   }
-
   return () => {
     refreshStatusListeners.delete(listener);
   };
 }
 
-/**
- * Get current refresh status (for checking state without subscribing)
- */
 export function getRefreshStatus(): RefreshStatus {
   return currentRefreshStatus;
 }
 
-/**
- * Emit refresh status change to all listeners
- */
-function emitRefreshStatus(status: RefreshStatus): void {
+/** Update + broadcast the refresh status (used by locale-change overlay). */
+export function setRefreshStatus(status: RefreshStatus): void {
   currentRefreshStatus = status;
-  if (__DEV__) console.log(`📊 Refresh status: ${status}`);
   refreshStatusListeners.forEach((listener) => {
     try {
       listener(status);
@@ -128,10 +83,6 @@ function emitRefreshStatus(status: RefreshStatus): void {
   });
 }
 
-/**
- * Subscribe to feed refresh events
- * Called when new or updated facts are written to the database
- */
 export function onFeedRefresh(listener: FeedRefreshListener): () => void {
   feedRefreshListeners.add(listener);
   return () => {
@@ -139,9 +90,6 @@ export function onFeedRefresh(listener: FeedRefreshListener): () => void {
   };
 }
 
-/**
- * Emit feed refresh event to all listeners
- */
 export function emitFeedRefresh(): void {
   feedRefreshListeners.forEach((listener) => {
     try {
@@ -152,70 +100,19 @@ export function emitFeedRefresh(): void {
   });
 }
 
-/**
- * Trigger a feed refresh manually
- * Used by DEV tools to refresh the feed after manipulation
- */
 export function triggerFeedRefresh(): void {
   emitFeedRefresh();
 }
 
 // ============================================================================
-// Cross-tab Discover category selection
+// Locale detection (drives the one-time locale-change UX at startup)
 // ============================================================================
 
-let pendingDiscoverCategory: string | null = null;
-
-/**
- * Set a category slug to be consumed by the Discover screen on next focus.
- */
-export function setPendingDiscoverCategory(slug: string): void {
-  pendingDiscoverCategory = slug;
-}
-
-/**
- * Consume and clear the pending category slug. Returns null if none is pending.
- */
-export function consumePendingDiscoverCategory(): string | null {
-  const slug = pendingDiscoverCategory;
-  pendingDiscoverCategory = null;
-  return slug;
-}
-
-export interface RefreshResult {
-  success: boolean;
-  updated: {
-    categories: number;
-    facts: number;
-  };
-  error?: string;
-}
-
-/**
- * Update the last refresh timestamp
- */
-async function updateLastRefreshTime(): Promise<void> {
-  try {
-    const now = new Date().toISOString();
-    await AsyncStorage.setItem(LAST_CONTENT_REFRESH_KEY, now);
-  } catch (error) {
-    console.error('Error updating last refresh time:', error);
-  }
-}
-
-/**
- * Get the current device locale from system settings.
- * This respects per-app language selection on iOS 13+ and Android 13+.
- */
 function getDeviceLocale(): SupportedLocale {
   const deviceLanguage = Localization.getLocales()[0]?.languageCode || 'en';
   return getLocaleFromCode(deviceLanguage);
 }
 
-/**
- * Get the stored locale from AsyncStorage
- * Returns null if no locale has been stored yet
- */
 export async function getStoredLocale(): Promise<string | null> {
   try {
     return await AsyncStorage.getItem(STORED_LOCALE_KEY);
@@ -225,21 +122,14 @@ export async function getStoredLocale(): Promise<string | null> {
   }
 }
 
-/**
- * Save the current locale to AsyncStorage
- */
-async function saveCurrentLocale(locale: string): Promise<void> {
+export async function saveCurrentLocale(locale: string): Promise<void> {
   try {
     await AsyncStorage.setItem(STORED_LOCALE_KEY, locale);
-    if (__DEV__) console.log(`📍 Stored locale saved: ${locale}`);
   } catch (error) {
     console.error('Error saving current locale:', error);
   }
 }
 
-/**
- * Check if the device locale has changed compared to the stored locale
- */
 export async function hasLocaleChanged(): Promise<{
   changed: boolean;
   currentLocale: SupportedLocale;
@@ -247,794 +137,9 @@ export async function hasLocaleChanged(): Promise<{
 }> {
   const currentLocale = getDeviceLocale();
   const storedLocale = await getStoredLocale();
-
   return {
     changed: storedLocale !== null && storedLocale !== currentLocale,
     currentLocale,
     storedLocale,
   };
-}
-
-/**
- * Get the most recent fact update timestamp from database
- * Used to fetch only new or updated facts from API
- */
-async function getLastFactUpdatedAt(): Promise<string | null> {
-  try {
-    const database = await db.openDatabase();
-    const result = await database.getFirstAsync<{ max_last_updated: string | null }>(
-      'SELECT MAX(last_updated) as max_last_updated FROM facts'
-    );
-    return result?.max_last_updated || null;
-  } catch (error) {
-    console.error('Error getting last fact timestamp:', error);
-    return null;
-  }
-}
-
-/**
- * Fetch the stored `last_updated` for a set of fact IDs.
- *
- * Used to tell a *genuine* update (the backend bumped updated_at — new audio,
- * image, slug, edited copy) apart from an unchanged row that the delta-sync
- * boundary re-returned. Without this the refresh logs "Updated N facts" for
- * every already-present id, which looks like a sync storm even when nothing
- * actually changed. Returns a Map<id, last_updated | null>.
- */
-async function getExistingFactTimestamps(
-  factIds: number[]
-): Promise<Map<number, string | null>> {
-  const map = new Map<number, string | null>();
-  if (factIds.length === 0) {
-    return map;
-  }
-
-  try {
-    const database = await db.openDatabase();
-    const placeholders = factIds.map(() => '?').join(',');
-    const rows = await database.getAllAsync<{ id: number; last_updated: string | null }>(
-      `SELECT id, last_updated FROM facts WHERE id IN (${placeholders})`,
-      factIds
-    );
-    for (const row of rows) {
-      map.set(row.id, row.last_updated);
-    }
-    return map;
-  } catch (error) {
-    console.error('Error getting existing fact timestamps:', error);
-    return map;
-  }
-}
-
-/**
- * Check if questions migration is needed
- * Returns true if user has facts but no questions (existing user before trivia feature)
- */
-async function needsQuestionsMigration(): Promise<boolean> {
-  try {
-    // Check if migration was already done
-    const migrationDone = await AsyncStorage.getItem(QUESTIONS_MIGRATION_KEY);
-    if (migrationDone === 'true') {
-      return false;
-    }
-
-    const database = await db.openDatabase();
-
-    // Check if there are any facts
-    const factsResult = await database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM facts'
-    );
-    const factsCount = factsResult?.count || 0;
-
-    if (factsCount === 0) {
-      // No facts yet, no migration needed
-      // Mark as done so we don't check again
-      await AsyncStorage.setItem(QUESTIONS_MIGRATION_KEY, 'true');
-      return false;
-    }
-
-    // Check if there are any questions
-    const questionsResult = await database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM questions'
-    );
-    const questionsCount = questionsResult?.count || 0;
-
-    // If we have facts but no questions, we need migration
-    if (questionsCount === 0) {
-      if (__DEV__)
-        console.log(`📊 Migration needed: ${factsCount} facts, ${questionsCount} questions`);
-      return true;
-    }
-
-    // Already have questions, mark migration as done
-    await AsyncStorage.setItem(QUESTIONS_MIGRATION_KEY, 'true');
-    return false;
-  } catch (error) {
-    console.error('Error checking questions migration:', error);
-    return false;
-  }
-}
-
-/**
- * Run questions migration for existing users
- * Re-fetches all facts with questions included
- */
-async function runQuestionsMigration(locale: SupportedLocale): Promise<void> {
-  try {
-    if (__DEV__) console.log('🔄 Running questions migration for existing facts...');
-
-    const categories = await onboardingService.getSelectedCategories();
-    if (categories.length === 0) {
-      if (__DEV__) console.log('No categories selected, skipping migration');
-      await AsyncStorage.setItem(QUESTIONS_MIGRATION_KEY, 'true');
-      return;
-    }
-
-    // Fetch all facts with questions
-    const facts = await api.getAllFactsWithRetry(
-      locale,
-      categories.join(','),
-      undefined, // no progress callback
-      3, // maxRetries
-      true // includeQuestions
-    );
-
-    // Extract and insert questions
-    const dbQuestions = extractQuestions(facts);
-    if (dbQuestions.length > 0) {
-      await db.insertQuestions(dbQuestions);
-      if (__DEV__)
-        console.log(`✅ Migration complete: Added ${dbQuestions.length} questions for trivia`);
-    } else {
-      console.warn('No questions found in API response');
-    }
-
-    // Mark migration as complete
-    await AsyncStorage.setItem(QUESTIONS_MIGRATION_KEY, 'true');
-  } catch (error) {
-    console.error('❌ Questions migration failed:', error);
-    // Don't mark as complete so it can retry next time
-  }
-}
-
-/**
- * Check if slug migration is needed
- * Returns true if user has facts without slug (existing user before slug field was added)
- */
-async function needsSlugMigration(): Promise<boolean> {
-  try {
-    // Check if migration was already done
-    const migrationDone = await AsyncStorage.getItem(SLUG_MIGRATION_KEY);
-    if (migrationDone === 'true') {
-      return false;
-    }
-
-    const database = await db.openDatabase();
-
-    // Check if any facts exist without a slug
-    const result = await database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM facts WHERE slug IS NULL'
-    );
-
-    if ((result?.count || 0) > 0) {
-      if (__DEV__) console.log(`📊 Slug migration needed: ${result?.count} facts without slug`);
-      return true;
-    }
-
-    // All facts have slugs (or no facts exist), mark migration as done
-    await AsyncStorage.setItem(SLUG_MIGRATION_KEY, 'true');
-    return false;
-  } catch (error) {
-    console.error('Error checking slug migration:', error);
-    return false;
-  }
-}
-
-/**
- * Run slug migration for existing users
- * Re-fetches all facts to populate the slug field
- */
-async function runSlugMigration(locale: SupportedLocale): Promise<void> {
-  try {
-    if (__DEV__) console.log('🔄 Running slug migration - re-downloading all facts...');
-
-    const categories = await onboardingService.getSelectedCategories();
-    if (categories.length === 0) {
-      if (__DEV__) console.log('No categories selected, skipping slug migration');
-      await AsyncStorage.setItem(SLUG_MIGRATION_KEY, 'true');
-      return;
-    }
-
-    // Fetch all facts with updated slug field
-    const facts = await api.getAllFactsWithRetry(
-      locale,
-      categories.join(','),
-      undefined,
-      3,
-      true // includeQuestions
-    );
-
-    // Convert to DB format with slug
-    const dbFacts: db.Fact[] = facts.map((fact) => ({
-      id: fact.id,
-      slug: fact.slug,
-      title: fact.title,
-      content: fact.content,
-      summary: fact.summary,
-      category: fact.category,
-      source_url: fact.source_url,
-      image_url: fact.image_url,
-      audio_url: fact.audio_url || undefined,
-      is_historical: fact.is_historical ? 1 : 0,
-      event_month: fact.metadata?.month ?? undefined,
-      event_day: fact.metadata?.day ?? undefined,
-      event_year: fact.metadata?.event_year ?? undefined,
-      metadata: fact.metadata
-        ? JSON.stringify({
-            original_event: fact.metadata.original_event,
-            country: fact.metadata.country,
-          })
-        : undefined,
-      language: fact.language,
-      created_at: fact.created_at,
-      last_updated: fact.updated_at,
-    }));
-
-    // Insert/update facts (preserves scheduling info via ON CONFLICT)
-    await db.insertFacts(dbFacts);
-
-    if (__DEV__) console.log(`✅ Slug migration complete: Updated ${dbFacts.length} facts`);
-    await AsyncStorage.setItem(SLUG_MIGRATION_KEY, 'true');
-  } catch (error) {
-    console.error('❌ Slug migration failed:', error);
-    // Don't mark as complete so it can retry next time
-  }
-}
-
-/**
- * Check if historical facts migration is needed for existing users
- * Returns true if there are facts in DB but no historical facts have been synced yet
- */
-async function needsHistoricalMigration(): Promise<boolean> {
-  try {
-    const migrationDone = await AsyncStorage.getItem(HISTORICAL_MIGRATION_KEY);
-    if (migrationDone === 'true') {
-      return false;
-    }
-
-    const database = await db.openDatabase();
-
-    // Check if any facts exist at all (if no facts, user is new — no migration needed)
-    const result = await database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM facts'
-    );
-
-    if ((result?.count || 0) === 0) {
-      await AsyncStorage.setItem(HISTORICAL_MIGRATION_KEY, 'true');
-      return false;
-    }
-
-    // Facts exist but migration hasn't run — we need to re-fetch with historical included
-    if (__DEV__)
-      console.log('📊 Historical migration needed: re-fetching all facts with historical data');
-    return true;
-  } catch (error) {
-    console.error('Error checking historical migration:', error);
-    return false;
-  }
-}
-
-/**
- * Run historical facts migration for existing users
- * Re-fetches all facts with include_historical=true to backfill historical facts
- * and populate is_historical/event_month/event_day/event_year/metadata on existing facts
- */
-async function runHistoricalMigration(locale: SupportedLocale): Promise<void> {
-  try {
-    if (__DEV__)
-      console.log(
-        '🔄 Running historical migration - re-downloading all facts with historical data...'
-      );
-
-    const categories = await onboardingService.getSelectedCategories();
-    if (categories.length === 0) {
-      if (__DEV__) console.log('No categories selected, skipping historical migration');
-      await AsyncStorage.setItem(HISTORICAL_MIGRATION_KEY, 'true');
-      return;
-    }
-
-    const facts = await api.getAllFactsWithRetry(
-      locale,
-      categories.join(','),
-      undefined,
-      3,
-      true, // includeQuestions
-      true // includeHistorical
-    );
-
-    const dbFacts: db.Fact[] = facts.map((fact) => ({
-      id: fact.id,
-      slug: fact.slug,
-      title: fact.title,
-      content: fact.content,
-      summary: fact.summary,
-      category: fact.category,
-      source_url: fact.source_url,
-      image_url: fact.image_url,
-      audio_url: fact.audio_url || undefined,
-      is_historical: fact.is_historical ? 1 : 0,
-      event_month: fact.metadata?.month ?? undefined,
-      event_day: fact.metadata?.day ?? undefined,
-      event_year: fact.metadata?.event_year ?? undefined,
-      metadata: fact.metadata
-        ? JSON.stringify({
-            original_event: fact.metadata.original_event,
-            country: fact.metadata.country,
-          })
-        : undefined,
-      language: fact.language,
-      created_at: fact.created_at,
-      last_updated: fact.updated_at,
-    }));
-
-    // Insert/update facts (preserves scheduling info via ON CONFLICT)
-    await db.insertFacts(dbFacts);
-
-    // Extract and insert questions
-    const dbQuestions = extractQuestions(facts);
-    if (dbQuestions.length > 0) {
-      await db.insertQuestions(dbQuestions);
-    }
-
-    if (__DEV__) console.log(`✅ Historical migration complete: Synced ${dbFacts.length} facts`);
-    await AsyncStorage.setItem(HISTORICAL_MIGRATION_KEY, 'true');
-  } catch (error) {
-    console.error('❌ Historical migration failed:', error);
-    // Don't mark as complete so it can retry next time
-  }
-}
-
-/**
- * Refresh app content from API: metadata and new facts
- * This runs every time the app opens (no time interval restriction)
- * Runs in the background and doesn't block app startup
- * Silently fails if offline or network issues occur
- *
- * On initial load, checks if locale has changed compared to DB.
- * If locale changed: triggers full refresh (fetch all facts, insert/update)
- * and shows an interstitial ad
- */
-export function refreshAppContent(): Promise<RefreshResult> {
-  if (activeRefreshPromise) {
-    if (__DEV__) console.log('🔄 Refresh already in progress — joining existing refresh');
-    return activeRefreshPromise;
-  }
-
-  activeRefreshPromise = refreshAppContentInternal().finally(() => {
-    activeRefreshPromise = null;
-  });
-
-  return activeRefreshPromise;
-}
-
-async function refreshAppContentInternal(): Promise<RefreshResult> {
-  const result: RefreshResult = {
-    success: false,
-    updated: {
-      categories: 0,
-      facts: 0,
-    },
-  };
-
-  try {
-    if (__DEV__) console.log('🔄 Starting background content refresh...');
-
-    // Check if locale has changed since last app open
-    const localeStatus = await hasLocaleChanged();
-    const currentLocale = localeStatus.currentLocale;
-
-    if (localeStatus.changed) {
-      // Locale has changed - trigger full refresh with new language
-      if (__DEV__)
-        console.log(
-          `🌍 Locale changed from "${localeStatus.storedLocale}" to "${currentLocale}" - triggering full refresh...`
-        );
-
-      // Emit locale-change status for UI loading indicator
-      emitRefreshStatus('locale-change');
-
-      // Load and show app open ad alongside content refresh
-      // Both run in parallel - ad displays while content downloads
-      const [languageChangeResult] = await Promise.all([
-        getPreferencesService().handleLanguageChange(currentLocale),
-        showAppOpenAdForLocaleChange().catch((error) => {
-          console.error('Failed to show app open ad for locale change:', error);
-        }),
-      ]);
-
-      if (languageChangeResult.success) {
-        // Save the new locale after successful refresh
-        await saveCurrentLocale(currentLocale);
-        await updateLastRefreshTime();
-
-        result.success = true;
-        result.updated.facts = languageChangeResult.factsCount || 0;
-        if (__DEV__)
-          console.log(`✅ Locale change refresh completed: ${result.updated.facts} facts updated`);
-      } else {
-        console.error('❌ Locale change refresh failed:', languageChangeResult.error);
-        result.error = languageChangeResult.error;
-      }
-
-      // Emit idle status when done
-      emitRefreshStatus('idle');
-
-      return result;
-    }
-
-    // No locale change - proceed with regular incremental refresh
-    // Emit refreshing status for UI loading indicator
-    emitRefreshStatus('refreshing');
-
-    // Also save current locale if this is the first time (storedLocale is null)
-    if (localeStatus.storedLocale === null) {
-      await saveCurrentLocale(currentLocale);
-      if (__DEV__) console.log(`📍 First app open - stored locale: ${currentLocale}`);
-    }
-
-    // Check if we need to run questions migration for existing users
-    // This is a one-time migration for users who had facts before trivia feature was added
-    if (await needsQuestionsMigration()) {
-      await runQuestionsMigration(currentLocale);
-    }
-
-    // Check if we need to run slug migration for existing users
-    // This is a one-time migration for users who had facts before slug field was added
-    if (await needsSlugMigration()) {
-      await runSlugMigration(currentLocale);
-    }
-
-    // Check if we need to run historical facts migration for existing users
-    // This is a one-time migration to backfill historical facts
-    if (await needsHistoricalMigration()) {
-      await runHistoricalMigration(currentLocale);
-    }
-
-    // Get current user preferences
-    const categories = await onboardingService.getSelectedCategories();
-
-    // Step 1: Fetch and update metadata (categories)
-    const metadata = await api.getMetadata(currentLocale);
-
-    await db.insertCategories(metadata.categories);
-    result.updated.categories = metadata.categories.length;
-
-    // If user is not premium, ensure no premium categories remain selected.
-    // This handles the case where a category was changed from free → premium
-    // on the backend while the user already had it selected.
-    // Sync requires break the circular dependency between contentRefresh and the
-    // premium-state / premium-downgrade modules; converting to dynamic `import()`
-    // would change the timing.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getIsPremium } = require('./premiumState') as typeof import('./premiumState');
-    if (!getIsPremium()) {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { reconcilePremiumCategories } =
-        require('./premiumDowngrade') as typeof import('./premiumDowngrade');
-      await reconcilePremiumCategories();
-    }
-
-    // Step 2: Fetch new or updated facts since last update
-    const lastFactUpdatedAt = await getLastFactUpdatedAt();
-
-    if (lastFactUpdatedAt) {
-      // Fetch only new or updated facts using since_updated parameter
-      // Include questions for trivia feature
-      // Paginate to ensure all updates are fetched (not just the first batch)
-      const categoriesParam = categories.join(',');
-      const batchSize = API_SETTINGS.FACTS_BATCH_SIZE;
-      let offset = 0;
-      const allIncrementalFacts: api.FactResponse[] = [];
-
-      let response = await api.getFacts({
-        language: currentLocale,
-        categories: categoriesParam,
-        since_updated: lastFactUpdatedAt,
-        limit: batchSize,
-        offset,
-        include_questions: true,
-        include_historical: true,
-      });
-
-      allIncrementalFacts.push(...response.facts);
-
-      while (response.pagination.has_more) {
-        offset += batchSize;
-        response = await api.getFacts({
-          language: currentLocale,
-          categories: categoriesParam,
-          since_updated: lastFactUpdatedAt,
-          limit: batchSize,
-          offset,
-          include_questions: true,
-          include_historical: true,
-        });
-        allIncrementalFacts.push(...response.facts);
-      }
-
-      if (allIncrementalFacts.length > 0) {
-        // Convert API facts to database format
-        // Note: API returns `updated_at`, we map it to `last_updated` in DB
-        const dbFacts: db.Fact[] = allIncrementalFacts.map((fact) => ({
-          id: fact.id,
-          slug: fact.slug,
-          title: fact.title,
-          content: fact.content,
-          summary: fact.summary,
-          category: fact.category,
-          source_url: fact.source_url,
-          image_url: fact.image_url,
-          audio_url: fact.audio_url || undefined,
-          is_historical: fact.is_historical ? 1 : 0,
-          event_month: fact.metadata?.month ?? undefined,
-          event_day: fact.metadata?.day ?? undefined,
-          event_year: fact.metadata?.event_year ?? undefined,
-          metadata: fact.metadata
-            ? JSON.stringify({
-                original_event: fact.metadata.original_event,
-                country: fact.metadata.country,
-              })
-            : undefined,
-          language: fact.language,
-          created_at: fact.created_at,
-          last_updated: fact.updated_at,
-        }));
-
-        // Extract questions from facts for trivia feature
-        const dbQuestions = extractQuestions(allIncrementalFacts);
-
-        // Classify incoming facts against what's already stored. We compare the
-        // backend's update timestamp, not just id-presence: the delta-sync
-        // filter (COALESCE(updated_at,created_at) > since) is inclusive at the
-        // boundary, so a row can come back unchanged. Treating every present id
-        // as "updated" is what made the log read "🔄 Updated 4723 facts" when
-        // nothing had actually changed.
-        const factIds = dbFacts.map((f) => f.id);
-        const existingTimestamps = await getExistingFactTimestamps(factIds);
-
-        const newFacts = dbFacts.filter((f) => !existingTimestamps.has(f.id));
-        const changedFacts = dbFacts.filter((f) => {
-          if (!existingTimestamps.has(f.id)) return false;
-          // Normalize both sides: rows written by older app builds may hold a
-          // space-form last_updated, while the incoming value is ISO-Z. Compare
-          // canonical forms so a format difference alone never reads as a change.
-          const stored = db.toIsoUtc(existingTimestamps.get(f.id) ?? undefined);
-          const incoming = db.toIsoUtc(f.last_updated);
-          return stored !== incoming;
-        });
-        const unchangedCount = dbFacts.length - newFacts.length - changedFacts.length;
-
-        // Insert new or updated facts (INSERT OR REPLACE handles duplicates).
-        // Unchanged rows are a harmless no-op rewrite; not worth a separate path.
-        await db.insertFacts(dbFacts);
-        result.updated.facts = newFacts.length + changedFacts.length;
-
-        // Insert questions (INSERT OR REPLACE handles duplicates)
-        if (dbQuestions.length > 0) {
-          await db.insertQuestions(dbQuestions);
-          if (__DEV__) console.log(`🧠 Synced ${dbQuestions.length} questions for trivia`);
-        }
-
-        // Log what genuinely changed. Unchanged re-syncs get a single quiet
-        // line so a boundary re-fetch never looks like a storm again.
-        if (newFacts.length > 0) {
-          const newIds = newFacts.map((f) => f.id).join(', ');
-          if (__DEV__) console.log(`✨ Fetched ${newFacts.length} new facts: [${newIds}]`);
-        }
-        if (changedFacts.length > 0) {
-          const updatedIds = changedFacts.map((f) => f.id).join(', ');
-          if (__DEV__) console.log(`🔄 Updated ${changedFacts.length} facts: [${updatedIds}]`);
-        }
-        if (__DEV__ && unchangedCount > 0 && newFacts.length === 0 && changedFacts.length === 0) {
-          console.log(`✅ Delta sync: ${unchangedCount} facts re-checked, none changed`);
-        }
-
-        // Only nudge the feed when content actually changed.
-        if (newFacts.length > 0 || changedFacts.length > 0) {
-          emitFeedRefresh();
-        }
-      } else {
-        if (__DEV__) console.log('✅ No new or updated facts available');
-      }
-    }
-
-    // Step 2b: Sync server-side deletions and clean up the local cache.
-    // /api/facts delta sync only carries adds/updates — without this step,
-    // any fact ever synced stays in local DB forever, even if the admin
-    // hard-deleted it. Must run BEFORE Step 3 (backfill): otherwise the
-    // count comparison would interpret the about-to-be-deleted facts as
-    // "present locally" and skip a backfill that's actually needed.
-    try {
-      let since = await AsyncStorage.getItem(LAST_DELETED_SYNC_AT_KEY);
-      if (!since) {
-        // First run after an in-place upgrade (fresh installs set this in
-        // completeOnboarding). Walk the full log once: payload is just ints.
-        since = '1970-01-01T00:00:00Z';
-      }
-
-      const allDeletedIds: number[] = [];
-      let cancelledTotal = 0;
-
-      while (true) {
-        const resp = await api.getDeletedFacts(since);
-        if (resp.deleted_ids.length > 0) {
-          const r = await db.deleteFactsByIds(resp.deleted_ids);
-          allDeletedIds.push(...resp.deleted_ids);
-          cancelledTotal += r.notificationsCancelled;
-        }
-        // Advance cursor using the SERVER's high_water_mark, never Date.now() —
-        // closes the race where a row inserted between query and now would be
-        // skipped on the next sync.
-        since = resp.high_water_mark;
-        await AsyncStorage.setItem(LAST_DELETED_SYNC_AT_KEY, since);
-        if (!resp.has_more) break;
-      }
-
-      if (allDeletedIds.length > 0) {
-        const deletedIdsStr = allDeletedIds.join(', ');
-        if (__DEV__) {
-          console.log(
-            `🗑️  Deleted ${allDeletedIds.length} facts: [${deletedIdsStr}] (cancelled ${cancelledTotal} notifications)`
-          );
-        }
-        emitFeedRefresh();
-      }
-    } catch (deletionErr) {
-      // Best-effort, matches backfill semantics. Cursor only advances on
-      // a successful batch, so a transient failure auto-retries next refresh.
-      console.error('🗑️  Deletion sync failed:', deletionErr);
-    }
-
-    // Step 3: Detect incomplete initial download and backfill missing facts
-    // When onboarding downloads newest-first, if the background download was
-    // interrupted (app killed, network lost), the local DB has the latest facts
-    // but is missing older ones. Delta sync (Step 2) won't catch these because
-    // MAX(last_updated) is already recent. Compare local count vs API total.
-    try {
-      const categoriesForBackfill = categories.join(',');
-      const localCount = await db.getFactsCount(currentLocale);
-
-      const countResponse = await api.getFacts({
-        language: currentLocale,
-        categories: categoriesForBackfill,
-        limit: 1,
-        offset: 0,
-        include_historical: true,
-      });
-      const apiTotal = countResponse.pagination.total;
-
-      if (__DEV__)
-        console.log(`📋 [ContentRefresh] Fact count check: local=${localCount}, API=${apiTotal}`);
-
-      if (localCount < apiTotal) {
-        const missing = apiTotal - localCount;
-        console.log(
-          `📋 [ContentRefresh] Local DB has ${localCount}/${apiTotal} facts — backfilling ${missing} missing`
-        );
-
-        let backfillOffset = 0;
-        const backfillBatchSize = API_SETTINGS.FACTS_BATCH_SIZE;
-
-        while (backfillOffset < apiTotal) {
-          const backfillResponse = await api.getFacts({
-            language: currentLocale,
-            categories: categoriesForBackfill,
-            limit: backfillBatchSize,
-            offset: backfillOffset,
-            include_questions: true,
-            include_historical: true,
-            skip_count: true,
-          });
-
-          if (backfillResponse.facts.length === 0) break;
-
-          if (__DEV__)
-            console.log(
-              `📋 [ContentRefresh] Backfill batch: offset=${backfillOffset}, got ${backfillResponse.facts.length} facts`
-            );
-
-          const backfillDbFacts: db.Fact[] = backfillResponse.facts.map((fact) => ({
-            id: fact.id,
-            slug: fact.slug,
-            title: fact.title,
-            content: fact.content,
-            summary: fact.summary,
-            category: fact.category,
-            source_url: fact.source_url,
-            image_url: fact.image_url,
-            audio_url: fact.audio_url || undefined,
-            is_historical: fact.is_historical ? 1 : 0,
-            event_month: fact.metadata?.month ?? undefined,
-            event_day: fact.metadata?.day ?? undefined,
-            event_year: fact.metadata?.event_year ?? undefined,
-            metadata: fact.metadata
-              ? JSON.stringify({
-                  original_event: fact.metadata.original_event,
-                  country: fact.metadata.country,
-                })
-              : undefined,
-            language: fact.language,
-            created_at: fact.created_at,
-            last_updated: fact.updated_at,
-          }));
-
-          await db.insertFacts(backfillDbFacts);
-
-          const backfillQuestions = extractQuestions(backfillResponse.facts);
-          if (backfillQuestions.length > 0) {
-            await db.insertQuestions(backfillQuestions);
-          }
-
-          result.updated.facts += backfillResponse.facts.length;
-          backfillOffset += backfillBatchSize;
-
-          if (!backfillResponse.pagination.has_more) break;
-        }
-
-        if (__DEV__) console.log(`📋 [ContentRefresh] Backfill complete`);
-        emitFeedRefresh();
-      } else {
-        if (__DEV__) console.log(`📋 [ContentRefresh] Fact count matches — no backfill needed`);
-      }
-    } catch (backfillError) {
-      // Backfill is best-effort — don't fail the entire refresh
-      console.error('📋 [ContentRefresh] Backfill failed:', backfillError);
-    }
-
-    // Update last refresh timestamp
-    await updateLastRefreshTime();
-
-    result.success = true;
-    if (__DEV__) console.log('✅ Background content refresh completed successfully');
-
-    // Push the latest facts to home-screen widgets. Dynamic import avoids a
-    // require cycle (widgetData → database → …). We do this after every
-    // successful refresh — both background-scheduled and app-foreground — so
-    // widgets stay fresh without depending on when the user opens the home tab.
-    try {
-      const locale = await getStoredLocale();
-      if (locale) {
-        const { refreshWidgetData } = await import('./widgetData');
-        await refreshWidgetData(locale);
-      }
-    } catch (widgetErr) {
-      if (__DEV__) console.error('Widget refresh after content sync failed:', widgetErr);
-    }
-  } catch (error) {
-    console.error('❌ Content refresh failed:', error);
-    result.error = error instanceof Error ? error.message : 'Unknown error';
-
-    // Don't throw - silently fail for offline scenarios
-    // The app will continue using cached data
-  } finally {
-    // Always emit idle status when done (success or error)
-    emitRefreshStatus('idle');
-  }
-
-  return result;
-}
-
-/**
- * Force refresh content regardless of last refresh time
- * Useful for manual refresh or settings changes
- */
-export async function forceRefreshContent(): Promise<RefreshResult> {
-  // Clear last refresh time to force refresh
-  try {
-    await AsyncStorage.removeItem(LAST_CONTENT_REFRESH_KEY);
-  } catch (error) {
-    console.error('Error clearing refresh timestamp:', error);
-  }
-
-  return refreshAppContent();
 }

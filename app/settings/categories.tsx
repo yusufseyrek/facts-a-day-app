@@ -18,6 +18,7 @@ import {
   trackScreenView,
   updateCategoriesProperty,
 } from '../../src/services/analytics';
+import * as api from '../../src/services/api';
 import * as db from '../../src/services/database';
 import { clearGlobalProgress, setGlobalProgress } from '../../src/services/globalProgress';
 import * as onboardingService from '../../src/services/onboarding';
@@ -129,10 +130,11 @@ export default function CategoriesSettings() {
 
   const loadData = async () => {
     try {
-      // Load categories from database, sorted by color hue
-      const categoriesFromDb = await db.getAllCategories();
-      categoriesFromDb.sort((a, b) => hexToHue(a.color_hex) - hexToHue(b.color_hex));
-      setCategories(categoriesFromDb);
+      // Load categories from the API (includes premium), sorted by color hue
+      const metadata = await api.getMetadata();
+      const categoriesFromApi = [...metadata.categories];
+      categoriesFromApi.sort((a, b) => hexToHue(a.color_hex) - hexToHue(b.color_hex));
+      setCategories(categoriesFromApi);
 
       // Load current selection from AsyncStorage
       const currentSelection = await onboardingService.getSelectedCategories();

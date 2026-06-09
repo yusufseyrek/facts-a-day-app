@@ -33,7 +33,8 @@ import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
 import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
-import * as database from '../../src/services/database';
+import * as api from '../../src/services/api';
+import { getFavoriteIds, mapApiFactToRelations } from '../../src/services/database';
 import { primePool } from '../../src/services/nativeAdPool';
 import { hexColors, useTheme } from '../../src/theme';
 import { getContrastColor } from '../../src/utils/colors';
@@ -139,10 +140,28 @@ export default function FavoritesScreen() {
           setRefreshing(true);
         }
 
-        const [favoritedFacts, favoriteCategories] = await Promise.all([
-          database.getFavorites(locale),
-          database.getFavoriteCategories(locale),
-        ]);
+        // Favorite ids are stored locally; hydrate their content from the API
+        // (no local facts mirror), preserving the newest-favorited-first order.
+        const ids = await getFavoriteIds();
+        const hydrated = ids.length > 0 ? await api.getFactsByIds(ids, locale) : [];
+        const byId = new Map(hydrated.map((f) => [f.id, f]));
+        const favoritedFacts = ids
+          .map((id) => byId.get(id))
+          .filter((f): f is NonNullable<typeof f> => f != null)
+          .map(mapApiFactToRelations);
+
+        // Derive the category chips from the hydrated favorites (deduped by slug).
+        const seen = new Set<string>();
+        const favoriteCategories: Category[] = [];
+        for (const fact of favoritedFacts) {
+          const cat = fact.categoryData;
+          if (cat?.slug && !seen.has(cat.slug)) {
+            seen.add(cat.slug);
+            favoriteCategories.push(cat);
+          }
+        }
+        favoriteCategories.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
         // Scroll to top when a new favorite has been added
         if (
           favoritedFacts.length > previousFavoritesCount.current &&

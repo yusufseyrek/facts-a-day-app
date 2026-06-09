@@ -38,6 +38,7 @@ import {
   trackPremiumGateAdShown,
   trackSourceLinkClick,
 } from '../services/analytics';
+import * as api from '../services/api';
 import { onFactViewed, onStreakMilestone, scheduleSatisfactionPrompt } from '../services/appReview';
 import {
   checkAndAwardBadges,
@@ -49,16 +50,13 @@ import {
 } from '../services/badges';
 import {
   addFactDetailTimeSpent,
-  deleteFact,
-  getPremiumCategorySlugs,
-  getRelatedFacts,
+  mapApiFactToRelations,
   markFactDetailOpened,
   markFactDetailRead,
 } from '../services/database';
 import { getCachedFactImageSync } from '../services/images';
 import { getIsConnected } from '../services/network';
 import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
-import { getIsPremium } from '../services/premiumState';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { PAYWALL_GOLD } from '../theme/paywallColors';
 import { getTranslatedUrl } from '../utils/browser';
@@ -196,9 +194,16 @@ export function FactModal({
     const categorySlug = fact.categoryData?.slug || fact.category;
     if (!categorySlug) return;
 
-    getRelatedFacts(categorySlug, fact.id, locale, 3)
-      .then((facts) => {
-        if (!cancelled) setRelatedFacts(facts);
+    // Related = a few facts from the same category (cursor feed), minus this one.
+    api
+      .getFactsFeed({ language: locale, categories: categorySlug, limit: 4 })
+      .then((res) => {
+        if (cancelled) return;
+        const related = res.facts
+          .filter((f) => f.id !== fact.id)
+          .slice(0, 3)
+          .map(mapApiFactToRelations);
+        setRelatedFacts(related);
       })
       .catch(() => {});
 
@@ -1313,19 +1318,12 @@ function PremiumGateOverlay({
   const adUnlockedRef = useRef(false);
 
   useEffect(() => {
-    getPremiumCategorySlugs()
-      .then((slugs) => setPremiumCategoryCount(slugs.length))
+    // Premium category count comes from server metadata now (no local table).
+    api
+      .getMetadata()
+      .then((meta) => setPremiumCategoryCount(meta.categories.filter((c) => c.is_premium).length))
       .catch(() => {});
   }, []);
-
-  // Delete the premium fact when the overlay unmounts (user closes without upgrading or watching ad)
-  useEffect(() => {
-    return () => {
-      if (!getIsPremium() && !adUnlockedRef.current) {
-        deleteFact(factId).catch(() => {});
-      }
-    };
-  }, [factId]);
 
   const handleWatchAd = useCallback(async () => {
     setIsLoadingAd(true);

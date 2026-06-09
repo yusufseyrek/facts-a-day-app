@@ -1,11 +1,11 @@
 /**
- * Database tests
+ * Database tests (thin cache).
  *
- * Since expo-sqlite v16 cannot run in Node.js, we mock the database module
- * and test the public API contracts + mapFactsWithRelations logic.
+ * The local DB no longer mirrors facts/categories/questions — those are served
+ * on demand from the API. These tests cover the pure helpers that survive:
+ * toIsoUtc (delta-sync timestamp normalization) and mapApiFactToRelations (the
+ * API → UI shape adapter). expo-sqlite is mocked since it can't run in Node.
  */
-
-import { createCategory, createDbRow, createFact } from '../helpers/factories';
 
 // Mock expo-sqlite
 jest.mock('expo-sqlite', () => {
@@ -22,140 +22,7 @@ jest.mock('expo-sqlite', () => {
   };
 });
 
-const sqlite = jest.requireMock('expo-sqlite');
-const mockDb = sqlite.__mockDb;
-
-// Import after mocks
 import * as database from '../../services/database';
-
-describe('database — mapFactsWithRelations', () => {
-  // We test this indirectly through getFactById/getAllFacts which use mapFactsWithRelations
-
-  it('maps row with category data', async () => {
-    const row = createDbRow({
-      id: 1,
-      title: 'Test Fact',
-      content: 'Content here',
-      category: 'science',
-      category_id: 10,
-      category_name: 'Science',
-      category_slug: 'science',
-      category_description: 'Scientific facts',
-      category_icon: 'flask',
-      category_color_hex: '#4CAF50',
-    });
-
-    mockDb.getFirstAsync.mockResolvedValueOnce(row);
-
-    const fact = await database.getFactById(1);
-    expect(fact).not.toBeNull();
-    expect(fact!.id).toBe(1);
-    expect(fact!.title).toBe('Test Fact');
-    expect(fact!.categoryData).toBeDefined();
-    expect(fact!.categoryData!.name).toBe('Science');
-    expect(fact!.categoryData!.slug).toBe('science');
-    expect(fact!.categoryData!.color_hex).toBe('#4CAF50');
-  });
-
-  it('maps row without category (null category_id)', async () => {
-    const row = createDbRow({
-      id: 2,
-      title: 'No Category',
-      category: null,
-      category_id: null,
-      category_name: null,
-      category_slug: null,
-      category_description: null,
-      category_icon: null,
-      category_color_hex: null,
-    });
-
-    mockDb.getFirstAsync.mockResolvedValueOnce(row);
-
-    const fact = await database.getFactById(2);
-    expect(fact).not.toBeNull();
-    expect(fact!.categoryData).toBeUndefined();
-  });
-
-  it('handles null fields gracefully', async () => {
-    const row = createDbRow({
-      id: 3,
-      slug: null,
-      title: null,
-      summary: null,
-      source_url: null,
-      image_url: null,
-      scheduled_date: null,
-      notification_id: null,
-    });
-
-    mockDb.getFirstAsync.mockResolvedValueOnce(row);
-
-    const fact = await database.getFactById(3);
-    expect(fact).not.toBeNull();
-    expect(fact!.slug).toBeNull();
-    expect(fact!.title).toBeNull();
-  });
-
-  it('maps empty array', async () => {
-    mockDb.getAllAsync.mockResolvedValueOnce([]);
-
-    const facts = await database.getAllFacts('en');
-    expect(facts).toEqual([]);
-  });
-});
-
-describe('database — insertFacts', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('inserts new facts', async () => {
-    const facts = [
-      createFact({ id: 100, content: 'Fact A' }),
-      createFact({ id: 101, content: 'Fact B' }),
-    ];
-
-    await database.insertFacts(facts);
-
-    expect(mockDb.withTransactionAsync).toHaveBeenCalled();
-    expect(mockDb.runAsync).toHaveBeenCalledTimes(2);
-  });
-
-  it('uses ON CONFLICT to preserve scheduling columns', async () => {
-    const facts = [createFact({ id: 200, content: 'Updated content' })];
-
-    await database.insertFacts(facts);
-
-    const sql = mockDb.runAsync.mock.calls[0][0];
-    expect(sql).toContain('ON CONFLICT(id) DO UPDATE');
-    // Should preserve local columns
-    expect(sql).toContain('scheduled_date = facts.scheduled_date');
-    expect(sql).toContain('notification_id = facts.notification_id');
-  });
-
-  it('normalizes a space-form created_at fallback to ISO-Z for the cursor', async () => {
-    // The delta-sync bug trigger: a fact with no updated_at falls back to the
-    // backend's space-form created_at. If stored verbatim, MAX(last_updated)
-    // gets pinned below same-instant ISO-Z values and re-fetches everything.
-    const facts = [
-      createFact({
-        id: 300,
-        created_at: '2026-06-06 00:00:28', // space-form, no zone
-        last_updated: undefined, // force the fallback path
-      }),
-    ];
-
-    await database.insertFacts(facts);
-
-    const params = mockDb.runAsync.mock.calls[0][1] as unknown[];
-    // Param order ends with: ... language, created_at, last_updated.
-    const createdAt = params[params.length - 2];
-    const lastUpdated = params[params.length - 1];
-    expect(createdAt).toBe('2026-06-06T00:00:28Z');
-    expect(lastUpdated).toBe('2026-06-06T00:00:28Z');
-  });
-});
 
 describe('database — toIsoUtc', () => {
   it('converts SQLite space-form to ISO-Z (UTC)', () => {
@@ -163,21 +30,15 @@ describe('database — toIsoUtc', () => {
   });
 
   it('preserves fractional seconds', () => {
-    expect(database.toIsoUtc('2026-06-06 00:00:28.627')).toBe(
-      '2026-06-06T00:00:28.627Z'
-    );
+    expect(database.toIsoUtc('2026-06-06 00:00:28.627')).toBe('2026-06-06T00:00:28.627Z');
   });
 
   it('leaves an already-ISO-Z timestamp unchanged', () => {
-    expect(database.toIsoUtc('2026-06-06T00:01:25.627Z')).toBe(
-      '2026-06-06T00:01:25.627Z'
-    );
+    expect(database.toIsoUtc('2026-06-06T00:01:25.627Z')).toBe('2026-06-06T00:01:25.627Z');
   });
 
   it('leaves an ISO timestamp with a numeric offset unchanged', () => {
-    expect(database.toIsoUtc('2026-06-06T00:01:25+03:00')).toBe(
-      '2026-06-06T00:01:25+03:00'
-    );
+    expect(database.toIsoUtc('2026-06-06T00:01:25+03:00')).toBe('2026-06-06T00:01:25+03:00');
   });
 
   it('returns undefined for null/undefined/empty', () => {
@@ -187,89 +48,58 @@ describe('database — toIsoUtc', () => {
   });
 
   it('orders a normalized space-form created_at correctly against ISO-Z', () => {
-    // The crux: after normalization, a created_at and a later updated_at on the
-    // same instant sort in true chronological order under string comparison.
     const createdAt = database.toIsoUtc('2026-06-06 00:00:28')!;
     const updatedAt = '2026-06-06T00:01:25.627Z';
     expect(createdAt < updatedAt).toBe(true);
   });
 });
 
-describe('database — insertCategories', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+describe('database — mapApiFactToRelations', () => {
+  const baseApiFact = {
+    id: 42,
+    title: 'A fact',
+    content: 'Body',
+    summary: 'Sum',
+    category: 'science',
+    category_name: 'Science',
+    category_icon: 'flask',
+    category_color_hex: '#00ff00',
+    source_url: 'https://e.com/s',
+    image_url: 'https://e.com/i.jpg',
+    audio_url: 'https://e.com/a.mp3',
+    is_historical: false,
+    metadata: null,
+    language: 'en',
+    created_at: '2026-06-06 00:00:28',
+    updated_at: '2026-06-06T00:01:25Z',
+  };
+
+  it('maps API booleans/objects to the local 0/1 + JSON conventions', () => {
+    const f = database.mapApiFactToRelations(baseApiFact);
+    expect(f.id).toBe(42);
+    expect(f.is_historical).toBe(0);
+    expect(f.last_updated).toBe('2026-06-06T00:01:25Z');
+    expect(f.audio_url).toBe('https://e.com/a.mp3');
   });
 
-  it('upserts categories', async () => {
-    const categories = [
-      createCategory({ id: 1, name: 'Science', slug: 'science' }),
-      createCategory({ id: 2, name: 'History', slug: 'history' }),
-    ];
-
-    await database.insertCategories(categories);
-
-    expect(mockDb.runAsync).toHaveBeenCalledTimes(2);
-    const sql = mockDb.runAsync.mock.calls[0][0];
-    expect(sql).toContain('INSERT OR REPLACE');
-  });
-});
-
-describe('database — markFactAsScheduled', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+  it('builds categoryData from inline category_* fields (no DB lookup)', () => {
+    const f = database.mapApiFactToRelations(baseApiFact);
+    expect(f.categoryData?.slug).toBe('science');
+    expect(f.categoryData?.name).toBe('Science');
+    expect(f.categoryData?.color_hex).toBe('#00ff00');
+    expect(f.categoryData?.icon).toBe('flask');
   });
 
-  it('updates scheduled_date and notification_id', async () => {
-    await database.markFactAsScheduled(1, '2025-06-01T09:00:00.000Z', 'notif-123');
-
-    expect(mockDb.runAsync).toHaveBeenCalled();
-    const args = mockDb.runAsync.mock.calls[0][1];
-    expect(args).toContain('2025-06-01T09:00:00.000Z');
-    expect(args).toContain('notif-123');
-    expect(args).toContain(1);
-  });
-});
-
-describe('database — getRandomUnscheduledFacts', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('queries for unscheduled facts with language filter', async () => {
-    const rows = [createDbRow({ id: 1 }), createDbRow({ id: 2 })];
-    mockDb.getAllAsync.mockResolvedValueOnce(rows);
-
-    const facts = await database.getRandomUnscheduledFacts(10, 'en');
-    expect(facts).toHaveLength(2);
-
-    const sql = mockDb.getAllAsync.mock.calls[0][0];
-    expect(sql).toContain('scheduled_date IS NULL');
-    expect(sql).toContain('ORDER BY RANDOM()');
-    expect(sql).toContain('LIMIT');
-  });
-
-  it('respects limit', async () => {
-    mockDb.getAllAsync.mockResolvedValueOnce([]);
-
-    await database.getRandomUnscheduledFacts(5, 'en');
-
-    const args = mockDb.getAllAsync.mock.calls[0][1];
-    expect(args).toContain(5);
-  });
-});
-
-describe('database — getTodaysFacts', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('queries with timezone-safe localtime comparison', async () => {
-    mockDb.getAllAsync.mockResolvedValueOnce([]);
-
-    await database.getTodaysFacts('en');
-
-    const sql = mockDb.getAllAsync.mock.calls[0][0];
-    // Should use localtime for timezone-safe date comparison
-    expect(sql).toContain('localtime');
+  it('serializes historical metadata into the local JSON string shape', () => {
+    const f = database.mapApiFactToRelations({
+      ...baseApiFact,
+      is_historical: true,
+      metadata: { month: 6, day: 6, event_year: 1944, original_event: 'D-Day', country: 'FR' },
+    });
+    expect(f.is_historical).toBe(1);
+    expect(f.event_month).toBe(6);
+    expect(f.event_day).toBe(6);
+    expect(f.event_year).toBe(1944);
+    expect(JSON.parse(f.metadata!)).toEqual({ original_event: 'D-Day', country: 'FR' });
   });
 });

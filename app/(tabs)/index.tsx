@@ -13,7 +13,7 @@ import { KeepReadingList } from '../../src/components/home/KeepReadingList';
 import { PAYWALL_PROMPT } from '../../src/config/app';
 import { queryClient } from '../../src/config/queryClient';
 import { usePremium, useScrollToTopHandler } from '../../src/contexts';
-import { homeKeys } from '../../src/hooks/queryKeys';
+import { factKeys, homeKeys } from '../../src/hooks/queryKeys';
 import { useHomeFeed } from '../../src/hooks/useHomeFeed';
 import { useHomeFeedEvents } from '../../src/hooks/useHomeFeedEvents';
 import { useKeepReading } from '../../src/hooks/useKeepReading';
@@ -21,10 +21,6 @@ import { useReadingStreak } from '../../src/hooks/useReadingStreak';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
 import { isModalScreenActive } from '../../src/services/badges';
-import { consumeFeedRefreshPending, forceRefreshContent } from '../../src/services/contentRefresh';
-import { loadDailyFeedSections } from '../../src/services/dailyFeed';
-import { clearGlobalProgress, setGlobalProgress } from '../../src/services/globalProgress';
-import { preCacheOfflineImages } from '../../src/services/images';
 import { primePool } from '../../src/services/nativeAdPool';
 import { shouldShowPaywall } from '../../src/services/paywallTiming';
 import { hexColors, useTheme } from '../../src/theme';
@@ -48,7 +44,6 @@ function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   // Refs
-  const preCacheDateRef = useRef<string | null>(null);
   const paywallCheckRef = useRef(false);
   const keepReadingListRef = useRef<FlashListRef<any>>(null);
   const latestListRef = useRef<FlashListRef<FactWithRelations>>(null);
@@ -70,37 +65,14 @@ function HomeScreen() {
     }, [])
   );
 
-  // Focus effect: pending feed refresh, image pre-cache, paywall check
+  // Focus effect: image pre-cache, paywall check. The feed is served on demand
+  // from the API and cached by React Query, so there's no pending-refresh flag
+  // to consume here anymore.
   useFocusEffect(
     useCallback(() => {
-      if (consumeFeedRefreshPending()) {
-        loadDailyFeedSections(locale, true).then((sections) => {
-          // Snap to top BEFORE the data swap so the new ListHeaderComponent
-          // commits around offset 0 instead of the previous scroll position
-          // (see useHomeFeedEvents for the full rationale).
-          keepReadingListRef.current?.scrollToOffset({ offset: 0, animated: false });
-          latestListRef.current?.scrollToOffset({ offset: 0, animated: false });
-          onThisDayListRef.current?.scrollToOffset({ offset: 0, animated: false });
-          queryClient.setQueryData(homeKeys.dailyFeed(locale), sections);
-          // Fallback retry once the new layout has settled.
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              keepReadingListRef.current?.scrollToOffset({ offset: 0, animated: false });
-            });
-          });
-        });
-      }
-
       primePool();
 
       const idleId = requestIdleCallback(() => {
-        const today = getLocalDateString();
-        if (preCacheDateRef.current !== today) {
-          preCacheDateRef.current = today;
-          preCacheOfflineImages(undefined, setGlobalProgress)
-            .then(() => setTimeout(clearGlobalProgress, 1000))
-            .catch(clearGlobalProgress);
-        }
         trackScreenView(Screens.HOME);
       });
 
@@ -145,23 +117,19 @@ function HomeScreen() {
     [router]
   );
 
-  // Pull-to-refresh
+  // Pull-to-refresh — re-fetch the on-demand feed sections from the API.
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     trackFeedRefresh('pull');
     try {
-      await forceRefreshContent();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: factKeys.feed(locale) }),
+        queryClient.invalidateQueries({ queryKey: factKeys.onThisDay(locale) }),
+        queryClient.invalidateQueries({ queryKey: homeKeys.readingStreak() }),
+      ]);
     } catch {
       // Ignore
     }
-    try {
-      const sections = await loadDailyFeedSections(locale, true);
-      queryClient.setQueryData(homeKeys.dailyFeed(locale), sections);
-    } catch {
-      // Ignore
-    }
-    queryClient.invalidateQueries({ queryKey: homeKeys.keepReading(locale) });
-    queryClient.invalidateQueries({ queryKey: homeKeys.readingStreak() });
     setRefreshing(false);
   }, [locale]);
 
@@ -259,13 +227,6 @@ function HomeScreen() {
       </YStack>
     </ScreenContainer>
   );
-}
-
-function getLocalDateString(date: Date = new Date()): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }
 
 export default HomeScreen;

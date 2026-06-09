@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 
 import Constants from 'expo-constants';
 
-import { API_SETTINGS, APP_CHECK } from '../config/app';
+import { APP_CHECK } from '../config/app';
 import { getAppCheckReady, isAppCheckInitialized } from '../config/appCheckState';
 import { getAppVersionInfo } from '../utils/appInfo';
 
@@ -73,7 +73,10 @@ export interface FactResponse {
   title?: string;
   content: string;
   summary?: string;
-  category?: string;
+  category?: string; // category slug
+  category_name?: string; // translated category display name
+  category_icon?: string; // Lucide icon name
+  category_color_hex?: string;
   source_url?: string;
   image_url?: string;
   audio_url?: string | null;
@@ -131,6 +134,50 @@ export interface ReportFactResponse {
   status: string;
   created_at: string;
   message: string;
+}
+
+/** Cursor-paginated feed page (GET /api/facts/feed). */
+export interface FactsFeedResponse {
+  facts: FactResponse[];
+  next_cursor: string | null;
+  has_more: boolean;
+}
+
+export interface GetFactsFeedParams {
+  language: string;
+  categories?: string; // comma-separated slugs
+  includeHistorical?: boolean;
+  limit?: number;
+  cursor?: string; // opaque next_cursor from the previous page
+}
+
+/** "On this day" historical facts: exact date + a ±3-day week fallback. */
+export interface OnThisDayResponse {
+  exact: FactResponse[];
+  week: FactResponse[];
+}
+
+/**
+ * A trivia question as returned by /api/trivia/* — self-contained (no local
+ * facts table needed). Extends the base question with the fact/category
+ * attribution the trivia UI renders.
+ */
+export interface TriviaQuestionResponse extends QuestionResponse {
+  fact_id: number;
+  fact_title?: string;
+  category_slug?: string;
+  category_name?: string;
+  category_color_hex?: string;
+}
+
+/** Device registration payload for server-driven push (POST /api/devices). */
+export interface RegisterPushParams {
+  token: string; // ExponentPushToken[...]
+  platform: 'ios' | 'android';
+  timezone: string; // IANA tz id
+  preferred_minutes: number[]; // minutes-from-local-midnight
+  locale: string;
+  categories?: string[]; // optional slugs (omit = all)
 }
 
 // ====== API Helpers ======
@@ -378,240 +425,6 @@ export async function getFacts(params: GetFactsParams): Promise<FactsResponse> {
   return makeRequest<FactsResponse>(endpoint);
 }
 
-export interface DeletedFactsResponse {
-  deleted_ids: number[];
-  high_water_mark: string;
-  has_more: boolean;
-}
-
-/**
- * Get IDs of facts deleted on the server since `since` (ISO 8601).
- * The mobile app calls this during refresh to remove stale facts from
- * its local cache. The /api/facts delta sync only carries adds/updates.
- */
-export async function getDeletedFacts(since: string): Promise<DeletedFactsResponse> {
-  const endpoint = `/api/facts/deleted?since=${encodeURIComponent(since)}`;
-  return makeRequest<DeletedFactsResponse>(endpoint);
-}
-
-/**
- * Fetch ALL facts in batches with concurrent requests
- * Fires 3 requests in parallel from the start for faster loading
- */
-export async function getAllFacts(
-  language: string,
-  categories?: string,
-  onProgress?: (downloaded: number, total: number) => void,
-  includeQuestions?: boolean,
-  includeHistorical?: boolean
-): Promise<FactResponse[]> {
-  const batchSize = API_SETTINGS.FACTS_BATCH_SIZE;
-  const concurrency = 3;
-
-  // Fire first batch of concurrent requests (offsets 0, batchSize, batchSize*2)
-  const initialOffsets = Array.from({ length: concurrency }, (_, i) => i * batchSize);
-
-  const initialResponses = await Promise.all(
-    initialOffsets.map((offset) =>
-      getFacts({
-        language,
-        categories,
-        offset,
-        batch_size: batchSize,
-        include_questions: includeQuestions,
-        include_historical: includeHistorical,
-      })
-    )
-  );
-
-  // Get total from first response
-  const total = initialResponses[0].pagination.total;
-
-  // Collect facts from initial responses (only include responses that have data)
-  const allFacts: FactResponse[] = [];
-  for (const response of initialResponses) {
-    if (response.facts.length > 0) {
-      allFacts.push(...response.facts);
-    }
-  }
-
-  if (onProgress) {
-    onProgress(allFacts.length, total);
-  }
-
-  // Check if we need more batches beyond the initial 3
-  const lastInitialOffset = initialOffsets[initialOffsets.length - 1];
-  let nextOffset = lastInitialOffset + batchSize;
-
-  // Continue fetching remaining batches with concurrency
-  while (nextOffset < total) {
-    const batchOffsets: number[] = [];
-    for (let i = 0; i < concurrency && nextOffset < total; i++) {
-      batchOffsets.push(nextOffset);
-      nextOffset += batchSize;
-    }
-
-    const responses = await Promise.all(
-      batchOffsets.map((offset) =>
-        getFacts({
-          language,
-          categories,
-          offset,
-          batch_size: batchSize,
-          include_questions: includeQuestions,
-          include_historical: includeHistorical,
-        })
-      )
-    );
-
-    for (const response of responses) {
-      allFacts.push(...response.facts);
-    }
-
-    if (onProgress) {
-      onProgress(allFacts.length, total);
-    }
-  }
-
-  return allFacts;
-}
-
-/**
- * Fetch all facts with retry logic for fail-safe implementation
- */
-export async function getAllFactsWithRetry(
-  language: string,
-  categories?: string,
-  onProgress?: (downloaded: number, total: number) => void,
-  maxRetries = 3,
-  includeQuestions?: boolean,
-  includeHistorical?: boolean
-): Promise<FactResponse[]> {
-  let attempt = 0;
-  let lastError: Error | null = null;
-
-  while (attempt < maxRetries) {
-    try {
-      return await getAllFacts(
-        language,
-        categories,
-        onProgress,
-        includeQuestions,
-        includeHistorical
-      );
-    } catch (error) {
-      lastError = error as Error;
-      attempt++;
-
-      if (attempt < maxRetries) {
-        // Exponential backoff: wait 1s, 2s, 4s
-        const delay = 1000 * Math.pow(2, attempt - 1);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-    }
-  }
-
-  throw lastError || new Error('Failed to fetch facts after multiple retries');
-}
-
-/**
- * Fetch facts incrementally, writing each batch to DB via callback as it arrives.
- * Phase 1: Single request for the latest facts (small, fast) → onBatchReady → unblock user
- * Phase 2: Remaining facts in concurrent batches → onBatchReady per group → until done
- */
-export async function fetchFactsIncrementally(params: {
-  language: string;
-  categories?: string;
-  initialBatchSize: number;
-  remainingBatchSize: number;
-  concurrency: number;
-  includeQuestions?: boolean;
-  includeHistorical?: boolean;
-  onBatchReady: (facts: FactResponse[], isInitialBatch: boolean) => Promise<void>;
-  onProgress?: (downloaded: number, total: number) => void;
-}): Promise<{ total: number }> {
-  const {
-    language,
-    categories,
-    initialBatchSize,
-    remainingBatchSize,
-    concurrency,
-    includeQuestions,
-    includeHistorical,
-    onBatchReady,
-    onProgress,
-  } = params;
-
-  // Phase 1: Fetch initial batch (latest facts, sorted newest first)
-
-  const initialResponse = await getFacts({
-    language,
-    categories,
-    limit: initialBatchSize,
-    offset: 0,
-    sort: 'created_at_desc',
-    include_questions: includeQuestions,
-    include_historical: includeHistorical,
-  });
-
-  const total = initialResponse.pagination.total;
-  let downloaded = initialResponse.facts.length;
-
-  // Write initial batch to DB via callback
-  await onBatchReady(initialResponse.facts, true);
-
-  if (onProgress) {
-    onProgress(downloaded, total);
-  }
-
-  // Phase 2: Fetch remaining facts in concurrent batches
-  let nextOffset = initialBatchSize;
-
-  while (nextOffset < total) {
-    const batchOffsets: number[] = [];
-    for (let i = 0; i < concurrency && nextOffset < total; i++) {
-      batchOffsets.push(nextOffset);
-      nextOffset += remainingBatchSize;
-    }
-
-    const responses = await Promise.all(
-      batchOffsets.map((offset) =>
-        getFacts({
-          language,
-          categories,
-          limit: remainingBatchSize,
-          offset,
-          sort: 'created_at_desc',
-          include_questions: includeQuestions,
-          include_historical: includeHistorical,
-          skip_count: true,
-        })
-      )
-    );
-
-    // Write each response individually to keep transactions small
-    // and avoid blocking other DB operations (e.g. home screen preload)
-    let groupEmpty = true;
-    for (const response of responses) {
-      if (response.facts.length === 0) continue;
-      groupEmpty = false;
-      downloaded += response.facts.length;
-
-      await onBatchReady(response.facts, false);
-    }
-
-    if (groupEmpty) break;
-
-    if (onProgress) {
-      onProgress(downloaded, total);
-    }
-
-    // If any response returned fewer facts than requested, we're done
-    if (responses.some((r) => r.facts.length < remainingBatchSize)) break;
-  }
-
-  return { total };
-}
 
 /**
  * Submit feedback or report an issue
@@ -641,5 +454,165 @@ export async function reportFact(
   return makeRequest<ReportFactResponse>(`/api/facts/${factId}/report`, {
     method: 'POST',
     body: JSON.stringify({ feedback_text: feedbackText }),
+  });
+}
+
+// ====== On-demand feed / hydration (replaces the local facts mirror) ======
+
+/**
+ * One page of the cursor-paginated feed. The client pages by round-tripping
+ * `next_cursor` verbatim (opaque token); newest-first. Replaces the app's
+ * full-download-into-SQLite model.
+ */
+export async function getFactsFeed(params: GetFactsFeedParams): Promise<FactsFeedResponse> {
+  const qp = new URLSearchParams();
+  qp.append('language', params.language);
+  if (params.categories) qp.append('categories', params.categories);
+  if (params.includeHistorical) qp.append('include_historical', 'true');
+  if (params.limit !== undefined) qp.append('limit', String(params.limit));
+  if (params.cursor) qp.append('cursor', params.cursor);
+  return makeRequest<FactsFeedResponse>(`/api/facts/feed?${qp.toString()}`);
+}
+
+/** Max ids per /api/facts/by-ids request (backend bounds the IN clause). */
+const BY_IDS_CHUNK = 200;
+
+/**
+ * Hydrate specific facts by id (favorites, trivia review). Chunks above the
+ * backend's 200-id cap and tolerates missing ids (deleted facts just drop out).
+ */
+export async function getFactsByIds(ids: number[], language: string): Promise<FactResponse[]> {
+  if (ids.length === 0) return [];
+  const out: FactResponse[] = [];
+  for (let i = 0; i < ids.length; i += BY_IDS_CHUNK) {
+    const chunk = ids.slice(i, i + BY_IDS_CHUNK);
+    const qp = new URLSearchParams();
+    qp.append('ids', chunk.join(','));
+    qp.append('language', language);
+    const res = await makeRequest<{ facts: FactResponse[] }>(`/api/facts/by-ids?${qp.toString()}`);
+    out.push(...res.facts);
+  }
+  return out;
+}
+
+/**
+ * "On this day" historical facts for today (or a given month/day): the exact
+ * date plus a ±3-day week fallback the UI uses when the exact date is empty.
+ */
+export async function getOnThisDay(
+  language: string,
+  month?: number,
+  day?: number
+): Promise<OnThisDayResponse> {
+  const qp = new URLSearchParams();
+  qp.append('language', language);
+  if (month !== undefined) qp.append('month', String(month));
+  if (day !== undefined) qp.append('day', String(day));
+  return makeRequest<OnThisDayResponse>(`/api/facts/on-this-day?${qp.toString()}`);
+}
+
+export interface SearchFactsParams {
+  q: string;
+  language: string;
+  categories?: string;
+  limit?: number;
+  offset?: number;
+}
+
+/** Title-first LIKE search across facts (replaces the on-device SQL search). */
+export async function searchFacts(params: SearchFactsParams): Promise<FactResponse[]> {
+  const qp = new URLSearchParams();
+  qp.append('q', params.q);
+  qp.append('language', params.language);
+  if (params.categories) qp.append('categories', params.categories);
+  if (params.limit !== undefined) qp.append('limit', String(params.limit));
+  if (params.offset !== undefined) qp.append('offset', String(params.offset));
+  const res = await makeRequest<{ facts: FactResponse[] }>(`/api/facts/search?${qp.toString()}`);
+  return res.facts;
+}
+
+// ====== Trivia (replaces the local questions table) ======
+
+function triviaQuery(language: string, limit?: number, excludeIds?: number[]): string {
+  const qp = new URLSearchParams();
+  qp.append('language', language);
+  if (limit !== undefined) qp.append('limit', String(limit));
+  if (excludeIds && excludeIds.length > 0) {
+    qp.append('exclude_question_ids', excludeIds.join(','));
+  }
+  return qp.toString();
+}
+
+/** Daily trivia: questions from facts created on the given UTC day (default today). */
+export async function getTriviaDaily(
+  language: string,
+  limit?: number,
+  excludeIds?: number[]
+): Promise<TriviaQuestionResponse[]> {
+  const res = await makeRequest<{ questions: TriviaQuestionResponse[] }>(
+    `/api/trivia/daily?${triviaQuery(language, limit, excludeIds)}`
+  );
+  return res.questions;
+}
+
+/** Random/mixed trivia, excluding question ids the user already answered. */
+export async function getTriviaRandom(
+  language: string,
+  limit?: number,
+  excludeIds?: number[]
+): Promise<TriviaQuestionResponse[]> {
+  const res = await makeRequest<{ questions: TriviaQuestionResponse[] }>(
+    `/api/trivia/random?${triviaQuery(language, limit, excludeIds)}`
+  );
+  return res.questions;
+}
+
+/** Category trivia, excluding mastered/answered question ids. */
+export async function getTriviaCategory(
+  slug: string,
+  language: string,
+  limit?: number,
+  excludeIds?: number[]
+): Promise<TriviaQuestionResponse[]> {
+  const res = await makeRequest<{ questions: TriviaQuestionResponse[] }>(
+    `/api/trivia/category/${encodeURIComponent(slug)}?${triviaQuery(language, limit, excludeIds)}`
+  );
+  return res.questions;
+}
+
+/** Hydrate specific trivia questions by id (past-session review). */
+export async function getTriviaByIds(
+  ids: number[],
+  language: string
+): Promise<TriviaQuestionResponse[]> {
+  if (ids.length === 0) return [];
+  const qp = new URLSearchParams();
+  qp.append('ids', ids.join(','));
+  qp.append('language', language);
+  const res = await makeRequest<{ questions: TriviaQuestionResponse[] }>(
+    `/api/trivia/by-ids?${qp.toString()}`
+  );
+  return res.questions;
+}
+
+// ====== Push registration ======
+
+/**
+ * Register this device's Expo push token + notification prefs with the backend
+ * (server-driven push replaces on-device local scheduling). Idempotent upsert.
+ */
+export async function registerPushToken(
+  params: RegisterPushParams
+): Promise<{ ok: boolean }> {
+  return makeRequest<{ ok: boolean }>('/api/devices', {
+    method: 'POST',
+    body: JSON.stringify({
+      expo_push_token: params.token,
+      platform: params.platform,
+      timezone: params.timezone,
+      preferred_minutes: params.preferred_minutes,
+      locale: params.locale,
+      categories: params.categories,
+    }),
   });
 }

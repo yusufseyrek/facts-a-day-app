@@ -375,7 +375,7 @@ export default function ActivityHistoryScreen() {
   const handleSessionClick = useCallback(async (sessionId: number) => {
     try {
       setLoadingSession(true);
-      const fullSession = await triviaService.getSessionById(sessionId);
+      const fullSession = await triviaService.getSessionById(sessionId, locale);
       if (fullSession && fullSession.questions && fullSession.answers) {
         setSelectedSession(fullSession);
         // Track viewing results from history
@@ -391,7 +391,7 @@ export default function ActivityHistoryScreen() {
     } finally {
       setLoadingSession(false);
     }
-  }, []);
+  }, [locale]);
 
   const handleCloseResults = useCallback(() => {
     setSelectedSession(null);

@@ -2,22 +2,21 @@ import { Alert } from 'react-native';
 
 import { MINIMUM_CATEGORIES } from '../config/app';
 
+import * as api from './api';
 import { emitFeedRefresh, markFeedRefreshPending } from './contentRefresh';
-import * as db from './database';
 import * as onboardingService from './onboarding';
 
 /**
- * Remove any premium categories from a free user's selection and clean up
- * their facts/questions. Silently no-ops if no premium categories are selected.
- *
- * Called from:
- * - handlePremiumDowngrade() when a subscription expires
- * - contentRefresh after metadata sync (catches free→premium category changes)
+ * Remove any premium categories from a free user's selection. Facts are served
+ * on demand from the API (no local mirror to clean up), so this just deselects
+ * the premium categories and refreshes the feed. Silently no-ops if none are
+ * selected.
  *
  * Returns true if any categories were deselected.
  */
 export async function reconcilePremiumCategories(): Promise<boolean> {
-  const premiumSlugs = await db.getPremiumCategorySlugs();
+  const metadata = await api.getMetadata();
+  const premiumSlugs = metadata.categories.filter((c) => c.is_premium).map((c) => c.slug);
   if (premiumSlugs.length === 0) return false;
 
   const premiumSlugSet = new Set(premiumSlugs);
@@ -29,19 +28,7 @@ export async function reconcilePremiumCategories(): Promise<boolean> {
   // Deselect premium categories
   await onboardingService.setSelectedCategories(filteredSelection);
 
-  // Delete facts from premium categories (except favorites)
-  await db.deleteFactsByCategorySlugs(premiumSlugs);
-
-  // Clean up orphaned questions
-  const database = await db.openDatabase();
-  await database.runAsync('DELETE FROM questions WHERE fact_id NOT IN (SELECT id FROM facts)');
-
-  // Clear feed cache so it rebuilds from updated DB state
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { invalidateFeedMemoryCache } = require('./dailyFeed') as typeof import('./dailyFeed');
-  invalidateFeedMemoryCache();
-
-  // Emit feed refresh
+  // The feed re-fetches from the API with the new selection.
   emitFeedRefresh();
   markFeedRefreshPending();
 

@@ -39,8 +39,9 @@ import {
   trackScreenView,
   trackSearch,
 } from '../../src/services/analytics';
-import { consumePendingDiscoverCategory } from '../../src/services/contentRefresh';
-import * as database from '../../src/services/database';
+import * as api from '../../src/services/api';
+import { mapApiFactToRelations } from '../../src/services/database';
+import { consumePendingDiscoverCategory } from '../../src/services/discoverNav';
 import { getCachedFactImageSync } from '../../src/services/images';
 import { primePool } from '../../src/services/nativeAdPool';
 import { getIsConnected } from '../../src/services/network';
@@ -60,6 +61,9 @@ import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { FactViewSource } from '../../src/services/analytics';
 import type { Category, FactWithRelations } from '../../src/services/database';
+
+// How many facts to pull for a category browse view (first feed page).
+const CATEGORY_BROWSE_LIMIT = 100;
 
 // Device breakpoints
 
@@ -192,7 +196,6 @@ function DiscoverScreen() {
 
   // Category filter state
   const [userCategories, setUserCategories] = useState<Category[]>([]);
-  const [categoryFactsCounts, setCategoryFactsCounts] = useState<Record<string, number>>({});
   const [selectedCategorySlug, setSelectedCategorySlug] = useState<string | null>(null);
   const [categoryFacts, setCategoryFacts] = useState<FactWithRelations[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
@@ -263,22 +266,13 @@ function DiscoverScreen() {
       }
 
       try {
-        let results: FactWithRelations[];
-
-        if (categorySlug) {
-          // Search within the selected category
-          const catFacts = await database.getFactsByCategory(categorySlug, locale);
-          const searchTerm = query.trim().toLowerCase();
-          results = catFacts.filter(
-            (fact) =>
-              fact.title?.toLowerCase().includes(searchTerm) ||
-              fact.content.toLowerCase().includes(searchTerm) ||
-              fact.summary?.toLowerCase().includes(searchTerm)
-          );
-        } else {
-          // Search all facts
-          results = await database.searchFacts(query.trim(), locale);
-        }
+        // Server-side title-first search, optionally scoped to a category.
+        const facts = await api.searchFacts({
+          q: query.trim(),
+          language: locale,
+          categories: categorySlug || undefined,
+        });
+        const results: FactWithRelations[] = facts.map(mapApiFactToRelations);
 
         setSearchResults(sortByImageAvailability(results));
 
@@ -311,23 +305,14 @@ function DiscoverScreen() {
     try {
       setIsLoadingCategories(true);
       const selectedSlugs = await getSelectedCategories();
-      const allCategories = await database.getAllCategories();
+      const metadata = await api.getMetadata(locale);
+      const allCategories = metadata.categories;
 
       // Filter to only include user's selected categories, sorted by hue
       const filteredCategories = allCategories
         .filter((cat) => selectedSlugs.includes(cat.slug))
         .sort((a, b) => hexToHue(a.color_hex) - hexToHue(b.color_hex));
       setUserCategories(filteredCategories);
-
-      // Load facts counts for each category
-      const counts: Record<string, number> = {};
-      await Promise.all(
-        filteredCategories.map(async (cat) => {
-          const facts = await database.getFactsByCategory(cat.slug, locale);
-          counts[cat.slug] = facts.length;
-        })
-      );
-      setCategoryFactsCounts(counts);
     } catch {
       // Ignore category loading errors
     } finally {
@@ -387,6 +372,19 @@ function DiscoverScreen() {
     [router]
   );
 
+  // Fetch the first page of a category from the cursor feed (browse view).
+  const fetchCategoryFacts = useCallback(
+    async (categorySlug: string): Promise<FactWithRelations[]> => {
+      const res = await api.getFactsFeed({
+        language: locale,
+        categories: categorySlug,
+        limit: CATEGORY_BROWSE_LIMIT,
+      });
+      return res.facts.map(mapApiFactToRelations);
+    },
+    [locale]
+  );
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     if (searchQuery.trim()) {
@@ -394,14 +392,14 @@ function DiscoverScreen() {
     } else if (selectedCategorySlug) {
       // Refresh category facts
       try {
-        const facts = await database.getFactsByCategory(selectedCategorySlug, locale);
+        const facts = await fetchCategoryFacts(selectedCategorySlug);
         setCategoryFacts(sortByImageAvailability(facts));
       } catch {
         // Ignore refresh errors
       }
     }
     setRefreshing(false);
-  }, [searchQuery, selectedCategorySlug, locale, performSearch]);
+  }, [searchQuery, selectedCategorySlug, performSearch, fetchCategoryFacts]);
 
   const handleSearchChange = useCallback((text: string) => {
     setSearchQuery(text);
@@ -433,7 +431,7 @@ function DiscoverScreen() {
       setIsLoadingCategoryFacts(true);
 
       try {
-        const facts = await database.getFactsByCategory(categorySlug, locale);
+        const facts = await fetchCategoryFacts(categorySlug);
         setCategoryFacts(sortByImageAvailability(facts));
 
         // Track category browse event
@@ -448,7 +446,7 @@ function DiscoverScreen() {
         setIsLoadingCategoryFacts(false);
       }
     },
-    [selectedCategorySlug, locale]
+    [selectedCategorySlug, fetchCategoryFacts]
   );
 
   // Consume pending category selection from home screen CTA on focus
@@ -777,7 +775,6 @@ function DiscoverScreen() {
                     {row.map((category) => {
                       const categoryColor = category.color_hex || '#0066FF';
                       const contrastColor = getContrastColor(categoryColor);
-                      const factsCount = categoryFactsCounts[category.slug] || 0;
 
                       return (
                         <Pressable
@@ -837,15 +834,6 @@ function DiscoverScreen() {
                                 >
                                   {category.name}
                                 </Text.Label>
-                                <Text.Caption
-                                  color={contrastColor}
-                                  style={{ opacity: 0.85 }}
-                                  fontFamily={FONT_FAMILIES.medium}
-                                >
-                                  {factsCount === 1
-                                    ? t('factCountSingular', { count: factsCount })
-                                    : t('factCountPlural', { count: factsCount })}
-                                </Text.Caption>
                               </DiscoverCategoryTextContainer>
                             </DiscoverCategoryCard>
                           </LinearGradient>
@@ -878,7 +866,6 @@ function DiscoverScreen() {
     isTablet,
     userCategories,
     isLoadingCategories,
-    categoryFactsCounts,
     theme,
     t,
     handleCategoryPress,

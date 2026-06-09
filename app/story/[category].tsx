@@ -35,9 +35,12 @@ import {
   trackStoryOpen,
   trackStoryReadMore,
 } from '../../src/services/analytics';
+import * as api from '../../src/services/api';
 import { checkAndAwardBadges, popModalScreen, pushModalScreen } from '../../src/services/badges';
 import * as database from '../../src/services/database';
+import { mapApiFactToRelations } from '../../src/services/database';
 import { getSelectedCategories } from '../../src/services/onboarding';
+import { takePrefetchedStory } from '../../src/services/storyPrefetch';
 import { hexColors, useTheme } from '../../src/theme';
 import {
   insertNativeAds,
@@ -49,6 +52,9 @@ import { useResponsive } from '../../src/utils/useResponsive';
 import type { FactWithRelations } from '../../src/services/database';
 
 type StoryListItem = FactWithRelations | NativeAdPlaceholder;
+
+// How many facts to pull for a story session (one feed page).
+const STORY_FETCH_LIMIT = 100;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -212,14 +218,27 @@ export default function StoryScreen() {
   const loadFacts = async () => {
     try {
       setLoading(true);
-      let result: FactWithRelations[];
 
-      if (category === 'mix') {
-        const slugs = await getSelectedCategories();
-        result = await database.getFactsForMixedStory(slugs, locale);
-      } else {
-        result = await database.getFactsForStory(category!, locale);
-      }
+      // Stories are fed from the cursor feed (single or multiple categories),
+      // then ordered unseen-first using the local story-view log — there's no
+      // local facts mirror to compute is_viewed anymore.
+      const categories =
+        category === 'mix' ? (await getSelectedCategories()).join(',') : category!;
+      // Use a warmed feed from the story-button prefetch when available, so the
+      // first card shows instantly instead of waiting on a network round-trip.
+      const res =
+        (await takePrefetchedStory(locale, categories)) ??
+        (await api.getFactsFeed({
+          language: locale,
+          categories,
+          limit: STORY_FETCH_LIMIT,
+        }));
+      const fetched = res.facts.map(mapApiFactToRelations);
+
+      const viewed = await database.getViewedStoryFactIds();
+      const unseen = fetched.filter((f) => !viewed.has(f.id));
+      const seen = fetched.filter((f) => viewed.has(f.id));
+      const result: FactWithRelations[] = [...unseen, ...seen];
 
       setFacts(result);
       // Store facts for event-driven prefetch and reset trigger

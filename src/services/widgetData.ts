@@ -18,7 +18,8 @@ import { reloadWidgets, setWidgetData } from '../native/WidgetBridge';
 import { getCategoryNeonColor } from '../theme/glowStyles';
 import { getContrastColor } from '../utils/colors';
 
-import { getLatestFacts } from './database';
+import { getFactsFeed } from './api';
+import { mapApiFactToRelations } from './database';
 import { getIsPremium } from './premiumState';
 
 import type { FactWithRelations } from './database';
@@ -92,7 +93,8 @@ function toWidgetFact(f: FactWithRelations, theme: 'light' | 'dark'): WidgetFact
  */
 export async function refreshWidgetData(locale: string): Promise<void> {
   try {
-    const facts = await getLatestFacts(WIDGET_FACT_COUNT, locale);
+    const page = await getFactsFeed({ language: locale, limit: WIDGET_FACT_COUNT });
+    const facts = page.facts.map(mapApiFactToRelations);
     if (facts.length === 0) return;
 
     const theme = await resolveTheme();

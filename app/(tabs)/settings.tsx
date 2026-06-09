@@ -13,7 +13,6 @@ import {
   Heart,
   Palette,
   RotateCcw,
-  Search,
   Settings,
   Shield,
   Star,
@@ -36,7 +35,6 @@ import {
   Text,
   useIconColor,
 } from '../../src/components';
-import { FeedManagementModal } from '../../src/components/settings/FeedManagementModal';
 import { ThemePickerModal } from '../../src/components/settings/ThemePickerModal';
 import { TimePickerModal } from '../../src/components/settings/TimePickerModal';
 import { SettingsRow } from '../../src/components/SettingsRow';
@@ -46,12 +44,17 @@ import { useTranslation } from '../../src/i18n';
 import { TranslationKeys } from '../../src/i18n/translations';
 import { openAdDebugMenu } from '../../src/services/ads';
 import { Screens, trackScreenView } from '../../src/services/analytics';
+import * as api from '../../src/services/api';
 import { requestReview } from '../../src/services/appReview';
 import { armDevDualTrigger, triggerTestBadgeToast } from '../../src/services/badges';
 import { onFeedRefresh } from '../../src/services/contentRefresh';
-import * as database from '../../src/services/database';
+import { mapApiFactToRelations } from '../../src/services/database';
 import { clearAllCachedImages, getCachedImagesSize } from '../../src/services/images';
-import { buildNotificationContent } from '../../src/services/notifications';
+import {
+  buildNotificationContent,
+  getExpoPushToken,
+  sendTestPushToSelf,
+} from '../../src/services/notifications';
 import * as onboardingService from '../../src/services/onboarding';
 import { cleanupShareCards } from '../../src/services/share';
 import { clearHintUsage } from '../../src/services/trivia';
@@ -122,7 +125,6 @@ export default function SettingsPage() {
   // Modal visibility state
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
-  const [showFeedManagementModal, setShowFeedManagementModal] = useState(false);
 
   // Preferences state
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -488,17 +490,17 @@ export default function SettingsPage() {
         return;
       }
 
-      const facts = await database.getRandomUnscheduledFacts(1, locale);
-      if (__DEV__) console.log('📚 Facts found:', facts.length);
+      const feed = await api.getFactsFeed({ language: locale, limit: 1 });
+      if (__DEV__) console.log('📚 Facts found:', feed.facts.length);
 
-      if (facts.length === 0) {
+      if (feed.facts.length === 0) {
         Alert.alert(t('noFactAvailable'), t('noFactsAvailableForTest'), [
           { text: t('ok'), style: 'default' },
         ]);
         return;
       }
 
-      const fact = facts[0];
+      const fact = mapApiFactToRelations(feed.facts[0]);
       if (__DEV__)
         console.log('✅ Using fact:', fact.id, '-', fact.content.substring(0, 50) + '...');
 
@@ -527,6 +529,34 @@ export default function SettingsPage() {
         `${t('failedToScheduleTestNotification')}: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
+        [{ text: t('ok'), style: 'default' }]
+      );
+    }
+  };
+
+  // DEV: verify the real server-push pipeline (Expo → APNs/FCM → this device),
+  // not just a local scheduled notification. Sends a push to this device's own
+  // Expo token through Expo's push API — the same transport the backend uses.
+  const handleTestServerPush = async () => {
+    try {
+      const token = await getExpoPushToken();
+      if (!token) {
+        Alert.alert(
+          'No push token',
+          'Need a real device with notification permission granted. (Simulators and Expo Go for a custom project cannot get a token.)'
+        );
+        return;
+      }
+      const result = await sendTestPushToSelf();
+      Alert.alert(
+        result.ok ? 'Push sent ✅' : 'Push failed ❌',
+        `${result.detail}\n\nToken:\n${token}`,
+        [{ text: t('ok'), style: 'default' }]
+      );
+    } catch (error) {
+      Alert.alert(
+        t('error'),
+        error instanceof Error ? error.message : 'Unknown error',
         [{ text: t('ok'), style: 'default' }]
       );
     }
@@ -584,197 +614,6 @@ export default function SettingsPage() {
         },
       },
     ]);
-  };
-
-  const _handleAdd10RandomFacts = async () => {
-    try {
-      if (__DEV__) console.log('📚 Adding 10 random facts with past dates for feed testing...');
-
-      // Get 10 random unscheduled facts
-      const facts = await database.getRandomUnscheduledFacts(10, locale);
-      if (__DEV__) console.log('📚 Unscheduled facts found:', facts.length);
-
-      if (facts.length === 0) {
-        Alert.alert(t('noFactAvailable'), t('noFactsAvailable'), [
-          { text: t('ok'), style: 'default' },
-        ]);
-        return;
-      }
-
-      if (__DEV__) console.log(`📚 Adding ${facts.length} facts with random past dates...`);
-
-      const now = new Date();
-
-      // Add facts with random past dates (spread across last 10 days)
-      for (let i = 0; i < facts.length; i++) {
-        const fact = facts[i];
-
-        // Generate a random date in the past (0-9 days ago)
-        const daysAgo = i; // Each fact gets a different day for variety
-        const scheduledDate = new Date(now);
-        scheduledDate.setDate(scheduledDate.getDate() - daysAgo);
-        // Randomize the hour a bit
-        scheduledDate.setHours(
-          9 + Math.floor(Math.random() * 3),
-          Math.floor(Math.random() * 60),
-          0,
-          0
-        );
-
-        const notificationId = `test_${fact.id}_${Date.now()}_${i}`;
-
-        await database.markFactAsScheduled(fact.id, scheduledDate.toISOString(), notificationId);
-
-        if (__DEV__)
-          console.log(
-            `✅ Added fact ${fact.id} with date ${scheduledDate.toISOString().split('T')[0]}`
-          );
-      }
-
-      // Show success message
-      const message = t('factsAddedDescription', { count: facts.length });
-      Alert.alert(t('factsAdded'), message, [{ text: t('ok'), style: 'default' }]);
-    } catch (error) {
-      console.error('❌ Error adding facts:', error);
-      Alert.alert(t('errorAddingFacts'), error instanceof Error ? error.message : 'Unknown error', [
-        { text: t('ok'), style: 'default' },
-      ]);
-    }
-  };
-
-  const _handleMarkAllStoriesViewed = async () => {
-    try {
-      const count = await database.markAllFactsViewedInStory(locale);
-      Alert.alert('Stories Marked Viewed', `${count} facts marked as viewed in story`, [
-        { text: t('ok'), style: 'default' },
-      ]);
-    } catch (error) {
-      console.error('Error marking stories viewed:', error);
-    }
-  };
-
-  const _handleScheduleDuplicateNotifications = async () => {
-    try {
-      if (__DEV__) console.log('🐛 Creating buggy notification schedule to test repair...');
-
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(t('notificationPermissionRequired'), t('notificationPermissionMessage'), [
-          { text: t('ok'), style: 'default' },
-        ]);
-        return;
-      }
-
-      // Step 1: Clear all existing notifications from OS and DB
-      if (__DEV__) console.log('🐛 Clearing existing notifications...');
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      await database.clearAllScheduledFactsCompletely();
-
-      // Step 2: Get enough facts to fill up to 64 notifications
-      const facts = await database.getRandomUnscheduledFacts(64, locale);
-      if (__DEV__) console.log('📚 Facts found:', facts.length);
-
-      if (facts.length < 64) {
-        Alert.alert(
-          'Not enough facts',
-          `Need 64 unscheduled facts to test, found ${facts.length}`,
-          [{ text: t('ok'), style: 'default' }]
-        );
-        return;
-      }
-
-      const now = new Date();
-      let scheduledCount = 0;
-      let factIndex = 0;
-
-      // Step 3: Schedule notifications with duplicates (simulating the bug)
-      // For first 10 days, schedule 3 notifications per day (30 total - duplicates!)
-      // For next 34 days, schedule 1 notification per day (34 total)
-      // Total: 64 notifications
-
-      if (__DEV__) console.log('🐛 Scheduling with duplicates for first 10 days...');
-
-      // First 10 days: 3 notifications each (this is the bug scenario)
-      for (let day = 1; day <= 10; day++) {
-        for (let slot = 0; slot < 3; slot++) {
-          if (factIndex >= facts.length) break;
-
-          const fact = facts[factIndex];
-          const scheduledDate = new Date(now);
-          scheduledDate.setDate(scheduledDate.getDate() + day);
-          scheduledDate.setHours(9 + slot * 2, 0, 0, 0); // 9:00, 11:00, 13:00
-
-          const content = await buildNotificationContent(fact, locale, scheduledDate);
-          const notificationId = await Notifications.scheduleNotificationAsync({
-            content,
-            trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.DATE,
-              date: scheduledDate,
-            },
-          });
-
-          if (notificationId) {
-            await database.markFactAsScheduled(
-              fact.id,
-              scheduledDate.toISOString(),
-              notificationId
-            );
-            scheduledCount++;
-            factIndex++;
-          }
-        }
-      }
-
-      // Next 34 days: 1 notification each (normal)
-      if (__DEV__) console.log('🐛 Scheduling normal notifications for remaining days...');
-      for (let day = 11; day <= 44 && factIndex < facts.length; day++) {
-        const fact = facts[factIndex];
-        const scheduledDate = new Date(now);
-        scheduledDate.setDate(scheduledDate.getDate() + day);
-        scheduledDate.setHours(9, 0, 0, 0);
-
-        const content = await buildNotificationContent(fact, locale, scheduledDate);
-        const notificationId = await Notifications.scheduleNotificationAsync({
-          content,
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: scheduledDate,
-          },
-        });
-
-        if (notificationId) {
-          await database.markFactAsScheduled(fact.id, scheduledDate.toISOString(), notificationId);
-          scheduledCount++;
-          factIndex++;
-        }
-      }
-
-      // Verify
-      const osCount = await Notifications.getAllScheduledNotificationsAsync();
-      if (__DEV__) {
-        console.log(
-          `🐛 Created buggy schedule: ${scheduledCount} notifications (OS: ${osCount.length})`
-        );
-        console.log(
-          '🐛 Days 1-10 have 3 notifications each (bug), days 11-44 have 1 each (normal)'
-        );
-      }
-
-      Alert.alert(
-        'Buggy Schedule Created',
-        `Scheduled ${scheduledCount} notifications:\n` +
-          `• Days 1-10: 3 per day (bug!)\n` +
-          `• Days 11-44: 1 per day (normal)\n\n` +
-          `OS has ${osCount.length} notifications.\n\n` +
-          `Restart the app to trigger the repair check.`,
-        [{ text: t('ok'), style: 'default' }]
-      );
-    } catch (error) {
-      console.error('❌ Error scheduling duplicate notifications:', error);
-      Alert.alert(t('error'), error instanceof Error ? error.message : 'Unknown error', [
-        { text: t('ok'), style: 'default' },
-      ]);
-    }
   };
 
   const headerIconColor = useIconColor();
@@ -880,14 +719,16 @@ export default function SettingsPage() {
         {
           id: 'testNotification',
           label: t('testNotification'),
+          value: 'local (5s)',
           icon: <TestTube size={iconSizes.md} color={iconColor} />,
           onPress: handleTestNotification,
         },
         {
-          id: 'notificationDiagnostics',
-          label: 'Notification Diagnostics',
-          icon: <Search size={iconSizes.md} color={iconColor} />,
-          onPress: () => router.push('/notification-diagnostics'),
+          id: 'testServerPush',
+          label: 'Test Server Push',
+          value: 'Expo → APNs/FCM',
+          icon: <Bell size={iconSizes.md} color={iconColor} />,
+          onPress: handleTestServerPush,
         },
         {
           id: 'adInspector',
@@ -1158,14 +999,6 @@ export default function SettingsPage() {
         }}
         hasNotificationPermission={notificationPermissionGranted}
       />
-
-      {/* DEV: Feed Management Modal for screenshots */}
-      {isDevelopment && (
-        <FeedManagementModal
-          visible={showFeedManagementModal}
-          onClose={() => setShowFeedManagementModal(false)}
-        />
-      )}
     </ScreenContainer>
   );
 }

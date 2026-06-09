@@ -13,20 +13,52 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HINT_LIMITS, STORAGE_KEYS } from '../config/app';
 import { TIME_PER_QUESTION, TRIVIA_QUESTIONS } from '../config/trivia';
 
+import * as api from './api';
 import { checkAndAwardBadges } from './badges';
 import * as database from './database';
+import { getAnsweredQuestionIds, mapApiFactToRelations } from './database';
 import * as onboardingService from './onboarding';
 import { getIsPremium } from './premiumState';
 
+import type { TriviaQuestionResponse } from './api';
 import type {
   Category,
   DailyTriviaProgress,
-  FactWithRelations,
   Question,
   QuestionWithFact,
   StoredAnswer,
   TriviaSessionWithCategory,
 } from './database';
+
+/**
+ * Map API trivia questions to the QuestionWithFact shape the UI consumes,
+ * hydrating each question's fact (image, content, category) via /api/facts/by-ids.
+ * The trivia endpoints return question text + fact attribution but not the full
+ * fact, so the game card background + results need a hydration pass.
+ */
+async function hydrateTriviaQuestions(
+  apiQuestions: TriviaQuestionResponse[],
+  language: string
+): Promise<QuestionWithFact[]> {
+  if (apiQuestions.length === 0) return [];
+
+  const factIds = Array.from(new Set(apiQuestions.map((q) => q.fact_id)));
+  const facts = await api.getFactsByIds(factIds, language);
+  const factById = new Map(facts.map((f) => [f.id, mapApiFactToRelations(f)]));
+
+  return apiQuestions.map((q) => ({
+    id: q.id,
+    fact_id: q.fact_id,
+    question_type: q.question_type,
+    question_text: q.question_text,
+    correct_answer: q.correct_answer,
+    // Local Question.wrong_answers is a JSON string; API returns an array.
+    wrong_answers: q.wrong_answers ? JSON.stringify(q.wrong_answers) : null,
+    explanation: q.explanation,
+    difficulty: q.difficulty,
+    fact: factById.get(q.fact_id),
+  }));
+}
 
 // Re-export types
 export type { StoredAnswer, TriviaSession, TriviaSessionWithCategory } from './database';
@@ -90,20 +122,24 @@ export interface TriviaSessionResult {
 // ====== DAILY TRIVIA ======
 
 /**
- * Get questions for today's daily trivia
- * Returns questions from facts that were shown to user today
+ * Get questions for today's daily trivia. Server-defined: questions drawn from
+ * facts CREATED today (the backend has no per-user "seen" log), the same set
+ * for everyone. Excludes questions the user already answered.
  */
 export async function getDailyTriviaQuestions(language: string): Promise<QuestionWithFact[]> {
-  const today = getLocalDateString();
-  return database.getQuestionsForDailyTrivia(today, language);
+  const answered = await getAnsweredQuestionIds();
+  const questions = await api.getTriviaDaily(language, DAILY_TRIVIA_QUESTIONS, answered);
+  return hydrateTriviaQuestions(questions, language);
 }
 
 /**
- * Get the number of questions available for today's daily trivia
+ * Number of questions available for today's daily trivia (cheap: just the
+ * question list length from the API).
  */
 export async function getDailyTriviaQuestionsCount(language: string): Promise<number> {
-  const today = getLocalDateString();
-  return database.getDailyTriviaQuestionsCount(today, language);
+  const answered = await getAnsweredQuestionIds();
+  const questions = await api.getTriviaDaily(language, DAILY_TRIVIA_QUESTIONS, answered);
+  return questions.length;
 }
 
 /**
@@ -143,18 +179,24 @@ export async function getDailyStreak(): Promise<number> {
 // ====== MIXED TRIVIA ======
 
 /**
- * Get questions for a mixed trivia session
- * Returns N random unanswered questions from the entire database
+ * Get questions for a mixed trivia session: N random questions the user hasn't
+ * answered yet (exclude set comes from local attempt history).
  */
 export async function getMixedTriviaQuestions(language: string): Promise<QuestionWithFact[]> {
-  return database.getRandomUnansweredQuestions(MIXED_TRIVIA_QUESTIONS, language);
+  const answered = await getAnsweredQuestionIds();
+  const questions = await api.getTriviaRandom(language, MIXED_TRIVIA_QUESTIONS, answered);
+  return hydrateTriviaQuestions(questions, language);
 }
 
 /**
- * Get the number of unanswered questions available for mixed trivia
+ * Number of unanswered questions available for mixed trivia (the API caps a
+ * single batch, so this reports the size of one fetch — enough to enable/disable
+ * the entry point).
  */
 export async function getMixedTriviaQuestionsCount(language: string): Promise<number> {
-  return database.getUnansweredQuestionsCount(language);
+  const answered = await getAnsweredQuestionIds();
+  const questions = await api.getTriviaRandom(language, MIXED_TRIVIA_QUESTIONS, answered);
+  return questions.length;
 }
 
 // ====== CATEGORY TRIVIA ======
@@ -168,46 +210,54 @@ export async function getCategoryTriviaQuestions(
   language: string,
   limit: number = CATEGORY_TRIVIA_QUESTIONS
 ): Promise<QuestionWithFact[]> {
-  return database.getQuestionsForCategory(categorySlug, limit, language, true);
+  const answered = await getAnsweredQuestionIds();
+  const questions = await api.getTriviaCategory(categorySlug, language, limit, answered);
+  return hydrateTriviaQuestions(questions, language);
 }
 
 /**
- * Get all categories with their trivia progress
- * Only returns categories that the user has selected in settings
+ * Get the user's selected categories for the trivia category list.
+ *
+ * The "mastered N of TOTAL" / accuracy-per-category progress depended on the
+ * full local question catalog (total pool) and a question→category map, both of
+ * which lived in the removed local mirror. Those stats are no longer computable
+ * client-side, so progress fields are zeroed — the category cards still render
+ * for play, but the per-category progress bars are not shown.
  */
 export async function getCategoriesWithProgress(language: string): Promise<CategoryWithProgress[]> {
-  // Get user's selected categories to filter trivia results
   const selectedCategories = await onboardingService.getSelectedCategories();
-  const categories = await database.getCategoriesWithTriviaProgress(language, selectedCategories);
-
-  return categories.map((cat) => ({
-    ...cat,
-    // Accuracy is correct answers / unique questions answered (as percentage)
-    accuracy: cat.answered > 0 ? Math.round((cat.correct / cat.answered) * 100) : 0,
-    isComplete: cat.total > 0 && cat.mastered >= cat.total,
-  }));
+  const metadata = await api.getMetadata(language);
+  return metadata.categories
+    .filter((cat) => selectedCategories.includes(cat.slug))
+    .map((cat) => ({
+      ...(cat as Category),
+      mastered: 0,
+      total: 0,
+      answered: 0,
+      correct: 0,
+      accuracy: 0,
+      isComplete: false,
+    }));
 }
 
 /**
- * Get progress for a specific category
+ * Per-category mastery progress is no longer tracked (see getCategoriesWithProgress).
  */
 export async function getCategoryProgress(
-  categorySlug: string,
-  language: string
+  _categorySlug: string,
+  _language: string
 ): Promise<{ mastered: number; total: number; isComplete: boolean }> {
-  const progress = await database.getCategoryProgress(categorySlug, language);
-  return {
-    ...progress,
-    isComplete: progress.total > 0 && progress.mastered >= progress.total,
-  };
+  return { mastered: 0, total: 0, isComplete: false };
 }
 
 /**
- * Check if a category is fully mastered
+ * Category completion is no longer tracked.
  */
-export async function isCategoryComplete(categorySlug: string, language: string): Promise<boolean> {
-  const progress = await getCategoryProgress(categorySlug, language);
-  return progress.isComplete;
+export async function isCategoryComplete(
+  _categorySlug: string,
+  _language: string
+): Promise<boolean> {
+  return false;
 }
 
 // ====== QUESTION ATTEMPTS ======
@@ -224,77 +274,36 @@ export async function recordAnswer(
   await database.recordQuestionAttempt(questionId, isCorrect, triviaMode, triviaSessionId);
 }
 
-/**
- * Check if a question has been mastered
- */
-export async function isQuestionMastered(questionId: number): Promise<boolean> {
-  return database.isQuestionMastered(questionId);
-}
-
-// ====== SESSION RESULTS ======
-
-/**
- * Get facts for wrong answers in a session
- * Used to show "Review These Facts" at end of category trivia
- */
-export async function getFactsForWrongAnswers(
-  wrongQuestionIds: number[]
-): Promise<FactWithRelations[]> {
-  if (wrongQuestionIds.length === 0) return [];
-  return database.getFactsForQuestions(wrongQuestionIds);
-}
-
 // ====== STATISTICS ======
 
 /**
- * Get overall trivia statistics
+ * Get overall trivia statistics from local attempt/session history.
+ *
+ * "Mastered" counts depended on the full local question catalog (removed with
+ * the mirror), so they are no longer reported (totalMastered/masteredToday = 0).
+ * Everything else is computable from question_attempts / trivia_sessions.
  */
 export async function getOverallStats(): Promise<TriviaStats> {
-  const [
-    stats,
-    totalMastered,
-    testsTaken,
-    testsThisWeek,
-    answeredThisWeek,
-    todayStats,
-    bestStreak,
-  ] = await Promise.all([
-    database.getOverallTriviaStats(),
-    database.getTotalMasteredCount(),
-    database.getTotalSessionsCount(),
-    database.getWeeklyTestsCount(),
-    database.getWeeklyAnsweredCount(),
-    database.getTodayTriviaStats(),
-    database.getBestDailyStreak(),
-  ]);
+  const [stats, testsTaken, testsThisWeek, answeredThisWeek, todayStats, bestStreak] =
+    await Promise.all([
+      database.getOverallTriviaStats(),
+      database.getTotalSessionsCount(),
+      database.getWeeklyTestsCount(),
+      database.getWeeklyAnsweredCount(),
+      database.getTodayTriviaStats(),
+      database.getBestDailyStreak(),
+    ]);
 
   return {
     ...stats,
     bestStreak,
-    totalMastered,
+    totalMastered: 0,
     testsTaken,
     testsThisWeek,
     answeredThisWeek,
-    masteredToday: todayStats.masteredToday,
+    masteredToday: 0,
     correctToday: todayStats.correctToday,
   };
-}
-
-/**
- * Get total number of questions available for trivia
- * (from facts that have been shown to user)
- */
-export async function getTotalAvailableQuestions(language: string): Promise<number> {
-  const categories = await database.getCategoriesWithTriviaProgress(language);
-  return categories.reduce((sum, cat) => sum + cat.total, 0);
-}
-
-/**
- * Get total mastered questions count
- */
-export async function getTotalMasteredQuestions(language: string): Promise<number> {
-  const categories = await database.getCategoriesWithTriviaProgress(language);
-  return categories.reduce((sum, cat) => sum + cat.mastered, 0);
 }
 
 // ====== HELPERS ======
@@ -517,10 +526,44 @@ export async function getRecentSessions(limit: number = 10): Promise<TriviaSessi
 }
 
 /**
- * Get a single trivia session by ID with full data
+ * Get a single trivia session by ID with its questions hydrated for review.
+ *
+ * The session stores only question ids + answer indexes locally; the question
+ * content (text, answers, fact) and the category display object are fetched
+ * from the API/metadata here, in the current app language.
  */
-export async function getSessionById(sessionId: number): Promise<TriviaSessionWithCategory | null> {
-  return database.getTriviaSessionById(sessionId);
+export async function getSessionById(
+  sessionId: number,
+  language: string = 'en'
+): Promise<TriviaSessionWithCategory | null> {
+  const session = await database.getTriviaSessionById(sessionId);
+  if (!session) return null;
+
+  // Hydrate questions from the stored ids.
+  if (session.question_ids) {
+    try {
+      const questionIds: number[] = JSON.parse(session.question_ids);
+      const apiQuestions = await api.getTriviaByIds(questionIds, language);
+      session.questions = await hydrateTriviaQuestions(apiQuestions, language);
+      const foundIds = new Set(session.questions.map((q) => q.id));
+      session.unavailableQuestionIds = questionIds.filter((id) => !foundIds.has(id));
+    } catch {
+      session.questions = [];
+    }
+  }
+
+  // Attach the category display object from server metadata (no local table).
+  if (session.category_slug) {
+    try {
+      const meta = await api.getMetadata(language);
+      const cat = meta.categories.find((c) => c.slug === session.category_slug);
+      if (cat) session.category = cat as Category;
+    } catch {
+      // category chrome is non-essential for the results screen
+    }
+  }
+
+  return session;
 }
 
 /**

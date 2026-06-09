@@ -51,21 +51,16 @@ import {
   ScrollToTopProvider,
   setFeedLoadPending,
   setLocaleRefreshPending,
-  setPreloadedFactsBeforeMount,
   signalLocaleRefreshDone,
   useOnboarding,
   waitForFeedLoaded,
 } from '../src/contexts';
-import { homeKeys } from '../src/hooks/queryKeys';
 import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
 import { initAnalytics } from '../src/services/analytics';
-import { registerBackgroundSync } from '../src/services/backgroundSync';
 import * as contentRefresh from '../src/services/contentRefresh';
-import { loadDailyFeedSections } from '../src/services/dailyFeed';
 import * as database from '../src/services/database';
 import { pruneAudioCacheIfOverLimit } from '../src/services/factAudio';
-import { runAudioMigrationIfNeeded } from '../src/services/factAudioMigration';
 import { ensureImagesDirExists } from '../src/services/images';
 import { startNetworkMonitoring } from '../src/services/network';
 import * as notificationService from '../src/services/notifications';
@@ -236,15 +231,6 @@ function AppContent() {
             await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_TRACK, notificationId);
 
             router.push(`/fact/${factId}?source=notification`);
-
-            // Sync notification schedule (check/repair/top-up)
-            const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
-            if (__DEV__) console.log('🔔 Notification opened, syncing schedule...');
-            notificationService
-              .ensureNotificationSchedule(getLocaleFromCode(deviceLocale), 'notification_tap')
-              .catch((error) => {
-                console.error('Notification sync after open failed:', error);
-              });
           }
         });
       }
@@ -394,13 +380,14 @@ export default function RootLayout() {
           }
         }
 
-        if (__DEV__) console.log('📱 App entered foreground, syncing notifications...');
+        if (__DEV__) console.log('📱 App entered foreground...');
         Notifications.setBadgeCountAsync(0);
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
+        // Re-register push (covers timezone/travel changes); best-effort.
         notificationService
-          .ensureNotificationSchedule(getLocaleFromCode(deviceLocale), 'foreground')
+          .registerForPush(getLocaleFromCode(deviceLocale))
           .catch((error) => {
-            console.error('Notification sync failed:', error);
+            console.error('Push re-registration on foreground failed:', error);
           });
 
         // Show app open ad on foreground (with cooldown)
@@ -423,10 +410,8 @@ export default function RootLayout() {
             console.error('OTA update check on foreground failed:', error);
           });
 
-        // Sync content from API — emitFeedRefresh() will auto-update home feed when new facts arrive.
-        contentRefresh.refreshAppContent().catch((error) => {
-          console.error('Foreground content refresh failed:', error);
-        });
+        // Refresh the on-demand feed cache so returning users see new facts.
+        contentRefresh.triggerFeedRefresh();
       }
       appStateRef.current = nextAppState;
     };
@@ -524,103 +509,46 @@ export default function RootLayout() {
       const locale = getLocaleFromCode(deviceLocale);
 
       if (localeStatus.changed) {
-        // Locale changed (OS cold-restarted the app)
-        // Gate the splash so it stays visible during refresh.
+        // Locale changed (OS cold-restarted the app). The home feed is fetched
+        // on demand from the API by the home screen, so there's nothing to
+        // pre-download here — just persist the new locale and gate the splash
+        // until the home screen signals it has loaded its feed.
         setLocaleRefreshPending();
-
-        // Pre-load home screen data so the home screen can mount and signal ready
-        // (required for splash overlay flow). Uses new locale — DB may be empty,
-        // but that's fine; the splash stays gated until locale refresh is done.
-        try {
-          const facts = await database.getFactsGroupedByDate(locale);
-          setPreloadedFactsBeforeMount(facts);
-        } catch (error) {
-          console.error('Failed to pre-load home screen data:', error);
-        }
+        await contentRefresh.saveCurrentLocale(locale);
 
         // Let the JS splash overlay mount (replaces native splash)
         setInitialOnboardingStatus(isComplete);
 
-        // Initialize ads SDK (needed before loading app open ad)
         try {
           await initializeAdsForReturningUser();
         } catch (error) {
           console.error('Failed to initialize ads for locale change:', error);
         }
 
-        // Run content refresh — splash stays visible because localeRefreshPromise is pending.
-        // handleLanguageChange emits onPreferenceFeedRefresh during this call, which may
-        // resolve a previous feedLoadedPromise. We reset it below before our own trigger.
-        await contentRefresh.refreshAppContent();
-
-        // Pre-populate the daily feed cache and React Query so the home screen's
-        // useHomeFeed hook gets an instant cache hit when it mounts.
-        try {
-          const feedSections = await loadDailyFeedSections(locale, true);
-          queryClient.setQueryData(homeKeys.dailyFeed(locale), feedSections);
-        } catch (error) {
-          console.error('Failed to pre-populate daily feed cache:', error);
-        }
-
-        // Reset the feed load gate. Any earlier signalFeedLoaded() calls (from
-        // onPreferenceFeedRefresh during refreshAppContent) are now stale.
-        // The home screen's onFeedRefresh handler will resolve this new promise
-        // after it finishes loading from the pre-populated cache.
+        // The home screen fetches the feed on mount and calls signalFeedLoaded.
         setFeedLoadPending();
-
-        // Tell the home screen to reload from the now-populated cache.
-        contentRefresh.triggerFeedRefresh();
-
-        // Wait for the home screen to finish loading feed data (5s timeout fallback).
         await waitForFeedLoaded();
 
-        // Now let splash fade out — home screen has data in its state.
         signalLocaleRefreshDone();
       } else {
-        // No locale change — normal startup flow
-        // Pre-load latest facts and daily feed sections
-        try {
-          const feedSections = await loadDailyFeedSections(locale);
-          // Pre-populate React Query cache so home screen gets instant data
-          queryClient.setQueryData(homeKeys.dailyFeed(locale), feedSections);
-        } catch (error) {
-          console.error('Failed to pre-load home screen data:', error);
-        }
-
-        // Let splash close, then do the rest in background
+        // No locale change — normal startup. Let splash close; the home screen
+        // fetches its feed on mount.
         setInitialOnboardingStatus(isComplete);
 
-        // ── Phase 3: Background tasks (fire-and-forget) ──
         initializeAdsForReturningUser().catch((error) => {
           console.error('Failed to initialize ads for returning user:', error);
-        });
-
-        contentRefresh.refreshAppContent().catch((error) => {
-          console.error('Background refresh failed:', error);
-        });
-
-        // One-shot full refetch for existing installs upgrading to the
-        // audio-playback version — backfilled audio_url isn't picked up by
-        // the normal delta sync (intentionally; see backend audio writers).
-        runAudioMigrationIfNeeded().catch((error) => {
-          console.error('Audio migration failed:', error);
         });
       }
 
       // Wait for IAP to finish (has been running in parallel since Phase 2 start)
       await iapPromise;
 
-      // Register background sync for all users (fact sync)
-      registerBackgroundSync().catch((error) => {
-        console.error('Failed to register background sync:', error);
-      });
-
       // Clear notification badge on app launch
       Notifications.setBadgeCountAsync(0);
 
-      // Sync notification schedule — fire-and-forget
-      notificationService.ensureNotificationSchedule(locale, 'cold_start').catch((error) => {
-        console.error('Notification sync failed:', error);
+      // Register this device for server-driven push — fire-and-forget.
+      notificationService.registerForPush(locale).catch((error) => {
+        console.error('Push registration failed:', error);
       });
 
       // Check for OTA updates in the background

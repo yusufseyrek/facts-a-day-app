@@ -185,32 +185,20 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
     setIsSaving(true);
     try {
-      // Save the times to AsyncStorage (always save user preference, even if notifications fail)
+      // Save the times to AsyncStorage (always save user preference, even if push registration fails)
       const timeStrings = times.map((t) => t.toISOString());
       await onboardingService.setNotificationTimes(timeStrings);
 
-      // Reschedule notification slots in DB (fast), OS sync happens in background
-      const result = await notificationService.ensureNotificationSchedule(locale, 'time_change', {
-        forceReschedule: true,
-        skipOsSync: true,
-      });
-
-      // Fire-and-forget: sync DB schedule to OS (downloads images, etc.)
-      notificationService.ensureNotificationSchedule(locale, 'time_change').catch((e) => {
-        console.error('Post-time-change notification sync failed:', e);
-      });
+      // Push the updated times to the backend (server-driven scheduling).
+      const registered = await notificationService.registerForPush(locale);
+      if (!registered) {
+        // Times were saved; push just couldn't register (permission denied / no token).
+        console.warn('Push registration skipped, but notification times were saved');
+      }
 
       // Update parent component with the first time (for backward compatibility)
       if (onTimeChange) {
         onTimeChange(times[0]);
-      }
-
-      // Check if scheduling failed due to permission issues
-      if (!result.success && result.error?.includes('permission')) {
-        console.warn('Notification scheduling failed due to permission, but times were saved');
-        // Still show success - times were saved, just notifications couldn't be scheduled
-      } else if (result.success) {
-        if (__DEV__) console.log(`Successfully rescheduled ${result.count} notifications`);
       }
 
       // Track notification time change and update user property

@@ -1,10 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { API_SETTINGS } from '../config/app';
-
 import * as api from './api';
 import * as db from './database';
-import { extractQuestions } from './questions';
 
 // AsyncStorage keys
 export const ONBOARDING_COMPLETE_KEY = '@onboarding_complete';
@@ -47,19 +44,16 @@ export interface InitializationResult {
 }
 
 /**
- * Initialize onboarding: fetch metadata from API
+ * Initialize onboarding: validate connectivity by fetching metadata. Facts and
+ * categories are served on demand from the API now, so there's nothing to
+ * download into a local mirror here — a successful metadata fetch is enough to
+ * proceed.
  */
 export async function initializeOnboarding(deviceLanguage: string): Promise<InitializationResult> {
   try {
-    // Fetch metadata with device language for translations
     if (__DEV__) console.log('Fetching metadata...');
-    const metadata = await api.getMetadata(deviceLanguage);
-
-    // Store metadata in database
-    if (__DEV__) console.log('Storing metadata in database...');
+    await api.getMetadata(deviceLanguage);
     await db.openDatabase();
-    await db.insertCategories(metadata.categories);
-
     return { success: true };
   } catch (error) {
     console.error('Initialization error:', error);
@@ -85,87 +79,20 @@ export interface FetchFactsResult {
 }
 
 /**
- * Convert API facts to database format
- */
-function mapFactsToDb(facts: api.FactResponse[]): db.Fact[] {
-  return facts.map((fact) => ({
-    id: fact.id,
-    slug: fact.slug,
-    title: fact.title,
-    content: fact.content,
-    summary: fact.summary,
-    category: fact.category,
-    source_url: fact.source_url,
-    image_url: fact.image_url,
-    audio_url: fact.audio_url || undefined,
-    is_historical: fact.is_historical ? 1 : 0,
-    event_month: fact.metadata?.month ?? undefined,
-    event_day: fact.metadata?.day ?? undefined,
-    event_year: fact.metadata?.event_year ?? undefined,
-    metadata: fact.metadata
-      ? JSON.stringify({
-          original_event: fact.metadata.original_event,
-          country: fact.metadata.country,
-        })
-      : undefined,
-    language: fact.language,
-    created_at: fact.created_at,
-    last_updated: fact.updated_at,
-  }));
-}
-
-/**
- * Fetch all facts incrementally and store each batch in database as it arrives.
- * The first batch (latest 500 facts) is written to DB and signals readiness
- * so the user can proceed to the home screen while remaining facts download.
+ * No-op retained for callers during the transition: facts are no longer
+ * downloaded into a local mirror at onboarding. The home screen fetches the
+ * feed on demand from the API, so onboarding completes immediately.
  */
 export async function fetchAllFacts(
-  language: string,
-  categories: string[],
+  _language: string,
+  _categories: string[],
   onProgress?: (progress: FetchFactsProgress) => void,
   onFirstBatchReady?: () => void
 ): Promise<FetchFactsResult> {
   try {
-    const categoriesParam = categories.join(',');
-
-    let totalInserted = 0;
-
-    const _result = await api.fetchFactsIncrementally({
-      language,
-      categories: categoriesParam,
-      initialBatchSize: API_SETTINGS.INITIAL_BATCH_SIZE,
-      remainingBatchSize: API_SETTINGS.FACTS_BATCH_SIZE,
-      concurrency: API_SETTINGS.BATCH_CONCURRENCY,
-      includeQuestions: true,
-      includeHistorical: true,
-      onBatchReady: async (facts, isInitialBatch) => {
-        const dbFacts = mapFactsToDb(facts);
-
-        await db.insertFacts(dbFacts);
-
-        const dbQuestions = extractQuestions(facts);
-        if (dbQuestions.length > 0) {
-          await db.insertQuestions(dbQuestions);
-        }
-
-        totalInserted += dbFacts.length;
-
-        if (isInitialBatch) {
-          onFirstBatchReady?.();
-        }
-      },
-      onProgress: (downloaded, total) => {
-        if (onProgress) {
-          onProgress({
-            downloaded,
-            total,
-            percentage: total > 0 ? Math.round((downloaded / total) * 100) : 0,
-          });
-        }
-      },
-    });
-
-    return { success: true, count: totalInserted };
+    onProgress?.({ downloaded: 0, total: 0, percentage: 100 });
+    onFirstBatchReady?.();
+    return { success: true, count: 0 };
   } catch (error) {
     console.error('Fetch facts error:', error);
     return {

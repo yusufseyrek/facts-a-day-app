@@ -75,21 +75,18 @@ describe('onboarding service', () => {
   // ==================================================================
 
   describe('initializeOnboarding', () => {
-    it('fetches metadata and inserts categories', async () => {
-      const mockCategories = [{ id: 1, name: 'Science', slug: 'science' }];
+    it('succeeds after validating connectivity via metadata (no local mirror)', async () => {
       apiMock.getMetadata.mockResolvedValue({
-        categories: mockCategories as any,
+        categories: [{ id: 1, name: 'Science', slug: 'science' }] as any,
         languages: [],
       });
       dbMock.openDatabase.mockResolvedValue(undefined as any);
-      dbMock.insertCategories.mockResolvedValue(undefined);
 
       const result = await initializeOnboarding('en');
 
       expect(result.success).toBe(true);
       expect(apiMock.getMetadata).toHaveBeenCalledWith('en');
       expect(dbMock.openDatabase).toHaveBeenCalled();
-      expect(dbMock.insertCategories).toHaveBeenCalledWith(mockCategories);
     });
 
     it('returns error on API failure', async () => {
@@ -106,167 +103,17 @@ describe('onboarding service', () => {
   // fetchAllFacts
   // ==================================================================
 
-  describe('fetchAllFacts', () => {
-    const mockApiFacts: api.FactResponse[] = [
-      {
-        id: 1,
-        slug: 'water-fact',
-        title: 'Water Fact',
-        content: 'Water is essential',
-        summary: 'About water',
-        category: 'science',
-        source_url: 'https://example.com',
-        image_url: 'https://img.example.com/1.jpg',
-        is_historical: false,
-        metadata: null,
-        language: 'en',
-        created_at: '2025-01-01T00:00:00Z',
-        updated_at: '2025-01-01T00:00:00Z',
-      },
-      {
-        id: 2,
-        slug: 'history-fact',
-        title: 'History Fact',
-        content: 'Something happened',
-        summary: 'Historical event',
-        category: 'history',
-        source_url: 'https://example.com',
-        image_url: 'https://img.example.com/2.jpg',
-        is_historical: true,
-        metadata: { month: 3, day: 15, event_year: 1900, original_event: 'event', country: 'US' },
-        language: 'en',
-        created_at: '2025-01-01T00:00:00Z',
-        updated_at: '2025-01-01T00:00:00Z',
-      },
-    ];
+  describe('fetchAllFacts (no-op — facts served on demand)', () => {
+    it('completes immediately and signals the first batch is ready', async () => {
+      const onProgress = jest.fn();
+      const onFirstBatchReady = jest.fn();
 
-    /**
-     * Helper: mock fetchFactsIncrementally to invoke onBatchReady with the
-     * given facts (simulating a single-batch download).
-     */
-    function mockIncrementalFetch(facts: api.FactResponse[]) {
-      apiMock.fetchFactsIncrementally.mockImplementation(async (params: any) => {
-        await params.onBatchReady(facts, true);
-        return { total: facts.length };
-      });
-    }
-
-    it('fetches facts and stores them in database', async () => {
-      mockIncrementalFetch(mockApiFacts);
-      dbMock.insertFacts.mockResolvedValue(undefined);
-      dbMock.insertQuestions.mockResolvedValue(undefined);
-
-      const result = await fetchAllFacts('en', ['science', 'history']);
+      const result = await fetchAllFacts('en', ['science'], onProgress, onFirstBatchReady);
 
       expect(result.success).toBe(true);
-      expect(result.count).toBe(2);
-      expect(apiMock.fetchFactsIncrementally).toHaveBeenCalledWith(
-        expect.objectContaining({
-          language: 'en',
-          categories: 'science,history',
-          includeQuestions: true,
-          includeHistorical: true,
-        })
-      );
-      expect(dbMock.insertFacts).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ id: 1, slug: 'water-fact', is_historical: 0 }),
-          expect.objectContaining({ id: 2, slug: 'history-fact', is_historical: 1 }),
-        ])
-      );
-    });
-
-    it('maps is_historical boolean to integer for DB', async () => {
-      mockIncrementalFetch(mockApiFacts);
-      dbMock.insertFacts.mockResolvedValue(undefined);
-      dbMock.insertQuestions.mockResolvedValue(undefined);
-
-      await fetchAllFacts('en', ['science']);
-
-      const insertedFacts = dbMock.insertFacts.mock.calls[0][0];
-      expect(insertedFacts[0].is_historical).toBe(0); // false → 0
-      expect(insertedFacts[1].is_historical).toBe(1); // true → 1
-    });
-
-    it('maps metadata fields correctly', async () => {
-      mockIncrementalFetch(mockApiFacts);
-      dbMock.insertFacts.mockResolvedValue(undefined);
-      dbMock.insertQuestions.mockResolvedValue(undefined);
-
-      await fetchAllFacts('en', ['history']);
-
-      const insertedFacts = dbMock.insertFacts.mock.calls[0][0];
-      const historicalFact = insertedFacts.find((f: any) => f.id === 2)!;
-      expect(historicalFact.event_month).toBe(3);
-      expect(historicalFact.event_day).toBe(15);
-      expect(historicalFact.event_year).toBe(1900);
-      expect(JSON.parse(historicalFact.metadata as string)).toEqual({
-        original_event: 'event',
-        country: 'US',
-      });
-    });
-
-    it('maps updated_at to last_updated', async () => {
-      mockIncrementalFetch(mockApiFacts);
-      dbMock.insertFacts.mockResolvedValue(undefined);
-      dbMock.insertQuestions.mockResolvedValue(undefined);
-
-      await fetchAllFacts('en', ['science']);
-
-      const insertedFacts = dbMock.insertFacts.mock.calls[0][0];
-      expect(insertedFacts[0].last_updated).toBe('2025-01-01T00:00:00Z');
-    });
-
-    it('reports progress via callback', async () => {
-      const progressCb = jest.fn();
-      apiMock.fetchFactsIncrementally.mockImplementation(async (params: any) => {
-        params.onProgress?.(5, 10);
-        params.onProgress?.(10, 10);
-        await params.onBatchReady(mockApiFacts, true);
-        return { total: 10 };
-      });
-      dbMock.insertFacts.mockResolvedValue(undefined);
-      dbMock.insertQuestions.mockResolvedValue(undefined);
-
-      await fetchAllFacts('en', ['science'], progressCb);
-
-      expect(progressCb).toHaveBeenCalledWith({ downloaded: 5, total: 10, percentage: 50 });
-      expect(progressCb).toHaveBeenCalledWith({ downloaded: 10, total: 10, percentage: 100 });
-    });
-
-    it('returns error on API failure', async () => {
-      apiMock.fetchFactsIncrementally.mockRejectedValue(new Error('timeout'));
-
-      const result = await fetchAllFacts('en', ['science']);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('timeout');
-    });
-
-    it('inserts extracted questions', async () => {
-      const { extractQuestions } = require('../../services/questions');
-      const mockQuestions = [{ id: 1, fact_id: 1, question_text: 'What?' }];
-      extractQuestions.mockReturnValue(mockQuestions);
-
-      mockIncrementalFetch(mockApiFacts);
-      dbMock.insertFacts.mockResolvedValue(undefined);
-      dbMock.insertQuestions.mockResolvedValue(undefined);
-
-      await fetchAllFacts('en', ['science']);
-
-      expect(dbMock.insertQuestions).toHaveBeenCalledWith(mockQuestions);
-    });
-
-    it('skips insertQuestions when no questions extracted', async () => {
-      const { extractQuestions } = require('../../services/questions');
-      extractQuestions.mockReturnValue([]);
-
-      apiMock.getAllFactsWithRetry.mockResolvedValue(mockApiFacts);
-      dbMock.insertFacts.mockResolvedValue(undefined);
-
-      await fetchAllFacts('en', ['science']);
-
-      expect(dbMock.insertQuestions).not.toHaveBeenCalled();
+      expect(result.count).toBe(0);
+      expect(onFirstBatchReady).toHaveBeenCalled();
+      expect(onProgress).toHaveBeenCalledWith({ downloaded: 0, total: 0, percentage: 100 });
     });
   });
 

@@ -4,11 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 
 import { HOME_FEED } from '../config/app';
 import { usePreloadedData } from '../contexts';
-import { loadDailyFeedSections } from '../services/dailyFeed';
+import { getFactsFeed, getOnThisDay } from '../services/api';
+import { mapApiFactToRelations } from '../services/database';
 
-import { homeKeys } from './queryKeys';
+import { factKeys } from './queryKeys';
 
-import type { DailyFeedSections } from '../services/dailyFeed';
 import type { FactWithRelations } from '../services/database';
 
 interface UseHomeFeedResult {
@@ -19,25 +19,44 @@ interface UseHomeFeedResult {
   isLoading: boolean;
 }
 
+/**
+ * Home sections (Latest carousel + On This Day), fetched on demand from the API
+ * instead of the local mirror. Latest = first page of the cursor feed; On This
+ * Day = the dedicated endpoint (exact date, with a ±3-day week fallback).
+ */
 export function useHomeFeed(locale: string): UseHomeFeedResult {
   const { signalHomeScreenReady } = usePreloadedData();
 
-  const { data, isLoading } = useQuery<DailyFeedSections>({
-    queryKey: homeKeys.dailyFeed(locale),
-    queryFn: () => loadDailyFeedSections(locale, false),
+  const latestQuery = useQuery({
+    queryKey: [...factKeys.feed(locale), 'latest', HOME_FEED.LATEST_COUNT] as const,
+    queryFn: () => getFactsFeed({ language: locale, limit: HOME_FEED.LATEST_COUNT }),
   });
 
-  const allFreshFacts = data?.freshFacts ?? [];
+  const onThisDayQuery = useQuery({
+    queryKey: factKeys.onThisDay(locale),
+    queryFn: () => getOnThisDay(locale),
+  });
+
+  const isLoading = latestQuery.isLoading || onThisDayQuery.isLoading;
 
   const latestFacts = useMemo(
-    () => allFreshFacts.slice(0, HOME_FEED.LATEST_COUNT),
-    [allFreshFacts]
+    () => (latestQuery.data?.facts ?? []).map(mapApiFactToRelations),
+    [latestQuery.data]
   );
 
   const latestFactIds = useMemo(() => latestFacts.map((f) => f.id), [latestFacts]);
 
-  const onThisDayFacts = data?.onThisDay ?? [];
-  const onThisDayIsWeekFallback = data?.onThisDayIsWeekFallback ?? false;
+  // Prefer exact-date facts; fall back to the surrounding week when empty.
+  const onThisDayFacts = useMemo(() => {
+    const exact = onThisDayQuery.data?.exact ?? [];
+    const week = onThisDayQuery.data?.week ?? [];
+    const chosen = exact.length > 0 ? exact : week;
+    return chosen.map(mapApiFactToRelations);
+  }, [onThisDayQuery.data]);
+
+  const onThisDayIsWeekFallback =
+    (onThisDayQuery.data?.exact?.length ?? 0) === 0 &&
+    (onThisDayQuery.data?.week?.length ?? 0) > 0;
 
   // Signal home screen ready when showing empty state
   if (!isLoading && latestFacts.length === 0 && onThisDayFacts.length === 0) {

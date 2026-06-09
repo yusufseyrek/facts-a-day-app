@@ -114,103 +114,22 @@ async function initializeSchema(): Promise<void> {
     throw new Error('Database not initialized');
   }
 
-  // Create categories table
-  await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS categories (
-      id INTEGER PRIMARY KEY,
-      name TEXT NOT NULL,
-      slug TEXT UNIQUE NOT NULL,
-      description TEXT,
-      icon TEXT,
-      color_hex TEXT,
-      is_premium INTEGER DEFAULT 0
-    );
-  `);
+  // The local DB is now a THIN cache for USER DATA only — facts/categories/
+  // questions are served on demand from the API. Tables below are keyed by
+  // fact_id / question_id integers and carry no fact content.
 
-  // Create facts table with updated schema
-  await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS facts (
-      id INTEGER PRIMARY KEY,
-      slug TEXT,
-      title TEXT,
-      content TEXT NOT NULL,
-      summary TEXT,
-      category TEXT,
-      source_url TEXT,
-      image_url TEXT,
-      audio_url TEXT,
-      is_historical INTEGER DEFAULT 0,
-      event_month INTEGER,
-      event_day INTEGER,
-      event_year INTEGER,
-      metadata TEXT,
-      language TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      last_updated TEXT,
-      scheduled_date TEXT,
-      notification_id TEXT
-    );
-  `);
-
-  // Create index on language for faster queries
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_facts_language ON facts(language);
-  `);
-
-  // Create index on category for faster queries
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_facts_category ON facts(category);
-  `);
-
-  // Create index on scheduled_date for faster queries
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_facts_scheduled_date ON facts(scheduled_date);
-  `);
-
-  // Create index on last_updated for faster queries
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_facts_last_updated ON facts(last_updated);
-  `);
-
-  // Create favorites table
+  // ── favorites ──
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS favorites (
       fact_id INTEGER PRIMARY KEY,
-      created_at TEXT NOT NULL,
-      FOREIGN KEY (fact_id) REFERENCES facts (id) ON DELETE CASCADE
+      created_at TEXT NOT NULL
     );
   `);
-
-  // Create index on favorites created_at for ordering
   await db.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_favorites_created_at ON favorites(created_at);
   `);
 
-  // ====== TRIVIA TABLES ======
-
-  // Create questions table
-  await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS questions (
-      id INTEGER PRIMARY KEY,
-      fact_id INTEGER NOT NULL,
-      question_type TEXT NOT NULL,
-      question_text TEXT NOT NULL,
-      correct_answer TEXT NOT NULL,
-      wrong_answers TEXT,
-      explanation TEXT,
-      difficulty INTEGER DEFAULT 2,
-      FOREIGN KEY (fact_id) REFERENCES facts(id) ON DELETE CASCADE
-    );
-  `);
-
-  // Create index on questions fact_id for faster joins
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_questions_fact_id ON questions(fact_id);
-  `);
-
-  // Create question_attempts table for tracking mastery
-  // NOTE: No CASCADE delete - we want to preserve attempts even when questions are deleted
-  // Statistics queries join with questions table to only count attempts for existing questions
+  // ── trivia attempt/session history (question content comes from the API) ──
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS question_attempts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -221,21 +140,19 @@ async function initializeSchema(): Promise<void> {
       trivia_session_id INTEGER
     );
   `);
+  await db.execAsync(
+    `CREATE INDEX IF NOT EXISTS idx_attempts_question_id ON question_attempts(question_id);`
+  );
+  await db.execAsync(
+    `CREATE INDEX IF NOT EXISTS idx_attempts_answered_at ON question_attempts(answered_at);`
+  );
+  await db.execAsync(
+    `CREATE INDEX IF NOT EXISTS idx_attempts_session_id ON question_attempts(trivia_session_id);`
+  );
+  await db.execAsync(
+    `CREATE INDEX IF NOT EXISTS idx_attempts_qid_correct_at ON question_attempts(question_id, is_correct, answered_at);`
+  );
 
-  // Create indexes on question_attempts
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_attempts_question_id ON question_attempts(question_id);
-  `);
-
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_attempts_answered_at ON question_attempts(answered_at);
-  `);
-
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_attempts_session_id ON question_attempts(trivia_session_id);
-  `);
-
-  // Create daily_trivia_progress table
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS daily_trivia_progress (
       date TEXT PRIMARY KEY,
@@ -245,10 +162,6 @@ async function initializeSchema(): Promise<void> {
     );
   `);
 
-  // Create trivia_sessions table for tracking individual test sessions
-  // Stores question IDs and answer indexes instead of full JSON for:
-  // - Language-independent storage (content fetched fresh on display)
-  // - Reduced database size (~200 bytes vs ~8KB per session)
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS trivia_sessions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -259,34 +172,41 @@ async function initializeSchema(): Promise<void> {
       completed_at TEXT NOT NULL,
       elapsed_time INTEGER,
       best_streak INTEGER,
-      question_ids TEXT,      -- JSON array of question IDs: [123, 456, ...]
-      selected_answers TEXT   -- JSON object: {"questionId": answerIndex, ...}
-                              -- answerIndex: 0=correct, 1-3=wrong_answers[0-2]
-                              -- For true/false: 0=True, 1=False
+      question_ids TEXT,
+      selected_answers TEXT
     );
   `);
+  await db.execAsync(
+    `CREATE INDEX IF NOT EXISTS idx_trivia_sessions_completed_at ON trivia_sessions(completed_at);`
+  );
+  await db.execAsync(
+    `CREATE INDEX IF NOT EXISTS idx_trivia_sessions_category ON trivia_sessions(category_slug);`
+  );
+  await db.execAsync(
+    `CREATE INDEX IF NOT EXISTS idx_trivia_sessions_elapsed ON trivia_sessions(elapsed_time);`
+  );
 
-  // Create index on trivia_sessions completed_at for faster queries
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_trivia_sessions_completed_at ON trivia_sessions(completed_at);
-  `);
-
-  // ====== FACT INTERACTIONS ======
-
-  // Track story views and detail engagement
+  // ── fact interactions (story views + detail engagement, for streaks/badges) ──
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS fact_interactions (
       fact_id INTEGER PRIMARY KEY,
       story_viewed_at TEXT,
       detail_opened_at TEXT,
       detail_read_at TEXT,
-      detail_time_spent INTEGER DEFAULT 0,
-      FOREIGN KEY (fact_id) REFERENCES facts(id) ON DELETE CASCADE
+      detail_time_spent INTEGER DEFAULT 0
     );
   `);
+  await db.execAsync(
+    `CREATE INDEX IF NOT EXISTS idx_fi_story_viewed_at ON fact_interactions(story_viewed_at);`
+  );
+  await db.execAsync(
+    `CREATE INDEX IF NOT EXISTS idx_fi_detail_read_at ON fact_interactions(detail_read_at);`
+  );
+  await db.execAsync(
+    `CREATE INDEX IF NOT EXISTS idx_fi_detail_opened_at ON fact_interactions(detail_opened_at);`
+  );
 
-  // ====== SHARE EVENTS ======
-
+  // ── share events ──
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS share_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -295,8 +215,7 @@ async function initializeSchema(): Promise<void> {
     );
   `);
 
-  // ====== BADGES ======
-
+  // ── badges ──
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS user_badges (
       badge_id TEXT NOT NULL,
@@ -306,83 +225,84 @@ async function initializeSchema(): Promise<void> {
     );
   `);
 
-  // ====== BADGE PERFORMANCE INDEXES ======
+  // One-time upgrade: drop the old facts mirror + its FKs on user tables.
+  await migrateToThinCache();
+}
 
-  // fact_interactions: used by curious_reader, deep_diver, reading streak queries
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_fi_story_viewed_at ON fact_interactions(story_viewed_at);
-  `);
+/**
+ * Migrate an existing install from the full facts mirror to the thin cache.
+ *
+ * Idempotent and safe to run on every launch:
+ *  - favorites / fact_interactions were created with `FOREIGN KEY → facts(id)`.
+ *    Once the facts table is dropped, inserts into them fail under
+ *    `foreign_keys = ON`. So if a legacy FK is present, rebuild the table
+ *    without it, preserving the rows.
+ *  - Then drop the mirror tables (facts/categories/questions/daily_feed_cache).
+ * Wrapped in a transaction with FKs off so the rebuild + drops can't cascade.
+ */
+async function migrateToThinCache(): Promise<void> {
+  if (!db) return;
 
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_fi_detail_read_at ON fact_interactions(detail_read_at);
-  `);
+  // Does `favorites` still carry the legacy FK to facts? (Fresh installs won't.)
+  let hasLegacyFk = false;
+  try {
+    const fkList = await db.getAllAsync<{ table: string }>(`PRAGMA foreign_key_list(favorites)`);
+    hasLegacyFk = fkList.some((row) => row.table === 'facts');
+  } catch {
+    hasLegacyFk = false;
+  }
 
-  // fact_interactions: detail open also counts as reading activity for streaks
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_fi_detail_opened_at ON fact_interactions(detail_opened_at);
-  `);
+  try {
+    await db.execAsync('PRAGMA foreign_keys = OFF;');
+    await db.withTransactionAsync(async () => {
+      if (!db) return;
 
-  // question_attempts: covering index for master_scholar nested subquery
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_attempts_qid_correct_at ON question_attempts(question_id, is_correct, answered_at);
-  `);
+      if (hasLegacyFk) {
+        // Rebuild favorites without the FK.
+        await db.execAsync(`
+          CREATE TABLE favorites_new (
+            fact_id INTEGER PRIMARY KEY,
+            created_at TEXT NOT NULL
+          );
+          INSERT OR IGNORE INTO favorites_new (fact_id, created_at)
+            SELECT fact_id, created_at FROM favorites;
+          DROP TABLE favorites;
+          ALTER TABLE favorites_new RENAME TO favorites;
+          CREATE INDEX IF NOT EXISTS idx_favorites_created_at ON favorites(created_at);
+        `);
 
-  // trivia_sessions: used by category_ace badge
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_trivia_sessions_category ON trivia_sessions(category_slug);
-  `);
+        // Rebuild fact_interactions without the FK.
+        await db.execAsync(`
+          CREATE TABLE fact_interactions_new (
+            fact_id INTEGER PRIMARY KEY,
+            story_viewed_at TEXT,
+            detail_opened_at TEXT,
+            detail_read_at TEXT,
+            detail_time_spent INTEGER DEFAULT 0
+          );
+          INSERT OR IGNORE INTO fact_interactions_new
+            (fact_id, story_viewed_at, detail_opened_at, detail_read_at, detail_time_spent)
+            SELECT fact_id, story_viewed_at, detail_opened_at, detail_read_at, detail_time_spent
+            FROM fact_interactions;
+          DROP TABLE fact_interactions;
+          ALTER TABLE fact_interactions_new RENAME TO fact_interactions;
+          CREATE INDEX IF NOT EXISTS idx_fi_story_viewed_at ON fact_interactions(story_viewed_at);
+          CREATE INDEX IF NOT EXISTS idx_fi_detail_read_at ON fact_interactions(detail_read_at);
+          CREATE INDEX IF NOT EXISTS idx_fi_detail_opened_at ON fact_interactions(detail_opened_at);
+        `);
+      }
 
-  // trivia_sessions: used by quick_thinker badge
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_trivia_sessions_elapsed ON trivia_sessions(elapsed_time);
-  `);
-
-  // ====== DAILY FEED CACHE ======
-
-  // Cache for locking Popular & Worth Knowing sections for the day
-  await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS daily_feed_cache (
-      section TEXT NOT NULL,
-      fact_id INTEGER NOT NULL,
-      cached_date TEXT NOT NULL,
-      display_order INTEGER NOT NULL,
-      PRIMARY KEY (section, fact_id, cached_date)
-    );
-  `);
-
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_daily_feed_cache_date ON daily_feed_cache(cached_date);
-  `);
-
-  // ====== MIGRATIONS ======
-
-  // Add slug column for existing databases (migration)
-  await db.execAsync('ALTER TABLE facts ADD COLUMN slug TEXT').catch(() => {
-    // Column already exists, ignore error
-  });
-
-  // Add historical fact columns for existing databases (migration)
-  await db
-    .execAsync('ALTER TABLE facts ADD COLUMN is_historical INTEGER DEFAULT 0')
-    .catch(() => {});
-  await db.execAsync('ALTER TABLE facts ADD COLUMN event_month INTEGER').catch(() => {});
-  await db.execAsync('ALTER TABLE facts ADD COLUMN event_day INTEGER').catch(() => {});
-  await db.execAsync('ALTER TABLE facts ADD COLUMN event_year INTEGER').catch(() => {});
-  await db.execAsync('ALTER TABLE facts ADD COLUMN metadata TEXT').catch(() => {});
-
-  // Premium categories migration
-  await db
-    .execAsync('ALTER TABLE categories ADD COLUMN is_premium INTEGER DEFAULT 0')
-    .catch(() => {});
-
-  // Audio URL migration — fact-reading TTS audio served from R2
-  await db.execAsync('ALTER TABLE facts ADD COLUMN audio_url TEXT').catch(() => {});
-
-  // Create composite index for "on this day" historical fact queries
-  // Must be after migrations so columns exist for existing databases
-  await db.execAsync(`
-    CREATE INDEX IF NOT EXISTS idx_facts_historical_date ON facts(is_historical, event_month, event_day);
-  `);
+      // Drop the facts mirror (content now comes from the API).
+      await db.execAsync(`
+        DROP TABLE IF EXISTS facts;
+        DROP TABLE IF EXISTS categories;
+        DROP TABLE IF EXISTS questions;
+        DROP TABLE IF EXISTS daily_feed_cache;
+      `);
+    });
+  } finally {
+    await db.execAsync('PRAGMA foreign_keys = ON;').catch(() => {});
+  }
 }
 
 /**
@@ -390,66 +310,16 @@ async function initializeSchema(): Promise<void> {
  */
 export async function clearDatabase(): Promise<void> {
   const database = await openDatabase();
+  // Thin cache: only user-data tables remain.
   await database.execAsync(`
-    DELETE FROM facts;
-    DELETE FROM categories;
     DELETE FROM favorites;
-    DELETE FROM questions;
     DELETE FROM question_attempts;
     DELETE FROM daily_trivia_progress;
     DELETE FROM trivia_sessions;
     DELETE FROM fact_interactions;
     DELETE FROM share_events;
     DELETE FROM user_badges;
-    DELETE FROM daily_feed_cache;
   `);
-}
-
-/**
- * Clear facts except those already delivered (scheduled_date <= now)
- * Used when changing preferences to remove future facts while keeping delivered ones
- */
-export async function clearFutureAndUnscheduledFacts(): Promise<void> {
-  const database = await openDatabase();
-  const now = new Date().toISOString();
-
-  await database.runAsync(
-    `
-    DELETE FROM facts
-    WHERE scheduled_date IS NULL OR scheduled_date > ?
-  `,
-    [now]
-  );
-
-  if (__DEV__) console.log('Cleared future and unscheduled facts');
-}
-
-/**
- * Get facts that have been delivered (scheduled_date <= now)
- * Used to preserve delivered facts during preference changes
- */
-export async function getDeliveredFacts(language?: string): Promise<Fact[]> {
-  const database = await openDatabase();
-  const now = new Date().toISOString();
-
-  if (language) {
-    return await database.getAllAsync<Fact>(
-      `SELECT * FROM facts
-       WHERE scheduled_date IS NOT NULL
-       AND scheduled_date <= ?
-       AND language = ?
-       ORDER BY scheduled_date DESC`,
-      [now, language]
-    );
-  }
-
-  return await database.getAllAsync<Fact>(
-    `SELECT * FROM facts
-     WHERE scheduled_date IS NOT NULL
-     AND scheduled_date <= ?
-     ORDER BY scheduled_date DESC`,
-    [now]
-  );
 }
 
 // ====== CATEGORIES ======
@@ -462,119 +332,6 @@ export interface Category {
   icon?: string;
   color_hex?: string;
   is_premium?: number | boolean;
-}
-
-export async function insertCategories(categories: Category[]): Promise<void> {
-  const database = await openDatabase();
-
-  for (const category of categories) {
-    await database.runAsync(
-      `INSERT OR REPLACE INTO categories (id, name, slug, description, icon, color_hex, is_premium)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        category.id,
-        category.name,
-        category.slug,
-        category.description || null,
-        category.icon || null,
-        category.color_hex || null,
-        category.is_premium ?? 0,
-      ]
-    );
-  }
-}
-
-export async function getAllCategories(): Promise<Category[]> {
-  const database = await openDatabase();
-  const result = await database.getAllAsync<Category>('SELECT * FROM categories ORDER BY name ASC');
-  return result;
-}
-
-export async function getCategoryBySlug(slug: string): Promise<Category | null> {
-  const database = await openDatabase();
-  const result = await database.getFirstAsync<Category>('SELECT * FROM categories WHERE slug = ?', [
-    slug,
-  ]);
-  return result;
-}
-
-export async function getPremiumCategorySlugs(): Promise<string[]> {
-  const database = await openDatabase();
-  const rows = await database.getAllAsync<{ slug: string }>(
-    'SELECT slug FROM categories WHERE is_premium = 1'
-  );
-  return rows.map((r) => r.slug);
-}
-
-export async function deletePremiumCategories(): Promise<void> {
-  const database = await openDatabase();
-  await database.runAsync('DELETE FROM categories WHERE is_premium = 1');
-}
-
-export async function deleteFact(factId: number): Promise<void> {
-  const database = await openDatabase();
-  await database.runAsync(
-    'DELETE FROM facts WHERE id = ? AND id NOT IN (SELECT fact_id FROM favorites)',
-    [factId]
-  );
-}
-
-/**
- * Unconditionally remove every local trace of the given fact IDs:
- * favorites, fact_interactions, the fact row itself, and any scheduled
- * OS notification pointing at the fact. Used when the server has
- * hard-deleted these facts and the local cache must catch up.
- *
- * Idempotent: IDs not present locally are simply no-ops, so this is
- * safe to call with the full server-side deletion list.
- */
-export async function deleteFactsByIds(ids: number[]): Promise<{
-  deleted: number;
-  notificationsCancelled: number;
-}> {
-  if (ids.length === 0) return { deleted: 0, notificationsCancelled: 0 };
-  const database = await openDatabase();
-  const placeholders = ids.map(() => '?').join(',');
-
-  // Capture notification_ids BEFORE the delete so we still know what to cancel.
-  // Notification cancellation runs outside the SQL transaction — it's an async
-  // native call and shouldn't sit inside withTransactionAsync.
-  const rows = await database.getAllAsync<{ id: number; notification_id: string | null }>(
-    `SELECT id, notification_id FROM facts WHERE id IN (${placeholders})`,
-    ids
-  );
-
-  let notificationsCancelled = 0;
-  for (const r of rows) {
-    if (r.notification_id) {
-      try {
-        await Notifications.cancelScheduledNotificationAsync(r.notification_id);
-        notificationsCancelled++;
-      } catch (e) {
-        if (__DEV__) console.warn('cancel notif failed for fact', r.id, e);
-      }
-    }
-  }
-
-  await withSerializedTransaction(async (db) => {
-    await db.runAsync(`DELETE FROM favorites WHERE fact_id IN (${placeholders})`, ids);
-    await db.runAsync(`DELETE FROM fact_interactions WHERE fact_id IN (${placeholders})`, ids);
-    await db.runAsync(`DELETE FROM facts WHERE id IN (${placeholders})`, ids);
-  });
-
-  return { deleted: rows.length, notificationsCancelled };
-}
-
-export async function deleteFactsByCategorySlugs(slugs: string[]): Promise<void> {
-  if (slugs.length === 0) return;
-  const database = await openDatabase();
-  const placeholders = slugs.map(() => '?').join(',');
-  await database.runAsync(
-    `DELETE FROM facts WHERE category IN (${placeholders})
-      AND id NOT IN (SELECT fact_id FROM favorites)
-      AND id NOT IN (SELECT fact_id FROM fact_interactions)`,
-    slugs
-  );
 }
 
 // ====== FACTS ======
@@ -652,6 +409,84 @@ function mapFactsWithRelations(rows: any[]): FactWithRelations[] {
   });
 }
 
+/** Minimal structural type of an API fact (avoids importing api.ts into the DB layer). */
+export interface ApiFactShape {
+  id: number;
+  slug?: string;
+  title?: string;
+  content: string;
+  summary?: string;
+  category?: string;
+  category_name?: string;
+  category_icon?: string;
+  category_color_hex?: string;
+  source_url?: string;
+  image_url?: string;
+  audio_url?: string | null;
+  is_historical: boolean;
+  metadata: {
+    month?: number;
+    day?: number;
+    event_year?: number;
+    original_event?: string;
+    country?: string;
+  } | null;
+  language: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+/**
+ * Map an API FactResponse to the FactWithRelations shape the UI consumes.
+ *
+ * The app now fetches facts on demand from the API instead of a local mirror,
+ * but the existing carousels/cards/detail all read FactWithRelations. This is
+ * the single adapter between the two shapes: API booleans/objects → the local
+ * 0/1 + JSON-string conventions, and the inline category_* fields → categoryData
+ * (no DB lookup needed — the feed/by-ids endpoints return category attribution).
+ */
+export function mapApiFactToRelations(api: ApiFactShape): FactWithRelations {
+  const fact: FactWithRelations = {
+    id: api.id,
+    slug: api.slug,
+    title: api.title,
+    content: api.content,
+    summary: api.summary,
+    category: api.category,
+    source_url: api.source_url,
+    image_url: api.image_url,
+    audio_url: api.audio_url ?? undefined,
+    is_historical: api.is_historical ? 1 : 0,
+    event_month: api.metadata?.month,
+    event_day: api.metadata?.day,
+    event_year: api.metadata?.event_year,
+    metadata: api.metadata
+      ? JSON.stringify({
+          original_event: api.metadata.original_event,
+          country: api.metadata.country,
+        })
+      : undefined,
+    language: api.language,
+    created_at: api.created_at,
+    last_updated: api.updated_at,
+  };
+
+  if (api.category) {
+    fact.categoryData = {
+      // The API doesn't return a numeric category id; the UI keys off slug.
+      id: 0,
+      name: api.category_name ?? api.category,
+      slug: api.category,
+      description: '',
+      icon: api.category_icon ?? null,
+      color_hex: api.category_color_hex ?? null,
+      is_premium: false,
+    } as Category;
+  }
+
+  return fact;
+}
+
 /**
  * Helper function to map a single query result with joined data to FactWithRelations
  */
@@ -659,1193 +494,7 @@ function mapSingleFactWithRelations(row: any): FactWithRelations {
   return mapFactsWithRelations([row])[0];
 }
 
-export async function insertFacts(facts: Fact[]): Promise<void> {
-  const database = await openDatabase();
-
-  // Snapshot existing image URLs so we can detect changes after upsert
-  const incomingIds = facts.map((f) => f.id);
-  const oldImageUrls = new Map<number, string | null>();
-  if (incomingIds.length > 0) {
-    const placeholders = incomingIds.map(() => '?').join(',');
-    const existing = await database.getAllAsync<{ id: number; image_url: string | null }>(
-      `SELECT id, image_url FROM facts WHERE id IN (${placeholders})`,
-      incomingIds
-    );
-    for (const row of existing) {
-      oldImageUrls.set(row.id, row.image_url);
-    }
-  }
-
-  // Use serialized transaction for better performance with batch inserts
-  await withSerializedTransaction(async (db) => {
-    for (const fact of facts) {
-      // Use INSERT ... ON CONFLICT to explicitly preserve local columns
-      // (scheduled_date, notification_id) when updating existing facts from API
-      await db.runAsync(
-        `INSERT INTO facts (
-          id, slug, title, content, summary, category,
-          source_url, image_url, audio_url, is_historical, event_month, event_day, event_year, metadata,
-          language, created_at, last_updated
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
-          slug = excluded.slug,
-          title = excluded.title,
-          content = excluded.content,
-          summary = excluded.summary,
-          category = excluded.category,
-          source_url = excluded.source_url,
-          image_url = excluded.image_url,
-          audio_url = excluded.audio_url,
-          is_historical = excluded.is_historical,
-          event_month = excluded.event_month,
-          event_day = excluded.event_day,
-          event_year = excluded.event_year,
-          metadata = excluded.metadata,
-          language = excluded.language,
-          last_updated = excluded.last_updated,
-          scheduled_date = facts.scheduled_date,
-          notification_id = facts.notification_id`,
-        [
-          fact.id,
-          fact.slug || null,
-          fact.title || null,
-          fact.content,
-          fact.summary || null,
-          fact.category || null,
-          fact.source_url || null,
-          fact.image_url || null,
-          fact.audio_url || null,
-          fact.is_historical ?? 0,
-          fact.event_month ?? null,
-          fact.event_day ?? null,
-          fact.event_year ?? null,
-          fact.metadata || null,
-          fact.language,
-          toIsoUtc(fact.created_at) ?? fact.created_at,
-          // Cursor field for delta sync — always store canonical ISO-Z so
-          // MAX(last_updated) stays comparable to the backend's updated_at and
-          // never gets pinned in the past by a space-form created_at fallback.
-          toIsoUtc(fact.last_updated) ?? toIsoUtc(fact.created_at) ?? fact.created_at,
-        ]
-      );
-    }
-  });
-
-  // Invalidate image cache for facts whose image_url changed
-  const changedIds = facts
-    .filter((f) => {
-      const oldUrl = oldImageUrls.get(f.id);
-      return oldUrl !== undefined && oldUrl !== (f.image_url || null);
-    })
-    .map((f) => f.id);
-
-  if (changedIds.length > 0) {
-    // Dynamic import to avoid circular dependency (images.ts imports from database.ts)
-    const { invalidateFactImageCache } = await import('./images');
-    await Promise.all(changedIds.map((id) => invalidateFactImageCache(id)));
-    if (__DEV__)
-      console.log(
-        `🖼️ Invalidated image cache for ${changedIds.length} facts: [${changedIds.join(', ')}]`
-      );
-  }
-}
-
-export async function getAllFacts(language?: string): Promise<FactWithRelations[]> {
-  const database = await openDatabase();
-
-  if (language) {
-    const result = await database.getAllAsync<any>(
-      `SELECT
-        f.*,
-        c.id as category_id,
-        c.name as category_name,
-        c.slug as category_slug,
-        c.description as category_description,
-        c.icon as category_icon,
-        c.color_hex as category_color_hex
-      FROM facts f
-      LEFT JOIN categories c ON f.category = c.slug
-      WHERE f.language = ?
-      ORDER BY RANDOM()`,
-      [language]
-    );
-    return mapFactsWithRelations(result);
-  }
-
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    ORDER BY RANDOM()`
-  );
-  return mapFactsWithRelations(result);
-}
-
-export async function getFactById(id: number): Promise<FactWithRelations | null> {
-  const database = await openDatabase();
-  const result = await database.getFirstAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.id = ?`,
-    [id]
-  );
-  return result ? mapSingleFactWithRelations(result) : null;
-}
-
-export async function getFactsByCategory(
-  category: string,
-  language?: string,
-  limit?: number
-): Promise<FactWithRelations[]> {
-  const database = await openDatabase();
-  const limitClause = limit ? ' LIMIT ?' : '';
-
-  if (language) {
-    const params: any[] = [category, language];
-    if (limit) params.push(limit);
-    const result = await database.getAllAsync<any>(
-      `SELECT
-        f.*,
-        c.id as category_id,
-        c.name as category_name,
-        c.slug as category_slug,
-        c.description as category_description,
-        c.icon as category_icon,
-        c.color_hex as category_color_hex
-      FROM facts f
-      LEFT JOIN categories c ON f.category = c.slug
-      WHERE f.category = ? AND f.language = ?
-      ORDER BY RANDOM()${limitClause}`,
-      params
-    );
-    return mapFactsWithRelations(result);
-  }
-
-  const params: any[] = [category];
-  if (limit) params.push(limit);
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.category = ?
-    ORDER BY RANDOM()${limitClause}`,
-    params
-  );
-  return mapFactsWithRelations(result);
-}
-
-export async function getRelatedFacts(
-  category: string,
-  excludeId: number,
-  language: string,
-  limit: number = 6
-): Promise<FactWithRelations[]> {
-  const database = await openDatabase();
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.category = ? AND f.language = ? AND f.id != ?
-    ORDER BY RANDOM()
-    LIMIT ?`,
-    [category, language, excludeId, limit]
-  );
-  return mapFactsWithRelations(result);
-}
-
-export async function getRandomFact(language?: string): Promise<FactWithRelations | null> {
-  const database = await openDatabase();
-
-  if (language) {
-    const result = await database.getFirstAsync<any>(
-      `SELECT
-        f.*,
-        c.id as category_id,
-        c.name as category_name,
-        c.slug as category_slug,
-        c.description as category_description,
-        c.icon as category_icon,
-        c.color_hex as category_color_hex
-      FROM facts f
-      LEFT JOIN categories c ON f.category = c.slug
-      WHERE f.language = ?
-      ORDER BY RANDOM()
-      LIMIT 1`,
-      [language]
-    );
-    return result ? mapSingleFactWithRelations(result) : null;
-  }
-
-  const result = await database.getFirstAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    ORDER BY RANDOM()
-    LIMIT 1`
-  );
-  return result ? mapSingleFactWithRelations(result) : null;
-}
-
-export async function getFactsCount(language?: string): Promise<number> {
-  const database = await openDatabase();
-
-  if (language) {
-    const result = await database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM facts WHERE language = ?',
-      [language]
-    );
-    return result?.count || 0;
-  }
-
-  const result = await database.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM facts'
-  );
-  return result?.count || 0;
-}
-
 // ====== NOTIFICATION SCHEDULING ======
-
-/**
- * Get random unscheduled facts for notification scheduling
- * Excludes facts that are already scheduled
- * @param limit Maximum number of facts to return
- * @param language Optional language filter
- */
-export async function getRandomUnscheduledFacts(
-  limit: number,
-  language?: string
-): Promise<FactWithRelations[]> {
-  const database = await openDatabase();
-
-  if (language) {
-    const result = await database.getAllAsync<any>(
-      `SELECT
-        f.*,
-        c.id as category_id,
-        c.name as category_name,
-        c.slug as category_slug,
-        c.description as category_description,
-        c.icon as category_icon,
-        c.color_hex as category_color_hex
-      FROM facts f
-      LEFT JOIN categories c ON f.category = c.slug
-      WHERE f.language = ? AND f.scheduled_date IS NULL
-      ORDER BY RANDOM()
-      LIMIT ?`,
-      [language, limit]
-    );
-    return mapFactsWithRelations(result);
-  }
-
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.scheduled_date IS NULL
-    ORDER BY RANDOM()
-    LIMIT ?`,
-    [limit]
-  );
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Like getRandomUnscheduledFacts, but falls back to any unscheduled facts
- * when the pool is exhausted.
- */
-export async function getRandomUnscheduledFactsWithFallback(
-  limit: number,
-  language: string
-): Promise<FactWithRelations[]> {
-  const unshown = await getRandomUnscheduledFacts(limit, language);
-  if (unshown.length > 0) return unshown;
-
-  // Fallback: any unscheduled facts regardless of shown status (pool exhausted)
-  const database = await openDatabase();
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.language = ? AND f.scheduled_date IS NULL
-    ORDER BY RANDOM()
-    LIMIT ?`,
-    [language, limit]
-  );
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Get unscheduled historical facts matching specific month/day pairs.
- * Returns at most 1 fact per unique (month, day) pair, picked randomly within each group.
- */
-export async function getUnscheduledHistoricalFactsForDates(
-  dates: Array<{ month: number; day: number }>,
-  language: string
-): Promise<FactWithRelations[]> {
-  if (dates.length === 0) return [];
-
-  const database = await openDatabase();
-
-  // Build OR conditions for each unique date
-  const uniqueDates = new Map<string, { month: number; day: number }>();
-  for (const d of dates) {
-    uniqueDates.set(`${d.month}-${d.day}`, d);
-  }
-
-  const conditions = Array.from(uniqueDates.values())
-    .map(() => '(f.event_month = ? AND f.event_day = ?)')
-    .join(' OR ');
-  const params: (string | number)[] = [language];
-  for (const d of uniqueDates.values()) {
-    params.push(d.month, d.day);
-  }
-
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.language = ? AND f.is_historical = 1
-      AND f.scheduled_date IS NULL
-      AND (${conditions})
-    ORDER BY RANDOM()`,
-    params
-  );
-
-  const facts = mapFactsWithRelations(result);
-
-  // Deduplicate: pick 1 per unique (month, day)
-  const seen = new Set<string>();
-  return facts.filter((f) => {
-    const key = `${f.event_month}-${f.event_day}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-/**
- * Get ALL unscheduled historical facts for the given dates (no 1-per-day cap).
- * Also excludes facts the user has already interacted with.
- */
-export async function getAllUnscheduledHistoricalFactsForDates(
-  dates: Array<{ month: number; day: number }>,
-  language: string
-): Promise<FactWithRelations[]> {
-  if (dates.length === 0) return [];
-
-  const database = await openDatabase();
-
-  const uniqueDates = new Map<string, { month: number; day: number }>();
-  for (const d of dates) {
-    uniqueDates.set(`${d.month}-${d.day}`, d);
-  }
-
-  const conditions = Array.from(uniqueDates.values())
-    .map(() => '(f.event_month = ? AND f.event_day = ?)')
-    .join(' OR ');
-  const params: (string | number)[] = [language];
-  for (const d of uniqueDates.values()) {
-    params.push(d.month, d.day);
-  }
-
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
-    WHERE f.language = ? AND f.is_historical = 1
-      AND f.scheduled_date IS NULL
-      AND fi.fact_id IS NULL
-      AND (${conditions})
-    ORDER BY RANDOM()`,
-    params
-  );
-
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Get the earliest (lowest id) unseen, unscheduled, non-historical facts for notification scheduling.
- * Excludes historical facts, already-selected IDs, and facts the user has already opened.
- * Used by the notification scheduler to drain the backlog FIFO instead of date-matching.
- */
-export async function getEarliestUnseenFactsForScheduling(
-  limit: number,
-  language: string,
-  excludeIds: number[] = []
-): Promise<FactWithRelations[]> {
-  const database = await openDatabase();
-  const excludePlaceholders = excludeIds.length > 0 ? excludeIds.map(() => '?').join(',') : null;
-  const excludeClause = excludePlaceholders ? `AND f.id NOT IN (${excludePlaceholders})` : '';
-
-  const result = await database.getAllAsync<any>(
-    `SELECT f.*
-    FROM facts f
-    LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
-    WHERE f.language = ?
-      AND f.scheduled_date IS NULL
-      AND (f.is_historical IS NULL OR f.is_historical = 0)
-      AND fi.fact_id IS NULL
-      ${excludeClause}
-    ORDER BY f.id ASC
-    LIMIT ?`,
-    [language, ...excludeIds, limit]
-  );
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Get unscheduled facts ordered by creation date (newest first).
- * Excludes historical facts, already-selected IDs, and facts the user has already opened.
- */
-export async function getRecentUnscheduledFacts(
-  limit: number,
-  language: string,
-  excludeIds: number[] = []
-): Promise<FactWithRelations[]> {
-  const database = await openDatabase();
-  const excludePlaceholders = excludeIds.length > 0 ? excludeIds.map(() => '?').join(',') : null;
-  const excludeClause = excludePlaceholders ? `AND f.id NOT IN (${excludePlaceholders})` : '';
-
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
-    WHERE f.language = ?
-      AND f.scheduled_date IS NULL
-      AND (f.is_historical IS NULL OR f.is_historical = 0)
-      AND fi.fact_id IS NULL
-      ${excludeClause}
-    ORDER BY f.created_at DESC
-    LIMIT ?`,
-    [language, ...excludeIds, limit]
-  );
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Get the most recently created non-historical facts.
- */
-export async function getLatestFacts(
-  limit: number,
-  language: string
-): Promise<FactWithRelations[]> {
-  const database = await openDatabase();
-
-  // Debug: check total facts in DB
-  const countResult = await database.getFirstAsync<{
-    total: number;
-    lang_match: number;
-    non_hist: number;
-  }>(
-    `SELECT
-      COUNT(*) as total,
-      SUM(CASE WHEN language = ? THEN 1 ELSE 0 END) as lang_match,
-      SUM(CASE WHEN (is_historical IS NULL OR is_historical = 0) AND language = ? THEN 1 ELSE 0 END) as non_hist
-    FROM facts`,
-    [language, language]
-  );
-  if (__DEV__)
-    console.log(
-      `📋 [DB] getLatestFacts: language="${language}", limit=${limit} | DB has: total=${countResult?.total}, lang_match=${countResult?.lang_match}, non_hist=${countResult?.non_hist}`
-    );
-
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.language = ? AND (f.is_historical IS NULL OR f.is_historical = 0)
-    ORDER BY f.created_at DESC
-    LIMIT ?`,
-    [language, limit]
-  );
-  if (__DEV__) console.log(`📋 [DB] getLatestFacts returned ${result.length} rows`);
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Get the most recently created non-historical facts with pagination.
- * Used for infinite scroll in the Keep Reading section.
- */
-export async function getLatestFactsPaginated(
-  limit: number,
-  offset: number,
-  language: string
-): Promise<FactWithRelations[]> {
-  const database = await openDatabase();
-
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.language = ? AND (f.is_historical IS NULL OR f.is_historical = 0)
-    ORDER BY f.created_at DESC
-    LIMIT ? OFFSET ?`,
-    [language, limit, offset]
-  );
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Get random non-historical facts, excluding specific IDs.
- */
-export async function getRandomWorthKnowingFacts(
-  limit: number,
-  language: string,
-  excludeIds: number[] = []
-): Promise<FactWithRelations[]> {
-  const database = await openDatabase();
-  const excludePlaceholders = excludeIds.length > 0 ? excludeIds.map(() => '?').join(',') : null;
-  const excludeClause = excludePlaceholders ? `AND f.id NOT IN (${excludePlaceholders})` : '';
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.language = ? AND (f.is_historical IS NULL OR f.is_historical = 0)
-      ${excludeClause}
-    ORDER BY RANDOM()
-    LIMIT ?`,
-    [language, ...excludeIds, limit]
-  );
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Get historical facts that happened on today's month and day.
- */
-export async function getOnThisDayFacts(language: string): Promise<FactWithRelations[]> {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const day = now.getDate();
-  const database = await openDatabase();
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.language = ? AND f.is_historical = 1
-      AND f.event_month = ? AND f.event_day = ?
-    ORDER BY f.event_year ASC`,
-    [language, month, day]
-  );
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Get historical facts from nearby dates (±3 days) when today has none.
- * Handles month boundaries correctly by computing actual calendar dates.
- */
-export async function getThisWeekInHistoryFacts(language: string): Promise<FactWithRelations[]> {
-  const now = new Date();
-  const todayMonth = now.getMonth() + 1;
-  const todayDay = now.getDate();
-
-  // Compute (month, day) pairs for ±3 days, excluding today
-  const pairs: [number, number][] = [];
-  for (let offset = -3; offset <= 3; offset++) {
-    if (offset === 0) continue;
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
-    pairs.push([d.getMonth() + 1, d.getDate()]);
-  }
-
-  const conditions = pairs.map(() => '(f.event_month = ? AND f.event_day = ?)').join(' OR ');
-  const params: (string | number)[] = [language];
-  for (const [m, d] of pairs) {
-    params.push(m, d);
-  }
-
-  const database = await openDatabase();
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.language = ? AND f.is_historical = 1
-      AND (${conditions})
-    ORDER BY ABS(f.event_month * 31 + f.event_day - ${todayMonth * 31 + todayDay}) ASC,
-             f.event_year ASC`,
-    params
-  );
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Mark a fact as scheduled with notification details
- * @param factId The ID of the fact
- * @param scheduledDate The scheduled date in ISO format
- * @param notificationId The OS notification identifier (null if pending OS scheduling)
- */
-export async function markFactAsScheduled(
-  factId: number,
-  scheduledDate: string,
-  notificationId: string | null
-): Promise<void> {
-  const database = await openDatabase();
-  await database.runAsync('UPDATE facts SET scheduled_date = ?, notification_id = ? WHERE id = ?', [
-    scheduledDate,
-    notificationId,
-    factId,
-  ]);
-}
-
-/**
- * Clear scheduling information for a fact
- */
-export async function clearFactScheduling(factId: number): Promise<void> {
-  const database = await openDatabase();
-  await database.runAsync(
-    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE id = ?',
-    [factId]
-  );
-}
-
-/**
- * Clear all scheduled facts (reset all scheduling)
- * Only clears FUTURE scheduled facts (scheduled_date > now)
- * Preserves already-delivered facts so they appear in the correct date group in the feed
- */
-export async function clearAllScheduledFacts(): Promise<void> {
-  const database = await openDatabase();
-  const now = new Date().toISOString();
-
-  await database.runAsync(
-    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ?',
-    [now]
-  );
-}
-
-/**
- * Clear ALL scheduled facts completely (including past ones)
- * Used when notification permissions are revoked to sync DB with OS state
- */
-export async function clearAllScheduledFactsCompletely(): Promise<void> {
-  const database = await openDatabase();
-
-  await database.runAsync(
-    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date IS NOT NULL'
-  );
-}
-
-/**
- * Clear facts scheduled beyond a cutoff date, freeing them back into the unscheduled pool.
- * Used to trim excess far-future schedules (e.g., after switching from 64-day to 7-day horizon).
- */
-export async function clearScheduledFactsBeyondDate(cutoffDate: string): Promise<number> {
-  const database = await openDatabase();
-  const result = await database.runAsync(
-    'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ?',
-    [cutoffDate]
-  );
-  return result.changes;
-}
-
-/**
- * Get future-scheduled facts that the user has already opened/viewed in-app.
- * These notifications are stale and should be replaced.
- */
-export async function getStaleScheduledFacts(
-  language: string
-): Promise<Array<{ id: number; notification_id: string | null; scheduled_date: string }>> {
-  const database = await openDatabase();
-  const now = new Date().toISOString();
-
-  return database.getAllAsync<{
-    id: number;
-    notification_id: string | null;
-    scheduled_date: string;
-  }>(
-    `SELECT f.id, f.notification_id, f.scheduled_date
-    FROM facts f
-    INNER JOIN fact_interactions fi ON fi.fact_id = f.id
-    WHERE f.scheduled_date > ?
-      AND f.language = ?
-      AND (fi.story_viewed_at IS NOT NULL OR fi.detail_opened_at IS NOT NULL)
-    ORDER BY f.scheduled_date ASC`,
-    [now, language]
-  );
-}
-
-/**
- * Clear scheduling for specific fact IDs (release them back to the unscheduled pool).
- */
-export async function clearScheduledFactsByIds(factIds: number[]): Promise<number> {
-  if (factIds.length === 0) return 0;
-  const database = await openDatabase();
-  const placeholders = factIds.map(() => '?').join(',');
-  const result = await database.runAsync(
-    `UPDATE facts SET scheduled_date = NULL, notification_id = NULL
-     WHERE id IN (${placeholders})`,
-    factIds
-  );
-  return result.changes;
-}
-
-/**
- * Clear scheduled_date and notification_id for facts whose notifications are no longer in the OS
- * Used to sync DB state with OS state after permissions are revoked/re-enabled
- * @param validNotificationIds Array of notification IDs that are still scheduled in the OS
- */
-export async function clearStaleScheduledFacts(validNotificationIds: string[]): Promise<number> {
-  const database = await openDatabase();
-  const now = new Date().toISOString();
-
-  // If no valid notification IDs, clear all future scheduled facts
-  if (validNotificationIds.length === 0) {
-    const result = await database.runAsync(
-      'UPDATE facts SET scheduled_date = NULL, notification_id = NULL WHERE scheduled_date > ? AND notification_id IS NOT NULL',
-      [now]
-    );
-    return result.changes;
-  }
-
-  // Clear facts whose notification_id is not in the valid list and scheduled_date is in the future
-  const placeholders = validNotificationIds.map(() => '?').join(',');
-  const result = await database.runAsync(
-    `UPDATE facts SET scheduled_date = NULL, notification_id = NULL 
-     WHERE scheduled_date > ? 
-     AND notification_id IS NOT NULL 
-     AND notification_id NOT IN (${placeholders})`,
-    [now, ...validNotificationIds]
-  );
-  return result.changes;
-}
-
-/**
- * Get count of scheduled facts
- */
-export async function getScheduledFactsCount(language?: string): Promise<number> {
-  const database = await openDatabase();
-
-  if (language) {
-    const result = await database.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM facts WHERE scheduled_date IS NOT NULL AND language = ?',
-      [language]
-    );
-    return result?.count || 0;
-  }
-
-  const result = await database.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM facts WHERE scheduled_date IS NOT NULL'
-  );
-  return result?.count || 0;
-}
-
-/**
- * Get count of future scheduled facts that are pending (not yet delivered)
- * These are facts with scheduled_date > now
- */
-export async function getFutureScheduledFactsCount(language?: string): Promise<number> {
-  const database = await openDatabase();
-  const now = new Date().toISOString();
-
-  if (language) {
-    const result = await database.getFirstAsync<{ count: number }>(
-      `SELECT COUNT(*) as count FROM facts 
-       WHERE scheduled_date > ? 
-       AND language = ?`,
-      [now, language]
-    );
-    return result?.count || 0;
-  }
-
-  const result = await database.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(*) as count FROM facts
-     WHERE scheduled_date > ?`,
-    [now]
-  );
-  return result?.count || 0;
-}
-
-/**
- * Get the latest scheduled date from all scheduled facts
- * Used to determine where to append new scheduled notifications
- * Returns the MAX scheduled_date as an ISO string, or null if no scheduled facts exist
- */
-export async function getLatestScheduledDate(language?: string): Promise<string | null> {
-  const database = await openDatabase();
-  const now = new Date().toISOString();
-
-  if (language) {
-    const result = await database.getFirstAsync<{ max_date: string | null }>(
-      `SELECT MAX(scheduled_date) as max_date FROM facts 
-       WHERE scheduled_date > ? 
-       AND language = ?`,
-      [now, language]
-    );
-    return result?.max_date || null;
-  }
-
-  const result = await database.getFirstAsync<{ max_date: string | null }>(
-    `SELECT MAX(scheduled_date) as max_date FROM facts
-     WHERE scheduled_date > ?`,
-    [now]
-  );
-  return result?.max_date || null;
-}
-
-/**
- * Get all scheduled dates for a specific day (used for multi-time scheduling)
- * Returns an array of scheduled_date ISO strings for the given date
- * @param dateString The date to check in YYYY-MM-DD format
- * @param language Optional language filter
- */
-export async function getScheduledTimesForDate(
-  dateString: string,
-  language?: string
-): Promise<string[]> {
-  const database = await openDatabase();
-
-  // Match scheduled_date that starts with the given date string (YYYY-MM-DD)
-  const datePrefix = dateString + 'T';
-
-  if (language) {
-    const result = await database.getAllAsync<{ scheduled_date: string }>(
-      `SELECT scheduled_date FROM facts 
-       WHERE scheduled_date LIKE ? 
-       AND language = ?
-       ORDER BY scheduled_date ASC`,
-      [datePrefix + '%', language]
-    );
-    return result.map((r) => r.scheduled_date);
-  }
-
-  const result = await database.getAllAsync<{ scheduled_date: string }>(
-    `SELECT scheduled_date FROM facts 
-     WHERE scheduled_date LIKE ?      ORDER BY scheduled_date ASC`,
-    [datePrefix + '%']
-  );
-  return result.map((r) => r.scheduled_date);
-}
-
-/**
- * Check if there are any days with more notifications scheduled than expected
- * This detects the bug where multiple notifications were scheduled per day
- * @param expectedPerDay Number of notifications expected per day (based on user's configured times)
- * @param language Optional language filter
- * @returns True if there are days with too many notifications (needs repair)
- */
-export async function hasExcessNotificationsPerDay(
-  expectedPerDay: number,
-  language?: string
-): Promise<boolean> {
-  const database = await openDatabase();
-  const now = new Date().toISOString();
-
-  // Group future scheduled facts by LOCAL date and count
-  // We use date(scheduled_date, 'localtime') to group by local date
-  const query = language
-    ? `SELECT date(scheduled_date, 'localtime') as local_date, COUNT(*) as count 
-       FROM facts 
-       WHERE scheduled_date > ? 
-       AND notification_id IS NOT NULL
-       AND language = ?
-       GROUP BY local_date
-       HAVING count > ?`
-    : `SELECT date(scheduled_date, 'localtime') as local_date, COUNT(*) as count 
-       FROM facts 
-       WHERE scheduled_date > ? 
-       AND notification_id IS NOT NULL
-       GROUP BY local_date
-       HAVING count > ?`;
-
-  const params = language ? [now, language, expectedPerDay] : [now, expectedPerDay];
-
-  const result = await database.getAllAsync<{ local_date: string; count: number }>(query, params);
-
-  if (result.length > 0) {
-    if (__DEV__)
-      console.log(
-        `🔔 Found ${result.length} days with excess notifications:`,
-        result.map((r) => `${r.local_date}: ${r.count}/${expectedPerDay}`).join(', ')
-      );
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Check if there are any days with incorrect notification counts (either too many OR too few)
- * This detects scheduling issues where days don't have the expected number of notifications.
- * The last scheduled day is allowed to have fewer notifications (due to hitting the 64 limit).
- *
- * @param expectedPerDay Number of notifications expected per day (based on user's configured times)
- * @param language Optional language filter
- * @returns Object with needsRepair flag and details about the issues found
- */
-export async function hasIncorrectNotificationsPerDay(
-  expectedPerDay: number,
-  language?: string
-): Promise<{ needsRepair: boolean; excessDays: number; deficitDays: number }> {
-  const database = await openDatabase();
-  const now = new Date().toISOString();
-
-  // Get all days with their notification counts, ordered by date
-  const query = language
-    ? `SELECT date(scheduled_date, 'localtime') as local_date, COUNT(*) as count 
-       FROM facts 
-       WHERE scheduled_date > ? 
-       AND notification_id IS NOT NULL
-       AND language = ?
-       GROUP BY local_date
-       ORDER BY local_date ASC`
-    : `SELECT date(scheduled_date, 'localtime') as local_date, COUNT(*) as count 
-       FROM facts 
-       WHERE scheduled_date > ? 
-       AND notification_id IS NOT NULL
-       GROUP BY local_date
-       ORDER BY local_date ASC`;
-
-  const params = language ? [now, language] : [now];
-  const result = await database.getAllAsync<{ local_date: string; count: number }>(query, params);
-
-  if (result.length === 0) {
-    return { needsRepair: false, excessDays: 0, deficitDays: 0 };
-  }
-
-  let excessDays = 0;
-  let deficitDays = 0;
-  const issues: string[] = [];
-
-  // Check all days except the last one (last day can have fewer due to hitting 64 limit)
-  for (let i = 0; i < result.length; i++) {
-    const day = result[i];
-    const isLastDay = i === result.length - 1;
-
-    if (day.count > expectedPerDay) {
-      // Too many notifications - always a problem (even on last day)
-      excessDays++;
-      issues.push(`${day.local_date}: ${day.count}/${expectedPerDay} (excess)`);
-    } else if (day.count < expectedPerDay && !isLastDay) {
-      // Too few notifications - problem only if NOT the last day
-      deficitDays++;
-      issues.push(`${day.local_date}: ${day.count}/${expectedPerDay} (deficit)`);
-    }
-  }
-
-  const needsRepair = excessDays > 0 || deficitDays > 0;
-
-  if (needsRepair && __DEV__) {
-    console.log(
-      `🔔 Found ${excessDays} days with excess and ${deficitDays} days with deficit notifications:`
-    );
-    // Log first 10 issues
-    for (const issue of issues.slice(0, 10)) {
-      console.log(`   ${issue}`);
-    }
-    if (issues.length > 10) {
-      console.log(`   ... and ${issues.length - 10} more`);
-    }
-  }
-
-  return { needsRepair, excessDays, deficitDays };
-}
-
-/**
- * Get all scheduled dates within a time range (used for multi-time scheduling with timezone support)
- * Returns an array of scheduled_date ISO strings within the given range
- * @param startIso The start of the range in ISO format (inclusive)
- * @param endIso The end of the range in ISO format (exclusive)
- * @param language Optional language filter
- */
-export async function getScheduledTimesInRange(
-  startIso: string,
-  endIso: string,
-  language?: string
-): Promise<string[]> {
-  const database = await openDatabase();
-
-  if (language) {
-    const result = await database.getAllAsync<{ scheduled_date: string }>(
-      `SELECT scheduled_date FROM facts 
-       WHERE scheduled_date >= ? 
-       AND scheduled_date < ?
-       AND language = ?
-       ORDER BY scheduled_date ASC`,
-      [startIso, endIso, language]
-    );
-    return result.map((r) => r.scheduled_date);
-  }
-
-  const result = await database.getAllAsync<{ scheduled_date: string }>(
-    `SELECT scheduled_date FROM facts 
-     WHERE scheduled_date >= ? 
-     AND scheduled_date < ?     ORDER BY scheduled_date ASC`,
-    [startIso, endIso]
-  );
-  return result.map((r) => r.scheduled_date);
-}
-
-/**
- * Get all future scheduled facts with their notification_id and scheduled_date
- * Used to sync OS notification queue with DB records
- * Includes facts with null notification_id (pending OS scheduling)
- * @param language Optional language filter
- */
-export async function getFutureScheduledFactsWithNotificationIds(
-  language?: string
-): Promise<Array<{ id: number; notification_id: string; scheduled_date: string }>> {
-  const database = await openDatabase();
-  const now = new Date().toISOString();
-
-  if (language) {
-    return await database.getAllAsync<{
-      id: number;
-      notification_id: string;
-      scheduled_date: string;
-    }>(
-      `SELECT id, notification_id, scheduled_date FROM facts 
-       WHERE scheduled_date > ? 
-       AND language = ?
-       ORDER BY scheduled_date ASC`,
-      [now, language]
-    );
-  }
-
-  return await database.getAllAsync<{
-    id: number;
-    notification_id: string;
-    scheduled_date: string;
-  }>(
-    `SELECT id, notification_id, scheduled_date FROM facts 
-     WHERE scheduled_date > ?      ORDER BY scheduled_date ASC`,
-    [now]
-  );
-}
-
-/**
- * Update the notification_id for a scheduled fact
- * Called after successfully scheduling a notification in the OS
- * @param factId The ID of the fact
- * @param notificationId The OS notification identifier
- */
-export async function updateNotificationId(factId: number, notificationId: string): Promise<void> {
-  const database = await openDatabase();
-  await database.runAsync('UPDATE facts SET notification_id = ? WHERE id = ?', [
-    notificationId,
-    factId,
-  ]);
-}
 
 // ====== FAVORITES ======
 
@@ -1890,94 +539,21 @@ export async function isFactFavorited(factId: number): Promise<boolean> {
 }
 
 /**
- * Get all favorited facts
+ * Get favorited fact ids, newest-favorited first. Reads only the favorites
+ * table (no JOIN to facts) so it works without the local facts mirror — the
+ * screen hydrates content via api.getFactsByIds.
  */
-export async function getFavorites(language?: string): Promise<FactWithRelations[]> {
+export async function getFavoriteIds(): Promise<number[]> {
   const database = await openDatabase();
-
-  if (language) {
-    const result = await database.getAllAsync<any>(
-      `SELECT
-        f.*,
-        c.id as category_id,
-        c.name as category_name,
-        c.slug as category_slug,
-        c.description as category_description,
-        c.icon as category_icon,
-        c.color_hex as category_color_hex
-      FROM facts f
-      INNER JOIN favorites fav ON f.id = fav.fact_id
-      LEFT JOIN categories c ON f.category = c.slug
-      WHERE f.language = ?
-      ORDER BY fav.created_at DESC`,
-      [language]
-    );
-    return mapFactsWithRelations(result);
-  }
-
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex
-    FROM facts f
-    INNER JOIN favorites fav ON f.id = fav.fact_id
-    LEFT JOIN categories c ON f.category = c.slug
-    ORDER BY fav.created_at DESC`
+  const rows = await database.getAllAsync<{ fact_id: number }>(
+    `SELECT fact_id FROM favorites ORDER BY created_at DESC`
   );
-  return mapFactsWithRelations(result);
+  return rows.map((r) => r.fact_id);
 }
 
-/**
- * Get distinct categories from favorited facts
- * Returns category objects for categories that have at least one favorited fact
- */
-export async function getFavoriteCategories(language?: string): Promise<Category[]> {
+export async function getFavoritesCount(): Promise<number> {
   const database = await openDatabase();
-
-  if (language) {
-    const result = await database.getAllAsync<Category>(
-      `SELECT DISTINCT c.*
-       FROM categories c
-       INNER JOIN facts f ON f.category = c.slug
-       INNER JOIN favorites fav ON fav.fact_id = f.id
-       WHERE f.language = ?
-       ORDER BY c.name ASC`,
-      [language]
-    );
-    return result;
-  }
-
-  const result = await database.getAllAsync<Category>(
-    `SELECT DISTINCT c.*
-     FROM categories c
-     INNER JOIN facts f ON f.category = c.slug
-     INNER JOIN favorites fav ON fav.fact_id = f.id
-     ORDER BY c.name ASC`
-  );
-  return result;
-}
-
-/**
- * Get count of favorited facts
- */
-export async function getFavoritesCount(language?: string): Promise<number> {
-  const database = await openDatabase();
-
-  if (language) {
-    const result = await database.getFirstAsync<{ count: number }>(
-      `SELECT COUNT(*) as count FROM favorites fav
-       INNER JOIN facts f ON fav.fact_id = f.id
-       WHERE f.language = ?`,
-      [language]
-    );
-    return result?.count || 0;
-  }
-
+  // Favorites are stored as language-agnostic fact IDs; the count is global.
   const result = await database.getFirstAsync<{ count: number }>(
     'SELECT COUNT(*) as count FROM favorites'
   );
@@ -1985,153 +561,6 @@ export async function getFavoritesCount(language?: string): Promise<number> {
 }
 
 // ====== DATE-BASED QUERIES ======
-
-/**
- * Get facts scheduled for today (visible after midnight regardless of notification time)
- * Uses local date to match today's facts so they appear at 00:01 even if scheduled for 08:00
- * @param language Language filter
- */
-export async function getTodaysFacts(language: string): Promise<FactWithRelations[]> {
-  const database = await openDatabase();
-
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE date(f.scheduled_date, 'localtime') = date('now', 'localtime')
-      AND f.language = ?
-    ORDER BY f.scheduled_date ASC`,
-    [language]
-  );
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Get facts that were already delivered via notifications
- * Returns facts from the past 30 days where scheduled_date <= now, ordered by date descending
- */
-export async function getFactsGroupedByDate(language?: string): Promise<FactWithRelations[]> {
-  const database = await openDatabase();
-
-  // Get date 30 days ago
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const cutoffDate = thirtyDaysAgo.toISOString();
-
-  // Get current date/time
-  const now = new Date().toISOString();
-
-  if (language) {
-    const result = await database.getAllAsync<any>(
-      `SELECT
-        f.*,
-        c.id as category_id,
-        c.name as category_name,
-        c.slug as category_slug,
-        c.description as category_description,
-        c.icon as category_icon,
-        c.color_hex as category_color_hex
-      FROM facts f
-      LEFT JOIN categories c ON f.category = c.slug
-      WHERE f.scheduled_date IS NOT NULL AND f.scheduled_date >= ? AND f.scheduled_date <= ?
-      AND f.language = ?
-      ORDER BY COALESCE(f.scheduled_date, f.created_at) DESC`,
-      [cutoffDate, now, language]
-    );
-    return mapFactsWithRelations(result);
-  }
-
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE f.scheduled_date IS NOT NULL AND f.scheduled_date >= ? AND f.scheduled_date <= ?
-    ORDER BY COALESCE(f.scheduled_date, f.created_at) DESC`,
-    [cutoffDate, now]
-  );
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Search facts by query string (searches in title, content, and summary)
- * Returns facts that match the search query, ordered by relevance (title matches first, then content/summary)
- */
-export async function searchFacts(query: string, language?: string): Promise<FactWithRelations[]> {
-  const database = await openDatabase();
-
-  if (!query || query.trim().length === 0) {
-    return [];
-  }
-
-  // Escape special characters for LIKE query
-  const searchTerm = `%${query.trim()}%`;
-
-  if (language) {
-    const result = await database.getAllAsync<any>(
-      `SELECT
-        f.*,
-        c.id as category_id,
-        c.name as category_name,
-        c.slug as category_slug,
-        c.description as category_description,
-        c.icon as category_icon,
-        c.color_hex as category_color_hex
-      FROM facts f
-      LEFT JOIN categories c ON f.category = c.slug
-      WHERE f.language = ?
-      AND (
-        f.title LIKE ? OR
-        f.content LIKE ? OR
-        f.summary LIKE ?
-      )
-      ORDER BY 
-        CASE WHEN f.title LIKE ? THEN 1 ELSE 2 END,
-        COALESCE(f.scheduled_date, f.created_at) DESC`,
-      [language, searchTerm, searchTerm, searchTerm, searchTerm]
-    );
-    return mapFactsWithRelations(result);
-  }
-
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      c.is_premium as category_is_premium
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE (
-      f.title LIKE ? OR
-      f.content LIKE ? OR
-      f.summary LIKE ?
-    )
-    ORDER BY 
-      CASE WHEN f.title LIKE ? THEN 1 ELSE 2 END,
-      COALESCE(f.scheduled_date, f.created_at) DESC`,
-    [searchTerm, searchTerm, searchTerm, searchTerm]
-  );
-  return mapFactsWithRelations(result);
-}
 
 // ====== TRIVIA QUESTIONS ======
 
@@ -2165,282 +594,6 @@ export interface DailyTriviaProgress {
   completed_at: string | null;
 }
 
-/**
- * Insert or update questions (upsert)
- * Questions come from the API along with facts
- */
-export async function insertQuestions(questions: Question[]): Promise<void> {
-  if (questions.length === 0) return;
-
-  await withSerializedTransaction(async (db) => {
-    for (const question of questions) {
-      await db.runAsync(
-        `INSERT OR REPLACE INTO questions (
-          id, fact_id, question_type, question_text, correct_answer,
-          wrong_answers, explanation, difficulty
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          question.id,
-          question.fact_id,
-          question.question_type,
-          question.question_text,
-          question.correct_answer,
-          question.wrong_answers || null,
-          question.explanation || null,
-          question.difficulty || 2,
-        ]
-      );
-    }
-  });
-}
-
-/**
- * Get questions for daily trivia - questions from facts shown today
- * @param dateString Date in YYYY-MM-DD format
- * @param language Language filter
- */
-export async function getQuestionsForDailyTrivia(
-  dateString: string,
-  language: string
-): Promise<QuestionWithFact[]> {
-  const database = await openDatabase();
-  const datePrefix = dateString + 'T';
-
-  const result = await database.getAllAsync<any>(
-    `SELECT 
-      q.*,
-      f.id as fact_id,
-      f.title as fact_title,
-      f.content as fact_content,
-      f.summary as fact_summary,
-      f.category as fact_category,
-      f.source_url as fact_source_url,
-      f.image_url as fact_image_url,
-      f.language as fact_language,
-      f.created_at as fact_created_at,
-      f.last_updated as fact_last_updated,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex
-    FROM questions q
-    INNER JOIN facts f ON q.fact_id = f.id
-    LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
-    WHERE f.scheduled_date LIKE ?
-    AND f.language = ?
-    ORDER BY
-      CASE
-        WHEN fi.detail_opened_at IS NOT NULL THEN 1
-        WHEN fi.story_viewed_at  IS NOT NULL THEN 2
-        ELSE 3
-      END ASC,
-      RANDOM()`,
-    [datePrefix + '%', language]
-  );
-
-  return mapQuestionsWithFact(result);
-}
-
-/**
- * Get random unanswered questions for mixed trivia
- * Returns N random questions that the user hasn't answered yet
- * @param limit Number of questions to return
- * @param language Language filter
- */
-export async function getRandomUnansweredQuestions(
-  limit: number,
-  language: string
-): Promise<QuestionWithFact[]> {
-  const database = await openDatabase();
-
-  const result = await database.getAllAsync<any>(
-    `SELECT 
-      q.*,
-      f.id as fact_id,
-      f.title as fact_title,
-      f.content as fact_content,
-      f.summary as fact_summary,
-      f.category as fact_category,
-      f.source_url as fact_source_url,
-      f.image_url as fact_image_url,
-      f.language as fact_language,
-      f.created_at as fact_created_at,
-      f.last_updated as fact_last_updated,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex
-    FROM questions q
-    INNER JOIN facts f ON q.fact_id = f.id
-    LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
-    WHERE f.language = ?
-    AND q.id NOT IN (
-      SELECT DISTINCT question_id FROM question_attempts
-    )
-    ORDER BY
-      CASE
-        WHEN fi.detail_opened_at IS NOT NULL THEN 1
-        WHEN fi.story_viewed_at  IS NOT NULL THEN 2
-        ELSE 3
-      END ASC,
-      RANDOM()
-    LIMIT ?`,
-    [language, limit]
-  );
-
-  return mapQuestionsWithFact(result);
-}
-
-/**
- * Get count of unanswered questions available for mixed trivia
- */
-export async function getUnansweredQuestionsCount(language: string): Promise<number> {
-  const database = await openDatabase();
-  const result = await database.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(*) as count 
-     FROM questions q
-     INNER JOIN facts f ON q.fact_id = f.id
-     WHERE f.language = ?
-     AND q.id NOT IN (
-       SELECT DISTINCT question_id FROM question_attempts
-     )`,
-    [language]
-  );
-  return result?.count || 0;
-}
-
-/**
- * Get questions for category trivia
- * Returns N random questions from category that haven't been mastered yet
- * @param categorySlug Category to get questions for
- * @param limit Number of questions to return
- * @param language Language filter
- * @param excludeMastered Whether to exclude mastered questions
- */
-export async function getQuestionsForCategory(
-  categorySlug: string,
-  limit: number,
-  language: string,
-  excludeMastered: boolean = true
-): Promise<QuestionWithFact[]> {
-  const database = await openDatabase();
-
-  // Candidate pool is every fact in the category; ordering below prioritizes
-  // facts the user has engaged with (detail > story) and falls back
-  // to unseen facts only when the pool of seen ones is exhausted.
-  let query = `
-    SELECT
-      q.*,
-      f.id as fact_id,
-      f.title as fact_title,
-      f.content as fact_content,
-      f.summary as fact_summary,
-      f.category as fact_category,
-      f.source_url as fact_source_url,
-      f.image_url as fact_image_url,
-      f.language as fact_language,
-      f.created_at as fact_created_at,
-      f.last_updated as fact_last_updated,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex
-    FROM questions q
-    INNER JOIN facts f ON q.fact_id = f.id
-    LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN fact_interactions fi ON fi.fact_id = f.id
-    WHERE f.category = ?
-    AND f.language = ?`;
-
-  if (excludeMastered) {
-    // Exclude questions that are mastered (3 correct answers in a row)
-    // A question is mastered if it has 3+ attempts and the last 3 are all correct
-    query += `
-    AND q.id NOT IN (
-      SELECT q2.id FROM questions q2
-      WHERE (
-        SELECT COUNT(*) FROM (
-          SELECT is_correct FROM question_attempts 
-          WHERE question_id = q2.id 
-          ORDER BY answered_at DESC 
-          LIMIT 3
-        ) WHERE is_correct = 1
-      ) = 3
-      AND (
-        SELECT COUNT(*) FROM question_attempts WHERE question_id = q2.id
-      ) >= 3
-    )`;
-  }
-
-  query += `
-    ORDER BY
-      CASE
-        WHEN fi.detail_opened_at IS NOT NULL THEN 1
-        WHEN fi.story_viewed_at  IS NOT NULL THEN 2
-        ELSE 3
-      END ASC,
-      RANDOM()
-    LIMIT ?`;
-
-  const result = await database.getAllAsync<any>(query, [categorySlug, language, limit]);
-
-  return mapQuestionsWithFact(result);
-}
-
-/**
- * Helper function to map query results to QuestionWithFact
- */
-function mapQuestionsWithFact(rows: any[]): QuestionWithFact[] {
-  return rows.map((row) => {
-    const question: QuestionWithFact = {
-      id: row.id,
-      fact_id: row.fact_id,
-      question_type: row.question_type,
-      question_text: row.question_text,
-      correct_answer: row.correct_answer,
-      wrong_answers: row.wrong_answers,
-      explanation: row.explanation,
-      difficulty: row.difficulty,
-    };
-
-    // Map fact data if present
-    if (row.fact_title || row.fact_content) {
-      question.fact = {
-        id: row.fact_id,
-        title: row.fact_title,
-        content: row.fact_content,
-        summary: row.fact_summary,
-        category: row.fact_category,
-        source_url: row.fact_source_url,
-        image_url: row.fact_image_url,
-        language: row.fact_language,
-        created_at: row.fact_created_at || '',
-        last_updated: row.fact_last_updated,
-      };
-
-      if (row.category_id) {
-        question.fact.categoryData = {
-          id: row.category_id,
-          name: row.category_name,
-          slug: row.category_slug,
-          icon: row.category_icon,
-          color_hex: row.category_color_hex,
-        };
-      }
-    }
-
-    return question;
-  });
-}
-
-/**
- * Record a question attempt
- */
 export async function recordQuestionAttempt(
   questionId: number,
   isCorrect: boolean,
@@ -2458,189 +611,17 @@ export async function recordQuestionAttempt(
 }
 
 /**
- * Check if a question has been mastered (answered correctly 3 times in a row)
- * Only returns true if the question still exists in the database
- * Mastery requires the last 3 consecutive attempts to all be correct
+ * Ids of every question the user has already answered (from local attempt
+ * history). Passed to the trivia API as exclude_question_ids so the server
+ * doesn't re-serve answered questions — replaces the old local "unanswered"
+ * JOIN against the (removed) questions table.
  */
-export async function isQuestionMastered(questionId: number): Promise<boolean> {
+export async function getAnsweredQuestionIds(): Promise<number[]> {
   const database = await openDatabase();
-  // Get the last 3 attempts for this question, ordered by most recent first
-  // Join with questions table to ensure the question still exists
-  const attempts = await database.getAllAsync<{ is_correct: number }>(
-    `SELECT qa.is_correct 
-     FROM question_attempts qa
-     INNER JOIN questions q ON qa.question_id = q.id
-     WHERE qa.question_id = ?
-     ORDER BY qa.answered_at DESC
-     LIMIT 3`,
-    [questionId]
+  const rows = await database.getAllAsync<{ question_id: number }>(
+    `SELECT DISTINCT question_id FROM question_attempts`
   );
-
-  // Mastered if there are at least 3 attempts and all are correct
-  if (attempts.length < 3) return false;
-  return attempts.every((a) => a.is_correct === 1);
-}
-
-/**
- * Get count of mastered questions for a category (answered correctly 3 times in a row)
- * A question is mastered if its last 3 consecutive attempts are all correct
- * Counts ALL questions in the category (not just from shown facts)
- */
-export async function getMasteredCountForCategory(
-  categorySlug: string,
-  language: string
-): Promise<number> {
-  const database = await openDatabase();
-  // Count questions where the last 3 attempts are all correct
-  const result = await database.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(*) as count FROM (
-       SELECT q.id
-       FROM questions q
-       INNER JOIN facts f ON q.fact_id = f.id
-       WHERE f.category = ? 
-       AND f.language = ?
-       AND (
-         SELECT COUNT(*) FROM (
-           SELECT is_correct FROM question_attempts 
-           WHERE question_id = q.id 
-           ORDER BY answered_at DESC 
-           LIMIT 3
-         ) WHERE is_correct = 1
-       ) = 3
-       AND (
-         SELECT COUNT(*) FROM question_attempts WHERE question_id = q.id
-       ) >= 3
-     )`,
-    [categorySlug, language]
-  );
-  return result?.count || 0;
-}
-
-/**
- * Get total questions count for a category (from ALL facts, not just shown ones)
- */
-export async function getTotalQuestionsForCategory(
-  categorySlug: string,
-  language: string
-): Promise<number> {
-  const database = await openDatabase();
-  const result = await database.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(*) as count 
-     FROM questions q
-     INNER JOIN facts f ON q.fact_id = f.id
-     WHERE f.category = ? 
-     AND f.language = ?`,
-    [categorySlug, language]
-  );
-  return result?.count || 0;
-}
-
-/**
- * Get category progress (mastered vs total)
- */
-export async function getCategoryProgress(
-  categorySlug: string,
-  language: string
-): Promise<{ mastered: number; total: number }> {
-  const mastered = await getMasteredCountForCategory(categorySlug, language);
-  const total = await getTotalQuestionsForCategory(categorySlug, language);
-  return { mastered, total };
-}
-
-/**
- * Get all categories with trivia progress
- * @param language - The language to filter facts by
- * @param selectedCategories - Optional array of category slugs to filter by (user's selected categories)
- * Returns ALL selected categories with their total questions and mastered count
- * Questions are available from ALL facts (not just shown ones)
- */
-export async function getCategoriesWithTriviaProgress(
-  language: string,
-  selectedCategories?: string[]
-): Promise<
-  Array<Category & { mastered: number; total: number; answered: number; correct: number }>
-> {
-  const database = await openDatabase();
-
-  // If no selected categories provided, return empty array
-  if (!selectedCategories || selectedCategories.length === 0) {
-    return [];
-  }
-
-  const placeholders = selectedCategories.map(() => '?').join(', ');
-
-  // Build query that returns ALL selected categories
-  // Counts ALL questions from ALL facts in each category (not just shown facts)
-  // Mastered = questions answered correctly 3 times in a row (last 3 attempts all correct)
-  // Answered = count of unique questions that have been attempted in this category
-  // Correct = count of correct answers in this category
-  const query = `
-    SELECT 
-      c.*,
-      COALESCE((
-        SELECT COUNT(DISTINCT q.id)
-        FROM questions q
-        INNER JOIN facts f ON q.fact_id = f.id
-        WHERE f.category = c.slug 
-        AND f.language = ?
-      ), 0) as total,
-      COALESCE((
-        SELECT COUNT(*) FROM (
-          SELECT q2.id
-          FROM questions q2
-          INNER JOIN facts f2 ON q2.fact_id = f2.id
-          WHERE f2.category = c.slug 
-          AND f2.language = ?
-          AND (
-            SELECT COUNT(*) FROM (
-              SELECT is_correct FROM question_attempts 
-              WHERE question_id = q2.id 
-              ORDER BY answered_at DESC 
-              LIMIT 3
-            ) WHERE is_correct = 1
-          ) = 3
-          AND (
-            SELECT COUNT(*) FROM question_attempts WHERE question_id = q2.id
-          ) >= 3
-        )
-      ), 0) as mastered,
-      COALESCE((
-        SELECT COUNT(*)
-        FROM question_attempts qa
-        INNER JOIN questions q ON qa.question_id = q.id
-        INNER JOIN facts f ON q.fact_id = f.id
-        WHERE f.category = c.slug 
-        AND f.language = ?
-      ), 0) as answered,
-      COALESCE((
-        SELECT COUNT(*)
-        FROM question_attempts qa
-        INNER JOIN questions q ON qa.question_id = q.id
-        INNER JOIN facts f ON q.fact_id = f.id
-        WHERE f.category = c.slug 
-        AND f.language = ?
-        AND qa.is_correct = 1
-      ), 0) as correct
-    FROM categories c
-    WHERE c.slug IN (${placeholders})
-    ORDER BY c.name ASC`;
-
-  const params: any[] = [language, language, language, language, ...selectedCategories];
-
-  const result = await database.getAllAsync<any>(query, params);
-
-  return result.map((row: any) => ({
-    id: row.id,
-    name: row.name,
-    slug: row.slug,
-    description: row.description,
-    icon: row.icon,
-    color_hex: row.color_hex,
-    mastered: row.mastered || 0,
-    total: row.total || 0,
-    answered: row.answered || 0,
-    correct: row.correct || 0,
-  }));
+  return rows.map((r) => r.question_id);
 }
 
 // ====== DAILY TRIVIA PROGRESS ======
@@ -2784,33 +765,6 @@ export async function getAnyTriviaStreak(): Promise<number> {
   return streak;
 }
 
-/**
- * Get count of questions available for daily trivia on a specific date
- */
-export async function getDailyTriviaQuestionsCount(
-  dateString: string,
-  language: string
-): Promise<number> {
-  const database = await openDatabase();
-  const datePrefix = dateString + 'T';
-
-  const result = await database.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(*) as count 
-     FROM questions q
-     INNER JOIN facts f ON q.fact_id = f.id
-     WHERE f.scheduled_date LIKE ?
-     AND f.language = ?`,
-    [datePrefix + '%', language]
-  );
-
-  return result?.count || 0;
-}
-
-/**
- * Get overall trivia statistics
- * Only counts attempts for questions that still exist in the database
- * (joins with questions table to filter out orphaned attempts)
- */
 export async function getOverallTriviaStats(): Promise<{
   totalAnswered: number;
   totalCorrect: number;
@@ -2819,16 +773,17 @@ export async function getOverallTriviaStats(): Promise<{
 }> {
   const database = await openDatabase();
 
-  // Join with questions table to only count attempts for questions that still exist
+  // Question CONTENT is no longer stored locally (served from the API), so we
+  // count the user's attempts directly. Attempts are the permanent local record
+  // of what the user answered, independent of whether the question is cached.
   const stats = await database.getFirstAsync<{
     total_answered: number;
     total_correct: number;
   }>(
-    `SELECT 
+    `SELECT
       COUNT(*) as total_answered,
       SUM(CASE WHEN qa.is_correct = 1 THEN 1 ELSE 0 END) as total_correct
-     FROM question_attempts qa
-     INNER JOIN questions q ON qa.question_id = q.id`
+     FROM question_attempts qa`
   );
 
   const currentStreak = await getDailyStreak();
@@ -2843,62 +798,6 @@ export async function getOverallTriviaStats(): Promise<{
     accuracy,
     currentStreak,
   };
-}
-
-/**
- * Get total count of mastered questions (answered correctly 3 times in a row)
- * Only counts questions that still exist in the database
- * A question is mastered if its last 3 consecutive attempts are all correct
- */
-export async function getTotalMasteredCount(): Promise<number> {
-  const database = await openDatabase();
-  // Count questions where the last 3 attempts are all correct
-  const result = await database.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(*) as count FROM (
-       SELECT q.id
-       FROM questions q
-       WHERE (
-         SELECT COUNT(*) FROM (
-           SELECT is_correct FROM question_attempts 
-           WHERE question_id = q.id 
-           ORDER BY answered_at DESC 
-           LIMIT 3
-         ) WHERE is_correct = 1
-       ) = 3
-       AND (
-         SELECT COUNT(*) FROM question_attempts WHERE question_id = q.id
-       ) >= 3
-     )`
-  );
-  return result?.count || 0;
-}
-
-/**
- * Get facts for a list of question IDs (used for showing related facts after wrong answers)
- */
-export async function getFactsForQuestions(questionIds: number[]): Promise<FactWithRelations[]> {
-  if (questionIds.length === 0) return [];
-
-  const database = await openDatabase();
-  const placeholders = questionIds.map(() => '?').join(',');
-
-  const result = await database.getAllAsync<any>(
-    `SELECT DISTINCT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex
-    FROM facts f
-    INNER JOIN questions q ON q.fact_id = f.id
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE q.id IN (${placeholders})`,
-    questionIds
-  );
-
-  return mapFactsWithRelations(result);
 }
 
 // ====== TRIVIA SESSIONS ======
@@ -2990,164 +889,38 @@ export async function getRecentTriviaSessions(
 ): Promise<TriviaSessionWithCategory[]> {
   const database = await openDatabase();
 
+  // Sessions store category_slug directly; the category display object is
+  // attached by the trivia service from server metadata (no local categories
+  // table in the thin cache).
   const result = await database.getAllAsync<any>(
-    `SELECT 
-      ts.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug_data,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex
-    FROM trivia_sessions ts
-    LEFT JOIN categories c ON ts.category_slug = c.slug
-    ORDER BY ts.completed_at DESC
-    LIMIT ?`,
+    `SELECT * FROM trivia_sessions ORDER BY completed_at DESC LIMIT ?`,
     [limit]
   );
 
-  return result.map((row: any) => {
-    const session: TriviaSessionWithCategory = {
-      id: row.id,
-      trivia_mode: row.trivia_mode,
-      category_slug: row.category_slug,
-      total_questions: row.total_questions,
-      correct_answers: row.correct_answers,
-      completed_at: row.completed_at,
-      elapsed_time: row.elapsed_time,
-      best_streak: row.best_streak,
-      question_ids: row.question_ids,
-      selected_answers: row.selected_answers,
-    };
-
-    if (row.category_id) {
-      session.category = {
-        id: row.category_id,
-        name: row.category_name,
-        slug: row.category_slug_data,
-        description: row.category_description,
-        icon: row.category_icon,
-        color_hex: row.category_color_hex,
-      };
-    }
-
-    return session;
-  });
-}
-
-/**
- * Get questions by their IDs with full fact data
- * Used to reconstruct session data for display
- * Returns questions in the order of the provided IDs
- */
-export async function getQuestionsByIds(questionIds: number[]): Promise<QuestionWithFact[]> {
-  if (questionIds.length === 0) return [];
-
-  const database = await openDatabase();
-  const placeholders = questionIds.map(() => '?').join(',');
-
-  const result = await database.getAllAsync<any>(
-    `SELECT 
-      q.*,
-      f.id as fact_id,
-      f.title as fact_title,
-      f.content as fact_content,
-      f.summary as fact_summary,
-      f.category as fact_category,
-      f.source_url as fact_source_url,
-      f.image_url as fact_image_url,
-      f.language as fact_language,
-      f.created_at as fact_created_at,
-      f.last_updated as fact_last_updated,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex
-    FROM questions q
-    INNER JOIN facts f ON q.fact_id = f.id
-    LEFT JOIN categories c ON f.category = c.slug
-    WHERE q.id IN (${placeholders})`,
-    questionIds
-  );
-
-  // Map results and preserve order from questionIds
-  const questionsMap = new Map<number, QuestionWithFact>();
-  for (const row of result) {
-    questionsMap.set(row.id, mapQuestionWithFact(row));
-  }
-
-  // Return in original order, filtering out any that weren't found
-  return questionIds
-    .map((id) => questionsMap.get(id))
-    .filter((q): q is QuestionWithFact => q !== undefined);
-}
-
-/**
- * Helper to map a single row to QuestionWithFact
- */
-function mapQuestionWithFact(row: any): QuestionWithFact {
-  const question: QuestionWithFact = {
+  return result.map((row: any) => ({
     id: row.id,
-    fact_id: row.fact_id,
-    question_type: row.question_type,
-    question_text: row.question_text,
-    correct_answer: row.correct_answer,
-    wrong_answers: row.wrong_answers,
-    explanation: row.explanation,
-    difficulty: row.difficulty,
-  };
-
-  if (row.fact_title || row.fact_content) {
-    question.fact = {
-      id: row.fact_id,
-      title: row.fact_title,
-      content: row.fact_content,
-      summary: row.fact_summary,
-      category: row.fact_category,
-      source_url: row.fact_source_url,
-      image_url: row.fact_image_url,
-      language: row.fact_language,
-      created_at: row.fact_created_at || '',
-      last_updated: row.fact_last_updated,
-    };
-
-    if (row.category_id) {
-      question.fact.categoryData = {
-        id: row.category_id,
-        name: row.category_name,
-        slug: row.category_slug,
-        icon: row.category_icon,
-        color_hex: row.category_color_hex,
-      };
-    }
-  }
-
-  return question;
+    trivia_mode: row.trivia_mode,
+    category_slug: row.category_slug,
+    total_questions: row.total_questions,
+    correct_answers: row.correct_answers,
+    completed_at: row.completed_at,
+    elapsed_time: row.elapsed_time,
+    best_streak: row.best_streak,
+    question_ids: row.question_ids,
+    selected_answers: row.selected_answers,
+  }));
 }
 
-/**
- * Get a single trivia session by ID with reconstructed question data
- * Fetches questions fresh from the database using stored IDs
- * This ensures content is always in the current app language
- */
 export async function getTriviaSessionById(
   sessionId: number
 ): Promise<TriviaSessionWithCategory | null> {
   const database = await openDatabase();
 
+  // Lean read: just the stored session. Question content (from the API) and the
+  // category display object (from metadata) are hydrated by the trivia service —
+  // the local questions/categories tables no longer exist.
   const row = await database.getFirstAsync<any>(
-    `SELECT 
-      ts.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug_data,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex
-    FROM trivia_sessions ts
-    LEFT JOIN categories c ON ts.category_slug = c.slug
-    WHERE ts.id = ?`,
+    `SELECT * FROM trivia_sessions WHERE id = ?`,
     [sessionId]
   );
 
@@ -3166,33 +939,7 @@ export async function getTriviaSessionById(
     selected_answers: row.selected_answers,
   };
 
-  if (row.category_id) {
-    session.category = {
-      id: row.category_id,
-      name: row.category_name,
-      slug: row.category_slug_data,
-      description: row.category_description,
-      icon: row.category_icon,
-      color_hex: row.category_color_hex,
-    };
-  }
-
-  // Reconstruct questions from stored IDs
-  if (row.question_ids) {
-    try {
-      const questionIds: number[] = JSON.parse(row.question_ids);
-      const questions = await getQuestionsByIds(questionIds);
-      session.questions = questions;
-
-      // Track unavailable questions (deleted from DB)
-      const foundIds = new Set(questions.map((q) => q.id));
-      session.unavailableQuestionIds = questionIds.filter((id) => !foundIds.has(id));
-    } catch (e) {
-      console.error('Error reconstructing questions:', e);
-    }
-  }
-
-  // Parse answer indexes
+  // Parse answer indexes (question content is hydrated in the service layer).
   if (row.selected_answers) {
     try {
       session.answers = JSON.parse(row.selected_answers);
@@ -3275,28 +1022,30 @@ export async function getTodayTriviaStats(): Promise<{
     [todayStart]
   );
 
-  // Get mastered today - questions that reached mastery status today
-  // A question is mastered when it gets its 3rd consecutive correct answer
-  // We check for questions where the 3rd correct attempt happened today
+  // Get mastered today - questions that reached mastery status today.
+  // A question is mastered when its last 3 attempts are all correct; we count
+  // it as "today" when its most recent attempt happened today. Question CONTENT
+  // is no longer stored locally, so we derive the candidate question IDs from
+  // the attempts table (the user's permanent record) instead of `questions`.
   const masteredResult = await database.getFirstAsync<{ count: number }>(
     `SELECT COUNT(*) as count FROM (
-       SELECT q.id
-       FROM questions q
+       SELECT DISTINCT qa.question_id AS id
+       FROM question_attempts qa
        WHERE (
          SELECT COUNT(*) FROM (
-           SELECT is_correct FROM question_attempts 
-           WHERE question_id = q.id 
-           ORDER BY answered_at DESC 
+           SELECT is_correct FROM question_attempts
+           WHERE question_id = qa.question_id
+           ORDER BY answered_at DESC
            LIMIT 3
          ) WHERE is_correct = 1
        ) = 3
        AND (
-         SELECT COUNT(*) FROM question_attempts WHERE question_id = q.id
+         SELECT COUNT(*) FROM question_attempts WHERE question_id = qa.question_id
        ) >= 3
        AND (
-         SELECT answered_at FROM question_attempts 
-         WHERE question_id = q.id 
-         ORDER BY answered_at DESC 
+         SELECT answered_at FROM question_attempts
+         WHERE question_id = qa.question_id
+         ORDER BY answered_at DESC
          LIMIT 1
        ) >= ?
      )`,
@@ -3378,101 +1127,33 @@ export async function markFactViewedInStory(factId: number): Promise<void> {
 }
 
 /**
- * Get facts for story view (single category)
- * Returns unseen facts first, then previously viewed facts
+ * Set of fact ids the user has already viewed in a story (local interaction
+ * log). Stories are now fed from the API; the client uses this to order unseen
+ * facts first, replacing the old local is_viewed JOIN.
  */
-export async function getFactsForStory(
-  category: string,
-  language: string
-): Promise<FactWithRelations[]> {
+export async function getViewedStoryFactIds(): Promise<Set<number>> {
   const database = await openDatabase();
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      CASE WHEN fi.story_viewed_at IS NOT NULL THEN 1 ELSE 0 END as is_viewed
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
-    WHERE f.category = ? AND f.language = ?
-      AND (f.is_historical IS NULL OR f.is_historical = 0)
-      AND f.scheduled_date IS NULL
-    ORDER BY is_viewed ASC, COALESCE(f.last_updated, f.created_at) ASC`,
-    [category, language]
+  const rows = await database.getAllAsync<{ fact_id: number }>(
+    `SELECT fact_id FROM fact_interactions WHERE story_viewed_at IS NOT NULL`
   );
-  return mapFactsWithRelations(result);
+  return new Set(rows.map((r) => r.fact_id));
 }
 
 /**
- * Get facts for mixed story view (multiple categories)
- * Returns unseen facts first, then previously viewed facts
- */
-export async function getFactsForMixedStory(
-  categorySlugs: string[],
-  language: string
-): Promise<FactWithRelations[]> {
-  if (categorySlugs.length === 0) return [];
-  const database = await openDatabase();
-  const placeholders = categorySlugs.map(() => '?').join(',');
-  const result = await database.getAllAsync<any>(
-    `SELECT
-      f.*,
-      c.id as category_id,
-      c.name as category_name,
-      c.slug as category_slug,
-      c.description as category_description,
-      c.icon as category_icon,
-      c.color_hex as category_color_hex,
-      CASE WHEN fi.story_viewed_at IS NOT NULL THEN 1 ELSE 0 END as is_viewed
-    FROM facts f
-    LEFT JOIN categories c ON f.category = c.slug
-    LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
-    WHERE f.category IN (${placeholders}) AND f.language = ?
-      AND (f.is_historical IS NULL OR f.is_historical = 0)
-      AND f.scheduled_date IS NULL
-    ORDER BY is_viewed ASC, COALESCE(f.last_updated, f.created_at) ASC`,
-    [...categorySlugs, language]
-  );
-  return mapFactsWithRelations(result);
-}
-
-/**
- * Get unseen story status for each category
- * Returns a map of category slug → whether it has unseen facts
+ * Whether each category has unseen story facts (drives the glowing gradient
+ * ring on the story buttons). Deciding this precisely needed a local facts
+ * JOIN (compare a category's total facts against the locally-viewed set), but
+ * facts are now served from the API and aren't stored locally — we can't know
+ * a category's remote total here. So every category reports "has unseen"
+ * (true) and the ring always glows, which matches the render-layer fallback
+ * (`unseenStatus[slug] ?? true`) and keeps the stories looking active.
  */
 export async function getUnseenStoryStatus(
   categorySlugs: string[],
-  language: string
+  _language: string
 ): Promise<Record<string, boolean>> {
-  if (categorySlugs.length === 0) return {};
-  const database = await openDatabase();
-  const placeholders = categorySlugs.map(() => '?').join(',');
-  const result = await database.getAllAsync<{ category: string; unseen_count: number }>(
-    `SELECT f.category, COUNT(*) as unseen_count
-     FROM facts f
-     LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
-     WHERE f.category IN (${placeholders})
-       AND f.language = ?
-       AND fi.story_viewed_at IS NULL
-       AND (f.is_historical IS NULL OR f.is_historical = 0)
-       AND f.scheduled_date IS NULL
-      GROUP BY f.category`,
-    [...categorySlugs, language]
-  );
-
-  // Build result map - default all to false, then set true for categories with unseen facts
   const statusMap: Record<string, boolean> = {};
-  for (const slug of categorySlugs) {
-    statusMap[slug] = false;
-  }
-  for (const row of result) {
-    statusMap[row.category] = row.unseen_count > 0;
-  }
+  for (const slug of categorySlugs) statusMap[slug] = true;
   return statusMap;
 }
 
@@ -3526,26 +1207,6 @@ export async function addFactDetailTimeSpent(factId: number, seconds: number): P
 
 // ====== DEV TOOLS ======
 
-/**
- * Mark all facts as viewed in story (DEV tool for testing muted ring state)
- * @param language Optional language filter
- */
-export async function markAllFactsViewedInStory(language?: string): Promise<number> {
-  const database = await openDatabase();
-  const now = new Date().toISOString();
-  const query = language
-    ? `INSERT INTO fact_interactions (fact_id, story_viewed_at)
-       SELECT id, ? FROM facts WHERE language = ?
-       ON CONFLICT(fact_id) DO UPDATE SET
-         story_viewed_at = COALESCE(story_viewed_at, excluded.story_viewed_at)`
-    : `INSERT INTO fact_interactions (fact_id, story_viewed_at)
-       SELECT id, ? FROM facts
-       ON CONFLICT(fact_id) DO UPDATE SET
-         story_viewed_at = COALESCE(story_viewed_at, excluded.story_viewed_at)`;
-  const result = await database.runAsync(query, language ? [now, language] : [now]);
-  return result.changes;
-}
-
 // ====== SHARE EVENTS ======
 
 /**
@@ -3560,29 +1221,6 @@ export async function recordShareEvent(factId: number): Promise<void> {
   ]);
 }
 
-/**
- * Update a fact's title (DEV tool for screenshots)
- * @param factId The ID of the fact to update
- * @param newTitle The new title to set
- */
-export async function updateFactTitle(factId: number, newTitle: string): Promise<void> {
-  const database = await openDatabase();
-  await database.runAsync('UPDATE facts SET title = ? WHERE id = ?', [newTitle, factId]);
-}
-
-/**
- * Clear all scheduled dates (DEV tool for screenshots)
- * This effectively clears the feed for fresh screenshot manipulation
- */
-export async function clearAllSchedulingData(): Promise<void> {
-  const database = await openDatabase();
-  await database.runAsync('UPDATE facts SET scheduled_date = NULL, notification_id = NULL');
-}
-
-/**
- * Count distinct facts the user has viewed or opened today.
- * Uses range comparison to leverage existing indexes on story_viewed_at and detail_opened_at.
- */
 export async function getFactsReadTodayCount(): Promise<number> {
   const database = await openDatabase();
   const row = await database.getFirstAsync<{ count: number }>(
@@ -3591,50 +1229,4 @@ export async function getFactsReadTodayCount(): Promise<number> {
         OR detail_opened_at >= datetime('now', 'localtime', 'start of day')`
   );
   return row?.count ?? 0;
-}
-
-/**
- * Get fact IDs and image URLs for pre-caching
- * Covers: fact of the day, next 20 story facts (unseen first), and favorites
- */
-export async function getFactsForOfflineCache(): Promise<Array<{ id: number; image_url: string }>> {
-  const database = await openDatabase();
-
-  // Query each source separately for logging
-  const todayFacts = await database.getAllAsync<{ id: number; image_url: string }>(
-    `SELECT DISTINCT f.id, f.image_url FROM facts f
-     WHERE f.image_url IS NOT NULL AND f.image_url != ''
-       AND date(f.scheduled_date, 'localtime') = date('now', 'localtime')`
-  );
-
-  // Story view: next 20 facts in mix story order (unseen first, then newest)
-  // Same ordering as getFactsForMixedStory
-  const storyFacts = await database.getAllAsync<{ id: number; image_url: string }>(
-    `SELECT f.id, f.image_url
-     FROM facts f
-     LEFT JOIN fact_interactions fi ON f.id = fi.fact_id
-     WHERE f.image_url IS NOT NULL AND f.image_url != ''
-     ORDER BY CASE WHEN fi.story_viewed_at IS NOT NULL THEN 1 ELSE 0 END ASC,
-              COALESCE(f.last_updated, f.created_at) DESC
-     LIMIT 20`
-  );
-
-  // Favorites
-  const favoriteFacts = await database.getAllAsync<{ id: number; image_url: string }>(
-    `SELECT DISTINCT f.id, f.image_url FROM facts f
-     INNER JOIN favorites fav ON f.id = fav.fact_id
-     WHERE f.image_url IS NOT NULL AND f.image_url != ''`
-  );
-
-  // Deduplicate
-  const seen = new Set<number>();
-  const result: Array<{ id: number; image_url: string }> = [];
-  for (const fact of [...todayFacts, ...storyFacts, ...favoriteFacts]) {
-    if (!seen.has(fact.id)) {
-      seen.add(fact.id);
-      result.push(fact);
-    }
-  }
-
-  return result;
 }

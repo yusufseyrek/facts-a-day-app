@@ -8,16 +8,11 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { Button, FONT_FAMILIES, ScreenContainer, Text } from '../../src/components';
-import { ADS_ENABLED, HOME_FEED } from '../../src/config/app';
-import { queryClient } from '../../src/config/queryClient';
+import { ADS_ENABLED } from '../../src/config/app';
 import { useOnboarding } from '../../src/contexts';
-import { homeKeys } from '../../src/hooks/queryKeys';
 import { useTranslation } from '../../src/i18n';
 import { completeConsentFlow, isConsentRequired } from '../../src/services/ads';
 import { Screens, trackOnboardingComplete, trackScreenView } from '../../src/services/analytics';
-import { consumeFeedRefreshPending } from '../../src/services/contentRefresh';
-import { loadDailyFeedSections } from '../../src/services/dailyFeed';
-import * as database from '../../src/services/database';
 import * as notificationService from '../../src/services/notifications';
 import { getNotificationTimes } from '../../src/services/onboarding';
 import { getNeonColors, hexColors, useTheme } from '../../src/theme';
@@ -163,8 +158,7 @@ export default function OnboardingSuccessScreen() {
   const { t, locale } = useTranslation();
   const { typography, iconSizes, spacing, radius, borderWidths, media } = useResponsive();
   const router = useRouter();
-  const { completeOnboarding, selectedCategories, isDownloadingFacts, waitForFirstBatchReady } =
-    useOnboarding();
+  const { completeOnboarding, selectedCategories } = useOnboarding();
 
   const [showConsent, setShowConsent] = useState(false);
   const [consentDone, setConsentDone] = useState(false);
@@ -197,59 +191,21 @@ export default function OnboardingSuccessScreen() {
 
     // Wait for first batch to be ready (enough facts for home screen)
     // Remaining facts continue downloading in the background
-    const downloadAndSave = (async () => {
+    const save = (async () => {
       try {
-        if (isDownloadingFacts) {
-          await waitForFirstBatchReady();
-        }
         await completeOnboarding();
       } catch (error) {
         console.error('Error completing onboarding:', error);
-        try {
-          await completeOnboarding();
-        } catch {
-          /* ignore */
-        }
       }
     })();
 
-    // Pre-load home screen data as soon as download + save finishes
-    const homePreload = downloadAndSave.then(async () => {
-      try {
-        const [feedSections] = await Promise.all([
-          loadDailyFeedSections(locale, true),
-          database.getAllCategories(),
-          database.getUnseenStoryStatus(selectedCategories, locale),
-        ]);
+    // Facts are fetched on demand from the API by the home screen on mount, so
+    // there's no local data to pre-populate here anymore.
 
-        // Pre-populate React Query cache so home screen gets instant data on mount
-        queryClient.setQueryData(homeKeys.dailyFeed(locale), feedSections);
-
-        // Also prime Keep Reading cache so it's available immediately
-        const _latestIds = feedSections.freshFacts
-          .slice(0, HOME_FEED.LATEST_COUNT)
-          .map((f) => f.id);
-        const keepReadingPage = await database.getLatestFactsPaginated(
-          HOME_FEED.KEEP_READING_PAGE_SIZE,
-          HOME_FEED.LATEST_COUNT,
-          locale
-        );
-        queryClient.setQueryData(homeKeys.keepReading(locale), {
-          pages: [keepReadingPage],
-          pageParams: [0],
-        });
-
-        // Clear the flag so home screen doesn't re-query the DB
-        consumeFeedRefreshPending();
-      } catch (error) {
-        console.error('Failed to pre-load home screen data:', error);
-      }
-    });
-
-    // Fire-and-forget after download + save
-    downloadAndSave.then(() => {
-      notificationService.ensureNotificationSchedule(locale, 'cold_start').catch((error) => {
-        console.error('Post-onboarding notification sync failed:', error);
+    // Fire-and-forget after onboarding is saved: register for push + analytics.
+    save.then(() => {
+      notificationService.registerForPush(locale).catch((error) => {
+        console.error('Post-onboarding push registration failed:', error);
       });
 
       getNotificationTimes().then((notificationTimes) => {
@@ -261,8 +217,8 @@ export default function OnboardingSuccessScreen() {
       });
     });
 
-    // Wait for animation timer, download+save, AND home preload
-    await Promise.all([animationTimer, homePreload]);
+    // Wait for the animation timer and the onboarding save.
+    await Promise.all([animationTimer, save]);
 
     setFlowComplete(true);
 

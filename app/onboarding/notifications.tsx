@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Easing, Pressable, ScrollView } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView } from 'react-native';
 
 import { styled } from '@tamagui/core';
 import { Bell } from '@tamagui/lucide-icons';
@@ -197,31 +197,17 @@ export default function NotificationsScreen() {
     setIsScheduling(true);
 
     try {
-      // Schedule notifications (DB-only, OS sync happens on success screen)
-      const result = await notificationService.ensureNotificationSchedule(locale, 'unknown', {
-        forceReschedule: true,
-        skipToday: true,
-        skipOsSync: true,
-      });
-
-      if (result.success) {
-        if (__DEV__) console.log(`Scheduled ${result.count} notifications`);
-        trackOnboardingNotificationsEnabled(notificationTimes.length);
-        router.push('/onboarding/success');
-      } else {
-        setIsScheduling(false);
-        Alert.alert(t('notificationSchedulingFailed'), t('notificationSchedulingFailedMessage'), [
-          { text: t('ok'), style: 'default' },
-        ]);
-      }
+      // Register this device for server-driven push (best-effort). Even if it
+      // can't register (no token / permission), the chosen times are saved and
+      // we proceed — registration retries on next launch.
+      await notificationService.registerForPush(locale);
+      trackOnboardingNotificationsEnabled(notificationTimes.length);
+      router.push('/onboarding/success');
     } catch (error) {
       console.error('Error in notification flow:', error);
       setIsScheduling(false);
-      Alert.alert(
-        t('notificationSchedulingFailed'),
-        error instanceof Error ? error.message : t('notificationSchedulingFailedMessage'),
-        [{ text: t('ok'), style: 'default' }]
-      );
+      // Don't block onboarding on a push-registration failure.
+      router.push('/onboarding/success');
     }
   };
 

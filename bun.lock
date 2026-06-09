@@ -20,10 +20,10 @@
         "expo-application": "~56.0.3",
         "expo-asset": "~56.0.8",
         "expo-audio": "~56.0.5",
-        "expo-background-task": "~56.0.7",
         "expo-blur": "~56.0.3",
         "expo-build-properties": "~56.0.7",
         "expo-constants": "~56.0.8",
+        "expo-dev-client": "~56.0.19",
         "expo-device": "~56.0.4",
         "expo-file-system": "~56.0.4",
         "expo-font": "~56.0.3",
@@ -42,7 +42,6 @@
         "expo-sqlite": "~56.0.3",
         "expo-status-bar": "~56.0.4",
         "expo-store-review": "~56.0.3",
-        "expo-task-manager": "~56.0.7",
         "expo-tracking-transparency": "~56.0.4",
         "expo-updates": "~56.0.8",
         "expo-web-browser": "~56.0.4",
@@ -1246,13 +1245,19 @@
 
     "expo-audio": ["expo-audio@56.0.5", "", { "peerDependencies": { "expo": "*", "expo-asset": "*", "react": "*", "react-native": "*" } }, "sha512-arrzAWeAEgycEHW9Ajo1mQ9a8caTDDjpnyle1JHYAxbcYR5LkS4SIVG7xJxRL3KV8YzmqbXQaZjFT5OeCQ8Nbg=="],
 
-    "expo-background-task": ["expo-background-task@56.0.7", "", { "dependencies": { "expo-task-manager": "~56.0.7" }, "peerDependencies": { "expo": "*" } }, "sha512-qAImd/I14j9roInOc5J1L5B86zM5LRlSYHdRfDBWUiz7gaPk6SLifYYl0vZ3rPkGc0QVqaK3EbAxZTyajk6FLQ=="],
-
     "expo-blur": ["expo-blur@56.0.3", "", { "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }, "sha512-KDDtrpWc2tYlm1WCPaOgBtv+YEGqe5ELheFPIgSNgHt28NQUDcfBcFsA9Us2StDh6osmSD6NbKxOt5bU6PcDbQ=="],
 
     "expo-build-properties": ["expo-build-properties@56.0.7", "", { "dependencies": { "@expo/schema-utils": "^56.0.0", "resolve-from": "^5.0.0", "semver": "^7.6.0" }, "peerDependencies": { "expo": "*" } }, "sha512-UJp3nUO4v6sOrkpipitrVGSHb+Zb3wSwOBA5vndKr+LQcbzq/TeeJkH/vMrBmBp89hyULqlgtuFTE2MtDUBYxg=="],
 
     "expo-constants": ["expo-constants@56.0.9", "", { "dependencies": { "@expo/env": "~2.2.0" }, "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-zOv0Xq9IfzONnmF8+qeub9Cr+KpOTMSXi+bTrQnvdPW4oXPGjMvrmUjGitGc/QgXlTL9jPdDkzCJSqgAMjKVYw=="],
+
+    "expo-dev-client": ["expo-dev-client@56.0.19", "", { "dependencies": { "expo-dev-launcher": "~56.0.19", "expo-dev-menu": "~56.0.16", "expo-dev-menu-interface": "~56.0.0", "expo-manifests": "~56.0.4", "expo-updates-interface": "~56.0.1" }, "peerDependencies": { "expo": "*" } }, "sha512-Mk2AsYGPBb+G30rwNHZvIE0Mi5Zd0yIZ2UdvIqllZjaWITiLbSqHklTgwY3KUs4/HrusXdZrfX7GqJGcUhOPiw=="],
+
+    "expo-dev-launcher": ["expo-dev-launcher@56.0.19", "", { "dependencies": { "@expo/schema-utils": "^56.0.0", "expo-dev-menu": "~56.0.16", "expo-manifests": "~56.0.4" }, "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-O1oJPNYLtVQT+ByIFVm3VsEdjeyvXVr5qCV4DXKGDNg+rXNqRh4GrmLRkupHb1T3tdgLAJ7FRsZL9XY3GoAyPA=="],
+
+    "expo-dev-menu": ["expo-dev-menu@56.0.16", "", { "dependencies": { "expo-dev-menu-interface": "~56.0.0" }, "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-aVgoe+YGhrQnpwiB5BRI7G+uQnGHMUij32bBnEVdc6eJrVZCStxQlV9NeFbbXxrDhLJt6OSqbCHbLR+XToWUUA=="],
+
+    "expo-dev-menu-interface": ["expo-dev-menu-interface@56.0.1", "", { "peerDependencies": { "expo": "*" } }, "sha512-odATx0ZL/Kis10sKSBiKiGQxAB6coSi/KQtKcMhnQVNno6FkRh5/4e5BqcEvpq2rNMTiQp4ytNAQHtdwbPXvGA=="],
 
     "expo-device": ["expo-device@56.0.4", "", { "dependencies": { "ua-parser-js": "^0.7.33" }, "peerDependencies": { "expo": "*" } }, "sha512-ucVcGPkvBrl2QHuy7XcYex2Y6BETvJ6TREutZrwLGUDnlvbpKS8KfQoNZOpvkyo5Nmm9RrasYQ0CrXmBHho2mg=="],
 
@@ -1284,7 +1289,7 @@
 
     "expo-localization": ["expo-localization@56.0.4", "", { "dependencies": { "rtl-detect": "^1.0.2" }, "peerDependencies": { "expo": "*", "react": "*" } }, "sha512-hBK2uj7mhMGtPlWPCt19+OPi+tzyweofcUWkrBypcosHGhPT+nbFdfPMdluWMpHx8ERWDOCh3zrx+yTXZ8eHBQ=="],
 
-    "expo-manifests": ["expo-manifests@56.0.3", "", { "dependencies": { "expo-json-utils": "~56.0.0" }, "peerDependencies": { "expo": "*" } }, "sha512-V14njZK/GQzWhYiwshA24LZr9dtg2hk+PuKSkpODbqoAB/+Z/okmQXBrUuk2x5fziW0U1XL77PpWxKN/jqc+Yw=="],
+    "expo-manifests": ["expo-manifests@56.0.4", "", { "dependencies": { "expo-json-utils": "~56.0.0" }, "peerDependencies": { "expo": "*" } }, "sha512-Fokawl2UkiExIF0bqGoblRFA8lYpROVD+EpvDwSW4LgqQyPwNua1gLSgHZjdl5GsVugfRMMWE3LHaibDyX93hw=="],
 
     "expo-modules-autolinking": ["expo-modules-autolinking@56.0.5", "", { "dependencies": { "@expo/require-utils": "^56.1.0", "@expo/spawn-async": "^1.7.2", "chalk": "^4.1.0", "commander": "^7.2.0" }, "bin": { "expo-modules-autolinking": "bin/expo-modules-autolinking.js" } }, "sha512-eWcgAgvSv5fSjJr3mvTmjm0w/jSnSby8DIqneaQ57JXsyQnnwAUllolPsAYvr0XBMqo80wfRFiGJ3BXj86owaA=="],
 
@@ -1313,8 +1318,6 @@
     "expo-structured-headers": ["expo-structured-headers@56.0.0", "", {}, "sha512-Yv4x+SQxNnMQm4nu8NFfzx197YaDhdYH2N0u7tGErwWTmH9Tm1SAhqo7bLbBWLC9kf7W+kdzTshLU9rTiCXWGw=="],
 
     "expo-symbols": ["expo-symbols@56.0.5", "", { "dependencies": { "@expo-google-fonts/material-symbols": "^0.4.1", "sf-symbols-typescript": "^2.0.0" }, "peerDependencies": { "expo": "*", "expo-font": "*", "react": "*", "react-native": "*" } }, "sha512-RIukH0Xo80C7RU8qreipL2SPy2Py+Km8JFPbCmbPQpHkM3DW9Znlmg6VfhzbtUOlO5EuNSF0lAJ3l2VJi6qYrw=="],
-
-    "expo-task-manager": ["expo-task-manager@56.0.7", "", { "dependencies": { "unimodules-app-loader": "~56.0.0" }, "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-89c8TaZWyGde5MYKOF6eR14UHKPzVLwQA6Pao///QkoGrfNskW9FtF9JpoqSY8/lzU1p50MYnl86/6zr1temwQ=="],
 
     "expo-tracking-transparency": ["expo-tracking-transparency@56.0.4", "", { "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-ZOPHT1EwAEOa68BoQqBtwCvAWfY2Mp4RPFflgE2DTx9Y7qx2XZp7dCFt7hi+WDmtf5/+wdVZxyCErl0LZk/S+w=="],
 
@@ -2182,8 +2185,6 @@
 
     "unicode-property-aliases-ecmascript": ["unicode-property-aliases-ecmascript@2.2.0", "", {}, "sha512-hpbDzxUY9BFwX+UeBnxv3Sh1q7HFxj48DTmXchNgRa46lO8uj3/1iEn3MiNUYTg1g9ctIqXCCERn8gYZhHC5lQ=="],
 
-    "unimodules-app-loader": ["unimodules-app-loader@56.0.1", "", {}, "sha512-Z801jeBOQMUF/ExklxT1BqhEV/oF2/Bii7PFYAj/8Sauxl7oKvZbf70peRzzAU0mG7UQ3yU/UO/EpD1JyJ2WcA=="],
-
     "universalify": ["universalify@0.2.0", "", {}, "sha512-CJ1QgKmNg3CwvAv/kOFmtnEN05f0D/cn9QntgNOQlQF9dgvVTHj3t+8JPdjqawCHk7V/KA+fbUqzZ9XWhcqPUg=="],
 
     "unpipe": ["unpipe@1.0.0", "", {}, "sha512-pjy2bYhSsufwWlKwPc+l3cN7+wuJlK6uz0YdJEOlQDbl6jo/YlPi4mb8agUkVC8BF7V8NuzeyPNqRksA3hztKQ=="],
@@ -2383,6 +2384,8 @@
     "expo-build-properties/semver": ["semver@7.8.0", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-AcM7dV/5ul4EekoQ29Agm5vri8JNqRyj39o0qpX6vDF2GZrtutZl5RwgD1XnZjiTAfncsJhMI48QQH3sN87YNA=="],
 
     "expo-modules-autolinking/commander": ["commander@7.2.0", "", {}, "sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw=="],
+
+    "expo-updates/expo-manifests": ["expo-manifests@56.0.3", "", { "dependencies": { "expo-json-utils": "~56.0.0" }, "peerDependencies": { "expo": "*" } }, "sha512-V14njZK/GQzWhYiwshA24LZr9dtg2hk+PuKSkpODbqoAB/+Z/okmQXBrUuk2x5fziW0U1XL77PpWxKN/jqc+Yw=="],
 
     "expo-updates/ignore": ["ignore@5.3.2", "", {}, "sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g=="],
 

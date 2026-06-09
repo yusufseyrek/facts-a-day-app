@@ -18,6 +18,13 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Secrets — Firebase ADMIN service-account keys only (full project access).
+# NOTE: google-services.json / GoogleService-Info.plist are NOT secrets (public
+# client config) and MUST stay tracked — app.json references them and EAS Build
+# only uploads git-tracked files. Do not ignore those.
+*-firebase-adminsdk-*.json
+service-account*.json
+
 # Metro
 .metro-health-check*
 

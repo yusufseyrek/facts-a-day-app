@@ -445,24 +445,21 @@ async function getAllBadgeProgressValues(): Promise<Map<string, number>> {
          AND (CAST(SUM(ts.correct_answers) AS REAL) / SUM(ts.total_questions)) >= 0.8
        )) as category_ace,
        (SELECT COUNT(*) FROM question_attempts qa
-        JOIN questions q ON qa.question_id = q.id
         WHERE qa.is_correct = 1) as sharp_mind,
-       (SELECT COUNT(*) FROM question_attempts qa
-        JOIN questions q ON qa.question_id = q.id) as endurance,
+       (SELECT COUNT(*) FROM question_attempts qa) as endurance,
        (SELECT COUNT(*) FROM (
-         SELECT q.id
-         FROM questions q
-         WHERE (
+         SELECT qa.question_id AS id
+         FROM question_attempts qa
+         GROUP BY qa.question_id
+         HAVING (
            SELECT COUNT(*) FROM (
              SELECT is_correct FROM question_attempts
-             WHERE question_id = q.id
+             WHERE question_id = qa.question_id
              ORDER BY answered_at DESC
              LIMIT 3
            ) WHERE is_correct = 1
          ) = 3
-         AND (
-           SELECT COUNT(*) FROM question_attempts WHERE question_id = q.id
-         ) >= 3
+         AND COUNT(*) >= 3
        )) as master_scholar,
        (SELECT COUNT(*) FROM favorites) as fact_collector,
        (SELECT COUNT(*) FROM share_events) as knowledge_sharer`
@@ -539,7 +536,6 @@ async function getBadgeProgressValue(badgeId: string): Promise<number> {
     case 'sharp_mind': {
       const r = await db.getFirstAsync<{ count: number }>(
         `SELECT COUNT(*) as count FROM question_attempts qa
-         JOIN questions q ON qa.question_id = q.id
          WHERE qa.is_correct = 1`
       );
       return r?.count || 0;
@@ -563,22 +559,23 @@ async function getBadgeProgressValue(badgeId: string): Promise<number> {
     }
 
     case 'master_scholar': {
-      // Reuse the mastered count logic from database.ts
+      // A question is "mastered" when its last 3 attempts are all correct.
+      // Question content is no longer stored locally, so derive candidate
+      // question IDs from the attempts table (the permanent local record).
       const r = await db.getFirstAsync<{ count: number }>(
         `SELECT COUNT(*) as count FROM (
-           SELECT q.id
-           FROM questions q
-           WHERE (
+           SELECT qa.question_id AS id
+           FROM question_attempts qa
+           GROUP BY qa.question_id
+           HAVING (
              SELECT COUNT(*) FROM (
                SELECT is_correct FROM question_attempts
-               WHERE question_id = q.id
+               WHERE question_id = qa.question_id
                ORDER BY answered_at DESC
                LIMIT 3
              ) WHERE is_correct = 1
            ) = 3
-           AND (
-             SELECT COUNT(*) FROM question_attempts WHERE question_id = q.id
-           ) >= 3
+           AND COUNT(*) >= 3
          )`
       );
       return r?.count || 0;
@@ -640,8 +637,7 @@ async function getBadgeProgressValue(badgeId: string): Promise<number> {
 
     case 'endurance': {
       const r = await db.getFirstAsync<{ count: number }>(
-        `SELECT COUNT(*) as count FROM question_attempts qa
-         JOIN questions q ON qa.question_id = q.id`
+        `SELECT COUNT(*) as count FROM question_attempts qa`
       );
       return r?.count || 0;
     }

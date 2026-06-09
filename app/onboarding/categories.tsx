@@ -22,6 +22,7 @@ import {
   trackOnboardingStart,
   trackScreenView,
 } from '../../src/services/analytics';
+import * as api from '../../src/services/api';
 import * as db from '../../src/services/database';
 import { hexColors, useTheme } from '../../src/theme';
 import { hexToHue } from '../../src/utils/colors';
@@ -159,9 +160,10 @@ export default function Categories() {
 
   const loadCategories = async () => {
     try {
-      const categoriesFromDb = await db.getAllCategories();
-      categoriesFromDb.sort((a, b) => hexToHue(a.color_hex) - hexToHue(b.color_hex));
-      setCategories(categoriesFromDb);
+      const metadata = await api.getMetadata();
+      const categoriesFromApi = [...metadata.categories];
+      categoriesFromApi.sort((a, b) => hexToHue(a.color_hex) - hexToHue(b.color_hex));
+      setCategories(categoriesFromApi);
     } catch (error) {
       console.error('Error loading categories:', error);
     } finally {

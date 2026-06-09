@@ -1,4 +1,4 @@
-import { __testing, getAllFacts, reportFact } from '../../services/api';
+import { __testing, reportFact } from '../../services/api';
 
 const { fetchWithTimeout, retryWithBackoff } = __testing;
 
@@ -148,59 +148,6 @@ describe('api — retryWithBackoff', () => {
 
     await expect(retryWithBackoff(fn, 3, 1)).rejects.toThrow('server error');
     expect(fn).toHaveBeenCalledTimes(3);
-  });
-});
-
-describe('api — getAllFacts', () => {
-  beforeEach(() => {
-    jest.useRealTimers();
-  });
-
-  it('fires 3 concurrent initial requests', async () => {
-    const mockFactsResponse = {
-      facts: Array.from({ length: 10 }, (_, i) => ({
-        id: i,
-        content: `fact ${i}`,
-        language: 'en',
-        created_at: '2025-01-01',
-      })),
-      pagination: { total: 10, limit: 1000, offset: 0, has_more: false },
-    };
-
-    // Each call needs its own Response object (body can only be read once)
-    (global.fetch as jest.Mock) = jest.fn().mockImplementation(() =>
-      Promise.resolve(
-        new Response(JSON.stringify(mockFactsResponse), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      )
-    );
-
-    await getAllFacts('en');
-
-    // Should have made 3 initial concurrent requests (offsets 0, 1000, 2000)
-    expect(global.fetch).toHaveBeenCalledTimes(3);
-  });
-
-  it('calls progress callback', async () => {
-    const mockResponse = {
-      facts: [{ id: 1, content: 'fact', language: 'en', created_at: '2025-01-01' }],
-      pagination: { total: 1, limit: 1000, offset: 0, has_more: false },
-    };
-
-    (global.fetch as jest.Mock) = jest.fn().mockImplementation(() =>
-      Promise.resolve(
-        new Response(JSON.stringify(mockResponse), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      )
-    );
-
-    const onProgress = jest.fn();
-    await getAllFacts('en', undefined, onProgress);
-    expect(onProgress).toHaveBeenCalled();
   });
 });
 

@@ -17,9 +17,11 @@ import { useFocusEffect } from 'expo-router';
 import { useRouter } from 'expo-router';
 
 import { useTranslation } from '../i18n';
+import * as api from '../services/api';
 import { onFeedRefresh } from '../services/contentRefresh';
 import * as database from '../services/database';
 import { getSelectedCategories } from '../services/onboarding';
+import { prefetchStory } from '../services/storyPrefetch';
 import { onPreferenceFeedRefresh } from '../services/preferences';
 import { hexColors, useTheme } from '../theme';
 import { getLucideIcon } from '../utils/iconMapper';
@@ -112,6 +114,9 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     // would force the cache-persist side effect into the updater body).
     const categoriesRef = useRef(categories);
     categoriesRef.current = categories;
+    // User's selected category slugs — needed to expand the 'mix' button into a
+    // concrete categories param when prefetching. Populated by loadCategories.
+    const selectedSlugsRef = useRef<string[]>([]);
 
     useImperativeHandle(ref, () => ({
       scrollToStart: () => {
@@ -159,11 +164,13 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     const loadCategories = async () => {
       try {
         const selectedSlugs = await getSelectedCategories();
-        const allCategories = await database.getAllCategories();
+        selectedSlugsRef.current = selectedSlugs;
+        const metadata = await api.getMetadata(locale);
+        const allCategories = metadata.categories;
 
         // Build a map for quick lookup
         const categoryMap = new Map<string, Category>();
-        allCategories.forEach((cat) => categoryMap.set(cat.slug, cat));
+        allCategories.forEach((cat) => categoryMap.set(cat.slug, cat as Category));
 
         // Build items from user's selected categories
         const items: CategoryItem[] = [];
@@ -197,6 +204,11 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
         setUnseenStatus(status);
         setCategories(newItems);
         setCachedRow(locale, { items: newItems, unseenStatus: status });
+
+        // Warm the feeds most likely to be tapped (Mix + first couple of
+        // categories) once the row is on screen, so the first story card is
+        // instant. Press-in prefetch (below) covers the rest.
+        newItems.slice(0, 3).forEach((it) => prefetchStory(locale, it.slug, selectedSlugs));
       } catch {
         // Ignore errors
       } finally {
@@ -234,6 +246,15 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
       [router]
     );
 
+    // Warm a category's story feed before the tap so the first card shows
+    // instantly. Fired on press-in (below) and for the first few buttons on load.
+    const handlePrefetch = useCallback(
+      (item: CategoryItem) => {
+        prefetchStory(locale, item.slug, selectedSlugsRef.current);
+      },
+      [locale]
+    );
+
     const renderItem = useCallback(
       ({ item }: { item: CategoryItem }) => {
         // Mix button has unseen if ANY category has unseen
@@ -250,6 +271,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
             surfaceColor={colors.surface}
             borderColor={colors.border}
             onPress={() => handlePress(item)}
+            onPrefetch={() => handlePrefetch(item)}
             circleSize={circleSize}
             iconSize={iconSize}
             borderWidth={borderWidths.medium}
@@ -258,7 +280,17 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
           />
         );
       },
-      [colors, handlePress, circleSize, iconSize, borderWidths, spacing, typography, unseenStatus]
+      [
+        colors,
+        handlePress,
+        handlePrefetch,
+        circleSize,
+        iconSize,
+        borderWidths,
+        spacing,
+        typography,
+        unseenStatus,
+      ]
     );
 
     const keyExtractor = useCallback((item: CategoryItem) => item.slug, []);
@@ -414,6 +446,7 @@ const CategoryButton = React.memo(
     surfaceColor,
     borderColor,
     onPress,
+    onPrefetch,
     circleSize,
     iconSize,
     borderWidth,
@@ -427,6 +460,7 @@ const CategoryButton = React.memo(
     surfaceColor: string;
     borderColor: string;
     onPress: () => void;
+    onPrefetch: () => void;
     circleSize: number;
     iconSize: number;
     borderWidth: number;
@@ -446,7 +480,10 @@ const CategoryButton = React.memo(
     }));
     const handlePressIn = useCallback(() => {
       scale.value = withSpring(0.92, { damping: 15, stiffness: 300 });
-    }, []);
+      // Warm this category's feed the instant the finger lands, before the
+      // navigation completes — a usable head start even on a cache miss.
+      onPrefetch();
+    }, [onPrefetch]);
     const handlePressOut = useCallback(() => {
       scale.value = withSpring(1, { damping: 15, stiffness: 150 });
     }, []);

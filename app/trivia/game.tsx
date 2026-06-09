@@ -168,7 +168,7 @@ export default function TriviaGameScreen() {
   useEffect(() => {
     if (params.sessionId) {
       triviaService
-        .getSessionById(Number(params.sessionId))
+        .getSessionById(Number(params.sessionId), locale)
         .then((session) => {
           if (session) {
             setReviewSession(session);

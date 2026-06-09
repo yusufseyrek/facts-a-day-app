@@ -85,75 +85,20 @@ export default function FactDetailModal() {
         return;
       }
 
-      // Look up fact in local database
-      let factData = await database.getFactById(factId);
-
-      // If not found locally, fetch from API (for deep links to facts not yet synced)
-      if (!factData) {
-        try {
-          const apiResponse = await api.getFactById(factId, locale, true);
-          // Validate API response has required fields
-          if (!apiResponse || !apiResponse.content) {
-            setError(t('factNotFound'));
-            return;
-          }
-          // Look up category from local DB (categories are already synced)
-          const categoryData = apiResponse.category
-            ? await database.getCategoryBySlug(apiResponse.category)
-            : null;
-
-          // Save fact to database for offline access
-          const factToSave: database.Fact = {
-            id: apiResponse.id,
-            title: apiResponse.title,
-            content: apiResponse.content,
-            summary: apiResponse.summary,
-            category: apiResponse.category,
-            source_url: apiResponse.source_url,
-            image_url: apiResponse.image_url,
-            language: apiResponse.language,
-            created_at: apiResponse.created_at,
-            last_updated: apiResponse.updated_at,
-          };
-          await database.insertFacts([factToSave]);
-
-          // Save questions to database if present
-          if (apiResponse.questions && apiResponse.questions.length > 0) {
-            const questionsToSave: database.Question[] = apiResponse.questions.map((q) => ({
-              id: q.id,
-              fact_id: apiResponse.id,
-              question_type: q.question_type,
-              question_text: q.question_text,
-              correct_answer: q.correct_answer,
-              wrong_answers: q.wrong_answers ? JSON.stringify(q.wrong_answers) : null,
-              explanation: q.explanation,
-              difficulty: q.difficulty,
-            }));
-            await database.insertQuestions(questionsToSave);
-          }
-
-          // Map API response to FactWithRelations
-          factData = {
-            ...apiResponse,
-            audio_url: apiResponse.audio_url || undefined,
-            is_historical: apiResponse.is_historical ? 1 : 0,
-            event_month: apiResponse.metadata?.month,
-            event_day: apiResponse.metadata?.day,
-            event_year: apiResponse.metadata?.event_year,
-            metadata: apiResponse.metadata
-              ? JSON.stringify({
-                  original_event: apiResponse.metadata.original_event,
-                  country: apiResponse.metadata.country,
-                })
-              : undefined,
-            last_updated: apiResponse.updated_at,
-            categoryData,
-          };
-        } catch {
-          // API also failed - fact doesn't exist
+      // Facts are served on demand from the API (no local mirror). The feed and
+      // by-ids endpoints return category attribution inline, so mapping is a
+      // pure transform — no local category lookup needed.
+      let factData: FactWithRelations;
+      try {
+        const apiResponse = await api.getFactById(factId, locale, true);
+        if (!apiResponse || !apiResponse.content) {
           setError(t('factNotFound'));
           return;
         }
+        factData = database.mapApiFactToRelations(apiResponse);
+      } catch {
+        setError(t('factNotFound'));
+        return;
       }
 
       setFact(factData);

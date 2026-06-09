@@ -133,34 +133,16 @@ async function getReadingHabits(): Promise<ReadingHabits> {
   };
 }
 
-async function getTopCategoriesRead(limit: number): Promise<CategoryStat[]> {
-  const db = await openDatabase();
-
-  const rows = await db.getAllAsync<{
-    slug: string | null;
-    name: string | null;
-    color_hex: string | null;
-    n: number;
-  }>(
-    `SELECT c.slug AS slug, c.name AS name, c.color_hex AS color_hex, COUNT(*) AS n
-     FROM fact_interactions fi
-     JOIN facts f ON f.id = fi.fact_id
-     LEFT JOIN categories c ON c.slug = f.category
-     WHERE fi.detail_read_at IS NOT NULL OR fi.story_viewed_at IS NOT NULL
-     GROUP BY c.slug
-     ORDER BY n DESC
-     LIMIT ?`,
-    [limit]
-  );
-
-  return rows
-    .filter((r) => r.slug && r.name)
-    .map((r) => ({
-      slug: r.slug!,
-      name: r.name!,
-      colorHex: r.color_hex,
-      count: r.n,
-    }));
+async function getTopCategoriesRead(_limit: number): Promise<CategoryStat[]> {
+  // The "top categories read" breakdown joined fact_interactions → facts →
+  // categories, but fact content (and its category) is no longer stored
+  // locally. We only record which fact IDs were read, not their category, so
+  // this can't be computed from the thin cache. The Reading Stats screen
+  // already guards on `topCategories.length > 0` and simply hides the card.
+  //
+  // To re-enable: persist `category_slug` on `fact_interactions` at read time
+  // (FactModal/story write sites have the slug) and GROUP BY it here.
+  return [];
 }
 
 // ============================================
