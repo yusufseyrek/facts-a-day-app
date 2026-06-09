@@ -250,8 +250,15 @@ function AppContent() {
         <Stack.Screen
           name="fact/[id]"
           options={{
-            presentation: 'modal',
+            presentation: 'card',
             headerShown: false,
+            // Native iOS left-edge swipe-back to dismiss the fact detail. A
+            // horizontal gesture never conflicts with the screen's vertical
+            // scroll/parallax (unlike a modal's swipe-down), so it's reliable.
+            gestureEnabled: true,
+            gestureDirection: 'horizontal',
+            animation: 'slide_from_right',
+            fullScreenGestureEnabled: true,
             contentStyle: { backgroundColor },
           }}
         />
