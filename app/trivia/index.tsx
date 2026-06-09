@@ -72,10 +72,11 @@ export default function TriviaScreen() {
     categoryIcon?: string;
     categoryColor?: string;
     questionCount: number;
-    masteredCount: number;
-    totalQuestions: number;
-    answeredCount: number;
-    correctCount: number;
+    // Progress fields below are daily/mixed-only; category sessions omit them.
+    masteredCount?: number;
+    totalQuestions?: number;
+    answeredCount?: number;
+    correctCount?: number;
   } | null>(null);
 
   // Keep last valid data for smooth close animation
@@ -166,11 +167,9 @@ export default function TriviaScreen() {
   };
 
   const showCategoryTriviaIntro = (category: CategoryWithProgress) => {
-    // Each session uses category trivia questions limit
-    const remainingQuestions = Math.min(
-      category.total - category.mastered,
-      triviaService.CATEGORY_TRIVIA_QUESTIONS
-    );
+    // Category sessions fetch a fixed number of questions from the API on start;
+    // there's no local pool to subtract a "mastered" count from. Show the
+    // session size (clamped at fetch time if a category has fewer available).
     setPendingTrivia({
       type: 'category',
       categorySlug: category.slug,
@@ -178,11 +177,7 @@ export default function TriviaScreen() {
       categoryDescription: category.description || undefined,
       categoryIcon: category.icon || undefined,
       categoryColor: category.color_hex || undefined,
-      questionCount: remainingQuestions,
-      masteredCount: category.mastered,
-      totalQuestions: category.total,
-      answeredCount: category.answered,
-      correctCount: category.correct,
+      questionCount: triviaService.CATEGORY_TRIVIA_QUESTIONS,
     });
   };
 

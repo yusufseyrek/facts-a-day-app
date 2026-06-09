@@ -74,11 +74,6 @@ export function TriviaGridCard({
     return getLucideIcon(icon, iconSizes.lg, accentColor);
   };
 
-  // Subtitle: only an explicitly provided one (daily/mixed). Category cards show
-  // no question count — it was always derived from a local total that no longer
-  // exists (questions are fetched from the API on tap).
-  const getSubtitle = () => subtitle ?? '';
-
   // Check if daily trivia is available (not completed and has questions)
   const isDailyAvailable = type === 'daily' && !isCompleted && !isDisabled;
 
@@ -148,13 +143,17 @@ export function TriviaGridCard({
           >
             {title}
           </Text.Label>
-          <Text.Caption
-            color={secondaryTextColor}
-            numberOfLines={1}
-            textAlign={centerContent ? 'center' : 'left'}
-          >
-            {getSubtitle()}
-          </Text.Caption>
+          {/* Only render the subtitle when there's text — an empty caption left
+              a blank line under category cards (which carry no subtitle). */}
+          {subtitle ? (
+            <Text.Caption
+              color={secondaryTextColor}
+              numberOfLines={1}
+              textAlign={centerContent ? 'center' : 'left'}
+            >
+              {subtitle}
+            </Text.Caption>
+          ) : null}
         </YStack>
       </YStack>
     </Pressable>
