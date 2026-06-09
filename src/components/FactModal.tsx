@@ -508,8 +508,13 @@ export function FactModal({
 
   const hasImage = !!imageUri && !isImageError;
 
-  // Header height = padding + measured title height
-  const basePaddingTop = Platform.OS === 'ios' ? spacing.xl : insets.top;
+  // Header height = padding + measured title height.
+  // Always offset by the real safe-area inset so the header (and the close
+  // button, which keys off basePaddingTop) clears the status bar / notch.
+  // fact/[id] is now a full-screen card (not a modal) that renders UNDER the
+  // status bar, so iOS needs insets.top too — a fixed pad overlapped the bar.
+  // spacing.lg adds consistent breathing room below the inset on both platforms.
+  const basePaddingTop = insets.top + spacing.lg;
   const basePaddingBottom = spacing.lg;
   const headerHeight = basePaddingTop + basePaddingBottom + titleHeight;
 
@@ -1238,9 +1243,8 @@ export function FactModal({
         <View
           style={{
             position: 'absolute',
-            // basePaddingTop already accounts for safe area on Android
-            // (insets.top) and uses spacing.xl on iOS, so the X aligns with
-            // the header content top on both platforms.
+            // basePaddingTop = safe-area inset + spacing.lg on both platforms,
+            // so the X clears the status bar and aligns with the header top.
             top: basePaddingTop,
             right: spacing.xl,
             zIndex: 9999,
