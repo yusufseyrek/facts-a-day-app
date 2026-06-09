@@ -5,15 +5,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Text } from '../../src/components';
 import { FactModal } from '../../src/components/FactModal';
+import { useFactDetail } from '../../src/hooks/useFactDetail';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackFactView, trackScreenView } from '../../src/services/analytics';
-import * as api from '../../src/services/api';
 import * as database from '../../src/services/database';
 import { hexColors } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { FactViewSource } from '../../src/services/analytics';
-import type { FactWithRelations } from '../../src/services/database';
 
 export default function FactDetailModal() {
   const {
@@ -44,83 +43,50 @@ export default function FactDetailModal() {
 
   const initialIndex = currentIndexParam ? parseInt(currentIndexParam, 10) : 0;
   const [currentIndex, setCurrentIndex] = useState(isNaN(initialIndex) ? 0 : initialIndex);
-  const [fact, setFact] = useState<FactWithRelations | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // When a related fact is tapped we display that id instead of the route/list id.
+  const [overrideFactId, setOverrideFactId] = useState<number | null>(null);
   const trackedFactIds = useRef(new Set<number>());
 
-  // Determine the current fact ID — either from navigation state or the route param
+  // Resolve the fact id to show: a tapped related fact wins; otherwise the
+  // current list index; otherwise the route param.
   const currentFactId = useMemo(() => {
+    if (overrideFactId !== null) return overrideFactId;
     if (factIds && currentIndex >= 0 && currentIndex < factIds.length) {
       return factIds[currentIndex];
     }
     return parseInt(id, 10);
-  }, [factIds, currentIndex, id]);
+  }, [overrideFactId, factIds, currentIndex, id]);
 
-  const hasNext = factIds !== null && currentIndex < factIds.length - 1;
-  const hasPrevious = factIds !== null && currentIndex > 0;
+  const hasNext =
+    overrideFactId === null && factIds !== null && currentIndex < factIds.length - 1;
+  const hasPrevious = overrideFactId === null && factIds !== null && currentIndex > 0;
   const totalCount = factIds ? factIds.length : undefined;
+
+  // Data: instant from cache (initialData), refetched in the background for
+  // questions. No more blocking fetch behind a full-screen spinner on a warm tap.
+  const { data: apiFact, isLoading, isError } = useFactDetail(currentFactId, locale);
+
+  const fact = useMemo(
+    () => (apiFact ? database.mapApiFactToRelations(apiFact) : null),
+    [apiFact]
+  );
 
   useEffect(() => {
     trackScreenView(Screens.FACT_DETAIL);
   }, []);
 
-  const isInitialLoad = useRef(true);
+  // Track a view once per fact, when its data is available.
   useEffect(() => {
-    const isNavigation = !isInitialLoad.current;
-    isInitialLoad.current = false;
-    loadFact(currentFactId, isNavigation);
-  }, [currentFactId]);
-
-  const loadFact = async (factId: number, isNavigation = false) => {
-    try {
-      // Only show full loading screen on initial load, not when navigating
-      if (!isNavigation) {
-        setLoading(true);
-      }
-      setError(null);
-
-      if (isNaN(factId)) {
-        setError(t('invalidFactId'));
-        return;
-      }
-
-      // Facts are served on demand from the API (no local mirror). The feed and
-      // by-ids endpoints return category attribution inline, so mapping is a
-      // pure transform — no local category lookup needed.
-      let factData: FactWithRelations;
-      try {
-        const apiResponse = await api.getFactById(factId, locale, true);
-        if (!apiResponse || !apiResponse.content) {
-          setError(t('factNotFound'));
-          return;
-        }
-        factData = database.mapApiFactToRelations(apiResponse);
-      } catch {
-        setError(t('factNotFound'));
-        return;
-      }
-
-      setFact(factData);
-      trackView(factData);
-    } catch (err) {
-      console.error('Error loading fact:', err);
-      setError(t('failedToLoadFact'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const trackView = (factData: FactWithRelations) => {
-    if (trackedFactIds.current.has(factData.id)) return;
-    trackedFactIds.current.add(factData.id);
-    const categorySlug = factData.categoryData?.slug || factData.category || 'unknown';
+    if (!fact) return;
+    if (trackedFactIds.current.has(fact.id)) return;
+    trackedFactIds.current.add(fact.id);
+    const categorySlug = fact.categoryData?.slug || fact.category || 'unknown';
     trackFactView({
-      factId: factData.id,
+      factId: fact.id,
       category: categorySlug,
       source: source || 'home_latest',
     });
-  };
+  }, [fact, source]);
 
   const handleClose = useCallback(() => {
     router.back();
@@ -128,19 +94,23 @@ export default function FactDetailModal() {
 
   const handleNext = useCallback(() => {
     if (!factIds || currentIndex >= factIds.length - 1) return;
-    setCurrentIndex(currentIndex + 1);
+    setOverrideFactId(null);
+    setCurrentIndex((i) => i + 1);
   }, [factIds, currentIndex]);
 
   const handlePrevious = useCallback(() => {
     if (!factIds || currentIndex <= 0) return;
-    setCurrentIndex(currentIndex - 1);
+    setOverrideFactId(null);
+    setCurrentIndex((i) => i - 1);
   }, [factIds, currentIndex]);
 
   const handleRelatedFactPress = useCallback((factId: number) => {
-    loadFact(factId, true);
+    setOverrideFactId(factId);
   }, []);
 
-  if (loading) {
+  // Only show the spinner when we have NOTHING to render yet (cold tap with no
+  // cached fact). A warm tap has initialData, so this is skipped entirely.
+  if (isLoading && !fact) {
     return (
       <View
         style={{
@@ -155,7 +125,8 @@ export default function FactDetailModal() {
     );
   }
 
-  if (error || !fact) {
+  if ((isError && !fact) || !fact) {
+    const invalid = !Number.isFinite(currentFactId) || currentFactId <= 0;
     return (
       <View
         style={{
@@ -166,7 +137,9 @@ export default function FactDetailModal() {
           backgroundColor: hexColors.dark.background,
         }}
       >
-        <Text.Body color="$textSecondary">{error || t('factNotFound')}</Text.Body>
+        <Text.Body color="$textSecondary">
+          {invalid ? t('invalidFactId') : t('factNotFound')}
+        </Text.Body>
       </View>
     );
   }
@@ -175,12 +148,12 @@ export default function FactDetailModal() {
     <FactModal
       fact={fact}
       onClose={handleClose}
-      onNext={factIds ? handleNext : undefined}
-      onPrevious={factIds ? handlePrevious : undefined}
+      onNext={factIds && overrideFactId === null ? handleNext : undefined}
+      onPrevious={factIds && overrideFactId === null ? handlePrevious : undefined}
       hasNext={hasNext}
       hasPrevious={hasPrevious}
-      currentIndex={factIds ? currentIndex : undefined}
-      totalCount={totalCount}
+      currentIndex={factIds && overrideFactId === null ? currentIndex : undefined}
+      totalCount={overrideFactId === null ? totalCount : undefined}
       source={source}
       onRelatedFactPress={handleRelatedFactPress}
     />
