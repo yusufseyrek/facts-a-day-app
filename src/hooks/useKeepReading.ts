@@ -1,12 +1,8 @@
 import { useCallback, useMemo } from 'react';
 
-import { useInfiniteQuery } from '@tanstack/react-query';
-
 import { HOME_FEED } from '../config/app';
-import { getFactsFeed } from '../services/api';
-import { mapApiFactToRelations } from '../services/database';
 
-import { factKeys } from './queryKeys';
+import { useHomeFeedData } from './useHomeFeedData';
 
 import type { FactWithRelations } from '../services/database';
 
@@ -18,26 +14,18 @@ interface UseKeepReadingResult {
 }
 
 /**
- * Infinite "Keep Reading" list, now backed by the cursor feed instead of the
- * local SQLite mirror. Pages by the opaque `next_cursor` the backend returns;
- * React Query's cache holds the pages.
+ * "Keep Reading" — everything in the shared home-feed stream AFTER the Latest
+ * carousel's first HOME_FEED.LATEST_COUNT facts. Reads from the same infinite
+ * query as the Latest carousel (see useHomeFeedData), so the two never overlap;
+ * infinite scroll keeps paging the same stream via cursor.
  */
 export function useKeepReading(locale: string): UseKeepReadingResult {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: factKeys.feed(locale),
-    queryFn: ({ pageParam }) =>
-      getFactsFeed({
-        language: locale,
-        limit: HOME_FEED.KEEP_READING_PAGE_SIZE,
-        cursor: pageParam ?? undefined,
-      }),
-    initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) => (lastPage.has_more ? lastPage.next_cursor : undefined),
-  });
+  const { facts, fetchNextPage, hasNextPage, isFetchingNextPage } = useHomeFeedData(locale);
 
-  const facts = useMemo(
-    () => (data?.pages ?? []).flatMap((p) => p.facts).map(mapApiFactToRelations),
-    [data]
+  // Skip the facts already shown in the Latest carousel.
+  const keepReadingFacts = useMemo(
+    () => facts.slice(HOME_FEED.LATEST_COUNT),
+    [facts]
   );
 
   const loadMore = useCallback(() => {
@@ -47,9 +35,9 @@ export function useKeepReading(locale: string): UseKeepReadingResult {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return {
-    facts,
+    facts: keepReadingFacts,
     fetchNextPage: loadMore,
-    hasNextPage: hasNextPage ?? false,
+    hasNextPage,
     isFetchingNextPage,
   };
 }

@@ -4,10 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 
 import { HOME_FEED } from '../config/app';
 import { usePreloadedData } from '../contexts';
-import { getFactsFeed, getOnThisDay } from '../services/api';
+import { getOnThisDay } from '../services/api';
 import { mapApiFactToRelations } from '../services/database';
 
 import { factKeys } from './queryKeys';
+import { useHomeFeedData } from './useHomeFeedData';
 
 import type { FactWithRelations } from '../services/database';
 
@@ -20,28 +21,28 @@ interface UseHomeFeedResult {
 }
 
 /**
- * Home sections (Latest carousel + On This Day), fetched on demand from the API
- * instead of the local mirror. Latest = first page of the cursor feed; On This
- * Day = the dedicated endpoint (exact date, with a ±3-day week fallback).
+ * Home sections (Latest carousel + On This Day). Latest is the FIRST
+ * HOME_FEED.LATEST_COUNT facts of the shared home-feed stream (see
+ * useHomeFeedData) — the same query Keep Reading reads from, so the two never
+ * show the same fact. On This Day is its own dedicated endpoint (exact date,
+ * with a ±3-day week fallback).
  */
 export function useHomeFeed(locale: string): UseHomeFeedResult {
   const { signalHomeScreenReady } = usePreloadedData();
 
-  const latestQuery = useQuery({
-    queryKey: [...factKeys.feed(locale), 'latest', HOME_FEED.LATEST_COUNT] as const,
-    queryFn: () => getFactsFeed({ language: locale, limit: HOME_FEED.LATEST_COUNT }),
-  });
+  const { facts: feedFacts, isLoading: feedLoading } = useHomeFeedData(locale);
 
   const onThisDayQuery = useQuery({
     queryKey: factKeys.onThisDay(locale),
     queryFn: () => getOnThisDay(locale),
   });
 
-  const isLoading = latestQuery.isLoading || onThisDayQuery.isLoading;
+  const isLoading = feedLoading || onThisDayQuery.isLoading;
 
+  // Latest = the first N facts of the shared stream.
   const latestFacts = useMemo(
-    () => (latestQuery.data?.facts ?? []).map(mapApiFactToRelations),
-    [latestQuery.data]
+    () => feedFacts.slice(0, HOME_FEED.LATEST_COUNT),
+    [feedFacts]
   );
 
   const latestFactIds = useMemo(() => latestFacts.map((f) => f.id), [latestFacts]);
