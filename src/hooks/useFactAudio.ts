@@ -92,12 +92,15 @@ export function useFactAudio(
   // Progress shared value — declared early so the factId reset effect can clear it.
   const progress = useSharedValue(0);
 
-  // Latched maximum duration for the current source. expo-audio reports
-  // status.duration as a partial/growing estimate while the audio is still
-  // buffering, so dividing currentTime by the live duration makes the ring
-  // reach 1.0 long before the audio ends. Tracking the largest duration seen
-  // gives a stable denominator → the ring tracks real elapsed fraction.
-  const maxDurationRef = useRef(0);
+  // Cached TRUE duration for the current source. expo-audio reports
+  // status.duration as 0/NaN until the item's metadata is loaded
+  // (isLoaded === true), then snaps to the real value — it does NOT creep up.
+  // We pin the FIRST finite, positive duration seen after load and keep it, so
+  // a transient 0/NaN frame, or a stale frame from the PREVIOUS source after a
+  // swap (e.g. a shorter clip's 12s), can never become the denominator and fill
+  // the ring early. (An earlier max-latch failed: it could seed a too-small
+  // stale value and, only ratcheting up, never correct it.)
+  const durationRef = useRef(0);
 
   // When the fact changes (prev/next in the modal), reset UI state immediately
   // and stop the current player. Without explicit pause+seek, expo-audio keeps
@@ -106,7 +109,7 @@ export function useFactAudio(
   useEffect(() => {
     setPlaybackState('idle');
     progress.value = 0;
-    maxDurationRef.current = 0;
+    durationRef.current = 0;
     try {
       player.pause();
       player.seekTo(0);
@@ -180,14 +183,21 @@ export function useFactAudio(
     cacheFactAudio(factId, language, audioUrl).catch(() => {});
   }, [resolvedSource, audioUrl, factId, language]);
 
-  // Progress shared value driven from status, against the LATCHED max duration
-  // (status.duration grows while buffering, which otherwise fills the ring early).
+  // Progress shared value driven from status against the cached TRUE duration.
+  // Trust status.duration only once the item is loaded and finite, then pin the
+  // first such value — so a later transient 0/NaN frame, or a stale frame from a
+  // prior source, can't collapse the denominator and fill the ring early.
   useEffect(() => {
     const liveDuration = status?.duration ?? 0;
-    if (liveDuration > maxDurationRef.current) {
-      maxDurationRef.current = liveDuration;
+    if (
+      durationRef.current <= 0 &&
+      status?.isLoaded === true &&
+      Number.isFinite(liveDuration) &&
+      liveDuration > 0
+    ) {
+      durationRef.current = liveDuration;
     }
-    const denom = maxDurationRef.current;
+    const denom = durationRef.current;
     if (denom <= 0) {
       progress.value = 0;
       return;
@@ -196,7 +206,7 @@ export function useFactAudio(
     progress.value = reduceMotion
       ? next
       : withTiming(next, { duration: 260, easing: Easing.linear });
-  }, [status?.currentTime, status?.duration, reduceMotion, progress]);
+  }, [status?.currentTime, status?.duration, status?.isLoaded, reduceMotion, progress]);
 
   const toggle = useCallback(() => {
     if (!hasAudio) return;
@@ -232,7 +242,12 @@ export function useFactAudio(
   return {
     playbackState,
     progress,
-    durationSeconds: Math.max(maxDurationRef.current, status?.duration ?? 0),
+    durationSeconds:
+      durationRef.current > 0
+        ? durationRef.current
+        : Number.isFinite(status?.duration) && (status?.duration ?? 0) > 0
+          ? (status?.duration as number)
+          : 0,
     currentSeconds: status?.currentTime ?? 0,
     reduceMotion,
     toggle,
