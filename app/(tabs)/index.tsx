@@ -13,7 +13,7 @@ import { KeepReadingList } from '../../src/components/home/KeepReadingList';
 import { PAYWALL_PROMPT } from '../../src/config/app';
 import { queryClient } from '../../src/config/queryClient';
 import { usePremium, useScrollToTopHandler } from '../../src/contexts';
-import { factKeys, homeKeys } from '../../src/hooks/queryKeys';
+import { factKeys, localStateKeys } from '../../src/hooks/queryKeys';
 import { useHomeFeed } from '../../src/hooks/useHomeFeed';
 import { useHomeFeedEvents } from '../../src/hooks/useHomeFeedEvents';
 import { useKeepReading } from '../../src/hooks/useKeepReading';
@@ -125,7 +125,7 @@ function HomeScreen() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: factKeys.feed(locale) }),
         queryClient.invalidateQueries({ queryKey: factKeys.onThisDay(locale) }),
-        queryClient.invalidateQueries({ queryKey: homeKeys.readingStreak() }),
+        queryClient.invalidateQueries({ queryKey: localStateKeys.readingStreak() }),
       ]);
     } catch {
       // Ignore

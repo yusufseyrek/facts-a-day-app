@@ -2,11 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 
 import { getReadingStreak } from '../services/badges';
 
-import { homeKeys } from './queryKeys';
+import { localStateKeys } from './queryKeys';
 
 export function useReadingStreak() {
   const { data } = useQuery({
-    queryKey: homeKeys.readingStreak(),
+    queryKey: localStateKeys.readingStreak(),
     queryFn: getReadingStreak,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });

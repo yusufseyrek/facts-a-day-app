@@ -2,7 +2,18 @@ export const homeKeys = {
   all: ['home'] as const,
   dailyFeed: (locale: string) => ['home', 'dailyFeed', locale] as const,
   keepReading: (locale: string) => ['home', 'keepReading', locale] as const,
-  readingStreak: () => ['home', 'readingStreak'] as const,
+};
+
+/**
+ * Queries derived from LOCAL state (SQLite) — reading streak, stats, etc.
+ * Deliberately NOT under a disk-persisted root: the source of truth is the
+ * local DB, so we recompute on mount rather than risk showing a stale snapshot
+ * restored from a second (AsyncStorage) cache. React Query's in-memory cache
+ * still dedupes within a session; we just never persist these to disk.
+ */
+export const localStateKeys = {
+  all: ['local'] as const,
+  readingStreak: () => ['local', 'readingStreak'] as const,
 };
 
 /**
