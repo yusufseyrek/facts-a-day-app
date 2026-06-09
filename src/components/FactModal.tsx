@@ -509,12 +509,11 @@ export function FactModal({
   const hasImage = !!imageUri && !isImageError;
 
   // Header height = padding + measured title height.
-  // Always offset by the real safe-area inset so the header (and the close
-  // button, which keys off basePaddingTop) clears the status bar / notch.
-  // fact/[id] is now a full-screen card (not a modal) that renders UNDER the
-  // status bar, so iOS needs insets.top too — a fixed pad overlapped the bar.
-  // spacing.lg adds consistent breathing room below the inset on both platforms.
-  const basePaddingTop = insets.top + spacing.lg;
+  // Offset by the real safe-area inset so the header (and the close button,
+  // which keys off basePaddingTop) clears the status bar / notch on the
+  // full-screen card. insets.top already includes the status-bar height, so we
+  // add only a small pad below it — spacing.lg looked like double the gap.
+  const basePaddingTop = insets.top + spacing.sm;
   const basePaddingBottom = spacing.lg;
   const headerHeight = basePaddingTop + basePaddingBottom + titleHeight;
 
