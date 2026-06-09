@@ -250,12 +250,32 @@ function AppContent() {
         <Stack.Screen
           name="fact/[id]"
           options={{
-            // Must be a modal, not a card: fact/[id] is also opened from the
-            // story screen, which is itself a fullScreenModal. On iOS a `card`
-            // pushed over a full-screen modal lands BEHIND it (so story
-            // "read more" appeared to do nothing). A modal presents over the
-            // story modal correctly. Dismiss gestures: the native modal
-            // swipe-down plus FactModal's own pull-down-to-close.
+            // Card presentation gives the iOS left-edge swipe-back to dismiss.
+            // A horizontal gesture never conflicts with the screen's vertical
+            // scroll/parallax (unlike a modal's swipe-down), and
+            // fullScreenGestureEnabled lets the swipe start from anywhere across
+            // the screen — friendliest while browsing facts.
+            //
+            // The ONE place this can't be used is the story screen (a
+            // fullScreenModal): on iOS a card pushed over a full-screen modal
+            // lands BEHIND it, so the story navigates to fact/modal/[id] (below)
+            // instead — same screen, modal presentation.
+            presentation: 'card',
+            headerShown: false,
+            gestureEnabled: true,
+            gestureDirection: 'horizontal',
+            animation: 'slide_from_right',
+            fullScreenGestureEnabled: true,
+            contentStyle: { backgroundColor },
+          }}
+        />
+        <Stack.Screen
+          name="fact/modal/[id]"
+          options={{
+            // Modal-presented twin of fact/[id], used only when opening fact
+            // detail from the story screen (see comment above). Dismiss
+            // gestures: the native modal swipe-down plus FactModal's own
+            // pull-down-to-close.
             presentation: 'modal',
             headerShown: false,
             gestureEnabled: true,

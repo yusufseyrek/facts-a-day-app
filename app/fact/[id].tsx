@@ -14,7 +14,20 @@ import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { FactViewSource } from '../../src/services/analytics';
 
-export default function FactDetailModal() {
+/**
+ * The fact detail screen. Backs two routes that differ ONLY in how the native
+ * stack presents them (see app/_layout.tsx):
+ *  - fact/[id]        → presentation:'card'  (horizontal swipe-back)
+ *  - fact/modal/[id]  → presentation:'modal' (renders correctly over the story
+ *                       fullScreenModal, where a card would land behind it)
+ * `presentedAsModal` is forwarded to FactModal so the iOS header top padding
+ * matches the presentation.
+ */
+export default function FactDetailScreen({
+  presentedAsModal = false,
+}: {
+  presentedAsModal?: boolean;
+}) {
   const {
     id,
     source,
@@ -168,6 +181,7 @@ export default function FactDetailModal() {
       totalCount={overrideFactId === null ? totalCount : undefined}
       source={source}
       onRelatedFactPress={handleRelatedFactPress}
+      presentedAsModal={presentedAsModal}
     />
   );
 }

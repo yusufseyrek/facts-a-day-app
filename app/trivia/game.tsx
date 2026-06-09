@@ -508,7 +508,9 @@ export default function TriviaGameScreen() {
         categorySlug: params.categorySlug,
       });
 
-      router.push(`/fact/${currentQuestion.fact.id}?source=trivia_hint`);
+      // Modal-presented variant: the trivia game is a fullScreenModal, and on
+      // iOS a `card` pushed over a full-screen modal can land behind it.
+      router.push(`/fact/modal/${currentQuestion.fact.id}?source=trivia_hint`);
     }
   }, [
     currentQuestion?.fact?.id,

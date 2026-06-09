@@ -585,15 +585,18 @@ export function TriviaResults({
   // Handle opening fact detail - use Expo Router like rest of app
   const handleAnswerCardPress = (question: QuestionWithFact) => {
     if (question.fact?.id) {
-      // If there are multiple distinct facts, enable navigation between them
+      // Use the modal-presented fact route. TriviaResults renders inside the
+      // trivia game (a fullScreenModal) as well as on card screens; on iOS a
+      // `card` pushed over a full-screen modal can land behind it, so the modal
+      // variant is the safe choice from every host (modal-over-card is fine).
       if (distinctFactIds.length > 1) {
         const currentIndex = distinctFactIds.indexOf(question.fact.id);
         router.push(
-          `/fact/${question.fact.id}?source=trivia_review&factIds=${JSON.stringify(distinctFactIds)}&currentIndex=${currentIndex}`
+          `/fact/modal/${question.fact.id}?source=trivia_review&factIds=${JSON.stringify(distinctFactIds)}&currentIndex=${currentIndex}`
         );
       } else {
         // Single fact or all cards point to same fact - no navigation controls
-        router.push(`/fact/${question.fact.id}?source=trivia_review`);
+        router.push(`/fact/modal/${question.fact.id}?source=trivia_review`);
       }
     }
   };

@@ -83,6 +83,13 @@ interface FactModalProps {
   totalCount?: number;
   source?: string;
   onRelatedFactPress?: (factId: number) => void;
+  /**
+   * Whether the host route is presented as an iOS modal (true) or a full-screen
+   * card (false/undefined). It changes only the iOS header top padding: a modal
+   * is laid out BELOW the status bar (small fixed pad), whereas a card draws
+   * UNDER it (needs the real safe-area inset). No effect on Android.
+   */
+  presentedAsModal?: boolean;
 }
 
 // Automatic hero-image retry tuning.
@@ -144,6 +151,7 @@ export function FactModal({
   totalCount,
   source,
   onRelatedFactPress,
+  presentedAsModal,
 }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
@@ -560,10 +568,13 @@ export function FactModal({
   const hasImage = !!imageUri && !isImageError;
 
   // Header height = padding + measured title height.
-  // fact/[id] is a modal: iOS already renders it below the status bar, so a
-  // small fixed top pad is enough (adding insets.top there would double the
-  // gap). Android still needs the real inset since it draws under the bar.
-  const basePaddingTop = Platform.OS === 'ios' ? spacing.xl : insets.top;
+  // On iOS the top pad depends on how the host route is presented:
+  //  - modal  → laid out BELOW the status bar, so a small fixed pad is enough
+  //             (adding insets.top there would double the gap).
+  //  - card   → draws UNDER the status bar, so it needs the real safe-area inset.
+  // Android always draws under the bar, so it uses the inset regardless.
+  const basePaddingTop =
+    Platform.OS === 'ios' ? (presentedAsModal ? spacing.xl : insets.top) : insets.top;
   const basePaddingBottom = spacing.lg;
   const headerHeight = basePaddingTop + basePaddingBottom + titleHeight;
 

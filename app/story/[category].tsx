@@ -549,7 +549,9 @@ const StoryPage = React.memo(
       } catch {
         // ignore analytics failures
       }
-      router.push(`/fact/${fact.id}?source=story`);
+      // Use the modal-presented variant: the story is a fullScreenModal, and on
+      // iOS a `card` (the default fact/[id]) pushed over it lands BEHIND it.
+      router.push(`/fact/modal/${fact.id}?source=story`);
     }, [router, fact.id, categorySlug]);
 
     return (
