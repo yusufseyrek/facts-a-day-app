@@ -371,7 +371,18 @@ function fetchMetadataFromNetwork(language?: string): Promise<MetadataResponse> 
 export async function getMetadata(language?: string): Promise<MetadataResponse> {
   return queryClient.fetchQuery({
     queryKey: metadataKeys.byLocale(language ?? 'default'),
-    queryFn: () => fetchMetadataFromNetwork(language),
+    queryFn: async () => {
+      const res = await fetchMetadataFromNetwork(language);
+      // Guard: never let an empty/invalid metadata response get cached (and
+      // worse, persisted to disk for the whole staleTime). An empty categories
+      // list would silently break every categories surface — Discover, story
+      // buttons — until the cache expired. Throwing keeps React Query from
+      // caching it, so the next call re-fetches instead of serving the dud.
+      if (!res?.categories || res.categories.length === 0) {
+        throw new Error('metadata returned no categories; not caching');
+      }
+      return res;
+    },
     staleTime: METADATA_STALE_TIME,
   });
 }

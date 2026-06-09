@@ -166,7 +166,15 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
         const selectedSlugs = await getSelectedCategories();
         selectedSlugsRef.current = selectedSlugs;
         const metadata = await api.getMetadata(locale);
-        const allCategories = metadata.categories;
+        const allCategories = metadata.categories ?? [];
+
+        // If metadata came back without categories (transient backend/App
+        // Check failure, empty response), do NOT wipe the row — keep whatever
+        // we already have (cached buttons from mem/disk) so the buttons never
+        // disappear on a hiccup. We only rebuild when we actually got data.
+        if (allCategories.length === 0) {
+          return;
+        }
 
         // Build a map for quick lookup
         const categoryMap = new Map<string, Category>();
