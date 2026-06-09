@@ -57,6 +57,11 @@ function getCachedRowSync(locale: string): CachedRow | null {
 }
 
 function setCachedRow(locale: string, data: CachedRow): void {
+  // Never cache a degraded row (empty, or only the Mix button). Persisting one
+  // would make the buttons "disappear" on the next cold start until the live
+  // load ran. Only real category buttons are worth caching.
+  const hasRealCategories = data.items.some((it) => !it.isMix);
+  if (!hasRealCategories) return;
   memCache.set(locale, data);
   AsyncStorage.setItem(CACHE_KEY_PREFIX + locale, JSON.stringify(data)).catch(() => {});
 }
@@ -134,6 +139,11 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
         hydrateCachedRow(locale).then((disk) => {
           if (cancelled || !disk) return;
           if (getCachedRowSync(locale) !== disk) return; // a live load already wrote a newer entry
+          // Ignore a poisoned/degraded cached row (empty, or Mix-only). Better
+          // to keep the skeleton until the live load resolves real buttons than
+          // to flash a lone Mix button from a bad earlier cache entry.
+          const hasRealCategories = disk.items.some((it) => !it.isMix);
+          if (!hasRealCategories) return;
           setCategories(disk.items);
           setUnseenStatus(disk.unseenStatus);
           setLoaded(true);
@@ -162,18 +172,30 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     );
 
     const loadCategories = async () => {
+      // The Mix button is always present — it doesn't depend on metadata, so
+      // the row never fully disappears even if the metadata fetch fails.
+      const mixItem: CategoryItem = { slug: 'mix', name: t('mix'), isMix: true };
       try {
         const selectedSlugs = await getSelectedCategories();
         selectedSlugsRef.current = selectedSlugs;
-        const metadata = await api.getMetadata(locale);
-        const allCategories = metadata.categories ?? [];
 
-        // If metadata came back without categories (transient backend/App
-        // Check failure, empty response), do NOT wipe the row — keep whatever
-        // we already have (cached buttons from mem/disk) so the buttons never
-        // disappear on a hiccup. We only rebuild when we actually got data.
-        if (allCategories.length === 0) {
-          return;
+        // Fetch metadata, but tolerate failure (App Check not ready, transient
+        // error, empty response). On failure we still render Mix + whatever
+        // category buttons we can resolve from the cached row.
+        let allCategories: Category[] = [];
+        try {
+          const metadata = await api.getMetadata(locale);
+          allCategories = (metadata.categories ?? []) as Category[];
+        } catch (e) {
+          allCategories = [];
+          if (__DEV__) {
+            console.warn('[StoryButtons] getMetadata failed:', e instanceof Error ? e.message : e);
+          }
+        }
+        if (__DEV__) {
+          console.log(
+            `[StoryButtons] locale=${locale} selectedSlugs=${selectedSlugsRef.current.length} metadataCategories=${allCategories.length}`
+          );
         }
 
         // Build a map for quick lookup
@@ -194,31 +216,39 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
           }
         }
 
+        // If metadata failed/empty but we had previously cached category
+        // buttons, keep showing those alongside Mix instead of dropping to a
+        // lone Mix button. Only the freshly-resolved set replaces them.
+        const cachedRest = (getCachedRowSync(locale)?.items ?? []).filter((it) => !it.isMix);
+        const resolvedItems = items.length > 0 ? items : cachedRest;
+
         // Load unseen status
         const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
 
         // Sort categories: unseen (has new facts) first
-        items.sort((a, b) => {
+        resolvedItems.sort((a, b) => {
           const aUnseen = status[a.slug] ? 0 : 1;
           const bUnseen = status[b.slug] ? 0 : 1;
           return aUnseen - bUnseen;
         });
 
-        const newItems: CategoryItem[] = [
-          { slug: 'mix', name: t('mix'), isMix: true },
-          ...items,
-        ];
+        const newItems: CategoryItem[] = [mixItem, ...resolvedItems];
 
         setUnseenStatus(status);
         setCategories(newItems);
-        setCachedRow(locale, { items: newItems, unseenStatus: status });
+        // Only persist a row that actually resolved real category buttons, so
+        // we never cache a degraded (Mix-only) row over a good one.
+        if (resolvedItems.length > 0) {
+          setCachedRow(locale, { items: newItems, unseenStatus: status });
+        }
 
         // Warm the feeds most likely to be tapped (Mix + first couple of
         // categories) once the row is on screen, so the first story card is
         // instant. Press-in prefetch (below) covers the rest.
         newItems.slice(0, 3).forEach((it) => prefetchStory(locale, it.slug, selectedSlugs));
       } catch {
-        // Ignore errors
+        // Last-resort: at least show the Mix button so the row is never empty.
+        setCategories((prev) => (prev.length > 0 ? prev : [mixItem]));
       } finally {
         setLoaded(true);
       }
@@ -227,17 +257,28 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     const loadUnseenStatus = async () => {
       try {
         const selectedSlugs = await getSelectedCategories();
-        const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
 
+        // Re-sort ONLY an already-populated row. If the row hasn't loaded its
+        // category buttons yet (cold/in-flight), do nothing here — otherwise we
+        // would overwrite (and worse, persist) an empty row, which is exactly
+        // what made the buttons vanish on refresh/focus. loadCategories owns
+        // building the row; this only refreshes unseen highlighting.
         const prev = categoriesRef.current;
-        const mix = prev.find((c) => c.isMix);
         const rest = prev.filter((c) => !c.isMix);
+        if (rest.length === 0) {
+          // Nothing to re-sort yet; trigger a real (re)load instead of wiping.
+          loadCategories();
+          return;
+        }
+
+        const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
+        const mix = prev.find((c) => c.isMix) ?? { slug: 'mix', name: t('mix'), isMix: true };
         rest.sort((a, b) => {
           const aUnseen = status[a.slug] ? 0 : 1;
           const bUnseen = status[b.slug] ? 0 : 1;
           return aUnseen - bUnseen;
         });
-        const newItems = mix ? [mix, ...rest] : rest;
+        const newItems = [mix, ...rest];
 
         setUnseenStatus(status);
         setCategories(newItems);
