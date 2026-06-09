@@ -20,7 +20,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/montserrat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { setAudioModeAsync } from 'expo-audio';
 import * as Localization from 'expo-localization';
 import * as Notifications from 'expo-notifications';
@@ -41,7 +41,7 @@ import {
   retryAppCheckInit,
 } from '../src/config/firebase';
 import { posthog } from '../src/config/posthog';
-import { queryClient } from '../src/config/queryClient';
+import { asyncStoragePersister, persistMaxAge, queryClient } from '../src/config/queryClient';
 import {
   BadgeToastProvider,
   OnboardingProvider,
@@ -604,7 +604,23 @@ export default function RootLayout() {
             <PostHogProvider client={posthog}>
               <PostHogErrorBoundary>
                 <I18nProvider>
-                  <QueryClientProvider client={queryClient}>
+                  <PersistQueryClientProvider
+                    client={queryClient}
+                    persistOptions={{
+                      persister: asyncStoragePersister,
+                      maxAge: persistMaxAge,
+                      // Only persist fact/home content — the data we want to
+                      // render instantly on cold start. Skip everything else
+                      // (stats, etc.) and never persist failed queries.
+                      dehydrateOptions: {
+                        shouldDehydrateQuery: (query) => {
+                          if (query.state.status !== 'success') return false;
+                          const root = query.queryKey[0];
+                          return root === 'facts' || root === 'home';
+                        },
+                      },
+                    }}
+                  >
                     <PreloadedDataProvider>
                       <OnboardingProvider initialComplete={initialOnboardingStatus}>
                         <IAPSafeProvider>
@@ -622,7 +638,7 @@ export default function RootLayout() {
                         </IAPSafeProvider>
                       </OnboardingProvider>
                     </PreloadedDataProvider>
-                  </QueryClientProvider>
+                  </PersistQueryClientProvider>
                 </I18nProvider>
               </PostHogErrorBoundary>
             </PostHogProvider>
