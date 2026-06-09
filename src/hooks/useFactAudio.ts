@@ -92,6 +92,13 @@ export function useFactAudio(
   // Progress shared value — declared early so the factId reset effect can clear it.
   const progress = useSharedValue(0);
 
+  // Latched maximum duration for the current source. expo-audio reports
+  // status.duration as a partial/growing estimate while the audio is still
+  // buffering, so dividing currentTime by the live duration makes the ring
+  // reach 1.0 long before the audio ends. Tracking the largest duration seen
+  // gives a stable denominator → the ring tracks real elapsed fraction.
+  const maxDurationRef = useRef(0);
+
   // When the fact changes (prev/next in the modal), reset UI state immediately
   // and stop the current player. Without explicit pause+seek, expo-audio keeps
   // emitting `status.playing=true` briefly after the source swap, and the
@@ -99,6 +106,7 @@ export function useFactAudio(
   useEffect(() => {
     setPlaybackState('idle');
     progress.value = 0;
+    maxDurationRef.current = 0;
     try {
       player.pause();
       player.seekTo(0);
@@ -172,13 +180,19 @@ export function useFactAudio(
     cacheFactAudio(factId, language, audioUrl).catch(() => {});
   }, [resolvedSource, audioUrl, factId, language]);
 
-  // Progress shared value driven from status.
+  // Progress shared value driven from status, against the LATCHED max duration
+  // (status.duration grows while buffering, which otherwise fills the ring early).
   useEffect(() => {
-    if (!status?.duration || status.duration <= 0) {
+    const liveDuration = status?.duration ?? 0;
+    if (liveDuration > maxDurationRef.current) {
+      maxDurationRef.current = liveDuration;
+    }
+    const denom = maxDurationRef.current;
+    if (denom <= 0) {
       progress.value = 0;
       return;
     }
-    const next = Math.min(1, Math.max(0, (status.currentTime ?? 0) / status.duration));
+    const next = Math.min(1, Math.max(0, (status?.currentTime ?? 0) / denom));
     progress.value = reduceMotion
       ? next
       : withTiming(next, { duration: 260, easing: Easing.linear });
@@ -218,7 +232,7 @@ export function useFactAudio(
   return {
     playbackState,
     progress,
-    durationSeconds: status?.duration ?? 0,
+    durationSeconds: Math.max(maxDurationRef.current, status?.duration ?? 0),
     currentSeconds: status?.currentTime ?? 0,
     reduceMotion,
     toggle,
