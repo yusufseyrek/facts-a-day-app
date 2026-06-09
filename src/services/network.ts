@@ -6,17 +6,34 @@ let _subscription: { remove: () => void } | null = null;
 type NetworkListener = (isConnected: boolean) => void;
 const _listeners = new Set<NetworkListener>();
 
+/**
+ * Derive connectivity from a network state.
+ *
+ * We key off `isConnected` (an interface is up), NOT `isInternetReachable`.
+ * On Android `isInternetReachable` is an active reachability probe that
+ * frequently reports `false` even on a perfectly good connection (slow/failed
+ * probe, certain networks) — and because we use connectivity to GATE remote
+ * image loads, a false negative there hid every fact image. `isConnected` is
+ * the reliable signal for "we have a network"; treat unknown as online.
+ */
+function deriveConnected(state: {
+  isConnected?: boolean | null;
+  isInternetReachable?: boolean | null;
+}): boolean {
+  return state.isConnected ?? true;
+}
+
 export function startNetworkMonitoring() {
   if (_subscription) return;
 
   // Get initial state
   Network.getNetworkStateAsync().then((state) => {
-    _isConnected = state.isInternetReachable ?? state.isConnected ?? true;
+    _isConnected = deriveConnected(state);
   });
 
   // Subscribe to native network state changes (instant detection)
   _subscription = Network.addNetworkStateListener((state) => {
-    const connected = state.isInternetReachable ?? state.isConnected ?? true;
+    const connected = deriveConnected(state);
     if (connected !== _isConnected) {
       _isConnected = connected;
       _listeners.forEach((listener) => listener(connected));

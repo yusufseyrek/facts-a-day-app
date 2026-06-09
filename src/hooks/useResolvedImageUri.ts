@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { resolveFactImageUri } from '../services/images';
+import { onNetworkChange } from '../services/network';
 
 /**
  * Resolves the best available image URI for a fact (local cache → remote URL).
@@ -27,11 +28,26 @@ export function useResolvedImageUri(
 
   useEffect(() => {
     let cancelled = false;
-    resolveFactImageUri(factId, remoteUrl).then((uri) => {
-      if (!cancelled) setResolvedUri(uri);
+
+    const resolve = () => {
+      resolveFactImageUri(factId, remoteUrl).then((uri) => {
+        if (!cancelled) setResolvedUri(uri);
+      });
+    };
+
+    resolve();
+
+    // Re-resolve when connectivity changes: if the first resolve happened while
+    // we were (or appeared) offline and fell back to a null local cache, a
+    // reconnect must retry so the remote URL is finally used. Without this a
+    // transient offline blip at mount would strand the image at null.
+    const unsubscribe = onNetworkChange(() => {
+      if (remoteUrl) resolve();
     });
+
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, [factId, remoteUrl]);
 
