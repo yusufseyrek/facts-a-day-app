@@ -24,6 +24,17 @@ export const factKeys = {
     ['facts', 'trivia', mode, locale, slug ?? null] as const,
 };
 
+/**
+ * Reference metadata (categories, languages, content types). Near-static and
+ * shared across screens, so it's cached with a long staleTime and persisted to
+ * disk — Discover and others render category chips instantly without a network
+ * round-trip after the first fetch.
+ */
+export const metadataKeys = {
+  all: ['metadata'] as const,
+  byLocale: (locale: string) => ['metadata', locale ?? 'default'] as const,
+};
+
 export const statsKeys = {
   all: ['stats'] as const,
 };

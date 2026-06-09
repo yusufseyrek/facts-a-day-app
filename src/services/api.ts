@@ -4,9 +4,14 @@ import Constants from 'expo-constants';
 
 import { APP_CHECK } from '../config/app';
 import { getAppCheckReady, isAppCheckInitialized } from '../config/appCheckState';
+import { queryClient } from '../config/queryClient';
+import { metadataKeys } from '../hooks/queryKeys';
 import { getAppVersionInfo } from '../utils/appInfo';
 
 import { getCachedAppCheckToken } from './appCheckToken';
+
+/** Metadata (categories/languages) is near-static; cache it aggressively. */
+const METADATA_STALE_TIME = 1000 * 60 * 60 * 6; // 6 hours
 
 /**
  * Get the API base URL, adjusting for Android emulator
@@ -340,15 +345,35 @@ export const __testing = { fetchWithTimeout, retryWithBackoff };
 // ====== API Endpoints ======
 
 /**
- * Get metadata (categories, languages, content types)
- * Optionally specify language to get translated metadata
+ * Raw network fetch for metadata. Kept separate so getMetadata can wrap it in
+ * the React Query cache (below).
  */
-export async function getMetadata(language?: string): Promise<MetadataResponse> {
+function fetchMetadataFromNetwork(language?: string): Promise<MetadataResponse> {
   const params = new URLSearchParams();
   if (language) params.append('language', language);
   params.append('includePremium', '1');
   const endpoint = `/api/metadata?${params.toString()}`;
   return makeRequest<MetadataResponse>(endpoint);
+}
+
+/**
+ * Get metadata (categories, languages, content types). Optionally specify
+ * language to get translated metadata.
+ *
+ * Metadata is near-static reference data shared across many screens (Discover,
+ * trivia, onboarding, premium reconciliation). Routing it through the React
+ * Query cache means: the first call fetches, every subsequent call within
+ * staleTime returns instantly with no network, concurrent callers are deduped
+ * into one request, and the result is persisted to disk — so e.g. the Discover
+ * category grid renders immediately on a warm open instead of waiting on a
+ * round-trip behind a full-screen spinner.
+ */
+export async function getMetadata(language?: string): Promise<MetadataResponse> {
+  return queryClient.fetchQuery({
+    queryKey: metadataKeys.byLocale(language ?? 'default'),
+    queryFn: () => fetchMetadataFromNetwork(language),
+    staleTime: METADATA_STALE_TIME,
+  });
 }
 
 export interface GetFactByIdResponse {

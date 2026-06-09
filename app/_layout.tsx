@@ -616,7 +616,7 @@ export default function RootLayout() {
                         shouldDehydrateQuery: (query) => {
                           if (query.state.status !== 'success') return false;
                           const root = query.queryKey[0];
-                          return root === 'facts' || root === 'home';
+                          return root === 'facts' || root === 'home' || root === 'metadata';
                         },
                       },
                     }}
