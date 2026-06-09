@@ -213,19 +213,6 @@ export async function setSelectedCategories(categories: string[]): Promise<void>
 }
 
 /**
- * Update notification time
- */
-export async function setNotificationTime(time: Date): Promise<void> {
-  try {
-    await AsyncStorage.setItem(NOTIFICATION_TIME_KEY, time.toISOString());
-    if (__DEV__) console.log('Notification time updated:', time.toISOString());
-  } catch (error) {
-    console.error('Error setting notification time:', error);
-    throw error;
-  }
-}
-
-/**
  * Update multiple notification times (for premium users)
  */
 export async function setNotificationTimes(times: string[]): Promise<void> {

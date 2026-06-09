@@ -30,7 +30,6 @@ import {
   consumePendingBadgeToasts,
   getAllBadgesWithStatus,
   getBadgeProgress,
-  getBestReadingStreak,
   getEarnedBadges,
   getQuizStreak,
   getReadingStreak,
@@ -607,57 +606,6 @@ describe('Streak Calculations', () => {
     });
   });
 
-  describe('getBestReadingStreak', () => {
-    it('returns 0 with no data', async () => {
-      mockDb.getAllAsync.mockResolvedValueOnce([]);
-      expect(await getBestReadingStreak()).toBe(0);
-    });
-
-    it('returns 1 for a single date', async () => {
-      mockDb.getAllAsync.mockResolvedValueOnce([{ view_date: '2025-01-15' }]);
-      expect(await getBestReadingStreak()).toBe(1);
-    });
-
-    it('finds the best streak even if not the most recent', async () => {
-      // ASC order
-      mockDb.getAllAsync.mockResolvedValueOnce([
-        { view_date: '2025-01-01' },
-        { view_date: '2025-01-02' },
-        { view_date: '2025-01-03' },
-        { view_date: '2025-01-04' },
-        { view_date: '2025-01-05' },
-        // gap
-        { view_date: '2025-06-10' },
-        { view_date: '2025-06-11' },
-      ]);
-      expect(await getBestReadingStreak()).toBe(5);
-    });
-
-    it('handles multiple streaks and picks the longest', async () => {
-      mockDb.getAllAsync.mockResolvedValueOnce([
-        { view_date: '2025-01-01' },
-        { view_date: '2025-01-02' },
-        // gap
-        { view_date: '2025-02-01' },
-        { view_date: '2025-02-02' },
-        { view_date: '2025-02-03' },
-        { view_date: '2025-02-04' },
-        // gap
-        { view_date: '2025-03-01' },
-      ]);
-      expect(await getBestReadingStreak()).toBe(4);
-    });
-
-    it('returns full length when all dates are consecutive', async () => {
-      mockDb.getAllAsync.mockResolvedValueOnce([
-        { view_date: '2025-01-01' },
-        { view_date: '2025-01-02' },
-        { view_date: '2025-01-03' },
-        { view_date: '2025-01-04' },
-      ]);
-      expect(await getBestReadingStreak()).toBe(4);
-    });
-  });
 });
 
 // ═══════════════════════════════════════════

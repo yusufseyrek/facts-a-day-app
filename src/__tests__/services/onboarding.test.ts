@@ -18,7 +18,6 @@ import {
   ONBOARDING_COMPLETE_KEY,
   resetOnboarding,
   SELECTED_CATEGORIES_KEY,
-  setNotificationTime,
   setNotificationTimes,
   setSelectedCategories,
 } from '../../services/onboarding';
@@ -283,18 +282,6 @@ describe('onboarding service', () => {
     it('throws on storage error', async () => {
       storageMock.setItem.mockRejectedValue(new Error('write error'));
       await expect(setSelectedCategories(['science'])).rejects.toThrow('write error');
-    });
-  });
-
-  // ==================================================================
-  // setNotificationTime (single)
-  // ==================================================================
-
-  describe('setNotificationTime', () => {
-    it('writes ISO string to storage', async () => {
-      const time = new Date('2025-06-15T14:30:00Z');
-      await setNotificationTime(time);
-      expect(storageMock.setItem).toHaveBeenCalledWith(NOTIFICATION_TIME_KEY, time.toISOString());
     });
   });
 

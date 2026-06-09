@@ -50,7 +50,6 @@ export interface RefreshProgress {
 export interface RefreshResult {
   success: boolean;
   error?: string;
-  factsCount?: number;
 }
 
 /** Notify every feed surface to re-fetch from the API. */
@@ -58,31 +57,6 @@ function notifyFeedRefresh(): void {
   emitFeedRefresh();
   emitContentFeedRefresh();
   markFeedRefreshPending();
-}
-
-/**
- * Handle a content-language change: refresh the feed in the new language and
- * re-register push so server-sent notifications switch language too.
- */
-export async function handleLanguageChange(
-  newLanguage: SupportedLocale,
-  onProgress?: (progress: RefreshProgress) => void
-): Promise<RefreshResult> {
-  try {
-    onProgress?.({ stage: 'scheduling', percentage: 90, message: 'Updating notifications...' });
-    await notificationService.registerForPush(newLanguage).catch((e) => {
-      console.error('Push re-registration after language change failed:', e);
-    });
-    onProgress?.({ stage: 'complete', percentage: 100, message: 'Language updated successfully!' });
-    notifyFeedRefresh();
-    return { success: true };
-  } catch (error) {
-    console.error('Error handling language change:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update language',
-    };
-  }
 }
 
 /**

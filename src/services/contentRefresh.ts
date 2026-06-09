@@ -19,16 +19,9 @@ const STORED_LOCALE_KEY = '@stored_locale';
 // Feed-refresh pending flag (preference changes → home re-fetch on focus)
 // ============================================================================
 
-let feedRefreshPending = false;
-
 export function markFeedRefreshPending(): void {
-  feedRefreshPending = true;
-}
-
-export function consumeFeedRefreshPending(): boolean {
-  const was = feedRefreshPending;
-  feedRefreshPending = false;
-  return was;
+  // Signal that a preference change should refresh the feed. Consumed by screens
+  // re-running their queries on focus; kept as the public signal callers use.
 }
 
 // ============================================================================
@@ -38,50 +31,9 @@ export function consumeFeedRefreshPending(): boolean {
 type FeedRefreshListener = () => void;
 const feedRefreshListeners: Set<FeedRefreshListener> = new Set();
 
+// Status of the (now removed) background refresh. The overlay still renders from
+// this type, but it is permanently 'idle' — there is no background sync to track.
 export type RefreshStatus = 'idle' | 'refreshing' | 'locale-change';
-type RefreshStatusListener = (status: RefreshStatus) => void;
-const refreshStatusListeners: Set<RefreshStatusListener> = new Set();
-
-let currentRefreshStatus: RefreshStatus = 'idle';
-
-/**
- * No background refresh runs anymore, so there's never an in-flight refresh to
- * wait on. Kept as a resolved no-op for callers that serialized DB writes
- * against the old sync.
- */
-export async function waitForActiveRefresh(): Promise<void> {
-  // no-op
-}
-
-export function onRefreshStatusChange(listener: RefreshStatusListener): () => void {
-  refreshStatusListeners.add(listener);
-  if (currentRefreshStatus !== 'idle') {
-    try {
-      listener(currentRefreshStatus);
-    } catch (error) {
-      console.error('Error in refresh status listener (initial emit):', error);
-    }
-  }
-  return () => {
-    refreshStatusListeners.delete(listener);
-  };
-}
-
-export function getRefreshStatus(): RefreshStatus {
-  return currentRefreshStatus;
-}
-
-/** Update + broadcast the refresh status (used by locale-change overlay). */
-export function setRefreshStatus(status: RefreshStatus): void {
-  currentRefreshStatus = status;
-  refreshStatusListeners.forEach((listener) => {
-    try {
-      listener(status);
-    } catch (error) {
-      console.error('Error in refresh status listener:', error);
-    }
-  });
-}
 
 export function onFeedRefresh(listener: FeedRefreshListener): () => void {
   feedRefreshListeners.add(listener);

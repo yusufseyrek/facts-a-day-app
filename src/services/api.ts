@@ -93,42 +93,6 @@ export interface FactResponse {
   questions?: QuestionResponse[]; // Only present when include_questions=true
 }
 
-export interface FactsResponse {
-  facts: FactResponse[];
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    has_more: boolean;
-  };
-}
-
-export interface GetFactsParams {
-  language: string;
-  categories?: string;
-  limit?: number;
-  offset?: number;
-  batch_size?: number;
-  since_updated?: string;
-  include_questions?: boolean;
-  include_historical?: boolean;
-  sort?: 'created_at_desc' | 'created_at_asc';
-  skip_count?: boolean;
-}
-
-export interface FeedbackRequest {
-  fact_id?: number;
-  feedback_type: 'report' | 'bug' | 'suggestion' | 'other';
-  message: string;
-  user_email?: string;
-}
-
-export interface FeedbackResponse {
-  success: boolean;
-  message: string;
-  feedback_id?: number;
-}
-
 export interface ReportFactRequest {
   feedback_text: string;
 }
@@ -416,62 +380,6 @@ export async function getFactById(
 /**
  * Get facts with filtering and pagination
  */
-export async function getFacts(params: GetFactsParams): Promise<FactsResponse> {
-  const queryParams = new URLSearchParams();
-
-  queryParams.append('language', params.language);
-
-  if (params.categories) {
-    queryParams.append('categories', params.categories);
-  }
-
-  if (params.limit !== undefined) {
-    queryParams.append('limit', params.limit.toString());
-  }
-
-  if (params.offset !== undefined) {
-    queryParams.append('offset', params.offset.toString());
-  }
-
-  if (params.batch_size !== undefined) {
-    queryParams.append('batch_size', params.batch_size.toString());
-  }
-
-  if (params.since_updated) {
-    queryParams.append('since_updated', params.since_updated);
-  }
-
-  if (params.include_questions) {
-    queryParams.append('include_questions', 'true');
-  }
-
-  if (params.include_historical) {
-    queryParams.append('include_historical', 'true');
-  }
-
-  if (params.sort) {
-    queryParams.append('sort', params.sort);
-  }
-
-  if (params.skip_count) {
-    queryParams.append('skip_count', 'true');
-  }
-
-  const endpoint = `/api/facts?${queryParams.toString()}`;
-  return makeRequest<FactsResponse>(endpoint);
-}
-
-
-/**
- * Submit feedback or report an issue
- */
-export async function submitFeedback(feedback: FeedbackRequest): Promise<FeedbackResponse> {
-  return makeRequest<FeedbackResponse>('/api/feedback', {
-    method: 'POST',
-    body: JSON.stringify(feedback),
-  });
-}
-
 /**
  * Report a content issue with a specific fact
  */

@@ -1,5 +1,4 @@
 import * as FileSystem from 'expo-file-system';
-import * as Notifications from 'expo-notifications';
 import * as SQLite from 'expo-sqlite';
 
 const DATABASE_NAME = 'factsaday.db';
@@ -30,29 +29,6 @@ export function toIsoUtc(ts: string | undefined | null): string | undefined {
 
 let db: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
-
-// Mutex for serializing write transactions.
-// expo-sqlite shares a single connection — concurrent withTransactionAsync
-// calls cause "cannot start a transaction within a transaction" errors.
-// This queue ensures only one transaction runs at a time.
-let txQueue: Promise<void> = Promise.resolve();
-
-async function withSerializedTransaction(
-  fn: (db: SQLite.SQLiteDatabase) => Promise<void>
-): Promise<void> {
-  const database = await openDatabase();
-  const prev = txQueue;
-  let release: () => void;
-  txQueue = new Promise<void>((res) => {
-    release = res;
-  });
-  try {
-    await prev;
-    await database.withTransactionAsync(() => fn(database));
-  } finally {
-    release!();
-  }
-}
 
 /**
  * Initialize and open the database
@@ -354,8 +330,6 @@ export interface Fact {
   language: string;
   created_at: string;
   last_updated?: string;
-  scheduled_date?: string; // ISO date string when fact is scheduled for notification
-  notification_id?: string; // Notification ID from expo-notifications
 }
 
 /**
@@ -363,50 +337,6 @@ export interface Fact {
  */
 export interface FactWithRelations extends Fact {
   categoryData?: Category | null;
-}
-
-/**
- * Helper function to map query results with joined data to FactWithRelations
- */
-function mapFactsWithRelations(rows: any[]): FactWithRelations[] {
-  return rows.map((row) => {
-    const fact: FactWithRelations = {
-      id: row.id,
-      slug: row.slug,
-      title: row.title,
-      content: row.content,
-      summary: row.summary,
-      category: row.category,
-      source_url: row.source_url,
-      image_url: row.image_url,
-      audio_url: row.audio_url,
-      is_historical: row.is_historical,
-      event_month: row.event_month,
-      event_day: row.event_day,
-      event_year: row.event_year,
-      metadata: row.metadata,
-      language: row.language,
-      created_at: row.created_at,
-      last_updated: row.last_updated,
-      scheduled_date: row.scheduled_date,
-      notification_id: row.notification_id,
-    };
-
-    // Map category data if present
-    if (row.category_id) {
-      fact.categoryData = {
-        id: row.category_id,
-        name: row.category_name,
-        slug: row.category_slug,
-        description: row.category_description,
-        icon: row.category_icon,
-        color_hex: row.category_color_hex,
-        is_premium: row.category_is_premium,
-      };
-    }
-
-    return fact;
-  });
 }
 
 /** Minimal structural type of an API fact (avoids importing api.ts into the DB layer). */
@@ -487,15 +417,6 @@ export function mapApiFactToRelations(api: ApiFactShape): FactWithRelations {
   return fact;
 }
 
-/**
- * Helper function to map a single query result with joined data to FactWithRelations
- */
-function mapSingleFactWithRelations(row: any): FactWithRelations {
-  return mapFactsWithRelations([row])[0];
-}
-
-// ====== NOTIFICATION SCHEDULING ======
-
 // ====== FAVORITES ======
 
 /**
@@ -560,8 +481,6 @@ export async function getFavoritesCount(): Promise<number> {
   return result?.count || 0;
 }
 
-// ====== DATE-BASED QUERIES ======
-
 // ====== TRIVIA QUESTIONS ======
 
 export interface Question {
@@ -577,14 +496,6 @@ export interface Question {
 
 export interface QuestionWithFact extends Question {
   fact?: FactWithRelations;
-}
-
-export interface QuestionAttempt {
-  id: number;
-  question_id: number;
-  is_correct: number; // 0 or 1
-  answered_at: string;
-  trivia_mode: 'daily' | 'category' | 'mixed' | 'quick';
 }
 
 export interface DailyTriviaProgress {
@@ -1205,8 +1116,6 @@ export async function addFactDetailTimeSpent(factId: number, seconds: number): P
   );
 }
 
-// ====== DEV TOOLS ======
-
 // ====== SHARE EVENTS ======
 
 /**
@@ -1221,12 +1130,3 @@ export async function recordShareEvent(factId: number): Promise<void> {
   ]);
 }
 
-export async function getFactsReadTodayCount(): Promise<number> {
-  const database = await openDatabase();
-  const row = await database.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(DISTINCT fact_id) as count FROM fact_interactions
-     WHERE story_viewed_at >= datetime('now', 'localtime', 'start of day')
-        OR detail_opened_at >= datetime('now', 'localtime', 'start of day')`
-  );
-  return row?.count ?? 0;
-}

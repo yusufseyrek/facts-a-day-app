@@ -524,29 +524,6 @@ export async function getCachedImagesSize(): Promise<number> {
  * Checks local cache first (with retry), falls back to remote URL only when online.
  * Returns null when offline and no cached image exists.
  */
-/**
- * Invalidate all cached image data for a specific fact.
- * Called when a fact's image_url changes so the next resolve fetches the new image.
- */
-export async function invalidateFactImageCache(factId: number): Promise<void> {
-  // Clear in-memory caches
-  fileExistenceCache.delete(factId);
-  const knownExt = knownExtensions.get(factId);
-  knownExtensions.delete(factId);
-  pendingExistenceChecks.delete(factId);
-  pendingDownloads.delete(factId);
-
-  // Delete disk files — try known extension first, fall back to all extensions
-  const extensions = knownExt ? [knownExt] : ['webp', 'jpg', 'jpeg', 'png', 'gif'];
-  await Promise.all(
-    extensions.map((ext) =>
-      FileSystem.deleteAsync(`${FACT_IMAGES_DIR}fact-${factId}.${ext}`, {
-        idempotent: true,
-      }).catch(() => {})
-    )
-  );
-}
-
 export async function resolveFactImageUri(
   factId: number,
   remoteUrl: string | undefined | null

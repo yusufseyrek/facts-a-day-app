@@ -42,15 +42,6 @@ export function configureNotifications() {
   });
 }
 
-export async function getScheduledNotificationsCount(): Promise<number> {
-  try {
-    const notifications = await Notifications.getAllScheduledNotificationsAsync();
-    return notifications.length;
-  } catch {
-    return 0;
-  }
-}
-
 // ============================================================================
 // SERVER-DRIVEN PUSH REGISTRATION
 // ============================================================================
@@ -259,8 +250,7 @@ export async function sendTestPushToSelf(factId?: number): Promise<{
  */
 export async function buildNotificationContent(
   fact: database.FactWithRelations,
-  locale: SupportedLocale = 'en',
-  _scheduledDate?: Date
+  locale: SupportedLocale = 'en'
 ): Promise<Notifications.NotificationContentInput> {
   const previousLocale = i18n.locale;
   i18n.locale = locale;

@@ -240,26 +240,6 @@ export async function getCategoriesWithProgress(language: string): Promise<Categ
     }));
 }
 
-/**
- * Per-category mastery progress is no longer tracked (see getCategoriesWithProgress).
- */
-export async function getCategoryProgress(
-  _categorySlug: string,
-  _language: string
-): Promise<{ mastered: number; total: number; isComplete: boolean }> {
-  return { mastered: 0, total: 0, isComplete: false };
-}
-
-/**
- * Category completion is no longer tracked.
- */
-export async function isCategoryComplete(
-  _categorySlug: string,
-  _language: string
-): Promise<boolean> {
-  return false;
-}
-
 // ====== QUESTION ATTEMPTS ======
 
 /**
@@ -340,23 +320,6 @@ export function getShuffledAnswers(question: Question): string[] {
   }
 
   return allAnswers;
-}
-
-/**
- * Format accuracy as percentage string
- */
-export function formatAccuracy(totalAnswered: number, totalCorrect: number): string {
-  if (totalAnswered === 0) return '0%';
-  const accuracy = Math.round((totalCorrect / totalAnswered) * 100);
-  return `${accuracy}%`;
-}
-
-/**
- * Get streak display text
- */
-export function getStreakDisplay(streak: number): string {
-  if (streak === 0) return '';
-  return `🔥 ${streak}`;
 }
 
 // ====== ANSWER INDEX HELPERS ======
@@ -573,13 +536,6 @@ export async function getSessionById(
 export async function getAllSessions(): Promise<TriviaSessionWithCategory[]> {
   // Use a large limit to get all sessions
   return database.getRecentTriviaSessions(1000);
-}
-
-/**
- * Get best daily streak ever achieved
- */
-export async function getBestStreak(): Promise<number> {
-  return database.getBestDailyStreak();
 }
 
 // ====== EXPLANATION HINT ======

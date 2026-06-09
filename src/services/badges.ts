@@ -328,40 +328,6 @@ export async function getQuizStreak(): Promise<number> {
   return streak;
 }
 
-export async function getBestReadingStreak(): Promise<number> {
-  const db = await openDatabase();
-
-  const result = await db.getAllAsync<{ view_date: string }>(
-    `SELECT DISTINCT view_date FROM (
-       SELECT date(story_viewed_at, 'localtime') as view_date
-       FROM fact_interactions WHERE story_viewed_at IS NOT NULL
-       UNION
-       SELECT date(detail_opened_at, 'localtime') as view_date
-       FROM fact_interactions WHERE detail_opened_at IS NOT NULL
-     )
-     ORDER BY view_date ASC`
-  );
-
-  if (result.length === 0) return 0;
-
-  let best = 1;
-  let current = 1;
-
-  for (let i = 1; i < result.length; i++) {
-    const prev = new Date(result[i - 1].view_date + 'T12:00:00');
-    const curr = new Date(result[i].view_date + 'T12:00:00');
-    const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays === 1) {
-      current++;
-      best = Math.max(best, current);
-    } else {
-      current = 1;
-    }
-  }
-
-  return best;
-}
-
 // ============================================
 // BATCH PROGRESS RESOLVER
 // ============================================

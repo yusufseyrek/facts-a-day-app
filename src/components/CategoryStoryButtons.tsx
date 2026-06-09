@@ -21,8 +21,8 @@ import * as api from '../services/api';
 import { onFeedRefresh } from '../services/contentRefresh';
 import * as database from '../services/database';
 import { getSelectedCategories } from '../services/onboarding';
-import { prefetchStory } from '../services/storyPrefetch';
 import { onPreferenceFeedRefresh } from '../services/preferences';
+import { prefetchStory } from '../services/storyPrefetch';
 import { hexColors, useTheme } from '../theme';
 import { getLucideIcon } from '../utils/iconMapper';
 import { useResponsive } from '../utils/useResponsive';
@@ -186,16 +186,8 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
         try {
           const metadata = await api.getMetadata(locale);
           allCategories = (metadata.categories ?? []) as Category[];
-        } catch (e) {
+        } catch {
           allCategories = [];
-          if (__DEV__) {
-            console.warn('[StoryButtons] getMetadata failed:', e instanceof Error ? e.message : e);
-          }
-        }
-        if (__DEV__) {
-          console.log(
-            `[StoryButtons] locale=${locale} selectedSlugs=${selectedSlugsRef.current.length} metadataCategories=${allCategories.length}`
-          );
         }
 
         // Build a map for quick lookup
