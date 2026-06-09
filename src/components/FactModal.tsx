@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   ActivityIndicator,
@@ -84,6 +84,10 @@ interface FactModalProps {
   source?: string;
   onRelatedFactPress?: (factId: number) => void;
 }
+
+// Automatic hero-image retry tuning.
+const MAX_IMAGE_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 600; // backoff: 600 / 1200 / 1800ms
 
 // Styled components without static responsive values - use inline props with useResponsive()
 const HeaderTitleContainer = styled(XStack, {
@@ -173,6 +177,12 @@ export function FactModal({
   // Image loading state tracked via expo-image callbacks
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isImageError, setIsImageError] = useState(false);
+  // Automatic retry for intermittent front-layer load failures (Android Glide
+  // race / dropped fetch). On retry we remount the front <Image> (key) AND vary
+  // its source URL (cache-buster) so expo-image actually re-fetches instead of
+  // short-circuiting to the cached failure. Manual overlay only after exhaustion.
+  const [retryCount, setRetryCount] = useState(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Double-buffer: keep the previous image visible until the new one loads.
   // `displayedImageUri` is the last successfully loaded image — it stays on screen
@@ -219,10 +229,22 @@ export function FactModal({
   // a displayed image so the placeholder overlay doesn't flash
   useEffect(() => {
     setIsImageError(false);
+    setRetryCount(0);
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
     if (!displayedImageUri) {
       setIsImageLoaded(false);
     }
   }, [fact.id]);
+
+  // Clear any pending backoff retry on unmount so it can't setState after teardown.
+  useEffect(() => {
+    return () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    };
+  }, []);
 
   // Show placeholder when loading OR when error (before image loads).
   // Suppressed when a back-buffered image is already on screen — otherwise
@@ -369,6 +391,17 @@ export function FactModal({
 
   const imageUri = notificationImageUri || resolvedImageUri;
 
+  // Front-layer source with a cache-buster on retry only. expo-image caches the
+  // FAILURE for a url key, so re-passing the same uri after onError is a no-op;
+  // varying the query string forces a fresh native fetch. file:// is local and
+  // never needs busting; retryCount===0 keeps the happy path byte-identical.
+  const frontImageSource = useMemo(() => {
+    if (!imageUri) return undefined;
+    if (retryCount === 0 || imageUri.startsWith('file://')) return { uri: imageUri };
+    const sep = imageUri.includes('?') ? '&' : '?';
+    return { uri: `${imageUri}${sep}retry=${retryCount}` };
+  }, [imageUri, retryCount]);
+
   // Smart image availability check: local file / cache / network → safety timeout.
   //
   // This is also the backstop for a real Android bug: two same-uri expo-image
@@ -474,6 +507,24 @@ export function FactModal({
       }
     },
     [fact.id, fact.content]
+  );
+
+  // Pull-down-to-close: when the user overscrolls past the top and releases,
+  // dismiss the screen. iOS reports a negative contentOffset.y while bouncing
+  // above the top; a downward release past PULL_TO_CLOSE_THRESHOLD closes. This
+  // coexists with normal scrolling (only fires above the top) and the
+  // horizontal swipe-back (different axis).
+  const PULL_TO_CLOSE_THRESHOLD = 90;
+  const handleScrollEndDrag = useCallback(
+    (event: any) => {
+      const y = event.nativeEvent.contentOffset.y;
+      if (y <= -PULL_TO_CLOSE_THRESHOLD) {
+        onClose();
+        return;
+      }
+      checkScrolledToBottom(event);
+    },
+    [onClose, checkScrolledToBottom]
   );
 
   const handleSourcePress = useCallback(
@@ -892,7 +943,7 @@ export function FactModal({
         showsVerticalScrollIndicator={false}
         bounces={true}
         onScroll={handleScroll}
-        onScrollEndDrag={checkScrolledToBottom}
+        onScrollEndDrag={handleScrollEndDrag}
         onMomentumScrollEnd={checkScrolledToBottom}
         scrollEventThrottle={16}
         // Optimize scroll performance on Android
@@ -1008,7 +1059,8 @@ export function FactModal({
                 )}
                 {/* Front layer: current/loading image */}
                 <Image
-                  source={{ uri: imageUri! }}
+                  key={`modal-main-${retryCount}`}
+                  source={frontImageSource}
                   aria-label={t('a11y_factImage', { title: factTitle })}
                   role="img"
                   style={{
@@ -1047,7 +1099,22 @@ export function FactModal({
                     setIsImageLoaded(true);
                     setDisplayedImageUri(imageUri);
                   }}
-                  onError={() => setIsImageError(true)}
+                  onError={() => {
+                    if (retryCount < MAX_IMAGE_RETRIES) {
+                      // Backoff, then bump retryCount → key+source change →
+                      // front <Image> remounts and re-fetches. isImageError
+                      // stays false during the retry window, so the availability
+                      // effect's reveal() backstop and the shimmer placeholder
+                      // remain armed and hasImage stays true (no layout thrash).
+                      const delay = RETRY_BASE_DELAY_MS * (retryCount + 1);
+                      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+                      retryTimerRef.current = setTimeout(() => {
+                        setRetryCount((c) => c + 1);
+                      }, delay);
+                    } else {
+                      setIsImageError(true); // exhausted → manual retry overlay
+                    }
+                  }}
                 />
               </Animated.View>
               {/* Gradient overlay */}
@@ -1069,6 +1136,7 @@ export function FactModal({
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={() => {
+                    setRetryCount(0); // re-arm a fresh round of auto-retries
                     setIsImageError(false);
                     setIsImageLoaded(false);
                   }}
