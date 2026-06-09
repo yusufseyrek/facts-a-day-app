@@ -190,8 +190,8 @@ export function FactModal({
   // Seed from the sync cache so the back layer renders on first paint when the
   // image is already on disk — without this, expo-image v56 always shows the
   // blurhash placeholder + transition fade even on cache hits.
-  const [displayedImageUri, setDisplayedImageUri] = useState<string | null>(
-    () => getCachedFactImageSync(fact.id)
+  const [displayedImageUri, setDisplayedImageUri] = useState<string | null>(() =>
+    getCachedFactImageSync(fact.id)
   );
 
   // Related facts for the current fact's category
@@ -954,8 +954,7 @@ export function FactModal({
         {!hasImage && (
           <View
             style={{
-              backgroundColor:
-                theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface,
+              backgroundColor: theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface,
               paddingTop: spacing.xl,
               paddingHorizontal: spacing.xl,
               paddingBottom: spacing.md,
@@ -1299,8 +1298,7 @@ export function FactModal({
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor:
-            theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface,
+          backgroundColor: theme === 'dark' ? hexColors.dark.surface : hexColors.light.surface,
           opacity: overlayOpacity,
         }}
       />
