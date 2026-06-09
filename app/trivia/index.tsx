@@ -382,13 +382,9 @@ export default function TriviaScreen() {
                             title={category.name}
                             icon={category.icon || undefined}
                             colorHex={category.color_hex || undefined}
-                            progress={{ mastered: category.mastered, total: category.total }}
                             // Category questions are fetched from the API on tap
-                            // (getCategoryTriviaQuestions), so there is no local
-                            // "total" to gate on — `total` is always 0 since the
-                            // mirror was removed. Never disable on it, or every
-                            // category card is dead. The game screen handles an
-                            // empty result if a category genuinely has none.
+                            // (getCategoryTriviaQuestions), so cards are never
+                            // disabled or annotated with a local question count.
                             isDisabled={false}
                             isDark={isDark}
                             onPress={() => showCategoryTriviaIntro(category)}

@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Check, ChevronRight, Shuffle, Zap } from '@tamagui/lucide-icons';
 import { XStack, YStack } from 'tamagui';
 
-import { useTranslation } from '../../i18n';
 import { hexColors } from '../../theme';
 import { blendHexColors, hexToRgba } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
@@ -20,7 +19,6 @@ interface TriviaGridCardProps {
   colorHex?: string;
   isCompleted?: boolean;
   isDisabled?: boolean;
-  progress?: { mastered: number; total: number };
   isDark: boolean;
   onPress: () => void;
   centerContent?: boolean;
@@ -34,12 +32,10 @@ export function TriviaGridCard({
   colorHex,
   isCompleted = false,
   isDisabled = false,
-  progress,
   isDark,
   onPress,
   centerContent = false,
 }: TriviaGridCardProps) {
-  const { t } = useTranslation();
   const { iconSizes, spacing, radius, media } = useResponsive();
   const iconContainerSize = media.topicCardSize * 0.7;
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
@@ -78,14 +74,10 @@ export function TriviaGridCard({
     return getLucideIcon(icon, iconSizes.lg, accentColor);
   };
 
-  // Get the subtitle text
-  const getSubtitle = () => {
-    if (subtitle) return subtitle;
-    if (type === 'category' && progress) {
-      return t('triviaQuestionsCount', { count: progress.total });
-    }
-    return '';
-  };
+  // Subtitle: only an explicitly provided one (daily/mixed). Category cards show
+  // no question count — it was always derived from a local total that no longer
+  // exists (questions are fetched from the API on tap).
+  const getSubtitle = () => subtitle ?? '';
 
   // Check if daily trivia is available (not completed and has questions)
   const isDailyAvailable = type === 'daily' && !isCompleted && !isDisabled;
