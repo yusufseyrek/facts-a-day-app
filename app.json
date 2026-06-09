@@ -44,7 +44,24 @@
       "ADMOB_ANDROID_NATIVE_ID": "ca-app-pub-7740246752776234/9607028018",
       "router": {},
       "eas": {
-        "projectId": "d110af35-f647-46c5-86c9-6ad19e942084"
+        "projectId": "d110af35-f647-46c5-86c9-6ad19e942084",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "FactsaDayWidget",
+                  "bundleIdentifier": "dev.seyrek.factsaday.widget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.dev.seyrek.factsaday"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     },
     "ios": {
@@ -444,7 +461,6 @@
       "@react-native-firebase/crashlytics",
       "./plugins/withAppCheckAppAttest.js",
       "./plugins/withModularHeaders.js",
-      "./plugins/withIosResourceBundleSigning.js",
       "./plugins/withIosPodsDeploymentTarget.js",
       "./plugins/withDisableAutoScreenReporting.js",
       "./plugins/withFactWidget.js",
