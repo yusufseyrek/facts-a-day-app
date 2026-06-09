@@ -1,12 +1,16 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { Platform, Pressable, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Check, ChevronRight } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { XStack, YStack } from 'tamagui';
 
 import { hexColors } from '../../theme';
+import { hexToRgba } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { GlassSurface } from '../GlassSurface';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { CategoryWithProgress } from '../../services/trivia';
@@ -33,6 +37,10 @@ export function CategoryQuestCard({ category, isDark, onPress, index }: Category
   // Use category color or fallback
   const categoryColor = category.color_hex || primaryColor;
 
+  // On iOS 26 the card goes transparent and Liquid Glass (tinted with the same
+  // card color) shows through; everywhere else today's opaque card is untouched.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
+
   return (
     <Animated.View
       entering={FadeIn.duration(300).delay(150 + index * 50)}
@@ -46,12 +54,22 @@ export function CategoryQuestCard({ category, isDark, onPress, index }: Category
         })}
       >
         <XStack
-          backgroundColor={cardBg}
+          backgroundColor={useGlass ? 'transparent' : cardBg}
           padding={spacing.lg}
           borderRadius={radius.md}
           alignItems="center"
           gap={spacing.md}
+          overflow={useGlass ? 'hidden' : undefined}
         >
+          {useGlass && (
+            <GlassSurface
+              variant="glass"
+              isDark={isDark}
+              tint={cardBg}
+              glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
+              style={absoluteFillObject}
+            />
+          )}
           {/* Category icon */}
           <YStack
             width={40}

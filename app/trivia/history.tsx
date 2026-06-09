@@ -1,19 +1,9 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Animated as RNAnimated,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  View,
-} from 'react-native';
-import Animated, { FadeInUp } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { Calendar, ChevronLeft, ChevronRight, Shuffle, Zap } from '@tamagui/lucide-icons';
-import { useFocusEffect } from 'expo-router';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
@@ -31,54 +21,6 @@ import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { TriviaMode } from '../../src/services/analytics';
 import type { TriviaSessionWithCategory } from '../../src/services/trivia';
-
-// Back Button with press animation
-function BackButton({ onPress, primaryColor }: { onPress: () => void; primaryColor: string }) {
-  const { iconSizes, media } = useResponsive();
-  const scale = useRef(new RNAnimated.Value(1)).current;
-  const buttonSize = media.topicCardSize * 0.45; // Scale with tablet
-
-  const handlePressIn = () => {
-    RNAnimated.spring(scale, {
-      toValue: 0.9,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 10,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    RNAnimated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 20,
-      bounciness: 8,
-    }).start();
-  };
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-    >
-      <RNAnimated.View
-        style={{
-          width: buttonSize,
-          height: buttonSize,
-          borderRadius: buttonSize / 2,
-          backgroundColor: `${primaryColor}20`,
-          justifyContent: 'center',
-          alignItems: 'center',
-          transform: [{ scale }],
-        }}
-      >
-        <ChevronLeft size={iconSizes.lg} color={primaryColor} />
-      </RNAnimated.View>
-    </Pressable>
-  );
-}
 
 // Session Card Component (unified with performance view)
 function SessionCard({
@@ -280,9 +222,8 @@ type HistoryListItem = SectionHeaderItem | SessionItem;
 export default function ActivityHistoryScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { spacing, media, isTablet } = useResponsive();
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const { spacing, isTablet, iconSizes } = useResponsive();
+  const navigation = useNavigation();
   const isDark = theme === 'dark';
 
   const [loading, setLoading] = useState(true);
@@ -291,21 +232,19 @@ export default function ActivityHistoryScreen() {
   const [selectedSession, setSelectedSession] = useState<TriviaSessionWithCategory | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
 
-  // Flatten sections into a single array for FlashList
-  const { flattenedData, stickyHeaderIndices } = useMemo(() => {
+  // Flatten sections into a single array for FlashList. Headers are NOT
+  // sticky: sticky headers pin to the viewport top, ignoring the translucent
+  // native header's content inset, so they'd float above the large title.
+  const flattenedData = useMemo(() => {
     const items: HistoryListItem[] = [];
-    const headerIndices: number[] = [];
     let itemIndex = 0;
 
     sections.forEach((section) => {
-      // Add section header
-      headerIndices.push(items.length);
       items.push({
         type: ITEM_TYPES.SECTION_HEADER,
         title: section.title,
       });
 
-      // Add session items
       section.data.forEach((session) => {
         items.push({
           type: ITEM_TYPES.SESSION_ITEM,
@@ -315,7 +254,7 @@ export default function ActivityHistoryScreen() {
       });
     });
 
-    return { flattenedData: items, stickyHeaderIndices: headerIndices };
+    return items;
   }, [sections]);
 
   // Group sessions by date
@@ -372,30 +311,68 @@ export default function ActivityHistoryScreen() {
     }, [loadData])
   );
 
-  const handleSessionClick = useCallback(async (sessionId: number) => {
-    try {
-      setLoadingSession(true);
-      const fullSession = await triviaService.getSessionById(sessionId, locale);
-      if (fullSession && fullSession.questions && fullSession.answers) {
-        setSelectedSession(fullSession);
-        // Track viewing results from history
-        trackScreenView(Screens.TRIVIA_RESULTS);
-        trackTriviaResultsView({
-          mode: fullSession.trivia_mode as TriviaMode,
-          sessionId: fullSession.id,
-          categorySlug: fullSession.category_slug || undefined,
-        });
+  const handleSessionClick = useCallback(
+    async (sessionId: number) => {
+      try {
+        setLoadingSession(true);
+        const fullSession = await triviaService.getSessionById(sessionId, locale);
+        if (fullSession && fullSession.questions && fullSession.answers) {
+          setSelectedSession(fullSession);
+          // Track viewing results from history
+          trackScreenView(Screens.TRIVIA_RESULTS);
+          trackTriviaResultsView({
+            mode: fullSession.trivia_mode as TriviaMode,
+            sessionId: fullSession.id,
+            categorySlug: fullSession.category_slug || undefined,
+          });
+        }
+      } catch {
+        // Ignore session loading errors
+      } finally {
+        setLoadingSession(false);
       }
-    } catch {
-      // Ignore session loading errors
-    } finally {
-      setLoadingSession(false);
-    }
-  }, [locale]);
+    },
+    [locale]
+  );
 
   const handleCloseResults = useCallback(() => {
     setSelectedSession(null);
   }, []);
+
+  // TriviaResults renders under the SAME native header as the rest of the
+  // stack: keep the header, retitle it, and point its back chevron at the
+  // results' close handler instead of popping the screen.
+  const showingResults = !!(
+    selectedSession &&
+    selectedSession.questions &&
+    selectedSession.answers
+  );
+  useEffect(() => {
+    if (showingResults) {
+      navigation.setOptions({
+        title: t('testResults'),
+        headerBackVisible: false,
+        headerLeft: () => (
+          <Pressable
+            onPress={handleCloseResults}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            testID="trivia-results-header-back"
+          >
+            <ChevronLeft
+              size={iconSizes.lg}
+              color={isDark ? hexColors.dark.primary : hexColors.light.primary}
+            />
+          </Pressable>
+        ),
+      });
+    } else {
+      navigation.setOptions({
+        title: t('testHistory'),
+        headerBackVisible: true,
+        headerLeft: undefined,
+      });
+    }
+  }, [navigation, showingResults, t, isDark, iconSizes.lg, handleCloseResults]);
 
   // FlashList key extractor
   const keyExtractor = useCallback((item: HistoryListItem, index: number) => {
@@ -442,12 +419,11 @@ export default function ActivityHistoryScreen() {
 
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
-  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top }}>
+      <View style={{ flex: 1, backgroundColor: bgColor }}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <YStack flex={1} justifyContent="center" alignItems="center">
           <ActivityIndicator size="large" color={primaryColor} />
@@ -499,7 +475,8 @@ export default function ActivityHistoryScreen() {
           isDark,
           t,
         })}
-        showBackButton={true}
+        showBackButton={false}
+        underNavigationHeader
         showReturnButton={false}
         unavailableQuestionIds={selectedSession.unavailableQuestionIds}
       />
@@ -509,26 +486,6 @@ export default function ActivityHistoryScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-
-      {/* Header */}
-      <Animated.View entering={FadeInUp.duration(400).springify()}>
-        <XStack
-          paddingTop={insets.top + spacing.sm}
-          paddingBottom={spacing.md}
-          paddingHorizontal={spacing.lg}
-          alignItems="center"
-          justifyContent="space-between"
-          borderBottomWidth={1}
-          borderBottomColor={isDark ? hexColors.dark.border : hexColors.light.border}
-        >
-          <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
-
-          <Text.Title color={textColor}>{t('testHistory')}</Text.Title>
-
-          {/* Empty spacer to balance the header */}
-          <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />
-        </XStack>
-      </Animated.View>
 
       <View style={{ flex: 1, alignItems: 'center' }}>
         <View
@@ -552,7 +509,7 @@ export default function ActivityHistoryScreen() {
               keyExtractor={keyExtractor}
               renderItem={renderItem}
               getItemType={getItemType}
-              stickyHeaderIndices={stickyHeaderIndices}
+              contentInsetAdjustmentBehavior="automatic"
               refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
               }

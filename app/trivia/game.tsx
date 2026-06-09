@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, View } from 'react-native';
+import { ActivityIndicator, BackHandler, View } from 'react-native';
 import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +16,6 @@ import {
   TriviaNativeAdView,
   TriviaResults,
 } from '../../src/components/trivia';
-import { Text } from '../../src/components/Typography';
 import { NATIVE_ADS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts/PremiumContext';
 import { useAdForSlot } from '../../src/hooks/useAdForSlot';
@@ -72,6 +71,18 @@ export default function TriviaGameScreen() {
           : 'mixed';
 
   const [loading, setLoading] = useState(true);
+  // Questions come from local SQLite, so loads are near-instant. Show nothing
+  // for the first beat (avoids a "Loading..." flash on every open) and only
+  // surface a spinner if loading genuinely takes longer.
+  const [showLoadingSpinner, setShowLoadingSpinner] = useState(false);
+  useEffect(() => {
+    if (!loading) {
+      setShowLoadingSpinner(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowLoadingSpinner(true), 300);
+    return () => clearTimeout(timer);
+  }, [loading]);
   const [showingAd, _setShowingAd] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
   const [showUnansweredModal, setShowUnansweredModal] = useState(false);
@@ -146,7 +157,6 @@ export default function TriviaGameScreen() {
 
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
-  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
 
   // Get trivia title based on type
   const getTriviaTitle = useCallback(() => {
@@ -693,7 +703,8 @@ export default function TriviaGameScreen() {
     router.back();
   };
 
-  // Loading state
+  // Loading state: just the background for fast (local-DB) loads; a spinner
+  // appears only if loading outlasts the 300ms grace window.
   if (loading) {
     return (
       <View
@@ -705,9 +716,14 @@ export default function TriviaGameScreen() {
         }}
       >
         <StatusBar style={isDark ? 'light' : 'dark'} />
-        <YStack flex={1} justifyContent="center" alignItems="center">
-          <Text.Body color={secondaryTextColor}>{t('loading') || 'Loading...'}</Text.Body>
-        </YStack>
+        {showLoadingSpinner && (
+          <YStack flex={1} justifyContent="center" alignItems="center">
+            <ActivityIndicator
+              size="large"
+              color={isDark ? hexColors.dark.primary : hexColors.light.primary}
+            />
+          </YStack>
+        )}
       </View>
     );
   }

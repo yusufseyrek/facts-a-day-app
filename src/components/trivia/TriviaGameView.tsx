@@ -1,5 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text as RNText, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text as RNText,
+  View,
+} from 'react-native';
 import Animated, {
   FadeIn,
   FadeInUp,
@@ -10,6 +17,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChevronLeft, ChevronRight, Lightbulb, Timer, X } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
@@ -17,8 +25,11 @@ import { XStack, YStack } from 'tamagui';
 
 import { LAYOUT } from '../../config/app';
 import { hexColors } from '../../theme';
+import { hexToRgba } from '../../utils/colors';
 import { maxFontSizeMultipliers } from '../../utils/responsive';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { GlassSurface } from '../GlassSurface';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { QuestionWithFact } from '../../services/database';
@@ -110,6 +121,10 @@ export function TriviaGameView({
   // When background image is present, always use white text over the dark overlay
   const questionTextColor = questionImageUri ? '#FFFFFF' : textColor;
 
+  // iOS 26 Liquid Glass on chrome (timer, progress track, hint pills, nav
+  // buttons); everywhere else (and on fallback) today's opaque UI is untouched.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
+
   const isTrueFalse = currentQuestion.question_type === 'true_false';
   const hasExplanation = !!currentQuestion.explanation;
   const letterLabels = ['A', 'B', 'C', 'D'];
@@ -195,7 +210,8 @@ export function TriviaGameView({
 
           {/* Timer */}
           <XStack
-            backgroundColor={surfaceColor}
+            backgroundColor={useGlass ? 'transparent' : surfaceColor}
+            overflow={useGlass ? 'hidden' : undefined}
             paddingHorizontal={spacing.md}
             paddingVertical={spacing.sm}
             borderRadius={radius.full}
@@ -203,6 +219,15 @@ export function TriviaGameView({
             gap={spacing.sm}
             zIndex={1}
           >
+            {useGlass && (
+              <GlassSurface
+                variant="glass"
+                isDark={isDark}
+                tint={surfaceColor}
+                glassTint={hexToRgba(surfaceColor, isDark ? 0.6 : 0.65)}
+                style={absoluteFillObject}
+              />
+            )}
             <Timer
               size={typography.fontSize.title}
               color={timeRemaining < 30 ? errorColor : primaryColor}
@@ -240,11 +265,21 @@ export function TriviaGameView({
           <View
             style={{
               height: borderWidths.extraHeavy,
-              backgroundColor: borderColor,
+              backgroundColor: useGlass ? 'transparent' : borderColor,
               borderRadius: 3,
               overflow: 'hidden',
             }}
           >
+            {/* Glass on the track only — the primary fill keeps its color on top */}
+            {useGlass && (
+              <GlassSurface
+                variant="glass"
+                isDark={isDark}
+                tint={borderColor}
+                glassTint={hexToRgba(borderColor, isDark ? 0.6 : 0.65)}
+                style={absoluteFillObject}
+              />
+            )}
             <Animated.View
               style={[
                 {
@@ -379,14 +414,23 @@ export function TriviaGameView({
                       <View
                         style={{
                           flexDirection: 'row',
-                          backgroundColor: `${accentColor}55`,
+                          backgroundColor: useGlass ? 'transparent' : `${accentColor}55`,
                           paddingHorizontal: spacing.md,
                           paddingVertical: spacing.sm,
                           borderRadius: radius.full,
                           alignItems: 'center',
                           gap: spacing.xs,
+                          ...(useGlass && { overflow: 'hidden' as const }),
                         }}
                       >
+                        {useGlass && (
+                          <GlassSurface
+                            variant="glass"
+                            isDark={isDark}
+                            tint={`${accentColor}55`}
+                            style={absoluteFillObject}
+                          />
+                        )}
                         <Lightbulb size={typography.fontSize.caption} color={accentColor} />
                         <RNText
                           maxFontSizeMultiplier={maxFontSizeMultipliers.label}
@@ -419,14 +463,23 @@ export function TriviaGameView({
                         <View
                           style={{
                             flexDirection: 'row',
-                            backgroundColor: `${accentColor}55`,
+                            backgroundColor: useGlass ? 'transparent' : `${accentColor}55`,
                             paddingHorizontal: spacing.md,
                             paddingVertical: spacing.sm,
                             borderRadius: radius.full,
                             alignItems: 'center',
                             gap: spacing.xs,
+                            ...(useGlass && { overflow: 'hidden' as const }),
                           }}
                         >
+                          {useGlass && (
+                            <GlassSurface
+                              variant="glass"
+                              isDark={isDark}
+                              tint={`${accentColor}55`}
+                              style={absoluteFillObject}
+                            />
+                          )}
                           <Lightbulb size={typography.fontSize.caption} color={accentColor} />
                           <RNText
                             maxFontSizeMultiplier={maxFontSizeMultipliers.label}
@@ -450,15 +503,24 @@ export function TriviaGameView({
                       <View
                         style={{
                           flexDirection: 'row',
-                          backgroundColor: `${secondaryTextColor}30`,
+                          backgroundColor: useGlass ? 'transparent' : `${secondaryTextColor}30`,
                           paddingHorizontal: spacing.md,
                           paddingVertical: spacing.sm,
                           borderRadius: radius.full,
                           alignItems: 'center',
                           gap: spacing.xs,
                           opacity: 0.8,
+                          ...(useGlass && { overflow: 'hidden' as const }),
                         }}
                       >
+                        {useGlass && (
+                          <GlassSurface
+                            variant="glass"
+                            isDark={isDark}
+                            tint={`${secondaryTextColor}30`}
+                            style={absoluteFillObject}
+                          />
+                        )}
                         <Lightbulb size={typography.fontSize.caption} color={secondaryTextColor} />
                         <RNText
                           maxFontSizeMultiplier={maxFontSizeMultipliers.label}
@@ -665,7 +727,8 @@ export function TriviaGameView({
             ]}
           >
             <XStack
-              backgroundColor={primaryColor}
+              backgroundColor={useGlass ? 'transparent' : primaryColor}
+              overflow={useGlass ? 'hidden' : undefined}
               height={media.buttonHeight}
               paddingHorizontal={spacing.lg}
               borderRadius={radius.lg}
@@ -673,6 +736,15 @@ export function TriviaGameView({
               alignItems="center"
               opacity={currentQuestionIndex > 0 ? 1 : 0.4}
             >
+              {useGlass && (
+                <GlassSurface
+                  variant="glass"
+                  isDark={isDark}
+                  tint={primaryColor}
+                  glassTint={hexToRgba(primaryColor, isDark ? 0.6 : 0.65)}
+                  style={absoluteFillObject}
+                />
+              )}
               <ChevronLeft size={iconSizes.lg} color="#FFFFFF" />
             </XStack>
           </Pressable>
@@ -689,7 +761,8 @@ export function TriviaGameView({
             ]}
           >
             <XStack
-              backgroundColor={primaryColor}
+              backgroundColor={useGlass ? 'transparent' : primaryColor}
+              overflow={useGlass ? 'hidden' : undefined}
               height={media.buttonHeight}
               borderRadius={radius.lg}
               justifyContent="center"
@@ -697,6 +770,15 @@ export function TriviaGameView({
               gap={spacing.sm}
               opacity={isLoadingResults ? 0.8 : 1}
             >
+              {useGlass && (
+                <GlassSurface
+                  variant="glass"
+                  isDark={isDark}
+                  tint={primaryColor}
+                  glassTint={hexToRgba(primaryColor, isDark ? 0.6 : 0.65)}
+                  style={absoluteFillObject}
+                />
+              )}
               {isLoadingResults ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (

@@ -9,8 +9,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import {
   Calendar,
@@ -23,12 +22,13 @@ import {
   Trophy,
   Zap,
 } from '@tamagui/lucide-icons';
-import { useFocusEffect } from 'expo-router';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
+import { useFocusEffect, useNavigation } from 'expo-router';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { ContentContainer } from '../../src/components';
+import { ContentContainer, GlassSurface } from '../../src/components';
 import { BannerAd } from '../../src/components/ads';
 import { BadgeIcon } from '../../src/components/badges/BadgeIcon';
 import { getTriviaModeBadge, TriviaResults } from '../../src/components/trivia';
@@ -40,7 +40,9 @@ import { Screens, trackScreenView, trackTriviaResultsView } from '../../src/serv
 import { getEarnedBadges } from '../../src/services/badges';
 import * as triviaService from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
+import { hexToRgba } from '../../src/utils/colors';
 import { getLucideIcon } from '../../src/utils/iconMapper';
+import { absoluteFillObject } from '../../src/utils/styles';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { TriviaMode } from '../../src/services/analytics';
@@ -105,55 +107,6 @@ function ViewAllButton({
   );
 }
 
-// Back Button with press animation
-function BackButton({ onPress, primaryColor }: { onPress: () => void; primaryColor: string }) {
-  const { iconSizes, media } = useResponsive();
-  const scale = useRef(new RNAnimated.Value(1)).current;
-  const buttonSize = media.topicCardSize * 0.45;
-
-  const handlePressIn = () => {
-    RNAnimated.spring(scale, {
-      toValue: 0.9,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 10,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    RNAnimated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 20,
-      bounciness: 8,
-    }).start();
-  };
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      testID="trivia-performance-back-button"
-    >
-      <RNAnimated.View
-        style={{
-          width: buttonSize,
-          height: buttonSize,
-          borderRadius: buttonSize / 2,
-          backgroundColor: `${primaryColor}20`,
-          justifyContent: 'center',
-          alignItems: 'center',
-          transform: [{ scale }],
-        }}
-      >
-        <ChevronLeft size={iconSizes.lg} color={primaryColor} />
-      </RNAnimated.View>
-    </Pressable>
-  );
-}
-
 // Metric Card Component
 function MetricCard({
   icon,
@@ -175,6 +128,10 @@ function MetricCard({
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const subtitleColor = isDark ? hexColors.dark.neonGreen : hexColors.light.success;
   const iconContainerSize = iconSizes.lg;
+
+  // On iOS 26 the card goes transparent and Liquid Glass (tinted with the same
+  // card color) shows through; everywhere else today's opaque card is untouched.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
 
   const iconContainer = (
     <View
@@ -208,10 +165,31 @@ function MetricCard({
   );
 
   return (
-    <View style={[perfShadowStyles.card, { flex: 1, borderRadius: radius.lg }]}>
+    <View
+      style={[
+        perfShadowStyles.card,
+        { flex: 1, borderRadius: radius.lg },
+        // Hairline defines the card immediately — the glass material/edge can
+        // lag a beat on first mount inside a transition.
+        useGlass && {
+          overflow: 'hidden' as const,
+          borderWidth: 1,
+          borderColor: isDark ? hexColors.dark.border : hexColors.light.border,
+        },
+      ]}
+    >
+      {useGlass && (
+        <GlassSurface
+          variant="glass"
+          isDark={isDark}
+          tint={cardBg}
+          glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
+          style={absoluteFillObject}
+        />
+      )}
       <YStack
         flex={1}
-        backgroundColor={cardBg}
+        backgroundColor={useGlass ? 'transparent' : cardBg}
         borderRadius={radius.lg}
         paddingHorizontal={spacing.xs}
         paddingVertical={spacing.sm}
@@ -552,10 +530,10 @@ export default function PerformanceScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
+  const navigation = useNavigation();
   const params = useLocalSearchParams<{ sessionId?: string }>();
-  const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
-  const { config, iconSizes, spacing, radius, media } = useResponsive();
+  const { config, iconSizes, spacing, radius } = useResponsive();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -611,31 +589,69 @@ export default function PerformanceScreen() {
   }, [params.sessionId]);
 
   // Handle session click to show results
-  const handleSessionClick = useCallback(async (sessionId: number) => {
-    try {
-      setLoadingSession(true);
-      const fullSession = await triviaService.getSessionById(sessionId, locale);
-      if (fullSession && fullSession.questions && fullSession.answers) {
-        setSelectedSession(fullSession);
-        // Track viewing results from performance
-        trackScreenView(Screens.TRIVIA_RESULTS);
-        trackTriviaResultsView({
-          mode: fullSession.trivia_mode as TriviaMode,
-          sessionId: fullSession.id,
-          categorySlug: fullSession.category_slug || undefined,
-        });
+  const handleSessionClick = useCallback(
+    async (sessionId: number) => {
+      try {
+        setLoadingSession(true);
+        const fullSession = await triviaService.getSessionById(sessionId, locale);
+        if (fullSession && fullSession.questions && fullSession.answers) {
+          setSelectedSession(fullSession);
+          // Track viewing results from performance
+          trackScreenView(Screens.TRIVIA_RESULTS);
+          trackTriviaResultsView({
+            mode: fullSession.trivia_mode as TriviaMode,
+            sessionId: fullSession.id,
+            categorySlug: fullSession.category_slug || undefined,
+          });
+        }
+      } catch (error) {
+        console.error('Error loading session:', error);
+      } finally {
+        setLoadingSession(false);
       }
-    } catch (error) {
-      console.error('Error loading session:', error);
-    } finally {
-      setLoadingSession(false);
-    }
-  }, [locale]);
+    },
+    [locale]
+  );
 
   // Handle close results view
   const handleCloseResults = useCallback(() => {
     setSelectedSession(null);
   }, []);
+
+  // TriviaResults renders under the SAME native header as the rest of the
+  // stack: keep the header, retitle it, and point its back chevron at the
+  // results' close handler instead of popping the screen.
+  const showingResults = !!(
+    selectedSession &&
+    selectedSession.questions &&
+    selectedSession.answers
+  );
+  React.useEffect(() => {
+    if (showingResults) {
+      navigation.setOptions({
+        title: t('testResults'),
+        headerBackVisible: false,
+        headerLeft: () => (
+          <Pressable
+            onPress={handleCloseResults}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            testID="trivia-results-header-back"
+          >
+            <ChevronLeft
+              size={iconSizes.lg}
+              color={isDark ? hexColors.dark.primary : hexColors.light.primary}
+            />
+          </Pressable>
+        ),
+      });
+    } else {
+      navigation.setOptions({
+        title: t('triviaPerformance'),
+        headerBackVisible: true,
+        headerLeft: undefined,
+      });
+    }
+  }, [navigation, showingResults, t, isDark, iconSizes.lg, handleCloseResults]);
 
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
@@ -646,9 +662,15 @@ export default function PerformanceScreen() {
   const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
 
+  // iOS 26 Liquid Glass for the stat cards in this plain ScrollView (cards go
+  // transparent, glass tinted with the card color shows through). Opaque cards
+  // everywhere else are untouched.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
+  const glassTint = hexToRgba(cardBg, isDark ? 0.6 : 0.65);
+
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top }}>
+      <View style={{ flex: 1, backgroundColor: bgColor }}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <YStack flex={1} justifyContent="center" alignItems="center">
           <ActivityIndicator size="large" color={primaryColor} />
@@ -701,7 +723,8 @@ export default function PerformanceScreen() {
           isDark,
           t,
         })}
-        showBackButton={true}
+        showBackButton={false}
+        underNavigationHeader
         showReturnButton={false}
         unavailableQuestionIds={selectedSession.unavailableQuestionIds}
         hideTimeAndStreak={selectedSession.trivia_mode === 'quick'}
@@ -719,45 +742,20 @@ export default function PerformanceScreen() {
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      {/* Header */}
-      <Animated.View
-        entering={FadeInUp.duration(400).springify()}
-        needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-      >
-        <XStack
-          paddingTop={insets.top + spacing.sm}
-          paddingBottom={spacing.md}
-          paddingHorizontal={spacing.lg}
-          alignItems="center"
-          justifyContent="space-between"
-          borderBottomWidth={1}
-          borderBottomColor={isDark ? hexColors.dark.border : hexColors.light.border}
-        >
-          <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
-
-          <Text.Title color={textColor}>{t('triviaPerformance')}</Text.Title>
-
-          {/* Empty spacer to balance the header */}
-          <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />
-        </XStack>
-      </Animated.View>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         overScrollMode="never"
+        contentInsetAdjustmentBehavior="automatic"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />}
       >
         <ContentContainer>
           <YStack marginVertical={spacing.lg} gap={spacing.xl}>
-            {/* Core Metrics */}
+            {/* Core metrics — no section label: it read as a stray fixed
+                subtitle directly under the native large title. */}
             <Animated.View
               entering={FadeIn.delay(50).duration(400).springify()}
               needsOffscreenAlphaCompositing={Platform.OS === 'android'}
             >
-              <Text.Title color={textColor} marginBottom={spacing.md}>
-                {t('coreMetrics')}
-              </Text.Title>
-
               <MetricsGrid
                 stats={stats}
                 isDark={isDark}
@@ -782,10 +780,24 @@ export default function PerformanceScreen() {
                   perfShadowStyles.card,
                   { borderRadius: radius.lg },
                   { opacity: pressed ? 0.7 : 1 },
+                  useGlass && {
+                    overflow: 'hidden' as const,
+                    borderWidth: 1,
+                    borderColor: isDark ? hexColors.dark.border : hexColors.light.border,
+                  },
                 ]}
               >
+                {useGlass && (
+                  <GlassSurface
+                    variant="glass"
+                    isDark={isDark}
+                    tint={cardBg}
+                    glassTint={glassTint}
+                    style={absoluteFillObject}
+                  />
+                )}
                 <YStack
-                  backgroundColor={cardBg}
+                  backgroundColor={useGlass ? 'transparent' : cardBg}
                   borderRadius={radius.lg}
                   padding={spacing.lg}
                   gap={spacing.md}
@@ -872,10 +884,24 @@ export default function PerformanceScreen() {
                     perfShadowStyles.card,
                     { borderRadius: radius.lg },
                     { opacity: pressed ? 0.7 : 1 },
+                    useGlass && {
+                      overflow: 'hidden' as const,
+                      borderWidth: 1,
+                      borderColor: isDark ? hexColors.dark.border : hexColors.light.border,
+                    },
                   ]}
                 >
+                  {useGlass && (
+                    <GlassSurface
+                      variant="glass"
+                      isDark={isDark}
+                      tint={cardBg}
+                      glassTint={glassTint}
+                      style={absoluteFillObject}
+                    />
+                  )}
                   <YStack
-                    backgroundColor={cardBg}
+                    backgroundColor={useGlass ? 'transparent' : cardBg}
                     borderRadius={radius.lg}
                     padding={spacing.lg}
                     gap={spacing.lg}

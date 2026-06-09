@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
 import { Check, X } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,6 +10,8 @@ import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
 import { useResponsive } from '../../utils/useResponsive';
+import { InlineOverlay } from '../InlineOverlay';
+import { ModalBackdrop } from '../ModalBackdrop';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import { BadgeIcon } from './BadgeIcon';
@@ -73,8 +75,17 @@ export function BadgeDetailSheet({ badge, visible, onClose }: BadgeDetailSheetPr
   };
 
   return (
-    <Modal visible={modalVisible} transparent animationType="none" statusBarTranslucent>
-      <Pressable style={styles.overlay} onPress={onClose}>
+    // exitGraceMs=0: the card's exit animation runs BEFORE `modalVisible` flips
+    // false (the Animated.parallel completion callback), so no extra mounted
+    // grace is needed — lingering would leave an invisible tap-blocking layer.
+    <InlineOverlay visible={modalVisible} onRequestClose={onClose} exitGraceMs={0}>
+      <View style={styles.overlay}>
+        <ModalBackdrop
+          isDark={theme === 'dark'}
+          blurIntensity={50}
+          androidScrim="rgba(0, 0, 0, 0.5)"
+          onPress={onClose}
+        />
         <Animated.View
           style={{
             opacity,
@@ -276,15 +287,14 @@ export function BadgeDetailSheet({ badge, visible, onClose }: BadgeDetailSheetPr
             </YStack>
           </Pressable>
         </Animated.View>
-      </Pressable>
-    </Modal>
+      </View>
+    </InlineOverlay>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },

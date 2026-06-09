@@ -49,6 +49,11 @@ export function ModalBackdrop({
         variant="glass"
         isDark={isDark}
         tint={androidScrim}
+        // Without this, the GlassView would inherit `tint` (the near-opaque
+        // Android scrim, e.g. rgba(0,0,0,0.9)) as its tintColor and render as
+        // a solid black sheet instead of glass. The dim layer below provides
+        // the darkening; the glass itself stays a light translucent tint.
+        glassTint={isDark ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)'}
         blurIntensity={blurIntensity}
         style={StyleSheet.absoluteFill}
       />

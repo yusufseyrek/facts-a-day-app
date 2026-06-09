@@ -32,8 +32,10 @@ appId: dev.seyrek.factsaday
           retryTapIfNoChange: true
       - waitForAnimationToEnd:
           timeout: 1000
+      # Performance now uses the native header back button (no testID);
+      # its accessibility label is the back title ("Trivia") or "Back".
       - tapOn:
-          id: "trivia-performance-back-button"
+          text: "Trivia|Back"
           retryTapIfNoChange: true
 
 - runFlow:

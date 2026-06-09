@@ -1496,6 +1496,10 @@ function PremiumGateOverlay({
         variant="glass"
         isDark={isDark}
         tint={isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)'}
+        // Mid-alpha so the gate reads as glass, not a solid sheet (the opaque
+        // `tint` would otherwise become the GlassView tintColor); stays heavy
+        // enough that the premium text underneath is unreadable.
+        glassTint={isDark ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.5)'}
         blurIntensity={50}
         style={StyleSheet.absoluteFill}
       />

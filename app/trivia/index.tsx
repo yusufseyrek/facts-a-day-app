@@ -7,21 +7,15 @@ import {
   ScrollView,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { ArrowRight, Brain, Gamepad2, Sparkles } from '@tamagui/lucide-icons';
-import { useFocusEffect } from 'expo-router';
+import { ArrowRight, Gamepad2, Sparkles } from '@tamagui/lucide-icons';
+import { useFocusEffect, useNavigation } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import {
-  ContentContainer,
-  LoadingContainer,
-  ScreenContainer,
-  ScreenHeader,
-  useIconColor,
-} from '../../src/components';
+import { ContentContainer, LoadingContainer, ScreenContainer } from '../../src/components';
 import { BannerAd } from '../../src/components/ads';
 import { TriviaGridCard, TriviaIntroModal, TriviaStatsHero } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
@@ -41,8 +35,8 @@ export default function TriviaScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
+  const navigation = useNavigation();
   const isDark = theme === 'dark';
-  const iconColor = useIconColor();
   const { isTablet, typography, config, iconSizes, spacing, radius } = useResponsive();
 
   const [loading, setLoading] = useState(true);
@@ -143,6 +137,39 @@ export default function TriviaScreen() {
     return () => unsubscribe();
   }, [loadTriviaData]);
 
+  // Streak badge lives in the native header (replaces the old ScreenHeader row).
+  useEffect(() => {
+    const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+    const secondaryTextColor = isDark
+      ? hexColors.dark.textSecondary
+      : hexColors.light.textSecondary;
+    const isStreakActive = dailyStreak > 0;
+    const streakColor = isStreakActive ? '#8B5CF6' : secondaryTextColor;
+
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={() => router.push('/badges')}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        >
+          <XStack
+            alignItems="center"
+            gap={spacing.xs}
+            paddingHorizontal={spacing.sm}
+            paddingVertical={spacing.xs}
+            borderRadius={radius.md}
+            backgroundColor={isStreakActive ? `${streakColor}15` : `${cardBg}20`}
+          >
+            <Gamepad2 size={iconSizes.sm} color={streakColor} />
+            <Text.Label fontFamily={FONT_FAMILIES.semibold} color={streakColor}>
+              {dailyStreak}
+            </Text.Label>
+          </XStack>
+        </Pressable>
+      ),
+    });
+  }, [navigation, dailyStreak, isDark, router, spacing, iconSizes, radius]);
+
   // Show intro modal before starting trivia
   const showDailyTriviaIntro = () => {
     setPendingTrivia({
@@ -206,7 +233,7 @@ export default function TriviaScreen() {
   // Loading state
   if (loading) {
     return (
-      <ScreenContainer edges={['top']}>
+      <ScreenContainer edges={[]}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <LoadingContainer>
           <ActivityIndicator size="large" color={hexColors.light.primary} />
@@ -230,30 +257,6 @@ export default function TriviaScreen() {
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
   const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
 
-  // Streak badge for header
-  const isStreakActive = dailyStreak > 0;
-  const streakColor = isStreakActive ? '#8B5CF6' : secondaryTextColor;
-  const streakBadge = (
-    <Pressable
-      onPress={() => router.push('/badges')}
-      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-    >
-      <XStack
-        alignItems="center"
-        gap={spacing.xs}
-        paddingHorizontal={spacing.sm}
-        paddingVertical={spacing.xs}
-        borderRadius={radius.md}
-        backgroundColor={isStreakActive ? `${streakColor}15` : `${cardBg}20`}
-      >
-        <Gamepad2 size={iconSizes.sm} color={streakColor} />
-        <Text.Label fontFamily={FONT_FAMILIES.semibold} color={streakColor}>
-          {dailyStreak}
-        </Text.Label>
-      </XStack>
-    </Pressable>
-  );
-
   // Helper to chunk categories into rows
   const chunkCategories = (categories: CategoryWithProgress[], size: number) => {
     const chunks: CategoryWithProgress[][] = [];
@@ -268,24 +271,14 @@ export default function TriviaScreen() {
   const categoryRows = chunkCategories(categoriesWithProgress, categoriesPerRow);
 
   return (
-    <ScreenContainer edges={['top']}>
+    <ScreenContainer edges={[]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <YStack flex={1}>
-        <Animated.View
-          entering={FadeIn.duration(300)}
-          needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-        >
-          <ScreenHeader
-            icon={<Brain size={iconSizes.lg} color={iconColor} />}
-            title={t('trivia')}
-            rightElement={streakBadge}
-          />
-        </Animated.View>
-
         <ScrollView
           ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
           overScrollMode="never"
+          contentInsetAdjustmentBehavior="automatic"
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => loadTriviaData(true)} />
           }

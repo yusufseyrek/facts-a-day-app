@@ -1,13 +1,17 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { Platform, Pressable, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
 import { ChevronRight } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { XStack, YStack } from 'tamagui';
 
 import { hexColors } from '../../theme';
+import { hexToRgba } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { GlassSurface } from '../GlassSurface';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { TranslationKeys } from '../../i18n/translations';
@@ -118,6 +122,12 @@ export function TriviaStatsHero({
   // Category icon color
   const categoryColor =
     topCategory?.color_hex || (isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple);
+
+  // On iOS 26 the card goes transparent and Liquid Glass (tinted with the same
+  // card color) shows through; the hairline border is dropped there since the
+  // glass edge provides the delineation. Everywhere else today's opaque card
+  // (with border) is untouched.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
 
   const cardContent = (
     <YStack padding={spacing.lg} gap={spacing.md}>
@@ -266,27 +276,49 @@ export function TriviaStatsHero({
           style={({ pressed }) => [
             heroShadowStyles.card,
             {
-              backgroundColor: cardBg,
+              backgroundColor: useGlass ? 'transparent' : cardBg,
               borderRadius: radius.lg,
+              // Hairline kept in glass mode too: it defines the card even
+              // before the glass material/edge finishes initializing.
               borderWidth: 1,
               borderColor: borderColor,
               opacity: pressed ? 0.85 : 1,
               transform: [{ scale: pressed ? 0.98 : 1 }],
             },
+            useGlass && { overflow: 'hidden' as const },
           ]}
           testID="trivia-stats-hero"
           accessibilityLabel={t('yourPerformance')}
         >
+          {useGlass && (
+            <GlassSurface
+              variant="glass"
+              isDark={isDark}
+              tint={cardBg}
+              glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
+              style={absoluteFillObject}
+            />
+          )}
           {cardContent}
         </Pressable>
       ) : (
         <YStack
-          backgroundColor={cardBg}
+          backgroundColor={useGlass ? 'transparent' : cardBg}
           borderRadius={radius.lg}
           borderWidth={1}
           borderColor={borderColor}
+          overflow={useGlass ? 'hidden' : undefined}
           style={heroShadowStyles.card}
         >
+          {useGlass && (
+            <GlassSurface
+              variant="glass"
+              isDark={isDark}
+              tint={cardBg}
+              glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
+              style={absoluteFillObject}
+            />
+          )}
           {cardContent}
         </YStack>
       )}

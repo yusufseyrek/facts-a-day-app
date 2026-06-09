@@ -141,7 +141,7 @@ export function FactActions({
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { iconSizes, typography, spacing } = useResponsive();
+  const { iconSizes, typography, spacing, radius } = useResponsive();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
   // iOS 26: frost the bottom action bar with Liquid Glass; opaque elsewhere.
@@ -369,152 +369,164 @@ export function FactActions({
     <>
       <Container
         backgroundColor={useGlass ? 'transparent' : '$background'}
-        overflow="hidden"
+        borderTopWidth={useGlass ? 0 : 1}
+        overflow={useGlass ? undefined : 'hidden'}
         style={{
           paddingBottom: insets.bottom > 0 ? insets.bottom : spacing.xs,
           paddingTop: spacing.xs,
+          paddingHorizontal: useGlass ? spacing.lg : 0,
         }}
       >
-        {useGlass ? (
-          <GlassSurface
-            variant="glass"
-            isDark={isDark}
-            tint={hexColors[theme].background}
-            glassTint={glassTint}
-            style={absoluteFillObject}
-          />
-        ) : null}
+        {/* iOS 26: the bar becomes a floating interactive-glass capsule inset
+            from the screen edges (content scrolls past in the gutters); the
+            opaque full-width bar is unchanged everywhere else. */}
+        <View
+          borderRadius={useGlass ? radius.full : 0}
+          overflow={useGlass ? 'hidden' : undefined}
+          paddingVertical={useGlass ? spacing.sm : 0}
+        >
+          {useGlass ? (
+            <GlassSurface
+              variant="glass"
+              isDark={isDark}
+              tint={hexColors[theme].background}
+              glassTint={glassTint}
+              isInteractive
+              style={absoluteFillObject}
+            />
+          ) : null}
 
-        {/* Action row: [ {} {} {} | < 1/N > ] or [ {} {} {} ] */}
-        <XStack alignItems="center" justifyContent="space-between" paddingHorizontal={spacing.sm}>
-          {/* Action buttons group */}
-          <XStack gap={spacing.lg} alignItems="center" justifyContent="space-around" flex={1}>
-            {/* Save Button */}
-            <Pressable
-              onPress={handleLike}
-              role="button"
-              aria-label={isFavorited ? t('a11y_likedButton') : t('a11y_likeButton')}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.8 : 1,
-                paddingVertical: spacing.xs,
-              })}
-            >
-              <View
-                style={{
+          {/* Action row: [ {} {} {} | < 1/N > ] or [ {} {} {} ] */}
+          <XStack alignItems="center" justifyContent="space-between" paddingHorizontal={spacing.sm}>
+            {/* Action buttons group */}
+            <XStack gap={spacing.lg} alignItems="center" justifyContent="space-around" flex={1}>
+              {/* Save Button */}
+              <Pressable
+                onPress={handleLike}
+                role="button"
+                aria-label={isFavorited ? t('a11y_likedButton') : t('a11y_likeButton')}
+                style={({ pressed }) => ({
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: iconSizes.lg,
-                  height: iconSizes.lg,
-                }}
+                  opacity: pressed ? 0.8 : 1,
+                  paddingVertical: spacing.xs,
+                })}
               >
-                <ParticleBurst color={heartColor} isActive={showParticles} />
-                <Animated.View style={[styles.heartIcon, heartAnimatedStyle]}>
-                  <Heart
-                    size={iconSizes.lg}
-                    color={heartColor}
-                    fill={isFavorited ? heartColor : 'none'}
-                  />
+                <View
+                  style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: iconSizes.lg,
+                    height: iconSizes.lg,
+                  }}
+                >
+                  <ParticleBurst color={heartColor} isActive={showParticles} />
+                  <Animated.View style={[styles.heartIcon, heartAnimatedStyle]}>
+                    <Heart
+                      size={iconSizes.lg}
+                      color={heartColor}
+                      fill={isFavorited ? heartColor : 'none'}
+                    />
+                  </Animated.View>
+                </View>
+              </Pressable>
+
+              {/* Share Button */}
+              <Pressable
+                onPress={handleShare}
+                disabled={isSharing}
+                role="button"
+                aria-label={t('a11y_shareButton')}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: pressed ? 0.8 : 1,
+                  paddingVertical: spacing.xs,
+                })}
+              >
+                <Animated.View style={shareAnimatedStyle}>
+                  <ShareIcon size={iconSizes.lg} color={shareColor} />
                 </Animated.View>
-              </View>
-            </Pressable>
+              </Pressable>
 
-            {/* Share Button */}
-            <Pressable
-              onPress={handleShare}
-              disabled={isSharing}
-              role="button"
-              aria-label={t('a11y_shareButton')}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.8 : 1,
-                paddingVertical: spacing.xs,
-              })}
-            >
-              <Animated.View style={shareAnimatedStyle}>
-                <ShareIcon size={iconSizes.lg} color={shareColor} />
-              </Animated.View>
-            </Pressable>
+              {/* Play / Audio Button — only rendered when this fact has audio */}
+              {audioController?.hasAudio && <FactAudioButton controller={audioController} />}
 
-            {/* Play / Audio Button — only rendered when this fact has audio */}
-            {audioController?.hasAudio && <FactAudioButton controller={audioController} />}
+              {/* Report Button */}
+              <Pressable
+                onPress={handleReport}
+                disabled={isSubmittingReport}
+                role="button"
+                aria-label={t('a11y_reportButton')}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: pressed ? 0.8 : isSubmittingReport ? 0.5 : 1,
+                  paddingVertical: spacing.xs,
+                })}
+              >
+                <Animated.View style={reportAnimatedStyle}>
+                  <Flag size={iconSizes.lg} color={flagColor} />
+                </Animated.View>
+              </Pressable>
+            </XStack>
 
-            {/* Report Button */}
-            <Pressable
-              onPress={handleReport}
-              disabled={isSubmittingReport}
-              role="button"
-              aria-label={t('a11y_reportButton')}
-              style={({ pressed }) => ({
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.8 : isSubmittingReport ? 0.5 : 1,
-                paddingVertical: spacing.xs,
-              })}
-            >
-              <Animated.View style={reportAnimatedStyle}>
-                <Flag size={iconSizes.lg} color={flagColor} />
-              </Animated.View>
-            </Pressable>
-          </XStack>
-
-          {/* Divider + Navigation */}
-          {hasNavigation && (
-            <>
-              <View
-                style={{
-                  width: 1,
-                  height: iconSizes.lg,
-                  backgroundColor: flagColor,
-                  opacity: 0.3,
-                  marginHorizontal: spacing.md,
-                }}
-              />
-              <XStack alignItems="center">
-                <Pressable
-                  onPress={handlePrevious}
-                  disabled={!hasPrevious}
-                  role="button"
-                  aria-label={t('a11y_previousButton')}
-                  hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: spacing.sm, right: 0 }}
-                  style={({ pressed }) => ({
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: !hasPrevious ? 0.25 : pressed ? 0.8 : 1,
-                  })}
-                >
-                  <ChevronLeft size={iconSizes.xl} color={navColor} padding={spacing.xl} />
-                </Pressable>
-                {showPosition && (
-                  <Text.Caption
-                    color="$textSecondary"
-                    fontSize={typography.fontSize.caption}
-                    textAlign="center"
-                    style={{ width: typography.fontSize.caption * 5 }}
+            {/* Divider + Navigation */}
+            {hasNavigation && (
+              <>
+                <View
+                  style={{
+                    width: 1,
+                    height: iconSizes.lg,
+                    backgroundColor: flagColor,
+                    opacity: 0.3,
+                    marginHorizontal: spacing.md,
+                  }}
+                />
+                <XStack alignItems="center">
+                  <Pressable
+                    onPress={handlePrevious}
+                    disabled={!hasPrevious}
+                    role="button"
+                    aria-label={t('a11y_previousButton')}
+                    hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: spacing.sm, right: 0 }}
+                    style={({ pressed }) => ({
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: !hasPrevious ? 0.25 : pressed ? 0.8 : 1,
+                    })}
                   >
-                    {`${currentIndex! + 1} / ${totalCount}`}
-                  </Text.Caption>
-                )}
-                <Pressable
-                  onPress={handleNext}
-                  disabled={!hasNext}
-                  role="button"
-                  aria-label={t('a11y_nextButton')}
-                  hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: 0, right: spacing.sm }}
-                  style={({ pressed }) => ({
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: !hasNext ? 0.25 : pressed ? 0.8 : 1,
-                  })}
-                >
-                  <ChevronRight size={iconSizes.xl} color={navColor} padding={spacing.xl} />
-                </Pressable>
-              </XStack>
-            </>
-          )}
-        </XStack>
+                    <ChevronLeft size={iconSizes.xl} color={navColor} padding={spacing.xl} />
+                  </Pressable>
+                  {showPosition && (
+                    <Text.Caption
+                      color="$textSecondary"
+                      fontSize={typography.fontSize.caption}
+                      textAlign="center"
+                      style={{ width: typography.fontSize.caption * 5 }}
+                    >
+                      {`${currentIndex! + 1} / ${totalCount}`}
+                    </Text.Caption>
+                  )}
+                  <Pressable
+                    onPress={handleNext}
+                    disabled={!hasNext}
+                    role="button"
+                    aria-label={t('a11y_nextButton')}
+                    hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: 0, right: spacing.sm }}
+                    style={({ pressed }) => ({
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: !hasNext ? 0.25 : pressed ? 0.8 : 1,
+                    })}
+                  >
+                    <ChevronRight size={iconSizes.xl} color={navColor} padding={spacing.xl} />
+                  </Pressable>
+                </XStack>
+              </>
+            )}
+          </XStack>
+        </View>
       </Container>
 
       <ReportFactModal

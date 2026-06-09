@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppState, Linking, Platform, SectionList } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import {
   BarChart3,
@@ -13,7 +13,6 @@ import {
   Heart,
   Palette,
   RotateCcw,
-  Settings,
   Shield,
   Star,
   TestTube,
@@ -28,13 +27,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as Updates from 'expo-updates';
 import { YStack } from 'tamagui';
 
-import {
-  ContentContainer,
-  ScreenContainer,
-  ScreenHeader,
-  Text,
-  useIconColor,
-} from '../../../src/components';
+import { ContentContainer, ScreenContainer, Text } from '../../../src/components';
 import { ThemePickerModal } from '../../../src/components/settings/ThemePickerModal';
 import { TimePickerModal } from '../../../src/components/settings/TimePickerModal';
 import { SettingsRow } from '../../../src/components/SettingsRow';
@@ -616,8 +609,6 @@ export default function SettingsPage() {
     ]);
   };
 
-  const headerIconColor = useIconColor();
-
   // Define settings items for each section
   type SettingsItem = {
     id: string;
@@ -920,18 +911,13 @@ export default function SettingsPage() {
   );
 
   return (
-    <ScreenContainer edges={['top']}>
+    <ScreenContainer edges={[]}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <Animated.View entering={shouldAnimate ? FadeIn.duration(300) : undefined}>
-        <ScreenHeader
-          icon={<Settings size={iconSizes.lg} color={headerIconColor} />}
-          title={t('settings')}
-        />
-      </Animated.View>
       <SectionList
         ref={listRef}
         sections={sections}
         overScrollMode="never"
+        contentInsetAdjustmentBehavior="automatic"
         keyExtractor={(item) => item.id}
         renderSectionHeader={({ section: { title }, section }) => {
           const sectionIndex = sections.findIndex((s) => s.title === section.title);
@@ -975,7 +961,10 @@ export default function SettingsPage() {
           );
         }}
         ListFooterComponent={renderFooter}
-        stickySectionHeadersEnabled={true}
+        // RN's JS sticky headers pin to the viewport top, ignoring the
+        // translucent native header's content inset — they'd float above the
+        // large title. Non-sticky headers scroll with content instead.
+        stickySectionHeadersEnabled={false}
         showsVerticalScrollIndicator={false}
       />
 

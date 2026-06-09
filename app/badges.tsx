@@ -1,9 +1,8 @@
-import React, { useCallback, useRef, useState } from 'react';
-import { Animated as RNAnimated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useCallback, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { BookOpen, ChevronLeft, Flame, Gamepad2, Trophy } from '@tamagui/lucide-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { BookOpen, Flame, Gamepad2, Trophy } from '@tamagui/lucide-icons';
+import { Stack, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
@@ -12,6 +11,7 @@ import { BadgeDetailSheet } from '../src/components/badges/BadgeDetailSheet';
 import { BadgesScreenSkeleton } from '../src/components/badges/BadgesScreenSkeleton';
 import { ContentContainer } from '../src/components/ScreenLayout';
 import { FONT_FAMILIES, Text } from '../src/components/Typography';
+import { useGlassHeaderOptions } from '../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../src/i18n';
 import { Screens, trackBadgeDetailView, trackScreenView } from '../src/services/analytics';
 import { getCachedBadgeData, setCachedBadgeData } from '../src/services/badgeCache';
@@ -50,61 +50,12 @@ function SectionLabel({
   );
 }
 
-// Back Button with press animation
-function BackButton({ onPress, primaryColor }: { onPress: () => void; primaryColor: string }) {
-  const { iconSizes, media } = useResponsive();
-  const scale = useRef(new RNAnimated.Value(1)).current;
-  const buttonSize = media.topicCardSize * 0.45;
-
-  const handlePressIn = () => {
-    RNAnimated.spring(scale, {
-      toValue: 0.9,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 10,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    RNAnimated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 20,
-      bounciness: 8,
-    }).start();
-  };
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-    >
-      <RNAnimated.View
-        style={{
-          width: buttonSize,
-          height: buttonSize,
-          borderRadius: buttonSize / 2,
-          backgroundColor: `${primaryColor}20`,
-          justifyContent: 'center',
-          alignItems: 'center',
-          transform: [{ scale }],
-        }}
-      >
-        <ChevronLeft size={iconSizes.lg} color={primaryColor} />
-      </RNAnimated.View>
-    </Pressable>
-  );
-}
-
 export default function BadgesScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const router = useRouter();
-  const { spacing, radius, iconSizes, media } = useResponsive();
+  const { spacing, radius, iconSizes } = useResponsive();
   const colors = hexColors[theme];
-  const insets = useSafeAreaInsets();
+  const glassHeaderOptions = useGlassHeaderOptions();
 
   const [badges, setBadges] = useState<BadgeWithStatus[]>([]);
   const [streak, setStreak] = useState(0);
@@ -211,30 +162,15 @@ export default function BadgesScreen() {
   );
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Native glass header (root stack defaults to headerShown: false) */}
+      <Stack.Screen options={{ ...glassHeaderOptions, title: t('achievements') }} />
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-
-      {/* Header */}
-      <XStack
-        paddingTop={spacing.sm}
-        paddingBottom={spacing.md}
-        paddingHorizontal={spacing.lg}
-        alignItems="center"
-        justifyContent="space-between"
-        borderBottomWidth={1}
-        borderBottomColor={colors.border}
-      >
-        <BackButton onPress={() => router.back()} primaryColor={colors.primary} />
-
-        <Text.Title color={colors.text}>{t('achievements')}</Text.Title>
-
-        {/* Empty spacer to balance the header */}
-        <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />
-      </XStack>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         overScrollMode="never"
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom: spacing.xxl }}
       >
         {loading ? (

@@ -172,6 +172,11 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
         // Lets the iOS 26 native large-title header collapse/expand with the
         // scroll and keeps content out from under the floating tab bar.
         contentInsetAdjustmentBehavior="automatic"
+        // FlashList v2 anchors VISIBLE content by default; when the header
+        // sections (carousels) load/grow after mount, that anchoring made the
+        // screen open "pre-scrolled" past the section titles. Anchor the top
+        // instead.
+        maintainVisibleContentPosition={{ disabled: true }}
         data={items}
         renderItem={renderItem}
         keyExtractor={keyExtractor}

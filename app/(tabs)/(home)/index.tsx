@@ -159,21 +159,10 @@ function HomeScreen() {
 
   const hasAnyContent = latestFacts.length > 0 || onThisDayFacts.length > 0;
 
-  // Snap the outer list to the top once initial content is in place. FlashList
-  // can drift when header sections (carousels, the Keep Reading section header)
-  // mount or grow asynchronously after the list itself, leaving the screen
-  // opened a bit scrolled.
-  const initialScrollResetRef = useRef(false);
-  useEffect(() => {
-    if (initialScrollResetRef.current) return;
-    if (isLoading || !hasAnyContent) return;
-    initialScrollResetRef.current = true;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        keepReadingListRef.current?.scrollToOffset({ offset: 0, animated: false });
-      });
-    });
-  }, [isLoading, hasAnyContent]);
+  // NOTE: the old "snap to offset 0 after first load" workaround is gone. The
+  // drift it papered over was FlashList v2's default maintainVisibleContentPosition
+  // anchoring (now disabled in KeepReadingList), and offset 0 is no longer the
+  // true top under the translucent native header anyway.
 
   // Compose list header from extracted components (memoized to prevent FlashList re-layout)
   const listHeader = useMemo(

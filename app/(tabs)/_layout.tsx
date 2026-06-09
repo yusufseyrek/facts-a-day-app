@@ -95,6 +95,11 @@ export default function TabLayout() {
         labelVisibilityMode="labeled"
         screenListeners={({ route }) => ({
           tabPress: () => {
+            // Android only: iOS re-tap scrolls natively, and UIKit lands at the
+            // ADJUSTED top (negative offset under the translucent large-title
+            // header). The JS handlers scroll to offset 0, which is BELOW that
+            // — they'd override the native scroll and cut off the list header.
+            if (Platform.OS !== 'android') return;
             const tabId = TAB_IDS[route.name] ?? route.name;
             if (tabId === currentTab) {
               scrollToTop(tabId);

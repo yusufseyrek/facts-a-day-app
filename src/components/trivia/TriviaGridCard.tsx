@@ -1,12 +1,15 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { Check, ChevronRight, Shuffle, Zap } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { XStack, YStack } from 'tamagui';
 
 import { hexColors } from '../../theme';
 import { blendHexColors, hexToRgba } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { GlassSurface } from '../GlassSurface';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 export type TriviaGridCardType = 'daily' | 'mixed' | 'category';
@@ -42,6 +45,7 @@ export function TriviaGridCard({
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
   const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
+  const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
   const chevronColor = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)';
@@ -77,6 +81,11 @@ export function TriviaGridCard({
   // Check if daily trivia is available (not completed and has questions)
   const isDailyAvailable = type === 'daily' && !isCompleted && !isDisabled;
 
+  // Opaque card fill (today's look); on iOS 26 it becomes the glass tint and the
+  // card itself goes transparent so Liquid Glass shows through.
+  const solidBg = isDailyAvailable ? blendHexColors(primaryColor, cardBg, 0.08) : cardBg;
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
+
   // Generate testID based on type and icon
   const getTestId = () => {
     if (type === 'daily') return 'trivia-card-daily';
@@ -93,7 +102,7 @@ export function TriviaGridCard({
         {
           flex: 1,
           borderRadius: radius.lg,
-          backgroundColor: isDailyAvailable ? blendHexColors(primaryColor, cardBg, 0.08) : cardBg,
+          backgroundColor: useGlass ? 'transparent' : solidBg,
           opacity:
             pressed && !isDisabled && !(isCompleted && type === 'daily')
               ? 0.85
@@ -104,10 +113,22 @@ export function TriviaGridCard({
             { scale: pressed && !isDisabled && !(isCompleted && type === 'daily') ? 0.98 : 1 },
           ],
         },
+        // Hairline defines the card immediately — the glass material/edge can
+        // lag a beat on first mount inside a tab transition.
+        useGlass && { overflow: 'hidden' as const, borderWidth: 1, borderColor },
       ]}
       testID={getTestId()}
       accessibilityLabel={title}
     >
+      {useGlass && (
+        <GlassSurface
+          variant="glass"
+          isDark={isDark}
+          tint={solidBg}
+          glassTint={hexToRgba(solidBg, isDark ? 0.6 : 0.65)}
+          style={absoluteFillObject}
+        />
+      )}
       <YStack
         padding={spacing.lg}
         justifyContent="space-between"

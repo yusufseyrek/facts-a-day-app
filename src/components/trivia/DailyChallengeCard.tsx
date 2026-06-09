@@ -1,11 +1,15 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { Platform, Pressable, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Check, ChevronRight, Zap } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { XStack, YStack } from 'tamagui';
 
 import { hexColors } from '../../theme';
+import { hexToRgba } from '../../utils/colors';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { GlassSurface } from '../GlassSurface';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { TranslationKeys } from '../../i18n/translations';
@@ -34,6 +38,11 @@ export function DailyChallengeCard({
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
 
+  // On iOS 26 the card goes transparent and Liquid Glass (tinted with the same
+  // card color) shows through. The neutral hairline border is dropped under
+  // glass, but the success border is KEPT — it's the completion signal.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
+
   return (
     <Animated.View
       entering={FadeIn.duration(300).delay(100)}
@@ -47,14 +56,24 @@ export function DailyChallengeCard({
         })}
       >
         <XStack
-          backgroundColor={cardBg}
+          backgroundColor={useGlass ? 'transparent' : cardBg}
           padding={spacing.lg}
           borderRadius={radius.md}
-          borderWidth={1}
+          borderWidth={useGlass && !isCompleted ? 0 : 1}
           borderColor={isCompleted ? successColor : borderColor}
           alignItems="center"
           gap={spacing.md}
+          overflow={useGlass ? 'hidden' : undefined}
         >
+          {useGlass && (
+            <GlassSurface
+              variant="glass"
+              isDark={isDark}
+              tint={cardBg}
+              glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
+              style={absoluteFillObject}
+            />
+          )}
           {/* Icon */}
           <YStack
             width={44}

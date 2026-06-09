@@ -42,6 +42,11 @@ interface GlassSurfaceProps extends ViewProps {
   blurIntensity?: number;
   /** Optional explicit BlurView tint; defaults to light/dark from `isDark`. */
   blurTint?: BlurTint;
+  /**
+   * iOS 26 interactive glass: the material responds to touches (shimmer/
+   * depress). Use on glass that backs tappable controls. No-op on fallbacks.
+   */
+  isInteractive?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -75,6 +80,7 @@ export function GlassSurface({
   glassTint,
   blurIntensity = 50,
   blurTint,
+  isInteractive,
   style,
   children,
   ...rest
@@ -84,12 +90,27 @@ export function GlassSurface({
   const wantsGlass = variant === 'glass' && Platform.OS === 'ios';
   const canGlass = wantsGlass && isLiquidGlassAvailable() && !reduceTransparency;
 
+  // UIVisualEffectView-backed glass mounted DURING a screen/tab transition can
+  // fail to initialize its material (renders empty or without the specular
+  // edge). Re-mount the native glass view once shortly after mount so
+  // first-mounts inside transitions self-heal. A timer is used deliberately:
+  // InteractionManager does NOT track native-driven transitions (native tabs /
+  // native stack), so it resolves too early.
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    if (!canGlass) return;
+    const timer = setTimeout(() => setSettled(true), 450);
+    return () => clearTimeout(timer);
+  }, [canGlass]);
+
   if (canGlass) {
     return (
       <GlassView
+        key={settled ? 'glass-settled' : 'glass-initial'}
         glassEffectStyle="regular"
         tintColor={glassTint ?? tint}
         colorScheme={isDark ? 'dark' : 'light'}
+        isInteractive={isInteractive}
         style={style}
         {...rest}
       >

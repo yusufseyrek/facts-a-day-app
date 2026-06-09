@@ -1,18 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, TextInput } from 'react-native';
-import Animated, {
-  FadeIn,
-  LinearTransition,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import {
+  ActivityIndicator,
+  NativeSyntheticEvent,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+} from 'react-native';
+import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 
 import { FlashList } from '@shopify/flash-list';
-import { styled } from '@tamagui/core';
-import { Heart, Search, X, XCircle } from '@tamagui/lucide-icons';
-import { useFocusEffect } from 'expo-router';
-import { useRouter } from 'expo-router';
+import { Heart } from '@tamagui/lucide-icons';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
@@ -22,9 +20,7 @@ import {
   FONT_FAMILIES,
   LoadingContainer,
   ScreenContainer,
-  ScreenHeader,
   Text,
-  useIconColor,
 } from '../../../src/components';
 import { NativeAdCard } from '../../../src/components/ads/NativeAdCard';
 import { ImageFactCard } from '../../../src/components/ImageFactCard';
@@ -47,26 +43,6 @@ import { useFlashListScrollToTop } from '../../../src/utils/useFlashListScrollTo
 import { useResponsive } from '../../../src/utils/useResponsive';
 
 import type { Category, FactWithRelations } from '../../../src/services/database';
-
-// Styled components
-const SearchInputContainer = styled(XStack, {
-  flex: 1,
-  alignItems: 'center',
-  backgroundColor: '$surface',
-  borderWidth: 1,
-  borderColor: '$border',
-});
-
-const SearchInput = styled(TextInput, {
-  flex: 1,
-  height: '100%',
-});
-
-const ClearButton = styled(YStack, {
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '$border',
-});
 
 // Memoized list item component to prevent re-renders
 interface FactListItemProps {
@@ -108,8 +84,8 @@ export default function FavoritesScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const iconColor = useIconColor();
-  const { iconSizes, spacing, radius, typography, media } = useResponsive();
+  const navigation = useNavigation();
+  const { iconSizes, spacing, radius, media } = useResponsive();
   const { isPremium } = usePremium();
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
@@ -117,21 +93,30 @@ export default function FavoritesScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [isSearchMode, setIsSearchMode] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const searchInputRef = useRef<TextInput>(null);
   const previousFavoritesCount = useRef<number>(0);
-
-  // Search animation
-  const searchExpand = useSharedValue(0);
-
-  const searchContainerStyle = useAnimatedStyle(() => ({
-    opacity: searchExpand.value,
-  }));
 
   // Scroll to top handler with smart instant/animated behavior
   const { listRef, handleScroll, scrollToTop } = useFlashListScrollToTop({ screenId: 'favorites' });
+
+  // Search lives in the native header search bar (replaces the old in-screen
+  // search row). Set once on mount: the state setters are stable, and
+  // re-setting the options would recreate the native search bar mid-use.
+  useEffect(() => {
+    navigation.setOptions({
+      headerSearchBarOptions: {
+        placeholder: t('searchFavorites'),
+        onChangeText: (e: NativeSyntheticEvent<{ text: string }>) =>
+          setSearchQuery(e.nativeEvent.text),
+        onCancelButtonPress: () => {
+          setSearchQuery('');
+          setDebouncedQuery('');
+        },
+        hideWhenScrolling: false,
+      },
+    });
+  }, [navigation]);
 
   const loadFavorites = useCallback(
     async (isRefresh = false) => {
@@ -279,21 +264,6 @@ export default function FavoritesScreen() {
     [scrollToTop]
   );
 
-  const openSearch = useCallback(() => {
-    setIsSearchMode(true);
-    searchExpand.value = withTiming(1, { duration: 250 });
-    // Focus after animation starts
-    setTimeout(() => searchInputRef.current?.focus(), 100);
-  }, [searchExpand]);
-
-  const closeSearch = useCallback(() => {
-    searchInputRef.current?.blur();
-    setSearchQuery('');
-    setDebouncedQuery('');
-    searchExpand.value = withTiming(0, { duration: 200 });
-    setTimeout(() => setIsSearchMode(false), 200);
-  }, [searchExpand]);
-
   // Memoized keyExtractor
   const keyExtractor = useCallback((item: FavoritesListItem) => {
     if (isNativeAdPlaceholder(item)) return item.key;
@@ -340,7 +310,7 @@ export default function FavoritesScreen() {
   // Only show loading spinner on initial load when there's no data yet
   if (initialLoading && favorites.length === 0) {
     return (
-      <ScreenContainer edges={['top']}>
+      <ScreenContainer edges={[]}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <LoadingContainer>
           <ActivityIndicator size="large" color={hexColors.light.primary} />
@@ -352,7 +322,7 @@ export default function FavoritesScreen() {
   // Empty state: no favorites at all
   if (favorites.length === 0) {
     return (
-      <ScreenContainer edges={['top']}>
+      <ScreenContainer edges={[]}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <YStack
           flex={1}
@@ -389,112 +359,22 @@ export default function FavoritesScreen() {
     );
   }
 
-  return (
-    <ScreenContainer edges={['top']}>
-      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-
-      {/* Header with search icon or search input */}
-      {isSearchMode ? (
-        <Animated.View style={searchContainerStyle}>
-          <XStack
-            padding={spacing.lg}
-            paddingBottom={spacing.sm}
-            alignItems="center"
-            gap={spacing.sm}
-          >
-            <SearchInputContainer
-              height={media.searchInputHeight}
-              borderRadius={radius.md}
-              paddingHorizontal={spacing.md}
-              gap={spacing.sm}
-            >
-              <Search
-                size={iconSizes.md}
-                color={
-                  theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
-                }
-              />
-              <SearchInput
-                ref={searchInputRef}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder={t('searchFavorites')}
-                placeholderTextColor={
-                  theme === 'dark' ? hexColors.dark.textMuted : hexColors.light.textMuted
-                }
-                style={{
-                  color: theme === 'dark' ? hexColors.dark.text : hexColors.light.text,
-                  fontSize: typography.fontSize.body,
-                  paddingVertical: spacing.xs,
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="search"
-              />
-              <Pressable
-                onPress={searchQuery.length > 0 ? () => setSearchQuery('') : closeSearch}
-                hitSlop={8}
-              >
-                <ClearButton
-                  width={media.clearButtonSize}
-                  height={media.clearButtonSize}
-                  borderRadius={radius.full}
-                >
-                  {searchQuery.length > 0 ? (
-                    <XCircle
-                      size={iconSizes.sm}
-                      color={
-                        theme === 'dark'
-                          ? hexColors.dark.textSecondary
-                          : hexColors.light.textSecondary
-                      }
-                    />
-                  ) : (
-                    <X
-                      size={iconSizes.sm}
-                      color={
-                        theme === 'dark'
-                          ? hexColors.dark.textSecondary
-                          : hexColors.light.textSecondary
-                      }
-                    />
-                  )}
-                </ClearButton>
-              </Pressable>
-            </SearchInputContainer>
-          </XStack>
-        </Animated.View>
-      ) : (
-        <ScreenHeader
-          icon={<Heart size={iconSizes.lg} color={iconColor} />}
-          title={t('favorites')}
-          paddingBottom={spacing.sm}
-          rightElement={
-            <Pressable onPress={openSearch} hitSlop={8}>
-              <Search
-                size={iconSizes.lg}
-                color={
-                  theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
-                }
-              />
-            </Pressable>
-          }
-        />
-      )}
-
-      {/* Category Filter Chips */}
-      {categories.length > 0 && (
-        <Animated.View entering={FadeIn.duration(250)} layout={LinearTransition.duration(250)}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            overScrollMode="never"
-            contentContainerStyle={{
-              paddingHorizontal: spacing.lg,
-              paddingBottom: spacing.md,
-              gap: spacing.sm,
-            }}
-          >
+  // Category filter chips. Rendered INSIDE the scroll content (list header /
+  // scrollable empty state): as a sibling above the list they'd sit at y=0
+  // behind the translucent native header.
+  const chipsRow =
+    categories.length > 0 ? (
+      <Animated.View entering={FadeIn.duration(250)} layout={LinearTransition.duration(250)}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          overScrollMode="never"
+          contentContainerStyle={{
+            paddingHorizontal: spacing.lg,
+            paddingBottom: spacing.md,
+            gap: spacing.sm,
+          }}
+        >
             {/* "All" chip */}
             <Pressable onPress={() => handleCategoryPress(null)}>
               <XStack
@@ -546,24 +426,36 @@ export default function FavoritesScreen() {
             })}
           </ScrollView>
         </Animated.View>
-      )}
+      ) : null;
+
+  return (
+    <ScreenContainer edges={[]}>
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
 
       {/* Content */}
       <YStack flex={1}>
         {filteredFavorites.length === 0 && hasActiveFilters ? (
-          // No-results state
-          <YStack
-            flex={1}
-            justifyContent="center"
-            alignItems="center"
-            padding={spacing.xl}
-            gap={spacing.md}
+          // No-results state — scrollable so the chips stay below the native
+          // header and remain reachable to clear the filter.
+          <ScrollView
+            contentInsetAdjustmentBehavior="automatic"
+            contentContainerStyle={{ flexGrow: 1 }}
+            overScrollMode="never"
           >
-            <Text.Headline textAlign="center">{t('noMatchingFavorites')}</Text.Headline>
-            <Text.Body textAlign="center" color="$textSecondary">
-              {t('noMatchingFavoritesDescription')}
-            </Text.Body>
-          </YStack>
+            {chipsRow}
+            <YStack
+              flex={1}
+              justifyContent="center"
+              alignItems="center"
+              padding={spacing.xl}
+              gap={spacing.md}
+            >
+              <Text.Headline textAlign="center">{t('noMatchingFavorites')}</Text.Headline>
+              <Text.Body textAlign="center" color="$textSecondary">
+                {t('noMatchingFavoritesDescription')}
+              </Text.Body>
+            </YStack>
+          </ScrollView>
         ) : (
           <FlashList
             ref={listRef}
@@ -573,6 +465,8 @@ export default function FavoritesScreen() {
             renderItem={renderItem}
             refreshControl={refreshControl}
             onScroll={handleScroll}
+            contentInsetAdjustmentBehavior="automatic"
+            ListHeaderComponent={chipsRow ?? undefined}
             {...FLASH_LIST_SETTINGS}
           />
         )}

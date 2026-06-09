@@ -6,16 +6,14 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  TextInput,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { styled, View } from '@tamagui/core';
-import { Search, X } from '@tamagui/lucide-icons';
+import { X } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect } from 'expo-router';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
@@ -56,38 +54,17 @@ import {
   isNativeAdPlaceholder,
   type NativeAdPlaceholder,
 } from '../../../src/utils/insertNativeAds';
-import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../../../src/utils/responsive';
 import { smartScrollToTop } from '../../../src/utils/useFlashListScrollToTop';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
+import type { SearchBarCommands } from 'react-native-screens';
 import type { FactViewSource } from '../../../src/services/analytics';
 import type { Category, FactWithRelations } from '../../../src/services/database';
 
 // How many facts to pull for a category browse view (first feed page).
 const CATEGORY_BROWSE_LIMIT = 100;
 
-// Device breakpoints
-
-const SearchInputContainer = styled(XStack, {
-  flex: 1,
-  alignItems: 'center',
-  backgroundColor: '$surface',
-  borderWidth: 1,
-  borderColor: '$border',
-});
-
-const SearchInput = styled(TextInput, {
-  flex: 1,
-  height: '100%',
-});
-
-const ClearButton = styled(YStack, {
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '$border',
-});
-
-// Category chip in search input
+// Selected-category chip shown in a small row below the native header
 const CategoryChip = styled(XStack, {
   alignItems: 'center',
 });
@@ -184,9 +161,10 @@ function sortByImageAvailability(facts: FactWithRelations[]): FactWithRelations[
 
 function DiscoverScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { isTablet, typography, spacing, iconSizes, config, media, radius } = useResponsive();
+  const { isTablet, spacing, iconSizes, config, media, radius } = useResponsive();
   // Seed the fact-detail cache from browse/search results (which live in local
   // state, not React Query) so opening any of them — and swiping between them —
   // is instant instead of triggering a blocking per-fact fetch.
@@ -197,7 +175,9 @@ function DiscoverScreen() {
   const [searchResults, setSearchResults] = useState<FactWithRelations[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const searchInputRef = useRef<TextInput>(null);
+  // Imperative handle to the native header search bar (it is uncontrolled, so
+  // programmatic state resets must also clear the native field).
+  const searchBarRef = useRef<SearchBarCommands>(null);
 
   // Category filter state
   const [userCategories, setUserCategories] = useState<Category[]>([]);
@@ -220,6 +200,8 @@ function DiscoverScreen() {
     setCategoryFacts([]);
     setSearchQuery('');
     setSearchResults([]);
+    searchBarRef.current?.clearText();
+    searchBarRef.current?.cancelSearch();
   }, []);
 
   // Scroll handlers to track offsets
@@ -335,16 +317,13 @@ function DiscoverScreen() {
   useEffect(() => {
     const unsubscribe = onPreferenceFeedRefresh(() => {
       // Clear any selected category filter since categories may have changed
-      setSelectedCategorySlug(null);
-      setCategoryFacts([]);
-      setSearchQuery('');
-      setSearchResults([]);
+      clearCategoryFilter();
       // Reload categories
       loadUserCategories();
     });
 
     return () => unsubscribe();
-  }, [loadUserCategories]);
+  }, [loadUserCategories, clearCategoryFilter]);
 
   // Debounce search
   useEffect(() => {
@@ -417,12 +396,30 @@ function DiscoverScreen() {
     }
   }, []);
 
+  // Cancel handler for the native header search bar (the native bar clears its
+  // own text on cancel; we only mirror the state reset).
   const clearSearch = useCallback(() => {
     setSearchQuery('');
     setSearchResults([]);
     setIsSearching(false);
-    searchInputRef.current?.focus();
   }, []);
+
+  // Native-stack header search bar: iOS gets the system (glass) search field
+  // under the large title, Android the native toolbar search. Handlers are
+  // stable, so this runs once per mount (and again only on locale change).
+  useEffect(() => {
+    navigation.setOptions({
+      headerSearchBarOptions: {
+        ref: searchBarRef,
+        placeholder: t('discoverPlaceholder'),
+        autoCapitalize: 'none' as const,
+        hideWhenScrolling: false,
+        onChangeText: (e: { nativeEvent: { text: string } }) =>
+          handleSearchChange(e.nativeEvent.text),
+        onCancelButtonPress: clearSearch,
+      },
+    });
+  }, [navigation, t, handleSearchChange, clearSearch]);
 
   // Handle category selection
   const handleCategoryPress = useCallback(
@@ -602,115 +599,72 @@ function DiscoverScreen() {
     [refreshing, selectedCategorySlug, handleCategoryPress]
   );
 
+  // The search field now lives in the native header; this renders only the
+  // selected-category chip (tap to clear the filter). It is rendered INSIDE
+  // the scroll content (ListHeaderComponent / scrollable empty state) — as a
+  // sibling above the lists it would sit at y=0 behind the translucent header.
   const renderHeader = useCallback(() => {
-    const categoryColor = selectedCategory?.color_hex || '#0066FF';
-    const contrastColor = selectedCategory ? getContrastColor(categoryColor) : '#FFFFFF';
+    if (!selectedCategory) return null;
+
+    const categoryColor = selectedCategory.color_hex || '#0066FF';
+    const contrastColor = getContrastColor(categoryColor);
 
     return (
       <Animated.View entering={FadeIn.duration(300)}>
-        <XStack padding={spacing.lg} alignItems="center" gap={spacing.sm}>
-          <SearchInputContainer
-            height={media.searchInputHeight}
-            borderRadius={radius.md}
-            paddingHorizontal={spacing.md}
-            gap={spacing.sm}
-          >
-            <Search
-              size={iconSizes.md}
-              color={
-                theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
-              }
-            />
-            {selectedCategory && (
-              <Pressable onPress={clearCategoryFilter}>
-                <CategoryChip
-                  height={media.chipHeight}
-                  borderRadius={radius.full}
-                  paddingLeft={spacing.sm}
-                  paddingRight={spacing.xs}
-                  gap={spacing.xs}
-                  style={{ backgroundColor: categoryColor }}
-                >
-                  <Text.Caption
-                    color={contrastColor}
-                    numberOfLines={1}
-                    fontFamily={FONT_FAMILIES.semibold}
-                  >
-                    {selectedCategory.name}
-                  </Text.Caption>
-                  <CategoryChipClearButton
-                    width={media.chipClearButtonSize}
-                    height={media.chipClearButtonSize}
-                    borderRadius={radius.full}
-                    style={{
-                      padding: spacing.xs,
-                      backgroundColor:
-                        contrastColor === '#000000' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)',
-                    }}
-                  >
-                    <X size={iconSizes.xs} color={contrastColor} />
-                  </CategoryChipClearButton>
-                </CategoryChip>
-              </Pressable>
-            )}
-            <SearchInput
-              maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER}
-              ref={searchInputRef}
-              value={searchQuery}
-              onChangeText={handleSearchChange}
-              placeholder={selectedCategory ? t('searchPlaceholder') : t('discoverPlaceholder')}
-              placeholderTextColor={
-                theme === 'dark' ? hexColors.dark.textMuted : hexColors.light.textMuted
-              }
-              style={{
-                color: theme === 'dark' ? hexColors.dark.text : hexColors.light.text,
-                fontSize: typography.fontSize.body,
-                paddingVertical: spacing.xs,
-              }}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-            />
-            {isSearching ? (
-              <ActivityIndicator size="small" color={hexColors[theme].textSecondary} />
-            ) : searchQuery.length > 0 ? (
-              <ClearButton
-                width={media.clearButtonSize}
-                height={media.clearButtonSize}
-                borderRadius={radius.full}
-                onPress={clearSearch}
+        <XStack
+          paddingHorizontal={spacing.lg}
+          paddingVertical={spacing.sm}
+          alignItems="center"
+          gap={spacing.sm}
+        >
+          <Pressable onPress={clearCategoryFilter}>
+            <CategoryChip
+              height={media.chipHeight}
+              borderRadius={radius.full}
+              paddingLeft={spacing.sm}
+              paddingRight={spacing.xs}
+              gap={spacing.xs}
+              style={{ backgroundColor: categoryColor }}
+            >
+              <Text.Caption
+                color={contrastColor}
+                numberOfLines={1}
+                fontFamily={FONT_FAMILIES.semibold}
               >
-                <X
-                  size={iconSizes.sm}
-                  color={
-                    theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary
-                  }
-                />
-              </ClearButton>
-            ) : null}
-          </SearchInputContainer>
+                {selectedCategory.name}
+              </Text.Caption>
+              <CategoryChipClearButton
+                width={media.chipClearButtonSize}
+                height={media.chipClearButtonSize}
+                borderRadius={radius.full}
+                style={{
+                  padding: spacing.xs,
+                  backgroundColor:
+                    contrastColor === '#000000' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)',
+                }}
+              >
+                <X size={iconSizes.xs} color={contrastColor} />
+              </CategoryChipClearButton>
+            </CategoryChip>
+          </Pressable>
         </XStack>
       </Animated.View>
     );
-  }, [
-    selectedCategory,
-    searchQuery,
-    isSearching,
-    theme,
-    t,
-    handleSearchChange,
-    clearSearch,
-    clearCategoryFilter,
-    spacing,
-    radius,
-    iconSizes,
-    typography,
-    media,
-  ]);
+  }, [selectedCategory, clearCategoryFilter, spacing, radius, iconSizes, media]);
 
   const renderEmptyState = useCallback(() => {
     const hasQuery = searchQuery.trim().length > 0;
     const searchFinished = !isSearching;
+
+    // In-flight search feedback (used to be a small spinner in the custom
+    // search input row, which is gone now).
+    if (hasQuery && !searchFinished && searchResults.length === 0) {
+      return (
+        <EmptyDiscoverState paddingHorizontal={spacing.xl} gap={spacing.md}>
+          <ActivityIndicator size="large" color={hexColors[theme].primary} />
+        </EmptyDiscoverState>
+      );
+    }
 
     if (hasQuery && searchFinished && searchResults.length === 0) {
       return (
@@ -755,6 +709,7 @@ function DiscoverScreen() {
           ref={categoryGridRef}
           showsVerticalScrollIndicator={false}
           overScrollMode="never"
+          contentInsetAdjustmentBehavior="automatic"
         >
           <CategoriesContainer
             paddingHorizontal={spacing.lg}
@@ -764,11 +719,10 @@ function DiscoverScreen() {
             maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
             alignSelf={isTablet ? 'center' : undefined}
           >
+            {/* The screen title is the native header's large title now; only
+                the description remains in-content. */}
             <Animated.View entering={FadeIn.duration(300)}>
-              <YStack gap={spacing.sm}>
-                <Text.Headline color="$text">{t('discover')}</Text.Headline>
-                <Text.Body color="$textMuted">{t('discoverDescription')}</Text.Body>
-              </YStack>
+              <Text.Body color="$textMuted">{t('discoverDescription')}</Text.Body>
             </Animated.View>
 
             <CategoriesGrid gap={spacing.md}>
@@ -906,6 +860,8 @@ function DiscoverScreen() {
             renderItem={renderSearchItem}
             refreshControl={searchRefreshControl}
             onScroll={handleSearchScroll}
+            contentInsetAdjustmentBehavior="automatic"
+            ListHeaderComponent={renderHeader}
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -925,16 +881,25 @@ function DiscoverScreen() {
       }
 
       if (categoryFacts.length === 0) {
+        // Scrollable so the category chip stays below the native header and
+        // remains reachable to clear the filter.
         return (
           <Animated.View
             key="empty"
             entering={FadeInUp.duration(350).springify()}
             style={{ flex: 1 }}
           >
-            <EmptyState
-              title={t('noDiscoverResults')}
-              description={t('noDiscoverResultsDescription')}
-            />
+            <ScrollView
+              contentInsetAdjustmentBehavior="automatic"
+              contentContainerStyle={{ flexGrow: 1 }}
+              overScrollMode="never"
+            >
+              {renderHeader()}
+              <EmptyState
+                title={t('noDiscoverResults')}
+                description={t('noDiscoverResultsDescription')}
+              />
+            </ScrollView>
           </Animated.View>
         );
       }
@@ -953,6 +918,8 @@ function DiscoverScreen() {
             renderItem={renderCategoryItem}
             refreshControl={categoryRefreshControl}
             onScroll={handleCategoryScroll}
+            contentInsetAdjustmentBehavior="automatic"
+            ListHeaderComponent={renderHeader}
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -982,13 +949,13 @@ function DiscoverScreen() {
     searchRefreshControl,
     categoryRefreshControl,
     renderEmptyState,
+    renderHeader,
     spacing,
   ]);
 
   return (
-    <ScreenContainer edges={['top']}>
+    <ScreenContainer edges={[]}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      {renderHeader()}
       <YStack flex={1}>{renderContent()}</YStack>
       {searchResults.length > 0 || (!selectedCategorySlug && <BannerAd collapsible="bottom" respectBottomInset />)}
     </ScreenContainer>

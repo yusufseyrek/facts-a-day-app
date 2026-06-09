@@ -1,81 +1,27 @@
-import { useCallback, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Animated as RNAnimated,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text as RNText,
-  View,
-} from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Platform, RefreshControl, ScrollView, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ChevronLeft } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useFocusEffect } from 'expo-router';
-import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { ContentContainer } from '../../../src/components';
 import { BannerAd } from '../../../src/components/ads';
+import { GlassSurface } from '../../../src/components/GlassSurface';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackScreenView } from '../../../src/services/analytics';
 import * as triviaService from '../../../src/services/trivia';
 import { hexColors, useTheme } from '../../../src/theme';
+import { hexToRgba } from '../../../src/utils/colors';
 import { getLucideIcon } from '../../../src/utils/iconMapper';
+import { absoluteFillObject } from '../../../src/utils/styles';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
 import type { CategoryWithProgress } from '../../../src/services/trivia';
-
-// Back Button with press animation
-function BackButton({ onPress, primaryColor }: { onPress: () => void; primaryColor: string }) {
-  const { iconSizes, media } = useResponsive();
-  const scale = useRef(new RNAnimated.Value(1)).current;
-  const buttonSize = media.topicCardSize * 0.45;
-
-  const handlePressIn = () => {
-    RNAnimated.spring(scale, {
-      toValue: 0.9,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 10,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    RNAnimated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 20,
-      bounciness: 8,
-    }).start();
-  };
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-    >
-      <RNAnimated.View
-        style={{
-          width: buttonSize,
-          height: buttonSize,
-          borderRadius: buttonSize / 2,
-          backgroundColor: `${primaryColor}20`,
-          justifyContent: 'center',
-          alignItems: 'center',
-          transform: [{ scale }],
-        }}
-      >
-        <ChevronLeft size={iconSizes.lg} color={primaryColor} />
-      </RNAnimated.View>
-    </Pressable>
-  );
-}
 
 // Category Progress Bar - shows accuracy (correct answers percentage)
 function CategoryProgressBar({
@@ -139,10 +85,12 @@ function CategoryProgressBar({
 export default function CategoriesAccuracyScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { spacing, radius, media, typography } = useResponsive();
-  const router = useRouter();
+  const { spacing, radius } = useResponsive();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
+  // iOS 26 Liquid Glass backing for the accuracy card; everywhere else keeps
+  // today's opaque card fill.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -180,13 +128,12 @@ export default function CategoriesAccuracyScreen() {
 
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
-  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: insets.top }}>
+      <View style={{ flex: 1, backgroundColor: bgColor }}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <YStack flex={1} justifyContent="center" alignItems="center">
           <ActivityIndicator size="large" color={primaryColor} />
@@ -199,39 +146,10 @@ export default function CategoriesAccuracyScreen() {
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      {/* Header */}
-      <Animated.View entering={FadeInUp.duration(400).springify()}>
-        <XStack
-          paddingTop={insets.top + spacing.sm}
-          paddingBottom={spacing.md}
-          paddingHorizontal={spacing.lg}
-          alignItems="center"
-          justifyContent="space-between"
-          borderBottomWidth={1}
-          borderBottomColor={isDark ? hexColors.dark.border : hexColors.light.border}
-        >
-          <BackButton onPress={() => router.back()} primaryColor={primaryColor} />
-
-          <RNText
-            style={{
-              flex: 1,
-              textAlign: 'center',
-              fontFamily: FONT_FAMILIES.bold,
-              fontSize: typography.fontSize.title,
-              color: textColor,
-            }}
-          >
-            {t('accuracyByCategory')}
-          </RNText>
-
-          {/* Empty spacer to balance the header */}
-          <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />
-        </XStack>
-      </Animated.View>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         overScrollMode="never"
+        contentInsetAdjustmentBehavior="automatic"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />}
         contentContainerStyle={{
           paddingBottom: insets.bottom + spacing.xl,
@@ -243,11 +161,23 @@ export default function CategoriesAccuracyScreen() {
               <>
                 <Animated.View entering={FadeIn.delay(50).duration(400).springify()}>
                   <YStack
-                    backgroundColor={cardBg}
+                    backgroundColor={useGlass ? 'transparent' : cardBg}
                     borderRadius={radius.lg}
                     padding={spacing.lg}
                     gap={spacing.lg}
+                    overflow={useGlass ? 'hidden' : undefined}
+                    borderWidth={useGlass ? 1 : 0}
+                    borderColor={isDark ? hexColors.dark.border : hexColors.light.border}
                   >
+                    {useGlass && (
+                      <GlassSurface
+                        variant="glass"
+                        isDark={isDark}
+                        tint={cardBg}
+                        glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
+                        style={absoluteFillObject}
+                      />
+                    )}
                     {categories.map((category, index) => (
                       <CategoryProgressBar
                         key={category.slug}

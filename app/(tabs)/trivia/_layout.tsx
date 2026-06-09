@@ -1,12 +1,18 @@
 import { Stack } from 'expo-router';
 
+import { useGlassHeaderOptions } from '../../../src/hooks/useGlassHeaderOptions';
+import { useTranslation } from '../../../src/i18n';
+
 export default function TriviaTabLayout() {
+  const headerOptions = useGlassHeaderOptions();
+  const { t } = useTranslation();
+
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="performance" />
-      <Stack.Screen name="categories" />
-      <Stack.Screen name="history" />
+    <Stack screenOptions={headerOptions}>
+      <Stack.Screen name="index" options={{ title: t('trivia') }} />
+      <Stack.Screen name="performance" options={{ title: t('triviaPerformance') }} />
+      <Stack.Screen name="categories" options={{ title: t('accuracyByCategory') }} />
+      <Stack.Screen name="history" options={{ title: t('testHistory') }} />
     </Stack>
   );
 }

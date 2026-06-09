@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Platform, Pressable, ScrollView, View } from 'react-native';
 import Animated, {
   FadeInDown,
   FadeInUp,
@@ -19,6 +19,7 @@ import {
   Timer,
   X,
 } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -27,9 +28,12 @@ import { XStack, YStack } from 'tamagui';
 import { LAYOUT } from '../../config/app';
 import { indexToAnswer, isTextAnswerCorrect } from '../../services/trivia';
 import { hexColors } from '../../theme';
+import { hexToRgba } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { BannerAd } from '../ads';
+import { GlassSurface } from '../GlassSurface';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { QuestionWithFact, StoredAnswer } from '../../services/database';
@@ -68,6 +72,12 @@ export interface TriviaResultsProps {
   unavailableQuestionIds?: number[];
   // Hide time and streak stat cards (e.g. for quick quiz)
   hideTimeAndStreak?: boolean;
+  /**
+   * Rendered below a visible native stack header (history/performance keep
+   * their header and retitle it for results). Skips the self-managed status
+   * bar inset — the header already occupies the top.
+   */
+  underNavigationHeader?: boolean;
 }
 
 // Horizontal progress bar component
@@ -435,6 +445,7 @@ export function TriviaResults({
   showReturnButton = true,
   unavailableQuestionIds = [],
   hideTimeAndStreak = false,
+  underNavigationHeader = false,
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -504,6 +515,10 @@ export function TriviaResults({
 
   const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
   const isPerfect = correctAnswers === totalQuestions;
+
+  // iOS 26 Liquid Glass: stat cards go transparent and the card fill becomes the
+  // glass tint; everywhere else they keep today's opaque cardBackground.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
 
   /**
    * Get the selected answer text for a question
@@ -606,12 +621,14 @@ export function TriviaResults({
       style={{
         flex: 1,
         backgroundColor: bgColor,
-        paddingTop: insets.top,
+        // Under a visible native header, the header owns the top inset.
+        paddingTop: underNavigationHeader ? 0 : insets.top,
       }}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      {/* Screen Header (when viewing past results) */}
+      {/* Screen Header (when viewing past results) — borderless, glass back
+          chip, matching the native glass headers on the other trivia screens */}
       {showBackButton && (
         <XStack
           paddingTop={spacing.sm}
@@ -619,8 +636,6 @@ export function TriviaResults({
           paddingHorizontal={spacing.lg}
           alignItems="center"
           justifyContent="space-between"
-          borderBottomWidth={1}
-          borderBottomColor={borderColor}
         >
           <Pressable
             onPress={onClose}
@@ -633,11 +648,21 @@ export function TriviaResults({
                 width: headerBtnSize,
                 height: headerBtnSize,
                 borderRadius: headerBtnSize / 2,
-                backgroundColor: `${primaryColor}20`,
+                backgroundColor: useGlass ? 'transparent' : `${primaryColor}20`,
+                overflow: useGlass ? 'hidden' : undefined,
                 justifyContent: 'center',
                 alignItems: 'center',
               }}
             >
+              {useGlass && (
+                <GlassSurface
+                  variant="glass"
+                  isDark={isDark}
+                  tint={`${primaryColor}20`}
+                  glassTint={hexToRgba(primaryColor, isDark ? 0.35 : 0.3)}
+                  style={absoluteFillObject}
+                />
+              )}
               <ChevronLeft size={iconSizes.lg} color={primaryColor} />
             </View>
           </Pressable>
@@ -789,13 +814,25 @@ export function TriviaResults({
                   {/* Duration Card */}
                   <YStack
                     flex={1}
-                    backgroundColor={cardBackground}
+                    backgroundColor={useGlass ? 'transparent' : cardBackground}
                     paddingVertical={spacing.lg}
                     paddingHorizontal={spacing.md}
                     borderRadius={radius.lg}
                     alignItems="center"
                     gap={spacing.xs}
+                    overflow={useGlass ? 'hidden' : undefined}
+                    borderWidth={useGlass ? 1 : 0}
+                    borderColor={borderColor}
                   >
+                    {useGlass && (
+                      <GlassSurface
+                        variant="glass"
+                        isDark={isDark}
+                        tint={cardBackground}
+                        glassTint={hexToRgba(cardBackground, isDark ? 0.6 : 0.65)}
+                        style={absoluteFillObject}
+                      />
+                    )}
                     <View
                       style={{
                         width: statsIconSize,
@@ -821,13 +858,25 @@ export function TriviaResults({
                   {/* Streak Card */}
                   <YStack
                     flex={1}
-                    backgroundColor={cardBackground}
+                    backgroundColor={useGlass ? 'transparent' : cardBackground}
                     paddingVertical={spacing.lg}
                     paddingHorizontal={spacing.md}
                     borderRadius={radius.lg}
                     alignItems="center"
                     gap={spacing.xs}
+                    overflow={useGlass ? 'hidden' : undefined}
+                    borderWidth={useGlass ? 1 : 0}
+                    borderColor={borderColor}
                   >
+                    {useGlass && (
+                      <GlassSurface
+                        variant="glass"
+                        isDark={isDark}
+                        tint={cardBackground}
+                        glassTint={hexToRgba(cardBackground, isDark ? 0.6 : 0.65)}
+                        style={absoluteFillObject}
+                      />
+                    )}
                     <View
                       style={{
                         width: statsIconSize,
