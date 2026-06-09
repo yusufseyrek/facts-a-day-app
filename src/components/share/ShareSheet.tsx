@@ -196,7 +196,12 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
           tint={colors.surface}
           glassTint={isDark ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'}
           blurIntensity={12}
-          style={StyleSheet.absoluteFill}
+          // Shape the glass material to the sheet's rounded top corners — the
+          // parent's clipping alone leaves the specular rim square there.
+          style={[
+            StyleSheet.absoluteFill,
+            { borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
+          ]}
           pointerEvents="none"
         />
 

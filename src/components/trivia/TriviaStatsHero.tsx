@@ -296,6 +296,7 @@ export function TriviaStatsHero({
               isDark={isDark}
               tint={cardBg}
               glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
+              borderRadius={radius.lg}
               style={absoluteFillObject}
             />
           )}
@@ -316,6 +317,7 @@ export function TriviaStatsHero({
               isDark={isDark}
               tint={cardBg}
               glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
+              borderRadius={radius.lg}
               style={absoluteFillObject}
             />
           )}

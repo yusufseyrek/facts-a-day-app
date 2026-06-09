@@ -179,7 +179,12 @@ export function OfflinePaywallSheet() {
             isDark={isDark}
             tint={sheetBg}
             glassTint={sheetGlassTint}
-            style={absoluteFillObject}
+            // Shape the glass material to the sheet's rounded top corners — the
+            // parent's clipping alone leaves the specular rim square there.
+            style={[
+              absoluteFillObject,
+              { borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
+            ]}
           />
         ) : null}
 

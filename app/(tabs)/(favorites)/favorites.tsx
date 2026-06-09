@@ -98,7 +98,9 @@ export default function FavoritesScreen() {
   const previousFavoritesCount = useRef<number>(0);
 
   // Scroll to top handler with smart instant/animated behavior
-  const { listRef, handleScroll, scrollToTop } = useFlashListScrollToTop({ screenId: 'favorites' });
+  const { listRef, handleScroll, scrollToTop, getScrollOffset } = useFlashListScrollToTop({
+    screenId: 'favorites',
+  });
 
   // Search lives in the native header search bar (replaces the old in-screen
   // search row). Set once on mount: the state setters are stable, and
@@ -185,13 +187,16 @@ export default function FavoritesScreen() {
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  // Scroll to top when search query changes
+  // Scroll to top when search query changes — but only when actually scrolled
+  // down. At rest under the translucent header the offset is NEGATIVE
+  // (automatic content inset), so an unconditional offset-0 scroll visibly
+  // drags the content down under the header.
   useEffect(() => {
-    if (debouncedQuery) {
+    if (debouncedQuery && getScrollOffset() > 0) {
       // Delay scroll to allow filtered list to re-render
       setTimeout(() => scrollToTop(), 50);
     }
-  }, [debouncedQuery, scrollToTop]);
+  }, [debouncedQuery, scrollToTop, getScrollOffset]);
 
   // Filter favorites based on search query and selected category
   const filteredFavorites = useMemo(() => {
@@ -255,14 +260,12 @@ export default function FavoritesScreen() {
     loadFavorites(true);
   }, [loadFavorites]);
 
-  const handleCategoryPress = useCallback(
-    (categorySlug: string | null) => {
-      setSelectedCategory((prev) => (prev === categorySlug ? null : categorySlug));
-      // Delay scroll to allow state update and re-render
-      setTimeout(() => scrollToTop(), 50);
-    },
-    [scrollToTop]
-  );
+  const handleCategoryPress = useCallback((categorySlug: string | null) => {
+    // No scroll-to-top here: the chips live in the list header, so they are
+    // only tappable when the list is already at the top — the old offset-0
+    // scroll just dragged the content down under the translucent header.
+    setSelectedCategory((prev) => (prev === categorySlug ? null : categorySlug));
+  }, []);
 
   // Memoized keyExtractor
   const keyExtractor = useCallback((item: FavoritesListItem) => {
@@ -467,6 +470,9 @@ export default function FavoritesScreen() {
             onScroll={handleScroll}
             contentInsetAdjustmentBehavior="automatic"
             ListHeaderComponent={chipsRow ?? undefined}
+            // FlashList v2 anchors visible content by default when data
+            // changes; on a filter swap that reads as a small phantom scroll.
+            maintainVisibleContentPosition={{ disabled: true }}
             {...FLASH_LIST_SETTINGS}
           />
         )}

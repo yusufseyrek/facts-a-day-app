@@ -184,6 +184,7 @@ function MetricCard({
           isDark={isDark}
           tint={cardBg}
           glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
+          borderRadius={radius.lg}
           style={absoluteFillObject}
         />
       )}
@@ -793,6 +794,7 @@ export default function PerformanceScreen() {
                     isDark={isDark}
                     tint={cardBg}
                     glassTint={glassTint}
+                    borderRadius={radius.lg}
                     style={absoluteFillObject}
                   />
                 )}

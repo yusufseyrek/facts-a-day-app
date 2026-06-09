@@ -126,6 +126,7 @@ export function TriviaGridCard({
           isDark={isDark}
           tint={solidBg}
           glassTint={hexToRgba(solidBg, isDark ? 0.6 : 0.65)}
+          borderRadius={radius.lg}
           style={absoluteFillObject}
         />
       )}

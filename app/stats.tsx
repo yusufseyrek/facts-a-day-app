@@ -1,24 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Animated as RNAnimated,
   Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type ViewShotRef } from 'react-native-view-shot';
 
-import { ChevronLeft, Share2 } from '@tamagui/lucide-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Share2 } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
+import { Stack, useFocusEffect } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { ContentContainer, EmptyState } from '../src/components';
+import { GlassSurface } from '../src/components/GlassSurface';
 import { ActivityBarChart } from '../src/components/stats/ActivityBarChart';
 import { CategoryBreakdown } from '../src/components/stats/CategoryBreakdown';
 import { HabitsCard } from '../src/components/stats/HabitsCard';
@@ -29,21 +30,26 @@ import { StatsHero } from '../src/components/stats/StatsHero';
 import { FONT_FAMILIES, Text } from '../src/components/Typography';
 import { queryClient } from '../src/config/queryClient';
 import { statsKeys } from '../src/hooks/queryKeys';
+import { useGlassHeaderOptions } from '../src/hooks/useGlassHeaderOptions';
 import { useAllReadingStats } from '../src/hooks/useReadingStats';
 import { useTranslation } from '../src/i18n';
 import { Screens, trackScreenView } from '../src/services/analytics';
 import { hexColors, useTheme } from '../src/theme';
+import { hexToRgba } from '../src/utils/colors';
+import { absoluteFillObject } from '../src/utils/styles';
 import { useResponsive } from '../src/utils/useResponsive';
 
 export default function StatsScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { iconSizes, spacing, radius, media } = useResponsive();
+  const { iconSizes, spacing, radius } = useResponsive();
   const colors = hexColors[theme];
   const isDark = theme === 'dark';
-  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const glassHeaderOptions = useGlassHeaderOptions();
+  // iOS 26: the share CTA goes Liquid Glass (primary-tinted, like the trivia
+  // game nav buttons); everywhere else it keeps the opaque primary fill.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
 
   // Single batched query for all stats — 6 DB hits in parallel, one loading state.
   const { data, isLoading } = useAllReadingStats();
@@ -109,26 +115,17 @@ export default function StatsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Native glass header (root stack defaults to headerShown: false).
+          headerBackButtonDisplayMode 'minimal': the previous route is the
+          "(tabs)" group, whose raw name would otherwise label the back button. */}
+      <Stack.Screen
+        options={{
+          ...glassHeaderOptions,
+          title: t('readingStats'),
+          headerBackButtonDisplayMode: 'minimal',
+        }}
+      />
       <StatusBar style={isDark ? 'light' : 'dark'} />
-
-      <Animated.View
-        entering={FadeInUp.duration(400).springify()}
-        needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-      >
-        <XStack
-          paddingTop={insets.top + spacing.sm}
-          paddingBottom={spacing.md}
-          paddingHorizontal={spacing.lg}
-          alignItems="center"
-          justifyContent="space-between"
-          borderBottomWidth={1}
-          borderBottomColor={colors.border}
-        >
-          <BackButton onPress={() => router.back()} primaryColor={colors.primary} />
-          <Text.Title color={textColor}>{t('readingStats')}</Text.Title>
-          <View style={{ width: media.topicCardSize * 0.45, height: media.topicCardSize * 0.45 }} />
-        </XStack>
-      </Animated.View>
 
       {isLoading && !data ? (
         <YStack flex={1} justifyContent="center" alignItems="center">
@@ -140,6 +137,7 @@ export default function StatsScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           overScrollMode="never"
+          contentInsetAdjustmentBehavior="automatic"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           contentContainerStyle={{ paddingBottom: spacing.xl + insets.bottom }}
         >
@@ -192,13 +190,25 @@ export default function StatsScreen() {
                   })}
                 >
                   <XStack
-                    backgroundColor={colors.primary}
+                    backgroundColor={useGlass ? 'transparent' : colors.primary}
+                    overflow={useGlass ? 'hidden' : undefined}
                     borderRadius={radius.lg}
                     paddingVertical={spacing.md}
                     alignItems="center"
                     justifyContent="center"
                     gap={spacing.sm}
                   >
+                    {useGlass && (
+                      <GlassSurface
+                        variant="glass"
+                        isDark={isDark}
+                        tint={colors.primary}
+                        glassTint={hexToRgba(colors.primary, isDark ? 0.6 : 0.65)}
+                        isInteractive
+                        borderRadius={radius.lg}
+                        style={absoluteFillObject}
+                      />
+                    )}
                     {isSharing ? (
                       <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
@@ -246,49 +256,3 @@ function Section({ delay, children }: { delay: number; children: React.ReactNode
   );
 }
 
-function BackButton({ onPress, primaryColor }: { onPress: () => void; primaryColor: string }) {
-  const { iconSizes, media } = useResponsive();
-  const scale = useRef(new RNAnimated.Value(1)).current;
-  const buttonSize = media.topicCardSize * 0.45;
-
-  const handlePressIn = () => {
-    RNAnimated.spring(scale, {
-      toValue: 0.9,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 10,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    RNAnimated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 20,
-      bounciness: 8,
-    }).start();
-  };
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-    >
-      <RNAnimated.View
-        style={{
-          width: buttonSize,
-          height: buttonSize,
-          borderRadius: buttonSize / 2,
-          backgroundColor: `${primaryColor}20`,
-          justifyContent: 'center',
-          alignItems: 'center',
-          transform: [{ scale }],
-        }}
-      >
-        <ChevronLeft size={iconSizes.lg} color={primaryColor} />
-      </RNAnimated.View>
-    </Pressable>
-  );
-}

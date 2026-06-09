@@ -24,6 +24,7 @@ import { getSelectedCategories } from '../services/onboarding';
 import { onPreferenceFeedRefresh } from '../services/preferences';
 import { prefetchStory } from '../services/storyPrefetch';
 import { hexColors, useTheme } from '../theme';
+import { blendHexColors } from '../utils/colors';
 import { getLucideIcon } from '../utils/iconMapper';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -513,6 +514,11 @@ const CategoryButton = React.memo(
     const ringWidth = borderWidth + 1; // Slightly thicker than regular border
     const outerSize = circleSize + ringWidth * 2;
     const innerSize = circleSize - 2; // Gap between gradient/border and inner circle
+    // Category-tinted circle fill (iOS tinted-symbol look) instead of the flat
+    // surface color — stronger while unseen, faint once seen. Blended opaque
+    // (not alpha) so the gradient ring can't bleed through the unseen fill.
+    const unseenFill = blendHexColors(ringColor, surfaceColor, 0.16);
+    const seenFill = blendHexColors(ringColor, surfaceColor, 0.07);
     // Spring scale animation
     const scale = useSharedValue(1);
     const animatedStyle = useAnimatedStyle(() => ({
@@ -567,7 +573,7 @@ const CategoryButton = React.memo(
                       width: innerSize,
                       height: innerSize,
                       borderRadius: innerSize / 2,
-                      backgroundColor: surfaceColor,
+                      backgroundColor: unseenFill,
                     },
                   ]}
                 >
@@ -575,7 +581,8 @@ const CategoryButton = React.memo(
                 </View>
               </LinearGradient>
             ) : (
-              // Muted border for all-viewed categories
+              // Seen: slim hairline ring + faint category tint (the chunky
+              // muted ring read as heavy next to the gradient state)
               <View
                 style={[
                   styles.circle,
@@ -583,9 +590,9 @@ const CategoryButton = React.memo(
                     width: outerSize,
                     height: outerSize,
                     borderRadius: outerSize / 2,
-                    borderWidth: ringWidth,
+                    borderWidth: 1.5,
                     borderColor,
-                    backgroundColor: surfaceColor,
+                    backgroundColor: seenFill,
                   },
                 ]}
               >
@@ -598,7 +605,7 @@ const CategoryButton = React.memo(
           numberOfLines={1}
           color={textColor}
           adjustsFontSizeToFit
-          fontFamily={FONT_FAMILIES.medium}
+          fontFamily={hasUnseen ? FONT_FAMILIES.semibold : FONT_FAMILIES.medium}
           style={{
             marginTop: labelMarginTop,
             textAlign: 'center',

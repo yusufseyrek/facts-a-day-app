@@ -14,7 +14,7 @@ interface ReadingStreakIndicatorProps {
 
 export function ReadingStreakIndicator({ streak, onPress }: ReadingStreakIndicatorProps) {
   const { theme } = useTheme();
-  const { spacing, iconSizes, radius } = useResponsive();
+  const { spacing, iconSizes } = useResponsive();
   const colors = hexColors[theme];
 
   const isActive = streak > 0;
@@ -22,13 +22,14 @@ export function ReadingStreakIndicator({ streak, onPress }: ReadingStreakIndicat
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+      {/* Bare icon + count: no chip background — inside the iOS 26 glass
+          header a filled pill reads as a stray box. Padding kept for the
+          touch target. */}
       <XStack
         alignItems="center"
         gap={spacing.xs}
         paddingHorizontal={spacing.sm}
         paddingVertical={spacing.xs}
-        borderRadius={radius.md}
-        backgroundColor={isActive ? `${flameColor}15` : `${colors.border}20`}
       >
         <Flame size={iconSizes.sm} color={flameColor} />
         <Text.Label

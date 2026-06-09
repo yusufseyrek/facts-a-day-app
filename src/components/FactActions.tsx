@@ -365,6 +365,84 @@ export function FactActions({
     }
   };
 
+  // Action buttons cluster — identical in the glass and opaque layouts.
+  const actionButtons = (
+    <>
+      {/* Save Button */}
+      <Pressable
+        onPress={handleLike}
+        role="button"
+        aria-label={isFavorited ? t('a11y_likedButton') : t('a11y_likeButton')}
+        style={({ pressed }) => ({
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: pressed ? 0.8 : 1,
+          paddingVertical: spacing.xs,
+        })}
+      >
+        <View
+          style={{
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: iconSizes.lg,
+            height: iconSizes.lg,
+          }}
+        >
+          <ParticleBurst color={heartColor} isActive={showParticles} />
+          <Animated.View style={[styles.heartIcon, heartAnimatedStyle]}>
+            <Heart size={iconSizes.lg} color={heartColor} fill={isFavorited ? heartColor : 'none'} />
+          </Animated.View>
+        </View>
+      </Pressable>
+
+      {/* Share Button */}
+      <Pressable
+        onPress={handleShare}
+        disabled={isSharing}
+        role="button"
+        aria-label={t('a11y_shareButton')}
+        style={({ pressed }) => ({
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: pressed ? 0.8 : 1,
+          paddingVertical: spacing.xs,
+        })}
+      >
+        <Animated.View style={shareAnimatedStyle}>
+          <ShareIcon size={iconSizes.lg} color={shareColor} />
+        </Animated.View>
+      </Pressable>
+
+      {/* Play / Audio Button — only rendered when this fact has audio */}
+      {audioController?.hasAudio && <FactAudioButton controller={audioController} />}
+
+      {/* Report Button */}
+      <Pressable
+        onPress={handleReport}
+        disabled={isSubmittingReport}
+        role="button"
+        aria-label={t('a11y_reportButton')}
+        style={({ pressed }) => ({
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: pressed ? 0.8 : isSubmittingReport ? 0.5 : 1,
+          paddingVertical: spacing.xs,
+        })}
+      >
+        <Animated.View style={reportAnimatedStyle}>
+          <Flag size={iconSizes.lg} color={flagColor} />
+        </Animated.View>
+      </Pressable>
+    </>
+  );
+
+  const navChevronStyle = ({ pressed }: { pressed: boolean }, enabled: boolean) => ({
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    padding: spacing.xs,
+    opacity: !enabled ? 0.25 : pressed ? 0.8 : 1,
+  });
+
   return (
     <>
       <Container
@@ -377,98 +455,94 @@ export function FactActions({
           paddingHorizontal: useGlass ? spacing.lg : 0,
         }}
       >
-        {/* iOS 26: the bar becomes a floating interactive-glass capsule inset
-            from the screen edges (content scrolls past in the gutters); the
-            opaque full-width bar is unchanged everywhere else. */}
-        <View
-          borderRadius={useGlass ? radius.full : 0}
-          overflow={useGlass ? 'hidden' : undefined}
-          paddingVertical={useGlass ? spacing.sm : 0}
-        >
-          {useGlass ? (
-            <GlassSurface
-              variant="glass"
-              isDark={isDark}
-              tint={hexColors[theme].background}
-              glassTint={glassTint}
-              isInteractive
-              style={absoluteFillObject}
-            />
-          ) : null}
+        {useGlass ? (
+          /* iOS 26: two floating interactive-glass capsules inset from the
+             screen edges — actions on the left, a compact prev/next pill on
+             the right (Safari-style split toolbar). Content scrolls past in
+             the gutters. */
+          <XStack gap={spacing.sm} alignItems="stretch">
+            <View
+              style={{
+                flex: 1,
+                borderRadius: radius.full,
+                overflow: 'hidden',
+                paddingVertical: spacing.sm,
+                justifyContent: 'center',
+              }}
+            >
+              <GlassSurface
+                variant="glass"
+                isDark={isDark}
+                tint={hexColors[theme].background}
+                glassTint={glassTint}
+                isInteractive
+                borderRadius={radius.full}
+                style={absoluteFillObject}
+              />
+              <XStack alignItems="center" justifyContent="space-evenly">
+                {actionButtons}
+              </XStack>
+            </View>
 
-          {/* Action row: [ {} {} {} | < 1/N > ] or [ {} {} {} ] */}
+            {hasNavigation && (
+              <View
+                style={{
+                  borderRadius: radius.full,
+                  overflow: 'hidden',
+                  paddingVertical: spacing.sm,
+                  paddingHorizontal: spacing.xs,
+                  justifyContent: 'center',
+                }}
+              >
+                <GlassSurface
+                  variant="glass"
+                  isDark={isDark}
+                  tint={hexColors[theme].background}
+                  glassTint={glassTint}
+                  isInteractive
+                  borderRadius={radius.full}
+                  style={absoluteFillObject}
+                />
+                <XStack alignItems="center">
+                  <Pressable
+                    onPress={handlePrevious}
+                    disabled={!hasPrevious}
+                    role="button"
+                    aria-label={t('a11y_previousButton')}
+                    hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: spacing.sm, right: 0 }}
+                    style={(state) => navChevronStyle(state, !!hasPrevious)}
+                  >
+                    <ChevronLeft size={iconSizes.xl} color={navColor} />
+                  </Pressable>
+                  {showPosition && (
+                    <Text.Caption
+                      color="$textSecondary"
+                      fontSize={typography.fontSize.caption}
+                      textAlign="center"
+                      style={{ minWidth: typography.fontSize.caption * 3 }}
+                    >
+                      {`${currentIndex! + 1}/${totalCount}`}
+                    </Text.Caption>
+                  )}
+                  <Pressable
+                    onPress={handleNext}
+                    disabled={!hasNext}
+                    role="button"
+                    aria-label={t('a11y_nextButton')}
+                    hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: 0, right: spacing.sm }}
+                    style={(state) => navChevronStyle(state, !!hasNext)}
+                  >
+                    <ChevronRight size={iconSizes.xl} color={navColor} />
+                  </Pressable>
+                </XStack>
+              </View>
+            )}
+          </XStack>
+        ) : (
+          /* Opaque full-width bar: [ {} {} {} | < 1/N > ] or [ {} {} {} ] */
           <XStack alignItems="center" justifyContent="space-between" paddingHorizontal={spacing.sm}>
-            {/* Action buttons group */}
             <XStack gap={spacing.lg} alignItems="center" justifyContent="space-around" flex={1}>
-              {/* Save Button */}
-              <Pressable
-                onPress={handleLike}
-                role="button"
-                aria-label={isFavorited ? t('a11y_likedButton') : t('a11y_likeButton')}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: pressed ? 0.8 : 1,
-                  paddingVertical: spacing.xs,
-                })}
-              >
-                <View
-                  style={{
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: iconSizes.lg,
-                    height: iconSizes.lg,
-                  }}
-                >
-                  <ParticleBurst color={heartColor} isActive={showParticles} />
-                  <Animated.View style={[styles.heartIcon, heartAnimatedStyle]}>
-                    <Heart
-                      size={iconSizes.lg}
-                      color={heartColor}
-                      fill={isFavorited ? heartColor : 'none'}
-                    />
-                  </Animated.View>
-                </View>
-              </Pressable>
-
-              {/* Share Button */}
-              <Pressable
-                onPress={handleShare}
-                disabled={isSharing}
-                role="button"
-                aria-label={t('a11y_shareButton')}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: pressed ? 0.8 : 1,
-                  paddingVertical: spacing.xs,
-                })}
-              >
-                <Animated.View style={shareAnimatedStyle}>
-                  <ShareIcon size={iconSizes.lg} color={shareColor} />
-                </Animated.View>
-              </Pressable>
-
-              {/* Play / Audio Button — only rendered when this fact has audio */}
-              {audioController?.hasAudio && <FactAudioButton controller={audioController} />}
-
-              {/* Report Button */}
-              <Pressable
-                onPress={handleReport}
-                disabled={isSubmittingReport}
-                role="button"
-                aria-label={t('a11y_reportButton')}
-                style={({ pressed }) => ({
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: pressed ? 0.8 : isSubmittingReport ? 0.5 : 1,
-                  paddingVertical: spacing.xs,
-                })}
-              >
-                <Animated.View style={reportAnimatedStyle}>
-                  <Flag size={iconSizes.lg} color={flagColor} />
-                </Animated.View>
-              </Pressable>
+              {actionButtons}
             </XStack>
 
             {/* Divider + Navigation */}
@@ -480,7 +554,7 @@ export function FactActions({
                     height: iconSizes.lg,
                     backgroundColor: flagColor,
                     opacity: 0.3,
-                    marginHorizontal: spacing.md,
+                    marginHorizontal: spacing.sm,
                   }}
                 />
                 <XStack alignItems="center">
@@ -490,22 +564,18 @@ export function FactActions({
                     role="button"
                     aria-label={t('a11y_previousButton')}
                     hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: spacing.sm, right: 0 }}
-                    style={({ pressed }) => ({
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: !hasPrevious ? 0.25 : pressed ? 0.8 : 1,
-                    })}
+                    style={(state) => navChevronStyle(state, !!hasPrevious)}
                   >
-                    <ChevronLeft size={iconSizes.xl} color={navColor} padding={spacing.xl} />
+                    <ChevronLeft size={iconSizes.xl} color={navColor} />
                   </Pressable>
                   {showPosition && (
                     <Text.Caption
                       color="$textSecondary"
                       fontSize={typography.fontSize.caption}
                       textAlign="center"
-                      style={{ width: typography.fontSize.caption * 5 }}
+                      style={{ minWidth: typography.fontSize.caption * 3 }}
                     >
-                      {`${currentIndex! + 1} / ${totalCount}`}
+                      {`${currentIndex! + 1}/${totalCount}`}
                     </Text.Caption>
                   )}
                   <Pressable
@@ -514,19 +584,15 @@ export function FactActions({
                     role="button"
                     aria-label={t('a11y_nextButton')}
                     hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: 0, right: spacing.sm }}
-                    style={({ pressed }) => ({
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: !hasNext ? 0.25 : pressed ? 0.8 : 1,
-                    })}
+                    style={(state) => navChevronStyle(state, !!hasNext)}
                   >
-                    <ChevronRight size={iconSizes.xl} color={navColor} padding={spacing.xl} />
+                    <ChevronRight size={iconSizes.xl} color={navColor} />
                   </Pressable>
                 </XStack>
               </>
             )}
           </XStack>
-        </View>
+        )}
       </Container>
 
       <ReportFactModal

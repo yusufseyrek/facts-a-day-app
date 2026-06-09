@@ -55,6 +55,9 @@ export function TriviaExitModal({
           isDark={isDark}
           blurIntensity={isDark ? 50 : 70}
           androidScrim={isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)'}
+          // Lighter-than-default dim: keep the game clearly visible through
+          // the Liquid Glass behind the exit dialog.
+          dim={isDark ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.08)'}
           onPress={onCancel}
         />
 

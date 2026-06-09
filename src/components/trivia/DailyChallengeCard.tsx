@@ -71,6 +71,7 @@ export function DailyChallengeCard({
               isDark={isDark}
               tint={cardBg}
               glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
+              borderRadius={radius.md}
               style={absoluteFillObject}
             />
           )}

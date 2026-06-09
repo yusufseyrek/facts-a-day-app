@@ -139,7 +139,6 @@ export default function TriviaScreen() {
 
   // Streak badge lives in the native header (replaces the old ScreenHeader row).
   useEffect(() => {
-    const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
     const secondaryTextColor = isDark
       ? hexColors.dark.textSecondary
       : hexColors.light.textSecondary;
@@ -152,13 +151,14 @@ export default function TriviaScreen() {
           onPress={() => router.push('/badges')}
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         >
+          {/* Bare icon + count: no chip background — inside the iOS 26 glass
+              header a filled pill reads as a stray box. Padding kept for the
+              touch target. */}
           <XStack
             alignItems="center"
             gap={spacing.xs}
             paddingHorizontal={spacing.sm}
             paddingVertical={spacing.xs}
-            borderRadius={radius.md}
-            backgroundColor={isStreakActive ? `${streakColor}15` : `${cardBg}20`}
           >
             <Gamepad2 size={iconSizes.sm} color={streakColor} />
             <Text.Label fontFamily={FONT_FAMILIES.semibold} color={streakColor}>
@@ -168,7 +168,7 @@ export default function TriviaScreen() {
         </Pressable>
       ),
     });
-  }, [navigation, dailyStreak, isDark, router, spacing, iconSizes, radius]);
+  }, [navigation, dailyStreak, isDark, router, spacing, iconSizes]);
 
   // Show intro modal before starting trivia
   const showDailyTriviaIntro = () => {

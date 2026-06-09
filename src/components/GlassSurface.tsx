@@ -47,6 +47,13 @@ interface GlassSurfaceProps extends ViewProps {
    * depress). Use on glass that backs tappable controls. No-op on fallbacks.
    */
   isInteractive?: boolean;
+  /**
+   * MUST match the rounded container this surface absolute-fills. The glass
+   * material is shaped by the native cornerConfiguration, NOT by the parent's
+   * overflow clipping — without this the specular rim runs square and gets
+   * clipped off at the corners (borders look "missing" at the corners).
+   */
+  borderRadius?: number;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -81,11 +88,13 @@ export function GlassSurface({
   blurIntensity = 50,
   blurTint,
   isInteractive,
+  borderRadius,
   style,
   children,
   ...rest
 }: GlassSurfaceProps) {
   const reduceTransparency = useReduceTransparency();
+  const radiusStyle = borderRadius !== undefined ? { borderRadius } : undefined;
 
   const wantsGlass = variant === 'glass' && Platform.OS === 'ios';
   const canGlass = wantsGlass && isLiquidGlassAvailable() && !reduceTransparency;
@@ -111,7 +120,7 @@ export function GlassSurface({
         tintColor={glassTint ?? tint}
         colorScheme={isDark ? 'dark' : 'light'}
         isInteractive={isInteractive}
-        style={style}
+        style={[style, radiusStyle]}
         {...rest}
       >
         {children}
@@ -125,7 +134,7 @@ export function GlassSurface({
       <BlurView
         intensity={blurIntensity}
         tint={blurTint ?? (isDark ? 'dark' : 'light')}
-        style={style}
+        style={[style, radiusStyle]}
         {...rest}
       >
         {children}
@@ -135,7 +144,7 @@ export function GlassSurface({
 
   // Android, variant 'solid', or reduce-transparency: opaque Material tonal fill.
   return (
-    <View style={[style, { backgroundColor: tint }]} {...rest}>
+    <View style={[style, radiusStyle, { backgroundColor: tint }]} {...rest}>
       {children}
     </View>
   );

@@ -67,6 +67,7 @@ export function CategoryQuestCard({ category, isDark, onPress, index }: Category
               isDark={isDark}
               tint={cardBg}
               glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
+              borderRadius={radius.md}
               style={absoluteFillObject}
             />
           )}

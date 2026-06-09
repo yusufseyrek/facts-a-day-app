@@ -1,12 +1,16 @@
 import React from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { BookOpen, Clock, Eye, Flame } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
+import { hexToRgba } from '../../utils/colors';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { GlassSurface } from '../GlassSurface';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import { formatDuration } from './formatDuration';
@@ -108,17 +112,31 @@ function HeroTile({
   const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
   const secondaryColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
+  // iOS 26: stat tile goes transparent and Liquid Glass (tinted with the card
+  // color) shows through; the colored hairline stays in both modes.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
 
   return (
     <YStack
       flex={1}
-      backgroundColor={cardBg}
+      backgroundColor={useGlass ? 'transparent' : cardBg}
       borderRadius={radius.lg}
       padding={spacing.md}
       gap={spacing.xs}
       borderWidth={borderWidths.hairline}
       borderColor={`${tile.color}30`}
+      overflow={useGlass ? 'hidden' : undefined}
     >
+      {useGlass && (
+        <GlassSurface
+          variant="glass"
+          isDark={isDark}
+          tint={cardBg}
+          glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
+          borderRadius={radius.lg}
+          style={absoluteFillObject}
+        />
+      )}
       <XStack alignItems="center" gap={spacing.sm}>
         <View
           style={{

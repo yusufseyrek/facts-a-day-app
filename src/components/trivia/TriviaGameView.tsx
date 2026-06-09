@@ -225,6 +225,7 @@ export function TriviaGameView({
                 isDark={isDark}
                 tint={surfaceColor}
                 glassTint={hexToRgba(surfaceColor, isDark ? 0.6 : 0.65)}
+                borderRadius={radius.full}
                 style={absoluteFillObject}
               />
             )}
@@ -277,6 +278,7 @@ export function TriviaGameView({
                 isDark={isDark}
                 tint={borderColor}
                 glassTint={hexToRgba(borderColor, isDark ? 0.6 : 0.65)}
+                borderRadius={3}
                 style={absoluteFillObject}
               />
             )}
@@ -428,6 +430,7 @@ export function TriviaGameView({
                             variant="glass"
                             isDark={isDark}
                             tint={`${accentColor}55`}
+                            borderRadius={radius.full}
                             style={absoluteFillObject}
                           />
                         )}
@@ -518,6 +521,7 @@ export function TriviaGameView({
                             variant="glass"
                             isDark={isDark}
                             tint={`${secondaryTextColor}30`}
+                            borderRadius={radius.full}
                             style={absoluteFillObject}
                           />
                         )}
@@ -742,6 +746,7 @@ export function TriviaGameView({
                   isDark={isDark}
                   tint={primaryColor}
                   glassTint={hexToRgba(primaryColor, isDark ? 0.6 : 0.65)}
+                  borderRadius={radius.lg}
                   style={absoluteFillObject}
                 />
               )}
@@ -776,6 +781,7 @@ export function TriviaGameView({
                   isDark={isDark}
                   tint={primaryColor}
                   glassTint={hexToRgba(primaryColor, isDark ? 0.6 : 0.65)}
+                  borderRadius={radius.lg}
                   style={absoluteFillObject}
                 />
               )}

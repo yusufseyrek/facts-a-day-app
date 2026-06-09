@@ -660,6 +660,7 @@ export function TriviaResults({
                   isDark={isDark}
                   tint={`${primaryColor}20`}
                   glassTint={hexToRgba(primaryColor, isDark ? 0.35 : 0.3)}
+                  borderRadius={headerBtnSize / 2}
                   style={absoluteFillObject}
                 />
               )}
@@ -681,6 +682,12 @@ export function TriviaResults({
         showsVerticalScrollIndicator={false}
         overScrollMode="never"
         onScrollEndDrag={handleVerticalScroll}
+        // Under the translucent native header (history/performance) iOS must
+        // inset the content below the header bar — without this the results
+        // render behind the screen title. Post-game there is no header and the
+        // root View already pads for the status bar, so 'never' keeps that
+        // layout untouched.
+        contentInsetAdjustmentBehavior={underNavigationHeader ? 'automatic' : 'never'}
       >
         <YStack width="100%" alignItems="center">
           <YStack
@@ -701,8 +708,10 @@ export function TriviaResults({
                   </XStack>
                 )}
 
-                {/* Only show title here if not showing header bar */}
-                {!showBackButton && (
+                {/* Only show the in-content title when there's no header
+                    already carrying it — neither the local header bar nor a
+                    retitled native stack header (history/performance). */}
+                {!showBackButton && !underNavigationHeader && (
                   <Text.Display fontFamily={FONT_FAMILIES.bold} color={textColor}>
                     {customTitle || t('testResults') || 'Test Results'}
                   </Text.Display>
@@ -830,6 +839,7 @@ export function TriviaResults({
                         isDark={isDark}
                         tint={cardBackground}
                         glassTint={hexToRgba(cardBackground, isDark ? 0.6 : 0.65)}
+                        borderRadius={radius.lg}
                         style={absoluteFillObject}
                       />
                     )}
@@ -874,6 +884,7 @@ export function TriviaResults({
                         isDark={isDark}
                         tint={cardBackground}
                         glassTint={hexToRgba(cardBackground, isDark ? 0.6 : 0.65)}
+                        borderRadius={radius.lg}
                         style={absoluteFillObject}
                       />
                     )}
@@ -985,7 +996,10 @@ export function TriviaResults({
           paddingBottom: showReturnButton ? insets.bottom + spacing.sm : 0,
         }}
       >
-        <BannerAd respectBottomInset />
+        {/* The banner only pads for the home indicator when it is the LAST
+            element; with the return button below it, that padding would open
+            a gap between the ad and the button. */}
+        <BannerAd respectBottomInset={!showReturnButton} />
 
         {/* Return button (shown for normal trivia flow) */}
         {showReturnButton && (

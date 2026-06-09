@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import { BookOpen, Flame, Gamepad2, Trophy } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Stack, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -9,6 +10,7 @@ import { XStack, YStack } from 'tamagui';
 import { BadgeCard } from '../src/components/badges/BadgeCard';
 import { BadgeDetailSheet } from '../src/components/badges/BadgeDetailSheet';
 import { BadgesScreenSkeleton } from '../src/components/badges/BadgesScreenSkeleton';
+import { GlassSurface } from '../src/components/GlassSurface';
 import { ContentContainer } from '../src/components/ScreenLayout';
 import { FONT_FAMILIES, Text } from '../src/components/Typography';
 import { useGlassHeaderOptions } from '../src/hooks/useGlassHeaderOptions';
@@ -22,6 +24,8 @@ import {
   getReadingStreak,
 } from '../src/services/badges';
 import { hexColors, useTheme } from '../src/theme';
+import { hexToRgba } from '../src/utils/colors';
+import { absoluteFillObject } from '../src/utils/styles';
 import { useResponsive } from '../src/utils/useResponsive';
 
 function SectionLabel({
@@ -56,6 +60,9 @@ export default function BadgesScreen() {
   const { spacing, radius, iconSizes } = useResponsive();
   const colors = hexColors[theme];
   const glassHeaderOptions = useGlassHeaderOptions();
+  // iOS 26: the streak stats panel goes Liquid Glass (stat panel = eligible
+  // chrome); the badge list below stays opaque (reading content).
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
 
   const [badges, setBadges] = useState<BadgeWithStatus[]>([]);
   const [streak, setStreak] = useState(0);
@@ -163,8 +170,16 @@ export default function BadgesScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Native glass header (root stack defaults to headerShown: false) */}
-      <Stack.Screen options={{ ...glassHeaderOptions, title: t('achievements') }} />
+      {/* Native glass header (root stack defaults to headerShown: false).
+          headerBackButtonDisplayMode 'minimal': the previous route is the
+          "(tabs)" group, whose raw name would otherwise label the back button. */}
+      <Stack.Screen
+        options={{
+          ...glassHeaderOptions,
+          title: t('achievements'),
+          headerBackButtonDisplayMode: 'minimal',
+        }}
+      />
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
 
       <ScrollView
@@ -179,14 +194,25 @@ export default function BadgesScreen() {
           <ContentContainer>
             {/* Streak panel */}
             <XStack
-              backgroundColor={colors.cardBackground}
+              backgroundColor={useGlass ? 'transparent' : colors.cardBackground}
               borderRadius={radius.lg}
               padding={spacing.md}
               marginBottom={spacing.lg}
               borderWidth={1}
               borderColor={colors.border}
               alignItems="center"
+              overflow={useGlass ? 'hidden' : undefined}
             >
+              {useGlass && (
+                <GlassSurface
+                  variant="glass"
+                  isDark={theme === 'dark'}
+                  tint={colors.cardBackground}
+                  glassTint={hexToRgba(colors.cardBackground, theme === 'dark' ? 0.6 : 0.65)}
+                  borderRadius={radius.lg}
+                  style={absoluteFillObject}
+                />
+              )}
               {/* Current streak */}
               <YStack flex={1} alignItems="center" gap={spacing.xs}>
                 <View style={panelStyles.iconShadow}>

@@ -160,6 +160,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
               isDark={isDark}
               tint={backgroundColor}
               glassTint={glassTint}
+              borderRadius={radius.lg}
               style={absoluteFillObject}
             />
           ) : null}

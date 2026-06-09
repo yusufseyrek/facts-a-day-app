@@ -11,7 +11,7 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { styled, View } from '@tamagui/core';
-import { X } from '@tamagui/lucide-icons';
+import { ChevronRight, X } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -404,14 +404,28 @@ function DiscoverScreen() {
     setIsSearching(false);
   }, []);
 
+  // Selected category name — drives the search bar placeholder below. Derived
+  // before the header effect so the effect can depend on the primitive string.
+  const selectedCategoryName = useMemo(
+    () =>
+      selectedCategorySlug
+        ? (userCategories.find((cat) => cat.slug === selectedCategorySlug)?.name ?? null)
+        : null,
+    [selectedCategorySlug, userCategories]
+  );
+
   // Native-stack header search bar: iOS gets the system (glass) search field
-  // under the large title, Android the native toolbar search. Handlers are
-  // stable, so this runs once per mount (and again only on locale change).
+  // under the large title, Android the native toolbar search. With a category
+  // selected, the field itself carries the scope ("Search in Science...") —
+  // the native search bar has no token/chip API, so the placeholder is the
+  // label. Re-runs on selection/locale change only.
   useEffect(() => {
     navigation.setOptions({
       headerSearchBarOptions: {
         ref: searchBarRef,
-        placeholder: t('discoverPlaceholder'),
+        placeholder: selectedCategoryName
+          ? t('searchInCategory', { category: selectedCategoryName })
+          : t('discoverPlaceholder'),
         autoCapitalize: 'none' as const,
         hideWhenScrolling: false,
         onChangeText: (e: { nativeEvent: { text: string } }) =>
@@ -419,7 +433,7 @@ function DiscoverScreen() {
         onCancelButtonPress: clearSearch,
       },
     });
-  }, [navigation, t, handleSearchChange, clearSearch]);
+  }, [navigation, t, handleSearchChange, clearSearch, selectedCategoryName]);
 
   // Handle category selection
   const handleCategoryPress = useCallback(
@@ -743,17 +757,25 @@ function DiscoverScreen() {
                           onPress={() => handleCategoryPress(category.slug)}
                           style={({ pressed }) => [
                             categoryShadowStyles.wrapper,
-                            { flex: 1, borderRadius: radius.lg, opacity: pressed ? 0.85 : 1 },
+                            {
+                              flex: 1,
+                              borderRadius: radius.xl,
+                              // Category-colored glow instead of a flat black
+                              // drop shadow — the tiles read as lit, not boxed.
+                              shadowColor: categoryColor,
+                              opacity: pressed ? 0.9 : 1,
+                              transform: [{ scale: pressed ? 0.97 : 1 }],
+                            },
                           ]}
                           testID={`discover-category-${rowIndex * numColumns + row.indexOf(category)}`}
                         >
                           <LinearGradient
-                            colors={[categoryColor, darkenColor(categoryColor, 0.25)]}
+                            colors={[categoryColor, darkenColor(categoryColor, 0.22)]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={{
                               flex: 1,
-                              borderRadius: radius.lg,
+                              borderRadius: radius.xl,
                               overflow: 'hidden',
                             }}
                           >
@@ -762,6 +784,7 @@ function DiscoverScreen() {
                               paddingHorizontal={spacing.md}
                               gap={spacing.md}
                             >
+                              {/* Layered decorative circles for depth */}
                               <View
                                 pointerEvents="none"
                                 style={{
@@ -771,18 +794,30 @@ function DiscoverScreen() {
                                   width: media.categoryIconContainerSize * 2,
                                   height: media.categoryIconContainerSize * 2,
                                   borderRadius: media.categoryIconContainerSize,
-                                  backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                                  backgroundColor: 'rgba(255, 255, 255, 0.10)',
+                                }}
+                              />
+                              <View
+                                pointerEvents="none"
+                                style={{
+                                  position: 'absolute',
+                                  bottom: -media.categoryIconContainerSize * 0.7,
+                                  right: -media.categoryIconContainerSize * 0.4,
+                                  width: media.categoryIconContainerSize * 1.6,
+                                  height: media.categoryIconContainerSize * 1.6,
+                                  borderRadius: media.categoryIconContainerSize * 0.8,
+                                  backgroundColor: 'rgba(255, 255, 255, 0.07)',
                                 }}
                               />
                               <DiscoverCategoryIconContainer
                                 width={media.categoryIconContainerSize}
                                 height={media.categoryIconContainerSize}
-                                borderRadius={radius.md}
+                                borderRadius={media.categoryIconContainerSize / 2}
                                 style={{
                                   backgroundColor:
                                     contrastColor === '#000000'
-                                      ? 'rgba(0,0,0,0.1)'
-                                      : 'rgba(255,255,255,0.2)',
+                                      ? 'rgba(0,0,0,0.12)'
+                                      : 'rgba(255,255,255,0.22)',
                                 }}
                               >
                                 {getLucideIcon(category.icon, iconSize, contrastColor)}
@@ -796,6 +831,11 @@ function DiscoverScreen() {
                                   {category.name}
                                 </Text.Label>
                               </DiscoverCategoryTextContainer>
+                              <ChevronRight
+                                size={iconSizes.sm}
+                                color={contrastColor}
+                                opacity={0.55}
+                              />
                             </DiscoverCategoryCard>
                           </LinearGradient>
                         </Pressable>
@@ -964,10 +1004,11 @@ function DiscoverScreen() {
 
 const categoryShadowStyles = StyleSheet.create({
   wrapper: {
+    // shadowColor is set per-tile (the category color) at the call site.
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
     elevation: 6,
   },
 });
