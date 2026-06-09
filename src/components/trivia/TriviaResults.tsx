@@ -936,7 +936,7 @@ export function TriviaResults({
           paddingBottom: showReturnButton ? insets.bottom + spacing.sm : 0,
         }}
       >
-        <BannerAd />
+        <BannerAd respectBottomInset />
 
         {/* Return button (shown for normal trivia flow) */}
         {showReturnButton && (

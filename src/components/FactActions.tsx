@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -13,6 +13,7 @@ import { type ViewShotRef } from 'react-native-view-shot';
 
 import { styled } from '@tamagui/core';
 import { ChevronLeft, ChevronRight, Flag, Heart, Share as ShareIcon } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { View, XStack, YStack } from 'tamagui';
 
@@ -23,9 +24,11 @@ import * as database from '../services/database';
 import { performFavoriteToggle } from '../services/favorites';
 import { shareService } from '../services/share';
 import { hexColors, useTheme } from '../theme';
+import { absoluteFillObject } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
 import { FactAudioButton } from './FactAudioButton';
+import { GlassSurface } from './GlassSurface';
 import { ReportFactModal } from './ReportFactModal';
 import { ShareCard } from './share';
 import { Text } from './Typography';
@@ -140,6 +143,10 @@ export function FactActions({
   const { theme } = useTheme();
   const { iconSizes, typography, spacing } = useResponsive();
   const insets = useSafeAreaInsets();
+  const isDark = theme === 'dark';
+  // iOS 26: frost the bottom action bar with Liquid Glass; opaque elsewhere.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
+  const glassTint = isDark ? 'rgba(10,22,40,0.6)' : 'rgba(240,245,252,0.65)';
 
   // Neon colors for actions
   const heartColor = theme === 'dark' ? hexColors.dark.neonRed : hexColors.light.neonRed;
@@ -361,11 +368,23 @@ export function FactActions({
   return (
     <>
       <Container
+        backgroundColor={useGlass ? 'transparent' : '$background'}
+        overflow="hidden"
         style={{
           paddingBottom: insets.bottom > 0 ? insets.bottom : spacing.xs,
           paddingTop: spacing.xs,
         }}
       >
+        {useGlass ? (
+          <GlassSurface
+            variant="glass"
+            isDark={isDark}
+            tint={hexColors[theme].background}
+            glassTint={glassTint}
+            style={absoluteFillObject}
+          />
+        ) : null}
+
         {/* Action row: [ {} {} {} | < 1/N > ] or [ {} {} {} ] */}
         <XStack alignItems="center" justifyContent="space-between" paddingHorizontal={spacing.sm}>
           {/* Action buttons group */}

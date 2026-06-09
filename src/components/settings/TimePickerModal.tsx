@@ -3,14 +3,13 @@ import {
   Alert,
   Dimensions,
   Linking,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
+import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { AlertTriangle, Plus, Trash2, X } from '@tamagui/lucide-icons';
@@ -20,9 +19,10 @@ import { trackNotificationTimeChange, updateNotificationProperty } from '../../s
 import * as notificationService from '../../services/notifications';
 import * as onboardingService from '../../services/onboarding';
 import { hexColors, useTheme } from '../../theme';
-import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { Button } from '../Button';
+import { InlineOverlay } from '../InlineOverlay';
+import { ModalBackdrop } from '../ModalBackdrop';
 import { SuccessToast } from '../SuccessToast';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -46,6 +46,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 }) => {
   const { theme } = useTheme();
   const colors = hexColors[theme];
+  const isDark = theme === 'dark';
   const { t, locale } = useTranslation();
   const { spacing, radius, iconSizes } = useResponsive();
 
@@ -380,15 +381,18 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   );
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
+    <InlineOverlay
+      visible={visible}
+      onRequestClose={handleClose}
+      exitGraceMs={ANIMATION_DURATION + 60}
+    >
       <View style={styles.container}>
-        {showContent && (
-          <Animated.View
-            entering={FadeIn.duration(ANIMATION_DURATION)}
-            exiting={FadeOut.duration(ANIMATION_DURATION)}
-            style={styles.overlay}
-          />
-        )}
+        <ModalBackdrop
+          isDark={isDark}
+          blurIntensity={50}
+          androidScrim={isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.5)'}
+          onPress={handleClose}
+        />
         <SuccessToast
           visible={showSuccessToast}
           message={
@@ -396,14 +400,14 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
           }
           onHide={handleSuccessToastHide}
         />
-        <Pressable style={styles.overlayPressable} onPress={handleClose}>
+        <View style={styles.overlayPressable} pointerEvents="box-none">
           {showContent && (
             <Animated.View
               entering={ZoomIn.duration(ANIMATION_DURATION)}
               exiting={ZoomOut.duration(ANIMATION_DURATION)}
               style={styles.animatedContainer}
             >
-              <Pressable onPress={(e) => e.stopPropagation()}>
+              <View>
                 <View
                   style={[
                     dynamicStyles.modalContainer,
@@ -508,22 +512,18 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                     </Button>
                   </View>
                 </View>
-              </Pressable>
+              </View>
             </Animated.View>
           )}
-        </Pressable>
+        </View>
       </View>
-    </Modal>
+    </InlineOverlay>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  overlay: {
-    ...absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   overlayPressable: {
     flex: 1,

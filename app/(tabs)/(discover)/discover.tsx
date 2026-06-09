@@ -25,43 +25,43 @@ import {
   FONT_FAMILIES,
   ScreenContainer,
   Text,
-} from '../../src/components';
-import { BannerAd } from '../../src/components/ads';
-import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
-import { ImageFactCard } from '../../src/components/ImageFactCard';
-import { LAYOUT, NATIVE_ADS } from '../../src/config/app';
-import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
-import { usePremium, useScrollToTopHandler } from '../../src/contexts';
-import { useSeedFactDetailsCache } from '../../src/hooks/useFactDetail';
-import { useTranslation } from '../../src/i18n';
+} from '../../../src/components';
+import { BannerAd } from '../../../src/components/ads';
+import { NativeAdCard } from '../../../src/components/ads/NativeAdCard';
+import { ImageFactCard } from '../../../src/components/ImageFactCard';
+import { LAYOUT, NATIVE_ADS } from '../../../src/config/app';
+import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
+import { usePremium, useScrollToTopHandler } from '../../../src/contexts';
+import { useSeedFactDetailsCache } from '../../../src/hooks/useFactDetail';
+import { useTranslation } from '../../../src/i18n';
 import {
   Screens,
   trackCategoryBrowse,
   trackScreenView,
   trackSearch,
-} from '../../src/services/analytics';
-import * as api from '../../src/services/api';
-import { mapApiFactToRelations } from '../../src/services/database';
-import { consumePendingDiscoverCategory } from '../../src/services/discoverNav';
-import { getCachedFactImageSync } from '../../src/services/images';
-import { primePool } from '../../src/services/nativeAdPool';
-import { getIsConnected } from '../../src/services/network';
-import { getSelectedCategories } from '../../src/services/onboarding';
-import { onPreferenceFeedRefresh } from '../../src/services/preferences';
-import { hexColors, useTheme } from '../../src/theme';
-import { darkenColor, getContrastColor, hexToHue } from '../../src/utils/colors';
-import { getLucideIcon } from '../../src/utils/iconMapper';
+} from '../../../src/services/analytics';
+import * as api from '../../../src/services/api';
+import { mapApiFactToRelations } from '../../../src/services/database';
+import { consumePendingDiscoverCategory } from '../../../src/services/discoverNav';
+import { getCachedFactImageSync } from '../../../src/services/images';
+import { primePool } from '../../../src/services/nativeAdPool';
+import { getIsConnected } from '../../../src/services/network';
+import { getSelectedCategories } from '../../../src/services/onboarding';
+import { onPreferenceFeedRefresh } from '../../../src/services/preferences';
+import { hexColors, useTheme } from '../../../src/theme';
+import { darkenColor, getContrastColor, hexToHue } from '../../../src/utils/colors';
+import { getLucideIcon } from '../../../src/utils/iconMapper';
 import {
   insertNativeAds,
   isNativeAdPlaceholder,
   type NativeAdPlaceholder,
-} from '../../src/utils/insertNativeAds';
-import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../../src/utils/responsive';
-import { smartScrollToTop } from '../../src/utils/useFlashListScrollToTop';
-import { useResponsive } from '../../src/utils/useResponsive';
+} from '../../../src/utils/insertNativeAds';
+import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../../../src/utils/responsive';
+import { smartScrollToTop } from '../../../src/utils/useFlashListScrollToTop';
+import { useResponsive } from '../../../src/utils/useResponsive';
 
-import type { FactViewSource } from '../../src/services/analytics';
-import type { Category, FactWithRelations } from '../../src/services/database';
+import type { FactViewSource } from '../../../src/services/analytics';
+import type { Category, FactWithRelations } from '../../../src/services/database';
 
 // How many facts to pull for a category browse view (first feed page).
 const CATEGORY_BROWSE_LIMIT = 100;
@@ -990,7 +990,7 @@ function DiscoverScreen() {
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       {renderHeader()}
       <YStack flex={1}>{renderContent()}</YStack>
-      {searchResults.length > 0 || (!selectedCategorySlug && <BannerAd collapsible="bottom" />)}
+      {searchResults.length > 0 || (!selectedCategorySlug && <BannerAd collapsible="bottom" respectBottomInset />)}
     </ScreenContainer>
   );
 }

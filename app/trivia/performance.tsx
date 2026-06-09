@@ -929,7 +929,7 @@ export default function PerformanceScreen() {
         </ContentContainer>
       </ScrollView>
 
-      <BannerAd />
+      <BannerAd respectBottomInset />
 
       {/* Loading overlay for session fetch */}
       {loadingSession && (

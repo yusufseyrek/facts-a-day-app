@@ -272,7 +272,7 @@ export default function CategoriesAccuracyScreen() {
         </ContentContainer>
       </ScrollView>
 
-      <BannerAd />
+      <BannerAd respectBottomInset />
     </View>
   );
 }

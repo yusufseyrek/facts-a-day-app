@@ -34,34 +34,34 @@ import {
   ScreenHeader,
   Text,
   useIconColor,
-} from '../../src/components';
-import { ThemePickerModal } from '../../src/components/settings/ThemePickerModal';
-import { TimePickerModal } from '../../src/components/settings/TimePickerModal';
-import { SettingsRow } from '../../src/components/SettingsRow';
-import { DEV_SETTINGS_ENABLED, LAYOUT, SUBSCRIPTION } from '../../src/config/app';
-import { useOnboarding, usePremium, useScrollToTopHandler } from '../../src/contexts';
-import { useTranslation } from '../../src/i18n';
-import { TranslationKeys } from '../../src/i18n/translations';
-import { openAdDebugMenu } from '../../src/services/ads';
-import { Screens, trackScreenView } from '../../src/services/analytics';
-import * as api from '../../src/services/api';
-import { requestReview } from '../../src/services/appReview';
-import { armDevDualTrigger, triggerTestBadgeToast } from '../../src/services/badges';
-import { onFeedRefresh } from '../../src/services/contentRefresh';
-import { mapApiFactToRelations } from '../../src/services/database';
-import { clearAllCachedImages, getCachedImagesSize } from '../../src/services/images';
+} from '../../../src/components';
+import { ThemePickerModal } from '../../../src/components/settings/ThemePickerModal';
+import { TimePickerModal } from '../../../src/components/settings/TimePickerModal';
+import { SettingsRow } from '../../../src/components/SettingsRow';
+import { DEV_SETTINGS_ENABLED, LAYOUT, SUBSCRIPTION } from '../../../src/config/app';
+import { useOnboarding, usePremium, useScrollToTopHandler } from '../../../src/contexts';
+import { useTranslation } from '../../../src/i18n';
+import { TranslationKeys } from '../../../src/i18n/translations';
+import { openAdDebugMenu } from '../../../src/services/ads';
+import { Screens, trackScreenView } from '../../../src/services/analytics';
+import * as api from '../../../src/services/api';
+import { requestReview } from '../../../src/services/appReview';
+import { armDevDualTrigger, triggerTestBadgeToast } from '../../../src/services/badges';
+import { onFeedRefresh } from '../../../src/services/contentRefresh';
+import { mapApiFactToRelations } from '../../../src/services/database';
+import { clearAllCachedImages, getCachedImagesSize } from '../../../src/services/images';
 import {
   buildNotificationContent,
   getExpoPushToken,
   sendTestPushToSelf,
-} from '../../src/services/notifications';
-import * as onboardingService from '../../src/services/onboarding';
-import { cleanupShareCards } from '../../src/services/share';
-import { clearHintUsage } from '../../src/services/trivia';
-import * as updates from '../../src/services/updates';
-import { hexColors, useTheme } from '../../src/theme';
-import { openInAppBrowser } from '../../src/utils/browser';
-import { useResponsive } from '../../src/utils/useResponsive';
+} from '../../../src/services/notifications';
+import * as onboardingService from '../../../src/services/onboarding';
+import { cleanupShareCards } from '../../../src/services/share';
+import { clearHintUsage } from '../../../src/services/trivia';
+import * as updates from '../../../src/services/updates';
+import { hexColors, useTheme } from '../../../src/theme';
+import { openInAppBrowser } from '../../../src/utils/browser';
+import { useResponsive } from '../../../src/utils/useResponsive';
 
 // Helper to get language display name
 const getLanguageName = (code: string): string => {
@@ -465,7 +465,7 @@ export default function SettingsPage() {
       await resetOnboarding();
       await clearHintUsage();
       // Clear cached images on disk
-      const { clearAllCachedImages } = await import('../../src/services/images');
+      const { clearAllCachedImages } = await import('../../../src/services/images');
       await clearAllCachedImages();
       // Reset ad consent state so GDPR/ATT prompts show again
       const { AdsConsent } = await import('react-native-google-mobile-ads');

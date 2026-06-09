@@ -5,6 +5,7 @@ import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Ban, Crown, Lightbulb, WifiOff } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { XStack, YStack } from 'tamagui';
@@ -14,6 +15,7 @@ import { PAYWALL_GOLD, paywallThemeColors, useTheme } from '../theme';
 import { absoluteFillObject } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
+import { GlassSurface } from './GlassSurface';
 import { FONT_FAMILIES, Text } from './Typography';
 
 /**
@@ -31,6 +33,11 @@ export function OfflinePaywallSheet() {
 
   const featureIconColor = '#78350F';
   const featureIconSize = iconSizes.xl + spacing.sm;
+
+  // iOS 26: back the sheet with Liquid Glass. A warm, low-alpha tint keeps the
+  // gold feature rows + CTA legible while letting the dimmed app refract through.
+  const useGlassSheet = Platform.OS === 'ios' && isLiquidGlassAvailable();
+  const sheetGlassTint = isDark ? 'rgba(13,26,48,0.62)' : 'rgba(255,248,238,0.7)';
 
   const features = [
     {
@@ -69,7 +76,10 @@ export function OfflinePaywallSheet() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: sheetBg,
+          // Glass paints the fill; keep the container transparent and clip the
+          // glass to the rounded top corners. Otherwise use the opaque fill.
+          backgroundColor: useGlassSheet ? 'transparent' : sheetBg,
+          overflow: useGlassSheet ? 'hidden' : 'visible',
           borderTopLeftRadius: radius.xl,
           borderTopRightRadius: radius.xl,
           paddingBottom: insets.bottom + spacing.lg,
@@ -142,7 +152,18 @@ export function OfflinePaywallSheet() {
           justifyContent: 'center',
         },
       }),
-    [sheetBg, radius, spacing, insets, handleColor, tc, featureIconSize, media, borderWidths]
+    [
+      sheetBg,
+      useGlassSheet,
+      radius,
+      spacing,
+      insets,
+      handleColor,
+      tc,
+      featureIconSize,
+      media,
+      borderWidths,
+    ]
   );
 
   return (
@@ -152,6 +173,16 @@ export function OfflinePaywallSheet() {
 
       {/* Bottom sheet */}
       <Animated.View entering={FadeInUp.duration(400)} style={dynamicStyles.sheet}>
+        {useGlassSheet ? (
+          <GlassSurface
+            variant="glass"
+            isDark={isDark}
+            tint={sheetBg}
+            glassTint={sheetGlassTint}
+            style={absoluteFillObject}
+          />
+        ) : null}
+
         {/* Handle */}
         <View style={dynamicStyles.handle} />
 

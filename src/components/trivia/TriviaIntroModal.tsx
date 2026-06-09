@@ -1,4 +1,4 @@
-import { Modal, Platform, Pressable } from 'react-native';
+import { Pressable } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import {
@@ -12,7 +12,6 @@ import {
   X,
   Zap,
 } from '@tamagui/lucide-icons';
-import { BlurView } from 'expo-blur';
 import { XStack, YStack } from 'tamagui';
 
 import { LAYOUT } from '../../config/app';
@@ -21,6 +20,8 @@ import { getEstimatedTimeMinutes } from '../../services/trivia';
 import { hexColors, useTheme } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
+import { InlineOverlay } from '../InlineOverlay';
+import { ModalBackdrop } from '../ModalBackdrop';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 export type TriviaType = 'daily' | 'mixed' | 'category';
@@ -110,39 +111,12 @@ export function TriviaIntroModal({
   const _remainingToMaster = totalQuestions - masteredCount;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
+    <InlineOverlay visible={visible} onRequestClose={onClose}>
       <YStack flex={1} justifyContent="center" alignItems="center" padding={spacing.md}>
-        {Platform.OS === 'ios' ? (
-          <BlurView
-            intensity={isDark ? 50 : 70}
-            tint={isDark ? 'dark' : 'light'}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-            }}
-          />
-        ) : (
-          <YStack
-            position="absolute"
-            top={0}
-            left={0}
-            right={0}
-            bottom={0}
-            backgroundColor={isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)'}
-          />
-        )}
-
-        <Pressable
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        <ModalBackdrop
+          isDark={isDark}
+          blurIntensity={isDark ? 50 : 70}
+          androidScrim={isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)'}
           onPress={onClose}
         />
 
@@ -381,6 +355,6 @@ export function TriviaIntroModal({
           </YStack>
         </Animated.View>
       </YStack>
-    </Modal>
+    </InlineOverlay>
   );
 }

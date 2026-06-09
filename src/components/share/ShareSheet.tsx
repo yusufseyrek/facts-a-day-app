@@ -6,7 +6,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
   StyleSheet,
   TouchableWithoutFeedback,
@@ -31,6 +30,8 @@ import { PLATFORM_CONFIG } from '../../services/share/platforms';
 import { hexColors, useTheme } from '../../theme';
 import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { GlassSurface } from '../GlassSurface';
+import { InlineOverlay } from '../InlineOverlay';
 import { Text } from '../Typography';
 
 import { ShareCard } from './ShareCard';
@@ -66,6 +67,7 @@ function getPlatformIcon(platform: SharePlatform, color: string, size: number) {
 export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareSheetProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const insets = useSafeAreaInsets();
   const { spacing, radius, iconSizes } = useResponsive();
   const colors = hexColors[theme];
@@ -165,13 +167,7 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
   }));
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={handleClose}
-      statusBarTranslucent
-    >
+    <InlineOverlay visible={visible} onRequestClose={handleClose}>
       {/* Backdrop */}
       <Animated.View style={[styles.backdrop, backdropStyle]}>
         <TouchableWithoutFeedback onPress={handleClose}>
@@ -185,13 +181,25 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
           styles.sheet,
           sheetStyle,
           {
-            backgroundColor: colors.surface,
+            backgroundColor: 'transparent',
+            overflow: 'hidden',
             paddingBottom: Math.max(insets.bottom, spacing.lg),
             borderTopLeftRadius: radius.xl,
             borderTopRightRadius: radius.xl,
           },
         ]}
       >
+        {/* iOS 26: Liquid Glass sheet backing (refracts the scrim/content) */}
+        <GlassSurface
+          variant="glass"
+          isDark={isDark}
+          tint={colors.surface}
+          glassTint={isDark ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'}
+          blurIntensity={12}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+
         {/* Handle */}
         <View style={styles.handleContainer}>
           <View style={[styles.handle, { backgroundColor: colors.border }]} />
@@ -263,7 +271,7 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
 
       {/* Off-screen ShareCard for image capture */}
       <ShareCard ref={viewShotRef} fact={fact} />
-    </Modal>
+    </InlineOverlay>
   );
 }
 

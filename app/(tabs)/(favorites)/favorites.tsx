@@ -25,28 +25,28 @@ import {
   ScreenHeader,
   Text,
   useIconColor,
-} from '../../src/components';
-import { NativeAdCard } from '../../src/components/ads/NativeAdCard';
-import { ImageFactCard } from '../../src/components/ImageFactCard';
-import { LAYOUT, NATIVE_ADS } from '../../src/config/app';
-import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
-import { usePremium } from '../../src/contexts';
-import { useTranslation } from '../../src/i18n';
-import { Screens, trackScreenView } from '../../src/services/analytics';
-import * as api from '../../src/services/api';
-import { getFavoriteIds, mapApiFactToRelations } from '../../src/services/database';
-import { primePool } from '../../src/services/nativeAdPool';
-import { hexColors, useTheme } from '../../src/theme';
-import { getContrastColor } from '../../src/utils/colors';
+} from '../../../src/components';
+import { NativeAdCard } from '../../../src/components/ads/NativeAdCard';
+import { ImageFactCard } from '../../../src/components/ImageFactCard';
+import { LAYOUT, NATIVE_ADS } from '../../../src/config/app';
+import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
+import { usePremium } from '../../../src/contexts';
+import { useTranslation } from '../../../src/i18n';
+import { Screens, trackScreenView } from '../../../src/services/analytics';
+import * as api from '../../../src/services/api';
+import { getFavoriteIds, mapApiFactToRelations } from '../../../src/services/database';
+import { primePool } from '../../../src/services/nativeAdPool';
+import { hexColors, useTheme } from '../../../src/theme';
+import { getContrastColor } from '../../../src/utils/colors';
 import {
   insertNativeAds,
   isNativeAdPlaceholder,
   type NativeAdPlaceholder,
-} from '../../src/utils/insertNativeAds';
-import { useFlashListScrollToTop } from '../../src/utils/useFlashListScrollToTop';
-import { useResponsive } from '../../src/utils/useResponsive';
+} from '../../../src/utils/insertNativeAds';
+import { useFlashListScrollToTop } from '../../../src/utils/useFlashListScrollToTop';
+import { useResponsive } from '../../../src/utils/useResponsive';
 
-import type { Category, FactWithRelations } from '../../src/services/database';
+import type { Category, FactWithRelations } from '../../../src/services/database';
 
 // Styled components
 const SearchInputContainer = styled(XStack, {

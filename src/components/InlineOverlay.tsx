@@ -1,0 +1,106 @@
+import { useEffect, useState } from 'react';
+import { BackHandler, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+/**
+ * InlineOverlay — a full-screen overlay rendered IN THE MAIN WINDOW.
+ *
+ * Drop-in replacement for `<Modal transparent>` for surfaces that use Liquid
+ * Glass. RN's `<Modal>` presents in a SEPARATE iOS UIWindow, where a glass
+ * (`UIVisualEffectView`) layer has no app content behind it to refract and so
+ * renders flat. Rendering the overlay inline — as an absolutely-positioned
+ * sibling within the current screen tree — keeps it in the same window as the
+ * content beneath, so glass actually refracts.
+ *
+ * Replicates the parts of `<Modal>` callers relied on:
+ *  - mounts only while `visible` (kept mounted briefly after dismiss so the
+ *    children's own exit animation, if any, can play),
+ *  - Android hardware-back → `onRequestClose`,
+ *  - EDGE-TO-EDGE coverage. Callers typically render inside a SafeAreaView
+ *    (ScreenContainer), so a plain absoluteFill would stop at the safe-area
+ *    inset and leave un-covered strips under the status bar / home indicator
+ *    (the old `<Modal statusBarTranslucent>` covered those). We bleed past the
+ *    parent's insets with negative margins so the backdrop reaches the physical
+ *    screen edges.
+ *
+ * The children own their own enter/exit animation (every current caller already
+ * wraps its card in `Animated.View entering={FadeInUp...}`), so this primitive
+ * stays animation-agnostic and just manages mount lifetime + back handling.
+ *
+ * NOTE: the caller's screen must already be inside the app's window (every
+ * current caller renders the modal within its own screen), so no portal host is
+ * required — which matters here because native portals are disabled under
+ * Fabric.
+ */
+
+interface InlineOverlayProps {
+  visible: boolean;
+  /** Fired by Android hardware back. Should drive `visible` to false. */
+  onRequestClose: () => void;
+  /**
+   * How long to keep the layer mounted after `visible` flips false, so the
+   * children's exit animation can finish (default 220ms).
+   */
+  exitGraceMs?: number;
+  children: React.ReactNode;
+}
+
+export function InlineOverlay({
+  visible,
+  onRequestClose,
+  exitGraceMs = 220,
+  children,
+}: InlineOverlayProps) {
+  const insets = useSafeAreaInsets();
+
+  // Two-phase visibility (mirrors SuccessToast): show immediately, unmount only
+  // after the grace window so a child exit animation isn't cut off.
+  const [mounted, setMounted] = useState(visible);
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      return;
+    }
+    const t = setTimeout(() => setMounted(false), exitGraceMs);
+    return () => clearTimeout(t);
+  }, [visible, exitGraceMs]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onRequestClose();
+      return true;
+    });
+    return () => sub.remove();
+  }, [visible, onRequestClose]);
+
+  if (!mounted) return null;
+
+  // Negative insets bleed the layer past the parent SafeAreaView to the physical
+  // screen edges, so the backdrop is truly edge-to-edge.
+  return (
+    <View
+      style={[
+        StyleSheet.absoluteFill,
+        styles.layer,
+        {
+          top: -insets.top,
+          bottom: -insets.bottom,
+          left: -insets.left,
+          right: -insets.right,
+        },
+      ]}
+      pointerEvents="box-none"
+    >
+      {children}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  layer: {
+    zIndex: 1000,
+    elevation: 1000,
+  },
+});

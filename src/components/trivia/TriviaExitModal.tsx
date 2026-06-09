@@ -1,13 +1,14 @@
-import { Modal, Platform, Pressable } from 'react-native';
+import { Pressable } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { AlertTriangle, DoorOpen, X } from '@tamagui/lucide-icons';
-import { BlurView } from 'expo-blur';
 import { XStack, YStack } from 'tamagui';
 
 import { LAYOUT } from '../../config/app';
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { InlineOverlay } from '../InlineOverlay';
+import { ModalBackdrop } from '../ModalBackdrop';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 interface TriviaExitModalProps {
@@ -47,41 +48,13 @@ export function TriviaExitModal({
   const warningBgColor = isDark ? 'rgba(251, 191, 36, 0.15)' : 'rgba(245, 158, 11, 0.1)';
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onCancel}
-    >
+    <InlineOverlay visible={visible} onRequestClose={onCancel}>
       <YStack flex={1} justifyContent="center" alignItems="center" padding={spacing.md}>
-        {/* Blur/Overlay Background */}
-        {Platform.OS === 'ios' ? (
-          <BlurView
-            intensity={isDark ? 50 : 70}
-            tint={isDark ? 'dark' : 'light'}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-            }}
-          />
-        ) : (
-          <YStack
-            position="absolute"
-            top={0}
-            left={0}
-            right={0}
-            bottom={0}
-            backgroundColor={isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)'}
-          />
-        )}
-
-        {/* Backdrop tap to cancel */}
-        <Pressable
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        {/* Blur/glass backdrop + tap-to-cancel */}
+        <ModalBackdrop
+          isDark={isDark}
+          blurIntensity={isDark ? 50 : 70}
+          androidScrim={isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)'}
           onPress={onCancel}
         />
 
@@ -226,6 +199,6 @@ export function TriviaExitModal({
           </YStack>
         </Animated.View>
       </YStack>
-    </Modal>
+    </InlineOverlay>
   );
 }

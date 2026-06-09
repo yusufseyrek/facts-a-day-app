@@ -6,7 +6,7 @@ appId: dev.seyrek.factsaday
 ---
 # Navigate to trivia tab
 - tapOn:
-    id: "tab-trivia"
+    text: "Trivia"
     retryTapIfNoChange: true
 
 # Wait for trivia hub to load

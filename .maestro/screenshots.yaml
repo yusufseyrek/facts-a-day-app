@@ -25,7 +25,7 @@ appId: dev.seyrek.factsaday
 # Wait for app to fully load (tab bar visible)
 - extendedWaitUntil:
     visible:
-      id: 'tab-home'
+      text: 'Home'
     timeout: 20000
 
 # Wait for initial content to load (facts should appear)
@@ -74,4 +74,4 @@ appId: dev.seyrek.factsaday
 
 # Return to home
 - tapOn:
-    id: 'tab-home'
+    text: 'Home'

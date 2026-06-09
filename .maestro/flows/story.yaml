@@ -54,5 +54,5 @@ appId: dev.seyrek.factsaday
 # Wait for home tab to be visible again
 - extendedWaitUntil:
     visible:
-      id: "tab-home"
+      text: "Home"
     timeout: 5000

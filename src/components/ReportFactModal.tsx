@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import {
   Keyboard,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   ScrollView,
   TextInput,
@@ -19,6 +18,8 @@ import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { useResponsive } from '../utils/useResponsive';
 
 import { Button } from './Button';
+import { InlineOverlay } from './InlineOverlay';
+import { ModalBackdrop } from './ModalBackdrop';
 import { Text } from './Typography';
 
 interface ReportFactModalProps {
@@ -115,22 +116,21 @@ export function ReportFactModal({
   );
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
-      statusBarTranslucent
-    >
+    <InlineOverlay visible={visible} onRequestClose={handleClose}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
+        {/* Glass/blur scrim behind the (opaque) report card */}
+        <ModalBackdrop
+          isDark={theme === 'dark'}
+          blurIntensity={50}
+          androidScrim="rgba(0,0,0,0.5)"
+        />
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <YStack
             flex={1}
-            backgroundColor="rgba(0, 0, 0, 0.5)"
             justifyContent="center"
             alignItems="center"
             padding={spacing.lg}
@@ -233,6 +233,6 @@ export function ReportFactModal({
           </YStack>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
-    </Modal>
+    </InlineOverlay>
   );
 }

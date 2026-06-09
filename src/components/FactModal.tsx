@@ -23,7 +23,7 @@ import {
   RefreshCw,
   X,
 } from '@tamagui/lucide-icons';
-import { BlurView } from 'expo-blur';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -67,6 +67,7 @@ import { showRewardedAd } from './ads/RewardedAd';
 import { BannerAd } from './ads';
 import { CategoryBadge } from './CategoryBadge';
 import { FactActions } from './FactActions';
+import { GlassSurface } from './GlassSurface';
 import { RelatedFacts } from './RelatedFacts';
 import { FONT_FAMILIES, Text } from './Typography';
 
@@ -156,6 +157,8 @@ export function FactModal({
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const { isPremium } = usePremium();
+  // iOS 26: the bottom chrome floats over the scroll content (see bottomBarHeight).
+  const useGlassChrome = Platform.OS === 'ios' && isLiquidGlassAvailable();
   const {
     typography,
     spacing,
@@ -175,6 +178,10 @@ export function FactModal({
   const currentScrollY = useRef(0);
   const [titleHeight, setTitleHeight] = useState<number>(typography.lineHeight.headline); // Default to 1 line height
   const [containerWidth, setContainerWidth] = useState(SCREEN_WIDTH); // Actual modal width
+  // With Liquid Glass the bottom bar (banner + actions) floats over the scroll
+  // content so the glass has something to refract; the scroll content gets
+  // padded by the bar's measured height so nothing hides behind it.
+  const [bottomBarHeight, setBottomBarHeight] = useState(0);
   const [adUnlocked, setAdUnlocked] = useState(false);
 
   // Reset ad unlock when navigating to a different fact
@@ -956,6 +963,8 @@ export function FactModal({
         onScrollEndDrag={handleScrollEndDrag}
         onMomentumScrollEnd={checkScrolledToBottom}
         scrollEventThrottle={16}
+        // When the bottom chrome floats (glass), pad so content scrolls past it.
+        contentContainerStyle={useGlassChrome ? { paddingBottom: bottomBarHeight } : undefined}
         // Optimize scroll performance on Android
         removeClippedSubviews={Platform.OS === 'android'}
         stickyHeaderIndices={!hasImage ? [0] : undefined}
@@ -1389,25 +1398,39 @@ export function FactModal({
         </View>
       )}
 
-      {/* Anchored Banner Ad at bottom */}
-      <BannerAd />
+      {/* Bottom chrome: banner + action bar. With Liquid Glass it floats over
+          the scrolling content so the glass bar refracts it; otherwise it stays
+          an in-flow footer exactly as before. */}
+      <View
+        style={useGlassChrome ? { position: 'absolute', left: 0, right: 0, bottom: 0 } : undefined}
+        onLayout={
+          useGlassChrome
+            ? (e) => {
+                const h = Math.ceil(e.nativeEvent.layout.height);
+                if (h !== bottomBarHeight) setBottomBarHeight(h);
+              }
+            : undefined
+        }
+      >
+        <BannerAd />
 
-      <FactActions
-        factId={fact.id}
-        factSlug={fact.slug}
-        factTitle={fact.title}
-        factContent={fact.content}
-        imageUrl={imageUri || undefined}
-        category={fact.categoryData || fact.category}
-        sourceUrl={fact.source_url || undefined}
-        onNext={onNext}
-        onPrevious={onPrevious}
-        hasNext={hasNext}
-        hasPrevious={hasPrevious}
-        currentIndex={currentIndex}
-        totalCount={totalCount}
-        audioController={audioController}
-      />
+        <FactActions
+          factId={fact.id}
+          factSlug={fact.slug}
+          factTitle={fact.title}
+          factContent={fact.content}
+          imageUrl={imageUri || undefined}
+          category={fact.categoryData || fact.category}
+          sourceUrl={fact.source_url || undefined}
+          onNext={onNext}
+          onPrevious={onPrevious}
+          hasNext={hasNext}
+          hasPrevious={hasPrevious}
+          currentIndex={currentIndex}
+          totalCount={totalCount}
+          audioController={audioController}
+        />
+      </View>
 
       {/* Premium content gate — blurs everything for free users viewing premium facts */}
       {!isPremium && !adUnlocked && !!fact.categoryData?.is_premium && (
@@ -1467,16 +1490,15 @@ function PremiumGateOverlay({
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      {Platform.OS === 'ios' ? (
-        <BlurView intensity={50} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-      ) : (
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            { backgroundColor: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)' },
-          ]}
-        />
-      )}
+      {/* iOS 26 -> Liquid Glass; iOS<26 -> BlurView(50); Android -> opaque rgba.
+          The dim+card View below doubles as the dim layer regular glass needs. */}
+      <GlassSurface
+        variant="glass"
+        isDark={isDark}
+        tint={isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)'}
+        blurIntensity={50}
+        style={StyleSheet.absoluteFill}
+      />
       <View
         style={{
           ...absoluteFillObject,

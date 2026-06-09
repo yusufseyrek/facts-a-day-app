@@ -459,7 +459,7 @@ export default function TriviaScreen() {
           </ContentContainer>
         </ScrollView>
 
-        <BannerAd />
+        <BannerAd respectBottomInset />
       </YStack>
 
       {/* Trivia Intro Modal */}

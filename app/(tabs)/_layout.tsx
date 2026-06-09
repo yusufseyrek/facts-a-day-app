@@ -1,19 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
-import Reanimated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import { useCallback, useEffect, useState } from 'react';
+import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Brain, Compass, Heart, Lightbulb, Settings } from '@tamagui/lucide-icons';
-import { useFocusEffect } from 'expo-router';
-import { Tabs, usePathname } from 'expo-router';
-import { BottomTabBar } from 'expo-router/build/react-navigation/bottom-tabs';
+import { useFocusEffect, usePathname } from 'expo-router';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { GlobalProgressBar } from '../../src/components/GlobalProgressBar';
 import { OfflinePaywallSheet } from '../../src/components/OfflinePaywallSheet';
@@ -22,228 +12,32 @@ import { useOfflineAccess } from '../../src/hooks/useOfflineAccess';
 import { useTranslation } from '../../src/i18n';
 import * as triviaService from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
-import { useResponsive } from '../../src/utils/useResponsive';
-
-import type {
-  BottomTabBarButtonProps,
-  BottomTabBarProps,
-} from 'expo-router/build/react-navigation/bottom-tabs';
-
-// Context to share current tab name with tab buttons
-const CurrentTabContext = createContext<string>('index');
-
-interface AnimatedTabButtonProps extends BottomTabBarButtonProps {
-  tabName?: string;
-}
-
-function AnimatedTabButton({
-  children,
-  onPress,
-  onLongPress,
-  accessibilityLabel,
-  accessibilityRole,
-  accessibilityState,
-  testID,
-  tabName,
-}: AnimatedTabButtonProps) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const { scrollToTop } = useScrollToTop();
-  const currentTab = useContext(CurrentTabContext);
-
-  const handlePressIn = useCallback(() => {
-    Animated.spring(scale, {
-      toValue: 0.85,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 4,
-    }).start();
-  }, [scale]);
-
-  const handlePressOut = useCallback(() => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 20,
-      bounciness: 8,
-    }).start();
-  }, [scale]);
-
-  const handlePress = useCallback(
-    (e: any) => {
-      // Check if this tab is already the current tab
-      const isCurrentTab = tabName === currentTab;
-      if (__DEV__)
-        console.log(
-          `📜 Tab pressed: ${tabName}, currentTab: ${currentTab}, isCurrentTab: ${isCurrentTab}`
-        );
-      if (isCurrentTab && tabName) {
-        scrollToTop(tabName);
-      }
-      // Always call original onPress to handle navigation
-      onPress?.(e);
-    },
-    [tabName, currentTab, scrollToTop, onPress]
-  );
-
-  return (
-    <Pressable
-      onPress={handlePress}
-      onLongPress={onLongPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      accessibilityLabel={accessibilityLabel}
-      accessibilityRole={accessibilityRole}
-      accessibilityState={accessibilityState}
-      testID={testID}
-      style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-    >
-      <Animated.View style={{ transform: [{ scale }] }}>{children}</Animated.View>
-    </Pressable>
-  );
-}
-
-// Minimal trivia icon with solid background - uses app's primary cyan color
-function TriviaTabIcon({
-  focused,
-  isDark,
-  hasBadge,
-}: {
-  focused: boolean;
-  isDark: boolean;
-  hasBadge: boolean;
-}) {
-  const { iconSizes, spacing, radius } = useResponsive();
-  const theme = isDark ? 'dark' : 'light';
-  // Use the app's primary color for consistency
-  const bgColor = hexColors[theme].primary;
-  const glowColor = hexColors[theme].primaryGlow;
-
-  // Calculate container size: icon + padding on both sides
-  const containerPadding = spacing.sm;
-  const containerSize = iconSizes.lg + containerPadding * 2;
-  const badgeSize = Math.round(containerSize * 0.35);
-
-  // Pulse animation - only active when badge is visible
-  const pulseScale = useSharedValue(1);
-
-  useEffect(() => {
-    if (hasBadge) {
-      pulseScale.value = withRepeat(
-        withSequence(
-          withTiming(1.08, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1.0, { duration: 1200, easing: Easing.inOut(Easing.ease) })
-        ),
-        -1,
-        true
-      );
-    } else {
-      pulseScale.value = withTiming(1);
-    }
-  }, [hasBadge, pulseScale]);
-
-  const pulseAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseScale.value }],
-  }));
-
-  // Platform-specific glow styles
-  const glowStyle = Platform.select({
-    ios: {
-      shadowColor: hexColors[theme].primary,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.6,
-      shadowRadius: 10,
-    },
-    android: {
-      elevation: 8,
-      borderWidth: 1.5,
-      borderColor: glowColor,
-    },
-  });
-
-  const badgeColor = hexColors[theme].neonRed;
-
-  return (
-    <Reanimated.View style={pulseAnimStyle}>
-      <View
-        style={[
-          styles.triviaIconContainer,
-          glowStyle,
-          {
-            backgroundColor: bgColor,
-            opacity: focused ? 1 : 0.85,
-            padding: containerPadding,
-            width: containerSize,
-            height: containerSize,
-            borderRadius: radius.full,
-          },
-        ]}
-      >
-        <Brain size={iconSizes.lg} color="#FFFFFF" strokeWidth={focused ? 2.5 : 1.5} />
-        {hasBadge && (
-          <View
-            style={[
-              styles.triviaBadge,
-              {
-                width: badgeSize,
-                height: badgeSize,
-                borderRadius: badgeSize / 2,
-                top: -badgeSize * 0.15,
-                right: -badgeSize * 0.15,
-                backgroundColor: badgeColor,
-                // Badge glow
-                ...Platform.select({
-                  ios: {
-                    shadowColor: badgeColor,
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.5,
-                    shadowRadius: 4,
-                  },
-                  android: {
-                    elevation: 4,
-                  },
-                }),
-              },
-            ]}
-          />
-        )}
-      </View>
-    </Reanimated.View>
-  );
-}
-
-function CustomTabBar(props: BottomTabBarProps) {
-  return (
-    <>
-      <GlobalProgressBar />
-      <BottomTabBar {...props} />
-    </>
-  );
-}
-
-const styles = StyleSheet.create({
-  triviaIconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  triviaBadge: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
 
 export default function TabLayout() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { iconSizes, media, spacing } = useResponsive();
   const { shouldShowOfflineGate } = useOfflineAccess();
+  const { scrollToTop } = useScrollToTop();
   const [hasDailyTrivia, setHasDailyTrivia] = useState(false);
 
-  // Get current tab from pathname
+  // Current tab from the pathname ("/discover" -> "discover", "/" -> "index"),
+  // used to detect re-taps for the JS scroll-to-top contract (Android has no
+  // native re-tap scroll-to-top; iOS does both natively and via this, same end
+  // state).
   const pathname = usePathname();
-  // Pathname is like "/(tabs)/index" or "/(tabs)/discover" - extract tab name
   const currentTab = pathname.replace(/^\/(tabs\/)?/, '').split('/')[0] || 'index';
+
+  // Tab routes are groups (so each tab hosts a native-header Stack while URLs
+  // stay unchanged); map group route names to the ids the scroll-to-top
+  // handlers registered under.
+  const TAB_IDS: Record<string, string> = {
+    '(home)': 'index',
+    '(discover)': 'discover',
+    trivia: 'trivia',
+    '(favorites)': 'favorites',
+    '(settings)': 'settings',
+  };
 
   // Check for daily trivia availability
   const checkDailyTrivia = useCallback(async () => {
@@ -274,111 +68,85 @@ export default function TabLayout() {
   );
 
   const isDark = theme === 'dark';
+  const colors = hexColors[theme];
   // Use neon cyan for active tab - subtle but visible
-  const activeTintColor = isDark
-    ? hexColors.dark.primary // Neon cyan in dark mode
-    : hexColors.light.primary; // Toned cyan in light mode
-  const inactiveTintColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
-  const backgroundColor = isDark ? hexColors.dark.surface : hexColors.light.surface;
-  const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
+  const activeTintColor = colors.primary;
+  const inactiveTintColor = colors.textSecondary;
 
   return (
-    <CurrentTabContext.Provider value={currentTab}>
-      <Tabs
-        tabBar={(props) => <CustomTabBar {...props} />}
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: activeTintColor,
-          tabBarInactiveTintColor: inactiveTintColor,
-          tabBarShowLabel: false,
-          tabBarStyle: {
-            backgroundColor,
-            borderTopColor: borderColor,
-            borderTopWidth: 1,
-            height: media.tabBarHeight + insets.bottom + spacing.xs,
-            paddingBottom: (insets.bottom > 0 ? insets.bottom : 8) + spacing.xs,
-            paddingTop: 10,
-          },
+    <View style={{ flex: 1 }}>
+      {/* Native tab bar: true Liquid Glass floating bar on iOS 26 (minimizes on
+          scroll), system bar on older iOS, Material 3 bottom navigation on
+          Android. Re-tap natively pops the tab's stack to root and scrolls the
+          first scroll view to top on iOS; the JS listener below keeps the
+          existing scroll-to-top contract working on Android too. */}
+      <NativeTabs
+        tintColor={activeTintColor}
+        iconColor={inactiveTintColor}
+        labelStyle={{
+          default: { color: inactiveTintColor },
+          selected: { color: activeTintColor },
         }}
+        badgeBackgroundColor={colors.neonRed}
+        minimizeBehavior="onScrollDown"
+        backgroundColor={Platform.OS === 'android' ? colors.surface : undefined}
+        rippleColor={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}
+        indicatorColor={isDark ? colors.neutralLight : colors.primaryLight}
+        labelVisibilityMode="labeled"
+        screenListeners={({ route }) => ({
+          tabPress: () => {
+            const tabId = TAB_IDS[route.name] ?? route.name;
+            if (tabId === currentTab) {
+              scrollToTop(tabId);
+            }
+          },
+        })}
       >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: t('home'),
-            tabBarIcon: ({ color, focused }) => (
-              <Lightbulb
-                size={iconSizes.lg}
-                color={color as string}
-                strokeWidth={focused ? 2.5 : 1.5}
-              />
-            ),
-            tabBarButton: (props) => (
-              <AnimatedTabButton {...props} tabName="index" testID="tab-home" />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="discover"
-          options={{
-            title: t('discover'),
-            tabBarIcon: ({ color, focused }) => (
-              <Compass
-                size={iconSizes.lg}
-                color={color as string}
-                strokeWidth={focused ? 2.5 : 1.5}
-              />
-            ),
-            tabBarButton: (props) => (
-              <AnimatedTabButton {...props} tabName="discover" testID="tab-discover" />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="trivia"
-          options={{
-            title: t('trivia'),
-            tabBarIcon: ({ focused }) => (
-              <TriviaTabIcon focused={focused} isDark={isDark} hasBadge={hasDailyTrivia} />
-            ),
-            tabBarButton: (props) => (
-              <AnimatedTabButton {...props} tabName="trivia" testID="tab-trivia" />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="favorites"
-          options={{
-            title: t('favorites'),
-            tabBarIcon: ({ color, focused }) => (
-              <Heart
-                size={iconSizes.lg}
-                color={color as string}
-                strokeWidth={focused ? 2.5 : 1.5}
-              />
-            ),
-            tabBarButton: (props) => (
-              <AnimatedTabButton {...props} tabName="favorites" testID="tab-favorites" />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="settings"
-          options={{
-            title: t('settings'),
-            tabBarIcon: ({ color, focused }) => (
-              <Settings
-                size={iconSizes.lg}
-                color={color as string}
-                strokeWidth={focused ? 2.5 : 1.5}
-              />
-            ),
-            tabBarButton: (props) => (
-              <AnimatedTabButton {...props} tabName="settings" testID="tab-settings" />
-            ),
-          }}
-        />
-      </Tabs>
+        <NativeTabs.Trigger name="(home)">
+          <NativeTabs.Trigger.Icon
+            sf={{ default: 'lightbulb', selected: 'lightbulb.fill' }}
+            md="lightbulb"
+          />
+          <NativeTabs.Trigger.Label>{t('home')}</NativeTabs.Trigger.Label>
+        </NativeTabs.Trigger>
+
+        <NativeTabs.Trigger name="(discover)">
+          <NativeTabs.Trigger.Icon sf={{ default: 'safari', selected: 'safari.fill' }} md="explore" />
+          <NativeTabs.Trigger.Label>{t('discover')}</NativeTabs.Trigger.Label>
+        </NativeTabs.Trigger>
+
+        <NativeTabs.Trigger name="trivia">
+          <NativeTabs.Trigger.Icon sf="brain" md="psychology" />
+          <NativeTabs.Trigger.Label>{t('trivia')}</NativeTabs.Trigger.Label>
+          {/* Empty badge renders as a dot when daily trivia is available */}
+          {hasDailyTrivia ? <NativeTabs.Trigger.Badge /> : null}
+        </NativeTabs.Trigger>
+
+        <NativeTabs.Trigger name="(favorites)">
+          <NativeTabs.Trigger.Icon sf={{ default: 'heart', selected: 'heart.fill' }} md="favorite" />
+          <NativeTabs.Trigger.Label>{t('favorites')}</NativeTabs.Trigger.Label>
+        </NativeTabs.Trigger>
+
+        <NativeTabs.Trigger name="(settings)">
+          <NativeTabs.Trigger.Icon
+            sf={{ default: 'gearshape', selected: 'gearshape.fill' }}
+            md="settings"
+          />
+          <NativeTabs.Trigger.Label>{t('settings')}</NativeTabs.Trigger.Label>
+        </NativeTabs.Trigger>
+      </NativeTabs>
+
+      {/* Global progress strip: previously composed above the JS tab bar; the
+          native bar can't host JS children, so it now floats under the status
+          bar (renders null when idle). */}
+      <View
+        pointerEvents="none"
+        style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 500 }}
+      >
+        <GlobalProgressBar />
+      </View>
+
       {shouldShowOfflineGate && <OfflinePaywallSheet />}
-    </CurrentTabContext.Provider>
+    </View>
   );
 }

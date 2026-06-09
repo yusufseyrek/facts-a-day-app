@@ -6,7 +6,7 @@ appId: dev.seyrek.factsaday
 ---
 # Navigate to favorites tab
 - tapOn:
-    id: "tab-favorites"
+    text: "Favorites"
     retryTapIfNoChange: true
 
 # Wait for favorites content to load (optional — may be empty state)

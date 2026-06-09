@@ -6,6 +6,7 @@ import {
   BannerAdSize,
   TestIds,
 } from 'react-native-google-mobile-ads';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Constants from 'expo-constants';
 
@@ -19,6 +20,14 @@ type CollapsiblePlacement = 'top' | 'bottom';
 interface BannerAdProps {
   onAdLoadChange?: (loaded: boolean) => void;
   collapsible?: CollapsiblePlacement;
+  /**
+   * Pad the iOS safe-area bottom so the banner clears the floating native tab
+   * bar (inside tabs) or the home indicator (in stack screens). Android content
+   * is already inset by the native tabs SafeAreaView wrap, so this is iOS-only.
+   * Leave false where a sibling below the banner already handles the inset
+   * (e.g. FactModal's action bar).
+   */
+  respectBottomInset?: boolean;
 }
 
 const getAdUnitId = (): string => {
@@ -34,10 +43,11 @@ const getAdUnitId = (): string => {
 
 type AdState = 'loading' | 'loaded' | 'error';
 
-function BannerAdComponent({ onAdLoadChange, collapsible }: BannerAdProps) {
+function BannerAdComponent({ onAdLoadChange, collapsible, respectBottomInset }: BannerAdProps) {
   // Subscribe to premium context so component re-renders when premium status changes
   // (shouldShowAds() reads module-level state which doesn't trigger re-renders on its own)
   usePremium();
+  const insets = useSafeAreaInsets();
   const [canRequestAds, setCanRequestAds] = useState<boolean | null>(null);
   const [requestNonPersonalized, setRequestNonPersonalized] = useState(true);
   const [adState, setAdState] = useState<AdState>('loading');
@@ -105,6 +115,8 @@ function BannerAdComponent({ onAdLoadChange, collapsible }: BannerAdProps) {
   }
 
   const isVisible = adState === 'loaded';
+  const bottomPad =
+    respectBottomInset && isVisible && Platform.OS === 'ios' ? insets.bottom : 0;
 
   return (
     <View
@@ -113,6 +125,7 @@ function BannerAdComponent({ onAdLoadChange, collapsible }: BannerAdProps) {
         {
           height: isVisible ? undefined : 0,
           opacity: isVisible ? 1 : 0,
+          paddingBottom: bottomPad,
         },
       ]}
       collapsable={!isVisible}

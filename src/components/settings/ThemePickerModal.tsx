@@ -1,14 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
+import { Dimensions, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
 
 import { Moon, Smartphone, Sun, X } from '@tamagui/lucide-icons';
 
 import { useTranslation } from '../../i18n';
 import { trackThemeChange, updateThemeProperty } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
-import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { InlineOverlay } from '../InlineOverlay';
+import { ModalBackdrop } from '../ModalBackdrop';
 import { Text } from '../Typography';
 
 import type { TranslationKeys } from '../../i18n';
@@ -31,6 +32,7 @@ interface ThemeOption {
 export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({ visible, onClose }) => {
   const { theme, themeMode, setThemeMode } = useTheme();
   const colors = hexColors[theme];
+  const isDark = theme === 'dark';
   const { t } = useTranslation();
   const { spacing, radius, iconSizes, maxModalWidth } = useResponsive();
 
@@ -139,23 +141,26 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({ visible, onC
   );
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
+    <InlineOverlay
+      visible={visible}
+      onRequestClose={handleClose}
+      exitGraceMs={ANIMATION_DURATION + 40}
+    >
       <View style={styles.container}>
-        {showContent && (
-          <Animated.View
-            entering={FadeIn.duration(ANIMATION_DURATION)}
-            exiting={FadeOut.duration(ANIMATION_DURATION)}
-            style={styles.overlay}
-          />
-        )}
-        <Pressable style={styles.overlayPressable} onPress={handleClose}>
+        <ModalBackdrop
+          isDark={theme === 'dark'}
+          blurIntensity={isDark ? 50 : 70}
+          androidScrim="rgba(0,0,0,0.5)"
+          onPress={handleClose}
+        />
+        <View style={styles.overlayPressable} pointerEvents="box-none">
           {showContent && (
             <Animated.View
               entering={ZoomIn.duration(ANIMATION_DURATION)}
               exiting={ZoomOut.duration(ANIMATION_DURATION)}
               style={styles.animatedContainer}
             >
-              <Pressable onPress={(e) => e.stopPropagation()}>
+              <View>
                 <View
                   style={[
                     dynamicStyles.modalContainer,
@@ -225,22 +230,18 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({ visible, onC
                     </View>
                   </ScrollView>
                 </View>
-              </Pressable>
+              </View>
             </Animated.View>
           )}
-        </Pressable>
+        </View>
       </View>
-    </Modal>
+    </InlineOverlay>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  overlay: {
-    ...absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   overlayPressable: {
     flex: 1,

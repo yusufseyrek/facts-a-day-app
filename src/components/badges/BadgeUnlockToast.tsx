@@ -3,6 +3,7 @@ import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { XStack, YStack } from 'tamagui';
@@ -11,7 +12,9 @@ import { type BadgeStar, STAR_COLORS } from '../../config/badges';
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { GlassSurface } from '../GlassSurface';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import { BadgeIcon } from './BadgeIcon';
@@ -62,6 +65,10 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
   const { t } = useTranslation();
   const colors = hexColors[theme];
   const insets = useSafeAreaInsets();
+  const isDark = theme === 'dark';
+  // iOS 26: float the toast on Liquid Glass; opaque card elsewhere.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
+  const glassTint = isDark ? 'rgba(20,34,56,0.6)' : 'rgba(255,255,255,0.65)';
 
   const translateY = useRef(new Animated.Value(-200)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -151,7 +158,7 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
         }}
       >
         <XStack
-          backgroundColor={colors.cardBackground}
+          backgroundColor={useGlass ? 'transparent' : colors.cardBackground}
           borderRadius={radius.lg}
           overflow="hidden"
           alignItems="stretch"
@@ -163,6 +170,16 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
           borderWidth={1}
           borderColor={`${accentColor}20`}
         >
+          {useGlass ? (
+            <GlassSurface
+              variant="glass"
+              isDark={isDark}
+              tint={colors.cardBackground}
+              glassTint={glassTint}
+              style={absoluteFillObject}
+            />
+          ) : null}
+
           {/* Left accent gradient bar */}
           <LinearGradient
             colors={[accentColor, hexToRgba(accentColor, 0.6)]}

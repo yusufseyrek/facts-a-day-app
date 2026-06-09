@@ -2,31 +2,32 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import { FlashListRef } from '@shopify/flash-list';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { YStack } from 'tamagui';
 
-import { EmptyState, LoadingContainer, ScreenContainer } from '../../src/components';
-import { CategoryStoryButtonsRef } from '../../src/components/CategoryStoryButtons';
-import { HomeHeader, HomeListHeader, LocaleChangeOverlay } from '../../src/components/home';
-import { KeepReadingList } from '../../src/components/home/KeepReadingList';
-import { PAYWALL_PROMPT } from '../../src/config/app';
-import { queryClient } from '../../src/config/queryClient';
-import { usePremium, useScrollToTopHandler } from '../../src/contexts';
-import { factKeys, localStateKeys } from '../../src/hooks/queryKeys';
-import { useHomeFeed } from '../../src/hooks/useHomeFeed';
-import { useHomeFeedEvents } from '../../src/hooks/useHomeFeedEvents';
-import { useKeepReading } from '../../src/hooks/useKeepReading';
-import { useReadingStreak } from '../../src/hooks/useReadingStreak';
-import { useTranslation } from '../../src/i18n';
-import { Screens, trackFeedRefresh, trackScreenView } from '../../src/services/analytics';
-import { isModalScreenActive } from '../../src/services/badges';
-import { primePool } from '../../src/services/nativeAdPool';
-import { shouldShowPaywall } from '../../src/services/paywallTiming';
-import { hexColors, useTheme } from '../../src/theme';
+import { EmptyState, LoadingContainer, ScreenContainer } from '../../../src/components';
+import { ReadingStreakIndicator } from '../../../src/components/badges/ReadingStreakIndicator';
+import { CategoryStoryButtonsRef } from '../../../src/components/CategoryStoryButtons';
+import { HomeListHeader, LocaleChangeOverlay } from '../../../src/components/home';
+import { KeepReadingList } from '../../../src/components/home/KeepReadingList';
+import { PAYWALL_PROMPT } from '../../../src/config/app';
+import { queryClient } from '../../../src/config/queryClient';
+import { usePremium, useScrollToTopHandler } from '../../../src/contexts';
+import { factKeys, localStateKeys } from '../../../src/hooks/queryKeys';
+import { useHomeFeed } from '../../../src/hooks/useHomeFeed';
+import { useHomeFeedEvents } from '../../../src/hooks/useHomeFeedEvents';
+import { useKeepReading } from '../../../src/hooks/useKeepReading';
+import { useReadingStreak } from '../../../src/hooks/useReadingStreak';
+import { useTranslation } from '../../../src/i18n';
+import { Screens, trackFeedRefresh, trackScreenView } from '../../../src/services/analytics';
+import { isModalScreenActive } from '../../../src/services/badges';
+import { primePool } from '../../../src/services/nativeAdPool';
+import { shouldShowPaywall } from '../../../src/services/paywallTiming';
+import { hexColors, useTheme } from '../../../src/theme';
 
-import type { FactViewSource } from '../../src/services/analytics';
-import type { FactWithRelations } from '../../src/services/database';
+import type { FactViewSource } from '../../../src/services/analytics';
+import type { FactWithRelations } from '../../../src/services/database';
 
 function HomeScreen() {
   const { theme } = useTheme();

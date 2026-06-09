@@ -22,6 +22,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StoryNativeAdCard } from '../../src/components/ads/StoryNativeAdCard';
 import { CategoryBadge } from '../../src/components/CategoryBadge';
 import { FavoriteButton } from '../../src/components/FavoriteButton';
+import { GlassSurface } from '../../src/components/GlassSurface';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { NATIVE_ADS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
@@ -384,7 +385,7 @@ export default function StoryScreen() {
         viewabilityConfig={viewabilityConfig}
       />
 
-      {/* Close button */}
+      {/* Close button — floating Liquid Glass over the story imagery */}
       <View
         style={[
           styles.closeButtonContainer,
@@ -394,22 +395,30 @@ export default function StoryScreen() {
           },
         ]}
       >
-        <TouchableOpacity
-          testID="story-close-button"
-          onPress={handleClose}
-          activeOpacity={0.7}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={[
-            styles.closeButton,
-            {
-              width: iconSizes.xl,
-              height: iconSizes.xl,
-              borderRadius: radius.full,
-            },
-          ]}
+        <GlassSurface
+          variant="glass"
+          isDark={theme === 'dark'}
+          tint="rgba(0, 0, 0, 0.4)"
+          glassTint="rgba(0, 0, 0, 0.2)"
+          blurIntensity={30}
+          blurTint="dark"
+          style={{
+            width: iconSizes.xl,
+            height: iconSizes.xl,
+            borderRadius: radius.full,
+            overflow: 'hidden',
+          }}
         >
-          <X size={iconSizes.md} color="#FFFFFF" />
-        </TouchableOpacity>
+          <TouchableOpacity
+            testID="story-close-button"
+            onPress={handleClose}
+            activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={styles.closeButton}
+          >
+            <X size={iconSizes.md} color="#FFFFFF" />
+          </TouchableOpacity>
+        </GlassSurface>
       </View>
 
       {/* Scroll hint — circular progress on ad pause, bouncing chevron otherwise */}
@@ -689,7 +698,7 @@ const styles = StyleSheet.create({
     }),
   },
   closeButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

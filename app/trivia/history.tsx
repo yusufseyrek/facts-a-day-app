@@ -565,7 +565,7 @@ export default function ActivityHistoryScreen() {
         </View>
       </View>
 
-      <BannerAd />
+      <BannerAd respectBottomInset />
 
       {/* Loading overlay for session fetch */}
       {loadingSession && (

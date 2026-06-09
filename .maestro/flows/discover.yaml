@@ -6,7 +6,7 @@ appId: dev.seyrek.factsaday
 ---
 # Navigate to discover tab
 - tapOn:
-    id: "tab-discover"
+    text: "Discover"
     retryTapIfNoChange: true
 
 # Wait for categories to load

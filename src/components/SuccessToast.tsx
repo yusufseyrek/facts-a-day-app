@@ -1,11 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Modal, StyleSheet, View } from 'react-native';
+import { Animated, Platform, StyleSheet, View } from 'react-native';
 
 import { CheckCircle } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 
 import { hexColors, useTheme } from '../theme';
+import { absoluteFillObject } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
+import { GlassSurface } from './GlassSurface';
+import { InlineOverlay } from './InlineOverlay';
 import { Text } from './Typography';
 
 interface SuccessToastProps {
@@ -41,9 +45,14 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
 
   // Theme-aware colors
   const colors = hexColors[theme];
+  const isDark = theme === 'dark';
   const successColor = colors.success;
   const backgroundColor = colors.cardBackground;
   const textColor = colors.text;
+
+  // iOS 26: float the toast card on Liquid Glass; keep the opaque card elsewhere.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
+  const glassTint = isDark ? 'rgba(20,34,56,0.6)' : 'rgba(255,255,255,0.65)';
 
   useEffect(() => {
     if (visible) {
@@ -102,6 +111,8 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
       paddingVertical: spacing.xl,
       paddingHorizontal: spacing.xxl,
       borderRadius: radius.lg,
+      // Glass paints the fill; clip it to the rounded card and drop the opaque bg.
+      overflow: useGlass ? ('hidden' as const) : ('visible' as const),
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.2,
@@ -109,7 +120,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
       elevation: 5,
       minWidth: 200,
     }),
-    [spacing, radius]
+    [spacing, radius, useGlass]
   );
 
   const iconContainerStyle = useMemo(
@@ -126,19 +137,32 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
 
   if (!visible && !modalVisible) return null;
 
+  // Rendered inline (not in a <Modal>) so the glass card refracts the live screen
+  // behind it. The toast manages its own fade-out lifecycle via `modalVisible`,
+  // so InlineOverlay's own grace window is disabled. A toast is not
+  // back-dismissible, so hardware back is a no-op.
   return (
-    <Modal visible={modalVisible} transparent animationType="none" statusBarTranslucent>
-      <View style={styles.overlay}>
+    <InlineOverlay visible={modalVisible} onRequestClose={noop} exitGraceMs={0}>
+      <View style={styles.overlay} pointerEvents="box-none">
         <Animated.View
           style={[
             containerStyle,
             {
-              backgroundColor,
+              backgroundColor: useGlass ? 'transparent' : backgroundColor,
               opacity,
               transform: [{ scale }],
             },
           ]}
         >
+          {useGlass ? (
+            <GlassSurface
+              variant="glass"
+              isDark={isDark}
+              tint={backgroundColor}
+              glassTint={glassTint}
+              style={absoluteFillObject}
+            />
+          ) : null}
           <View style={[iconContainerStyle, { backgroundColor: `${successColor}20` }]}>
             {icon || <CheckCircle size={iconSizes.xl} color={successColor} />}
           </View>
@@ -147,9 +171,11 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
           </Text.Label>
         </Animated.View>
       </View>
-    </Modal>
+    </InlineOverlay>
   );
 };
+
+const noop = () => {};
 
 const styles = StyleSheet.create({
   overlay: {

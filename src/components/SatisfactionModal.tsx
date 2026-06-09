@@ -1,14 +1,16 @@
-import { Modal, Platform, Pressable } from 'react-native';
+import { useEffect } from 'react';
+import { Pressable } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { Heart, MessageCircle, X } from '@tamagui/lucide-icons';
-import { BlurView } from 'expo-blur';
 import { XStack, YStack } from 'tamagui';
 
 import { LAYOUT } from '../config/app';
 import { hexColors } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
+import { InlineOverlay } from './InlineOverlay';
+import { ModalBackdrop } from './ModalBackdrop';
 import { FONT_FAMILIES, Text } from './Typography';
 
 interface SatisfactionModalProps {
@@ -47,41 +49,18 @@ export function SatisfactionModal({
   const heartColor = isDark ? '#FF6B8A' : '#E8476C';
   const heartBgColor = isDark ? 'rgba(255, 107, 138, 0.15)' : 'rgba(232, 71, 108, 0.1)';
 
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onDismiss}
-      onShow={onShow}
-    >
-      <YStack flex={1} justifyContent="center" alignItems="center" padding={spacing.md}>
-        {Platform.OS === 'ios' ? (
-          <BlurView
-            intensity={35}
-            tint={isDark ? 'dark' : 'light'}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-            }}
-          />
-        ) : (
-          <YStack
-            position="absolute"
-            top={0}
-            left={0}
-            right={0}
-            bottom={0}
-            backgroundColor={isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)'}
-          />
-        )}
+  // Preserve the old <Modal onShow> callback (InlineOverlay has no onShow).
+  useEffect(() => {
+    if (visible) onShow?.();
+  }, [visible, onShow]);
 
-        <Pressable
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+  return (
+    <InlineOverlay visible={visible} onRequestClose={onDismiss}>
+      <YStack flex={1} justifyContent="center" alignItems="center" padding={spacing.md}>
+        <ModalBackdrop
+          isDark={isDark}
+          blurIntensity={35}
+          androidScrim={isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)'}
           onPress={onDismiss}
         />
 
@@ -209,6 +188,6 @@ export function SatisfactionModal({
           </YStack>
         </Animated.View>
       </YStack>
-    </Modal>
+    </InlineOverlay>
   );
 }
