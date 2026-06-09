@@ -542,7 +542,13 @@ const StoryPage = React.memo(
     const categorySlug = fact.categoryData?.slug || fact.category || 'unknown';
 
     const handleReadMore = useCallback(() => {
-      trackStoryReadMore({ factId: fact.id, category: categorySlug });
+      // Never let analytics abort navigation — a throw here previously meant the
+      // tap did "nothing".
+      try {
+        trackStoryReadMore({ factId: fact.id, category: categorySlug });
+      } catch {
+        // ignore analytics failures
+      }
       router.push(`/fact/${fact.id}?source=story`);
     }, [router, fact.id, categorySlug]);
 
