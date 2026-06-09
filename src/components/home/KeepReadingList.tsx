@@ -169,6 +169,9 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
     return (
       <FlashList
         ref={ref}
+        // Lets the iOS 26 native large-title header collapse/expand with the
+        // scroll and keeps content out from under the floating tab bar.
+        contentInsetAdjustmentBehavior="automatic"
         data={items}
         renderItem={renderItem}
         keyExtractor={keyExtractor}

@@ -33,6 +33,7 @@ function HomeScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
+  const navigation = useNavigation();
   const { isPremium } = usePremium();
 
   // Data hooks
@@ -40,6 +41,15 @@ function HomeScreen() {
     useHomeFeed(locale);
   const { facts: keepReadingFacts, fetchNextPage, isFetchingNextPage } = useKeepReading(locale);
   const { streak } = useReadingStreak();
+
+  // Reading streak lives in the native header (replaces the old HomeHeader row).
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <ReadingStreakIndicator streak={streak} onPress={() => router.push('/stats')} />
+      ),
+    });
+  }, [navigation, streak, router]);
 
   // Local state
   const [refreshing, setRefreshing] = useState(false);
@@ -193,7 +203,7 @@ function HomeScreen() {
   );
 
   return (
-    <ScreenContainer edges={['top']}>
+    <ScreenContainer edges={[]}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
 
       <YStack flex={1}>
@@ -205,8 +215,6 @@ function HomeScreen() {
           <EmptyState title={t('emptyStateTitle')} description={t('emptyStateDescription')} />
         ) : (
           <>
-            <HomeHeader isPremium={isPremium} streak={streak} />
-
             <View style={{ flex: 1 }}>
               <KeepReadingList
                 ref={keepReadingListRef}
