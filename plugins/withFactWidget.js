@@ -162,6 +162,12 @@ function syncWidgetVersionBuildSettings(xcodeProject, config) {
     ) {
       cfg.buildSettings.MARKETING_VERSION = config.version || '1.0';
       cfg.buildSettings.CURRENT_PROJECT_VERSION = String(config.ios?.buildNumber ?? '1');
+      // Keep the widget's signing team in lockstep with the main app on every
+      // prebuild (this runs even when the target already exists), so it never
+      // drifts back to "no team" and breaks local signing.
+      if (config.ios?.appleTeamId) {
+        cfg.buildSettings.DEVELOPMENT_TEAM = config.ios.appleTeamId;
+      }
     }
   }
 }
@@ -357,6 +363,14 @@ function withIOSWidgetTarget(config) {
           cfg.buildSettings.PRODUCT_NAME = `"$(TARGET_NAME)"`;
           cfg.buildSettings.SKIP_INSTALL = 'YES';
           cfg.buildSettings.GENERATE_INFOPLIST_FILE = 'NO';
+          // Expo's `ios.appleTeamId` sets DEVELOPMENT_TEAM on the MAIN app
+          // target only — the widget extension is added by us, so it inherits
+          // nothing and fails to sign ("No profiles for ...widget"). Mirror the
+          // same team here so local Xcode builds (expo run:ios) can sign the
+          // extension. Single source of truth: app.json ios.appleTeamId.
+          if (config.ios?.appleTeamId) {
+            cfg.buildSettings.DEVELOPMENT_TEAM = config.ios.appleTeamId;
+          }
         }
       }
 
