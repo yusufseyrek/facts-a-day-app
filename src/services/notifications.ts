@@ -154,8 +154,12 @@ export async function getExpoPushToken(): Promise<string | null> {
 /**
  * DEV/diagnostics: send a real push to THIS device through Expo's push service —
  * the exact transport the backend scheduler uses (Expo → APNs/FCM → device).
- * Unlike the local `scheduleNotificationAsync` test, this proves the full remote
- * pipeline end to end. Returns the Expo push ticket status for display.
+ *
+ * Crucially this checks the push *receipt*, not just the ticket. The ticket
+ * `status: ok` only means Expo accepted the message; the actual APNs/FCM
+ * delivery result (and any error like DeviceNotRegistered or an APNs/.p8
+ * credential problem) only shows up in the receipt a few seconds later. A push
+ * that "says ok but never arrives" almost always has a failing receipt.
  */
 export async function sendTestPushToSelf(factId?: number): Promise<{
   ok: boolean;
@@ -183,18 +187,62 @@ export async function sendTestPushToSelf(factId?: number): Promise<{
       }),
     });
     const json = (await res.json()) as {
-      data?: { status?: string; message?: string };
+      data?: { status?: string; message?: string; id?: string };
       errors?: unknown;
     };
-    const status = json?.data?.status;
-    if (status === 'ok') {
-      return { ok: true, detail: 'Expo accepted the push (status: ok).', token };
+    const ticket = json?.data;
+    if (ticket?.status !== 'ok') {
+      return {
+        ok: false,
+        detail: ticket?.message || JSON.stringify(json?.errors || json),
+        token,
+      };
     }
-    return {
-      ok: false,
-      detail: json?.data?.message || JSON.stringify(json?.errors || json),
-      token,
-    };
+
+    // Ticket accepted. Now confirm actual delivery via the receipt.
+    const ticketId = ticket.id;
+    if (!ticketId) {
+      return { ok: true, detail: 'Expo accepted the push (no ticket id to verify).', token };
+    }
+
+    // Receipts aren't instant; give Expo→APNs a moment, then poll a few times.
+    let lastDetail = 'Ticket accepted; receipt not ready yet.';
+    for (let attempt = 0; attempt < 4; attempt++) {
+      await new Promise((r) => setTimeout(r, 2500));
+      try {
+        const rcptRes = await fetch('https://exp.host/--/api/v2/push/getReceipts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: [ticketId] }),
+        });
+        const rcptJson = (await rcptRes.json()) as {
+          data?: Record<
+            string,
+            { status?: string; message?: string; details?: { error?: string } }
+          >;
+        };
+        const receipt = rcptJson?.data?.[ticketId];
+        if (!receipt) {
+          lastDetail = 'Receipt not available yet (Expo still processing).';
+          continue;
+        }
+        if (receipt.status === 'ok') {
+          return { ok: true, detail: 'Delivered ✅ (APNs/FCM accepted the push).', token };
+        }
+        // Receipt error = the real reason it never arrived.
+        const err = receipt.details?.error;
+        return {
+          ok: false,
+          detail: `Receipt error: ${err || receipt.status}${
+            receipt.message ? ` — ${receipt.message}` : ''
+          }`,
+          token,
+        };
+      } catch {
+        lastDetail = 'Receipt fetch failed (network).';
+      }
+    }
+    return { ok: false, detail: lastDetail, token };
   } catch (e) {
     return { ok: false, detail: e instanceof Error ? e.message : 'send failed', token };
   }

@@ -7,11 +7,14 @@ import {
 } from '../../config/app';
 
 // ---------------------------------------------------------------------------
-// DEV_SETTINGS_ENABLED — must be false before shipping
+// DEV_SETTINGS_ENABLED — tied to __DEV__ so it's stripped from prod builds
 // ---------------------------------------------------------------------------
 describe('DEV_SETTINGS_ENABLED', () => {
-  it('must be false so dev settings are not exposed in production builds', () => {
-    expect(DEV_SETTINGS_ENABLED).toBe(false);
+  it('mirrors __DEV__ so dev settings show in dev builds and never in production', () => {
+    // Production bundles set __DEV__ === false, which forces this off; the test
+    // env runs with __DEV__ === true. Asserting equality pins the intent: the
+    // flag is on exactly when (and only when) the build is a development build.
+    expect(DEV_SETTINGS_ENABLED).toBe(__DEV__);
   });
 });
 

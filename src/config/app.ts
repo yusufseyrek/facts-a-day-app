@@ -6,10 +6,12 @@
  */
 
 /**
- * Set to true to show developer settings section in the Settings screen.
- * Only works when __DEV__ is true.
+ * Whether to show the developer settings section (test push, ad inspector,
+ * etc.) in the Settings screen. Tied to __DEV__ so it appears automatically in
+ * dev / Expo dev-client builds and is always stripped from production bundles
+ * (where __DEV__ === false). No manual toggle to forget before shipping.
  */
-export const DEV_SETTINGS_ENABLED = false;
+export const DEV_SETTINGS_ENABLED = __DEV__;
 
 /**
  * Ads configuration
