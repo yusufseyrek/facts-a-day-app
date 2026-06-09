@@ -89,3 +89,47 @@ export function useFactDetail(factId: number, locale: string) {
     initialDataUpdatedAt: 0,
   });
 }
+
+/**
+ * Warm the detail cache for given fact ids so swiping prev/next in the detail
+ * screen is instant. Needed because some list surfaces (e.g. Discover's
+ * category browse) hold their facts in local state, not React Query — so
+ * useFactDetail can't seed from cache and falls back to a blocking network
+ * fetch (the "long spinner" on every switch). Prefetching the neighbors removes
+ * that wait. No-op for ids already cached and fresh.
+ */
+export function usePrefetchFactDetails(locale: string) {
+  const queryClient = useQueryClient();
+  return (factIds: number[]) => {
+    for (const id of factIds) {
+      if (!Number.isFinite(id) || id <= 0) continue;
+      queryClient.prefetchQuery({
+        queryKey: factKeys.detail(locale, id),
+        queryFn: () => getFactById(id, locale, false),
+        // Don't refetch if we already have a usable cached entry.
+        staleTime: 1000 * 60 * 5,
+      });
+    }
+  };
+}
+
+/**
+ * Prime the detail cache directly from a list of already-fetched facts. Use
+ * when a surface fetches facts into LOCAL state (Discover category browse,
+ * search) rather than via a React Query key useFactDetail scans — seeding here
+ * means opening any of them, and swiping between them, is instant with zero
+ * extra network. Only seeds full records (with content); skips ids already
+ * cached so a richer cached copy isn't clobbered.
+ */
+export function useSeedFactDetailsCache(locale: string) {
+  const queryClient = useQueryClient();
+  return (facts: FactResponse[]) => {
+    for (const fact of facts) {
+      if (!fact || typeof fact.id !== 'number' || typeof fact.content !== 'string') continue;
+      const key = factKeys.detail(locale, fact.id);
+      if (queryClient.getQueryData(key) === undefined) {
+        queryClient.setQueryData(key, fact);
+      }
+    }
+  };
+}

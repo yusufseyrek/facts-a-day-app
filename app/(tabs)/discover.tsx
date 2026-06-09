@@ -32,6 +32,7 @@ import { ImageFactCard } from '../../src/components/ImageFactCard';
 import { LAYOUT, NATIVE_ADS } from '../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../src/config/factListSettings';
 import { usePremium, useScrollToTopHandler } from '../../src/contexts';
+import { useSeedFactDetailsCache } from '../../src/hooks/useFactDetail';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
@@ -186,6 +187,10 @@ function DiscoverScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const { isTablet, typography, spacing, iconSizes, config, media, radius } = useResponsive();
+  // Seed the fact-detail cache from browse/search results (which live in local
+  // state, not React Query) so opening any of them — and swiping between them —
+  // is instant instead of triggering a blocking per-fact fetch.
+  const seedFactDetailsCache = useSeedFactDetailsCache(locale);
   const { isPremium } = usePremium();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -272,6 +277,7 @@ function DiscoverScreen() {
           language: locale,
           categories: categorySlug || undefined,
         });
+        seedFactDetailsCache(facts);
         const results: FactWithRelations[] = facts.map(mapApiFactToRelations);
 
         setSearchResults(sortByImageAvailability(results));
@@ -289,7 +295,7 @@ function DiscoverScreen() {
         setIsSearching(false);
       }
     },
-    [locale]
+    [locale, seedFactDetailsCache]
   );
 
   // Track screen view when tab is focused
@@ -380,9 +386,10 @@ function DiscoverScreen() {
         categories: categorySlug,
         limit: CATEGORY_BROWSE_LIMIT,
       });
+      seedFactDetailsCache(res.facts);
       return res.facts.map(mapApiFactToRelations);
     },
-    [locale]
+    [locale, seedFactDetailsCache]
   );
 
   const handleRefresh = useCallback(async () => {

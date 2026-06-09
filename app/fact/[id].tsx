@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Text } from '../../src/components';
 import { FactModal } from '../../src/components/FactModal';
-import { useFactDetail } from '../../src/hooks/useFactDetail';
+import { useFactDetail, usePrefetchFactDetails } from '../../src/hooks/useFactDetail';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackFactView, trackScreenView } from '../../src/services/analytics';
 import * as database from '../../src/services/database';
@@ -70,6 +70,18 @@ export default function FactDetailModal() {
     () => (apiFact ? database.mapApiFactToRelations(apiFact) : null),
     [apiFact]
   );
+
+  // Warm the cache for the adjacent facts so swiping prev/next is instant —
+  // some list surfaces (Discover category browse) keep facts in local state, so
+  // without this the next fact isn't cached and triggers a blocking fetch.
+  const prefetchFactDetails = usePrefetchFactDetails(locale);
+  useEffect(() => {
+    if (!factIds || overrideFactId !== null) return;
+    const neighbors: number[] = [];
+    if (currentIndex + 1 < factIds.length) neighbors.push(factIds[currentIndex + 1]);
+    if (currentIndex - 1 >= 0) neighbors.push(factIds[currentIndex - 1]);
+    if (neighbors.length > 0) prefetchFactDetails(neighbors);
+  }, [factIds, currentIndex, overrideFactId, prefetchFactDetails]);
 
   useEffect(() => {
     trackScreenView(Screens.FACT_DETAIL);
