@@ -969,6 +969,19 @@ export function FactModal({
                     setIsImageLoaded(true);
                     setDisplayedImageUri(imageUri);
                   }}
+                  onDisplay={() => {
+                    // expo-image v56 + Glide on Android can drop the onLoad
+                    // dispatch on this front layer when a same-uri Image
+                    // (the modal-hero background copy) co-mounts in the same
+                    // commit — leaving isImageLoaded false, so the opaque
+                    // placeholder overlay stays on top and the front image
+                    // reads as blank (until scroll reveals the background copy).
+                    // onDisplay fires when the bitmap is actually painted to
+                    // THIS view, surviving the race, so it reliably clears the
+                    // placeholder. Idempotent with onLoad.
+                    setIsImageLoaded(true);
+                    setDisplayedImageUri(imageUri);
+                  }}
                   onError={() => setIsImageError(true)}
                 />
               </Animated.View>
