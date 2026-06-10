@@ -111,8 +111,8 @@ function CircularProgress({
   );
 }
 
-// One stat line of the support column: frosted icon plate + fixed value slot
-// + label/micro stack.
+// One stat line of the support column: frosted icon plate tightly coupled to
+// its value + label/micro stack.
 function StatRow({
   icon,
   plateBg,
@@ -122,7 +122,6 @@ function StatRow({
   microActive,
   valueMuted = false,
   contrastColor,
-  valueSlotWidth,
 }: {
   icon: ReactNode;
   plateBg: string;
@@ -132,7 +131,6 @@ function StatRow({
   microActive: boolean;
   valueMuted?: boolean;
   contrastColor: string;
-  valueSlotWidth: number;
 }) {
   const { typography, iconSizes, spacing } = useResponsive();
   return (
@@ -148,15 +146,9 @@ function StatRow({
       >
         {icon}
       </YStack>
-      {/* Fixed slot: shared width keeps the label column aligned across rows
-          at any digit count; fixed height keeps rows level at one title line.
-          Right-aligned so the digits share a common edge against the labels. */}
-      <YStack
-        minWidth={valueSlotWidth}
-        height={typography.lineHeight.title}
-        justifyContent="center"
-        alignItems="flex-end"
-      >
+      {/* Fixed height keeps rows level at one title line; the value sits
+          directly after the plate so the pair reads as one unit. */}
+      <YStack height={typography.lineHeight.title} justifyContent="center">
         <Text.Title
           fontFamily={FONT_FAMILIES.bold}
           color={contrastColor}
@@ -201,7 +193,7 @@ export function TriviaStatsHero({
   t,
   onPress,
 }: TriviaStatsHeroProps) {
-  const { typography, iconSizes, spacing, radius, borderWidths, media } = useResponsive();
+  const { iconSizes, spacing, radius, borderWidths, media } = useResponsive();
   const accuracy = stats?.accuracy ?? 0;
   const testsTaken = stats?.testsTaken ?? 0;
   // currentStreak IS the daily play streak (getDailyStreak) — the same number
@@ -251,17 +243,6 @@ export function TriviaStatsHero({
   // Deco-circle driver: identical to TriviaGridCard's iconContainerSize so the
   // corner texture matches the grid tiles.
   const s = media.topicCardSize * 0.7;
-  // Shared value-slot width: Montserrat Bold digits ≈ 0.62em; 0.65 adds safety.
-  // All three rows share it, so a 4-digit value cannot break alignment.
-  const valueDigits = Math.max(
-    String(testsTaken).length,
-    String(currentStreak).length,
-    String(totalCorrect).length
-  );
-  const valueSlotWidth = Math.max(
-    iconSizes.xxl,
-    Math.ceil(valueDigits * typography.fontSize.title * 0.65)
-  );
 
   const tinyLabelProps = {
     color: contrastColor,
@@ -357,7 +338,7 @@ export function TriviaStatsHero({
                 % fits the 84pt inner diameter without auto-shrinking — iOS
                 collapses adjustsFontSizeToFit text inside flex rows); the
                 label sits under the ring where it has the full column width. */}
-            <YStack flex={1} alignItems="center" gap={spacing.xs}>
+            <YStack width="50%" alignItems="center" gap={spacing.xs}>
               <CircularProgress
                 percentage={hasData ? accuracy : 0}
                 size={iconSizes.heroXl}
@@ -390,7 +371,7 @@ export function TriviaStatsHero({
             </YStack>
 
             {hasData ? (
-              <YStack flex={1} gap={spacing.sm}>
+              <YStack width="50%" gap={spacing.sm}>
                 <StatRow
                   icon={<Zap size={iconSizes.xs} color={contrastColor} />}
                   plateBg={plateBg}
@@ -398,9 +379,7 @@ export function TriviaStatsHero({
                   label={t('quizzes')}
                   micro={t('thisWeek', { count: testsThisWeek })}
                   microActive={testsThisWeek > 0}
-                  contrastColor={contrastColor}
-                  valueSlotWidth={valueSlotWidth}
-                />
+                  contrastColor={contrastColor}                />
                 {/* Streak value muted at 0 as a dormant comeback cue; the Best
                     micro line is always inactive (reference, not a delta). */}
                 <StatRow
@@ -411,9 +390,7 @@ export function TriviaStatsHero({
                   micro={t('best', { count: bestStreak })}
                   microActive={false}
                   valueMuted={currentStreak === 0}
-                  contrastColor={contrastColor}
-                  valueSlotWidth={valueSlotWidth}
-                />
+                  contrastColor={contrastColor}                />
                 {topCategory ? (
                   /* DORMANT branch (see topCategory above). Icon stays
                      contrastColor — never topCategory.color_hex — so the
@@ -455,13 +432,11 @@ export function TriviaStatsHero({
                     label={t('correct')}
                     micro={t('todayCount', { count: correctToday })}
                     microActive={correctToday > 0}
-                    contrastColor={contrastColor}
-                    valueSlotWidth={valueSlotWidth}
-                  />
+                    contrastColor={contrastColor}                  />
                 )}
               </YStack>
             ) : (
-              <YStack flex={1} justifyContent="center">
+              <YStack width="50%" justifyContent="center">
                 {/* No numberOfLines: long-locale sentences wrap (the German
                    noTestsYet string is 60 chars). */}
                 <Text.Label
