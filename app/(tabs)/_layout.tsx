@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,7 +12,7 @@ import { useScrollToTop } from '../../src/contexts';
 import { InsideTabsProvider } from '../../src/contexts/InsideTabsContext';
 import { useOfflineAccess } from '../../src/hooks/useOfflineAccess';
 import { useTranslation } from '../../src/i18n';
-import { setLastNonSearchTabPath } from '../../src/services/tabHistory';
+import { emitSearchSessionReset, setLastNonSearchTabPath } from '../../src/services/tabHistory';
 import * as triviaService from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
 
@@ -55,9 +55,20 @@ export default function TabLayout() {
   // screen's ✕/cancel handler navigates back to it — see tabHistory.ts for why
   // the tab bar itself never sees the ✕ press). Guarded by TAB_PATHS so non-tab
   // routes like /fact/123 are never recorded.
+  //
+  // Also ends the search session when the user leaves the search tab for a
+  // real tab: the search screen clears its query/category scope so the next
+  // entry targets ALL facts. Leaving to a non-tab route (a fact opened from
+  // results) keeps the session — returning from it must not lose the browse.
+  const prevTabRef = useRef(currentTab);
   useEffect(() => {
+    const prevTab = prevTabRef.current;
+    prevTabRef.current = currentTab;
     if (currentTab !== 'search' && TAB_PATHS[currentTab]) {
       setLastNonSearchTabPath(TAB_PATHS[currentTab]);
+      if (prevTab === 'search') {
+        emitSearchSessionReset();
+      }
     }
   }, [currentTab]);
 

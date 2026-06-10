@@ -45,7 +45,7 @@ import { primePool } from '../../../src/services/nativeAdPool';
 import { getIsConnected } from '../../../src/services/network';
 import { getSelectedCategories } from '../../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../../src/services/preferences';
-import { getLastNonSearchTabPath } from '../../../src/services/tabHistory';
+import { getLastNonSearchTabPath, onSearchSessionReset } from '../../../src/services/tabHistory';
 import { hexColors, useTheme } from '../../../src/theme';
 import { blendHexColors, hexToHue, hexToRgba } from '../../../src/utils/colors';
 import {
@@ -182,6 +182,25 @@ function SearchScreen() {
     setTimeout(() => {
       suppressCancelExitRef.current = false;
     }, 500);
+  }, []);
+
+  // End-of-session reset, emitted by the tabs layout when this tab is left for
+  // another real tab (✕ exit or direct tab switch). Clears the scope so the
+  // next entry into search mode targets ALL facts — without this, re-opening
+  // search resurrected the previous "Search in <category>" browse. Fires while
+  // the screen is unfocused, so the user never sees the state flip. The native
+  // field is uncontrolled and must be cleared explicitly; cancelSearch() is
+  // deliberately NOT called here (its native cancel event would re-trigger the
+  // exit-search navigation).
+  useEffect(() => {
+    return onSearchSessionReset(() => {
+      setSelectedCategorySlug(null);
+      setCategoryFacts([]);
+      setSearchQuery('');
+      setSearchResults([]);
+      setIsSearching(false);
+      searchBarRef.current?.clearText();
+    });
   }, []);
 
   // Scroll handlers to track offsets
