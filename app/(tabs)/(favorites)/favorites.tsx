@@ -6,7 +6,7 @@ import {
   RefreshControl,
   ScrollView,
 } from 'react-native';
-import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import { FlashList } from '@shopify/flash-list';
 import { Heart } from '@tamagui/lucide-icons';
@@ -34,7 +34,7 @@ import * as api from '../../../src/services/api';
 import { getFavoriteIds, mapApiFactToRelations } from '../../../src/services/database';
 import { primePool } from '../../../src/services/nativeAdPool';
 import { hexColors, useTheme } from '../../../src/theme';
-import { getContrastColor } from '../../../src/utils/colors';
+import { getContrastColor, hexToRgba } from '../../../src/utils/colors';
 import {
   insertNativeAds,
   isNativeAdPlaceholder,
@@ -105,27 +105,38 @@ export default function FavoritesScreen() {
   });
 
   // Search lives in the native header search bar (replaces the old in-screen
-  // search row). Set once on mount: the state setters are stable, and
-  // re-setting the options would recreate the native search bar mid-use.
+  // search row). Hidden while there is nothing to search — with no favorites
+  // the bar is dead weight over the empty state. Re-set only when crossing the
+  // empty/non-empty boundary: the state setters are stable, and re-setting the
+  // options on every render would recreate the native search bar mid-use.
+  const showSearchBar = !initialLoading && favorites.length > 0;
   useEffect(() => {
     navigation.setOptions({
-      headerSearchBarOptions: {
-        placeholder: t('searchFavorites'),
-        onChangeText: (e: NativeSyntheticEvent<{ text: string }>) =>
-          setSearchQuery(e.nativeEvent.text),
-        onCancelButtonPress: () => {
-          setSearchQuery('');
-          setDebouncedQuery('');
-        },
-        // onCancelButtonPress is iOS-only; Android's collapse event is onClose.
-        onClose: () => {
-          setSearchQuery('');
-          setDebouncedQuery('');
-        },
-        hideWhenScrolling: false,
-      },
+      headerSearchBarOptions: showSearchBar
+        ? {
+            placeholder: t('searchFavorites'),
+            onChangeText: (e: NativeSyntheticEvent<{ text: string }>) =>
+              setSearchQuery(e.nativeEvent.text),
+            onCancelButtonPress: () => {
+              setSearchQuery('');
+              setDebouncedQuery('');
+            },
+            // onCancelButtonPress is iOS-only; Android's collapse event is onClose.
+            onClose: () => {
+              setSearchQuery('');
+              setDebouncedQuery('');
+            },
+            hideWhenScrolling: false,
+          }
+        : undefined,
     });
-  }, [navigation]);
+    if (!showSearchBar) {
+      // The bar may disappear mid-query (last favorite removed): drop the
+      // query state too, or a phantom filter survives into the next session.
+      setSearchQuery('');
+      setDebouncedQuery('');
+    }
+  }, [navigation, showSearchBar]);
 
   const loadFavorites = useCallback(
     async (isRefresh = false) => {
@@ -323,14 +334,18 @@ export default function FavoritesScreen() {
       <ScreenContainer edges={[]}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <LoadingContainer>
-          <ActivityIndicator size="large" color={hexColors.light.primary} />
+          <ActivityIndicator size="large" color={hexColors[theme].primary} />
         </LoadingContainer>
       </ScreenContainer>
     );
   }
 
-  // Empty state: no favorites at all
+  // Empty state: no favorites at all. Heart hero in a neon ring with a soft
+  // glow halo (same neon accent language as the home category rings), staggered
+  // entrances, CTA into discover. The header search bar is hidden in this state.
   if (favorites.length === 0) {
+    const neonRed = hexColors[theme].neonRed;
+
     return (
       <ScreenContainer edges={[]}>
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
@@ -339,31 +354,55 @@ export default function FavoritesScreen() {
           justifyContent="center"
           alignItems="center"
           padding={spacing.xl}
-          gap={spacing.lg}
+          gap={spacing.xl}
         >
-          <YStack
-            width={120}
-            height={120}
-            borderRadius={radius.full}
-            backgroundColor="$primaryLight"
-            alignItems="center"
-            justifyContent="center"
-            marginBottom={spacing.md}
+          <Animated.View entering={FadeInDown.duration(400)}>
+            <YStack alignItems="center" justifyContent="center">
+              {/* Soft halo behind the ring */}
+              <YStack
+                position="absolute"
+                width={190}
+                height={190}
+                borderRadius={95}
+                backgroundColor={hexToRgba(neonRed, theme === 'dark' ? 0.08 : 0.06)}
+              />
+              <YStack
+                width={130}
+                height={130}
+                borderRadius={65}
+                alignItems="center"
+                justifyContent="center"
+                backgroundColor="$surface"
+                borderWidth={1}
+                borderColor={hexToRgba(neonRed, theme === 'dark' ? 0.45 : 0.3)}
+                style={{
+                  shadowColor: neonRed,
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: theme === 'dark' ? 0.35 : 0.25,
+                  shadowRadius: 24,
+                  elevation: 6,
+                }}
+              >
+                <Heart size={iconSizes.hero} color={neonRed} fill={neonRed} />
+              </YStack>
+            </YStack>
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(80).duration(400)}>
+            <YStack alignItems="center" gap={spacing.sm} maxWidth={LAYOUT.MAX_CONTENT_WIDTH}>
+              <Text.Headline textAlign="center">{t('noFavorites')}</Text.Headline>
+              <Text.Body textAlign="center" color="$textSecondary">
+                {t('noFavoritesDescription')}
+              </Text.Body>
+            </YStack>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(160).duration(400)}
+            style={{ width: '100%', maxWidth: 280 }}
           >
-            <Heart
-              size={iconSizes.hero}
-              color={theme === 'dark' ? hexColors.dark.neonRed : hexColors.light.neonRed}
-            />
-          </YStack>
-          <YStack alignItems="center" gap={spacing.md} maxWidth={LAYOUT.MAX_CONTENT_WIDTH}>
-            <Text.Headline textAlign="center">{t('noFavorites')}</Text.Headline>
-            <Text.Body textAlign="center" color="$textSecondary">
-              {t('noFavoritesDescription')}
-            </Text.Body>
-          </YStack>
-          <YStack width="100%" maxWidth={280} marginTop={spacing.md}>
             <Button onPress={() => router.push('/(tabs)/search')}>{t('discoverFacts')}</Button>
-          </YStack>
+          </Animated.View>
         </YStack>
       </ScreenContainer>
     );
