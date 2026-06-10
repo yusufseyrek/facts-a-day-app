@@ -14,13 +14,14 @@ import {
   WifiOff,
   X,
 } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { ErrorCode, useIAP } from 'expo-iap';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { SuccessToast, Text } from '../src/components';
+import { GlassSurface, SuccessToast, Text } from '../src/components';
 import { FONT_FAMILIES } from '../src/components/Typography';
 import { SUBSCRIPTION } from '../src/config/app';
 
@@ -33,6 +34,7 @@ import { openDatabase } from '../src/services/database';
 import { markPaywallShown } from '../src/services/paywallTiming';
 import { hexColors, PAYWALL_GOLD, paywallThemeColors, useTheme } from '../src/theme';
 import { openInAppBrowser } from '../src/utils/browser';
+import { hexToRgba } from '../src/utils/colors';
 import { useResponsive } from '../src/utils/useResponsive';
 
 const WEEKS_PER_MONTH = 52 / 12;
@@ -95,6 +97,17 @@ export default function PaywallScreen() {
   const { spacing, radius, iconSizes, media, borderWidths } = useResponsive();
   const tc = paywallThemeColors[theme];
   const isDark = theme === 'dark';
+
+  // iOS 26 Liquid Glass: the paywall tiles/controls go transparent and a glass
+  // material (tinted with the same token that used to be their fill) shows
+  // through, matching the trivia cards / FactActions treatment. On Android,
+  // iOS < 26 and reduce-transparency the GlassSurface is simply not mounted,
+  // so the current opaque look is untouched.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
+  // GlassView tints must be LOW-alpha for the refraction to show through.
+  // Dark-theme tokens are already low-alpha rgba (pass through); light-theme
+  // fills are opaque hex (#FFFFFF) and get softened here.
+  const glassTintOf = (color: string) => (color.startsWith('#') ? hexToRgba(color, 0.65) : color);
   const { isPremium, subscriptions, cachedPrices, restorePurchases, devSetPremium } = usePremium();
   const { requestPurchase } = useSafeIAP();
 
@@ -329,9 +342,10 @@ export default function PaywallScreen() {
           width: closeBtnSize,
           height: closeBtnSize,
           borderRadius: closeBtnRadius,
-          backgroundColor: tc.closeBtn,
+          backgroundColor: useGlass ? 'transparent' : tc.closeBtn,
           alignItems: 'center',
           justifyContent: 'center',
+          ...(useGlass && { overflow: 'hidden' as const }),
         },
         scrollContent: {
           flexGrow: 1,
@@ -365,13 +379,18 @@ export default function PaywallScreen() {
           borderRadius: radius.lg,
           borderWidth: 1,
         },
+        // Under glass the cards keep only MEANINGFUL borders (gold accents);
+        // neutral hairlines are dropped (width kept so layout doesn't shift) —
+        // the glass material's specular rim takes over that job.
         statStreakCard: {
-          backgroundColor: tc.featureBg,
+          backgroundColor: useGlass ? 'transparent' : tc.featureBg,
           borderColor: tc.featureBorder,
+          ...(useGlass && { overflow: 'hidden' as const }),
         },
         statNeutralCard: {
-          backgroundColor: tc.planBg,
-          borderColor: tc.planBorder,
+          backgroundColor: useGlass ? 'transparent' : tc.planBg,
+          borderColor: useGlass ? 'transparent' : tc.planBorder,
+          ...(useGlass && { overflow: 'hidden' as const }),
         },
         statStreakIcon: {
           width: statIconCircleSize,
@@ -406,12 +425,13 @@ export default function PaywallScreen() {
           textShadowRadius: isDark ? 24 : 0,
         },
         benefitCard: {
-          backgroundColor: tc.featureBg,
+          backgroundColor: useGlass ? 'transparent' : tc.featureBg,
           borderRadius: radius.lg,
           borderWidth: 1,
           borderColor: tc.featureBorder,
           paddingVertical: spacing.sm + 2,
           paddingHorizontal: spacing.md,
+          ...(useGlass && { overflow: 'hidden' as const }),
         },
         benefitIcon: {
           width: benefitIconCircleSize,
@@ -429,23 +449,29 @@ export default function PaywallScreen() {
           paddingHorizontal: spacing.md,
           borderRadius: radius.lg,
           borderWidth: borderWidths.thin,
-          borderColor: tc.planBorder,
-          backgroundColor: tc.planBg,
+          borderColor: useGlass ? 'transparent' : tc.planBorder,
+          backgroundColor: useGlass ? 'transparent' : tc.planBg,
           minHeight: media.buttonHeight + spacing.lg,
+          // NO overflow:'hidden' here — the SAVE badge hangs over the top edge.
+          // The glass layer rounds itself via its borderRadius prop instead.
         },
         planCardSelected: {
           borderColor: tc.planSelectedBorder,
-          backgroundColor: tc.planSelectedBg,
+          backgroundColor: useGlass ? 'transparent' : tc.planSelectedBg,
           // iOS-only soft glow. Android `elevation` renders an opaque drop-shadow
           // that looks like a thick inner shadow on the translucent gold fill.
-          ...Platform.select({
-            ios: {
-              shadowColor: PAYWALL_GOLD.primary,
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: isDark ? 0.18 : 0.12,
-              shadowRadius: 24,
-            },
-          }),
+          // Skipped under glass: a shadow on a transparent-bg view casts from
+          // child pixels, not the native glass material, and renders artifacts —
+          // the gold border + gold glass tint carry the selection emphasis there.
+          ...(!useGlass &&
+            Platform.select({
+              ios: {
+                shadowColor: PAYWALL_GOLD.primary,
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: isDark ? 0.18 : 0.12,
+                shadowRadius: 24,
+              },
+            })),
         },
         savingsBadge: {
           position: 'absolute',
@@ -488,6 +514,7 @@ export default function PaywallScreen() {
     [
       tc,
       isDark,
+      useGlass,
       spacing,
       radius,
       iconSizes,
@@ -543,11 +570,24 @@ export default function PaywallScreen() {
         <LinearGradient colors={[...tc.ambientGlow]} style={StyleSheet.absoluteFill} />
       </View>
 
-      {/* Close button */}
+      {/* Close button — interactive glass circle on iOS 26 */}
       <Pressable onPress={handleClose} hitSlop={spacing.lg} style={dynamicStyles.closeButton}>
-        <View style={dynamicStyles.closeButtonInner}>
-          <X size={iconSizes.sm} color={tc.closeIcon} />
-        </View>
+        {useGlass ? (
+          <GlassSurface
+            variant="glass"
+            isDark={isDark}
+            tint={tc.closeBtn}
+            isInteractive
+            borderRadius={closeBtnRadius}
+            style={dynamicStyles.closeButtonInner}
+          >
+            <X size={iconSizes.sm} color={tc.closeIcon} />
+          </GlassSurface>
+        ) : (
+          <View style={dynamicStyles.closeButtonInner}>
+            <X size={iconSizes.sm} color={tc.closeIcon} />
+          </View>
+        )}
       </Pressable>
 
       {/* Group 1 — Wordmark, pinned at the top */}
@@ -584,6 +624,16 @@ export default function PaywallScreen() {
             <Animated.View entering={FadeInDown.delay(80).duration(400)}>
               <XStack gap={spacing.sm + 2} style={dynamicStyles.statsRow}>
                 <View style={[dynamicStyles.statCard, dynamicStyles.statStreakCard]}>
+                  {useGlass && (
+                    <GlassSurface
+                      variant="glass"
+                      isDark={isDark}
+                      tint={tc.featureBg}
+                      glassTint={glassTintOf(tc.featureBg)}
+                      borderRadius={radius.lg}
+                      style={StyleSheet.absoluteFill}
+                    />
+                  )}
                   <XStack alignItems="center" gap={spacing.sm + 3}>
                     <LinearGradient
                       colors={[PAYWALL_GOLD.light, PAYWALL_GOLD.primary]}
@@ -617,6 +667,16 @@ export default function PaywallScreen() {
                 </View>
 
                 <View style={[dynamicStyles.statCard, dynamicStyles.statNeutralCard]}>
+                  {useGlass && (
+                    <GlassSurface
+                      variant="glass"
+                      isDark={isDark}
+                      tint={tc.planBg}
+                      glassTint={glassTintOf(tc.planBg)}
+                      borderRadius={radius.lg}
+                      style={StyleSheet.absoluteFill}
+                    />
+                  )}
                   <XStack alignItems="center" gap={spacing.sm + 3}>
                     <View style={dynamicStyles.statNeutralIcon}>
                       <BookOpen size={iconSizes.sm} color={tc.featureDesc} />
@@ -677,6 +737,16 @@ export default function PaywallScreen() {
           {benefits.map((b, i) => (
             <Animated.View key={i} entering={FadeInDown.delay(200 + i * 70).duration(400)}>
               <View style={dynamicStyles.benefitCard}>
+                {useGlass && (
+                  <GlassSurface
+                    variant="glass"
+                    isDark={isDark}
+                    tint={tc.featureBg}
+                    glassTint={glassTintOf(tc.featureBg)}
+                    borderRadius={radius.lg}
+                    style={StyleSheet.absoluteFill}
+                  />
+                )}
                 <XStack alignItems="center" gap={spacing.md}>
                   <View style={dynamicStyles.benefitIcon}>{b.icon}</View>
                   <YStack flex={1} gap={1}>
@@ -707,6 +777,17 @@ export default function PaywallScreen() {
                   <View
                     style={[dynamicStyles.planCard, selected && dynamicStyles.planCardSelected]}
                   >
+                    {useGlass && (
+                      <GlassSurface
+                        variant="glass"
+                        isDark={isDark}
+                        tint={selected ? tc.planSelectedBg : tc.planBg}
+                        glassTint={glassTintOf(selected ? tc.planSelectedBg : tc.planBg)}
+                        isInteractive
+                        borderRadius={radius.lg}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    )}
                     {monthly && (
                       <View style={dynamicStyles.savingsBadge}>
                         <LinearGradient

@@ -98,7 +98,6 @@ const phoneMedia = {
   clearButtonSize: 28,
   chipHeight: 28,
   chipClearButtonSize: 20,
-  categoryIconContainerSize: 48,
   answerLabelWidth: 70,
   compactCardThumbnailSize: 84,
   keepReadingImageSize: 105,

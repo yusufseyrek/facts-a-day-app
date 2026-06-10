@@ -46,7 +46,6 @@ import { getSelectedCategories } from '../../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../../src/services/preferences';
 import { hexColors, useTheme } from '../../../src/theme';
 import { blendHexColors, hexToHue, hexToRgba } from '../../../src/utils/colors';
-import { getLucideIcon } from '../../../src/utils/iconMapper';
 import {
   insertNativeAds,
   isNativeAdPlaceholder,
@@ -82,11 +81,6 @@ const CategoryRow = styled(XStack, {
 const DiscoverCategoryCard = styled(XStack, {
   flex: 1,
   alignItems: 'center',
-});
-
-const DiscoverCategoryIconContainer = styled(YStack, {
-  alignItems: 'center',
-  justifyContent: 'center',
 });
 
 const DiscoverCategoryTextContainer = styled(YStack, {
@@ -671,7 +665,6 @@ function SearchScreen() {
     // Show category grid when no search has been performed and no category is selected
     if (!hasQuery && !selectedCategorySlug) {
       const numColumns = config.discoverColumns;
-      const iconSize = iconSizes.md;
 
       // Split categories into rows of 2 (or 3 on tablet)
       const rows: Category[][] = [];
@@ -767,19 +760,6 @@ function SearchScreen() {
                               paddingHorizontal={spacing.md}
                               gap={spacing.md}
                             >
-                              <DiscoverCategoryIconContainer
-                                width={media.categoryIconContainerSize}
-                                height={media.categoryIconContainerSize}
-                                borderRadius={media.categoryIconContainerSize / 2}
-                                style={{
-                                  backgroundColor: hexToRgba(
-                                    categoryColor,
-                                    theme === 'dark' ? 0.18 : 0.12
-                                  ),
-                                }}
-                              >
-                                {getLucideIcon(category.icon, iconSize, categoryColor)}
-                              </DiscoverCategoryIconContainer>
                               <DiscoverCategoryTextContainer gap={2}>
                                 <Text.Label
                                   color="$text"
