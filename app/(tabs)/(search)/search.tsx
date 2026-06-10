@@ -12,6 +12,7 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { styled, View } from '@tamagui/core';
 import { ChevronRight, X } from '@tamagui/lucide-icons';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -45,6 +46,7 @@ import { primePool } from '../../../src/services/nativeAdPool';
 import { getIsConnected } from '../../../src/services/network';
 import { getSelectedCategories } from '../../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../../src/services/preferences';
+import { getLastNonSearchTabPath } from '../../../src/services/tabHistory';
 import { hexColors, useTheme } from '../../../src/theme';
 import { blendHexColors, hexToHue, hexToRgba } from '../../../src/utils/colors';
 import {
@@ -179,13 +181,24 @@ function SearchScreen() {
 
   const categoryGridRef = useRef<ScrollView>(null);
 
+  // Programmatic cancelSearch() goes through the same native path as the
+  // user's ✕ (RNSSearchBar cancelSearch calls searchBarCancelButtonClicked),
+  // so it ALSO fires onCancelButtonPress. This flag marks those programmatic
+  // cancels so the iOS 26 exit-search navigation doesn't trigger for them.
+  const suppressCancelExitRef = useRef(false);
+
   const clearCategoryFilter = useCallback(() => {
     setSelectedCategorySlug(null);
     setCategoryFacts([]);
     setSearchQuery('');
     setSearchResults([]);
+    suppressCancelExitRef.current = true;
     searchBarRef.current?.clearText();
     searchBarRef.current?.cancelSearch();
+    // The native event is delivered async; clear the flag well after it lands.
+    setTimeout(() => {
+      suppressCancelExitRef.current = false;
+    }, 500);
   }, []);
 
   // Scroll handlers to track offsets
@@ -285,11 +298,26 @@ function SearchScreen() {
     useCallback(() => {
       if (Platform.OS !== 'ios') return;
       const { hasQuery, hasCategory } = searchActivityRef.current;
-      if (hasQuery || hasCategory) return;
       // Deferred: the native search bar attaches via navigation.setOptions
       // after mount, so an immediate focus() can hit a null ref.
-      const timer = setTimeout(() => searchBarRef.current?.focus(), 100);
-      return () => clearTimeout(timer);
+      let blurTimer: ReturnType<typeof setTimeout> | undefined;
+      const timer = setTimeout(() => {
+        searchBarRef.current?.focus();
+        if (hasQuery || hasCategory) {
+          // Returning to an active query / category browse: the focus() is only
+          // to ACTIVATE the UISearchController (see below), not to type — drop
+          // the keyboard again immediately.
+          // iOS 26 search-role tab: the ✕ in the tab bar only emits
+          // onCancelButtonPress while the controller is active; if it was never
+          // activated, UIKit swallows the press entirely and search mode can't
+          // be exited. Keeping the controller active makes ✕ reliable.
+          blurTimer = setTimeout(() => searchBarRef.current?.blur(), 60);
+        }
+      }, 100);
+      return () => {
+        clearTimeout(timer);
+        if (blurTimer) clearTimeout(blurTimer);
+      };
     }, [])
   );
 
@@ -409,6 +437,18 @@ function SearchScreen() {
     setIsSearching(false);
   }, []);
 
+  // iOS 26 search-role tab: the ✕ next to the tab-bar-integrated search field
+  // is this search bar's CANCEL button — UIKit swallows it without touching
+  // tab selection (no tab event ever reaches JS, verified against
+  // react-native-screens 4.25.2), so exiting search mode is implemented here:
+  // cancel = leave the search tab, back to wherever the user came from.
+  const exitSearchOnCancel = Platform.OS === 'ios' && isLiquidGlassAvailable();
+  const handleCancelButtonPress = useCallback(() => {
+    clearSearch();
+    if (!exitSearchOnCancel || suppressCancelExitRef.current) return;
+    router.navigate(getLastNonSearchTabPath());
+  }, [clearSearch, exitSearchOnCancel, router]);
+
   // Selected category name — drives the search bar placeholder below. Derived
   // before the header effect so the effect can depend on the primitive string.
   const selectedCategoryName = useMemo(
@@ -436,7 +476,8 @@ function SearchScreen() {
         hideWhenScrolling: false,
         onChangeText: (e: { nativeEvent: { text: string } }) =>
           handleSearchChange(e.nativeEvent.text),
-        onCancelButtonPress: clearSearch,
+        // iOS ✕/Cancel: clears state and (on iOS 26) exits the search tab.
+        onCancelButtonPress: handleCancelButtonPress,
         // onCancelButtonPress is iOS-only; Android's collapse event is onClose.
         // Without it, closing the toolbar search leaves stale results state.
         onClose: clearSearch,
@@ -464,6 +505,7 @@ function SearchScreen() {
     t,
     handleSearchChange,
     clearSearch,
+    handleCancelButtonPress,
     selectedCategoryName,
     clearCategoryFilter,
     iconSizes.md,

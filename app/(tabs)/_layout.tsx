@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { useFocusEffect, usePathname, useRouter } from 'expo-router';
+import { useFocusEffect, usePathname } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { GlobalProgressBar } from '../../src/components/GlobalProgressBar';
@@ -12,6 +11,7 @@ import { useScrollToTop } from '../../src/contexts';
 import { InsideTabsProvider } from '../../src/contexts/InsideTabsContext';
 import { useOfflineAccess } from '../../src/hooks/useOfflineAccess';
 import { useTranslation } from '../../src/i18n';
+import { setLastNonSearchTabPath } from '../../src/services/tabHistory';
 import * as triviaService from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
 
@@ -50,20 +50,13 @@ export default function TabLayout() {
     '(settings)': 'settings',
   };
 
-  // iOS 26 Liquid Glass splits the role="search" tab into the standalone
-  // trailing search button; while the search tab is active that button renders
-  // as ✕ ("close search"). UIKit delivers the ✕ press as a REPEATED selection
-  // of the search tab — react-native-screens blocks the native effect (it
-  // interferes with JS-controlled tabs) and re-emits it as `tabPress`, so the
-  // "return to where the user came from" policy has to be implemented here.
-  // Track the last non-search TAB (guarded by TAB_PATHS so non-tab routes like
-  // /fact/123 never get recorded) to know where ✕ should land.
-  const router = useRouter();
-  const useSeparatedSearchTab = Platform.OS === 'ios' && isLiquidGlassAvailable();
-  const lastNonSearchTabRef = useRef('index');
+  // Record the last non-search tab for the iOS 26 search-exit flow (the search
+  // screen's ✕/cancel handler navigates back to it — see tabHistory.ts for why
+  // the tab bar itself never sees the ✕ press). Guarded by TAB_PATHS so non-tab
+  // routes like /fact/123 are never recorded.
   useEffect(() => {
     if (currentTab !== 'search' && TAB_PATHS[currentTab]) {
-      lastNonSearchTabRef.current = currentTab;
+      setLastNonSearchTabPath(TAB_PATHS[currentTab]);
     }
   }, [currentTab]);
 
@@ -124,27 +117,12 @@ export default function TabLayout() {
           labelVisibilityMode="labeled"
           screenListeners={({ route }) => ({
             tabPress: () => {
-              const tabId = TAB_IDS[route.name] ?? route.name;
-
-              // iOS 26: a re-tap of the ACTIVE search tab is the separated
-              // search button's ✕ — exit search mode by jumping back to the
-              // tab the user was on (its stack/scroll state is preserved by
-              // the native tabs, so home resumes exactly where it was).
-              if (
-                useSeparatedSearchTab &&
-                tabId === 'search' &&
-                currentTab === 'search'
-              ) {
-                router.navigate(TAB_PATHS[lastNonSearchTabRef.current] ?? '/');
-                return;
-              }
-
-              // Android only below: iOS re-tap scrolls natively, and UIKit lands
-              // at the ADJUSTED top (negative offset under the translucent
-              // large-title header). The JS handlers scroll to offset 0, which is
-              // BELOW that — they'd override the native scroll and cut off the
-              // list header.
+              // Android only: iOS re-tap scrolls natively, and UIKit lands at the
+              // ADJUSTED top (negative offset under the translucent large-title
+              // header). The JS handlers scroll to offset 0, which is BELOW that
+              // — they'd override the native scroll and cut off the list header.
               if (Platform.OS !== 'android') return;
+              const tabId = TAB_IDS[route.name] ?? route.name;
               if (tabId === currentTab) {
                 scrollToTop(tabId);
               }
