@@ -16,7 +16,10 @@ export const DEV_SETTINGS_ENABLED = __DEV__;
 /**
  * Ads configuration
  */
-export const ADS_ENABLED = true;
+export const ADS_ENABLED = false;
+
+// todo: reports system for users to report issues with facts, should get replies. consider sending them push notifications when their report is taken care of.
+// todo: consider adding comments section for each fact, with upvoting and sorting by top / new. would increase engagement and time in app, but also requires active moderation to prevent abuse and misinformation. could start with just a simple free-form comment box without threading or voting to test demand before building out more features.
 
 /**
  * App Check settings for Firebase App Check initialization
