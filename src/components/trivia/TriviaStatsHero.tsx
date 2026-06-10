@@ -8,7 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
-import { ChevronRight, Target } from '@tamagui/lucide-icons';
+import { Check, ChevronRight, Flame, Target, Zap } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { XStack, YStack } from 'tamagui';
 
@@ -111,8 +111,11 @@ function CircularProgress({
   );
 }
 
-// One stat line of the support column: fixed value slot + label/micro stack.
+// One stat line of the support column: frosted icon plate + fixed value slot
+// + label/micro stack.
 function StatRow({
+  icon,
+  plateBg,
   value,
   label,
   micro,
@@ -121,6 +124,8 @@ function StatRow({
   contrastColor,
   valueSlotWidth,
 }: {
+  icon: ReactNode;
+  plateBg: string;
   value: number;
   label: string;
   micro: string;
@@ -129,9 +134,20 @@ function StatRow({
   contrastColor: string;
   valueSlotWidth: number;
 }) {
-  const { typography, spacing } = useResponsive();
+  const { typography, iconSizes, spacing } = useResponsive();
   return (
     <XStack alignItems="center" gap={spacing.sm}>
+      {/* Frosted plate, half-size sibling of the grid cards' icon plates */}
+      <YStack
+        width={iconSizes.xl}
+        height={iconSizes.xl}
+        borderRadius={iconSizes.xl / 2}
+        backgroundColor={plateBg}
+        justifyContent="center"
+        alignItems="center"
+      >
+        {icon}
+      </YStack>
       {/* Fixed slot: shared width keeps the label column aligned across rows
           at any digit count; fixed height keeps rows level at one title line.
           Right-aligned so the digits share a common edge against the labels. */}
@@ -307,18 +323,12 @@ export function TriviaStatsHero({
           }}
         />
         <YStack padding={spacing.lg} gap={spacing.md}>
-          {/* Header row. Text.Label bold = the grid cards' title preset; hero
-              hierarchy comes from width, the ring, and the two-hue gradient,
-              not type size. */}
+          {/* Header row: full Title size so the card title owns the
+              hierarchy; the Details pill stays a quiet Caption-sized control. */}
           <XStack justifyContent="space-between" alignItems="center">
-            <Text.Label
-              flex={1}
-              fontFamily={FONT_FAMILIES.bold}
-              color={contrastColor}
-              numberOfLines={1}
-            >
+            <Text.Title flex={1} color={contrastColor} numberOfLines={1}>
               {t('yourPerformance')}
-            </Text.Label>
+            </Text.Title>
             {hasData && (
               /* Frosted pill: same contrast-plate alpha the grid cards use for
                  their icon plates, so the affordance reads as a real button. */
@@ -330,8 +340,10 @@ export function TriviaStatsHero({
                 borderRadius={radius.full}
                 backgroundColor={plateBg}
               >
-                <Text.Label color={contrastColor}>{t('details')}</Text.Label>
-                <ChevronRight size={iconSizes.md} color={contrastColor} opacity={0.78} />
+                <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={contrastColor}>
+                  {t('details')}
+                </Text.Caption>
+                <ChevronRight size={iconSizes.sm} color={contrastColor} opacity={0.78} />
               </XStack>
             )}
           </XStack>
@@ -339,38 +351,47 @@ export function TriviaStatsHero({
           {/* Body row — one skeleton for filled and empty so the empty state
               previews the filled geometry and cannot drift out of sync. */}
           <XStack alignItems="center" gap={spacing.lg}>
-            <CircularProgress
-              percentage={hasData ? accuracy : 0}
-              size={iconSizes.heroXl}
-              strokeWidth={borderWidths.extraHeavy}
-              progressColor={contrastColor}
-              trackColor={plateBg}
-            >
-              {hasData ? (
-                <>
+            {/* Ring column: number stays full Display size (a 0-100 value plus
+                % fits the 84pt inner diameter without auto-shrinking — iOS
+                collapses adjustsFontSizeToFit text inside flex rows); the
+                label sits under the ring where it has the full column width. */}
+            <YStack alignItems="center" gap={spacing.xs}>
+              <CircularProgress
+                percentage={hasData ? accuracy : 0}
+                size={iconSizes.heroXl}
+                strokeWidth={borderWidths.extraHeavy}
+                progressColor={contrastColor}
+                trackColor={plateBg}
+              >
+                {hasData ? (
                   <XStack alignItems="baseline">
-                    {/* adjustsFontSizeToFit bounds the 3-digit "100%" case
-                        inside the ring's inner diameter at the display
-                        preset's max font multiplier. */}
-                    <Text.Display color={contrastColor} numberOfLines={1} adjustsFontSizeToFit>
+                    <Text.Display color={contrastColor} numberOfLines={1}>
                       {accuracy}
                     </Text.Display>
-                    <Text.Caption fontFamily={FONT_FAMILIES.bold} color={contrastColor} opacity={0.78}>
+                    <Text.Caption
+                      fontFamily={FONT_FAMILIES.bold}
+                      color={contrastColor}
+                      opacity={0.78}
+                    >
                       %
                     </Text.Caption>
                   </XStack>
-                  <Text.Tiny {...tinyLabelProps} numberOfLines={1} adjustsFontSizeToFit>
-                    {t('accuracy')}
-                  </Text.Tiny>
-                </>
-              ) : (
-                <Target size={iconSizes.lg} color={contrastColor} />
+                ) : (
+                  <Target size={iconSizes.lg} color={contrastColor} />
+                )}
+              </CircularProgress>
+              {hasData && (
+                <Text.Tiny {...tinyLabelProps} numberOfLines={1}>
+                  {t('accuracy')}
+                </Text.Tiny>
               )}
-            </CircularProgress>
+            </YStack>
 
             {hasData ? (
               <YStack flex={1} gap={spacing.sm}>
                 <StatRow
+                  icon={<Zap size={iconSizes.xs} color={contrastColor} />}
+                  plateBg={plateBg}
                   value={testsTaken}
                   label={t('quizzes')}
                   micro={t('thisWeek', { count: testsThisWeek })}
@@ -381,6 +402,8 @@ export function TriviaStatsHero({
                 {/* Streak value muted at 0 as a dormant comeback cue; the Best
                     micro line is always inactive (reference, not a delta). */}
                 <StatRow
+                  icon={<Flame size={iconSizes.xs} color={contrastColor} />}
+                  plateBg={plateBg}
                   value={currentStreak}
                   label={t('dayStreak')}
                   micro={t('best', { count: bestStreak })}
@@ -393,12 +416,17 @@ export function TriviaStatsHero({
                   /* DORMANT branch (see topCategory above). Icon stays
                      contrastColor — never topCategory.color_hex — so the
                      all-contrast signature holds. */
-                  <XStack
-                    alignItems="center"
-                    gap={spacing.sm}
-                    minHeight={typography.lineHeight.title}
-                  >
-                    {getLucideIcon(topCategory.icon, iconSizes.xs, contrastColor)}
+                  <XStack alignItems="center" gap={spacing.sm}>
+                    <YStack
+                      width={iconSizes.xl}
+                      height={iconSizes.xl}
+                      borderRadius={iconSizes.xl / 2}
+                      backgroundColor={plateBg}
+                      justifyContent="center"
+                      alignItems="center"
+                    >
+                      {getLucideIcon(topCategory.icon, iconSizes.xs, contrastColor)}
+                    </YStack>
                     <YStack flex={1} justifyContent="center">
                       <Text.Caption
                         fontFamily={FONT_FAMILIES.semibold}
@@ -419,6 +447,8 @@ export function TriviaStatsHero({
                   </XStack>
                 ) : (
                   <StatRow
+                    icon={<Check size={iconSizes.xs} color={contrastColor} />}
+                    plateBg={plateBg}
                     value={totalCorrect}
                     label={t('correct')}
                     micro={t('todayCount', { count: correctToday })}
