@@ -235,10 +235,23 @@ Source: came across this in Facts a Day — they curate facts from real articles
 | DE | Täglich Wissen: Entdecke Mehr | Ausgewählte Fakten & Trivia |
 | ES | Datos Diarios: Saber Más | Datos Verificados & Trivia |
 | FR | Savoir du Jour: Quiz & Faits | Faits Vérifiés & Quiz du Jour |
-| JA | 毎日の雑学 - 知識を深めよう | 厳選された雑学 & デイリートリビア |
-| KO | 매일 상식 - 지식을 넓히세요 | 엄선된 상식 & 데일리 트리비아 |
-| ZH | 每日知识 - 拓展你的视野 | 精选知识 · 每日问答挑战 |
+| JA | 毎日の雑学・豆知識 - 教養と知識が身につくクイズアプリ | 1日3分で世界を学ぶ・厳選トリビア&一般常識テスト |
+| KO | 매일 상식 - 교양과 지식이 쌓이는 잡학 퀴즈 | 하루 3분 두뇌 트레이닝, 오늘의 시사 & 트리비아 |
+| ZH | 每日知识 - 趣味冷知识百科与益智问答挑战 | 精选科普、人文历史与天文地理，开拓你的眼界 |
 | TR | Günlük Bilgi: Keşfet & Öğren | Gerçek Kaynaklı Bilgi & Quiz |
+
+### iOS Metadata-Only Locales
+
+Beyond the 8 app languages, the iOS listing is localized (name, subtitle, keywords,
+description) for 26 additional App Store locales: ar-SA, ca, cs, da, el, fi, he, hi,
+hr, hu, id, it, ms, nl-NL, no, pl, pt-BR, pt-PT, ro, ru, sk, sv, th, uk, vi, zh-Hant.
+
+Policy for these locales:
+- App name keeps the English brand: `Facts a Day: <localized keyword tail>` (zh-Hant mirrors the zh-Hans brand 每日知識)
+- App UI is NOT localized; users get one of the 8 supported languages (the description's language list states this)
+- Legal links point to the English pages (factsaday.com/en/terms, /en/privacy); zh-Hant uses /zh/
+- Screenshots are not localized; the English set shows via App Store fallback
+- Android (Google Play) is unaffected: still 8 locales only
 
 ---
 

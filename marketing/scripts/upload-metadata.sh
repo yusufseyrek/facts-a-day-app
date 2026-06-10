@@ -35,7 +35,14 @@ ANDROID_PACKAGE_NAME="dev.seyrek.factsaday"
 METADATA_FILE="$MARKETING_DIR/config/metadata.json"
 
 # Supported locales (internal codes)
-ALL_LOCALES=("en" "de" "es" "fr" "ja" "ko" "tr" "zh")
+# First 8 are full app languages (iOS + Android, screenshots, app UI).
+# The rest are iOS store-metadata-only locales (ASC locale codes used directly);
+# they have no android entry in metadata.json and are skipped for --android.
+ALL_LOCALES=(
+    "en" "de" "es" "fr" "ja" "ko" "tr" "zh"
+    "ar-SA" "ca" "cs" "da" "el" "fi" "he" "hi" "hr" "hu" "id" "it" "ms"
+    "nl-NL" "no" "pl" "pt-BR" "pt-PT" "ro" "ru" "sk" "sv" "th" "uk" "vi" "zh-Hant"
+)
 
 # API endpoints
 ASC_API_BASE="https://api.appstoreconnect.apple.com/v1"
