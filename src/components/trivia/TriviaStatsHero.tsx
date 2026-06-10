@@ -1,5 +1,5 @@
-import { type ReactNode,useEffect } from 'react';
-import { Platform, Pressable, StyleSheet } from 'react-native';
+import { type ReactNode, useEffect } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   ReduceMotion,
   useAnimatedProps,
@@ -9,15 +9,13 @@ import Animated, {
 import Svg, { Circle } from 'react-native-svg';
 
 import { ChevronRight, Target } from '@tamagui/lucide-icons';
-import { isLiquidGlassAvailable } from 'expo-glass-effect';
+import { LinearGradient } from 'expo-linear-gradient';
 import { XStack, YStack } from 'tamagui';
 
 import { hexColors } from '../../theme';
-import { hexToRgba } from '../../utils/colors';
+import { blendHexColors, darkenColor, getContrastColor } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
-import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
-import { GlassSurface } from '../GlassSurface';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { TranslationKeys } from '../../i18n/translations';
@@ -80,20 +78,23 @@ function CircularProgress({
           strokeWidth={strokeWidth}
           fill="none"
         />
-        {/* Progress arc */}
-        <AnimatedCircle
-          cx={center}
-          cy={center}
-          r={radius}
-          stroke={progressColor}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          animatedProps={animatedRingProps}
-          rotation="-90"
-          origin={`${center}, ${center}`}
-        />
+        {/* Progress arc. Skipped entirely at 0%: a zero-length dash with a
+            round linecap still paints a cap dot at 12 o'clock. */}
+        {percentage > 0 && (
+          <AnimatedCircle
+            cx={center}
+            cy={center}
+            r={radius}
+            stroke={progressColor}
+            strokeWidth={strokeWidth}
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            animatedProps={animatedRingProps}
+            rotation="-90"
+            origin={`${center}, ${center}`}
+          />
+        )}
       </Svg>
       {/* Center content, width-bound to the inner diameter (padding keeps it
           slightly off the stroke's inner edge) */}
@@ -110,6 +111,73 @@ function CircularProgress({
   );
 }
 
+// One stat line of the support column: fixed value slot + label/micro stack.
+function StatRow({
+  value,
+  label,
+  micro,
+  microActive,
+  valueMuted = false,
+  contrastColor,
+  valueSlotWidth,
+}: {
+  value: number;
+  label: string;
+  micro: string;
+  microActive: boolean;
+  valueMuted?: boolean;
+  contrastColor: string;
+  valueSlotWidth: number;
+}) {
+  const { typography, spacing } = useResponsive();
+  return (
+    <XStack alignItems="center" gap={spacing.sm}>
+      {/* Fixed slot: shared width keeps the label column aligned across rows
+          at any digit count; fixed height keeps rows level at one title line.
+          Right-aligned so the digits share a common edge against the labels. */}
+      <YStack
+        minWidth={valueSlotWidth}
+        height={typography.lineHeight.title}
+        justifyContent="center"
+        alignItems="flex-end"
+      >
+        <Text.Title
+          fontFamily={FONT_FAMILIES.bold}
+          color={contrastColor}
+          opacity={valueMuted ? 0.55 : 1}
+          numberOfLines={1}
+        >
+          {value}
+        </Text.Title>
+      </YStack>
+      <YStack flex={1} justifyContent="center">
+        <Text.Tiny
+          color={contrastColor}
+          opacity={0.78}
+          textTransform="uppercase"
+          letterSpacing={0.5}
+          fontFamily={FONT_FAMILIES.medium}
+          numberOfLines={1}
+        >
+          {label}
+        </Text.Tiny>
+        {/* Live deltas use the monochrome ramp: 0.9 active / 0.55 inactive
+            (labels sit at 0.78 between them). No success-green on the
+            gradient: light-mode #10B981 on #0077A8 is near-invisible. */}
+        <Text.Tiny
+          color={contrastColor}
+          opacity={microActive ? 0.9 : 0.55}
+          fontFamily={FONT_FAMILIES.medium}
+          numberOfLines={1}
+          flexShrink={1}
+        >
+          {micro}
+        </Text.Tiny>
+      </YStack>
+    </XStack>
+  );
+}
+
 export function TriviaStatsHero({
   stats,
   categories = [],
@@ -117,7 +185,7 @@ export function TriviaStatsHero({
   t,
   onPress,
 }: TriviaStatsHeroProps) {
-  const { typography, iconSizes, spacing, radius, borderWidths } = useResponsive();
+  const { typography, iconSizes, spacing, radius, borderWidths, media } = useResponsive();
   const accuracy = stats?.accuracy ?? 0;
   const testsTaken = stats?.testsTaken ?? 0;
   // currentStreak IS the daily play streak (getDailyStreak) — the same number
@@ -131,7 +199,7 @@ export function TriviaStatsHero({
 
   // DORMANT: getCategoriesWithProgress currently zeroes `answered` for every
   // category (the local question mirror was removed), so topCategory is always
-  // null and the strip's third column renders the Correct stat instead. When
+  // null and the strip's third row renders the Correct stat instead. When
   // per-category progress returns, the Top Cat. branch lights up automatically.
   const topCategory =
     categories.length > 0
@@ -142,35 +210,49 @@ export function TriviaStatsHero({
 
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
-  const textColor = isDark ? hexColors.dark.text : hexColors.light.text;
-  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
-  const mutedTextColor = isDark ? hexColors.dark.textMuted : hexColors.light.textMuted;
-  const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
-  const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
-  const dividerColor = isDark ? hexColors.dark.border : hexColors.light.border;
-  // Dimmed-primary track gives the unfilled ring an Apple-style "empty" read.
-  const ringTrackColor = hexToRgba(primaryColor, isDark ? 0.18 : 0.12);
+  // The gradient bridges the two flagship mode hues sitting directly below
+  // this card: daily (primary) top-left into mixed (neonPurple) bottom-right.
+  // LOAD-BEARING: the purple stop MUST stay darkened by 0.22. Raw dark-mode
+  // neonPurple #A855F7 (luminance 0.503) flips getContrastColor to BLACK while
+  // the cyan end stays white; darkenColor keeps BOTH ends white-contrast in
+  // BOTH themes, and reproduces the grid cards' [accent, darken(accent, 0.22)]
+  // depth cue. Do not "simplify" this back to the raw hue.
+  const gradientEnd = darkenColor(purpleColor, 0.22);
+  // Both gradient ends verified to agree on contrast in both themes.
+  const contrastColor = getContrastColor(primaryColor);
+  const onDark = contrastColor === '#FFFFFF';
+  // Signature alphas from TriviaGridCard, branched in case a future palette
+  // swap flips the contrast to black.
+  const plateBg = onDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.12)';
+  const circleA = onDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)';
+  const circleB = onDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)';
+  // Glow bridges both hues instead of doubling the daily card's primary glow
+  // sitting directly below the hero's left edge.
+  const glowColor = blendHexColors(primaryColor, purpleColor, 0.5);
 
   const hasData = testsTaken > 0;
 
-  // Category icon color
-  const categoryColor = topCategory?.color_hex || purpleColor;
-
-  // On iOS 26 the card goes transparent and Liquid Glass (tinted with the same
-  // card color) shows through; the primary-tinted hairline stays in both modes
-  // since it defines the card even before the glass material initializes.
-  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
+  // Deco-circle driver: identical to TriviaGridCard's iconContainerSize so the
+  // corner texture matches the grid tiles.
+  const s = media.topicCardSize * 0.7;
+  // Shared value-slot width: Montserrat Bold digits ≈ 0.62em; 0.65 adds safety.
+  // All three rows share it, so a 4-digit value cannot break alignment.
+  const valueDigits = Math.max(
+    String(testsTaken).length,
+    String(currentStreak).length,
+    String(totalCorrect).length
+  );
+  const valueSlotWidth = Math.max(
+    iconSizes.xxl,
+    Math.ceil(valueDigits * typography.fontSize.title * 0.65)
+  );
 
   const tinyLabelProps = {
-    color: secondaryTextColor,
+    color: contrastColor,
+    opacity: 0.78,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     fontFamily: FONT_FAMILIES.medium,
-  } as const;
-
-  const microLineProps = {
-    fontFamily: FONT_FAMILIES.medium,
-    numberOfLines: 1,
   } as const;
 
   return (
@@ -180,224 +262,198 @@ export function TriviaStatsHero({
       style={({ pressed }) => [
         heroShadowStyles.card,
         {
-          backgroundColor: useGlass ? 'transparent' : cardBg,
           borderRadius: radius.xl,
-          borderWidth: 1,
-          borderColor: hexToRgba(primaryColor, isDark ? 0.35 : 0.25),
-          shadowColor: primaryColor,
-          opacity: pressed ? 0.9 : 1,
-          transform: [{ scale: pressed ? 0.97 : 1 }],
+          shadowColor: glowColor,
+          // Empty state renders at full opacity with no press transform:
+          // informative, not actionable — never dimmed like a disabled control.
+          opacity: pressed && hasData ? 0.9 : 1,
+          transform: [{ scale: pressed && hasData ? 0.97 : 1 }],
         },
-        useGlass && { overflow: 'hidden' as const },
       ]}
       testID="trivia-stats-hero"
       accessibilityLabel={t('yourPerformance')}
     >
-      {useGlass && (
-        <GlassSurface
-          variant="glass"
-          isDark={isDark}
-          tint={cardBg}
-          glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
-          borderRadius={radius.xl}
-          style={absoluteFillObject}
+      <LinearGradient
+        colors={[primaryColor, gradientEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ borderRadius: radius.xl, overflow: 'hidden' }}
+      >
+        {/* Layered decorative circles for depth (grid-card geometry). The
+            bottom-left circle passes faintly behind the ring track; accepted
+            for signature fidelity (tuning knob: 1.4 -> 1.15 size multiplier). */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: -s * 0.6,
+            right: -s * 0.5,
+            width: s * 1.8,
+            height: s * 1.8,
+            borderRadius: s * 0.9,
+            backgroundColor: circleA,
+          }}
         />
-      )}
-      <YStack padding={spacing.lg} gap={spacing.lg}>
-        {/* Header */}
-        <XStack justifyContent="space-between" alignItems="center">
-          <Text.Title flex={1} color={textColor}>
-            {t('yourPerformance')}
-          </Text.Title>
-          {hasData && (
-            <XStack
-              alignItems="center"
-              gap={2}
-              paddingHorizontal={spacing.sm}
-              paddingVertical={spacing.xs}
-              borderRadius={radius.full}
-              backgroundColor={hexToRgba(primaryColor, isDark ? 0.18 : 0.1)}
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            bottom: -s * 0.7,
+            left: -s * 0.4,
+            width: s * 1.4,
+            height: s * 1.4,
+            borderRadius: s * 0.7,
+            backgroundColor: circleB,
+          }}
+        />
+        <YStack padding={spacing.lg} gap={spacing.md}>
+          {/* Header row. Text.Label bold = the grid cards' title preset; hero
+              hierarchy comes from width, the ring, and the two-hue gradient,
+              not type size. */}
+          <XStack justifyContent="space-between" alignItems="center">
+            <Text.Label
+              flex={1}
+              fontFamily={FONT_FAMILIES.bold}
+              color={contrastColor}
+              numberOfLines={1}
             >
-              <Text.Label color={primaryColor}>{t('details')}</Text.Label>
-              <ChevronRight size={iconSizes.md} color={primaryColor} />
-            </XStack>
-          )}
-        </XStack>
-
-        {hasData ? (
-          <>
-            {/* Focal accuracy ring */}
-            <YStack alignItems="center">
-              <CircularProgress
-                percentage={accuracy}
-                size={iconSizes.heroXl}
-                strokeWidth={borderWidths.extraHeavy}
-                progressColor={primaryColor}
-                trackColor={ringTrackColor}
+              {t('yourPerformance')}
+            </Text.Label>
+            {hasData && (
+              /* Frosted pill: same contrast-plate alpha the grid cards use for
+                 their icon plates, so the affordance reads as a real button. */
+              <XStack
+                alignItems="center"
+                gap={2}
+                paddingHorizontal={spacing.sm}
+                paddingVertical={spacing.xs}
+                borderRadius={radius.full}
+                backgroundColor={plateBg}
               >
-                <XStack alignItems="baseline">
-                  {/* adjustsFontSizeToFit bounds the 3-digit "100%" case inside
-                      the ring's inner diameter at the display preset's max
-                      font multiplier. */}
-                  <Text.Display color={textColor} numberOfLines={1} adjustsFontSizeToFit>
-                    {accuracy}
-                  </Text.Display>
-                  <Text.Caption fontFamily={FONT_FAMILIES.bold} color={secondaryTextColor}>
-                    %
-                  </Text.Caption>
-                </XStack>
-                <Text.Tiny {...tinyLabelProps} numberOfLines={1} adjustsFontSizeToFit>
-                  {t('accuracy')}
-                </Text.Tiny>
-              </CircularProgress>
-            </YStack>
+                <Text.Label color={contrastColor}>{t('details')}</Text.Label>
+                <ChevronRight size={iconSizes.md} color={contrastColor} opacity={0.78} />
+              </XStack>
+            )}
+          </XStack>
 
-            {/* Divider */}
-            <YStack
-              alignSelf="stretch"
-              height={borderWidths.hairline}
-              backgroundColor={dividerColor}
-            />
-
-            {/* Support strip: each column has a fixed-height value slot and an
-                always-rendered micro line so the three columns stay level. */}
-            <XStack gap={spacing.sm}>
-              {/* Tests */}
-              <YStack flex={1} alignItems="center" gap={spacing.xs}>
-                <YStack
-                  height={typography.lineHeight.title}
-                  justifyContent="center"
-                  alignItems="center"
-                >
-                  <Text.Title fontFamily={FONT_FAMILIES.bold} color={textColor} numberOfLines={1}>
-                    {testsTaken}
-                  </Text.Title>
-                </YStack>
-                <Text.Tiny
-                  {...microLineProps}
-                  color={testsThisWeek > 0 ? successColor : mutedTextColor}
-                >
-                  {t('thisWeek', { count: testsThisWeek })}
-                </Text.Tiny>
-                <Text.Tiny {...tinyLabelProps} numberOfLines={1}>
-                  {t('quizzes')}
-                </Text.Tiny>
-              </YStack>
-
-              {/* Day streak (muted at 0 as a dormant comeback cue) */}
-              <YStack flex={1} alignItems="center" gap={spacing.xs}>
-                <YStack
-                  height={typography.lineHeight.title}
-                  justifyContent="center"
-                  alignItems="center"
-                >
-                  <Text.Title
-                    fontFamily={FONT_FAMILIES.bold}
-                    color={currentStreak > 0 ? textColor : mutedTextColor}
-                    numberOfLines={1}
-                  >
-                    {currentStreak}
-                  </Text.Title>
-                </YStack>
-                <Text.Tiny {...microLineProps} color={mutedTextColor}>
-                  {t('best', { count: bestStreak })}
-                </Text.Tiny>
-                <Text.Tiny {...tinyLabelProps} numberOfLines={1}>
-                  {t('dayStreak')}
-                </Text.Tiny>
-              </YStack>
-
-              {/* Top category when available, otherwise total correct */}
-              <YStack flex={1} alignItems="center" gap={spacing.xs}>
-                {topCategory ? (
-                  <>
-                    <YStack
-                      height={typography.lineHeight.title}
-                      justifyContent="center"
-                      alignItems="center"
-                    >
-                      <XStack alignItems="center" gap={spacing.xs} flexShrink={1}>
-                        {getLucideIcon(topCategory.icon, iconSizes.xs, categoryColor)}
-                        <Text.Caption
-                          fontFamily={FONT_FAMILIES.semibold}
-                          color={textColor}
-                          numberOfLines={1}
-                          flexShrink={1}
-                        >
-                          {topCategory.name}
-                        </Text.Caption>
-                      </XStack>
-                    </YStack>
-                    <Text.Tiny {...microLineProps} color={mutedTextColor}>
-                      {`${topCategory.accuracy}%`}
-                    </Text.Tiny>
-                    <Text.Tiny {...tinyLabelProps} numberOfLines={1}>
-                      {t('topCat')}
-                    </Text.Tiny>
-                  </>
-                ) : (
-                  <>
-                    <YStack
-                      height={typography.lineHeight.title}
-                      justifyContent="center"
-                      alignItems="center"
-                    >
-                      <Text.Title
-                        fontFamily={FONT_FAMILIES.bold}
-                        color={textColor}
-                        numberOfLines={1}
-                      >
-                        {totalCorrect}
-                      </Text.Title>
-                    </YStack>
-                    <Text.Tiny
-                      {...microLineProps}
-                      color={correctToday > 0 ? successColor : mutedTextColor}
-                    >
-                      {t('todayCount', { count: correctToday })}
-                    </Text.Tiny>
-                    <Text.Tiny {...tinyLabelProps} numberOfLines={1}>
-                      {t('correct')}
-                    </Text.Tiny>
-                  </>
-                )}
-              </YStack>
-            </XStack>
-          </>
-        ) : (
-          /* Empty state: the 0% ring renders track-only, previewing the filled
-             geometry with the Target icon in the center. */
-          <YStack alignItems="center" gap={spacing.sm} paddingVertical={spacing.sm}>
+          {/* Body row — one skeleton for filled and empty so the empty state
+              previews the filled geometry and cannot drift out of sync. */}
+          <XStack alignItems="center" gap={spacing.lg}>
             <CircularProgress
-              percentage={0}
+              percentage={hasData ? accuracy : 0}
               size={iconSizes.heroXl}
               strokeWidth={borderWidths.extraHeavy}
-              progressColor={primaryColor}
-              trackColor={ringTrackColor}
+              progressColor={contrastColor}
+              trackColor={plateBg}
             >
-              <Target size={iconSizes.lg} color={primaryColor} />
+              {hasData ? (
+                <>
+                  <XStack alignItems="baseline">
+                    {/* adjustsFontSizeToFit bounds the 3-digit "100%" case
+                        inside the ring's inner diameter at the display
+                        preset's max font multiplier. */}
+                    <Text.Display color={contrastColor} numberOfLines={1} adjustsFontSizeToFit>
+                      {accuracy}
+                    </Text.Display>
+                    <Text.Caption fontFamily={FONT_FAMILIES.bold} color={contrastColor} opacity={0.78}>
+                      %
+                    </Text.Caption>
+                  </XStack>
+                  <Text.Tiny {...tinyLabelProps} numberOfLines={1} adjustsFontSizeToFit>
+                    {t('accuracy')}
+                  </Text.Tiny>
+                </>
+              ) : (
+                <Target size={iconSizes.lg} color={contrastColor} />
+              )}
             </CircularProgress>
-            <Text.Label
-              color={secondaryTextColor}
-              textAlign="center"
-              fontFamily={FONT_FAMILIES.semibold}
-            >
-              {t('noTestsYet')}
-            </Text.Label>
-          </YStack>
-        )}
-      </YStack>
+
+            {hasData ? (
+              <YStack flex={1} gap={spacing.sm}>
+                <StatRow
+                  value={testsTaken}
+                  label={t('quizzes')}
+                  micro={t('thisWeek', { count: testsThisWeek })}
+                  microActive={testsThisWeek > 0}
+                  contrastColor={contrastColor}
+                  valueSlotWidth={valueSlotWidth}
+                />
+                {/* Streak value muted at 0 as a dormant comeback cue; the Best
+                    micro line is always inactive (reference, not a delta). */}
+                <StatRow
+                  value={currentStreak}
+                  label={t('dayStreak')}
+                  micro={t('best', { count: bestStreak })}
+                  microActive={false}
+                  valueMuted={currentStreak === 0}
+                  contrastColor={contrastColor}
+                  valueSlotWidth={valueSlotWidth}
+                />
+                {topCategory ? (
+                  /* DORMANT branch (see topCategory above). Icon stays
+                     contrastColor — never topCategory.color_hex — so the
+                     all-contrast signature holds. */
+                  <XStack
+                    alignItems="center"
+                    gap={spacing.sm}
+                    minHeight={typography.lineHeight.title}
+                  >
+                    {getLucideIcon(topCategory.icon, iconSizes.xs, contrastColor)}
+                    <YStack flex={1} justifyContent="center">
+                      <Text.Caption
+                        fontFamily={FONT_FAMILIES.semibold}
+                        color={contrastColor}
+                        numberOfLines={1}
+                      >
+                        {topCategory.name}
+                      </Text.Caption>
+                      <Text.Tiny
+                        color={contrastColor}
+                        opacity={0.78}
+                        fontFamily={FONT_FAMILIES.medium}
+                        numberOfLines={1}
+                      >
+                        {`${topCategory.accuracy}% · ${t('topCat')}`}
+                      </Text.Tiny>
+                    </YStack>
+                  </XStack>
+                ) : (
+                  <StatRow
+                    value={totalCorrect}
+                    label={t('correct')}
+                    micro={t('todayCount', { count: correctToday })}
+                    microActive={correctToday > 0}
+                    contrastColor={contrastColor}
+                    valueSlotWidth={valueSlotWidth}
+                  />
+                )}
+              </YStack>
+            ) : (
+              /* No numberOfLines: long-locale sentences wrap (the German
+                 noTestsYet string is 60 chars). */
+              <Text.Label
+                flex={1}
+                color={contrastColor}
+                opacity={0.78}
+                fontFamily={FONT_FAMILIES.semibold}
+              >
+                {t('noTestsYet')}
+              </Text.Label>
+            )}
+          </XStack>
+        </YStack>
+      </LinearGradient>
     </Pressable>
   );
 }
 
 const heroShadowStyles = StyleSheet.create({
   card: {
-    // shadowColor is overridden inline with the primary accent for a faint glow.
+    // shadowColor is overridden inline with the blue/violet blend glow.
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
   },
 });
