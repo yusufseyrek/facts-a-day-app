@@ -1,12 +1,18 @@
 import { type ReactNode, useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
+  Easing,
   ReduceMotion,
   useAnimatedProps,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Stop,
+} from 'react-native-svg';
 
 import { Check, ChevronRight, Flame, Target, Zap } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -31,13 +37,17 @@ interface TriviaStatsHeroProps {
   onPress?: () => void;
 }
 
-// Circular progress ring component
+// Circular progress dial: dotted watch-face track, frosted inner disc, soft
+// glow halo under a sheen-gradient arc, and a comet-tip dot riding the leading
+// edge. All strokes stay in the contrastColor family (alpha-only variation) to
+// hold the card's all-contrast signature.
 function CircularProgress({
   percentage,
   size,
   strokeWidth,
   progressColor,
   trackColor,
+  innerFill,
   children,
 }: {
   percentage: number;
@@ -45,17 +55,25 @@ function CircularProgress({
   strokeWidth: number;
   progressColor: string;
   trackColor: string;
+  innerFill?: string;
   children?: ReactNode;
 }) {
   const { spacing } = useResponsive();
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const center = size / 2;
+  // Glow + tip halo overhang the ring path, so the canvas gets padding while a
+  // negative margin keeps the layout footprint at `size`.
+  const glowPad = strokeWidth * 1.6;
+  const box = size + glowPad * 2;
+  const center = box / 2;
+  // Near-zero dash + round caps renders the track as evenly spaced dial dots.
+  const trackDotGap = circumference / 44;
 
   const progress = useSharedValue(0);
   useEffect(() => {
     progress.value = withTiming(percentage, {
-      duration: 700,
+      duration: 900,
+      easing: Easing.out(Easing.cubic),
       reduceMotion: ReduceMotion.System,
     });
   }, [percentage, progress]);
@@ -66,34 +84,89 @@ function CircularProgress({
     strokeDashoffset: circumference - (progress.value / 100) * circumference,
   }));
 
+  // The tip dot tracks the arc's leading edge (arc starts at 12 o'clock and
+  // sweeps clockwise, hence the -90° phase).
+  const animatedTipProps = useAnimatedProps(() => {
+    const angle = (progress.value / 100) * 2 * Math.PI - Math.PI / 2;
+    return {
+      cx: center + radius * Math.cos(angle),
+      cy: center + radius * Math.sin(angle),
+    };
+  });
+
   return (
     <YStack alignItems="center" justifyContent="center">
-      <Svg width={size} height={size}>
-        {/* Background track */}
+      <Svg width={box} height={box} style={{ margin: -glowPad }}>
+        <Defs>
+          {/* Sheen runs top-left → bottom-right, matching the card gradient's
+              light direction; alpha-only so the stroke stays contrast-white. */}
+          <SvgLinearGradient id="heroRingSheen" x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={progressColor} stopOpacity="1" />
+            <Stop offset="100%" stopColor={progressColor} stopOpacity="0.62" />
+          </SvgLinearGradient>
+        </Defs>
+        {/* Frosted inner disc gives the center value its own plate, echoing
+            the stat rows' frosted icon plates. */}
+        {innerFill && (
+          <Circle cx={center} cy={center} r={radius - strokeWidth * 1.6} fill={innerFill} />
+        )}
+        {/* Dotted dial track */}
         <Circle
           cx={center}
           cy={center}
           r={radius}
           stroke={trackColor}
-          strokeWidth={strokeWidth}
+          strokeWidth={strokeWidth * 0.55}
+          strokeLinecap="round"
+          strokeDasharray={[0.1, trackDotGap - 0.1]}
           fill="none"
         />
-        {/* Progress arc. Skipped entirely at 0%: a zero-length dash with a
-            round linecap still paints a cap dot at 12 o'clock. */}
+        {/* Progress arc layers. Skipped entirely at 0%: a zero-length dash
+            with a round linecap still paints a cap dot at 12 o'clock. */}
         {percentage > 0 && (
-          <AnimatedCircle
-            cx={center}
-            cy={center}
-            r={radius}
-            stroke={progressColor}
-            strokeWidth={strokeWidth}
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            animatedProps={animatedRingProps}
-            rotation="-90"
-            origin={`${center}, ${center}`}
-          />
+          <>
+            {/* Soft halo: the same arc widened and faded (no SVG blur on RN,
+                a translucent under-stroke fakes the glow). */}
+            <AnimatedCircle
+              cx={center}
+              cy={center}
+              r={radius}
+              stroke={progressColor}
+              opacity={0.22}
+              strokeWidth={strokeWidth * 2.1}
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              animatedProps={animatedRingProps}
+              rotation="-90"
+              origin={`${center}, ${center}`}
+            />
+            <AnimatedCircle
+              cx={center}
+              cy={center}
+              r={radius}
+              stroke="url(#heroRingSheen)"
+              strokeWidth={strokeWidth}
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              animatedProps={animatedRingProps}
+              rotation="-90"
+              origin={`${center}, ${center}`}
+            />
+            {/* Comet tip: halo + bright core at the leading edge */}
+            <AnimatedCircle
+              r={strokeWidth * 1.45}
+              fill={progressColor}
+              opacity={0.3}
+              animatedProps={animatedTipProps}
+            />
+            <AnimatedCircle
+              r={strokeWidth * 0.8}
+              fill={progressColor}
+              animatedProps={animatedTipProps}
+            />
+          </>
         )}
       </Svg>
       {/* Center content, width-bound to the inner diameter (padding keeps it
@@ -345,6 +418,7 @@ export function TriviaStatsHero({
                 strokeWidth={borderWidths.extraHeavy}
                 progressColor={contrastColor}
                 trackColor={plateBg}
+                innerFill={circleA}
               >
                 {hasData ? (
                   <XStack alignItems="baseline">
