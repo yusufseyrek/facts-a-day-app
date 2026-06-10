@@ -20,6 +20,7 @@ import { BannerAd } from '../../src/components/ads';
 import { TriviaGridCard, TriviaIntroModal, TriviaStatsHero } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { useScrollToTopHandler } from '../../src/contexts';
+import { useHeaderContentGap } from '../../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import { onPreferenceFeedRefresh } from '../../src/services/preferences';
@@ -38,6 +39,7 @@ export default function TriviaScreen() {
   const navigation = useNavigation();
   const isDark = theme === 'dark';
   const { isTablet, typography, config, iconSizes, spacing, radius } = useResponsive();
+  const headerGap = useHeaderContentGap();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -283,7 +285,7 @@ export default function TriviaScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => loadTriviaData(true)} />
           }
         >
-          <ContentContainer paddingBottom={spacing.md}>
+          <ContentContainer paddingTop={headerGap} paddingBottom={spacing.md}>
             {/* Always show Stats */}
             <Animated.View
               entering={FadeInDown.delay(50).duration(300)}

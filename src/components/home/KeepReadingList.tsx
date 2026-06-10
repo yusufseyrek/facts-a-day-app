@@ -5,6 +5,7 @@ import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 
 import { ADS_ENABLED, LAYOUT, NATIVE_ADS } from '../../config/app';
+import { useHeaderContentGap } from '../../hooks/useGlassHeaderOptions';
 import { useResponsive } from '../../utils/useResponsive';
 import { InlineNativeAd } from '../ads/InlineNativeAd';
 
@@ -76,6 +77,7 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
     ref
   ) {
     const { spacing } = useResponsive();
+    const headerGap = useHeaderContentGap();
 
     // Drop ad rows that the pool reports as 'failed' (no-fill / rate-limit)
     // so the vertical list collapses the fixed-height InlineNativeAd spacer.
@@ -177,6 +179,7 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
         // screen open "pre-scrolled" past the section titles. Anchor the top
         // instead.
         maintainVisibleContentPosition={{ disabled: true }}
+        contentContainerStyle={{ paddingTop: headerGap }}
         data={items}
         renderItem={renderItem}
         keyExtractor={keyExtractor}

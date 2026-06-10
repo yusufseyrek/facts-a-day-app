@@ -18,6 +18,17 @@ type StackScreenOptions = NonNullable<React.ComponentProps<typeof Stack>['screen
  *
  * Android: Material toolbar on the theme surface color.
  */
+/**
+ * Android-only gap between the opaque Material toolbar and the screen's scroll
+ * content (applied as paddingTop on scroll content so it still slides under
+ * the toolbar edge when scrolling). 0 on iOS: the large title brings its own
+ * breathing room and contentInsetAdjustmentBehavior handles the inset.
+ */
+export function useHeaderContentGap(): number {
+  const { spacing } = useResponsive();
+  return Platform.OS === 'android' ? spacing.md : 0;
+}
+
 export function useGlassHeaderOptions(): StackScreenOptions {
   const { theme } = useTheme();
   const colors = hexColors[theme];

@@ -27,6 +27,7 @@ import { ImageFactCard } from '../../../src/components/ImageFactCard';
 import { LAYOUT, NATIVE_ADS } from '../../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
 import { usePremium } from '../../../src/contexts';
+import { useHeaderContentGap } from '../../../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackScreenView } from '../../../src/services/analytics';
 import * as api from '../../../src/services/api';
@@ -86,6 +87,7 @@ export default function FavoritesScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { iconSizes, spacing, radius, media } = useResponsive();
+  const headerGap = useHeaderContentGap();
   const { isPremium } = usePremium();
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
@@ -447,7 +449,7 @@ export default function FavoritesScreen() {
           // header and remain reachable to clear the filter.
           <ScrollView
             contentInsetAdjustmentBehavior="automatic"
-            contentContainerStyle={{ flexGrow: 1 }}
+            contentContainerStyle={{ flexGrow: 1, paddingTop: headerGap }}
             overScrollMode="never"
           >
             {chipsRow}
@@ -474,6 +476,7 @@ export default function FavoritesScreen() {
             refreshControl={refreshControl}
             onScroll={handleScroll}
             contentInsetAdjustmentBehavior="automatic"
+            contentContainerStyle={{ paddingTop: headerGap }}
             ListHeaderComponent={chipsRow ?? undefined}
             // FlashList v2 anchors visible content by default when data
             // changes; on a filter swap that reads as a small phantom scroll.

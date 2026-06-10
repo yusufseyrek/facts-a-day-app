@@ -30,6 +30,7 @@ import { LAYOUT, NATIVE_ADS } from '../../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
 import { usePremium, useScrollToTopHandler } from '../../../src/contexts';
 import { useSeedFactDetailsCache } from '../../../src/hooks/useFactDetail';
+import { useHeaderContentGap } from '../../../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../../../src/i18n';
 import {
   Screens,
@@ -147,6 +148,7 @@ function SearchScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const { isTablet, spacing, iconSizes, config, media, radius } = useResponsive();
+  const headerGap = useHeaderContentGap();
   // Seed the fact-detail cache from browse/search results (which live in local
   // state, not React Query) so opening any of them — and swiping between them —
   // is instant instead of triggering a blocking per-fact fetch.
@@ -696,6 +698,7 @@ function SearchScreen() {
           showsVerticalScrollIndicator={false}
           overScrollMode="never"
           contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{ paddingTop: headerGap }}
         >
           <CategoriesContainer
             paddingHorizontal={spacing.lg}
@@ -813,6 +816,7 @@ function SearchScreen() {
     config,
     media,
     iconSizes,
+    headerGap,
   ]);
 
   const renderContent = useCallback(() => {
@@ -839,6 +843,7 @@ function SearchScreen() {
             refreshControl={searchRefreshControl}
             onScroll={handleSearchScroll}
             contentInsetAdjustmentBehavior="automatic"
+            contentContainerStyle={{ paddingTop: headerGap }}
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -895,6 +900,7 @@ function SearchScreen() {
             refreshControl={categoryRefreshControl}
             onScroll={handleCategoryScroll}
             contentInsetAdjustmentBehavior="automatic"
+            contentContainerStyle={{ paddingTop: headerGap }}
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -925,6 +931,7 @@ function SearchScreen() {
     categoryRefreshControl,
     renderEmptyState,
     spacing,
+    headerGap,
   ]);
 
   return (
