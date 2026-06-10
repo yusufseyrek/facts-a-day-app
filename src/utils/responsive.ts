@@ -58,7 +58,6 @@ export const applyDisplayScale = <T extends Record<string, number>>(
 const phoneConfig = {
   maxLines: 3,
   categoryColumns: 3,
-  discoverColumns: 2,
   triviaCategoriesPerRow: 2,
   cardWidthMultiplier: 0.85,
   headerPaddingAdjustment: 8,
@@ -68,7 +67,6 @@ const phoneConfig = {
 const tabletConfig = {
   maxLines: 3,
   categoryColumns: 5,
-  discoverColumns: 2,
   triviaCategoriesPerRow: 3,
   cardWidthMultiplier: 0.7,
   headerPaddingAdjustment: 4,

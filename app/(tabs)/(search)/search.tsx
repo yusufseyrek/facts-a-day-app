@@ -5,17 +5,16 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { styled, View } from '@tamagui/core';
-import { ChevronRight, X } from '@tamagui/lucide-icons';
+import { X } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
+import { YStack } from 'tamagui';
 
 import {
   ContentContainer,
@@ -71,22 +70,6 @@ const EmptyDiscoverState = styled(YStack, {
 });
 
 const CategoriesContainer = styled(YStack, {
-  flex: 1,
-});
-
-const CategoriesGrid = styled(View, {});
-
-const CategoryRow = styled(XStack, {
-  justifyContent: 'space-between',
-});
-
-// Discover Category Card - wider with facts count
-const DiscoverCategoryCard = styled(XStack, {
-  flex: 1,
-  alignItems: 'center',
-});
-
-const DiscoverCategoryTextContainer = styled(YStack, {
   flex: 1,
 });
 
@@ -706,16 +689,8 @@ function SearchScreen() {
       );
     }
 
-    // Show category grid when no search has been performed and no category is selected
+    // Show category chips when no search has been performed and no category is selected
     if (!hasQuery && !selectedCategorySlug) {
-      const numColumns = config.discoverColumns;
-
-      // Split categories into rows of 2 (or 3 on tablet)
-      const rows: Category[][] = [];
-      for (let i = 0; i < userCategories.length; i += numColumns) {
-        rows.push(userCategories.slice(i, i + numColumns));
-      }
-
       if (isLoadingCategories) {
         return (
           <EmptyDiscoverState paddingHorizontal={spacing.xl} gap={spacing.md}>
@@ -756,86 +731,51 @@ function SearchScreen() {
               <Text.Body color="$textMuted">{t('discoverDescription')}</Text.Body>
             </Animated.View>
 
-            <CategoriesGrid gap={spacing.md}>
-              {rows.map((row, rowIndex) => (
-                <Animated.View
-                  key={`row-${rowIndex}`}
-                  entering={FadeInDown.delay(100 + rowIndex * 50).duration(300)}
-                  needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-                >
-                  <CategoryRow gap={spacing.md}>
-                    {row.map((category) => {
-                      const categoryColor = category.color_hex || '#0066FF';
-                      const surfaceColor = hexColors[theme].surface;
+            {/* Minimal chip flow: compact pills that wrap, replacing the old
+                2-column grid of 80pt tiles. The category color stays a quiet
+                accent (hairline + barely-there tinted fill); no chevrons, no
+                shadows, no per-row stagger. */}
+            <Animated.View
+              entering={FadeInDown.delay(80).duration(300)}
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: spacing.sm,
+              }}
+            >
+              {userCategories.map((category, index) => {
+                const categoryColor = category.color_hex || '#0066FF';
+                const surfaceColor = hexColors[theme].surface;
 
-                      return (
-                        <Pressable
-                          key={category.slug}
-                          onPress={() => handleCategoryPress(category.slug)}
-                          style={({ pressed }) => [
-                            categoryShadowStyles.wrapper,
-                            {
-                              flex: 1,
-                              borderRadius: radius.xl,
-                              opacity: pressed ? 0.9 : 1,
-                              transform: [{ scale: pressed ? 0.97 : 1 }],
-                            },
-                          ]}
-                          testID={`discover-category-${rowIndex * numColumns + row.indexOf(category)}`}
-                        >
-                          {/* Calm tinted surface: the category color stays an
-                              accent (icon, plate, hairline) instead of filling
-                              the whole tile. */}
-                          <View
-                            style={{
-                              flex: 1,
-                              borderRadius: radius.xl,
-                              overflow: 'hidden',
-                              backgroundColor: blendHexColors(
-                                categoryColor,
-                                surfaceColor,
-                                theme === 'dark' ? 0.1 : 0.07
-                              ),
-                              borderWidth: 1,
-                              borderColor: hexToRgba(categoryColor, theme === 'dark' ? 0.35 : 0.25),
-                            }}
-                          >
-                            <DiscoverCategoryCard
-                              height={media.topicCardSize}
-                              paddingHorizontal={spacing.md}
-                              gap={spacing.md}
-                            >
-                              <DiscoverCategoryTextContainer gap={2}>
-                                <Text.Label
-                                  color="$text"
-                                  numberOfLines={1}
-                                  fontFamily={FONT_FAMILIES.semibold}
-                                >
-                                  {category.name}
-                                </Text.Label>
-                              </DiscoverCategoryTextContainer>
-                              <ChevronRight
-                                size={iconSizes.sm}
-                                color={hexColors[theme].textSecondary}
-                                opacity={0.7}
-                              />
-                            </DiscoverCategoryCard>
-                          </View>
-                        </Pressable>
-                      );
-                    })}
-                    {/* Add empty placeholders for the last row if needed */}
-                    {row.length < numColumns && (
-                      <>
-                        {Array.from({ length: numColumns - row.length }).map((_, idx) => (
-                          <View key={`placeholder-${idx}`} style={{ flex: 1 }} />
-                        ))}
-                      </>
-                    )}
-                  </CategoryRow>
-                </Animated.View>
-              ))}
-            </CategoriesGrid>
+                return (
+                  <Pressable
+                    key={category.slug}
+                    onPress={() => handleCategoryPress(category.slug)}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+                    testID={`discover-category-${index}`}
+                  >
+                    <View
+                      style={{
+                        paddingHorizontal: spacing.md,
+                        paddingVertical: spacing.sm,
+                        borderRadius: 999,
+                        backgroundColor: blendHexColors(
+                          categoryColor,
+                          surfaceColor,
+                          theme === 'dark' ? 0.1 : 0.07
+                        ),
+                        borderWidth: 1,
+                        borderColor: hexToRgba(categoryColor, theme === 'dark' ? 0.35 : 0.25),
+                      }}
+                    >
+                      <Text.Label color="$text" fontFamily={FONT_FAMILIES.semibold}>
+                        {category.name}
+                      </Text.Label>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </Animated.View>
           </CategoriesContainer>
         </ScrollView>
       );
@@ -985,15 +925,5 @@ function SearchScreen() {
     </ScreenContainer>
   );
 }
-
-const categoryShadowStyles = StyleSheet.create({
-  wrapper: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-});
 
 export default SearchScreen;
