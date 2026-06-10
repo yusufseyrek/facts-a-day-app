@@ -350,7 +350,7 @@ export function TriviaStatsHero({
 
           {/* Body row — one skeleton for filled and empty so the empty state
               previews the filled geometry and cannot drift out of sync. */}
-          <XStack alignItems="center" gap={spacing.lg}>
+          <XStack alignItems="center" gap={spacing.xxl}>
             {/* Ring column: number stays full Display size (a 0-100 value plus
                 % fits the 84pt inner diameter without auto-shrinking — iOS
                 collapses adjustsFontSizeToFit text inside flex rows); the
