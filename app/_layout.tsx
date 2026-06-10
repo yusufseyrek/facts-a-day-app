@@ -283,6 +283,23 @@ function AppContent() {
           }}
         />
         <Stack.Screen
+          name="fact/morph/[id]"
+          options={{
+            // Morph-presented twin of fact/[id]: a card→detail container
+            // transform. transparentModal keeps the feed visible behind while
+            // the screen expands from the pressed card's rect; animation:'none'
+            // because FactMorphContainer drives ALL motion (open, close, and
+            // Android back). Native gestures are off — dismissal goes through
+            // the morph controller (X button, pull-down-to-close, hardware
+            // back) so the reverse morph always plays.
+            presentation: 'transparentModal',
+            animation: 'none',
+            headerShown: false,
+            gestureEnabled: false,
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
+        <Stack.Screen
           name="[locale]/fact/[id]"
           options={{
             // This route immediately redirects, so no UI needed

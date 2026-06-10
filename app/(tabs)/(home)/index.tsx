@@ -22,6 +22,7 @@ import { useReadingStreak } from '../../../src/hooks/useReadingStreak';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackFeedRefresh, trackScreenView } from '../../../src/services/analytics';
 import { isModalScreenActive } from '../../../src/services/badges';
+import { factDetailBasePath } from '../../../src/services/factMorph';
 import { primePool } from '../../../src/services/nativeAdPool';
 import { shouldShowPaywall } from '../../../src/services/paywallTiming';
 import { useTheme } from '../../../src/theme';
@@ -117,12 +118,15 @@ function HomeScreen() {
       factIdList?: number[],
       indexInList?: number
     ) => {
+      // Cards that registered a morph source on press-in (ImageFactCard) open
+      // via the card→detail morph; everything else keeps the card presentation.
+      const base = factDetailBasePath(fact.id);
       if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
         router.push(
-          `/fact/${fact.id}?source=${source}&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
+          `${base}/${fact.id}?source=${source}&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
         );
       } else {
-        router.push(`/fact/${fact.id}?source=${source}`);
+        router.push(`${base}/${fact.id}?source=${source}`);
       }
     },
     [router]

@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
 import { usePressFeedback } from '../hooks/usePressFeedback';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
+import { setPendingFactMorph } from '../services/factMorph';
 import { getIsConnected } from '../services/network';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -75,6 +76,9 @@ const ImageFactCardComponent = ({
 
   // Light opacity-dim press feedback (replaces the old scale spring)
   const { pressStyle, onPressIn, onPressOut } = usePressFeedback();
+
+  // Card root, measured on press-in for the card → detail morph transition.
+  const cardRef = useRef<View>(null);
 
   // Shimmer animation using Reanimated (runs on UI thread)
   const shimmerOpacity = useSharedValue(0.3);
@@ -245,6 +249,53 @@ const ImageFactCardComponent = ({
     [radius]
   );
 
+  // Register this card as the morph source on press-IN: measureInWindow is
+  // async, so starting here guarantees the rect is registered by the time
+  // onPress (touch up) pushes the route via factDetailBasePath(). Skipped
+  // while the image is still loading — morphing a shimmer reads broken, and
+  // the press then falls back to the plain card presentation. A press-in that
+  // turns into a scroll leaves a harmless entry (fact-id + TTL guarded).
+  const handlePressIn = useCallback(() => {
+    onPressIn();
+    if (!imageLoaded) return;
+    cardRef.current?.measureInWindow((x, y, width, height) => {
+      if (!(width > 0 && height > 0)) return;
+      setPendingFactMorph({
+        factId,
+        x,
+        y,
+        width,
+        height,
+        borderRadius: radius.lg,
+        imageUri: resolvedUri ?? null,
+        imageUrl,
+        title,
+        category,
+        categorySlug: typeof category === 'string' ? category : category?.slug,
+        titleNumberOfLines: titleNumberOfLines ?? config.maxLines,
+        isPremiumLocked,
+        contentOverlayStyle: _contentOverlayStyle,
+        favoritePositionStyle: _favoritePositionStyle,
+        TitleComponent,
+      });
+    });
+  }, [
+    onPressIn,
+    imageLoaded,
+    factId,
+    radius.lg,
+    resolvedUri,
+    imageUrl,
+    title,
+    category,
+    titleNumberOfLines,
+    config.maxLines,
+    isPremiumLocked,
+    _contentOverlayStyle,
+    _favoritePositionStyle,
+    TitleComponent,
+  ]);
+
   // Offline text-only card: no image, just text on dark background
   if (isOfflineImageFailed) {
     return (
@@ -311,8 +362,9 @@ const ImageFactCardComponent = ({
       renderToHardwareTextureAndroid={true}
     >
       <Pressable
+        ref={cardRef}
         onPress={onPress}
-        onPressIn={onPressIn}
+        onPressIn={handlePressIn}
         onPressOut={onPressOut}
         android_ripple={androidRipple}
         style={pressableStyle}
@@ -474,6 +526,15 @@ const styles = StyleSheet.create({
     minHeight: 120,
   },
 });
+
+// Shared with FactCardReplica (the morph transition's static card clone) so
+// the replica can't drift from the card's actual look.
+export const FACT_CARD_GRADIENT = {
+  colors: gradientColors,
+  locations: gradientLocations,
+} as const;
+export const factCardTitleShadow = styles.titleShadow;
+export const factCardCrownShadow = styles.crownShadow;
 
 // Memoize the component to prevent unnecessary re-renders
 export const ImageFactCard = React.memo(ImageFactCardComponent, (prevProps, nextProps) => {

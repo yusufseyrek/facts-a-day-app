@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { X } from '@tamagui/lucide-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Text } from '../../src/components';
 import { FactModal } from '../../src/components/FactModal';
+import { useFactMorph } from '../../src/components/factMorph/FactMorphContext';
 import { useFactDetail, usePrefetchFactDetails } from '../../src/hooks/useFactDetail';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackFactView, trackScreenView } from '../../src/services/analytics';
@@ -41,7 +44,11 @@ export default function FactDetailScreen({
   }>();
   const router = useRouter();
   const { t, locale } = useTranslation();
-  const { spacing } = useResponsive();
+  const { spacing, iconSizes, radius } = useResponsive();
+  const insets = useSafeAreaInsets();
+  // Non-null when hosted by the morph route — closing must play the reverse
+  // morph instead of popping instantly.
+  const morph = useFactMorph();
 
   // Parse fact ID list for navigation
   const factIds = useMemo(() => {
@@ -110,8 +117,39 @@ export default function FactDetailScreen({
   }, [fact, source]);
 
   const handleClose = useCallback(() => {
+    if (morph) {
+      morph.close();
+      return;
+    }
     router.back();
-  }, [router]);
+  }, [router, morph]);
+
+  // The loading/error early returns need their own close affordance: under the
+  // morph presentation there is no native dismiss gesture, and even as a card
+  // an explicit X beats relying on the swipe-back.
+  const earlyCloseButton = (
+    <View
+      style={{ position: 'absolute', top: Math.max(insets.top, spacing.xl), right: spacing.xl }}
+    >
+      <TouchableOpacity
+        onPress={handleClose}
+        activeOpacity={0.7}
+        hitSlop={{ top: spacing.lg, bottom: spacing.lg, left: spacing.lg, right: spacing.lg }}
+        aria-label={t('a11y_closeButton')}
+        role="button"
+        style={{
+          width: iconSizes.xl,
+          height: iconSizes.xl,
+          borderRadius: radius.full,
+          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <X size={iconSizes.md} color="#FFFFFF" />
+      </TouchableOpacity>
+    </View>
+  );
 
   const handleNext = useCallback(() => {
     if (!factIds || currentIndex >= factIds.length - 1) return;
@@ -142,6 +180,7 @@ export default function FactDetailScreen({
         }}
       >
         <ActivityIndicator size="large" color={hexColors.light.primary} />
+        {earlyCloseButton}
       </View>
     );
   }
@@ -161,6 +200,7 @@ export default function FactDetailScreen({
         <Text.Body color="$textSecondary">
           {invalid ? t('invalidFactId') : t('factNotFound')}
         </Text.Body>
+        {earlyCloseButton}
       </View>
     );
   }

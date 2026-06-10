@@ -1,11 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-} from 'react-native';
+import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
@@ -40,6 +34,7 @@ import {
 } from '../../../src/services/analytics';
 import * as api from '../../../src/services/api';
 import { mapApiFactToRelations } from '../../../src/services/database';
+import { factDetailBasePath } from '../../../src/services/factMorph';
 import { getCachedFactImageSync } from '../../../src/services/images';
 import { primePool } from '../../../src/services/nativeAdPool';
 import { getIsConnected } from '../../../src/services/network';
@@ -381,12 +376,13 @@ function SearchScreen() {
       factIdList?: number[],
       indexInList?: number
     ) => {
+      const base = factDetailBasePath(fact.id);
       if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
         router.push(
-          `/fact/${fact.id}?source=${source}&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
+          `${base}/${fact.id}?source=${source}&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
         );
       } else {
-        router.push(`/fact/${fact.id}?source=${source}`);
+        router.push(`${base}/${fact.id}?source=${source}`);
       }
     },
     [router]
