@@ -1,152 +1,94 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, ScrollView, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  interpolate,
+  type SharedValue,
+  useAnimatedProps,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { Circle, Defs, LinearGradient as SvgLinearGradient, Path, Stop, Svg } from 'react-native-svg';
 
-import { CheckCircle, Gift, Sparkle, Star } from '@tamagui/lucide-icons';
+import { Gift } from '@tamagui/lucide-icons';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
+import { YStack } from 'tamagui';
 
-import { Button, FONT_FAMILIES, ScreenContainer, Text } from '../../src/components';
+import { Button, FONT_FAMILIES, GlassSurface, ScreenContainer, Text } from '../../src/components';
 import { ADS_ENABLED } from '../../src/config/app';
 import { useOnboarding } from '../../src/contexts';
+import { useReduceMotion } from '../../src/hooks/useReduceMotion';
 import { useTranslation } from '../../src/i18n';
 import { completeConsentFlow, isConsentRequired } from '../../src/services/ads';
 import { Screens, trackOnboardingComplete, trackScreenView } from '../../src/services/analytics';
 import * as notificationService from '../../src/services/notifications';
 import { getNotificationTimes } from '../../src/services/onboarding';
 import { getNeonColors, hexColors, useTheme } from '../../src/theme';
+import { hexToRgba } from '../../src/utils/colors';
 import { useResponsive } from '../../src/utils/useResponsive';
 
-// Particle component for confetti effect
-const Particle = ({ delay, index }: { delay: number; index: number }) => {
-  const animatedValue = useRef(new Animated.Value(0)).current;
-  const { theme } = useTheme();
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-  useEffect(() => {
-    Animated.sequence([
-      Animated.delay(delay),
-      Animated.parallel([
-        Animated.timing(animatedValue, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-  }, []);
+// Checkmark path in a 100x100 viewBox; CHECK_LENGTH is its measured stroke
+// length (drawn via dashoffset, so it must cover the full path).
+const CHECK_PATH = 'M30 53 L45 67 L71 39';
+const CHECK_LENGTH = 60;
 
-  const translateY = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -150 - Math.random() * 100],
-  });
+const BURST_DOT_COUNT = 12;
 
-  const translateX = animatedValue.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0, (Math.random() - 0.5) * 150, (Math.random() - 0.5) * 200],
-  });
-
-  const scale = animatedValue.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0, 1.2, 0],
-  });
-
-  const opacity = animatedValue.interpolate({
-    inputRange: [0, 0.1, 0.9, 1],
-    outputRange: [0, 1, 1, 0],
-  });
-
-  const rotate = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', `${360 + Math.random() * 360}deg`],
-  });
-
-  const neonColors = getNeonColors(theme);
-  const colors = [
-    neonColors.cyan,
-    neonColors.green,
-    neonColors.yellow,
-    neonColors.magenta,
-    neonColors.purple,
-    neonColors.orange,
-  ];
-  const particleColor = colors[index % colors.length];
-  const ParticleIcon = index % 3 === 0 ? Star : Sparkle;
-
-  return (
-    <Animated.View
-      style={{
-        position: 'absolute',
-        transform: [{ translateX }, { translateY }, { scale }, { rotate }],
-        opacity,
-      }}
-    >
-      <ParticleIcon size={20 + Math.random() * 10} color={particleColor} fill={particleColor} />
-    </Animated.View>
-  );
-};
-
-// Ring pulse animation component
-const PulseRing = ({
-  delay,
-  theme,
+/** One radial burst dot, driven by a single shared progress value. */
+const BurstDot = ({
+  progress,
+  angle,
+  distance,
   size,
-  borderWidth,
+  color,
+  centerOffset,
 }: {
-  delay: number;
-  theme: 'light' | 'dark';
+  progress: SharedValue<number>;
+  angle: number;
+  distance: number;
   size: number;
-  borderWidth: number;
+  color: string;
+  centerOffset: number;
 }) => {
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const opacityAnim = useRef(new Animated.Value(1)).current;
-  const ringColor = theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.neonCyan;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(scaleAnim, {
-            toValue: 2.5,
-            duration: 2000,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacityAnim, {
-            toValue: 0,
-            duration: 2000,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.timing(scaleAnim, {
-          toValue: 0,
-          duration: 0,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 0,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
+  const style = useAnimatedStyle(() => {
+    const p = progress.value;
+    return {
+      opacity: interpolate(p, [0, 0.08, 0.7, 1], [0, 1, 0.9, 0]),
+      transform: [
+        { translateX: Math.cos(angle) * distance * p },
+        { translateY: Math.sin(angle) * distance * p },
+        { scale: interpolate(p, [0, 0.12, 1], [0.4, 1, 0.5]) },
+      ],
+    };
+  });
 
   return (
     <Animated.View
-      style={{
-        position: 'absolute',
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        borderWidth,
-        borderColor: ringColor,
-        transform: [{ scale: scaleAnim }],
-        opacity: opacityAnim,
-      }}
+      pointerEvents="none"
+      style={[
+        {
+          position: 'absolute',
+          top: centerOffset - size / 2,
+          left: centerOffset - size / 2,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+        },
+        style,
+      ]}
     />
   );
 };
@@ -156,18 +98,26 @@ const NAVIGATE_DELAY_MS = 3000;
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, iconSizes, spacing, radius, borderWidths, media } = useResponsive();
+  const { typography, iconSizes, spacing, radius, media } = useResponsive();
   const router = useRouter();
   const { completeOnboarding, selectedCategories } = useOnboarding();
+  const reduceMotion = useReduceMotion();
 
   const [showConsent, setShowConsent] = useState(false);
   const [consentDone, setConsentDone] = useState(false);
   const [consentLoading, setConsentLoading] = useState(false);
   const [_flowComplete, setFlowComplete] = useState(false);
 
-  // Responsive icon container size — derives from heroLg icon + padding
-  const iconContainerSize = iconSizes.heroLg * 2 + spacing.md;
-  const iconAreaSize = iconContainerSize + spacing.xl * 2;
+  const neon = getNeonColors(theme);
+
+  // Badge disc, the gradient ring around it, and the stage they live on
+  const badgeSize = iconSizes.heroLg * 2 + spacing.md;
+  const ringGap = spacing.lg;
+  const ringStroke = 3.5;
+  const ringSize = badgeSize + ringGap * 2;
+  const areaSize = ringSize + spacing.xl * 2;
+  const ringRadius = (ringSize - ringStroke) / 2;
+  const circumference = 2 * Math.PI * ringRadius;
   const consentIconSize = iconSizes.hero + spacing.xl;
 
   // Track screen view and kick off the flow
@@ -262,128 +212,103 @@ export default function OnboardingSuccessScreen() {
   };
 
   // === Animation values ===
-  const iconDropAnim = useRef(new Animated.Value(0)).current;
-  const iconPulseAnim = useRef(new Animated.Value(1)).current;
-  const mainIconRotate = useRef(new Animated.Value(0)).current;
-  const mainIconOpacity = useRef(new Animated.Value(0)).current;
-  const titleWords = t('allSet').split(' ');
-  const wordAnimations = useRef(
-    titleWords.map(() => ({
-      opacity: new Animated.Value(0),
-      scale: new Animated.Value(0.5),
-      translateY: new Animated.Value(20),
-    }))
-  ).current;
+  // badgeIn: disc spring-in. ring/check: SVG stroke draws. halo/burst: the
+  // single celebration pulse. breath: idle loop. title/subtitle: rise + fade.
+  const badgeIn = useSharedValue(0);
+  const ring = useSharedValue(0);
+  const check = useSharedValue(0);
+  const halo = useSharedValue(0);
+  const burst = useSharedValue(0);
+  const breath = useSharedValue(0);
+  const titleIn = useSharedValue(0);
+  const subtitleIn = useSharedValue(0);
 
-  const subtextOpacity = useRef(new Animated.Value(0)).current;
-  const subtextTranslateY = useRef(new Animated.Value(spacing.xl)).current;
-
-  // Start animations after consent flow completes (or immediately if no consent needed)
+  // Choreography: disc + ring (0ms) -> check draws (380ms) -> haptic, halo and
+  // burst fire as the check lands (~830ms) -> text rises -> idle breathing.
   useEffect(() => {
     if (!consentDone) return;
 
-    Animated.sequence([
-      // Phase 1: Icon drop with bounce
-      Animated.parallel([
-        Animated.spring(iconDropAnim, {
-          toValue: 1,
-          tension: 30,
-          friction: 5,
-          useNativeDriver: true,
-        }),
-        Animated.timing(mainIconOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(mainIconRotate, {
-          toValue: 1,
-          duration: 800,
-          easing: Easing.out(Easing.back(2)),
-          useNativeDriver: true,
-        }),
-      ]),
-      // Phase 2: Title + subtitle + progress bar
-      Animated.parallel([
-        ...wordAnimations.map((wordAnim, index) =>
-          Animated.parallel([
-            Animated.spring(wordAnim.opacity, {
-              toValue: 1,
-              delay: index * 100,
-              useNativeDriver: true,
-            }),
-            Animated.spring(wordAnim.scale, {
-              toValue: 1,
-              tension: 40,
-              friction: 6,
-              delay: index * 100,
-              useNativeDriver: true,
-            }),
-            Animated.spring(wordAnim.translateY, {
-              toValue: 0,
-              tension: 40,
-              friction: 6,
-              delay: index * 100,
-              useNativeDriver: true,
-            }),
-          ])
+    if (reduceMotion) {
+      badgeIn.value = 1;
+      ring.value = 1;
+      check.value = 1;
+      titleIn.value = 1;
+      subtitleIn.value = 1;
+      return;
+    }
+
+    badgeIn.value = withSpring(1, { damping: 14, stiffness: 140 });
+    ring.value = withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) });
+    check.value = withDelay(380, withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) }));
+    halo.value = withDelay(830, withTiming(1, { duration: 750, easing: Easing.out(Easing.quad) }));
+    burst.value = withDelay(830, withTiming(1, { duration: 700, easing: Easing.out(Easing.quad) }));
+    breath.value = withDelay(
+      1700,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: 1600, easing: Easing.inOut(Easing.sin) })
         ),
-        Animated.sequence([
-          Animated.delay(titleWords.length * 100 + 200),
-          Animated.parallel([
-            Animated.timing(subtextOpacity, {
-              toValue: 1,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-            Animated.spring(subtextTranslateY, {
-              toValue: 0,
-              tension: 40,
-              friction: 8,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]),
-      ]),
-    ]).start();
+        -1,
+        false
+      )
+    );
+    titleIn.value = withDelay(850, withSpring(1, { damping: 16, stiffness: 120 }));
+    subtitleIn.value = withDelay(
+      1000,
+      withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) })
+    );
 
-    // Continuous pulse
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(iconPulseAnim, {
-          toValue: 1.05,
-          duration: 1500,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(iconPulseAnim, {
-          toValue: 1,
-          duration: 1500,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, [consentDone]);
+    const hapticTimer = setTimeout(() => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    }, 830);
 
-  // Icon interpolations
-  const iconTranslateY = iconDropAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-100, 0],
-  });
-  const iconDropScale = iconDropAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
-  const iconRotate = mainIconRotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['-180deg', '0deg'],
-  });
+    return () => {
+      clearTimeout(hapticTimer);
+      cancelAnimation(breath);
+    };
+  }, [consentDone, reduceMotion]);
 
-  const particles = useMemo(
-    () => Array.from({ length: 15 }, (_, i) => <Particle key={i} index={i} delay={300 + i * 50} />),
-    []
-  );
+  const ringProps = useAnimatedProps(() => ({
+    strokeDashoffset: circumference * (1 - ring.value),
+  }));
+
+  const checkProps = useAnimatedProps(() => ({
+    strokeDashoffset: CHECK_LENGTH * (1 - check.value),
+  }));
+
+  const badgeStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(badgeIn.value, [0, 1], [0, 1], 'clamp'),
+    transform: [{ scale: interpolate(badgeIn.value, [0, 1], [0.6, 1]) * (1 + breath.value * 0.02) }],
+  }));
+
+  const haloStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(halo.value, [0, 0.12, 1], [0, 0.5, 0]),
+    transform: [{ scale: 1 + halo.value * 0.8 }],
+  }));
+
+  const titleStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(titleIn.value, [0, 1], [0, 1], 'clamp'),
+    transform: [{ translateY: (1 - titleIn.value) * spacing.lg }],
+  }));
+
+  const subtitleStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(subtitleIn.value, [0, 1], [0, 1], 'clamp'),
+    transform: [{ translateY: (1 - subtitleIn.value) * spacing.md }],
+  }));
+
+  // Deterministic radial burst: evenly spread angles with small per-dot
+  // variation in distance and size so it reads organic, not mechanical.
+  const burstDots = useMemo(() => {
+    const palette = [neon.cyan, neon.green, neon.yellow, neon.magenta, neon.purple, neon.orange];
+    const baseDistance = ringSize / 2 + spacing.lg;
+    return Array.from({ length: BURST_DOT_COUNT }, (_, i) => ({
+      angle: (i / BURST_DOT_COUNT) * Math.PI * 2 + (i % 2 === 0 ? 0.12 : -0.08),
+      distance: baseDistance * (1 + ((i * 7) % 5) / 10),
+      size: 5 + (i % 3) * 2,
+      color: palette[i % palette.length],
+    }));
+  }, [neon, ringSize, spacing.lg]);
 
   const darkColors = [hexColors.dark.background, '#0F1E36', '#1A3D5C'] as const;
   const lightColors = [hexColors.light.background, '#E0F7FF', '#D0EFFF'] as const;
@@ -443,7 +368,8 @@ export default function OnboardingSuccessScreen() {
     </ScrollView>
   );
 
-  // Animation screen (progress bar reflects download)
+  // Success animation: glass disc with a self-drawing check, gradient ring,
+  // one halo pulse + dot burst, then rising text.
   const renderAnimationScreen = () => (
     <YStack
       padding={spacing.xl}
@@ -453,130 +379,163 @@ export default function OnboardingSuccessScreen() {
       alignItems="center"
     >
       <YStack alignItems="center" gap={spacing.xl}>
-        {/* Icon with particles and pulse rings */}
         <View
           style={{
-            width: iconAreaSize,
-            height: iconAreaSize,
+            width: areaSize,
+            height: areaSize,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <PulseRing
-            delay={0}
-            theme={theme}
-            size={iconContainerSize}
-            borderWidth={borderWidths.medium}
+          {/* Halo pulse — a single soft ring expanding past the badge */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              {
+                position: 'absolute',
+                width: ringSize,
+                height: ringSize,
+                borderRadius: ringSize / 2,
+                borderWidth: 1.5,
+                borderColor: neon.cyan,
+              },
+              haloStyle,
+            ]}
           />
-          <PulseRing
-            delay={1000}
-            theme={theme}
-            size={iconContainerSize}
-            borderWidth={borderWidths.medium}
-          />
-          <PulseRing
-            delay={2000}
-            theme={theme}
-            size={iconContainerSize}
-            borderWidth={borderWidths.medium}
-          />
-          {particles}
+
+          {burstDots.map((dot, index) => (
+            <BurstDot
+              key={index}
+              progress={burst}
+              angle={dot.angle}
+              distance={dot.distance}
+              size={dot.size}
+              color={dot.color}
+              centerOffset={areaSize / 2}
+            />
+          ))}
 
           <Animated.View
-            style={{
-              opacity: mainIconOpacity,
-              transform: [
-                { translateY: iconTranslateY },
-                { scale: iconDropScale },
-                { rotate: iconRotate },
-              ],
-              shadowColor: theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.neonCyan,
-              shadowOffset: { width: 0, height: spacing.sm },
-              shadowOpacity: theme === 'dark' ? 0.4 : 0.2,
-              shadowRadius: spacing.xl,
-              elevation: 10,
-            }}
+            style={[
+              badgeStyle,
+              {
+                shadowColor: neon.cyan,
+                shadowOffset: { width: 0, height: spacing.sm },
+                shadowOpacity: theme === 'dark' ? 0.35 : 0.18,
+                shadowRadius: spacing.xl,
+                elevation: 10,
+              },
+            ]}
           >
-            <Animated.View style={{ transform: [{ scale: iconPulseAnim }] }}>
-              <YStack
-                width={iconContainerSize}
-                height={iconContainerSize}
-                borderRadius={radius.full}
-                backgroundColor={theme === 'dark' ? '$primaryLight' : '#D4F1FF'}
-                alignItems="center"
-                justifyContent="center"
-                marginBottom={spacing.lg}
-              >
-                <CheckCircle
-                  size={iconSizes.heroLg}
-                  color={theme === 'dark' ? hexColors.dark.neonGreen : hexColors.light.neonGreen}
-                  strokeWidth={2.5}
+            <View style={{ width: ringSize, height: ringSize }}>
+              {/* Gradient ring drawing around the disc */}
+              <Svg width={ringSize} height={ringSize}>
+                <Defs>
+                  <SvgLinearGradient id="successRing" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <Stop offset="0%" stopColor={neon.cyan} />
+                    <Stop offset="100%" stopColor={neon.green} />
+                  </SvgLinearGradient>
+                </Defs>
+                <Circle
+                  cx={ringSize / 2}
+                  cy={ringSize / 2}
+                  r={ringRadius}
+                  stroke={theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}
+                  strokeWidth={ringStroke}
+                  fill="none"
                 />
-              </YStack>
-            </Animated.View>
+                <AnimatedCircle
+                  cx={ringSize / 2}
+                  cy={ringSize / 2}
+                  r={ringRadius}
+                  stroke="url(#successRing)"
+                  strokeWidth={ringStroke}
+                  strokeLinecap="round"
+                  fill="none"
+                  strokeDasharray={`${circumference} ${circumference}`}
+                  animatedProps={ringProps}
+                  transform={`rotate(-90 ${ringSize / 2} ${ringSize / 2})`}
+                />
+              </Svg>
+
+              {/* Glass disc with the self-drawing checkmark */}
+              <View
+                style={{
+                  position: 'absolute',
+                  top: ringGap,
+                  left: ringGap,
+                  width: badgeSize,
+                  height: badgeSize,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <GlassSurface
+                  variant="glass"
+                  isDark={theme === 'dark'}
+                  tint={hexColors[theme].primaryLight}
+                  glassTint={hexToRgba(neon.cyan, 0.12)}
+                  borderRadius={badgeSize / 2}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Svg width={badgeSize * 0.58} height={badgeSize * 0.58} viewBox="0 0 100 100">
+                  <AnimatedPath
+                    d={CHECK_PATH}
+                    stroke={neon.green}
+                    strokeWidth={9}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                    strokeDasharray={`${CHECK_LENGTH} ${CHECK_LENGTH}`}
+                    animatedProps={checkProps}
+                  />
+                </Svg>
+              </View>
+            </View>
           </Animated.View>
         </View>
 
-        {/* Animated title — word by word */}
-        <XStack gap={spacing.sm} alignItems="center">
-          {titleWords.map((word, index) => (
-            <Animated.View
-              key={index}
-              style={{
-                opacity: wordAnimations[index].opacity,
-                transform: [
-                  { scale: wordAnimations[index].scale },
-                  { translateY: wordAnimations[index].translateY },
-                ],
-              }}
+        {/* Title + subtitle rising in sequence */}
+        <YStack alignItems="center" gap={spacing.md}>
+          <Animated.View style={titleStyle}>
+            <Text.Headline
+              fontSize={typography.fontSize.display}
+              fontFamily={FONT_FAMILIES.extrabold}
+              textAlign="center"
+              color="$text"
+              letterSpacing={typography.letterSpacing.display}
+              lineHeight={typography.lineHeight.display}
             >
-              <Text.Headline
-                fontSize={typography.fontSize.display}
-                fontFamily={FONT_FAMILIES.extrabold}
-                textAlign="center"
-                color="$text"
-                letterSpacing={typography.letterSpacing.display}
-                lineHeight={typography.lineHeight.display}
-              >
-                {word}
-              </Text.Headline>
-            </Animated.View>
-          ))}
-        </XStack>
+              {t('allSet')}
+            </Text.Headline>
+          </Animated.View>
 
-        {/* Animated subtitle */}
-        <Animated.View
-          style={{
-            opacity: subtextOpacity,
-            transform: [{ translateY: subtextTranslateY }],
-          }}
-        >
-          <Text.Body
-            fontSize={typography.fontSize.title}
-            textAlign="center"
-            color="$textSecondary"
-            lineHeight={typography.lineHeight.title}
-          >
-            {t('welcomeToApp')}
-          </Text.Body>
-        </Animated.View>
+          <Animated.View style={subtitleStyle}>
+            <Text.Body
+              fontSize={typography.fontSize.title}
+              textAlign="center"
+              color="$textSecondary"
+              lineHeight={typography.lineHeight.title}
+            >
+              {t('welcomeToApp')}
+            </Text.Body>
+          </Animated.View>
+        </YStack>
       </YStack>
     </YStack>
   );
 
   return (
-    <Animated.View style={{ flex: 1 }}>
-      <LinearGradient
-        colors={gradientColors}
-        style={{ flex: 1 }}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <ScreenContainer>
-          <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-          {showConsent ? renderConsentScreen() : consentDone && renderAnimationScreen()}
-        </ScreenContainer>
-      </LinearGradient>
-    </Animated.View>
+    <LinearGradient
+      colors={gradientColors}
+      style={{ flex: 1 }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <ScreenContainer>
+        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+        {showConsent ? renderConsentScreen() : consentDone && renderAnimationScreen()}
+      </ScreenContainer>
+    </LinearGradient>
   );
 }
