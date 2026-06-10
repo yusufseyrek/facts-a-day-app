@@ -25,20 +25,32 @@ const DELAY_DURATION = 1000;
 const FADE_DURATION = 350;
 
 interface SplashOverlayProps {
+  /**
+   * True once the app tree under the overlay is mounted. The readiness gates
+   * (setHomeRenderPending) are armed during initialization, so waiting any
+   * earlier would resolve against not-yet-created gates and fade the overlay
+   * out while the home screen is still rendering (the old Android flash).
+   */
+  appReady: boolean;
   onHidden: () => void;
 }
 
-export function SplashOverlay({ onHidden }: SplashOverlayProps) {
+export function SplashOverlay({ appReady, onHidden }: SplashOverlayProps) {
   const [imageReady, setImageReady] = useState(false);
   const [homeReady, setHomeReady] = useState(false);
   const opacity = useSharedValue(1);
 
-  // Wait for home screen to be ready
+  // Once the app tree is mounted, wait for the home screen's first real paint
   useEffect(() => {
+    if (!appReady) return;
+    let cancelled = false;
     waitForHomeScreenReady().then(() => {
-      setHomeReady(true);
+      if (!cancelled) setHomeReady(true);
     });
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [appReady]);
 
   // When image is loaded and decoded, hide native splash
   const handleImageLoaded = useCallback(() => {

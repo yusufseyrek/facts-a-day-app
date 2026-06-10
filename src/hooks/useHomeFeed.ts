@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 
 import { HOME_FEED } from '../config/app';
-import { usePreloadedData } from '../contexts';
+import { signalHeroImageReady, signalHomeScreenRendered } from '../contexts';
 import { getOnThisDay } from '../services/api';
 import { mapApiFactToRelations } from '../services/database';
 
@@ -28,8 +28,6 @@ interface UseHomeFeedResult {
  * with a ±3-day week fallback).
  */
 export function useHomeFeed(locale: string): UseHomeFeedResult {
-  const { signalHomeScreenReady } = usePreloadedData();
-
   const { facts: feedFacts, isLoading: feedLoading } = useHomeFeedData(locale);
 
   const onThisDayQuery = useQuery({
@@ -55,10 +53,24 @@ export function useHomeFeed(locale: string): UseHomeFeedResult {
   const onThisDayIsWeekFallback =
     (onThisDayQuery.data?.exact?.length ?? 0) === 0 && (onThisDayQuery.data?.week?.length ?? 0) > 0;
 
-  // Signal home screen ready when showing empty state
-  if (!isLoading && latestFacts.length === 0 && onThisDayFacts.length === 0) {
-    signalHomeScreenReady();
-  }
+  // Release the splash gates. Once the queries settle, the commit that runs
+  // this effect contains the settled content (cards or empty state); two
+  // frames later the native side has actually drawn it. The hero-image gate is
+  // resolved by LatestCarousel's first card — unless there are no cards, in
+  // which case no image will ever load and the gate is released here.
+  const hasLatest = latestFacts.length > 0;
+  useEffect(() => {
+    if (isLoading) return;
+    if (!hasLatest) signalHeroImageReady();
+    let secondFrame: number | undefined;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => signalHomeScreenRendered());
+    });
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      if (secondFrame !== undefined) cancelAnimationFrame(secondFrame);
+    };
+  }, [isLoading, hasLatest]);
 
   return { latestFacts, latestFactIds, onThisDayFacts, onThisDayIsWeekFallback, isLoading };
 }

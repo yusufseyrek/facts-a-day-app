@@ -12,6 +12,7 @@ import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { Newspaper } from '@tamagui/lucide-icons';
 
 import { LAYOUT, NATIVE_ADS } from '../../config/app';
+import { signalHeroImageReady } from '../../contexts';
 import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { useTranslation } from '../../i18n';
 import { trackCarouselSwipe } from '../../services/analytics';
@@ -177,6 +178,9 @@ export const LatestCarousel = React.memo(function LatestCarousel({
             aspectRatio={1}
             titleNumberOfLines={5}
             isPremiumLocked={isFactPremiumLocked}
+            // First card is the splash "hero": the overlay holds its fade-out
+            // until this image has decoded (see splashGate).
+            onImageReady={item.id === factIds[0] ? signalHeroImageReady : undefined}
           />
         </View>
       );

@@ -45,11 +45,11 @@ import { asyncStoragePersister, persistMaxAge, queryClient } from '../src/config
 import {
   BadgeToastProvider,
   OnboardingProvider,
-  PreloadedDataProvider,
   PremiumProvider,
   ReviewPromptProvider,
   ScrollToTopProvider,
   setFeedLoadPending,
+  setHomeRenderPending,
   setLocaleRefreshPending,
   signalLocaleRefreshDone,
   useOnboarding,
@@ -541,7 +541,8 @@ export default function RootLayout() {
         setLocaleRefreshPending();
         await contentRefresh.saveCurrentLocale(locale);
 
-        // Let the JS splash overlay mount (replaces native splash)
+        // Arm the splash gates, then let the app tree mount under the overlay.
+        setHomeRenderPending();
         setInitialOnboardingStatus(isComplete);
 
         try {
@@ -556,8 +557,10 @@ export default function RootLayout() {
 
         signalLocaleRefreshDone();
       } else {
-        // No locale change — normal startup. Let splash close; the home screen
-        // fetches its feed on mount.
+        // No locale change — normal startup. The home screen fetches its feed
+        // on mount; the splash overlay holds until it has actually rendered
+        // (see setHomeRenderPending / SplashOverlay).
+        setHomeRenderPending();
         setInitialOnboardingStatus(isComplete);
 
         initializeAdsForReturningUser().catch((error) => {
@@ -649,23 +652,21 @@ export default function RootLayout() {
                       },
                     }}
                   >
-                    <PreloadedDataProvider>
-                      <OnboardingProvider initialComplete={initialOnboardingStatus}>
-                        <IAPSafeProvider>
-                          <ScrollToTopProvider>
-                            <AppThemeProvider>
-                              <NavigationThemeWrapper>
-                                <ReviewPromptProvider>
-                                  <BadgeToastProvider>
-                                    <AppContent />
-                                  </BadgeToastProvider>
-                                </ReviewPromptProvider>
-                              </NavigationThemeWrapper>
-                            </AppThemeProvider>
-                          </ScrollToTopProvider>
-                        </IAPSafeProvider>
-                      </OnboardingProvider>
-                    </PreloadedDataProvider>
+                    <OnboardingProvider initialComplete={initialOnboardingStatus}>
+                      <IAPSafeProvider>
+                        <ScrollToTopProvider>
+                          <AppThemeProvider>
+                            <NavigationThemeWrapper>
+                              <ReviewPromptProvider>
+                                <BadgeToastProvider>
+                                  <AppContent />
+                                </BadgeToastProvider>
+                              </ReviewPromptProvider>
+                            </NavigationThemeWrapper>
+                          </AppThemeProvider>
+                        </ScrollToTopProvider>
+                      </IAPSafeProvider>
+                    </OnboardingProvider>
                   </PersistQueryClientProvider>
                 </I18nProvider>
               </PostHogErrorBoundary>
@@ -673,7 +674,9 @@ export default function RootLayout() {
           </SafeAreaProvider>
         </ErrorBoundary>
       )}
-      {showSplashOverlay && <SplashOverlay onHidden={() => setShowSplashOverlay(false)} />}
+      {showSplashOverlay && (
+        <SplashOverlay appReady={isAppReady} onHidden={() => setShowSplashOverlay(false)} />
+      )}
     </View>
   );
 }
