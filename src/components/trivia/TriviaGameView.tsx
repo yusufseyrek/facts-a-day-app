@@ -730,9 +730,10 @@ export function TriviaGameView({
               pressed && currentQuestionIndex > 0 && { opacity: 0.8, transform: [{ scale: 0.98 }] },
             ]}
           >
+            {/* Solid primary on purpose (no glass): must match the opaque
+                primary buttons on the native-ad interstitial exactly. */}
             <XStack
-              backgroundColor={useGlass ? 'transparent' : primaryColor}
-              overflow={useGlass ? 'hidden' : undefined}
+              backgroundColor={primaryColor}
               height={media.buttonHeight}
               paddingHorizontal={spacing.lg}
               borderRadius={radius.lg}
@@ -740,19 +741,6 @@ export function TriviaGameView({
               alignItems="center"
               opacity={currentQuestionIndex > 0 ? 1 : 0.4}
             >
-              {useGlass && (
-                <GlassSurface
-                  variant="glass"
-                  isDark={isDark}
-                  tint={primaryColor}
-                  // High alpha on purpose: these are primary CTAs and at the
-                  // usual 0.6 glass tint they read faded next to the opaque
-                  // primary buttons elsewhere in the trivia flow.
-                  glassTint={hexToRgba(primaryColor, 0.85)}
-                  borderRadius={radius.lg}
-                  style={absoluteFillObject}
-                />
-              )}
               <ChevronLeft size={iconSizes.lg} color="#FFFFFF" />
             </XStack>
           </Pressable>
@@ -769,8 +757,7 @@ export function TriviaGameView({
             ]}
           >
             <XStack
-              backgroundColor={useGlass ? 'transparent' : primaryColor}
-              overflow={useGlass ? 'hidden' : undefined}
+              backgroundColor={primaryColor}
               height={media.buttonHeight}
               borderRadius={radius.lg}
               justifyContent="center"
@@ -778,19 +765,6 @@ export function TriviaGameView({
               gap={spacing.sm}
               opacity={isLoadingResults ? 0.8 : 1}
             >
-              {useGlass && (
-                <GlassSurface
-                  variant="glass"
-                  isDark={isDark}
-                  tint={primaryColor}
-                  // High alpha on purpose: these are primary CTAs and at the
-                  // usual 0.6 glass tint they read faded next to the opaque
-                  // primary buttons elsewhere in the trivia flow.
-                  glassTint={hexToRgba(primaryColor, 0.85)}
-                  borderRadius={radius.lg}
-                  style={absoluteFillObject}
-                />
-              )}
               {isLoadingResults ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
