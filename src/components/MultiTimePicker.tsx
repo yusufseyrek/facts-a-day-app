@@ -91,7 +91,7 @@ export function MultiTimePicker({
           padding={spacing.md}
           borderRadius={radius.md}
           alignItems="center"
-          justifyContent="space-between"
+          justifyContent="center"
           gap={spacing.md}
         >
           <Text.Label color="$textSecondary" fontFamily={FONT_FAMILIES.medium}>

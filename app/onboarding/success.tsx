@@ -23,12 +23,12 @@ import {
   Svg,
 } from 'react-native-svg';
 
-import { Gift } from '@tamagui/lucide-icons';
+import { Gift, Sparkles } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { YStack } from 'tamagui';
+import { XStack, YStack } from 'tamagui';
 
 import { Button, FONT_FAMILIES, GlassSurface, ScreenContainer, Text } from '../../src/components';
 import { ADS_ENABLED } from '../../src/config/app';
@@ -105,7 +105,7 @@ const NAVIGATE_DELAY_MS = 3000;
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, iconSizes, spacing, radius, media } = useResponsive();
+  const { typography, iconSizes, spacing, radius, media, borderWidths } = useResponsive();
   const router = useRouter();
   const { completeOnboarding, selectedCategories } = useOnboarding();
   const reduceMotion = useReduceMotion();
@@ -228,10 +228,12 @@ export default function OnboardingSuccessScreen() {
   const burst = useSharedValue(0);
   const breath = useSharedValue(0);
   const titleIn = useSharedValue(0);
+  const underlineIn = useSharedValue(0);
   const subtitleIn = useSharedValue(0);
 
   // Choreography: disc + ring (0ms) -> check draws (380ms) -> haptic, halo and
-  // burst fire as the check lands (~830ms) -> text rises -> idle breathing.
+  // burst fire as the check lands (~830ms) -> title rises, underline draws,
+  // welcome pill rises -> idle breathing (from 1000ms).
   useEffect(() => {
     if (!consentDone) return;
 
@@ -240,6 +242,7 @@ export default function OnboardingSuccessScreen() {
       ring.value = 1;
       check.value = 1;
       titleIn.value = 1;
+      underlineIn.value = 1;
       subtitleIn.value = 1;
       return;
     }
@@ -253,7 +256,7 @@ export default function OnboardingSuccessScreen() {
     halo.value = withDelay(830, withTiming(1, { duration: 750, easing: Easing.out(Easing.quad) }));
     burst.value = withDelay(830, withTiming(1, { duration: 700, easing: Easing.out(Easing.quad) }));
     breath.value = withDelay(
-      1700,
+      1000,
       withRepeat(
         withSequence(
           withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.sin) }),
@@ -264,8 +267,12 @@ export default function OnboardingSuccessScreen() {
       )
     );
     titleIn.value = withDelay(850, withSpring(1, { damping: 16, stiffness: 120 }));
-    subtitleIn.value = withDelay(
+    underlineIn.value = withDelay(
       1000,
+      withTiming(1, { duration: 500, easing: Easing.out(Easing.cubic) })
+    );
+    subtitleIn.value = withDelay(
+      1100,
       withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) })
     );
 
@@ -302,6 +309,12 @@ export default function OnboardingSuccessScreen() {
   const titleStyle = useAnimatedStyle(() => ({
     opacity: interpolate(titleIn.value, [0, 1], [0, 1], 'clamp'),
     transform: [{ translateY: (1 - titleIn.value) * spacing.lg }],
+  }));
+
+  // Gradient underline draws out from the center beneath the title
+  const underlineStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(underlineIn.value, [0, 1], [0, 1], 'clamp'),
+    transform: [{ scaleX: interpolate(underlineIn.value, [0, 1], [0.15, 1]) }],
   }));
 
   const subtitleStyle = useAnimatedStyle(() => ({
@@ -507,7 +520,7 @@ export default function OnboardingSuccessScreen() {
           </Animated.View>
         </View>
 
-        {/* Title + subtitle rising in sequence */}
+        {/* Title with neon glow, gradient underline, then welcome pill */}
         <YStack alignItems="center" gap={spacing.md}>
           <Animated.View style={titleStyle}>
             <Text.Headline
@@ -517,20 +530,60 @@ export default function OnboardingSuccessScreen() {
               color="$text"
               letterSpacing={typography.letterSpacing.display}
               lineHeight={typography.lineHeight.display}
+              style={{
+                textShadowColor: hexToRgba(neon.cyan, theme === 'dark' ? 0.45 : 0.2),
+                textShadowOffset: { width: 0, height: 0 },
+                textShadowRadius: 16,
+              }}
             >
               {t('allSet')}
             </Text.Headline>
           </Animated.View>
 
+          {/* Underline picks up the ring's cyan -> green gradient */}
+          <Animated.View style={underlineStyle}>
+            <LinearGradient
+              colors={[neon.cyan, neon.green]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{
+                width: spacing.xxl * 2,
+                height: spacing.xs,
+                borderRadius: radius.full,
+              }}
+            />
+          </Animated.View>
+
           <Animated.View style={subtitleStyle}>
-            <Text.Body
-              fontSize={typography.fontSize.title}
-              textAlign="center"
-              color="$textSecondary"
-              lineHeight={typography.lineHeight.title}
+            <XStack
+              alignItems="center"
+              gap={spacing.sm}
+              paddingHorizontal={spacing.lg}
+              paddingVertical={spacing.sm + spacing.xs / 2}
+              borderRadius={radius.full}
+              borderWidth={borderWidths.hairline}
+              borderColor={hexToRgba(neon.cyan, theme === 'dark' ? 0.35 : 0.25)}
+              overflow="hidden"
             >
-              {t('welcomeToApp')}
-            </Text.Body>
+              <GlassSurface
+                variant="glass"
+                isDark={theme === 'dark'}
+                tint={hexColors[theme].primaryLight}
+                glassTint={hexToRgba(neon.cyan, 0.08)}
+                borderRadius={radius.full}
+                style={StyleSheet.absoluteFill}
+              />
+              <Sparkles size={iconSizes.sm} color={neon.cyan} />
+              <Text.Body
+                fontSize={typography.fontSize.title}
+                fontFamily={FONT_FAMILIES.semibold}
+                textAlign="center"
+                color="$text"
+                lineHeight={typography.lineHeight.title}
+              >
+                {t('welcomeToApp')}
+              </Text.Body>
+            </XStack>
           </Animated.View>
         </YStack>
       </YStack>
