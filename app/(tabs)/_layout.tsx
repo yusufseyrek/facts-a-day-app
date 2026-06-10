@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useFocusEffect, usePathname } from 'expo-router';
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
+import { useFocusEffect, usePathname, useRouter } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { GlobalProgressBar } from '../../src/components/GlobalProgressBar';
@@ -60,6 +61,20 @@ export default function TabLayout() {
     }
   }, [currentTab]);
 
+  // iOS 26 contextual trailing button: while the trivia tab is active, the
+  // separated role="search" button becomes a PLAY button. The search screen
+  // gets preventNativeSelection, so pressing it doesn't switch tabs — the
+  // native side blocks the selection and emits onTabSelectionPrevented, which
+  // launches a trivia game instead (daily if one is pending, mixed otherwise).
+  // Only the search trigger ever sets preventNativeSelection, so any prevented
+  // event is a play press. Other platforms keep the plain search tab.
+  const router = useRouter();
+  const useSeparatedSearchTab = Platform.OS === 'ios' && isLiquidGlassAvailable();
+  const playTriviaMode = useSeparatedSearchTab && currentTab === 'trivia';
+  const handleTriviaPlayPress = useCallback(() => {
+    router.push(hasDailyTrivia ? '/trivia/game?type=daily' : '/trivia/game?type=mixed');
+  }, [router, hasDailyTrivia]);
+
   // Check for daily trivia availability
   const checkDailyTrivia = useCallback(async () => {
     try {
@@ -115,6 +130,11 @@ export default function TabLayout() {
           rippleColor={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}
           indicatorColor={isDark ? colors.neutralLight : colors.primaryLight}
           labelVisibilityMode="labeled"
+          unstable_nativeProps={
+            useSeparatedSearchTab
+              ? { onTabSelectionPrevented: handleTriviaPlayPress }
+              : undefined
+          }
           screenListeners={({ route }) => ({
             tabPress: () => {
               // Android only: iOS re-tap scrolls natively, and UIKit lands at the
@@ -139,10 +159,21 @@ export default function TabLayout() {
 
           {/* role="search" splits this tab into the standalone trailing search
             button next to the Liquid Glass bar on iOS 26; Android ignores the
-            role and keeps a regular tab (hence the explicit icon/label). */}
-          <NativeTabs.Trigger name="(search)" role="search">
-            <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
-            <NativeTabs.Trigger.Label>{t('search')}</NativeTabs.Trigger.Label>
+            role and keeps a regular tab (hence the explicit icon/label).
+            While the trivia tab is active the button turns into a play-trivia
+            button (icon swap + preventNativeSelection, handled above). */}
+          <NativeTabs.Trigger
+            name="(search)"
+            role="search"
+            unstable_nativeProps={playTriviaMode ? { preventNativeSelection: true } : undefined}
+          >
+            <NativeTabs.Trigger.Icon
+              sf={playTriviaMode ? 'play.fill' : 'magnifyingglass'}
+              md="search"
+            />
+            <NativeTabs.Trigger.Label>
+              {playTriviaMode ? t('trivia') : t('search')}
+            </NativeTabs.Trigger.Label>
           </NativeTabs.Trigger>
 
           {/* Android: an empty <Badge /> reaches rn-screens as badgeValue ' '
