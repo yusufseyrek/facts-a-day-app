@@ -115,6 +115,11 @@ export default function FavoritesScreen() {
           setSearchQuery('');
           setDebouncedQuery('');
         },
+        // onCancelButtonPress is iOS-only; Android's collapse event is onClose.
+        onClose: () => {
+          setSearchQuery('');
+          setDebouncedQuery('');
+        },
         hideWhenScrolling: false,
       },
     });

@@ -8,6 +8,7 @@ import { Image } from 'expo-image';
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { hexColors, useTheme } from '../theme';
+import { androidRipple } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
 import { CategoryBadge } from './CategoryBadge';
@@ -141,10 +142,13 @@ const CompactFactCardComponent = ({
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        android_ripple={androidRipple(theme === 'dark')}
         style={[
           styles.card,
           {
             borderRadius: radius.lg,
+            // Clip the Android ripple to the rounded card.
+            overflow: 'hidden',
             backgroundColor: colors.cardBackground,
             padding: spacing.md,
             gap: spacing.md,

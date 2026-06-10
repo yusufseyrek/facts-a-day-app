@@ -42,7 +42,7 @@ import * as triviaService from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
 import { hexToRgba } from '../../src/utils/colors';
 import { getLucideIcon } from '../../src/utils/iconMapper';
-import { absoluteFillObject } from '../../src/utils/styles';
+import { absoluteFillObject, androidRipple } from '../../src/utils/styles';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { TriviaMode } from '../../src/services/analytics';
@@ -482,10 +482,14 @@ function SessionCard({
   return (
     <Pressable
       onPress={hasResultData ? onPress : undefined}
+      android_ripple={hasResultData ? androidRipple(isDark) : undefined}
       style={({ pressed }) => [
         perfShadowStyles.card,
         { borderRadius: radius.lg },
-        pressed && hasResultData && { opacity: 0.8 },
+        // Clip the ripple to the rounded card — Android only: on iOS
+        // overflow:'hidden' (masksToBounds) would kill the card shadow.
+        Platform.OS === 'android' && { overflow: 'hidden' as const },
+        Platform.OS === 'ios' && pressed && hasResultData && { opacity: 0.8 },
       ]}
       testID={testID}
     >

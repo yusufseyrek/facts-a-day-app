@@ -11,10 +11,17 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, AppState } from 'react-native';
-import { Easing, type SharedValue, useSharedValue, withTiming } from 'react-native-reanimated';
+import {
+  cancelAnimation,
+  Easing,
+  type SharedValue,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
+import { useNavigation } from 'expo-router';
 
 import { cacheFactAudio, getLocalFactAudioPath } from '../services/factAudio';
 
@@ -112,7 +119,9 @@ export function useFactAudio(
     durationRef.current = 0;
     try {
       player.pause();
-      player.seekTo(0);
+      // seekTo is async — a rejection after the native player is released
+      // (screen close mid-seek) must not surface as an unhandled rejection.
+      player.seekTo(0)?.catch?.(() => {});
     } catch {
       // expo-audio throws transient errors when the player is being remounted; ignore.
     }
@@ -135,7 +144,7 @@ export function useFactAudio(
       setPlaybackState('idle');
       try {
         player.pause();
-        player.seekTo(0);
+        player.seekTo(0)?.catch?.(() => {});
       } catch {
         // expo-audio throws transient errors when the player is being remounted; ignore.
       }
@@ -165,17 +174,39 @@ export function useFactAudio(
     return () => sub.remove();
   }, [hasAudio, player]);
 
-  // Cleanup the player when source changes or the hook unmounts.
+  // No manual player cleanup: useAudioPlayer owns the native player's
+  // lifecycle and releases it on unmount AND on source change
+  // (useReleasingSharedObject). The pause()/remove() we used to call here ran
+  // against an already-released shared object on Android — a double-release
+  // during the screen-dismissal fragment teardown. What we DO own is the
+  // Reanimated progress animation: cancel it so no UI-thread timing keeps
+  // writing to the SVG ring while the screen's native views are being deleted
+  // (Android Fabric crash class).
   useEffect(() => {
     return () => {
+      cancelAnimation(progress);
+    };
+  }, [progress]);
+
+  // Quiesce the moment the host screen STARTS closing — beforeRemove covers
+  // the X button, Android hardware back, and swipe-back, all of which begin a
+  // native pop transition while this hook is still mounted. Pausing stops
+  // currentTime from changing (so no further ring animations arm during the
+  // transition) and cancelAnimation kills any in-flight timing segment. The
+  // unmount cleanup above is the backstop; this closes the playing-while-
+  // closing window it can't reach.
+  const navigation = useNavigation();
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
       try {
         player.pause();
-        player.remove();
       } catch {
-        // expo-audio throws transient errors when the player is being remounted; ignore.
+        // player may already be released; nothing to quiesce
       }
-    };
-  }, [player]);
+      cancelAnimation(progress);
+    });
+    return unsubscribe;
+  }, [navigation, player, progress]);
 
   // Background-cache the remote audio on first play so next time is local.
   useEffect(() => {
@@ -203,6 +234,13 @@ export function useFactAudio(
       return;
     }
     const next = Math.min(1, Math.max(0, (status?.currentTime ?? 0) / denom));
+    // Skip unchanged values entirely. Status ticks every ~500ms even for a
+    // loaded-but-IDLE player (currentTime pinned at 0), and each tick used to
+    // arm a fresh withTiming — Reanimated work that kept running through the
+    // Android screen-dismissal transition and raced the native teardown
+    // (crash on close). When the value DOES change (playback, pause, finish,
+    // reset-to-0), keep the timing animation so the ring moves smoothly.
+    if (progress.value === next) return;
     progress.value = reduceMotion
       ? next
       : withTiming(next, { duration: 260, easing: Easing.linear });

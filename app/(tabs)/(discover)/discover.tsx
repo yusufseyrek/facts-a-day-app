@@ -64,16 +64,6 @@ import type { Category, FactWithRelations } from '../../../src/services/database
 // How many facts to pull for a category browse view (first feed page).
 const CATEGORY_BROWSE_LIMIT = 100;
 
-// Selected-category chip shown in a small row below the native header
-const CategoryChip = styled(XStack, {
-  alignItems: 'center',
-});
-
-const CategoryChipClearButton = styled(YStack, {
-  alignItems: 'center',
-  justifyContent: 'center',
-});
-
 const EmptyDiscoverState = styled(YStack, {
   flex: 1,
   justifyContent: 'center',
@@ -418,7 +408,8 @@ function DiscoverScreen() {
   // under the large title, Android the native toolbar search. With a category
   // selected, the field itself carries the scope ("Search in Science...") —
   // the native search bar has no token/chip API, so the placeholder is the
-  // label. Re-runs on selection/locale change only.
+  // label — and an X appears in the header to clear the filter (replaces the
+  // old in-content chip row). Re-runs on selection/locale change only.
   useEffect(() => {
     navigation.setOptions({
       headerSearchBarOptions: {
@@ -431,9 +422,38 @@ function DiscoverScreen() {
         onChangeText: (e: { nativeEvent: { text: string } }) =>
           handleSearchChange(e.nativeEvent.text),
         onCancelButtonPress: clearSearch,
+        // onCancelButtonPress is iOS-only; Android's collapse event is onClose.
+        // Without it, closing the toolbar search leaves stale results state.
+        onClose: clearSearch,
       },
+      headerRight: selectedCategoryName
+        ? () => (
+            <Pressable
+              onPress={clearCategoryFilter}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+              role="button"
+              aria-label={t('allCategories')}
+              testID="discover-clear-category"
+            >
+              <X
+                size={iconSizes.md}
+                color={theme === 'dark' ? hexColors.dark.primary : hexColors.light.primary}
+              />
+            </Pressable>
+          )
+        : undefined,
     });
-  }, [navigation, t, handleSearchChange, clearSearch, selectedCategoryName]);
+  }, [
+    navigation,
+    t,
+    handleSearchChange,
+    clearSearch,
+    selectedCategoryName,
+    clearCategoryFilter,
+    iconSizes.md,
+    theme,
+  ]);
 
   // Handle category selection
   const handleCategoryPress = useCallback(
@@ -613,59 +633,9 @@ function DiscoverScreen() {
     [refreshing, selectedCategorySlug, handleCategoryPress]
   );
 
-  // The search field now lives in the native header; this renders only the
-  // selected-category chip (tap to clear the filter). It is rendered INSIDE
-  // the scroll content (ListHeaderComponent / scrollable empty state) — as a
-  // sibling above the lists it would sit at y=0 behind the translucent header.
-  const renderHeader = useCallback(() => {
-    if (!selectedCategory) return null;
-
-    const categoryColor = selectedCategory.color_hex || '#0066FF';
-    const contrastColor = getContrastColor(categoryColor);
-
-    return (
-      <Animated.View entering={FadeIn.duration(300)}>
-        <XStack
-          paddingHorizontal={spacing.lg}
-          paddingVertical={spacing.sm}
-          alignItems="center"
-          gap={spacing.sm}
-        >
-          <Pressable onPress={clearCategoryFilter}>
-            <CategoryChip
-              height={media.chipHeight}
-              borderRadius={radius.full}
-              paddingLeft={spacing.sm}
-              paddingRight={spacing.xs}
-              gap={spacing.xs}
-              style={{ backgroundColor: categoryColor }}
-            >
-              <Text.Caption
-                color={contrastColor}
-                numberOfLines={1}
-                fontFamily={FONT_FAMILIES.semibold}
-              >
-                {selectedCategory.name}
-              </Text.Caption>
-              <CategoryChipClearButton
-                width={media.chipClearButtonSize}
-                height={media.chipClearButtonSize}
-                borderRadius={radius.full}
-                style={{
-                  padding: spacing.xs,
-                  backgroundColor:
-                    contrastColor === '#000000' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)',
-                }}
-              >
-                <X size={iconSizes.xs} color={contrastColor} />
-              </CategoryChipClearButton>
-            </CategoryChip>
-          </Pressable>
-        </XStack>
-      </Animated.View>
-    );
-  }, [selectedCategory, clearCategoryFilter, spacing, radius, iconSizes, media]);
-
+  // The selected-category indicator lives in the native header now: the search
+  // placeholder carries the scope and headerRight is an X that clears the
+  // filter. No in-content chip row anymore.
   const renderEmptyState = useCallback(() => {
     const hasQuery = searchQuery.trim().length > 0;
     const searchFinished = !isSearching;
@@ -901,7 +871,6 @@ function DiscoverScreen() {
             refreshControl={searchRefreshControl}
             onScroll={handleSearchScroll}
             contentInsetAdjustmentBehavior="automatic"
-            ListHeaderComponent={renderHeader}
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -921,8 +890,8 @@ function DiscoverScreen() {
       }
 
       if (categoryFacts.length === 0) {
-        // Scrollable so the category chip stays below the native header and
-        // remains reachable to clear the filter.
+        // Scrollable so the empty state sits below the translucent native
+        // header (the header X clears the filter).
         return (
           <Animated.View
             key="empty"
@@ -934,7 +903,6 @@ function DiscoverScreen() {
               contentContainerStyle={{ flexGrow: 1 }}
               overScrollMode="never"
             >
-              {renderHeader()}
               <EmptyState
                 title={t('noDiscoverResults')}
                 description={t('noDiscoverResultsDescription')}
@@ -959,7 +927,6 @@ function DiscoverScreen() {
             refreshControl={categoryRefreshControl}
             onScroll={handleCategoryScroll}
             contentInsetAdjustmentBehavior="automatic"
-            ListHeaderComponent={renderHeader}
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -989,7 +956,6 @@ function DiscoverScreen() {
     searchRefreshControl,
     categoryRefreshControl,
     renderEmptyState,
-    renderHeader,
     spacing,
   ]);
 

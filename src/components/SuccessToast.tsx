@@ -142,7 +142,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
   // so InlineOverlay's own grace window is disabled. A toast is not
   // back-dismissible, so hardware back is a no-op.
   return (
-    <InlineOverlay visible={modalVisible} onRequestClose={noop} exitGraceMs={0}>
+    <InlineOverlay visible={modalVisible} onRequestClose={noop} exitGraceMs={0} passthrough>
       <View style={styles.overlay} pointerEvents="box-none">
         <Animated.View
           style={[

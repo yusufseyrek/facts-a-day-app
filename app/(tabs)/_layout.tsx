@@ -8,6 +8,7 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { GlobalProgressBar } from '../../src/components/GlobalProgressBar';
 import { OfflinePaywallSheet } from '../../src/components/OfflinePaywallSheet';
 import { useScrollToTop } from '../../src/contexts';
+import { InsideTabsProvider } from '../../src/contexts/InsideTabsContext';
 import { useOfflineAccess } from '../../src/hooks/useOfflineAccess';
 import { useTranslation } from '../../src/i18n';
 import * as triviaService from '../../src/services/trivia';
@@ -74,6 +75,7 @@ export default function TabLayout() {
   const inactiveTintColor = colors.textSecondary;
 
   return (
+    <InsideTabsProvider value={true}>
     <View style={{ flex: 1 }}>
       {/* Native tab bar: true Liquid Glass floating bar on iOS 26 (minimizes on
           scroll), system bar on older iOS, Material 3 bottom navigation on
@@ -153,5 +155,6 @@ export default function TabLayout() {
 
       {shouldShowOfflineGate && <OfflinePaywallSheet />}
     </View>
+    </InsideTabsProvider>
   );
 }

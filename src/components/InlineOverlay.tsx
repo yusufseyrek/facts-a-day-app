@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BackHandler, StyleSheet, View } from 'react-native';
+import { Modal, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**
@@ -42,6 +42,20 @@ interface InlineOverlayProps {
    * children's exit animation can finish (default 220ms).
    */
   exitGraceMs?: number;
+  /**
+   * Android: keep the inline-view rendering (no Modal) so touches PASS
+   * THROUGH to the screen. For non-interactive overlays only (toasts) — a
+   * real Modal's dialog window consumes every touch regardless of
+   * pointerEvents="box-none".
+   */
+  passthrough?: boolean;
+  /**
+   * Android Modal: draw the dialog under the system navigation bar (full
+   * bleed). Disable for dialogs with TEXT INPUTS: an edge-to-edge dialog
+   * window loses the framework's adjustResize keyboard handling, so the
+   * keyboard would cover the input.
+   */
+  coverNavigationBar?: boolean;
   children: React.ReactNode;
 }
 
@@ -49,6 +63,8 @@ export function InlineOverlay({
   visible,
   onRequestClose,
   exitGraceMs = 220,
+  passthrough = false,
+  coverNavigationBar = true,
   children,
 }: InlineOverlayProps) {
   const insets = useSafeAreaInsets();
@@ -66,19 +82,36 @@ export function InlineOverlay({
     return () => clearTimeout(t);
   }, [visible, exitGraceMs]);
 
-  useEffect(() => {
-    if (!visible) return;
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      onRequestClose();
-      return true;
-    });
-    return () => sub.remove();
-  }, [visible, onRequestClose]);
-
   if (!mounted) return null;
 
-  // Negative insets bleed the layer past the parent SafeAreaView to the physical
-  // screen edges, so the backdrop is truly edge-to-edge.
+  // ANDROID (interactive dialogs): use a real RN <Modal>. The inline-view
+  // approach exists purely so iOS Liquid Glass has same-window content to
+  // refract — Android gets an opaque scrim either way, and the inline view
+  // CANNOT cover the NativeTabs Material bottom nav (a native sibling view):
+  // the scrim stopped at the tab bar's top edge and tabs stayed tappable
+  // under an open dialog. Modal owns hardware-back via onRequestClose, so no
+  // BackHandler subscription needed. Passthrough overlays (toasts) keep the
+  // inline path below — a Modal would block all input while they show.
+  if (Platform.OS === 'android' && !passthrough) {
+    return (
+      <Modal
+        transparent
+        statusBarTranslucent
+        navigationBarTranslucent={coverNavigationBar}
+        visible={mounted}
+        onRequestClose={onRequestClose}
+        animationType="none"
+      >
+        {children}
+      </Modal>
+    );
+  }
+
+  // iOS (and Android passthrough): in-window overlay so glass refracts. (On
+  // iOS there is no back-button concept; the backdrop's tap-to-dismiss
+  // handles closing.) Negative insets bleed the layer past the parent
+  // SafeAreaView to the physical screen edges, so the backdrop is truly
+  // edge-to-edge.
   return (
     <View
       style={[

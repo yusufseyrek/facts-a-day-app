@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { Appearance, Platform, useColorScheme } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TamaguiProvider, Theme } from '@tamagui/core';
+import { NavigationBar } from 'expo-navigation-bar';
 
 import { config } from './config';
 
@@ -27,6 +28,33 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   // Determine actual theme based on mode
   const theme: 'light' | 'dark' =
     themeMode === 'system' ? (systemColorScheme === 'dark' ? 'dark' : 'light') : themeMode;
+
+  // Pin the NATIVE trait environment to the app's own theme toggle. The iOS 26
+  // Liquid Glass chrome we don't render ourselves — the floating tab bar and
+  // the native stack headers — resolves its light/dark material from the
+  // system traits, NOT from our JS theme. With a forced in-app theme on a
+  // mismatched system theme, that chrome rendered the wrong scheme and flipped
+  // adaptively over content. (Also keys Android's AppCompat night mode.)
+  // 'system' passes 'unspecified' = follow the OS again; useColorScheme keeps
+  // working because the override only takes effect when a scheme is forced.
+  useEffect(() => {
+    Appearance.setColorScheme(themeMode === 'system' ? 'unspecified' : themeMode);
+  }, [themeMode]);
+
+  // Android edge-to-edge renders the system navigation bar (gesture pill /
+  // 3-button icons) over app content, and its button contrast follows the
+  // SYSTEM theme by default. The app has its own theme toggle, so key the bar
+  // style to the RESOLVED app theme. NOTE the style names the CONTENT color
+  // (StatusBar 'dark-content' convention): 'light' = LIGHT buttons (for our
+  // dark background), 'dark' = DARK buttons (for our light background).
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    try {
+      NavigationBar.setStyle(theme === 'dark' ? 'light' : 'dark');
+    } catch {
+      // non-fatal: bar style stays on the system default
+    }
+  }, [theme]);
 
   // Load saved theme preference on mount
   useEffect(() => {

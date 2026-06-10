@@ -1,17 +1,7 @@
 import { Pressable } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
-import {
-  CheckCircle,
-  Clock,
-  HelpCircle,
-  Play,
-  Shuffle,
-  Target,
-  Trophy,
-  X,
-  Zap,
-} from '@tamagui/lucide-icons';
+import { CheckCircle, Clock, HelpCircle, Play, Shuffle, Trophy, X, Zap } from '@tamagui/lucide-icons';
 import { XStack, YStack } from 'tamagui';
 
 import { LAYOUT } from '../../config/app';
@@ -52,10 +42,10 @@ export function TriviaIntroModal({
   categoryIcon,
   categoryColor,
   questionCount,
-  masteredCount = 0,
+  masteredCount: _masteredCount = 0,
   totalQuestions = 0,
   answeredCount = 0,
-  correctCount: _correctCount = 0,
+  correctCount = 0,
 }: TriviaIntroModalProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -107,8 +97,8 @@ export function TriviaIntroModal({
     return categoryDescription || '';
   };
 
-  // Calculate remaining to master (reserved for future use)
-  const _remainingToMaster = totalQuestions - masteredCount;
+  // Personal accuracy across previously answered questions in this scope.
+  const accuracyPct = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
 
   return (
     <InlineOverlay visible={visible} onRequestClose={onClose}>
@@ -263,8 +253,9 @@ export function TriviaIntroModal({
 
             {/* Info Cards */}
             <YStack paddingHorizontal={spacing.lg} gap={spacing.xs} marginBottom={spacing.md}>
-              {/* Progress Card (for categories and mixed) */}
-              {(type === 'category' || type === 'mixed') && totalQuestions > 0 && (
+              {/* Personal accuracy (replaces the answered/mastered progress
+                  card — accuracy is the number players actually chase) */}
+              {(type === 'category' || type === 'mixed') && answeredCount > 0 && (
                 <XStack
                   backgroundColor={surfaceColor}
                   borderRadius={radius.md}
@@ -275,37 +266,16 @@ export function TriviaIntroModal({
                   <Trophy size={typography.fontSize.title} color={successColor} />
                   <YStack flex={1} gap={2}>
                     <Text.Caption fontFamily={FONT_FAMILIES.medium} color={textColor}>
-                      {t('triviaTotalQuestions', { count: totalQuestions })}
+                      {t('accuracy')}: {accuracyPct}%
                     </Text.Caption>
-                    <XStack alignItems="center" gap={spacing.sm}>
-                      <Text.Caption fontFamily={FONT_FAMILIES.medium} color={secondaryTextColor}>
-                        {answeredCount} {t('triviaAnswered')}
-                      </Text.Caption>
-                      <Text.Caption color={secondaryTextColor}>•</Text.Caption>
-                      <Text.Caption fontFamily={FONT_FAMILIES.medium} color={successColor}>
-                        {masteredCount} {t('triviaMastered')}
-                      </Text.Caption>
-                    </XStack>
+                    <Text.Tiny color={secondaryTextColor}>
+                      {totalQuestions > 0
+                        ? `${answeredCount}/${totalQuestions} ${t('triviaAnswered')}`
+                        : `${answeredCount} ${t('triviaAnswered')}`}
+                    </Text.Tiny>
                   </YStack>
                 </XStack>
               )}
-
-              {/* How to Master */}
-              <XStack
-                backgroundColor={surfaceColor}
-                borderRadius={radius.md}
-                padding={spacing.md}
-                alignItems="center"
-                gap={spacing.sm}
-              >
-                <Target size={typography.fontSize.title} color={isDark ? '#818CF8' : '#6366F1'} />
-                <YStack flex={1}>
-                  <Text.Caption fontFamily={FONT_FAMILIES.medium} color={textColor}>
-                    {t('triviaHowToMaster')}
-                  </Text.Caption>
-                  <Text.Tiny color={secondaryTextColor}>{t('triviaHowToMasterDesc')}</Text.Tiny>
-                </YStack>
-              </XStack>
 
               {/* Question Types */}
               <XStack
@@ -343,7 +313,7 @@ export function TriviaIntroModal({
                   backgroundColor={accentColor}
                   paddingVertical={spacing.md}
                   paddingHorizontal={spacing.xl}
-                  borderRadius={radius.md}
+                  borderRadius={radius.full}
                   alignItems="center"
                   justifyContent="center"
                   gap={spacing.sm}

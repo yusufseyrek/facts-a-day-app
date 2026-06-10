@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { XStack, YStack } from 'tamagui';
 
 import { STAR_COLORS } from '../../config/badges';
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
+import { androidRipple } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -46,6 +47,7 @@ export function BadgeCard({ badge, onPress }: BadgeCardProps) {
   return (
     <Pressable
       onPress={onPress}
+      android_ripple={androidRipple(theme === 'dark')}
       style={({ pressed }) => [
         shadowStyles.card,
         {
@@ -53,8 +55,9 @@ export function BadgeCard({ badge, onPress }: BadgeCardProps) {
           backgroundColor: colors.cardBackground,
           borderWidth: 1,
           borderColor: colors.border,
-          opacity: pressed ? 0.85 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
+          // iOS keeps dim+scale; Android feedback is the Material ripple.
+          opacity: Platform.OS === 'ios' && pressed ? 0.85 : 1,
+          transform: [{ scale: Platform.OS === 'ios' && pressed ? 0.98 : 1 }],
           overflow: 'hidden',
         },
       ]}

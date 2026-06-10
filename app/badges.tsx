@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BookOpen, Flame, Gamepad2, Trophy } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
@@ -60,6 +61,7 @@ export default function BadgesScreen() {
   const { spacing, radius, iconSizes } = useResponsive();
   const colors = hexColors[theme];
   const glassHeaderOptions = useGlassHeaderOptions();
+  const insets = useSafeAreaInsets();
   // iOS 26: the streak stats panel goes Liquid Glass (stat panel = eligible
   // chrome); the badge list below stays opaque (reading content).
   const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
@@ -186,7 +188,15 @@ export default function BadgesScreen() {
         showsVerticalScrollIndicator={false}
         overScrollMode="never"
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom: spacing.xxl }}
+        // Android-only inset: edge-to-edge has no bottom inset handling on
+        // this root-stack screen — without it the last card sits behind the
+        // system navigation bar. NOT applied on iOS: automatic content-inset
+        // adjustment already adds the safe area there, so padding would stack
+        // on top of it (extra blank space).
+        contentContainerStyle={{
+          paddingTop: spacing.lg,
+          paddingBottom: spacing.xxl + (Platform.OS === 'android' ? insets.bottom : 0),
+        }}
       >
         {loading ? (
           <BadgesScreenSkeleton />

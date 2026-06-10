@@ -3,6 +3,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   TextInput,
   TouchableWithoutFeedback,
@@ -74,8 +75,10 @@ export function ReportFactModal({
 
   const modalContainerStyle = useMemo(
     () => ({
-      backgroundColor: '$background',
-      borderRadius: radius.lg,
+      backgroundColor: '$cardBackground',
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: '$border',
       width: '100%' as const,
       maxWidth: 500,
       padding: spacing.lg,
@@ -85,16 +88,16 @@ export function ReportFactModal({
       ...Platform.select({
         ios: {
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.25,
-          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: theme === 'dark' ? 0.5 : 0.25,
+          shadowRadius: 24,
         },
         android: {
-          elevation: 5,
+          elevation: 12,
         },
       }),
     }),
-    [spacing, radius]
+    [spacing, radius, theme]
   );
 
   const textInputStyle = useMemo(
@@ -116,11 +119,15 @@ export function ReportFactModal({
   );
 
   return (
-    <InlineOverlay visible={visible} onRequestClose={handleClose}>
+    // coverNavigationBar={false}: this dialog hosts a TEXT INPUT (autoFocus).
+    // An edge-to-edge Android dialog window loses the framework's adjustResize
+    // keyboard handling — the card ended up bottom-clipped behind the
+    // keyboard. Fitting system windows restores the resize, and KAV is then
+    // only needed on iOS.
+    <InlineOverlay visible={visible} onRequestClose={handleClose} coverNavigationBar={false}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         {/* Glass/blur scrim behind the (opaque) report card */}
         <ModalBackdrop
@@ -155,7 +162,13 @@ export function ReportFactModal({
                     marginBottom={spacing.sm}
                   >
                     <Text.Title>{t('reportFact')}</Text.Title>
-                    <TouchableWithoutFeedback onPress={handleClose}>
+                    <Pressable
+                      onPress={handleClose}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                      role="button"
+                      aria-label={t('cancel')}
+                    >
                       <YStack
                         width={32}
                         height={32}
@@ -166,7 +179,7 @@ export function ReportFactModal({
                       >
                         <X size={iconSizes.md} color={hexColors[theme].text} />
                       </YStack>
-                    </TouchableWithoutFeedback>
+                    </Pressable>
                   </XStack>
 
                   <Text.Body color="$text" fontSize={typography.fontSize.caption}>
@@ -201,11 +214,14 @@ export function ReportFactModal({
 
                   <XStack justifyContent="space-between" alignItems="center">
                     {error ? (
-                      <Text.Label color="#EF4444" fontSize={typography.fontSize.caption}>
+                      <Text.Label
+                        color={hexColors[theme].error}
+                        fontSize={typography.fontSize.caption}
+                      >
                         {error}
                       </Text.Label>
                     ) : (
-                      <Text.Label color="$text" fontSize={typography.fontSize.caption}>
+                      <Text.Label color="$textSecondary" fontSize={typography.fontSize.caption}>
                         {feedback.length}/1000
                       </Text.Label>
                     )}

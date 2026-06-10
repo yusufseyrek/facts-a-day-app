@@ -965,8 +965,11 @@ export function FactModal({
         scrollEventThrottle={16}
         // When the bottom chrome floats (glass), pad so content scrolls past it.
         contentContainerStyle={useGlassChrome ? { paddingBottom: bottomBarHeight } : undefined}
-        // Optimize scroll performance on Android
-        removeClippedSubviews={Platform.OS === 'android'}
+        // NO removeClippedSubviews here: on Android Fabric, removing clipped
+        // children while the screen's fragment is being torn down (closing
+        // this screen) is a native crash class — and the prop is unsupported
+        // together with stickyHeaderIndices anyway. Fabric handles offscreen
+        // content well enough without it.
         stickyHeaderIndices={!hasImage ? [0] : undefined}
       >
         {/* Sticky title for no-image layout (direct child at index 0 for stickyHeaderIndices) */}

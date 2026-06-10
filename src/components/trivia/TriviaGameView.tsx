@@ -745,7 +745,10 @@ export function TriviaGameView({
                   variant="glass"
                   isDark={isDark}
                   tint={primaryColor}
-                  glassTint={hexToRgba(primaryColor, isDark ? 0.6 : 0.65)}
+                  // High alpha on purpose: these are primary CTAs and at the
+                  // usual 0.6 glass tint they read faded next to the opaque
+                  // primary buttons elsewhere in the trivia flow.
+                  glassTint={hexToRgba(primaryColor, 0.85)}
                   borderRadius={radius.lg}
                   style={absoluteFillObject}
                 />
@@ -780,7 +783,10 @@ export function TriviaGameView({
                   variant="glass"
                   isDark={isDark}
                   tint={primaryColor}
-                  glassTint={hexToRgba(primaryColor, isDark ? 0.6 : 0.65)}
+                  // High alpha on purpose: these are primary CTAs and at the
+                  // usual 0.6 glass tint they read faded next to the opaque
+                  // primary buttons elsewhere in the trivia flow.
+                  glassTint={hexToRgba(primaryColor, 0.85)}
                   borderRadius={radius.lg}
                   style={absoluteFillObject}
                 />

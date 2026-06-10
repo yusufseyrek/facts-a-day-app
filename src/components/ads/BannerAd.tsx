@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 
 import { AD_KEYWORDS, AD_RETRY } from '../../config/app';
+import { useInsideTabs } from '../../contexts/InsideTabsContext';
 import { usePremium } from '../../contexts/PremiumContext';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { shouldShowAds } from '../../services/premiumState';
@@ -21,11 +22,11 @@ interface BannerAdProps {
   onAdLoadChange?: (loaded: boolean) => void;
   collapsible?: CollapsiblePlacement;
   /**
-   * Pad the iOS safe-area bottom so the banner clears the floating native tab
-   * bar (inside tabs) or the home indicator (in stack screens). Android content
-   * is already inset by the native tabs SafeAreaView wrap, so this is iOS-only.
-   * Leave false where a sibling below the banner already handles the inset
-   * (e.g. FactModal's action bar).
+   * Pad the safe-area bottom so the banner clears the floating native tab bar
+   * / home indicator (iOS) or the edge-to-edge system navigation bar (Android,
+   * non-tab screens only — inside tabs the Material bottom nav already
+   * consumes the bottom edge). Leave false where a sibling below the banner
+   * already handles the inset (e.g. FactModal's action bar).
    */
   respectBottomInset?: boolean;
 }
@@ -48,6 +49,12 @@ function BannerAdComponent({ onAdLoadChange, collapsible, respectBottomInset }: 
   // (shouldShowAds() reads module-level state which doesn't trigger re-renders on its own)
   usePremium();
   const insets = useSafeAreaInsets();
+  // Inside the (tabs) group the bottom edge is owned by the tab bar (Material
+  // bottom nav on Android / floating glass bar on iOS); outside it, Android's
+  // mandatory edge-to-edge would put the banner behind the system nav bar.
+  // Context (set by the tabs layout), NOT useSegments: segments track the
+  // FOCUSED route, so a covered-but-mounted tab banner would misread them.
+  const inTabs = useInsideTabs();
   const [canRequestAds, setCanRequestAds] = useState<boolean | null>(null);
   const [requestNonPersonalized, setRequestNonPersonalized] = useState(true);
   const [adState, setAdState] = useState<AdState>('loading');
@@ -55,6 +62,18 @@ function BannerAdComponent({ onAdLoadChange, collapsible, respectBottomInset }: 
   const [adKey, setAdKey] = useState(0);
 
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // AdMob load/fail callbacks arrive from native seconds after mount — often
+  // exactly while the host screen is being dismissed. Ignore them once
+  // unmounted so a late event can't schedule state updates or animations
+  // during teardown.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Check consent on mount
   useEffect(() => {
@@ -84,20 +103,29 @@ function BannerAdComponent({ onAdLoadChange, collapsible, respectBottomInset }: 
     onAdLoadChange?.(adState === 'loaded');
   }, [adState, onAdLoadChange]);
 
-  const handleAdLoaded = useCallback(() => {
+  // LayoutAnimation.configureNext is GLOBAL: it arms the NEXT commit, whatever
+  // that is. A banner callback landing as the user closes the screen would arm
+  // the navigation-pop commit that deletes the whole subtree — on Android
+  // Fabric that combination is a known native crash (MountingManager
+  // "unable to find viewState"). iOS-only; Android takes the plain re-layout.
+  const animateBannerResize = useCallback(() => {
+    if (Platform.OS !== 'ios') return;
     LayoutAnimation.configureNext({
       duration: 150,
       update: { type: LayoutAnimation.Types.easeInEaseOut },
     });
-    setAdState('loaded');
-    setRetryCount(0);
   }, []);
 
+  const handleAdLoaded = useCallback(() => {
+    if (!mountedRef.current) return;
+    animateBannerResize();
+    setAdState('loaded');
+    setRetryCount(0);
+  }, [animateBannerResize]);
+
   const handleAdFailedToLoad = useCallback(() => {
-    LayoutAnimation.configureNext({
-      duration: 150,
-      update: { type: LayoutAnimation.Types.easeInEaseOut },
-    });
+    if (!mountedRef.current) return;
+    animateBannerResize();
     setAdState('error');
 
     if (retryCount < AD_RETRY.MAX_RETRIES) {
@@ -116,7 +144,7 @@ function BannerAdComponent({ onAdLoadChange, collapsible, respectBottomInset }: 
 
   const isVisible = adState === 'loaded';
   const bottomPad =
-    respectBottomInset && isVisible && Platform.OS === 'ios' ? insets.bottom : 0;
+    respectBottomInset && isVisible && (Platform.OS === 'ios' || !inTabs) ? insets.bottom : 0;
 
   return (
     <View

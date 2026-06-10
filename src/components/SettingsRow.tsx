@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 
 import { AlertCircle, ChevronRight, ExternalLink } from '@tamagui/lucide-icons';
 
 import { hexColors, useTheme } from '../theme';
+import { androidRipple } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
 import { Text } from './Typography';
@@ -112,9 +113,15 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
       onPress={onPress}
       role="button"
       aria-label={`${label}${value ? `, ${value}` : ''}`}
+      android_ripple={androidRipple(theme === 'dark')}
       style={({ pressed }) => [
         {
-          opacity: pressed ? 0.7 : 1,
+          // Radius + clip on the Pressable so the Android ripple follows the
+          // row's rounded card. iOS keeps the opacity dim; Android gets the
+          // ripple only (no double feedback).
+          borderRadius: radius.md,
+          overflow: 'hidden' as const,
+          opacity: Platform.OS === 'ios' && pressed ? 0.7 : 1,
         },
       ]}
     >
