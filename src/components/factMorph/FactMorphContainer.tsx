@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   Extrapolation,
@@ -28,6 +29,14 @@ const CLOSE_DURATION_MS = 320;
 const OPEN_EASING = Easing.bezier(0.19, 1, 0.22, 1);
 const CLOSE_EASING = Easing.bezier(0.4, 0, 0.22, 1);
 
+// Interactive left-edge swipe-back (stand-in for the native stack gesture,
+// which a transparentModal can't have). Translation across the screen width
+// maps linearly onto the reverse morph, like UIKit's interactive pop.
+const EDGE_SWIPE_WIDTH = 32;
+const SWIPE_CLOSE_DISTANCE_RATIO = 0.3;
+const SWIPE_CLOSE_VELOCITY = 800;
+const SWIPE_SETTLE_MS = 220;
+
 /**
  * "Container transform" shared-element morph from a pressed fact card to the
  * full-screen fact detail.
@@ -53,9 +62,11 @@ const CLOSE_EASING = Easing.bezier(0.4, 0, 0.22, 1);
  *    cell: otherwise the closing screen shrinks down on top of a visible
  *    duplicate. It's revealed one commit BEFORE the pop, under the replica's
  *    exact cover, so neither direction shows a hole or a double.
- *  - Close (X button, pull-down, Android back) plays the reverse morph, then
- *    pops the route. Reanimated's reduced-motion handling makes both
- *    directions jump-cut automatically when the system requests it.
+ *  - Close (X button, pull-down, left-edge swipe-right, Android back) plays
+ *    the reverse morph, then pops the route. The edge swipe is interactive:
+ *    the finger drives the morph progress directly. Reanimated's
+ *    reduced-motion handling makes the timed directions jump-cut
+ *    automatically when the system requests it.
  */
 export function FactMorphContainer({
   source,
@@ -114,7 +125,12 @@ export function FactMorphContainer({
     return () => setActiveFactMorph(null);
   }, [source]);
 
+  // Idempotent: the X button, the edge swipe, and Android back can race onto
+  // this; a double router.back() would pop the screen below too.
+  const poppedRef = useRef(false);
   const goBack = useCallback(() => {
+    if (poppedRef.current) return;
+    poppedRef.current = true;
     setActiveFactMorph(null);
     if (router.canGoBack()) router.back();
   }, [router]);
@@ -143,6 +159,44 @@ export function FactMorphContainer({
   }, [close]);
 
   const controller = useMemo(() => ({ close }), [close]);
+
+  // Left-edge swipe-right: the finger drives the reverse morph directly;
+  // release past the distance/velocity threshold completes the close,
+  // otherwise the morph springs back open. hitSlop restricts recognition to
+  // the edge strip so the vertical scroll and the related-facts carousel
+  // never compete with it, and the pan is attached to an ANCESTOR of the
+  // scroll views (observes, doesn't consume), so vertical drags that start
+  // in the strip still scroll normally after failOffsetY fails the pan.
+  // Disabled until the open completes and while a button-close is running
+  // (close() flips `interactive` off, which also cancels an in-flight pan).
+  const edgeSwipe = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(interactive)
+        .hitSlop({ right: -(targetW - EDGE_SWIPE_WIDTH) })
+        .activeOffsetX(12)
+        .failOffsetY([-16, 16])
+        .onUpdate((e) => {
+          progress.value = 1 - Math.min(Math.max(e.translationX, 0) / targetW, 1);
+        })
+        .onEnd((e) => {
+          const shouldClose =
+            e.translationX > targetW * SWIPE_CLOSE_DISTANCE_RATIO ||
+            e.velocityX > SWIPE_CLOSE_VELOCITY;
+          if (shouldClose) {
+            progress.value = withTiming(
+              0,
+              { duration: SWIPE_SETTLE_MS, easing: CLOSE_EASING },
+              (finished) => {
+                if (finished) runOnJS(goBack)();
+              }
+            );
+          } else {
+            progress.value = withTiming(1, { duration: SWIPE_SETTLE_MS, easing: CLOSE_EASING });
+          }
+        }),
+    [interactive, targetW, progress, goBack]
+  );
 
   const onRootLayout = useCallback(
     (e: { nativeEvent: { layout: { width: number; height: number } } }) => {
@@ -201,30 +255,36 @@ export function FactMorphContainer({
 
   return (
     <FactMorphContext.Provider value={controller}>
-      {/* Root also swallows touches so the visible feed behind stays inert. */}
-      <View style={styles.root} onLayout={onRootLayout}>
-        <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]} />
-        <Animated.View
-          style={[styles.container, { backgroundColor: surfaceColor }, containerStyle]}
-        >
-          <Animated.View
-            style={[
-              styles.content,
-              {
-                width: targetW,
-                height: targetH,
-                pointerEvents: interactive ? 'auto' : 'none',
-              },
-              contentStyle,
-            ]}
-          >
-            {children}
-          </Animated.View>
-          <Animated.View style={[styles.replica, replicaStyle]}>
-            <FactCardReplica source={source} />
-          </Animated.View>
-        </Animated.View>
-      </View>
+      {/* Local GH root: expo-router doesn't mount a global one, and the
+          GestureDetector below requires an ancestor root view. */}
+      <GestureHandlerRootView style={styles.root}>
+        <GestureDetector gesture={edgeSwipe}>
+          {/* Root also swallows touches so the visible feed behind stays inert. */}
+          <View style={styles.root} onLayout={onRootLayout}>
+            <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]} />
+            <Animated.View
+              style={[styles.container, { backgroundColor: surfaceColor }, containerStyle]}
+            >
+              <Animated.View
+                style={[
+                  styles.content,
+                  {
+                    width: targetW,
+                    height: targetH,
+                    pointerEvents: interactive ? 'auto' : 'none',
+                  },
+                  contentStyle,
+                ]}
+              >
+                {children}
+              </Animated.View>
+              <Animated.View style={[styles.replica, replicaStyle]}>
+                <FactCardReplica source={source} />
+              </Animated.View>
+            </Animated.View>
+          </View>
+        </GestureDetector>
+      </GestureHandlerRootView>
     </FactMorphContext.Provider>
   );
 }
