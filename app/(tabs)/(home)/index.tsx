@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 
 import { FlashListRef } from '@shopify/flash-list';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { YStack } from 'tamagui';
 
-import { EmptyState, LoadingContainer, ScreenContainer } from '../../../src/components';
+import { EmptyState, ScreenContainer } from '../../../src/components';
 import { ReadingStreakIndicator } from '../../../src/components/badges/ReadingStreakIndicator';
 import { CategoryStoryButtonsRef } from '../../../src/components/CategoryStoryButtons';
 import { HomeListHeader, LocaleChangeOverlay } from '../../../src/components/home';
@@ -24,7 +24,7 @@ import { Screens, trackFeedRefresh, trackScreenView } from '../../../src/service
 import { isModalScreenActive } from '../../../src/services/badges';
 import { primePool } from '../../../src/services/nativeAdPool';
 import { shouldShowPaywall } from '../../../src/services/paywallTiming';
-import { hexColors, useTheme } from '../../../src/theme';
+import { useTheme } from '../../../src/theme';
 
 import type { FactViewSource } from '../../../src/services/analytics';
 import type { FactWithRelations } from '../../../src/services/database';
@@ -178,6 +178,7 @@ function HomeScreen() {
         storyButtonsRef={storyButtonsRef}
         latestListRef={latestListRef}
         onThisDayListRef={onThisDayListRef}
+        isLoading={isLoading}
       />
     ),
     [
@@ -188,6 +189,7 @@ function HomeScreen() {
       keepReadingFacts.length,
       isPremium,
       handleFactPress,
+      isLoading,
     ]
   );
 
@@ -196,29 +198,23 @@ function HomeScreen() {
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
 
       <YStack flex={1}>
-        {isLoading ? (
-          <LoadingContainer>
-            <ActivityIndicator size="large" color={hexColors[theme].primary} />
-          </LoadingContainer>
-        ) : !hasAnyContent ? (
+        {!isLoading && !hasAnyContent ? (
           <EmptyState title={t('emptyStateTitle')} description={t('emptyStateDescription')} />
         ) : (
-          <>
-            <View style={{ flex: 1 }}>
-              <KeepReadingList
-                ref={keepReadingListRef}
-                facts={keepReadingFacts}
-                onFactPress={handleKeepReadingPress}
-                onEndReached={fetchNextPage}
-                isFetchingMore={isFetchingNextPage}
-                isPremium={isPremium}
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                onScroll={handleScroll}
-                ListHeaderComponent={listHeader}
-              />
-            </View>
-          </>
+          <View style={{ flex: 1 }}>
+            <KeepReadingList
+              ref={keepReadingListRef}
+              facts={keepReadingFacts}
+              onFactPress={handleKeepReadingPress}
+              onEndReached={fetchNextPage}
+              isFetchingMore={isFetchingNextPage}
+              isPremium={isPremium}
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              onScroll={handleScroll}
+              ListHeaderComponent={listHeader}
+            />
+          </View>
         )}
 
         <LocaleChangeOverlay status={backgroundRefreshStatus} />

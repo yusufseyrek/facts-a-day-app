@@ -24,6 +24,7 @@ import {
 import { useResponsive } from '../../utils/useResponsive';
 import { NativeAdCard } from '../ads/NativeAdCard';
 import { ImageFactCard } from '../ImageFactCard';
+import { ShimmerPlaceholder } from '../ShimmerPlaceholder';
 
 import { SectionHeader } from './SectionHeader';
 
@@ -41,6 +42,7 @@ interface LatestCarouselProps {
   ) => void;
   listRef?: React.RefObject<FlashListRef<FactWithRelations> | null>;
   isPremium?: boolean;
+  isLoading?: boolean;
 }
 
 type LatestRow = FactWithRelations | NativeAdPlaceholder;
@@ -79,6 +81,7 @@ export const LatestCarousel = React.memo(function LatestCarousel({
   onFactPress,
   listRef,
   isPremium,
+  isLoading,
 }: LatestCarouselProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -194,7 +197,36 @@ export const LatestCarousel = React.memo(function LatestCarousel({
 
   const ItemSeparator = useCallback(() => <View style={separatorStyle} />, [separatorStyle]);
 
-  if (facts.length === 0) return null;
+  if (!isLoading && facts.length === 0) return null;
+
+  if (isLoading) {
+    return (
+      <>
+        <SectionHeader
+          icon={<Newspaper size={iconSizes.sm} color={colors.primary} />}
+          title={t('latest')}
+        />
+        <View
+          style={{
+            height: cardHeight + spacing.xxl,
+            paddingHorizontal: listInset,
+            flexDirection: 'row',
+            overflow: 'hidden',
+          }}
+        >
+          {[0, 1, 2].map((i) => (
+            <ShimmerPlaceholder
+              key={i}
+              width={cardWidth}
+              height={cardHeight}
+              borderRadius={spacing.sm}
+              style={i < 2 ? { marginRight: cardGap } : undefined}
+            />
+          ))}
+        </View>
+      </>
+    );
+  }
 
   return (
     <>
