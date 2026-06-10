@@ -539,4 +539,3 @@ export async function resolveFactImageUri(
   const localUri = await getCachedFactImage(factId);
   return localUri;
 }
-

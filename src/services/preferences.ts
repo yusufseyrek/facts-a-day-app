@@ -73,7 +73,11 @@ export async function handleCategoriesChange(
     await notificationService.registerForPush(currentLanguage).catch((e) => {
       console.error('Push re-registration after categories change failed:', e);
     });
-    onProgress?.({ stage: 'complete', percentage: 100, message: 'Categories updated successfully!' });
+    onProgress?.({
+      stage: 'complete',
+      percentage: 100,
+      message: 'Categories updated successfully!',
+    });
     notifyFeedRefresh();
     return { success: true };
   } catch (error) {

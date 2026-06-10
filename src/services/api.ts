@@ -545,9 +545,7 @@ export async function getTriviaByIds(
  * Register this device's Expo push token + notification prefs with the backend
  * (server-driven push replaces on-device local scheduling). Idempotent upsert.
  */
-export async function registerPushToken(
-  params: RegisterPushParams
-): Promise<{ ok: boolean }> {
+export async function registerPushToken(params: RegisterPushParams): Promise<{ ok: boolean }> {
   return makeRequest<{ ok: boolean }>('/api/devices', {
     method: 'POST',
     body: JSON.stringify({

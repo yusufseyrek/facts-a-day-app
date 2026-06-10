@@ -411,11 +411,9 @@ export default function RootLayout() {
         Notifications.setBadgeCountAsync(0);
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
         // Re-register push (covers timezone/travel changes); best-effort.
-        notificationService
-          .registerForPush(getLocaleFromCode(deviceLocale))
-          .catch((error) => {
-            console.error('Push re-registration on foreground failed:', error);
-          });
+        notificationService.registerForPush(getLocaleFromCode(deviceLocale)).catch((error) => {
+          console.error('Push re-registration on foreground failed:', error);
+        });
 
         // Show app open ad on foreground (with cooldown)
         showAppOpenAdOnForeground().catch((error) => {
@@ -626,7 +624,10 @@ export default function RootLayout() {
         <ErrorBoundary>
           <SafeAreaProvider initialMetrics={initialWindowMetrics}>
             {appCheckFailed && (
-              <AppCheckBlockingScreen onRetry={handleAppCheckRetry} isRetrying={isRetryingAppCheck} />
+              <AppCheckBlockingScreen
+                onRetry={handleAppCheckRetry}
+                isRetrying={isRetryingAppCheck}
+              />
             )}
             <PostHogProvider client={posthog}>
               <PostHogErrorBoundary>

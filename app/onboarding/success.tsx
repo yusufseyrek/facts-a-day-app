@@ -14,7 +14,14 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { Circle, Defs, LinearGradient as SvgLinearGradient, Path, Stop, Svg } from 'react-native-svg';
+import {
+  Circle,
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Path,
+  Stop,
+  Svg,
+} from 'react-native-svg';
 
 import { Gift } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
@@ -239,7 +246,10 @@ export default function OnboardingSuccessScreen() {
 
     badgeIn.value = withSpring(1, { damping: 14, stiffness: 140 });
     ring.value = withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) });
-    check.value = withDelay(380, withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) }));
+    check.value = withDelay(
+      380,
+      withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) })
+    );
     halo.value = withDelay(830, withTiming(1, { duration: 750, easing: Easing.out(Easing.quad) }));
     burst.value = withDelay(830, withTiming(1, { duration: 700, easing: Easing.out(Easing.quad) }));
     breath.value = withDelay(
@@ -279,7 +289,9 @@ export default function OnboardingSuccessScreen() {
 
   const badgeStyle = useAnimatedStyle(() => ({
     opacity: interpolate(badgeIn.value, [0, 1], [0, 1], 'clamp'),
-    transform: [{ scale: interpolate(badgeIn.value, [0, 1], [0.6, 1]) * (1 + breath.value * 0.02) }],
+    transform: [
+      { scale: interpolate(badgeIn.value, [0, 1], [0.6, 1]) * (1 + breath.value * 0.02) },
+    ],
   }));
 
   const haloStyle = useAnimatedStyle(() => ({

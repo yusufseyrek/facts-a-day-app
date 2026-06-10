@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleProp, View, ViewProps, ViewStyle } from 'react-native';
 
-import { BlurTint,BlurView } from 'expo-blur';
+import { BlurTint, BlurView } from 'expo-blur';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 
 /**
@@ -68,10 +68,7 @@ function useReduceTransparency(): boolean {
         if (active) setReduce(value);
       })
       .catch(() => {});
-    const subscription = AccessibilityInfo.addEventListener(
-      'reduceTransparencyChanged',
-      setReduce
-    );
+    const subscription = AccessibilityInfo.addEventListener('reduceTransparencyChanged', setReduce);
     return () => {
       active = false;
       subscription.remove();

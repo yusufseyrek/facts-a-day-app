@@ -223,8 +223,7 @@ export default function StoryScreen() {
       // Stories are fed from the cursor feed (single or multiple categories),
       // then ordered unseen-first using the local story-view log — there's no
       // local facts mirror to compute is_viewed anymore.
-      const categories =
-        category === 'mix' ? (await getSelectedCategories()).join(',') : category!;
+      const categories = category === 'mix' ? (await getSelectedCategories()).join(',') : category!;
       // Use a warmed feed from the story-button prefetch when available, so the
       // first card shows instantly instead of waiting on a network round-trip.
       const res =

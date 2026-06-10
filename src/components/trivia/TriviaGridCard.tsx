@@ -119,7 +119,8 @@ export function TriviaGridCard({
             width: iconContainerSize * 1.8,
             height: iconContainerSize * 1.8,
             borderRadius: iconContainerSize * 0.9,
-            backgroundColor: contrastColor === '#000000' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.10)',
+            backgroundColor:
+              contrastColor === '#000000' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.10)',
           }}
         />
         <View
@@ -131,7 +132,8 @@ export function TriviaGridCard({
             width: iconContainerSize * 1.4,
             height: iconContainerSize * 1.4,
             borderRadius: iconContainerSize * 0.7,
-            backgroundColor: contrastColor === '#000000' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.07)',
+            backgroundColor:
+              contrastColor === '#000000' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.07)',
           }}
         />
         <YStack

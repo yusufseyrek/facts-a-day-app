@@ -70,8 +70,7 @@ export default function FactDetailScreen({
     return parseInt(id, 10);
   }, [overrideFactId, factIds, currentIndex, id]);
 
-  const hasNext =
-    overrideFactId === null && factIds !== null && currentIndex < factIds.length - 1;
+  const hasNext = overrideFactId === null && factIds !== null && currentIndex < factIds.length - 1;
   const hasPrevious = overrideFactId === null && factIds !== null && currentIndex > 0;
   const totalCount = factIds ? factIds.length : undefined;
 
@@ -79,10 +78,7 @@ export default function FactDetailScreen({
   // questions. No more blocking fetch behind a full-screen spinner on a warm tap.
   const { data: apiFact, isLoading, isError } = useFactDetail(currentFactId, locale);
 
-  const fact = useMemo(
-    () => (apiFact ? database.mapApiFactToRelations(apiFact) : null),
-    [apiFact]
-  );
+  const fact = useMemo(() => (apiFact ? database.mapApiFactToRelations(apiFact) : null), [apiFact]);
 
   // Warm the cache for the adjacent facts so swiping prev/next is instant —
   // some list surfaces (Discover category browse) keep facts in local state, so

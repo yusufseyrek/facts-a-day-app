@@ -390,7 +390,11 @@ export function FactActions({
         >
           <ParticleBurst color={heartColor} isActive={showParticles} />
           <Animated.View style={[styles.heartIcon, heartAnimatedStyle]}>
-            <Heart size={iconSizes.lg} color={heartColor} fill={isFavorited ? heartColor : 'none'} />
+            <Heart
+              size={iconSizes.lg}
+              color={heartColor}
+              fill={isFavorited ? heartColor : 'none'}
+            />
           </Animated.View>
         </View>
       </Pressable>

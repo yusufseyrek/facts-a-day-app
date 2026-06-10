@@ -255,4 +255,3 @@ function Section({ delay, children }: { delay: number; children: React.ReactNode
     </Animated.View>
   );
 }
-

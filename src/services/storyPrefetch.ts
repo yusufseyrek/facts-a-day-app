@@ -47,11 +47,7 @@ function categoriesParam(category: string, selectedForMix: string[]): string {
  * for the same key share one in-flight request, and a fresh cached entry is
  * reused. Errors are swallowed (best-effort) — the screen still fetches on miss.
  */
-export function prefetchStory(
-  locale: string,
-  category: string,
-  selectedForMix: string[]
-): void {
+export function prefetchStory(locale: string, category: string, selectedForMix: string[]): void {
   const categories = categoriesParam(category, selectedForMix);
   const key = keyFor(locale, categories);
 

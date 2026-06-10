@@ -26,8 +26,7 @@ export const factKeys = {
   feed: (locale: string, categories?: string) =>
     ['facts', 'feed', locale, categories ?? null] as const,
   onThisDay: (locale: string) => ['facts', 'onThisDay', locale] as const,
-  byIds: (locale: string, ids: number[]) =>
-    ['facts', 'byIds', locale, ids.join(',')] as const,
+  byIds: (locale: string, ids: number[]) => ['facts', 'byIds', locale, ids.join(',')] as const,
   search: (locale: string, q: string, categories?: string) =>
     ['facts', 'search', locale, q, categories ?? null] as const,
   detail: (locale: string, id: number) => ['facts', 'detail', locale, id] as const,

@@ -830,10 +830,9 @@ export async function getTriviaSessionById(
   // Lean read: just the stored session. Question content (from the API) and the
   // category display object (from metadata) are hydrated by the trivia service —
   // the local questions/categories tables no longer exist.
-  const row = await database.getFirstAsync<any>(
-    `SELECT * FROM trivia_sessions WHERE id = ?`,
-    [sessionId]
-  );
+  const row = await database.getFirstAsync<any>(`SELECT * FROM trivia_sessions WHERE id = ?`, [
+    sessionId,
+  ]);
 
   if (!row) return null;
 
@@ -1129,4 +1128,3 @@ export async function recordShareEvent(factId: number): Promise<void> {
     now,
   ]);
 }
-

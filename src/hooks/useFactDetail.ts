@@ -80,10 +80,7 @@ export function useFactDetail(factId: number, locale: string) {
     // Seed from whatever the list queries already cached, so content paints
     // immediately; the queryFn still runs to fetch the full record (questions).
     initialData: () =>
-      findFactInCache(
-        () => queryClient.getQueriesData({ queryKey: factKeys.all }),
-        factId
-      ),
+      findFactInCache(() => queryClient.getQueriesData({ queryKey: factKeys.all }), factId),
     // Treat seeded data as already-stale so the background refetch runs to fill
     // in trivia questions the list payload didn't carry.
     initialDataUpdatedAt: 0,

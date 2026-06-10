@@ -105,9 +105,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     // changes, etc.) within a session render the previous buttons
     // immediately instead of flashing the skeleton.
     const initialCache = getCachedRowSync(locale);
-    const [categories, setCategories] = useState<CategoryItem[]>(
-      () => initialCache?.items ?? []
-    );
+    const [categories, setCategories] = useState<CategoryItem[]>(() => initialCache?.items ?? []);
     const [unseenStatus, setUnseenStatus] = useState<Record<string, boolean>>(
       () => initialCache?.unseenStatus ?? {}
     );

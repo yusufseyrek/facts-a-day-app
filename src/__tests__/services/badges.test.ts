@@ -605,7 +605,6 @@ describe('Streak Calculations', () => {
       expect(await getQuizStreak()).toBe(2);
     });
   });
-
 });
 
 // ═══════════════════════════════════════════

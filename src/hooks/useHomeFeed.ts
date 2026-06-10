@@ -40,10 +40,7 @@ export function useHomeFeed(locale: string): UseHomeFeedResult {
   const isLoading = feedLoading || onThisDayQuery.isLoading;
 
   // Latest = the first N facts of the shared stream.
-  const latestFacts = useMemo(
-    () => feedFacts.slice(0, HOME_FEED.LATEST_COUNT),
-    [feedFacts]
-  );
+  const latestFacts = useMemo(() => feedFacts.slice(0, HOME_FEED.LATEST_COUNT), [feedFacts]);
 
   const latestFactIds = useMemo(() => latestFacts.map((f) => f.id), [latestFacts]);
 
@@ -56,8 +53,7 @@ export function useHomeFeed(locale: string): UseHomeFeedResult {
   }, [onThisDayQuery.data]);
 
   const onThisDayIsWeekFallback =
-    (onThisDayQuery.data?.exact?.length ?? 0) === 0 &&
-    (onThisDayQuery.data?.week?.length ?? 0) > 0;
+    (onThisDayQuery.data?.exact?.length ?? 0) === 0 && (onThisDayQuery.data?.week?.length ?? 0) > 0;
 
   // Signal home screen ready when showing empty state
   if (!isLoading && latestFacts.length === 0 && onThisDayFacts.length === 0) {

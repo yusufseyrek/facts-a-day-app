@@ -547,11 +547,9 @@ export default function SettingsPage() {
         [{ text: t('ok'), style: 'default' }]
       );
     } catch (error) {
-      Alert.alert(
-        t('error'),
-        error instanceof Error ? error.message : 'Unknown error',
-        [{ text: t('ok'), style: 'default' }]
-      );
+      Alert.alert(t('error'), error instanceof Error ? error.message : 'Unknown error', [
+        { text: t('ok'), style: 'default' },
+      ]);
     }
   };
 

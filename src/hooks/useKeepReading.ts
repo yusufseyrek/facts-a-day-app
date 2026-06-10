@@ -23,10 +23,7 @@ export function useKeepReading(locale: string): UseKeepReadingResult {
   const { facts, fetchNextPage, hasNextPage, isFetchingNextPage } = useHomeFeedData(locale);
 
   // Skip the facts already shown in the Latest carousel.
-  const keepReadingFacts = useMemo(
-    () => facts.slice(HOME_FEED.LATEST_COUNT),
-    [facts]
-  );
+  const keepReadingFacts = useMemo(() => facts.slice(HOME_FEED.LATEST_COUNT), [facts]);
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {

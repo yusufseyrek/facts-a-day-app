@@ -94,8 +94,7 @@ export async function registerForPush(locale: SupportedLocale): Promise<boolean>
 
     // Expo-managed token (NOT getDevicePushTokenAsync — the backend sends via
     // Expo's push service, which requires the ExponentPushToken[...] form).
-    const projectId =
-      Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
     const tokenResponse = await Notifications.getExpoPushTokenAsync(
       projectId ? { projectId } : undefined
     );
@@ -131,11 +130,8 @@ export async function getExpoPushToken(): Promise<string | null> {
     if (!Device.isDevice) return null;
     const { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted') return null;
-    const projectId =
-      Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
-    const res = await Notifications.getExpoPushTokenAsync(
-      projectId ? { projectId } : undefined
-    );
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+    const res = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
     return res.data ?? null;
   } catch {
     return null;

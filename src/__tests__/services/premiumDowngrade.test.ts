@@ -32,14 +32,7 @@ const onboardingMock = onboardingService as jest.Mocked<typeof onboardingService
 
 /** Build a metadata response whose given slugs are premium. */
 function metadataWithPremium(premiumSlugs: string[]) {
-  const all = [
-    'science',
-    'history',
-    'nature',
-    'finance',
-    'cinema',
-    'anatomy',
-  ];
+  const all = ['science', 'history', 'nature', 'finance', 'cinema', 'anatomy'];
   return {
     categories: all.map((slug, i) => ({
       id: i + 1,
