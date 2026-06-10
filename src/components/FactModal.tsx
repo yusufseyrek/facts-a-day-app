@@ -55,9 +55,12 @@ import {
   markFactDetailOpened,
   markFactDetailRead,
 } from '../services/database';
-import { getCachedFactImageSync } from '../services/images';
+import {
+  getCachedFactImage,
+  getCachedFactImageSync,
+  purgeCachedFactImage,
+} from '../services/images';
 import { getIsConnected } from '../services/network';
-import { deleteNotificationImage, getLocalNotificationImagePath } from '../services/notifications';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { PAYWALL_GOLD } from '../theme/paywallColors';
 import { getTranslatedUrl } from '../utils/browser';
@@ -194,12 +197,27 @@ export function FactModal({
   // Image loading state tracked via expo-image callbacks
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isImageError, setIsImageError] = useState(false);
+  // True only when a real expo-image paint callback (onLoad/onDisplay) fired
+  // for the current fact. isImageLoaded can also be set by the availability
+  // effect's safety reveal — an ASSUMPTION that the bitmap painted — so error
+  // UI must key off this confirmed signal, not isImageLoaded; otherwise a
+  // load that fails after the safety reveal leaves a permanently blank slot
+  // with no retry affordance.
+  const [hasPainted, setHasPainted] = useState(false);
   // Automatic retry for intermittent front-layer load failures (Android Glide
   // race / dropped fetch). On retry we remount the front <Image> (key) AND vary
   // its source URL (cache-buster) so expo-image actually re-fetches instead of
   // short-circuiting to the cached failure. Manual overlay only after exhaustion.
   const [retryCount, setRetryCount] = useState(0);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Fail-safe fallback chain. When the current source has exhausted its
+  // automatic retries, swap to the other source for this fact (remote URL ↔
+  // disk cache) instead of giving up: a failing remote may have a good cached
+  // copy, and a corrupt cache file may still load fine from the network.
+  // `triedUrisRef` guards against ping-ponging between two dead sources.
+  const [fallbackUri, setFallbackUri] = useState<string | null>(null);
+  const triedUrisRef = useRef<Set<string>>(new Set());
 
   // Double-buffer: keep the previous image visible until the new one loads.
   // `displayedImageUri` is the last successfully loaded image — it stays on screen
@@ -247,6 +265,9 @@ export function FactModal({
   useEffect(() => {
     setIsImageError(false);
     setRetryCount(0);
+    setHasPainted(false);
+    setFallbackUri(null);
+    triedUrisRef.current.clear();
     if (retryTimerRef.current) {
       clearTimeout(retryTimerRef.current);
       retryTimerRef.current = null;
@@ -268,8 +289,11 @@ export function FactModal({
   // the shimmer overlay would flash on top of the cached image we just rendered.
   const showImagePlaceholder = !!fact.image_url && !isImageLoaded && !displayedImageUri;
 
-  // Show error state when image fails
-  const isImageFailed = !!fact.image_url && isImageError && !isImageLoaded;
+  // Show error state when image fails. Keys off hasPainted (confirmed paint),
+  // NOT isImageLoaded: the safety reveal sets isImageLoaded optimistically, and
+  // an error after that must still surface the retry overlay instead of
+  // leaving a silently blank image slot.
+  const isImageFailed = !!fact.image_url && isImageError && !hasPainted;
 
   // Run shimmer animation only during actual loading (not on permanent error)
   const isActivelyLoading = showImagePlaceholder && !isImageFailed;
@@ -359,54 +383,59 @@ export function FactModal({
     };
   }, [fact.id]);
 
-  // Local notification image state - prioritize notification image if available
-  const [notificationImageUri, setNotificationImageUri] = useState<string | null>(null);
-
-  // Check for local notification image and use it if available, then delete it
-  useEffect(() => {
-    let isMounted = true;
-    // Clear stale notification image from previous fact
-    setNotificationImageUri(null);
-
-    const checkAndUseLocalImage = async () => {
-      if (!fact.image_url) return;
-
-      try {
-        // Check if we have a locally cached notification image
-        const localImagePath = await getLocalNotificationImagePath(fact.id);
-
-        if (localImagePath && isMounted) {
-          setNotificationImageUri(localImagePath);
-
-          // Delete the notification image after a short delay to ensure it's loaded
-          // This prevents the image from being deleted before it's displayed
-          setTimeout(async () => {
-            await deleteNotificationImage(fact.id);
-          }, 1000);
-        }
-      } catch {
-        // Ignore errors checking local notification image
-      }
-    };
-
-    checkAndUseLocalImage();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [fact.id, fact.image_url]);
-
-  // Use notification image → remote URL (online) → local cache (offline)
+  // Use remote URL (online) → local cache (offline).
   // When online, prefer remote URL so expo-image resolves by URL (avoids stale
   // decoded images cached against fixed local file paths).
   // When offline, only use locally cached images — don't fall back to remote URLs
-  // that will never load (avoids showing a placeholder for nothing)
+  // that will never load (avoids showing a placeholder for nothing).
+  //
+  // NOTE: legacy notification images (notification-images/ dir) are deliberately
+  // NOT used here. That directory is purged wholesale at startup
+  // (cleanupOldNotificationImages), so preferring those files raced the purge:
+  // the modal could latch onto a file:// URI that was deleted mid-load, fail all
+  // retries against the dead path, and render the fact with no image.
   const initialImageUri = getIsConnected()
     ? fact.image_url || getCachedFactImageSync(fact.id)
     : getCachedFactImageSync(fact.id);
   const resolvedImageUri = useResolvedImageUri(fact.id, fact.image_url, initialImageUri);
 
-  const imageUri = notificationImageUri || resolvedImageUri;
+  const imageUri = fallbackUri || resolvedImageUri;
+
+  // Guards tryNextImageSource against applying a stale fallback: it awaits a
+  // disk check, and the user can swipe to another fact mid-await.
+  const imageFactIdRef = useRef(fact.id);
+  imageFactIdRef.current = fact.id;
+
+  const tryNextImageSource = useCallback(
+    async (failedUri: string) => {
+      const factId = fact.id;
+      triedUrisRef.current.add(failedUri);
+
+      if (failedUri.startsWith('file://')) {
+        // The cached file is undecodable (passed size checks but won't render):
+        // purge it so resolveFactImageUri can't keep returning the broken path.
+        purgeCachedFactImage(factId).catch(() => {});
+
+        const remote = fact.image_url;
+        if (remote && getIsConnected() && !triedUrisRef.current.has(remote)) {
+          setRetryCount(0);
+          setFallbackUri(remote);
+          return;
+        }
+      } else {
+        const local = await getCachedFactImage(factId);
+        if (imageFactIdRef.current !== factId) return; // fact changed mid-await
+        if (local && !triedUrisRef.current.has(local)) {
+          setRetryCount(0);
+          setFallbackUri(local);
+          return;
+        }
+      }
+
+      setIsImageError(true); // no untried source left → manual retry overlay
+    },
+    [fact.id, fact.image_url]
+  );
 
   // Front-layer source with a cache-buster on retry only. expo-image caches the
   // FAILURE for a url key, so re-passing the same uri after onError is a no-op;
@@ -462,9 +491,14 @@ export function FactModal({
         // silently ignore cache check
       }
 
-      // Not cached — if offline, it can't load.
+      // Not cached — if offline, the remote URL can't load. Don't error out
+      // immediately: a disk-cached copy may exist (connectivity can flip
+      // offline after the resolver picked the remote URL), so run the
+      // fallback chain, which errors only when no source is left.
       if (!getIsConnected() && !cancelled) {
-        setIsImageError(true);
+        tryNextImageSource(imageUri!).catch(() => {
+          if (!cancelled) setIsImageError(true);
+        });
         return;
       }
 
@@ -481,7 +515,7 @@ export function FactModal({
       cancelled = true;
       clearTimeout(safetyTimeoutId);
     };
-  }, [imageUri, isImageLoaded, isImageError]);
+  }, [imageUri, isImageLoaded, isImageError, tryNextImageSource]);
 
   // Images are always square (1:1)
   // For tablets: landscape shows 50% height (more content visible), portrait shows 80% height centered
@@ -574,7 +608,13 @@ export function FactModal({
     return categoryForBadge.color_hex || getCategoryNeonColor(categoryForBadge.slug, theme);
   }, [categoryForBadge, theme]);
 
-  const hasImage = !!imageUri && !isImageError;
+  // Keep the image section mounted while we have a URI, even in the error
+  // state — the manual-retry overlay lives INSIDE this section, so collapsing
+  // to the no-image layout on error (the old `&& !isImageError`) made the
+  // retry UI unreachable and silently dropped the image for facts that do
+  // have one. Genuine no-image facts (imageUri null) still get the text-only
+  // layout.
+  const hasImage = !!imageUri;
 
   // Header height = padding + measured title height.
   // On iOS the top pad depends on how the host route is presented:
@@ -1107,6 +1147,7 @@ export function FactModal({
                   }
                   onLoad={() => {
                     setIsImageLoaded(true);
+                    setHasPainted(true);
                     setDisplayedImageUri(imageUri);
                   }}
                   onDisplay={() => {
@@ -1120,6 +1161,7 @@ export function FactModal({
                     // THIS view, surviving the race, so it reliably clears the
                     // placeholder. Idempotent with onLoad.
                     setIsImageLoaded(true);
+                    setHasPainted(true);
                     setDisplayedImageUri(imageUri);
                   }}
                   onError={() => {
@@ -1134,8 +1176,13 @@ export function FactModal({
                       retryTimerRef.current = setTimeout(() => {
                         setRetryCount((c) => c + 1);
                       }, delay);
+                    } else if (imageUri) {
+                      // Exhausted retries on this source → try the other one
+                      // (remote ↔ disk cache); only errors out when no untried
+                      // source remains.
+                      tryNextImageSource(imageUri).catch(() => setIsImageError(true));
                     } else {
-                      setIsImageError(true); // exhausted → manual retry overlay
+                      setIsImageError(true);
                     }
                   }}
                 />
@@ -1160,6 +1207,8 @@ export function FactModal({
                   activeOpacity={0.7}
                   onPress={() => {
                     setRetryCount(0); // re-arm a fresh round of auto-retries
+                    triedUrisRef.current.clear(); // re-arm the source fallback chain
+                    setFallbackUri(null); // start over from the resolved source
                     setIsImageError(false);
                     setIsImageLoaded(false);
                   }}

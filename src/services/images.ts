@@ -178,12 +178,14 @@ async function performFileExistenceCheck(factId: number): Promise<string | null>
           if (fileInfo.size !== undefined && fileInfo.size < IMAGE_CACHE.MIN_FILE_SIZE_BYTES) {
             FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
             knownExtensions.delete(factId);
+            fileExistenceCache.delete(factId);
           } else if (fileInfo.modificationTime) {
             // Check if cache is still valid (2-day TTL)
             const ageMs = Date.now() - fileInfo.modificationTime * 1000;
             if (ageMs > maxAgeMs) {
               FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
               knownExtensions.delete(factId);
+              fileExistenceCache.delete(factId);
             } else {
               return localUri;
             }
@@ -193,9 +195,11 @@ async function performFileExistenceCheck(factId: number): Promise<string | null>
         } else {
           // File no longer exists, remove from registry
           knownExtensions.delete(factId);
+          fileExistenceCache.delete(factId);
         }
       } catch {
         knownExtensions.delete(factId);
+        fileExistenceCache.delete(factId);
       }
     }
 
@@ -426,6 +430,28 @@ async function performImageDownload(
   } catch {
     return null;
   }
+}
+
+/**
+ * Purge a single fact's cached image: in-memory entries AND the on-disk file.
+ *
+ * Use when a cached file fails to actually render (expo-image onError on a
+ * file:// URI). Such a file passed the size/age checks yet is undecodable —
+ * typically a truncated or corrupt download — so it must be removed, or every
+ * future resolve keeps handing out the same broken URI.
+ */
+export async function purgeCachedFactImage(factId: number): Promise<void> {
+  fileExistenceCache.delete(factId);
+  knownExtensions.delete(factId);
+
+  const extensions = ['webp', 'jpg', 'jpeg', 'png', 'gif'];
+  await Promise.all(
+    extensions.map((ext) =>
+      FileSystem.deleteAsync(`${FACT_IMAGES_DIR}fact-${factId}.${ext}`, {
+        idempotent: true,
+      }).catch(() => {})
+    )
+  );
 }
 
 /**

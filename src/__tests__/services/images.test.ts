@@ -163,6 +163,52 @@ describe('images — getCachedFactImage', () => {
   });
 });
 
+describe('images — purgeCachedFactImage', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('deletes the on-disk file for every known extension', async () => {
+    jest.resetModules();
+    const freshFS = jest.requireMock('expo-file-system/legacy');
+    freshFS.deleteAsync.mockResolvedValue(undefined);
+    const { purgeCachedFactImage } = require('../../services/images');
+
+    await purgeCachedFactImage(42);
+
+    const deleted = freshFS.deleteAsync.mock.calls.map((c: any[]) => c[0]);
+    for (const ext of ['webp', 'jpg', 'jpeg', 'png', 'gif']) {
+      expect(deleted.some((uri: string) => uri.endsWith(`fact-42.${ext}`))).toBe(true);
+    }
+  });
+
+  it('invalidates the in-memory existence cache so the broken URI is not re-served', async () => {
+    jest.resetModules();
+    const freshFS = jest.requireMock('expo-file-system/legacy');
+    freshFS.deleteAsync.mockResolvedValue(undefined);
+    freshFS.getInfoAsync.mockResolvedValue({
+      exists: true,
+      size: 5000,
+      modificationTime: Date.now() / 1000,
+    });
+    const {
+      getCachedFactImage: freshGetCached,
+      getCachedFactImageSync: freshGetCachedSync,
+      purgeCachedFactImage: freshPurge,
+    } = require('../../services/images');
+
+    // Prime the in-memory existence cache
+    const cached = await freshGetCached(77);
+    expect(cached).toContain('fact-77');
+    expect(freshGetCachedSync(77)).toBe(cached);
+
+    await freshPurge(77);
+
+    // Sync lookup must no longer return the purged URI
+    expect(freshGetCachedSync(77)).toBeNull();
+  });
+});
+
 describe('images — clearAllCachedImages', () => {
   it('clears memory and files, reports count and bytes', async () => {
     FileSystem.getInfoAsync.mockImplementation(async (uri: string) => {
