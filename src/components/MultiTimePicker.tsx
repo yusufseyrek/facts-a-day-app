@@ -106,51 +106,52 @@ export function MultiTimePicker({
           borderWidth={1}
           borderColor="$border"
           alignItems="center"
-          justifyContent="center"
-          alignSelf="center"
+          justifyContent="space-between"
           gap={spacing.md}
         >
           <Text.Label color="$textSecondary" fontFamily={FONT_FAMILIES.medium}>
             {t('time')} {index + 1}
           </Text.Label>
 
-          {Platform.OS === 'ios' ? (
-            <DateTimePicker
-              value={time}
-              mode="time"
-              display="compact"
-              onChange={(event, selectedDate) => handleTimeChange(index, event, selectedDate)}
-              themeVariant={theme}
-            />
-          ) : (
-            <XStack
-              backgroundColor="$primaryLight"
-              paddingVertical={spacing.sm}
-              paddingHorizontal={spacing.lg}
-              borderRadius={radius.full}
-              pressStyle={{ opacity: 0.7, scale: 0.98 }}
-              onPress={() => handleAndroidTimePress(index)}
-            >
-              <Text.Label fontFamily={FONT_FAMILIES.bold} color="$primary">
-                {formatTime(time)}
-              </Text.Label>
-            </XStack>
-          )}
+          <XStack alignItems="center" gap={spacing.md}>
+            {Platform.OS === 'ios' ? (
+              <DateTimePicker
+                value={time}
+                mode="time"
+                display="compact"
+                onChange={(event, selectedDate) => handleTimeChange(index, event, selectedDate)}
+                themeVariant={theme}
+              />
+            ) : (
+              <XStack
+                backgroundColor="$primaryLight"
+                paddingVertical={spacing.sm}
+                paddingHorizontal={spacing.lg}
+                borderRadius={radius.full}
+                pressStyle={{ opacity: 0.7, scale: 0.98 }}
+                onPress={() => handleAndroidTimePress(index)}
+              >
+                <Text.Label fontFamily={FONT_FAMILIES.bold} color="$primary">
+                  {formatTime(time)}
+                </Text.Label>
+              </XStack>
+            )}
 
-          {times.length > minTimes && (
-            <XStack
-              width={36}
-              height={36}
-              borderRadius={radius.sm}
-              backgroundColor="$errorLight"
-              alignItems="center"
-              justifyContent="center"
-              pressStyle={{ opacity: 0.7, scale: 0.95 }}
-              onPress={() => handleRemoveTime(index)}
-            >
-              <Trash2 size={iconSizes.md} color={hexColors.light.error} />
-            </XStack>
-          )}
+            {times.length > minTimes && (
+              <XStack
+                width={36}
+                height={36}
+                borderRadius={radius.full}
+                backgroundColor="$errorLight"
+                alignItems="center"
+                justifyContent="center"
+                pressStyle={{ opacity: 0.7, scale: 0.95 }}
+                onPress={() => handleRemoveTime(index)}
+              >
+                <Trash2 size={iconSizes.md} color={hexColors.light.error} />
+              </XStack>
+            )}
+          </XStack>
         </XStack>
       ))}
 
@@ -169,7 +170,7 @@ export function MultiTimePicker({
           backgroundColor="transparent"
           padding={spacing.lg}
           borderRadius={radius.lg}
-          borderWidth={2}
+          borderWidth={1.5}
           borderColor="$primary"
           borderStyle="dashed"
           alignItems="center"

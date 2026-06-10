@@ -282,7 +282,7 @@ export default function NotificationsScreen() {
                 transform: [{ translateY: pickerTranslateY }],
               }}
             >
-              <TimePickerContainer padding={spacing.xl} borderRadius={radius.lg} gap={spacing.md}>
+              <TimePickerContainer padding={spacing.xl} borderRadius={radius.xl} gap={spacing.md}>
                 <MultiTimePicker
                   times={notificationTimes}
                   onTimesChange={setNotificationTimes}

@@ -95,12 +95,15 @@ const CategoryCardComponent = ({
   // Determine contrast color for selected state
   const contrastColor = getContrastColor(neonColor);
 
-  // Colors based on selection state
+  // Colors based on selection state. Unselected cards show the category color
+  // on the icon so the grid reads as a palette; locked cards stay muted.
   const iconColor = selected
     ? contrastColor
-    : theme === 'dark'
-      ? hexColors.dark.textSecondary
-      : hexColors.light.textSecondary;
+    : locked
+      ? theme === 'dark'
+        ? hexColors.dark.textSecondary
+        : hexColors.light.textSecondary
+      : neonColor;
 
   const backgroundColor = selected
     ? neonColor
@@ -170,8 +173,8 @@ const CategoryCardComponent = ({
             position="relative"
             width="100%"
             aspectRatio={1}
-            borderRadius={radius.lg}
-            borderWidth={2}
+            borderRadius={radius.xl}
+            borderWidth={1.5}
             alignItems="center"
             justifyContent="center"
             gap={spacing.sm}

@@ -62,7 +62,7 @@ const FactImageCard = ({
           styles.cardContainer,
           {
             borderRadius: radius.lg,
-            borderColor: theme === 'dark' ? '#222222' : '#dfdfdf',
+            borderColor: hexColors[theme].border,
           },
         ]}
       >

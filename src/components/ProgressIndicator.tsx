@@ -5,8 +5,6 @@ import { XStack, YStack } from 'tamagui';
 
 import { useResponsive } from '../utils';
 
-import { FONT_FAMILIES, Text } from './Typography';
-
 interface ProgressIndicatorProps {
   currentStep: number;
   totalSteps: number;
@@ -19,30 +17,33 @@ export function ProgressIndicator({
   rightElement,
 }: ProgressIndicatorProps) {
   const { spacing, radius, borderWidths } = useResponsive();
-  const progress = (currentStep / totalSteps) * 100;
 
   return (
     <YStack gap={spacing.sm}>
-      <XStack justifyContent="space-between" alignItems="center">
-        <Text.Caption fontFamily={FONT_FAMILIES.medium}>
-          {currentStep} of {totalSteps}
-        </Text.Caption>
+      <XStack alignItems="center" gap={rightElement ? spacing.lg : 0}>
+        {/* One pill per step, filled up to the current one */}
+        <XStack
+          flex={1}
+          gap={spacing.xs}
+          alignItems="center"
+          role="progressbar"
+          aria-valuenow={currentStep}
+          aria-valuemin={1}
+          aria-valuemax={totalSteps}
+        >
+          {Array.from({ length: totalSteps }).map((_, index) => (
+            <View
+              key={index}
+              flex={1}
+              height={borderWidths.extraHeavy}
+              borderRadius={radius.full}
+              backgroundColor={index < currentStep ? '$primary' : '$neutralLight'}
+              opacity={index < currentStep ? 1 : 0.6}
+            />
+          ))}
+        </XStack>
         {rightElement}
       </XStack>
-      <View
-        width="100%"
-        backgroundColor="$neutralLight"
-        borderRadius={radius.full}
-        overflow="hidden"
-        height={borderWidths.extraHeavy}
-      >
-        <View
-          height="100%"
-          backgroundColor="$primary"
-          borderRadius={radius.full}
-          style={{ width: `${progress}%` }}
-        />
-      </View>
     </YStack>
   );
 }
