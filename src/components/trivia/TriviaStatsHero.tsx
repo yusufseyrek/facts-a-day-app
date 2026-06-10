@@ -350,12 +350,14 @@ export function TriviaStatsHero({
 
           {/* Body row — one skeleton for filled and empty so the empty state
               previews the filled geometry and cannot drift out of sync. */}
-          <XStack alignItems="center" gap={spacing.xxl}>
-            {/* Ring column: number stays full Display size (a 0-100 value plus
+          {/* Body splits 50/50: ring centered in the left half, stat rows
+              filling the right half. */}
+          <XStack alignItems="center">
+            {/* Ring half: number stays full Display size (a 0-100 value plus
                 % fits the 84pt inner diameter without auto-shrinking — iOS
                 collapses adjustsFontSizeToFit text inside flex rows); the
                 label sits under the ring where it has the full column width. */}
-            <YStack alignItems="center" gap={spacing.xs}>
+            <YStack flex={1} alignItems="center" gap={spacing.xs}>
               <CircularProgress
                 percentage={hasData ? accuracy : 0}
                 size={iconSizes.heroXl}
@@ -459,16 +461,17 @@ export function TriviaStatsHero({
                 )}
               </YStack>
             ) : (
-              /* No numberOfLines: long-locale sentences wrap (the German
-                 noTestsYet string is 60 chars). */
-              <Text.Label
-                flex={1}
-                color={contrastColor}
-                opacity={0.78}
-                fontFamily={FONT_FAMILIES.semibold}
-              >
-                {t('noTestsYet')}
-              </Text.Label>
+              <YStack flex={1} justifyContent="center">
+                {/* No numberOfLines: long-locale sentences wrap (the German
+                   noTestsYet string is 60 chars). */}
+                <Text.Label
+                  color={contrastColor}
+                  opacity={0.78}
+                  fontFamily={FONT_FAMILIES.semibold}
+                >
+                  {t('noTestsYet')}
+                </Text.Label>
+              </YStack>
             )}
           </XStack>
         </YStack>
