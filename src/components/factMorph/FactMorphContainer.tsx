@@ -12,6 +12,7 @@ import Animated, {
 
 import { useRouter } from 'expo-router';
 
+import { setActiveFactMorph } from '../../services/factMorph';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 
@@ -47,6 +48,11 @@ const CLOSE_EASING = Easing.bezier(0.4, 0, 0.22, 1);
  *    from the card frame onto the detail hero frame; row sources (compact
  *    card, keep-reading) have no hero-shaped geometry, so the replica stays
  *    pinned at its original size and fades in place.
+ *  - While mounted, the source card hides itself (setActiveFactMorph →
+ *    useFactMorphSource), like UIKit's zoom transition hiding the source
+ *    cell: otherwise the closing screen shrinks down on top of a visible
+ *    duplicate. It's revealed one commit BEFORE the pop, under the replica's
+ *    exact cover, so neither direction shows a hole or a double.
  *  - Close (X button, pull-down, Android back) plays the reverse morph, then
  *    pops the route. Reanimated's reduced-motion handling makes both
  *    directions jump-cut automatically when the system requests it.
@@ -98,7 +104,18 @@ export function FactMorphContainer({
     // Open exactly once, on mount.
   }, []);
 
+  // Hide the pressed card for the lifetime of this presentation. The unmount
+  // cleanup is only the safety net — the normal path reveals the card in
+  // goBack(), one commit before the pop, while the replica still covers it
+  // exactly; revealing only on unmount can leave a one-frame hole after the
+  // screen is gone.
+  useEffect(() => {
+    setActiveFactMorph(source);
+    return () => setActiveFactMorph(null);
+  }, [source]);
+
   const goBack = useCallback(() => {
+    setActiveFactMorph(null);
     if (router.canGoBack()) router.back();
   }, [router]);
 

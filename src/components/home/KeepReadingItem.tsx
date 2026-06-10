@@ -4,9 +4,9 @@ import Animated from 'react-native-reanimated';
 
 import { Image } from 'expo-image';
 
+import { useFactMorphSource } from '../../hooks/useFactMorphSource';
 import { usePressFeedback } from '../../hooks/usePressFeedback';
 import { useResolvedImageUri } from '../../hooks/useResolvedImageUri';
-import { setPendingFactMorph } from '../../services/factMorph';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { ImagePlaceholder } from '../ImagePlaceholder';
@@ -44,7 +44,10 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
   const { pressStyle, onPressIn, onPressOut } = usePressFeedback();
 
   // Row root, measured on press-in for the row → detail morph transition.
+  // isMorphSourceActive hides this row while its morph presentation is on
+  // screen, so the closing screen never lands on top of a visible duplicate.
   const rowRef = useRef<View>(null);
+  const { registerMorphSource, isMorphSourceActive } = useFactMorphSource(fact.id);
 
   // Register this row as the morph source on press-IN: measureInWindow is
   // async, so starting here guarantees the rect is registered by the time
@@ -54,7 +57,7 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
     onPressIn();
     rowRef.current?.measureInWindow((x, y, width, height) => {
       if (!(width > 0 && height > 0)) return;
-      setPendingFactMorph({
+      registerMorphSource({
         kind: 'keep-reading',
         factId: fact.id,
         x,
@@ -71,7 +74,7 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
         isOdd,
       });
     });
-  }, [onPressIn, fact, resolvedUri, categoryName, imageSize, isOdd]);
+  }, [onPressIn, registerMorphSource, fact, resolvedUri, categoryName, imageSize, isOdd]);
 
   return (
     <Animated.View style={pressStyle}>
@@ -86,6 +89,7 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
             padding: spacing.xl,
             backgroundColor: isOdd ? `${colors.cardBackground}70` : 'transparent',
           },
+          isMorphSourceActive && styles.morphSourceHidden,
         ]}
       >
         <View style={[styles.textContainer, { marginRight: spacing.md }]}>
@@ -140,5 +144,10 @@ const styles = StyleSheet.create({
   },
   image: {
     overflow: 'hidden',
+  },
+  // Hides the row while it is the active morph source (the expanded detail
+  // presentation covers this exact rect, so no hole is ever visible).
+  morphSourceHidden: {
+    opacity: 0,
   },
 });

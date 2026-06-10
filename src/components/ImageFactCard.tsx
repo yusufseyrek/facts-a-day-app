@@ -14,9 +14,9 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
+import { useFactMorphSource } from '../hooks/useFactMorphSource';
 import { usePressFeedback } from '../hooks/usePressFeedback';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
-import { setPendingFactMorph } from '../services/factMorph';
 import { getIsConnected } from '../services/network';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -78,7 +78,10 @@ const ImageFactCardComponent = ({
   const { pressStyle, onPressIn, onPressOut } = usePressFeedback();
 
   // Card root, measured on press-in for the card → detail morph transition.
+  // isMorphSourceActive hides this card while its morph presentation is on
+  // screen, so the closing screen never lands on top of a visible duplicate.
   const cardRef = useRef<View>(null);
+  const { registerMorphSource, isMorphSourceActive } = useFactMorphSource(factId);
 
   // Shimmer animation using Reanimated (runs on UI thread)
   const shimmerOpacity = useSharedValue(0.3);
@@ -260,7 +263,7 @@ const ImageFactCardComponent = ({
     if (!imageLoaded) return;
     cardRef.current?.measureInWindow((x, y, width, height) => {
       if (!(width > 0 && height > 0)) return;
-      setPendingFactMorph({
+      registerMorphSource({
         kind: 'image-card',
         factId,
         x,
@@ -282,6 +285,7 @@ const ImageFactCardComponent = ({
     });
   }, [
     onPressIn,
+    registerMorphSource,
     imageLoaded,
     factId,
     radius.lg,
@@ -368,7 +372,7 @@ const ImageFactCardComponent = ({
         onPressIn={handlePressIn}
         onPressOut={onPressOut}
         android_ripple={androidRipple}
-        style={pressableStyle}
+        style={[pressableStyle, isMorphSourceActive && styles.morphSourceHidden]}
         testID={testID || `fact-card-${factId}`}
         aria-label={title}
         role="button"
@@ -525,6 +529,11 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: 'flex-end',
     minHeight: 120,
+  },
+  // Hides the card while it is the active morph source (the expanded detail
+  // presentation covers this exact rect, so no hole is ever visible).
+  morphSourceHidden: {
+    opacity: 0,
   },
 });
 

@@ -6,9 +6,9 @@ import { ChevronRight, RefreshCw } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
+import { useFactMorphSource } from '../hooks/useFactMorphSource';
 import { usePressFeedback } from '../hooks/usePressFeedback';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
-import { setPendingFactMorph } from '../services/factMorph';
 import { hexColors, useTheme } from '../theme';
 import { androidRipple } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
@@ -48,7 +48,10 @@ const CompactFactCardComponent = ({
   const { pressStyle, onPressIn, onPressOut } = usePressFeedback();
 
   // Card root, measured on press-in for the card → detail morph transition.
+  // isMorphSourceActive hides this card while its morph presentation is on
+  // screen, so the closing screen never lands on top of a visible duplicate.
   const cardRef = useRef<View>(null);
+  const { registerMorphSource, isMorphSourceActive } = useFactMorphSource(fact.id);
 
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -127,7 +130,7 @@ const CompactFactCardComponent = ({
     onPressIn();
     cardRef.current?.measureInWindow((x, y, width, height) => {
       if (!(width > 0 && height > 0)) return;
-      setPendingFactMorph({
+      registerMorphSource({
         kind: 'compact-card',
         factId: fact.id,
         x,
@@ -148,6 +151,7 @@ const CompactFactCardComponent = ({
     });
   }, [
     onPressIn,
+    registerMorphSource,
     fact,
     radius.lg,
     resolvedUri,
@@ -181,6 +185,7 @@ const CompactFactCardComponent = ({
             padding: spacing.md,
             gap: spacing.md,
           },
+          isMorphSourceActive && styles.morphSourceHidden,
         ]}
       >
         {/* Thumbnail */}
@@ -291,6 +296,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  // Hides the card while it is the active morph source (the expanded detail
+  // presentation covers this exact rect, so no hole is ever visible).
+  morphSourceHidden: {
+    opacity: 0,
   },
 });
 

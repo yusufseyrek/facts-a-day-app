@@ -116,6 +116,40 @@ export function clearPendingFactMorph(factId: number): void {
   }
 }
 
+// ── Active morph source ─────────────────────────────────────────────────────
+// While a morph presentation is on screen, the pressed card hides itself
+// (like UIKit's zoom transition hiding the source cell). Without this, the
+// closing screen shrinks down on top of a still-visible duplicate — clearly
+// so when the rect drifted after press-in (carousel snap) or the card was
+// partially off-screen. Identity is the registered source OBJECT, not the
+// fact id: the same fact can appear in several feed sections at once, and
+// only the instance that was actually pressed may hide.
+
+type ActiveMorphListener = (active: FactMorphSource | null) => void;
+
+let activeSource: FactMorphSource | null = null;
+const activeListeners = new Set<ActiveMorphListener>();
+
+/** Set by FactMorphContainer on mount (and cleared just before it pops). */
+export function setActiveFactMorph(source: FactMorphSource | null): void {
+  if (activeSource === source) return;
+  activeSource = source;
+  for (const listener of activeListeners) {
+    listener(activeSource);
+  }
+}
+
+export function getActiveFactMorph(): FactMorphSource | null {
+  return activeSource;
+}
+
+export function subscribeActiveFactMorph(listener: ActiveMorphListener): () => void {
+  activeListeners.add(listener);
+  return () => {
+    activeListeners.delete(listener);
+  };
+}
+
 /**
  * Which fact-detail route a press should push. Surfaces using fact cards that
  * register a morph (ImageFactCard, CompactFactCard, KeepReadingItem) get the
