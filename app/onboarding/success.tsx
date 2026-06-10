@@ -4,6 +4,7 @@ import Animated, {
   cancelAnimation,
   Easing,
   interpolate,
+  interpolateColor,
   type SharedValue,
   useAnimatedProps,
   useAnimatedStyle,
@@ -23,7 +24,7 @@ import {
   Svg,
 } from 'react-native-svg';
 
-import { Gift, Sparkles } from '@tamagui/lucide-icons';
+import { Gift } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -40,7 +41,7 @@ import { Screens, trackOnboardingComplete, trackScreenView } from '../../src/ser
 import * as notificationService from '../../src/services/notifications';
 import { getNotificationTimes } from '../../src/services/onboarding';
 import { getNeonColors, hexColors, useTheme } from '../../src/theme';
-import { hexToRgba } from '../../src/utils/colors';
+import { blendHexColors, hexToRgba } from '../../src/utils/colors';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -100,12 +101,76 @@ const BurstDot = ({
   );
 };
 
+// Overshoot easing so each letter pops slightly past its resting spot
+const LETTER_EASING = Easing.out(Easing.back(2));
+
+/**
+ * One letter of the welcome line. Rises and pops in over its own window of the
+ * shared cascade progress; its color idles between two points on the cyan ->
+ * green ramp (driven by breath) so the gradient appears to flow through the
+ * text.
+ */
+const CascadeLetter = ({
+  progress,
+  breath,
+  char,
+  start,
+  end,
+  colorFrom,
+  colorTo,
+  glowColor,
+  fontSize,
+  lineHeight,
+  rise,
+}: {
+  progress: SharedValue<number>;
+  breath: SharedValue<number>;
+  char: string;
+  start: number;
+  end: number;
+  colorFrom: string;
+  colorTo: string;
+  glowColor: string;
+  fontSize: number;
+  lineHeight: number;
+  rise: number;
+}) => {
+  const style = useAnimatedStyle(() => {
+    const p = interpolate(progress.value, [start, end], [0, 1], 'clamp');
+    const eased = LETTER_EASING(p);
+    return {
+      opacity: p,
+      color: interpolateColor(breath.value, [0, 1], [colorFrom, colorTo]),
+      transform: [{ translateY: (1 - eased) * rise }, { scale: 0.9 + eased * 0.1 }],
+    };
+  });
+
+  return (
+    <Animated.Text
+      allowFontScaling={false}
+      style={[
+        {
+          fontFamily: FONT_FAMILIES.bold,
+          fontSize,
+          lineHeight,
+          textShadowColor: glowColor,
+          textShadowOffset: { width: 0, height: 0 },
+          textShadowRadius: 10,
+        },
+        style,
+      ]}
+    >
+      {char}
+    </Animated.Text>
+  );
+};
+
 const NAVIGATE_DELAY_MS = 3000;
 
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
-  const { typography, iconSizes, spacing, radius, media, borderWidths } = useResponsive();
+  const { typography, iconSizes, spacing, radius, media } = useResponsive();
   const router = useRouter();
   const { completeOnboarding, selectedCategories } = useOnboarding();
   const reduceMotion = useReduceMotion();
@@ -220,7 +285,8 @@ export default function OnboardingSuccessScreen() {
 
   // === Animation values ===
   // badgeIn: disc spring-in. ring/check: SVG stroke draws. halo/burst: the
-  // single celebration pulse. breath: idle loop. title/subtitle: rise + fade.
+  // single celebration pulse. breath: idle loop (badge scale + welcome-line
+  // gradient flow). title: rise + fade. welcomeIn: letter cascade progress.
   const badgeIn = useSharedValue(0);
   const ring = useSharedValue(0);
   const check = useSharedValue(0);
@@ -229,11 +295,11 @@ export default function OnboardingSuccessScreen() {
   const breath = useSharedValue(0);
   const titleIn = useSharedValue(0);
   const underlineIn = useSharedValue(0);
-  const subtitleIn = useSharedValue(0);
+  const welcomeIn = useSharedValue(0);
 
   // Choreography: disc + ring (0ms) -> check draws (380ms) -> haptic, halo and
   // burst fire as the check lands (~830ms) -> title rises, underline draws,
-  // welcome pill rises -> idle breathing (from 1000ms).
+  // welcome line cascades in letter by letter -> idle breathing (from 1000ms).
   useEffect(() => {
     if (!consentDone) return;
 
@@ -243,7 +309,7 @@ export default function OnboardingSuccessScreen() {
       check.value = 1;
       titleIn.value = 1;
       underlineIn.value = 1;
-      subtitleIn.value = 1;
+      welcomeIn.value = 1;
       return;
     }
 
@@ -271,10 +337,9 @@ export default function OnboardingSuccessScreen() {
       1000,
       withTiming(1, { duration: 500, easing: Easing.out(Easing.cubic) })
     );
-    subtitleIn.value = withDelay(
-      1100,
-      withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) })
-    );
+    // Linear master clock for the cascade; each letter applies its own
+    // overshoot easing inside its window.
+    welcomeIn.value = withDelay(1050, withTiming(1, { duration: 900, easing: Easing.linear }));
 
     const hapticTimer = setTimeout(() => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -317,10 +382,40 @@ export default function OnboardingSuccessScreen() {
     transform: [{ scaleX: interpolate(underlineIn.value, [0, 1], [0.15, 1]) }],
   }));
 
-  const subtitleStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(subtitleIn.value, [0, 1], [0, 1], 'clamp'),
-    transform: [{ translateY: (1 - subtitleIn.value) * spacing.md }],
-  }));
+  // Welcome line split into words of letters. Each letter gets its position on
+  // the cyan -> green ramp (colorFrom) and the mirrored position (colorTo) so
+  // breath makes the gradient sweep back and forth, plus a stagger window for
+  // the cascade. Spaces are skipped but keep their slot, giving a natural
+  // pause between words.
+  const welcomeFontSize = typography.fontSize.title;
+  const welcomeWords = useMemo(() => {
+    const chars = Array.from(t('welcomeToApp'));
+    const total = chars.length;
+    const ramp = (pos: number) => blendHexColors(neon.green, neon.cyan, pos);
+    const words: {
+      char: string;
+      colorFrom: string;
+      colorTo: string;
+      start: number;
+      end: number;
+    }[][] = [[]];
+    chars.forEach((char, i) => {
+      if (char === ' ') {
+        if (words[words.length - 1].length > 0) words.push([]);
+        return;
+      }
+      const pos = total > 1 ? i / (total - 1) : 0.5;
+      const start = (i / total) * 0.7;
+      words[words.length - 1].push({
+        char,
+        colorFrom: ramp(pos),
+        colorTo: ramp(1 - pos),
+        start,
+        end: start + 0.3,
+      });
+    });
+    return words.filter((word) => word.length > 0);
+  }, [locale, neon, t]);
 
   // Deterministic radial burst: evenly spread angles with small per-dot
   // variation in distance and size so it reads organic, not mechanical.
@@ -520,7 +615,7 @@ export default function OnboardingSuccessScreen() {
           </Animated.View>
         </View>
 
-        {/* Title with neon glow, gradient underline, then welcome pill */}
+        {/* Title with neon glow, gradient underline, then cascading welcome line */}
         <YStack alignItems="center" gap={spacing.md}>
           <Animated.View style={titleStyle}>
             <Text.Headline
@@ -554,37 +649,35 @@ export default function OnboardingSuccessScreen() {
             />
           </Animated.View>
 
-          <Animated.View style={subtitleStyle}>
-            <XStack
-              alignItems="center"
-              gap={spacing.sm}
-              paddingHorizontal={spacing.lg}
-              paddingVertical={spacing.sm + spacing.xs / 2}
-              borderRadius={radius.full}
-              borderWidth={borderWidths.hairline}
-              borderColor={hexToRgba(neon.cyan, theme === 'dark' ? 0.35 : 0.25)}
-              overflow="hidden"
-            >
-              <GlassSurface
-                variant="glass"
-                isDark={theme === 'dark'}
-                tint={hexColors[theme].primaryLight}
-                glassTint={hexToRgba(neon.cyan, 0.08)}
-                borderRadius={radius.full}
-                style={StyleSheet.absoluteFill}
-              />
-              <Sparkles size={iconSizes.sm} color={neon.cyan} />
-              <Text.Body
-                fontSize={typography.fontSize.title}
-                fontFamily={FONT_FAMILIES.semibold}
-                textAlign="center"
-                color="$text"
-                lineHeight={typography.lineHeight.title}
-              >
-                {t('welcomeToApp')}
-              </Text.Body>
-            </XStack>
-          </Animated.View>
+          {/* Welcome line: gradient letters cascading in, glow per letter */}
+          <XStack
+            flexWrap="wrap"
+            justifyContent="center"
+            columnGap={welcomeFontSize * 0.3}
+            rowGap={spacing.xs}
+            paddingHorizontal={spacing.lg}
+          >
+            {welcomeWords.map((word, wordIndex) => (
+              <XStack key={wordIndex}>
+                {word.map((letter, letterIndex) => (
+                  <CascadeLetter
+                    key={letterIndex}
+                    progress={welcomeIn}
+                    breath={breath}
+                    char={letter.char}
+                    start={letter.start}
+                    end={letter.end}
+                    colorFrom={letter.colorFrom}
+                    colorTo={letter.colorTo}
+                    glowColor={hexToRgba(letter.colorFrom, theme === 'dark' ? 0.4 : 0.18)}
+                    fontSize={welcomeFontSize}
+                    lineHeight={typography.lineHeight.title}
+                    rise={spacing.lg}
+                  />
+                ))}
+              </XStack>
+            ))}
+          </XStack>
         </YStack>
       </YStack>
     </YStack>
