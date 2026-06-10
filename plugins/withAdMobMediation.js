@@ -9,13 +9,26 @@ const path = require("path");
  * as mediation partners for Google AdMob.
  */
 
-// iOS CocoaPods dependencies (compatible with Google-Mobile-Ads-SDK 13.1.0)
+// iOS CocoaPods dependencies. Deliberately unpinned: each adapter podspec
+// declares its required Google-Mobile-Ads-SDK range, and RNGoogleMobileAds
+// pins the exact GMA version, so CocoaPods automatically resolves the newest
+// adapter compatible with the wrapper's GMA — newer-but-incompatible adapter
+// releases are skipped, not broken against.
 const IOS_PODS = [
   "GoogleMobileAdsMediationVungle",
   "GoogleMobileAdsMediationUnity",
 ];
 
-// Android Gradle dependencies (pinned to versions compatible with Google Mobile Ads SDK 25.0.0)
+// Android Gradle dependencies. Gradle has no equivalent compatibility
+// resolution, so these are hand-pinned to the newest adapters built against
+// the play-services-ads version that react-native-google-mobile-ads ships
+// (25.0.0 as of RNGMA 16.3.3 — check node_modules/react-native-google-mobile-ads/
+// package.json sdkVersions). Newer adapters (unity 4.18+, vungle 7.7.3+) are
+// built against play-services-ads 25.2.0 and would transitively drag the core
+// ads SDK past what the wrapper was tested with — revisit when RNGMA bumps
+// its GMA pin. The adapter POMs at
+// https://dl.google.com/dl/android/maven2/com/google/ads/mediation/ declare
+// each version's play-services-ads target.
 const ANDROID_DEPENDENCIES = [
   "com.google.ads.mediation:vungle:7.7.2.0",
   "com.unity3d.ads:unity-ads:4.17.0",
