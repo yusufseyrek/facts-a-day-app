@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 
 import { HOME_FEED } from '../config/app';
 import { signalHeroImageReady, signalHomeScreenRendered } from '../contexts';
@@ -11,6 +11,17 @@ import { factKeys } from './queryKeys';
 import { useHomeFeedData } from './useHomeFeedData';
 
 import type { FactWithRelations } from '../services/database';
+
+/**
+ * Shared options for the On This Day section — same dual-consumer setup as
+ * homeFeedQueryOptions (home hook + onboarding warm-up prefetch).
+ */
+export function onThisDayQueryOptions(locale: string) {
+  return queryOptions({
+    queryKey: factKeys.onThisDay(locale),
+    queryFn: () => getOnThisDay(locale),
+  });
+}
 
 interface UseHomeFeedResult {
   latestFacts: FactWithRelations[];
@@ -30,10 +41,7 @@ interface UseHomeFeedResult {
 export function useHomeFeed(locale: string): UseHomeFeedResult {
   const { facts: feedFacts, isLoading: feedLoading } = useHomeFeedData(locale);
 
-  const onThisDayQuery = useQuery({
-    queryKey: factKeys.onThisDay(locale),
-    queryFn: () => getOnThisDay(locale),
-  });
+  const onThisDayQuery = useQuery(onThisDayQueryOptions(locale));
 
   const isLoading = feedLoading || onThisDayQuery.isLoading;
 

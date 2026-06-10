@@ -38,6 +38,7 @@ import { useReduceMotion } from '../../src/hooks/useReduceMotion';
 import { useTranslation } from '../../src/i18n';
 import { completeConsentFlow, isConsentRequired } from '../../src/services/ads';
 import { Screens, trackOnboardingComplete, trackScreenView } from '../../src/services/analytics';
+import { warmUpHomeScreen } from '../../src/services/homeWarmup';
 import * as notificationService from '../../src/services/notifications';
 import { getNotificationTimes } from '../../src/services/onboarding';
 import { getNeonColors, hexColors, useTheme } from '../../src/theme';
@@ -167,6 +168,9 @@ const CascadeLetter = ({
 
 const NAVIGATE_DELAY_MS = 3000;
 
+// Max extra dwell after the animation while the home warm-up finishes.
+const HOME_WARM_EXTRA_WAIT_MS = 2500;
+
 export default function OnboardingSuccessScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
@@ -201,6 +205,12 @@ export default function OnboardingSuccessScreen() {
   const consentResolveRef = useRef<(() => void) | null>(null);
 
   const runFlow = async () => {
+    // Start rendering the home screen's world immediately, in the background:
+    // prefetch its queries and first-card images while the user watches the
+    // consent/success animation. By navigation time the home screen mounts
+    // straight into a fully painted first frame. Never rejects.
+    const homeWarm = warmUpHomeScreen(locale);
+
     // Step 1: Handle consent first (download continues in background)
     try {
       await handleConsent();
@@ -211,8 +221,6 @@ export default function OnboardingSuccessScreen() {
     // Step 2: Animation is now visible — start the minimum display timer
     const animationTimer = new Promise<void>((resolve) => setTimeout(resolve, NAVIGATE_DELAY_MS));
 
-    // Wait for first batch to be ready (enough facts for home screen)
-    // Remaining facts continue downloading in the background
     const save = (async () => {
       try {
         await completeOnboarding();
@@ -220,9 +228,6 @@ export default function OnboardingSuccessScreen() {
         console.error('Error completing onboarding:', error);
       }
     })();
-
-    // Facts are fetched on demand from the API by the home screen on mount, so
-    // there's no local data to pre-populate here anymore.
 
     // Fire-and-forget after onboarding is saved: register for push + analytics.
     save.then(() => {
@@ -244,8 +249,13 @@ export default function OnboardingSuccessScreen() {
 
     setFlowComplete(true);
 
-    // Brief pause to let home screen render with preloaded data
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Navigate as soon as the home warm-up lands — usually it already finished
+    // under the animation, so this is instant. The cap bounds a dead network:
+    // past it, home shows its own loading states, same as without warming.
+    await Promise.race([
+      homeWarm,
+      new Promise<void>((resolve) => setTimeout(resolve, HOME_WARM_EXTRA_WAIT_MS)),
+    ]);
     router.replace('/');
   };
 
