@@ -285,7 +285,7 @@ export default function TriviaScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => loadTriviaData(true)} />
           }
         >
-          <ContentContainer paddingTop={headerGap} paddingBottom={spacing.md}>
+          <ContentContainer paddingTop={headerGap + spacing.sm} paddingBottom={spacing.xl}>
             {/* Always show Stats */}
             <Animated.View
               entering={FadeInDown.delay(50).duration(300)}
@@ -310,20 +310,20 @@ export default function TriviaScreen() {
                   <Text.Body
                     color={textColor}
                     fontFamily={FONT_FAMILIES.semibold}
-                    marginTop={spacing.xl}
-                    marginBottom={spacing.sm}
+                    marginTop={spacing.xxl}
+                    marginBottom={spacing.md}
                     marginLeft={spacing.sm}
                   >
                     {t('triviaGameModes')}
                   </Text.Body>
                 </Animated.View>
-                <View style={{ gap: spacing.md }}>
+                <View style={{ gap: spacing.lg }}>
                   {/* First row: Daily Trivia + Mixed Trivia */}
                   <Animated.View
                     entering={FadeInDown.delay(150).duration(300)}
                     needsOffscreenAlphaCompositing={Platform.OS === 'android'}
                   >
-                    <XStack gap={spacing.md}>
+                    <XStack gap={spacing.lg}>
                       <TriviaGridCard
                         type="daily"
                         title={t('dailyTrivia')}
@@ -364,7 +364,7 @@ export default function TriviaScreen() {
                       entering={FadeInDown.delay(200 + rowIndex * 50).duration(300)}
                       needsOffscreenAlphaCompositing={Platform.OS === 'android'}
                     >
-                      <XStack gap={spacing.md}>
+                      <XStack gap={spacing.lg}>
                         {row.map((category) => (
                           <TriviaGridCard
                             key={category.slug}
