@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { ChevronRight, RefreshCw } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
+import { usePressFeedback } from '../hooks/usePressFeedback';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { hexColors, useTheme } from '../theme';
 import { androidRipple } from '../utils/styles';
@@ -42,11 +43,8 @@ const CompactFactCardComponent = ({
 
   const thumbnailSize = imageSize ?? media.compactCardThumbnailSize;
 
-  const scaleAnim = useSharedValue(1);
-  const scaleStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scaleAnim.value }],
-  }));
-  const pressDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Light opacity-dim press feedback (replaces the old scale spring)
+  const { pressStyle, onPressIn, onPressOut } = usePressFeedback();
 
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -115,33 +113,18 @@ const CompactFactCardComponent = ({
   const mountTimestamp = useRef(Date.now()).current;
   const recyclingKey = `popular-${fact.id}-${mountTimestamp}-${renderRetryCount}`;
 
-  const handlePressIn = useCallback(() => {
-    if (pressDelayRef.current) clearTimeout(pressDelayRef.current);
-    pressDelayRef.current = setTimeout(() => {
-      scaleAnim.value = withSpring(0.97, { damping: 8, stiffness: 100 });
-    }, 100);
-  }, []);
-
-  const handlePressOut = useCallback(() => {
-    if (pressDelayRef.current) {
-      clearTimeout(pressDelayRef.current);
-      pressDelayRef.current = null;
-    }
-    scaleAnim.value = withSpring(1, { damping: 8, stiffness: 40 });
-  }, []);
-
   const shadowStyle = theme === 'dark' ? styles.shadowDark : styles.shadowLight;
 
   return (
     <Animated.View
-      style={[{ width: cardWidth ?? '100%', borderRadius: radius.lg }, shadowStyle, scaleStyle]}
+      style={[{ width: cardWidth ?? '100%', borderRadius: radius.lg }, shadowStyle, pressStyle]}
       shouldRasterizeIOS={true}
       renderToHardwareTextureAndroid={true}
     >
       <Pressable
         onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
         android_ripple={androidRipple(theme === 'dark')}
         style={[
           styles.card,

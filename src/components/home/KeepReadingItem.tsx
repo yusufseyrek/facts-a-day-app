@@ -1,8 +1,10 @@
 import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { Image } from 'expo-image';
 
+import { usePressFeedback } from '../../hooks/usePressFeedback';
 import { useResolvedImageUri } from '../../hooks/useResolvedImageUri';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
@@ -36,56 +38,63 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
     onPress(fact, index);
   }, [onPress, fact, index]);
 
+  // Smooth animated dim on press (was an instant opacity snap via the
+  // Pressable pressed-state style) — same feedback as the feed cards.
+  const { pressStyle, onPressIn, onPressOut } = usePressFeedback();
+
   return (
-    <Pressable
-      onPress={handlePress}
-      style={({ pressed }) => [
-        styles.item,
-        {
-          padding: spacing.xl,
-          backgroundColor: isOdd ? `${colors.cardBackground}70` : 'transparent',
-          opacity: pressed ? 0.7 : 1,
-        },
-      ]}
-    >
-      <View style={[styles.textContainer, { marginRight: spacing.md }]}>
-        {categoryName && (
-          <Text.Label
-            color={fact.categoryData?.color_hex ?? '$textSecondary'}
-            marginBottom={spacing.xs}
-          >
-            {categoryName}
-          </Text.Label>
+    <Animated.View style={pressStyle}>
+      <Pressable
+        onPress={handlePress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        style={[
+          styles.item,
+          {
+            padding: spacing.xl,
+            backgroundColor: isOdd ? `${colors.cardBackground}70` : 'transparent',
+          },
+        ]}
+      >
+        <View style={[styles.textContainer, { marginRight: spacing.md }]}>
+          {categoryName && (
+            <Text.Label
+              color={fact.categoryData?.color_hex ?? '$textSecondary'}
+              marginBottom={spacing.xs}
+            >
+              {categoryName}
+            </Text.Label>
+          )}
+          <Text.Body color="$text" numberOfLines={5} fontFamily={FONT_FAMILIES.semibold}>
+            {fact.title}
+          </Text.Body>
+        </View>
+        {resolvedUri ? (
+          <Image
+            source={{ uri: resolvedUri }}
+            style={[
+              styles.image,
+              {
+                width: imageSize,
+                height: imageSize,
+                borderRadius: spacing.sm,
+              },
+            ]}
+            contentFit="cover"
+            transition={200}
+          />
+        ) : (
+          <ImagePlaceholder
+            width={imageSize}
+            height={imageSize}
+            borderRadius={spacing.sm}
+            iconSize={imageSize * 0.4}
+            categoryIcon={fact.categoryData?.icon}
+            categoryColor={fact.categoryData?.color_hex}
+          />
         )}
-        <Text.Body color="$text" numberOfLines={5} fontFamily={FONT_FAMILIES.semibold}>
-          {fact.title}
-        </Text.Body>
-      </View>
-      {resolvedUri ? (
-        <Image
-          source={{ uri: resolvedUri }}
-          style={[
-            styles.image,
-            {
-              width: imageSize,
-              height: imageSize,
-              borderRadius: spacing.sm,
-            },
-          ]}
-          contentFit="cover"
-          transition={200}
-        />
-      ) : (
-        <ImagePlaceholder
-          width={imageSize}
-          height={imageSize}
-          borderRadius={spacing.sm}
-          iconSize={imageSize * 0.4}
-          categoryIcon={fact.categoryData?.icon}
-          categoryColor={fact.categoryData?.color_hex}
-        />
-      )}
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 });
 

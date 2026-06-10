@@ -6,7 +6,6 @@ import Animated, {
   useSharedValue,
   withRepeat,
   withSequence,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 
@@ -15,6 +14,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
+import { usePressFeedback } from '../hooks/usePressFeedback';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { getIsConnected } from '../services/network';
 import { useResponsive } from '../utils/useResponsive';
@@ -73,14 +73,8 @@ const ImageFactCardComponent = ({
 }: ImageFactCardProps) => {
   const { screenWidth, spacing, radius, config } = useResponsive();
 
-  // Scale animation using Reanimated (runs on UI thread)
-  const scaleAnim = useSharedValue(1);
-  const scaleStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scaleAnim.value }],
-  }));
-
-  // Ref to track press delay timeout - prevents animation during scroll
-  const pressDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Light opacity-dim press feedback (replaces the old scale spring)
+  const { pressStyle, onPressIn, onPressOut } = usePressFeedback();
 
   // Shimmer animation using Reanimated (runs on UI thread)
   const shimmerOpacity = useSharedValue(0.3);
@@ -163,24 +157,6 @@ const ImageFactCardComponent = ({
   // cardWidthProp allows carousels to pass the actual card width for correct sizing
   const baseWidth = cardWidthProp || screenWidth;
   const cardHeight = aspectRatio ? baseWidth / aspectRatio : baseWidth * config.cardAspectRatio;
-
-  // Delay press animation to avoid triggering during scroll
-  const handlePressIn = useCallback(() => {
-    if (pressDelayRef.current) {
-      clearTimeout(pressDelayRef.current);
-    }
-    pressDelayRef.current = setTimeout(() => {
-      scaleAnim.value = withSpring(0.96, { damping: 8, stiffness: 100 });
-    }, 100);
-  }, []);
-
-  const handlePressOut = useCallback(() => {
-    if (pressDelayRef.current) {
-      clearTimeout(pressDelayRef.current);
-      pressDelayRef.current = null;
-    }
-    scaleAnim.value = withSpring(1, { damping: 8, stiffness: 40 });
-  }, []);
 
   // Handle image render error — retry by re-rendering (fixes Android timing issues)
   const handleImageError = useCallback(() => {
@@ -276,15 +252,15 @@ const ImageFactCardComponent = ({
         style={[
           styles.shadowWrapper,
           { borderRadius: radius.lg, marginBottom: spacing.md },
-          scaleStyle,
+          pressStyle,
         ]}
         shouldRasterizeIOS={true}
         renderToHardwareTextureAndroid={true}
       >
         <Pressable
           onPress={onPress}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
           android_ripple={androidRipple}
           style={pressableStyle}
           testID={testID || `fact-card-${factId}`}
@@ -329,15 +305,15 @@ const ImageFactCardComponent = ({
       style={[
         styles.shadowWrapper,
         { borderRadius: radius.lg, marginBottom: spacing.md },
-        scaleStyle,
+        pressStyle,
       ]}
       shouldRasterizeIOS={true}
       renderToHardwareTextureAndroid={true}
     >
       <Pressable
         onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
         android_ripple={androidRipple}
         style={pressableStyle}
         testID={testID || `fact-card-${factId}`}
