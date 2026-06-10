@@ -219,9 +219,14 @@ function StatRow({
       >
         {icon}
       </YStack>
-      {/* Fixed height keeps rows level at one title line; the value sits
-          directly after the plate so the pair reads as one unit. */}
-      <YStack height={typography.lineHeight.title} justifyContent="center">
+      {/* Fixed height keeps rows level at one title line; minWidth gives
+          1-2 digit values a shared column so the label stack starts at the
+          same x on every row instead of ragged-left. */}
+      <YStack
+        height={typography.lineHeight.title}
+        minWidth={typography.fontSize.title * 1.3}
+        justifyContent="center"
+      >
         <Text.Title
           fontFamily={FONT_FAMILIES.bold}
           color={contrastColor}
@@ -232,22 +237,24 @@ function StatRow({
         </Text.Title>
       </YStack>
       <YStack flex={1} justifyContent="center">
+        {/* Overline label: same semibold wide-tracked style as the card
+            eyebrow and the ring's Accuracy caption, one step quieter. */}
         <Text.Tiny
           color={contrastColor}
-          opacity={0.78}
+          opacity={0.72}
           textTransform="uppercase"
-          letterSpacing={0.5}
-          fontFamily={FONT_FAMILIES.medium}
+          letterSpacing={0.8}
+          fontFamily={FONT_FAMILIES.semibold}
           numberOfLines={1}
         >
           {label}
         </Text.Tiny>
-        {/* Live deltas use the monochrome ramp: 0.9 active / 0.55 inactive
-            (labels sit at 0.78 between them). No success-green on the
+        {/* Live deltas use the monochrome ramp: 0.95 active / 0.5 inactive
+            (labels sit at 0.72 between them). No success-green on the
             gradient: light-mode #10B981 on #0077A8 is near-invisible. */}
         <Text.Tiny
           color={contrastColor}
-          opacity={microActive ? 0.9 : 0.55}
+          opacity={microActive ? 0.95 : 0.5}
           fontFamily={FONT_FAMILIES.medium}
           numberOfLines={1}
           flexShrink={1}
@@ -317,13 +324,19 @@ export function TriviaStatsHero({
   // corner texture matches the grid tiles.
   const s = media.topicCardSize * 0.7;
 
+  // Shared overline voice: semibold caps with wide tracking. The card title,
+  // the ring's Accuracy caption, and the stat labels all speak it so the big
+  // numbers own the hierarchy.
   const tinyLabelProps = {
     color: contrastColor,
-    opacity: 0.78,
+    opacity: 0.72,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    fontFamily: FONT_FAMILIES.medium,
+    letterSpacing: 1,
+    fontFamily: FONT_FAMILIES.semibold,
   } as const;
+  // Hairline divider between the ring and stat halves; one step fainter than
+  // the deco circles so it reads as structure, not decoration.
+  const hairline = onDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.08)';
 
   return (
     <Pressable
@@ -376,13 +389,22 @@ export function TriviaStatsHero({
             backgroundColor: circleB,
           }}
         />
-        <YStack padding={spacing.lg} gap={spacing.md}>
-          {/* Header row: full Title size so the card title owns the
-              hierarchy; the Details pill stays a quiet Caption-sized control. */}
+        <YStack padding={spacing.lg} gap={spacing.lg}>
+          {/* Header row: the title is a quiet uppercase eyebrow (dashboard
+              voice) so the Display-sized accuracy number owns the card's
+              hierarchy; the Details pill shrinks to match. */}
           <XStack justifyContent="space-between" alignItems="center">
-            <Text.Title flex={1} color={contrastColor} numberOfLines={1}>
+            <Text.Caption
+              flex={1}
+              color={contrastColor}
+              opacity={0.85}
+              textTransform="uppercase"
+              letterSpacing={1.4}
+              fontFamily={FONT_FAMILIES.semibold}
+              numberOfLines={1}
+            >
               {t('yourPerformance')}
-            </Text.Title>
+            </Text.Caption>
             {hasData && (
               /* Frosted pill: same contrast-plate alpha the grid cards use for
                  their icon plates, so the affordance reads as a real button. */
@@ -394,24 +416,24 @@ export function TriviaStatsHero({
                 borderRadius={radius.full}
                 backgroundColor={plateBg}
               >
-                <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={contrastColor}>
+                <Text.Tiny fontFamily={FONT_FAMILIES.semibold} color={contrastColor}>
                   {t('details')}
-                </Text.Caption>
-                <ChevronRight size={iconSizes.sm} color={contrastColor} opacity={0.78} />
+                </Text.Tiny>
+                <ChevronRight size={iconSizes.xs} color={contrastColor} opacity={0.78} />
               </XStack>
             )}
           </XStack>
 
           {/* Body row — one skeleton for filled and empty so the empty state
               previews the filled geometry and cannot drift out of sync. */}
-          {/* Body splits 50/50: ring centered in the left half, stat rows
-              filling the right half. */}
-          <XStack alignItems="center">
+          {/* Body splits in equal halves around a hairline divider: ring
+              centered left, stat rows filling the right. */}
+          <XStack alignItems="center" gap={spacing.md}>
             {/* Ring half: number stays full Display size (a 0-100 value plus
                 % fits the 84pt inner diameter without auto-shrinking — iOS
                 collapses adjustsFontSizeToFit text inside flex rows); the
                 label sits under the ring where it has the full column width. */}
-            <YStack width="50%" alignItems="center" gap={spacing.xs}>
+            <YStack flex={1} alignItems="center" gap={spacing.sm}>
               <CircularProgress
                 percentage={hasData ? accuracy : 0}
                 size={iconSizes.heroXl}
@@ -426,9 +448,9 @@ export function TriviaStatsHero({
                       {accuracy}
                     </Text.Display>
                     <Text.Caption
-                      fontFamily={FONT_FAMILIES.bold}
+                      fontFamily={FONT_FAMILIES.semibold}
                       color={contrastColor}
-                      opacity={0.78}
+                      opacity={0.7}
                     >
                       %
                     </Text.Caption>
@@ -444,8 +466,16 @@ export function TriviaStatsHero({
               )}
             </YStack>
 
+            {/* Structural hairline between the halves */}
+            <YStack
+              width={1}
+              alignSelf="stretch"
+              marginVertical={spacing.xs}
+              backgroundColor={hairline}
+            />
+
             {hasData ? (
-              <YStack width="50%" gap={spacing.sm}>
+              <YStack flex={1} gap={spacing.md}>
                 <StatRow
                   icon={<Zap size={iconSizes.xs} color={contrastColor} />}
                   plateBg={plateBg}
@@ -490,7 +520,7 @@ export function TriviaStatsHero({
                       </Text.Caption>
                       <Text.Tiny
                         color={contrastColor}
-                        opacity={0.78}
+                        opacity={0.72}
                         fontFamily={FONT_FAMILIES.medium}
                         numberOfLines={1}
                       >
@@ -510,13 +540,14 @@ export function TriviaStatsHero({
                 )}
               </YStack>
             ) : (
-              <YStack width="50%" justifyContent="center">
+              <YStack flex={1} justifyContent="center">
                 {/* No numberOfLines: long-locale sentences wrap (the German
-                   noTestsYet string is 60 chars). */}
+                   noTestsYet string is 60 chars). Medium weight: an invitation,
+                   not a stat, so it sits softer than the data voice. */}
                 <Text.Label
                   color={contrastColor}
-                  opacity={0.78}
-                  fontFamily={FONT_FAMILIES.semibold}
+                  opacity={0.85}
+                  fontFamily={FONT_FAMILIES.medium}
                 >
                   {t('noTestsYet')}
                 </Text.Label>
