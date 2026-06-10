@@ -85,6 +85,7 @@
     },
   },
   "patchedDependencies": {
+    "react-native-screens@4.25.0": "patches/react-native-screens@4.25.0.patch",
     "react-native-google-mobile-ads@16.3.3": "patches/react-native-google-mobile-ads@16.3.3.patch",
   },
   "packages": {
