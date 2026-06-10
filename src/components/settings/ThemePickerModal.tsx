@@ -1,21 +1,19 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
+import React from 'react';
+import { Pressable, ScrollView } from 'react-native';
 
-import { Moon, Smartphone, Sun, X } from '@tamagui/lucide-icons';
+import { Moon, Smartphone, Sun } from '@tamagui/lucide-icons';
+import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../../i18n';
 import { trackThemeChange, updateThemeProperty } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
+import { hexToRgba } from '../../utils/colors';
 import { useResponsive } from '../../utils/useResponsive';
-import { InlineOverlay } from '../InlineOverlay';
-import { ModalBackdrop } from '../ModalBackdrop';
+import { DialogShell } from '../DialogShell';
 import { Text } from '../Typography';
 
 import type { TranslationKeys } from '../../i18n';
 import type { ThemeMode } from '../../theme/ThemeProvider';
-
-const ANIMATION_DURATION = 200;
 
 interface ThemePickerModalProps {
   visible: boolean;
@@ -32,35 +30,8 @@ interface ThemeOption {
 export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({ visible, onClose }) => {
   const { theme, themeMode, setThemeMode } = useTheme();
   const colors = hexColors[theme];
-  const isDark = theme === 'dark';
   const { t } = useTranslation();
-  const { spacing, radius, iconSizes, maxModalWidth } = useResponsive();
-
-  // Internal state to keep modal mounted during exit animation
-  const [showContent, setShowContent] = useState(false);
-  const closingRef = useRef(false);
-
-  // Sync with external visible prop
-  useEffect(() => {
-    if (visible) {
-      setShowContent(true);
-      closingRef.current = false;
-    } else if (!closingRef.current) {
-      // External close (e.g., Android back button handled by parent)
-      setShowContent(false);
-    }
-  }, [visible]);
-
-  const handleClose = useCallback(() => {
-    if (closingRef.current) return;
-    closingRef.current = true;
-    setShowContent(false);
-    // Wait for animation to complete, then notify parent
-    setTimeout(() => {
-      onClose();
-      closingRef.current = false;
-    }, ANIMATION_DURATION);
-  }, [onClose]);
+  const { spacing, radius, iconSizes, maxModalWidth, screenHeight } = useResponsive();
 
   const themeOptions: ThemeOption[] = [
     {
@@ -84,10 +55,11 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({ visible, onC
   ];
 
   const handleSelectTheme = (mode: ThemeMode) => {
-    // Start closing animation
-    handleClose();
+    // Start closing first (shell unmounts the card immediately, so the theme
+    // re-render below never repaints the exiting dialog), then apply the theme
+    // shortly after the exit begins to avoid a mid-animation flash.
+    onClose();
 
-    // Apply theme change after animation starts
     setTimeout(() => {
       if (mode !== themeMode) {
         trackThemeChange({ from: themeMode, to: mode });
@@ -97,165 +69,56 @@ export const ThemePickerModal: React.FC<ThemePickerModalProps> = ({ visible, onC
     }, 50);
   };
 
-  const dynamicStyles = useMemo(
-    () => ({
-      modalContainer: {
-        maxHeight: Dimensions.get('window').height * 0.7,
-        borderRadius: radius.lg,
-        overflow: 'hidden' as const,
-      },
-      header: {
-        flexDirection: 'row' as const,
-        alignItems: 'center' as const,
-        justifyContent: 'space-between' as const,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.lg,
-        borderBottomWidth: 1,
-      },
-      closeButton: {
-        padding: spacing.xs,
-      },
-      optionsContainer: {
-        padding: spacing.lg,
-        gap: spacing.md,
-      },
-      optionCard: {
-        borderRadius: radius.lg,
-        borderWidth: 2,
-        padding: spacing.lg,
-      },
-      optionHeader: {
-        flexDirection: 'row' as const,
-        alignItems: 'center' as const,
-        gap: spacing.md,
-      },
-      iconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: radius.md,
-        alignItems: 'center' as const,
-        justifyContent: 'center' as const,
-      },
-    }),
-    [spacing, radius]
-  );
-
   return (
-    <InlineOverlay
+    <DialogShell
       visible={visible}
-      onRequestClose={handleClose}
-      exitGraceMs={ANIMATION_DURATION + 40}
+      onClose={onClose}
+      title={t('settingsThemeTitle')}
+      showClose
+      maxWidth={maxModalWidth}
     >
-      <View style={styles.container}>
-        <ModalBackdrop
-          isDark={theme === 'dark'}
-          blurIntensity={isDark ? 50 : 70}
-          androidScrim="rgba(0,0,0,0.5)"
-          onPress={handleClose}
-        />
-        <View style={styles.overlayPressable} pointerEvents="box-none">
-          {showContent && (
-            <Animated.View
-              entering={ZoomIn.duration(ANIMATION_DURATION)}
-              exiting={ZoomOut.duration(ANIMATION_DURATION)}
-              style={styles.animatedContainer}
-            >
-              <View>
-                <View
-                  style={[
-                    dynamicStyles.modalContainer,
-                    { backgroundColor: colors.background, width: maxModalWidth },
-                  ]}
-                >
-                  <View style={[dynamicStyles.header, { borderBottomColor: colors.border }]}>
-                    <Text.Title color={colors.text}>{t('settingsThemeTitle')}</Text.Title>
-                    <Pressable onPress={handleClose} style={dynamicStyles.closeButton}>
-                      <X size={iconSizes.lg} color={colors.text} />
-                    </Pressable>
-                  </View>
-
-                  <ScrollView style={styles.scrollView} overScrollMode="never">
-                    <View style={dynamicStyles.optionsContainer}>
-                      {themeOptions.map((option) => {
-                        const isSelected = themeMode === option.value;
-                        return (
-                          <Pressable
-                            key={option.value}
-                            onPress={() => handleSelectTheme(option.value)}
-                          >
-                            {({ pressed }) => (
-                              <View
-                                style={[
-                                  dynamicStyles.optionCard,
-                                  {
-                                    backgroundColor: isSelected ? colors.primary : colors.surface,
-                                    borderColor: isSelected ? colors.primary : colors.border,
-                                    opacity: pressed ? 0.7 : 1,
-                                  },
-                                ]}
-                              >
-                                <View style={dynamicStyles.optionHeader}>
-                                  <View
-                                    style={[
-                                      dynamicStyles.iconContainer,
-                                      {
-                                        backgroundColor: isSelected
-                                          ? 'rgba(255, 255, 255, 0.2)'
-                                          : 'rgba(0, 0, 0, 0.05)',
-                                      },
-                                    ]}
-                                  >
-                                    {option.icon(isSelected ? '#FFFFFF' : colors.text)}
-                                  </View>
-                                  <View style={styles.optionTextContainer}>
-                                    <Text.Label color={isSelected ? '#FFFFFF' : colors.text}>
-                                      {t(option.titleKey)}
-                                    </Text.Label>
-                                    <Text.Caption
-                                      color={
-                                        isSelected
-                                          ? 'rgba(255, 255, 255, 0.9)'
-                                          : colors.textSecondary
-                                      }
-                                    >
-                                      {t(option.descriptionKey)}
-                                    </Text.Caption>
-                                  </View>
-                                </View>
-                              </View>
-                            )}
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  </ScrollView>
-                </View>
-              </View>
-            </Animated.View>
-          )}
-        </View>
-      </View>
-    </InlineOverlay>
+      <ScrollView style={{ maxHeight: screenHeight * 0.6 }} overScrollMode="never">
+        <YStack padding={spacing.lg} gap={spacing.md}>
+          {themeOptions.map((option) => {
+            const isSelected = themeMode === option.value;
+            return (
+              <Pressable key={option.value} onPress={() => handleSelectTheme(option.value)}>
+                {({ pressed }) => (
+                  <XStack
+                    borderRadius={radius.lg}
+                    borderWidth={2}
+                    padding={spacing.lg}
+                    backgroundColor={isSelected ? hexToRgba(colors.primary, 0.12) : colors.surface}
+                    borderColor={isSelected ? colors.primary : colors.border}
+                    opacity={pressed ? 0.7 : 1}
+                    alignItems="center"
+                    gap={spacing.md}
+                  >
+                    <YStack
+                      width={iconSizes.hero}
+                      height={iconSizes.hero}
+                      borderRadius={radius.md}
+                      backgroundColor={
+                        isSelected ? hexToRgba(colors.primary, 0.15) : 'rgba(0, 0, 0, 0.05)'
+                      }
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      {option.icon(isSelected ? colors.primary : colors.text)}
+                    </YStack>
+                    <YStack flex={1} gap={spacing.xs}>
+                      <Text.Label color={colors.text}>{t(option.titleKey)}</Text.Label>
+                      <Text.Caption color={colors.textSecondary}>
+                        {t(option.descriptionKey)}
+                      </Text.Caption>
+                    </YStack>
+                  </XStack>
+                )}
+              </Pressable>
+            );
+          })}
+        </YStack>
+      </ScrollView>
+    </DialogShell>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  overlayPressable: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  animatedContainer: {
-    alignItems: 'center',
-  },
-  scrollView: {
-    maxHeight: 500,
-  },
-  optionTextContainer: {
-    flex: 1,
-    gap: 4,
-  },
-});

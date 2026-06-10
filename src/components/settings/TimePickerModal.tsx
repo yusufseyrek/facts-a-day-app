@@ -1,18 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  Dimensions,
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Linking, Platform, Pressable, ScrollView, View } from 'react-native';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { AlertTriangle, Plus, Trash2, X } from '@tamagui/lucide-icons';
+import { AlertTriangle, Plus, Trash2 } from '@tamagui/lucide-icons';
 
 import { useTranslation } from '../../i18n/useTranslation';
 import { trackNotificationTimeChange, updateNotificationProperty } from '../../services/analytics';
@@ -20,13 +10,9 @@ import * as notificationService from '../../services/notifications';
 import * as onboardingService from '../../services/onboarding';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
-import { Button } from '../Button';
-import { InlineOverlay } from '../InlineOverlay';
-import { ModalBackdrop } from '../ModalBackdrop';
+import { DialogButton, DialogShell } from '../DialogShell';
 import { SuccessToast } from '../SuccessToast';
 import { FONT_FAMILIES, Text } from '../Typography';
-
-const ANIMATION_DURATION = 150;
 
 interface TimePickerModalProps {
   visible: boolean;
@@ -46,16 +32,11 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 }) => {
   const { theme } = useTheme();
   const colors = hexColors[theme];
-  const isDark = theme === 'dark';
   const { t, locale } = useTranslation();
-  const { spacing, radius, iconSizes } = useResponsive();
+  const { spacing, radius, iconSizes, maxModalWidth, screenHeight } = useResponsive();
 
   // Warning color - darker in light mode for better readability
   const warningColor = theme === 'dark' ? '#F59E0B' : '#B45309';
-
-  // Internal state to keep modal mounted during exit animation
-  const [showContent, setShowContent] = useState(false);
-  const closingRef = useRef(false);
 
   // Support multiple notification times (up to 3 per day)
   const [times, setTimes] = useState<Date[]>([currentTime]);
@@ -63,28 +44,6 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   const [activePickerIndex, setActivePickerIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-
-  // Sync with external visible prop
-  useEffect(() => {
-    if (visible) {
-      setShowContent(true);
-      closingRef.current = false;
-    } else if (!closingRef.current) {
-      // External close (e.g., Android back button handled by parent)
-      setShowContent(false);
-    }
-  }, [visible]);
-
-  const handleClose = useCallback(() => {
-    if (closingRef.current) return;
-    closingRef.current = true;
-    setShowContent(false);
-    // Wait for animation to complete, then notify parent
-    setTimeout(() => {
-      onClose();
-      closingRef.current = false;
-    }, ANIMATION_DURATION);
-  }, [onClose]);
 
   // Load saved times on mount
   useEffect(() => {
@@ -154,11 +113,10 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
     }
   };
 
+  // Limits are declarative: the add button hides at 3 times and the remove
+  // button hides at 1, so these guards are unreachable in normal use.
   const handleAddTime = () => {
-    if (times.length >= 3) {
-      Alert.alert(t('maximumReached'), t('youCanScheduleUpTo3'));
-      return;
-    }
+    if (times.length >= 3) return;
 
     // Add a new time (default to 2 hours after the last time)
     const lastTime = times[times.length - 1];
@@ -168,10 +126,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   };
 
   const handleRemoveTime = (index: number) => {
-    if (times.length === 1) {
-      Alert.alert(t('minimumRequired'), t('youMustHaveAtLeastOne'));
-      return;
-    }
+    if (times.length === 1) return;
 
     const newTimes = times.filter((_, i) => i !== index);
     setTimes(newTimes);
@@ -180,7 +135,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   const handleSave = async () => {
     // If no changes, just close the modal without rescheduling
     if (!hasTimesChanged()) {
-      handleClose();
+      onClose();
       return;
     }
 
@@ -295,31 +250,11 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
   const handleSuccessToastHide = () => {
     setShowSuccessToast(false);
-    handleClose();
+    onClose();
   };
-
-  const screenWidth = Dimensions.get('window').width;
-  const screenHeight = Dimensions.get('window').height;
-  const modalWidth = screenWidth * 0.85;
 
   const dynamicStyles = useMemo(
     () => ({
-      modalContainer: {
-        maxHeight: screenHeight * 0.8,
-        borderRadius: radius.lg,
-        overflow: 'hidden' as const,
-      },
-      header: {
-        flexDirection: 'row' as const,
-        alignItems: 'center' as const,
-        justifyContent: 'space-between' as const,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.lg,
-        borderBottomWidth: 1,
-      },
-      closeButton: {
-        padding: spacing.xs,
-      },
       content: {
         padding: spacing.lg,
         gap: spacing.md,
@@ -364,10 +299,6 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
         gap: spacing.xs,
         marginTop: spacing.sm,
       },
-      footer: {
-        padding: spacing.lg,
-        paddingTop: 0,
-      },
       androidTimeButton: {
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.xl,
@@ -381,163 +312,113 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   );
 
   return (
-    <InlineOverlay
-      visible={visible}
-      onRequestClose={handleClose}
-      exitGraceMs={ANIMATION_DURATION + 60}
-    >
-      <View style={styles.container}>
-        <ModalBackdrop
-          isDark={isDark}
-          blurIntensity={50}
-          androidScrim={isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.5)'}
-          onPress={handleClose}
-        />
-        <SuccessToast
-          visible={showSuccessToast}
-          message={
-            times.length === 1 ? t('notificationTimeUpdated') : t('notificationTimesUpdated')
-          }
-          onHide={handleSuccessToastHide}
-        />
-        <View style={styles.overlayPressable} pointerEvents="box-none">
-          {showContent && (
-            <Animated.View
-              entering={ZoomIn.duration(ANIMATION_DURATION)}
-              exiting={ZoomOut.duration(ANIMATION_DURATION)}
-              style={styles.animatedContainer}
+    <>
+      <DialogShell
+        // The toast renders as a passthrough inline overlay in the main
+        // window, so on Android it can never paint above the dialog's native
+        // Modal window — slide the dialog out while the toast shows instead.
+        // Toast onHide still drives the real close (parent flips `visible`).
+        visible={visible && !showSuccessToast}
+        onClose={onClose}
+        title={t('settingsNotificationTime')}
+        showClose
+        maxWidth={maxModalWidth}
+        footer={
+          <DialogButton
+            label={isSaving ? t('saving') : t('save')}
+            onPress={handleSave}
+            disabled={isSaving}
+          />
+        }
+      >
+        <ScrollView
+          style={{ maxHeight: screenHeight * 0.55 }}
+          showsVerticalScrollIndicator={true}
+          overScrollMode="never"
+          nestedScrollEnabled={true}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={dynamicStyles.content}>
+            {!hasNotificationPermission && (
+              <Pressable
+                style={({ pressed }) => [
+                  dynamicStyles.warningContainer,
+                  {
+                    backgroundColor: `${warningColor}20`,
+                    borderColor: warningColor,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+                onPress={async () => {
+                  try {
+                    if (Platform.OS === 'ios') {
+                      await Linking.openURL('app-settings:');
+                    } else {
+                      await Linking.openSettings();
+                    }
+                  } catch (error) {
+                    console.error('Error opening notification settings:', error);
+                  }
+                }}
+              >
+                <AlertTriangle size={iconSizes.md} color={warningColor} />
+                <Text.Caption color={warningColor} style={{ flex: 1 }}>
+                  {t('notificationPermissionWarning')}
+                </Text.Caption>
+              </Pressable>
+            )}
+
+            <Text.Label
+              textAlign="center"
+              color={colors.textSecondary}
+              style={{ marginBottom: spacing.sm }}
             >
-              <View>
-                <View
-                  style={[
-                    dynamicStyles.modalContainer,
-                    { backgroundColor: colors.background, width: modalWidth },
-                  ]}
-                >
-                  <View style={[dynamicStyles.header, { borderBottomColor: colors.border }]}>
-                    <Text.Title color={colors.text}>{t('settingsNotificationTime')}</Text.Title>
-                    <Pressable onPress={handleClose} style={dynamicStyles.closeButton}>
-                      <X size={iconSizes.lg} color={colors.text} />
-                    </Pressable>
-                  </View>
+              {t('scheduleUpTo3Notifications')}
+            </Text.Label>
 
-                  <ScrollView
-                    style={styles.scrollContent}
-                    contentContainerStyle={styles.scrollContentContainer}
-                    showsVerticalScrollIndicator={true}
-                    overScrollMode="never"
-                    nestedScrollEnabled={true}
-                    keyboardShouldPersistTaps="handled"
-                  >
-                    <View style={dynamicStyles.content}>
-                      {!hasNotificationPermission && (
-                        <Pressable
-                          style={({ pressed }) => [
-                            dynamicStyles.warningContainer,
-                            {
-                              backgroundColor: `${warningColor}20`,
-                              borderColor: warningColor,
-                              opacity: pressed ? 0.7 : 1,
-                            },
-                          ]}
-                          onPress={async () => {
-                            try {
-                              if (Platform.OS === 'ios') {
-                                await Linking.openURL('app-settings:');
-                              } else {
-                                await Linking.openSettings();
-                              }
-                            } catch (error) {
-                              console.error('Error opening notification settings:', error);
-                            }
-                          }}
-                        >
-                          <AlertTriangle size={iconSizes.md} color={warningColor} />
-                          <Text.Caption color={warningColor} style={{ flex: 1 }}>
-                            {t('notificationPermissionWarning')}
-                          </Text.Caption>
-                        </Pressable>
-                      )}
+            {times.map((time, index) => renderTimePicker(time, index, getTimeLabels()[index]))}
 
-                      <Text.Label
-                        textAlign="center"
-                        color={colors.textSecondary}
-                        style={{ marginBottom: spacing.sm }}
-                      >
-                        {t('scheduleUpTo3Notifications')}
-                      </Text.Label>
+            {times.length < 3 && (
+              <Pressable
+                onPress={handleAddTime}
+                style={[
+                  dynamicStyles.addButton,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Plus size={iconSizes.md} color={colors.primary} />
+                <Text.Label color={colors.primary}>{t('addAnotherTime')}</Text.Label>
+              </Pressable>
+            )}
 
-                      {times.map((time, index) =>
-                        renderTimePicker(time, index, getTimeLabels()[index])
-                      )}
+            <Text.Caption
+              textAlign="center"
+              color={colors.textSecondary}
+              fontFamily={FONT_FAMILIES.semibold}
+              style={{ marginTop: spacing.sm }}
+            >
+              {t('multipleNotificationsPerDay', { count: times.length })}
+            </Text.Caption>
+            <Text.Caption
+              textAlign="center"
+              color={colors.textSecondary}
+              fontStyle="italic"
+              style={{ marginTop: spacing.xs }}
+            >
+              {t('notificationRespectMessage')}
+            </Text.Caption>
+          </View>
+        </ScrollView>
+      </DialogShell>
 
-                      {times.length < 3 && (
-                        <Pressable
-                          onPress={handleAddTime}
-                          style={[
-                            dynamicStyles.addButton,
-                            {
-                              backgroundColor: colors.surface,
-                              borderColor: colors.border,
-                            },
-                          ]}
-                        >
-                          <Plus size={iconSizes.md} color={colors.primary} />
-                          <Text.Label color={colors.primary}>{t('addAnotherTime')}</Text.Label>
-                        </Pressable>
-                      )}
-
-                      <Text.Caption
-                        textAlign="center"
-                        color={colors.textSecondary}
-                        fontFamily={FONT_FAMILIES.semibold}
-                        style={{ marginTop: spacing.sm }}
-                      >
-                        {t('multipleNotificationsPerDay', { count: times.length })}
-                      </Text.Caption>
-                      <Text.Caption
-                        textAlign="center"
-                        color={colors.textSecondary}
-                        fontStyle="italic"
-                        style={{ marginTop: spacing.xs }}
-                      >
-                        {t('notificationRespectMessage')}
-                      </Text.Caption>
-                    </View>
-                  </ScrollView>
-
-                  <View style={dynamicStyles.footer}>
-                    <Button onPress={handleSave} loading={isSaving} disabled={isSaving}>
-                      {isSaving ? t('saving') : t('save')}
-                    </Button>
-                  </View>
-                </View>
-              </View>
-            </Animated.View>
-          )}
-        </View>
-      </View>
-    </InlineOverlay>
+      <SuccessToast
+        visible={showSuccessToast}
+        message={times.length === 1 ? t('notificationTimeUpdated') : t('notificationTimesUpdated')}
+        onHide={handleSuccessToastHide}
+      />
+    </>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  overlayPressable: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  animatedContainer: {
-    alignItems: 'center',
-  },
-  scrollContent: {
-    flexGrow: 0,
-    flexShrink: 1,
-  },
-  scrollContentContainer: {
-    flexGrow: 1,
-  },
-});

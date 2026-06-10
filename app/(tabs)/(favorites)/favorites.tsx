@@ -360,7 +360,7 @@ export default function FavoritesScreen() {
             </Text.Body>
           </YStack>
           <YStack width="100%" maxWidth={280} marginTop={spacing.md}>
-            <Button onPress={() => router.push('/(tabs)/discover')}>{t('discoverFacts')}</Button>
+            <Button onPress={() => router.push('/(tabs)/search')}>{t('discoverFacts')}</Button>
           </YStack>
         </YStack>
       </ScreenContainer>
@@ -383,58 +383,58 @@ export default function FavoritesScreen() {
             gap: spacing.sm,
           }}
         >
-            {/* "All" chip */}
-            <Pressable onPress={() => handleCategoryPress(null)}>
-              <XStack
-                height={media.chipHeight}
-                borderRadius={radius.full}
-                paddingHorizontal={spacing.md}
-                alignItems="center"
-                justifyContent="center"
-                backgroundColor={selectedCategory === null ? '$primary' : '$surface'}
-                borderWidth={selectedCategory === null ? 0 : 1}
-                borderColor="$border"
+          {/* "All" chip */}
+          <Pressable onPress={() => handleCategoryPress(null)}>
+            <XStack
+              height={media.chipHeight}
+              borderRadius={radius.full}
+              paddingHorizontal={spacing.md}
+              alignItems="center"
+              justifyContent="center"
+              backgroundColor={selectedCategory === null ? '$primary' : '$surface'}
+              borderWidth={selectedCategory === null ? 0 : 1}
+              borderColor="$border"
+            >
+              <Text.Caption
+                color={selectedCategory === null ? '#FFFFFF' : '$textSecondary'}
+                fontFamily={FONT_FAMILIES.semibold}
               >
-                <Text.Caption
-                  color={selectedCategory === null ? '#FFFFFF' : '$textSecondary'}
-                  fontFamily={FONT_FAMILIES.semibold}
+                {t('allCategories')}
+              </Text.Caption>
+            </XStack>
+          </Pressable>
+
+          {/* Category chips */}
+          {categories.map((category) => {
+            const isActive = selectedCategory === category.slug;
+            const categoryColor = category.color_hex || hexColors.light.primary;
+            const contrastColor = getContrastColor(categoryColor);
+
+            return (
+              <Pressable key={category.slug} onPress={() => handleCategoryPress(category.slug)}>
+                <XStack
+                  height={media.chipHeight}
+                  borderRadius={radius.full}
+                  paddingHorizontal={spacing.md}
+                  alignItems="center"
+                  justifyContent="center"
+                  backgroundColor={isActive ? categoryColor : '$surface'}
+                  borderWidth={isActive ? 0 : 1}
+                  borderColor="$border"
                 >
-                  {t('allCategories')}
-                </Text.Caption>
-              </XStack>
-            </Pressable>
-
-            {/* Category chips */}
-            {categories.map((category) => {
-              const isActive = selectedCategory === category.slug;
-              const categoryColor = category.color_hex || hexColors.light.primary;
-              const contrastColor = getContrastColor(categoryColor);
-
-              return (
-                <Pressable key={category.slug} onPress={() => handleCategoryPress(category.slug)}>
-                  <XStack
-                    height={media.chipHeight}
-                    borderRadius={radius.full}
-                    paddingHorizontal={spacing.md}
-                    alignItems="center"
-                    justifyContent="center"
-                    backgroundColor={isActive ? categoryColor : '$surface'}
-                    borderWidth={isActive ? 0 : 1}
-                    borderColor="$border"
+                  <Text.Caption
+                    color={isActive ? contrastColor : '$textSecondary'}
+                    fontFamily={FONT_FAMILIES.semibold}
                   >
-                    <Text.Caption
-                      color={isActive ? contrastColor : '$textSecondary'}
-                      fontFamily={FONT_FAMILIES.semibold}
-                    >
-                      {category.name}
-                    </Text.Caption>
-                  </XStack>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </Animated.View>
-      ) : null;
+                    {category.name}
+                  </Text.Caption>
+                </XStack>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </Animated.View>
+    ) : null;
 
   return (
     <ScreenContainer edges={[]}>

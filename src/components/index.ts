@@ -1,7 +1,9 @@
+export { BottomSheetShell } from './BottomSheetShell';
 export { Button } from './Button';
 export { CategoryBadge } from './CategoryBadge';
 export type { CategoryCardProps } from './CategoryCard';
 export { CategoryCard } from './CategoryCard';
+export { DialogButton, DialogCard, dialogCardShadow, DialogShell } from './DialogShell';
 export { ProgressIndicator } from './ProgressIndicator';
 export type { TextComponent, TextPreset, TextProps } from './Typography';
 export { FONT_FAMILIES, Text } from './Typography';

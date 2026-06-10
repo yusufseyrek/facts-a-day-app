@@ -39,7 +39,6 @@ import {
 } from '../../../src/services/analytics';
 import * as api from '../../../src/services/api';
 import { mapApiFactToRelations } from '../../../src/services/database';
-import { consumePendingDiscoverCategory } from '../../../src/services/discoverNav';
 import { getCachedFactImageSync } from '../../../src/services/images';
 import { primePool } from '../../../src/services/nativeAdPool';
 import { getIsConnected } from '../../../src/services/network';
@@ -148,7 +147,7 @@ function sortByImageAvailability(facts: FactWithRelations[]): FactWithRelations[
   });
 }
 
-function DiscoverScreen() {
+function SearchScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { theme } = useTheme();
@@ -231,7 +230,7 @@ function DiscoverScreen() {
     categoryFacts.length,
     clearCategoryFilter,
   ]);
-  useScrollToTopHandler('discover', scrollToTop);
+  useScrollToTopHandler('search', scrollToTop);
 
   const performSearch = useCallback(
     async (query: string, categorySlug: string | null) => {
@@ -274,6 +273,27 @@ function DiscoverScreen() {
     useCallback(() => {
       trackScreenView(Screens.DISCOVER);
       primePool();
+    }, [])
+  );
+
+  // iOS 26 search-role tab: drop straight into typing when the trailing
+  // search button is tapped. Guarded via a ref snapshot (not deps) so it fires
+  // once per focus session and never steals focus when returning from fact
+  // details with an active query or category browse.
+  const searchActivityRef = useRef({ hasQuery: false, hasCategory: false });
+  searchActivityRef.current = {
+    hasQuery: searchQuery.trim().length > 0,
+    hasCategory: selectedCategorySlug !== null,
+  };
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'ios') return;
+      const { hasQuery, hasCategory } = searchActivityRef.current;
+      if (hasQuery || hasCategory) return;
+      // Deferred: the native search bar attaches via navigation.setOptions
+      // after mount, so an immediate focus() can hit a null ref.
+      const timer = setTimeout(() => searchBarRef.current?.focus(), 100);
+      return () => clearTimeout(timer);
     }, [])
   );
 
@@ -484,16 +504,6 @@ function DiscoverScreen() {
       }
     },
     [selectedCategorySlug, fetchCategoryFacts]
-  );
-
-  // Consume pending category selection from home screen CTA on focus
-  useFocusEffect(
-    useCallback(() => {
-      const pendingSlug = consumePendingDiscoverCategory();
-      if (pendingSlug) {
-        handleCategoryPress(pendingSlug);
-      }
-    }, [handleCategoryPress])
   );
 
   // Get selected category object
@@ -941,7 +951,8 @@ function DiscoverScreen() {
     <ScreenContainer edges={[]}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <YStack flex={1}>{renderContent()}</YStack>
-      {searchResults.length > 0 || (!selectedCategorySlug && <BannerAd collapsible="bottom" respectBottomInset />)}
+      {searchResults.length > 0 ||
+        (!selectedCategorySlug && <BannerAd collapsible="bottom" respectBottomInset />)}
     </ScreenContainer>
   );
 }
@@ -956,4 +967,4 @@ const categoryShadowStyles = StyleSheet.create({
   },
 });
 
-export default DiscoverScreen;
+export default SearchScreen;

@@ -1,5 +1,14 @@
-import { useEffect, useRef } from 'react';
-import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 
@@ -16,6 +25,11 @@ import { FONT_FAMILIES, Text } from '../Typography';
 
 import { BadgeIcon } from './BadgeIcon';
 import { StarRating } from './StarRating';
+
+const HIDDEN_TRANSLATE_Y = -200;
+const SPRING_IN = { duration: 350, dampingRatio: 0.8 } as const;
+const AUTO_HIDE_MS = 3000;
+const SPIN_DURATION_MS = 8000;
 
 function buildShineSvg(size: number, color: string, colorFade: string): string {
   const cx = size / 2;
@@ -63,11 +77,20 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
   const colors = hexColors[theme];
   const insets = useSafeAreaInsets();
 
-  const translateY = useRef(new Animated.Value(-200)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const spin = useRef(new Animated.Value(0)).current;
+  const translateY = useSharedValue(HIDDEN_TRANSLATE_Y);
+  const opacity = useSharedValue(0);
+  const spin = useSharedValue(0);
   const onHideRef = useRef(onHide);
   onHideRef.current = onHide;
+
+  const finishHide = useCallback(() => {
+    onHideRef.current();
+  }, []);
+
+  const finishPress = useCallback(() => {
+    onHideRef.current();
+    onPress?.();
+  }, [onPress]);
 
   useEffect(() => {
     if (!badge) return;
@@ -76,37 +99,44 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 
-    translateY.setValue(-200);
-    opacity.setValue(0);
-    spin.setValue(0);
+    translateY.value = HIDDEN_TRANSLATE_Y;
+    opacity.value = 0;
+    spin.value = 0;
 
-    Animated.parallel([
-      Animated.spring(translateY, {
-        toValue: 0,
-        friction: 8,
-        tension: 80,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-    ]).start();
+    translateY.value = withSpring(0, SPRING_IN);
+    opacity.value = withTiming(1, { duration: 200 });
 
     // Slow continuous rotation for the sunburst
-    Animated.loop(
-      Animated.timing(spin, {
-        toValue: 1,
-        duration: 8000,
-        useNativeDriver: true,
-      })
-    ).start();
+    spin.value = withRepeat(
+      withTiming(1, { duration: SPIN_DURATION_MS, easing: Easing.linear }),
+      -1,
+      false
+    );
 
     const timer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(translateY, { toValue: -200, duration: 250, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }),
-      ]).start(() => onHideRef.current());
-    }, 3000);
+      opacity.value = withTiming(0, { duration: 250 });
+      translateY.value = withTiming(HIDDEN_TRANSLATE_Y, { duration: 250 }, (finished) => {
+        if (finished) runOnJS(finishHide)();
+      });
+    }, AUTO_HIDE_MS);
     return () => clearTimeout(timer);
-  }, [badge]);
+  }, [badge, finishHide, opacity, spin, translateY]);
+
+  const handlePress = useCallback(() => {
+    opacity.value = withTiming(0, { duration: 200 });
+    translateY.value = withTiming(HIDDEN_TRANSLATE_Y, { duration: 200 }, (finished) => {
+      if (finished) runOnJS(finishPress)();
+    });
+  }, [finishPress, opacity, translateY]);
+
+  const cardStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const spinStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spin.value * 360}deg` }],
+  }));
 
   if (!badge) return null;
 
@@ -120,11 +150,6 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
     hexToRgba(accentColor, 0.05)
   );
 
-  const spinRotation = spin.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
   return (
     <Animated.View
       style={[
@@ -133,26 +158,15 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
           top: insets.top + spacing.sm,
           left: spacing.lg,
           right: spacing.lg,
-          opacity,
-          transform: [{ translateY }],
         },
+        cardStyle,
       ]}
       pointerEvents="box-none"
     >
-      <Pressable
-        onPress={() => {
-          Animated.parallel([
-            Animated.timing(translateY, { toValue: -200, duration: 200, useNativeDriver: true }),
-            Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-          ]).start(() => {
-            onHideRef.current();
-            onPress?.();
-          });
-        }}
-      >
+      <Pressable onPress={handlePress}>
         <XStack
           backgroundColor={colors.cardBackground}
-          borderRadius={radius.lg}
+          borderRadius={radius.xl}
           overflow="hidden"
           alignItems="stretch"
           shadowColor={accentColor}
@@ -181,12 +195,7 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
                 alignItems: 'center',
               }}
             >
-              <Animated.View
-                style={{
-                  position: 'absolute',
-                  transform: [{ rotate: spinRotation }],
-                }}
-              >
+              <Animated.View style={[styles.sunburst, spinStyle]}>
                 <SvgXml xml={sunburstXml} width={burstSize} height={burstSize} />
               </Animated.View>
               {badge.badgeId && <BadgeIcon badgeId={badge.badgeId} size={iconSize} />}
@@ -216,5 +225,8 @@ const styles = StyleSheet.create({
     ...Platform.select({
       android: { elevation: 99999 },
     }),
+  },
+  sunburst: {
+    position: 'absolute',
   },
 });

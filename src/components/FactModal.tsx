@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Reanimated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { styled } from '@tamagui/core';
@@ -66,8 +67,9 @@ import { useResponsive } from '../utils/useResponsive';
 import { showRewardedAd } from './ads/RewardedAd';
 import { BannerAd } from './ads';
 import { CategoryBadge } from './CategoryBadge';
+import { DialogCard } from './DialogShell';
 import { FactActions } from './FactActions';
-import { GlassSurface } from './GlassSurface';
+import { ModalBackdrop } from './ModalBackdrop';
 import { RelatedFacts } from './RelatedFacts';
 import { FONT_FAMILIES, Text } from './Typography';
 
@@ -1493,126 +1495,115 @@ function PremiumGateOverlay({
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      {/* iOS 26 -> Liquid Glass; iOS<26 -> BlurView(50); Android -> opaque rgba.
-          The dim+card View below doubles as the dim layer regular glass needs. */}
-      <GlassSurface
-        variant="glass"
+      {/* Standardized scrim (Liquid Glass / BlurView / Android rgba). No
+          onPress: the gate is NOT backdrop-dismissible — closing is only via
+          the explicit goBack link below. */}
+      <ModalBackdrop
         isDark={isDark}
-        tint={isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)'}
-        // Mid-alpha so the gate reads as glass, not a solid sheet (the opaque
-        // `tint` would otherwise become the GlassView tintColor); stays heavy
-        // enough that the premium text underneath is unreadable.
-        glassTint={isDark ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.5)'}
-        blurIntensity={50}
-        style={StyleSheet.absoluteFill}
+        blurIntensity={isDark ? 50 : 70}
+        androidScrim={isDark ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.55)'}
       />
       <View
         style={{
           ...absoluteFillObject,
-          backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.2)',
           justifyContent: 'center',
           alignItems: 'center',
           paddingHorizontal: spacing.xl,
         }}
       >
-        <View
-          style={{
-            alignItems: 'center',
-            gap: spacing.lg,
-            padding: spacing.xl,
-            borderRadius: radius.xl,
-            backgroundColor: isDark ? 'rgba(20,20,30,0.9)' : 'rgba(255,255,255,0.95)',
-            maxWidth: maxModalWidth * 0.9,
-            width: '100%',
-            ...Platform.select({
-              ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: spacing.sm },
-                shadowOpacity: 0.3,
-                shadowRadius: spacing.lg,
-              },
-              android: {
-                elevation: 12,
-              },
-            }),
-          }}
+        <Reanimated.View
+          entering={FadeInUp.duration(180)}
+          style={{ width: '100%', alignItems: 'center' }}
         >
-          <Crown size={iconSizes.hero} color={PAYWALL_GOLD.primary} fill={PAYWALL_GOLD.primary} />
-          <Text.Title textAlign="center" color="$text">
-            {t('premiumGateTitle')}
-          </Text.Title>
-          <Text.Body textAlign="center" color="$textSecondary">
-            {t('premiumGateDescription', { count: premiumCategoryCount })}
-          </Text.Body>
-          <Pressable
-            onPress={() => router.push('/paywall')}
-            style={({ pressed }) => ({
-              alignSelf: 'center',
-              overflow: 'hidden',
-              borderRadius: radius.xl,
-              opacity: pressed ? 0.85 : 1,
-              transform: [{ scale: pressed ? 0.98 : 1 }],
-              ...Platform.select({
-                ios: {
-                  shadowColor: PAYWALL_GOLD.primary,
-                  shadowOffset: { width: 0, height: spacing.xs },
-                  shadowOpacity: 0.4,
-                  shadowRadius: spacing.md,
-                },
-                android: {
-                  elevation: 8,
-                },
-              }),
-            })}
-          >
-            <LinearGradient
-              colors={[PAYWALL_GOLD.dark, PAYWALL_GOLD.primary, PAYWALL_GOLD.light]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{
-                // paddingVertical: spacing.md,
-                paddingHorizontal: spacing.xl,
-                alignItems: 'center',
-                height: media.buttonHeight * 0.9,
-                justifyContent: 'center',
-              }}
-            >
-              <Text.Label color="#000000" fontFamily={FONT_FAMILIES.semibold}>
-                {t('unlockPremium')}
-              </Text.Label>
-            </LinearGradient>
-          </Pressable>
-          <Pressable
-            onPress={handleWatchAd}
-            disabled={isLoadingAd}
-            style={({ pressed }) => ({
-              alignSelf: 'center',
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing.xs,
-              paddingVertical: spacing.sm,
-              opacity: isLoadingAd ? 0.5 : pressed ? 0.7 : 1,
-            })}
-          >
-            {isLoadingAd ? (
-              <ActivityIndicator size="small" color={PAYWALL_GOLD.primary} />
-            ) : (
-              <Play size={14} color={PAYWALL_GOLD.primary} fill={PAYWALL_GOLD.primary} />
-            )}
-            <Text.Caption color={PAYWALL_GOLD.primary} fontFamily={FONT_FAMILIES.semibold}>
-              {t('watchAdToRead')}
-            </Text.Caption>
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              onClose();
-            }}
-            hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: spacing.lg, right: spacing.lg }}
-            style={({ pressed }) => ({ opacity: pressed ? 0.5 : 0.7 })}
-          >
-            <Text.Caption color="$textSecondary">{t('goBack')}</Text.Caption>
-          </Pressable>
-        </View>
+          <DialogCard style={{ maxWidth: maxModalWidth * 0.9 }}>
+            <YStack alignItems="center" gap={spacing.lg} padding={spacing.xl}>
+              <Crown
+                size={iconSizes.hero}
+                color={PAYWALL_GOLD.primary}
+                fill={PAYWALL_GOLD.primary}
+              />
+              <Text.Title textAlign="center" color="$text">
+                {t('premiumGateTitle')}
+              </Text.Title>
+              <Text.Body textAlign="center" color="$textSecondary">
+                {t('premiumGateDescription', { count: premiumCategoryCount })}
+              </Text.Body>
+              <Pressable
+                onPress={() => router.push('/paywall')}
+                style={({ pressed }) => ({
+                  alignSelf: 'center',
+                  overflow: 'hidden',
+                  borderRadius: radius.xl,
+                  opacity: pressed ? 0.85 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                  ...Platform.select({
+                    ios: {
+                      shadowColor: PAYWALL_GOLD.primary,
+                      shadowOffset: { width: 0, height: spacing.xs },
+                      shadowOpacity: 0.4,
+                      shadowRadius: spacing.md,
+                    },
+                    android: {
+                      elevation: 8,
+                    },
+                  }),
+                })}
+              >
+                <LinearGradient
+                  colors={[PAYWALL_GOLD.dark, PAYWALL_GOLD.primary, PAYWALL_GOLD.light]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    // paddingVertical: spacing.md,
+                    paddingHorizontal: spacing.xl,
+                    alignItems: 'center',
+                    height: media.buttonHeight * 0.9,
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text.Label color="#000000" fontFamily={FONT_FAMILIES.semibold}>
+                    {t('unlockPremium')}
+                  </Text.Label>
+                </LinearGradient>
+              </Pressable>
+              <Pressable
+                onPress={handleWatchAd}
+                disabled={isLoadingAd}
+                style={({ pressed }) => ({
+                  alignSelf: 'center',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing.xs,
+                  paddingVertical: spacing.sm,
+                  opacity: isLoadingAd ? 0.5 : pressed ? 0.7 : 1,
+                })}
+              >
+                {isLoadingAd ? (
+                  <ActivityIndicator size="small" color={PAYWALL_GOLD.primary} />
+                ) : (
+                  <Play size={14} color={PAYWALL_GOLD.primary} fill={PAYWALL_GOLD.primary} />
+                )}
+                <Text.Caption color={PAYWALL_GOLD.primary} fontFamily={FONT_FAMILIES.semibold}>
+                  {t('watchAdToRead')}
+                </Text.Caption>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  onClose();
+                }}
+                hitSlop={{
+                  top: spacing.sm,
+                  bottom: spacing.sm,
+                  left: spacing.lg,
+                  right: spacing.lg,
+                }}
+                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 0.7 })}
+              >
+                <Text.Caption color="$textSecondary">{t('goBack')}</Text.Caption>
+              </Pressable>
+            </YStack>
+          </DialogCard>
+        </Reanimated.View>
       </View>
     </View>
   );

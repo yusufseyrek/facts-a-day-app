@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { useMemo } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Check, X } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,8 +10,7 @@ import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
 import { useResponsive } from '../../utils/useResponsive';
-import { InlineOverlay } from '../InlineOverlay';
-import { ModalBackdrop } from '../ModalBackdrop';
+import { DialogShell } from '../DialogShell';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import { BadgeIcon } from './BadgeIcon';
@@ -30,27 +29,6 @@ export function BadgeDetailSheet({ badge, visible, onClose }: BadgeDetailSheetPr
   const { t } = useTranslation();
   const { spacing, radius, iconSizes, maxModalWidth } = useResponsive();
   const colors = hexColors[theme];
-
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.9)).current;
-  const [modalVisible, setModalVisible] = useState(false);
-
-  useEffect(() => {
-    if (visible && badge) {
-      setModalVisible(true);
-      opacity.setValue(0);
-      scale.setValue(0.9);
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.spring(scale, { toValue: 1, friction: 8, tension: 100, useNativeDriver: true }),
-      ]).start();
-    } else if (!visible) {
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 0, duration: 150, useNativeDriver: true }),
-        Animated.timing(scale, { toValue: 0.9, duration: 150, useNativeDriver: true }),
-      ]).start(() => setModalVisible(false));
-    }
-  }, [visible, badge, opacity, scale]);
 
   const earnedStarSet = useMemo(
     () => new Set(badge?.earnedStars.map((e) => e.star) || []),
@@ -75,230 +53,172 @@ export function BadgeDetailSheet({ badge, visible, onClose }: BadgeDetailSheetPr
   };
 
   return (
-    // exitGraceMs=0: the card's exit animation runs BEFORE `modalVisible` flips
-    // false (the Animated.parallel completion callback), so no extra mounted
-    // grace is needed — lingering would leave an invisible tap-blocking layer.
-    <InlineOverlay visible={modalVisible} onRequestClose={onClose} exitGraceMs={0}>
-      <View style={styles.overlay}>
-        <ModalBackdrop
-          isDark={theme === 'dark'}
-          blurIntensity={50}
-          androidScrim="rgba(0, 0, 0, 0.5)"
+    <DialogShell visible={visible} onClose={onClose} maxWidth={maxModalWidth}>
+      {/* Top gradient area (bespoke hero header, so the shell's header slot is unused) */}
+      <LinearGradient
+        colors={
+          isUnlocked
+            ? [hexToRgba(STAR_COLORS.filled, 0.12), hexToRgba(STAR_COLORS.filled, 0.02)]
+            : [hexToRgba(colors.border, 0.1), 'transparent']
+        }
+        style={{ paddingTop: spacing.lg, paddingBottom: spacing.sm, alignItems: 'center' }}
+      >
+        {/* Close button */}
+        <Pressable
           onPress={onClose}
-        />
-        <Animated.View
-          style={{
-            opacity,
-            transform: [{ scale }],
-            width: '88%',
-            maxWidth: maxModalWidth,
-          }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={({ pressed }) => ({
+            position: 'absolute',
+            top: spacing.lg,
+            right: spacing.lg,
+            width: iconSizes.lg,
+            height: iconSizes.lg,
+            borderRadius: iconSizes.lg / 2,
+            backgroundColor: `${colors.text}10`,
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1,
+            opacity: pressed ? 0.6 : 1,
+          })}
         >
-          <Pressable>
-            <YStack
-              backgroundColor={colors.cardBackground}
-              borderRadius={radius.xl}
-              overflow="hidden"
-              shadowColor="#000"
-              shadowOffset={{ width: 0, height: 8 }}
-              shadowOpacity={0.25}
-              shadowRadius={16}
-              elevation={8}
-            >
-              {/* Top gradient area */}
-              <LinearGradient
-                colors={
-                  isUnlocked
-                    ? [hexToRgba(STAR_COLORS.filled, 0.12), hexToRgba(STAR_COLORS.filled, 0.02)]
-                    : [hexToRgba(colors.border, 0.1), 'transparent']
+          <X size={iconSizes.sm} color={colors.textSecondary} />
+        </Pressable>
+
+        {/* Badge icon — gold shadow scales with stars */}
+        <View
+          style={
+            isUnlocked
+              ? {
+                  shadowColor: STAR_COLORS.filled,
+                  shadowOffset: { width: 0, height: 4 + badge.earnedStars.length * 4 },
+                  shadowOpacity: 0.35 + badge.earnedStars.length * 0.2,
+                  shadowRadius: 10 + badge.earnedStars.length * 8,
+                  elevation: 6 + badge.earnedStars.length * 6,
                 }
-                style={{ paddingTop: spacing.lg, paddingBottom: spacing.sm, alignItems: 'center' }}
-              >
-                {/* Close button */}
-                <Pressable
-                  onPress={onClose}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  style={({ pressed }) => ({
-                    position: 'absolute',
-                    top: spacing.lg,
-                    right: spacing.lg,
-                    width: iconSizes.lg,
-                    height: iconSizes.lg,
-                    borderRadius: iconSizes.lg / 2,
-                    backgroundColor: `${colors.text}10`,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 1,
-                    opacity: pressed ? 0.6 : 1,
-                  })}
-                >
-                  <X size={iconSizes.sm} color={colors.textSecondary} />
-                </Pressable>
+              : detailStyles.badgeIcon
+          }
+        >
+          <BadgeIcon badgeId={definition.id} size={heroIconSize} isUnlocked={isUnlocked} />
+        </View>
+      </LinearGradient>
 
-                {/* Badge icon — gold shadow scales with stars */}
-                <View
-                  style={
-                    isUnlocked
-                      ? {
-                          shadowColor: STAR_COLORS.filled,
-                          shadowOffset: { width: 0, height: 4 + badge.earnedStars.length * 4 },
-                          shadowOpacity: 0.35 + badge.earnedStars.length * 0.2,
-                          shadowRadius: 10 + badge.earnedStars.length * 8,
-                          elevation: 6 + badge.earnedStars.length * 6,
-                        }
-                      : detailStyles.badgeIcon
-                  }
-                >
-                  <BadgeIcon badgeId={definition.id} size={heroIconSize} isUnlocked={isUnlocked} />
-                </View>
-              </LinearGradient>
+      <YStack padding={spacing.lg} paddingTop={spacing.md} gap={spacing.md} alignItems="center">
+        {/* Name & description */}
+        <YStack alignItems="center" gap={spacing.xs}>
+          <Text.Title textAlign="center" color={colors.text}>
+            {t(`badge_${definition.id}` as any)}
+          </Text.Title>
+          <Text.Caption textAlign="center" color={colors.textSecondary}>
+            {t(`badge_${definition.id}_desc` as any)}
+          </Text.Caption>
+        </YStack>
 
-              <YStack
-                padding={spacing.lg}
-                paddingTop={spacing.md}
-                gap={spacing.md}
+        {/* Star rating */}
+        <StarRating earnedCount={badge.earnedStars.length} size={iconSizes.lg} gap={spacing.sm} />
+
+        {/* Star detail rows */}
+        <YStack width="100%" gap={spacing.xs}>
+          {definition.stars.map((starDef, index) => {
+            const isEarned = earnedStarSet.has(starDef.star);
+            const earnedEntry = badge.earnedStars.find((e) => e.star === starDef.star);
+            const starProgress = Math.min(currentProgress / starDef.threshold, 1);
+            const starCount = index + 1;
+
+            return (
+              <XStack
+                key={starDef.star}
                 alignItems="center"
+                gap={spacing.sm}
+                paddingVertical={spacing.sm}
+                paddingHorizontal={spacing.sm}
+                borderRadius={radius.md}
+                backgroundColor={isEarned ? `${STAR_COLORS.filled}10` : `${colors.border}08`}
               >
-                {/* Name & description */}
-                <YStack alignItems="center" gap={spacing.xs}>
-                  <Text.Title textAlign="center" color={colors.text}>
-                    {t(`badge_${definition.id}` as any)}
-                  </Text.Title>
-                  <Text.Caption textAlign="center" color={colors.textSecondary}>
-                    {t(`badge_${definition.id}_desc` as any)}
-                  </Text.Caption>
-                </YStack>
+                {/* Left: stars right-aligned in fixed-width column */}
+                <View style={{ width: (iconSizes.xs + spacing.xs) * 3, alignItems: 'flex-end' }}>
+                  <StarRating
+                    earnedCount={isEarned ? starCount : 0}
+                    totalStars={starCount}
+                    size={iconSizes.xs}
+                    gap={spacing.xs}
+                  />
+                </View>
 
-                {/* Star rating */}
-                <StarRating
-                  earnedCount={badge.earnedStars.length}
-                  size={iconSizes.lg}
-                  gap={spacing.sm}
-                />
-
-                {/* Star detail rows */}
-                <YStack width="100%" gap={spacing.xs}>
-                  {definition.stars.map((starDef, index) => {
-                    const isEarned = earnedStarSet.has(starDef.star);
-                    const earnedEntry = badge.earnedStars.find((e) => e.star === starDef.star);
-                    const starProgress = Math.min(currentProgress / starDef.threshold, 1);
-                    const starCount = index + 1;
-
-                    return (
-                      <XStack
-                        key={starDef.star}
-                        alignItems="center"
-                        gap={spacing.sm}
-                        paddingVertical={spacing.sm}
-                        paddingHorizontal={spacing.sm}
-                        borderRadius={radius.md}
-                        backgroundColor={
-                          isEarned ? `${STAR_COLORS.filled}10` : `${colors.border}08`
-                        }
-                      >
-                        {/* Left: stars right-aligned in fixed-width column */}
-                        <View
-                          style={{ width: (iconSizes.xs + spacing.xs) * 3, alignItems: 'flex-end' }}
-                        >
-                          <StarRating
-                            earnedCount={isEarned ? starCount : 0}
-                            totalStars={starCount}
-                            size={iconSizes.xs}
-                            gap={spacing.xs}
-                          />
-                        </View>
-
-                        {/* Right: goal text + progress */}
-                        <YStack flex={1} gap={spacing.xs}>
-                          <XStack alignItems="center" gap={spacing.xs}>
-                            <Text.Caption
-                              fontFamily={FONT_FAMILIES.semibold}
-                              color={isEarned ? colors.text : colors.textSecondary}
-                              flex={1}
-                            >
-                              {getGoalText(starDef.threshold)}
-                            </Text.Caption>
-                            {isEarned && earnedEntry && (
-                              <XStack alignItems="center" gap={spacing.xs}>
-                                <Check
-                                  size={iconSizes.xs}
-                                  color={STAR_COLORS.filled}
-                                  strokeWidth={3}
-                                />
-                                <Text.Tiny color={colors.textMuted}>
-                                  {new Date(earnedEntry.earned_at).toLocaleDateString()}
-                                </Text.Tiny>
-                              </XStack>
-                            )}
-                            {!isEarned && (
-                              <Text.Tiny color={colors.textMuted} fontFamily={FONT_FAMILIES.medium}>
-                                {currentProgress}/{starDef.threshold}
-                              </Text.Tiny>
-                            )}
-                          </XStack>
-
-                          {/* Progress bar for unearned stars — full width */}
-                          {!isEarned && (
-                            <View
-                              style={{
-                                height: 3,
-                                backgroundColor: `${colors.border}25`,
-                                borderRadius: radius.sm,
-                                overflow: 'hidden',
-                              }}
-                            >
-                              <View
-                                style={{
-                                  width: `${starProgress * 100}%` as any,
-                                  height: '100%',
-                                  backgroundColor: `${STAR_COLORS.filled}90`,
-                                  borderRadius: radius.sm,
-                                }}
-                              />
-                            </View>
-                          )}
-                        </YStack>
-                      </XStack>
-                    );
-                  })}
-                </YStack>
-
-                {/* Guidance pill */}
-                {badge.nextStar && badge.nextThreshold && (
-                  <YStack
-                    backgroundColor={`${STAR_COLORS.filled}25`}
-                    borderWidth={1}
-                    borderColor={`${STAR_COLORS.filled}40`}
-                    paddingHorizontal={spacing.md}
-                    paddingVertical={spacing.sm}
-                    borderRadius={radius.full}
-                    alignSelf="center"
-                  >
-                    <Text.Tiny
-                      textAlign="center"
-                      color={STAR_COLORS.filled}
+                {/* Right: goal text + progress */}
+                <YStack flex={1} gap={spacing.xs}>
+                  <XStack alignItems="center" gap={spacing.xs}>
+                    <Text.Caption
                       fontFamily={FONT_FAMILIES.semibold}
+                      color={isEarned ? colors.text : colors.textSecondary}
+                      flex={1}
                     >
-                      {getGuidanceText()}
-                    </Text.Tiny>
-                  </YStack>
-                )}
-              </YStack>
-            </YStack>
-          </Pressable>
-        </Animated.View>
-      </View>
-    </InlineOverlay>
+                      {getGoalText(starDef.threshold)}
+                    </Text.Caption>
+                    {isEarned && earnedEntry && (
+                      <XStack alignItems="center" gap={spacing.xs}>
+                        <Check size={iconSizes.xs} color={STAR_COLORS.filled} strokeWidth={3} />
+                        <Text.Tiny color={colors.textMuted}>
+                          {new Date(earnedEntry.earned_at).toLocaleDateString()}
+                        </Text.Tiny>
+                      </XStack>
+                    )}
+                    {!isEarned && (
+                      <Text.Tiny color={colors.textMuted} fontFamily={FONT_FAMILIES.medium}>
+                        {currentProgress}/{starDef.threshold}
+                      </Text.Tiny>
+                    )}
+                  </XStack>
+
+                  {/* Progress bar for unearned stars — full width */}
+                  {!isEarned && (
+                    <View
+                      style={{
+                        height: 3,
+                        backgroundColor: `${colors.border}25`,
+                        borderRadius: radius.sm,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: `${starProgress * 100}%` as any,
+                          height: '100%',
+                          backgroundColor: `${STAR_COLORS.filled}90`,
+                          borderRadius: radius.sm,
+                        }}
+                      />
+                    </View>
+                  )}
+                </YStack>
+              </XStack>
+            );
+          })}
+        </YStack>
+
+        {/* Guidance pill */}
+        {badge.nextStar && badge.nextThreshold && (
+          <YStack
+            backgroundColor={`${STAR_COLORS.filled}25`}
+            borderWidth={1}
+            borderColor={`${STAR_COLORS.filled}40`}
+            paddingHorizontal={spacing.md}
+            paddingVertical={spacing.sm}
+            borderRadius={radius.full}
+            alignSelf="center"
+          >
+            <Text.Tiny
+              textAlign="center"
+              color={STAR_COLORS.filled}
+              fontFamily={FONT_FAMILIES.semibold}
+            >
+              {getGuidanceText()}
+            </Text.Tiny>
+          </YStack>
+        )}
+      </YStack>
+    </DialogShell>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
 
 const detailStyles = StyleSheet.create({
   badgeIcon: {

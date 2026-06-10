@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Plus, Trash2 } from '@tamagui/lucide-icons';
@@ -39,14 +39,9 @@ export function MultiTimePicker({
     });
   };
 
+  // Limits are declarative: the add button hides at maxTimes and the remove
+  // button hides at minTimes, so neither handler needs a guard.
   const handleAddTime = () => {
-    if (times.length >= maxTimes) {
-      Alert.alert(t('maxTimesReached'), t('maxTimesReachedMessage', { max: maxTimes }), [
-        { text: t('ok'), style: 'default' },
-      ]);
-      return;
-    }
-
     // Create a new time 1 hour after the last time
     const lastTime = times[times.length - 1];
     const newTime = new Date(lastTime);
@@ -56,13 +51,6 @@ export function MultiTimePicker({
   };
 
   const handleRemoveTime = (index: number) => {
-    if (times.length <= minTimes) {
-      Alert.alert(t('minTimesRequired'), t('minTimesRequiredMessage', { min: minTimes }), [
-        { text: t('ok'), style: 'default' },
-      ]);
-      return;
-    }
-
     const newTimes = times.filter((_, i) => i !== index);
     onTimesChange(newTimes);
   };
@@ -100,11 +88,8 @@ export function MultiTimePicker({
         <XStack
           key={index}
           backgroundColor="$surface"
-          paddingVertical={spacing.md}
-          paddingHorizontal={spacing.lg}
-          borderRadius={radius.lg}
-          borderWidth={1}
-          borderColor="$border"
+          padding={spacing.md}
+          borderRadius={radius.md}
           alignItems="center"
           justifyContent="space-between"
           gap={spacing.md}

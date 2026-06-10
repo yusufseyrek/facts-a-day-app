@@ -1,15 +1,10 @@
-import { Pressable } from 'react-native';
-import Animated, { FadeInUp } from 'react-native-reanimated';
-
-import { AlertTriangle, DoorOpen, X } from '@tamagui/lucide-icons';
+import { AlertTriangle, DoorOpen } from '@tamagui/lucide-icons';
 import { XStack, YStack } from 'tamagui';
 
-import { LAYOUT } from '../../config/app';
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
-import { InlineOverlay } from '../InlineOverlay';
-import { ModalBackdrop } from '../ModalBackdrop';
-import { FONT_FAMILIES, Text } from '../Typography';
+import { DialogButton, DialogShell } from '../DialogShell';
+import { Text } from '../Typography';
 
 interface TriviaExitModalProps {
   visible: boolean;
@@ -32,176 +27,61 @@ export function TriviaExitModal({
   cancelText,
   exitText,
 }: TriviaExitModalProps) {
-  // Get responsive values for device type
-  const { screenWidth, typography, spacing, radius, iconSizes } = useResponsive();
+  const { spacing, radius, iconSizes } = useResponsive();
 
-  // Colors matching the app's design system
-  const bgColor = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
-  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
-  const secondaryTextColor = isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
-  const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
-  const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
-  const surfaceColor = isDark ? hexColors.dark.surface : hexColors.light.surface;
+  const colors = isDark ? hexColors.dark : hexColors.light;
 
   // Warning colors - amber/orange tones
   const warningColor = isDark ? '#FBBF24' : '#F59E0B';
   const warningBgColor = isDark ? 'rgba(251, 191, 36, 0.15)' : 'rgba(245, 158, 11, 0.1)';
 
   return (
-    <InlineOverlay visible={visible} onRequestClose={onCancel}>
-      <YStack flex={1} justifyContent="center" alignItems="center" padding={spacing.md}>
-        {/* Blur/glass backdrop + tap-to-cancel */}
-        <ModalBackdrop
-          isDark={isDark}
-          blurIntensity={isDark ? 50 : 70}
-          androidScrim={isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.7)'}
-          // Lighter-than-default dim: keep the game clearly visible through
-          // the Liquid Glass behind the exit dialog.
-          dim={isDark ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.08)'}
-          onPress={onCancel}
-        />
-
-        {/* Modal Content */}
-        <Animated.View
-          entering={FadeInUp.duration(150)}
-          style={{
-            width: screenWidth - spacing.md * 2,
-            maxWidth: LAYOUT.MAX_CONTENT_WIDTH,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 12 },
-            shadowOpacity: isDark ? 0.5 : 0.25,
-            shadowRadius: 24,
-            elevation: 24,
-          }}
+    <DialogShell
+      visible={visible}
+      onClose={onCancel}
+      // Lighter-than-default dim: keep the game clearly visible through the
+      // Liquid Glass behind the exit dialog.
+      dimOverride={isDark ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.08)'}
+      headerIcon={<AlertTriangle size={iconSizes.xl} color={warningColor} strokeWidth={2} />}
+      headerIconTint={warningBgColor}
+      title={title}
+      showClose
+      closeTestID="trivia-exit-cancel-x"
+      footer={
+        <>
+          <DialogButton
+            label={cancelText}
+            onPress={onCancel}
+            variant="outline"
+            testID="trivia-exit-cancel"
+            accessibilityLabel={cancelText}
+          />
+          <DialogButton
+            label={exitText}
+            onPress={onExit}
+            variant="destructive"
+            icon={<DoorOpen size={iconSizes.sm} color="#FFFFFF" />}
+            testID="trivia-exit-confirm"
+            accessibilityLabel={exitText}
+          />
+        </>
+      }
+    >
+      {/* Message Box */}
+      <YStack paddingHorizontal={spacing.lg} paddingVertical={spacing.lg}>
+        <XStack
+          backgroundColor={colors.surface}
+          borderRadius={radius.md}
+          padding={spacing.md}
+          alignItems="center"
+          gap={spacing.sm}
         >
-          <YStack width="100%" borderRadius={radius.xl} overflow="hidden" backgroundColor={bgColor}>
-            {/* Close button */}
-            <Pressable
-              onPress={onCancel}
-              testID="trivia-exit-cancel-x"
-              style={{
-                position: 'absolute',
-                top: spacing.md,
-                right: spacing.md,
-                zIndex: 10,
-                padding: spacing.xs,
-              }}
-            >
-              <X size={iconSizes.md} color={secondaryTextColor} />
-            </Pressable>
-
-            {/* Header with Icon */}
-            <YStack
-              paddingTop={spacing.xl}
-              paddingHorizontal={spacing.lg}
-              paddingBottom={spacing.md}
-              alignItems="center"
-              gap={spacing.md}
-            >
-              {/* Warning Icon */}
-              <YStack
-                width={iconSizes.heroLg}
-                height={iconSizes.heroLg}
-                borderRadius={iconSizes.heroLg / 2}
-                backgroundColor={warningBgColor}
-                justifyContent="center"
-                alignItems="center"
-              >
-                <AlertTriangle size={iconSizes.xl} color={warningColor} strokeWidth={2} />
-              </YStack>
-
-              {/* Title */}
-              <Text.Title color={textColor} textAlign="center">
-                {title}
-              </Text.Title>
-            </YStack>
-
-            {/* Divider */}
-            <YStack height={1} backgroundColor={borderColor} marginHorizontal={spacing.lg} />
-
-            {/* Message Box */}
-            <YStack paddingHorizontal={spacing.lg} paddingVertical={spacing.lg}>
-              <XStack
-                backgroundColor={surfaceColor}
-                borderRadius={radius.md}
-                padding={spacing.md}
-                alignItems="center"
-                gap={spacing.sm}
-              >
-                <DoorOpen size={iconSizes.lg} margin={spacing.xs} color={errorColor} />
-                <Text.Body flex={1} color={secondaryTextColor}>
-                  {message}
-                </Text.Body>
-              </XStack>
-            </YStack>
-
-            {/* Buttons */}
-            <XStack paddingHorizontal={spacing.lg} paddingBottom={spacing.lg} gap={spacing.md}>
-              {/* Cancel Button - Outlined */}
-              <Pressable
-                onPress={onCancel}
-                testID="trivia-exit-cancel"
-                accessibilityLabel={cancelText}
-                style={({ pressed }) => ({
-                  flex: 1,
-                  opacity: pressed ? 0.8 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                })}
-              >
-                <XStack
-                  backgroundColor="transparent"
-                  borderWidth={1.5}
-                  borderColor={borderColor}
-                  paddingVertical={spacing.md}
-                  borderRadius={radius.md}
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <Text.Label
-                    fontSize={typography.fontSize.body}
-                    fontFamily={FONT_FAMILIES.semibold}
-                    color={textColor}
-                  >
-                    {cancelText}
-                  </Text.Label>
-                </XStack>
-              </Pressable>
-
-              {/* Exit Button - Solid Destructive */}
-              <Pressable
-                onPress={onExit}
-                testID="trivia-exit-confirm"
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel={exitText}
-                style={({ pressed }) => ({
-                  flex: 1,
-                  opacity: pressed ? 0.9 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                })}
-              >
-                <XStack
-                  backgroundColor={errorColor}
-                  paddingVertical={spacing.md}
-                  borderRadius={radius.md}
-                  alignItems="center"
-                  justifyContent="center"
-                  gap={spacing.xs}
-                >
-                  <DoorOpen size={iconSizes.sm} color="#FFFFFF" />
-                  <Text.Label
-                    fontSize={typography.fontSize.body}
-                    fontFamily={FONT_FAMILIES.semibold}
-                    color="#FFFFFF"
-                  >
-                    {exitText}
-                  </Text.Label>
-                </XStack>
-              </Pressable>
-            </XStack>
-          </YStack>
-        </Animated.View>
+          <DoorOpen size={iconSizes.lg} margin={spacing.xs} color={colors.error} />
+          <Text.Body flex={1} color={colors.textSecondary}>
+            {message}
+          </Text.Body>
+        </XStack>
       </YStack>
-    </InlineOverlay>
+    </DialogShell>
   );
 }

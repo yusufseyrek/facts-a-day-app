@@ -1,12 +1,12 @@
-# Discover Screen Screenshot Flow
-# Captures the discover/browse screen with category grid
+# Search Screen Screenshot Flow
+# Captures the search/browse screen with category grid
 
 appId: dev.seyrek.factsaday
 
 ---
-# Navigate to discover tab
+# Navigate to search tab
 - tapOn:
-    text: "Discover"
+    text: "Search"
     retryTapIfNoChange: true
 
 # Wait for categories to load

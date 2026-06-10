@@ -34,7 +34,7 @@ export default function TabLayout() {
   // handlers registered under.
   const TAB_IDS: Record<string, string> = {
     '(home)': 'index',
-    '(discover)': 'discover',
+    '(search)': 'search',
     trivia: 'trivia',
     '(favorites)': 'favorites',
     '(settings)': 'settings',
@@ -76,85 +76,100 @@ export default function TabLayout() {
 
   return (
     <InsideTabsProvider value={true}>
-    <View style={{ flex: 1 }}>
-      {/* Native tab bar: true Liquid Glass floating bar on iOS 26 (minimizes on
+      <View style={{ flex: 1 }}>
+        {/* Native tab bar: true Liquid Glass floating bar on iOS 26 (minimizes on
           scroll), system bar on older iOS, Material 3 bottom navigation on
           Android. Re-tap natively pops the tab's stack to root and scrolls the
           first scroll view to top on iOS; the JS listener below keeps the
           existing scroll-to-top contract working on Android too. */}
-      <NativeTabs
-        tintColor={activeTintColor}
-        iconColor={inactiveTintColor}
-        labelStyle={{
-          default: { color: inactiveTintColor },
-          selected: { color: activeTintColor },
-        }}
-        badgeBackgroundColor={colors.neonRed}
-        minimizeBehavior="onScrollDown"
-        backgroundColor={Platform.OS === 'android' ? colors.surface : undefined}
-        rippleColor={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}
-        indicatorColor={isDark ? colors.neutralLight : colors.primaryLight}
-        labelVisibilityMode="labeled"
-        screenListeners={({ route }) => ({
-          tabPress: () => {
-            // Android only: iOS re-tap scrolls natively, and UIKit lands at the
-            // ADJUSTED top (negative offset under the translucent large-title
-            // header). The JS handlers scroll to offset 0, which is BELOW that
-            // — they'd override the native scroll and cut off the list header.
-            if (Platform.OS !== 'android') return;
-            const tabId = TAB_IDS[route.name] ?? route.name;
-            if (tabId === currentTab) {
-              scrollToTop(tabId);
+        <NativeTabs
+          tintColor={activeTintColor}
+          iconColor={inactiveTintColor}
+          labelStyle={{
+            default: { color: inactiveTintColor },
+            selected: { color: activeTintColor },
+          }}
+          badgeBackgroundColor={colors.neonRed}
+          minimizeBehavior="onScrollDown"
+          backgroundColor={Platform.OS === 'android' ? colors.surface : undefined}
+          rippleColor={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}
+          indicatorColor={isDark ? colors.neutralLight : colors.primaryLight}
+          labelVisibilityMode="labeled"
+          screenListeners={({ route }) => ({
+            tabPress: () => {
+              // Android only: iOS re-tap scrolls natively, and UIKit lands at the
+              // ADJUSTED top (negative offset under the translucent large-title
+              // header). The JS handlers scroll to offset 0, which is BELOW that
+              // — they'd override the native scroll and cut off the list header.
+              if (Platform.OS !== 'android') return;
+              const tabId = TAB_IDS[route.name] ?? route.name;
+              if (tabId === currentTab) {
+                scrollToTop(tabId);
+              }
+            },
+          })}
+        >
+          <NativeTabs.Trigger name="(home)">
+            <NativeTabs.Trigger.Icon
+              sf={{ default: 'lightbulb', selected: 'lightbulb.fill' }}
+              md="lightbulb"
+            />
+            <NativeTabs.Trigger.Label>{t('home')}</NativeTabs.Trigger.Label>
+          </NativeTabs.Trigger>
+
+          {/* role="search" splits this tab into the standalone trailing search
+            button next to the Liquid Glass bar on iOS 26; Android ignores the
+            role and keeps a regular tab (hence the explicit icon/label). */}
+          <NativeTabs.Trigger name="(search)" role="search">
+            <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
+            <NativeTabs.Trigger.Label>{t('search')}</NativeTabs.Trigger.Label>
+          </NativeTabs.Trigger>
+
+          {/* Android: an empty <Badge /> reaches rn-screens as badgeValue ' '
+            (space), which Material renders as an oversized TEXT badge; only
+            the literal '' takes the small-dot path, so override it natively.
+            iOS keeps the plain Badge child. */}
+          <NativeTabs.Trigger
+            name="trivia"
+            unstable_nativeProps={
+              Platform.OS === 'android' && hasDailyTrivia ? { badgeValue: '' } : undefined
             }
-          },
-        })}
-      >
-        <NativeTabs.Trigger name="(home)">
-          <NativeTabs.Trigger.Icon
-            sf={{ default: 'lightbulb', selected: 'lightbulb.fill' }}
-            md="lightbulb"
-          />
-          <NativeTabs.Trigger.Label>{t('home')}</NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
+          >
+            <NativeTabs.Trigger.Icon sf="brain" md="psychology" />
+            <NativeTabs.Trigger.Label>{t('trivia')}</NativeTabs.Trigger.Label>
+            {/* Empty badge renders as a dot when daily trivia is available */}
+            {hasDailyTrivia ? <NativeTabs.Trigger.Badge /> : null}
+          </NativeTabs.Trigger>
 
-        <NativeTabs.Trigger name="(discover)">
-          <NativeTabs.Trigger.Icon sf={{ default: 'safari', selected: 'safari.fill' }} md="explore" />
-          <NativeTabs.Trigger.Label>{t('discover')}</NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
+          <NativeTabs.Trigger name="(favorites)">
+            <NativeTabs.Trigger.Icon
+              sf={{ default: 'heart', selected: 'heart.fill' }}
+              md="favorite"
+            />
+            <NativeTabs.Trigger.Label>{t('favorites')}</NativeTabs.Trigger.Label>
+          </NativeTabs.Trigger>
 
-        <NativeTabs.Trigger name="trivia">
-          <NativeTabs.Trigger.Icon sf="brain" md="psychology" />
-          <NativeTabs.Trigger.Label>{t('trivia')}</NativeTabs.Trigger.Label>
-          {/* Empty badge renders as a dot when daily trivia is available */}
-          {hasDailyTrivia ? <NativeTabs.Trigger.Badge /> : null}
-        </NativeTabs.Trigger>
+          <NativeTabs.Trigger name="(settings)">
+            <NativeTabs.Trigger.Icon
+              sf={{ default: 'gearshape', selected: 'gearshape.fill' }}
+              md="settings"
+            />
+            <NativeTabs.Trigger.Label>{t('settings')}</NativeTabs.Trigger.Label>
+          </NativeTabs.Trigger>
+        </NativeTabs>
 
-        <NativeTabs.Trigger name="(favorites)">
-          <NativeTabs.Trigger.Icon sf={{ default: 'heart', selected: 'heart.fill' }} md="favorite" />
-          <NativeTabs.Trigger.Label>{t('favorites')}</NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
-
-        <NativeTabs.Trigger name="(settings)">
-          <NativeTabs.Trigger.Icon
-            sf={{ default: 'gearshape', selected: 'gearshape.fill' }}
-            md="settings"
-          />
-          <NativeTabs.Trigger.Label>{t('settings')}</NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
-      </NativeTabs>
-
-      {/* Global progress strip: previously composed above the JS tab bar; the
+        {/* Global progress strip: previously composed above the JS tab bar; the
           native bar can't host JS children, so it now floats under the status
           bar (renders null when idle). */}
-      <View
-        pointerEvents="none"
-        style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 500 }}
-      >
-        <GlobalProgressBar />
-      </View>
+        <View
+          pointerEvents="none"
+          style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 500 }}
+        >
+          <GlobalProgressBar />
+        </View>
 
-      {shouldShowOfflineGate && <OfflinePaywallSheet />}
-    </View>
+        {shouldShowOfflineGate && <OfflinePaywallSheet />}
+      </View>
     </InsideTabsProvider>
   );
 }

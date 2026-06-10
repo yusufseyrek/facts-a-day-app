@@ -3,21 +3,8 @@
  * Bottom sheet modal for selecting share destination
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  View,
-} from 'react-native';
-import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { type ViewShotRef } from 'react-native-view-shot';
 
 import { Facebook, Instagram, MessageCircle, Share2, Twitter, X } from '@tamagui/lucide-icons';
@@ -28,10 +15,8 @@ import { useTranslation } from '../../i18n';
 import { shareService } from '../../services/share';
 import { PLATFORM_CONFIG } from '../../services/share/platforms';
 import { hexColors, useTheme } from '../../theme';
-import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
-import { GlassSurface } from '../GlassSurface';
-import { InlineOverlay } from '../InlineOverlay';
+import { BottomSheetShell } from '../BottomSheetShell';
 import { Text } from '../Typography';
 
 import { ShareCard } from './ShareCard';
@@ -67,9 +52,7 @@ function getPlatformIcon(platform: SharePlatform, color: string, size: number) {
 export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareSheetProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
-  const insets = useSafeAreaInsets();
-  const { spacing, radius, iconSizes } = useResponsive();
+  const { spacing, iconSizes } = useResponsive();
   const colors = hexColors[theme];
 
   const [availablePlatforms, setAvailablePlatforms] = useState<SharePlatform[]>([
@@ -83,10 +66,6 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
   const [sharingPlatform, setSharingPlatform] = useState<SharePlatform | null>(null);
 
   const viewShotRef = useRef<ViewShotRef>(null);
-
-  // Animation values
-  const translateY = useSharedValue(400);
-  const backdropOpacity = useSharedValue(0);
 
   // Set ViewShot ref when component mounts
   useEffect(() => {
@@ -105,17 +84,6 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
     }
   }, [visible]);
 
-  // Animate sheet
-  useEffect(() => {
-    if (visible) {
-      translateY.value = withTiming(0, { duration: 300 });
-      backdropOpacity.value = withTiming(1, { duration: 200 });
-    } else {
-      translateY.value = withTiming(400, { duration: 200 });
-      backdropOpacity.value = withTiming(0, { duration: 150 });
-    }
-  }, [visible]);
-
   const loadAvailablePlatforms = async () => {
     try {
       const platforms = await shareService.getAvailablePlatforms();
@@ -124,13 +92,6 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
       // Keep default platforms on error
     }
   };
-
-  const handleClose = useCallback(() => {
-    translateY.value = withTiming(400, { duration: 200 }, () => {
-      runOnJS(onClose)();
-    });
-    backdropOpacity.value = withTiming(0, { duration: 150 });
-  }, [onClose]);
 
   const handleShare = async (platform: SharePlatform) => {
     if (isSharing) return;
@@ -148,9 +109,10 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
 
       onShareComplete?.(result);
 
-      // Only close if share was successful (not cancelled)
+      // Only close if share was successful (not cancelled). The shell plays
+      // the slide-out during its exit grace once the parent flips `visible`.
       if (result.success || result.error !== 'cancelled') {
-        handleClose();
+        onClose();
       }
     } finally {
       setIsSharing(false);
@@ -158,58 +120,9 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
     }
   };
 
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity: backdropOpacity.value,
-  }));
-
-  const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
-
   return (
-    <InlineOverlay visible={visible} onRequestClose={handleClose}>
-      {/* Backdrop */}
-      <Animated.View style={[styles.backdrop, backdropStyle]}>
-        <TouchableWithoutFeedback onPress={handleClose}>
-          <View style={StyleSheet.absoluteFill} />
-        </TouchableWithoutFeedback>
-      </Animated.View>
-
-      {/* Sheet */}
-      <Animated.View
-        style={[
-          styles.sheet,
-          sheetStyle,
-          {
-            backgroundColor: 'transparent',
-            overflow: 'hidden',
-            paddingBottom: Math.max(insets.bottom, spacing.lg),
-            borderTopLeftRadius: radius.xl,
-            borderTopRightRadius: radius.xl,
-          },
-        ]}
-      >
-        {/* iOS 26: Liquid Glass sheet backing (refracts the scrim/content) */}
-        <GlassSurface
-          variant="glass"
-          isDark={isDark}
-          tint={colors.surface}
-          glassTint={isDark ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'}
-          blurIntensity={12}
-          // Shape the glass material to the sheet's rounded top corners — the
-          // parent's clipping alone leaves the specular rim square there.
-          style={[
-            StyleSheet.absoluteFill,
-            { borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
-          ]}
-          pointerEvents="none"
-        />
-
-        {/* Handle */}
-        <View style={styles.handleContainer}>
-          <View style={[styles.handle, { backgroundColor: colors.border }]} />
-        </View>
-
+    <>
+      <BottomSheetShell visible={visible} onClose={onClose}>
         {/* Header */}
         <XStack
           justifyContent="space-between"
@@ -219,7 +132,7 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
         >
           <Text.Title>{t('a11y_shareButton')}</Text.Title>
           <Pressable
-            onPress={handleClose}
+            onPress={onClose}
             style={({ pressed }) => [
               styles.closeButton,
               {
@@ -272,35 +185,16 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
             );
           })}
         </XStack>
-      </Animated.View>
+      </BottomSheetShell>
 
-      {/* Off-screen ShareCard for image capture */}
-      <ShareCard ref={viewShotRef} fact={fact} />
-    </InlineOverlay>
+      {/* Off-screen ShareCard for image capture (outside the sheet so the
+          translateY/overflow clipping never touches the capture target) */}
+      {visible && <ShareCard ref={viewShotRef} fact={fact} />}
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    ...absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingTop: 8,
-  },
-  handleContainer: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-  },
   closeButton: {
     width: 32,
     height: 32,

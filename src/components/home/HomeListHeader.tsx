@@ -9,6 +9,7 @@ import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { CategoryStoryButtons, CategoryStoryButtonsRef } from '../CategoryStoryButtons';
 
+import { KeepReadingSkeleton } from './KeepReadingSkeleton';
 import { LatestCarousel } from './LatestCarousel';
 import { OnThisDayCarousel } from './OnThisDayCarousel';
 import { SectionHeader } from './SectionHeader';
@@ -23,6 +24,7 @@ interface HomeListHeaderProps {
   onThisDayIsWeekFallback: boolean;
   keepReadingCount: number;
   isPremium: boolean;
+  isLoading?: boolean;
   onFactPress: (
     fact: FactWithRelations,
     source: FactViewSource,
@@ -41,6 +43,7 @@ export const HomeListHeader = React.memo(function HomeListHeader({
   onThisDayIsWeekFallback,
   keepReadingCount,
   isPremium,
+  isLoading,
   onFactPress,
   storyButtonsRef,
   latestListRef,
@@ -63,6 +66,7 @@ export const HomeListHeader = React.memo(function HomeListHeader({
         onFactPress={onFactPress}
         listRef={latestListRef}
         isPremium={isPremium}
+        isLoading={isLoading}
       />
 
       <OnThisDayCarousel
@@ -70,15 +74,17 @@ export const HomeListHeader = React.memo(function HomeListHeader({
         isWeekFallback={onThisDayIsWeekFallback}
         onFactPress={onFactPress}
         listRef={onThisDayListRef}
+        isLoading={isLoading}
       />
 
-      {keepReadingCount > 0 && (
+      {(isLoading || keepReadingCount > 0) && (
         <SectionHeader
           icon={<BookOpen size={iconSizes.sm} color={colors.primary} />}
           title={t('keepReading')}
           paddingTop={spacing.md}
         />
       )}
+      {isLoading && keepReadingCount === 0 ? <KeepReadingSkeleton rows={5} /> : null}
     </>
   );
 });

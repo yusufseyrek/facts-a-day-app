@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import Animated, {
+  type EntryExitAnimationFunction,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { CheckCircle } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
@@ -8,9 +13,37 @@ import { hexColors, useTheme } from '../theme';
 import { absoluteFillObject } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
+import { dialogCardShadow } from './DialogShell';
 import { GlassSurface } from './GlassSurface';
 import { InlineOverlay } from './InlineOverlay';
 import { Text } from './Typography';
+
+const ENTER_MS = 200;
+const EXIT_MS = 200;
+
+// Fade + subtle scale pop (ports the legacy Animated.parallel choreography:
+// 200ms fade with a sprung 0.8 -> 1 scale, reversed on exit).
+const toastEnter: EntryExitAnimationFunction = () => {
+  'worklet';
+  return {
+    initialValues: { opacity: 0, transform: [{ scale: 0.8 }] },
+    animations: {
+      opacity: withTiming(1, { duration: ENTER_MS }),
+      transform: [{ scale: withSpring(1, { duration: 350, dampingRatio: 0.8 }) }],
+    },
+  };
+};
+
+const toastExit: EntryExitAnimationFunction = () => {
+  'worklet';
+  return {
+    initialValues: { opacity: 1, transform: [{ scale: 1 }] },
+    animations: {
+      opacity: withTiming(0, { duration: EXIT_MS }),
+      transform: [{ scale: withTiming(0.8, { duration: EXIT_MS }) }],
+    },
+  };
+};
 
 interface SuccessToastProps {
   visible: boolean;
@@ -31,11 +64,10 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
 }) => {
   const { theme } = useTheme();
   const { spacing, radius, iconSizes } = useResponsive();
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.8)).current;
 
-  // Internal state to properly manage Modal visibility
-  const [modalVisible, setModalVisible] = useState(false);
+  // Two-phase visibility: the card unmounts first (playing its exit animation
+  // inside InlineOverlay's grace window), then the parent is notified.
+  const [showContent, setShowContent] = useState(false);
   const onHideRef = useRef(onHide);
 
   // Keep onHide ref updated to avoid stale closure issues
@@ -55,72 +87,40 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
   const glassTint = isDark ? 'rgba(20,34,56,0.6)' : 'rgba(255,255,255,0.65)';
 
   useEffect(() => {
-    if (visible) {
-      // Show modal first
-      setModalVisible(true);
-
-      // Reset animation values first
-      opacity.setValue(0);
-      scale.setValue(0.8);
-
-      // Fade in and scale up
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scale, {
-          toValue: 1,
-          friction: 8,
-          tension: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      // Auto-hide after duration
-      const timer = setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 0.8,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          // Close the modal first, then notify parent after a small delay
-          // to ensure the modal has properly closed
-          setModalVisible(false);
-          setTimeout(() => {
-            onHideRef.current?.();
-          }, 50);
-        });
-      }, duration);
-
-      return () => clearTimeout(timer);
+    if (!visible) {
+      setShowContent(false);
+      return;
     }
-  }, [visible, duration, opacity, scale]);
+
+    setShowContent(true);
+
+    let notifyTimer: ReturnType<typeof setTimeout> | undefined;
+    const autoHideTimer = setTimeout(() => {
+      setShowContent(false);
+      // Notify the parent only after the exit animation has finished.
+      notifyTimer = setTimeout(() => {
+        onHideRef.current?.();
+      }, EXIT_MS + 50);
+    }, duration);
+
+    return () => {
+      clearTimeout(autoHideTimer);
+      if (notifyTimer) clearTimeout(notifyTimer);
+    };
+  }, [visible, duration]);
 
   const containerStyle = useMemo(
     () => ({
       alignItems: 'center' as const,
       paddingVertical: spacing.xl,
       paddingHorizontal: spacing.xxl,
-      borderRadius: radius.lg,
+      borderRadius: radius.xl,
       // Glass paints the fill; clip it to the rounded card and drop the opaque bg.
       overflow: useGlass ? ('hidden' as const) : ('visible' as const),
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 5,
       minWidth: 200,
+      ...dialogCardShadow(isDark),
     }),
-    [spacing, radius, useGlass]
+    [spacing, radius, useGlass, isDark]
   );
 
   const iconContainerStyle = useMemo(
@@ -135,42 +135,46 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
     [spacing]
   );
 
-  if (!visible && !modalVisible) return null;
+  if (!visible && !showContent) return null;
 
   // Rendered inline (not in a <Modal>) so the glass card refracts the live screen
-  // behind it. The toast manages its own fade-out lifecycle via `modalVisible`,
-  // so InlineOverlay's own grace window is disabled. A toast is not
-  // back-dismissible, so hardware back is a no-op.
+  // behind it. No scrim: a toast floats over the app without dimming it. A toast
+  // is not back-dismissible, so hardware back is a no-op.
   return (
-    <InlineOverlay visible={modalVisible} onRequestClose={noop} exitGraceMs={0} passthrough>
+    <InlineOverlay
+      visible={showContent}
+      onRequestClose={noop}
+      exitGraceMs={EXIT_MS + 40}
+      passthrough
+    >
       <View style={styles.overlay} pointerEvents="box-none">
-        <Animated.View
-          style={[
-            containerStyle,
-            {
-              backgroundColor: useGlass ? 'transparent' : backgroundColor,
-              opacity,
-              transform: [{ scale }],
-            },
-          ]}
-        >
-          {useGlass ? (
-            <GlassSurface
-              variant="glass"
-              isDark={isDark}
-              tint={backgroundColor}
-              glassTint={glassTint}
-              borderRadius={radius.lg}
-              style={absoluteFillObject}
-            />
-          ) : null}
-          <View style={[iconContainerStyle, { backgroundColor: `${successColor}20` }]}>
-            {icon || <CheckCircle size={iconSizes.xl} color={successColor} />}
-          </View>
-          <Text.Label textAlign="center" color={textColor}>
-            {message}
-          </Text.Label>
-        </Animated.View>
+        {showContent && (
+          <Animated.View
+            entering={toastEnter}
+            exiting={toastExit}
+            style={[
+              containerStyle,
+              { backgroundColor: useGlass ? 'transparent' : backgroundColor },
+            ]}
+          >
+            {useGlass ? (
+              <GlassSurface
+                variant="glass"
+                isDark={isDark}
+                tint={backgroundColor}
+                glassTint={glassTint}
+                borderRadius={radius.xl}
+                style={absoluteFillObject}
+              />
+            ) : null}
+            <View style={[iconContainerStyle, { backgroundColor: `${successColor}20` }]}>
+              {icon || <CheckCircle size={iconSizes.xl} color={successColor} />}
+            </View>
+            <Text.Label textAlign="center" color={textColor}>
+              {message}
+            </Text.Label>
+          </Animated.View>
+        )}
       </View>
     </InlineOverlay>
   );
@@ -181,7 +185,6 @@ const noop = () => {};
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
