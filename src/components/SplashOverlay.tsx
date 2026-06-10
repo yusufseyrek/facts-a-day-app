@@ -20,8 +20,9 @@ const splashIcon = require('../../assets/splash-icon.png');
 const SPLASH_BACKGROUND = '#0A1628';
 const LOGO_SIZE = 200;
 
-// Animation timing
-const DELAY_DURATION = 1000;
+// Animation timing. The post-ready hold is a deliberate brand beat on cold
+// start; skip it in dev where it just slows down every metro reload.
+const DELAY_DURATION = __DEV__ ? 0 : 1000;
 const FADE_DURATION = 350;
 
 interface SplashOverlayProps {
