@@ -357,7 +357,10 @@ export default function FavoritesScreen() {
           gap={spacing.xl}
         >
           <Animated.View entering={FadeInDown.duration(400)}>
-            <YStack alignItems="center" justifyContent="center">
+            {/* Sized to the HALO (not the ring) so the stack gap is measured
+                from the glow's edge — otherwise the absolute halo overflows
+                the layout box and visually eats the spacing below. */}
+            <YStack alignItems="center" justifyContent="center" width={190} height={190}>
               {/* Soft halo behind the ring */}
               <YStack
                 position="absolute"
