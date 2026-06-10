@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -6,6 +6,7 @@ import { Image } from 'expo-image';
 
 import { usePressFeedback } from '../../hooks/usePressFeedback';
 import { useResolvedImageUri } from '../../hooks/useResolvedImageUri';
+import { setPendingFactMorph } from '../../services/factMorph';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { ImagePlaceholder } from '../ImagePlaceholder';
@@ -42,11 +43,42 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
   // Pressable pressed-state style) — same feedback as the feed cards.
   const { pressStyle, onPressIn, onPressOut } = usePressFeedback();
 
+  // Row root, measured on press-in for the row → detail morph transition.
+  const rowRef = useRef<View>(null);
+
+  // Register this row as the morph source on press-IN: measureInWindow is
+  // async, so starting here guarantees the rect is registered by the time
+  // onPress (touch up) pushes the route via factDetailBasePath(). A press-in
+  // that turns into a scroll leaves a harmless entry (fact-id + TTL guarded).
+  const handlePressIn = useCallback(() => {
+    onPressIn();
+    rowRef.current?.measureInWindow((x, y, width, height) => {
+      if (!(width > 0 && height > 0)) return;
+      setPendingFactMorph({
+        kind: 'keep-reading',
+        factId: fact.id,
+        x,
+        y,
+        width,
+        height,
+        borderRadius: 0,
+        imageUri: resolvedUri ?? null,
+        title: fact.title ?? '',
+        categoryName,
+        categoryColor: fact.categoryData?.color_hex,
+        categoryIcon: fact.categoryData?.icon,
+        imageSize,
+        isOdd,
+      });
+    });
+  }, [onPressIn, fact, resolvedUri, categoryName, imageSize, isOdd]);
+
   return (
     <Animated.View style={pressStyle}>
       <Pressable
+        ref={rowRef}
         onPress={handlePress}
-        onPressIn={onPressIn}
+        onPressIn={handlePressIn}
         onPressOut={onPressOut}
         style={[
           styles.item,

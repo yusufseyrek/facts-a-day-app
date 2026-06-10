@@ -1,28 +1,48 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Crown } from '@tamagui/lucide-icons';
+import { ChevronRight, Crown } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { IMAGE_PLACEHOLDER } from '../../config/images';
+import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { CategoryBadge } from '../CategoryBadge';
 import { FavoriteButton } from '../FavoriteButton';
 import { FACT_CARD_GRADIENT, factCardCrownShadow, factCardTitleShadow } from '../ImageFactCard';
-import { Text } from '../Typography';
+import { ImagePlaceholder } from '../ImagePlaceholder';
+import { FONT_FAMILIES, Text } from '../Typography';
 
-import type { FactMorphSource } from '../../services/factMorph';
+import type {
+  CompactCardMorphSource,
+  FactMorphSource,
+  ImageCardMorphSource,
+  KeepReadingMorphSource,
+} from '../../services/factMorph';
 
 /**
- * Static visual clone of the pressed ImageFactCard, layered inside the morph
- * container. It matches the card pixel-for-pixel at progress 0 (same image
- * URI, gradient, badge, favorite/crown, title styling registered by the card
- * itself) and cross-fades out as the real detail screen fades in underneath.
+ * Static visual clone of the pressed fact card/row, layered inside the morph
+ * container. It matches the source pixel-for-pixel at progress 0 (same image
+ * URI and visual props, registered by the card itself on press-in) and
+ * cross-fades out as the real detail screen fades in underneath.
  *
  * The whole tree is inert (pointerEvents none on the wrapper) — interactive
  * children like FavoriteButton render purely for visual continuity.
  */
 export function FactCardReplica({ source }: { source: FactMorphSource }) {
+  switch (source.kind) {
+    case 'image-card':
+      return <ImageCardReplica source={source} />;
+    case 'compact-card':
+      return <CompactCardReplica source={source} />;
+    case 'keep-reading':
+      return <KeepReadingReplica source={source} />;
+  }
+}
+
+/** Mirrors ImageFactCard: full-bleed image, gradient, badges, title overlay. */
+function ImageCardReplica({ source }: { source: ImageCardMorphSource }) {
   const { spacing, config } = useResponsive();
   const Title = source.TitleComponent || Text.Title;
 
@@ -92,10 +112,141 @@ export function FactCardReplica({ source }: { source: FactMorphSource }) {
   );
 }
 
+/** Mirrors CompactFactCard: rounded surface row, thumbnail + title + badge. */
+function CompactCardReplica({ source }: { source: CompactCardMorphSource }) {
+  const { theme } = useTheme();
+  const { spacing, radius, typography, iconSizes } = useResponsive();
+  const colors = hexColors[theme];
+
+  return (
+    <View
+      style={[
+        styles.fill,
+        styles.row,
+        {
+          borderRadius: radius.lg,
+          backgroundColor: colors.cardBackground,
+          padding: spacing.md,
+          gap: spacing.md,
+        },
+      ]}
+      pointerEvents="none"
+    >
+      <View
+        style={{
+          width: source.thumbnailSize,
+          height: source.thumbnailSize,
+          borderRadius: radius.md,
+          overflow: 'hidden',
+        }}
+      >
+        {source.imageUri ? (
+          <Image
+            source={{ uri: source.imageUri }}
+            aria-hidden
+            style={styles.fillImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={0}
+            // Same blurhash as the card, so a still-loading thumbnail shows
+            // the identical placeholder instead of popping.
+            placeholder={{ blurhash: IMAGE_PLACEHOLDER.DEFAULT_BLURHASH }}
+          />
+        ) : (
+          <ImagePlaceholder
+            width={source.thumbnailSize}
+            height={source.thumbnailSize}
+            borderRadius={radius.md}
+            iconSize={source.thumbnailSize * 0.4}
+            categoryIcon={source.categoryIcon}
+            categoryColor={source.categoryColor}
+          />
+        )}
+      </View>
+      <View style={{ flex: 1, justifyContent: 'center', gap: spacing.xs }}>
+        <Text.Label
+          numberOfLines={source.titleLines}
+          color={colors.text}
+          fontFamily={FONT_FAMILIES.bold}
+        >
+          {source.title}
+        </Text.Label>
+        {!source.hideCategoryBadge && source.category && (
+          <CategoryBadge category={source.category} fontSize={typography.fontSize.tiny} compact />
+        )}
+      </View>
+      {source.showChevron && <ChevronRight size={iconSizes.md} color={colors.primary} />}
+    </View>
+  );
+}
+
+/** Mirrors KeepReadingItem: category + title left, square thumbnail right. */
+function KeepReadingReplica({ source }: { source: KeepReadingMorphSource }) {
+  const { theme } = useTheme();
+  const { spacing } = useResponsive();
+  const colors = hexColors[theme];
+
+  return (
+    <View
+      style={[
+        styles.fill,
+        styles.row,
+        {
+          padding: spacing.xl,
+          backgroundColor: source.isOdd ? `${colors.cardBackground}70` : 'transparent',
+        },
+      ]}
+      pointerEvents="none"
+    >
+      <View style={{ flex: 1, marginRight: spacing.md }}>
+        {source.categoryName && (
+          <Text.Label color={source.categoryColor ?? '$textSecondary'} marginBottom={spacing.xs}>
+            {source.categoryName}
+          </Text.Label>
+        )}
+        <Text.Body color="$text" numberOfLines={5} fontFamily={FONT_FAMILIES.semibold}>
+          {source.title}
+        </Text.Body>
+      </View>
+      {source.imageUri ? (
+        <Image
+          source={{ uri: source.imageUri }}
+          aria-hidden
+          style={{
+            width: source.imageSize,
+            height: source.imageSize,
+            borderRadius: spacing.sm,
+            overflow: 'hidden',
+          }}
+          contentFit="cover"
+          transition={0}
+        />
+      ) : (
+        <ImagePlaceholder
+          width={source.imageSize}
+          height={source.imageSize}
+          borderRadius={spacing.sm}
+          iconSize={source.imageSize * 0.4}
+          categoryIcon={source.categoryIcon}
+          categoryColor={source.categoryColor}
+        />
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
     overflow: 'hidden',
+  },
+  fillImage: {
+    width: '100%',
+    height: '100%',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   badge: {
     position: 'absolute',

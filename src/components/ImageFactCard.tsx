@@ -261,6 +261,7 @@ const ImageFactCardComponent = ({
     cardRef.current?.measureInWindow((x, y, width, height) => {
       if (!(width > 0 && height > 0)) return;
       setPendingFactMorph({
+        kind: 'image-card',
         factId,
         x,
         y,

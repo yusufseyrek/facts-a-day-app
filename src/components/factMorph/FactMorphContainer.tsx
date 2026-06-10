@@ -35,12 +35,17 @@ const CLOSE_EASING = Easing.bezier(0.4, 0, 0.22, 1);
  * the feed stays visible behind and this component owns ALL motion):
  *
  *  - A clipped container animates from the card's window rect to full screen.
+ *    Its surface background fades IN with progress rather than being solid:
+ *    keep-reading rows can be transparent, and a solid rect at frame 0 would
+ *    pop where the feed used to show through.
  *  - Inside it, two layers cross-fade:
  *     1. the real detail screen, rendered at final size and scaled with a
  *        top-left origin so its width tracks the container width exactly
  *        every frame (the hero image stays geometrically continuous), and
- *     2. a static replica of the pressed card whose image region morphs from
- *        the card frame onto the detail hero frame.
+ *     2. a static replica of the pressed card. For image cards its image
+ *        region morphs from the card frame onto the detail hero frame; row
+ *        sources (compact card, keep-reading) have no hero-shaped geometry,
+ *        so the replica stays pinned at its original size and fades in place.
  *  - Close (X button, pull-down, Android back) plays the reverse morph, then
  *    pops the route. Reanimated's reduced-motion handling makes both
  *    directions jump-cut automatically when the system requests it.
@@ -68,12 +73,13 @@ export function FactMorphContainer({
   const heroHeight = isTablet ? (isLandscape ? targetW * 0.7 : targetW * 0.8) : targetW;
 
   // Primitives only — the worklets below must not capture `source` itself
-  // (it carries a component reference, which isn't worklet-serializable).
+  // (it can carry a component reference, which isn't worklet-serializable).
   const srcX = source.x;
   const srcY = source.y;
   const srcW = source.width;
   const srcH = source.height;
   const srcRadius = source.borderRadius;
+  const isImageCard = source.kind === 'image-card';
 
   const progress = useSharedValue(0);
   // Content is inert while morphing; enabled once fully open.
@@ -158,12 +164,22 @@ export function FactMorphContainer({
     };
   });
 
-  // Card replica's image region: card frame → detail hero frame, fading out
-  // on top of the incoming content (and back in on close).
+  // Surface background fades in as the container expands; at p=0 the
+  // container is transparent so a transparent row source shows the feed
+  // through it, exactly as before the press.
+  const containerBgStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 0.2], [0, 1], Extrapolation.CLAMP),
+  }));
+
+  // Card replica, fading out on top of the incoming content (and back in on
+  // close). Image cards: the image region morphs card frame → detail hero
+  // frame, tracking the container width. Row sources: pinned at the original
+  // row size (no hero-shaped geometry to morph onto), fading in place.
   const replicaStyle = useAnimatedStyle(() => {
     const p = progress.value;
     return {
-      height: interpolate(p, [0, 1], [srcH, heroHeight]),
+      width: isImageCard ? interpolate(p, [0, 1], [srcW, targetW]) : srcW,
+      height: isImageCard ? interpolate(p, [0, 1], [srcH, heroHeight]) : srcH,
       opacity: interpolate(p, [0.2, 0.6], [1, 0], Extrapolation.CLAMP),
     };
   });
@@ -175,9 +191,10 @@ export function FactMorphContainer({
       {/* Root also swallows touches so the visible feed behind stays inert. */}
       <View style={styles.root} onLayout={onRootLayout}>
         <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]} />
-        <Animated.View
-          style={[styles.container, { backgroundColor: surfaceColor }, containerStyle]}
-        >
+        <Animated.View style={[styles.container, containerStyle]}>
+          <Animated.View
+            style={[StyleSheet.absoluteFill, { backgroundColor: surfaceColor }, containerBgStyle]}
+          />
           <Animated.View
             style={[
               styles.content,
@@ -221,7 +238,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    right: 0,
     overflow: 'hidden',
     pointerEvents: 'none',
   },

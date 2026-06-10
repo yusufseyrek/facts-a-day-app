@@ -8,6 +8,7 @@ import { Image } from 'expo-image';
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
 import { usePressFeedback } from '../hooks/usePressFeedback';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
+import { setPendingFactMorph } from '../services/factMorph';
 import { hexColors, useTheme } from '../theme';
 import { androidRipple } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
@@ -45,6 +46,9 @@ const CompactFactCardComponent = ({
 
   // Light opacity-dim press feedback (replaces the old scale spring)
   const { pressStyle, onPressIn, onPressOut } = usePressFeedback();
+
+  // Card root, measured on press-in for the card → detail morph transition.
+  const cardRef = useRef<View>(null);
 
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -113,6 +117,46 @@ const CompactFactCardComponent = ({
   const mountTimestamp = useRef(Date.now()).current;
   const recyclingKey = `popular-${fact.id}-${mountTimestamp}-${renderRetryCount}`;
 
+  // Register this card as the morph source on press-IN: measureInWindow is
+  // async, so starting here guarantees the rect is registered by the time
+  // onPress (touch up) pushes the route via factDetailBasePath(). The replica
+  // mirrors whatever the thumbnail currently shows (image, blurhash, or
+  // placeholder), so no imageLoaded gate is needed. A press-in that turns
+  // into a scroll leaves a harmless entry (fact-id + TTL guarded).
+  const handlePressIn = useCallback(() => {
+    onPressIn();
+    cardRef.current?.measureInWindow((x, y, width, height) => {
+      if (!(width > 0 && height > 0)) return;
+      setPendingFactMorph({
+        kind: 'compact-card',
+        factId: fact.id,
+        x,
+        y,
+        width,
+        height,
+        borderRadius: radius.lg,
+        imageUri: resolvedUri ?? null,
+        title: fact.title ?? '',
+        category: fact.categoryData || fact.category || undefined,
+        hideCategoryBadge,
+        showChevron,
+        titleLines,
+        thumbnailSize,
+        categoryIcon: fact.categoryData?.icon,
+        categoryColor: fact.categoryData?.color_hex,
+      });
+    });
+  }, [
+    onPressIn,
+    fact,
+    radius.lg,
+    resolvedUri,
+    hideCategoryBadge,
+    showChevron,
+    titleLines,
+    thumbnailSize,
+  ]);
+
   const shadowStyle = theme === 'dark' ? styles.shadowDark : styles.shadowLight;
 
   return (
@@ -122,8 +166,9 @@ const CompactFactCardComponent = ({
       renderToHardwareTextureAndroid={true}
     >
       <Pressable
+        ref={cardRef}
         onPress={onPress}
-        onPressIn={onPressIn}
+        onPressIn={handlePressIn}
         onPressOut={onPressOut}
         android_ripple={androidRipple(theme === 'dark')}
         style={[
