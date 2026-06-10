@@ -24,8 +24,10 @@ import type {
 /**
  * Static visual clone of the pressed fact card/row, layered inside the morph
  * container. It matches the source pixel-for-pixel at progress 0 (same image
- * URI and visual props, registered by the card itself on press-in) and
- * cross-fades out as the real detail screen fades in underneath.
+ * URI and visual props, registered by the card itself on press-in) and fades
+ * out over the always-opaque detail screen beneath (one-sided dissolve — see
+ * FactMorphContainer's Liquid Glass note). Each variant must be opaque at
+ * progress 0: the replica is all the frame-0 coverage there is.
  *
  * The whole tree is inert (pointerEvents none on the wrapper) — interactive
  * children like FavoriteButton render purely for visual continuity.
@@ -180,57 +182,62 @@ function CompactCardReplica({ source }: { source: CompactCardMorphSource }) {
   );
 }
 
-/** Mirrors KeepReadingItem: category + title left, square thumbnail right. */
+/**
+ * Mirrors KeepReadingItem: category + title left, square thumbnail right.
+ *
+ * The row itself is transparent (even rows) or translucent (odd rows) over
+ * the feed background, so the replica paints that background color as an
+ * opaque base: the morph's detail content underneath is always opaque (the
+ * Liquid Glass constraint, see FactMorphContainer) and would otherwise show
+ * through at frame 0. The composite is pixel-identical to the feed row.
+ */
 function KeepReadingReplica({ source }: { source: KeepReadingMorphSource }) {
   const { theme } = useTheme();
   const { spacing } = useResponsive();
   const colors = hexColors[theme];
 
   return (
-    <View
-      style={[
-        styles.fill,
-        styles.row,
-        {
-          padding: spacing.xl,
-          backgroundColor: source.isOdd ? `${colors.cardBackground}70` : 'transparent',
-        },
-      ]}
-      pointerEvents="none"
-    >
-      <View style={{ flex: 1, marginRight: spacing.md }}>
-        {source.categoryName && (
-          <Text.Label color={source.categoryColor ?? '$textSecondary'} marginBottom={spacing.xs}>
-            {source.categoryName}
-          </Text.Label>
-        )}
-        <Text.Body color="$text" numberOfLines={5} fontFamily={FONT_FAMILIES.semibold}>
-          {source.title}
-        </Text.Body>
-      </View>
-      {source.imageUri ? (
-        <Image
-          source={{ uri: source.imageUri }}
-          aria-hidden
-          style={{
-            width: source.imageSize,
-            height: source.imageSize,
-            borderRadius: spacing.sm,
-            overflow: 'hidden',
-          }}
-          contentFit="cover"
-          transition={0}
-        />
-      ) : (
-        <ImagePlaceholder
-          width={source.imageSize}
-          height={source.imageSize}
-          borderRadius={spacing.sm}
-          iconSize={source.imageSize * 0.4}
-          categoryIcon={source.categoryIcon}
-          categoryColor={source.categoryColor}
+    <View style={[styles.fill, { backgroundColor: colors.background }]} pointerEvents="none">
+      {source.isOdd && (
+        <View
+          style={[StyleSheet.absoluteFill, { backgroundColor: `${colors.cardBackground}70` }]}
         />
       )}
+      <View style={[StyleSheet.absoluteFill, styles.row, { padding: spacing.xl }]}>
+        <View style={{ flex: 1, marginRight: spacing.md }}>
+          {source.categoryName && (
+            <Text.Label color={source.categoryColor ?? '$textSecondary'} marginBottom={spacing.xs}>
+              {source.categoryName}
+            </Text.Label>
+          )}
+          <Text.Body color="$text" numberOfLines={5} fontFamily={FONT_FAMILIES.semibold}>
+            {source.title}
+          </Text.Body>
+        </View>
+        {source.imageUri ? (
+          <Image
+            source={{ uri: source.imageUri }}
+            aria-hidden
+            style={{
+              width: source.imageSize,
+              height: source.imageSize,
+              borderRadius: spacing.sm,
+              overflow: 'hidden',
+            }}
+            contentFit="cover"
+            transition={0}
+          />
+        ) : (
+          <ImagePlaceholder
+            width={source.imageSize}
+            height={source.imageSize}
+            borderRadius={spacing.sm}
+            iconSize={source.imageSize * 0.4}
+            categoryIcon={source.categoryIcon}
+            categoryColor={source.categoryColor}
+          />
+        )}
+      </View>
     </View>
   );
 }
