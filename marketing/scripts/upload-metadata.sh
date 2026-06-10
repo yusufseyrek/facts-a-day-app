@@ -380,6 +380,8 @@ get_app_info_id() {
 get_or_create_app_info_localization() {
     local app_info_id="$1"
     local locale="$2"
+    local name="$3"
+    local subtitle="$4"
 
     local response
     response=$(asc_api GET "/appInfos/$app_info_id/appInfoLocalizations")
@@ -392,23 +394,33 @@ get_or_create_app_info_localization() {
         return 0
     fi
 
+    # The create endpoint requires 'name' (unlike PATCH), so send the full
+    # attribute set on creation.
     echo "  Creating new app info localization for $locale..." >&2
-    local create_data='{
-        "data": {
-            "type": "appInfoLocalizations",
-            "attributes": {
-                "locale": "'"$locale"'"
-            },
-            "relationships": {
-                "appInfo": {
-                    "data": {
-                        "type": "appInfos",
-                        "id": "'"$app_info_id"'"
+    local create_data
+    create_data=$(jq -n \
+        --arg locale "$locale" \
+        --arg name "$name" \
+        --arg subtitle "$subtitle" \
+        --arg app_info_id "$app_info_id" \
+        '{
+            "data": {
+                "type": "appInfoLocalizations",
+                "attributes": {
+                    "locale": $locale,
+                    "name": $name,
+                    "subtitle": $subtitle
+                },
+                "relationships": {
+                    "appInfo": {
+                        "data": {
+                            "type": "appInfos",
+                            "id": $app_info_id
+                        }
                     }
                 }
             }
-        }
-    }'
+        }')
 
     response=$(asc_api POST "/appInfoLocalizations" "$create_data")
 
@@ -704,7 +716,7 @@ upload_ios_metadata() {
 
         # Update app info localization (name & subtitle)
         local app_info_loc_id
-        app_info_loc_id=$(get_or_create_app_info_localization "$app_info_id" "$store_locale")
+        app_info_loc_id=$(get_or_create_app_info_localization "$app_info_id" "$store_locale" "$name" "$subtitle")
 
         if [ -z "$app_info_loc_id" ]; then
             error "  Could not get/create app info localization for $store_locale"
