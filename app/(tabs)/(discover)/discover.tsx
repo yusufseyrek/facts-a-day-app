@@ -12,7 +12,6 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { styled, View } from '@tamagui/core';
 import { ChevronRight, X } from '@tamagui/lucide-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
@@ -47,7 +46,7 @@ import { getIsConnected } from '../../../src/services/network';
 import { getSelectedCategories } from '../../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../../src/services/preferences';
 import { hexColors, useTheme } from '../../../src/theme';
-import { darkenColor, getContrastColor, hexToHue } from '../../../src/utils/colors';
+import { blendHexColors, hexToHue, hexToRgba } from '../../../src/utils/colors';
 import { getLucideIcon } from '../../../src/utils/iconMapper';
 import {
   insertNativeAds,
@@ -719,7 +718,7 @@ function DiscoverScreen() {
                   <CategoryRow gap={spacing.md}>
                     {row.map((category) => {
                       const categoryColor = category.color_hex || '#0066FF';
-                      const contrastColor = getContrastColor(categoryColor);
+                      const surfaceColor = hexColors[theme].surface;
 
                       return (
                         <Pressable
@@ -730,23 +729,27 @@ function DiscoverScreen() {
                             {
                               flex: 1,
                               borderRadius: radius.xl,
-                              // Category-colored glow instead of a flat black
-                              // drop shadow — the tiles read as lit, not boxed.
-                              shadowColor: categoryColor,
                               opacity: pressed ? 0.9 : 1,
                               transform: [{ scale: pressed ? 0.97 : 1 }],
                             },
                           ]}
                           testID={`discover-category-${rowIndex * numColumns + row.indexOf(category)}`}
                         >
-                          <LinearGradient
-                            colors={[categoryColor, darkenColor(categoryColor, 0.22)]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
+                          {/* Calm tinted surface: the category color stays an
+                              accent (icon, plate, hairline) instead of filling
+                              the whole tile. */}
+                          <View
                             style={{
                               flex: 1,
                               borderRadius: radius.xl,
                               overflow: 'hidden',
+                              backgroundColor: blendHexColors(
+                                categoryColor,
+                                surfaceColor,
+                                theme === 'dark' ? 0.1 : 0.07
+                              ),
+                              borderWidth: 1,
+                              borderColor: hexToRgba(categoryColor, theme === 'dark' ? 0.35 : 0.25),
                             }}
                           >
                             <DiscoverCategoryCard
@@ -754,47 +757,22 @@ function DiscoverScreen() {
                               paddingHorizontal={spacing.md}
                               gap={spacing.md}
                             >
-                              {/* Layered decorative circles for depth */}
-                              <View
-                                pointerEvents="none"
-                                style={{
-                                  position: 'absolute',
-                                  top: -media.categoryIconContainerSize * 0.5,
-                                  left: -media.categoryIconContainerSize * 0.5,
-                                  width: media.categoryIconContainerSize * 2,
-                                  height: media.categoryIconContainerSize * 2,
-                                  borderRadius: media.categoryIconContainerSize,
-                                  backgroundColor: 'rgba(255, 255, 255, 0.10)',
-                                }}
-                              />
-                              <View
-                                pointerEvents="none"
-                                style={{
-                                  position: 'absolute',
-                                  bottom: -media.categoryIconContainerSize * 0.7,
-                                  right: -media.categoryIconContainerSize * 0.4,
-                                  width: media.categoryIconContainerSize * 1.6,
-                                  height: media.categoryIconContainerSize * 1.6,
-                                  borderRadius: media.categoryIconContainerSize * 0.8,
-                                  backgroundColor: 'rgba(255, 255, 255, 0.07)',
-                                }}
-                              />
                               <DiscoverCategoryIconContainer
                                 width={media.categoryIconContainerSize}
                                 height={media.categoryIconContainerSize}
                                 borderRadius={media.categoryIconContainerSize / 2}
                                 style={{
-                                  backgroundColor:
-                                    contrastColor === '#000000'
-                                      ? 'rgba(0,0,0,0.12)'
-                                      : 'rgba(255,255,255,0.22)',
+                                  backgroundColor: hexToRgba(
+                                    categoryColor,
+                                    theme === 'dark' ? 0.18 : 0.12
+                                  ),
                                 }}
                               >
-                                {getLucideIcon(category.icon, iconSize, contrastColor)}
+                                {getLucideIcon(category.icon, iconSize, categoryColor)}
                               </DiscoverCategoryIconContainer>
                               <DiscoverCategoryTextContainer gap={2}>
                                 <Text.Label
-                                  color={contrastColor}
+                                  color="$text"
                                   numberOfLines={1}
                                   fontFamily={FONT_FAMILIES.semibold}
                                 >
@@ -803,11 +781,11 @@ function DiscoverScreen() {
                               </DiscoverCategoryTextContainer>
                               <ChevronRight
                                 size={iconSizes.sm}
-                                color={contrastColor}
-                                opacity={0.55}
+                                color={hexColors[theme].textSecondary}
+                                opacity={0.7}
                               />
                             </DiscoverCategoryCard>
-                          </LinearGradient>
+                          </View>
                         </Pressable>
                       );
                     })}
@@ -970,12 +948,11 @@ function DiscoverScreen() {
 
 const categoryShadowStyles = StyleSheet.create({
   wrapper: {
-    // shadowColor is set per-tile (the category color) at the call site.
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
 });
 
