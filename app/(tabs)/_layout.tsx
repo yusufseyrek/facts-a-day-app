@@ -167,8 +167,11 @@ export default function TabLayout() {
             role="search"
             unstable_nativeProps={playTriviaMode ? { preventNativeSelection: true } : undefined}
           >
+            {/* gamecontroller matches the app's trivia iconography (Gamepad2 on
+              the Mixed Trivia card) and stays distinct from the trivia tab's
+              own brain icon. */}
             <NativeTabs.Trigger.Icon
-              sf={playTriviaMode ? 'play.fill' : 'magnifyingglass'}
+              sf={playTriviaMode ? 'gamecontroller.fill' : 'magnifyingglass'}
               md="search"
             />
             <NativeTabs.Trigger.Label>
