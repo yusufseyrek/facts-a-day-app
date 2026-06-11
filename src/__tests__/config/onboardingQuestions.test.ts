@@ -59,12 +59,22 @@ describe('QUIZ_QUESTIONS', () => {
     }
   });
 
-  it('covers every free category across all options, so no interest is unreachable', () => {
+  it('covers all 27 backend categories across all options, so no interest is unreachable', () => {
     const reachable = new Set(
       QUIZ_QUESTIONS.flatMap((q) => q.options.flatMap((o) => Object.keys(o.weights)))
     );
-    for (const slug of FREE_SLUGS) {
+    for (const slug of [...FREE_SLUGS, ...PREMIUM_SLUGS]) {
       expect(reachable).toContain(slug);
+    }
+  });
+
+  it('leads every option with a free category, so any pick yields content for free users', () => {
+    const premium = new Set(PREMIUM_SLUGS);
+    for (const question of QUIZ_QUESTIONS) {
+      for (const option of question.options) {
+        const freeSlugs = Object.keys(option.weights).filter((slug) => !premium.has(slug));
+        expect(freeSlugs.length).toBeGreaterThan(0);
+      }
     }
   });
 });
@@ -76,17 +86,15 @@ describe('deriveCategories', () => {
         for (let c = 0; c < 4; c++) {
           const derived = deriveCategories([[a], [b], [c]], ALL_CATEGORIES, false);
           expect(derived.length).toBeGreaterThanOrEqual(MINIMUM_CATEGORIES);
-          expect(derived.length).toBeLessThanOrEqual(6);
         }
       }
     }
   });
 
-  it('ranks directly-chosen themes first', () => {
-    // universe + tech documentary + invest
+  it('ranks the highest-scoring theme first', () => {
+    // universe + tech documentary + invest: science scores 2+1 across picks
     const derived = deriveCategories([[0], [0], [3]], ALL_CATEGORIES, false);
-    // science 2+1, technology 2+1, business 1+2 all score 3
-    expect(derived.slice(0, 3).sort()).toEqual(['business', 'science', 'technology']);
+    expect(derived[0]).toBe('science');
   });
 
   it('accumulates weights across multiple selections in one question', () => {
@@ -98,10 +106,14 @@ describe('deriveCategories', () => {
     expect(multi).toContain('space');
   });
 
-  it('caps at 6 even when every option is selected', () => {
+  it('selects every available category when everything is selected', () => {
     const everything = QUIZ_QUESTIONS.map((q) => q.options.map((_, i) => i));
-    const derived = deriveCategories(everything, ALL_CATEGORIES, false);
-    expect(derived).toHaveLength(6);
+
+    const freeDerived = deriveCategories(everything, ALL_CATEGORIES, false);
+    expect([...freeDerived].sort()).toEqual([...FREE_SLUGS].sort());
+
+    const premiumDerived = deriveCategories(everything, ALL_CATEGORIES, true);
+    expect([...premiumDerived].sort()).toEqual([...FREE_SLUGS, ...PREMIUM_SLUGS].sort());
   });
 
   it('excludes premium categories for free users', () => {

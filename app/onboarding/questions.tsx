@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Easing,
   Pressable,
@@ -17,7 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
 import { Button, FONT_FAMILIES, GlassBackButton, ScreenContainer, Text } from '../../src/components';
-import { LAYOUT, SUBSCRIPTION } from '../../src/config/app';
+import { LAYOUT } from '../../src/config/app';
 import { deriveCategories, QUIZ_QUESTIONS } from '../../src/config/onboardingQuestions';
 import { useOnboarding, usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
@@ -32,6 +31,7 @@ import * as api from '../../src/services/api';
 import * as db from '../../src/services/database';
 import { hexColors, useTheme } from '../../src/theme';
 import { darkenColor, getContrastColor } from '../../src/utils/colors';
+import { getLucideIcon } from '../../src/utils/iconMapper';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { QuizOption } from '../../src/config/onboardingQuestions';
@@ -43,8 +43,8 @@ const TRANSITION_IN_MS = 220;
 /**
  * One selectable answer tile, in the app's gradient game-tile signature
  * (TriviaGridCard): diagonal accent gradient, decorative offset circles,
- * emoji on a translucent plate, accent-colored glow. Selection shows a
- * contrast ring plus a check badge — multiple tiles can be selected.
+ * a Lucide icon on a translucent plate, accent-colored glow. Selection shows
+ * a contrast ring plus a check badge — multiple tiles can be selected.
  */
 function QuizOptionTile({
   option,
@@ -119,7 +119,7 @@ function QuizOptionTile({
         />
 
         <YStack padding={spacing.lg} gap={spacing.md} alignItems="center">
-          {/* Emoji plate */}
+          {/* Icon plate */}
           <YStack
             width={plateSize}
             height={plateSize}
@@ -128,9 +128,7 @@ function QuizOptionTile({
             justifyContent="center"
             alignItems="center"
           >
-            <Text.Title style={{ fontSize: plateSize * 0.5, lineHeight: plateSize * 0.62 }}>
-              {option.emoji}
-            </Text.Title>
+            {getLucideIcon(option.icon, plateSize * 0.5, contrastColor)}
           </YStack>
 
           <Text.Label
@@ -196,13 +194,12 @@ export default function Questions() {
     initializeOnboarding,
     downloadFacts,
   } = useOnboarding();
-  const { isPremium, restorePurchases } = usePremium();
+  const { isPremium } = usePremium();
   const { spacing } = useResponsive();
 
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [metadataFailed, setMetadataFailed] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(false);
 
   const [questionIndex, setQuestionIndex] = useState(0);
   // Selected option indexes per question (multi-select)
@@ -363,23 +360,6 @@ export default function Questions() {
     router.push('/onboarding/notifications');
   }, [quizComplete, selectedCategories, downloadFacts, locale, router]);
 
-  const handleRestorePurchases = async () => {
-    setIsRestoring(true);
-    try {
-      const restored = await restorePurchases();
-      if (restored) {
-        Alert.alert(t('settingsRestoreSuccess'), t('settingsRestoreSuccessMessage'));
-      } else {
-        Alert.alert(t('settingsRestoreNoSubscription'), t('settingsRestoreNoSubscriptionMessage'));
-      }
-    } catch (error) {
-      console.error('Error restoring purchases:', error);
-      Alert.alert(t('error'), t('settingsRestoreNoSubscriptionMessage'));
-    } finally {
-      setIsRestoring(false);
-    }
-  };
-
   // Show loading while initializing or loading categories
   if (isInitializing || (!isInitialized && !initializationError) || isLoading) {
     return (
@@ -512,18 +492,6 @@ export default function Questions() {
           <Button onPress={handleContinue} disabled={selection.length === 0}>
             {t('continue')}
           </Button>
-          {SUBSCRIPTION.ENABLED && !isPremium && (
-            <Pressable
-              onPress={handleRestorePurchases}
-              disabled={isRestoring}
-              hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
-              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-            >
-              <Text.Caption color="$textSecondary" textAlign="center">
-                {isRestoring ? t('loading') : t('paywallRestore')}
-              </Text.Caption>
-            </Pressable>
-          )}
         </YStack>
       </YStack>
     </ScreenContainer>

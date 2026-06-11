@@ -8,7 +8,8 @@ export interface QuizOption {
   key: string;
   /** i18n key for the option label */
   labelKey: TranslationKeys;
-  emoji: string;
+  /** Lucide icon name (kebab-case, resolved via getLucideIcon) */
+  icon: string;
   /** Accent color driving the option tile's gradient (game-tile style) */
   color: string;
   /** Category slug -> score contribution when this option is chosen */
@@ -29,9 +30,12 @@ export interface QuizQuestion {
  * grid; the full editor remains available in Settings > Categories).
  *
  * Weights reference backend category slugs. Premium slugs may appear here:
- * deriveCategories drops them for non-premium users. Across all options the
- * free categories are fully covered, so every answer combination yields a
- * varied feed.
+ * deriveCategories drops them for non-premium users. The 12 option bundles
+ * jointly cover ALL 27 backend categories, so selecting everything selects
+ * every category available to the user, and each bundle leads with a free
+ * slug so any pick yields content for free users. Questions are framed to
+ * read naturally across a wide age range (18-60): reading taste, documentary
+ * pick, free-afternoon plans.
  */
 export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
@@ -41,28 +45,28 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
       {
         key: 'universe',
         labelKey: 'quizScrollUniverse',
-        emoji: '🔭',
+        icon: 'telescope',
         color: '#3F51B5',
         weights: { space: 2, science: 2, mathematics: 1 },
       },
       {
         key: 'past',
         labelKey: 'quizScrollPast',
-        emoji: '🏺',
+        icon: 'landmark',
         color: '#FF9800',
-        weights: { history: 2, culture: 2, mythology: 1 },
+        weights: { history: 2, mythology: 1 },
       },
       {
         key: 'mind',
         labelKey: 'quizScrollMind',
-        emoji: '🧠',
+        icon: 'brain',
         color: '#9C27B0',
         weights: { psychology: 2, philosophy: 2, relationships: 1 },
       },
       {
         key: 'nature',
         labelKey: 'quizScrollNature',
-        emoji: '🌿',
+        icon: 'leaf',
         color: '#7CB342',
         weights: { nature: 2, environment: 2, animals: 1 },
       },
@@ -75,30 +79,30 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
       {
         key: 'technology',
         labelKey: 'quizDocTech',
-        emoji: '🤖',
+        icon: 'cpu',
         color: '#2196F3',
-        weights: { technology: 2, science: 1, inventions: 1, business: 1 },
+        weights: { technology: 2, inventions: 1, science: 1 },
       },
       {
-        key: 'civilizations',
-        labelKey: 'quizDocCivilizations',
-        emoji: '🗿',
-        color: '#FFA000',
-        weights: { history: 2, geography: 1, culture: 1, mythology: 1 },
+        key: 'crime',
+        labelKey: 'quizDocCrime',
+        icon: 'fingerprint',
+        color: '#5C6BC0',
+        weights: { mysteries: 2, crime: 2, history: 1, psychology: 1 },
       },
       {
         key: 'body',
         labelKey: 'quizDocBody',
-        emoji: '🧬',
+        icon: 'heart-pulse',
         color: '#F44336',
-        weights: { health: 2, science: 1, anatomy: 1, psychology: 1 },
+        weights: { health: 2, anatomy: 1, science: 1 },
       },
       {
         key: 'art',
         labelKey: 'quizDocArt',
-        emoji: '🎨',
+        icon: 'palette',
         color: '#E91E63',
-        weights: { arts: 2, culture: 1, cinema: 1, language: 1 },
+        weights: { arts: 2, cinema: 1, architecture: 1 },
       },
     ],
   },
@@ -109,44 +113,43 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
       {
         key: 'cook',
         labelKey: 'quizFreeCook',
-        emoji: '🍳',
+        icon: 'chef-hat',
         color: '#FF6F00',
-        weights: { food: 2, health: 1, culture: 1 },
+        weights: { food: 2, culture: 1 },
       },
       {
         key: 'game',
         labelKey: 'quizFreeGame',
-        emoji: '🏆',
+        icon: 'trophy',
         color: '#E53935',
         weights: { sports: 2, health: 1 },
       },
       {
         key: 'trip',
         labelKey: 'quizFreeTrip',
-        emoji: '🗺️',
+        icon: 'plane',
         color: '#00BCD4',
-        weights: { geography: 2, language: 1, culture: 1, nature: 1 },
+        weights: { geography: 2, language: 1, culture: 1 },
       },
       {
         key: 'invest',
         labelKey: 'quizFreeInvest',
-        emoji: '📈',
+        icon: 'trending-up',
         color: '#43A047',
-        weights: { business: 2, finance: 1, mathematics: 1, technology: 1 },
+        weights: { business: 2, finance: 1, mathematics: 1 },
       },
     ],
   },
 ];
-
-/** Cap on derived preferences so the feed stays focused. */
-const MAX_DERIVED_CATEGORIES = 6;
 
 /** Broad, free categories used to top up if derivation comes in short. */
 const FALLBACK_CATEGORIES = ['science', 'history', 'nature', 'technology', 'culture'];
 
 /**
  * Score every selected option (multi-select per question) into a ranked list
- * of category slugs.
+ * of category slugs. No upper cap: the option bundles cover all 27 backend
+ * categories, so selecting everything selects every category available to
+ * the user.
  *
  * Only slugs that exist in `available` survive, premium ones only for premium
  * users. Sorting is stable, so ties keep question order. The result always
@@ -176,8 +179,7 @@ export function deriveCategories(
   const derived = [...scores.entries()]
     .filter(([slug]) => selectable(slug))
     .sort((a, b) => b[1] - a[1])
-    .map(([slug]) => slug)
-    .slice(0, MAX_DERIVED_CATEGORIES);
+    .map(([slug]) => slug);
 
   for (const slug of FALLBACK_CATEGORIES) {
     if (derived.length >= MINIMUM_CATEGORIES) break;
