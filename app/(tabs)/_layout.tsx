@@ -150,10 +150,11 @@ export default function TabLayout() {
             tabPress: () => {
               const tabId = TAB_IDS[route.name] ?? route.name;
               // Every home press (switch-to or re-tap, both platforms) resets
-              // the Latest carousel to the first card. Horizontal only, so it
-              // never conflicts with the native iOS vertical re-tap scroll.
+              // the horizontal rows (story buttons, Latest carousel) to start.
+              // Horizontal only, so it never conflicts with the native iOS
+              // vertical re-tap scroll.
               if (tabId === 'index') {
-                scrollToTop('index-latest');
+                scrollToTop('index-horizontal');
               }
               // Android only: iOS re-tap scrolls natively, and UIKit lands at the
               // ADJUSTED top (negative offset under the translucent large-title

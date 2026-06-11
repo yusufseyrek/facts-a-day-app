@@ -82,10 +82,11 @@ function HomeScreen() {
   );
 
   // Every home tab press (switch-to or re-tap, both platforms) scrolls the
-  // Latest carousel back to the first card.
+  // horizontal rows — story buttons and the Latest carousel — back to start.
   useScrollToTopHandler(
-    'index-latest',
+    'index-horizontal',
     useCallback(() => {
+      storyButtonsRef.current?.scrollToStart();
       latestListRef.current?.scrollToOffset({ offset: 0, animated: true });
     }, [])
   );
