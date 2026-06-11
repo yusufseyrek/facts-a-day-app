@@ -97,7 +97,8 @@ export function FactMorphContainer({
   const srcW = source.width;
   const srcH = source.height;
   const srcRadius = source.borderRadius;
-  const isImageCard = source.kind === 'image-card';
+  // Sample cards (onboarding) share the image card's hero-continuous geometry.
+  const isImageCard = source.kind === 'image-card' || source.kind === 'sample-card';
 
   const progress = useSharedValue(0);
   // Content is inert while morphing; enabled once fully open.

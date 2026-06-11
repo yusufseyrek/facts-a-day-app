@@ -12,15 +12,20 @@ const TOTAL_STEPS = 3;
 
 /**
  * Step shown in the shared progress bar, per route. Routes not listed (the
- * index redirect and the success celebration) hide the bar. The fact preview
- * is a modal presented over welcome, so it keeps welcome's step.
+ * index redirect and the success celebration) hide the bar. The sample-fact
+ * preview (/fact/sample/[id], a root-level transparent modal) morphs over
+ * welcome, which stays visible behind it — so it keeps welcome's step.
  */
 const STEP_BY_PATH: Record<string, number> = {
   '/onboarding/welcome': 1,
-  '/onboarding/fact': 1,
   '/onboarding/questions': 2,
   '/onboarding/notifications': 3,
 };
+
+function stepForPath(pathname: string): number | undefined {
+  if (pathname.startsWith('/fact/sample/')) return 1;
+  return STEP_BY_PATH[pathname];
+}
 
 export default function OnboardingLayout() {
   const colorScheme = useColorScheme();
@@ -33,7 +38,7 @@ export default function OnboardingLayout() {
 
   // The progress bar lives here, above the Stack, so it stays constant while
   // screens slide underneath it; only the pill fill animates between steps.
-  const step = STEP_BY_PATH[pathname];
+  const step = stepForPath(pathname);
   const visible = step !== undefined;
 
   const barOpacity = useRef(new Animated.Value(0)).current;
@@ -77,7 +82,6 @@ export default function OnboardingLayout() {
         <Stack.Screen name="questions" />
         <Stack.Screen name="notifications" />
         <Stack.Screen name="success" />
-        <Stack.Screen name="fact" options={{ presentation: 'modal' }} />
       </Stack>
     </View>
   );

@@ -300,6 +300,22 @@ function AppContent() {
           }}
         />
         <Stack.Screen
+          name="fact/sample/[id]"
+          options={{
+            // Onboarding sample-fact preview, morphing from a pressed welcome
+            // carousel card (same container transform as fact/morph/[id]).
+            // Registered on the root stack — not the onboarding one — so the
+            // expanding screen covers the whole window including the
+            // onboarding layout's progress bar, which stays visible (dimmed)
+            // behind the transparent modal.
+            presentation: 'transparentModal',
+            animation: 'none',
+            headerShown: false,
+            gestureEnabled: false,
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
+        <Stack.Screen
           name="[locale]/fact/[id]"
           options={{
             // This route immediately redirects, so no UI needed

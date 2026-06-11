@@ -28,6 +28,13 @@ const SAMPLE_FACT_IMAGES: Record<string, ImageSource> = {
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 /**
+ * Synthetic fact id for the morph transition machinery, which keys pending
+ * sources by numeric fact id. Negative, so it can never collide with a real
+ * DB fact id (positive autoincrement).
+ */
+export const sampleFactMorphId = (index: number): number => -(index + 1);
+
+/**
  * Sample facts shown in the onboarding welcome carousel and fact preview modal.
  * Sourced from the production database — real article-sourced facts with bundled images.
  */

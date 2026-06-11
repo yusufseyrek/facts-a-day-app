@@ -12,6 +12,7 @@ import { CategoryBadge } from '../CategoryBadge';
 import { FavoriteButton } from '../FavoriteButton';
 import { FACT_CARD_GRADIENT, factCardCrownShadow, factCardTitleShadow } from '../ImageFactCard';
 import { ImagePlaceholder } from '../ImagePlaceholder';
+import { SampleFactCardLayers } from '../SampleFactCard';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type {
@@ -19,6 +20,7 @@ import type {
   FactMorphSource,
   ImageCardMorphSource,
   KeepReadingMorphSource,
+  SampleCardMorphSource,
 } from '../../services/factMorph';
 
 /**
@@ -40,7 +42,22 @@ export function FactCardReplica({ source }: { source: FactMorphSource }) {
       return <CompactCardReplica source={source} />;
     case 'keep-reading':
       return <KeepReadingReplica source={source} />;
+    case 'sample-card':
+      return <SampleCardReplica source={source} />;
   }
+}
+
+/**
+ * Mirrors the onboarding welcome carousel card (same shared layers). The
+ * opaque base matches the card's background so frame 0 has full coverage
+ * even before the bundled image paints.
+ */
+function SampleCardReplica({ source }: { source: SampleCardMorphSource }) {
+  return (
+    <View style={[styles.fill, styles.sampleCardBase]} pointerEvents="none">
+      <SampleFactCardLayers fact={source.fact} titleWidth={source.width} imageTransition={0} />
+    </View>
+  );
 }
 
 /** Mirrors ImageFactCard: full-bleed image, gradient, badges, title overlay. */
@@ -246,6 +263,10 @@ const styles = StyleSheet.create({
   fill: {
     flex: 1,
     overflow: 'hidden',
+  },
+  // Same backdrop as the welcome carousel card's container.
+  sampleCardBase: {
+    backgroundColor: '#1a1a2e',
   },
   fillImage: {
     width: '100%',

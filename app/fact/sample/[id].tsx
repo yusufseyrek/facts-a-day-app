@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { X } from '@tamagui/lucide-icons';
@@ -9,16 +9,19 @@ import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { YStack } from 'tamagui';
 
-import { CategoryBadge, FONT_FAMILIES, Text } from '../../src/components';
-import { IMAGE_PLACEHOLDER } from '../../src/config/images';
-import { sampleFacts } from '../../src/config/sampleFacts';
-import { useTranslation } from '../../src/i18n';
-import { Screens, trackScreenView } from '../../src/services/analytics';
-import { hexColors, useTheme } from '../../src/theme';
-import { useResponsive } from '../../src/utils/useResponsive';
+import { CategoryBadge, FONT_FAMILIES, Text } from '../../../src/components';
+import { FactMorphContainer } from '../../../src/components/factMorph/FactMorphContainer';
+import { useFactMorph } from '../../../src/components/factMorph/FactMorphContext';
+import { IMAGE_PLACEHOLDER } from '../../../src/config/images';
+import { sampleFactMorphId, sampleFacts } from '../../../src/config/sampleFacts';
+import { useTranslation } from '../../../src/i18n';
+import { Screens, trackScreenView } from '../../../src/services/analytics';
+import { clearPendingFactMorph, peekPendingFactMorph } from '../../../src/services/factMorph';
+import { hexColors, useTheme } from '../../../src/theme';
+import { useResponsive } from '../../../src/utils/useResponsive';
 
-import type { SupportedLocale } from '../../src/i18n';
-import type { Category } from '../../src/services/database';
+import type { SupportedLocale } from '../../../src/i18n';
+import type { Category } from '../../../src/services/database';
 
 // Bottom-of-hero gradient so the image blends into the page background
 const heroGradientLocations = [0.7, 1] as const;
@@ -26,31 +29,57 @@ const heroGradientLocations = [0.7, 1] as const;
 const placeholder = { blurhash: IMAGE_PLACEHOLDER.DEFAULT_BLURHASH };
 
 /**
- * Fact detail preview for the onboarding welcome carousel.
+ * Fact detail preview for the onboarding welcome carousel — the morph twin
+ * of the home screen's fact open.
  *
- * Mirrors the real FactModal's visual hierarchy (hero image, category badge,
- * title, summary, body) but renders entirely from the bundled sample facts:
- * no database, network, audio, or favorites coupling, so it works before any
- * onboarding step has completed.
+ * Registered on the ROOT stack (not the onboarding one) with the same
+ * transparentModal options as fact/morph/[id], for two reasons: the morph
+ * must cover the whole window including the onboarding layout's progress bar
+ * (on Android a nested-stack screen is clipped to the navigator's frame,
+ * below the bar), and the welcome screen must stay visible behind the
+ * expanding card. The card registers its rect on press-in; if no fresh
+ * source exists (deep link, stale state) the detail renders without a morph.
+ *
+ * The content mirrors the real FactModal's visual hierarchy (hero image,
+ * category badge, title, summary, body) but renders entirely from the
+ * bundled sample facts: no database, network, audio, or favorites coupling,
+ * so it works before any onboarding step has completed.
  */
-export default function OnboardingFactPreview() {
+export default function SampleFactRoute() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const index = parseInt(id, 10);
+  const factId = sampleFactMorphId(index);
+
+  // Peek (don't clear) in the initializer — render paths can run twice under
+  // StrictMode. Cleared post-commit below.
+  const [morphSource] = useState(() => peekPendingFactMorph(factId));
+
+  useEffect(() => {
+    clearPendingFactMorph(factId);
+  }, [factId]);
+
+  if (!morphSource) {
+    return <SampleFactDetail index={index} />;
+  }
+
+  return (
+    <FactMorphContainer source={morphSource}>
+      <SampleFactDetail index={index} />
+    </FactMorphContainer>
+  );
+}
+
+function SampleFactDetail({ index }: { index: number }) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
+  const morph = useFactMorph();
   const insets = useSafeAreaInsets();
-  const {
-    spacing,
-    radius,
-    iconSizes,
-    typography,
-    isTablet,
-    screenWidth,
-    screenHeight,
-  } = useResponsive();
+  const { spacing, radius, iconSizes, typography, isTablet, isLandscape, screenWidth } =
+    useResponsive();
 
-  const { index } = useLocalSearchParams<{ index?: string }>();
   const facts = sampleFacts[locale as SupportedLocale] ?? sampleFacts.en;
-  const fact = facts[Number(index)] ?? null;
+  const fact = facts[index] ?? null;
 
   const hasTracked = useRef(false);
   useEffect(() => {
@@ -66,13 +95,24 @@ export default function OnboardingFactPreview() {
 
   const backgroundColor = hexColors[theme].background;
 
-  // Square hero on phones (matches FactModal), shorter banner on tablets.
-  const heroHeight = isTablet
-    ? Math.min(screenHeight * 0.4, 480)
-    : Math.min(screenWidth, screenHeight * 0.5);
+  // Mirrors FactModal's hero formula — FactMorphContainer morphs the card
+  // replica onto exactly this frame, so the image stays continuous.
+  const heroHeight = isTablet ? (isLandscape ? screenWidth * 0.7 : screenWidth * 0.8) : screenWidth;
 
-  // iOS modal sheets are laid out below the status bar; Android draws under it.
-  const closeButtonTop = Platform.OS === 'ios' ? spacing.lg : insets.top + spacing.sm;
+  // transparentModal draws under the status bar on both platforms.
+  const closeButtonTop = insets.top + spacing.sm;
+
+  // Close through the morph controller so the reverse morph plays; without
+  // one (deep link fallback) a plain pop is correct.
+  const handleClose = () => {
+    if (morph) {
+      morph.close();
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/onboarding/welcome');
+    }
+  };
 
   const categoryForBadge: Category = {
     id: -1,
@@ -96,7 +136,7 @@ export default function OnboardingFactPreview() {
             style={StyleSheet.absoluteFill}
             contentFit="cover"
             placeholder={placeholder}
-            transition={200}
+            transition={0}
             aria-label={t('a11y_factImage', { title: fact.title })}
             role="img"
           />
@@ -137,7 +177,7 @@ export default function OnboardingFactPreview() {
 
       {/* Floating close button */}
       <Pressable
-        onPress={() => router.back()}
+        onPress={handleClose}
         accessibilityRole="button"
         aria-label={t('a11y_closeButton')}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

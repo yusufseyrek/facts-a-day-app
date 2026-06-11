@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import type { ViewStyle } from 'react-native';
+import type { SampleFact } from '../config/sampleFacts';
 import type { Category } from './database';
 
 /**
@@ -77,10 +78,21 @@ export interface KeepReadingMorphSource extends FactMorphSourceBase {
   isOdd: boolean;
 }
 
+/**
+ * Onboarding welcome-carousel sample card. Same hero-continuous geometry as
+ * 'image-card', but renders from a bundled SampleFact (no DB fact, no remote
+ * URI) — factId is the synthetic negative id from sampleFactMorphId().
+ */
+export interface SampleCardMorphSource extends FactMorphSourceBase {
+  kind: 'sample-card';
+  fact: SampleFact;
+}
+
 export type FactMorphSource =
   | ImageCardMorphSource
   | CompactCardMorphSource
-  | KeepReadingMorphSource;
+  | KeepReadingMorphSource
+  | SampleCardMorphSource;
 
 // Long enough to survive a slow press (press-in → release), short enough that
 // an abandoned press-in (scroll-through) can't leak into a later interaction.

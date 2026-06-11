@@ -2,18 +2,17 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, FlatList, Pressable, StyleSheet, View, ViewToken } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { Button, FONT_FAMILIES, MockNotificationCard, Text } from '../../src/components';
+import { Button, MockNotificationCard, Text } from '../../src/components';
 import { ScreenContainer } from '../../src/components';
+import { SampleFactCardLayers } from '../../src/components/SampleFactCard';
 import { LAYOUT } from '../../src/config/app';
-import { IMAGE_PLACEHOLDER } from '../../src/config/images';
-import { type SampleFact, sampleFacts } from '../../src/config/sampleFacts';
+import { type SampleFact, sampleFactMorphId, sampleFacts } from '../../src/config/sampleFacts';
 import { useOnboarding } from '../../src/contexts';
+import { useFactMorphSource } from '../../src/hooks/useFactMorphSource';
 import { useTranslation } from '../../src/i18n';
 import { Screens, trackScreenView } from '../../src/services/analytics';
 import { hexColors, useTheme } from '../../src/theme';
@@ -21,83 +20,86 @@ import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { SupportedLocale } from '../../src/i18n';
 
-// Gradient for text legibility over images
-const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.85)'] as const;
-const gradientLocations = [0.3, 0.55, 1] as const;
-
-const placeholder = { blurhash: IMAGE_PLACEHOLDER.DEFAULT_BLURHASH };
-
 /** Immersive 1:1 fact card with image, gradient, category badge, and title */
 const FactImageCard = ({
   item,
+  index,
   size,
   theme,
+  onPress,
 }: {
   item: SampleFact;
+  index: number;
   size: number;
   theme: 'light' | 'dark';
+  onPress: () => void;
 }) => {
-  const { spacing, radius, config } = useResponsive();
+  const { radius } = useResponsive();
+  const factId = sampleFactMorphId(index);
+  // Same card → detail morph transition as the home screen fact open:
+  // isMorphSourceActive hides this card while its morph presentation is on
+  // screen (the expanded preview covers its rect exactly).
+  const { registerMorphSource, isMorphSourceActive } = useFactMorphSource(factId);
+  const cardRef = useRef<View>(null);
+
+  // Register this card as the morph source on press-IN: measureInWindow is
+  // async, so starting here guarantees the rect is registered by the time
+  // onPress (touch up) pushes the route. No shimmer guard like
+  // ImageFactCard's — the sample images are bundled, always painted.
+  const handlePressIn = () => {
+    cardRef.current?.measureInWindow((x, y, width, height) => {
+      if (!(width > 0 && height > 0)) return;
+      registerMorphSource({
+        kind: 'sample-card',
+        factId,
+        x,
+        y,
+        width,
+        height,
+        borderRadius: radius.lg,
+        imageUri: null,
+        title: item.title,
+        fact: item,
+      });
+    });
+  };
 
   return (
-    <View
-      style={[
-        styles.cardShadow,
-        {
-          width: size,
-          height: size,
-          borderRadius: radius.lg,
-          shadowOpacity: 0.5,
-        },
+    <Pressable
+      onPressIn={handlePressIn}
+      onPress={onPress}
+      accessibilityRole="button"
+      aria-label={item.title}
+      style={({ pressed }) => [
+        { transform: [{ scale: pressed ? 0.97 : 1 }] },
+        isMorphSourceActive && styles.morphSourceHidden,
       ]}
     >
       <View
+        ref={cardRef}
         style={[
-          styles.cardContainer,
+          styles.cardShadow,
           {
+            width: size,
+            height: size,
             borderRadius: radius.lg,
-            borderColor: hexColors[theme].border,
+            shadowOpacity: 0.5,
           },
         ]}
       >
-        <Image
-          source={item.image}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          placeholder={placeholder}
-          transition={300}
-        />
-
-        {/* Gradient overlay */}
-        <LinearGradient
-          colors={gradientColors}
-          locations={gradientLocations}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-
-        {/* Category badge */}
-        <View style={[styles.badge, { top: spacing.md, left: spacing.md }]}>
-          <XStack
-            paddingHorizontal={spacing.md}
-            paddingVertical={spacing.xs}
-            borderRadius={radius.full}
-            style={{ backgroundColor: item.categoryColor }}
-          >
-            <Text.Caption color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
-              {item.category}
-            </Text.Caption>
-          </XStack>
-        </View>
-
-        {/* Title */}
-        <View style={[styles.titleArea, { padding: spacing.lg }]}>
-          <Text.Title color="#FFFFFF" numberOfLines={config.maxLines} style={styles.titleShadow}>
-            {item.title}
-          </Text.Title>
+        <View
+          style={[
+            styles.cardContainer,
+            {
+              borderRadius: radius.lg,
+              borderColor: hexColors[theme].border,
+            },
+          ]}
+        >
+          <SampleFactCardLayers fact={item} />
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 };
 
@@ -253,16 +255,15 @@ export default function WelcomeScreen() {
         paddingBottom: spacing.lg,
       }}
     >
-      <Pressable
-        accessibilityRole="button"
-        aria-label={item.title}
+      <FactImageCard
+        item={item}
+        index={index}
+        size={cardSize}
+        theme={theme}
         onPress={() =>
-          router.push({ pathname: '/onboarding/fact', params: { index: String(index) } })
+          router.push({ pathname: '/fact/sample/[id]', params: { id: String(index) } })
         }
-        style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.97 : 1 }] })}
-      >
-        <FactImageCard item={item} size={cardSize} theme={theme} />
-      </Pressable>
+      />
     </View>
   );
 
@@ -471,19 +472,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a2e',
     borderWidth: 1,
   },
-  badge: {
-    position: 'absolute',
-    zIndex: 10,
-  },
-  titleArea: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  titleShadow: {
-    textShadowColor: 'rgba(0, 0, 0, 0.9)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 12,
+  // Hides the card while it is the active morph source (the expanded preview
+  // covers its rect exactly), mirroring ImageFactCard.
+  morphSourceHidden: {
+    opacity: 0,
   },
 });
