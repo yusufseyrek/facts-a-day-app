@@ -57,6 +57,37 @@ export const maybeShowTriviaResultsInterstitial = async (): Promise<boolean> => 
 };
 
 /**
+ * Show interstitial ad after a fact view.
+ * Fires once FACT_VIEWS_BETWEEN_ADS views have accumulated since the last
+ * fact-view interstitial, subject to the global cooldown. The counter only
+ * resets when an ad is actually shown, so a view that lands inside the
+ * cooldown window (or is skipped, e.g. notification opens that already
+ * showed an app-open ad) defers the ad to the next eligible view instead of
+ * dropping it.
+ */
+export const maybeShowFactViewInterstitial = async (opts?: {
+  skipThisTime?: boolean;
+}): Promise<boolean> => {
+  if (!INTERSTITIAL_ADS.ENABLED) return false;
+  if (!shouldShowAds()) return false;
+
+  try {
+    const count = await incrementCounter(STORAGE_KEYS.FACT_VIEWS_SINCE_AD);
+    if (count < INTERSTITIAL_ADS.FACT_VIEWS_BETWEEN_ADS) return false;
+    if (opts?.skipThisTime) return false;
+
+    const shown = await maybeShowInterstitial('fact_view');
+    if (shown) {
+      await AsyncStorage.setItem(STORAGE_KEYS.FACT_VIEWS_SINCE_AD, '0');
+    }
+    return shown;
+  } catch (error) {
+    console.error('Error showing fact view interstitial:', error);
+    return false;
+  }
+};
+
+/**
  * Show interstitial ad after a category-save action.
  * Fires every Nth save (configured in INTERSTITIAL_ADS.CATEGORY_CHANGES_BETWEEN_ADS)
  * and respects the global cooldown.

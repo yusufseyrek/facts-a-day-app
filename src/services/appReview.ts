@@ -300,13 +300,17 @@ export async function trackFactView(): Promise<void> {
 }
 
 /**
- * Handle fact viewed event — increment counter only.
- * Review prompts are no longer triggered from here, and interstitials no longer
- * fire on fact views (only on trivia completion and category changes).
+ * Handle fact viewed event — increment the view counter and give the ad
+ * manager a chance to show a fact-view interstitial. Review prompts are no
+ * longer triggered from here. Notification opens skip the interstitial (an
+ * app-open ad may have just shown); the ad is deferred to the next view.
  */
-export async function onFactViewed(_source?: string): Promise<void> {
+export async function onFactViewed(source?: string): Promise<void> {
   try {
     await trackFactView();
+
+    const { maybeShowFactViewInterstitial } = await import('./adManager');
+    await maybeShowFactViewInterstitial({ skipThisTime: source === 'notification' });
   } catch (error) {
     if (__DEV__) {
       console.error('Error in onFactViewed:', error);

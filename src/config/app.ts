@@ -16,7 +16,7 @@ export const DEV_SETTINGS_ENABLED = __DEV__;
 /**
  * Ads configuration
  */
-export const ADS_ENABLED = false;
+export const ADS_ENABLED = true;
 
 // todo: reports system for users to report issues with facts, should get replies. consider sending them push notifications when their report is taken care of.
 // todo: consider adding comments section for each fact, with upvoting and sorting by top / new. would increase engagement and time in app, but also requires active moderation to prevent abuse and misinformation. could start with just a simple free-form comment box without threading or voting to test demand before building out more features.
@@ -49,8 +49,10 @@ export const INTERSTITIAL_ADS = {
   ENABLED: true,
   /** Number of category-save actions between interstitial ads */
   CATEGORY_CHANGES_BETWEEN_ADS: 3,
+  /** Number of fact views between interstitial ads */
+  FACT_VIEWS_BETWEEN_ADS: 10,
   /** Minimum seconds between interstitial ads (cooldown) */
-  COOLDOWN_SECONDS: 300,
+  COOLDOWN_SECONDS: 600,
 } as const;
 
 /**
@@ -121,6 +123,8 @@ export const STORAGE_KEYS = {
   PAYWALL_LAST_SHOWN: '@paywall_last_shown',
   /** Key for tracking number of category-save actions (for interstitial cadence) */
   CATEGORY_CHANGES_COUNT: '@category_changes_count',
+  /** Key for tracking fact views since the last fact-view interstitial */
+  FACT_VIEWS_SINCE_AD: '@fact_views_since_ad',
 } as const;
 
 /**
@@ -165,6 +169,12 @@ export const HOME_FEED = {
   KEEP_READING_PAGE_SIZE: 25,
   /** Number of cards per category carousel on the home screen */
   CATEGORY_CAROUSEL_COUNT: 6,
+  /**
+   * Min age of the feed data before a screen focus triggers another silent
+   * background refetch. Keeps "refresh on every focus" from re-fetching every
+   * loaded page of the cursor feed on each back-navigation from a detail screen.
+   */
+  FOCUS_REFRESH_MIN_AGE_MS: 30_000,
 } as const;
 
 /**

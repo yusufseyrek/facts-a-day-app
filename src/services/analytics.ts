@@ -425,7 +425,7 @@ export const trackCategoryBrowse = (params: { category: string; factsCount: numb
   posthog.capture('category_browsed', props);
 };
 
-export type FeedRefreshSource = 'pull' | 'notification' | 'auto';
+export type FeedRefreshSource = 'pull' | 'notification' | 'auto' | 'focus';
 
 /**
  * Track feed refresh
@@ -474,7 +474,7 @@ export const trackNotificationTimeChange = (timesCount: number): void => {
 // Ads Events
 // ============================================================================
 
-export type InterstitialSource = 'settings' | 'content_refresh' | 'trivia_results';
+export type InterstitialSource = 'settings' | 'content_refresh' | 'trivia_results' | 'fact_view';
 
 /**
  * Track when interstitial ad is shown
