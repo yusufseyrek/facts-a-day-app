@@ -337,6 +337,24 @@ function AppContent() {
             contentStyle: { backgroundColor },
           }}
         />
+        <Stack.Screen
+          name="story/morph/[category]"
+          options={{
+            // Morph-presented twin of story/[category]: a story-button→story
+            // container transform (same pattern as fact/morph/[id]).
+            // transparentModal keeps the home feed visible behind while the
+            // screen expands from the pressed circle's rect; animation:'none'
+            // because StoryMorphContainer drives ALL motion (open, close, and
+            // Android back). Native gestures are off — dismissal goes through
+            // the morph controller (X button, left-edge swipe, hardware back)
+            // so the reverse morph always plays.
+            presentation: 'transparentModal',
+            animation: 'none',
+            headerShown: false,
+            gestureEnabled: false,
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
         <Stack.Screen name="badges" options={{ headerShown: false }} />
         <Stack.Screen name="trivia" options={{ gestureEnabled: false }} />
         <Stack.Screen

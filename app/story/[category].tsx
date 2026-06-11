@@ -6,7 +6,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  TouchableOpacity,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -14,15 +13,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-import { ChevronRight, ChevronsUp, X } from '@tamagui/lucide-icons';
+import { ChevronRight, ChevronsUp } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { StoryNativeAdCard } from '../../src/components/ads/StoryNativeAdCard';
 import { CategoryBadge } from '../../src/components/CategoryBadge';
+import { CloseButton } from '../../src/components/CloseButton';
 import { FavoriteButton } from '../../src/components/FavoriteButton';
-import { GlassSurface } from '../../src/components/GlassSurface';
+import { useStoryMorph } from '../../src/components/storyMorph/StoryMorphContext';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { NATIVE_ADS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
@@ -66,7 +66,7 @@ export default function StoryScreen() {
   const { theme } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const { spacing, iconSizes, radius } = useResponsive();
+  const { spacing, iconSizes } = useResponsive();
   const colors = hexColors[theme];
 
   // Dimensions.get('screen').height returns the full physical screen height
@@ -316,14 +316,23 @@ export default function StoryScreen() {
     []
   );
 
+  // Non-null when hosted by the story/morph route: closing must go through
+  // the controller so the reverse morph (screen → story button circle) plays
+  // before the pop. Null under the plain fullScreenModal presentation.
+  const morph = useStoryMorph();
+
   const handleClose = useCallback(async () => {
     trackStoryClose({
       category: category!,
       factsViewed: viewedFactIds.current.size,
       totalFacts: facts.length,
     });
-    router.back();
-  }, [router, category, facts.length]);
+    if (morph) {
+      morph.close();
+    } else {
+      router.back();
+    }
+  }, [router, category, facts.length, morph]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: StoryListItem; index: number }) => {
@@ -384,7 +393,7 @@ export default function StoryScreen() {
         viewabilityConfig={viewabilityConfig}
       />
 
-      {/* Close button — floating Liquid Glass over the story imagery */}
+      {/* Close button — floating over the story imagery */}
       <View
         style={[
           styles.closeButtonContainer,
@@ -394,30 +403,7 @@ export default function StoryScreen() {
           },
         ]}
       >
-        <GlassSurface
-          variant="glass"
-          isDark={theme === 'dark'}
-          tint="rgba(0, 0, 0, 0.4)"
-          glassTint="rgba(0, 0, 0, 0.2)"
-          blurIntensity={30}
-          blurTint="dark"
-          style={{
-            width: iconSizes.xl,
-            height: iconSizes.xl,
-            borderRadius: radius.full,
-            overflow: 'hidden',
-          }}
-        >
-          <TouchableOpacity
-            testID="story-close-button"
-            onPress={handleClose}
-            activeOpacity={0.7}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={styles.closeButton}
-          >
-            <X size={iconSizes.md} color="#FFFFFF" />
-          </TouchableOpacity>
-        </GlassSurface>
+        <CloseButton testID="story-close-button" onPress={handleClose} />
       </View>
 
       {/* Scroll hint — circular progress on ad pause, bouncing chevron otherwise */}
@@ -695,11 +681,6 @@ const styles = StyleSheet.create({
         elevation: 999,
       },
     }),
-  },
-  closeButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   scrollHint: {
     position: 'absolute',
