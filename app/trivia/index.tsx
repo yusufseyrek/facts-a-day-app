@@ -311,7 +311,13 @@ export default function TriviaScreen() {
               />
             </Animated.View>
 
-            {showModes ? (
+            {/* Hold the whole modes section until the local category load
+                lands so the daily/mixed row and the category rows mount in the
+                same frame — their staggered entering delays then play as one
+                sequence instead of daily/mixed popping in ahead of the grid.
+                statsLoading only starts true on first mount, so re-focus
+                loads never hide an already-visible grid. */}
+            {statsLoading ? null : showModes ? (
               <>
                 {/* Section title */}
                 <Animated.View
