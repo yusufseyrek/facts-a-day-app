@@ -3,6 +3,26 @@ export const translations = {
     // Onboarding - Welcome
     hereIsWhatYouGet: 'Das erwartet dich jeden Tag',
     chooseYourInterests: 'Wähle deine Interessen',
+    personalizeMyFeed: 'Meinen Feed personalisieren',
+    tapCardToPreview: 'Tippe auf eine Karte, um die ganze Geschichte zu lesen',
+
+    // Onboarding - Preference quiz
+    quizProgress: 'Frage %{current} von %{total}',
+    quizQuestionScroll: 'Bei welchem Fakt würdest du hängen bleiben?',
+    quizScrollUniverse: 'Wie das Universum funktioniert',
+    quizScrollPast: 'Unerzählte Geschichten der Vergangenheit',
+    quizScrollMind: 'Wie unser Verstand arbeitet',
+    quizScrollNature: 'Die Welt der Natur',
+    quizQuestionDocumentary: 'Welche Doku schaust du heute Abend?',
+    quizDocTech: 'Die Zukunft der Technologie',
+    quizDocCivilizations: 'Versunkene Zivilisationen',
+    quizDocBody: 'Im Inneren des menschlichen Körpers',
+    quizDocArt: 'Kunst, die die Welt veränderte',
+    quizQuestionFreeTime: 'Dein perfekter freier Nachmittag?',
+    quizFreeCook: 'Etwas Neues kochen',
+    quizFreeGame: 'Das Spiel schauen',
+    quizFreeTrip: 'Die nächste Reise planen',
+    quizFreeInvest: 'Mein Geld vermehren',
 
     // Onboarding - Categories
     whatInterestsYou: 'Was interessiert dich?',
@@ -538,6 +558,26 @@ export const translations = {
     // Onboarding - Welcome
     hereIsWhatYouGet: "Here's what you'll get every day",
     chooseYourInterests: 'Choose Your Interests',
+    personalizeMyFeed: 'Personalize my feed',
+    tapCardToPreview: 'Tap a card to read the full story',
+
+    // Onboarding - Preference quiz
+    quizProgress: 'Question %{current} of %{total}',
+    quizQuestionScroll: 'Which fact would stop your scroll?',
+    quizScrollUniverse: 'How the universe works',
+    quizScrollPast: 'Untold stories from the past',
+    quizScrollMind: 'How the mind works',
+    quizScrollNature: 'The natural world',
+    quizQuestionDocumentary: "Pick tonight's documentary",
+    quizDocTech: 'The future of technology',
+    quizDocCivilizations: 'Lost civilizations',
+    quizDocBody: 'Inside the human body',
+    quizDocArt: 'Art that changed the world',
+    quizQuestionFreeTime: 'Your perfect free afternoon?',
+    quizFreeCook: 'Cooking something new',
+    quizFreeGame: 'Watching the game',
+    quizFreeTrip: 'Planning my next trip',
+    quizFreeInvest: 'Growing my money',
 
     // Onboarding - Categories
     whatInterestsYou: 'What interests you?',
@@ -1063,6 +1103,26 @@ export const translations = {
     // Onboarding - Welcome
     hereIsWhatYouGet: 'Esto es lo que recibirás cada día',
     chooseYourInterests: 'Elige tus intereses',
+    personalizeMyFeed: 'Personalizar mi feed',
+    tapCardToPreview: 'Toca una tarjeta para leer la historia completa',
+
+    // Onboarding - Preference quiz
+    quizProgress: 'Pregunta %{current} de %{total}',
+    quizQuestionScroll: '¿Qué dato detendría tu scroll?',
+    quizScrollUniverse: 'Cómo funciona el universo',
+    quizScrollPast: 'Historias olvidadas del pasado',
+    quizScrollMind: 'Cómo funciona la mente',
+    quizScrollNature: 'El mundo natural',
+    quizQuestionDocumentary: 'Elige el documental de esta noche',
+    quizDocTech: 'El futuro de la tecnología',
+    quizDocCivilizations: 'Civilizaciones perdidas',
+    quizDocBody: 'Dentro del cuerpo humano',
+    quizDocArt: 'El arte que cambió el mundo',
+    quizQuestionFreeTime: '¿Tu tarde libre perfecta?',
+    quizFreeCook: 'Cocinar algo nuevo',
+    quizFreeGame: 'Ver el partido',
+    quizFreeTrip: 'Planear mi próximo viaje',
+    quizFreeInvest: 'Hacer crecer mi dinero',
 
     // Onboarding - Categories
     whatInterestsYou: '¿Qué te interesa?',
@@ -1592,6 +1652,26 @@ export const translations = {
     // Onboarding - Welcome
     hereIsWhatYouGet: 'Voici ce que vous recevrez chaque jour',
     chooseYourInterests: "Choisissez vos centres d'intérêt",
+    personalizeMyFeed: 'Personnaliser mon fil',
+    tapCardToPreview: "Touchez une carte pour lire l'histoire complète",
+
+    // Onboarding - Preference quiz
+    quizProgress: 'Question %{current} sur %{total}',
+    quizQuestionScroll: 'Quel fait arrêterait votre scroll ?',
+    quizScrollUniverse: "Comment fonctionne l'univers",
+    quizScrollPast: 'Histoires méconnues du passé',
+    quizScrollMind: 'Comment fonctionne notre esprit',
+    quizScrollNature: 'Le monde naturel',
+    quizQuestionDocumentary: 'Choisissez le documentaire de ce soir',
+    quizDocTech: "L'avenir de la technologie",
+    quizDocCivilizations: 'Civilisations disparues',
+    quizDocBody: 'Au cœur du corps humain',
+    quizDocArt: "L'art qui a changé le monde",
+    quizQuestionFreeTime: 'Votre après-midi libre idéal ?',
+    quizFreeCook: 'Cuisiner quelque chose de nouveau',
+    quizFreeGame: 'Regarder le match',
+    quizFreeTrip: 'Planifier mon prochain voyage',
+    quizFreeInvest: 'Faire fructifier mon argent',
 
     // Onboarding - Categories
     whatInterestsYou: "Qu'est-ce qui vous intéresse?",
@@ -2124,6 +2204,26 @@ export const translations = {
     // Onboarding - Welcome
     hereIsWhatYouGet: '毎日届く内容はこちら',
     chooseYourInterests: '興味を選ぼう',
+    personalizeMyFeed: 'フィードをパーソナライズ',
+    tapCardToPreview: 'カードをタップすると全文を読めます',
+
+    // Onboarding - Preference quiz
+    quizProgress: '質問 %{current}/%{total}',
+    quizQuestionScroll: '思わず手が止まるのはどんな豆知識？',
+    quizScrollUniverse: '宇宙のしくみ',
+    quizScrollPast: '知られざる歴史の物語',
+    quizScrollMind: '心のはたらき',
+    quizScrollNature: '自然の世界',
+    quizQuestionDocumentary: '今夜観るドキュメンタリーは？',
+    quizDocTech: 'テクノロジーの未来',
+    quizDocCivilizations: '失われた文明',
+    quizDocBody: '人体の内側',
+    quizDocArt: '世界を変えたアート',
+    quizQuestionFreeTime: '理想の自由な午後は？',
+    quizFreeCook: '新しい料理に挑戦する',
+    quizFreeGame: 'スポーツ観戦をする',
+    quizFreeTrip: '次の旅行を計画する',
+    quizFreeInvest: 'お金を増やす',
 
     // Onboarding - Categories
     whatInterestsYou: '何に興味がありますか？',
@@ -2648,6 +2748,26 @@ export const translations = {
     // Onboarding - Welcome
     hereIsWhatYouGet: '매일 이런 내용을 받게 됩니다',
     chooseYourInterests: '관심사 선택하기',
+    personalizeMyFeed: '내 피드 맞춤 설정',
+    tapCardToPreview: '카드를 누르면 전체 이야기를 읽을 수 있어요',
+
+    // Onboarding - Preference quiz
+    quizProgress: '질문 %{current}/%{total}',
+    quizQuestionScroll: '스크롤을 멈추게 할 지식은?',
+    quizScrollUniverse: '우주가 작동하는 방식',
+    quizScrollPast: '알려지지 않은 과거의 이야기',
+    quizScrollMind: '마음이 작동하는 방식',
+    quizScrollNature: '자연의 세계',
+    quizQuestionDocumentary: '오늘 밤 볼 다큐멘터리는?',
+    quizDocTech: '기술의 미래',
+    quizDocCivilizations: '사라진 문명',
+    quizDocBody: '인체의 비밀',
+    quizDocArt: '세상을 바꾼 예술',
+    quizQuestionFreeTime: '완벽한 자유 시간을 보낸다면?',
+    quizFreeCook: '새로운 요리 해보기',
+    quizFreeGame: '경기 시청하기',
+    quizFreeTrip: '다음 여행 계획하기',
+    quizFreeInvest: '돈 불리기',
 
     // Onboarding - Categories
     whatInterestsYou: '무엇에 관심이 있으신가요?',
@@ -3171,6 +3291,26 @@ export const translations = {
     // Onboarding - Welcome
     hereIsWhatYouGet: 'Her gün seni böyle bilgiler bekliyor',
     chooseYourInterests: 'İlgi Alanlarını Seç',
+    personalizeMyFeed: 'Akışımı kişiselleştir',
+    tapCardToPreview: 'Hikâyenin tamamını okumak için bir karta dokun',
+
+    // Onboarding - Preference quiz
+    quizProgress: 'Soru %{current}/%{total}',
+    quizQuestionScroll: 'Hangi bilgi kaydırmanı durdururdu?',
+    quizScrollUniverse: 'Evren nasıl işliyor',
+    quizScrollPast: 'Geçmişin anlatılmamış hikâyeleri',
+    quizScrollMind: 'Zihin nasıl çalışıyor',
+    quizScrollNature: 'Doğanın dünyası',
+    quizQuestionDocumentary: 'Bu akşamın belgeselini seç',
+    quizDocTech: 'Teknolojinin geleceği',
+    quizDocCivilizations: 'Kayıp uygarlıklar',
+    quizDocBody: 'İnsan vücudunun derinlikleri',
+    quizDocArt: 'Dünyayı değiştiren sanat',
+    quizQuestionFreeTime: 'Mükemmel boş öğleden sonran?',
+    quizFreeCook: 'Yeni bir şeyler pişirmek',
+    quizFreeGame: 'Maç izlemek',
+    quizFreeTrip: 'Bir sonraki seyahati planlamak',
+    quizFreeInvest: 'Paramı büyütmek',
 
     // Onboarding - Categories
     whatInterestsYou: 'İlginizi çeken nedir?',
@@ -3696,6 +3836,26 @@ export const translations = {
     // Onboarding - Welcome
     hereIsWhatYouGet: '这是你每天会收到的内容',
     chooseYourInterests: '选择你的兴趣',
+    personalizeMyFeed: '个性化我的内容',
+    tapCardToPreview: '点按卡片阅读完整故事',
+
+    // Onboarding - Preference quiz
+    quizProgress: '问题 %{current}/%{total}',
+    quizQuestionScroll: '哪条知识会让你停下滑动？',
+    quizScrollUniverse: '宇宙如何运转',
+    quizScrollPast: '不为人知的历史故事',
+    quizScrollMind: '心智如何运作',
+    quizScrollNature: '自然世界',
+    quizQuestionDocumentary: '挑一部今晚看的纪录片',
+    quizDocTech: '科技的未来',
+    quizDocCivilizations: '消失的文明',
+    quizDocBody: '人体的奥秘',
+    quizDocArt: '改变世界的艺术',
+    quizQuestionFreeTime: '理想的空闲午后？',
+    quizFreeCook: '做一道新菜',
+    quizFreeGame: '看场比赛',
+    quizFreeTrip: '规划下一次旅行',
+    quizFreeInvest: '让钱增值',
 
     // Onboarding - Categories
     whatInterestsYou: '你对什么感兴趣？',

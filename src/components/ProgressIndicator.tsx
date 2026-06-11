@@ -1,49 +1,69 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, View } from 'react-native';
 
-import { View } from '@tamagui/core';
-import { XStack, YStack } from 'tamagui';
+import { XStack } from 'tamagui';
 
+import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils';
 
 interface ProgressIndicatorProps {
   currentStep: number;
   totalSteps: number;
-  rightElement?: React.ReactNode;
 }
 
-export function ProgressIndicator({
-  currentStep,
-  totalSteps,
-  rightElement,
-}: ProgressIndicatorProps) {
-  const { spacing, radius, borderWidths } = useResponsive();
+/** One step pill: a muted track whose fill animates in/out as steps change. */
+function ProgressPill({ filled }: { filled: boolean }) {
+  const { theme } = useTheme();
+  const { radius, borderWidths } = useResponsive();
+  const fill = useRef(new Animated.Value(filled ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(fill, {
+      toValue: filled ? 1 : 0,
+      duration: 350,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false, // animates width
+    }).start();
+  }, [filled, fill]);
 
   return (
-    <YStack gap={spacing.sm}>
-      <XStack alignItems="center" gap={rightElement ? spacing.lg : 0}>
-        {/* One pill per step, filled up to the current one */}
-        <XStack
-          flex={1}
-          gap={spacing.xs}
-          alignItems="center"
-          role="progressbar"
-          aria-valuenow={currentStep}
-          aria-valuemin={1}
-          aria-valuemax={totalSteps}
-        >
-          {Array.from({ length: totalSteps }).map((_, index) => (
-            <View
-              key={index}
-              flex={1}
-              height={borderWidths.extraHeavy}
-              borderRadius={radius.full}
-              backgroundColor={index < currentStep ? '$primary' : '$neutralLight'}
-              opacity={index < currentStep ? 1 : 0.6}
-            />
-          ))}
-        </XStack>
-        {rightElement}
-      </XStack>
-    </YStack>
+    <View
+      style={{
+        flex: 1,
+        height: borderWidths.extraHeavy,
+        borderRadius: radius.full,
+        backgroundColor: hexColors[theme].neutralLight,
+        opacity: filled ? 1 : 0.6,
+        overflow: 'hidden',
+      }}
+    >
+      <Animated.View
+        style={{
+          height: '100%',
+          borderRadius: radius.full,
+          backgroundColor: hexColors[theme].primary,
+          width: fill.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+        }}
+      />
+    </View>
+  );
+}
+
+export function ProgressIndicator({ currentStep, totalSteps }: ProgressIndicatorProps) {
+  const { spacing } = useResponsive();
+
+  return (
+    <XStack
+      gap={spacing.xs}
+      alignItems="center"
+      role="progressbar"
+      aria-valuenow={currentStep}
+      aria-valuemin={1}
+      aria-valuemax={totalSteps}
+    >
+      {Array.from({ length: totalSteps }).map((_, index) => (
+        <ProgressPill key={index} filled={index < currentStep} />
+      ))}
+    </XStack>
   );
 }

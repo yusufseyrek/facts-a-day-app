@@ -8,13 +8,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import {
-  Button,
-  MultiTimePicker,
-  ProgressIndicator,
-  ScreenContainer,
-  Text,
-} from '../../src/components';
+import { Button, MultiTimePicker, ScreenContainer, Text } from '../../src/components';
 import { LAYOUT } from '../../src/config/app';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
@@ -63,8 +57,6 @@ export default function NotificationsScreen() {
   const { iconSizes, spacing, radius } = useResponsive();
 
   // Enter animations
-  const progressOpacity = useRef(new Animated.Value(0)).current;
-  const progressTranslateY = useRef(new Animated.Value(-20)).current;
   const iconScale = useRef(new Animated.Value(0)).current;
   const iconRotation = useRef(new Animated.Value(0)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
@@ -79,22 +71,6 @@ export default function NotificationsScreen() {
     trackScreenView(Screens.ONBOARDING_NOTIFICATIONS);
 
     // Start enter animations - run in parallel with staggered delays
-    // Progress indicator (immediate)
-    Animated.parallel([
-      Animated.timing(progressOpacity, {
-        toValue: 1,
-        duration: 200,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(progressTranslateY, {
-        toValue: 0,
-        duration: 200,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
     // Icon with bounce (slight delay)
     Animated.parallel([
       Animated.spring(iconScale, {
@@ -218,7 +194,7 @@ export default function NotificationsScreen() {
   });
 
   return (
-    <ScreenContainer>
+    <ScreenContainer edges={['bottom', 'left', 'right']}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <ContentContainer
         paddingHorizontal={spacing.lg}
@@ -226,14 +202,6 @@ export default function NotificationsScreen() {
         paddingBottom={spacing.sm}
         gap={spacing.md}
       >
-        <Animated.View
-          style={{
-            opacity: progressOpacity,
-            transform: [{ translateY: progressTranslateY }],
-          }}
-        >
-          <ProgressIndicator currentStep={3} totalSteps={3} />
-        </Animated.View>
         <ScrollView
           showsVerticalScrollIndicator={false}
           overScrollMode="never"

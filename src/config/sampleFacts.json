@@ -1,0 +1,450 @@
+{
+  "en": [
+    {
+      "title": "Some fighter jets can fly faster than sound without using extra fuel",
+      "summary": "Supercruise lets the most advanced jets break the sound barrier without afterburners, the fuel-hungry boosters most aircraft depend on.",
+      "content": "Most fighter jets need afterburners to push past the speed of sound. Afterburners dump raw fuel into the engine exhaust for a huge burst of thrust, burning fuel several times faster than normal flight.\n\nA few aircraft, like the F-22 Raptor, can supercruise instead: they sustain supersonic speed on normal engine power alone. That means longer range, more time at high speed, and a cooler exhaust that is much harder for heat-seeking sensors to track.",
+      "category": "Technology",
+      "categorySlug": "technology",
+      "categoryColor": "#2196F3",
+      "image": "technology"
+    },
+    {
+      "title": "A savory cheese dish became so popular it earned a national holiday",
+      "summary": "Macaroni and cheese became such a beloved comfort food in the United States that July 14 is celebrated as National Mac and Cheese Day.",
+      "content": "Baked pasta-and-cheese recipes go back centuries in Europe, but the dish took off in America after Thomas Jefferson served a macaroni pie at an 1802 state dinner. Boxed versions in the 1930s turned it into an affordable staple during the Great Depression.\n\nToday the dish is so popular in the United States that it has its own unofficial holiday: every July 14, restaurants and home cooks celebrate National Mac and Cheese Day.",
+      "category": "Food",
+      "categorySlug": "food",
+      "categoryColor": "#FF6F00",
+      "image": "food"
+    },
+    {
+      "title": "The dinosaur named 'egg thief' was actually a devoted parent",
+      "summary": "Oviraptor means 'egg thief', but the fossil that earned the name was most likely a parent protecting its own nest.",
+      "content": "When the first Oviraptor fossil was found in Mongolia in 1924, it was lying on a clutch of eggs scientists believed belonged to another dinosaur. The animal was named 'egg seizer' and condemned as a nest robber.\n\nDecades later, paleontologists found embryos inside identical eggs, along with adult oviraptorids preserved brooding their clutches with arms spread, just like modern birds. The 'thief' had been a devoted parent all along.",
+      "category": "Nature",
+      "categorySlug": "nature",
+      "categoryColor": "#8BC34A",
+      "image": "nature"
+    },
+    {
+      "title": "Japan honors 47 samurai who chose death over dishonor in 1703",
+      "summary": "The 47 ronin avenged their master knowing it would cost them their lives, and Japan still honors them every December.",
+      "content": "In 1701, Lord Asano was forced to commit ritual suicide after drawing his sword against a court official who had humiliated him. His samurai became masterless ronin. Forty-seven of them spent nearly two years planning their revenge and carried it out in early 1703; they then turned themselves in and were sentenced to the same honorable death.\n\nTheir graves at Sengaku-ji temple in Tokyo draw visitors to this day, and every December 14 a festival honors their loyalty.",
+      "category": "Culture",
+      "categorySlug": "culture",
+      "categoryColor": "#ff0055",
+      "image": "culture"
+    },
+    {
+      "title": "Small dust storms on Mars can catapult water into space",
+      "summary": "On Mars, even regional dust storms can loft water vapor high into the atmosphere, where sunlight breaks it apart and it escapes to space.",
+      "content": "Mars was once wet, and scientists have long wondered where its water went. Spacecraft observations revealed one escape route: dust storms. Dust heats the atmosphere, allowing water vapor to rise far higher than usual instead of freezing into clouds.\n\nAt those altitudes, ultraviolet sunlight splits the water molecules apart, and the lightweight hydrogen drifts off into space. Storm by storm, the red planet keeps slowly drying out.",
+      "category": "Space",
+      "categorySlug": "space",
+      "categoryColor": "#3F51B5",
+      "image": "space"
+    },
+    {
+      "title": "A four-year-old boy became the emperor of China in 1875",
+      "summary": "In 1875, the Guangxu Emperor took China's throne as a small child, while real power stayed with Empress Dowager Cixi.",
+      "content": "When the Tongzhi Emperor died in 1875 without an heir, his aunt, Empress Dowager Cixi, arranged for her four-year-old nephew Zaitian to be placed on the throne as the Guangxu Emperor.\n\nA child obviously could not govern, which suited the court: Cixi ruled as regent for years, and even after Guangxu came of age she kept control, eventually placing him under house arrest after he backed a sweeping reform movement in 1898.",
+      "category": "History",
+      "categorySlug": "history",
+      "categoryColor": "#FF9800",
+      "image": "history"
+    }
+  ],
+  "de": [
+    {
+      "title": "Einige Kampfjets fliegen ohne zusätzlichen Treibstoff schneller als der Schall",
+      "summary": "Dank Supercruise durchbrechen die modernsten Jets die Schallmauer ohne Nachbrenner, jene treibstoffhungrigen Booster, auf die die meisten Flugzeuge angewiesen sind.",
+      "content": "Die meisten Kampfjets brauchen Nachbrenner, um schneller als der Schall zu fliegen. Dabei wird zusätzlicher Treibstoff direkt in den Abgasstrahl eingespritzt, was enormen Schub liefert, aber ein Vielfaches des normalen Verbrauchs kostet.\n\nEinige wenige Flugzeuge wie die F-22 Raptor beherrschen den sogenannten Supercruise: Sie halten Überschallgeschwindigkeit allein mit normaler Triebwerksleistung. Das bedeutet mehr Reichweite, längere Zeit bei hohem Tempo und einen kühleren Abgasstrahl, der für wärmesuchende Sensoren deutlich schwerer zu orten ist.",
+      "category": "Technologie",
+      "categorySlug": "technology",
+      "categoryColor": "#2196F3",
+      "image": "technology"
+    },
+    {
+      "title": "Ein herzhaftes Käsegericht wurde so beliebt, dass es einen nationalen Feiertag erhielt",
+      "summary": "Mac and Cheese wurde in den USA zu einem so beliebten Wohlfühlgericht, dass ihm der 14. Juli als National Mac and Cheese Day gewidmet ist.",
+      "content": "Aufläufe aus Nudeln und Käse gibt es in Europa seit Jahrhunderten, doch richtig populär wurde das Gericht in Amerika, nachdem Thomas Jefferson 1802 bei einem Staatsdinner eine Makkaroni-Pastete servieren ließ. Fertigmischungen machten es in den 1930er-Jahren während der Großen Depression zum erschwinglichen Grundnahrungsmittel.\n\nHeute ist Mac and Cheese in den USA so beliebt, dass es einen eigenen inoffiziellen Feiertag hat: Jedes Jahr am 14. Juli feiern Restaurants und Hobbyköche den National Mac and Cheese Day.",
+      "category": "Essen",
+      "categorySlug": "food",
+      "categoryColor": "#FF6F00",
+      "image": "food"
+    },
+    {
+      "title": "Der als 'Eierdieb' benannte Dinosaurier war tatsächlich ein fürsorgliches Elternteil",
+      "summary": "Oviraptor bedeutet 'Eierdieb', doch das Fossil, dem der Name zu verdanken ist, war vermutlich ein Elternteil, das sein eigenes Nest beschützte.",
+      "content": "Als 1924 in der Mongolei das erste Oviraptor-Fossil entdeckt wurde, lag es auf einem Gelege, das Forscher einem anderen Dinosaurier zuordneten. Das Tier wurde als 'Eierräuber' benannt und als Nestplünderer abgestempelt.\n\nJahrzehnte später fanden Paläontologen Embryonen in identischen Eiern sowie erwachsene Oviraptoriden, die mit ausgebreiteten Armen über ihren Gelegen brüteten, genau wie heutige Vögel. Der vermeintliche Dieb war die ganze Zeit ein fürsorgliches Elternteil.",
+      "category": "Natur",
+      "categorySlug": "nature",
+      "categoryColor": "#8BC34A",
+      "image": "nature"
+    },
+    {
+      "title": "Japan ehrt 47 Samurai, die im Jahr 1703 den Tod der Ehrlosigkeit vorzogen",
+      "summary": "Die 47 Ronin rächten ihren Herrn, obwohl sie wussten, dass es sie das Leben kosten würde. Japan ehrt sie bis heute jeden Dezember.",
+      "content": "Im Jahr 1701 musste Fürst Asano rituellen Selbstmord begehen, nachdem er gegen einen Hofbeamten das Schwert gezogen hatte, der ihn gedemütigt hatte. Seine Samurai wurden herrenlose Ronin. 47 von ihnen planten fast zwei Jahre lang ihre Rache und vollzogen sie Anfang 1703. Danach stellten sie sich und wurden zum gleichen ehrenvollen Tod verurteilt.\n\nIhre Gräber am Sengaku-ji-Tempel in Tokio ziehen bis heute Besucher an, und jedes Jahr am 14. Dezember ehrt ein Fest ihre Treue.",
+      "category": "Kultur",
+      "categorySlug": "culture",
+      "categoryColor": "#ff0055",
+      "image": "culture"
+    },
+    {
+      "title": "Kleine Staubstürme auf dem Mars können Wasser ins All schleudern",
+      "summary": "Auf dem Mars tragen schon regionale Staubstürme Wasserdampf hoch in die Atmosphäre, wo Sonnenlicht ihn aufspaltet und er ins All entweicht.",
+      "content": "Der Mars war einst nass, und lange rätselte die Forschung, wohin sein Wasser verschwand. Raumsonden enthüllten einen Fluchtweg: Staubstürme. Der Staub heizt die Atmosphäre auf, sodass Wasserdampf weit höher aufsteigen kann als sonst, statt zu Wolken zu gefrieren.\n\nIn diesen Höhen spaltet ultraviolettes Sonnenlicht die Wassermoleküle, und der leichte Wasserstoff driftet ins All davon. Sturm für Sturm trocknet der Rote Planet so langsam weiter aus.",
+      "category": "Weltraum",
+      "categorySlug": "space",
+      "categoryColor": "#3F51B5",
+      "image": "space"
+    },
+    {
+      "title": "Ein vierjähriger Junge wurde 1875 Kaiser von China",
+      "summary": "1875 bestieg der Guangxu-Kaiser als kleines Kind den chinesischen Thron, während die wahre Macht bei Kaiserinwitwe Cixi lag.",
+      "content": "Als der Tongzhi-Kaiser 1875 ohne Erben starb, sorgte seine Tante, Kaiserinwitwe Cixi, dafür, dass ihr vierjähriger Neffe Zaitian als Guangxu-Kaiser auf den Thron kam.\n\nEin Kind konnte offensichtlich nicht regieren, was dem Hof gelegen kam: Cixi herrschte jahrelang als Regentin. Auch als Guangxu volljährig wurde, behielt sie die Kontrolle und stellte ihn schließlich unter Hausarrest, nachdem er 1898 eine umfassende Reformbewegung unterstützt hatte.",
+      "category": "Geschichte",
+      "categorySlug": "history",
+      "categoryColor": "#FF9800",
+      "image": "history"
+    }
+  ],
+  "es": [
+    {
+      "title": "Algunos aviones de combate pueden volar más rápido que el sonido sin usar combustible extra",
+      "summary": "El supercrucero permite a los cazas más avanzados superar la barrera del sonido sin posquemadores, los propulsores que devoran combustible.",
+      "content": "La mayoría de los cazas necesitan posquemadores para superar la velocidad del sonido. Estos inyectan combustible directamente en el escape del motor para lograr un enorme empuje extra, pero queman combustible varias veces más rápido de lo normal.\n\nUnos pocos aviones, como el F-22 Raptor, pueden hacer supercrucero: mantienen velocidad supersónica solo con la potencia normal del motor. Eso significa más alcance, más tiempo a alta velocidad y un escape más frío, mucho más difícil de rastrear para los sensores de calor.",
+      "category": "Tecnología",
+      "categorySlug": "technology",
+      "categoryColor": "#2196F3",
+      "image": "technology"
+    },
+    {
+      "title": "Un sabroso plato de queso se volvió tan popular que ganó un día nacional",
+      "summary": "Los macarrones con queso se volvieron un plato tan querido en Estados Unidos que cada 14 de julio se celebra su día nacional.",
+      "content": "Las recetas de pasta horneada con queso existen en Europa desde hace siglos, pero el plato despegó en América después de que Thomas Jefferson sirviera un pastel de macarrones en una cena de Estado en 1802. Las versiones en caja de los años treinta lo convirtieron en un básico asequible durante la Gran Depresión.\n\nHoy es tan popular en Estados Unidos que tiene su propia festividad no oficial: cada 14 de julio, restaurantes y cocineros caseros celebran el Día Nacional del Mac and Cheese.",
+      "category": "Comida",
+      "categorySlug": "food",
+      "categoryColor": "#FF6F00",
+      "image": "food"
+    },
+    {
+      "title": "El dinosaurio llamado 'ladrón de huevos' era en realidad un padre dedicado",
+      "summary": "Oviraptor significa 'ladrón de huevos', pero el fósil que originó el nombre probablemente era un padre protegiendo su propio nido.",
+      "content": "Cuando en 1924 se encontró el primer fósil de Oviraptor en Mongolia, estaba sobre una nidada de huevos que los científicos atribuyeron a otro dinosaurio. Lo bautizaron 'ladrón de huevos' y lo condenaron como saqueador de nidos.\n\nDécadas después, los paleontólogos hallaron embriones dentro de huevos idénticos y adultos ovirraptóridos preservados incubando sus nidadas con los brazos extendidos, igual que las aves modernas. El 'ladrón' siempre fue un padre dedicado.",
+      "category": "Naturaleza",
+      "categorySlug": "nature",
+      "categoryColor": "#8BC34A",
+      "image": "nature"
+    },
+    {
+      "title": "Japón honra a 47 samuráis que eligieron la muerte antes que el deshonor en 1703",
+      "summary": "Los 47 ronin vengaron a su señor sabiendo que les costaría la vida, y Japón aún los honra cada diciembre.",
+      "content": "En 1701, el señor Asano fue obligado a cometer suicidio ritual tras desenvainar su espada contra un funcionario de la corte que lo había humillado. Sus samuráis quedaron como ronin, guerreros sin amo. Cuarenta y siete de ellos pasaron casi dos años planeando su venganza y la consumaron a comienzos de 1703; luego se entregaron y fueron condenados a la misma muerte honorable.\n\nSus tumbas en el templo Sengaku-ji de Tokio siguen atrayendo visitantes, y cada 14 de diciembre un festival honra su lealtad.",
+      "category": "Cultura",
+      "categorySlug": "culture",
+      "categoryColor": "#ff0055",
+      "image": "culture"
+    },
+    {
+      "title": "Las pequeñas tormentas de polvo en Marte pueden lanzar agua al espacio",
+      "summary": "En Marte, incluso las tormentas de polvo regionales pueden elevar vapor de agua a gran altura, donde la luz solar lo descompone y escapa al espacio.",
+      "content": "Marte fue un planeta húmedo, y los científicos se preguntaron durante mucho tiempo adónde fue su agua. Las observaciones de las sondas revelaron una vía de escape: las tormentas de polvo. El polvo calienta la atmósfera y permite que el vapor de agua ascienda mucho más de lo habitual en lugar de congelarse en nubes.\n\nA esas alturas, la luz ultravioleta divide las moléculas de agua, y el hidrógeno, muy ligero, se pierde en el espacio. Tormenta tras tormenta, el planeta rojo se sigue secando lentamente.",
+      "category": "Espacio",
+      "categorySlug": "space",
+      "categoryColor": "#3F51B5",
+      "image": "space"
+    },
+    {
+      "title": "Un niño de cuatro años se convirtió en emperador de China en 1875",
+      "summary": "En 1875, el emperador Guangxu subió al trono de China siendo un niño pequeño, mientras el poder real quedaba en manos de la emperatriz viuda Cixi.",
+      "content": "Cuando el emperador Tongzhi murió en 1875 sin heredero, su tía, la emperatriz viuda Cixi, dispuso que su sobrino Zaitian, de cuatro años, ocupara el trono como el emperador Guangxu.\n\nUn niño obviamente no podía gobernar, y eso convenía a la corte: Cixi gobernó como regente durante años e incluso cuando Guangxu alcanzó la mayoría de edad mantuvo el control, hasta ponerlo bajo arresto domiciliario después de que él respaldara un ambicioso movimiento reformista en 1898.",
+      "category": "Historia",
+      "categorySlug": "history",
+      "categoryColor": "#FF9800",
+      "image": "history"
+    }
+  ],
+  "fr": [
+    {
+      "title": "Certains avions de chasse volent plus vite que le son sans carburant supplémentaire",
+      "summary": "La supercroisière permet aux chasseurs les plus avancés de franchir le mur du son sans postcombustion, ce dispositif très gourmand en carburant.",
+      "content": "La plupart des avions de chasse ont besoin de la postcombustion pour dépasser la vitesse du son. Elle injecte du carburant directement dans les gaz d'échappement pour un énorme surcroît de poussée, en brûlant plusieurs fois plus de carburant qu'en vol normal.\n\nQuelques appareils, comme le F-22 Raptor, savent voler en supercroisière : maintenir une vitesse supersonique avec la seule poussée normale des moteurs. Résultat : plus d'autonomie, plus de temps à haute vitesse et un échappement plus froid, bien plus difficile à repérer pour les capteurs thermiques.",
+      "category": "Technologie",
+      "categorySlug": "technology",
+      "categoryColor": "#2196F3",
+      "image": "technology"
+    },
+    {
+      "title": "Un plat au fromage savoureux est devenu si populaire qu'il a obtenu sa fête nationale",
+      "summary": "Le mac and cheese est devenu un plat si adoré aux États-Unis que le 14 juillet y est célébré comme sa journée nationale.",
+      "content": "Les gratins de pâtes au fromage existent en Europe depuis des siècles, mais le plat a décollé en Amérique après que Thomas Jefferson en a servi lors d'un dîner d'État en 1802. Les versions en boîte des années 1930 en ont fait un aliment de base abordable pendant la Grande Dépression.\n\nAujourd'hui, le plat est si populaire aux États-Unis qu'il a sa propre fête officieuse : chaque 14 juillet, restaurants et cuisiniers amateurs célèbrent le National Mac and Cheese Day.",
+      "category": "Cuisine",
+      "categorySlug": "food",
+      "categoryColor": "#FF6F00",
+      "image": "food"
+    },
+    {
+      "title": "Le dinosaure nommé 'voleur d'œufs' était en fait un parent dévoué",
+      "summary": "Oviraptor signifie 'voleur d'œufs', mais le fossile à l'origine de ce nom protégeait probablement son propre nid.",
+      "content": "Quand le premier fossile d'Oviraptor a été découvert en Mongolie en 1924, il reposait sur une couvée d'œufs que les scientifiques attribuaient à un autre dinosaure. L'animal fut baptisé 'voleur d'œufs' et condamné comme pilleur de nids.\n\nDes décennies plus tard, des paléontologues ont trouvé des embryons dans des œufs identiques, ainsi que des oviraptoridés adultes fossilisés en train de couver, les bras déployés, exactement comme les oiseaux modernes. Le 'voleur' était en réalité un parent dévoué.",
+      "category": "Nature",
+      "categorySlug": "nature",
+      "categoryColor": "#8BC34A",
+      "image": "nature"
+    },
+    {
+      "title": "Le Japon honore 47 samouraïs qui ont choisi la mort plutôt que le déshonneur en 1703",
+      "summary": "Les 47 ronins ont vengé leur maître en sachant qu'ils le paieraient de leur vie, et le Japon les honore encore chaque mois de décembre.",
+      "content": "En 1701, le seigneur Asano fut contraint au suicide rituel pour avoir dégainé son sabre contre un officiel de la cour qui l'avait humilié. Ses samouraïs devinrent des ronins, des guerriers sans maître. Quarante-sept d'entre eux passèrent près de deux ans à préparer leur vengeance et l'accomplirent au début de 1703 ; ils se rendirent ensuite et furent condamnés à la même mort honorable.\n\nLeurs tombes au temple Sengaku-ji de Tokyo attirent toujours des visiteurs, et chaque 14 décembre une fête célèbre leur loyauté.",
+      "category": "Culture",
+      "categorySlug": "culture",
+      "categoryColor": "#ff0055",
+      "image": "culture"
+    },
+    {
+      "title": "De petites tempêtes de poussière sur Mars peuvent catapulter l'eau dans l'espace",
+      "summary": "Sur Mars, même des tempêtes de poussière régionales peuvent hisser la vapeur d'eau très haut dans l'atmosphère, où le soleil la décompose avant qu'elle ne s'échappe dans l'espace.",
+      "content": "Mars fut autrefois une planète humide, et les scientifiques se sont longtemps demandé où son eau était passée. Les observations des sondes ont révélé une voie de fuite : les tempêtes de poussière. La poussière réchauffe l'atmosphère, ce qui permet à la vapeur d'eau de monter bien plus haut que d'habitude au lieu de geler en nuages.\n\nÀ ces altitudes, les ultraviolets du soleil brisent les molécules d'eau, et l'hydrogène, très léger, dérive vers l'espace. Tempête après tempête, la planète rouge continue lentement de s'assécher.",
+      "category": "Espace",
+      "categorySlug": "space",
+      "categoryColor": "#3F51B5",
+      "image": "space"
+    },
+    {
+      "title": "Un garçon de quatre ans est devenu empereur de Chine en 1875",
+      "summary": "En 1875, l'empereur Guangxu monta sur le trône de Chine alors qu'il n'était qu'un petit enfant, le vrai pouvoir restant aux mains de l'impératrice douairière Cixi.",
+      "content": "À la mort de l'empereur Tongzhi en 1875, sans héritier, sa tante, l'impératrice douairière Cixi, fit placer sur le trône son neveu Zaitian, âgé de quatre ans, qui devint l'empereur Guangxu.\n\nUn enfant ne pouvait évidemment pas gouverner, ce qui arrangeait la cour : Cixi exerça la régence pendant des années et garda le contrôle même après la majorité de Guangxu, allant jusqu'à l'assigner à résidence après qu'il eut soutenu un vaste mouvement de réformes en 1898.",
+      "category": "Histoire",
+      "categorySlug": "history",
+      "categoryColor": "#FF9800",
+      "image": "history"
+    }
+  ],
+  "ja": [
+    {
+      "title": "一部の戦闘機は追加の燃料なしで音速を超えて飛行できる",
+      "summary": "スーパークルーズ機能を持つ最新鋭の戦闘機は、燃料を大量に消費するアフターバーナーなしで音速の壁を超えられます。",
+      "content": "ほとんどの戦闘機は、音速を超えるためにアフターバーナーを必要とします。アフターバーナーは排気に燃料を直接噴射して大きな推力を生み出しますが、燃料消費は通常飛行の数倍にもなります。\n\nF-22ラプターなど一部の機体は「スーパークルーズ」が可能で、通常のエンジン出力だけで超音速巡航を維持できます。その結果、航続距離が伸び、高速で飛べる時間が長くなり、排気温度も低いため赤外線センサーに探知されにくくなります。",
+      "category": "テクノロジー",
+      "categorySlug": "technology",
+      "categoryColor": "#2196F3",
+      "image": "technology"
+    },
+    {
+      "title": "ある美味しいチーズ料理が人気を博し、記念日が制定されました",
+      "summary": "マカロニ・アンド・チーズはアメリカで愛されるあまり、7月14日が「ナショナル・マック&チーズ・デー」になりました。",
+      "content": "パスタとチーズを焼き上げる料理はヨーロッパに何世紀も前からありましたが、1802年にトーマス・ジェファーソンが公式晩餐会でマカロニ料理を振る舞ったことをきっかけに、アメリカで人気が広がりました。1930年代には箱入り製品が登場し、大恐慌時代の手頃な定番料理になりました。\n\n現在ではアメリカで絶大な人気を誇り、毎年7月14日には「ナショナル・マック&チーズ・デー」として非公式の記念日が祝われています。",
+      "category": "料理",
+      "categorySlug": "food",
+      "categoryColor": "#FF6F00",
+      "image": "food"
+    },
+    {
+      "title": "「卵泥棒」と呼ばれた恐竜は、実は献身的な親でした",
+      "summary": "オヴィラプトルは「卵泥棒」という意味ですが、その名前の由来となった化石は、自分の巣を守る親だった可能性が高いのです。",
+      "content": "1924年にモンゴルで最初のオヴィラプトルの化石が発見されたとき、それは別の恐竜のものと思われた卵の上に横たわっていました。そのためこの恐竜は「卵泥棒」と名付けられ、巣を荒らす悪者とされてしまいました。\n\n数十年後、古生物学者たちは同じ種類の卵の中から胚を発見し、さらに現代の鳥のように腕を広げて卵を抱く成体の化石も見つけました。「泥棒」は実は献身的な親だったのです。",
+      "category": "自然",
+      "categorySlug": "nature",
+      "categoryColor": "#8BC34A",
+      "image": "nature"
+    },
+    {
+      "title": "日本は1703年に不名誉よりも死を選んだ47人の侍を称えています",
+      "summary": "47人の浪士は命と引き換えになると知りながら主君の仇を討ち、日本では今も毎年12月に彼らを偲びます。",
+      "content": "1701年、浅野内匠頭は自分を侮辱した幕府の高官に刃傷に及んだ罪で切腹を命じられました。主君を失った家臣たちは浪人となり、そのうち47人が約2年をかけて復讐を計画。1703年初めに本懐を遂げた後、自首し、同じく切腹を命じられました。\n\n東京・泉岳寺にある彼らの墓には今も多くの参拝者が訪れ、毎年12月14日には義士祭が開かれ、その忠義が称えられています。",
+      "category": "文化",
+      "categorySlug": "culture",
+      "categoryColor": "#ff0055",
+      "image": "culture"
+    },
+    {
+      "title": "火星の小さな砂嵐が水を宇宙へ放り出す",
+      "summary": "火星では局地的な砂嵐でも水蒸気を大気の高層まで巻き上げ、太陽光がそれを分解して宇宙へ逃がしてしまいます。",
+      "content": "かつて火星には水が豊富にありましたが、その行方は長年の謎でした。探査機の観測により、逃げ道のひとつが明らかになりました。それが砂嵐です。砂塵が大気を暖めることで、水蒸気は雲として凍りつく代わりに、通常よりはるかに高くまで上昇できるようになります。\n\nその高度では太陽の紫外線が水分子を分解し、軽い水素は宇宙空間へと逃げていきます。嵐が起こるたびに、赤い惑星は少しずつ乾燥し続けているのです。",
+      "category": "宇宙",
+      "categorySlug": "space",
+      "categoryColor": "#3F51B5",
+      "image": "space"
+    },
+    {
+      "title": "1875年、4歳の少年が中国の皇帝に即位しました",
+      "summary": "1875年、光緒帝は幼い子どもとして清の皇帝に即位しましたが、実権は西太后が握り続けました。",
+      "content": "1875年、同治帝が後継ぎのないまま亡くなると、その伯母にあたる西太后は、わずか4歳の甥・載湉を光緒帝として帝位に就けました。\n\n幼い子どもに政治ができないことは、宮廷にとって好都合でした。西太后は摂政として長年実権を握り、光緒帝が成人した後も支配を続け、1898年に皇帝が大規模な改革運動を支持すると、ついに彼を幽閉してしまいました。",
+      "category": "歴史",
+      "categorySlug": "history",
+      "categoryColor": "#FF9800",
+      "image": "history"
+    }
+  ],
+  "ko": [
+    {
+      "title": "일부 전투기는 추가 연료 없이 소리보다 빠르게 비행할 수 있습니다",
+      "summary": "슈퍼크루즈 기능을 갖춘 최신 전투기는 연료를 대량으로 소모하는 애프터버너 없이도 음속을 돌파할 수 있습니다.",
+      "content": "대부분의 전투기는 음속을 넘기 위해 애프터버너가 필요합니다. 애프터버너는 배기가스에 연료를 직접 분사해 엄청난 추력을 내지만, 연료를 평소보다 몇 배나 빨리 소모합니다.\n\nF-22 랩터 같은 일부 기체는 '슈퍼크루즈'가 가능해 일반 엔진 출력만으로 초음속 비행을 유지할 수 있습니다. 덕분에 항속 거리가 길어지고, 고속 비행 시간이 늘어나며, 배기 온도가 낮아 열추적 센서에 탐지되기 어렵습니다.",
+      "category": "기술",
+      "categorySlug": "technology",
+      "categoryColor": "#2196F3",
+      "image": "technology"
+    },
+    {
+      "title": "풍미 가득한 치즈 요리가 큰 인기를 얻어 국가 기념일이 되었습니다",
+      "summary": "맥앤치즈는 미국에서 큰 사랑을 받은 나머지 7월 14일이 '전국 맥앤치즈의 날'로 기념되고 있습니다.",
+      "content": "파스타와 치즈를 구운 요리는 수백 년 전부터 유럽에 있었지만, 1802년 토머스 제퍼슨이 국빈 만찬에서 마카로니 요리를 선보인 뒤 미국에서 큰 인기를 얻었습니다. 1930년대에는 박스 제품이 나오면서 대공황 시기의 저렴한 국민 음식이 되었습니다.\n\n오늘날 이 요리는 미국에서 워낙 사랑받아 비공식 기념일까지 생겼습니다. 매년 7월 14일, 식당과 가정에서 '전국 맥앤치즈의 날'을 기념합니다.",
+      "category": "음식",
+      "categorySlug": "food",
+      "categoryColor": "#FF6F00",
+      "image": "food"
+    },
+    {
+      "title": "'알 도둑'이라 불린 공룡은 사실 헌신적인 부모였습니다",
+      "summary": "오비랍토르는 '알 도둑'이라는 뜻이지만, 그 이름의 유래가 된 화석은 사실 자기 둥지를 지키던 부모였을 가능성이 큽니다.",
+      "content": "1924년 몽골에서 첫 오비랍토르 화석이 발견되었을 때, 그것은 다른 공룡의 것으로 여겨진 알 둥지 위에 놓여 있었습니다. 그래서 이 공룡은 '알 도둑'이라는 이름과 함께 둥지 약탈자라는 누명을 썼습니다.\n\n수십 년 후 고생물학자들은 똑같은 알 속에서 배아를 발견했고, 현대의 새처럼 팔을 펼친 채 알을 품고 있는 성체 화석도 찾아냈습니다. '도둑'은 사실 헌신적인 부모였던 것입니다.",
+      "category": "자연",
+      "categorySlug": "nature",
+      "categoryColor": "#8BC34A",
+      "image": "nature"
+    },
+    {
+      "title": "일본은 1703년 불명예 대신 죽음을 택한 47인의 사무라이를 기립니다",
+      "summary": "47인의 사무라이는 목숨을 잃을 것을 알면서도 주군의 복수를 감행했고, 일본은 지금도 매년 12월 그들을 기립니다.",
+      "content": "1701년, 아사노 영주는 자신을 모욕한 막부 관리에게 칼을 뽑은 죄로 할복을 명령받았습니다. 주군을 잃은 가신들은 떠돌이 무사 로닌이 되었고, 그중 47인이 거의 2년에 걸쳐 복수를 계획했습니다. 1703년 초 복수를 완수한 그들은 자수했고, 주군과 같은 명예로운 죽음을 선고받았습니다.\n\n도쿄 센가쿠지 사원에 있는 그들의 무덤에는 지금도 참배객이 찾아오며, 매년 12월 14일에는 그들의 충의를 기리는 축제가 열립니다.",
+      "category": "문화",
+      "categorySlug": "culture",
+      "categoryColor": "#ff0055",
+      "image": "culture"
+    },
+    {
+      "title": "화성의 작은 먼지 폭풍이 물을 우주로 날려 보낼 수 있습니다",
+      "summary": "화성에서는 지역적인 먼지 폭풍만으로도 수증기가 대기 높은 곳까지 올라가, 햇빛에 분해되어 우주로 빠져나갑니다.",
+      "content": "화성은 한때 물이 풍부했지만, 그 물이 어디로 사라졌는지는 오랜 수수께끼였습니다. 탐사선 관측으로 탈출 경로 하나가 밝혀졌는데, 바로 먼지 폭풍입니다. 먼지가 대기를 데우면 수증기는 구름으로 얼어붙는 대신 평소보다 훨씬 높이 올라갈 수 있습니다.\n\n그 고도에서는 태양의 자외선이 물 분자를 쪼개고, 가벼운 수소는 우주로 흩어집니다. 폭풍이 지나갈 때마다 붉은 행성은 조금씩 더 메말라 가고 있습니다.",
+      "category": "우주",
+      "categorySlug": "space",
+      "categoryColor": "#3F51B5",
+      "image": "space"
+    },
+    {
+      "title": "1875년 네 살 소년이 중국의 황제가 되었습니다",
+      "summary": "1875년 광서제는 어린아이의 몸으로 청나라 황제에 올랐지만, 실권은 서태후의 손에 있었습니다.",
+      "content": "1875년 동치제가 후사 없이 세상을 떠나자, 그의 이모인 서태후는 네 살배기 조카 짜이톈을 광서제로 즉위시켰습니다.\n\n어린아이가 나라를 다스릴 수 없다는 사실은 궁정에 오히려 유리했습니다. 서태후는 오랜 세월 섭정으로 군림했고, 광서제가 성년이 된 후에도 권력을 놓지 않았으며, 1898년 황제가 대대적인 개혁 운동을 지지하자 그를 유폐해 버렸습니다.",
+      "category": "역사",
+      "categorySlug": "history",
+      "categoryColor": "#FF9800",
+      "image": "history"
+    }
+  ],
+  "tr": [
+    {
+      "title": "Bazı savaş uçakları ekstra yakıt kullanmadan sesten hızlı uçabilir",
+      "summary": "Süper seyir özelliği, en gelişmiş savaş uçaklarının yakıt canavarı art yakıcılara ihtiyaç duymadan ses duvarını aşmasını sağlar.",
+      "content": "Çoğu savaş uçağı, ses hızını aşmak için art yakıcıya ihtiyaç duyar. Art yakıcı, motor egzozuna doğrudan yakıt püskürterek muazzam bir itiş sağlar ama yakıtı normal uçuştan kat kat hızlı tüketir.\n\nF-22 Raptor gibi az sayıda uçak ise 'süper seyir' yapabilir: yalnızca normal motor gücüyle süpersonik hızı koruyabilir. Bu, daha uzun menzil, yüksek hızda daha fazla süre ve ısı arayan sensörlerin izlemesi çok daha zor, daha soğuk bir egzoz demektir.",
+      "category": "Teknoloji",
+      "categorySlug": "technology",
+      "categoryColor": "#2196F3",
+      "image": "technology"
+    },
+    {
+      "title": "Lezzetli bir peynir yemeği ulusal bir bayram kazanacak kadar popülerleşti",
+      "summary": "Mac and cheese ABD'de o kadar sevildi ki 14 Temmuz, Ulusal Mac and Cheese Günü olarak kutlanıyor.",
+      "content": "Fırında makarna ve peynir tarifleri Avrupa'da yüzyıllardır var, ancak yemek, Thomas Jefferson'ın 1802'deki bir devlet yemeğinde makarna böreği ikram etmesinin ardından Amerika'da yaygınlaştı. 1930'larda kutulu versiyonlar, Büyük Buhran döneminde onu herkesin alabileceği bir temel yiyecek hâline getirdi.\n\nBugün bu yemek ABD'de o kadar popüler ki kendi gayriresmî gününe sahip: her 14 Temmuz'da restoranlar ve ev aşçıları Ulusal Mac and Cheese Günü'nü kutluyor.",
+      "category": "Yemek",
+      "categorySlug": "food",
+      "categoryColor": "#FF6F00",
+      "image": "food"
+    },
+    {
+      "title": "'Yumurta hırsızı' adlı dinozor aslında fedakar bir ebeveynmiş",
+      "summary": "Oviraptor 'yumurta hırsızı' demektir, ancak bu isme yol açan fosil büyük olasılıkla kendi yuvasını koruyan bir ebeveyndi.",
+      "content": "1924'te Moğolistan'da ilk Oviraptor fosili bulunduğunda, bilim insanlarının başka bir dinozora ait olduğunu düşündüğü bir yumurta kümesinin üzerinde yatıyordu. Hayvana 'yumurta hırsızı' adı verildi ve yuva yağmacısı olarak damgalandı.\n\nOnlarca yıl sonra paleontologlar, aynı türden yumurtaların içinde embriyolar ve tıpkı günümüz kuşları gibi kollarını açarak kuluçkaya yatmış yetişkin oviraptoridler buldular. 'Hırsız' aslında baştan beri fedakâr bir ebeveyndi.",
+      "category": "Doğa",
+      "categorySlug": "nature",
+      "categoryColor": "#8BC34A",
+      "image": "nature"
+    },
+    {
+      "title": "Japonya 1703 yılında onursuzluk yerine ölümü seçen 47 samurayı anıyor",
+      "summary": "47 ronin, canlarına mal olacağını bile bile efendilerinin intikamını aldı; Japonya onları hâlâ her aralık ayında anıyor.",
+      "content": "1701'de Lord Asano, kendisini aşağılayan bir saray görevlisine kılıç çektiği için törensel intihara zorlandı. Samurayları efendisiz kalarak ronin oldu. İçlerinden 47'si neredeyse iki yıl boyunca intikam planları yaptı ve 1703'ün başında intikamlarını aldı; ardından teslim olup aynı onurlu ölüme mahkûm edildiler.\n\nTokyo'daki Sengaku-ji tapınağında bulunan mezarları bugün hâlâ ziyaretçi çekiyor ve her 14 Aralık'ta düzenlenen bir festival, sadakatlerini onurlandırıyor.",
+      "category": "Kültür",
+      "categorySlug": "culture",
+      "categoryColor": "#ff0055",
+      "image": "culture"
+    },
+    {
+      "title": "Mars'taki küçük toz fırtınaları suyu uzaya fırlatabiliyor",
+      "summary": "Mars'ta bölgesel toz fırtınaları bile su buharını atmosferin yükseklerine taşıyabiliyor; orada güneş ışığı onu parçalıyor ve su uzaya kaçıyor.",
+      "content": "Mars bir zamanlar sulak bir gezegendi ve bilim insanları suyunun nereye gittiğini uzun süre merak etti. Uzay araçlarının gözlemleri bir kaçış yolunu ortaya çıkardı: toz fırtınaları. Toz, atmosferi ısıtarak su buharının bulutlara dönüşüp donmak yerine normalden çok daha yükseğe çıkmasına izin veriyor.\n\nO yüksekliklerde güneşin morötesi ışınları su moleküllerini parçalıyor ve hafif hidrojen uzaya sürükleniyor. Her fırtınayla birlikte kızıl gezegen yavaş yavaş kurumaya devam ediyor.",
+      "category": "Uzay",
+      "categorySlug": "space",
+      "categoryColor": "#3F51B5",
+      "image": "space"
+    },
+    {
+      "title": "Dört yaşındaki bir çocuk 1875'te Çin imparatoru oldu",
+      "summary": "1875'te Guangxu İmparatoru, Çin tahtına küçük bir çocukken çıktı; gerçek güç ise İmparatoriçe Cixi'nin elindeydi.",
+      "content": "Tongzhi İmparatoru 1875'te veliaht bırakmadan ölünce, halası İmparatoriçe Cixi, dört yaşındaki yeğeni Zaitian'ın Guangxu İmparatoru olarak tahta çıkmasını sağladı.\n\nBir çocuğun ülkeyi yönetemeyecek olması sarayın işine geliyordu: Cixi yıllarca naip olarak hüküm sürdü. Guangxu reşit olduktan sonra bile kontrolü bırakmadı ve imparator 1898'de kapsamlı bir reform hareketini destekleyince onu saray hapsine aldı.",
+      "category": "Tarih",
+      "categorySlug": "history",
+      "categoryColor": "#FF9800",
+      "image": "history"
+    }
+  ],
+  "zh": [
+    {
+      "title": "部分战斗机无需额外燃料即可实现超音速飞行",
+      "summary": "具备超音速巡航能力的先进战机，无需依赖耗油巨大的加力燃烧室就能突破音障。",
+      "content": "大多数战斗机需要开启加力燃烧室才能突破音速。加力燃烧室将燃油直接喷入发动机尾流以产生巨大推力，但油耗是正常飞行的数倍。\n\n少数机型（如F-22猛禽）具备“超音速巡航”能力：仅靠发动机的常规推力就能维持超音速飞行。这意味着更远的航程、更长的高速飞行时间，以及更低温、更难被热追踪传感器锁定的尾流。",
+      "category": "技术",
+      "categorySlug": "technology",
+      "categoryColor": "#2196F3",
+      "image": "technology"
+    },
+    {
+      "title": "一道美味的奶酪菜肴因大受欢迎而获得了全国性节日",
+      "summary": "奶酪通心粉在美国深受喜爱，以至于每年7月14日被定为“全国奶酪通心粉日”。",
+      "content": "用面食和奶酪烤制的菜肴在欧洲已有数百年历史，但这道菜真正流行起来，是在1802年托马斯·杰斐逊在国宴上端出通心粉派之后。20世纪30年代的盒装版本让它成为大萧条时期人人吃得起的主食。\n\n如今这道菜在美国大受欢迎，甚至拥有了自己的非官方节日：每年7月14日，餐厅和家庭厨师都会庆祝全国奶酪通心粉日。",
+      "category": "美食",
+      "categorySlug": "food",
+      "categoryColor": "#FF6F00",
+      "image": "food"
+    },
+    {
+      "title": "名为'偷蛋贼'的恐龙其实是尽职的父母",
+      "summary": "偷蛋龙的名字意为“偷蛋的贼”，但让它得名的那块化石，很可能是一位正在保护自己巢穴的父母。",
+      "content": "1924年，第一块偷蛋龙化石在蒙古被发现时，正趴在一窝科学家认为属于另一种恐龙的蛋上。于是它被命名为“偷蛋龙”，背上了偷袭巢穴的恶名。\n\n几十年后，古生物学家在同样的蛋中发现了偷蛋龙的胚胎，还找到了像现代鸟类一样张开双臂孵蛋的成年偷蛋龙化石。这个“贼”其实一直是尽职尽责的父母。",
+      "category": "自然",
+      "categorySlug": "nature",
+      "categoryColor": "#8BC34A",
+      "image": "nature"
+    },
+    {
+      "title": "日本纪念在1703年选择死亡而非屈辱的47名武士",
+      "summary": "47位浪人明知会付出生命的代价，仍为主君复仇，日本至今仍在每年12月纪念他们。",
+      "content": "1701年，浅野长矩因对羞辱自己的幕府官员拔刀而被勒令切腹。他的武士们沦为无主的浪人，其中47人花了近两年时间策划复仇，并在1703年初大仇得报。随后他们投案自首，被判处同样光荣的死刑。\n\n他们安葬在东京泉岳寺，墓地至今仍吸引着众多访客。每年12月14日，人们都会举行祭典，纪念他们的忠义。",
+      "category": "文化",
+      "categorySlug": "culture",
+      "categoryColor": "#ff0055",
+      "image": "culture"
+    },
+    {
+      "title": "火星上的小型沙尘暴会将水抛向太空",
+      "summary": "在火星上，即使是区域性沙尘暴也能将水汽卷到高层大气，在那里阳光将其分解，让水逃逸到太空。",
+      "content": "火星曾经水量充沛，科学家长期想知道这些水去了哪里。探测器的观测揭示了一条逃逸通道：沙尘暴。沙尘加热大气，使水汽不再凝结成云，而是升到比平时高得多的地方。\n\n在那样的高度，太阳的紫外线会把水分子分解，轻盈的氢原子便飘散到太空中。一场又一场风暴过后，这颗红色星球仍在缓慢变干。",
+      "category": "太空",
+      "categorySlug": "space",
+      "categoryColor": "#3F51B5",
+      "image": "space"
+    },
+    {
+      "title": "1875年，一名四岁男孩成为了中国皇帝",
+      "summary": "1875年，年幼的光绪帝登上中国皇位，而实权始终掌握在慈禧太后手中。",
+      "content": "1875年，同治帝驾崩且没有留下继承人，他的姨母慈禧太后安排年仅四岁的载湉登基，成为光绪帝。\n\n孩童显然无法理政，这正合宫廷之意：慈禧以摄政身份执掌大权多年。即使光绪成年后，她依然牢牢控制朝政，并在1898年光绪支持一场大规模变法后，将他软禁起来。",
+      "category": "历史",
+      "categorySlug": "history",
+      "categoryColor": "#FF9800",
+      "image": "history"
+    }
+  ]
+}

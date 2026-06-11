@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, FlatList, StyleSheet, View, ViewToken } from 'react-native';
+import { Animated, Easing, FlatList, Pressable, StyleSheet, View, ViewToken } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Image } from 'expo-image';
@@ -8,13 +8,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import {
-  Button,
-  FONT_FAMILIES,
-  MockNotificationCard,
-  ProgressIndicator,
-  Text,
-} from '../../src/components';
+import { Button, FONT_FAMILIES, MockNotificationCard, Text } from '../../src/components';
 import { ScreenContainer } from '../../src/components';
 import { LAYOUT } from '../../src/config/app';
 import { IMAGE_PLACEHOLDER } from '../../src/config/images';
@@ -145,6 +139,8 @@ export default function WelcomeScreen() {
     60 + // CTA button height + marginTop
     dotSize +
     spacing.lg + // dots row + gap
+    20 +
+    spacing.md + // tap-to-preview hint + gap
     spacing.sm +
     spacing.lg + // carousel item padding (top + bottom)
     notifFixedHeight + // notification mockup
@@ -163,7 +159,6 @@ export default function WelcomeScreen() {
   }, [isInitialized, isInitializing, initializationError, locale, initializeOnboarding]);
 
   // === Entrance animations ===
-  const progressAnim = useRef(new Animated.Value(0)).current;
   const titleAnim = useRef(new Animated.Value(0)).current;
   const cardAnim = useRef(new Animated.Value(0)).current;
   const cardScale = useRef(new Animated.Value(0.92)).current;
@@ -198,7 +193,6 @@ export default function WelcomeScreen() {
 
     // Orchestrated entrance
     Animated.parallel([
-      stagger(0, progressAnim),
       stagger(120, titleAnim),
       stagger(250, cardAnim, [
         Animated.spring(cardScale, {
@@ -249,7 +243,7 @@ export default function WelcomeScreen() {
     return `${h}:00 ${ampm}`;
   }, []);
 
-  const renderItem = ({ item }: { item: SampleFact }) => (
+  const renderItem = ({ item, index }: { item: SampleFact; index: number }) => (
     <View
       style={{
         width: carouselWidth,
@@ -259,12 +253,21 @@ export default function WelcomeScreen() {
         paddingBottom: spacing.lg,
       }}
     >
-      <FactImageCard item={item} size={cardSize} theme={theme} />
+      <Pressable
+        accessibilityRole="button"
+        aria-label={item.title}
+        onPress={() =>
+          router.push({ pathname: '/onboarding/fact', params: { index: String(index) } })
+        }
+        style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.97 : 1 }] })}
+      >
+        <FactImageCard item={item} size={cardSize} theme={theme} />
+      </Pressable>
     </View>
   );
 
   return (
-    <ScreenContainer>
+    <ScreenContainer edges={['bottom', 'left', 'right']}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <YStack
         flex={1}
@@ -273,18 +276,12 @@ export default function WelcomeScreen() {
         paddingTop={spacing.lg}
         paddingBottom={spacing.lg + spacing.md + spacing.sm}
       >
-        {/* Header: progress (full width) + title */}
-        <YStack gap={spacing.md}>
-          <Animated.View style={{ opacity: progressAnim }}>
-            <ProgressIndicator currentStep={1} totalSteps={3} />
-          </Animated.View>
-
-          <Animated.View style={{ opacity: titleAnim, marginTop: spacing.sm }}>
-            <YStack gap={spacing.xs} alignItems="center">
-              <Text.Headline textAlign="center">{t('hereIsWhatYouGet')}</Text.Headline>
-            </YStack>
-          </Animated.View>
-        </YStack>
+        {/* Header: title (progress bar lives in the onboarding layout) */}
+        <Animated.View style={{ opacity: titleAnim, marginTop: spacing.sm }}>
+          <YStack gap={spacing.xs} alignItems="center">
+            <Text.Headline textAlign="center">{t('hereIsWhatYouGet')}</Text.Headline>
+          </YStack>
+        </Animated.View>
 
         {/* Center content: notification mockup + card carousel + dots */}
         {isLandscape ? (
@@ -332,26 +329,31 @@ export default function WelcomeScreen() {
 
               {/* Dot pagination */}
               <Animated.View style={{ opacity: dotsAnim }}>
-                <XStack justifyContent="center" gap={spacing.sm}>
-                  {facts.map((_, index) => (
-                    <View
-                      key={index}
-                      style={{
-                        height: dotSize,
-                        borderRadius: dotSize / 2,
-                        width: index === activeIndex ? activeDotWidth : dotSize,
-                        backgroundColor:
-                          index === activeIndex
-                            ? theme === 'dark'
-                              ? hexColors.dark.neonCyan
-                              : hexColors.light.primary
-                            : theme === 'dark'
-                              ? 'rgba(255,255,255,0.2)'
-                              : 'rgba(0,0,0,0.12)',
-                      }}
-                    />
-                  ))}
-                </XStack>
+                <YStack gap={spacing.md} alignItems="center">
+                  <XStack justifyContent="center" gap={spacing.sm}>
+                    {facts.map((_, index) => (
+                      <View
+                        key={index}
+                        style={{
+                          height: dotSize,
+                          borderRadius: dotSize / 2,
+                          width: index === activeIndex ? activeDotWidth : dotSize,
+                          backgroundColor:
+                            index === activeIndex
+                              ? theme === 'dark'
+                                ? hexColors.dark.neonCyan
+                                : hexColors.light.primary
+                              : theme === 'dark'
+                                ? 'rgba(255,255,255,0.2)'
+                                : 'rgba(0,0,0,0.12)',
+                        }}
+                      />
+                    ))}
+                  </XStack>
+                  <Text.Caption color="$textSecondary" textAlign="center">
+                    {t('tapCardToPreview')}
+                  </Text.Caption>
+                </YStack>
               </Animated.View>
             </YStack>
           </XStack>
@@ -410,26 +412,31 @@ export default function WelcomeScreen() {
 
             {/* Dot pagination */}
             <Animated.View style={{ opacity: dotsAnim }}>
-              <XStack justifyContent="center" gap={spacing.sm}>
-                {facts.map((_, index) => (
-                  <View
-                    key={index}
-                    style={{
-                      height: dotSize,
-                      borderRadius: dotSize / 2,
-                      width: index === activeIndex ? activeDotWidth : dotSize,
-                      backgroundColor:
-                        index === activeIndex
-                          ? theme === 'dark'
-                            ? hexColors.dark.neonCyan
-                            : hexColors.light.primary
-                          : theme === 'dark'
-                            ? 'rgba(255,255,255,0.2)'
-                            : 'rgba(0,0,0,0.12)',
-                    }}
-                  />
-                ))}
-              </XStack>
+              <YStack gap={spacing.md} alignItems="center">
+                <XStack justifyContent="center" gap={spacing.sm}>
+                  {facts.map((_, index) => (
+                    <View
+                      key={index}
+                      style={{
+                        height: dotSize,
+                        borderRadius: dotSize / 2,
+                        width: index === activeIndex ? activeDotWidth : dotSize,
+                        backgroundColor:
+                          index === activeIndex
+                            ? theme === 'dark'
+                              ? hexColors.dark.neonCyan
+                              : hexColors.light.primary
+                            : theme === 'dark'
+                              ? 'rgba(255,255,255,0.2)'
+                              : 'rgba(0,0,0,0.12)',
+                      }}
+                    />
+                  ))}
+                </XStack>
+                <Text.Caption color="$textSecondary" textAlign="center">
+                  {t('tapCardToPreview')}
+                </Text.Caption>
+              </YStack>
             </Animated.View>
           </YStack>
         )}
@@ -442,8 +449,8 @@ export default function WelcomeScreen() {
             marginTop: spacing.xl,
           }}
         >
-          <Button onPress={() => router.push('/onboarding/categories')}>
-            {t('chooseYourInterests')}
+          <Button onPress={() => router.push('/onboarding/questions')}>
+            {t('personalizeMyFeed')}
           </Button>
         </Animated.View>
       </YStack>

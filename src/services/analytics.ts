@@ -166,7 +166,8 @@ export const Screens = {
   SETTINGS: 'Settings',
   FACT_DETAIL: 'FactDetail',
   ONBOARDING_WELCOME: 'OnboardingWelcome',
-  ONBOARDING_CATEGORIES: 'OnboardingCategories',
+  ONBOARDING_FACT_PREVIEW: 'OnboardingFactPreview',
+  ONBOARDING_QUESTIONS: 'OnboardingQuestions',
   ONBOARDING_NOTIFICATIONS: 'OnboardingNotifications',
   ONBOARDING_SUCCESS: 'OnboardingSuccess',
   SETTINGS_CATEGORIES: 'SettingsCategories',
@@ -213,7 +214,7 @@ export const trackATTPermissionResult = (status: string): void => {
 // ============================================================================
 
 /**
- * Track when user starts onboarding (categories screen mount)
+ * Track when user starts onboarding (questions screen mount)
  */
 export const trackOnboardingStart = (locale: string): void => {
   logEvent('app_onboarding_start', { locale });
@@ -221,7 +222,19 @@ export const trackOnboardingStart = (locale: string): void => {
 };
 
 /**
- * Track when user selects categories and continues
+ * Track an answer to an onboarding preference question
+ */
+export const trackOnboardingQuizAnswer = (params: {
+  questionKey: string;
+  optionKey: string;
+}): void => {
+  const props = { question: params.questionKey, option: params.optionKey };
+  logEvent('app_onboarding_quiz_answer', props);
+  posthog.capture('onboarding_quiz_answer', props);
+};
+
+/**
+ * Track the categories derived from quiz answers when the user continues
  */
 export const trackOnboardingCategoriesSelected = (categories: string[]): void => {
   const props = { count: categories.length, categories: categories.slice(0, 10).join(',') };
