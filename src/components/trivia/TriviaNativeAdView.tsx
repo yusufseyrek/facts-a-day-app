@@ -11,7 +11,7 @@ import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Circle, Svg } from 'react-native-svg';
 
-import { ChevronLeft, ChevronRight, Timer, X } from '@tamagui/lucide-icons';
+import { ChevronLeft, ChevronRight, Timer } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
@@ -20,6 +20,7 @@ import { XStack, YStack } from 'tamagui';
 import { LAYOUT } from '../../config/app';
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { CloseButton } from '../CloseButton';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
@@ -108,13 +109,11 @@ export function TriviaNativeAdView({
           justifyContent="space-between"
           position="relative"
         >
-          <Pressable
+          <CloseButton
             onPress={() => handlePressWithHaptics(onExit)}
-            hitSlop={12}
-            style={({ pressed }) => [{ zIndex: 1 }, pressed && { opacity: 0.6 }]}
-          >
-            <X size={iconSizes.lg} color={textColor} />
-          </Pressable>
+            label="Exit"
+            style={{ zIndex: 1 }}
+          />
 
           {/* Trivia Mode Title - Centered */}
           <View

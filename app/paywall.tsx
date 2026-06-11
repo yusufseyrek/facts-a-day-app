@@ -12,7 +12,6 @@ import {
   Lightbulb,
   PartyPopper,
   WifiOff,
-  X,
 } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { ErrorCode, useIAP } from 'expo-iap';
@@ -21,7 +20,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { GlassSurface, SuccessToast, Text } from '../src/components';
+import { CloseButton, GlassSurface, SuccessToast, Text } from '../src/components';
 import { FONT_FAMILIES } from '../src/components/Typography';
 import { SUBSCRIPTION } from '../src/config/app';
 
@@ -309,8 +308,9 @@ export default function PaywallScreen() {
   const showStats = (streak ?? 0) > 0 || (factsRead ?? 0) > 0;
 
   // Derived responsive sizes
-  const closeBtnSize = iconSizes.lg + spacing.sm;
-  const closeBtnRadius = closeBtnSize / 2;
+  // CloseButton's diameter — the wordmark row reserves space so it never
+  // underlaps the floating close.
+  const closeBtnSize = iconSizes.xl + spacing.md;
   const wordmarkCrownSize = iconSizes.xs + 2;
   const statIconCircleSize = iconSizes.xxl;
   const statIconCircleRadius = statIconCircleSize / 2;
@@ -337,15 +337,6 @@ export default function PaywallScreen() {
           right: spacing.xl,
           top: Platform.OS === 'ios' ? spacing.xxl : insets.top,
           zIndex: 10,
-        },
-        closeButtonInner: {
-          width: closeBtnSize,
-          height: closeBtnSize,
-          borderRadius: closeBtnRadius,
-          backgroundColor: useGlass ? 'transparent' : tc.closeBtn,
-          alignItems: 'center',
-          justifyContent: 'center',
-          ...(useGlass && { overflow: 'hidden' as const }),
         },
         scrollContent: {
           flexGrow: 1,
@@ -522,7 +513,6 @@ export default function PaywallScreen() {
       insets,
       borderWidths,
       closeBtnSize,
-      closeBtnRadius,
       statIconCircleSize,
       statIconCircleRadius,
       benefitIconCircleSize,
@@ -570,25 +560,8 @@ export default function PaywallScreen() {
         <LinearGradient colors={[...tc.ambientGlow]} style={StyleSheet.absoluteFill} />
       </View>
 
-      {/* Close button — interactive glass circle on iOS 26 */}
-      <Pressable onPress={handleClose} hitSlop={spacing.lg} style={dynamicStyles.closeButton}>
-        {useGlass ? (
-          <GlassSurface
-            variant="glass"
-            isDark={isDark}
-            tint={tc.closeBtn}
-            isInteractive
-            borderRadius={closeBtnRadius}
-            style={dynamicStyles.closeButtonInner}
-          >
-            <X size={iconSizes.sm} color={tc.closeIcon} />
-          </GlassSurface>
-        ) : (
-          <View style={dynamicStyles.closeButtonInner}>
-            <X size={iconSizes.sm} color={tc.closeIcon} />
-          </View>
-        )}
-      </Pressable>
+      {/* Close button */}
+      <CloseButton onPress={handleClose} style={dynamicStyles.closeButton} />
 
       {/* Group 1 — Wordmark, pinned at the top */}
       <Animated.View entering={FadeInDown.duration(400)}>

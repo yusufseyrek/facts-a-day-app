@@ -22,7 +22,6 @@ import {
   ImagePlus,
   Play,
   RefreshCw,
-  X,
 } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Image } from 'expo-image';
@@ -70,6 +69,7 @@ import { useResponsive } from '../utils/useResponsive';
 import { showRewardedAd } from './ads/RewardedAd';
 import { BannerAd } from './ads';
 import { CategoryBadge } from './CategoryBadge';
+import { CloseButton } from './CloseButton';
 import { DialogCard } from './DialogShell';
 import { FactActions } from './FactActions';
 import { ModalBackdrop } from './ModalBackdrop';
@@ -1377,80 +1377,24 @@ export function FactModal({
       />
 
       {/* Fixed Close Button - always visible for easy dismissal */}
-      {hasImage && (
-        <View
-          style={{
-            position: 'absolute',
-            // Aligns with the header top via the shared basePaddingTop.
-            top: basePaddingTop,
-            right: spacing.xl,
-            zIndex: 9999,
-            ...Platform.select({
-              android: {
-                elevation: 999, // Much higher than any other element to receive touches
-              },
-            }),
-          }}
-          collapsable={false}
-          pointerEvents="box-none"
-        >
-          <TouchableOpacity
-            onPress={onClose}
-            activeOpacity={0.7}
-            hitSlop={{ top: spacing.lg, bottom: spacing.lg, left: spacing.lg, right: spacing.lg }}
-            testID="fact-modal-close-button"
-            aria-label={t('a11y_closeButton')}
-            role="button"
-            style={{
-              width: iconSizes.xl,
-              height: iconSizes.xl,
-              borderRadius: radius.full,
-              backgroundColor: 'rgba(0, 0, 0, 0.4)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <X size={iconSizes.md} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Close button for facts without images */}
-      {!hasImage && (
-        <View
-          style={{
-            position: 'absolute',
-            top: basePaddingTop,
-            right: spacing.xl,
-            zIndex: 9999,
-            ...Platform.select({
-              android: {
-                elevation: 999, // Much higher than any other element to receive touches
-              },
-            }),
-          }}
-          pointerEvents="box-none"
-        >
-          <TouchableOpacity
-            onPress={onClose}
-            activeOpacity={0.7}
-            hitSlop={{ top: spacing.lg, bottom: spacing.lg, left: spacing.lg, right: spacing.lg }}
-            testID="fact-modal-close-button"
-            aria-label={t('a11y_closeButton')}
-            role="button"
-            style={{
-              width: iconSizes.xl,
-              height: iconSizes.xl,
-              borderRadius: radius.full,
-              backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <X size={iconSizes.md} color={theme === 'dark' ? '#FFFFFF' : hexColors.light.text} />
-          </TouchableOpacity>
-        </View>
-      )}
+      <View
+        style={{
+          position: 'absolute',
+          // Aligns with the header top via the shared basePaddingTop.
+          top: basePaddingTop,
+          right: spacing.xl,
+          zIndex: 9999,
+          ...Platform.select({
+            android: {
+              elevation: 999, // Much higher than any other element to receive touches
+            },
+          }),
+        }}
+        collapsable={false}
+        pointerEvents="box-none"
+      >
+        <CloseButton onPress={onClose} testID="fact-modal-close-button" />
+      </View>
 
       {/* Bottom chrome: banner + action bar. With Liquid Glass it floats over
           the scrolling content so the glass bar refracts it; otherwise it stays

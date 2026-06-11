@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { X } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { YStack } from 'tamagui';
 
-import { CategoryBadge, FONT_FAMILIES, Text } from '../../../src/components';
+import { CategoryBadge, CloseButton, FONT_FAMILIES, Text } from '../../../src/components';
 import { FactMorphContainer } from '../../../src/components/factMorph/FactMorphContainer';
 import { useFactMorph } from '../../../src/components/factMorph/FactMorphContext';
 import { IMAGE_PLACEHOLDER } from '../../../src/config/images';
@@ -75,8 +74,7 @@ function SampleFactDetail({ index }: { index: number }) {
   const router = useRouter();
   const morph = useFactMorph();
   const insets = useSafeAreaInsets();
-  const { spacing, radius, iconSizes, typography, isTablet, isLandscape, screenWidth } =
-    useResponsive();
+  const { spacing, typography, isTablet, isLandscape, screenWidth } = useResponsive();
 
   const facts = sampleFacts[locale as SupportedLocale] ?? sampleFacts.en;
   const fact = facts[index] ?? null;
@@ -176,39 +174,10 @@ function SampleFactDetail({ index }: { index: number }) {
       </ScrollView>
 
       {/* Floating close button */}
-      <Pressable
+      <CloseButton
         onPress={handleClose}
-        accessibilityRole="button"
-        aria-label={t('a11y_closeButton')}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        style={({ pressed }) => [
-          styles.closeButton,
-          {
-            top: closeButtonTop,
-            right: spacing.lg,
-            width: iconSizes.xl + spacing.md,
-            height: iconSizes.xl + spacing.md,
-            borderRadius: radius.full,
-            backgroundColor: theme === 'dark' ? 'rgba(20,24,48,0.7)' : 'rgba(255,255,255,0.75)',
-            opacity: pressed ? 0.7 : 1,
-          },
-        ]}
-      >
-        <X size={iconSizes.md} color={hexColors[theme].text} />
-      </Pressable>
+        style={{ position: 'absolute', top: closeButtonTop, right: spacing.lg }}
+      />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  closeButton: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-});

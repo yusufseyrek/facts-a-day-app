@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { Check, X } from '@tamagui/lucide-icons';
+import { Check } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { XStack, YStack } from 'tamagui';
 
@@ -10,6 +10,7 @@ import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
 import { useResponsive } from '../../utils/useResponsive';
+import { CloseButton } from '../CloseButton';
 import { DialogShell } from '../DialogShell';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -64,25 +65,10 @@ export function BadgeDetailSheet({ badge, visible, onClose }: BadgeDetailSheetPr
         style={{ paddingTop: spacing.lg, paddingBottom: spacing.sm, alignItems: 'center' }}
       >
         {/* Close button */}
-        <Pressable
+        <CloseButton
           onPress={onClose}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={({ pressed }) => ({
-            position: 'absolute',
-            top: spacing.lg,
-            right: spacing.lg,
-            width: iconSizes.lg,
-            height: iconSizes.lg,
-            borderRadius: iconSizes.lg / 2,
-            backgroundColor: `${colors.text}10`,
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1,
-            opacity: pressed ? 0.6 : 1,
-          })}
-        >
-          <X size={iconSizes.sm} color={colors.textSecondary} />
-        </Pressable>
+          style={{ position: 'absolute', top: spacing.lg, right: spacing.lg, zIndex: 1 }}
+        />
 
         {/* Badge icon — gold shadow scales with stars */}
         <View

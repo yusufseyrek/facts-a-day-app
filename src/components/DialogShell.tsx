@@ -9,13 +9,13 @@ import {
 } from 'react-native';
 import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
 
-import { X } from '@tamagui/lucide-icons';
 import { XStack, YStack } from 'tamagui';
 
 import { LAYOUT } from '../config/app';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
+import { CloseButton } from './CloseButton';
 import { InlineOverlay } from './InlineOverlay';
 import { ModalBackdrop } from './ModalBackdrop';
 import { FONT_FAMILIES, Text } from './Typography';
@@ -279,20 +279,11 @@ export function DialogShell({
         >
           <DialogCard>
             {showClose && (
-              <Pressable
+              <CloseButton
                 onPress={requestClose}
                 testID={closeTestID}
-                accessibilityRole="button"
-                style={{
-                  position: 'absolute',
-                  top: spacing.md,
-                  right: spacing.md,
-                  zIndex: 10,
-                  padding: spacing.xs,
-                }}
-              >
-                <X size={iconSizes.md} color={colors.textSecondary} />
-              </Pressable>
+                style={{ position: 'absolute', top: spacing.md, right: spacing.md, zIndex: 10 }}
+              />
             )}
 
             {(headerIcon || title) && (

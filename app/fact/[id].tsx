@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { X } from '@tamagui/lucide-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Text } from '../../src/components';
+import { CloseButton, Text } from '../../src/components';
 import { FactModal } from '../../src/components/FactModal';
 import { useFactMorph } from '../../src/components/factMorph/FactMorphContext';
 import { useFactDetail, usePrefetchFactDetails } from '../../src/hooks/useFactDetail';
@@ -44,7 +43,7 @@ export default function FactDetailScreen({
   }>();
   const router = useRouter();
   const { t, locale } = useTranslation();
-  const { spacing, iconSizes, radius } = useResponsive();
+  const { spacing } = useResponsive();
   const insets = useSafeAreaInsets();
   // Non-null when hosted by the morph route — closing must play the reverse
   // morph instead of popping instantly.
@@ -128,27 +127,10 @@ export default function FactDetailScreen({
   // morph presentation there is no native dismiss gesture, and even as a card
   // an explicit X beats relying on the swipe-back.
   const earlyCloseButton = (
-    <View
+    <CloseButton
+      onPress={handleClose}
       style={{ position: 'absolute', top: Math.max(insets.top, spacing.xl), right: spacing.xl }}
-    >
-      <TouchableOpacity
-        onPress={handleClose}
-        activeOpacity={0.7}
-        hitSlop={{ top: spacing.lg, bottom: spacing.lg, left: spacing.lg, right: spacing.lg }}
-        aria-label={t('a11y_closeButton')}
-        role="button"
-        style={{
-          width: iconSizes.xl,
-          height: iconSizes.xl,
-          borderRadius: radius.full,
-          backgroundColor: 'rgba(255, 255, 255, 0.15)',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <X size={iconSizes.md} color="#FFFFFF" />
-      </TouchableOpacity>
-    </View>
+    />
   );
 
   const handleNext = useCallback(() => {

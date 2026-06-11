@@ -3,6 +3,7 @@ export { Button } from './Button';
 export { CategoryBadge } from './CategoryBadge';
 export type { CategoryCardProps } from './CategoryCard';
 export { CategoryCard } from './CategoryCard';
+export { CloseButton } from './CloseButton';
 export { DialogButton, DialogCard, dialogCardShadow, DialogShell } from './DialogShell';
 export { ProgressIndicator } from './ProgressIndicator';
 export type { TextComponent, TextPreset, TextProps } from './Typography';

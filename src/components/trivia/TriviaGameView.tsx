@@ -16,7 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ChevronLeft, ChevronRight, Lightbulb, Timer, X } from '@tamagui/lucide-icons';
+import { ChevronLeft, ChevronRight, Lightbulb, Timer } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
@@ -29,6 +29,7 @@ import { hexToRgba } from '../../utils/colors';
 import { maxFontSizeMultipliers } from '../../utils/responsive';
 import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { CloseButton } from '../CloseButton';
 import { GlassSurface } from '../GlassSurface';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -177,16 +178,12 @@ export function TriviaGameView({
           justifyContent="space-between"
           position="relative"
         >
-          <Pressable
+          <CloseButton
             onPress={() => handlePressWithHaptics(onExit)}
-            hitSlop={12}
-            style={({ pressed }) => [{ zIndex: 1 }, pressed && { opacity: 0.6 }]}
             testID="trivia-game-exit-button"
-            role="button"
-            aria-label="Exit"
-          >
-            <X size={iconSizes.lg} color={textColor} />
-          </Pressable>
+            label="Exit"
+            style={{ zIndex: 1 }}
+          />
 
           {/* Trivia Mode Title - Centered */}
           <View

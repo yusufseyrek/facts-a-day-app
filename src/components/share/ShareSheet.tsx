@@ -7,16 +7,16 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { type ViewShotRef } from 'react-native-view-shot';
 
-import { Facebook, Instagram, MessageCircle, Share2, Twitter, X } from '@tamagui/lucide-icons';
+import { Facebook, Instagram, MessageCircle, Share2, Twitter } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
 import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../../i18n';
 import { shareService } from '../../services/share';
 import { PLATFORM_CONFIG } from '../../services/share/platforms';
-import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { BottomSheetShell } from '../BottomSheetShell';
+import { CloseButton } from '../CloseButton';
 import { Text } from '../Typography';
 
 import { ShareCard } from './ShareCard';
@@ -51,9 +51,7 @@ function getPlatformIcon(platform: SharePlatform, color: string, size: number) {
 
 export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareSheetProps) {
   const { t } = useTranslation();
-  const { theme } = useTheme();
   const { spacing, iconSizes } = useResponsive();
-  const colors = hexColors[theme];
 
   const [availablePlatforms, setAvailablePlatforms] = useState<SharePlatform[]>([
     'instagram_stories',
@@ -131,18 +129,7 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
           paddingBottom={spacing.md}
         >
           <Text.Title>{t('a11y_shareButton')}</Text.Title>
-          <Pressable
-            onPress={onClose}
-            style={({ pressed }) => [
-              styles.closeButton,
-              {
-                backgroundColor: colors.background,
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
-          >
-            <X size={iconSizes.md} color={colors.text} />
-          </Pressable>
+          <CloseButton onPress={onClose} />
         </XStack>
 
         {/* Platform buttons */}
@@ -195,13 +182,6 @@ export function ShareSheet({ visible, fact, onClose, onShareComplete }: ShareShe
 }
 
 const styles = StyleSheet.create({
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   platformButton: {
     width: 80,
     alignItems: 'center',

@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 
-import { X } from '@tamagui/lucide-icons';
 import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n';
@@ -9,6 +8,7 @@ import { hexColors, useTheme } from '../theme';
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { useResponsive } from '../utils/useResponsive';
 
+import { CloseButton } from './CloseButton';
 import { DialogButton, DialogShell } from './DialogShell';
 import { Text } from './Typography';
 
@@ -27,7 +27,7 @@ export function ReportFactModal({
 }: ReportFactModalProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { spacing, radius, typography, iconSizes } = useResponsive();
+  const { spacing, radius, typography } = useResponsive();
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
   const [inputWidth, setInputWidth] = useState<number | undefined>(undefined);
@@ -112,24 +112,7 @@ export function ReportFactModal({
       >
         <XStack justifyContent="space-between" alignItems="center" marginBottom={spacing.sm}>
           <Text.Title>{t('reportFact')}</Text.Title>
-          <Pressable
-            onPress={handleClose}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-            role="button"
-            aria-label={t('cancel')}
-          >
-            <YStack
-              width={32}
-              height={32}
-              borderRadius={radius.full}
-              backgroundColor="$surface"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <X size={iconSizes.md} color={hexColors[theme].text} />
-            </YStack>
-          </Pressable>
+          <CloseButton onPress={handleClose} label={t('cancel')} />
         </XStack>
 
         <Text.Body color="$text" fontSize={typography.fontSize.caption}>
