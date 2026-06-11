@@ -72,12 +72,22 @@ function HomeScreen() {
   // Silent stale-while-revalidate on every focus — no spinner, scroll untouched.
   useFocusFeedRefresh(locale);
 
-  // Scroll-to-top handler for tab re-tap
+  // Scroll-to-top handler for tab re-tap (Android only; iOS re-tap scrolls the
+  // outer list natively — see the tabPress listener in (tabs)/_layout.tsx)
   useScrollToTopHandler(
     'index',
     useCallback(() => {
       keepReadingListRef.current?.scrollToOffset({ offset: 0, animated: true });
-      latestListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    }, [])
+  );
+
+  // Every home tab press (switch-to or re-tap, both platforms) snaps the
+  // Latest carousel back to the first card. Instant, so when arriving from
+  // another tab the carousel is already at 0 rather than animating on entry.
+  useScrollToTopHandler(
+    'index-latest',
+    useCallback(() => {
+      latestListRef.current?.scrollToOffset({ offset: 0, animated: false });
     }, [])
   );
 
