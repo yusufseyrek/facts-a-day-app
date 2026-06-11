@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Image } from 'expo-image';
@@ -112,6 +114,16 @@ function SampleFactDetail({ index }: { index: number }) {
     }
   };
 
+  // Pull-down-to-close, mirroring FactModal: iOS reports a negative
+  // contentOffset.y while bouncing above the top; a downward release past the
+  // threshold closes through the same morph-aware path as the X button.
+  const PULL_TO_CLOSE_THRESHOLD = 90;
+  const handleScrollEndDrag = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (event.nativeEvent.contentOffset.y <= -PULL_TO_CLOSE_THRESHOLD) {
+      handleClose();
+    }
+  };
+
   const categoryForBadge: Category = {
     id: -1,
     name: fact.category,
@@ -124,7 +136,9 @@ function SampleFactDetail({ index }: { index: number }) {
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <ScrollView
         showsVerticalScrollIndicator={false}
+        bounces={true}
         overScrollMode="never"
+        onScrollEndDrag={handleScrollEndDrag}
         contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}
       >
         {/* Hero image */}
