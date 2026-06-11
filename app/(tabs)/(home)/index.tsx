@@ -15,6 +15,7 @@ import { PAYWALL_PROMPT } from '../../../src/config/app';
 import { queryClient } from '../../../src/config/queryClient';
 import { usePremium, useScrollToTopHandler } from '../../../src/contexts';
 import { factKeys, localStateKeys } from '../../../src/hooks/queryKeys';
+import { useFocusFeedRefresh } from '../../../src/hooks/useFocusFeedRefresh';
 import { useHomeFeed } from '../../../src/hooks/useHomeFeed';
 import { useHomeFeedEvents } from '../../../src/hooks/useHomeFeedEvents';
 import { useKeepReading } from '../../../src/hooks/useKeepReading';
@@ -67,6 +68,9 @@ function HomeScreen() {
     onThisDayListRef,
     outerListRef: keepReadingListRef,
   });
+
+  // Silent stale-while-revalidate on every focus — no spinner, scroll untouched.
+  useFocusFeedRefresh(locale);
 
   // Scroll-to-top handler for tab re-tap
   useScrollToTopHandler(
