@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   ReduceMotion,
@@ -7,12 +7,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, {
-  Circle,
-  Defs,
-  LinearGradient as SvgLinearGradient,
-  Stop,
-} from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 
 import { Check, ChevronRight, Flame, Target, Zap } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,6 +28,8 @@ interface TriviaStatsHeroProps {
   stats: TriviaStats | null;
   categories?: CategoryWithProgress[];
   isDark: boolean;
+  /** First-load pending state: the card frame renders, the body is a spinner. */
+  loading?: boolean;
   t: (key: TranslationKeys, params?: Record<string, string | number>) => string;
   onPress?: () => void;
 }
@@ -270,6 +267,7 @@ export function TriviaStatsHero({
   stats,
   categories = [],
   isDark,
+  loading = false,
   t,
   onPress,
 }: TriviaStatsHeroProps) {
@@ -318,7 +316,9 @@ export function TriviaStatsHero({
   // sitting directly below the hero's left edge.
   const glowColor = blendHexColors(primaryColor, purpleColor, 0.5);
 
-  const hasData = testsTaken > 0;
+  // While loading, the card is inert and the Details pill stays hidden — we
+  // don't yet know whether there's anything to drill into.
+  const hasData = !loading && testsTaken > 0;
 
   // Deco-circle driver: identical to TriviaGridCard's iconContainerSize so the
   // corner texture matches the grid tiles.
@@ -428,132 +428,143 @@ export function TriviaStatsHero({
               previews the filled geometry and cannot drift out of sync. */}
           {/* Body splits in equal halves around a hairline divider: ring
               centered left, stat rows filling the right. */}
-          <XStack alignItems="center" gap={spacing.md}>
-            {/* Ring half: number stays full Display size (a 0-100 value plus
+          {loading ? (
+            /* minHeight matches the ring's layout footprint so the card
+               doesn't jump when the stats land. */
+            <YStack minHeight={iconSizes.heroXl} justifyContent="center" alignItems="center">
+              <ActivityIndicator color={contrastColor} />
+            </YStack>
+          ) : (
+            <XStack alignItems="center" gap={spacing.md}>
+              {/* Ring half: number stays full Display size (a 0-100 value plus
                 % fits the 84pt inner diameter without auto-shrinking — iOS
                 collapses adjustsFontSizeToFit text inside flex rows); the
                 label sits under the ring where it has the full column width. */}
-            <YStack flex={1} alignItems="center" gap={spacing.sm}>
-              <CircularProgress
-                percentage={hasData ? accuracy : 0}
-                size={iconSizes.heroXl}
-                strokeWidth={borderWidths.extraHeavy}
-                progressColor={contrastColor}
-                trackColor={plateBg}
-                innerFill={circleA}
-              >
-                {hasData ? (
-                  <XStack alignItems="baseline">
-                    <Text.Display color={contrastColor} numberOfLines={1}>
-                      {accuracy}
-                    </Text.Display>
-                    <Text.Caption
-                      fontFamily={FONT_FAMILIES.semibold}
-                      color={contrastColor}
-                      opacity={0.7}
-                    >
-                      %
-                    </Text.Caption>
-                  </XStack>
-                ) : (
-                  <Target size={iconSizes.lg} color={contrastColor} />
-                )}
-              </CircularProgress>
-              {hasData && (
-                <Text.Tiny {...tinyLabelProps} numberOfLines={1}>
-                  {t('accuracy')}
-                </Text.Tiny>
-              )}
-            </YStack>
-
-            {/* Structural hairline between the halves */}
-            <YStack
-              width={1}
-              alignSelf="stretch"
-              marginVertical={spacing.xs}
-              backgroundColor={hairline}
-            />
-
-            {hasData ? (
-              <YStack flex={1} gap={spacing.md}>
-                <StatRow
-                  icon={<Zap size={iconSizes.xs} color={contrastColor} />}
-                  plateBg={plateBg}
-                  value={testsTaken}
-                  label={t('quizzes')}
-                  micro={t('thisWeek', { count: testsThisWeek })}
-                  microActive={testsThisWeek > 0}
-                  contrastColor={contrastColor}                />
-                {/* Streak value muted at 0 as a dormant comeback cue; the Best
-                    micro line is always inactive (reference, not a delta). */}
-                <StatRow
-                  icon={<Flame size={iconSizes.xs} color={contrastColor} />}
-                  plateBg={plateBg}
-                  value={currentStreak}
-                  label={t('dayStreak')}
-                  micro={t('best', { count: bestStreak })}
-                  microActive={false}
-                  valueMuted={currentStreak === 0}
-                  contrastColor={contrastColor}                />
-                {topCategory ? (
-                  /* DORMANT branch (see topCategory above). Icon stays
-                     contrastColor — never topCategory.color_hex — so the
-                     all-contrast signature holds. */
-                  <XStack alignItems="center" gap={spacing.sm}>
-                    <YStack
-                      width={iconSizes.xl}
-                      height={iconSizes.xl}
-                      borderRadius={iconSizes.xl / 2}
-                      backgroundColor={plateBg}
-                      justifyContent="center"
-                      alignItems="center"
-                    >
-                      {getLucideIcon(topCategory.icon, iconSizes.xs, contrastColor)}
-                    </YStack>
-                    <YStack flex={1} justifyContent="center">
+              <YStack flex={1} alignItems="center" gap={spacing.sm}>
+                <CircularProgress
+                  percentage={hasData ? accuracy : 0}
+                  size={iconSizes.heroXl}
+                  strokeWidth={borderWidths.extraHeavy}
+                  progressColor={contrastColor}
+                  trackColor={plateBg}
+                  innerFill={circleA}
+                >
+                  {hasData ? (
+                    <XStack alignItems="baseline">
+                      <Text.Display color={contrastColor} numberOfLines={1}>
+                        {accuracy}
+                      </Text.Display>
                       <Text.Caption
                         fontFamily={FONT_FAMILIES.semibold}
                         color={contrastColor}
-                        numberOfLines={1}
+                        opacity={0.7}
                       >
-                        {topCategory.name}
+                        %
                       </Text.Caption>
-                      <Text.Tiny
-                        color={contrastColor}
-                        opacity={0.72}
-                        fontFamily={FONT_FAMILIES.medium}
-                        numberOfLines={1}
-                      >
-                        {`${topCategory.accuracy}% · ${t('topCat')}`}
-                      </Text.Tiny>
-                    </YStack>
-                  </XStack>
-                ) : (
-                  <StatRow
-                    icon={<Check size={iconSizes.xs} color={contrastColor} />}
-                    plateBg={plateBg}
-                    value={totalCorrect}
-                    label={t('correct')}
-                    micro={t('todayCount', { count: correctToday })}
-                    microActive={correctToday > 0}
-                    contrastColor={contrastColor}                  />
+                    </XStack>
+                  ) : (
+                    <Target size={iconSizes.lg} color={contrastColor} />
+                  )}
+                </CircularProgress>
+                {hasData && (
+                  <Text.Tiny {...tinyLabelProps} numberOfLines={1}>
+                    {t('accuracy')}
+                  </Text.Tiny>
                 )}
               </YStack>
-            ) : (
-              <YStack flex={1} justifyContent="center">
-                {/* No numberOfLines: long-locale sentences wrap (the German
+
+              {/* Structural hairline between the halves */}
+              <YStack
+                width={1}
+                alignSelf="stretch"
+                marginVertical={spacing.xs}
+                backgroundColor={hairline}
+              />
+
+              {hasData ? (
+                <YStack flex={1} gap={spacing.md}>
+                  <StatRow
+                    icon={<Zap size={iconSizes.xs} color={contrastColor} />}
+                    plateBg={plateBg}
+                    value={testsTaken}
+                    label={t('quizzes')}
+                    micro={t('thisWeek', { count: testsThisWeek })}
+                    microActive={testsThisWeek > 0}
+                    contrastColor={contrastColor}
+                  />
+                  {/* Streak value muted at 0 as a dormant comeback cue; the Best
+                    micro line is always inactive (reference, not a delta). */}
+                  <StatRow
+                    icon={<Flame size={iconSizes.xs} color={contrastColor} />}
+                    plateBg={plateBg}
+                    value={currentStreak}
+                    label={t('dayStreak')}
+                    micro={t('best', { count: bestStreak })}
+                    microActive={false}
+                    valueMuted={currentStreak === 0}
+                    contrastColor={contrastColor}
+                  />
+                  {topCategory ? (
+                    /* DORMANT branch (see topCategory above). Icon stays
+                     contrastColor — never topCategory.color_hex — so the
+                     all-contrast signature holds. */
+                    <XStack alignItems="center" gap={spacing.sm}>
+                      <YStack
+                        width={iconSizes.xl}
+                        height={iconSizes.xl}
+                        borderRadius={iconSizes.xl / 2}
+                        backgroundColor={plateBg}
+                        justifyContent="center"
+                        alignItems="center"
+                      >
+                        {getLucideIcon(topCategory.icon, iconSizes.xs, contrastColor)}
+                      </YStack>
+                      <YStack flex={1} justifyContent="center">
+                        <Text.Caption
+                          fontFamily={FONT_FAMILIES.semibold}
+                          color={contrastColor}
+                          numberOfLines={1}
+                        >
+                          {topCategory.name}
+                        </Text.Caption>
+                        <Text.Tiny
+                          color={contrastColor}
+                          opacity={0.72}
+                          fontFamily={FONT_FAMILIES.medium}
+                          numberOfLines={1}
+                        >
+                          {`${topCategory.accuracy}% · ${t('topCat')}`}
+                        </Text.Tiny>
+                      </YStack>
+                    </XStack>
+                  ) : (
+                    <StatRow
+                      icon={<Check size={iconSizes.xs} color={contrastColor} />}
+                      plateBg={plateBg}
+                      value={totalCorrect}
+                      label={t('correct')}
+                      micro={t('todayCount', { count: correctToday })}
+                      microActive={correctToday > 0}
+                      contrastColor={contrastColor}
+                    />
+                  )}
+                </YStack>
+              ) : (
+                <YStack flex={1} justifyContent="center">
+                  {/* No numberOfLines: long-locale sentences wrap (the German
                    noTestsYet string is 60 chars). Medium weight: an invitation,
                    not a stat, so it sits softer than the data voice. */}
-                <Text.Label
-                  color={contrastColor}
-                  opacity={0.85}
-                  fontFamily={FONT_FAMILIES.medium}
-                >
-                  {t('noTestsYet')}
-                </Text.Label>
-              </YStack>
-            )}
-          </XStack>
+                  <Text.Label
+                    color={contrastColor}
+                    opacity={0.85}
+                    fontFamily={FONT_FAMILIES.medium}
+                  >
+                    {t('noTestsYet')}
+                  </Text.Label>
+                </YStack>
+              )}
+            </XStack>
+          )}
         </YStack>
       </LinearGradient>
     </Pressable>

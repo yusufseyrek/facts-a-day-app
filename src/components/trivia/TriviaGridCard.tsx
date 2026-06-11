@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { Check, ChevronRight, Shuffle, Zap } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,6 +20,9 @@ interface TriviaGridCardProps {
   colorHex?: string;
   isCompleted?: boolean;
   isDisabled?: boolean;
+  /** Availability still being fetched: card is inert (not dimmed) and the
+      subtitle slot shows a small spinner instead of possibly-stale text. */
+  isLoading?: boolean;
   isDark: boolean;
   onPress: () => void;
   centerContent?: boolean;
@@ -33,11 +36,12 @@ export function TriviaGridCard({
   colorHex,
   isCompleted = false,
   isDisabled = false,
+  isLoading = false,
   isDark,
   onPress,
   centerContent = false,
 }: TriviaGridCardProps) {
-  const { iconSizes, spacing, radius, media } = useResponsive();
+  const { iconSizes, spacing, radius, media, typography } = useResponsive();
   const iconContainerSize = media.topicCardSize * 0.7;
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
@@ -82,7 +86,7 @@ export function TriviaGridCard({
     return `trivia-card-category-${icon || 'unknown'}`;
   };
 
-  const inert = isDisabled || (isCompleted && type === 'daily');
+  const inert = isLoading || isDisabled || (isCompleted && type === 'daily');
 
   return (
     <Pressable
@@ -173,7 +177,19 @@ export function TriviaGridCard({
             </Text.Label>
             {/* Only render the subtitle when there's text — an empty caption left
                 a blank line under category cards (which carry no subtitle). */}
-            {subtitle ? (
+            {isLoading ? (
+              /* Fixed to the caption's line height so the swap to real text
+                 doesn't shift the card's layout. */
+              <View
+                style={{
+                  height: typography.lineHeight.caption,
+                  justifyContent: 'center',
+                  alignSelf: centerContent ? 'center' : 'flex-start',
+                }}
+              >
+                <ActivityIndicator size="small" color={contrastColor} />
+              </View>
+            ) : subtitle ? (
               <Text.Caption
                 color={contrastColor}
                 opacity={0.78}

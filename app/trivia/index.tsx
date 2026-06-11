@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  View,
-} from 'react-native';
+import { Platform, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ArrowRight, Gamepad2, Sparkles } from '@tamagui/lucide-icons';
@@ -15,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { ContentContainer, LoadingContainer, ScreenContainer } from '../../src/components';
+import { ContentContainer, ScreenContainer } from '../../src/components';
 import { BannerAd } from '../../src/components/ads';
 import { TriviaGridCard, TriviaIntroModal, TriviaStatsHero } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
@@ -41,7 +34,12 @@ export default function TriviaScreen() {
   const { isTablet, typography, config, iconSizes, spacing, radius } = useResponsive();
   const headerGap = useHeaderContentGap();
 
-  const [loading, setLoading] = useState(true);
+  // Per-section loading instead of one full-screen gate: the hero's stats and
+  // the category grid come from local SQLite (+ disk-cached metadata) and land
+  // almost immediately; only the daily/mixed availability counts go over the
+  // network. Each box shows its own pending state on first load.
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [countsLoading, setCountsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // Scroll to top handler
@@ -84,36 +82,56 @@ export default function TriviaScreen() {
 
   const loadTriviaData = useCallback(
     async (isRefresh = false) => {
-      try {
-        if (isRefresh) setRefreshing(true);
+      if (isRefresh) setRefreshing(true);
 
-        const [streak, dailyCount, dailyCompleted, mixedCount, stats, categories] =
-          await Promise.all([
+      // Local track: SQLite stats/streak/completion plus the category list
+      // (user's selection joined with React-Query-cached metadata). These must
+      // not wait behind the network counts below.
+      const localLoad = (async () => {
+        try {
+          const [streak, dailyCompleted, stats, categories] = await Promise.all([
             triviaService.getDailyStreak(),
-            triviaService.getDailyTriviaQuestionsCount(locale),
             triviaService.isDailyTriviaCompleted(),
-            triviaService.getMixedTriviaQuestionsCount(locale),
             triviaService.getOverallStats(),
             triviaService.getCategoriesWithProgress(locale),
           ]);
 
-        setDailyStreak(streak);
-        setDailyQuestionsCount(dailyCount);
-        setIsDailyCompleted(dailyCompleted);
-        setMixedQuestionsCount(mixedCount);
-        setOverallStats(stats);
-        // Sort by color hue, but push categories with 0 questions to the end
-        const sorted = [...categories].sort((a, b) => {
-          if (a.total > 0 !== b.total > 0) return b.total > 0 ? 1 : -1;
-          return hexToHue(a.color_hex) - hexToHue(b.color_hex);
-        });
-        setCategoriesWithProgress(sorted);
-      } catch (error) {
-        console.error('Error loading trivia data:', error);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
+          setDailyStreak(streak);
+          setIsDailyCompleted(dailyCompleted);
+          setOverallStats(stats);
+          // Sort by color hue, but push categories with 0 questions to the end
+          const sorted = [...categories].sort((a, b) => {
+            if (a.total > 0 !== b.total > 0) return b.total > 0 ? 1 : -1;
+            return hexToHue(a.color_hex) - hexToHue(b.color_hex);
+          });
+          setCategoriesWithProgress(sorted);
+        } catch (error) {
+          console.error('Error loading trivia data:', error);
+        } finally {
+          setStatsLoading(false);
+        }
+      })();
+
+      // Network track: how many daily/mixed questions are available. Gates
+      // only the two mode cards, never the screen.
+      const countsLoad = (async () => {
+        try {
+          const [dailyCount, mixedCount] = await Promise.all([
+            triviaService.getDailyTriviaQuestionsCount(locale),
+            triviaService.getMixedTriviaQuestionsCount(locale),
+          ]);
+
+          setDailyQuestionsCount(dailyCount);
+          setMixedQuestionsCount(mixedCount);
+        } catch (error) {
+          console.error('Error loading trivia question counts:', error);
+        } finally {
+          setCountsLoading(false);
+        }
+      })();
+
+      await Promise.all([localLoad, countsLoad]);
+      setRefreshing(false);
     },
     [locale]
   );
@@ -232,24 +250,16 @@ export default function TriviaScreen() {
     }
   };
 
-  // Loading state
-  if (loading) {
-    return (
-      <ScreenContainer edges={[]}>
-        <StatusBar style={isDark ? 'light' : 'dark'} />
-        <LoadingContainer>
-          <ActivityIndicator size="large" color={hexColors.light.primary} />
-        </LoadingContainer>
-      </ScreenContainer>
-    );
-  }
-
   // Hub view (main trivia screen)
   // Check if there are any questions available (daily, mixed, or any category with questions)
   const hasCategoryQuestions = categoriesWithProgress.some((cat) => cat.total > 0);
   const hasQuestions = dailyQuestionsCount > 0 || mixedQuestionsCount > 0 || hasCategoryQuestions;
   // Show categories section if user has selected categories (even if no questions yet)
   const hasCategories = categoriesWithProgress.length > 0;
+  // While the counts are still in flight we can't tell "no content" from
+  // "still checking", so keep the modes grid up (cards show their own pending
+  // state) and only fall back to the empty state once the counts have loaded.
+  const showModes = hasQuestions || hasCategories || countsLoading;
 
   // Colors for empty state
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
@@ -295,12 +305,13 @@ export default function TriviaScreen() {
                 stats={overallStats}
                 categories={categoriesWithProgress}
                 isDark={isDark}
+                loading={statsLoading}
                 t={t}
                 onPress={() => router.push('/(tabs)/trivia/performance')}
               />
             </Animated.View>
 
-            {hasQuestions || hasCategories ? (
+            {showModes ? (
               <>
                 {/* Section title */}
                 <Animated.View
@@ -340,7 +351,8 @@ export default function TriviaScreen() {
                               : t('noQuestionsYet')
                         }
                         isCompleted={isDailyCompleted}
-                        isDisabled={dailyQuestionsCount === 0}
+                        isDisabled={!countsLoading && dailyQuestionsCount === 0}
+                        isLoading={countsLoading}
                         isDark={isDark}
                         onPress={showDailyTriviaIntro}
                         centerContent={isTablet}
@@ -349,7 +361,8 @@ export default function TriviaScreen() {
                         type="mixed"
                         title={t('mixedTrivia')}
                         subtitle={t('mixedTriviaDescription')}
-                        isDisabled={mixedQuestionsCount === 0}
+                        isDisabled={!countsLoading && mixedQuestionsCount === 0}
+                        isLoading={countsLoading}
                         isDark={isDark}
                         onPress={showMixedTriviaIntro}
                         centerContent={isTablet}
