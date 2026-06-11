@@ -81,13 +81,12 @@ function HomeScreen() {
     }, [])
   );
 
-  // Every home tab press (switch-to or re-tap, both platforms) snaps the
-  // Latest carousel back to the first card. Instant, so when arriving from
-  // another tab the carousel is already at 0 rather than animating on entry.
+  // Every home tab press (switch-to or re-tap, both platforms) scrolls the
+  // Latest carousel back to the first card.
   useScrollToTopHandler(
     'index-latest',
     useCallback(() => {
-      latestListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      latestListRef.current?.scrollToOffset({ offset: 0, animated: true });
     }, [])
   );
 
