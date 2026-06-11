@@ -910,13 +910,17 @@ function withAndroidWidgetBridgeRegistration(config) {
     if (!contents.includes('WidgetBridgePackage()')) {
       // Expression body: `override fun getPackages(): List<ReactPackage> =\n    PackageList(this).packages.apply {`
       // Block body:      `override fun getPackages(): List<ReactPackage> {\n    return PackageList(this).packages.apply {`
+      // Bridgeless (RN 0.85+): `packageList =\n    PackageList(this).packages.apply {` inside getDefaultReactHost()
       const blockPattern = /(override fun getPackages\(\): List<ReactPackage> \{[\s\S]*?return PackageList\(this\)\.packages\.apply \{)/;
       const exprPattern = /(override fun getPackages\(\): List<ReactPackage> =[\s\S]*?PackageList\(this\)\.packages\.apply \{)/;
+      const reactHostPattern = /(packageList =\s*\n?\s*PackageList\(this\)\.packages\.apply \{)/;
 
       if (blockPattern.test(contents)) {
         contents = contents.replace(blockPattern, `$1\n            add(WidgetBridgePackage())`);
       } else if (exprPattern.test(contents)) {
         contents = contents.replace(exprPattern, `$1\n              add(WidgetBridgePackage())`);
+      } else if (reactHostPattern.test(contents)) {
+        contents = contents.replace(reactHostPattern, `$1\n          add(WidgetBridgePackage())`);
       } else {
         console.warn('withFactWidget: could not find getPackages() to inject WidgetBridgePackage');
       }
