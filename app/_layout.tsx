@@ -202,8 +202,12 @@ function AppContent() {
 
     const inOnboarding = segments[0] === 'onboarding';
     const onSuccessScreen = (segments as string[])[1] === 'success';
+    // The sample-fact preview (fact/sample/[id]) belongs to the onboarding
+    // flow but lives on the root stack so its morph can cover the whole
+    // window — don't bounce it back to /onboarding.
+    const inSamplePreview = segments[0] === 'fact' && (segments as string[])[1] === 'sample';
 
-    if (!isOnboardingComplete && !inOnboarding) {
+    if (!isOnboardingComplete && !inOnboarding && !inSamplePreview) {
       // User hasn't completed onboarding, redirect to categories selection
       router.replace('/onboarding');
     } else if (isOnboardingComplete && inOnboarding && !onSuccessScreen) {

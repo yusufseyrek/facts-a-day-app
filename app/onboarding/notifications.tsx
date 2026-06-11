@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { Button, MultiTimePicker, ScreenContainer, Text } from '../../src/components';
+import { Button, GlassBackButton, MultiTimePicker, ScreenContainer, Text } from '../../src/components';
 import { LAYOUT } from '../../src/config/app';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';
@@ -202,6 +202,7 @@ export default function NotificationsScreen() {
         paddingBottom={spacing.sm}
         gap={spacing.md}
       >
+        <GlassBackButton onPress={() => router.back()} />
         <ScrollView
           showsVerticalScrollIndicator={false}
           overScrollMode="never"

@@ -12,6 +12,7 @@ export { EmptyState } from './EmptyState';
 export { ErrorBoundary } from './ErrorBoundary';
 export { FactActions } from './FactActions';
 export { FactModal } from './FactModal';
+export { GlassBackButton } from './GlassBackButton';
 export { GlassSurface } from './GlassSurface';
 export { InlineOverlay } from './InlineOverlay';
 export { MockNotificationCard } from './MockNotificationCard';

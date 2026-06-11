@@ -1,12 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Easing, Pressable, ScrollView } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Easing,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 
-import { ChevronLeft } from '@tamagui/lucide-icons';
+import { Check } from '@tamagui/lucide-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { XStack, YStack } from 'tamagui';
 
-import { Button, FONT_FAMILIES, ScreenContainer, Text } from '../../src/components';
+import { Button, FONT_FAMILIES, GlassBackButton, ScreenContainer, Text } from '../../src/components';
 import { LAYOUT, SUBSCRIPTION } from '../../src/config/app';
 import { deriveCategories, QUIZ_QUESTIONS } from '../../src/config/onboardingQuestions';
 import { useOnboarding, usePremium } from '../../src/contexts';
@@ -21,15 +31,157 @@ import {
 import * as api from '../../src/services/api';
 import * as db from '../../src/services/database';
 import { hexColors, useTheme } from '../../src/theme';
+import { darkenColor, getContrastColor } from '../../src/utils/colors';
 import { useResponsive } from '../../src/utils/useResponsive';
 
+import type { QuizOption } from '../../src/config/onboardingQuestions';
 import type { SupportedLocale } from '../../src/i18n';
 
-// Delay between tapping an option and advancing, so the selection highlight
-// is visible before the next question slides in.
-const ADVANCE_DELAY_MS = 300;
 const TRANSITION_OUT_MS = 160;
 const TRANSITION_IN_MS = 220;
+
+/**
+ * One selectable answer tile, in the app's gradient game-tile signature
+ * (TriviaGridCard): diagonal accent gradient, decorative offset circles,
+ * emoji on a translucent plate, accent-colored glow. Selection shows a
+ * contrast ring plus a check badge — multiple tiles can be selected.
+ */
+function QuizOptionTile({
+  option,
+  label,
+  selected,
+  onToggle,
+}: {
+  option: QuizOption;
+  label: string;
+  selected: boolean;
+  onToggle: () => void;
+}) {
+  const { spacing, radius, media, iconSizes } = useResponsive();
+
+  const accentColor = option.color;
+  const contrastColor = getContrastColor(accentColor);
+  const plateSize = media.topicCardSize * 0.6;
+  const plateBg = contrastColor === '#000000' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.22)';
+  const checkSize = iconSizes.md + spacing.xs;
+
+  return (
+    <Pressable
+      onPress={onToggle}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: selected }}
+      aria-label={label}
+      style={({ pressed }) => [
+        styles.tileShadow,
+        {
+          flex: 1,
+          borderRadius: radius.xl,
+          // Accent-colored glow instead of a flat black drop shadow — the
+          // tiles read as lit, not boxed (same treatment as trivia/discover).
+          shadowColor: accentColor,
+          opacity: pressed ? 0.9 : 1,
+          transform: [{ scale: pressed ? 0.97 : 1 }],
+        },
+      ]}
+    >
+      <LinearGradient
+        colors={[accentColor, darkenColor(accentColor, 0.22)]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ flex: 1, borderRadius: radius.xl, overflow: 'hidden' }}
+      >
+        {/* Layered decorative circles for depth */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: -plateSize * 0.6,
+            right: -plateSize * 0.5,
+            width: plateSize * 1.8,
+            height: plateSize * 1.8,
+            borderRadius: plateSize * 0.9,
+            backgroundColor:
+              contrastColor === '#000000' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.10)',
+          }}
+        />
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            bottom: -plateSize * 0.7,
+            left: -plateSize * 0.4,
+            width: plateSize * 1.4,
+            height: plateSize * 1.4,
+            borderRadius: plateSize * 0.7,
+            backgroundColor:
+              contrastColor === '#000000' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.07)',
+          }}
+        />
+
+        <YStack padding={spacing.lg} gap={spacing.md} alignItems="center">
+          {/* Emoji plate */}
+          <YStack
+            width={plateSize}
+            height={plateSize}
+            borderRadius={plateSize / 2}
+            backgroundColor={plateBg}
+            justifyContent="center"
+            alignItems="center"
+          >
+            <Text.Title style={{ fontSize: plateSize * 0.5, lineHeight: plateSize * 0.62 }}>
+              {option.emoji}
+            </Text.Title>
+          </YStack>
+
+          <Text.Label
+            fontFamily={FONT_FAMILIES.bold}
+            color={contrastColor}
+            numberOfLines={2}
+            textAlign="center"
+          >
+            {label}
+          </Text.Label>
+        </YStack>
+
+        {/* Selection ring */}
+        {selected && (
+          <View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                borderRadius: radius.xl,
+                borderWidth: 2.5,
+                borderColor: contrastColor,
+              },
+            ]}
+          />
+        )}
+
+        {/* Check badge (empty ring when unselected — signals multi-select) */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: spacing.sm,
+            right: spacing.sm,
+            width: checkSize,
+            height: checkSize,
+            borderRadius: checkSize / 2,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: selected ? contrastColor : 'transparent',
+            borderWidth: selected ? 0 : 1.5,
+            borderColor:
+              contrastColor === '#000000' ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.55)',
+          }}
+        >
+          {selected && <Check size={checkSize * 0.62} color={accentColor} strokeWidth={3} />}
+        </View>
+      </LinearGradient>
+    </Pressable>
+  );
+}
 
 export default function Questions() {
   const { theme } = useTheme();
@@ -45,7 +197,7 @@ export default function Questions() {
     downloadFacts,
   } = useOnboarding();
   const { isPremium, restorePurchases } = usePremium();
-  const { spacing, radius, typography, borderWidths, iconSizes } = useResponsive();
+  const { spacing } = useResponsive();
 
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,11 +205,11 @@ export default function Questions() {
   const [isRestoring, setIsRestoring] = useState(false);
 
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<(number | null)[]>(() =>
-    QUIZ_QUESTIONS.map(() => null)
-  );
-  // Set when the last answer lands; the effect below waits for the context to
-  // reflect the derived categories before starting the download + navigating.
+  // Selected option indexes per question (multi-select)
+  const [answers, setAnswers] = useState<number[][]>(() => QUIZ_QUESTIONS.map(() => []));
+  // Set when the last question is confirmed; the effect below waits for the
+  // context to reflect the derived categories before starting the download +
+  // navigating.
   const [quizComplete, setQuizComplete] = useState(false);
   const isTransitioning = useRef(false);
 
@@ -150,30 +302,50 @@ export default function Questions() {
     });
   };
 
-  const selectOption = (optionIndex: number) => {
+  const toggleOption = (optionIndex: number) => {
     if (isTransitioning.current || quizComplete) return;
-
-    const question = QUIZ_QUESTIONS[questionIndex];
-    trackOnboardingQuizAnswer({
-      questionKey: question.key,
-      optionKey: question.options[optionIndex].key,
-    });
-
-    const nextAnswers = [...answers];
-    nextAnswers[questionIndex] = optionIndex;
-    setAnswers(nextAnswers);
-
-    setTimeout(() => {
-      if (questionIndex < QUIZ_QUESTIONS.length - 1) {
-        goToQuestion(questionIndex + 1, 1);
+    setAnswers((prev) => {
+      const next = prev.map((selection) => [...selection]);
+      const selection = next[questionIndex];
+      const at = selection.indexOf(optionIndex);
+      if (at >= 0) {
+        selection.splice(at, 1);
       } else {
-        finishQuiz(nextAnswers);
+        selection.push(optionIndex);
       }
-    }, ADVANCE_DELAY_MS);
+      return next;
+    });
   };
 
-  const finishQuiz = (finalAnswers: (number | null)[]) => {
-    const derived = deriveCategories(finalAnswers, categories, isPremium);
+  const handleBack = () => {
+    if (quizComplete) return;
+    if (questionIndex > 0) {
+      goToQuestion(questionIndex - 1, -1);
+    } else {
+      router.back();
+    }
+  };
+
+  const handleContinue = () => {
+    if (isTransitioning.current || quizComplete) return;
+    const question = QUIZ_QUESTIONS[questionIndex];
+    const selection = answers[questionIndex];
+    if (selection.length === 0) return;
+
+    trackOnboardingQuizAnswer({
+      questionKey: question.key,
+      optionKey: selection.map((i) => question.options[i].key).join(','),
+    });
+
+    if (questionIndex < QUIZ_QUESTIONS.length - 1) {
+      goToQuestion(questionIndex + 1, 1);
+    } else {
+      finishQuiz(answers);
+    }
+  };
+
+  const finishQuiz = (selections: number[][]) => {
+    const derived = deriveCategories(selections, categories, isPremium);
     trackOnboardingCategoriesSelected(derived);
     setSelectedCategories(derived);
     setQuizComplete(true);
@@ -264,7 +436,13 @@ export default function Questions() {
   }
 
   const question = QUIZ_QUESTIONS[questionIndex];
-  const selectedColor = theme === 'dark' ? hexColors.dark.neonCyan : hexColors.light.primary;
+  const selection = answers[questionIndex];
+
+  // Options in rows of two — the gradient tiles read as a game board.
+  const optionRows: QuizOption[][] = [];
+  for (let i = 0; i < question.options.length; i += 2) {
+    optionRows.push(question.options.slice(i, i + 2));
+  }
 
   return (
     <ScreenContainer edges={['bottom', 'left', 'right']}>
@@ -276,20 +454,7 @@ export default function Questions() {
         gap={spacing.md}
         flex={1}
       >
-        {/* Back to the previous question */}
-        <XStack alignItems="center" height={iconSizes.lg} gap={spacing.sm}>
-          {questionIndex > 0 && (
-            <Pressable
-              onPress={() => goToQuestion(questionIndex - 1, -1)}
-              accessibilityRole="button"
-              aria-label={t('goBack')}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-            >
-              <ChevronLeft size={iconSizes.lg} color={hexColors[theme].text} />
-            </Pressable>
-          )}
-        </XStack>
+        <GlassBackButton onPress={handleBack} />
 
         <Animated.View
           style={{
@@ -318,60 +483,60 @@ export default function Questions() {
                   })}
                 </Text.Caption>
                 <Text.Headline>{t(question.labelKey)}</Text.Headline>
+                <Text.Caption color="$textSecondary">{t('quizMultiHint')}</Text.Caption>
               </YStack>
 
               <YStack gap={spacing.md}>
-                {question.options.map((option, optionIndex) => {
-                  const selected = answers[questionIndex] === optionIndex;
-                  return (
-                    <Pressable
-                      key={option.key}
-                      onPress={() => selectOption(optionIndex)}
-                      accessibilityRole="button"
-                      aria-label={t(option.labelKey)}
-                      style={({ pressed }) => ({
-                        transform: [{ scale: pressed || selected ? 0.98 : 1 }],
-                      })}
-                    >
-                      <XStack
-                        alignItems="center"
-                        gap={spacing.md}
-                        padding={spacing.lg}
-                        borderRadius={radius.lg}
-                        borderWidth={borderWidths.heavy}
-                        borderColor={selected ? selectedColor : '$border'}
-                        backgroundColor={selected ? '$primaryLight' : '$surface'}
-                      >
-                        <Text.Title>{option.emoji}</Text.Title>
-                        <Text.Body
-                          flex={1}
-                          fontFamily={FONT_FAMILIES.semibold}
-                          fontSize={typography.fontSize.body * 1.05}
-                        >
-                          {t(option.labelKey)}
-                        </Text.Body>
-                      </XStack>
-                    </Pressable>
-                  );
-                })}
+                {optionRows.map((row, rowIndex) => (
+                  <XStack key={`row-${rowIndex}`} gap={spacing.md} alignItems="stretch">
+                    {row.map((option) => {
+                      const optionIndex = question.options.indexOf(option);
+                      return (
+                        <QuizOptionTile
+                          key={option.key}
+                          option={option}
+                          label={t(option.labelKey)}
+                          selected={selection.includes(optionIndex)}
+                          onToggle={() => toggleOption(optionIndex)}
+                        />
+                      );
+                    })}
+                  </XStack>
+                ))}
               </YStack>
             </YStack>
           </ScrollView>
         </Animated.View>
 
-        {SUBSCRIPTION.ENABLED && !isPremium && (
-          <Pressable
-            onPress={handleRestorePurchases}
-            disabled={isRestoring}
-            hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
-            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, alignSelf: 'center' })}
-          >
-            <Text.Caption color="$textSecondary" textAlign="center">
-              {isRestoring ? t('loading') : t('paywallRestore')}
-            </Text.Caption>
-          </Pressable>
-        )}
+        <YStack gap={spacing.md} alignItems="center">
+          <Button onPress={handleContinue} disabled={selection.length === 0}>
+            {t('continue')}
+          </Button>
+          {SUBSCRIPTION.ENABLED && !isPremium && (
+            <Pressable
+              onPress={handleRestorePurchases}
+              disabled={isRestoring}
+              hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            >
+              <Text.Caption color="$textSecondary" textAlign="center">
+                {isRestoring ? t('loading') : t('paywallRestore')}
+              </Text.Caption>
+            </Pressable>
+          )}
+        </YStack>
       </YStack>
     </ScreenContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  tileShadow: {
+    // shadowColor is set per-tile (the accent color) at the call site.
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+});

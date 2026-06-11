@@ -8,6 +8,7 @@ export const translations = {
 
     // Onboarding - Preference quiz
     quizProgress: 'Frage %{current} von %{total}',
+    quizMultiHint: 'Wähle so viele aus, wie du magst',
     quizQuestionScroll: 'Bei welchem Fakt würdest du hängen bleiben?',
     quizScrollUniverse: 'Wie das Universum funktioniert',
     quizScrollPast: 'Unerzählte Geschichten der Vergangenheit',
@@ -563,6 +564,7 @@ export const translations = {
 
     // Onboarding - Preference quiz
     quizProgress: 'Question %{current} of %{total}',
+    quizMultiHint: 'Pick as many as you like',
     quizQuestionScroll: 'Which fact would stop your scroll?',
     quizScrollUniverse: 'How the universe works',
     quizScrollPast: 'Untold stories from the past',
@@ -1108,6 +1110,7 @@ export const translations = {
 
     // Onboarding - Preference quiz
     quizProgress: 'Pregunta %{current} de %{total}',
+    quizMultiHint: 'Elige tantas como quieras',
     quizQuestionScroll: '¿Qué dato detendría tu scroll?',
     quizScrollUniverse: 'Cómo funciona el universo',
     quizScrollPast: 'Historias olvidadas del pasado',
@@ -1657,6 +1660,7 @@ export const translations = {
 
     // Onboarding - Preference quiz
     quizProgress: 'Question %{current} sur %{total}',
+    quizMultiHint: 'Choisissez-en autant que vous voulez',
     quizQuestionScroll: 'Quel fait arrêterait votre scroll ?',
     quizScrollUniverse: "Comment fonctionne l'univers",
     quizScrollPast: 'Histoires méconnues du passé',
@@ -2209,6 +2213,7 @@ export const translations = {
 
     // Onboarding - Preference quiz
     quizProgress: '質問 %{current}/%{total}',
+    quizMultiHint: 'いくつでも選べます',
     quizQuestionScroll: '思わず手が止まるのはどんな豆知識？',
     quizScrollUniverse: '宇宙のしくみ',
     quizScrollPast: '知られざる歴史の物語',
@@ -2753,6 +2758,7 @@ export const translations = {
 
     // Onboarding - Preference quiz
     quizProgress: '질문 %{current}/%{total}',
+    quizMultiHint: '원하는 만큼 선택하세요',
     quizQuestionScroll: '스크롤을 멈추게 할 지식은?',
     quizScrollUniverse: '우주가 작동하는 방식',
     quizScrollPast: '알려지지 않은 과거의 이야기',
@@ -3296,6 +3302,7 @@ export const translations = {
 
     // Onboarding - Preference quiz
     quizProgress: 'Soru %{current}/%{total}',
+    quizMultiHint: 'İstediğin kadar seçebilirsin',
     quizQuestionScroll: 'Hangi bilgi kaydırmanı durdururdu?',
     quizScrollUniverse: 'Evren nasıl işliyor',
     quizScrollPast: 'Geçmişin anlatılmamış hikâyeleri',
@@ -3841,6 +3848,7 @@ export const translations = {
 
     // Onboarding - Preference quiz
     quizProgress: '问题 %{current}/%{total}',
+    quizMultiHint: '想选几个都可以',
     quizQuestionScroll: '哪条知识会让你停下滑动？',
     quizScrollUniverse: '宇宙如何运转',
     quizScrollPast: '不为人知的历史故事',

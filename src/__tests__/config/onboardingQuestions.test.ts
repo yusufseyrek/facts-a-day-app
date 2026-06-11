@@ -70,11 +70,11 @@ describe('QUIZ_QUESTIONS', () => {
 });
 
 describe('deriveCategories', () => {
-  it('always yields at least MINIMUM_CATEGORIES for any full answer combination', () => {
+  it('always yields at least MINIMUM_CATEGORIES for any single-pick combination', () => {
     for (let a = 0; a < 4; a++) {
       for (let b = 0; b < 4; b++) {
         for (let c = 0; c < 4; c++) {
-          const derived = deriveCategories([a, b, c], ALL_CATEGORIES, false);
+          const derived = deriveCategories([[a], [b], [c]], ALL_CATEGORIES, false);
           expect(derived.length).toBeGreaterThanOrEqual(MINIMUM_CATEGORIES);
           expect(derived.length).toBeLessThanOrEqual(6);
         }
@@ -84,36 +84,51 @@ describe('deriveCategories', () => {
 
   it('ranks directly-chosen themes first', () => {
     // universe + tech documentary + invest
-    const derived = deriveCategories([0, 0, 3], ALL_CATEGORIES, false);
+    const derived = deriveCategories([[0], [0], [3]], ALL_CATEGORIES, false);
     // science 2+1, technology 2+1, business 1+2 all score 3
     expect(derived.slice(0, 3).sort()).toEqual(['business', 'science', 'technology']);
   });
 
+  it('accumulates weights across multiple selections in one question', () => {
+    // Q1 universe only vs Q1 universe + nature: the second adds nature themes
+    const single = deriveCategories([[0], [], []], ALL_CATEGORIES, false);
+    const multi = deriveCategories([[0, 3], [], []], ALL_CATEGORIES, false);
+    expect(single).not.toContain('nature');
+    expect(multi).toContain('nature');
+    expect(multi).toContain('space');
+  });
+
+  it('caps at 6 even when every option is selected', () => {
+    const everything = QUIZ_QUESTIONS.map((q) => q.options.map((_, i) => i));
+    const derived = deriveCategories(everything, ALL_CATEGORIES, false);
+    expect(derived).toHaveLength(6);
+  });
+
   it('excludes premium categories for free users', () => {
     // past + civilizations doubles up on mythology (premium)
-    const derived = deriveCategories([1, 1, 2], ALL_CATEGORIES, false);
+    const derived = deriveCategories([[1], [1], [2]], ALL_CATEGORIES, false);
     for (const slug of derived) {
       expect(PREMIUM_SLUGS).not.toContain(slug);
     }
   });
 
   it('includes premium categories for premium users when they score', () => {
-    const derived = deriveCategories([1, 1, 2], ALL_CATEGORIES, true);
+    const derived = deriveCategories([[1], [1], [2]], ALL_CATEGORIES, true);
     expect(derived).toContain('mythology');
   });
 
   it('drops slugs the backend no longer offers', () => {
     const withoutSpace = ALL_CATEGORIES.filter((c) => c.slug !== 'space');
-    const derived = deriveCategories([0, 0, 3], withoutSpace, false);
+    const derived = deriveCategories([[0], [0], [3]], withoutSpace, false);
     expect(derived).not.toContain('space');
   });
 
   it('tops up from fallbacks when answers are missing', () => {
-    const derived = deriveCategories([null, null, null], ALL_CATEGORIES, false);
+    const derived = deriveCategories([[], [], []], ALL_CATEGORIES, false);
     expect(derived.length).toBeGreaterThanOrEqual(MINIMUM_CATEGORIES);
   });
 
   it('returns nothing when the backend offers no categories', () => {
-    expect(deriveCategories([0, 1, 2], [], false)).toEqual([]);
+    expect(deriveCategories([[0], [1], [2]], [], false)).toEqual([]);
   });
 });
