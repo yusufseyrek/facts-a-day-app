@@ -9,82 +9,38 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-import { Shuffle } from '@tamagui/lucide-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from 'expo-router';
 import { useRouter } from 'expo-router';
 
+import { useStoryMorphSource } from '../hooks/useStoryMorphSource';
 import { useTranslation } from '../i18n';
 import * as api from '../services/api';
+import {
+  getCachedRowSync,
+  hydrateCachedRow,
+  setCachedRow,
+} from '../services/categoryButtonsCache';
 import { onFeedRefresh } from '../services/contentRefresh';
 import * as database from '../services/database';
 import { getSelectedCategories } from '../services/onboarding';
 import { onPreferenceFeedRefresh } from '../services/preferences';
+import { storyBasePath } from '../services/storyMorph';
 import { prefetchStory } from '../services/storyPrefetch';
 import { hexColors, useTheme } from '../theme';
 import { blendHexColors } from '../utils/colors';
-import { getLucideIcon } from '../utils/iconMapper';
 import { useResponsive } from '../utils/useResponsive';
 
+import { StoryButtonCircle } from './storyMorph/StoryButtonCircle';
 import { FONT_FAMILIES, Text } from './Typography';
 
+import type { CachedCategoryItem } from '../services/categoryButtonsCache';
 import type { Category } from '../services/database';
 
-interface CategoryItem {
-  slug: string;
-  name: string;
-  icon?: string;
-  color_hex?: string;
-  isMix?: boolean;
-}
+type CategoryItem = CachedCategoryItem;
 
 export interface CategoryStoryButtonsRef {
   scrollToStart: () => void;
-}
-
-// Module-level cache so the row renders the previous session's buttons
-// immediately on remount instead of flashing a skeleton while the async
-// load (AsyncStorage → SQLite → SQLite) runs. Keyed by locale because the
-// `name` field is localized.
-type CachedRow = { items: CategoryItem[]; unseenStatus: Record<string, boolean> };
-const CACHE_KEY_PREFIX = '@category_buttons_cache_v1_';
-const memCache = new Map<string, CachedRow>();
-const hydrationByLocale = new Map<string, Promise<CachedRow | null>>();
-
-function getCachedRowSync(locale: string): CachedRow | null {
-  return memCache.get(locale) ?? null;
-}
-
-function setCachedRow(locale: string, data: CachedRow): void {
-  // Never cache a degraded row (empty, or only the Mix button). Persisting one
-  // would make the buttons "disappear" on the next cold start until the live
-  // load ran. Only real category buttons are worth caching.
-  const hasRealCategories = data.items.some((it) => !it.isMix);
-  if (!hasRealCategories) return;
-  memCache.set(locale, data);
-  AsyncStorage.setItem(CACHE_KEY_PREFIX + locale, JSON.stringify(data)).catch(() => {});
-}
-
-function hydrateCachedRow(locale: string): Promise<CachedRow | null> {
-  const existing = hydrationByLocale.get(locale);
-  if (existing) return existing;
-  const promise = (async () => {
-    const fromMem = memCache.get(locale);
-    if (fromMem) return fromMem;
-    try {
-      const raw = await AsyncStorage.getItem(CACHE_KEY_PREFIX + locale);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as CachedRow;
-      memCache.set(locale, parsed);
-      return parsed;
-    } catch {
-      return null;
-    }
-  })();
-  hydrationByLocale.set(locale, promise);
-  return promise;
 }
 
 export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
@@ -209,8 +165,11 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
         // If metadata failed/empty but we had previously cached category
         // buttons, keep showing those alongside Mix instead of dropping to a
-        // lone Mix button. Only the freshly-resolved set replaces them.
-        const cachedRest = (getCachedRowSync(locale)?.items ?? []).filter((it) => !it.isMix);
+        // lone Mix button — but only the ones still selected, so a stale cache
+        // from a previous onboarding run can never resurrect deselected rows.
+        const cachedRest = (getCachedRowSync(locale)?.items ?? []).filter(
+          (it) => !it.isMix && selectedSlugs.includes(it.slug)
+        );
         const resolvedItems = items.length > 0 ? items : cachedRest;
 
         // Load unseen status
@@ -227,9 +186,10 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
         setUnseenStatus(status);
         setCategories(newItems);
-        // Only persist a row that actually resolved real category buttons, so
-        // we never cache a degraded (Mix-only) row over a good one.
-        if (resolvedItems.length > 0) {
+        // Only persist a FRESHLY resolved row (selected ∩ metadata). The
+        // cached-fallback path must not re-persist itself: that would keep
+        // renewing a stale row's lease after the selection has changed.
+        if (items.length > 0) {
           setCachedRow(locale, { items: newItems, unseenStatus: status });
         }
 
@@ -248,21 +208,27 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     const loadUnseenStatus = async () => {
       try {
         const selectedSlugs = await getSelectedCategories();
+        const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
 
-        // Re-sort ONLY an already-populated row. If the row hasn't loaded its
-        // category buttons yet (cold/in-flight), do nothing here — otherwise we
-        // would overwrite (and worse, persist) an empty row, which is exactly
-        // what made the buttons vanish on refresh/focus. loadCategories owns
-        // building the row; this only refreshes unseen highlighting.
+        // Read the row AFTER the awaits so a load that landed mid-flight isn't
+        // clobbered with a pre-await snapshot. loadCategories owns building the
+        // row; this only refreshes unseen highlighting.
         const prev = categoriesRef.current;
         const rest = prev.filter((c) => !c.isMix);
-        if (rest.length === 0) {
-          // Nothing to re-sort yet; trigger a real (re)load instead of wiping.
+
+        // Re-sort ONLY a row that matches the current selections. A mismatch
+        // means the row is stale (cache from a previous selection, cold/
+        // in-flight load) — rebuild it instead of re-sorting (and worse,
+        // persisting) the wrong buttons. This also self-heals on every focus.
+        const onScreen = new Set(rest.map((c) => c.slug));
+        const matchesSelection =
+          rest.length === selectedSlugs.length &&
+          selectedSlugs.every((slug) => onScreen.has(slug));
+        if (!matchesSelection) {
           loadCategories();
           return;
         }
 
-        const status = await database.getUnseenStoryStatus(selectedSlugs, locale);
         const mix = prev.find((c) => c.isMix) ?? { slug: 'mix', name: t('mix'), isMix: true };
         rest.sort((a, b) => {
           const aUnseen = status[a.slug] ? 0 : 1;
@@ -281,7 +247,10 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
     const handlePress = useCallback(
       (item: CategoryItem) => {
-        router.push(`/story/${item.slug}`);
+        // storyBasePath picks the morph-presented route when the pressed
+        // button registered a fresh circle measurement on press-in (the
+        // normal case), falling back to the plain fullScreenModal otherwise.
+        router.push(`${storyBasePath(item.slug)}/${item.slug}`);
       },
       [router]
     );
@@ -462,20 +431,6 @@ const CategoryRowSkeleton = React.memo(
 
 CategoryRowSkeleton.displayName = 'CategoryRowSkeleton';
 
-/**
- * Lighten a hex color by a given amount (0–1)
- */
-function lightenColor(hex: string, amount: number): string {
-  const clean = hex.replace('#', '');
-  const r = parseInt(clean.substring(0, 2), 16);
-  const g = parseInt(clean.substring(2, 4), 16);
-  const b = parseInt(clean.substring(4, 6), 16);
-  const newR = Math.min(255, Math.round(r + (255 - r) * amount));
-  const newG = Math.min(255, Math.round(g + (255 - g) * amount));
-  const newB = Math.min(255, Math.round(b + (255 - b) * amount));
-  return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
-}
-
 // Separate memoized button component for performance
 const CategoryButton = React.memo(
   ({
@@ -523,24 +478,68 @@ const CategoryButton = React.memo(
       transform: [{ scale: scale.value }],
       opacity: scale.value < 1 ? 0.85 : 1,
     }));
+
+    // isMorphSourceActive hides the circle while its morph presentation is on
+    // screen (the replica covers the exact rect, so no hole shows in the row).
+    const { registerMorphSource, isMorphSourceActive } = useStoryMorphSource(item.slug);
+    const pressableRef = useRef<View>(null);
+
     const handlePressIn = useCallback(() => {
       scale.value = withSpring(0.92, { damping: 15, stiffness: 300 });
       // Warm this category's feed the instant the finger lands, before the
       // navigation completes — a usable head start even on a cache miss.
       onPrefetch();
-    }, [onPrefetch]);
+      // Register the circle as the morph source on press-IN: measureInWindow
+      // is async, so starting here guarantees the rect is registered by the
+      // time onPress pushes the route via storyBasePath(). The Pressable is
+      // measured (the spring scale lives on a child, so its rect is stable)
+      // and the centered circle's rect is derived from it. A press-in that
+      // turns into a scroll leaves a harmless entry (slug + TTL guarded).
+      pressableRef.current?.measureInWindow((x, y, width, height) => {
+        if (!(width > 0 && height > 0)) return;
+        registerMorphSource({
+          categorySlug: item.slug,
+          x: x + (width - outerSize) / 2,
+          y,
+          width: outerSize,
+          height: outerSize,
+          borderRadius: outerSize / 2,
+          hasUnseen,
+          isMix: !!item.isMix,
+          icon: item.icon,
+          ringColor,
+          iconColor,
+          unseenFill,
+          seenFill,
+          borderColor,
+          outerSize,
+          innerSize,
+          iconSize,
+        });
+      });
+    }, [
+      onPrefetch,
+      registerMorphSource,
+      item.slug,
+      item.isMix,
+      item.icon,
+      hasUnseen,
+      ringColor,
+      iconColor,
+      unseenFill,
+      seenFill,
+      borderColor,
+      outerSize,
+      innerSize,
+      iconSize,
+    ]);
     const handlePressOut = useCallback(() => {
       scale.value = withSpring(1, { damping: 15, stiffness: 150 });
     }, []);
 
-    const icon = item.isMix ? (
-      <Shuffle size={iconSize} color={iconColor} />
-    ) : (
-      getLucideIcon(item.icon, iconSize, iconColor)
-    );
-
     return (
       <Pressable
+        ref={pressableRef}
         testID={`story-button-${item.slug}`}
         onPress={onPress}
         onPressIn={handlePressIn}
@@ -548,55 +547,20 @@ const CategoryButton = React.memo(
         style={[styles.buttonContainer, { width: outerSize + labelMarginTop }]}
       >
         <Animated.View style={animatedStyle}>
-          <View>
-            {hasUnseen ? (
-              // Gradient ring for unseen facts
-              <LinearGradient
-                colors={[ringColor, lightenColor(ringColor, 0.4)]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[
-                  styles.circle,
-                  {
-                    width: outerSize,
-                    height: outerSize,
-                    borderRadius: outerSize / 2,
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.circle,
-                    {
-                      width: innerSize,
-                      height: innerSize,
-                      borderRadius: innerSize / 2,
-                      backgroundColor: unseenFill,
-                    },
-                  ]}
-                >
-                  {icon}
-                </View>
-              </LinearGradient>
-            ) : (
-              // Seen: slim hairline ring + faint category tint (the chunky
-              // muted ring read as heavy next to the gradient state)
-              <View
-                style={[
-                  styles.circle,
-                  {
-                    width: outerSize,
-                    height: outerSize,
-                    borderRadius: outerSize / 2,
-                    borderWidth: 1.5,
-                    borderColor,
-                    backgroundColor: seenFill,
-                  },
-                ]}
-              >
-                {icon}
-              </View>
-            )}
+          <View style={isMorphSourceActive ? styles.morphSourceHidden : undefined}>
+            <StoryButtonCircle
+              hasUnseen={hasUnseen}
+              isMix={!!item.isMix}
+              icon={item.icon}
+              ringColor={ringColor}
+              iconColor={iconColor}
+              unseenFill={unseenFill}
+              seenFill={seenFill}
+              borderColor={borderColor}
+              outerSize={outerSize}
+              innerSize={innerSize}
+              iconSize={iconSize}
+            />
           </View>
         </Animated.View>
         <Text.Tiny
@@ -623,8 +587,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     alignItems: 'center',
   },
-  circle: {
-    justifyContent: 'center',
-    alignItems: 'center',
+  morphSourceHidden: {
+    opacity: 0,
   },
 });

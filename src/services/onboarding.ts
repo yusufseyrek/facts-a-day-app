@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import * as api from './api';
+import { clearCategoryButtonsCache } from './categoryButtonsCache';
 import * as db from './database';
 
 // AsyncStorage keys
@@ -242,6 +243,10 @@ export async function resetOnboarding(): Promise<void> {
     await AsyncStorage.removeItem(SELECTED_CATEGORIES_KEY);
     await AsyncStorage.removeItem(NOTIFICATION_TIME_KEY);
     await AsyncStorage.removeItem(NOTIFICATION_TIMES_KEY);
+    // The home story-button row caches its last rendered state (memory +
+    // disk). Clear it with the selections it was built from, or the next
+    // onboarding run can briefly show — and re-persist — the old categories.
+    await clearCategoryButtonsCache();
     await db.clearDatabase();
     if (__DEV__) console.log('Onboarding reset successfully');
   } catch (error) {
