@@ -26,7 +26,9 @@ import {
   TestTube,
   Trash2,
   Trophy,
+  User,
 } from '../../../src/components/icons';
+import { ScreenNameModal } from '../../../src/components/ScreenNameModal';
 import { ThemePickerModal } from '../../../src/components/settings/ThemePickerModal';
 import { TimePickerModal } from '../../../src/components/settings/TimePickerModal';
 import { SettingsRow } from '../../../src/components/SettingsRow';
@@ -52,6 +54,7 @@ import * as onboardingService from '../../../src/services/onboarding';
 import { cleanupShareCards } from '../../../src/services/share';
 import { clearHintUsage } from '../../../src/services/trivia';
 import * as updates from '../../../src/services/updates';
+import * as userService from '../../../src/services/user';
 import { hexColors, useTheme } from '../../../src/theme';
 import { openInAppBrowser } from '../../../src/utils/browser';
 import { useResponsive } from '../../../src/utils/useResponsive';
@@ -118,6 +121,16 @@ export default function SettingsPage() {
   // Modal visibility state
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
+  const [showScreenNameModal, setShowScreenNameModal] = useState(false);
+
+  // Claimed screen name (null until the user picks one)
+  const [screenName, setScreenName] = useState<string | null>(null);
+  useEffect(() => {
+    userService
+      .getProfile()
+      .then((profile) => setScreenName(profile?.screenName ?? null))
+      .catch(() => {});
+  }, []);
 
   // Preferences state
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -647,6 +660,13 @@ export default function SettingsPage() {
       title: t('settingsUserPreferences'),
       data: [
         {
+          id: 'screenName',
+          label: t('screenName'),
+          value: screenName ?? t('screenNameNotSet'),
+          icon: <User size={iconSizes.md} color={iconColor} />,
+          onPress: () => setShowScreenNameModal(true),
+        },
+        {
           id: 'language',
           label: t('settingsLanguage'),
           value: getLanguageName(locale),
@@ -861,6 +881,7 @@ export default function SettingsPage() {
     notificationPermissionGranted,
     isDevelopment,
     theme,
+    screenName,
     imageCacheSize,
     updateInfo,
     isCheckingUpdate,
@@ -968,6 +989,13 @@ export default function SettingsPage() {
 
       {/* Modals */}
       <ThemePickerModal visible={showThemeModal} onClose={() => setShowThemeModal(false)} />
+
+      <ScreenNameModal
+        visible={showScreenNameModal}
+        onClose={() => setShowScreenNameModal(false)}
+        onSaved={(name) => setScreenName(name)}
+        currentName={screenName}
+      />
 
       <TimePickerModal
         visible={showTimeModal}

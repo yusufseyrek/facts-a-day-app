@@ -1,0 +1,306 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
+
+import { useTranslation } from '../i18n';
+import * as api from '../services/api';
+import * as userService from '../services/user';
+import { hexColors, useTheme } from '../theme';
+import { countryFlagEmoji } from '../utils/countryFlag';
+import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
+import { useResponsive } from '../utils/useResponsive';
+
+import { MessageCircle, Send } from './icons';
+import { ScreenNameModal } from './ScreenNameModal';
+import { XStack, YStack } from './Stacks';
+import { FONT_FAMILIES, Text } from './Typography';
+
+import type { ApiComment } from '../services/api';
+
+interface FactCommentsProps {
+  factId: number;
+  /** Category accent for the section separator, matching RelatedFacts. */
+  categoryColor: string | null;
+}
+
+const PAGE_SIZE = 10;
+const MAX_COMMENT_LENGTH = 500;
+
+/** "5m" / "3h" style relative age; falls back to a localized date. */
+function timeAgo(createdAt: string, locale: string): string {
+  try {
+    // SQLite CURRENT_TIMESTAMP is UTC space-form without a marker; normalize
+    // like FactModal.formatLastUpdated so the device offset is applied.
+    const normalized = /[zZ]|[+-]\d{2}:?\d{2}$/.test(createdAt)
+      ? createdAt
+      : createdAt.replace(' ', 'T') + 'Z';
+    const then = new Date(normalized).getTime();
+    const seconds = Math.max(0, Math.round((Date.now() - then) / 1000));
+    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'always', style: 'narrow' });
+    if (seconds < 60) return rtf.format(-seconds, 'second');
+    if (seconds < 3600) return rtf.format(-Math.floor(seconds / 60), 'minute');
+    if (seconds < 86400) return rtf.format(-Math.floor(seconds / 3600), 'hour');
+    if (seconds < 86400 * 30) return rtf.format(-Math.floor(seconds / 86400), 'day');
+    return new Date(normalized).toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return '';
+  }
+}
+
+function CommentRow({ comment, locale }: { comment: ApiComment; locale: string }) {
+  const { spacing, typography } = useResponsive();
+  const flag = countryFlagEmoji(comment.country_code);
+
+  return (
+    <YStack gap={spacing.xs}>
+      <XStack alignItems="center" gap={spacing.xs} flexWrap="wrap">
+        {flag ? <Text.Label fontSize={typography.fontSize.caption}>{flag}</Text.Label> : null}
+        <Text.Label
+          color="$text"
+          fontFamily={FONT_FAMILIES.semibold}
+          fontSize={typography.fontSize.caption}
+        >
+          {comment.screen_name}
+        </Text.Label>
+        <Text.Label color="$textMuted" fontSize={typography.fontSize.caption}>
+          {timeAgo(comment.created_at, locale)}
+        </Text.Label>
+      </XStack>
+      <Text.Body color="$text" fontSize={typography.fontSize.label}>
+        {comment.body}
+      </Text.Body>
+    </YStack>
+  );
+}
+
+/**
+ * Comments under the fact detail content. Anonymous read; writing routes
+ * through the screen-name claim (ScreenNameModal) on first use. Pages with the
+ * backend's keyset cursor via "show more".
+ */
+function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
+  const { t, locale } = useTranslation();
+  const { theme } = useTheme();
+  const { spacing, radius, borderWidths, typography, iconSizes } = useResponsive();
+  const colors = hexColors[theme];
+
+  const [comments, setComments] = useState<ApiComment[]>([]);
+  const [total, setTotal] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const [screenName, setScreenName] = useState<string | null>(null);
+  const [namePromptVisible, setNamePromptVisible] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
+  const [postError, setPostError] = useState('');
+
+  // First page + the viewer's identity, per fact.
+  useEffect(() => {
+    let cancelled = false;
+    setComments([]);
+    setNextCursor(null);
+    setTotal(0);
+    setIsLoading(true);
+    setPostError('');
+
+    api
+      .getFactComments(factId, null, PAGE_SIZE)
+      .then((page) => {
+        if (cancelled) return;
+        setComments(page.comments);
+        setNextCursor(page.next_cursor);
+        setTotal(page.total);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    userService
+      .getProfile()
+      .then((profile) => {
+        if (!cancelled) setScreenName(profile?.screenName ?? null);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [factId]);
+
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const page = await api.getFactComments(factId, nextCursor, PAGE_SIZE);
+      setComments((prev) => [...prev, ...page.comments]);
+      setNextCursor(page.next_cursor);
+      setTotal(page.total);
+    } catch {
+      // keep the current cursor; the user can tap again
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [factId, nextCursor, isLoadingMore]);
+
+  const submit = useCallback(async () => {
+    const body = draft.trim();
+    if (!body || isPosting) return;
+    setIsPosting(true);
+    setPostError('');
+    try {
+      const created = await api.postFactComment(factId, body, locale);
+      setComments((prev) => [created, ...prev]);
+      setTotal((n) => n + 1);
+      setDraft('');
+    } catch (error) {
+      const status = (error as any)?.status;
+      setPostError(status === 429 ? t('commentCooldown') : t('commentPostFailed'));
+    } finally {
+      setIsPosting(false);
+    }
+  }, [draft, isPosting, factId, locale, t]);
+
+  const separatorColor = categoryColor ? `${categoryColor}33` : colors.border;
+  const canSend = draft.trim().length > 0 && !isPosting;
+
+  return (
+    <View style={{ marginTop: spacing.md }}>
+      {/* Separator — same treatment as the RelatedFacts section divider */}
+      <View
+        style={{
+          height: borderWidths.thin,
+          backgroundColor: separatorColor,
+          marginBottom: spacing.xl,
+        }}
+      />
+
+      {/* Section header */}
+      <XStack alignItems="center" gap={spacing.sm} marginBottom={spacing.md}>
+        <MessageCircle size={iconSizes.sm} color={categoryColor || colors.textSecondary} />
+        <Text.Body color="$textSecondary" fontFamily={FONT_FAMILIES.bold}>
+          {t('comments')}
+          {total > 0 ? ` (${total})` : ''}
+        </Text.Body>
+      </XStack>
+
+      {/* Composer */}
+      {screenName ? (
+        <YStack gap={spacing.xs} marginBottom={spacing.lg}>
+          <XStack alignItems="flex-end" gap={spacing.sm}>
+            <TextInput
+              maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER}
+              value={draft}
+              onChangeText={(text) => {
+                setDraft(text);
+                setPostError('');
+              }}
+              placeholder={t('commentPlaceholder')}
+              placeholderTextColor={colors.textMuted}
+              multiline
+              maxLength={MAX_COMMENT_LENGTH}
+              editable={!isPosting}
+              style={{
+                flex: 1,
+                backgroundColor: colors.surface,
+                borderRadius: radius.md,
+                borderWidth: 1,
+                borderColor: colors.border,
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.sm,
+                maxHeight: 100,
+                fontSize: typography.fontSize.label,
+                color: colors.text,
+              }}
+            />
+            <Pressable
+              onPress={submit}
+              disabled={!canSend}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={({ pressed }) => ({
+                opacity: !canSend ? 0.35 : pressed ? 0.6 : 1,
+                padding: spacing.sm,
+              })}
+            >
+              {isPosting ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Send size={iconSizes.md} color={colors.primary} />
+              )}
+            </Pressable>
+          </XStack>
+          {postError ? (
+            <Text.Label color={colors.error} fontSize={typography.fontSize.caption}>
+              {postError}
+            </Text.Label>
+          ) : null}
+        </YStack>
+      ) : (
+        <Pressable
+          onPress={() => setNamePromptVisible(true)}
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.7 : 1,
+            backgroundColor: colors.surface,
+            borderRadius: radius.md,
+            borderWidth: 1,
+            borderColor: colors.border,
+            padding: spacing.md,
+            marginBottom: spacing.lg,
+          })}
+        >
+          <Text.Label color="$textSecondary" fontSize={typography.fontSize.caption}>
+            {t('joinConversation')}
+          </Text.Label>
+        </Pressable>
+      )}
+
+      {/* Comment list */}
+      {isLoading ? (
+        <ActivityIndicator size="small" color={colors.textSecondary} />
+      ) : comments.length === 0 ? (
+        <Text.Label color="$textMuted" fontSize={typography.fontSize.caption}>
+          {t('commentsEmpty')}
+        </Text.Label>
+      ) : (
+        <YStack gap={spacing.lg}>
+          {comments.map((comment) => (
+            <CommentRow key={comment.id} comment={comment} locale={locale} />
+          ))}
+          {nextCursor ? (
+            <Pressable
+              onPress={loadMore}
+              disabled={isLoadingMore}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, alignSelf: 'flex-start' })}
+            >
+              {isLoadingMore ? (
+                <ActivityIndicator size="small" color={colors.textSecondary} />
+              ) : (
+                <Text.Label
+                  color={colors.primary}
+                  fontFamily={FONT_FAMILIES.semibold}
+                  fontSize={typography.fontSize.caption}
+                >
+                  {t('showMoreComments')}
+                </Text.Label>
+              )}
+            </Pressable>
+          ) : null}
+        </YStack>
+      )}
+
+      <ScreenNameModal
+        visible={namePromptVisible}
+        onClose={() => setNamePromptVisible(false)}
+        onSaved={(name) => setScreenName(name)}
+        currentName={null}
+      />
+    </View>
+  );
+}
+
+export const FactComments = React.memo(FactCommentsComponent);

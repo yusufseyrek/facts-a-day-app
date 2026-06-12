@@ -62,6 +62,7 @@ import { CategoryBadge } from './CategoryBadge';
 import { CloseButton } from './CloseButton';
 import { DialogCard } from './DialogShell';
 import { FactActions } from './FactActions';
+import { FactComments } from './FactComments';
 import { Calendar, Crown, ExternalLink, ImagePlus, Play, RefreshCw } from './icons';
 import { ModalBackdrop } from './ModalBackdrop';
 import { RelatedFacts } from './RelatedFacts';
@@ -1347,6 +1348,9 @@ export function FactModal({
                 containerWidth={containerWidth}
               />
             )}
+
+            {/* Comments */}
+            <FactComments factId={fact.id} categoryColor={categoryColor} />
           </YStack>
         </View>
       </Animated.ScrollView>

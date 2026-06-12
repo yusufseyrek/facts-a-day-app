@@ -9,6 +9,7 @@ import { metadataKeys } from '../hooks/queryKeys';
 import { getAppVersionInfo } from '../utils/appInfo';
 
 import { getCachedAppCheckToken } from './appCheckToken';
+import { getIdentityHeaders } from './userIdentity';
 
 /** Metadata (categories/languages) is near-static; cache it aggressively. */
 const METADATA_STALE_TIME = 1000 * 60 * 60 * 6; // 6 hours
@@ -203,7 +204,15 @@ async function retryWithBackoff<T>(
       lastError = error as Error;
       attempt++;
 
-      // Don't retry on client errors (4xx except 429)
+      // Don't retry on client errors (4xx except 429). Prefer the structured
+      // status (always set by makeRequest); the message check remains for
+      // errors thrown before a response existed. Without the structured check,
+      // a 4xx whose body carried a server message (which replaces the
+      // "API Error: 4xx" text) was silently retried.
+      const status = (error as any)?.status;
+      if (typeof status === 'number' && status >= 400 && status < 500 && status !== 429) {
+        throw error;
+      }
       if (error instanceof Error && error.message.includes('API Error: 4')) {
         // Check if it's a 429 (rate limit)
         if (!error.message.includes('429')) {
@@ -275,6 +284,10 @@ async function makeRequest<T>(
       const error = new Error(
         errorData.message || `API Error: ${response.status} ${response.statusText}`
       );
+      // Status + backend error code (e.g. SCREEN_NAME_TAKEN) so callers can
+      // branch without string-matching the human message.
+      (error as any).status = response.status;
+      (error as any).code = errorData.error;
 
       // Add rate limit info to error if available
       if (response.status === 429) {
@@ -395,10 +408,111 @@ export async function reportFact(
     throw new Error('Feedback text must be at most 1000 characters long.');
   }
 
+  // Identity headers (when a screen name exists) link the report to the user,
+  // so support can resolve it and reply with a push.
   return makeRequest<ReportFactResponse>(`/api/facts/${factId}/report`, {
     method: 'POST',
+    headers: await getIdentityHeaders(),
     body: JSON.stringify({ feedback_text: feedbackText }),
   });
+}
+
+// ====== User identity (screen names) ======
+
+export interface CreateUserResponse {
+  user_id: string;
+  user_secret: string;
+  screen_name: string;
+  country_code: string | null;
+}
+
+/**
+ * Claim a screen name, minting the anonymous identity. The secret in the
+ * response exists only this once — the caller must persist it (userIdentity).
+ * 409 (code SCREEN_NAME_TAKEN) when the name is in use.
+ */
+export async function createUser(
+  screenName: string,
+  countryCode: string | null
+): Promise<CreateUserResponse> {
+  return makeRequest<CreateUserResponse>('/api/users', {
+    method: 'POST',
+    body: JSON.stringify({
+      screen_name: screenName,
+      country_code: countryCode ?? undefined,
+    }),
+  });
+}
+
+/** Rename / refresh country for the current identity. 409 on a taken name. */
+export async function updateUser(params: {
+  screen_name?: string;
+  country_code?: string;
+}): Promise<{ ok: boolean; screen_name: string }> {
+  return makeRequest<{ ok: boolean; screen_name: string }>('/api/users/me', {
+    method: 'PATCH',
+    headers: await getIdentityHeaders(),
+    body: JSON.stringify(params),
+  });
+}
+
+/** Live availability for the claim form (debounced by the caller). */
+export async function checkScreenName(
+  name: string
+): Promise<{ available: boolean; valid: boolean }> {
+  return makeRequest<{ available: boolean; valid: boolean }>(
+    `/api/users/screen-name-check?name=${encodeURIComponent(name)}`,
+    {},
+    true // skipRetry: a stale availability answer is worse than none
+  );
+}
+
+// ====== Fact comments ======
+
+export interface ApiComment {
+  id: number;
+  body: string;
+  screen_name: string;
+  country_code: string | null;
+  created_at: string;
+}
+
+export interface CommentsPage {
+  comments: ApiComment[];
+  /** Opaque "<created_at>|<id>" keyset token; round-trip verbatim. */
+  next_cursor: string | null;
+  total: number;
+}
+
+export async function getFactComments(
+  factId: number,
+  cursor?: string | null,
+  limit?: number
+): Promise<CommentsPage> {
+  const qp = new URLSearchParams();
+  if (cursor) qp.append('cursor', cursor);
+  if (limit !== undefined) qp.append('limit', String(limit));
+  const query = qp.toString();
+  return makeRequest<CommentsPage>(
+    `/api/facts/${factId}/comments${query ? `?${query}` : ''}`
+  );
+}
+
+/** Post a comment. Requires a claimed screen name (401 without identity). */
+export async function postFactComment(
+  factId: number,
+  body: string,
+  locale: string
+): Promise<ApiComment> {
+  const res = await makeRequest<{ comment: ApiComment }>(
+    `/api/facts/${factId}/comments`,
+    {
+      method: 'POST',
+      headers: await getIdentityHeaders(),
+      body: JSON.stringify({ body, locale }),
+    }
+  );
+  return res.comment;
 }
 
 // ====== On-demand feed / hydration (replaces the local facts mirror) ======
@@ -546,8 +660,11 @@ export async function getTriviaByIds(
  * (server-driven push replaces on-device local scheduling). Idempotent upsert.
  */
 export async function registerPushToken(params: RegisterPushParams): Promise<{ ok: boolean }> {
+  // Identity headers link the device token to the user's profile (admin can
+  // then reply to their reports with a push). Absent identity changes nothing.
   return makeRequest<{ ok: boolean }>('/api/devices', {
     method: 'POST',
+    headers: await getIdentityHeaders(),
     body: JSON.stringify({
       expo_push_token: params.token,
       platform: params.platform,

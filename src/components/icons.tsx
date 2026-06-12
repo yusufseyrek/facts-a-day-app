@@ -669,6 +669,16 @@ export const Search = icon([
   [Circle, { cx: '11', cy: '11', r: '8' }],
 ]);
 
+export const Send = icon([
+  [
+    Path,
+    {
+      d: 'M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z',
+    },
+  ],
+  [Path, { d: 'm21.854 2.147-10.94 10.939' }],
+]);
+
 export const Share = icon([
   [Path, { d: 'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8' }],
   [Polyline, { points: '16 6 12 2 8 6' }],
@@ -827,6 +837,11 @@ export const Twitter = icon([
       d: 'M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z',
     },
   ],
+]);
+
+export const User = icon([
+  [Path, { d: 'M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2' }],
+  [Circle, { cx: '12', cy: '7', r: '4' }],
 ]);
 
 export const Users = icon([
