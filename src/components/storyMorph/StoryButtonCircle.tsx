@@ -46,8 +46,10 @@ export interface StoryButtonCircleProps {
 // Theme-button aura blur radius, and the headroom the story row must reserve
 // above the circles: the row is a horizontal ScrollView, which clips at its
 // bounds — without top padding the aura renders cut off at the row's top edge.
+// A blur's visible falloff reaches ~2x its radius (radius alone still showed
+// a faint flat edge), so the bleed reserves the full tail.
 const GLOW_RADIUS = 12;
-export const THEME_GLOW_BLEED = GLOW_RADIUS + 2;
+export const THEME_GLOW_BLEED = GLOW_RADIUS * 2;
 
 /** Lighten a hex color by a given amount (0–1). */
 export function lightenColor(hex: string, amount: number): string {
