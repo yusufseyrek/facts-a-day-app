@@ -251,9 +251,18 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
   const accent = categoryColor || colors.primary;
   const separatorColor = categoryColor ? `${categoryColor}33` : colors.border;
   const canSend = draft.trim().length > 0 && !isPosting;
-  // The send disc sets the composer's rhythm: the input's single-line height
-  // matches it exactly, so the pair reads as one aligned control.
+  // The send disc sets the composer's rhythm: the input's vertical padding is
+  // derived so one line of text is EXACTLY disc-height and dead-centered.
+  // (iOS ignores textAlignVertical and pins multiline text to the top inset,
+  // so a minHeight-stretched box would leave the text floating high.)
   const sendSize = iconSizes.xl + spacing.md;
+  const inputLineHeight = typography.lineHeight.label;
+  // Border counts toward the box height, so subtract it: border + pad + line +
+  // pad + border === sendSize exactly.
+  const inputPadV = Math.max(
+    spacing.xs,
+    (sendSize - inputLineHeight) / 2 - borderWidths.hairline
+  );
   const nearLimit = draft.length >= MAX_COMMENT_LENGTH * 0.8;
 
   return (
@@ -294,16 +303,17 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
               editable={!isPosting}
               style={{
                 flex: 1,
-                minHeight: sendSize,
                 maxHeight: 120,
                 backgroundColor: colors.surface,
                 borderRadius: Math.min(radius.xl, sendSize / 2),
                 borderWidth: borderWidths.hairline,
                 borderColor: draft.length > 0 ? `${accent}66` : colors.border,
                 paddingHorizontal: spacing.lg,
-                paddingVertical: spacing.sm,
-                textAlignVertical: 'center',
+                paddingTop: inputPadV,
+                paddingBottom: inputPadV,
                 fontSize: typography.fontSize.label,
+                lineHeight: inputLineHeight,
+                textAlignVertical: 'center',
                 color: colors.text,
               }}
             />
