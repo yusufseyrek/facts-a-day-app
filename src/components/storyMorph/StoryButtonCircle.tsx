@@ -56,14 +56,46 @@ export function StoryButtonCircle({
   innerSize,
   iconSize,
 }: StoryButtonCircleProps) {
-  const iconNode = imageUrl ? (
-    <Image
-      source={{ uri: imageUrl }}
-      contentFit="cover"
-      transition={150}
-      style={{ width: innerSize, height: innerSize, borderRadius: innerSize / 2 }}
-    />
-  ) : isMix ? (
+  // Story themes: the image IS the button — full-bleed to the outer edge (no
+  // gradient ring or inner fill), a hairline ring so the edge reads on any
+  // background, and a soft shadow for lift.
+  if (imageUrl) {
+    return (
+      <View
+        style={[
+          styles.imageShadow,
+          {
+            width: outerSize,
+            height: outerSize,
+            borderRadius: outerSize / 2,
+            // Opaque fill behind the image: Android elevation needs it to
+            // cast, and it doubles as the loading placeholder.
+            backgroundColor: seenFill,
+          },
+        ]}
+      >
+        <Image
+          source={{ uri: imageUrl }}
+          contentFit="cover"
+          transition={150}
+          style={{ width: outerSize, height: outerSize, borderRadius: outerSize / 2 }}
+        />
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              borderRadius: outerSize / 2,
+              borderWidth: 1.25,
+              borderColor,
+            },
+          ]}
+        />
+      </View>
+    );
+  }
+
+  const iconNode = isMix ? (
     <Shuffle size={iconSize} color={iconColor} />
   ) : (
     getLucideIcon(icon, iconSize, iconColor)
@@ -127,5 +159,12 @@ const styles = StyleSheet.create({
   circle: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  imageShadow: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.22,
+    shadowRadius: 5,
+    elevation: 5,
   },
 });

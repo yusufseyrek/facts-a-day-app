@@ -42,7 +42,7 @@ import * as database from '../../src/services/database';
 import { mapApiFactToRelations } from '../../src/services/database';
 import { hasReadyAd } from '../../src/services/nativeAdPool';
 import { getSelectedCategories } from '../../src/services/onboarding';
-import { takePrefetchedStory } from '../../src/services/storyPrefetch';
+import { takePrefetchedStory, THEME_STORY_PREFIX } from '../../src/services/storyPrefetch';
 import { hexColors, useTheme } from '../../src/theme';
 import {
   insertNativeAds,
@@ -223,17 +223,27 @@ export default function StoryScreen() {
 
       // Stories are fed from the cursor feed (single or multiple categories),
       // then ordered unseen-first using the local story-view log — there's no
-      // local facts mirror to compute is_viewed anymore.
-      const categories = category === 'mix' ? (await getSelectedCategories()).join(',') : category!;
+      // local facts mirror to compute is_viewed anymore. `theme:<slug>` story
+      // slugs (event theme buttons) page from the theme facts endpoint instead;
+      // both paths share the prefetch cache, keyed by the same string.
+      const isTheme = category!.startsWith(THEME_STORY_PREFIX);
+      const categories =
+        category === 'mix' ? (await getSelectedCategories()).join(',') : category!;
       // Use a warmed feed from the story-button prefetch when available, so the
       // first card shows instantly instead of waiting on a network round-trip.
       const res =
         (await takePrefetchedStory(locale, categories)) ??
-        (await api.getFactsFeed({
-          language: locale,
-          categories,
-          limit: STORY_FETCH_LIMIT,
-        }));
+        (isTheme
+          ? await api.getStoryThemeFacts({
+              slug: category!.slice(THEME_STORY_PREFIX.length),
+              language: locale,
+              limit: STORY_FETCH_LIMIT,
+            })
+          : await api.getFactsFeed({
+              language: locale,
+              categories,
+              limit: STORY_FETCH_LIMIT,
+            }));
       const fetched = res.facts.map(mapApiFactToRelations);
 
       const viewed = await database.getViewedStoryFactIds();

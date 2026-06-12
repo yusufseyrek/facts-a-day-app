@@ -35,6 +35,15 @@ import type { Category } from '../services/database';
 
 type CategoryItem = CachedCategoryItem;
 
+/**
+ * The slug the story routes (and the morph/prefetch keys) use for a button.
+ * Themes are namespaced so they can't collide with a category slug and so the
+ * story screen knows to page them from the theme endpoint.
+ */
+function storySlugFor(item: CategoryItem): string {
+  return item.isTheme ? `theme:${item.slug}` : item.slug;
+}
+
 export interface CategoryStoryButtonsRef {
   scrollToStart: () => void;
 }
@@ -208,13 +217,9 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
         }
 
         // Warm the feeds most likely to be tapped (Mix + first couple of
-        // categories) once the row is on screen, so the first story card is
-        // instant. Press-in prefetch (below) covers the rest. Theme buttons
-        // open a fact LIST (not a story feed), so they don't take part.
-        newItems
-          .filter((it) => !it.isTheme)
-          .slice(0, 3)
-          .forEach((it) => prefetchStory(locale, it.slug, selectedSlugs));
+        // buttons, themes included) once the row is on screen, so the first
+        // story card is instant. Press-in prefetch (below) covers the rest.
+        newItems.slice(0, 3).forEach((it) => prefetchStory(locale, storySlugFor(it), selectedSlugs));
       } catch {
         // Last-resort: at least show the Mix button so the row is never empty.
         setCategories((prev) => (prev.length > 0 ? prev : [mixItem]));
@@ -266,19 +271,13 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
     const handlePress = useCallback(
       (item: CategoryItem) => {
-        // Theme buttons open the theme's fact list (search-results style)
-        // instead of a story. Name rides along so the header paints instantly.
-        if (item.isTheme) {
-          router.push({
-            pathname: '/theme/[slug]',
-            params: { slug: item.slug, name: item.name },
-          });
-          return;
-        }
         // storyBasePath picks the morph-presented route when the pressed
         // button registered a fresh circle measurement on press-in (the
         // normal case), falling back to the plain fullScreenModal otherwise.
-        router.push(`${storyBasePath(item.slug)}/${item.slug}`);
+        // Themes ride the same story routes under a namespaced slug — the
+        // story screen pages them from /api/story-themes instead of the feed.
+        const storySlug = storySlugFor(item);
+        router.push(`${storyBasePath(storySlug)}/${storySlug}`);
       },
       [router]
     );
@@ -287,8 +286,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     // instantly. Fired on press-in (below) and for the first few buttons on load.
     const handlePrefetch = useCallback(
       (item: CategoryItem) => {
-        if (item.isTheme) return; // theme screens fetch their own list
-        prefetchStory(locale, item.slug, selectedSlugsRef.current);
+        prefetchStory(locale, storySlugFor(item), selectedSlugsRef.current);
       },
       [locale]
     );
@@ -336,10 +334,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
     // Theme slugs are admin-defined and may collide with a category slug —
     // namespace the key so FlashList never sees a duplicate.
-    const keyExtractor = useCallback(
-      (item: CategoryItem) => (item.isTheme ? `theme:${item.slug}` : item.slug),
-      []
-    );
+    const keyExtractor = useCallback((item: CategoryItem) => storySlugFor(item), []);
 
     // Height for horizontal FlashList container: circle + label margin + label line.
     // Reserved on every render (including skeleton) so the row never collapses
@@ -518,11 +513,10 @@ const CategoryButton = React.memo(
 
     // isMorphSourceActive hides the circle while its morph presentation is on
     // screen (the replica covers the exact rect, so no hole shows in the row).
-    // Theme buttons never morph — namespace the slug so a theme sharing a
-    // category's slug can't be hidden by that category's morph.
-    const { registerMorphSource, isMorphSourceActive } = useStoryMorphSource(
-      item.isTheme ? `theme:${item.slug}` : item.slug
-    );
+    // Keyed by the story slug (themes namespaced) — the same string the press
+    // pushes as the route param, so registration and route peek always agree.
+    const storySlug = storySlugFor(item);
+    const { registerMorphSource, isMorphSourceActive } = useStoryMorphSource(storySlug);
     const pressableRef = useRef<View>(null);
 
     const handlePressIn = useCallback(() => {
@@ -530,8 +524,6 @@ const CategoryButton = React.memo(
       // Warm this category's feed the instant the finger lands, before the
       // navigation completes — a usable head start even on a cache miss.
       onPrefetch();
-      // Theme buttons push a plain card screen — no morph source to register.
-      if (item.isTheme) return;
       // Register the circle as the morph source on press-IN: measureInWindow
       // is async, so starting here guarantees the rect is registered by the
       // time onPress pushes the route via storyBasePath(). The Pressable is
@@ -541,7 +533,7 @@ const CategoryButton = React.memo(
       pressableRef.current?.measureInWindow((x, y, width, height) => {
         if (!(width > 0 && height > 0)) return;
         registerMorphSource({
-          categorySlug: item.slug,
+          categorySlug: storySlug,
           x: x + (width - outerSize) / 2,
           y,
           width: outerSize,
@@ -550,6 +542,7 @@ const CategoryButton = React.memo(
           hasUnseen,
           isMix: !!item.isMix,
           icon: item.icon,
+          imageUrl: item.isTheme ? item.image_url : undefined,
           ringColor,
           iconColor,
           unseenFill,
@@ -563,10 +556,11 @@ const CategoryButton = React.memo(
     }, [
       onPrefetch,
       registerMorphSource,
-      item.slug,
+      storySlug,
       item.isMix,
       item.isTheme,
       item.icon,
+      item.image_url,
       hasUnseen,
       ringColor,
       iconColor,
@@ -584,7 +578,7 @@ const CategoryButton = React.memo(
     return (
       <Pressable
         ref={pressableRef}
-        testID={`story-button-${item.isTheme ? `theme:${item.slug}` : item.slug}`}
+        testID={`story-button-${storySlug}`}
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}

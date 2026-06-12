@@ -1,6 +1,6 @@
 import * as api from './api';
 
-import type { FactsFeedResponse } from './api';
+import type { FactResponse } from './api';
 
 /**
  * Lightweight in-memory prefetch cache for story feeds.
@@ -13,6 +13,10 @@ import type { FactsFeedResponse } from './api';
  * Keyed by `locale|categories` so a prefetch matches the exact request the
  * story screen makes. Entries expire after TTL so a returning user gets fresh
  * facts rather than a stale page.
+ *
+ * `theme:<slug>` keys (story theme buttons) warm the theme facts endpoint
+ * instead of the category feed; the story screen only consumes `facts`, so
+ * both responses share the StoryPageResponse shape.
  */
 
 // One story page — must match STORY_FETCH_LIMIT in app/story/[category].tsx.
@@ -20,11 +24,30 @@ const STORY_FETCH_LIMIT = 100;
 // How long a warmed feed stays usable before we re-fetch (ms).
 const PREFETCH_TTL_MS = 60_000;
 
+/** The slice of the feed/theme responses a story session consumes. */
+export interface StoryPageResponse {
+  facts: FactResponse[];
+}
+
+/** Story slugs are namespaced: `theme:<slug>` pages from the theme endpoint. */
+export const THEME_STORY_PREFIX = 'theme:';
+
+function fetchStoryPage(locale: string, categories: string): Promise<StoryPageResponse> {
+  if (categories.startsWith(THEME_STORY_PREFIX)) {
+    return api.getStoryThemeFacts({
+      slug: categories.slice(THEME_STORY_PREFIX.length),
+      language: locale,
+      limit: STORY_FETCH_LIMIT,
+    });
+  }
+  return api.getFactsFeed({ language: locale, categories, limit: STORY_FETCH_LIMIT });
+}
+
 interface Entry {
   at: number;
   // The settled response, or null while the request is still in flight.
-  data: FactsFeedResponse | null;
-  promise: Promise<FactsFeedResponse | null>;
+  data: StoryPageResponse | null;
+  promise: Promise<StoryPageResponse | null>;
 }
 
 const cache = new Map<string, Entry>();
@@ -59,8 +82,7 @@ export function prefetchStory(locale: string, category: string, selectedForMix: 
   const entry: Entry = {
     at: Date.now(),
     data: null,
-    promise: api
-      .getFactsFeed({ language: locale, categories, limit: STORY_FETCH_LIMIT })
+    promise: fetchStoryPage(locale, categories)
       .then((res) => {
         const cur = cache.get(key);
         if (cur) cur.data = res;
@@ -84,7 +106,7 @@ export function prefetchStory(locale: string, category: string, selectedForMix: 
 export async function takePrefetchedStory(
   locale: string,
   categories: string
-): Promise<FactsFeedResponse | null> {
+): Promise<StoryPageResponse | null> {
   const key = keyFor(locale, categories);
   const entry = cache.get(key);
   if (!entry) return null;

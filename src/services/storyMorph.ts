@@ -27,6 +27,8 @@ export interface StoryMorphSource {
   hasUnseen: boolean;
   isMix: boolean;
   icon?: string;
+  /** Story themes: full-bleed image circle replacing the icon treatment. */
+  imageUrl?: string | null;
   ringColor: string;
   iconColor: string;
   unseenFill: string;

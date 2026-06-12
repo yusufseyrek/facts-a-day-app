@@ -265,6 +265,7 @@ export function StoryMorphContainer({
                   hasUnseen={source.hasUnseen}
                   isMix={source.isMix}
                   icon={source.icon}
+                  imageUrl={source.imageUrl}
                   ringColor={source.ringColor}
                   iconColor={source.iconColor}
                   unseenFill={source.unseenFill}
