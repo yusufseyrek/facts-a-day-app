@@ -1337,6 +1337,9 @@ export function FactModal({
               </View>
             )}
 
+            {/* Comments */}
+            <FactComments factId={fact.id} categoryColor={categoryColor} />
+
             {/* Related Facts */}
             {relatedFacts.length > 0 && onRelatedFactPress && (
               <RelatedFacts
@@ -1348,9 +1351,6 @@ export function FactModal({
                 containerWidth={containerWidth}
               />
             )}
-
-            {/* Comments */}
-            <FactComments factId={fact.id} categoryColor={categoryColor} />
           </YStack>
         </View>
       </Animated.ScrollView>
