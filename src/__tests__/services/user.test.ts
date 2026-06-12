@@ -1,5 +1,3 @@
-import { Platform } from 'react-native';
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCalendars, getLocales } from 'expo-localization';
 
@@ -23,7 +21,6 @@ const mockLocales = getLocales as jest.Mock;
 const mockCalendars = getCalendars as jest.Mock;
 
 const store = new Map<string, string>();
-const originalOS = Platform.OS;
 
 describe('user country detection', () => {
   beforeEach(() => {
@@ -41,39 +38,29 @@ describe('user country detection', () => {
     jest.clearAllMocks();
   });
 
-  afterEach(() => {
-    (Platform as { OS: string }).OS = originalOS;
-  });
-
   describe('deviceCountryCode', () => {
-    it('android: the time zone outranks a language-tag region (the zh→CN trap)', () => {
-      (Platform as { OS: string }).OS = 'android';
-      // A preferred-language list headed by Chinese while the user is in
-      // Türkiye — exactly how a profile got stamped "CN".
-      mockLocales.mockReturnValue([{ languageCode: 'zh', regionCode: 'CN' }]);
+    it('the time zone outranks locale regions (the zh→CN / Region-residue trap)', () => {
+      // Language-pinned regions (Android zh → CN) and stale iOS Region
+      // settings (en-CN, tr-CN after a Chinese-content test session) both
+      // poison the locale list — exactly how profiles got stamped "CN".
+      mockLocales.mockReturnValue([
+        { languageCode: 'en', regionCode: 'CN' },
+        { languageCode: 'zh', regionCode: 'CN' },
+        { languageCode: 'tr', regionCode: 'CN' },
+      ]);
       mockCalendars.mockReturnValue([{ timeZone: 'Europe/Istanbul' }]);
 
       expect(deviceCountryCode()).toBe('TR');
     });
 
-    it('android: falls back to the locale region when the zone maps to no country', () => {
-      (Platform as { OS: string }).OS = 'android';
+    it('falls back to the locale region when the zone maps to no country', () => {
       mockLocales.mockReturnValue([{ languageCode: 'tr', regionCode: 'TR' }]);
       mockCalendars.mockReturnValue([{ timeZone: 'Etc/UTC' }]);
 
       expect(deviceCountryCode()).toBe('TR');
     });
 
-    it('ios: the explicit Region setting (first locale) leads', () => {
-      (Platform as { OS: string }).OS = 'ios';
-      mockLocales.mockReturnValue([{ languageCode: 'en', regionCode: 'TR' }]);
-      mockCalendars.mockReturnValue([{ timeZone: 'America/New_York' }]);
-
-      expect(deviceCountryCode()).toBe('TR');
-    });
-
-    it('skips malformed regions and normalizes case', () => {
-      (Platform as { OS: string }).OS = 'ios';
+    it('skips malformed regions and normalizes case in the fallback', () => {
       mockLocales.mockReturnValue([
         { languageCode: 'eo', regionCode: '419' }, // UN M.49 area, not a country
         { languageCode: 'tr', regionCode: 'tr' },
@@ -93,7 +80,6 @@ describe('user country detection', () => {
     };
 
     beforeEach(() => {
-      (Platform as { OS: string }).OS = 'android';
       mockLocales.mockReturnValue([{ languageCode: 'en', regionCode: 'US' }]);
       mockCalendars.mockReturnValue([{ timeZone: 'Europe/Istanbul' }]);
     });

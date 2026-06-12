@@ -1,5 +1,3 @@
-import { Platform } from 'react-native';
-
 import { getCalendars, getLocales } from 'expo-localization';
 
 import { countryForTimeZone } from '../utils/timezoneCountry';
@@ -55,16 +53,16 @@ function timeZoneCountryCode(): string | null {
 /**
  * Device country ("TR") for the profile flag.
  *
- * On Android a locale's regionCode is just the *language* tag's region — a
- * preferred-language list headed by Chinese reads as "CN" regardless of where
- * the user is — so the clock's time zone leads there. On iOS the first
- * locale's region mirrors the explicit Language & Region setting, which is the
- * user's own choice, so it leads and the time zone is the fallback.
+ * The clock's IANA time zone leads on BOTH platforms: locale regions lie
+ * whenever languages pin their own region (Android's zh → "CN") or the
+ * Language & Region setting carries test residue (iOS suffixes every
+ * preferred language with the device region — en-CN, tr-CN — long after a
+ * Chinese-content test session ended). The time zone tracks where the device
+ * actually lives; locale region is only the fallback for unmapped zones
+ * (Etc/UTC and friends).
  */
 export function deviceCountryCode(): string | null {
-  return Platform.OS === 'ios'
-    ? (localeRegionCode() ?? timeZoneCountryCode())
-    : (timeZoneCountryCode() ?? localeRegionCode());
+  return timeZoneCountryCode() ?? localeRegionCode();
 }
 
 export async function getProfile(): Promise<UserIdentity | null> {
