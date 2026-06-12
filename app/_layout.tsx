@@ -71,6 +71,7 @@ import {
   getCachedPremiumStatus,
   initIAPConnection,
 } from '../src/services/purchases';
+import * as triviaSync from '../src/services/triviaSync';
 import * as updates from '../src/services/updates';
 import * as userService from '../src/services/user';
 import { AppThemeProvider, hexColors, useTheme } from '../src/theme';
@@ -638,6 +639,10 @@ export default function RootLayout() {
       // Sync the profile's country flag if the device reading changed — the
       // claim-time capture is otherwise permanent. Fire-and-forget.
       userService.refreshCountryIfStale().catch(() => {});
+
+      // Drain trivia results that didn't reach the leaderboard yet
+      // (offline games, prior failures). Fire-and-forget.
+      triviaSync.syncTriviaResults().catch(() => {});
 
       // Check for OTA updates in the background
       updates

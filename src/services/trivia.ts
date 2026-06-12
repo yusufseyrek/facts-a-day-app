@@ -19,6 +19,7 @@ import * as database from './database';
 import { getAnsweredQuestionIds, mapApiFactToRelations } from './database';
 import * as onboardingService from './onboarding';
 import { getIsPremium } from './premiumState';
+import { syncTriviaResults } from './triviaSync';
 
 import type { TriviaQuestionResponse } from './api';
 import type {
@@ -475,6 +476,10 @@ export async function saveSessionResult(
 
   // Check for badge unlocks after saving session
   checkAndAwardBadges().catch(() => {});
+
+  // Push the result to the server leaderboard (no-op without an identity;
+  // failures retry on the next trigger).
+  syncTriviaResults().catch(() => {});
 
   return sessionId;
 }

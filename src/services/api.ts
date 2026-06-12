@@ -704,6 +704,68 @@ export async function getTriviaByIds(
   return res.questions;
 }
 
+// ====== Trivia leaderboard ======
+
+export type TriviaLeaderboardWindow = 'today' | 'week' | 'all';
+
+export interface TriviaResultSubmission {
+  client_session_id: string;
+  mode: 'daily' | 'mixed' | 'category';
+  category_slug?: string;
+  language: string;
+  questions_total: number;
+  correct_count: number;
+  elapsed_ms: number;
+}
+
+export interface TriviaLeaderboardEntry {
+  rank: number;
+  screen_name: string;
+  country_code: string | null;
+  score: number;
+  games: number;
+  total_elapsed_ms: number;
+}
+
+export interface TriviaLeaderboardStanding {
+  rank: number;
+  score: number;
+  games: number;
+  total_elapsed_ms: number;
+  total_players: number;
+}
+
+export interface TriviaLeaderboardResponse {
+  window: TriviaLeaderboardWindow;
+  entries: TriviaLeaderboardEntry[];
+  me: TriviaLeaderboardStanding | null;
+}
+
+/** Submit a completed session (identity required). Replays of an
+ * already-stored session come back accepted=false. */
+export async function postTriviaResult(
+  submission: TriviaResultSubmission
+): Promise<{ accepted: boolean }> {
+  return makeRequest<{ accepted: boolean }>(`/api/trivia/results`, {
+    method: 'POST',
+    headers: await getIdentityHeaders(),
+    body: JSON.stringify(submission),
+  });
+}
+
+/** Ranked board; identity headers (when present) add the viewer's standing. */
+export async function getTriviaLeaderboard(
+  window: TriviaLeaderboardWindow,
+  limit?: number
+): Promise<TriviaLeaderboardResponse> {
+  const qp = new URLSearchParams();
+  qp.append('window', window);
+  if (limit) qp.append('limit', String(limit));
+  return makeRequest<TriviaLeaderboardResponse>(`/api/trivia/leaderboard?${qp.toString()}`, {
+    headers: await getIdentityHeaders(),
+  });
+}
+
 // ====== Push registration ======
 
 /**

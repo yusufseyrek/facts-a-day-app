@@ -162,6 +162,16 @@ async function initializeSchema(): Promise<void> {
     `CREATE INDEX IF NOT EXISTS idx_trivia_sessions_elapsed ON trivia_sessions(elapsed_time);`
   );
 
+  // Sync ledger for the server leaderboard: a row means the session was
+  // submitted (or is permanently unsubmittable). A separate table instead of
+  // a column so existing installs need no ALTER migration.
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS trivia_result_sync (
+      session_id INTEGER PRIMARY KEY,
+      synced_at TEXT NOT NULL
+    );
+  `);
+
   // ── fact interactions (story views + detail engagement, for streaks/badges) ──
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS fact_interactions (
@@ -787,6 +797,36 @@ export async function saveTriviaSession(
   );
 
   return result.lastInsertRowId;
+}
+
+/**
+ * Completed sessions not yet recorded on the server leaderboard: no ledger
+ * row, a leaderboard-eligible mode, and recent enough to still matter.
+ */
+export async function getUnsyncedTriviaSessions(
+  sinceIso: string,
+  limit: number = 10
+): Promise<TriviaSession[]> {
+  const database = await openDatabase();
+  return database.getAllAsync<TriviaSession>(
+    `SELECT s.* FROM trivia_sessions s
+     LEFT JOIN trivia_result_sync y ON y.session_id = s.id
+     WHERE y.session_id IS NULL
+       AND s.completed_at >= ?
+       AND s.trivia_mode IN ('daily', 'mixed', 'category')
+     ORDER BY s.completed_at ASC
+     LIMIT ?`,
+    [sinceIso, limit]
+  );
+}
+
+/** Mark a session as submitted (or permanently unsubmittable). */
+export async function markTriviaSessionSynced(sessionId: number): Promise<void> {
+  const database = await openDatabase();
+  await database.runAsync(
+    `INSERT OR REPLACE INTO trivia_result_sync (session_id, synced_at) VALUES (?, ?)`,
+    [sessionId, new Date().toISOString()]
+  );
 }
 
 /**

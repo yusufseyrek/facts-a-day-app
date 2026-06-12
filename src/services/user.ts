@@ -4,6 +4,7 @@ import { countryForTimeZone } from '../utils/timezoneCountry';
 
 import * as api from './api';
 import * as notificationService from './notifications';
+import { syncTriviaResults } from './triviaSync';
 import { getIdentity, saveIdentity, type UserIdentity } from './userIdentity';
 
 import type { SupportedLocale } from '../i18n/translations';
@@ -99,6 +100,9 @@ export async function claimScreenName(
   // Link this device to the fresh identity. Best-effort: the next foreground
   // re-register links it anyway, so a failure here must not fail the claim.
   notificationService.registerForPush(locale).catch(() => {});
+
+  // Recent games played before the claim can now join the leaderboard.
+  syncTriviaResults().catch(() => {});
 
   return identity;
 }
