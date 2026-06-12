@@ -502,12 +502,7 @@
       ],
       "expo-web-browser",
       "expo-tracking-transparency",
-      [
-        "expo-router",
-        {
-          "asyncRoutes": "development"
-        }
-      ],
+      "expo-router",
       "expo-sqlite",
       "expo-updates",
       [

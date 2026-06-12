@@ -1,17 +1,112 @@
 import React from 'react';
 
-import * as LucideIcons from '@tamagui/lucide-icons';
+import {
+  Activity,
+  Award,
+  Banknote,
+  Bookmark,
+  BookOpen,
+  Brain,
+  Calculator,
+  Calendar,
+  CalendarCheck,
+  CheckCircle,
+  ChefHat,
+  Clapperboard,
+  Clock,
+  Cpu,
+  Dumbbell,
+  Fingerprint,
+  Flame,
+  Gamepad2,
+  Globe,
+  GraduationCap,
+  HeartHandshake,
+  HeartPulse,
+  Landmark,
+  Leaf,
+  Lightbulb,
+  Map as MapIcon,
+  MessageCircle,
+  Microscope,
+  Palette,
+  PawPrint,
+  Plane,
+  Rocket,
+  ScanEye,
+  Search,
+  Share2,
+  ShieldAlert,
+  Shuffle,
+  Tag,
+  Telescope,
+  TrendingUp,
+  Trophy,
+  Users,
+  Utensils,
+  Wrench,
+  Zap,
+} from '@tamagui/lucide-icons';
+
+type IconComponent = typeof Lightbulb;
 
 /**
- * Convert kebab-case to PascalCase
- * Example: "book-open" -> "BookOpen"
+ * Every icon name the app can receive at runtime, keyed by the kebab-case
+ * names used in data: backend `categories.icon`, onboarding questions,
+ * badge definitions, and trivia mode badges.
+ *
+ * This used to be `import * as LucideIcons` with a kebab→Pascal lookup,
+ * which pulled all ~1,760 icon modules into every bundle (Metro doesn't
+ * tree-shake in dev). Unknown names fall back to Lightbulb with a warning;
+ * when the backend adds a category with a new icon, add it here.
  */
-function kebabToPascalCase(str: string): string {
-  return str
-    .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join('');
-}
+const ICON_MAP = {
+  activity: Activity,
+  award: Award,
+  banknote: Banknote,
+  'book-open': BookOpen,
+  bookmark: Bookmark,
+  brain: Brain,
+  calculator: Calculator,
+  calendar: Calendar,
+  'calendar-check': CalendarCheck,
+  'check-circle': CheckCircle,
+  'chef-hat': ChefHat,
+  clapperboard: Clapperboard,
+  clock: Clock,
+  cpu: Cpu,
+  dumbbell: Dumbbell,
+  fingerprint: Fingerprint,
+  flame: Flame,
+  'gamepad-2': Gamepad2,
+  globe: Globe,
+  'graduation-cap': GraduationCap,
+  'heart-handshake': HeartHandshake,
+  'heart-pulse': HeartPulse,
+  landmark: Landmark,
+  leaf: Leaf,
+  lightbulb: Lightbulb,
+  map: MapIcon,
+  'message-circle': MessageCircle,
+  microscope: Microscope,
+  palette: Palette,
+  'paw-print': PawPrint,
+  plane: Plane,
+  rocket: Rocket,
+  'scan-eye': ScanEye,
+  search: Search,
+  'share-2': Share2,
+  'shield-alert': ShieldAlert,
+  shuffle: Shuffle,
+  tag: Tag,
+  telescope: Telescope,
+  'trending-up': TrendingUp,
+  trophy: Trophy,
+  users: Users,
+  utensils: Utensils,
+  wrench: Wrench,
+  zap: Zap,
+} satisfies Record<string, IconComponent>;
 
 /**
  * Get a Lucide icon component by its kebab-case name
@@ -25,27 +120,19 @@ export function getLucideIcon(
   size = 32,
   color?: string
 ): React.ReactElement {
-  if (!iconName) {
-    return <LucideIcons.Lightbulb size={size} color={color} />;
+  const IconComponent = iconName
+    ? (ICON_MAP as Record<string, IconComponent>)[iconName]
+    : undefined;
+
+  if (iconName && !IconComponent) {
+    console.warn(`Icon "${iconName}" not in ICON_MAP. Using Lightbulb as fallback.`);
   }
 
-  // Convert kebab-case to PascalCase
-  const pascalCaseName = kebabToPascalCase(iconName);
-
-  // Get the icon component
-  const IconComponent = LucideIcons[pascalCaseName as keyof typeof LucideIcons];
-
-  if (!IconComponent || typeof IconComponent !== 'function') {
-    console.warn(
-      `Icon "${iconName}" (${pascalCaseName}) not found in Lucide icons. Using Lightbulb as fallback.`
-    );
-    return <LucideIcons.Lightbulb size={size} color={color} />;
-  }
-
-  return <IconComponent size={size} color={color} />;
+  const Icon = IconComponent ?? Lightbulb;
+  return <Icon size={size} color={color} />;
 }
 
 /**
  * Type-safe Lucide icon names
  */
-export type LucideIconName = keyof typeof LucideIcons;
+export type LucideIconName = keyof typeof ICON_MAP;
