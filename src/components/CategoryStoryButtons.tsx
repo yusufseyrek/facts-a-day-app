@@ -27,7 +27,7 @@ import { hexColors, useTheme } from '../theme';
 import { blendHexColors } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
 
-import { StoryButtonCircle } from './storyMorph/StoryButtonCircle';
+import { StoryButtonCircle, THEME_GLOW_BLEED } from './storyMorph/StoryButtonCircle';
 import { FONT_FAMILIES, Text } from './Typography';
 
 import type { CachedCategoryItem } from '../services/categoryButtonsCache';
@@ -336,10 +336,13 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     // namespace the key so FlashList never sees a duplicate.
     const keyExtractor = useCallback((item: CategoryItem) => storySlugFor(item), []);
 
-    // Height for horizontal FlashList container: circle + label margin + label line.
-    // Reserved on every render (including skeleton) so the row never collapses
-    // while data loads — that collapse was the source of the home-feed jump.
-    const rowHeight = circleSize + spacing.xs + typography.fontSize.tiny * 2;
+    // Height for horizontal FlashList container: glow headroom + circle +
+    // label margin + label line. Reserved on every render (including skeleton)
+    // so the row never collapses while data loads — that collapse was the
+    // source of the home-feed jump. The headroom keeps the theme buttons'
+    // aura inside the list's scroll bounds (a ScrollView clips at its edges,
+    // which cut the glow off at the top).
+    const rowHeight = THEME_GLOW_BLEED + circleSize + spacing.xs + typography.fontSize.tiny * 2;
     const outerSize = circleSize + (borderWidths.medium + 1) * 2;
 
     const itemSeparator = useCallback(() => <View style={{ width: spacing.md }} />, [spacing.md]);
@@ -362,6 +365,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
             ItemSeparatorComponent={itemSeparator}
             contentContainerStyle={{
               paddingHorizontal: spacing.lg,
+              paddingTop: THEME_GLOW_BLEED,
             }}
           />
         ) : (
@@ -371,6 +375,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
             labelMarginTop={spacing.xs}
             labelHeight={typography.fontSize.tiny * 2}
             paddingHorizontal={spacing.lg}
+            paddingTop={THEME_GLOW_BLEED}
             gap={spacing.md}
             placeholderColor={colors.surface}
           />
@@ -392,6 +397,7 @@ const CategoryRowSkeleton = React.memo(
     labelMarginTop,
     labelHeight,
     paddingHorizontal,
+    paddingTop,
     gap,
     placeholderColor,
   }: {
@@ -400,6 +406,7 @@ const CategoryRowSkeleton = React.memo(
     labelMarginTop: number;
     labelHeight: number;
     paddingHorizontal: number;
+    paddingTop: number;
     gap: number;
     placeholderColor: string;
   }) => {
@@ -420,6 +427,7 @@ const CategoryRowSkeleton = React.memo(
         style={{
           flexDirection: 'row',
           paddingHorizontal,
+          paddingTop,
           alignItems: 'flex-start',
         }}
       >

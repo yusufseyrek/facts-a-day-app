@@ -43,6 +43,12 @@ export interface StoryButtonCircleProps {
   iconSize: number;
 }
 
+// Theme-button aura blur radius, and the headroom the story row must reserve
+// above the circles: the row is a horizontal ScrollView, which clips at its
+// bounds — without top padding the aura renders cut off at the row's top edge.
+const GLOW_RADIUS = 12;
+export const THEME_GLOW_BLEED = GLOW_RADIUS + 2;
+
 /** Lighten a hex color by a given amount (0–1). */
 export function lightenColor(hex: string, amount: number): string {
   const clean = hex.replace('#', '');
@@ -246,7 +252,7 @@ const styles = StyleSheet.create({
     // Zero offset: an even halo all around (aura), not a drop shadow.
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.85,
-    shadowRadius: 12,
+    shadowRadius: GLOW_RADIUS,
     elevation: 12,
   },
 });
