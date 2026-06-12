@@ -1,5 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,10 +20,12 @@ import { Shuffle } from '../icons';
 
 /**
  * The story button's circle visual (gradient ring while unseen, hairline ring
- * once seen), shared by the live CategoryButton and the morph replica so the
- * replica is a pixel-exact static clone of the pressed button. All colors
- * arrive pre-computed (blends depend on theme + category), keeping this a
- * pure render of primitives — exactly what StoryMorphSource carries.
+ * once seen, glowing image circle for story themes), shared by the live
+ * CategoryButton and the morph replica so the replica is a pixel-exact clone
+ * of the pressed button. All colors arrive pre-computed (blends depend on
+ * theme + category) — exactly what StoryMorphSource carries. The theme
+ * variant runs a self-contained shine loop; everything else stays a pure
+ * render of primitives.
  */
 export interface StoryButtonCircleProps {
   hasUnseen: boolean;
@@ -42,6 +55,103 @@ export function lightenColor(hex: string, amount: number): string {
   return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
 }
 
+/**
+ * Story themes: the image IS the button. Borderless full-bleed circle sold by
+ * two effects instead of a ring: an event-colored glow (shadow in the theme
+ * color; Android gets it via colored elevation on API 28+) and a periodic
+ * diagonal shine sweeping across the image — kin to the screen's gradient
+ * signature rather than a flat cutout.
+ */
+function ThemeImageCircle({
+  imageUrl,
+  glowColor,
+  fill,
+  outerSize,
+}: {
+  imageUrl: string;
+  glowColor: string;
+  fill: string;
+  outerSize: number;
+}) {
+  // 0 → 1 drives one shine sweep (left of the circle to past its right edge);
+  // the strip parks outside the clip between sweeps, so no opacity juggling.
+  const shine = useSharedValue(0);
+
+  useEffect(() => {
+    shine.value = 0;
+    shine.value = withRepeat(
+      withSequence(
+        withDelay(2600, withTiming(1, { duration: 900, easing: Easing.inOut(Easing.ease) })),
+        withTiming(0, { duration: 0 })
+      ),
+      -1,
+      false
+    );
+    return () => cancelAnimation(shine);
+  }, [shine]);
+
+  const stripWidth = outerSize * 0.45;
+  const shineStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX: interpolate(shine.value, [0, 1], [-stripWidth * 1.5, outerSize + stripWidth]),
+      },
+      { rotate: '18deg' },
+    ],
+  }));
+
+  return (
+    <View
+      style={[
+        styles.imageGlow,
+        {
+          width: outerSize,
+          height: outerSize,
+          borderRadius: outerSize / 2,
+          // Opaque fill behind the image: Android elevation needs it to cast,
+          // and it doubles as the loading placeholder.
+          backgroundColor: fill,
+          // Lightened so the halo carries luminance on the dark home surface
+          // (the raw event color reads as barely-there at shadow opacity).
+          shadowColor: lightenColor(glowColor, 0.3),
+        },
+      ]}
+    >
+      {/* Clip layer is separate from the shadow layer (overflow hidden kills shadows). */}
+      <View
+        style={{ width: outerSize, height: outerSize, borderRadius: outerSize / 2, overflow: 'hidden' }}
+      >
+        <Image
+          source={{ uri: imageUrl }}
+          contentFit="cover"
+          transition={150}
+          style={StyleSheet.absoluteFill}
+        />
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            {
+              position: 'absolute',
+              top: -outerSize * 0.3,
+              left: 0,
+              width: stripWidth,
+              height: outerSize * 1.6,
+            },
+            shineStyle,
+          ]}
+        >
+          <LinearGradient
+            colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+      </View>
+    </View>
+  );
+}
+
 export function StoryButtonCircle({
   hasUnseen,
   isMix,
@@ -56,42 +166,14 @@ export function StoryButtonCircle({
   innerSize,
   iconSize,
 }: StoryButtonCircleProps) {
-  // Story themes: the image IS the button — full-bleed to the outer edge (no
-  // gradient ring or inner fill), a hairline ring so the edge reads on any
-  // background, and a soft shadow for lift.
   if (imageUrl) {
     return (
-      <View
-        style={[
-          styles.imageShadow,
-          {
-            width: outerSize,
-            height: outerSize,
-            borderRadius: outerSize / 2,
-            // Opaque fill behind the image: Android elevation needs it to
-            // cast, and it doubles as the loading placeholder.
-            backgroundColor: seenFill,
-          },
-        ]}
-      >
-        <Image
-          source={{ uri: imageUrl }}
-          contentFit="cover"
-          transition={150}
-          style={{ width: outerSize, height: outerSize, borderRadius: outerSize / 2 }}
-        />
-        <View
-          pointerEvents="none"
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              borderRadius: outerSize / 2,
-              borderWidth: 1.25,
-              borderColor,
-            },
-          ]}
-        />
-      </View>
+      <ThemeImageCircle
+        imageUrl={imageUrl}
+        glowColor={ringColor}
+        fill={seenFill}
+        outerSize={outerSize}
+      />
     );
   }
 
@@ -160,11 +242,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  imageShadow: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.22,
-    shadowRadius: 5,
-    elevation: 5,
+  imageGlow: {
+    // Zero offset: an even halo all around (aura), not a drop shadow.
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.85,
+    shadowRadius: 12,
+    elevation: 12,
   },
 });
