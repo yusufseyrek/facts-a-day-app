@@ -8,7 +8,6 @@ import { hexColors, useTheme } from '../theme';
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { useResponsive } from '../utils/useResponsive';
 
-import { CloseButton } from './CloseButton';
 import { DialogButton, DialogShell } from './DialogShell';
 import { XStack, YStack } from './Stacks';
 import { Text } from './Typography';
@@ -32,7 +31,7 @@ type Availability = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 export function ScreenNameModal({ visible, onClose, onSaved, currentName }: ScreenNameModalProps) {
   const { t, locale } = useTranslation();
   const { theme } = useTheme();
-  const { spacing, radius, typography } = useResponsive();
+  const { spacing, radius, typography, maxModalWidth } = useResponsive();
 
   const [name, setName] = useState(currentName ?? '');
   const [availability, setAvailability] = useState<Availability>('idle');
@@ -136,7 +135,9 @@ export function ScreenNameModal({ visible, onClose, onSaved, currentName }: Scre
       visible={visible}
       onClose={handleClose}
       keyboardAware
-      maxWidth={500}
+      title={currentName ? t('screenNameChangeTitle') : t('screenNameTitle')}
+      showClose
+      maxWidth={maxModalWidth}
       footer={
         <>
           <DialogButton
@@ -159,13 +160,6 @@ export function ScreenNameModal({ visible, onClose, onSaved, currentName }: Scre
         paddingBottom={spacing.md}
         gap={spacing.md}
       >
-        <XStack justifyContent="space-between" alignItems="center" marginBottom={spacing.sm}>
-          <Text.Title>
-            {currentName ? t('screenNameChangeTitle') : t('screenNameTitle')}
-          </Text.Title>
-          <CloseButton onPress={handleClose} label={t('cancel')} />
-        </XStack>
-
         <Text.Body color="$textSecondary" fontSize={typography.fontSize.caption}>
           {t('screenNameHint')}
         </Text.Body>
