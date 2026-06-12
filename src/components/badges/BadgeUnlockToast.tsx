@@ -29,7 +29,10 @@ import { FONT_FAMILIES, Text } from '../Typography';
 import { BadgeIcon } from './BadgeIcon';
 import { StarRating } from './StarRating';
 
-const HIDDEN_TRANSLATE_Y = -200;
+// Must clear the whole card above the screen edge WITHOUT relying on the
+// fade: in glass mode the toast slides but never fades (see below), and the
+// tablet card (top inset + hero icon + padding) is taller than the old -200.
+const HIDDEN_TRANSLATE_Y = -280;
 const SPRING_IN = { duration: 350, dampingRatio: 0.8 } as const;
 const AUTO_HIDE_MS = 3000;
 const SPIN_DURATION_MS = 8000;
@@ -80,8 +83,15 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
   const colors = hexColors[theme];
   const insets = useSafeAreaInsets();
 
+  // UIVisualEffectView rule (and the liquid-glass UIGlassEffect is stricter):
+  // alpha < 1 on the effect view or ANY ancestor makes the material render
+  // incorrectly or fully transparent, and it can latch that way. So in glass
+  // mode the toast only slides; its opacity is pinned at 1 for its whole
+  // lifetime. The opaque fallback card keeps the fade.
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
+
   const translateY = useSharedValue(HIDDEN_TRANSLATE_Y);
-  const opacity = useSharedValue(0);
+  const opacity = useSharedValue(useGlass ? 1 : 0);
   const spin = useSharedValue(0);
   const onHideRef = useRef(onHide);
   onHideRef.current = onHide;
@@ -103,11 +113,11 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 
     translateY.value = HIDDEN_TRANSLATE_Y;
-    opacity.value = 0;
+    opacity.value = useGlass ? 1 : 0;
     spin.value = 0;
 
     translateY.value = withSpring(0, SPRING_IN);
-    opacity.value = withTiming(1, { duration: 200 });
+    if (!useGlass) opacity.value = withTiming(1, { duration: 200 });
 
     // Slow continuous rotation for the sunburst
     spin.value = withRepeat(
@@ -117,20 +127,20 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
     );
 
     const timer = setTimeout(() => {
-      opacity.value = withTiming(0, { duration: 250 });
+      if (!useGlass) opacity.value = withTiming(0, { duration: 250 });
       translateY.value = withTiming(HIDDEN_TRANSLATE_Y, { duration: 250 }, (finished) => {
         if (finished) runOnJS(finishHide)();
       });
     }, AUTO_HIDE_MS);
     return () => clearTimeout(timer);
-  }, [badge, finishHide, opacity, spin, translateY]);
+  }, [badge, finishHide, opacity, spin, translateY, useGlass]);
 
   const handlePress = useCallback(() => {
-    opacity.value = withTiming(0, { duration: 200 });
+    if (!useGlass) opacity.value = withTiming(0, { duration: 200 });
     translateY.value = withTiming(HIDDEN_TRANSLATE_Y, { duration: 200 }, (finished) => {
       if (finished) runOnJS(finishPress)();
     });
-  }, [finishPress, opacity, translateY]);
+  }, [finishPress, opacity, translateY, useGlass]);
 
   const cardStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -146,7 +156,6 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
   const starCount = badge.star ? parseInt(badge.star.replace('star', '')) : 3;
   const iconSize = Math.round(iconSizes.heroLg);
   const accentColor = STAR_COLORS.filled;
-  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
   const burstSize = iconSize + spacing.lg;
   const sunburstXml = buildShineSvg(
     burstSize,
