@@ -7,9 +7,10 @@ import type { Category } from './database';
  * Pending "container transform" handoff between a pressed fact card and the
  * fact/morph/[id] route.
  *
- * Flow: the card measures itself on press-IN (measureInWindow is async, so
- * starting at press-in guarantees the rect is registered by the time the
- * press handler pushes the route). The surface's press handler then asks
+ * Flow: the card measures its morph anchor on press-IN — full-bleed cards
+ * measure themselves, row cards measure just their thumbnail (measureInWindow
+ * is async, so starting at press-in guarantees the rect is registered by the
+ * time the press handler pushes the route). The surface's press handler then asks
  * factDetailBasePath() which route to push: when a fresh measurement for that
  * fact id exists it pushes fact/morph/[id] (transparentModal, no native
  * animation), whose FactMorphContainer expands from this rect to full screen.
@@ -20,7 +21,7 @@ import type { Category } from './database';
  */
 interface FactMorphSourceBase {
   factId: number;
-  /** Window-absolute frame of the pressed card (measureInWindow). */
+  /** Window-absolute frame of the morph anchor (measureInWindow). */
   x: number;
   y: number;
   width: number;
@@ -51,31 +52,18 @@ export interface ImageCardMorphSource extends FactMorphSourceBase {
 }
 
 /**
- * Thumbnail row card (CompactFactCard, e.g. the On This Day carousel). No
- * geometric continuity to a full-width hero — the replica fades in place at
- * its original size while the container expands around it.
+ * Square thumbnail inside a row card (CompactFactCard — On This Day, related
+ * facts — and the Keep Reading rows). The registered rect is the THUMBNAIL
+ * itself, not the row: the container transform starts and ends on the image,
+ * and when the fact has one the replica morphs onto the detail hero frame —
+ * the same image continuity as the full-bleed cards. The rest of the row
+ * never moves; only its thumbnail hides while the morph covers that rect.
  */
-export interface CompactCardMorphSource extends FactMorphSourceBase {
-  kind: 'compact-card';
-  category?: string | Category;
-  hideCategoryBadge?: boolean;
-  showChevron?: boolean;
-  titleLines: number;
-  thumbnailSize: number;
+export interface ThumbnailMorphSource extends FactMorphSourceBase {
+  kind: 'thumbnail';
   /** ImagePlaceholder props for facts without a usable image. */
   categoryIcon?: string;
   categoryColor?: string;
-}
-
-/** Keep Reading list row. Same fade-in-place replica behavior as compact. */
-export interface KeepReadingMorphSource extends FactMorphSourceBase {
-  kind: 'keep-reading';
-  categoryName?: string;
-  categoryColor?: string;
-  categoryIcon?: string;
-  imageSize: number;
-  /** Odd rows have a translucent card background, even rows are transparent. */
-  isOdd: boolean;
 }
 
 /**
@@ -88,11 +76,7 @@ export interface SampleCardMorphSource extends FactMorphSourceBase {
   fact: SampleFact;
 }
 
-export type FactMorphSource =
-  | ImageCardMorphSource
-  | CompactCardMorphSource
-  | KeepReadingMorphSource
-  | SampleCardMorphSource;
+export type FactMorphSource = ImageCardMorphSource | ThumbnailMorphSource | SampleCardMorphSource;
 
 // Long enough to survive a slow press (press-in → release), short enough that
 // an abandoned press-in (scroll-through) can't leak into a later interaction.

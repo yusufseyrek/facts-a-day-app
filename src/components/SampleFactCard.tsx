@@ -2,11 +2,11 @@ import { StyleSheet, View } from 'react-native';
 
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { XStack } from 'tamagui';
 
 import { IMAGE_PLACEHOLDER } from '../config/images';
 import { useResponsive } from '../utils/useResponsive';
 
+import { XStack } from 'tamagui';
 import { FONT_FAMILIES, Text } from './Typography';
 
 import type { SampleFact } from '../config/sampleFacts';
@@ -29,15 +29,19 @@ const placeholder = { blurhash: IMAGE_PLACEHOLDER.DEFAULT_BLURHASH };
  * the pressed card's width so the title never reflows mid-morph).
  * @param imageTransition 0 for the replica — it must be opaque on its first
  * frame, a fade-in would show a hole.
+ * @param onImageReady Fired on the image's first paint (the replica's morph
+ * container holds the transition until then — see FactCardReplica).
  */
 export function SampleFactCardLayers({
   fact,
   titleWidth,
   imageTransition = 300,
+  onImageReady,
 }: {
   fact: SampleFact;
   titleWidth?: number;
   imageTransition?: number;
+  onImageReady?: () => void;
 }) {
   const { spacing, radius, config } = useResponsive();
 
@@ -49,6 +53,8 @@ export function SampleFactCardLayers({
         contentFit="cover"
         placeholder={placeholder}
         transition={imageTransition}
+        onLoad={onImageReady}
+        onDisplay={onImageReady}
       />
 
       <LinearGradient

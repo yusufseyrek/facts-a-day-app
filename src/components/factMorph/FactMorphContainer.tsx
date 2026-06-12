@@ -37,6 +37,11 @@ const SWIPE_CLOSE_DISTANCE_RATIO = 0.3;
 const SWIPE_CLOSE_VELOCITY = 800;
 const SWIPE_SETTLE_MS = 220;
 
+// Ceiling on waiting for the replica's image to paint before the morph
+// starts anyway (broken or glacial images shouldn't block the open; they
+// just fall back to the pre-gate behavior of fading from the blurhash).
+const REPLICA_READY_FALLBACK_MS = 300;
+
 /**
  * "Container transform" shared-element morph from a pressed fact card to the
  * full-screen fact detail.
@@ -53,15 +58,24 @@ const SWIPE_SETTLE_MS = 220;
  *    Glass (UIVisualEffectView), which permanently fails to render when
  *    mounted while any ancestor has alpha < 1. Replicas are therefore opaque
  *    at progress 0 (they're all the frame-0 coverage there is).
- *  - Replica geometry per source kind: image cards morph their image region
- *    from the card frame onto the detail hero frame; row sources (compact
- *    card, keep-reading) have no hero-shaped geometry, so the replica stays
- *    pinned at its original size and fades in place.
- *  - While mounted, the source card hides itself (setActiveFactMorph →
- *    useFactMorphSource), like UIKit's zoom transition hiding the source
- *    cell: otherwise the closing screen shrinks down on top of a visible
- *    duplicate. It's revealed one commit BEFORE the pop, under the replica's
- *    exact cover, so neither direction shows a hole or a double.
+ *  - Replica geometry: sources with an image (full-bleed cards, row
+ *    thumbnails — for rows the registered rect is the thumbnail itself, not
+ *    the row) morph their image from the pressed frame onto the detail hero
+ *    frame, keeping the picture continuous. Imageless thumbnail sources have
+ *    no hero to land on (the detail renders none), so their placeholder
+ *    replica stays pinned at its original size and fades in place.
+ *  - The morph does NOT start on mount: replica images decode asynchronously
+ *    even on memory-cache hits, and starting earlier flashes the blurhash/
+ *    placeholder where the pressed image was. Until the replica reports its
+ *    first paint (onLoad/onDisplay, REPLICA_READY_FALLBACK_MS backstop) the
+ *    container parks off-screen — translated, never alpha-hidden (the Liquid
+ *    Glass constraint above) — and the source card stays visible.
+ *  - From that ready commit on, the source card hides itself
+ *    (setActiveFactMorph → useFactMorphSource), like UIKit's zoom transition
+ *    hiding the source cell: otherwise the closing screen shrinks down on
+ *    top of a visible duplicate. It's revealed one commit BEFORE the pop,
+ *    under the replica's exact cover, so neither direction shows a hole or a
+ *    double.
  *  - Close (X button, pull-down, left-edge swipe-right, Android back) plays
  *    the reverse morph, then pops the route. The edge swipe is interactive:
  *    the finger drives the morph progress directly. Reanimated's
@@ -97,15 +111,30 @@ export function FactMorphContainer({
   const srcW = source.width;
   const srcH = source.height;
   const srcRadius = source.borderRadius;
-  // Sample cards (onboarding) share the image card's hero-continuous geometry.
-  const isImageCard = source.kind === 'image-card' || source.kind === 'sample-card';
+  // Hero-continuous geometry: the replica's image morphs onto the detail hero
+  // frame. Full-bleed cards (and the onboarding sample cards) always do;
+  // thumbnail sources do when the fact has an image. An imageless thumbnail
+  // has no hero to land on — the detail renders none — so it fades in place.
+  const morphsToHero =
+    source.kind === 'image-card' || source.kind === 'sample-card' || source.imageUri != null;
 
   const progress = useSharedValue(0);
   // Content is inert while morphing; enabled once fully open.
   const [interactive, setInteractive] = useState(false);
   const closingRef = useRef(false);
 
+  // Frame-0 gate: true once the replica's image has painted (or the fallback
+  // fired), i.e. once the container can cover the source card without a
+  // flash. See the readiness note in the component docs.
+  const [replicaReady, setReplicaReady] = useState(false);
+  const onReplicaReady = useCallback(() => setReplicaReady(true), []);
   useEffect(() => {
+    const fallback = setTimeout(() => setReplicaReady(true), REPLICA_READY_FALLBACK_MS);
+    return () => clearTimeout(fallback);
+  }, []);
+
+  useEffect(() => {
+    if (!replicaReady) return;
     progress.value = withTiming(
       1,
       { duration: OPEN_DURATION_MS, easing: OPEN_EASING },
@@ -113,18 +142,20 @@ export function FactMorphContainer({
         if (finished) runOnJS(setInteractive)(true);
       }
     );
-    // Open exactly once, on mount.
-  }, []);
+    // Opens exactly once: replicaReady only ever flips false → true.
+  }, [replicaReady]);
 
-  // Hide the pressed card for the lifetime of this presentation. The unmount
-  // cleanup is only the safety net — the normal path reveals the card in
-  // goBack(), one commit before the pop, while the replica still covers it
+  // Hide the pressed card from the ready commit on — the same commit that
+  // moves the container into place over it, so the swap is seamless. The
+  // unmount cleanup is only the safety net — the normal path reveals the card
+  // in goBack(), one commit before the pop, while the replica still covers it
   // exactly; revealing only on unmount can leave a one-frame hole after the
   // screen is gone.
   useEffect(() => {
+    if (!replicaReady) return;
     setActiveFactMorph(source);
     return () => setActiveFactMorph(null);
-  }, [source]);
+  }, [replicaReady, source]);
 
   // Idempotent: the X button, the edge swipe, and Android back can race onto
   // this; a double router.back() would pop the screen below too.
@@ -240,14 +271,14 @@ export function FactMorphContainer({
 
   // Card replica, fading out on top of the always-opaque content (and back
   // in on close) — see the one-sided dissolve note in the component docs.
-  // Image cards: the image region morphs card frame → detail hero frame,
-  // tracking the container width. Row sources: pinned at the original row
-  // size (no hero-shaped geometry to morph onto), fading in place.
+  // Hero-continuous sources: the image morphs pressed frame → detail hero
+  // frame, tracking the container width. Imageless thumbnails: pinned at the
+  // original size (no hero to morph onto), fading in place.
   const replicaStyle = useAnimatedStyle(() => {
     const p = progress.value;
     return {
-      width: isImageCard ? interpolate(p, [0, 1], [srcW, targetW]) : srcW,
-      height: isImageCard ? interpolate(p, [0, 1], [srcH, heroHeight]) : srcH,
+      width: morphsToHero ? interpolate(p, [0, 1], [srcW, targetW]) : srcW,
+      height: morphsToHero ? interpolate(p, [0, 1], [srcH, heroHeight]) : srcH,
       opacity: interpolate(p, [0.2, 0.6], [1, 0], Extrapolation.CLAMP),
     };
   });
@@ -264,7 +295,12 @@ export function FactMorphContainer({
           <View style={styles.root} onLayout={onRootLayout}>
             <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]} />
             <Animated.View
-              style={[styles.container, { backgroundColor: surfaceColor }, containerStyle]}
+              style={[
+                styles.container,
+                { backgroundColor: surfaceColor },
+                containerStyle,
+                !replicaReady && styles.waitingOffscreen,
+              ]}
             >
               <Animated.View
                 style={[
@@ -280,7 +316,7 @@ export function FactMorphContainer({
                 {children}
               </Animated.View>
               <Animated.View style={[styles.replica, replicaStyle]}>
-                <FactCardReplica source={source} />
+                <FactCardReplica source={source} onReady={onReplicaReady} />
               </Animated.View>
             </Animated.View>
           </View>
@@ -313,5 +349,11 @@ const styles = StyleSheet.create({
     left: 0,
     overflow: 'hidden',
     pointerEvents: 'none',
+  },
+  // Parks the not-yet-ready presentation out of view WITHOUT touching alpha
+  // (the Liquid Glass mount constraint): layout and image decoding proceed
+  // normally off-screen while the source card stays visible in the feed.
+  waitingOffscreen: {
+    transform: [{ translateX: 100000 }],
   },
 });

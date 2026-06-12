@@ -43,43 +43,40 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
   // Pressable pressed-state style) — same feedback as the feed cards.
   const { pressStyle, onPressIn, onPressOut } = usePressFeedback();
 
-  // Row root, measured on press-in for the row → detail morph transition.
-  // isMorphSourceActive hides this row while its morph presentation is on
-  // screen, so the closing screen never lands on top of a visible duplicate.
-  const rowRef = useRef<View>(null);
+  // Thumbnail, measured on press-in for the image → detail-hero morph: the
+  // container transform starts and ends on the image rect, not the row.
+  // isMorphSourceActive hides just the image while its morph presentation is
+  // on screen, so the closing morph never lands on a visible duplicate.
+  const imageRef = useRef<View>(null);
   const { registerMorphSource, isMorphSourceActive } = useFactMorphSource(fact.id);
 
-  // Register this row as the morph source on press-IN: measureInWindow is
+  // Register the image as the morph source on press-IN: measureInWindow is
   // async, so starting here guarantees the rect is registered by the time
   // onPress (touch up) pushes the route via factDetailBasePath(). A press-in
   // that turns into a scroll leaves a harmless entry (fact-id + TTL guarded).
   const handlePressIn = useCallback(() => {
     onPressIn();
-    rowRef.current?.measureInWindow((x, y, width, height) => {
+    imageRef.current?.measureInWindow((x, y, width, height) => {
       if (!(width > 0 && height > 0)) return;
       registerMorphSource({
-        kind: 'keep-reading',
+        kind: 'thumbnail',
         factId: fact.id,
         x,
         y,
         width,
         height,
-        borderRadius: 0,
+        borderRadius: spacing.sm,
         imageUri: resolvedUri ?? null,
         title: fact.title ?? '',
-        categoryName,
         categoryColor: fact.categoryData?.color_hex,
         categoryIcon: fact.categoryData?.icon,
-        imageSize,
-        isOdd,
       });
     });
-  }, [onPressIn, registerMorphSource, fact, resolvedUri, categoryName, imageSize, isOdd]);
+  }, [onPressIn, registerMorphSource, fact, resolvedUri, spacing.sm]);
 
   return (
     <Animated.View style={pressStyle}>
       <Pressable
-        ref={rowRef}
         onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={onPressOut}
@@ -89,7 +86,6 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
             padding: spacing.xl,
             backgroundColor: isOdd ? `${colors.cardBackground}70` : 'transparent',
           },
-          isMorphSourceActive && styles.morphSourceHidden,
         ]}
       >
         <View style={[styles.textContainer, { marginRight: spacing.md }]}>
@@ -105,30 +101,37 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
             {fact.title}
           </Text.Body>
         </View>
-        {resolvedUri ? (
-          <Image
-            source={{ uri: resolvedUri }}
-            style={[
-              styles.image,
-              {
-                width: imageSize,
-                height: imageSize,
-                borderRadius: spacing.sm,
-              },
-            ]}
-            contentFit="cover"
-            transition={200}
-          />
-        ) : (
-          <ImagePlaceholder
-            width={imageSize}
-            height={imageSize}
-            borderRadius={spacing.sm}
-            iconSize={imageSize * 0.4}
-            categoryIcon={fact.categoryData?.icon}
-            categoryColor={fact.categoryData?.color_hex}
-          />
-        )}
+        {/* Thumbnail — collapsable=false so measureInWindow works on Android */}
+        <View
+          ref={imageRef}
+          collapsable={false}
+          style={isMorphSourceActive && styles.morphSourceHidden}
+        >
+          {resolvedUri ? (
+            <Image
+              source={{ uri: resolvedUri }}
+              style={[
+                styles.image,
+                {
+                  width: imageSize,
+                  height: imageSize,
+                  borderRadius: spacing.sm,
+                },
+              ]}
+              contentFit="cover"
+              transition={200}
+            />
+          ) : (
+            <ImagePlaceholder
+              width={imageSize}
+              height={imageSize}
+              borderRadius={spacing.sm}
+              iconSize={imageSize * 0.4}
+              categoryIcon={fact.categoryData?.icon}
+              categoryColor={fact.categoryData?.color_hex}
+            />
+          )}
+        </View>
       </Pressable>
     </Animated.View>
   );
@@ -145,7 +148,7 @@ const styles = StyleSheet.create({
   image: {
     overflow: 'hidden',
   },
-  // Hides the row while it is the active morph source (the expanded detail
+  // Hides the thumbnail while it is the active morph source (the morph
   // presentation covers this exact rect, so no hole is ever visible).
   morphSourceHidden: {
     opacity: 0,

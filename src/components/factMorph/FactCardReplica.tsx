@@ -1,31 +1,30 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { ChevronRight, Crown } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { IMAGE_PLACEHOLDER } from '../../config/images';
-import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { CategoryBadge } from '../CategoryBadge';
 import { FavoriteButton } from '../FavoriteButton';
+import { Crown } from '@tamagui/lucide-icons';
 import { FACT_CARD_GRADIENT, factCardCrownShadow, factCardTitleShadow } from '../ImageFactCard';
 import { ImagePlaceholder } from '../ImagePlaceholder';
 import { SampleFactCardLayers } from '../SampleFactCard';
-import { FONT_FAMILIES, Text } from '../Typography';
+import { Text } from '../Typography';
 
 import type {
-  CompactCardMorphSource,
   FactMorphSource,
   ImageCardMorphSource,
-  KeepReadingMorphSource,
   SampleCardMorphSource,
+  ThumbnailMorphSource,
 } from '../../services/factMorph';
 
 /**
- * Static visual clone of the pressed fact card/row, layered inside the morph
- * container. It matches the source pixel-for-pixel at progress 0 (same image
+ * Static visual clone of the pressed morph source (a full-bleed card, or just
+ * the thumbnail of a row source), layered inside the morph container. It
+ * matches the source pixel-for-pixel at progress 0 (same image
  * URI and visual props, registered by the card itself on press-in) and fades
  * out over the always-opaque detail screen beneath (one-sided dissolve — see
  * FactMorphContainer's Liquid Glass note). Each variant must be opaque at
@@ -33,17 +32,27 @@ import type {
  *
  * The whole tree is inert (pointerEvents none on the wrapper) — interactive
  * children like FavoriteButton render purely for visual continuity.
+ *
+ * `onReady` reports the replica's frame-0 coverage: fired on the image's
+ * first paint (onLoad/onDisplay — expo-image decodes asynchronously even on
+ * cache hits), or immediately when there is no image to wait for. The morph
+ * container holds the transition (and the source card's hide) until then,
+ * otherwise the opening frames flash the blurhash where the image was.
  */
-export function FactCardReplica({ source }: { source: FactMorphSource }) {
+export function FactCardReplica({
+  source,
+  onReady,
+}: {
+  source: FactMorphSource;
+  onReady?: () => void;
+}) {
   switch (source.kind) {
     case 'image-card':
-      return <ImageCardReplica source={source} />;
-    case 'compact-card':
-      return <CompactCardReplica source={source} />;
-    case 'keep-reading':
-      return <KeepReadingReplica source={source} />;
+      return <ImageCardReplica source={source} onReady={onReady} />;
+    case 'thumbnail':
+      return <ThumbnailReplica source={source} onReady={onReady} />;
     case 'sample-card':
-      return <SampleCardReplica source={source} />;
+      return <SampleCardReplica source={source} onReady={onReady} />;
   }
 }
 
@@ -52,18 +61,41 @@ export function FactCardReplica({ source }: { source: FactMorphSource }) {
  * opaque base matches the card's background so frame 0 has full coverage
  * even before the bundled image paints.
  */
-function SampleCardReplica({ source }: { source: SampleCardMorphSource }) {
+function SampleCardReplica({
+  source,
+  onReady,
+}: {
+  source: SampleCardMorphSource;
+  onReady?: () => void;
+}) {
   return (
     <View style={[styles.fill, styles.sampleCardBase]} pointerEvents="none">
-      <SampleFactCardLayers fact={source.fact} titleWidth={source.width} imageTransition={0} />
+      <SampleFactCardLayers
+        fact={source.fact}
+        titleWidth={source.width}
+        imageTransition={0}
+        onImageReady={onReady}
+      />
     </View>
   );
 }
 
 /** Mirrors ImageFactCard: full-bleed image, gradient, badges, title overlay. */
-function ImageCardReplica({ source }: { source: ImageCardMorphSource }) {
+function ImageCardReplica({
+  source,
+  onReady,
+}: {
+  source: ImageCardMorphSource;
+  onReady?: () => void;
+}) {
   const { spacing, config } = useResponsive();
   const Title = source.TitleComponent || Text.Title;
+
+  // No image to wait for — the gradient/badge/title layers paint
+  // synchronously, so frame 0 is covered from the first commit.
+  useEffect(() => {
+    if (!source.imageUri) onReady?.();
+  }, [source.imageUri, onReady]);
 
   return (
     <View style={styles.fill} pointerEvents="none">
@@ -75,6 +107,10 @@ function ImageCardReplica({ source }: { source: ImageCardMorphSource }) {
           contentFit="cover"
           cachePolicy="memory-disk"
           transition={0}
+          // Both fire on cache hits; whichever lands first releases the
+          // morph's frame-0 gate (idempotent on the container side).
+          onLoad={onReady}
+          onDisplay={onReady}
         />
       )}
       <LinearGradient
@@ -131,131 +167,54 @@ function ImageCardReplica({ source }: { source: ImageCardMorphSource }) {
   );
 }
 
-/** Mirrors CompactFactCard: rounded surface row, thumbnail + title + badge. */
-function CompactCardReplica({ source }: { source: CompactCardMorphSource }) {
-  const { theme } = useTheme();
-  const { spacing, radius, typography, iconSizes } = useResponsive();
-  const colors = hexColors[theme];
-
-  return (
-    <View
-      style={[
-        styles.fill,
-        styles.row,
-        {
-          borderRadius: radius.lg,
-          backgroundColor: colors.cardBackground,
-          padding: spacing.md,
-          gap: spacing.md,
-        },
-      ]}
-      pointerEvents="none"
-    >
-      <View
-        style={{
-          width: source.thumbnailSize,
-          height: source.thumbnailSize,
-          borderRadius: radius.md,
-          overflow: 'hidden',
-        }}
-      >
-        {source.imageUri ? (
-          <Image
-            source={{ uri: source.imageUri }}
-            aria-hidden
-            style={styles.fillImage}
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            transition={0}
-            // Same blurhash as the card, so a still-loading thumbnail shows
-            // the identical placeholder instead of popping.
-            placeholder={{ blurhash: IMAGE_PLACEHOLDER.DEFAULT_BLURHASH }}
-          />
-        ) : (
-          <ImagePlaceholder
-            width={source.thumbnailSize}
-            height={source.thumbnailSize}
-            borderRadius={radius.md}
-            iconSize={source.thumbnailSize * 0.4}
-            categoryIcon={source.categoryIcon}
-            categoryColor={source.categoryColor}
-          />
-        )}
-      </View>
-      <View style={{ flex: 1, justifyContent: 'center', gap: spacing.xs }}>
-        <Text.Label
-          numberOfLines={source.titleLines}
-          color={colors.text}
-          fontFamily={FONT_FAMILIES.bold}
-        >
-          {source.title}
-        </Text.Label>
-        {!source.hideCategoryBadge && source.category && (
-          <CategoryBadge category={source.category} fontSize={typography.fontSize.tiny} compact />
-        )}
-      </View>
-      {source.showChevron && <ChevronRight size={iconSizes.md} color={colors.primary} />}
-    </View>
-  );
-}
-
 /**
- * Mirrors KeepReadingItem: category + title left, square thumbnail right.
- *
- * The row itself is transparent (even rows) or translucent (odd rows) over
- * the feed background, so the replica paints that background color as an
- * opaque base: the morph's detail content underneath is always opaque (the
- * Liquid Glass constraint, see FactMorphContainer) and would otherwise show
- * through at frame 0. The composite is pixel-identical to the feed row.
+ * Mirrors the square thumbnail of a row source (CompactFactCard, Keep
+ * Reading). The replica IS the image — the morph container starts and ends
+ * on the thumbnail rect, so there is no row chrome to clone. With an image
+ * the frame morphs onto the detail hero; with a placeholder it stays pinned
+ * at its original size and fades in place (see FactMorphContainer).
  */
-function KeepReadingReplica({ source }: { source: KeepReadingMorphSource }) {
-  const { theme } = useTheme();
-  const { spacing } = useResponsive();
-  const colors = hexColors[theme];
+function ThumbnailReplica({
+  source,
+  onReady,
+}: {
+  source: ThumbnailMorphSource;
+  onReady?: () => void;
+}) {
+  // The placeholder branch paints synchronously (View + vector icon), so
+  // frame 0 is covered from the first commit.
+  useEffect(() => {
+    if (!source.imageUri) onReady?.();
+  }, [source.imageUri, onReady]);
 
+  if (source.imageUri) {
+    return (
+      <Image
+        source={{ uri: source.imageUri }}
+        aria-hidden
+        style={styles.fill}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={0}
+        // Same blurhash as the cards, so a still-loading thumbnail shows the
+        // identical placeholder instead of popping.
+        placeholder={{ blurhash: IMAGE_PLACEHOLDER.DEFAULT_BLURHASH }}
+        // Both fire on cache hits; whichever lands first releases the
+        // morph's frame-0 gate (idempotent on the container side).
+        onLoad={onReady}
+        onDisplay={onReady}
+      />
+    );
+  }
   return (
-    <View style={[styles.fill, { backgroundColor: colors.background }]} pointerEvents="none">
-      {source.isOdd && (
-        <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: `${colors.cardBackground}70` }]}
-        />
-      )}
-      <View style={[StyleSheet.absoluteFill, styles.row, { padding: spacing.xl }]}>
-        <View style={{ flex: 1, marginRight: spacing.md }}>
-          {source.categoryName && (
-            <Text.Label color={source.categoryColor ?? '$textSecondary'} marginBottom={spacing.xs}>
-              {source.categoryName}
-            </Text.Label>
-          )}
-          <Text.Body color="$text" numberOfLines={5} fontFamily={FONT_FAMILIES.semibold}>
-            {source.title}
-          </Text.Body>
-        </View>
-        {source.imageUri ? (
-          <Image
-            source={{ uri: source.imageUri }}
-            aria-hidden
-            style={{
-              width: source.imageSize,
-              height: source.imageSize,
-              borderRadius: spacing.sm,
-              overflow: 'hidden',
-            }}
-            contentFit="cover"
-            transition={0}
-          />
-        ) : (
-          <ImagePlaceholder
-            width={source.imageSize}
-            height={source.imageSize}
-            borderRadius={spacing.sm}
-            iconSize={source.imageSize * 0.4}
-            categoryIcon={source.categoryIcon}
-            categoryColor={source.categoryColor}
-          />
-        )}
-      </View>
-    </View>
+    <ImagePlaceholder
+      width={source.width}
+      height={source.height}
+      borderRadius={source.borderRadius}
+      iconSize={source.width * 0.4}
+      categoryIcon={source.categoryIcon}
+      categoryColor={source.categoryColor}
+    />
   );
 }
 
@@ -267,14 +226,6 @@ const styles = StyleSheet.create({
   // Same backdrop as the welcome carousel card's container.
   sampleCardBase: {
     backgroundColor: '#1a1a2e',
-  },
-  fillImage: {
-    width: '100%',
-    height: '100%',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   badge: {
     position: 'absolute',

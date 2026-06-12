@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { ChevronRight, RefreshCw } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
@@ -14,6 +13,7 @@ import { androidRipple } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
 import { CategoryBadge } from './CategoryBadge';
+import { ChevronRight, RefreshCw } from '@tamagui/lucide-icons';
 import { ImagePlaceholder } from './ImagePlaceholder';
 import { FONT_FAMILIES, Text } from './Typography';
 
@@ -47,10 +47,11 @@ const CompactFactCardComponent = ({
   // Light opacity-dim press feedback (replaces the old scale spring)
   const { pressStyle, onPressIn, onPressOut } = usePressFeedback();
 
-  // Card root, measured on press-in for the card → detail morph transition.
-  // isMorphSourceActive hides this card while its morph presentation is on
-  // screen, so the closing screen never lands on top of a visible duplicate.
-  const cardRef = useRef<View>(null);
+  // Thumbnail, measured on press-in for the image → detail-hero morph: the
+  // container transform starts and ends on the thumbnail rect, not the row.
+  // isMorphSourceActive hides just the thumbnail while its morph presentation
+  // is on screen, so the closing morph never lands on a visible duplicate.
+  const thumbnailRef = useRef<View>(null);
   const { registerMorphSource, isMorphSourceActive } = useFactMorphSource(fact.id);
 
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -120,46 +121,31 @@ const CompactFactCardComponent = ({
   const mountTimestamp = useRef(Date.now()).current;
   const recyclingKey = `popular-${fact.id}-${mountTimestamp}-${renderRetryCount}`;
 
-  // Register this card as the morph source on press-IN: measureInWindow is
-  // async, so starting here guarantees the rect is registered by the time
+  // Register the thumbnail as the morph source on press-IN: measureInWindow
+  // is async, so starting here guarantees the rect is registered by the time
   // onPress (touch up) pushes the route via factDetailBasePath(). The replica
   // mirrors whatever the thumbnail currently shows (image, blurhash, or
   // placeholder), so no imageLoaded gate is needed. A press-in that turns
   // into a scroll leaves a harmless entry (fact-id + TTL guarded).
   const handlePressIn = useCallback(() => {
     onPressIn();
-    cardRef.current?.measureInWindow((x, y, width, height) => {
+    thumbnailRef.current?.measureInWindow((x, y, width, height) => {
       if (!(width > 0 && height > 0)) return;
       registerMorphSource({
-        kind: 'compact-card',
+        kind: 'thumbnail',
         factId: fact.id,
         x,
         y,
         width,
         height,
-        borderRadius: radius.lg,
+        borderRadius: radius.md,
         imageUri: resolvedUri ?? null,
         title: fact.title ?? '',
-        category: fact.categoryData || fact.category || undefined,
-        hideCategoryBadge,
-        showChevron,
-        titleLines,
-        thumbnailSize,
         categoryIcon: fact.categoryData?.icon,
         categoryColor: fact.categoryData?.color_hex,
       });
     });
-  }, [
-    onPressIn,
-    registerMorphSource,
-    fact,
-    radius.lg,
-    resolvedUri,
-    hideCategoryBadge,
-    showChevron,
-    titleLines,
-    thumbnailSize,
-  ]);
+  }, [onPressIn, registerMorphSource, fact, radius.md, resolvedUri]);
 
   const shadowStyle = theme === 'dark' ? styles.shadowDark : styles.shadowLight;
 
@@ -170,7 +156,6 @@ const CompactFactCardComponent = ({
       renderToHardwareTextureAndroid={true}
     >
       <Pressable
-        ref={cardRef}
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={onPressOut}
@@ -185,11 +170,12 @@ const CompactFactCardComponent = ({
             padding: spacing.md,
             gap: spacing.md,
           },
-          isMorphSourceActive && styles.morphSourceHidden,
         ]}
       >
-        {/* Thumbnail */}
+        {/* Thumbnail — collapsable=false so measureInWindow works on Android */}
         <View
+          ref={thumbnailRef}
+          collapsable={false}
           style={[
             styles.thumbnail,
             {
@@ -197,6 +183,7 @@ const CompactFactCardComponent = ({
               width: thumbnailSize,
               height: thumbnailSize,
             },
+            isMorphSourceActive && styles.morphSourceHidden,
           ]}
         >
           {imageSource ? (
@@ -297,7 +284,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  // Hides the card while it is the active morph source (the expanded detail
+  // Hides the thumbnail while it is the active morph source (the morph
   // presentation covers this exact rect, so no hole is ever visible).
   morphSourceHidden: {
     opacity: 0,
