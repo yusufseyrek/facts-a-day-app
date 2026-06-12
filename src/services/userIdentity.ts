@@ -43,6 +43,16 @@ export async function saveIdentity(identity: UserIdentity): Promise<void> {
   await AsyncStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
 }
 
+/**
+ * Forget the stored identity (the "reset onboarding" flow clears it for a
+ * factory-fresh run). Local only: any backend user row survives, and losing
+ * the secret here means that name can only be re-claimed if the row is gone.
+ */
+export async function clearIdentity(): Promise<void> {
+  cached = null;
+  await AsyncStorage.removeItem(IDENTITY_KEY);
+}
+
 /** Headers proving who we are, or {} when no name has been claimed yet. */
 export async function getIdentityHeaders(): Promise<Record<string, string>> {
   const identity = await getIdentity();

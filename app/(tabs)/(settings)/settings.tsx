@@ -58,6 +58,7 @@ import { cleanupShareCards } from '../../../src/services/share';
 import { clearHintUsage } from '../../../src/services/trivia';
 import * as updates from '../../../src/services/updates';
 import * as userService from '../../../src/services/user';
+import { clearIdentity } from '../../../src/services/userIdentity';
 import { hexColors, useTheme } from '../../../src/theme';
 import { openInAppBrowser } from '../../../src/utils/browser';
 import { darkenColor, getContrastColor } from '../../../src/utils/colors';
@@ -570,6 +571,10 @@ export default function SettingsPage() {
     try {
       await resetOnboarding();
       await clearHintUsage();
+      // Forget the claimed screen name so comments start from the join CTA
+      // again (local only — re-claiming the same name needs the backend row
+      // gone, since the secret is unrecoverable).
+      await clearIdentity();
       // Clear cached images on disk
       const { clearAllCachedImages } = await import('../../../src/services/images');
       await clearAllCachedImages();

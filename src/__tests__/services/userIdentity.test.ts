@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
   __resetIdentityCache,
+  clearIdentity,
   getIdentity,
   getIdentityHeaders,
   saveIdentity,
@@ -48,6 +49,26 @@ describe('userIdentity', () => {
     const reloaded = await getIdentity();
     expect(reloaded?.screenName).toBe('CuriousMind');
     expect(reloaded?.countryCode).toBe('TR');
+  });
+
+  it('clearIdentity forgets the identity in cache and storage', async () => {
+    (AsyncStorage.removeItem as jest.Mock).mockImplementation(async (key: string) => {
+      store.delete(key);
+    });
+    await saveIdentity({
+      userId: 'uuid-1',
+      userKey: 'secret-1',
+      screenName: 'CuriousMind',
+      countryCode: 'TR',
+    });
+
+    await clearIdentity();
+
+    expect(await getIdentity()).toBeNull();
+    expect(await getIdentityHeaders()).toEqual({});
+    // Storage is empty too, not just the in-memory cache.
+    __resetIdentityCache();
+    expect(await getIdentity()).toBeNull();
   });
 
   it('treats corrupted storage as no identity', async () => {
