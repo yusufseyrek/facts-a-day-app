@@ -12,6 +12,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -19,7 +20,9 @@ import { type BadgeStar, STAR_COLORS } from '../../config/badges';
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { GlassSurface } from '../GlassSurface';
 import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -143,6 +146,7 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
   const starCount = badge.star ? parseInt(badge.star.replace('star', '')) : 3;
   const iconSize = Math.round(iconSizes.heroLg);
   const accentColor = STAR_COLORS.filled;
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
   const burstSize = iconSize + spacing.lg;
   const sunburstXml = buildShineSvg(
     burstSize,
@@ -165,18 +169,35 @@ export function BadgeUnlockToast({ badge, onHide, onPress }: BadgeUnlockToastPro
     >
       <Pressable onPress={handlePress}>
         <XStack
-          backgroundColor={colors.cardBackground}
+          backgroundColor={useGlass ? 'transparent' : colors.cardBackground}
           borderRadius={radius.xl}
           overflow="hidden"
           alignItems="stretch"
-          shadowColor={accentColor}
-          shadowOffset={{ width: 0, height: 4 }}
-          shadowOpacity={theme === 'dark' ? 0.35 : 0.15}
-          shadowRadius={12}
-          elevation={10}
+          // Liquid glass floats via its material (specular rim), not a drop
+          // shadow — the gold glow stays on the opaque fallback card only.
+          shadowColor={useGlass ? undefined : accentColor}
+          shadowOffset={useGlass ? undefined : { width: 0, height: 4 }}
+          shadowOpacity={useGlass ? undefined : theme === 'dark' ? 0.35 : 0.15}
+          shadowRadius={useGlass ? undefined : 12}
+          elevation={useGlass ? undefined : 10}
           borderWidth={1}
           borderColor={`${accentColor}20`}
         >
+          {/* iOS 26: Liquid Glass card backing — same composition as the
+              badges screen's glass panels (transparent card + absolute-fill
+              surface shaped to the card's radius). */}
+          {useGlass && (
+            <GlassSurface
+              variant="glass"
+              isDark={theme === 'dark'}
+              tint={colors.cardBackground}
+              glassTint={hexToRgba(colors.cardBackground, theme === 'dark' ? 0.6 : 0.65)}
+              borderRadius={radius.xl}
+              style={absoluteFillObject}
+              pointerEvents="none"
+            />
+          )}
+
           {/* Left accent gradient bar */}
           <LinearGradient
             colors={[accentColor, hexToRgba(accentColor, 0.6)]}
