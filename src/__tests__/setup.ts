@@ -84,6 +84,7 @@ jest.mock('expo-tracking-transparency', () => ({
 
 jest.mock('expo-localization', () => ({
   getLocales: jest.fn(() => [{ languageCode: 'en', regionCode: 'US' }]),
+  getCalendars: jest.fn(() => [{ timeZone: 'America/New_York' }]),
   locale: 'en-US',
 }));
 

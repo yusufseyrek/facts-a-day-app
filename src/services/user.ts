@@ -1,4 +1,8 @@
-import { getLocales } from 'expo-localization';
+import { Platform } from 'react-native';
+
+import { getCalendars, getLocales } from 'expo-localization';
+
+import { countryForTimeZone } from '../utils/timezoneCountry';
 
 import * as api from './api';
 import * as notificationService from './notifications';
@@ -26,14 +30,41 @@ function isTakenError(error: unknown): boolean {
   return (error as any)?.code === 'SCREEN_NAME_TAKEN' || (error as any)?.status === 409;
 }
 
-/** Device region ("TR") from the OS locale; the profile's flag source. */
-function deviceCountryCode(): string | null {
+function localeRegionCode(): string | null {
   try {
-    const region = getLocales()[0]?.regionCode;
-    return region && /^[A-Za-z]{2}$/.test(region) ? region.toUpperCase() : null;
+    for (const locale of getLocales()) {
+      const region = locale?.regionCode;
+      if (region && /^[A-Za-z]{2}$/.test(region)) return region.toUpperCase();
+    }
+  } catch {
+    // fall through to null
+  }
+  return null;
+}
+
+function timeZoneCountryCode(): string | null {
+  try {
+    const timeZone =
+      getCalendars()[0]?.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return countryForTimeZone(timeZone);
   } catch {
     return null;
   }
+}
+
+/**
+ * Device country ("TR") for the profile flag.
+ *
+ * On Android a locale's regionCode is just the *language* tag's region — a
+ * preferred-language list headed by Chinese reads as "CN" regardless of where
+ * the user is — so the clock's time zone leads there. On iOS the first
+ * locale's region mirrors the explicit Language & Region setting, which is the
+ * user's own choice, so it leads and the time zone is the fallback.
+ */
+export function deviceCountryCode(): string | null {
+  return Platform.OS === 'ios'
+    ? (localeRegionCode() ?? timeZoneCountryCode())
+    : (timeZoneCountryCode() ?? localeRegionCode());
 }
 
 export async function getProfile(): Promise<UserIdentity | null> {
@@ -72,6 +103,34 @@ export async function claimScreenName(
   notificationService.registerForPush(locale).catch(() => {});
 
   return identity;
+}
+
+// Once per launch is enough: the inputs (time zone, locales) only change with
+// device settings, and the next cold start picks those up.
+let countryRefreshed = false;
+
+/**
+ * Re-derive the device country and sync a stale stored value to the backend
+ * (claim-time capture is otherwise permanent, so a wrong reading — e.g. "CN"
+ * recorded while a Chinese language list was active — would stick forever).
+ * Comments join the user row, so past comments' flags heal too. Best-effort.
+ */
+export async function refreshCountryIfStale(): Promise<void> {
+  if (countryRefreshed) return;
+  const identity = await getIdentity();
+  if (!identity) return;
+  countryRefreshed = true;
+
+  const device = deviceCountryCode();
+  if (!device || device === identity.countryCode) return;
+
+  await api.updateUser({ country_code: device });
+  await saveIdentity({ ...identity, countryCode: device });
+}
+
+/** Test hook: allow refreshCountryIfStale to run again. */
+export function __resetCountryRefresh(): void {
+  countryRefreshed = false;
 }
 
 /** Rename, keeping the same identity (devices/comments/reports follow). */

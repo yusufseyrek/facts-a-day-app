@@ -72,6 +72,7 @@ import {
   initIAPConnection,
 } from '../src/services/purchases';
 import * as updates from '../src/services/updates';
+import * as userService from '../src/services/user';
 import { AppThemeProvider, hexColors, useTheme } from '../src/theme';
 
 // Prevent "multiple linking listeners" error during Fast Refresh
@@ -633,6 +634,10 @@ export default function RootLayout() {
       notificationService.registerForPush(locale).catch((error) => {
         console.error('Push registration failed:', error);
       });
+
+      // Sync the profile's country flag if the device reading changed — the
+      // claim-time capture is otherwise permanent. Fire-and-forget.
+      userService.refreshCountryIfStale().catch(() => {});
 
       // Check for OTA updates in the background
       updates
