@@ -1,11 +1,11 @@
 import React from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
-import { X } from '@tamagui/lucide-icons';
-
 import { useTranslation } from '../i18n';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
+
+import { X } from './icons';
 
 import type { StyleProp, ViewStyle } from 'react-native';
 

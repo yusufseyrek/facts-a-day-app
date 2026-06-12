@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { NativeScrollEvent, NativeSyntheticEvent, View } from 'react-native';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-import { CalendarDays } from '@tamagui/lucide-icons';
 
 import { LAYOUT } from '../../config/app';
 import { useTranslation } from '../../i18n';
@@ -10,6 +9,7 @@ import { trackCarouselSwipe } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { CompactFactCard } from '../CompactFactCard';
+import { CalendarDays } from '../icons';
 import { ShimmerPlaceholder } from '../ShimmerPlaceholder';
 
 import { SectionHeader } from './SectionHeader';

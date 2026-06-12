@@ -11,6 +11,14 @@ import {
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
+import { useFocusEffect, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+
+import { ContentContainer, GlassSurface } from '../../src/components';
+import { BannerAd } from '../../src/components/ads';
+import { BadgeIcon } from '../../src/components/badges/BadgeIcon';
 import {
   Calendar,
   CheckCircle,
@@ -21,16 +29,8 @@ import {
   Shuffle,
   Trophy,
   Zap,
-} from '@tamagui/lucide-icons';
-import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { useFocusEffect, useNavigation } from 'expo-router';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
-
-import { ContentContainer, GlassSurface } from '../../src/components';
-import { BannerAd } from '../../src/components/ads';
-import { BadgeIcon } from '../../src/components/badges/BadgeIcon';
+} from '../../src/components/icons';
+import { XStack, YStack } from '../../src/components/Stacks';
 import { getTriviaModeBadge, TriviaResults } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { DISPLAY_LIMITS } from '../../src/config/app';
@@ -322,7 +322,7 @@ function CategoryProgressBar({
       <XStack alignItems="center" justifyContent="space-between">
         <XStack alignItems="center" gap={spacing.sm}>
           {getLucideIcon(category.icon, typography.fontSize.title, progressColor)}
-          <Text.Label color={textColor} fontFamily={FONT_FAMILIES.medium} w="50%">
+          <Text.Label color={textColor} fontFamily={FONT_FAMILIES.medium} width="50%">
             {category.name}
           </Text.Label>
         </XStack>

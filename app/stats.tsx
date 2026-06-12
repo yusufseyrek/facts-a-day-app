@@ -11,15 +11,15 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type ViewShotRef } from 'react-native-view-shot';
 
-import { Share2 } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Stack, useFocusEffect } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
 import { ContentContainer, EmptyState } from '../src/components';
 import { GlassSurface } from '../src/components/GlassSurface';
+import { Share2 } from '../src/components/icons';
+import { XStack, YStack } from '../src/components/Stacks';
 import { ActivityBarChart } from '../src/components/stats/ActivityBarChart';
 import { CategoryBreakdown } from '../src/components/stats/CategoryBreakdown';
 import { HabitsCard } from '../src/components/stats/HabitsCard';

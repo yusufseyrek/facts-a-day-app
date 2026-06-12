@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, ScrollView, View } from 'react-native';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { AlertTriangle, Plus, Trash2 } from '@tamagui/lucide-icons';
 
 import { useTranslation } from '../../i18n/useTranslation';
 import { trackNotificationTimeChange, updateNotificationProperty } from '../../services/analytics';
@@ -11,6 +10,7 @@ import * as onboardingService from '../../services/onboarding';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { DialogButton, DialogShell } from '../DialogShell';
+import { AlertTriangle, Plus, Trash2 } from '../icons';
 import { SuccessToast } from '../SuccessToast';
 import { FONT_FAMILIES, Text } from '../Typography';
 

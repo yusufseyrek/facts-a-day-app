@@ -1,15 +1,14 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Pressable, Text as RNText } from 'react-native';
 
-import { Check, Lock } from '@tamagui/lucide-icons';
-import { YStack } from 'tamagui';
-
 import { useTranslation } from '../i18n/useTranslation';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { getContrastColor } from '../utils/colors';
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { useResponsive } from '../utils/useResponsive';
 
+import { Check, Lock } from './icons';
+import { YStack } from './Stacks';
 import { FONT_FAMILIES } from './Typography';
 
 export interface CategoryCardProps {

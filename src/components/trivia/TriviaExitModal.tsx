@@ -1,9 +1,8 @@
-import { AlertTriangle, DoorOpen } from '@tamagui/lucide-icons';
-import { XStack, YStack } from 'tamagui';
-
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { DialogButton, DialogShell } from '../DialogShell';
+import { AlertTriangle, DoorOpen } from '../icons';
+import { XStack, YStack } from '../Stacks';
 import { Text } from '../Typography';
 
 interface TriviaExitModalProps {

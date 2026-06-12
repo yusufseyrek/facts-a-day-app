@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { Platform } from 'react-native';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Plus, Trash2 } from '@tamagui/lucide-icons';
-import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
+import { Plus, Trash2 } from './icons';
+import { XStack, YStack } from './Stacks';
 import { FONT_FAMILIES, Text } from './Typography';
 
 interface MultiTimePickerProps {

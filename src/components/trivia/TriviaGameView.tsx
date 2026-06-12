@@ -16,12 +16,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ChevronLeft, ChevronRight, Lightbulb, Timer } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
 import { LAYOUT } from '../../config/app';
 import { hexColors } from '../../theme';
@@ -31,6 +29,8 @@ import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { CloseButton } from '../CloseButton';
 import { GlassSurface } from '../GlassSurface';
+import { ChevronLeft, ChevronRight, Lightbulb, Timer } from '../icons';
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { QuestionWithFact } from '../../services/database';

@@ -1,13 +1,12 @@
 import { useMemo } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
-import { XStack, YStack } from 'tamagui';
-
 import { STAR_COLORS } from '../../config/badges';
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { androidRipple } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import { BadgeIcon } from './BadgeIcon';

@@ -1,11 +1,9 @@
 import { Image } from 'react-native';
 
-import { View } from '@tamagui/core';
-import { XStack, YStack } from 'tamagui';
-
 import { useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
+import { View, XStack, YStack } from './Stacks';
 import { FONT_FAMILIES, Text } from './Typography';
 
 interface MockNotificationCardProps {

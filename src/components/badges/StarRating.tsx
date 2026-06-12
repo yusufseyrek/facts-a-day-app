@@ -1,9 +1,8 @@
 import { SvgXml } from 'react-native-svg';
 
-import { XStack } from 'tamagui';
-
 import { STAR_COLORS } from '../../config/badges';
 import { useTheme } from '../../theme';
+import { XStack } from '../Stacks';
 
 // 5-point star polygon coordinates in a 24x24 viewBox
 const STAR_POINTS =

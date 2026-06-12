@@ -2,16 +2,16 @@
 import { useMemo } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { Ban, Crown, Lightbulb, WifiOff } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n/useTranslation';
 import { PAYWALL_GOLD, paywallThemeColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
 import { BottomSheetShell } from './BottomSheetShell';
+import { Ban, Crown, Lightbulb, WifiOff } from './icons';
+import { XStack, YStack } from './Stacks';
 import { FONT_FAMILIES, Text } from './Typography';
 
 /**

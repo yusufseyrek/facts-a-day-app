@@ -1,11 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { LayoutChangeEvent, Pressable, View } from 'react-native';
 
-import { XStack, YStack } from 'tamagui';
-
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import { formatShortDate } from './formatDuration';

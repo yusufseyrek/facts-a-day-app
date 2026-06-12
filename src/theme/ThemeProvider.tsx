@@ -2,10 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Appearance, Platform, useColorScheme } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TamaguiProvider, Theme } from '@tamagui/core';
 import { NavigationBar } from 'expo-navigation-bar';
-
-import { config } from './config';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -107,9 +104,7 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeContext.Provider value={{ theme, themeMode, setThemeMode, toggleTheme }}>
-      <TamaguiProvider config={config} defaultTheme={theme}>
-        <Theme name={theme}>{children}</Theme>
-      </TamaguiProvider>
+      {children}
     </ThemeContext.Provider>
   );
 }
@@ -120,4 +115,16 @@ export function useTheme() {
     throw new Error('useTheme must be used within AppThemeProvider');
   }
   return context;
+}
+
+/**
+ * Resolved theme name that does NOT require AppThemeProvider: falls back to
+ * the system scheme outside it. Used by the base primitives (Stacks,
+ * Typography, icons) so they stay safe in trees mounted outside the provider
+ * (ErrorBoundary fallback, AppCheckBlockingScreen, SplashOverlay).
+ */
+export function useThemeName(): 'light' | 'dark' {
+  const context = useContext(ThemeContext);
+  const systemColorScheme = useColorScheme();
+  return context?.theme ?? (systemColorScheme === 'dark' ? 'dark' : 'light');
 }

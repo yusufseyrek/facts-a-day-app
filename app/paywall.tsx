@@ -3,6 +3,13 @@ import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { isLiquidGlassAvailable } from 'expo-glass-effect';
+import { ErrorCode, useIAP } from 'expo-iap';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+
+import { CloseButton, GlassSurface, SuccessToast, Text } from '../src/components';
 import {
   Ban,
   BookOpen,
@@ -12,15 +19,8 @@ import {
   Lightbulb,
   PartyPopper,
   WifiOff,
-} from '@tamagui/lucide-icons';
-import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { ErrorCode, useIAP } from 'expo-iap';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
-
-import { CloseButton, GlassSurface, SuccessToast, Text } from '../src/components';
+} from '../src/components/icons';
+import { XStack, YStack } from '../src/components/Stacks';
 import { FONT_FAMILIES } from '../src/components/Typography';
 import { SUBSCRIPTION } from '../src/config/app';
 

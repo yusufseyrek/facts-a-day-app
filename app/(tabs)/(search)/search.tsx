@@ -3,12 +3,9 @@ import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView } fr
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
-import { styled, View } from '@tamagui/core';
-import { X } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { YStack } from 'tamagui';
 
 import {
   ContentContainer,
@@ -19,7 +16,9 @@ import {
 } from '../../../src/components';
 import { BannerAd } from '../../../src/components/ads';
 import { NativeAdCard } from '../../../src/components/ads/NativeAdCard';
+import { X } from '../../../src/components/icons';
 import { ImageFactCard } from '../../../src/components/ImageFactCard';
+import { styled, View, YStack } from '../../../src/components/Stacks';
 import { LAYOUT, NATIVE_ADS } from '../../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
 import { usePremium, useScrollToTopHandler } from '../../../src/contexts';

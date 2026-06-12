@@ -40,7 +40,7 @@
     ],
     "testTimeout": 1e4,
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@shopify/flash-list|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|tamagui|@tamagui/.*|i18n-js|react-native-google-mobile-ads|react-native-reanimated|react-native-gesture-handler|react-native-screens|react-native-safe-area-context|react-native-worklets)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@shopify/flash-list|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|i18n-js|react-native-google-mobile-ads|react-native-reanimated|react-native-gesture-handler|react-native-screens|react-native-safe-area-context|react-native-worklets)"
     ],
     "moduleNameMapper": {
       "^@react-native-firebase/app$": "<rootDir>/src/__tests__/__mocks__/firebase/app.ts",
@@ -58,8 +58,6 @@
     "@react-native-firebase/app-check": "^24.1.1",
     "@react-native-firebase/crashlytics": "^24.1.1",
     "@shopify/flash-list": "2.0.2",
-    "@tamagui/core": "^1.136.2",
-    "@tamagui/lucide-icons": "^1.136.2",
     "@tanstack/query-async-storage-persister": "^5.101.0",
     "@tanstack/react-query": "^5.101.0",
     "@tanstack/react-query-persist-client": "^5.101.0",
@@ -107,8 +105,7 @@
     "react-native-screens": "4.25.2",
     "react-native-svg": "15.15.4",
     "react-native-view-shot": "^5.1.0",
-    "react-native-worklets": "0.8.3",
-    "tamagui": "^1.136.2"
+    "react-native-worklets": "0.8.3"
   },
   "devDependencies": {
     "@react-native/jest-preset": "~0.85.3",
@@ -116,7 +113,6 @@
     "@types/react": "~19.2.17",
     "@typescript-eslint/eslint-plugin": "^8.61.0",
     "@typescript-eslint/parser": "^8.61.0",
-    "babel-plugin-transform-imports": "^2.0.0",
     "babel-plugin-transform-remove-console": "^6.9.4",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",

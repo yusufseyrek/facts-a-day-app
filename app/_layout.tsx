@@ -4,7 +4,7 @@ import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-c
 
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../src/utils/responsive';
 
-// Cap system font scaling globally — catches raw RN Text, Tamagui, and third-party libs.
+// Cap system font scaling globally — catches raw RN Text and third-party libs.
 for (const Component of [RNText, TextInput]) {
   const c = Component as { defaultProps?: Record<string, unknown> };
   c.defaultProps = { ...c.defaultProps, maxFontSizeMultiplier: DEFAULT_MAX_FONT_SIZE_MULTIPLIER };

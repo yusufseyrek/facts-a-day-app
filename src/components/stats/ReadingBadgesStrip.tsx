@@ -1,15 +1,15 @@
 import { useMemo } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 
-import { ChevronRight, Trophy } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
-import { XStack, YStack } from 'tamagui';
 
 import { BADGE_DEFINITIONS } from '../../config/badges';
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { BadgeIcon } from '../badges/BadgeIcon';
+import { ChevronRight, Trophy } from '../icons';
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 interface ReadingBadgesStripProps {

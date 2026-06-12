@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView } from 'react-native';
 
-import { styled } from '@tamagui/core';
-import { Bell } from '@tamagui/lucide-icons';
 import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
-import { Button, GlassBackButton, MultiTimePicker, ScreenContainer, Text } from '../../src/components';
+import {
+  Button,
+  GlassBackButton,
+  MultiTimePicker,
+  ScreenContainer,
+  Text,
+} from '../../src/components';
+import { Bell } from '../../src/components/icons';
+import { styled, XStack, YStack } from '../../src/components/Stacks';
 import { LAYOUT } from '../../src/config/app';
 import { useOnboarding } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';

@@ -1,12 +1,11 @@
 import React, { useMemo } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
-import { AlertCircle, ChevronRight, ExternalLink } from '@tamagui/lucide-icons';
-
 import { hexColors, useTheme } from '../theme';
 import { androidRipple } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
+import { AlertCircle, ChevronRight, ExternalLink } from './icons';
 import { Text } from './Typography';
 
 interface SettingsRowProps {

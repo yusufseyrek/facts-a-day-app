@@ -10,7 +10,6 @@ import React, {
 import { NativeScrollEvent, NativeSyntheticEvent, Pressable, View } from 'react-native';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-import { Compass } from '@tamagui/lucide-icons';
 
 import { NATIVE_ADS } from '../config/app';
 import { usePremium } from '../contexts';
@@ -24,6 +23,7 @@ import {
 import { useResponsive } from '../utils/useResponsive';
 
 import { NativeAdCard } from './ads/NativeAdCard';
+import { Compass } from './icons';
 import { ImageFactCard } from './ImageFactCard';
 import { ContentContainer } from './ScreenLayout';
 import { Text } from './Typography';

@@ -61,7 +61,10 @@ export async function warmUpHomeScreen(locale: string): Promise<void> {
   ];
   const backgroundUrls = [
     ...imageUrlsOf(latestFacts.slice(BLOCKING_LATEST_IMAGES), BACKGROUND_LATEST_IMAGES),
-    ...imageUrlsOf(onThisDayFacts.slice(BLOCKING_ON_THIS_DAY_IMAGES), BACKGROUND_ON_THIS_DAY_IMAGES),
+    ...imageUrlsOf(
+      onThisDayFacts.slice(BLOCKING_ON_THIS_DAY_IMAGES),
+      BACKGROUND_ON_THIS_DAY_IMAGES
+    ),
   ];
 
   // 'disk' matches ImageFactCard's Android cachePolicy; on iOS the

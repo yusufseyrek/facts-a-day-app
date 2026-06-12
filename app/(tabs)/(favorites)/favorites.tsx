@@ -9,10 +9,8 @@ import {
 import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import { FlashList } from '@shopify/flash-list';
-import { Heart } from '@tamagui/lucide-icons';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
 import {
   Button,
@@ -23,7 +21,9 @@ import {
   Text,
 } from '../../../src/components';
 import { NativeAdCard } from '../../../src/components/ads/NativeAdCard';
+import { Heart } from '../../../src/components/icons';
 import { ImageFactCard } from '../../../src/components/ImageFactCard';
+import { XStack, YStack } from '../../../src/components/Stacks';
 import { LAYOUT, NATIVE_ADS } from '../../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
 import { usePremium } from '../../../src/contexts';

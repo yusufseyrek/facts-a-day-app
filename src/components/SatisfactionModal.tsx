@@ -1,12 +1,11 @@
 import { useEffect } from 'react';
 
-import { Heart, MessageCircle } from '@tamagui/lucide-icons';
-import { YStack } from 'tamagui';
-
 import { hexColors } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
 import { DialogButton, DialogShell } from './DialogShell';
+import { Heart, MessageCircle } from './icons';
+import { YStack } from './Stacks';
 import { Text } from './Typography';
 
 interface SatisfactionModalProps {

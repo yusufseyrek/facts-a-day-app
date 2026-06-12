@@ -1,9 +1,7 @@
 import React from 'react';
 import { Platform, View } from 'react-native';
 
-import { BookOpen, Clock, Eye, Flame } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
@@ -11,6 +9,8 @@ import { hexToRgba } from '../../utils/colors';
 import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { GlassSurface } from '../GlassSurface';
+import { BookOpen, Clock, Eye, Flame } from '../icons';
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import { formatDuration } from './formatDuration';

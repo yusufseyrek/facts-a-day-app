@@ -1,12 +1,11 @@
 import React from 'react';
 import { View } from 'react-native';
 
-import { XStack, YStack } from 'tamagui';
-
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { ContentContainer } from '../ScreenLayout';
 import { ShimmerPlaceholder } from '../ShimmerPlaceholder';
+import { XStack, YStack } from '../Stacks';
 
 function BadgeCardSkeleton() {
   const { theme } = useTheme();

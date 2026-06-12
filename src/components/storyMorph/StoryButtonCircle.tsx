@@ -1,10 +1,10 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Shuffle } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { getLucideIcon } from '../../utils/iconMapper';
+import { Shuffle } from '../icons';
 
 /**
  * The story button's circle visual (gradient ring while unseen, hairline ring

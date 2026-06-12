@@ -11,11 +11,8 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type ViewShotRef } from 'react-native-view-shot';
 
-import { styled } from '@tamagui/core';
-import { ChevronLeft, ChevronRight, Flag, Heart, Share as ShareIcon } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
-import { View, XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../i18n';
 import { trackFactReport, trackFactShare } from '../services/analytics';
@@ -29,8 +26,10 @@ import { useResponsive } from '../utils/useResponsive';
 
 import { FactAudioButton } from './FactAudioButton';
 import { GlassSurface } from './GlassSurface';
+import { ChevronLeft, ChevronRight, Flag, Heart, Share as ShareIcon } from './icons';
 import { ReportFactModal } from './ReportFactModal';
 import { ShareCard } from './share';
+import { styled, View, XStack, YStack } from './Stacks';
 import { Text } from './Typography';
 
 import type { FactAudioController } from '../hooks/useFactAudio';

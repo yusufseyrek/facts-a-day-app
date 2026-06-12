@@ -6,9 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { YStack } from 'tamagui';
 
 import { showRewardedAd } from '../../src/components/ads/RewardedAd';
+import { YStack } from '../../src/components/Stacks';
 import {
   getTriviaModeBadge,
   TriviaExitModal,

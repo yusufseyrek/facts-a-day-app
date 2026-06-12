@@ -24,14 +24,14 @@ import {
   Svg,
 } from 'react-native-svg';
 
-import { Gift } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
 import { Button, FONT_FAMILIES, GlassSurface, ScreenContainer, Text } from '../../src/components';
+import { Gift } from '../../src/components/icons';
+import { XStack, YStack } from '../../src/components/Stacks';
 import { ADS_ENABLED } from '../../src/config/app';
 import { useOnboarding } from '../../src/contexts';
 import { useReduceMotion } from '../../src/hooks/useReduceMotion';

@@ -6,7 +6,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { CheckCircle } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 
 import { hexColors, useTheme } from '../theme';
@@ -15,6 +14,7 @@ import { useResponsive } from '../utils/useResponsive';
 
 import { dialogCardShadow } from './DialogShell';
 import { GlassSurface } from './GlassSurface';
+import { CheckCircle } from './icons';
 import { InlineOverlay } from './InlineOverlay';
 import { Text } from './Typography';
 

@@ -30,8 +30,8 @@ interface State {
  * logs those errors to Firebase Crashlytics, and displays a fallback UI.
  *
  * NOTE: This component uses plain React Native Text components instead of
- * Tamagui Typography because ErrorBoundary is rendered OUTSIDE the
- * AppThemeProvider/TamaguiProvider, so Tamagui components would fail.
+ * our Typography/Stacks primitives: it renders OUTSIDE AppThemeProvider and
+ * must stay dependency-free so a crash anywhere can't take down the fallback.
  *
  * Usage:
  * ```tsx
@@ -90,7 +90,7 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       // Default fallback UI using plain React Native components
-      // (Tamagui components can't be used here since we're outside AppThemeProvider)
+      // (keep it dependency-free — we're outside AppThemeProvider)
       return (
         <View style={styles.container}>
           <View style={styles.content}>

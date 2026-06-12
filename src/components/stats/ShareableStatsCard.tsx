@@ -3,8 +3,8 @@ import { StyleSheet, View } from 'react-native';
 import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import { LinearGradient } from 'expo-linear-gradient';
-import { XStack, YStack } from 'tamagui';
 
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import { formatDuration } from './formatDuration';

@@ -1,11 +1,10 @@
 import React from 'react';
 import { View } from 'react-native';
 
-import { XStack, YStack } from 'tamagui';
-
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { CategoryStat } from '../../services/stats';

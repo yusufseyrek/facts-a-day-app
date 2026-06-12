@@ -13,7 +13,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-import { ChevronRight, ChevronsUp } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -22,6 +21,7 @@ import { StoryNativeAdCard } from '../../src/components/ads/StoryNativeAdCard';
 import { CategoryBadge } from '../../src/components/CategoryBadge';
 import { CloseButton } from '../../src/components/CloseButton';
 import { FavoriteButton } from '../../src/components/FavoriteButton';
+import { ChevronRight, ChevronsUp } from '../../src/components/icons';
 import { useStoryMorph } from '../../src/components/storyMorph/StoryMorphContext';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { NATIVE_ADS } from '../../src/config/app';

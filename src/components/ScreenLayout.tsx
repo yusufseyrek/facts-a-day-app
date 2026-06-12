@@ -2,18 +2,16 @@ import React from 'react';
 import { StyleSheet, ViewStyle } from 'react-native';
 import { SafeAreaView, SafeAreaViewProps } from 'react-native-safe-area-context';
 
-import { styled } from '@tamagui/core';
-import { XStack, YStack, YStackProps } from 'tamagui';
-
 import { LAYOUT } from '../config/app';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
+import { styled, XStack, YStack, YStackProps } from './Stacks';
 import { Text } from './Typography';
 
 /**
  * ScreenContainer - Main container for all screens
- * Uses SafeAreaView directly (not via Tamagui styled()) to ensure
+ * Uses SafeAreaView directly (not via styled()) to ensure
  * native safe-area insets are applied correctly on all Android devices.
  */
 export function ScreenContainer({ style, children, ...props }: SafeAreaViewProps) {

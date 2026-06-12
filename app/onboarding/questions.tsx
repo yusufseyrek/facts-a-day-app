@@ -9,13 +9,19 @@ import {
   View,
 } from 'react-native';
 
-import { Check } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
-import { Button, FONT_FAMILIES, GlassBackButton, ScreenContainer, Text } from '../../src/components';
+import {
+  Button,
+  FONT_FAMILIES,
+  GlassBackButton,
+  ScreenContainer,
+  Text,
+} from '../../src/components';
+import { Check } from '../../src/components/icons';
+import { XStack, YStack } from '../../src/components/Stacks';
 import { LAYOUT } from '../../src/config/app';
 import { deriveCategories, QUIZ_QUESTIONS } from '../../src/config/onboardingQuestions';
 import { useOnboarding, usePremium } from '../../src/contexts';

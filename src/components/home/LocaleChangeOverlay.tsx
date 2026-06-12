@@ -1,11 +1,10 @@
 import React from 'react';
 import { ActivityIndicator } from 'react-native';
 
-import { YStack } from 'tamagui';
-
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { YStack } from '../Stacks';
 import { Text } from '../Typography';
 
 import type { RefreshStatus } from '../../services/contentRefresh';

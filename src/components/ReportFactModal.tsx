@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react';
 import { TextInput, View } from 'react-native';
 
-import { XStack, YStack } from 'tamagui';
-
 import { useTranslation } from '../i18n';
 import { hexColors, useTheme } from '../theme';
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
@@ -10,6 +8,7 @@ import { useResponsive } from '../utils/useResponsive';
 
 import { CloseButton } from './CloseButton';
 import { DialogButton, DialogShell } from './DialogShell';
+import { XStack, YStack } from './Stacks';
 import { Text } from './Typography';
 
 interface ReportFactModalProps {

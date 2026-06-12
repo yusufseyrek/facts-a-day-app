@@ -1,10 +1,18 @@
 import React from 'react';
-import { Platform, TextStyle } from 'react-native';
+import {
+  Platform,
+  StyleProp,
+  Text as RNText,
+  TextProps as RNTextProps,
+  TextStyle,
+} from 'react-native';
 
-import { GetProps, Text as TamaguiText } from '@tamagui/core';
-
+import { useThemeName } from '../theme/ThemeProvider';
+import { resolveColorToken } from '../theme/tokens';
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER, maxFontSizeMultipliers } from '../utils/responsive';
 import { useResponsive } from '../utils/useResponsive';
+
+import { COLOR_KEYS, STYLE_KEYS } from './Stacks';
 
 /**
  * Font family constants for Montserrat weights.
@@ -79,16 +87,43 @@ const PRESETS: Record<
   },
 } as const;
 
-// Get the base props from Tamagui Text
-type BaseTextProps = GetProps<typeof TamaguiText>;
+/** TextStyle keys accepted as JSX props (the Tamagui style-props convention). */
+const TEXT_STYLE_KEYS = new Set([
+  ...STYLE_KEYS,
+  'color',
+  'fontFamily',
+  'fontSize',
+  'fontStyle',
+  'fontVariant',
+  'fontWeight',
+  'includeFontPadding',
+  'letterSpacing',
+  'lineHeight',
+  'textAlign',
+  'textAlignVertical',
+  'textDecorationColor',
+  'textDecorationLine',
+  'textDecorationStyle',
+  'textShadowColor',
+  'textShadowOffset',
+  'textShadowRadius',
+  'textTransform',
+  'userSelect',
+  'verticalAlign',
+  'writingDirection',
+]);
+
+const TEXT_COLOR_KEYS = new Set([...COLOR_KEYS, 'color', 'textDecorationColor', 'textShadowColor']);
 
 /**
- * Props for the Text component
+ * Props for the Text component: RN Text props plus TextStyle keys as direct
+ * JSX props, with `$token` color support.
  */
-export interface TextProps extends Omit<BaseTextProps, 'style'> {
+export interface TextProps extends Omit<RNTextProps, 'style'>, Omit<TextStyle, 'fontWeight'> {
   children: React.ReactNode;
-  style?: TextStyle;
+  style?: StyleProp<TextStyle>;
   preset?: TextPreset;
+  fontWeight?: TextStyle['fontWeight'] | string;
   maxFontSizeMultiplier?: number;
 }
 
@@ -116,6 +151,7 @@ const TextBase = React.memo(
     ...props
   }: TextProps) => {
     const { typography } = useResponsive();
+    const theme = useThemeName();
 
     // Get preset styles if preset is provided
     const presetStyles = preset ? PRESETS[preset] : null;
@@ -138,28 +174,49 @@ const TextBase = React.memo(
       Platform.OS === 'android' && fontFamily
         ? undefined
         : (customFontWeight ?? presetStyles?.fontWeight);
-    const color = customColor ?? presetStyles?.color;
+    const rawColor = (customColor as string | undefined) ?? presetStyles?.color;
+    const color = rawColor === undefined ? undefined : resolveColorToken(theme, rawColor);
     const resolvedMaxFontSizeMultiplier =
       customMaxFontSizeMultiplier ??
       (preset ? maxFontSizeMultipliers[preset] : DEFAULT_MAX_FONT_SIZE_MULTIPLIER);
 
+    // Partition remaining props into style keys vs RN Text props
+    const styleFromProps: Record<string, unknown> = {};
+    const textProps: Record<string, unknown> = {};
+    for (const key of Object.keys(props)) {
+      const value = (props as Record<string, unknown>)[key];
+      if (TEXT_STYLE_KEYS.has(key)) {
+        styleFromProps[key] =
+          TEXT_COLOR_KEYS.has(key) && typeof value === 'string' && value.startsWith('$')
+            ? resolveColorToken(theme, value)
+            : value;
+      } else {
+        textProps[key] = value;
+      }
+    }
+
     return (
-      <TamaguiText
-        userSelect="text"
+      <RNText
         maxFontSizeMultiplier={resolvedMaxFontSizeMultiplier}
-        fontSize={fontSize}
-        lineHeight={lineHeight}
-        letterSpacing={letterSpacing}
-        fontFamily={fontFamily}
-        fontWeight={fontWeight as BaseTextProps['fontWeight']}
-        color={color}
-        style={style}
-        // Fix for cut words
-        paddingHorizontal={1}
-        {...props}
+        {...textProps}
+        style={[
+          {
+            userSelect: 'text',
+            fontSize,
+            lineHeight,
+            letterSpacing,
+            fontFamily,
+            fontWeight: fontWeight as TextStyle['fontWeight'],
+            color,
+            // Fix for cut words
+            paddingHorizontal: 1,
+          },
+          styleFromProps as TextStyle,
+          style,
+        ]}
       >
         {children}
-      </TamaguiText>
+      </RNText>
     );
   }
 );

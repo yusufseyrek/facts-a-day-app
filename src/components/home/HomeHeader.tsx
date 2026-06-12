@@ -2,13 +2,13 @@ import React from 'react';
 import { View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { Crown, Lightbulb } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { ReadingStreakIndicator } from '../badges/ReadingStreakIndicator';
+import { Crown, Lightbulb } from '../icons';
 import { ScreenHeader } from '../ScreenLayout';
 
 interface HomeHeaderProps {

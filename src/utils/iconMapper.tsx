@@ -46,7 +46,7 @@ import {
   Utensils,
   Wrench,
   Zap,
-} from '@tamagui/lucide-icons';
+} from '../components/icons';
 
 type IconComponent = typeof Lightbulb;
 

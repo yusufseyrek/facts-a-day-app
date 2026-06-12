@@ -4,11 +4,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
 import { Button, MockNotificationCard, Text } from '../../src/components';
 import { ScreenContainer } from '../../src/components';
 import { SampleFactCardLayers } from '../../src/components/SampleFactCard';
+import { XStack, YStack } from '../../src/components/Stacks';
 import { LAYOUT } from '../../src/config/app';
 import { type SampleFact, sampleFactMorphId, sampleFacts } from '../../src/config/sampleFacts';
 import { useOnboarding } from '../../src/contexts';

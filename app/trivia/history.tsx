@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
-import { Calendar, ChevronLeft, ChevronRight, Shuffle, Zap } from '@tamagui/lucide-icons';
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
 import { BannerAd } from '../../src/components/ads';
+import { Calendar, ChevronLeft, ChevronRight, Shuffle, Zap } from '../../src/components/icons';
+import { XStack, YStack } from '../../src/components/Stacks';
 import { getTriviaModeBadge, TriviaResults } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { LAYOUT } from '../../src/config/app';

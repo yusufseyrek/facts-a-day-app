@@ -8,7 +8,7 @@ import { IMAGE_PLACEHOLDER } from '../../config/images';
 import { useResponsive } from '../../utils/useResponsive';
 import { CategoryBadge } from '../CategoryBadge';
 import { FavoriteButton } from '../FavoriteButton';
-import { Crown } from '@tamagui/lucide-icons';
+import { Crown } from '../icons';
 import { FACT_CARD_GRADIENT, factCardCrownShadow, factCardTitleShadow } from '../ImageFactCard';
 import { ImagePlaceholder } from '../ImagePlaceholder';
 import { SampleFactCardLayers } from '../SampleFactCard';

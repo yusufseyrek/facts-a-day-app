@@ -9,8 +9,6 @@ import {
 } from 'react-native';
 import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
 
-import { XStack, YStack } from 'tamagui';
-
 import { LAYOUT } from '../config/app';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
@@ -18,6 +16,7 @@ import { useResponsive } from '../utils/useResponsive';
 import { CloseButton } from './CloseButton';
 import { InlineOverlay } from './InlineOverlay';
 import { ModalBackdrop } from './ModalBackdrop';
+import { XStack, YStack } from './Stacks';
 import { FONT_FAMILIES, Text } from './Typography';
 
 /**

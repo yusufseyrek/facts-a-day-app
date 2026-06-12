@@ -1,13 +1,13 @@
 import React from 'react';
 
 import { FlashListRef } from '@shopify/flash-list';
-import { BookOpen } from '@tamagui/lucide-icons';
-import { YStack } from 'tamagui';
 
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { CategoryStoryButtons, CategoryStoryButtonsRef } from '../CategoryStoryButtons';
+import { BookOpen } from '../icons';
+import { YStack } from '../Stacks';
 
 import { KeepReadingSkeleton } from './KeepReadingSkeleton';
 import { LatestCarousel } from './LatestCarousel';

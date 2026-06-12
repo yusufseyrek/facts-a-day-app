@@ -2,6 +2,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, AppState, Linking, Platform, SectionList } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import Constants from 'expo-constants';
+import { deepLinkToSubscriptions } from 'expo-iap';
+import * as Notifications from 'expo-notifications';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import * as Updates from 'expo-updates';
+
+import { ContentContainer, ScreenContainer, Text } from '../../../src/components';
 import {
   BarChart3,
   Bell,
@@ -18,19 +26,11 @@ import {
   TestTube,
   Trash2,
   Trophy,
-} from '@tamagui/lucide-icons';
-import Constants from 'expo-constants';
-import { deepLinkToSubscriptions } from 'expo-iap';
-import * as Notifications from 'expo-notifications';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import * as Updates from 'expo-updates';
-import { YStack } from 'tamagui';
-
-import { ContentContainer, ScreenContainer, Text } from '../../../src/components';
+} from '../../../src/components/icons';
 import { ThemePickerModal } from '../../../src/components/settings/ThemePickerModal';
 import { TimePickerModal } from '../../../src/components/settings/TimePickerModal';
 import { SettingsRow } from '../../../src/components/SettingsRow';
+import { YStack } from '../../../src/components/Stacks';
 import { DEV_SETTINGS_ENABLED, LAYOUT, SUBSCRIPTION } from '../../../src/config/app';
 import { useOnboarding, usePremium, useScrollToTopHandler } from '../../../src/contexts';
 import { useTranslation } from '../../../src/i18n';

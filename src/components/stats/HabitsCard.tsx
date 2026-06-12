@@ -1,12 +1,11 @@
 import React from 'react';
 import { View } from 'react-native';
 
-import { CalendarDays, Clock4, Hourglass } from '@tamagui/lucide-icons';
-import { XStack, YStack } from 'tamagui';
-
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { CalendarDays, Clock4, Hourglass } from '../icons';
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import { formatDuration, formatHour, formatWeekday } from './formatDuration';

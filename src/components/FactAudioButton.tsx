@@ -8,11 +8,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, G } from 'react-native-svg';
 
-import { Pause, Play } from '@tamagui/lucide-icons';
-
 import { useTranslation } from '../i18n';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
+
+import { Pause, Play } from './icons';
 
 import type { FactAudioController } from '../hooks/useFactAudio';
 

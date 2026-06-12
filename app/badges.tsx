@@ -2,17 +2,17 @@ import React, { useCallback, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BookOpen, Flame, Gamepad2, Trophy } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Stack, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
 import { BadgeCard } from '../src/components/badges/BadgeCard';
 import { BadgeDetailSheet } from '../src/components/badges/BadgeDetailSheet';
 import { BadgesScreenSkeleton } from '../src/components/badges/BadgesScreenSkeleton';
 import { GlassSurface } from '../src/components/GlassSurface';
+import { BookOpen, Flame, Gamepad2, Trophy } from '../src/components/icons';
 import { ContentContainer } from '../src/components/ScreenLayout';
+import { XStack, YStack } from '../src/components/Stacks';
 import { FONT_FAMILIES, Text } from '../src/components/Typography';
 import { useGlassHeaderOptions } from '../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../src/i18n';

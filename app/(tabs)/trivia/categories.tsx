@@ -6,11 +6,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
 import { ContentContainer } from '../../../src/components';
 import { BannerAd } from '../../../src/components/ads';
 import { GlassSurface } from '../../../src/components/GlassSurface';
+import { XStack, YStack } from '../../../src/components/Stacks';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackScreenView } from '../../../src/services/analytics';

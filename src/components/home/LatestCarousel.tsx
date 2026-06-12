@@ -9,7 +9,6 @@ import {
 import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
-import { Newspaper } from '@tamagui/lucide-icons';
 
 import { LAYOUT, NATIVE_ADS } from '../../config/app';
 import { signalHeroImageReady } from '../../contexts';
@@ -24,6 +23,7 @@ import {
 } from '../../utils/insertNativeAds';
 import { useResponsive } from '../../utils/useResponsive';
 import { NativeAdCard } from '../ads/NativeAdCard';
+import { Newspaper } from '../icons';
 import { ImageFactCard } from '../ImageFactCard';
 import { ShimmerPlaceholder } from '../ShimmerPlaceholder';
 

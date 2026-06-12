@@ -13,7 +13,7 @@ import { androidRipple } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
 import { CategoryBadge } from './CategoryBadge';
-import { ChevronRight, RefreshCw } from '@tamagui/lucide-icons';
+import { ChevronRight, RefreshCw } from './icons';
 import { ImagePlaceholder } from './ImagePlaceholder';
 import { FONT_FAMILIES, Text } from './Typography';
 

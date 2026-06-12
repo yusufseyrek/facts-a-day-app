@@ -1,18 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-
-import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { YStack } from 'tamagui';
 
 import { CategoryBadge, CloseButton, FONT_FAMILIES, Text } from '../../../src/components';
 import { FactMorphContainer } from '../../../src/components/factMorph/FactMorphContainer';
 import { useFactMorph } from '../../../src/components/factMorph/FactMorphContext';
+import { YStack } from '../../../src/components/Stacks';
 import { IMAGE_PLACEHOLDER } from '../../../src/config/images';
 import { sampleFactMorphId, sampleFacts } from '../../../src/config/sampleFacts';
 import { useTranslation } from '../../../src/i18n';
@@ -21,6 +19,7 @@ import { clearPendingFactMorph, peekPendingFactMorph } from '../../../src/servic
 import { hexColors, useTheme } from '../../../src/theme';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import type { SupportedLocale } from '../../../src/i18n';
 import type { Category } from '../../../src/services/database';
 

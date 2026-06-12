@@ -2,11 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { LayoutChangeEvent, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 
-import { YStack } from 'tamagui';
-
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import { formatShortDate } from './formatDuration';

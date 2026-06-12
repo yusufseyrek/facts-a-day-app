@@ -14,20 +14,10 @@ import {
 import Reanimated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { styled } from '@tamagui/core';
-import {
-  Calendar,
-  Crown,
-  ExternalLink,
-  ImagePlus,
-  Play,
-  RefreshCw,
-} from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { XStack, YStack } from 'tamagui';
 
 import { usePremium } from '../contexts';
 import { useFactAudio } from '../hooks/useFactAudio';
@@ -72,8 +62,10 @@ import { CategoryBadge } from './CategoryBadge';
 import { CloseButton } from './CloseButton';
 import { DialogCard } from './DialogShell';
 import { FactActions } from './FactActions';
+import { Calendar, Crown, ExternalLink, ImagePlus, Play, RefreshCw } from './icons';
 import { ModalBackdrop } from './ModalBackdrop';
 import { RelatedFacts } from './RelatedFacts';
+import { styled, XStack, YStack } from './Stacks';
 import { FONT_FAMILIES, Text } from './Typography';
 
 import type { Category, FactWithRelations } from '../services/database';

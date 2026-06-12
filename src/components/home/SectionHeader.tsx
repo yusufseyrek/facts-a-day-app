@@ -1,9 +1,8 @@
 import React from 'react';
 
-import { XStack } from 'tamagui';
-
 import { LAYOUT } from '../../config/app';
 import { useResponsive } from '../../utils/useResponsive';
+import { XStack } from '../Stacks';
 import { Text } from '../Typography';
 
 interface SectionHeaderProps {

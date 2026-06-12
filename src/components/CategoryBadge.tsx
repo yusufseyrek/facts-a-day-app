@@ -1,11 +1,10 @@
-import { Lock } from '@tamagui/lucide-icons';
-import { XStack } from 'tamagui';
-
 import { translateCategory, useTranslation } from '../i18n';
 import { getCategoryNeonColor, useTheme } from '../theme';
 import { getContrastColor } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
 
+import { Lock } from './icons';
+import { XStack } from './Stacks';
 import { FONT_FAMILIES, Text } from './Typography';
 
 import type { Category } from '../services/database';

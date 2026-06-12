@@ -2,14 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { ArrowRight, Gamepad2, Sparkles } from '@tamagui/lucide-icons';
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
 import { ContentContainer, ScreenContainer } from '../../src/components';
 import { BannerAd } from '../../src/components/ads';
+import { ArrowRight, Gamepad2, Sparkles } from '../../src/components/icons';
+import { XStack, YStack } from '../../src/components/Stacks';
 import { TriviaGridCard, TriviaIntroModal, TriviaStatsHero } from '../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { useScrollToTopHandler } from '../../src/contexts';

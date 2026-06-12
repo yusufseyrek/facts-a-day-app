@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, View } from 'react-native';
 
-import { XStack } from 'tamagui';
-
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils';
+
+import { XStack } from './Stacks';
 
 interface ProgressIndicatorProps {
   currentStep: number;

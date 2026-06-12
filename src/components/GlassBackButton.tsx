@@ -1,6 +1,5 @@
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
-import { ChevronLeft } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 
 import { useTranslation } from '../i18n';
@@ -9,6 +8,7 @@ import { hexToRgba } from '../utils/colors';
 import { useResponsive } from '../utils/useResponsive';
 
 import { GlassSurface } from './GlassSurface';
+import { ChevronLeft } from './icons';
 
 /**
  * Circular glass back button (same interactive-glass treatment as the paywall

@@ -9,13 +9,14 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { Heart } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
 
 import * as database from '../services/database';
 import { performFavoriteToggle } from '../services/favorites';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
+
+import { Heart } from './icons';
 
 interface FavoriteButtonProps {
   factId: number;

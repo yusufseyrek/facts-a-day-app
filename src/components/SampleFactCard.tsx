@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { IMAGE_PLACEHOLDER } from '../config/images';
 import { useResponsive } from '../utils/useResponsive';
 
-import { XStack } from 'tamagui';
+import { XStack } from './Stacks';
 import { FONT_FAMILIES, Text } from './Typography';
 
 import type { SampleFact } from '../config/sampleFacts';

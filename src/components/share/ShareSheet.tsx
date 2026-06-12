@@ -7,9 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { type ViewShotRef } from 'react-native-view-shot';
 
-import { Facebook, Instagram, MessageCircle, Share2, Twitter } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
-import { XStack, YStack } from 'tamagui';
 
 import { useTranslation } from '../../i18n';
 import { shareService } from '../../services/share';
@@ -17,6 +15,8 @@ import { PLATFORM_CONFIG } from '../../services/share/platforms';
 import { useResponsive } from '../../utils/useResponsive';
 import { BottomSheetShell } from '../BottomSheetShell';
 import { CloseButton } from '../CloseButton';
+import { Facebook, Instagram, MessageCircle, Share2, Twitter } from '../icons';
+import { XStack, YStack } from '../Stacks';
 import { Text } from '../Typography';
 
 import { ShareCard } from './ShareCard';

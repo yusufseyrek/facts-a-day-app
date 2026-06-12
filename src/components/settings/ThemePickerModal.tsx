@@ -1,15 +1,14 @@
 import React from 'react';
 import { Pressable, ScrollView } from 'react-native';
 
-import { Moon, Smartphone, Sun } from '@tamagui/lucide-icons';
-import { XStack, YStack } from 'tamagui';
-
 import { useTranslation } from '../../i18n';
 import { trackThemeChange, updateThemeProperty } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
 import { useResponsive } from '../../utils/useResponsive';
 import { DialogShell } from '../DialogShell';
+import { Moon, Smartphone, Sun } from '../icons';
+import { XStack, YStack } from '../Stacks';
 import { Text } from '../Typography';
 
 import type { TranslationKeys } from '../../i18n';

@@ -11,16 +11,16 @@ import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Circle, Svg } from 'react-native-svg';
 
-import { ChevronLeft, ChevronRight, Timer } from '@tamagui/lucide-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
 import { LAYOUT } from '../../config/app';
 import { hexColors } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { CloseButton } from '../CloseButton';
+import { ChevronLeft, ChevronRight, Timer } from '../icons';
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);

@@ -1,9 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Check } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { XStack, YStack } from 'tamagui';
 
 import { STAR_COLORS } from '../../config/badges';
 import { useTranslation } from '../../i18n';
@@ -12,6 +10,8 @@ import { hexToRgba } from '../../utils/colors';
 import { useResponsive } from '../../utils/useResponsive';
 import { CloseButton } from '../CloseButton';
 import { DialogShell } from '../DialogShell';
+import { Check } from '../icons';
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import { BadgeIcon } from './BadgeIcon';

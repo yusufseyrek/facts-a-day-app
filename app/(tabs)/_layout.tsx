@@ -142,9 +142,7 @@ export default function TabLayout() {
           indicatorColor={isDark ? colors.neutralLight : colors.primaryLight}
           labelVisibilityMode="labeled"
           unstable_nativeProps={
-            useSeparatedSearchTab
-              ? { onTabSelectionPrevented: handleTriviaPlayPress }
-              : undefined
+            useSeparatedSearchTab ? { onTabSelectionPrevented: handleTriviaPlayPress } : undefined
           }
           screenListeners={({ route }) => ({
             tabPress: () => {

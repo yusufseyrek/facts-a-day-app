@@ -1,11 +1,10 @@
 import { ActivityIndicator } from 'react-native';
 
-import { View } from '@tamagui/core';
 import * as Haptics from 'expo-haptics';
-import { XStack } from 'tamagui';
 
 import { useResponsive } from '../utils';
 
+import { View, XStack } from './Stacks';
 import { FONT_FAMILIES, Text } from './Typography';
 
 interface ButtonProps {

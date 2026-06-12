@@ -10,11 +10,11 @@ import {
 } from 'react-native-google-mobile-ads';
 
 import { LinearGradient } from 'expo-linear-gradient';
-import { XStack } from 'tamagui';
 
 import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { useTranslation } from '../../i18n';
 import { useResponsive } from '../../utils/useResponsive';
+import { XStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 interface NativeAdCardProps {

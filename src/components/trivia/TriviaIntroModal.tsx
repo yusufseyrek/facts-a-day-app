@@ -1,14 +1,13 @@
 import { Pressable } from 'react-native';
 
-import { CheckCircle, Clock, HelpCircle, Play, Shuffle, Trophy, Zap } from '@tamagui/lucide-icons';
-import { XStack, YStack } from 'tamagui';
-
 import { useTranslation } from '../../i18n';
 import { getEstimatedTimeMinutes } from '../../services/trivia';
 import { hexColors, useTheme } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
 import { DialogShell } from '../DialogShell';
+import { CheckCircle, Clock, HelpCircle, Play, Shuffle, Trophy, Zap } from '../icons';
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 export type TriviaType = 'daily' | 'mixed' | 'category';

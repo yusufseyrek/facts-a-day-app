@@ -9,7 +9,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { Crown, RefreshCw } from '@tamagui/lucide-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -22,6 +21,7 @@ import { useResponsive } from '../utils/useResponsive';
 
 import { CategoryBadge } from './CategoryBadge';
 import { FavoriteButton } from './FavoriteButton';
+import { Crown, RefreshCw } from './icons';
 import { ImagePlaceholder } from './ImagePlaceholder';
 import { Text } from './Typography';
 

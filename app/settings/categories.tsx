@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, Pressable, ScrollView } from 'react-native';
 
-import { View } from '@tamagui/core';
-import { ArrowLeft } from '@tamagui/lucide-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
 import { Button, CategoryCard, ScreenContainer, SuccessToast, Text } from '../../src/components';
+import { ArrowLeft } from '../../src/components/icons';
+import { View, XStack, YStack } from '../../src/components/Stacks';
 import { MINIMUM_CATEGORIES } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
 import { useTranslation } from '../../src/i18n';

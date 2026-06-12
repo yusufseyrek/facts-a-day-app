@@ -16,11 +16,7 @@ import { useRouter } from 'expo-router';
 import { useStoryMorphSource } from '../hooks/useStoryMorphSource';
 import { useTranslation } from '../i18n';
 import * as api from '../services/api';
-import {
-  getCachedRowSync,
-  hydrateCachedRow,
-  setCachedRow,
-} from '../services/categoryButtonsCache';
+import { getCachedRowSync, hydrateCachedRow, setCachedRow } from '../services/categoryButtonsCache';
 import { onFeedRefresh } from '../services/contentRefresh';
 import * as database from '../services/database';
 import { getSelectedCategories } from '../services/onboarding';
@@ -222,8 +218,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
         // persisting) the wrong buttons. This also self-heals on every focus.
         const onScreen = new Set(rest.map((c) => c.slug));
         const matchesSelection =
-          rest.length === selectedSlugs.length &&
-          selectedSlugs.every((slug) => onScreen.has(slug));
+          rest.length === selectedSlugs.length && selectedSlugs.every((slug) => onScreen.has(slug));
         if (!matchesSelection) {
           loadCategories();
           return;

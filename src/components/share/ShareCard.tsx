@@ -10,9 +10,9 @@ import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { XStack, YStack } from 'tamagui';
 
 import { i18n } from '../../i18n';
+import { XStack, YStack } from '../Stacks';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const appIcon = require('../../../assets/icon.png');

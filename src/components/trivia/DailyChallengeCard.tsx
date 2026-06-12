@@ -1,15 +1,15 @@
 import { Platform, Pressable, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { Check, ChevronRight, Zap } from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { XStack, YStack } from 'tamagui';
 
 import { hexColors } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
 import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { GlassSurface } from '../GlassSurface';
+import { Check, ChevronRight, Zap } from '../icons';
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { TranslationKeys } from '../../i18n/translations';

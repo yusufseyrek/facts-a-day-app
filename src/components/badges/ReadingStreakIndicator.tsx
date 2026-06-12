@@ -1,10 +1,9 @@
 import { Pressable } from 'react-native';
 
-import { Flame } from '@tamagui/lucide-icons';
-import { XStack } from 'tamagui';
-
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { Flame } from '../icons';
+import { XStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 interface ReadingStreakIndicatorProps {

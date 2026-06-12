@@ -9,21 +9,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  Calendar,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Flame,
-  Star,
-  Timer,
-  X,
-} from '@tamagui/lucide-icons';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { XStack, YStack } from 'tamagui';
 
 import { LAYOUT } from '../../config/app';
 import { indexToAnswer, isTextAnswerCorrect } from '../../services/trivia';
@@ -34,6 +23,8 @@ import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { BannerAd } from '../ads';
 import { GlassSurface } from '../GlassSurface';
+import { Calendar, Check, ChevronLeft, ChevronRight, Flame, Star, Timer, X } from '../icons';
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { QuestionWithFact, StoredAnswer } from '../../services/database';

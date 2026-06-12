@@ -4,13 +4,13 @@ import { View } from 'react-native';
 import { FlashListRef } from '@shopify/flash-list';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { YStack } from 'tamagui';
 
 import { EmptyState, ScreenContainer } from '../../../src/components';
 import { ReadingStreakIndicator } from '../../../src/components/badges/ReadingStreakIndicator';
 import { CategoryStoryButtonsRef } from '../../../src/components/CategoryStoryButtons';
 import { HomeListHeader, LocaleChangeOverlay } from '../../../src/components/home';
 import { KeepReadingList } from '../../../src/components/home/KeepReadingList';
+import { YStack } from '../../../src/components/Stacks';
 import { PAYWALL_PROMPT } from '../../../src/config/app';
 import { queryClient } from '../../../src/config/queryClient';
 import { usePremium, useScrollToTopHandler } from '../../../src/contexts';

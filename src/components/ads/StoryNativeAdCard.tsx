@@ -10,14 +10,14 @@ import {
 } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ChevronRight } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { XStack } from 'tamagui';
 
 import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
+import { ChevronRight } from '../icons';
+import { XStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 interface StoryNativeAdCardProps {

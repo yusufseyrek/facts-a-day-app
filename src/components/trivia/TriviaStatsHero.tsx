@@ -9,14 +9,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 
-import { Check, ChevronRight, Flame, Target, Zap } from '@tamagui/lucide-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { XStack, YStack } from 'tamagui';
 
 import { hexColors } from '../../theme';
 import { blendHexColors, darkenColor, getContrastColor } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
+import { Check, ChevronRight, Flame, Target, Zap } from '../icons';
+import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
 import type { TranslationKeys } from '../../i18n/translations';

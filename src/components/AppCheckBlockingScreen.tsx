@@ -7,7 +7,7 @@ import { absoluteFillObject } from '../utils/styles';
 
 import { FONT_FAMILIES } from './Typography';
 
-// Hardcoded values — this component renders outside Tamagui context (like ErrorBoundary)
+// Hardcoded values — this component renders outside AppThemeProvider (like ErrorBoundary)
 const SPACING = { sm: 8, md: 12, lg: 16, xl: 24 };
 const RADIUS = { lg: 16 };
 

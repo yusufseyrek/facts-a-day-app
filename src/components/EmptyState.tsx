@@ -1,10 +1,9 @@
-import { Lightbulb } from '@tamagui/lucide-icons';
-import { YStack } from 'tamagui';
-
 import { LAYOUT } from '../config';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
+import { Lightbulb } from './icons';
+import { YStack } from './Stacks';
 import { Text } from './Typography';
 
 interface EmptyStateProps {
