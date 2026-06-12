@@ -175,6 +175,7 @@ export const Screens = {
   BADGES: 'Badges',
   BADGE_DETAIL: 'BadgeDetail',
   READING_STATS: 'ReadingStats',
+  STORY_THEME: 'StoryTheme',
 } as const;
 
 // ============================================================================
@@ -287,6 +288,7 @@ export type FactViewSource =
   | 'discover_category'
   | 'favorites'
   | 'story'
+  | 'story_theme'
   | 'notification'
   | 'trivia_review'
   | 'widget';

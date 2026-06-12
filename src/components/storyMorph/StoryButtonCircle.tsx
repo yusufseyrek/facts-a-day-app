@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { getLucideIcon } from '../../utils/iconMapper';
@@ -17,6 +18,8 @@ export interface StoryButtonCircleProps {
   hasUnseen: boolean;
   isMix: boolean;
   icon?: string;
+  /** Story themes: full-circle image fill replacing the icon. */
+  imageUrl?: string | null;
   ringColor: string;
   iconColor: string;
   unseenFill: string;
@@ -43,6 +46,7 @@ export function StoryButtonCircle({
   hasUnseen,
   isMix,
   icon,
+  imageUrl,
   ringColor,
   iconColor,
   unseenFill,
@@ -52,7 +56,14 @@ export function StoryButtonCircle({
   innerSize,
   iconSize,
 }: StoryButtonCircleProps) {
-  const iconNode = isMix ? (
+  const iconNode = imageUrl ? (
+    <Image
+      source={{ uri: imageUrl }}
+      contentFit="cover"
+      transition={150}
+      style={{ width: innerSize, height: innerSize, borderRadius: innerSize / 2 }}
+    />
+  ) : isMix ? (
     <Shuffle size={iconSize} color={iconColor} />
   ) : (
     getLucideIcon(icon, iconSize, iconColor)

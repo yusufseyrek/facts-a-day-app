@@ -14,6 +14,9 @@ import { getIdentityHeaders } from './userIdentity';
 /** Metadata (categories/languages) is near-static; cache it aggressively. */
 const METADATA_STALE_TIME = 1000 * 60 * 60 * 6; // 6 hours
 
+/** Story themes are timed events; refresh more often than metadata. */
+const STORY_THEMES_STALE_TIME = 1000 * 60 * 60; // 1 hour
+
 /**
  * Get the API base URL, adjusting for Android emulator
  * On Android emulator, localhost refers to the emulator itself,
@@ -53,6 +56,15 @@ export interface Language {
 export interface MetadataResponse {
   categories: Category[];
   languages: Language[];
+}
+
+/** Admin-curated event collection ("World Cup") shown as an image-circle story button. */
+export interface StoryTheme {
+  id: number;
+  slug: string;
+  name: string;
+  image_url: string | null;
+  color_hex: string | null;
 }
 
 export interface QuestionResponse {
@@ -362,6 +374,45 @@ export async function getMetadata(language?: string): Promise<MetadataResponse> 
     },
     staleTime: METADATA_STALE_TIME,
   });
+}
+
+/**
+ * Active story themes (event collections) for the home button row. Routed
+ * through the React Query cache like metadata — persisted to disk, deduped,
+ * and an empty list is a VALID state (no events running), so it caches too.
+ */
+export async function getStoryThemes(language: string): Promise<StoryTheme[]> {
+  const res = await queryClient.fetchQuery({
+    queryKey: metadataKeys.storyThemes(language),
+    queryFn: () => makeRequest<{ themes: StoryTheme[] }>(`/api/story-themes?language=${language}`),
+    staleTime: STORY_THEMES_STALE_TIME,
+  });
+  return res.themes ?? [];
+}
+
+export interface StoryThemeFactsResponse {
+  theme: StoryTheme;
+  facts: FactResponse[];
+  pagination: { limit: number; offset: number; has_more: boolean };
+}
+
+/**
+ * One offset-page of facts collected by a theme's (server-side) search terms,
+ * title-matches-first — the same ordering as search results.
+ */
+export async function getStoryThemeFacts(params: {
+  slug: string;
+  language: string;
+  limit?: number;
+  offset?: number;
+}): Promise<StoryThemeFactsResponse> {
+  const qp = new URLSearchParams();
+  qp.append('language', params.language);
+  if (params.limit !== undefined) qp.append('limit', String(params.limit));
+  if (params.offset !== undefined) qp.append('offset', String(params.offset));
+  return makeRequest<StoryThemeFactsResponse>(
+    `/api/story-themes/${encodeURIComponent(params.slug)}/facts?${qp.toString()}`
+  );
 }
 
 export interface GetFactByIdResponse {

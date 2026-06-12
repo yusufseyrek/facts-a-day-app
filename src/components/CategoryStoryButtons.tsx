@@ -127,6 +127,11 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
       // the row never fully disappears even if the metadata fetch fails.
       const mixItem: CategoryItem = { slug: 'mix', name: t('mix'), isMix: true };
       try {
+        // Active event themes (admin-managed), fetched in parallel with the
+        // metadata below. null = fetch failed → fall back to the cached row's
+        // theme buttons so a transient error doesn't drop a running event.
+        const themesPromise = api.getStoryThemes(locale).catch(() => null);
+
         const selectedSlugs = await getSelectedCategories();
         selectedSlugsRef.current = selectedSlugs;
 
@@ -140,6 +145,18 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
         } catch {
           allCategories = [];
         }
+
+        const themes = await themesPromise;
+        const themeItems: CategoryItem[] =
+          themes !== null
+            ? themes.map((theme) => ({
+                slug: theme.slug,
+                name: theme.name,
+                color_hex: theme.color_hex ?? undefined,
+                image_url: theme.image_url,
+                isTheme: true,
+              }))
+            : (getCachedRowSync(locale)?.items ?? []).filter((it) => it.isTheme);
 
         // Build a map for quick lookup
         const categoryMap = new Map<string, Category>();
@@ -164,7 +181,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
         // lone Mix button — but only the ones still selected, so a stale cache
         // from a previous onboarding run can never resurrect deselected rows.
         const cachedRest = (getCachedRowSync(locale)?.items ?? []).filter(
-          (it) => !it.isMix && selectedSlugs.includes(it.slug)
+          (it) => !it.isMix && !it.isTheme && selectedSlugs.includes(it.slug)
         );
         const resolvedItems = items.length > 0 ? items : cachedRest;
 
@@ -178,7 +195,8 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
           return aUnseen - bUnseen;
         });
 
-        const newItems: CategoryItem[] = [mixItem, ...resolvedItems];
+        // Event themes sit right next to Mix, ahead of the category sort.
+        const newItems: CategoryItem[] = [mixItem, ...themeItems, ...resolvedItems];
 
         setUnseenStatus(status);
         setCategories(newItems);
@@ -191,8 +209,12 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
         // Warm the feeds most likely to be tapped (Mix + first couple of
         // categories) once the row is on screen, so the first story card is
-        // instant. Press-in prefetch (below) covers the rest.
-        newItems.slice(0, 3).forEach((it) => prefetchStory(locale, it.slug, selectedSlugs));
+        // instant. Press-in prefetch (below) covers the rest. Theme buttons
+        // open a fact LIST (not a story feed), so they don't take part.
+        newItems
+          .filter((it) => !it.isTheme)
+          .slice(0, 3)
+          .forEach((it) => prefetchStory(locale, it.slug, selectedSlugs));
       } catch {
         // Last-resort: at least show the Mix button so the row is never empty.
         setCategories((prev) => (prev.length > 0 ? prev : [mixItem]));
@@ -208,9 +230,11 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
         // Read the row AFTER the awaits so a load that landed mid-flight isn't
         // clobbered with a pre-await snapshot. loadCategories owns building the
-        // row; this only refreshes unseen highlighting.
+        // row; this only refreshes unseen highlighting. Theme buttons don't
+        // participate in unseen sorting — they stay pinned right after Mix.
         const prev = categoriesRef.current;
-        const rest = prev.filter((c) => !c.isMix);
+        const themeItems = prev.filter((c) => c.isTheme);
+        const rest = prev.filter((c) => !c.isMix && !c.isTheme);
 
         // Re-sort ONLY a row that matches the current selections. A mismatch
         // means the row is stale (cache from a previous selection, cold/
@@ -230,7 +254,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
           const bUnseen = status[b.slug] ? 0 : 1;
           return aUnseen - bUnseen;
         });
-        const newItems = [mix, ...rest];
+        const newItems = [mix, ...themeItems, ...rest];
 
         setUnseenStatus(status);
         setCategories(newItems);
@@ -242,6 +266,15 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
     const handlePress = useCallback(
       (item: CategoryItem) => {
+        // Theme buttons open the theme's fact list (search-results style)
+        // instead of a story. Name rides along so the header paints instantly.
+        if (item.isTheme) {
+          router.push({
+            pathname: '/theme/[slug]',
+            params: { slug: item.slug, name: item.name },
+          });
+          return;
+        }
         // storyBasePath picks the morph-presented route when the pressed
         // button registered a fresh circle measurement on press-in (the
         // normal case), falling back to the plain fullScreenModal otherwise.
@@ -254,6 +287,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     // instantly. Fired on press-in (below) and for the first few buttons on load.
     const handlePrefetch = useCallback(
       (item: CategoryItem) => {
+        if (item.isTheme) return; // theme screens fetch their own list
         prefetchStory(locale, item.slug, selectedSlugsRef.current);
       },
       [locale]
@@ -261,10 +295,13 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
 
     const renderItem = useCallback(
       ({ item }: { item: CategoryItem }) => {
-        // Mix button has unseen if ANY category has unseen
-        const hasUnseen = item.isMix
-          ? Object.values(unseenStatus).some(Boolean)
-          : (unseenStatus[item.slug] ?? true);
+        // Mix button has unseen if ANY category has unseen. Theme buttons are
+        // event promos — they always wear the gradient ring.
+        const hasUnseen = item.isTheme
+          ? true
+          : item.isMix
+            ? Object.values(unseenStatus).some(Boolean)
+            : (unseenStatus[item.slug] ?? true);
 
         return (
           <CategoryButton
@@ -297,7 +334,12 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
       ]
     );
 
-    const keyExtractor = useCallback((item: CategoryItem) => item.slug, []);
+    // Theme slugs are admin-defined and may collide with a category slug —
+    // namespace the key so FlashList never sees a duplicate.
+    const keyExtractor = useCallback(
+      (item: CategoryItem) => (item.isTheme ? `theme:${item.slug}` : item.slug),
+      []
+    );
 
     // Height for horizontal FlashList container: circle + label margin + label line.
     // Reserved on every render (including skeleton) so the row never collapses
@@ -476,7 +518,11 @@ const CategoryButton = React.memo(
 
     // isMorphSourceActive hides the circle while its morph presentation is on
     // screen (the replica covers the exact rect, so no hole shows in the row).
-    const { registerMorphSource, isMorphSourceActive } = useStoryMorphSource(item.slug);
+    // Theme buttons never morph — namespace the slug so a theme sharing a
+    // category's slug can't be hidden by that category's morph.
+    const { registerMorphSource, isMorphSourceActive } = useStoryMorphSource(
+      item.isTheme ? `theme:${item.slug}` : item.slug
+    );
     const pressableRef = useRef<View>(null);
 
     const handlePressIn = useCallback(() => {
@@ -484,6 +530,8 @@ const CategoryButton = React.memo(
       // Warm this category's feed the instant the finger lands, before the
       // navigation completes — a usable head start even on a cache miss.
       onPrefetch();
+      // Theme buttons push a plain card screen — no morph source to register.
+      if (item.isTheme) return;
       // Register the circle as the morph source on press-IN: measureInWindow
       // is async, so starting here guarantees the rect is registered by the
       // time onPress pushes the route via storyBasePath(). The Pressable is
@@ -517,6 +565,7 @@ const CategoryButton = React.memo(
       registerMorphSource,
       item.slug,
       item.isMix,
+      item.isTheme,
       item.icon,
       hasUnseen,
       ringColor,
@@ -535,7 +584,7 @@ const CategoryButton = React.memo(
     return (
       <Pressable
         ref={pressableRef}
-        testID={`story-button-${item.slug}`}
+        testID={`story-button-${item.isTheme ? `theme:${item.slug}` : item.slug}`}
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
@@ -547,6 +596,7 @@ const CategoryButton = React.memo(
               hasUnseen={hasUnseen}
               isMix={!!item.isMix}
               icon={item.icon}
+              imageUrl={item.isTheme ? item.image_url : undefined}
               ringColor={ringColor}
               iconColor={iconColor}
               unseenFill={unseenFill}

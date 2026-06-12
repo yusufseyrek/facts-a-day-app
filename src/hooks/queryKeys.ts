@@ -43,6 +43,9 @@ export const factKeys = {
 export const metadataKeys = {
   all: ['metadata'] as const,
   byLocale: (locale: string) => ['metadata', locale ?? 'default'] as const,
+  // Story themes live under the persisted 'metadata' root so the event button
+  // row paints instantly on a warm open, same as the category buttons.
+  storyThemes: (locale: string) => ['metadata', 'storyThemes', locale] as const,
 };
 
 export const statsKeys = {

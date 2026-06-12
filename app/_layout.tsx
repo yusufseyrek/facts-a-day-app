@@ -356,6 +356,21 @@ function AppContent() {
             contentStyle: { backgroundColor: 'transparent' },
           }}
         />
+        <Stack.Screen
+          name="theme/[slug]"
+          options={{
+            // Story-theme fact list (event collections). Card presentation
+            // with the full-screen back swipe, same rationale as fact/[id];
+            // the screen itself enables the native glass header.
+            presentation: 'card',
+            headerShown: false,
+            gestureEnabled: true,
+            gestureDirection: 'horizontal',
+            animation: 'slide_from_right',
+            fullScreenGestureEnabled: true,
+            contentStyle: { backgroundColor },
+          }}
+        />
         <Stack.Screen name="badges" options={{ headerShown: false }} />
         <Stack.Screen name="trivia" options={{ gestureEnabled: false }} />
         <Stack.Screen

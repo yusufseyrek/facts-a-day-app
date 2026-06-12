@@ -17,6 +17,10 @@ export interface CachedCategoryItem {
   icon?: string;
   color_hex?: string;
   isMix?: boolean;
+  /** Story theme (event) button: image circle, opens the theme's fact list. */
+  isTheme?: boolean;
+  /** Full-circle image for theme buttons. */
+  image_url?: string | null;
 }
 
 export type CachedCategoryRow = {
