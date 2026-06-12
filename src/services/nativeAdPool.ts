@@ -371,6 +371,15 @@ export const getSlot = (
 };
 
 /**
+ * Read-only peek: does this slot currently have an ad bound? Unlike `getSlot`,
+ * never creates a slot or fires a fill — safe to call from scroll/viewability
+ * handlers. Full-screen placements (story pages) use this to decide whether an
+ * ad page can actually be presented, since no-fill slots park in 'loading'
+ * indefinitely and would otherwise present as blank pages.
+ */
+export const hasReadyAd = (slotKey: string): boolean => slots.get(slotKey)?.ad != null;
+
+/**
  * Subscribe to state changes for a slot. Returns an unsubscribe function.
  * Does NOT allocate an ad — call `getSlot` to trigger binding.
  */

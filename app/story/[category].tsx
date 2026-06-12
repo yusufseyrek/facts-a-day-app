@@ -40,6 +40,7 @@ import * as api from '../../src/services/api';
 import { checkAndAwardBadges, popModalScreen, pushModalScreen } from '../../src/services/badges';
 import * as database from '../../src/services/database';
 import { mapApiFactToRelations } from '../../src/services/database';
+import { hasReadyAd } from '../../src/services/nativeAdPool';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { takePrefetchedStory } from '../../src/services/storyPrefetch';
 import { hexColors, useTheme } from '../../src/theme';
@@ -264,14 +265,14 @@ export default function StoryScreen() {
 
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: Array<{ item: any; index: number | null }> }) => {
-      let landedOnAd = false;
+      let landedAdKey: string | null = null;
       for (const entry of viewableItems) {
         if (entry.index != null && !isResizingRef.current) {
           setCurrentIndex(entry.index);
           currentIndexRef.current = entry.index;
         }
         if (isNativeAdPlaceholder(entry.item)) {
-          landedOnAd = true;
+          landedAdKey = entry.item.key;
           continue;
         }
         const fact = entry.item as FactWithRelations;
@@ -289,8 +290,18 @@ export default function StoryScreen() {
         }
       }
 
-      // Lock scrolling briefly when landing on a native ad
-      if (landedOnAd && !scrollLocked) {
+      // Landing on a native ad page: only pause scrolling (with the progress
+      // ring) when the slot actually has an ad bound — same gate as the trivia
+      // game, which only presents its ad page when `nativeAd` is non-null.
+      // No-fill slots park in 'loading' forever, so without this check the
+      // user gets locked onto a BLANK page with a progress ring. Instead, drop
+      // the placeholder: the list closes the gap and the next fact takes the
+      // page's place immediately.
+      if (landedAdKey !== null && !scrollLocked) {
+        if (!hasReadyAd(landedAdKey)) {
+          handleAdFailed(landedAdKey);
+          return;
+        }
         setScrollLocked(true);
         adPauseProgress.setValue(0);
         Animated.timing(adPauseProgress, {
@@ -306,7 +317,7 @@ export default function StoryScreen() {
         }, NATIVE_ADS.NAV_LOCK_DURATION_MS);
       }
     },
-    [category, scrollLocked, adPauseProgress]
+    [category, scrollLocked, adPauseProgress, handleAdFailed]
   );
 
   const viewabilityConfig = useMemo(

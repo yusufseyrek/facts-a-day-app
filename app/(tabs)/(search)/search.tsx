@@ -14,7 +14,6 @@ import {
   ScreenContainer,
   Text,
 } from '../../../src/components';
-import { BannerAd } from '../../../src/components/ads';
 import { NativeAdCard } from '../../../src/components/ads/NativeAdCard';
 import { X } from '../../../src/components/icons';
 import { ImageFactCard } from '../../../src/components/ImageFactCard';
@@ -565,6 +564,14 @@ function SearchScreen() {
     });
   }, []);
 
+  // Failures are per-moment, not per-session: ad keys derive from the
+  // preceding fact's id, so the same key can reappear in a later search (same
+  // top results). Without this reset a slot that failed once would stay
+  // filtered out of every subsequent result list.
+  useEffect(() => {
+    setFailedAdKeys((prev) => (prev.size === 0 ? prev : new Set()));
+  }, [searchResults, categoryFacts]);
+
   // isPremium triggers re-computation to remove/add native ads
   const searchDataWithAds = useMemo(() => {
     const withAds = insertNativeAds(searchResults, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER);
@@ -934,8 +941,6 @@ function SearchScreen() {
     <ScreenContainer edges={[]}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <YStack flex={1}>{renderContent()}</YStack>
-      {searchResults.length > 0 ||
-        (!selectedCategorySlug && <BannerAd collapsible="bottom" respectBottomInset />)}
     </ScreenContainer>
   );
 }

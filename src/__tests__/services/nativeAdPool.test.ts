@@ -529,3 +529,45 @@ describe('nativeAdPool — SDK-ready gate', () => {
     expect(result.ad).toBeNull();
   });
 });
+
+describe('nativeAdPool — hasReadyAd peek', () => {
+  it('is false for unknown slots and never creates one', async () => {
+    const { pool } = loadPool();
+    pool.primePool();
+    await flushMicrotasks();
+
+    expect(pool.hasReadyAd('never-requested')).toBe(false);
+    // Peeking must not have allocated the slot: a later getSlot starts fresh
+    // and can still claim a queued ad.
+    const bound = pool.getSlot('never-requested', PORTRAIT);
+    expect(bound.status).toBe('ready');
+  });
+
+  it('is true once a slot has a bound ad, false while parked in loading', async () => {
+    const { pool } = loadPool();
+
+    // No inventory yet: requests hang (never resolve), so the slot parks in
+    // 'loading' — exactly the story-view blank-page scenario.
+    mockCreateForAdRequest.mockImplementation(() => new Promise(() => {}));
+    const parked = pool.getSlot('story-ad', PORTRAIT);
+    expect(parked.status).toBe('loading');
+    expect(pool.hasReadyAd('story-ad')).toBe(false);
+
+    // Inventory arrives: the slot binds and the peek flips to true.
+    mockCreateForAdRequest.mockImplementation(() => Promise.resolve(createMockAd()));
+    pool.primePool();
+    await flushMicrotasks();
+    expect(pool.hasReadyAd('story-ad')).toBe(true);
+  });
+
+  it('is false again after the slot is released', async () => {
+    const { pool } = loadPool();
+    pool.primePool();
+    await flushMicrotasks();
+
+    pool.getSlot('story-ad', PORTRAIT);
+    expect(pool.hasReadyAd('story-ad')).toBe(true);
+    pool.releaseSlot('story-ad');
+    expect(pool.hasReadyAd('story-ad')).toBe(false);
+  });
+});

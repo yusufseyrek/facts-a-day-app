@@ -2,13 +2,12 @@ import { useColorScheme } from 'react-native';
 
 import { Stack } from 'expo-router';
 
-import { useGlassHeaderOptions } from '../../src/hooks/useGlassHeaderOptions';
-import { useTranslation } from '../../src/i18n';
 import { hexColors } from '../../src/theme';
 
+// Only the game lives outside the tabs: it presents as a fullScreenModal that
+// must cover the tab bar. The trivia hub/performance/history screens live in
+// app/(tabs)/trivia so they render under the tab bar.
 export default function TriviaLayout() {
-  const headerOptions = useGlassHeaderOptions();
-  const { t } = useTranslation();
   const colorScheme = useColorScheme();
 
   // Use system color scheme for initial background (app theme will override via screen styles)
@@ -18,13 +17,10 @@ export default function TriviaLayout() {
   return (
     <Stack
       screenOptions={{
-        ...headerOptions,
         gestureEnabled: false,
         contentStyle: { backgroundColor },
       }}
     >
-      <Stack.Screen name="index" options={{ title: t('trivia') }} />
-      <Stack.Screen name="performance" options={{ title: t('triviaPerformance') }} />
       <Stack.Screen
         name="game"
         options={{
@@ -36,7 +32,6 @@ export default function TriviaLayout() {
           contentStyle: { backgroundColor },
         }}
       />
-      <Stack.Screen name="history" options={{ title: t('testHistory') }} />
     </Stack>
   );
 }
