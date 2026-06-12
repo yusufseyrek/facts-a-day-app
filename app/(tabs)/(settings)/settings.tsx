@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, AppState, Linking, Platform, SectionList } from 'react-native';
+import { Alert, AppState, Linking, Platform, Pressable, SectionList, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import Constants from 'expo-constants';
 import { deepLinkToSubscriptions } from 'expo-iap';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Notifications from 'expo-notifications';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -13,6 +14,7 @@ import { ContentContainer, ScreenContainer, Text } from '../../../src/components
 import {
   BarChart3,
   Bell,
+  ChevronRight,
   Crown,
   Eye,
   FileText,
@@ -32,7 +34,8 @@ import { ScreenNameModal } from '../../../src/components/ScreenNameModal';
 import { ThemePickerModal } from '../../../src/components/settings/ThemePickerModal';
 import { TimePickerModal } from '../../../src/components/settings/TimePickerModal';
 import { SettingsRow } from '../../../src/components/SettingsRow';
-import { YStack } from '../../../src/components/Stacks';
+import { XStack, YStack } from '../../../src/components/Stacks';
+import { FONT_FAMILIES } from '../../../src/components/Typography';
 import { DEV_SETTINGS_ENABLED, LAYOUT, SUBSCRIPTION } from '../../../src/config/app';
 import { useOnboarding, usePremium, useScrollToTopHandler } from '../../../src/contexts';
 import { useTranslation } from '../../../src/i18n';
@@ -57,6 +60,7 @@ import * as updates from '../../../src/services/updates';
 import * as userService from '../../../src/services/user';
 import { hexColors, useTheme } from '../../../src/theme';
 import { openInAppBrowser } from '../../../src/utils/browser';
+import { darkenColor, getContrastColor } from '../../../src/utils/colors';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
 // Helper to get language display name
@@ -83,6 +87,101 @@ const getThemeName = (mode: string, t: (key: TranslationKeys) => string): string
   };
   return themeNames[mode] || mode;
 };
+
+// Premium upsell row in the gradient game-tile signature (TriviaGridCard):
+// diagonal accent gradient, contrast-colored content, icon on a translucent
+// plate, decorative offset circles, accent glow shadow, pressed scale.
+function PremiumUpgradeCard({
+  label,
+  isDark,
+  onPress,
+}: {
+  label: string;
+  isDark: boolean;
+  onPress: () => void;
+}) {
+  const { spacing, radius, iconSizes, media } = useResponsive();
+  const gold = isDark ? hexColors.dark.warning : hexColors.light.warning;
+  const contrastColor = getContrastColor(gold);
+  const platBg = contrastColor === '#000000' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.22)';
+  const plateSize = media.topicCardSize * 0.5;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      role="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        {
+          borderRadius: radius.xl,
+          shadowColor: gold,
+          shadowOffset: { width: 0, height: 5 },
+          shadowOpacity: 0.35,
+          shadowRadius: 10,
+          elevation: 6,
+          opacity: pressed ? 0.9 : 1,
+          transform: [{ scale: pressed ? 0.97 : 1 }],
+        },
+      ]}
+    >
+      <LinearGradient
+        colors={[gold, darkenColor(gold, 0.22)]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ borderRadius: radius.xl, overflow: 'hidden' }}
+      >
+        {/* Layered decorative circles for depth — same as the trivia tiles */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: -plateSize * 0.6,
+            right: -plateSize * 0.5,
+            width: plateSize * 1.8,
+            height: plateSize * 1.8,
+            borderRadius: plateSize * 0.9,
+            backgroundColor:
+              contrastColor === '#000000' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.10)',
+          }}
+        />
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            bottom: -plateSize * 0.7,
+            left: -plateSize * 0.4,
+            width: plateSize * 1.4,
+            height: plateSize * 1.4,
+            borderRadius: plateSize * 0.7,
+            backgroundColor:
+              contrastColor === '#000000' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.07)',
+          }}
+        />
+        <XStack alignItems="center" gap={spacing.md} padding={spacing.lg}>
+          <YStack
+            width={plateSize}
+            height={plateSize}
+            borderRadius={plateSize / 2}
+            backgroundColor={platBg}
+            justifyContent="center"
+            alignItems="center"
+          >
+            <Crown size={iconSizes.lg} color={contrastColor} />
+          </YStack>
+          <Text.Label
+            flex={1}
+            fontFamily={FONT_FAMILIES.bold}
+            color={contrastColor}
+            numberOfLines={1}
+          >
+            {label}
+          </Text.Label>
+          <ChevronRight size={iconSizes.md} color={contrastColor} opacity={0.55} />
+        </XStack>
+      </LinearGradient>
+    </Pressable>
+  );
+}
 
 export default function SettingsPage() {
   const { theme, themeMode } = useTheme();
@@ -117,6 +216,7 @@ export default function SettingsPage() {
 
   // Use white icons in dark mode for better contrast
   const iconColor = theme === 'dark' ? '#FFFFFF' : hexColors[theme].text;
+  const colors = hexColors[theme];
 
   // Modal visibility state
   const [showThemeModal, setShowThemeModal] = useState(false);
@@ -626,6 +726,8 @@ export default function SettingsPage() {
     label: string;
     value?: string;
     icon: React.ReactNode;
+    /** Chip accent behind the icon; the icon is colored with it too. */
+    accent: string;
     onPress: () => void;
     showExternalLink?: boolean;
     showWarning?: boolean;
@@ -644,13 +746,15 @@ export default function SettingsPage() {
         {
           id: 'readingStats',
           label: t('readingStats'),
-          icon: <BarChart3 size={iconSizes.md} color={iconColor} />,
+          icon: <BarChart3 size={iconSizes.md} color={colors.neonCyan} />,
+          accent: colors.neonCyan,
           onPress: () => router.push('/stats'),
         },
         {
           id: 'achievements',
           label: t('achievements'),
-          icon: <Trophy size={iconSizes.md} color={iconColor} />,
+          icon: <Trophy size={iconSizes.md} color={colors.neonYellow} />,
+          accent: colors.neonYellow,
           onPress: () => router.push('/badges'),
         },
       ],
@@ -663,14 +767,16 @@ export default function SettingsPage() {
           id: 'screenName',
           label: t('screenName'),
           value: screenName ?? t('screenNameNotSet'),
-          icon: <User size={iconSizes.md} color={iconColor} />,
+          icon: <User size={iconSizes.md} color={colors.neonPurple} />,
+          accent: colors.neonPurple,
           onPress: () => setShowScreenNameModal(true),
         },
         {
           id: 'language',
           label: t('settingsLanguage'),
           value: getLanguageName(locale),
-          icon: <Globe size={iconSizes.md} color={iconColor} />,
+          icon: <Globe size={iconSizes.md} color={colors.neonGreen} />,
+          accent: colors.neonGreen,
           onPress: handleLanguagePress,
           showExternalLink: true,
         },
@@ -678,14 +784,16 @@ export default function SettingsPage() {
           id: 'theme',
           label: t('settingsThemeTitle'),
           value: getThemeName(themeMode, t),
-          icon: <Palette size={iconSizes.md} color={iconColor} />,
+          icon: <Palette size={iconSizes.md} color={colors.neonMagenta} />,
+          accent: colors.neonMagenta,
           onPress: () => setShowThemeModal(true),
         },
         {
           id: 'categories',
           label: t('settingsCategories'),
           value: `${selectedCategories.length} ${t('settingsSelected')}`,
-          icon: <Grid size={iconSizes.md} color={iconColor} />,
+          icon: <Grid size={iconSizes.md} color={colors.neonOrange} />,
+          accent: colors.neonOrange,
           onPress: handleCategoriesPress,
         },
         {
@@ -699,7 +807,13 @@ export default function SettingsPage() {
                   hour12: false,
                 })
               : t('settingsNotificationTimesCount', { count: notificationTimes.length }),
-          icon: <Bell size={iconSizes.md} color={iconColor} />,
+          icon: (
+            <Bell
+              size={iconSizes.md}
+              color={notificationPermissionGranted ? colors.neonRed : colors.warning}
+            />
+          ),
+          accent: notificationPermissionGranted ? colors.neonRed : colors.warning,
           onPress: handleTimePress,
           showWarning: !notificationPermissionGranted,
         },
@@ -716,7 +830,8 @@ export default function SettingsPage() {
             imageCacheSize > 0
               ? t('settingsImageCacheSize', { size: formatBytes(imageCacheSize) })
               : undefined,
-          icon: <Trash2 size={iconSizes.md} color={iconColor} />,
+          icon: <Trash2 size={iconSizes.md} color={colors.error} />,
+          accent: colors.error,
           onPress: handleClearImageCache,
         },
       ],
@@ -729,27 +844,31 @@ export default function SettingsPage() {
           id: 'testNotification',
           label: t('testNotification'),
           value: 'local (5s)',
-          icon: <TestTube size={iconSizes.md} color={iconColor} />,
+          icon: <TestTube size={iconSizes.md} color={colors.neonGreen} />,
+          accent: colors.neonGreen,
           onPress: handleTestNotification,
         },
         {
           id: 'testServerPush',
           label: 'Test Server Push',
           value: 'Expo → APNs/FCM',
-          icon: <Bell size={iconSizes.md} color={iconColor} />,
+          icon: <Bell size={iconSizes.md} color={colors.neonCyan} />,
+          accent: colors.neonCyan,
           onPress: handleTestServerPush,
         },
         {
           id: 'adInspector',
           label: 'Ad Inspector',
           value: 'debug ads',
-          icon: <Eye size={iconSizes.md} color={iconColor} />,
+          icon: <Eye size={iconSizes.md} color={colors.neonMagenta} />,
+          accent: colors.neonMagenta,
           onPress: openAdDebugMenu,
         },
         {
           id: 'testBadgeToast',
           label: 'Test Badge Toast',
-          icon: <Trophy size={iconSizes.md} color={iconColor} />,
+          icon: <Trophy size={iconSizes.md} color={colors.neonYellow} />,
+          accent: colors.neonYellow,
           onPress: () => {
             triggerTestBadgeToast();
           },
@@ -758,7 +877,8 @@ export default function SettingsPage() {
           id: 'testSatisfactionModal',
           label: 'Test Satisfaction Modal',
           value: 'badge + modal on fact close',
-          icon: <Heart size={iconSizes.md} color={iconColor} />,
+          icon: <Heart size={iconSizes.md} color={colors.neonRed} />,
+          accent: colors.neonRed,
           onPress: () => {
             armDevDualTrigger();
             Alert.alert(
@@ -771,7 +891,8 @@ export default function SettingsPage() {
           id: 'devTogglePremium',
           label: isPremium ? 'Dev: Disable Premium' : 'Dev: Enable Premium',
           value: isPremium ? 'on' : 'off',
-          icon: <Crown size={iconSizes.md} color={isPremium ? '#FFD700' : iconColor} />,
+          icon: <Crown size={iconSizes.md} color={isPremium ? '#FFD700' : colors.warning} />,
+          accent: isPremium ? '#FFD700' : colors.warning,
           onPress: async () => {
             const next = !isPremium;
             await devSetPremium(next);
@@ -786,7 +907,8 @@ export default function SettingsPage() {
         {
           id: 'resetOnboarding',
           label: t('resetOnboarding'),
-          icon: <RotateCcw size={iconSizes.md} color={iconColor} />,
+          icon: <RotateCcw size={iconSizes.md} color={colors.error} />,
+          accent: colors.error,
           onPress: handleResetOnboarding,
         },
       ],
@@ -798,7 +920,8 @@ export default function SettingsPage() {
         {
           id: 'reviewApp',
           label: t('settingsReviewApp', { appName: t('appName') }),
-          icon: <Star size={iconSizes.md} color={iconColor} />,
+          icon: <Star size={iconSizes.md} color={colors.neonYellow} />,
+          accent: colors.neonYellow,
           onPress: handleReviewApp,
         },
       ],
@@ -810,13 +933,15 @@ export default function SettingsPage() {
         {
           id: 'privacyPolicy',
           label: t('settingsPrivacyPolicy'),
-          icon: <Shield size={iconSizes.md} color={iconColor} />,
+          icon: <Shield size={iconSizes.md} color={colors.neonGreen} />,
+          accent: colors.neonGreen,
           onPress: handlePrivacyPolicyPress,
         },
         {
           id: 'termsOfService',
           label: t('settingsTermsOfService'),
-          icon: <FileText size={iconSizes.md} color={iconColor} />,
+          icon: <FileText size={iconSizes.md} color={colors.neutral} />,
+          accent: colors.neutral,
           onPress: handleTermsOfServicePress,
         },
       ],
@@ -830,14 +955,18 @@ export default function SettingsPage() {
               id: 'premiumActive',
               label: t('settingsPremiumActive'),
               icon: <Crown size={iconSizes.md} color="#FFD700" />,
+              accent: '#FFD700',
               onPress: () => deepLinkToSubscriptions(),
             },
           ]
         : [
             {
+              // Rendered as the gradient PremiumUpgradeCard (see renderItem),
+              // not a SettingsRow; icon/accent are unused for this id.
               id: 'upgradePremium',
               label: t('settingsUpgradeToPremium'),
-              icon: <Crown size={iconSizes.md} color={iconColor} />,
+              icon: <Crown size={iconSizes.md} color={colors.warning} />,
+              accent: colors.warning,
               onPress: () => router.push('/paywall'),
             },
           ],
@@ -855,7 +984,8 @@ export default function SettingsPage() {
       supportSection.data.push({
         id: 'restorePurchases',
         label: t('settingsRestorePurchases'),
-        icon: <RotateCcw size={iconSizes.md} color={iconColor} />,
+        icon: <RotateCcw size={iconSizes.md} color={colors.neonCyan} />,
+        accent: colors.neonCyan,
         onPress: async () => {
           const restored = await restorePurchases();
           Alert.alert(
@@ -962,19 +1092,33 @@ export default function SettingsPage() {
         renderItem={({ item, section, index }) => {
           const sectionIndex = sections.findIndex((s) => s.title === section.title);
           const animationDelay = sectionIndex * 50 + (index + 1) * 30;
+          const isLast = index === section.data.length - 1;
           return (
             <Animated.View
               entering={shouldAnimate ? FadeInDown.delay(animationDelay).duration(300) : undefined}
             >
-              <ContentContainer marginBottom={spacing.sm}>
-                <SettingsRow
-                  label={item.label}
-                  value={item.value}
-                  icon={item.icon}
-                  onPress={item.onPress}
-                  showExternalLink={item.showExternalLink}
-                  showWarning={item.showWarning}
-                />
+              {/* Rows of a section stack edge-to-edge into one grouped card;
+                  only the last row adds the gap before the next section. */}
+              <ContentContainer marginBottom={isLast ? spacing.md : 0}>
+                {item.id === 'upgradePremium' ? (
+                  <PremiumUpgradeCard
+                    label={item.label}
+                    isDark={theme === 'dark'}
+                    onPress={item.onPress}
+                  />
+                ) : (
+                  <SettingsRow
+                    label={item.label}
+                    value={item.value}
+                    icon={item.icon}
+                    accentColor={item.accent}
+                    isFirst={index === 0}
+                    isLast={isLast}
+                    onPress={item.onPress}
+                    showExternalLink={item.showExternalLink}
+                    showWarning={item.showWarning}
+                  />
+                )}
               </ContentContainer>
             </Animated.View>
           );
