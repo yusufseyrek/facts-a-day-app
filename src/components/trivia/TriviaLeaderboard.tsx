@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -13,6 +13,7 @@ import { countryFlagEmoji } from '../../utils/countryFlag';
 import { useResponsive } from '../../utils/useResponsive';
 import { ChevronRight, Trophy } from '../icons';
 import { ScreenNameModal } from '../ScreenNameModal';
+import { ShimmerPlaceholder } from '../ShimmerPlaceholder';
 import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -39,6 +40,18 @@ const MEDAL_COLORS = ['#F5C518', '#B8C4CE', '#CD7F32'] as const;
 
 function medalFor(rank: number): string | null {
   return rank >= 1 && rank <= 3 ? MEDAL_COLORS[rank - 1] : null;
+}
+
+/** Group thousands (4,210) without Intl, which is unreliable across RN engines.
+ * Scores are small today but grow with play volume. */
+function formatScore(n: number): string {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+/** Screen names are unique (COLLATE NOCASE server-side), so identity, not rank,
+ * decides which row is the viewer — rank can repeat on ties. */
+function isSameName(a: string | null | undefined, b: string | null | undefined): boolean {
+  return !!a && !!b && a.toLowerCase() === b.toLowerCase();
 }
 
 /** Gradient initial disc — the same signature as the comments avatars. */
@@ -106,12 +119,23 @@ function PodiumColumn({
   const flag = countryFlagEmoji(entry.country_code);
 
   return (
-    <YStack flex={1} alignItems="center" gap={spacing.sm} justifyContent="flex-end">
+    <YStack
+      flex={1}
+      alignItems="center"
+      gap={spacing.sm}
+      justifyContent="flex-end"
+      accessible
+      accessibilityLabel={`#${entry.rank} ${entry.screen_name} ${formatScore(entry.score)}${
+        isViewer ? ` (${youLabel})` : ''
+      }`}
+    >
       <InitialDisc
         name={entry.screen_name}
         color={medal}
         size={discSize}
-        borderColor={isViewer ? contrastColor : undefined}
+        // Border (the viewer marker) must contrast its own medal disc, not the
+        // card accent — white-on-gold failed contrast.
+        borderColor={isViewer ? getContrastColor(medal) : undefined}
       />
       <YStack alignItems="center" gap={2} maxWidth="100%">
         <Text.Caption
@@ -122,7 +146,7 @@ function PodiumColumn({
           {`${flag ? `${flag} ` : ''}${entry.screen_name}`}
         </Text.Caption>
         <Text.Title color={contrastColor} fontFamily={FONT_FAMILIES.bold}>
-          {entry.score}
+          {formatScore(entry.score)}
         </Text.Title>
         {isViewer && (
           <Text.Tiny
@@ -159,6 +183,83 @@ function PodiumColumn({
 }
 
 /**
+ * Loading scaffold in the board's own shape (podium + ranked rows). Shown on
+ * first load and when switching windows so the structure stays put and only
+ * the content swaps, instead of collapsing to a centered spinner.
+ */
+function LeaderboardSkeleton() {
+  const { theme } = useTheme();
+  const { spacing, radius, borderWidths, media } = useResponsive();
+  const colors = hexColors[theme];
+  const disc = media.topicCardSize * 0.62;
+  // 2nd, 1st, 3rd — same column order and plinth heights as the real podium.
+  const columns = [
+    { plinth: 48, d: disc * 0.82 },
+    { plinth: 72, d: disc },
+    { plinth: 34, d: disc * 0.82 },
+  ];
+
+  return (
+    <YStack gap={spacing.lg}>
+      {/* Podium frame */}
+      <YStack
+        backgroundColor={colors.cardBackground}
+        borderRadius={radius.xl}
+        paddingHorizontal={spacing.lg}
+        paddingTop={spacing.xl}
+        overflow="hidden"
+      >
+        <XStack alignItems="flex-end" gap={spacing.md}>
+          {columns.map((c, i) => (
+            <YStack
+              key={i}
+              flex={1}
+              alignItems="center"
+              gap={spacing.sm}
+              justifyContent="flex-end"
+            >
+              <ShimmerPlaceholder width={c.d} height={c.d} borderRadius={c.d / 2} />
+              <ShimmerPlaceholder width="70%" height={12} />
+              <ShimmerPlaceholder width={28} height={18} />
+              <ShimmerPlaceholder
+                width="100%"
+                height={c.plinth}
+                borderRadius={radius.md}
+                style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}
+              />
+            </YStack>
+          ))}
+        </XStack>
+      </YStack>
+
+      {/* Ranked rows frame */}
+      <YStack
+        backgroundColor={colors.cardBackground}
+        borderRadius={radius.lg}
+        borderWidth={borderWidths.hairline}
+        borderColor={colors.border}
+        paddingVertical={spacing.xs}
+      >
+        {Array.from({ length: 6 }).map((_, i) => (
+          <XStack
+            key={i}
+            alignItems="center"
+            gap={spacing.sm}
+            paddingVertical={spacing.sm}
+            paddingHorizontal={spacing.md}
+          >
+            <ShimmerPlaceholder width={18} height={16} />
+            <ShimmerPlaceholder width="45%" height={14} />
+            <View style={{ flex: 1 }} />
+            <ShimmerPlaceholder width={28} height={16} />
+          </XStack>
+        ))}
+      </YStack>
+    </YStack>
+  );
+}
+
+/**
  * Full-screen leaderboard: window tabs, a gradient podium hero for the top
  * three (decorated in the trivia tile signature), ranked rows for the rest,
  * the viewer's standing pinned when off-list, and the claim CTA for
@@ -181,13 +282,23 @@ function TriviaLeaderboardComponent({
 
   const [window, setWindow] = useState<TriviaLeaderboardWindow>('today');
   const [entries, setEntries] = useState<TriviaLeaderboardEntry[]>([]);
+  // The window the current entries belong to. When it lags behind the selected
+  // window (first load or a tab switch) we show the skeleton; on a same-window
+  // refresh it already matches, so the existing rows stay put underneath.
+  const [loadedWindow, setLoadedWindow] = useState<TriviaLeaderboardWindow | null>(null);
   const [me, setMe] = useState<TriviaLeaderboardStanding | null>(null);
   const [screenName, setScreenName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [namePromptVisible, setNamePromptVisible] = useState(false);
+  // Every load() bumps the epoch; only the latest load applies its result. This
+  // drops out-of-order responses from fast tab switches / refreshes (which would
+  // otherwise paint a stale window) and defers onLoadEnd until the newest load
+  // settles, so the pull-to-refresh spinner clears at the right moment.
+  const loadEpoch = useRef(0);
 
   const load = useCallback(async () => {
+    const epoch = ++loadEpoch.current;
     setIsLoading(true);
     setHasError(false);
     try {
@@ -195,14 +306,19 @@ function TriviaLeaderboardComponent({
         api.getTriviaLeaderboard(window, limit),
         userService.getProfile().catch(() => null),
       ]);
+      if (epoch !== loadEpoch.current) return; // superseded by a newer load
       setEntries(board.entries);
       setMe(board.me);
       setScreenName(profile?.screenName ?? null);
+      setLoadedWindow(window);
     } catch {
+      if (epoch !== loadEpoch.current) return;
       setHasError(true);
     } finally {
-      setIsLoading(false);
-      onLoadEnd?.();
+      if (epoch === loadEpoch.current) {
+        setIsLoading(false);
+        onLoadEnd?.();
+      }
     }
   }, [window, limit, onLoadEnd]);
 
@@ -228,16 +344,19 @@ function TriviaLeaderboardComponent({
     { key: 'all', label: t('leaderboardAllTime') },
   ];
 
-  const podium = entries.slice(0, 3);
+  // Defensive: the server already returns rank order, but sort before the
+  // 2-1-3 podium reorder so a winner is never placed off-center.
+  const podium = entries.slice(0, 3).sort((a, b) => a.rank - b.rank);
   const rest = entries.slice(3);
-  const meInList = me !== null && entries.some((e) => e.rank === me.rank);
+  // The viewer's own row is matched by screen name (unique), not rank — ties
+  // repeat a rank, so a rank match would light up the wrong row.
+  const isMyRow = (entry: TriviaLeaderboardEntry) => isSameName(entry.screen_name, screenName);
+  const meInList = entries.some(isMyRow);
   // Podium render order: 2nd, 1st, 3rd — winner in the middle.
   const podiumOrder = [podium[1], podium[0], podium[2]].filter(
     (e): e is TriviaLeaderboardEntry => e !== undefined
   );
   const plinthHeights: Record<number, number> = { 1: 72, 2: 48, 3: 34 };
-
-  const isViewerRank = (rank: number) => me !== null && meInList && rank === me.rank;
 
   return (
     <YStack gap={spacing.lg}>
@@ -254,6 +373,9 @@ function TriviaLeaderboardComponent({
             <Pressable
               key={key}
               onPress={() => setWindow(key)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={label}
               style={({ pressed }) => ({ flex: 1, opacity: pressed && !active ? 0.7 : 1 })}
             >
               <YStack
@@ -276,11 +398,7 @@ function TriviaLeaderboardComponent({
         })}
       </XStack>
 
-      {isLoading ? (
-        <YStack alignItems="center" paddingVertical={spacing.xxxl * 2}>
-          <ActivityIndicator size="large" color={colors.textSecondary} />
-        </YStack>
-      ) : hasError ? (
+      {hasError ? (
         <YStack alignItems="center" gap={spacing.md} paddingVertical={spacing.xxxl * 2}>
           <Trophy size={iconSizes.hero} color={colors.textMuted} opacity={0.5} />
           <Text.Label color="$textMuted">{t('leaderboardLoadFailed')}</Text.Label>
@@ -290,11 +408,13 @@ function TriviaLeaderboardComponent({
             </Text.Label>
           </Pressable>
         </YStack>
+      ) : loadedWindow !== window ? (
+        <LeaderboardSkeleton />
       ) : entries.length === 0 ? (
         <YStack alignItems="center" gap={spacing.md} paddingVertical={spacing.xxxl * 2}>
           <Trophy size={iconSizes.hero} color={colors.textMuted} opacity={0.5} />
           <Text.Label color="$textMuted" textAlign="center">
-            {t('leaderboardEmpty')}
+            {t(window === 'today' ? 'leaderboardEmptyToday' : 'leaderboardEmpty')}
           </Text.Label>
         </YStack>
       ) : (
@@ -340,16 +460,16 @@ function TriviaLeaderboardComponent({
                 }}
               />
               <XStack
-                alignItems="flex-end"
+                alignItems={podiumOrder.length < 3 ? 'center' : 'flex-end'}
                 gap={spacing.md}
                 paddingHorizontal={spacing.lg}
                 paddingTop={spacing.xl}
               >
                 {podiumOrder.map((entry) => (
                   <PodiumColumn
-                    key={entry.rank}
+                    key={entry.screen_name}
                     entry={entry}
-                    isViewer={isViewerRank(entry.rank)}
+                    isViewer={isMyRow(entry)}
                     plinthHeight={plinthHeights[entry.rank] ?? 34}
                     discSize={entry.rank === 1 ? discSize : discSize * 0.82}
                     contrastColor={contrastColor}
@@ -371,7 +491,7 @@ function TriviaLeaderboardComponent({
               paddingVertical={spacing.xs}
             >
               {rest.map((entry, index) => {
-                const isMe = isViewerRank(entry.rank);
+                const isMe = isMyRow(entry);
                 const flag = countryFlagEmoji(entry.country_code);
                 return (
                   <React.Fragment key={`${entry.rank}-${entry.screen_name}`}>
@@ -390,6 +510,10 @@ function TriviaLeaderboardComponent({
                       paddingVertical={spacing.sm}
                       paddingHorizontal={spacing.md}
                       backgroundColor={isMe ? hexToRgba(accent, 0.1) : 'transparent'}
+                      accessible
+                      accessibilityLabel={`#${entry.rank} ${entry.screen_name} ${formatScore(
+                        entry.score
+                      )}${isMe ? ` (${t('leaderboardYou')})` : ''}`}
                     >
                       <View style={{ width: iconSizes.lg, alignItems: 'center' }}>
                         <Text.Label
@@ -412,16 +536,14 @@ function TriviaLeaderboardComponent({
                       </Text.Label>
                       <YStack alignItems="flex-end">
                         <Text.Label color={accent} fontFamily={FONT_FAMILIES.bold}>
-                          {entry.score}
+                          {formatScore(entry.score)}
                         </Text.Label>
-                        {window !== 'today' && (
-                          <Text.Caption
-                            color={colors.textMuted}
-                            fontSize={typography.fontSize.tiny}
-                          >
-                            {t('leaderboardGamesCount', { count: String(entry.games) })}
-                          </Text.Caption>
-                        )}
+                        <Text.Caption
+                          color={colors.textMuted}
+                          fontSize={typography.fontSize.tiny}
+                        >
+                          {t('leaderboardGamesCount', { count: String(entry.games) })}
+                        </Text.Caption>
                       </YStack>
                     </XStack>
                   </React.Fragment>
@@ -456,13 +578,11 @@ function TriviaLeaderboardComponent({
                   </Text.Label>
                   <YStack alignItems="flex-end">
                     <Text.Label color={contrastColor} fontFamily={FONT_FAMILIES.bold}>
-                      {me.score}
+                      {formatScore(me.score)}
                     </Text.Label>
-                    {window !== 'today' && (
-                      <Text.Tiny color={contrastColor} opacity={0.8}>
-                        {t('leaderboardGamesCount', { count: String(me.games) })}
-                      </Text.Tiny>
-                    )}
+                    <Text.Tiny color={contrastColor} opacity={0.8}>
+                      {t('leaderboardGamesCount', { count: String(me.games) })}
+                    </Text.Tiny>
                   </YStack>
                 </XStack>
               </LinearGradient>
