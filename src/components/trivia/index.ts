@@ -6,6 +6,7 @@ export { TriviaGameView } from './TriviaGameView';
 export type { TriviaGridCardType } from './TriviaGridCard';
 export { TriviaGridCard } from './TriviaGridCard';
 export { TriviaIntroModal } from './TriviaIntroModal';
+export { TriviaLeaderboard } from './TriviaLeaderboard';
 export type { TriviaNativeAdViewProps } from './TriviaNativeAdView';
 export { TriviaNativeAdView } from './TriviaNativeAdView';
 export type { TriviaResultsProps } from './TriviaResults';

@@ -31,7 +31,11 @@ import {
   Zap,
 } from '../../../src/components/icons';
 import { XStack, YStack } from '../../../src/components/Stacks';
-import { getTriviaModeBadge, TriviaResults } from '../../../src/components/trivia';
+import {
+  getTriviaModeBadge,
+  TriviaLeaderboard,
+  TriviaResults,
+} from '../../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
 import { DISPLAY_LIMITS } from '../../../src/config/app';
 import { BADGE_DEFINITIONS } from '../../../src/config/badges';
@@ -549,6 +553,7 @@ export default function PerformanceScreen() {
   const [selectedSession, setSelectedSession] = useState<TriviaSessionWithCategory | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
   const [earnedBadgeIds, setEarnedBadgeIds] = useState<Set<string>>(new Set());
+  const [boardReloadToken, setBoardReloadToken] = useState(0);
 
   const loadData = useCallback(
     async (isRefresh = false) => {
@@ -567,6 +572,9 @@ export default function PerformanceScreen() {
         setRecentSessions(sessionsData);
         setTotalSessionsCount(statsData.testsTaken);
         setEarnedBadgeIds(new Set(earnedBadges.map((b) => b.badge_id)));
+        // The leaderboard card fetches its own server data; focus and
+        // pull-to-refresh reload it through this token.
+        setBoardReloadToken((n) => n + 1);
       } catch (error) {
         console.error('Error loading performance data:', error);
       } finally {
@@ -865,6 +873,15 @@ export default function PerformanceScreen() {
                   </ScrollView>
                 </YStack>
               </Pressable>
+            </Animated.View>
+
+            {/* Leaderboard */}
+            <Animated.View
+              entering={FadeIn.delay(150).duration(400).springify()}
+              needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+              style={perfShadowStyles.card}
+            >
+              <TriviaLeaderboard reloadToken={boardReloadToken} />
             </Animated.View>
 
             {/* Accuracy by Category */}

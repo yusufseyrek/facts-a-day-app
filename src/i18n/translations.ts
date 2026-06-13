@@ -1,5 +1,13 @@
 export const translations = {
   de: {
+    leaderboard: 'Bestenliste',
+    leaderboardAllTime: 'Gesamt',
+    leaderboardWeek: 'Diese Woche',
+    leaderboardEmpty: 'Noch keine Ergebnisse. Spiel eine Runde und eröffne die Liste!',
+    leaderboardYou: 'Du',
+    leaderboardClaimCta: 'Sichere dir einen Anzeigenamen für die Bestenliste',
+    leaderboardGamesCount: '%{count} Spiele',
+    leaderboardLoadFailed: 'Bestenliste konnte nicht geladen werden',
     // Onboarding - Welcome
     hereIsWhatYouGet: 'Das erwartet dich jeden Tag',
     chooseYourInterests: 'Wähle deine Interessen',
@@ -576,6 +584,14 @@ export const translations = {
     statsShareTitle: 'Meine Lesestatistiken',
   },
   en: {
+    leaderboard: 'Leaderboard',
+    leaderboardAllTime: 'All Time',
+    leaderboardWeek: 'This Week',
+    leaderboardEmpty: 'No scores yet. Finish a game to start the board!',
+    leaderboardYou: 'You',
+    leaderboardClaimCta: 'Claim a screen name to join the leaderboard',
+    leaderboardGamesCount: '%{count} games',
+    leaderboardLoadFailed: 'Could not load the leaderboard',
     // Onboarding - Welcome
     hereIsWhatYouGet: "Here's what you'll get every day",
     chooseYourInterests: 'Choose Your Interests',
@@ -1142,6 +1158,14 @@ export const translations = {
     statsShareTitle: 'My Reading Stats',
   },
   es: {
+    leaderboard: 'Clasificación',
+    leaderboardAllTime: 'Histórico',
+    leaderboardWeek: 'Esta semana',
+    leaderboardEmpty: 'Aún no hay puntuaciones. ¡Termina una partida para estrenar la tabla!',
+    leaderboardYou: 'Tú',
+    leaderboardClaimCta: 'Reclama un nombre de usuario para entrar en la clasificación',
+    leaderboardGamesCount: '%{count} partidas',
+    leaderboardLoadFailed: 'No se pudo cargar la clasificación',
     // Onboarding - Welcome
     hereIsWhatYouGet: 'Esto es lo que recibirás cada día',
     chooseYourInterests: 'Elige tus intereses',
@@ -1712,6 +1736,14 @@ export const translations = {
     statsShareTitle: 'Mis estadísticas de lectura',
   },
   fr: {
+    leaderboard: 'Classement',
+    leaderboardAllTime: 'Général',
+    leaderboardWeek: 'Cette semaine',
+    leaderboardEmpty: 'Pas encore de scores. Terminez une partie pour lancer le classement !',
+    leaderboardYou: 'Vous',
+    leaderboardClaimCta: 'Choisissez un pseudo pour rejoindre le classement',
+    leaderboardGamesCount: '%{count} parties',
+    leaderboardLoadFailed: 'Impossible de charger le classement',
     // Onboarding - Welcome
     hereIsWhatYouGet: 'Voici ce que vous recevrez chaque jour',
     chooseYourInterests: "Choisissez vos centres d'intérêt",
@@ -2285,6 +2317,14 @@ export const translations = {
     statsShareTitle: 'Mes statistiques de lecture',
   },
   ja: {
+    leaderboard: 'ランキング',
+    leaderboardAllTime: '総合',
+    leaderboardWeek: '今週',
+    leaderboardEmpty: 'まだスコアがありません。ゲームをプレイして一番乗りしよう！',
+    leaderboardYou: 'あなた',
+    leaderboardClaimCta: 'スクリーンネームを登録してランキングに参加しよう',
+    leaderboardGamesCount: '%{count}回',
+    leaderboardLoadFailed: 'ランキングを読み込めませんでした',
     // Onboarding - Welcome
     hereIsWhatYouGet: '毎日届く内容はこちら',
     chooseYourInterests: '興味を選ぼう',
@@ -2850,6 +2890,14 @@ export const translations = {
     statsShareTitle: 'わたしの読書統計',
   },
   ko: {
+    leaderboard: '리더보드',
+    leaderboardAllTime: '전체 기간',
+    leaderboardWeek: '이번 주',
+    leaderboardEmpty: '아직 점수가 없어요. 게임을 완료하고 첫 주자가 되어 보세요!',
+    leaderboardYou: '나',
+    leaderboardClaimCta: '닉네임을 만들고 리더보드에 참여하세요',
+    leaderboardGamesCount: '%{count}판',
+    leaderboardLoadFailed: '리더보드를 불러오지 못했습니다',
     // Onboarding - Welcome
     hereIsWhatYouGet: '매일 이런 내용을 받게 됩니다',
     chooseYourInterests: '관심사 선택하기',
@@ -3414,6 +3462,14 @@ export const translations = {
     statsShareTitle: '내 읽기 통계',
   },
   tr: {
+    leaderboard: 'Liderlik Tablosu',
+    leaderboardAllTime: 'Tüm Zamanlar',
+    leaderboardWeek: 'Bu Hafta',
+    leaderboardEmpty: 'Henüz skor yok. Bir oyun bitir, tabloyu sen aç!',
+    leaderboardYou: 'Sen',
+    leaderboardClaimCta: 'Liderlik tablosuna katılmak için bir kullanıcı adı al',
+    leaderboardGamesCount: '%{count} oyun',
+    leaderboardLoadFailed: 'Liderlik tablosu yüklenemedi',
     // Onboarding - Welcome
     hereIsWhatYouGet: 'Her gün seni böyle bilgiler bekliyor',
     chooseYourInterests: 'İlgi Alanlarını Seç',
@@ -3980,6 +4036,14 @@ export const translations = {
     statsShareTitle: 'Okuma İstatistiklerim',
   },
   zh: {
+    leaderboard: '排行榜',
+    leaderboardAllTime: '总榜',
+    leaderboardWeek: '本周',
+    leaderboardEmpty: '还没有成绩。完成一局游戏，抢占榜首吧！',
+    leaderboardYou: '你',
+    leaderboardClaimCta: '领取一个昵称，加入排行榜',
+    leaderboardGamesCount: '%{count} 局',
+    leaderboardLoadFailed: '无法加载排行榜',
     // Onboarding - Welcome
     hereIsWhatYouGet: '这是你每天会收到的内容',
     chooseYourInterests: '选择你的兴趣',
