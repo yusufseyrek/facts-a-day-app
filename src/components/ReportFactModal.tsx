@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { TextInput } from 'react-native';
 
 import { useTranslation } from '../i18n';
 import { hexColors, useTheme } from '../theme';
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { useResponsive } from '../utils/useResponsive';
 
-import { CloseButton } from './CloseButton';
 import { DialogButton, DialogShell } from './DialogShell';
 import { XStack, YStack } from './Stacks';
 import { Text } from './Typography';
@@ -26,10 +25,9 @@ export function ReportFactModal({
 }: ReportFactModalProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { spacing, radius, typography } = useResponsive();
+  const { spacing, radius, typography, maxModalWidth } = useResponsive();
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
-  const [inputWidth, setInputWidth] = useState<number | undefined>(undefined);
 
   const handleClose = () => {
     setFeedback('');
@@ -74,9 +72,9 @@ export function ReportFactModal({
       alignSelf: 'stretch' as const,
       fontSize: typography.fontSize.body,
       color: hexColors[theme].text,
-      width: inputWidth ?? ('100%' as const),
+      width: '100%' as const,
     }),
-    [spacing, radius, typography, theme, inputWidth]
+    [spacing, radius, typography, theme]
   );
 
   return (
@@ -86,7 +84,9 @@ export function ReportFactModal({
       visible={visible}
       onClose={handleClose}
       keyboardAware
-      maxWidth={500}
+      title={t('reportFact')}
+      showClose
+      maxWidth={maxModalWidth}
       footer={
         <>
           <DialogButton
@@ -109,40 +109,25 @@ export function ReportFactModal({
         paddingBottom={spacing.md}
         gap={spacing.md}
       >
-        <XStack justifyContent="space-between" alignItems="center" marginBottom={spacing.sm}>
-          <Text.Title>{t('reportFact')}</Text.Title>
-          <CloseButton onPress={handleClose} label={t('cancel')} />
-        </XStack>
-
         <Text.Body color="$text" fontSize={typography.fontSize.caption}>
           {t('whatIsWrong')}
         </Text.Body>
 
-        <View
-          style={{ width: '100%', flexShrink: 0 }}
-          onLayout={(e) => {
-            const { width } = e.nativeEvent.layout;
-            if (width > 0) {
-              setInputWidth(width);
-            }
+        <TextInput
+          maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER}
+          value={feedback}
+          onChangeText={(text) => {
+            setFeedback(text);
+            setError('');
           }}
-        >
-          <TextInput
-            maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER}
-            value={feedback}
-            onChangeText={(text) => {
-              setFeedback(text);
-              setError('');
-            }}
-            placeholder={t('reportPlaceholder') || 'Enter your feedback...'}
-            placeholderTextColor={hexColors[theme].textMuted}
-            multiline
-            maxLength={1000}
-            editable={!isSubmitting}
-            autoFocus
-            style={textInputStyle}
-          />
-        </View>
+          placeholder={t('reportPlaceholder') || 'Enter your feedback...'}
+          placeholderTextColor={hexColors[theme].textMuted}
+          multiline
+          maxLength={1000}
+          editable={!isSubmitting}
+          autoFocus
+          style={textInputStyle}
+        />
 
         <XStack justifyContent="space-between" alignItems="center">
           {error ? (
