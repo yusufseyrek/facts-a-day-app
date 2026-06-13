@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { infiniteQueryOptions, useInfiniteQuery } from '@tanstack/react-query';
 
 import { HOME_FEED } from '../config/app';
 import { getFactsFeed } from '../services/api';
 import { mapApiFactToRelations } from '../services/database';
+import { precacheFeedImages } from '../services/images';
 
 import { factKeys } from './queryKeys';
 
@@ -57,6 +58,13 @@ export function useHomeFeedData(locale: string): HomeFeedData {
     () => (data?.pages ?? []).flatMap((p) => p.facts).map(mapApiFactToRelations),
     [data]
   );
+
+  // Pre-download the feed's images to disk so they still render once offline
+  // (resolveFactImageUri falls back to that cache). Best-effort + guarded; cheap
+  // on repeat because already-cached images are skipped.
+  useEffect(() => {
+    if (facts.length > 0) precacheFeedImages(facts).catch(() => {});
+  }, [facts]);
 
   return {
     facts,

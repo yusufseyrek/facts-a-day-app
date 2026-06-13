@@ -16,7 +16,7 @@
 
 import * as FileSystem from 'expo-file-system/legacy';
 
-import { IMAGE_CACHE, IMAGE_DOWNLOAD_RETRY } from '../config/images';
+import { IMAGE_CACHE, IMAGE_DOWNLOAD_RETRY, PRECACHE } from '../config/images';
 
 import { getIsConnected } from './network';
 
@@ -564,4 +564,40 @@ export async function resolveFactImageUri(
   // Offline: fall back to local disk cache
   const localUri = await getCachedFactImage(factId);
   return localUri;
+}
+
+/**
+ * Pre-download a feed's images into the on-disk cache so they still render once
+ * the device is offline (resolveFactImageUri already falls back to that cache).
+ * Best-effort: online-only, bounded concurrency, capped count, errors ignored.
+ * downloadImage no-ops on already-cached images, so repeat calls stay cheap. The
+ * module-level guard coalesces the concurrent calls the feed's several hook
+ * consumers would otherwise fire.
+ */
+let precacheInFlight = false;
+export async function precacheFeedImages(
+  items: { id: number; image_url?: string | null }[],
+  limit: number = PRECACHE.BACKGROUND_BATCH_SIZE
+): Promise<void> {
+  if (precacheInFlight || !getIsConnected()) return;
+  const targets = items
+    .filter((i): i is { id: number; image_url: string } => !!i.image_url)
+    .slice(0, limit);
+  if (targets.length === 0) return;
+
+  precacheInFlight = true;
+  try {
+    let next = 0;
+    const worker = async () => {
+      while (next < targets.length) {
+        const t = targets[next++];
+        await downloadImage(t.image_url, t.id).catch(() => null);
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(PRECACHE.CONCURRENCY, targets.length) }, worker)
+    );
+  } finally {
+    precacheInFlight = false;
+  }
 }

@@ -441,6 +441,7 @@
       ]
     },
     "plugins": [
+      "expo-background-task",
       "expo-notifications",
       [
         "expo-localization",

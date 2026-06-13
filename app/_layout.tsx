@@ -58,6 +58,8 @@ import {
 import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
 import { initAnalytics } from '../src/services/analytics';
+import { API_BASE_URL } from '../src/services/api';
+import { registerBackgroundFeedFetch } from '../src/services/backgroundFeedFetch';
 import * as contentRefresh from '../src/services/contentRefresh';
 import * as database from '../src/services/database';
 import { pruneAudioCacheIfOverLimit } from '../src/services/factAudio';
@@ -545,6 +547,9 @@ export default function RootLayout() {
       ensureImagesDirExists().catch(() => {});
       notificationService.cleanupOldNotificationImages().catch(() => {});
       pruneAudioCacheIfOverLimit().catch(() => {});
+      // Register the OS background feed refresh so an offline open has fresh,
+      // image-cached content (no-op until the next native build adds the plugin).
+      registerBackgroundFeedFetch().catch(() => {});
 
       const dbPromise = Promise.race([
         database.openDatabase(),
@@ -705,6 +710,11 @@ export default function RootLayout() {
                     persistOptions={{
                       persister: asyncStoragePersister,
                       maxAge: persistMaxAge,
+                      // Tie the persisted snapshot to the backend it came from:
+                      // flipping API_BASE_URL (prod <-> localhost testing)
+                      // discards the cache at hydration instead of serving the
+                      // other environment's data for up to maxAge.
+                      buster: API_BASE_URL,
                       // Only persist fact/home content — the data we want to
                       // render instantly on cold start. Skip everything else
                       // (stats, etc.) and never persist failed queries.
