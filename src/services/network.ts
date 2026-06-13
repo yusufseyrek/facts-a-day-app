@@ -41,13 +41,6 @@ export function startNetworkMonitoring() {
   });
 }
 
-export function stopNetworkMonitoring() {
-  if (_subscription) {
-    _subscription.remove();
-    _subscription = null;
-  }
-}
-
 export function getIsConnected(): boolean {
   return _isConnected;
 }

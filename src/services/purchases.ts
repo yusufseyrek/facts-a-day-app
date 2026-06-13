@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { endConnection, hasActiveSubscriptions, initConnection } from 'expo-iap';
+import { hasActiveSubscriptions, initConnection } from 'expo-iap';
 
 import { SUBSCRIPTION } from '../config/app';
 
@@ -26,17 +26,6 @@ export const initIAPConnection = async (): Promise<void> => {
     } else {
       console.error('Failed to initialize IAP connection:', error);
     }
-  }
-};
-
-/**
- * End the IAP connection. Call on app unmount.
- */
-export const endIAPConnection = async (): Promise<void> => {
-  try {
-    await endConnection();
-  } catch (error) {
-    console.error('Failed to end IAP connection:', error);
   }
 };
 

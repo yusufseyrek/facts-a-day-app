@@ -250,16 +250,6 @@ export const Clock4 = icon([
   [Polyline, { points: '12 6 12 12 16 14' }],
 ]);
 
-export const Compass = icon([
-  [
-    Path,
-    {
-      d: 'm16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z',
-    },
-  ],
-  [Circle, { cx: '12', cy: '12', r: '10' }],
-]);
-
 export const Cpu = icon([
   [Path, { d: 'M12 20v2' }],
   [Path, { d: 'M12 2v2' }],

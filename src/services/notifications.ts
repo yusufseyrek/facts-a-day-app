@@ -267,31 +267,6 @@ export async function buildNotificationContent(
 // LEGACY IMAGE CACHE CLEANUP
 // ============================================================================
 
-export async function getLocalNotificationImagePath(factId: number): Promise<string | null> {
-  try {
-    for (const ext of ['jpg', 'webp', 'png']) {
-      const uri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.${ext}`;
-      const info = await FileSystem.getInfoAsync(uri);
-      if (info.exists) return uri;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-export async function deleteNotificationImage(factId: number): Promise<void> {
-  try {
-    for (const ext of ['jpg', 'jpeg', 'webp', 'png', 'gif']) {
-      const uri = `${NOTIFICATION_IMAGES_DIR}fact-${factId}.${ext}`;
-      const info = await FileSystem.getInfoAsync(uri);
-      if (info.exists) await FileSystem.deleteAsync(uri, { idempotent: true });
-    }
-  } catch {
-    // Ignore deletion errors
-  }
-}
-
 /**
  * Purge the legacy notification image cache. The app no longer schedules local
  * notifications, so every preloaded image is obsolete — delete the whole dir.

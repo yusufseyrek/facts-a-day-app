@@ -25,9 +25,6 @@ import {
 // Mock api and database modules
 jest.mock('../../services/api');
 jest.mock('../../services/database');
-jest.mock('../../services/questions', () => ({
-  extractQuestions: jest.fn(() => []),
-}));
 
 const apiMock = api as jest.Mocked<typeof api>;
 const dbMock = db as jest.Mocked<typeof db>;

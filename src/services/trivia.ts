@@ -114,11 +114,6 @@ export interface CategoryWithProgress extends Category {
   isComplete: boolean;
 }
 
-export interface TriviaSessionResult {
-  totalQuestions: number;
-  correctAnswers: number;
-  wrongQuestionIds: number[];
-}
 
 // ====== DAILY TRIVIA ======
 
@@ -160,7 +155,7 @@ export async function getDailyTriviaQuestionsCount(language: string): Promise<nu
 /**
  * Get today's daily trivia progress
  */
-export async function getTodayProgress(): Promise<DailyTriviaProgress | null> {
+async function getTodayProgress(): Promise<DailyTriviaProgress | null> {
   const today = getLocalDateString();
   return database.getDailyTriviaProgress(today);
 }
@@ -182,13 +177,6 @@ export async function saveDailyProgress(
 ): Promise<void> {
   const today = getLocalDateString();
   await database.saveDailyTriviaProgress(today, totalQuestions, correctAnswers);
-}
-
-/**
- * Get the current trivia streak (consecutive days with any completed trivia session)
- */
-export async function getDailyStreak(): Promise<number> {
-  return database.getAnyTriviaStreak();
 }
 
 // ====== MIXED TRIVIA ======
@@ -295,7 +283,7 @@ export async function getOverallStats(): Promise<TriviaStats> {
 /**
  * Parse wrong_answers from JSON string to array
  */
-export function parseWrongAnswers(wrongAnswersJson: string | null): string[] {
+function parseWrongAnswers(wrongAnswersJson: string | null): string[] {
   if (!wrongAnswersJson) return [];
   try {
     return JSON.parse(wrongAnswersJson);
@@ -581,7 +569,7 @@ async function getHintUsage(): Promise<HintUsage> {
 /**
  * Get the daily hint limit based on premium status
  */
-export function getHintLimit(): number {
+function getHintLimit(): number {
   return getIsPremium() ? HINT_LIMITS.PREMIUM : HINT_LIMITS.FREE;
 }
 

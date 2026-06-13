@@ -26,7 +26,7 @@ const THRESHOLDS = {
 export type BadgeCategory = 'reading' | 'quiz';
 export type BadgeStar = 'star1' | 'star2' | 'star3';
 
-export interface BadgeStarDefinition {
+interface BadgeStarDefinition {
   star: BadgeStar;
   threshold: number;
 }

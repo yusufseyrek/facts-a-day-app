@@ -1,4 +1,3 @@
-export { BottomSheetShell } from './BottomSheetShell';
 export { Button } from './Button';
 export { CategoryBadge } from './CategoryBadge';
 export type { CategoryCardProps } from './CategoryCard';
@@ -39,4 +38,4 @@ export {
 } from './ScreenLayout';
 
 // Trivia components
-export { CategoryQuestCard, DailyChallengeCard, TriviaStatsHero } from './trivia';
+export { TriviaStatsHero } from './trivia';

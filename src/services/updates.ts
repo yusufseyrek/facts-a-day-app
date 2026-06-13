@@ -432,47 +432,10 @@ export async function performUpdateCycle(autoReload: boolean = false): Promise<{
 }
 
 /**
- * Add update state change listener
- * Useful for tracking update download progress or errors
- */
-export function addUpdateStateChangeListener(
-  listener: (event: Updates.UpdatesNativeStateChangeEvent) => void
-): { remove: () => void } {
-  return Updates.addUpdatesStateChangeListener(listener);
-}
-
-/**
- * Get detailed current update info including manifest data
- * Useful for verifying which update is currently running
- */
-export function getDetailedUpdateInfo(): {
-  updateId: string | null;
-  channel: string | null;
-  runtimeVersion: string;
-  isEmbedded: boolean;
-  manifestId: string | null;
-  manifestCreatedAt: string | null;
-  isEnabled: boolean;
-  updateUrl: string | null;
-} {
-  const manifest = (Updates as any).manifest;
-  return {
-    updateId: Updates.updateId,
-    channel: Updates.channel,
-    runtimeVersion: getRuntimeVersion(),
-    isEmbedded: Updates.isEmbeddedLaunch || !Updates.updateId,
-    manifestId: manifest?.id || null,
-    manifestCreatedAt: manifest?.createdAt || null,
-    isEnabled: Updates.isEnabled,
-    updateUrl: Constants.expoConfig?.updates?.url || null,
-  };
-}
-
-/**
  * Read native log entries from expo-updates
  * Useful for debugging update issues in release builds
  */
-export async function getNativeLogEntries(
+async function getNativeLogEntries(
   maxAge: number = 3600000
 ): Promise<Updates.UpdatesLogEntry[]> {
   if (__DEV__) {

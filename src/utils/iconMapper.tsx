@@ -132,7 +132,3 @@ export function getLucideIcon(
   return <Icon size={size} color={color} />;
 }
 
-/**
- * Type-safe Lucide icon names
- */
-export type LucideIconName = keyof typeof ICON_MAP;

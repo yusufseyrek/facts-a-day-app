@@ -5,7 +5,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getAnalytics,
   logEvent as analyticsLogEvent,
-  setUserId as setAnalyticsUserId,
   setUserProperty as analyticsSetUserProperty,
 } from '@react-native-firebase/analytics';
 import { getApp } from '@react-native-firebase/app';
@@ -21,14 +20,12 @@ const { ReactNativeFirebaseAppCheckProvider } = require('@react-native-firebase/
   ReactNativeFirebaseAppCheckProvider: any;
 };
 import {
-  crash,
   getCrashlytics,
   log,
   recordError as crashlyticsRecordError,
   setAttribute,
   setAttributes,
   setCrashlyticsCollectionEnabled,
-  setUserId as setCrashlyticsUserId,
 } from '@react-native-firebase/crashlytics';
 import * as Device from 'expo-device';
 
@@ -40,7 +37,6 @@ import { APP_CHECK } from './app';
 // iOS builds get the real token, Android builds get undefined
 import { MACOS_DEBUG_TOKEN } from './appCheckConfig';
 import {
-  getAppCheckReady,
   isAppCheckInitialized,
   resetAppCheckReady,
   resolveAppCheckReady,
@@ -509,22 +505,6 @@ export function enableCrashlyticsConsoleLogging() {
 }
 
 /**
- * Clear user context (e.g., on logout)
- * Disabled in dev mode since analytics/crashlytics collection is disabled
- */
-export async function clearFirebaseUser() {
-  if (__DEV__) {
-    return;
-  }
-  try {
-    await setCrashlyticsUserId(crashlyticsInstance, '');
-    await setAnalyticsUserId(analyticsInstance, null);
-  } catch (error) {
-    console.error('Failed to clear Firebase user:', error);
-  }
-}
-
-/**
  * Add custom attributes to crash reports (Crashlytics)
  * Disabled in dev mode since crashlytics collection is disabled
  */
@@ -555,9 +535,6 @@ export async function setAnalyticsUserProperty(name: string, value: string | nul
   }
 }
 
-// Legacy alias for backwards compatibility
-export const setFirebaseAttribute = setCrashlyticsAttribute;
-
 /**
  * Record an error to Crashlytics
  * Use this for caught errors that you still want to track
@@ -576,22 +553,6 @@ export function recordError(error: Error, context?: Record<string, string>) {
     crashlyticsRecordError(crashlyticsInstance, error);
   } catch (e) {
     console.error('Failed to record error to Crashlytics:', e);
-  }
-}
-
-/**
- * Log a message to Crashlytics (appears in crash reports)
- */
-export function logMessage(message: string) {
-  if (__DEV__) {
-    console.log('Crashlytics log:', message);
-    return;
-  }
-
-  try {
-    log(crashlyticsInstance, message);
-  } catch (error) {
-    console.error('Failed to log message to Crashlytics:', error);
   }
 }
 
@@ -629,21 +590,6 @@ export async function logScreenView(screenName: string, screenClass?: string) {
   } catch (error) {
     console.error('Failed to log screen view:', error);
   }
-}
-
-/**
- * Test Crashlytics by logging an error and then forcing a crash
- * This works in both dev and release modes for testing purposes
- */
-export function testCrashlytics() {
-  // Log a message that will appear in the crash report
-  log(crashlyticsInstance, 'Test crash initiated from settings');
-
-  // Record a non-fatal error first
-  crashlyticsRecordError(crashlyticsInstance, new Error('Test error before crash'));
-
-  // Force crash the app (this will terminate the app)
-  crash(crashlyticsInstance);
 }
 
 /**
@@ -747,30 +693,6 @@ function startBackgroundTokenRetry(providerName: string) {
 }
 
 /**
- * Get the current App Check token (for debugging)
- * This can be used to verify App Check is working correctly
- * Uses the modular API (v22+)
- */
-export async function getAppCheckToken() {
-  // Wait for App Check initialization to complete
-  await getAppCheckReady();
-
-  if (!isAppCheckInitialized()) {
-    console.warn('App Check not initialized');
-    return null;
-  }
-
-  try {
-    const appCheckInstance = getAppCheck(getApp());
-    const { token } = await getAppCheckTokenFn(appCheckInstance, true);
-    return token;
-  } catch (error) {
-    console.error('Failed to get App Check token:', error);
-    return null;
-  }
-}
-
-/**
  * Retry App Check initialization (called from blocking screen retry button)
  * Resets state and re-runs the full init flow.
  * @returns true if initialization succeeded
@@ -785,8 +707,3 @@ export async function retryAppCheckInit(): Promise<boolean> {
   return success;
 }
 
-// Re-export shared App Check state for consumers that import from this module
-export { getAppCheckReady, isAppCheckInitialized } from './appCheckState';
-
-// Export instances for direct access if needed
-export { analyticsInstance as analytics, crashlyticsInstance as crashlytics };

@@ -287,13 +287,6 @@ export const completeConsentFlow = async (): Promise<{
 };
 
 /**
- * Check if SDK is already initialized
- */
-export const isAdsSDKInitialized = (): boolean => {
-  return isSDKInitialized;
-};
-
-/**
  * Open the Ad Inspector debug menu for testing ads
  * Only works in development builds
  */

@@ -1,9 +1,3 @@
-export const homeKeys = {
-  all: ['home'] as const,
-  dailyFeed: (locale: string) => ['home', 'dailyFeed', locale] as const,
-  keepReading: (locale: string) => ['home', 'keepReading', locale] as const,
-};
-
 /**
  * Queries derived from LOCAL state (SQLite) — reading streak, stats, etc.
  * Deliberately NOT under a disk-persisted root: the source of truth is the

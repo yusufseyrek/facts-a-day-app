@@ -18,7 +18,6 @@ import {
   isTabletDevice,
   media as responsiveMedia,
   radius as responsiveRadius,
-  RESPONSIVE_CONSTANTS,
   spacing as responsiveSpacing,
   typography as responsiveTypography,
 } from './responsive';
@@ -105,6 +104,3 @@ export const useResponsive = (): ResponsiveValues => {
     };
   }, [width, height]);
 };
-
-// Re-export constants
-export { RESPONSIVE_CONSTANTS };

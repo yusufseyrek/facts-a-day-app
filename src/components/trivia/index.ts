@@ -1,5 +1,3 @@
-export { CategoryQuestCard } from './CategoryQuestCard';
-export { DailyChallengeCard } from './DailyChallengeCard';
 export { TriviaExitModal } from './TriviaExitModal';
 export type { TriviaGameViewProps } from './TriviaGameView';
 export { TriviaGameView } from './TriviaGameView';

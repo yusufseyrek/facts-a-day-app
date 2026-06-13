@@ -3,16 +3,6 @@
  * These settings are optimized for smooth scrolling with proper virtualization
  */
 
-import { config } from '../utils/responsive';
-
-/**
- * Card aspect ratios - imported from images.ts for single source of truth
- */
-const CARD_ASPECT_RATIOS = {
-  phone: config.phone.cardAspectRatio,
-  tablet: config.tablet.cardAspectRatio,
-} as const;
-
 /**
  * FlashList-specific settings optimized for lists.
  * FlashList v2 auto-measures items, so no estimatedItemSize / overrideItemLayout size is needed.
@@ -40,22 +30,3 @@ export const SCROLL_TO_TOP_SETTINGS = {
   preRenderItemCount: 4,
 } as const;
 
-/** Border width used by ImageFactCard's cardWrapperStyle */
-const CARD_BORDER_WIDTH = 1;
-
-/**
- * Calculate ImageFactCard height based on screen width.
- * Must match ImageFactCard's actual rendered height including:
- * - Image height (width * aspectRatio)
- * - Border (1px top + 1px bottom = 2px)
- * - Margin bottom (spacing.md)
- *
- * @param width Screen width for calculating image card height
- * @param isTablet Whether tablet layout is being used
- * @param margin The actual spacing.md value from useResponsive()
- */
-export const getImageCardHeight = (width: number, isTablet: boolean, margin: number): number => {
-  const aspectRatio = isTablet ? CARD_ASPECT_RATIOS.tablet : CARD_ASPECT_RATIOS.phone;
-  const borderTotal = CARD_BORDER_WIDTH * 2; // top + bottom
-  return width * aspectRatio + borderTotal + margin;
-};

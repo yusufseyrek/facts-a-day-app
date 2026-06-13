@@ -265,14 +265,3 @@ export const PAYWALL_PROMPT = {
   DELAY_MS: 1500,
 } as const;
 
-/**
- * API settings for fetching data
- */
-export const API_SETTINGS = {
-  /** Batch size for fetching facts from the server */
-  FACTS_BATCH_SIZE: 1000,
-  /** Initial batch size for onboarding (latest facts, enough for home screen) */
-  INITIAL_BATCH_SIZE: 500,
-  /** Number of concurrent requests for remaining batches */
-  BATCH_CONCURRENCY: 3,
-} as const;

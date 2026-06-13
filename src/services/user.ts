@@ -136,7 +136,7 @@ export function __resetCountryRefresh(): void {
 }
 
 /** Rename, keeping the same identity (devices/comments/reports follow). */
-export async function renameScreenName(screenName: string): Promise<UserIdentity> {
+async function renameScreenName(screenName: string): Promise<UserIdentity> {
   const identity = await getIdentity();
   if (!identity) throw new Error('no identity to rename');
 
