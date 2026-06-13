@@ -82,7 +82,7 @@ function getLocalDateString(date: Date = new Date()): string {
 }
 
 // Re-export TIME_PER_QUESTION for backwards compatibility
-export { TIME_PER_QUESTION } from '../config/trivia';
+export { MIN_SECONDS_PER_QUESTION, TIME_PER_QUESTION } from '../config/trivia';
 
 // Calculate estimated time for a quiz in minutes
 export function getEstimatedTimeMinutes(questionCount: number): number {

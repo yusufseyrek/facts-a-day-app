@@ -28,3 +28,12 @@ export const TIME_PER_QUESTION = {
   /** Average time used for estimation */
   AVERAGE: 45,
 } as const;
+
+/**
+ * Mirror of the backend leaderboard plausibility floor
+ * (MIN_ELAPSED_PER_QUESTION_MS in backend routes/triviaResults.ts: 1500ms). A
+ * round averaging under this per question is rejected by the server and never
+ * ranked. Kept here so the results screen can warn the player up front instead
+ * of relying on the (fire-and-forget) submission outcome.
+ */
+export const MIN_SECONDS_PER_QUESTION = 1.5;

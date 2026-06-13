@@ -33,7 +33,7 @@ import {
 } from '../../src/services/analytics';
 import { onTriviaCompleted, scheduleSatisfactionPrompt } from '../../src/services/appReview';
 import * as triviaService from '../../src/services/trivia';
-import { TIME_PER_QUESTION } from '../../src/services/trivia';
+import { MIN_SECONDS_PER_QUESTION, TIME_PER_QUESTION } from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
 
 import type { TriviaMode } from '../../src/services/analytics';
@@ -126,6 +126,13 @@ export default function TriviaGameScreen() {
   // Timer state
   const [timeRemaining, setTimeRemaining] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Wall-clock elapsed accounting. The countdown above drives the on-screen
+  // timer, but it loses sub-second time on every question advance (the effect
+  // re-runs and restarts the interval with a fresh 1s phase), so a fast game
+  // records ~0s and the server rejects it as implausible. We sum active
+  // wall-clock spans instead — paused during ads, exactly like the countdown.
+  const activePlayStartRef = useRef<number | null>(null);
+  const activeElapsedMsRef = useRef(0);
 
   // Animation values
   const progressWidth = useSharedValue(0);
@@ -223,6 +230,10 @@ export default function TriviaGameScreen() {
       return;
     }
 
+    // An active play span begins now (first question, a question advance, or
+    // resuming after an ad). The teardown below banks it into the accumulator.
+    activePlayStartRef.current = Date.now();
+
     timerRef.current = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
@@ -241,6 +252,11 @@ export default function TriviaGameScreen() {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      // Bank the span that just ended (advance, ad, finish, or unmount).
+      if (activePlayStartRef.current != null) {
+        activeElapsedMsRef.current += Date.now() - activePlayStartRef.current;
+        activePlayStartRef.current = null;
+      }
     };
   }, [
     loading,
@@ -249,6 +265,14 @@ export default function TriviaGameScreen() {
     showingRewardedAd,
     showingNativeAd,
   ]);
+
+  /** Real seconds of active play so far (banked spans + the live one). Used
+   * for both the saved result and the on-screen results, so they agree. */
+  const getElapsedSeconds = useCallback(() => {
+    const live =
+      activePlayStartRef.current != null ? Date.now() - activePlayStartRef.current : 0;
+    return Math.round((activeElapsedMsRef.current + live) / 1000);
+  }, []);
 
   // Cleanup ad nav lock timer on unmount
   useEffect(() => {
@@ -291,6 +315,11 @@ export default function TriviaGameScreen() {
       // Calculate total time based on question count (using average time per question)
       const totalTime = questions.length * TIME_PER_QUESTION.AVERAGE;
       setTimeRemaining(totalTime);
+
+      // Fresh game: clear any banked elapsed (the timer effect starts a new
+      // span once loading flips false).
+      activeElapsedMsRef.current = 0;
+      activePlayStartRef.current = null;
 
       setGameState((prev) => ({
         ...prev,
@@ -629,8 +658,9 @@ export default function TriviaGameScreen() {
       }
     }
 
-    // Calculate elapsed time
-    const elapsedTime = gameState.totalTime - timeRemaining;
+    // Real seconds of active play (see getElapsedSeconds). The countdown is
+    // only for the on-screen timer; it loses time and would record ~0s here.
+    const elapsedTime = getElapsedSeconds();
 
     try {
       // Save session result first to get the session ID
@@ -757,8 +787,8 @@ export default function TriviaGameScreen() {
       }
     }
 
-    // Calculate elapsed time
-    const elapsedTime = gameState.totalTime - timeRemaining;
+    // Real seconds of active play — matches the value saved in finishQuiz.
+    const elapsedTime = getElapsedSeconds();
 
     return { correct, wrong, unanswered, bestStreak, elapsedTime };
   };
@@ -799,6 +829,11 @@ export default function TriviaGameScreen() {
   // Results view
   if (gameState.isFinished) {
     const results = calculateResults();
+    // Same rule the server enforces: an average under MIN_SECONDS_PER_QUESTION
+    // won't be ranked, so warn the player here (the submission is
+    // fire-and-forget and can't surface its own outcome).
+    const tooFastForLeaderboard =
+      results.elapsedTime < gameState.questions.length * MIN_SECONDS_PER_QUESTION;
 
     return (
       <TriviaResults
@@ -814,6 +849,7 @@ export default function TriviaGameScreen() {
         onClose={handleClose}
         isDark={isDark}
         t={t}
+        tooFastForLeaderboard={tooFastForLeaderboard}
         triviaModeBadge={getTriviaModeBadge({
           mode: params.type || 'mixed',
           categoryName: params.categoryName,

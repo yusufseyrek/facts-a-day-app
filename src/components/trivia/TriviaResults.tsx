@@ -23,7 +23,7 @@ import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { BannerAd } from '../ads';
 import { GlassSurface } from '../GlassSurface';
-import { Calendar, Check, ChevronLeft, ChevronRight, Flame, Star, Timer, X } from '../icons';
+import { Calendar, Check, ChevronLeft, ChevronRight, Flame, Star, Timer, X, Zap } from '../icons';
 import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -63,6 +63,12 @@ export interface TriviaResultsProps {
   unavailableQuestionIds?: number[];
   // Hide time and streak stat cards (e.g. for quick quiz)
   hideTimeAndStreak?: boolean;
+  /**
+   * Live game only: the round was finished faster than the leaderboard's
+   * plausibility floor, so the server won't rank it. Shows an inline notice.
+   * Left unset for history/review (those aren't fresh submissions).
+   */
+  tooFastForLeaderboard?: boolean;
   /**
    * Rendered below a visible native stack header (history/performance keep
    * their header and retitle it for results). Skips the self-managed status
@@ -437,6 +443,7 @@ export function TriviaResults({
   unavailableQuestionIds = [],
   hideTimeAndStreak = false,
   underNavigationHeader = false,
+  tooFastForLeaderboard = false,
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -801,6 +808,47 @@ export function TriviaResults({
                 </XStack>
               </YStack>
             </Animated.View>
+
+            {/* Too-fast notice — the server won't rank a round finished under
+                the plausibility floor, so tell the player it didn't count
+                (their local stats still saved). */}
+            {tooFastForLeaderboard && (
+              <Animated.View entering={FadeInDown.delay(50).duration(400)}>
+                <XStack
+                  marginHorizontal={spacing.xl}
+                  marginTop={spacing.md}
+                  padding={spacing.md}
+                  gap={spacing.sm}
+                  alignItems="center"
+                  borderRadius={radius.lg}
+                  borderWidth={1}
+                  backgroundColor={hexToRgba(accentColor, isDark ? 0.15 : 0.1)}
+                  borderColor={hexToRgba(accentColor, isDark ? 0.4 : 0.25)}
+                >
+                  <View
+                    style={{
+                      width: statsIconSize * 0.7,
+                      height: statsIconSize * 0.7,
+                      borderRadius: (statsIconSize * 0.7) / 2,
+                      backgroundColor: hexToRgba(accentColor, isDark ? 0.22 : 0.16),
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Zap size={iconSizes.md} color={accentColor} />
+                  </View>
+                  <YStack flex={1} gap={2}>
+                    <Text.Label fontFamily={FONT_FAMILIES.bold} color={textColor}>
+                      {t('leaderboardTooFastTitle') || 'Not added to the leaderboard'}
+                    </Text.Label>
+                    <Text.Caption color={secondaryTextColor}>
+                      {t('leaderboardTooFastBody') ||
+                        'This round was finished too quickly to count toward rankings. Your score and streak are still saved.'}
+                    </Text.Caption>
+                  </YStack>
+                </XStack>
+              </Animated.View>
+            )}
 
             {/* Stats Cards */}
             {!hideTimeAndStreak && (
