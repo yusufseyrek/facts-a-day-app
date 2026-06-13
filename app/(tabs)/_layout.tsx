@@ -7,10 +7,8 @@ import { useFocusEffect, usePathname, useRouter } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { GlobalProgressBar } from '../../src/components/GlobalProgressBar';
-import { OfflinePaywallSheet } from '../../src/components/OfflinePaywallSheet';
 import { useScrollToTop } from '../../src/contexts';
 import { InsideTabsProvider } from '../../src/contexts/InsideTabsContext';
-import { useOfflineAccess } from '../../src/hooks/useOfflineAccess';
 import { useTranslation } from '../../src/i18n';
 import { emitSearchSessionReset, setLastNonSearchTabPath } from '../../src/services/tabHistory';
 import * as triviaService from '../../src/services/trivia';
@@ -29,7 +27,6 @@ export default function TabLayout() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { shouldShowOfflineGate } = useOfflineAccess();
   const { scrollToTop } = useScrollToTop();
   const [hasDailyTrivia, setHasDailyTrivia] = useState(false);
 
@@ -234,8 +231,6 @@ export default function TabLayout() {
         >
           <GlobalProgressBar />
         </View>
-
-        {shouldShowOfflineGate && <OfflinePaywallSheet />}
       </View>
     </InsideTabsProvider>
   );
