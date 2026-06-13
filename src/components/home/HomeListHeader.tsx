@@ -56,7 +56,10 @@ export const HomeListHeader = React.memo(function HomeListHeader({
 
   return (
     <>
-      <YStack paddingBottom={spacing.lg}>
+      {/* Pull the row up into the story circles' transparent glow headroom
+          (THEME_GLOW_BLEED) so the gap below the large title reads tighter
+          without clipping the aura. */}
+      <YStack marginTop={-spacing.lg} paddingBottom={spacing.lg}>
         <CategoryStoryButtons ref={storyButtonsRef} />
       </YStack>
 
