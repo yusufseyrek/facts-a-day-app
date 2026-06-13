@@ -14,7 +14,7 @@ import { YStack } from '../../../src/components/Stacks';
 import { PAYWALL_PROMPT } from '../../../src/config/app';
 import { queryClient } from '../../../src/config/queryClient';
 import { usePremium, useScrollToTopHandler } from '../../../src/contexts';
-import { factKeys, localStateKeys } from '../../../src/hooks/queryKeys';
+import { factKeys, localStateKeys, metadataKeys } from '../../../src/hooks/queryKeys';
 import { useFocusFeedRefresh } from '../../../src/hooks/useFocusFeedRefresh';
 import { useHomeFeed } from '../../../src/hooks/useHomeFeed';
 import { useHomeFeedEvents } from '../../../src/hooks/useHomeFeedEvents';
@@ -23,6 +23,7 @@ import { useReadingStreak } from '../../../src/hooks/useReadingStreak';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackFeedRefresh, trackScreenView } from '../../../src/services/analytics';
 import { isModalScreenActive } from '../../../src/services/badges';
+import { triggerFeedRefresh } from '../../../src/services/contentRefresh';
 import { factDetailBasePath } from '../../../src/services/factMorph';
 import { primePool } from '../../../src/services/nativeAdPool';
 import { shouldShowPaywall } from '../../../src/services/paywallTiming';
@@ -155,10 +156,16 @@ function HomeScreen() {
         queryClient.invalidateQueries({ queryKey: factKeys.feed(locale) }),
         queryClient.invalidateQueries({ queryKey: factKeys.onThisDay(locale) }),
         queryClient.invalidateQueries({ queryKey: localStateKeys.readingStreak() }),
+        // Story themes ride a separate cache fetched imperatively by the button
+        // row, not a useQuery observer — so invalidating alone won't refetch it.
+        // Mark it stale here, then triggerFeedRefresh re-runs loadCategories,
+        // whose fetchQuery now sees the stale entry and hits the network.
+        queryClient.invalidateQueries({ queryKey: metadataKeys.storyThemes(locale) }),
       ]);
     } catch {
       // Ignore
     }
+    triggerFeedRefresh();
     setRefreshing(false);
   }, [locale]);
 
