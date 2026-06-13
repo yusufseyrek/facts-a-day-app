@@ -34,11 +34,15 @@ export default function TriviaScreen() {
   const { isTablet, typography, config, iconSizes, spacing, radius } = useResponsive();
   const headerGap = useHeaderContentGap();
 
-  // Per-section loading instead of one full-screen gate: the hero's stats and
-  // the category grid come from local SQLite (+ disk-cached metadata) and land
-  // almost immediately; only the daily/mixed availability counts go over the
-  // network. Each box shows its own pending state on first load.
+  // Per-section loading instead of one full-screen gate. Four independent
+  // tracks so each region settles the moment ITS data is ready and never waits
+  // on an unrelated slower call:
+  //   statsLoading      — hero: pure-local SQLite stats (lands first)
+  //   categoriesLoading — modes grid: local selection + cached metadata
+  //   countsLoading      — daily/mixed cards: the two availability fetches
+  //   allTimeRank        — leaderboard standing: decorative, gates nothing
   const [statsLoading, setStatsLoading] = useState(true);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [countsLoading, setCountsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -84,47 +88,52 @@ export default function TriviaScreen() {
     async (isRefresh = false) => {
       if (isRefresh) setRefreshing(true);
 
-      // Local track: SQLite stats/streak/completion plus the category list
-      // (user's selection joined with React-Query-cached metadata). These must
-      // not wait behind the network counts below.
-      const localLoad = (async () => {
+      // Hero stats — pure-local SQLite (stats/streak/completion). No network,
+      // so the hero never waits on metadata or the leaderboard.
+      const statsLoad = (async () => {
         try {
-          const [dailyCompleted, stats, categories] = await Promise.all([
+          const [dailyCompleted, stats] = await Promise.all([
             triviaService.isDailyTriviaCompleted(),
             triviaService.getOverallStats(),
-            triviaService.getCategoriesWithProgress(locale),
           ]);
-
           setIsDailyCompleted(dailyCompleted);
           setOverallStats(stats);
-          // Sort by color hue, but push categories with 0 questions to the end
+        } catch (error) {
+          console.error('Error loading trivia stats:', error);
+        } finally {
+          setStatsLoading(false);
+        }
+      })();
+
+      // Category grid — local selection joined with React-Query-cached
+      // metadata. Gates the modes section so daily/mixed + category rows mount
+      // in the same frame.
+      const categoriesLoad = (async () => {
+        try {
+          const categories = await triviaService.getCategoriesWithProgress(locale);
+          // Sort by color hue, but push categories with 0 questions to the end.
           const sorted = [...categories].sort((a, b) => {
             if (a.total > 0 !== b.total > 0) return b.total > 0 ? 1 : -1;
             return hexToHue(a.color_hex) - hexToHue(b.color_hex);
           });
           setCategoriesWithProgress(sorted);
         } catch (error) {
-          console.error('Error loading trivia data:', error);
+          console.error('Error loading trivia categories:', error);
         } finally {
-          setStatsLoading(false);
+          setCategoriesLoading(false);
         }
       })();
 
-      // Network track: how many daily/mixed questions are available. Gates
-      // only the two mode cards, never the screen.
+      // Availability counts — the two network fetches that gate the daily/mixed
+      // cards, grouped on their own so the leaderboard can't hold them up.
       const countsLoad = (async () => {
         try {
-          const [dailyCount, mixedCount, board] = await Promise.all([
+          const [dailyCount, mixedCount] = await Promise.all([
             triviaService.getDailyTriviaQuestionsCount(locale),
             triviaService.getMixedTriviaQuestionsCount(locale),
-            // Viewer's all-time standing for the hero; absent (anonymous, no
-            // results, offline) just hides the row.
-            api.getTriviaLeaderboard('all', 1).catch(() => null),
           ]);
-
           setDailyQuestionsCount(dailyCount);
           setMixedQuestionsCount(mixedCount);
-          setAllTimeRank(board?.me?.rank ?? null);
         } catch (error) {
           console.error('Error loading trivia question counts:', error);
         } finally {
@@ -132,7 +141,18 @@ export default function TriviaScreen() {
         }
       })();
 
-      await Promise.all([localLoad, countsLoad]);
+      // All-time standing — decorative (hero row + header trophy). Independent
+      // of every card; absent (anonymous, no results, offline) just hides it.
+      const rankLoad = (async () => {
+        try {
+          const board = await api.getTriviaLeaderboard('all', 1);
+          setAllTimeRank(board?.me?.rank ?? null);
+        } catch {
+          // leave the rank hidden
+        }
+      })();
+
+      await Promise.all([statsLoad, categoriesLoad, countsLoad, rankLoad]);
       setRefreshing(false);
     },
     [locale]
@@ -317,13 +337,13 @@ export default function TriviaScreen() {
               />
             </Animated.View>
 
-            {/* Hold the whole modes section until the local category load
-                lands so the daily/mixed row and the category rows mount in the
-                same frame — their staggered entering delays then play as one
+            {/* Hold the whole modes section until the category load lands so
+                the daily/mixed row and the category rows mount in the same
+                frame — their staggered entering delays then play as one
                 sequence instead of daily/mixed popping in ahead of the grid.
-                statsLoading only starts true on first mount, so re-focus
+                categoriesLoading only starts true on first mount, so re-focus
                 loads never hide an already-visible grid. */}
-            {statsLoading ? null : showModes ? (
+            {categoriesLoading ? null : showModes ? (
               <>
                 {/* Section title */}
                 <Animated.View
