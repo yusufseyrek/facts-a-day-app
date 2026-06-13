@@ -25,6 +25,9 @@ interface ScreenNameModalProps {
 
 type Availability = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 
+const NAME_MIN = 3;
+const NAME_MAX = 20;
+
 /**
  * Claim or change the unique screen name. Availability is checked live
  * (debounced) against the backend; the actual claim still handles the 409
@@ -33,7 +36,8 @@ type Availability = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 export function ScreenNameModal({ visible, onClose, onSaved, currentName }: ScreenNameModalProps) {
   const { t, locale } = useTranslation();
   const { theme } = useTheme();
-  const { spacing, radius, typography, maxModalWidth, iconSizes } = useResponsive();
+  const { spacing, radius, typography, maxModalWidth, iconSizes, borderWidths } =
+    useResponsive();
 
   const [name, setName] = useState(currentName ?? '');
   const [availability, setAvailability] = useState<Availability>('idle');
@@ -128,7 +132,7 @@ export function ScreenNameModal({ visible, onClose, onSaved, currentName }: Scre
   const canSubmit =
     !isSubmitting &&
     !unchanged &&
-    trimmed.length >= 3 &&
+    trimmed.length >= NAME_MIN &&
     availability !== 'taken' &&
     availability !== 'invalid';
 
@@ -162,9 +166,7 @@ export function ScreenNameModal({ visible, onClose, onSaved, currentName }: Scre
         paddingBottom={spacing.md}
         gap={spacing.md}
       >
-        <Text.Body color="$textSecondary" fontSize={typography.fontSize.caption}>
-          {t('screenNameHint')}
-        </Text.Body>
+        <Text.Caption color="$textSecondary">{t('screenNameHint')}</Text.Caption>
 
         <XStack gap={spacing.sm} alignItems="stretch" style={{ flexShrink: 0 }}>
           <TextInput
@@ -175,7 +177,7 @@ export function ScreenNameModal({ visible, onClose, onSaved, currentName }: Scre
             placeholderTextColor={hexColors[theme].textMuted}
             autoCapitalize="none"
             autoCorrect={false}
-            maxLength={20}
+            maxLength={NAME_MAX}
             editable={!isSubmitting}
             autoFocus
             style={{
@@ -183,7 +185,7 @@ export function ScreenNameModal({ visible, onClose, onSaved, currentName }: Scre
               backgroundColor: hexColors[theme].surface,
               borderRadius: radius.md,
               padding: spacing.md,
-              borderWidth: 1,
+              borderWidth: borderWidths.hairline,
               borderColor: hexColors[theme].border,
               fontSize: typography.fontSize.body,
               color: hexColors[theme].text,
@@ -196,6 +198,7 @@ export function ScreenNameModal({ visible, onClose, onSaved, currentName }: Scre
             disabled={isSubmitting}
             accessibilityRole="button"
             accessibilityLabel={t('screenNameRandomize')}
+            accessibilityState={{ disabled: isSubmitting }}
             style={({ pressed }) => ({
               opacity: isSubmitting ? 0.4 : pressed ? 0.7 : 1,
               transform: [{ scale: pressed && !isSubmitting ? 0.95 : 1 }],
@@ -204,7 +207,7 @@ export function ScreenNameModal({ visible, onClose, onSaved, currentName }: Scre
               aspectRatio: 1,
               backgroundColor: hexColors[theme].surface,
               borderRadius: radius.md,
-              borderWidth: 1,
+              borderWidth: borderWidths.hairline,
               borderColor: hexColors[theme].border,
             })}
           >
@@ -212,18 +215,30 @@ export function ScreenNameModal({ visible, onClose, onSaved, currentName }: Scre
           </Pressable>
         </XStack>
 
-        <XStack justifyContent="space-between" alignItems="center" minHeight={20}>
+        <XStack
+          justifyContent="space-between"
+          alignItems="center"
+          minHeight={typography.lineHeight.caption}
+        >
           {error ? (
-            <Text.Label color={hexColors[theme].error} fontSize={typography.fontSize.caption}>
+            <Text.Label
+              color={hexColors[theme].error}
+              fontSize={typography.fontSize.caption}
+              numberOfLines={1}
+            >
               {error}
             </Text.Label>
           ) : statusLine ? (
-            <Text.Label color={statusLine.color} fontSize={typography.fontSize.caption}>
+            <Text.Label
+              color={statusLine.color}
+              fontSize={typography.fontSize.caption}
+              numberOfLines={1}
+            >
               {statusLine.text}
             </Text.Label>
           ) : (
             <Text.Label color="$textSecondary" fontSize={typography.fontSize.caption}>
-              {trimmed.length}/20
+              {trimmed.length}/{NAME_MAX}
             </Text.Label>
           )}
         </XStack>

@@ -102,6 +102,7 @@ function PremiumUpgradeCard({
   onPress: () => void;
 }) {
   const { spacing, radius, iconSizes, media } = useResponsive();
+  const { t } = useTranslation();
   const gold = isDark ? hexColors.dark.warning : hexColors.light.warning;
   const contrastColor = getContrastColor(gold);
   const platBg = contrastColor === '#000000' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.22)';
@@ -112,6 +113,7 @@ function PremiumUpgradeCard({
       onPress={onPress}
       role="button"
       accessibilityLabel={label}
+      accessibilityHint={t('settingsUpgradeHint')}
       style={({ pressed }) => [
         {
           borderRadius: radius.xl,
@@ -134,6 +136,8 @@ function PremiumUpgradeCard({
         {/* Layered decorative circles for depth — same as the trivia tiles */}
         <View
           pointerEvents="none"
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
           style={{
             position: 'absolute',
             top: -plateSize * 0.6,
@@ -147,6 +151,8 @@ function PremiumUpgradeCard({
         />
         <View
           pointerEvents="none"
+          accessible={false}
+          importantForAccessibility="no-hide-descendants"
           style={{
             position: 'absolute',
             bottom: -plateSize * 0.7,
@@ -166,6 +172,8 @@ function PremiumUpgradeCard({
             backgroundColor={platBg}
             justifyContent="center"
             alignItems="center"
+            accessible={false}
+            importantForAccessibility="no-hide-descendants"
           >
             <Crown size={iconSizes.lg} color={contrastColor} />
           </YStack>
@@ -1035,7 +1043,7 @@ export default function SettingsPage() {
             color={iconColor}
             style={{ opacity: 0.6, marginBottom: spacing.xs }}
           >
-            Version {Constants.expoConfig?.version || '1.0.0'} (
+            {t('settingsVersionLabel')} {Constants.expoConfig?.version || '1.0.0'} (
             {Platform.OS === 'ios'
               ? Constants.expoConfig?.ios?.buildNumber || 'N/A'
               : Constants.expoConfig?.android?.versionCode || 'N/A'}
@@ -1085,7 +1093,7 @@ export default function SettingsPage() {
                 <YStack
                   width="100%"
                   maxWidth={isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined}
-                  paddingHorizontal={spacing.xl}
+                  paddingHorizontal={spacing.md}
                   paddingVertical={spacing.md}
                 >
                   <Text.Title>{title}</Text.Title>

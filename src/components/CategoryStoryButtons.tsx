@@ -53,7 +53,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     const { t, locale } = useTranslation();
     const { theme } = useTheme();
     const router = useRouter();
-    const { spacing, iconSizes, borderWidths, typography } = useResponsive();
+    const { spacing, radius, iconSizes, borderWidths, typography } = useResponsive();
     const colors = hexColors[theme];
 
     // Responsive circle and icon sizes: 64/28 on phone, 96/42 on tablet
@@ -314,7 +314,9 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
             circleSize={circleSize}
             iconSize={iconSize}
             borderWidth={borderWidths.medium}
+            hairline={borderWidths.hairline}
             labelMarginTop={spacing.xs}
+            labelGutter={spacing.sm}
             labelFontSize={typography.fontSize.tiny}
           />
         );
@@ -343,7 +345,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     // aura inside the list's scroll bounds (a ScrollView clips at its edges,
     // which cut the glow off at the top).
     const rowHeight = THEME_GLOW_BLEED + circleSize + spacing.xs + typography.fontSize.tiny * 2;
-    const outerSize = circleSize + (borderWidths.medium + 1) * 2;
+    const outerSize = circleSize + (borderWidths.medium + borderWidths.hairline) * 2;
 
     const itemSeparator = useCallback(() => <View style={{ width: spacing.md }} />, [spacing.md]);
 
@@ -374,6 +376,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
             outerSize={outerSize}
             labelMarginTop={spacing.xs}
             labelHeight={typography.fontSize.tiny * 2}
+            labelRadius={radius.sm}
             paddingHorizontal={spacing.lg}
             paddingTop={THEME_GLOW_BLEED}
             gap={spacing.md}
@@ -396,6 +399,7 @@ const CategoryRowSkeleton = React.memo(
     outerSize,
     labelMarginTop,
     labelHeight,
+    labelRadius,
     paddingHorizontal,
     paddingTop,
     gap,
@@ -405,6 +409,7 @@ const CategoryRowSkeleton = React.memo(
     outerSize: number;
     labelMarginTop: number;
     labelHeight: number;
+    labelRadius: number;
     paddingHorizontal: number;
     paddingTop: number;
     gap: number;
@@ -456,7 +461,7 @@ const CategoryRowSkeleton = React.memo(
                   marginTop: labelMarginTop,
                   width: outerSize * 0.7,
                   height: labelHeight * 0.4,
-                  borderRadius: 4,
+                  borderRadius: labelRadius,
                   backgroundColor: placeholderColor,
                 },
                 animatedStyle,
@@ -485,7 +490,9 @@ const CategoryButton = React.memo(
     circleSize,
     iconSize,
     borderWidth,
+    hairline,
     labelMarginTop,
+    labelGutter,
     labelFontSize: _labelFontSize,
   }: {
     item: CategoryItem;
@@ -499,14 +506,16 @@ const CategoryButton = React.memo(
     circleSize: number;
     iconSize: number;
     borderWidth: number;
+    hairline: number;
     labelMarginTop: number;
+    labelGutter: number;
     labelFontSize: number;
   }) => {
     const ringColor = item.isMix ? primaryColor : item.color_hex || primaryColor;
     const iconColor = item.isMix ? primaryColor : item.color_hex || primaryColor;
-    const ringWidth = borderWidth + 1; // Slightly thicker than regular border
+    const ringWidth = borderWidth + hairline; // Slightly thicker than regular border
     const outerSize = circleSize + ringWidth * 2;
-    const innerSize = circleSize - 2; // Gap between gradient/border and inner circle
+    const innerSize = circleSize - hairline * 2; // Gap between gradient/border and inner circle
     // Category-tinted circle fill (iOS tinted-symbol look) instead of the flat
     // surface color — stronger while unseen, faint once seen. Blended opaque
     // (not alpha) so the gradient ring can't bleed through the unseen fill.
@@ -587,10 +596,12 @@ const CategoryButton = React.memo(
       <Pressable
         ref={pressableRef}
         testID={`story-button-${storySlug}`}
+        accessibilityRole="button"
+        aria-label={item.name}
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={[styles.buttonContainer, { width: outerSize + labelMarginTop }]}
+        style={[styles.buttonContainer, { width: outerSize + labelGutter }]}
       >
         <Animated.View style={animatedStyle}>
           <View style={isMorphSourceActive ? styles.morphSourceHidden : undefined}>

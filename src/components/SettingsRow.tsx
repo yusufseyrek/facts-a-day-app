@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { hexColors, useTheme } from '../theme';
+import { darkenColor } from '../utils/colors';
 import { androidRipple } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -51,7 +52,7 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   const labelColor = theme === 'dark' ? '#FFFFFF' : colors.text;
 
   // Warning indicator color - darker in light mode for better readability
-  const warningColor = theme === 'dark' ? '#F59E0B' : '#B45309';
+  const warningColor = theme === 'dark' ? colors.warning : darkenColor(colors.warning, 0.25);
 
   const chipAccent = accentColor ?? colors.textSecondary;
   // Same proven chip sizing as the trivia history session cards.
@@ -72,7 +73,7 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
         justifyContent: 'space-between' as const,
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.md,
-        minHeight: 56,
+        minHeight: media.buttonHeight,
       },
       leftContent: {
         flexDirection: 'row' as const,
@@ -104,7 +105,7 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
         height: StyleSheet.hairlineWidth,
       },
     }),
-    [spacing, radius, chipSize]
+    [spacing, radius, chipSize, media]
   );
 
   const content = (
@@ -134,7 +135,11 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
         )}
       </View>
       <View style={styles.rightContent}>
-        {value && <Text.Label color={colors.textSecondary}>{value}</Text.Label>}
+        {value && (
+          <Text.Label color={colors.textSecondary} numberOfLines={1} flexShrink={1}>
+            {value}
+          </Text.Label>
+        )}
         {onPress &&
           (showExternalLink ? (
             <ExternalLink size={iconSizes.md} color={colors.textSecondary} />

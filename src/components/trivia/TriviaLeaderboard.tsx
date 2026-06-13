@@ -22,6 +22,7 @@ import type {
   TriviaLeaderboardStanding,
   TriviaLeaderboardWindow,
 } from '../../services/api';
+import type { ResponsiveMedia } from '../../utils/useResponsive';
 
 interface TriviaLeaderboardProps {
   /** Bump to reload (parent pull-to-refresh / focus). */
@@ -40,6 +41,15 @@ const MEDAL_COLORS = ['#F5C518', '#B8C4CE', '#CD7F32'] as const;
 
 function medalFor(rank: number): string | null {
   return rank >= 1 && rank <= 3 ? MEDAL_COLORS[rank - 1] : null;
+}
+
+/** Podium plinth heights derived from one responsive base so they stay
+ * proportional on tablet/large font scale. The winner's plinth towers; 2nd and
+ * 3rd step down at fixed ratios. Reused by both the real podium and the
+ * loading skeleton so the two never drift apart. */
+function plinthHeightsFor(media: ResponsiveMedia): Record<number, number> {
+  const base = media.topicCardSize * 0.9;
+  return { 1: base, 2: base * 0.67, 3: base * 0.47 };
 }
 
 /** Group thousands (4,210) without Intl, which is unreliable across RN engines.
@@ -142,10 +152,15 @@ function PodiumColumn({
           fontFamily={FONT_FAMILIES.semibold}
           color={contrastColor}
           numberOfLines={1}
+          maxFontSizeMultiplier={1.2}
         >
           {`${flag ? `${flag} ` : ''}${entry.screen_name}`}
         </Text.Caption>
-        <Text.Title color={contrastColor} fontFamily={FONT_FAMILIES.bold}>
+        <Text.Title
+          color={contrastColor}
+          fontFamily={FONT_FAMILIES.bold}
+          maxFontSizeMultiplier={1.2}
+        >
           {formatScore(entry.score)}
         </Text.Title>
         {isViewer && (
@@ -192,11 +207,13 @@ function LeaderboardSkeleton() {
   const { spacing, radius, borderWidths, media } = useResponsive();
   const colors = hexColors[theme];
   const disc = media.topicCardSize * 0.62;
-  // 2nd, 1st, 3rd — same column order and plinth heights as the real podium.
+  // 2nd, 1st, 3rd — same column order and plinth heights as the real podium,
+  // derived from the same single base so the two stay proportional.
+  const plinths = plinthHeightsFor(media);
   const columns = [
-    { plinth: 48, d: disc * 0.82 },
-    { plinth: 72, d: disc },
-    { plinth: 34, d: disc * 0.82 },
+    { plinth: plinths[2], d: disc * 0.82 },
+    { plinth: plinths[1], d: disc },
+    { plinth: plinths[3], d: disc * 0.82 },
   ];
 
   return (
@@ -356,12 +373,13 @@ function TriviaLeaderboardComponent({
   const podiumOrder = [podium[1], podium[0], podium[2]].filter(
     (e): e is TriviaLeaderboardEntry => e !== undefined
   );
-  const plinthHeights: Record<number, number> = { 1: 72, 2: 48, 3: 34 };
+  const plinthHeights: Record<number, number> = plinthHeightsFor(media);
 
   return (
     <YStack gap={spacing.lg}>
       {/* Window tabs */}
       <XStack
+        accessibilityRole="tablist"
         backgroundColor={colors.surface}
         borderRadius={radius.full}
         padding={spacing.xs}
@@ -402,7 +420,11 @@ function TriviaLeaderboardComponent({
         <YStack alignItems="center" gap={spacing.md} paddingVertical={spacing.xxxl * 2}>
           <Trophy size={iconSizes.hero} color={colors.textMuted} opacity={0.5} />
           <Text.Label color="$textMuted">{t('leaderboardLoadFailed')}</Text.Label>
-          <Pressable onPress={load} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+          <Pressable
+            onPress={load}
+            accessibilityRole="button"
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          >
             <Text.Label color={accent} fontFamily={FONT_FAMILIES.semibold}>
               {t('tryAgain')}
             </Text.Label>
@@ -580,9 +602,13 @@ function TriviaLeaderboardComponent({
                     <Text.Label color={contrastColor} fontFamily={FONT_FAMILIES.bold}>
                       {formatScore(me.score)}
                     </Text.Label>
-                    <Text.Tiny color={contrastColor} opacity={0.8}>
+                    <Text.Caption
+                      color={contrastColor}
+                      opacity={0.8}
+                      fontSize={typography.fontSize.tiny}
+                    >
                       {t('leaderboardGamesCount', { count: String(me.games) })}
-                    </Text.Tiny>
+                    </Text.Caption>
                   </YStack>
                 </XStack>
               </LinearGradient>
@@ -595,6 +621,9 @@ function TriviaLeaderboardComponent({
       {!isLoading && !screenName && (
         <Pressable
           onPress={() => setNamePromptVisible(true)}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={t('leaderboardClaimCta')}
           style={({ pressed }) => ({
             opacity: pressed ? 0.8 : 1,
             transform: [{ scale: pressed ? 0.98 : 1 }],

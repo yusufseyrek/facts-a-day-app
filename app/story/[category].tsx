@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   Easing,
@@ -63,7 +64,7 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 export default function StoryScreen() {
   const { category } = useLocalSearchParams<{ category: string }>();
   const router = useRouter();
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
   const { theme } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -391,8 +392,44 @@ export default function StoryScreen() {
     []
   );
 
-  if (loading || facts.length === 0) {
-    return <View style={[styles.container, { backgroundColor: colors.background }]} />;
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' },
+        ]}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  // A failed or empty load must stay dismissable: render the close button and a
+  // message instead of trapping the user on an inescapable blank screen.
+  if (facts.length === 0) {
+    return (
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: colors.background,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: spacing.xl,
+          },
+        ]}
+      >
+        <Text.Body color="$textSecondary" style={{ textAlign: 'center' }}>
+          {t('noFactsAvailable')}
+        </Text.Body>
+        <View
+          style={[styles.closeButtonContainer, { top: insets.top + spacing.xl, right: spacing.lg }]}
+        >
+          <CloseButton testID="story-close-button" onPress={handleClose} />
+        </View>
+      </View>
+    );
   }
 
   return (
@@ -597,10 +634,7 @@ const StoryPage = React.memo(
           </Animated.View>
         ) : (
           <View
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: theme === 'dark' ? '#1a1a2e' : '#e8e8f0' },
-            ]}
+            style={[StyleSheet.absoluteFill, { backgroundColor: colors.surface }]}
           />
         )}
 
@@ -648,6 +682,7 @@ const StoryPage = React.memo(
           {/* Title */}
           {fact.title && (
             <Pressable
+              accessibilityRole="link"
               onPress={handleReadMore}
               style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
             >
@@ -664,6 +699,7 @@ const StoryPage = React.memo(
 
           {/* Read More link */}
           <Pressable
+            accessibilityRole="link"
             onPress={handleReadMore}
             style={({ pressed }) => ({
               flexDirection: 'row',

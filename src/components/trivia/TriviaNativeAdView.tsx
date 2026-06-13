@@ -111,7 +111,7 @@ export function TriviaNativeAdView({
         >
           <CloseButton
             onPress={() => handlePressWithHaptics(onExit)}
-            label="Exit"
+            label={t('exit')}
             style={{ zIndex: 1 }}
           />
 
@@ -171,7 +171,7 @@ export function TriviaNativeAdView({
             style={{
               height: borderWidths.extraHeavy,
               backgroundColor: borderColor,
-              borderRadius: 3,
+              borderRadius: radius.sm,
               overflow: 'hidden',
             }}
           >
@@ -180,7 +180,7 @@ export function TriviaNativeAdView({
                 {
                   height: '100%',
                   backgroundColor: primaryColor,
-                  borderRadius: 3,
+                  borderRadius: radius.sm,
                 },
                 progressAnimatedStyle,
               ]}
@@ -196,12 +196,16 @@ export function TriviaNativeAdView({
                 flex: 1,
                 borderRadius: radius.xl,
                 overflow: 'hidden',
-                borderWidth: 1,
+                borderWidth: borderWidths.hairline,
                 borderColor: 'rgba(255, 255, 255, 0.1)',
               }}
             >
-              {/* Media content */}
-              <NativeMediaView resizeMode="cover" style={StyleSheet.absoluteFill} />
+              {/* Media content — must explicitly nullify the internal aspectRatio
+                  that NativeMediaView injects, otherwise it overrides our dimensions */}
+              <NativeMediaView
+                resizeMode="cover"
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, aspectRatio: undefined }}
+              />
 
               {/* Gradient overlay */}
               <LinearGradient

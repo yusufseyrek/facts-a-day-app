@@ -457,7 +457,7 @@ export function TriviaResults({
     }
   }, []);
 
-  const { screenWidth, isTablet, typography, config, iconSizes, spacing, radius, media } =
+  const { screenWidth, isTablet, typography, config, iconSizes, spacing, radius, borderWidths, media } =
     useResponsive();
   const statsIconSize = media.topicCardSize * 0.55;
   const headerBtnSize = media.topicCardSize * 0.45;
@@ -821,7 +821,7 @@ export function TriviaResults({
                   gap={spacing.sm}
                   alignItems="center"
                   borderRadius={radius.lg}
-                  borderWidth={1}
+                  borderWidth={borderWidths.hairline}
                   backgroundColor={hexToRgba(accentColor, isDark ? 0.15 : 0.1)}
                   borderColor={hexToRgba(accentColor, isDark ? 0.4 : 0.25)}
                 >

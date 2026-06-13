@@ -143,7 +143,7 @@ function CommentRow({ comment, locale }: { comment: ApiComment; locale: string }
             fontFamily={FONT_FAMILIES.semibold}
             fontSize={typography.fontSize.caption}
           >
-            {comment.screen_name}
+            {name}
           </Text.Label>
           {flag ? <Text.Label fontSize={typography.fontSize.caption}>{flag}</Text.Label> : null}
           <Text.Label color="$textMuted" fontSize={typography.fontSize.caption}>
@@ -174,6 +174,7 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const [screenName, setScreenName] = useState<string | null>(null);
   const [namePromptVisible, setNamePromptVisible] = useState(false);
@@ -188,6 +189,7 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
     setNextCursor(null);
     setTotal(0);
     setIsLoading(true);
+    setLoadError(false);
     setPostError('');
 
     api
@@ -198,7 +200,9 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
         setNextCursor(page.next_cursor);
         setTotal(page.total);
       })
-      .catch(() => {})
+      .catch(() => {
+        if (!cancelled) setLoadError(true);
+      })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
       });
@@ -213,6 +217,21 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
     return () => {
       cancelled = true;
     };
+  }, [factId]);
+
+  const retryLoad = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(false);
+    try {
+      const page = await api.getFactComments(factId, null, PAGE_SIZE);
+      setComments(page.comments);
+      setNextCursor(page.next_cursor);
+      setTotal(page.total);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setIsLoading(false);
+    }
   }, [factId]);
 
   const loadMore = useCallback(async () => {
@@ -263,6 +282,13 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
     spacing.xs,
     (sendSize - inputLineHeight) / 2 - borderWidths.hairline
   );
+  // Bias a touch onto the bottom so the text isn't flush against the rounded
+  // base; the send disc still bottom-aligns to the (now slightly taller) box.
+  const inputPadBottom = inputPadV + spacing.xs / 2;
+  // The paper-plane glyph's mass sits low-left while its tip pulls the eye
+  // up-right, so geometric centering reads high-right; nudge it left+down to
+  // optically center it inside the disc.
+  const sendGlyphNudge = { transform: [{ translateX: -1.5 }, { translateY: 1.5 }] };
   const nearLimit = draft.length >= MAX_COMMENT_LENGTH * 0.8;
 
   return (
@@ -303,14 +329,14 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
               editable={!isPosting}
               style={{
                 flex: 1,
-                maxHeight: 120,
+                maxHeight: inputLineHeight * 4 + inputPadV * 2,
                 backgroundColor: colors.surface,
                 borderRadius: Math.min(radius.xl, sendSize / 2),
                 borderWidth: borderWidths.hairline,
                 borderColor: draft.length > 0 ? `${accent}66` : colors.border,
                 paddingHorizontal: spacing.lg,
                 paddingTop: inputPadV,
-                paddingBottom: inputPadV,
+                paddingBottom: inputPadBottom,
                 fontSize: typography.fontSize.label,
                 lineHeight: inputLineHeight,
                 textAlignVertical: 'center',
@@ -320,7 +346,10 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
             <Pressable
               onPress={submit}
               disabled={!canSend}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel={t('send')}
+              accessibilityState={{ disabled: !canSend }}
+              hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: spacing.sm, right: spacing.sm }}
               style={({ pressed }) => ({
                 opacity: pressed ? 0.85 : 1,
                 transform: [{ scale: pressed ? 0.94 : 1 }],
@@ -331,7 +360,7 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
                   {isPosting ? (
                     <ActivityIndicator size="small" color={getContrastColor(accent)} />
                   ) : (
-                    <Send size={iconSizes.md} color={getContrastColor(accent)} />
+                    <Send size={iconSizes.md} color={getContrastColor(accent)} style={sendGlyphNudge} />
                   )}
                 </GradientDisc>
               ) : (
@@ -347,7 +376,7 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
                     borderColor: colors.border,
                   }}
                 >
-                  <Send size={iconSizes.md} color={colors.textMuted} />
+                  <Send size={iconSizes.md} color={colors.textMuted} style={sendGlyphNudge} />
                 </View>
               )}
             </Pressable>
@@ -369,6 +398,7 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
       ) : (
         <Pressable
           onPress={() => setNamePromptVisible(true)}
+          accessibilityRole="button"
           style={({ pressed }) => ({
             opacity: pressed ? 0.8 : 1,
             transform: [{ scale: pressed ? 0.98 : 1 }],
@@ -400,6 +430,38 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
       {/* Comment list */}
       {isLoading ? (
         <ActivityIndicator size="small" color={colors.textSecondary} />
+      ) : loadError ? (
+        // A failed first-page load must read as an error with a retry — not as
+        // the empty state, which is indistinguishable from a genuinely empty thread.
+        <YStack alignItems="center" gap={spacing.sm} paddingVertical={spacing.lg}>
+          <MessageCircle size={iconSizes.lg} color={colors.textMuted} opacity={0.6} />
+          <Text.Label color="$textMuted" fontSize={typography.fontSize.caption}>
+            {t('commentsLoadFailed')}
+          </Text.Label>
+          <Pressable
+            onPress={retryLoad}
+            accessibilityRole="button"
+            accessibilityLabel={t('tryAgain')}
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.7 : 1,
+              marginTop: spacing.xs,
+              paddingHorizontal: spacing.lg,
+              paddingVertical: spacing.sm,
+              borderRadius: radius.full,
+              borderWidth: borderWidths.hairline,
+              borderColor: `${accent}55`,
+              backgroundColor: `${accent}14`,
+            })}
+          >
+            <Text.Label
+              color={accent}
+              fontFamily={FONT_FAMILIES.semibold}
+              fontSize={typography.fontSize.caption}
+            >
+              {t('tryAgain')}
+            </Text.Label>
+          </Pressable>
+        </YStack>
       ) : comments.length === 0 ? (
         <YStack alignItems="center" gap={spacing.sm} paddingVertical={spacing.lg}>
           <MessageCircle size={iconSizes.lg} color={colors.textMuted} opacity={0.6} />
@@ -416,6 +478,8 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
             <Pressable
               onPress={loadMore}
               disabled={isLoadingMore}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isLoadingMore }}
               style={({ pressed }) => ({
                 opacity: pressed ? 0.7 : 1,
                 alignSelf: 'center',
