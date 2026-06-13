@@ -185,6 +185,22 @@ export function FactModal({
   const [bottomBarHeight, setBottomBarHeight] = useState(0);
   const [adUnlocked, setAdUnlocked] = useState(false);
 
+  // Max scroll for the header progress border. The border is full when the thin
+  // divider under the source link (the comments/"more from category" tail's top
+  // edge) scrolls up to meet the header border line, i.e. screen-y === headerHeight.
+  // tailTopY = the article's end offset (full content minus the measured tail and
+  // the glass bottom inset); completion is tailTopY − headerHeight.
+  const [maxScroll, setMaxScroll] = useState(0);
+  const contentHeightRef = useRef(0);
+  const tailHeightRef = useRef(0);
+  const headerHeightRef = useRef(0);
+  const recomputeMaxScroll = useCallback(() => {
+    const tail = tailHeightRef.current + (useGlassChrome ? bottomBarHeight : 0);
+    const tailTopY = Math.max(0, contentHeightRef.current - tail);
+    const next = Math.max(0, tailTopY - headerHeightRef.current);
+    setMaxScroll((prev) => (Math.abs(prev - next) > 1 ? next : prev));
+  }, [useGlassChrome, bottomBarHeight]);
+
   // Reset ad unlock when navigating to a different fact
   useEffect(() => {
     setAdUnlocked(false);
@@ -645,6 +661,9 @@ export function FactModal({
     Platform.OS === 'ios' ? (presentedAsModal ? spacing.xl : insets.top) : insets.top;
   const basePaddingBottom = spacing.lg;
   const headerHeight = basePaddingTop + basePaddingBottom + titleHeight;
+  // Mirror into a ref so recomputeMaxScroll (declared above) can read the latest
+  // header height without a stale closure / use-before-declaration.
+  headerHeightRef.current = headerHeight;
 
   // Header background appears when image starts to be covered (for images) or early for no image
   const HEADER_BG_TRANSITION = hasImage ? IMAGE_HEIGHT - headerHeight : 100;
@@ -680,6 +699,11 @@ export function FactModal({
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
     scrollY.setValue(0);
     currentScrollY.current = 0;
+    // New fact = new content length; let onContentSizeChange / the tail's
+    // onLayout repopulate them.
+    contentHeightRef.current = 0;
+    tailHeightRef.current = 0;
+    setMaxScroll(0);
 
     // Brief hold so cascading state updates (related facts, resolved URI,
     // image source decode) settle under the cover, then fade it away.
@@ -789,20 +813,27 @@ export function FactModal({
     (hasImage ? IMAGE_HEIGHT : 0) + spacing.lg + titleHeight + spacing.md - headerHeight
   );
 
-  // Header border animations - appears when category badge scrolls under header
-  // ScaleX animation for sleek reveal from center
-  const headerBorderScaleX = scrollY.interpolate({
-    inputRange: [BADGE_SCROLL_THRESHOLD, BADGE_SCROLL_THRESHOLD + 40],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  });
-
-  // Subtle opacity fade for polish
-  const headerBorderOpacity = scrollY.interpolate({
-    inputRange: [BADGE_SCROLL_THRESHOLD, BADGE_SCROLL_THRESHOLD + 20],
-    outputRange: [0, 0.7],
-    extrapolate: 'clamp',
-  });
+  // Header border = reading-progress indicator. It fills left→right as scrollY
+  // travels [borderStartOffset → maxScroll], so a full-width border lands exactly
+  // when the content's end is reached and its growth rate signals how much remains.
+  // The fill only STARTS once the sticky header title has finished sliding into
+  // place (HEADER_BG_TRANSITION + headerTitleStartY), so the border doesn't move
+  // while the title is still animating; no-image facts have a static title and so
+  // start at 0. scaleX (native-driver friendly) carries the fill; a paired
+  // translateX anchors the growth to the left edge instead of scaling from center.
+  // With no meaningful scroll past that point, everything's on screen so it sits full.
+  const borderStartOffset = hasImage ? HEADER_BG_TRANSITION + headerTitleStartY : 0;
+  const isContentScrollable = maxScroll > borderStartOffset + 8;
+  const progressRange = {
+    inputRange: [borderStartOffset, Math.max(maxScroll, borderStartOffset + 1)],
+    extrapolate: 'clamp' as const,
+  };
+  const borderScaleX = isContentScrollable
+    ? scrollY.interpolate({ ...progressRange, outputRange: [0, 1] })
+    : 1;
+  const borderTranslateX = isContentScrollable
+    ? scrollY.interpolate({ ...progressRange, outputRange: [-containerWidth / 2, 0] })
+    : 0;
 
   // Category badge fade out as it approaches the header
   // Category badge fades out as it scrolls under the header (has-image only)
@@ -996,7 +1027,8 @@ export function FactModal({
               </HeaderTitleContainer>
             </XStack>
           </Animated.View>
-          {/* Animated border bottom when category badge is hidden */}
+          {/* Reading-progress border: fills as the content scrolls (see
+              borderScaleX). Parent header opacity fades it in with the header. */}
           {categoryColor && (
             <Animated.View
               style={{
@@ -1006,8 +1038,7 @@ export function FactModal({
                 right: 0,
                 height: borderWidths.heavy,
                 backgroundColor: categoryColor,
-                opacity: headerBorderOpacity,
-                transform: [{ scaleX: headerBorderScaleX }],
+                transform: [{ translateX: borderTranslateX }, { scaleX: borderScaleX }],
                 zIndex: 999,
               }}
               pointerEvents="none"
@@ -1024,6 +1055,13 @@ export function FactModal({
         onScrollEndDrag={handleScrollEndDrag}
         onMomentumScrollEnd={checkScrolledToBottom}
         scrollEventThrottle={16}
+        // Feed the reading-progress border (recompute on viewport/orientation
+        // and on content-size changes as comments/related load).
+        onLayout={() => recomputeMaxScroll()}
+        onContentSizeChange={(_w, h) => {
+          contentHeightRef.current = h;
+          recomputeMaxScroll();
+        }}
         // When the bottom chrome floats (glass), pad so content scrolls past it.
         contentContainerStyle={useGlassChrome ? { paddingBottom: bottomBarHeight } : undefined}
         // NO removeClippedSubviews here: on Android Fabric, removing clipped
@@ -1041,8 +1079,6 @@ export function FactModal({
               paddingTop: spacing.xl,
               paddingHorizontal: spacing.xl,
               paddingBottom: spacing.md,
-              borderBottomWidth: categoryColor ? borderWidths.heavy : 0,
-              borderBottomColor: categoryColor || 'transparent',
             }}
           >
             <View style={{ position: 'relative' }}>
@@ -1061,6 +1097,22 @@ export function FactModal({
                 </Text.Headline>
               </View>
             </View>
+            {/* Same reading-progress border as the has-image header, anchored to
+                the sticky title's base so no-image facts get the indicator too. */}
+            {categoryColor && (
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: borderWidths.heavy,
+                  backgroundColor: categoryColor,
+                  transform: [{ translateX: borderTranslateX }, { scaleX: borderScaleX }],
+                }}
+                pointerEvents="none"
+              />
+            )}
           </View>
         )}
 
@@ -1363,20 +1415,32 @@ export function FactModal({
               </View>
             )}
 
-            {/* Comments */}
-            <FactComments factId={fact.id} categoryColor={categoryColor} />
+            {/* Appended tail (comments + "more from category"). Measured so its
+                height can be excluded from the progress border's content length —
+                the border tracks the article, not these sections. Same gap as the
+                parent YStack so spacing is unchanged. */}
+            <View
+              style={{ gap: spacing.md }}
+              onLayout={(e) => {
+                tailHeightRef.current = e.nativeEvent.layout.height;
+                recomputeMaxScroll();
+              }}
+            >
+              {/* Comments */}
+              <FactComments factId={fact.id} categoryColor={categoryColor} />
 
-            {/* Related Facts */}
-            {relatedFacts.length > 0 && onRelatedFactPress && (
-              <RelatedFacts
-                facts={relatedFacts}
-                onFactPress={onRelatedFactPress}
-                categoryColor={categoryColor}
-                categoryIcon={fact.categoryData?.icon}
-                categoryName={fact.categoryData?.name || slugToTitleCase(fact.category || '')}
-                containerWidth={containerWidth}
-              />
-            )}
+              {/* Related Facts */}
+              {relatedFacts.length > 0 && onRelatedFactPress && (
+                <RelatedFacts
+                  facts={relatedFacts}
+                  onFactPress={onRelatedFactPress}
+                  categoryColor={categoryColor}
+                  categoryIcon={fact.categoryData?.icon}
+                  categoryName={fact.categoryData?.name || slugToTitleCase(fact.category || '')}
+                  containerWidth={containerWidth}
+                />
+              )}
+            </View>
           </YStack>
         </View>
       </Animated.ScrollView>
