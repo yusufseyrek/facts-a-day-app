@@ -15,7 +15,7 @@ import { hexColors } from '../../theme';
 import { blendHexColors, darkenColor, getContrastColor } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
-import { Check, ChevronRight, Flame, Target, Zap } from '../icons';
+import { Check, ChevronRight, Flame, Target, Trophy, Zap } from '../icons';
 import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -30,6 +30,8 @@ interface TriviaStatsHeroProps {
   isDark: boolean;
   /** First-load pending state: the card frame renders, the body is a spinner. */
   loading?: boolean;
+  /** All-time server leaderboard rank; null/undefined hides the row. */
+  allTimeRank?: number | null;
   t: (key: TranslationKeys, params?: Record<string, string | number>) => string;
   onPress?: () => void;
 }
@@ -195,7 +197,7 @@ function StatRow({
 }: {
   icon: ReactNode;
   plateBg: string;
-  value: number;
+  value: number | string;
   label: string;
   micro: string;
   microActive: boolean;
@@ -268,6 +270,7 @@ export function TriviaStatsHero({
   categories = [],
   isDark,
   loading = false,
+  allTimeRank = null,
   t,
   onPress,
 }: TriviaStatsHeroProps) {
@@ -504,7 +507,20 @@ export function TriviaStatsHero({
                     valueMuted={currentStreak === 0}
                     contrastColor={contrastColor}
                   />
-                  {topCategory ? (
+                  {allTimeRank !== null ? (
+                    /* The server leaderboard standing outranks the local
+                       fillers: it's the only number here the user competes
+                       on. Tapping the card lands on the full board. */
+                    <StatRow
+                      icon={<Trophy size={iconSizes.xs} color={contrastColor} />}
+                      plateBg={plateBg}
+                      value={`#${allTimeRank}`}
+                      label={t('leaderboard')}
+                      micro={t('leaderboardAllTime')}
+                      microActive={false}
+                      contrastColor={contrastColor}
+                    />
+                  ) : topCategory ? (
                     /* DORMANT branch (see topCategory above). Icon stays
                      contrastColor — never topCategory.color_hex — so the
                      all-contrast signature holds. */

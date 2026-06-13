@@ -15,6 +15,7 @@ import { useScrollToTopHandler } from '../../../src/contexts';
 import { useHeaderContentGap } from '../../../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackScreenView } from '../../../src/services/analytics';
+import * as api from '../../../src/services/api';
 import { onPreferenceFeedRefresh } from '../../../src/services/preferences';
 import { consumePendingQuizSessionId } from '../../../src/services/quizSession';
 import * as triviaService from '../../../src/services/trivia';
@@ -54,6 +55,7 @@ export default function TriviaScreen() {
   const [isDailyCompleted, setIsDailyCompleted] = useState(false);
   const [mixedQuestionsCount, setMixedQuestionsCount] = useState(0);
   const [overallStats, setOverallStats] = useState<triviaService.TriviaStats | null>(null);
+  const [allTimeRank, setAllTimeRank] = useState<number | null>(null);
   const [categoriesWithProgress, setCategoriesWithProgress] = useState<CategoryWithProgress[]>([]);
 
   // Pending trivia modal state
@@ -115,13 +117,17 @@ export default function TriviaScreen() {
       // only the two mode cards, never the screen.
       const countsLoad = (async () => {
         try {
-          const [dailyCount, mixedCount] = await Promise.all([
+          const [dailyCount, mixedCount, board] = await Promise.all([
             triviaService.getDailyTriviaQuestionsCount(locale),
             triviaService.getMixedTriviaQuestionsCount(locale),
+            // Viewer's all-time standing for the hero; absent (anonymous, no
+            // results, offline) just hides the row.
+            api.getTriviaLeaderboard('all', 1).catch(() => null),
           ]);
 
           setDailyQuestionsCount(dailyCount);
           setMixedQuestionsCount(mixedCount);
+          setAllTimeRank(board?.me?.rank ?? null);
         } catch (error) {
           console.error('Error loading trivia question counts:', error);
         } finally {
@@ -305,6 +311,7 @@ export default function TriviaScreen() {
                 categories={categoriesWithProgress}
                 isDark={isDark}
                 loading={statsLoading}
+                allTimeRank={allTimeRank}
                 t={t}
                 onPress={() => router.push('/(tabs)/trivia/performance')}
               />
