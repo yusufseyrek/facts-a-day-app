@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { Pressable, TextInput } from 'react-native';
 
 import { useTranslation } from '../i18n';
 import * as api from '../services/api';
 import * as userService from '../services/user';
 import { hexColors, useTheme } from '../theme';
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
+import { generateScreenName } from '../utils/screenNameGenerator';
 import { useResponsive } from '../utils/useResponsive';
 
 import { DialogButton, DialogShell } from './DialogShell';
+import { Shuffle } from './icons';
 import { XStack, YStack } from './Stacks';
 import { Text } from './Typography';
 
@@ -31,7 +33,7 @@ type Availability = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 export function ScreenNameModal({ visible, onClose, onSaved, currentName }: ScreenNameModalProps) {
   const { t, locale } = useTranslation();
   const { theme } = useTheme();
-  const { spacing, radius, typography, maxModalWidth } = useResponsive();
+  const { spacing, radius, typography, maxModalWidth, iconSizes } = useResponsive();
 
   const [name, setName] = useState(currentName ?? '');
   const [availability, setAvailability] = useState<Availability>('idle');
@@ -164,7 +166,7 @@ export function ScreenNameModal({ visible, onClose, onSaved, currentName }: Scre
           {t('screenNameHint')}
         </Text.Body>
 
-        <View style={{ width: '100%', flexShrink: 0 }}>
+        <XStack gap={spacing.sm} alignItems="stretch" style={{ flexShrink: 0 }}>
           <TextInput
             maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER}
             value={name}
@@ -177,6 +179,7 @@ export function ScreenNameModal({ visible, onClose, onSaved, currentName }: Scre
             editable={!isSubmitting}
             autoFocus
             style={{
+              flex: 1,
               backgroundColor: hexColors[theme].surface,
               borderRadius: radius.md,
               padding: spacing.md,
@@ -186,7 +189,28 @@ export function ScreenNameModal({ visible, onClose, onSaved, currentName }: Scre
               color: hexColors[theme].text,
             }}
           />
-        </View>
+          {/* Dice roll: fills the input; the debounced availability check
+              fires through onChange state like any typed value. */}
+          <Pressable
+            onPress={() => setName(generateScreenName())}
+            disabled={isSubmitting}
+            accessibilityRole="button"
+            accessibilityLabel={t('screenNameRandomize')}
+            style={({ pressed }) => ({
+              opacity: isSubmitting ? 0.4 : pressed ? 0.7 : 1,
+              transform: [{ scale: pressed && !isSubmitting ? 0.95 : 1 }],
+              justifyContent: 'center',
+              alignItems: 'center',
+              aspectRatio: 1,
+              backgroundColor: hexColors[theme].surface,
+              borderRadius: radius.md,
+              borderWidth: 1,
+              borderColor: hexColors[theme].border,
+            })}
+          >
+            <Shuffle size={iconSizes.sm} color={hexColors[theme].primary} />
+          </Pressable>
+        </XStack>
 
         <XStack justifyContent="space-between" alignItems="center" minHeight={20}>
           {error ? (
