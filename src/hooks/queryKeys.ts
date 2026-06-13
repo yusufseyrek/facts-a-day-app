@@ -51,3 +51,16 @@ export const metadataKeys = {
 export const statsKeys = {
   all: ['stats'] as const,
 };
+
+/**
+ * Server-backed trivia hub data. Availability (daily/mixed playable counts) is
+ * stable enough to cache with a staleTime; it lives OUTSIDE the persisted roots
+ * (facts/home/metadata) on purpose — we'd rather refetch on a cold open than
+ * render a stale count from disk. The leaderboard is intentionally NOT cached
+ * here: it's live, so it revalidates on every read via the shared ETag layer
+ * (a cheap 304 when unchanged) instead of a staleTime window.
+ */
+export const triviaKeys = {
+  all: ['trivia'] as const,
+  availability: (locale: string) => ['trivia', 'availability', locale] as const,
+};

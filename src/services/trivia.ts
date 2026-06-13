@@ -134,13 +134,27 @@ export async function getDailyTriviaQuestions(language: string): Promise<Questio
 }
 
 /**
- * Number of questions available for today's daily trivia (cheap: just the
- * question list length from the API).
+ * Playable daily + mixed counts for the trivia hub in ONE lightweight request:
+ * the server returns just the two integers (each capped at its batch size), so
+ * the hub no longer downloads the full daily and random question payloads just
+ * to read their length — and then re-download them when the user taps to play.
+ * Excludes locally-answered questions for the mixed count.
  */
-export async function getDailyTriviaQuestionsCount(language: string): Promise<number> {
+export async function getTriviaAvailability(
+  language: string
+): Promise<{ daily: number; mixed: number }> {
   const answered = await getAnsweredQuestionIds();
-  const questions = await api.getTriviaDaily(language, DAILY_TRIVIA_QUESTIONS, answered);
-  return questions.length;
+  return api.getTriviaAvailability(
+    language,
+    answered,
+    DAILY_TRIVIA_QUESTIONS,
+    MIXED_TRIVIA_QUESTIONS
+  );
+}
+
+/** Number of questions available for today's daily trivia (lightweight count). */
+export async function getDailyTriviaQuestionsCount(language: string): Promise<number> {
+  return (await getTriviaAvailability(language)).daily;
 }
 
 /**
@@ -187,17 +201,6 @@ export async function getMixedTriviaQuestions(language: string): Promise<Questio
   const answered = await getAnsweredQuestionIds();
   const questions = await api.getTriviaRandom(language, MIXED_TRIVIA_QUESTIONS, answered);
   return hydrateTriviaQuestions(questions, language);
-}
-
-/**
- * Number of unanswered questions available for mixed trivia (the API caps a
- * single batch, so this reports the size of one fetch — enough to enable/disable
- * the entry point).
- */
-export async function getMixedTriviaQuestionsCount(language: string): Promise<number> {
-  const answered = await getAnsweredQuestionIds();
-  const questions = await api.getTriviaRandom(language, MIXED_TRIVIA_QUESTIONS, answered);
-  return questions.length;
 }
 
 // ====== CATEGORY TRIVIA ======
@@ -480,6 +483,10 @@ export async function saveSessionResult(
   // Push the result to the server leaderboard (no-op without an identity;
   // failures retry on the next trigger).
   syncTriviaResults().catch(() => {});
+
+  // The answered set just grew, so the playable counts may have changed —
+  // refetch availability on the next hub read instead of serving the cache.
+  api.invalidateTriviaAvailability();
 
   return sessionId;
 }

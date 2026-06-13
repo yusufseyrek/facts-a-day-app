@@ -86,7 +86,11 @@ export default function TriviaScreen() {
 
   const loadTriviaData = useCallback(
     async (isRefresh = false) => {
-      if (isRefresh) setRefreshing(true);
+      if (isRefresh) {
+        setRefreshing(true);
+        // Pull-to-refresh must bypass the availability cache and refetch.
+        api.invalidateTriviaAvailability();
+      }
 
       // Hero stats — pure-local SQLite (stats/streak/completion). No network,
       // so the hero never waits on metadata or the leaderboard.
@@ -124,16 +128,13 @@ export default function TriviaScreen() {
         }
       })();
 
-      // Availability counts — the two network fetches that gate the daily/mixed
-      // cards, grouped on their own so the leaderboard can't hold them up.
+      // Availability counts — one lightweight request returns both daily and
+      // mixed playable counts (no question payloads), gating the mode cards.
       const countsLoad = (async () => {
         try {
-          const [dailyCount, mixedCount] = await Promise.all([
-            triviaService.getDailyTriviaQuestionsCount(locale),
-            triviaService.getMixedTriviaQuestionsCount(locale),
-          ]);
-          setDailyQuestionsCount(dailyCount);
-          setMixedQuestionsCount(mixedCount);
+          const { daily, mixed } = await triviaService.getTriviaAvailability(locale);
+          setDailyQuestionsCount(daily);
+          setMixedQuestionsCount(mixed);
         } catch (error) {
           console.error('Error loading trivia question counts:', error);
         } finally {

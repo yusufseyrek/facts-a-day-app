@@ -5,17 +5,28 @@ import Constants from 'expo-constants';
 import { APP_CHECK } from '../config/app';
 import { getAppCheckReady, isAppCheckInitialized } from '../config/appCheckState';
 import { queryClient } from '../config/queryClient';
-import { metadataKeys } from '../hooks/queryKeys';
+import { metadataKeys, triviaKeys } from '../hooks/queryKeys';
 import { getAppVersionInfo } from '../utils/appInfo';
 
 import { getCachedAppCheckToken } from './appCheckToken';
+import { getCachedBody, getStoredEtag, storeEtag } from './etagCache';
 import { getIdentityHeaders } from './userIdentity';
 
 /** Metadata (categories/languages) is near-static; cache it aggressively. */
 const METADATA_STALE_TIME = 1000 * 60 * 60 * 6; // 6 hours
 
-/** Story themes are timed events; refresh more often than metadata. */
-const STORY_THEMES_STALE_TIME = 1000 * 60 * 60; // 1 hour
+/** Trivia hub availability counts barely move within a session; cache briefly
+ * (invalidated explicitly when the user plays a game or pull-to-refreshes). */
+const AVAILABILITY_STALE_TIME = 1000 * 60 * 5; // 5 minutes
+
+/**
+ * Story themes are timed events (e.g. a World Cup window opening). The cache is
+ * persisted to disk, so a long staleTime keeps already-installed apps on a
+ * pre-event snapshot for that whole window — including server-side changes that
+ * don't bump the themes' updated_at (e.g. the fact-image fallback resolving once
+ * a theme has matching facts). Keep it short so events surface within minutes.
+ */
+const STORY_THEMES_STALE_TIME = 1000 * 60 * 5; // 5 minutes
 
 /**
  * Get the API base URL, adjusting for Android emulator
@@ -33,7 +44,7 @@ function getApiBaseUrl(): string {
   return configuredUrl;
 }
 
-const API_BASE_URL = getApiBaseUrl();
+export const API_BASE_URL = getApiBaseUrl();
 
 // ====== Types ======
 
@@ -286,10 +297,29 @@ async function makeRequest<T>(
       console.warn(`⚠️ API request without App Check token: ${endpoint}`);
     }
 
+    // Conditional GET: attach the stored ETag so an unchanged response comes
+    // back as a cheap 304 (served from the local body cache below). Only GETs
+    // participate, and only endpoints that emit an ETag are ever stored — every
+    // other request behaves exactly as before.
+    const method = (options.method ?? 'GET').toUpperCase();
+    const isCacheable = method === 'GET';
+    if (isCacheable) {
+      const storedEtag = getStoredEtag(url);
+      if (storedEtag) headers['If-None-Match'] = storedEtag;
+    }
+
     const response = await fetchWithTimeout(url, {
       ...options,
       headers,
     });
+
+    // 304 Not Modified: serve the body cached alongside this ETag (we only sent
+    // If-None-Match because we already hold that body).
+    if (response.status === 304) {
+      const cached = getCachedBody<T>(url);
+      if (cached.hit) return cached.body as T;
+      throw new Error(`304 Not Modified without a cached body: ${endpoint}`);
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -312,7 +342,14 @@ async function makeRequest<T>(
       throw error;
     }
 
-    return await response.json();
+    const data = (await response.json()) as T;
+    // Stamp the ETag + body so the next request for this URL can revalidate
+    // with If-None-Match and short-circuit on a 304.
+    if (isCacheable) {
+      const etag = response.headers.get('ETag');
+      if (etag) storeEtag(url, etag, data);
+    }
+    return data;
   };
 
   try {
@@ -687,6 +724,45 @@ export async function getTriviaCategory(
     `/api/trivia/category/${encodeURIComponent(slug)}?${triviaQuery(language, limit, excludeIds)}`
   );
   return res.questions;
+}
+
+/**
+ * Lightweight daily/mixed playable counts for the trivia hub — gates the mode
+ * cards without fetching (and later re-fetching on tap) the full question
+ * batches. Counts are capped at the supplied batch limits.
+ */
+export async function getTriviaAvailability(
+  language: string,
+  excludeIds?: number[],
+  dailyLimit?: number,
+  mixedLimit?: number
+): Promise<{ daily: number; mixed: number }> {
+  // React Query (instant within staleTime) over the shared ETag layer (a cheap
+  // 304 when it does revalidate). Keyed by language only — the answered-exclude
+  // list isn't in the key (it would thrash on every play); freshness after a
+  // game is handled by invalidateTriviaAvailability() instead.
+  return queryClient.fetchQuery({
+    queryKey: triviaKeys.availability(language),
+    queryFn: () => {
+      const qp = new URLSearchParams();
+      qp.append('language', language);
+      if (dailyLimit) qp.append('daily_limit', String(dailyLimit));
+      if (mixedLimit) qp.append('mixed_limit', String(mixedLimit));
+      if (excludeIds && excludeIds.length > 0) {
+        qp.append('exclude_question_ids', excludeIds.join(','));
+      }
+      return makeRequest<{ daily: number; mixed: number }>(
+        `/api/trivia/availability?${qp.toString()}`
+      );
+    },
+    staleTime: AVAILABILITY_STALE_TIME,
+  });
+}
+
+/** Drop the cached availability counts so the next hub read refetches — call
+ * after a game completes (the answered set changed) or on pull-to-refresh. */
+export function invalidateTriviaAvailability(): void {
+  queryClient.invalidateQueries({ queryKey: triviaKeys.all });
 }
 
 /** Hydrate specific trivia questions by id (past-session review). */
