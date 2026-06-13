@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AccessibilityInfo,
   ActivityIndicator,
+  Alert,
   Animated,
   Linking,
   Platform,
@@ -24,6 +25,7 @@ import { useFactAudio } from '../hooks/useFactAudio';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { useTranslation } from '../i18n';
 import {
+  trackFactReport,
   trackPremiumGateAdResult,
   trackPremiumGateAdShown,
   trackSourceLinkClick,
@@ -66,6 +68,7 @@ import { FactComments } from './FactComments';
 import { Calendar, Crown, ExternalLink, ImagePlus, Play, RefreshCw } from './icons';
 import { ModalBackdrop } from './ModalBackdrop';
 import { RelatedFacts } from './RelatedFacts';
+import { ReportFactModal } from './ReportFactModal';
 import { styled, XStack, YStack } from './Stacks';
 import { FONT_FAMILIES, Text } from './Typography';
 
@@ -224,6 +227,11 @@ export function FactModal({
 
   // Related facts for the current fact's category
   const [relatedFacts, setRelatedFacts] = useState<FactWithRelations[]>([]);
+  // Report dialog is hosted HERE (screen root), not in the action bar: the
+  // bar can be absolute bottom chrome, and the dialog's inline overlay fills
+  // its parent — inside the bar it was squeezed into the bar's box.
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -569,6 +577,24 @@ export function FactModal({
       checkScrolledToBottom(event);
     },
     [onClose, checkScrolledToBottom]
+  );
+
+  const handleSubmitReport = useCallback(
+    async (feedbackText: string) => {
+      setIsSubmittingReport(true);
+      try {
+        await api.reportFact(fact.id, feedbackText);
+        trackFactReport(fact.id);
+        Alert.alert(t('success'), t('reportSubmitted'));
+      } catch (error) {
+        console.error('Error submitting report:', error);
+        const errorMessage = error instanceof Error ? error.message : t('failedToSubmitReport');
+        Alert.alert(t('error'), errorMessage);
+      } finally {
+        setIsSubmittingReport(false);
+      }
+    },
+    [fact.id, t]
   );
 
   const handleSourcePress = useCallback(
@@ -1423,6 +1449,7 @@ export function FactModal({
           currentIndex={currentIndex}
           totalCount={totalCount}
           audioController={audioController}
+          onReportPress={() => setShowReportModal(true)}
         />
       </View>
 
@@ -1435,6 +1462,14 @@ export function FactModal({
           onAdUnlock={() => setAdUnlocked(true)}
         />
       )}
+
+      {/* Root-level so the dialog's inline overlay covers the whole screen */}
+      <ReportFactModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        onSubmit={handleSubmitReport}
+        isSubmitting={isSubmittingReport}
+      />
     </View>
   );
 }

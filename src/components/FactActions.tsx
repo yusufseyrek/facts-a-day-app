@@ -15,8 +15,7 @@ import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 
 import { useTranslation } from '../i18n';
-import { trackFactReport, trackFactShare } from '../services/analytics';
-import * as api from '../services/api';
+import { trackFactShare } from '../services/analytics';
 import * as database from '../services/database';
 import { performFavoriteToggle } from '../services/favorites';
 import { shareService } from '../services/share';
@@ -27,7 +26,6 @@ import { useResponsive } from '../utils/useResponsive';
 import { FactAudioButton } from './FactAudioButton';
 import { GlassSurface } from './GlassSurface';
 import { ChevronLeft, ChevronRight, Flag, Heart, Share as ShareIcon } from './icons';
-import { ReportFactModal } from './ReportFactModal';
 import { ShareCard } from './share';
 import { styled, View, XStack, YStack } from './Stacks';
 import { Text } from './Typography';
@@ -50,6 +48,11 @@ interface FactActionsProps {
   currentIndex?: number;
   totalCount?: number;
   audioController?: FactAudioController;
+  /** Opens the report dialog. Hosted by the SCREEN (not this bar): the bar
+   * can be absolutely-positioned bottom chrome, and DialogShell's inline
+   * overlay fills its parent — mounted here the dialog would be squeezed
+   * into the bar's box instead of covering the screen. */
+  onReportPress: () => void;
 }
 
 const Container = styled(YStack, {
@@ -137,6 +140,7 @@ export function FactActions({
   currentIndex,
   totalCount,
   audioController,
+  onReportPress,
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -153,8 +157,6 @@ export function FactActions({
   const flagColor = theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
   const navColor = theme === 'dark' ? hexColors.dark.primary : hexColors.light.primary;
   const [isFavorited, setIsFavorited] = useState(false);
-  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
 
@@ -332,22 +334,7 @@ export function FactActions({
   const handleReport = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     triggerReportAnimation();
-    setShowReportModal(true);
-  };
-
-  const handleSubmitReport = async (feedbackText: string) => {
-    setIsSubmittingReport(true);
-    try {
-      await api.reportFact(factId, feedbackText);
-      trackFactReport(factId);
-      Alert.alert(t('success'), t('reportSubmitted'));
-    } catch (error) {
-      console.error('Error submitting report:', error);
-      const errorMessage = error instanceof Error ? error.message : t('failedToSubmitReport');
-      Alert.alert(t('error'), errorMessage);
-    } finally {
-      setIsSubmittingReport(false);
-    }
+    onReportPress();
   };
 
   const handleNext = () => {
@@ -422,13 +409,12 @@ export function FactActions({
       {/* Report Button */}
       <Pressable
         onPress={handleReport}
-        disabled={isSubmittingReport}
         role="button"
         aria-label={t('a11y_reportButton')}
         style={({ pressed }) => ({
           alignItems: 'center',
           justifyContent: 'center',
-          opacity: pressed ? 0.8 : isSubmittingReport ? 0.5 : 1,
+          opacity: pressed ? 0.8 : 1,
           paddingVertical: spacing.xs,
         })}
       >
@@ -597,13 +583,6 @@ export function FactActions({
           </XStack>
         )}
       </Container>
-
-      <ReportFactModal
-        visible={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        onSubmit={handleSubmitReport}
-        isSubmitting={isSubmittingReport}
-      />
 
       {/* Off-screen ShareCard for image capture */}
       <ShareCard
