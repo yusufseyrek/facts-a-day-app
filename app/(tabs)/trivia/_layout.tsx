@@ -11,6 +11,7 @@ export default function TriviaTabLayout() {
     <Stack screenOptions={headerOptions}>
       <Stack.Screen name="index" options={{ title: t('trivia') }} />
       <Stack.Screen name="performance" options={{ title: t('triviaPerformance') }} />
+      <Stack.Screen name="leaderboard" options={{ title: t('leaderboard') }} />
       <Stack.Screen name="categories" options={{ title: t('accuracyByCategory') }} />
       <Stack.Screen name="history" options={{ title: t('testHistory') }} />
     </Stack>

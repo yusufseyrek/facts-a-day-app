@@ -28,9 +28,14 @@ import type {
 interface TriviaLeaderboardProps {
   /** Bump to reload (parent pull-to-refresh / focus). */
   reloadToken?: number;
+  /** Entries per window; the dedicated screen shows more than a card would. */
+  limit?: number;
+  /** Fires when a load settles (success or error) — lets a hosting screen
+   * clear its RefreshControl. */
+  onLoadEnd?: () => void;
 }
 
-const BOARD_LIMIT = 10;
+const DEFAULT_BOARD_LIMIT = 10;
 
 /** Olympic medal accents for the top three rank discs. */
 const MEDAL_COLORS = ['#F5C518', '#B8C4CE', '#CD7F32'] as const;
@@ -80,7 +85,11 @@ function RankBadge({ rank, size }: { rank: number; size: number }) {
  * entries, the viewer's own standing when they fall outside the top, and a
  * claim-a-name CTA for anonymous players.
  */
-function TriviaLeaderboardComponent({ reloadToken = 0 }: TriviaLeaderboardProps) {
+function TriviaLeaderboardComponent({
+  reloadToken = 0,
+  limit = DEFAULT_BOARD_LIMIT,
+  onLoadEnd,
+}: TriviaLeaderboardProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -104,7 +113,7 @@ function TriviaLeaderboardComponent({ reloadToken = 0 }: TriviaLeaderboardProps)
     setHasError(false);
     try {
       const [board, profile] = await Promise.all([
-        api.getTriviaLeaderboard(window, BOARD_LIMIT),
+        api.getTriviaLeaderboard(window, limit),
         userService.getProfile().catch(() => null),
       ]);
       setEntries(board.entries);
@@ -114,8 +123,9 @@ function TriviaLeaderboardComponent({ reloadToken = 0 }: TriviaLeaderboardProps)
       setHasError(true);
     } finally {
       setIsLoading(false);
+      onLoadEnd?.();
     }
-  }, [window]);
+  }, [window, limit, onLoadEnd]);
 
   useEffect(() => {
     load();

@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { ContentContainer, ScreenContainer } from '../../../src/components';
-import { ArrowRight, Gamepad2, Sparkles } from '../../../src/components/icons';
+import { ArrowRight, Sparkles, Trophy } from '../../../src/components/icons';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { TriviaGridCard, TriviaIntroModal, TriviaStatsHero } from '../../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
@@ -50,7 +50,6 @@ export default function TriviaScreen() {
   useScrollToTopHandler('trivia', scrollToTop);
 
   // Trivia stats
-  const [dailyStreak, setDailyStreak] = useState(0);
   const [dailyQuestionsCount, setDailyQuestionsCount] = useState(0);
   const [isDailyCompleted, setIsDailyCompleted] = useState(false);
   const [mixedQuestionsCount, setMixedQuestionsCount] = useState(0);
@@ -90,14 +89,12 @@ export default function TriviaScreen() {
       // not wait behind the network counts below.
       const localLoad = (async () => {
         try {
-          const [streak, dailyCompleted, stats, categories] = await Promise.all([
-            triviaService.getDailyStreak(),
+          const [dailyCompleted, stats, categories] = await Promise.all([
             triviaService.isDailyTriviaCompleted(),
             triviaService.getOverallStats(),
             triviaService.getCategoriesWithProgress(locale),
           ]);
 
-          setDailyStreak(streak);
           setIsDailyCompleted(dailyCompleted);
           setOverallStats(stats);
           // Sort by color hue, but push categories with 0 questions to the end
@@ -162,21 +159,22 @@ export default function TriviaScreen() {
     return () => unsubscribe();
   }, [loadTriviaData]);
 
-  // Streak badge lives in the native header (replaces the old ScreenHeader row).
+  // Leaderboard entry lives in the native header (replaced the achievements
+  // streak badge); shows the viewer's all-time rank when they have one.
   useEffect(() => {
     const secondaryTextColor = isDark
       ? hexColors.dark.textSecondary
       : hexColors.light.textSecondary;
-    const isStreakActive = dailyStreak > 0;
-    const streakColor = isStreakActive ? '#8B5CF6' : secondaryTextColor;
+    const rankedColor = isDark ? hexColors.dark.warning : hexColors.light.warning;
+    const trophyColor = allTimeRank !== null ? rankedColor : secondaryTextColor;
 
     navigation.setOptions({
       headerRight: () => (
         <Pressable
-          onPress={() => router.push('/badges')}
+          onPress={() => router.push('/(tabs)/trivia/leaderboard')}
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         >
-          {/* Bare icon + count: no chip background — inside the iOS 26 glass
+          {/* Bare icon + rank: no chip background — inside the iOS 26 glass
               header a filled pill reads as a stray box. Padding kept for the
               touch target. */}
           <XStack
@@ -185,15 +183,17 @@ export default function TriviaScreen() {
             paddingHorizontal={spacing.sm}
             paddingVertical={spacing.xs}
           >
-            <Gamepad2 size={iconSizes.sm} color={streakColor} />
-            <Text.Label fontFamily={FONT_FAMILIES.semibold} color={streakColor}>
-              {dailyStreak}
-            </Text.Label>
+            <Trophy size={iconSizes.sm} color={trophyColor} />
+            {allTimeRank !== null && (
+              <Text.Label fontFamily={FONT_FAMILIES.semibold} color={trophyColor}>
+                {`#${allTimeRank}`}
+              </Text.Label>
+            )}
           </XStack>
         </Pressable>
       ),
     });
-  }, [navigation, dailyStreak, isDark, router, spacing, iconSizes]);
+  }, [navigation, allTimeRank, isDark, router, spacing, iconSizes]);
 
   // Show intro modal before starting trivia
   const showDailyTriviaIntro = () => {
