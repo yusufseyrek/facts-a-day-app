@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Platform,
   Pressable,
-  RefreshControl,
   ScrollView,
   View,
 } from 'react-native';
@@ -18,6 +17,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { ContentContainer, EmptyState } from '../src/components';
 import { GlassSurface } from '../src/components/GlassSurface';
+import { PullToRefresh } from '../src/components/home/PullToRefresh';
 import { Share2 } from '../src/components/icons';
 import { XStack, YStack } from '../src/components/Stacks';
 import { ActivityBarChart } from '../src/components/stats/ActivityBarChart';
@@ -134,14 +134,15 @@ export default function StatsScreen() {
       ) : !hasAnyActivity || !overview ? (
         <EmptyState title={t('statsNoData')} description={t('statsNoDataDescription')} />
       ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          overScrollMode="never"
-          contentInsetAdjustmentBehavior="automatic"
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-          contentContainerStyle={{ paddingBottom: spacing.xl + insets.bottom }}
-        >
-          <ContentContainer>
+        <PullToRefresh refreshing={refreshing} onRefresh={handleRefresh}>
+          {(scrollProps) => (
+            <ScrollView
+              {...scrollProps}
+              showsVerticalScrollIndicator={false}
+              contentInsetAdjustmentBehavior="automatic"
+              contentContainerStyle={{ paddingBottom: spacing.xl + insets.bottom }}
+            >
+              <ContentContainer>
             <YStack marginVertical={spacing.lg} gap={spacing.xl}>
               <Section delay={50}>
                 <StatsHero
@@ -222,7 +223,9 @@ export default function StatsScreen() {
               </Section>
             </YStack>
           </ContentContainer>
-        </ScrollView>
+            </ScrollView>
+          )}
+        </PullToRefresh>
       )}
 
       {/* Lazy-mounted: only renders while the share flow is active. */}

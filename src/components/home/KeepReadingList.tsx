@@ -1,6 +1,8 @@
 import React, { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, RefreshControl, View, type ViewToken } from 'react-native';
+import { ActivityIndicator, View, type ViewToken } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
 import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
+import Animated from 'react-native-reanimated';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 
@@ -10,6 +12,7 @@ import { useResponsive } from '../../utils/useResponsive';
 import { InlineNativeAd } from '../ads/InlineNativeAd';
 
 import { KeepReadingItem } from './KeepReadingItem';
+import { type usePullToRefresh } from './usePullToRefresh';
 
 import type { FactWithRelations } from '../../services/database';
 
@@ -53,9 +56,8 @@ interface KeepReadingListProps {
   onEndReached: () => void;
   isFetchingMore: boolean;
   isPremium: boolean;
-  refreshing: boolean;
-  onRefresh: () => void;
-  onScroll?: (y: number) => void;
+  /** Custom pull-to-refresh wiring (gesture + animated wrapper + scroll gate). */
+  pullRefresh: ReturnType<typeof usePullToRefresh>;
   ListHeaderComponent: React.ReactElement;
 }
 
@@ -69,9 +71,7 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
       onEndReached,
       isFetchingMore,
       isPremium,
-      refreshing,
-      onRefresh,
-      onScroll,
+      pullRefresh,
       ListHeaderComponent,
     },
     ref
@@ -147,18 +147,6 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
 
     const getItemType = useCallback((item: KeepReadingRow) => item.type, []);
 
-    const handleScroll = useCallback(
-      (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-        onScroll?.(e.nativeEvent.contentOffset.y);
-      },
-      [onScroll]
-    );
-
-    const refreshControl = useMemo(
-      () => <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />,
-      [refreshing, onRefresh]
-    );
-
     const listFooter = useMemo(() => {
       if (!isFetchingMore) return null;
       return (
@@ -169,36 +157,42 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
     }, [isFetchingMore, spacing.lg]);
 
     return (
-      <FlashList
-        ref={ref}
-        // Lets the iOS 26 native large-title header collapse/expand with the
-        // scroll and keeps content out from under the floating tab bar.
-        contentInsetAdjustmentBehavior="automatic"
-        // FlashList v2 anchors VISIBLE content by default; when the header
-        // sections (carousels) load/grow after mount, that anchoring made the
-        // screen open "pre-scrolled" past the section titles. Anchor the top
-        // instead.
-        maintainVisibleContentPosition={{ disabled: true }}
-        contentContainerStyle={{ paddingTop: headerGap }}
-        data={items}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        getItemType={getItemType}
-        ListHeaderComponent={ListHeaderComponent}
-        ListFooterComponent={listFooter}
-        refreshControl={refreshControl}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
-        showsVerticalScrollIndicator={false}
-        overScrollMode="never"
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        // FlashList needs `extraData` to re-invoke `renderItem` for
-        // already-mounted cells when the lookahead frontier advances.
-        extraData={highestViewedIndex}
-      />
+      <GestureDetector gesture={pullRefresh.gesture}>
+        <Animated.View style={[{ flex: 1 }, pullRefresh.wrapStyle]}>
+          <FlashList
+            ref={ref}
+            // Lets the iOS 26 native large-title header collapse/expand with the
+            // scroll and keeps content out from under the floating tab bar.
+            contentInsetAdjustmentBehavior="automatic"
+            // FlashList v2 anchors VISIBLE content by default; when the header
+            // sections (carousels) load/grow after mount, that anchoring made the
+            // screen open "pre-scrolled" past the section titles. Anchor the top
+            // instead.
+            maintainVisibleContentPosition={{ disabled: true }}
+            contentContainerStyle={{ paddingTop: headerGap }}
+            data={items}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            getItemType={getItemType}
+            ListHeaderComponent={ListHeaderComponent}
+            ListFooterComponent={listFooter}
+            onEndReached={onEndReached}
+            onEndReachedThreshold={0.5}
+            showsVerticalScrollIndicator={false}
+            // Custom pull-to-refresh owns the top; kill native overscroll/bounce
+            // so only our gesture moves the list.
+            overScrollMode="never"
+            bounces={false}
+            onScroll={pullRefresh.onScroll}
+            scrollEventThrottle={16}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={viewabilityConfig}
+            // FlashList needs `extraData` to re-invoke `renderItem` for
+            // already-mounted cells when the lookahead frontier advances.
+            extraData={highestViewedIndex}
+          />
+        </Animated.View>
+      </GestureDetector>
     );
   }
 );

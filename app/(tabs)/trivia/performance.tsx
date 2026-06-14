@@ -4,7 +4,6 @@ import {
   Animated as RNAnimated,
   Platform,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
@@ -19,6 +18,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ContentContainer, GlassSurface } from '../../../src/components';
 import { BannerAd } from '../../../src/components/ads';
 import { BadgeIcon } from '../../../src/components/badges/BadgeIcon';
+import { PullToRefresh } from '../../../src/components/home/PullToRefresh';
 import {
   Calendar,
   CheckCircle,
@@ -747,13 +747,14 @@ export default function PerformanceScreen() {
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        overScrollMode="never"
-        contentInsetAdjustmentBehavior="automatic"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />}
-      >
-        <ContentContainer>
+      <PullToRefresh refreshing={refreshing} onRefresh={() => loadData(true)}>
+        {(scrollProps) => (
+          <ScrollView
+            {...scrollProps}
+            showsVerticalScrollIndicator={false}
+            contentInsetAdjustmentBehavior="automatic"
+          >
+            <ContentContainer>
           <YStack marginVertical={spacing.lg} gap={spacing.xl}>
             {/* Core metrics — no section label: it read as a stray fixed
                 subtitle directly under the native large title. */}
@@ -957,9 +958,11 @@ export default function PerformanceScreen() {
                 </YStack>
               </View>
             )}
-          </YStack>
-        </ContentContainer>
-      </ScrollView>
+            </YStack>
+          </ContentContainer>
+          </ScrollView>
+        )}
+      </PullToRefresh>
 
       <BannerAd respectBottomInset />
 

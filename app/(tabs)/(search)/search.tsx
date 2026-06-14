@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
@@ -15,6 +15,7 @@ import {
   Text,
 } from '../../../src/components';
 import { NativeAdCard } from '../../../src/components/ads/NativeAdCard';
+import { PullToRefresh } from '../../../src/components/home/PullToRefresh';
 import { X } from '../../../src/components/icons';
 import { ImageFactCard } from '../../../src/components/ImageFactCard';
 import { styled, View, YStack } from '../../../src/components/Stacks';
@@ -662,27 +663,14 @@ function SearchScreen() {
     [isTablet, handleFactPress, selectedCategory?.slug, categoryFactIds, handleAdFailed]
   );
 
-  // Memoized refresh controls
-  const searchRefreshControl = useMemo(
-    () => <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
-    [refreshing, handleRefresh]
-  );
-
-  const categoryRefreshControl = useMemo(
-    () => (
-      <RefreshControl
-        refreshing={refreshing}
-        onRefresh={async () => {
-          setRefreshing(true);
-          if (selectedCategorySlug) {
-            await handleCategoryPress(selectedCategorySlug);
-          }
-          setRefreshing(false);
-        }}
-      />
-    ),
-    [refreshing, selectedCategorySlug, handleCategoryPress]
-  );
+  // Category browse refresh: re-fetches the selected category's facts.
+  const handleCategoryRefresh = useCallback(async () => {
+    setRefreshing(true);
+    if (selectedCategorySlug) {
+      await handleCategoryPress(selectedCategorySlug);
+    }
+    setRefreshing(false);
+  }, [selectedCategorySlug, handleCategoryPress]);
 
   // The selected-category indicator lives in the native header now: the search
   // placeholder carries the scope and headerRight is an X that clears the
@@ -837,18 +825,28 @@ function SearchScreen() {
           entering={FadeInUp.duration(350).springify()}
           style={{ flex: 1 }}
         >
-          <FlashList
-            ref={searchListRef}
-            data={searchDataWithAds}
-            keyExtractor={keyExtractor}
-            getItemType={getItemType}
-            renderItem={renderSearchItem}
-            refreshControl={searchRefreshControl}
-            onScroll={handleSearchScroll}
-            contentInsetAdjustmentBehavior="automatic"
-            contentContainerStyle={{ paddingTop: headerGap }}
-            {...FLASH_LIST_SETTINGS}
-          />
+          <PullToRefresh refreshing={refreshing} onRefresh={handleRefresh}>
+            {(scrollProps) => (
+              <FlashList
+                {...scrollProps}
+                ref={searchListRef}
+                data={searchDataWithAds}
+                keyExtractor={keyExtractor}
+                getItemType={getItemType}
+                renderItem={renderSearchItem}
+                onScroll={(e) => {
+                  scrollProps.onScroll(e);
+                  handleSearchScroll(e);
+                }}
+                contentInsetAdjustmentBehavior="automatic"
+                contentContainerStyle={{ paddingTop: headerGap }}
+                {...FLASH_LIST_SETTINGS}
+                // Pull-to-refresh owns the top; override FLASH_LIST_SETTINGS.bounces
+                // so iOS doesn't double-move (native bounce + our gesture translate).
+                bounces={false}
+              />
+            )}
+          </PullToRefresh>
         </Animated.View>
       );
     }
@@ -894,18 +892,28 @@ function SearchScreen() {
           entering={FadeInUp.duration(400).springify()}
           style={{ flex: 1 }}
         >
-          <FlashList
-            ref={categoryListRef}
-            data={categoryDataWithAds}
-            keyExtractor={keyExtractor}
-            getItemType={getItemType}
-            renderItem={renderCategoryItem}
-            refreshControl={categoryRefreshControl}
-            onScroll={handleCategoryScroll}
-            contentInsetAdjustmentBehavior="automatic"
-            contentContainerStyle={{ paddingTop: headerGap }}
-            {...FLASH_LIST_SETTINGS}
-          />
+          <PullToRefresh refreshing={refreshing} onRefresh={handleCategoryRefresh}>
+            {(scrollProps) => (
+              <FlashList
+                {...scrollProps}
+                ref={categoryListRef}
+                data={categoryDataWithAds}
+                keyExtractor={keyExtractor}
+                getItemType={getItemType}
+                renderItem={renderCategoryItem}
+                onScroll={(e) => {
+                  scrollProps.onScroll(e);
+                  handleCategoryScroll(e);
+                }}
+                contentInsetAdjustmentBehavior="automatic"
+                contentContainerStyle={{ paddingTop: headerGap }}
+                {...FLASH_LIST_SETTINGS}
+                // Pull-to-refresh owns the top; override FLASH_LIST_SETTINGS.bounces
+                // so iOS doesn't double-move (native bounce + our gesture translate).
+                bounces={false}
+              />
+            )}
+          </PullToRefresh>
         </Animated.View>
       );
     }
@@ -930,8 +938,11 @@ function SearchScreen() {
     getItemType,
     renderSearchItem,
     renderCategoryItem,
-    searchRefreshControl,
-    categoryRefreshControl,
+    refreshing,
+    handleRefresh,
+    handleCategoryRefresh,
+    handleSearchScroll,
+    handleCategoryScroll,
     renderEmptyState,
     spacing,
     headerGap,

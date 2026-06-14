@@ -1,11 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  NativeSyntheticEvent,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-} from 'react-native';
+import { ActivityIndicator, NativeSyntheticEvent, Pressable, ScrollView } from 'react-native';
 import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import { FlashList } from '@shopify/flash-list';
@@ -21,6 +15,7 @@ import {
   Text,
 } from '../../../src/components';
 import { NativeAdCard } from '../../../src/components/ads/NativeAdCard';
+import { PullToRefresh } from '../../../src/components/home/PullToRefresh';
 import { Heart } from '../../../src/components/icons';
 import { ImageFactCard } from '../../../src/components/ImageFactCard';
 import { XStack, YStack } from '../../../src/components/Stacks';
@@ -321,12 +316,6 @@ export default function FavoritesScreen() {
     [handleFactPress, filteredFactIds, handleAdFailed]
   );
 
-  // Memoized refresh control
-  const refreshControl = useMemo(
-    () => <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
-    [refreshing, handleRefresh]
-  );
-
   // Check if filters are active
   const hasActiveFilters = selectedCategory !== null || debouncedQuery.trim().length > 0;
 
@@ -511,22 +500,32 @@ export default function FavoritesScreen() {
             </YStack>
           </ScrollView>
         ) : (
-          <FlashList
-            ref={listRef}
-            data={filteredDataWithAds}
-            keyExtractor={keyExtractor}
-            getItemType={getItemType}
-            renderItem={renderItem}
-            refreshControl={refreshControl}
-            onScroll={handleScroll}
-            contentInsetAdjustmentBehavior="automatic"
-            contentContainerStyle={{ paddingTop: headerGap }}
-            ListHeaderComponent={chipsRow ?? undefined}
-            // FlashList v2 anchors visible content by default when data
-            // changes; on a filter swap that reads as a small phantom scroll.
-            maintainVisibleContentPosition={{ disabled: true }}
-            {...FLASH_LIST_SETTINGS}
-          />
+          <PullToRefresh refreshing={refreshing} onRefresh={handleRefresh}>
+            {(scrollProps) => (
+              <FlashList
+                {...scrollProps}
+                ref={listRef}
+                data={filteredDataWithAds}
+                keyExtractor={keyExtractor}
+                getItemType={getItemType}
+                renderItem={renderItem}
+                onScroll={(e) => {
+                  scrollProps.onScroll(e);
+                  handleScroll(e);
+                }}
+                contentInsetAdjustmentBehavior="automatic"
+                contentContainerStyle={{ paddingTop: headerGap }}
+                ListHeaderComponent={chipsRow ?? undefined}
+                // FlashList v2 anchors visible content by default when data
+                // changes; on a filter swap that reads as a small phantom scroll.
+                maintainVisibleContentPosition={{ disabled: true }}
+                {...FLASH_LIST_SETTINGS}
+                // Pull-to-refresh owns the top; override FLASH_LIST_SETTINGS.bounces
+                // so iOS doesn't double-move (native bounce + our gesture translate).
+                bounces={false}
+              />
+            )}
+          </PullToRefresh>
         )}
       </YStack>
     </ScreenContainer>

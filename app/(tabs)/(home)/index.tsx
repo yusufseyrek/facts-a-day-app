@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { FlashListRef } from '@shopify/flash-list';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
@@ -10,6 +10,8 @@ import { ReadingStreakIndicator } from '../../../src/components/badges/ReadingSt
 import { CategoryStoryButtonsRef } from '../../../src/components/CategoryStoryButtons';
 import { HomeListHeader, LocaleChangeOverlay } from '../../../src/components/home';
 import { KeepReadingList } from '../../../src/components/home/KeepReadingList';
+import { LogoPullRefresh } from '../../../src/components/home/LogoPullRefresh';
+import { usePullToRefresh } from '../../../src/components/home/usePullToRefresh';
 import { YStack } from '../../../src/components/Stacks';
 import { PAYWALL_PROMPT } from '../../../src/config/app';
 import { queryClient } from '../../../src/config/queryClient';
@@ -56,6 +58,7 @@ function HomeScreen() {
 
   // Local state
   const [refreshing, setRefreshing] = useState(false);
+
 
   // Refs
   const paywallCheckRef = useRef(false);
@@ -178,9 +181,9 @@ function HomeScreen() {
     [handleFactPress, keepReadingIds]
   );
 
-  const handleScroll = useCallback((_y: number) => {
-    // Reserved for future scroll-dependent behavior (e.g. header collapse)
-  }, []);
+  // Custom gesture-driven pull-to-refresh (works on iOS + Android, unlike the
+  // native RefreshControl which can't expose its drag distance on Android).
+  const pullRefresh = usePullToRefresh({ refreshing, onRefresh: handleRefresh });
 
   const hasAnyContent = latestFacts.length > 0 || onThisDayFacts.length > 0;
 
@@ -226,7 +229,7 @@ function HomeScreen() {
         {!isLoading && !hasAnyContent ? (
           <EmptyState title={t('emptyStateTitle')} description={t('emptyStateDescription')} />
         ) : (
-          <View style={{ flex: 1 }}>
+          <GestureHandlerRootView style={{ flex: 1 }}>
             <KeepReadingList
               ref={keepReadingListRef}
               facts={keepReadingFacts}
@@ -234,12 +237,11 @@ function HomeScreen() {
               onEndReached={fetchNextPage}
               isFetchingMore={isFetchingNextPage}
               isPremium={isPremium}
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              onScroll={handleScroll}
+              pullRefresh={pullRefresh}
               ListHeaderComponent={listHeader}
             />
-          </View>
+            <LogoPullRefresh progress={pullRefresh.progress} refreshing={refreshing} />
+          </GestureHandlerRootView>
         )}
 
         <LocaleChangeOverlay status={backgroundRefreshStatus} />

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { BannerAd } from '../../../src/components/ads';
+import { PullToRefresh } from '../../../src/components/home/PullToRefresh';
 import { Calendar, ChevronLeft, ChevronRight, Shuffle, Zap } from '../../../src/components/icons';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { getTriviaModeBadge, TriviaResults } from '../../../src/components/trivia';
@@ -504,20 +505,25 @@ export default function ActivityHistoryScreen() {
               </Text.Body>
             </YStack>
           ) : (
-            <FlashList
-              data={flattenedData}
-              keyExtractor={keyExtractor}
-              renderItem={renderItem}
-              getItemType={getItemType}
-              contentInsetAdjustmentBehavior="automatic"
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
-              }
-              contentContainerStyle={{
-                paddingBottom: spacing.sm,
-              }}
-              {...FLASH_LIST_SETTINGS}
-            />
+            <PullToRefresh refreshing={refreshing} onRefresh={() => loadData(true)}>
+              {(scrollProps) => (
+                <FlashList
+                  {...scrollProps}
+                  data={flattenedData}
+                  keyExtractor={keyExtractor}
+                  renderItem={renderItem}
+                  getItemType={getItemType}
+                  contentInsetAdjustmentBehavior="automatic"
+                  contentContainerStyle={{
+                    paddingBottom: spacing.sm,
+                  }}
+                  {...FLASH_LIST_SETTINGS}
+                  // Pull-to-refresh owns the top; override FLASH_LIST_SETTINGS.bounces
+                  // so iOS doesn't double-move (native bounce + our gesture translate).
+                  bounces={false}
+                />
+              )}
+            </PullToRefresh>
           )}
         </View>
       </View>
