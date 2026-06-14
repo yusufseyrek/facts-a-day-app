@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode,useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -83,6 +83,125 @@ function formatPriceLike(sourceDisplay: string, value: number): string {
   const fixed = value.toFixed(2);
   const formatted = usesCommaDecimal ? fixed.replace('.', ',') : fixed;
   return `${startsWith}${formatted}${endsWith}`;
+}
+
+/** Warm near-black used for every glyph/number ON the gold crest and the CTA
+ *  label — ~9.8:1 on PAYWALL_GOLD.primary, tonally softer than pure #000. */
+const CREST_INK = '#1A1A2E';
+
+/**
+ * The "crest" — the user's momentum is the hero. A small gold "PREMIUM" crown
+ * kicker sits above oversized stat numerals (streak / facts-read), each lifted
+ * by a gold-gradient icon disc (the app's lit signature) and split by a thin
+ * divider. The numerals use the theme title color (AA-safe in both themes);
+ * gold is reserved for the kicker and the small icon discs. New users (no
+ * stats) see just the crown kicker — the headline below carries the value.
+ */
+function PaywallCrest({
+  streak,
+  factsRead,
+  tc,
+  isDark,
+}: {
+  streak: number;
+  factsRead: number;
+  tc: (typeof paywallThemeColors)[keyof typeof paywallThemeColors];
+  isDark: boolean;
+}) {
+  const { t } = useTranslation();
+  const { spacing, iconSizes } = useResponsive();
+
+  const discSize = iconSizes.xxl; // 40
+
+  // Only non-zero stats render. Two → side-by-side with a divider; one → a
+  // single centered column; new user → none (the headline carries it).
+  const stats: { key: string; icon: ReactNode; value: number; label: string }[] = [];
+  if (streak > 0) {
+    stats.push({
+      key: 'streak',
+      icon: <Flame size={iconSizes.md} color="#78350F" fill="#78350F" />,
+      value: streak,
+      label: t('paywallStreakLabel'),
+    });
+  }
+  if (factsRead > 0) {
+    stats.push({
+      key: 'facts',
+      icon: <BookOpen size={iconSizes.md} color="#78350F" />,
+      value: factsRead,
+      label: t('paywallFactsReadLabel'),
+    });
+  }
+
+  const a11yLabel =
+    stats.length > 0
+      ? `${t('paywallPremiumTag')}. ${stats.map((s) => `${s.value} ${s.label}`).join(', ')}`
+      : t('paywallPremiumTag');
+
+  const renderStat = (s: (typeof stats)[number]) => (
+    <YStack key={s.key} alignItems="center" gap={spacing.xs}>
+      <LinearGradient
+        colors={[PAYWALL_GOLD.light, PAYWALL_GOLD.primary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{
+          width: discSize,
+          height: discSize,
+          borderRadius: discSize / 2,
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: PAYWALL_GOLD.primary,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: isDark ? 0.4 : 0.3,
+          shadowRadius: 12,
+          elevation: 6,
+        }}
+      >
+        {s.icon}
+      </LinearGradient>
+      <Text.Display fontFamily={FONT_FAMILIES.extrabold} color={tc.title} letterSpacing={-1}>
+        {s.value}
+      </Text.Display>
+      <Text.Tiny
+        fontFamily={FONT_FAMILIES.bold}
+        color={tc.featureDesc}
+        letterSpacing={0.8}
+        numberOfLines={1}
+      >
+        {s.label}
+      </Text.Tiny>
+    </YStack>
+  );
+
+  // New users have no stats → the crest renders nothing and the headline below
+  // becomes the hero (no empty spacer left behind).
+  if (stats.length === 0) return null;
+
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(80).duration(400)}
+      accessible
+      accessibilityLabel={a11yLabel}
+    >
+      {/* Stats hero — oversized numerals, the emotional anchor. */}
+      {stats.length === 2 ? (
+        <XStack alignItems="center" alignSelf="stretch">
+          <View style={{ flex: 1, alignItems: 'center' }}>{renderStat(stats[0])}</View>
+          <View
+            style={{
+              width: 1,
+              height: iconSizes.xxl,
+              alignSelf: 'center',
+              backgroundColor: tc.planBorder,
+            }}
+          />
+          <View style={{ flex: 1, alignItems: 'center' }}>{renderStat(stats[1])}</View>
+        </XStack>
+      ) : (
+        renderStat(stats[0])
+      )}
+    </Animated.View>
+  );
 }
 
 export default function PaywallScreen() {
@@ -311,9 +430,7 @@ export default function PaywallScreen() {
   // underlaps the floating close.
   const closeBtnSize = iconSizes.xl + spacing.md;
   const wordmarkCrownSize = iconSizes.xs + 2;
-  const statIconCircleSize = iconSizes.xxl;
-  const statIconCircleRadius = statIconCircleSize / 2;
-  const benefitIconCircleSize = iconSizes.xl + spacing.xs;
+  const benefitIconCircleSize = iconSizes.xl + spacing.md;
   const benefitIconCircleRadius = benefitIconCircleSize / 2;
 
   /* eslint-disable react-native/no-unused-styles -- styles used via dynamicStyles.* */
@@ -339,12 +456,15 @@ export default function PaywallScreen() {
         },
         scrollContent: {
           flexGrow: 1,
+          // Top-aligned: the stats/headline/benefits sit just under the wordmark
+          // and the offer (plans + CTA + footer) is anchored to the bottom by a
+          // flex spacer, so the slack falls into ONE comfortable middle gap
+          // rather than a large margin above the stats.
           paddingBottom: spacing.md,
-          paddingTop: spacing.md,
+          paddingTop: spacing.xs,
         },
         centerGroup: {
-          flex: 1,
-          justifyContent: 'space-around',
+          gap: spacing.lg,
         },
         wordmarkRow: {
           paddingHorizontal: spacing.xl,
@@ -358,55 +478,14 @@ export default function PaywallScreen() {
           backgroundColor: tc.planBorder,
           marginHorizontal: spacing.sm,
         },
-        statsRow: {
+        hairline: {
+          height: borderWidths.thin,
           marginHorizontal: spacing.xl,
-          marginBottom: spacing.xl,
-        },
-        statCard: {
-          flex: 1,
-          paddingVertical: spacing.md,
-          paddingHorizontal: spacing.md,
-          borderRadius: radius.lg,
-          borderWidth: 1,
-        },
-        // Under glass the cards keep only MEANINGFUL borders (gold accents);
-        // neutral hairlines are dropped (width kept so layout doesn't shift) —
-        // the glass material's specular rim takes over that job.
-        statStreakCard: {
-          backgroundColor: useGlass ? 'transparent' : tc.featureBg,
-          borderColor: tc.featureBorder,
-          ...(useGlass && { overflow: 'hidden' as const }),
-        },
-        statNeutralCard: {
-          backgroundColor: useGlass ? 'transparent' : tc.planBg,
-          borderColor: useGlass ? 'transparent' : tc.planBorder,
-          ...(useGlass && { overflow: 'hidden' as const }),
-        },
-        statStreakIcon: {
-          width: statIconCircleSize,
-          height: statIconCircleSize,
-          borderRadius: statIconCircleRadius,
-          alignItems: 'center',
-          justifyContent: 'center',
-          shadowColor: PAYWALL_GOLD.primary,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: isDark ? 0.4 : 0.3,
-          shadowRadius: 12,
-          elevation: 6,
-        },
-        statNeutralIcon: {
-          width: statIconCircleSize,
-          height: statIconCircleSize,
-          borderRadius: statIconCircleRadius,
-          backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-          borderWidth: 1,
-          borderColor: tc.planBorder,
-          alignItems: 'center',
-          justifyContent: 'center',
+          marginVertical: spacing.lg,
+          overflow: 'hidden',
         },
         headlineWrap: {
           marginHorizontal: spacing.xl,
-          marginBottom: spacing.xxl,
         },
         headlineAccentText: {
           color: PAYWALL_GOLD.primary,
@@ -419,8 +498,8 @@ export default function PaywallScreen() {
           borderRadius: radius.lg,
           borderWidth: 1,
           borderColor: tc.featureBorder,
-          paddingVertical: spacing.sm + 2,
-          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.md + 2,
+          paddingHorizontal: spacing.md + 2,
           ...(useGlass && { overflow: 'hidden' as const }),
         },
         benefitIcon: {
@@ -512,8 +591,6 @@ export default function PaywallScreen() {
       insets,
       borderWidths,
       closeBtnSize,
-      statIconCircleSize,
-      statIconCircleRadius,
       benefitIconCircleSize,
       benefitIconCircleRadius,
     ]
@@ -522,12 +599,12 @@ export default function PaywallScreen() {
 
   const benefits = [
     {
-      icon: <Ban size={iconSizes.sm} color={PAYWALL_GOLD.primary} />,
+      icon: <Ban size={iconSizes.md} color={PAYWALL_GOLD.primary} />,
       title: t('paywallFeatureNoAds'),
       description: t('paywallFeatureNoAdsDesc'),
     },
     {
-      icon: <Lightbulb size={iconSizes.sm} color={PAYWALL_GOLD.primary} />,
+      icon: <Lightbulb size={iconSizes.md} color={PAYWALL_GOLD.primary} />,
       title: t('paywallFeatureHints'),
       description: t('paywallFeatureHintsDesc'),
     },
@@ -585,94 +662,14 @@ export default function PaywallScreen() {
         contentContainerStyle={dynamicStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Group 2 — Stats + headline, vertically centered in the leftover area */}
-        <View style={dynamicStyles.centerGroup}>
-          {showStats && (
-            <Animated.View entering={FadeInDown.delay(80).duration(400)}>
-              <XStack gap={spacing.sm + 2} style={dynamicStyles.statsRow}>
-                <View style={[dynamicStyles.statCard, dynamicStyles.statStreakCard]}>
-                  {useGlass && (
-                    <GlassSurface
-                      variant="glass"
-                      isDark={isDark}
-                      tint={tc.featureBg}
-                      glassTint={glassTintOf(tc.featureBg)}
-                      borderRadius={radius.lg}
-                      style={StyleSheet.absoluteFill}
-                    />
-                  )}
-                  <XStack alignItems="center" gap={spacing.sm + 3}>
-                    <LinearGradient
-                      colors={[PAYWALL_GOLD.light, PAYWALL_GOLD.primary]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 0, y: 1 }}
-                      style={dynamicStyles.statStreakIcon}
-                    >
-                      <Flame size={iconSizes.md} color="#78350F" fill="#78350F" />
-                    </LinearGradient>
-                    <YStack>
-                      <Text.Title
-                        fontFamily={FONT_FAMILIES.extrabold}
-                        letterSpacing={-0.5}
-                        color={tc.title}
-                      >
-                        {streak ?? 0}
-                      </Text.Title>
-                      <Text.Tiny
-                        fontFamily={FONT_FAMILIES.bold}
-                        color={tc.featureDesc}
-                        letterSpacing={0.6}
-                        marginTop={spacing.xs}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.75}
-                      >
-                        {t('paywallStreakLabel')}
-                      </Text.Tiny>
-                    </YStack>
-                  </XStack>
-                </View>
+        {/* Vertical slack is split top:middle:bottom = 3:3:3 — the stats get a
+            bit more top margin (1/3 of the slack) while the features↔price gap
+            and the bottom margin stay equal to each other, so it reads balanced. */}
+        <View style={{ flex: 3 }} />
 
-                <View style={[dynamicStyles.statCard, dynamicStyles.statNeutralCard]}>
-                  {useGlass && (
-                    <GlassSurface
-                      variant="glass"
-                      isDark={isDark}
-                      tint={tc.planBg}
-                      glassTint={glassTintOf(tc.planBg)}
-                      borderRadius={radius.lg}
-                      style={StyleSheet.absoluteFill}
-                    />
-                  )}
-                  <XStack alignItems="center" gap={spacing.sm + 3}>
-                    <View style={dynamicStyles.statNeutralIcon}>
-                      <BookOpen size={iconSizes.sm} color={tc.featureDesc} />
-                    </View>
-                    <YStack>
-                      <Text.Title
-                        fontFamily={FONT_FAMILIES.extrabold}
-                        letterSpacing={-0.5}
-                        color={tc.title}
-                      >
-                        {factsRead ?? 0}
-                      </Text.Title>
-                      <Text.Tiny
-                        fontFamily={FONT_FAMILIES.bold}
-                        color={tc.featureDesc}
-                        letterSpacing={0.6}
-                        marginTop={spacing.xs}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.75}
-                      >
-                        {t('paywallFactsReadLabel')}
-                      </Text.Tiny>
-                    </YStack>
-                  </XStack>
-                </View>
-              </XStack>
-            </Animated.View>
-          )}
+        {/* Group 2 — Crest + headline (the emotional opener) */}
+        <View style={dynamicStyles.centerGroup}>
+          <PaywallCrest streak={streak ?? 0} factsRead={factsRead ?? 0} tc={tc} isDark={isDark} />
 
           {/* Headline + subtitle */}
           <Animated.View entering={FadeInDown.delay(140).duration(400)}>
@@ -699,8 +696,19 @@ export default function PaywallScreen() {
           </Animated.View>
         </View>
 
+        {/* Gold hairline — the single structural divider between the emotional
+            opener (crest + headline) and the rational benefit proof. */}
+        <Animated.View entering={FadeIn.delay(180)} style={dynamicStyles.hairline} pointerEvents="none">
+          <LinearGradient
+            colors={['transparent', hexToRgba(PAYWALL_GOLD.primary, 0.5), 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+
         {/* Group 3 — Benefits + plans + CTA + footer, anchored to the bottom */}
-        <YStack gap={spacing.sm} marginHorizontal={spacing.xl} marginBottom={spacing.xl}>
+        <YStack gap={spacing.md} marginHorizontal={spacing.xl} marginBottom={spacing.xl}>
           {benefits.map((b, i) => (
             <Animated.View key={i} entering={FadeInDown.delay(200 + i * 70).duration(400)}>
               <View style={dynamicStyles.benefitCard}>
@@ -716,16 +724,21 @@ export default function PaywallScreen() {
                 )}
                 <XStack alignItems="center" gap={spacing.md}>
                   <View style={dynamicStyles.benefitIcon}>{b.icon}</View>
-                  <YStack flex={1} gap={1}>
-                    <Text.Label color={tc.featureTitle}>{b.title}</Text.Label>
+                  <YStack flex={1} gap={2}>
+                    <Text.Body fontFamily={FONT_FAMILIES.semibold} color={tc.featureTitle}>
+                      {b.title}
+                    </Text.Body>
                     <Text.Caption color={tc.featureDesc}>{b.description}</Text.Caption>
                   </YStack>
-                  <Check size={iconSizes.xs - 2} color={tc.featureDesc} strokeWidth={2.4} />
+                  <Check size={iconSizes.sm} color={tc.featureDesc} strokeWidth={2.4} />
                 </XStack>
               </View>
             </Animated.View>
           ))}
         </YStack>
+
+        {/* Features↔price gap — 1/3 of the slack (matches the bottom spacer). */}
+        <View style={{ flex: 3, minHeight: spacing.md }} />
 
         {/* Plans — compact, left-aligned. Crown inline on Monthly, SAVE badge top-right */}
         <Animated.View entering={FadeInDown.delay(420).duration(400)}>
@@ -764,7 +777,7 @@ export default function PaywallScreen() {
                           style={StyleSheet.absoluteFill}
                         />
                         <Text.Tiny
-                          color="#FFFFFF"
+                          color={CREST_INK}
                           fontFamily={FONT_FAMILIES.extrabold}
                           letterSpacing={0.5}
                         >
@@ -886,6 +899,10 @@ export default function PaywallScreen() {
             </Pressable>
           </YStack>
         </Animated.View>
+
+        {/* Bottom spacer — 1/3 of the slack, matching the features↔price gap so
+            the offer floats off the very bottom rather than hugging it. */}
+        <View style={{ flex: 3, minHeight: spacing.md }} />
       </Animated.ScrollView>
     </View>
   );

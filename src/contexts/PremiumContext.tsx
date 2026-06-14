@@ -65,6 +65,16 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
 }
 
 /**
+ * Dev-only placeholder prices so the paywall renders with real-looking numbers
+ * on the simulator / in dev, where the store (and thus live/cached prices) is
+ * unavailable. Never reached in production (DevPremiumProvider is __DEV__-only).
+ */
+const DEV_MOCK_PRICES: CachedSubscription[] = [
+  { id: 'factsaday_premium_weekly', displayPrice: '$4.99', price: 4.99 },
+  { id: 'factsaday_premium_monthly', displayPrice: '$14.99', price: 14.99 },
+];
+
+/**
  * Dev-only provider: no real IAP, premium is toggled via devSetPremium.
  * Paywall "Start Premium" calls devSetPremium(true), "Restore" calls devSetPremium(false).
  */
@@ -108,7 +118,7 @@ function DevPremiumProvider({ children }: { children: React.ReactNode }) {
         isPremium,
         isLoading: false,
         subscriptions: [],
-        cachedPrices: [],
+        cachedPrices: DEV_MOCK_PRICES,
         restorePurchases: async () => {
           await devSetPremium(false);
           return false;
