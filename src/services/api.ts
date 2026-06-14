@@ -563,7 +563,17 @@ export interface ApiComment {
   body: string;
   screen_name: string;
   country_code: string | null;
+  /** Author's content language; lets the app offer a translation to readers in
+   *  a different locale. Null for legacy comments posted before locale capture. */
+  locale: string | null;
   created_at: string;
+}
+
+/** A comment translated into the reader's locale (from /api/comments/translate). */
+export interface ApiCommentTranslation {
+  id: number;
+  body: string;
+  source_locale: string | null;
 }
 
 export interface CommentsPage {
@@ -602,6 +612,27 @@ export async function postFactComment(
     }
   );
   return res.comment;
+}
+
+/**
+ * Translate a batch of comments into `target` (the reader's locale). Anonymous
+ * (App Check only); the server caches per (comment, locale), so repeat calls are
+ * cheap. Returns only the comments that were actually translated — same-locale
+ * or untranslatable ones are omitted and should render as their original.
+ */
+export async function translateComments(
+  commentIds: number[],
+  target: string
+): Promise<ApiCommentTranslation[]> {
+  if (commentIds.length === 0) return [];
+  const res = await makeRequest<{ translations: ApiCommentTranslation[] }>(
+    `/api/comments/translate`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ comment_ids: commentIds, target }),
+    }
+  );
+  return res.translations;
 }
 
 // ====== On-demand feed / hydration (replaces the local facts mirror) ======

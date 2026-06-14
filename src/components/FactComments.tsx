@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTranslation } from '../i18n';
+import { SUPPORTED_LOCALES } from '../i18n/config';
 import * as api from '../services/api';
 import * as userService from '../services/user';
 import { hexColors, useTheme } from '../theme';
@@ -18,6 +19,17 @@ import { XStack, YStack } from './Stacks';
 import { FONT_FAMILIES, Text } from './Typography';
 
 import type { ApiComment } from '../services/api';
+
+/** A comment's translated body + the language it came from, keyed by comment id. */
+type TranslationEntry = { body: string; source_locale: string | null };
+
+/** Endonym for the "Translated from X" label (e.g. en -> English, de -> Deutsch). */
+const LOCALE_ENDONYM: Record<string, string> = Object.fromEntries(
+  SUPPORTED_LOCALES.map((l) => [l.code, l.name])
+);
+function localeName(code: string | null): string {
+  return (code && LOCALE_ENDONYM[code]) || (code ?? '');
+}
 
 interface FactCommentsProps {
   factId: number;
@@ -102,7 +114,20 @@ function GradientDisc({
   );
 }
 
-function CommentRow({ comment, locale }: { comment: ApiComment; locale: string }) {
+function CommentRow({
+  comment,
+  locale,
+  translation,
+  showOriginal,
+  onToggleOriginal,
+}: {
+  comment: ApiComment;
+  locale: string;
+  translation?: TranslationEntry;
+  showOriginal: boolean;
+  onToggleOriginal: () => void;
+}) {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { spacing, radius, borderWidths, typography, iconSizes } = useResponsive();
   const palette = hexColors[theme];
@@ -111,6 +136,15 @@ function CommentRow({ comment, locale }: { comment: ApiComment; locale: string }
   const name = comment.screen_name || '?';
   const accent = avatarColor(name, palette);
   const avatarSize = iconSizes.xl + spacing.xs;
+
+  // When a translation is available we show it by default and offer "See
+  // original"; once toggled to the original we offer "See translation". The
+  // source language for the label comes from the translation (falling back to
+  // the comment's stored author locale).
+  const hasTranslation = !!translation;
+  const viewingTranslation = hasTranslation && !showOriginal;
+  const bodyText = viewingTranslation ? translation!.body : comment.body;
+  const sourceName = localeName(translation?.source_locale ?? comment.locale);
 
   return (
     <XStack gap={spacing.sm} alignItems="flex-start">
@@ -151,8 +185,32 @@ function CommentRow({ comment, locale }: { comment: ApiComment; locale: string }
           </Text.Label>
         </XStack>
         <Text.Body color="$text" fontSize={typography.fontSize.label}>
-          {comment.body}
+          {bodyText}
         </Text.Body>
+
+        {hasTranslation ? (
+          <Pressable
+            onPress={onToggleOriginal}
+            accessibilityRole="button"
+            hitSlop={{ top: spacing.xs, bottom: spacing.xs, left: spacing.sm, right: spacing.sm }}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          >
+            <Text.Label fontSize={typography.fontSize.caption}>
+              {viewingTranslation ? (
+                <Text.Label color="$textMuted" fontSize={typography.fontSize.caption}>
+                  {t('translatedFrom', { language: sourceName }) + ' · '}
+                </Text.Label>
+              ) : null}
+              <Text.Label
+                color={palette.primary}
+                fontFamily={FONT_FAMILIES.semibold}
+                fontSize={typography.fontSize.caption}
+              >
+                {viewingTranslation ? t('seeOriginal') : t('seeTranslation')}
+              </Text.Label>
+            </Text.Label>
+          </Pressable>
+        ) : null}
       </YStack>
     </XStack>
   );
@@ -176,6 +234,13 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
+  // Translations keyed by comment id (foreign comments only), plus a per-comment
+  // "show the original instead" toggle. `requestedRef` dedupes in-flight/done
+  // translation requests so a comment is only ever sent once per locale.
+  const [translations, setTranslations] = useState<Record<number, TranslationEntry>>({});
+  const [showOriginal, setShowOriginal] = useState<Record<number, boolean>>({});
+  const requestedRef = useRef<Set<number>>(new Set());
+
   const [screenName, setScreenName] = useState<string | null>(null);
   const [namePromptVisible, setNamePromptVisible] = useState(false);
   const [draft, setDraft] = useState('');
@@ -191,6 +256,9 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
     setIsLoading(true);
     setLoadError(false);
     setPostError('');
+    setTranslations({});
+    setShowOriginal({});
+    requestedRef.current = new Set();
 
     api
       .getFactComments(factId, null, PAGE_SIZE)
@@ -266,6 +334,46 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
       setIsPosting(false);
     }
   }, [draft, isPosting, factId, locale, t]);
+
+  // Fetch translations for any comments written in a different locale than the
+  // reader's. Server-cached per (comment, locale), so this is cheap on repeat;
+  // results swap the displayed body in place once they arrive.
+  const fetchTranslations = useCallback(
+    async (list: ApiComment[]) => {
+      const ids = list
+        .filter((c) => c.locale && c.locale !== locale && !requestedRef.current.has(c.id))
+        .map((c) => c.id);
+      if (ids.length === 0) return;
+      ids.forEach((id) => requestedRef.current.add(id));
+      try {
+        const results = await api.translateComments(ids, locale);
+        if (results.length === 0) return;
+        setTranslations((prev) => {
+          const next = { ...prev };
+          for (const r of results) next[r.id] = { body: r.body, source_locale: r.source_locale };
+          return next;
+        });
+      } catch {
+        // Drop the ids so a later attempt (e.g. a locale switch) can retry them.
+        ids.forEach((id) => requestedRef.current.delete(id));
+      }
+    },
+    [locale]
+  );
+
+  // Reader switched languages: drop cached translations + the requested set so
+  // the effect below re-translates the current list into the new locale.
+  useEffect(() => {
+    setTranslations({});
+    setShowOriginal({});
+    requestedRef.current = new Set();
+  }, [locale]);
+
+  // Translate whenever the list grows (first page, "show more", a new post) or
+  // the locale changes (fetchTranslations identity changes). Dedupe via the ref.
+  useEffect(() => {
+    void fetchTranslations(comments);
+  }, [comments, fetchTranslations]);
 
   const accent = categoryColor || colors.primary;
   const separatorColor = categoryColor ? `${categoryColor}33` : colors.border;
@@ -472,7 +580,16 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
       ) : (
         <YStack gap={spacing.md}>
           {comments.map((comment) => (
-            <CommentRow key={comment.id} comment={comment} locale={locale} />
+            <CommentRow
+              key={comment.id}
+              comment={comment}
+              locale={locale}
+              translation={translations[comment.id]}
+              showOriginal={!!showOriginal[comment.id]}
+              onToggleOriginal={() =>
+                setShowOriginal((prev) => ({ ...prev, [comment.id]: !prev[comment.id] }))
+              }
+            />
           ))}
           {nextCursor ? (
             <Pressable
