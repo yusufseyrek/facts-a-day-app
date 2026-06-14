@@ -466,6 +466,7 @@
       "./plugins/withIosPodsDeploymentTarget.js",
       "./plugins/withDisableAutoScreenReporting.js",
       "./plugins/withFactWidget.js",
+      "./plugins/withNotificationServiceExtension.js",
       "./plugins/withAdMobMediation.js",
       [
         "react-native-google-mobile-ads",
