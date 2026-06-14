@@ -107,6 +107,7 @@ export interface FactResponse {
   category_icon?: string; // Lucide icon name
   category_color_hex?: string;
   source_url?: string;
+  source_language?: string | null; // language of the source article; null/absent = unknown
   image_url?: string;
   audio_url?: string | null;
   is_historical: boolean;

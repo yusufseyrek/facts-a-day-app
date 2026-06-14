@@ -482,7 +482,11 @@ function TriviaLeaderboardComponent({
                 }}
               />
               <XStack
-                alignItems={podiumOrder.length < 3 ? 'center' : 'flex-end'}
+                // Always bottom-align so every plinth sits flush on the panel
+                // floor. 'center' (the old <3-entry branch) vertically centered
+                // the shorter columns, floating 2nd/3rd place off the bottom
+                // while the tallest (1st) still filled the row.
+                alignItems="flex-end"
                 gap={spacing.md}
                 paddingHorizontal={spacing.lg}
                 paddingTop={spacing.xl}

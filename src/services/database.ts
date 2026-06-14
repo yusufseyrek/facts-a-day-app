@@ -330,6 +330,7 @@ export interface Fact {
   summary?: string;
   category?: string;
   source_url?: string;
+  source_language?: string | null; // language of the source article; null/undefined = unknown
   image_url?: string;
   audio_url?: string;
   is_historical?: number; // 0 or 1
@@ -361,6 +362,7 @@ export interface ApiFactShape {
   category_icon?: string;
   category_color_hex?: string;
   source_url?: string;
+  source_language?: string | null;
   image_url?: string;
   audio_url?: string | null;
   is_historical: boolean;
@@ -394,6 +396,7 @@ export function mapApiFactToRelations(api: ApiFactShape): FactWithRelations {
     summary: api.summary,
     category: api.category,
     source_url: api.source_url,
+    source_language: api.source_language ?? null,
     image_url: api.image_url,
     audio_url: api.audio_url ?? undefined,
     is_historical: api.is_historical ? 1 : 0,

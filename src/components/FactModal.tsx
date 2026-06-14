@@ -616,10 +616,23 @@ export function FactModal({
   const handleSourcePress = useCallback(
     (url: string) => {
       trackSourceLinkClick({ factId: fact.id, domain: extractDomain(url) });
-      const finalUrl = locale !== 'en' ? getTranslatedUrl(url, locale) : url;
+      // Translate the source page only when its language differs from the
+      // reader's. Compare base language codes (the source/locale are ISO codes
+      // like 'en'/'tr', but normalize away case/region just in case).
+      const baseCode = (code: string) => code.toLowerCase().split('-')[0];
+      const sourceLang = fact.source_language ? baseCode(fact.source_language) : null;
+      const userLang = baseCode(locale);
+      // Known source language → translate iff it's not the reader's language.
+      // Unknown source (null) → fall back to the prior heuristic (most sources
+      // are English): translate unless the reader already reads English. Either
+      // way getTranslatedUrl uses sl=sourceLang when known, sl=auto otherwise.
+      const shouldTranslate = sourceLang ? sourceLang !== userLang : userLang !== 'en';
+      const finalUrl = shouldTranslate
+        ? getTranslatedUrl(url, locale, sourceLang ?? undefined)
+        : url;
       Linking.openURL(finalUrl);
     },
-    [fact.id, locale]
+    [fact.id, fact.source_language, locale]
   );
 
   let categoryForBadge: string | Category | null = null;

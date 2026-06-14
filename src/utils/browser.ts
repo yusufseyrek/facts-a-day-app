@@ -13,11 +13,19 @@ export interface OpenBrowserOptions {
  * Wraps a URL with Google Translate to show translated content.
  * @param url - The original URL to translate
  * @param targetLanguage - The target language code (e.g., 'en', 'es', 'ja')
+ * @param sourceLanguage - The known source-article language code. When provided,
+ *   it's passed as `sl=` for a more accurate translation; otherwise Google
+ *   auto-detects (`sl=auto`).
  * @returns The Google Translate wrapped URL
  */
-export function getTranslatedUrl(url: string, targetLanguage: string): string {
+export function getTranslatedUrl(
+  url: string,
+  targetLanguage: string,
+  sourceLanguage?: string | null
+): string {
   const encodedUrl = encodeURIComponent(url);
-  return `https://translate.google.com/translate?sl=auto&tl=${targetLanguage}&u=${encodedUrl}`;
+  const sl = sourceLanguage || 'auto';
+  return `https://translate.google.com/translate?sl=${sl}&tl=${targetLanguage}&u=${encodedUrl}`;
 }
 
 /**

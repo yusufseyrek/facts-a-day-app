@@ -90,6 +90,16 @@ describe('database — mapApiFactToRelations', () => {
     expect(f.categoryData?.icon).toBe('flask');
   });
 
+  it('passes source_language through, defaulting absent/null to null', () => {
+    expect(database.mapApiFactToRelations({ ...baseApiFact, source_language: 'tr' }).source_language).toBe(
+      'tr'
+    );
+    expect(database.mapApiFactToRelations(baseApiFact).source_language).toBeNull();
+    expect(
+      database.mapApiFactToRelations({ ...baseApiFact, source_language: null }).source_language
+    ).toBeNull();
+  });
+
   it('serializes historical metadata into the local JSON string shape', () => {
     const f = database.mapApiFactToRelations({
       ...baseApiFact,
