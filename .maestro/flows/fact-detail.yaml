@@ -1,5 +1,7 @@
-# Fact Detail Screen Screenshot Flow
-# Assumes we're on home screen from previous flow
+# Fact Detail Screen Screenshot Flow (frame 03)
+# Opens a fact card from Home into the detail modal (hero image + source
+# attribution + reading-progress header). Assumes we are on Home (after launch
+# or the previous flow).
 
 appId: dev.seyrek.factsaday
 
@@ -31,7 +33,7 @@ appId: dev.seyrek.factsaday
     timeout: 5000
 
 # Take screenshot
-- takeScreenshot: ${OUTPUT_DIR}/02_fact_detail
+- takeScreenshot: ${OUTPUT_DIR}/03_fact_detail
 
 # Close modal - iOS uses X button, Android uses back key
 - runFlow:

@@ -1,14 +1,23 @@
-# Category Browse Screen Screenshot Flow
-# Assumes we're already on discover screen from previous flow
+# Category Browse Screen Screenshot Flow (frame 05)
+# Opens the first category from Search into its fact list (image cards).
+# Self-contained: deep-links to Search first, so it also works standalone
+# (capture.sh --flow 5) without a prerequisite flow.
 
 appId: dev.seyrek.factsaday
 
 ---
-# Wait for discover screen to be fully stable
+# Ensure we are on the Search tab (harmless if already here)
+- openLink: factsaday://search
+
+# Wait for the category grid to be ready
+- extendedWaitUntil:
+    visible:
+      id: "discover-category-0"
+    timeout: 8000
 - waitForAnimationToEnd:
     timeout: 1000
 
-# Tap on the first category (already on discover from previous flow)
+# Tap the first category
 - tapOn:
     id: "discover-category-0"
     retryTapIfNoChange: true
@@ -17,11 +26,11 @@ appId: dev.seyrek.factsaday
 - extendedWaitUntil:
     visible:
       id: "fact-card-.*"
-    timeout: 5000
+    timeout: 8000
 
 # Wait for images/animations
 - waitForAnimationToEnd:
-    timeout: 1000
+    timeout: 1500
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/05_category_browse

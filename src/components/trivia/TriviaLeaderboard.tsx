@@ -441,8 +441,12 @@ function TriviaLeaderboardComponent({
         </YStack>
       ) : (
         <>
-          {/* Podium hero — full-color gradient in the trivia tile signature */}
+          {/* Podium hero — full-color gradient in the trivia tile signature.
+              testID is the marketing-screenshot wait anchor: it only mounts
+              when the board has entries, so the capture flow gates on it and
+              fails loudly rather than shooting a blank/empty board. */}
           <View
+            testID="leaderboard-podium-hero"
             style={[
               styles.heroShadow,
               { borderRadius: radius.xl, shadowColor: accent },

@@ -1,10 +1,15 @@
 # Main Screenshot Orchestration Flow
-# Runs all screen flows in sequence to capture promotional screenshots
+# Runs all screen flows in sequence to capture promotional screenshots.
 #
 # IMPORTANT: Use the capture.sh script for proper folder structure!
 #   ./marketing/scripts/capture.sh --ios --locale en
 #
-# The OUTPUT_DIR env var MUST be passed via -e flag
+# The OUTPUT_DIR env var MUST be passed via -e flag.
+#
+# Story order (8 frames): home -> story -> fact detail -> search -> category
+# browse -> trivia hub -> leaderboard -> favorites. Navigation between tabs uses
+# factsaday:// deep links inside the per-screen flows (the NativeTabs labels are
+# localized + rendered natively, so tab-text taps are NOT locale-proof).
 
 appId: dev.seyrek.factsaday
 
@@ -22,56 +27,41 @@ appId: dev.seyrek.factsaday
 - waitForAnimationToEnd:
     timeout: 20000
 
-# Wait for app to fully load (tab bar visible)
-- extendedWaitUntil:
-    visible:
-      text: 'Home'
-    timeout: 20000
-
-# Wait for initial content to load (facts should appear)
+# Wait for initial Home content to load — gate on fact cards (locale-proof, no
+# tab text) rather than the localized "Home" label.
 - extendedWaitUntil:
     visible:
       id: 'fact-card-.*'
     timeout: 20000
 
-# Extended wait for all animations, image loading, and list settling
-# This prevents kAXErrorInvalidUIElement errors from FlashList recycling
+# Extended wait for all animations, image loading, and list settling.
+# Prevents kAXErrorInvalidUIElement errors from FlashList recycling.
 - waitForAnimationToEnd:
     timeout: 5000
 
-# Run all screen flows in sequence
-# Flows assume state from previous flow for efficiency
+# Run all screen flows in sequence.
+# Frames 01-03 start from Home; 04-08 self-navigate via deep link.
 
-# 1. Home Screen (already on home after launch)
+# 01. Home feed (already on home after launch)
 - runFlow: flows/home.yaml
 
-# 2. Fact Detail (opens modal from home)
-- runFlow: flows/fact-detail.yaml
-
-# 3. Story Screen (opens story from home)
+# 02. Story view (themed "behind the headlines" hero, Mix fallback)
 - runFlow: flows/story.yaml
 
-# 4. Discover Screen (navigates to discover tab)
+# 03. Fact detail (opens a fact card modal from home)
+- runFlow: flows/fact-detail.yaml
+
+# 04. Search / Discover (deep link -> /search)
 - runFlow: flows/discover.yaml
 
-# 5. Category Browse (taps category, already on discover)
+# 05. Category browse (taps a category on search)
 - runFlow: flows/category-browse.yaml
 
-# 6. Trivia Hub (navigates to trivia tab)
+# 06. Trivia hub (deep link -> /trivia)
 - runFlow: flows/trivia.yaml
 
-# 7. Trivia Game (starts game, already on trivia hub)
-- runFlow: flows/trivia-game.yaml
+# 07. Leaderboard (deep link -> /trivia/leaderboard)
+- runFlow: flows/leaderboard.yaml
 
-# 8. Trivia Performance (opens from trivia hub)
-- runFlow: flows/trivia-performance.yaml
-
-# 9. Trivia Results (taps session, already on performance)
-- runFlow: flows/trivia-results.yaml
-
-# 10. Favorites Screen (navigates to favorites tab)
+# 08. Favorites (deep link -> /favorites)
 - runFlow: flows/favorites.yaml
-
-# Return to home
-- tapOn:
-    text: 'Home'

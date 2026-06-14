@@ -35,49 +35,46 @@ SCREENSHOTS_DIR="$PROJECT_DIR/screenshots"
 
 ALL_LOCALES=("en" "de" "es" "fr" "ja" "ko" "tr" "zh")
 
-# Flow configuration (index 0 unused, 1-10 are valid flows)
+# Flow configuration (index 0 unused, 1-8 are valid flows).
+# Order matches the App Store / Play Store gallery story order.
 FLOW_FILES=(
     ""                      # 0: unused
     "home.yaml"             # 1
-    "fact-detail.yaml"      # 2
-    "story.yaml"            # 3
+    "story.yaml"            # 2
+    "fact-detail.yaml"      # 3
     "discover.yaml"         # 4
     "category-browse.yaml"  # 5
     "trivia.yaml"           # 6
-    "trivia-game.yaml"      # 7
-    "trivia-performance.yaml" # 8
-    "trivia-results.yaml"   # 9
-    "favorites.yaml"        # 10
+    "leaderboard.yaml"      # 7
+    "favorites.yaml"        # 8
 )
 
 FLOW_NAMES=(
     ""                      # 0: unused
     "Home Screen"           # 1
-    "Fact Detail"           # 2
-    "Story Screen"          # 3
-    "Discover Screen"       # 4
+    "Story Screen"          # 2
+    "Fact Detail"           # 3
+    "Search / Discover"     # 4
     "Category Browse"       # 5
     "Trivia Hub"            # 6
-    "Trivia Game"           # 7
-    "Trivia Performance"    # 8
-    "Trivia Results"        # 9
-    "Favorites Screen"      # 10
+    "Leaderboard"           # 7
+    "Favorites Screen"      # 8
 )
 
-# Flow prerequisites (which flows need to run first to set up state)
-# Format: space-separated list of prerequisite flow numbers
+# Flow prerequisites (which flows need to run first to set up state).
+# All flows are now self-contained: 1-3 start from Home (guaranteed by the app
+# launch in the single-flow runner), and 4-8 self-navigate via factsaday://
+# deep links. So there are no prerequisites.
 FLOW_PREREQS=(
     ""      # 0: unused
     ""      # 1: Home - just needs app launched
-    ""      # 2: Fact Detail - starts from home
-    ""      # 3: Story - starts from home
-    ""      # 4: Discover - navigates to tab itself
-    "4"     # 5: Category Browse - needs discover screen first
-    ""      # 6: Trivia Hub - navigates to tab itself
-    "6"     # 7: Trivia Game - needs trivia hub first
-    "6"     # 8: Trivia Performance - needs trivia hub first
-    "6 8"   # 9: Trivia Results - needs trivia hub, then performance
-    ""      # 10: Favorites - navigates to tab itself
+    ""      # 2: Story - starts from home
+    ""      # 3: Fact Detail - starts from home
+    ""      # 4: Search - deep-links to /search
+    ""      # 5: Category Browse - deep-links to /search, then taps a category
+    ""      # 6: Trivia Hub - deep-links to /trivia
+    ""      # 7: Leaderboard - deep-links to /trivia/leaderboard
+    ""      # 8: Favorites - deep-links to /favorites
 )
 
 # Colors
@@ -356,17 +353,12 @@ appId: $APP_ID
       AppleLanguages: "(\${LOCALE})"
       AppleLocale: "\${FULL_LOCALE}"
 
-# Wait for app to fully load
-- extendedWaitUntil:
-    visible:
-      id: "tab-home"
-    timeout: 15000
-
-# Wait for initial content
+# Wait for initial Home content (locale-proof: gate on fact cards, not the
+# localized tab label)
 - extendedWaitUntil:
     visible:
       id: "fact-card-.*"
-    timeout: 15000
+    timeout: 20000
 
 - waitForAnimationToEnd:
     timeout: 3000
@@ -477,22 +469,21 @@ PLATFORM (required):
 OPTIONS:
     --locale <code>     Capture specific locale (en, de, es, fr, ja, ko, tr, zh)
     --all-locales       Capture all 8 supported locales
-    --flow <number>     Capture only a specific screen (1-10, see list below)
+    --flow <number>     Capture only a specific screen (1-8, see list below)
     --help              Show this help
 
-FLOWS:
-    1  Home Screen         - Facts feed
-    2  Fact Detail         - Modal detail view
-    3  Story Screen        - Full-screen story view
-    4  Discover Screen     - Category discovery
-    5  Category Browse     - Category facts list (auto-runs: 4)
-    6  Trivia Hub          - Trivia main screen
-    7  Trivia Game         - Active trivia question (auto-runs: 6)
-    8  Trivia Performance  - Stats overview (auto-runs: 6)
-    9  Trivia Results      - Session results (auto-runs: 6, 8)
-    10 Favorites Screen    - Saved facts
+FLOWS (App Store / Play Store gallery order):
+    1  Home Screen        - Curated facts feed + story buttons
+    2  Story Screen       - Full-screen "behind the headlines" story
+    3  Fact Detail        - Modal detail view (hero image + source)
+    4  Search / Discover  - Category grid
+    5  Category Browse    - Category facts list (self-navigates to search)
+    6  Trivia Hub         - Stats hero + game modes
+    7  Leaderboard        - Competition podium + ranks
+    8  Favorites Screen   - Saved facts (offline)
 
-    Note: Prerequisites are automatically run to reach the correct app state.
+    Note: every flow is self-contained — 1-3 start from Home (the app launch),
+    4-8 self-navigate via factsaday:// deep links. No prerequisites needed.
 
 EXAMPLES:
     # iOS phone, English only (all screens)
@@ -504,8 +495,8 @@ EXAMPLES:
     # Android, German only
     ./marketing/scripts/capture.sh --android --locale de
 
-    # Just capture the trivia game screen (flow 6)
-    ./marketing/scripts/capture.sh --ios --flow 6
+    # Just capture the leaderboard screen (flow 7)
+    ./marketing/scripts/capture.sh --ios --flow 7
 
     # Capture home screen in all locales
     ./marketing/scripts/capture.sh --ios --flow 1 --all-locales
@@ -558,11 +549,11 @@ main() {
                 ;;
             --flow)
                 flow_num="$2"
-                if [[ ! "$flow_num" =~ ^([1-9]|10)$ ]]; then
-                    error "Invalid flow number: $flow_num (must be 1-10)"
+                if [[ ! "$flow_num" =~ ^[1-8]$ ]]; then
+                    error "Invalid flow number: $flow_num (must be 1-8)"
                     echo "" >&2
                     echo "Available flows:" >&2
-                    for i in {1..10}; do
+                    for i in {1..8}; do
                         echo "  $i: ${FLOW_NAMES[$i]}" >&2
                     done
                     exit 1
@@ -632,7 +623,7 @@ main() {
     if [ -n "$flow_num" ]; then
         info "Flow:        $flow_num (${FLOW_NAMES[$flow_num]})"
     else
-        info "Flow:        All screens (1-10)"
+        info "Flow:        All screens (1-8)"
     fi
     info "Output:      screenshots/$platform/$device_type/"
     

@@ -1,19 +1,18 @@
-# Favorites Screen Screenshot Flow
-# Captures the saved/favorite facts screen
+# Favorites Screen Screenshot Flow (frame 08)
+# Captures the saved/favorite facts screen (works offline). Navigates via deep
+# link (locale-proof).
 
 appId: dev.seyrek.factsaday
 
 ---
-# Navigate to favorites tab
-- tapOn:
-    text: "Favorites"
-    retryTapIfNoChange: true
+# Open the Favorites tab via deep link (expo-router route /favorites)
+- openLink: factsaday://favorites
 
-# Wait for favorites content to load (optional — may be empty state)
+# Wait for favorites content to load (optional — may be an empty state)
 - extendedWaitUntil:
     visible:
       id: "fact-card-.*"
-    timeout: 5000
+    timeout: 8000
     optional: true
 
 # Wait for images and animations to settle
@@ -21,4 +20,4 @@ appId: dev.seyrek.factsaday
     timeout: 2000
 
 # Take screenshot
-- takeScreenshot: ${OUTPUT_DIR}/10_favorites
+- takeScreenshot: ${OUTPUT_DIR}/08_favorites

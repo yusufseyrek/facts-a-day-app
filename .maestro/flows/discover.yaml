@@ -1,23 +1,24 @@
-# Search Screen Screenshot Flow
-# Captures the search/browse screen with category grid
+# Search / Discover Screen Screenshot Flow (frame 04)
+# Captures the search screen with the hue-sorted category grid.
+# Navigates via deep link so we never tap the localized native tab labels
+# (NativeTabs renders labels natively + per-locale; tab text taps are not
+# locale-proof and the iOS 26 search role is a separated button).
 
 appId: dev.seyrek.factsaday
 
 ---
-# Navigate to search tab
-- tapOn:
-    text: "Search"
-    retryTapIfNoChange: true
+# Open the Search tab via deep link (expo-router route /search)
+- openLink: factsaday://search
 
-# Wait for categories to load
+# Wait for the category grid to load (async — generous timeout)
 - extendedWaitUntil:
     visible:
       id: "discover-category-0"
-    timeout: 1000
+    timeout: 8000
 
 # Wait for animations to settle
 - waitForAnimationToEnd:
-    timeout: 1000
+    timeout: 1500
 
 # Take screenshot
 - takeScreenshot: ${OUTPUT_DIR}/04_discover

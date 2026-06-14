@@ -1,25 +1,45 @@
-# Story Screen Screenshot Flow
-# Assumes we're on home screen after fact-detail modal closed
+# Story Screen Screenshot Flow (frame 02)
+# Captures the full-screen immersive story view ("behind the headlines" hero).
+# Prefers a themed event-collection story; falls back to the always-present Mix
+# story when no event theme is seeded on the capture DB. Assumes we are on Home
+# (after launch or the previous flow). Selectors are testIDs, so locale-proof.
 
 appId: dev.seyrek.factsaday
 
 ---
-# Wait for home to stabilize after fact-detail modal close
+# Let Home settle (e.g. after a closed modal from a prior flow)
 - waitForAnimationToEnd:
     timeout: 2000
 
-# Wait for story buttons to be visible
+# Wait for the story-button row to load
 - extendedWaitUntil:
     visible:
       id: "story-button-.*"
-    timeout: 5000
+    timeout: 8000
 
-# Tap the mix story button (always first, always exists)
+# Prefer a themed event-collection story — the strongest "behind the headlines"
+# visual. story-button-theme:<slug> sits right after Mix when a theme is active.
 - tapOn:
-    id: "story-button-mix"
+    id: "story-button-theme:.*"
+    index: 0
+    optional: true
     retryTapIfNoChange: true
 
-# Wait for story content to load (image + text overlay)
+# Give the story view a moment to open if a theme button was tapped
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Fall back to the always-present Mix story when no event theme opened
+- runFlow:
+    when:
+      notVisible:
+        id: "story-content"
+    commands:
+      - tapOn:
+          id: "story-button-mix"
+          retryTapIfNoChange: true
+
+# Wait for story content (full-bleed image + text overlay)
 - extendedWaitUntil:
     visible:
       id: "story-content"
@@ -30,7 +50,7 @@ appId: dev.seyrek.factsaday
     timeout: 3000
 
 # Take screenshot
-- takeScreenshot: ${OUTPUT_DIR}/03_story
+- takeScreenshot: ${OUTPUT_DIR}/02_story
 
 # Close story - iOS uses close button, Android uses back key
 - runFlow:
@@ -50,9 +70,3 @@ appId: dev.seyrek.factsaday
       - pressKey: back
       - waitForAnimationToEnd:
           timeout: 1000
-
-# Wait for home tab to be visible again
-- extendedWaitUntil:
-    visible:
-      text: "Home"
-    timeout: 5000

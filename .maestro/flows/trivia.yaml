@@ -1,21 +1,20 @@
-# Trivia Hub Screen Screenshot Flow
-# Captures the main trivia screen with game modes
+# Trivia Hub Screen Screenshot Flow (frame 06)
+# Captures the trivia hub (stats hero with accuracy ring + all-time rank, and
+# the game-mode tiles). Navigates via deep link (locale-proof).
 
 appId: dev.seyrek.factsaday
 
 ---
-# Navigate to trivia tab
-- tapOn:
-    text: "Trivia"
-    retryTapIfNoChange: true
+# Open the Trivia tab via deep link (expo-router route /trivia)
+- openLink: factsaday://trivia
 
-# Wait for trivia hub to load
+# Wait for the trivia hub stats hero to load
 - extendedWaitUntil:
     visible:
       id: "trivia-stats-hero"
-    timeout: 3000
+    timeout: 8000
 
-# Wait for animations
+# Wait for animations (accuracy ring, hero counters)
 - waitForAnimationToEnd:
     timeout: 2000
 

@@ -1,0 +1,28 @@
+# Leaderboard Screen Screenshot Flow (frame 07) — NEW
+# Captures the competition leaderboard (gradient podium hero + ranked list).
+# Navigates straight to the leaderboard via deep link (locale-proof; the entry
+# point is otherwise an icon-only header trophy).
+#
+# IMPORTANT: the podium hero only mounts when the board has entries. We gate the
+# screenshot on its testID so an EMPTY board fails loudly instead of shooting a
+# blank state. The capture DB (a prod backup) normally has real leaderboard
+# data; if a clean run shows empty, seed a few rows or drop this frame.
+
+appId: dev.seyrek.factsaday
+
+---
+# Open the leaderboard via deep link (expo-router route /trivia/leaderboard)
+- openLink: factsaday://trivia/leaderboard
+
+# Gate on the podium hero (present only when the board has entries)
+- extendedWaitUntil:
+    visible:
+      id: "leaderboard-podium-hero"
+    timeout: 10000
+
+# Wait for podium / list entrance animations to settle
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# Take screenshot
+- takeScreenshot: ${OUTPUT_DIR}/07_leaderboard
