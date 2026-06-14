@@ -1,11 +1,10 @@
 import { useCallback, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, View } from 'react-native';
 
 import { useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { ContentContainer } from '../../../src/components';
-import { PullToRefresh } from '../../../src/components/home/PullToRefresh';
 import { TriviaLeaderboard } from '../../../src/components/trivia';
 import { trackScreenView } from '../../../src/services/analytics';
 import { hexColors, useTheme } from '../../../src/theme';
@@ -44,21 +43,18 @@ export default function TriviaLeaderboardScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <PullToRefresh refreshing={refreshing} onRefresh={handleRefresh}>
-        {(scrollProps) => (
-          <ScrollView
-            {...scrollProps}
-            showsVerticalScrollIndicator={false}
-            contentInsetAdjustmentBehavior="automatic"
-          >
-            <ContentContainer>
-              <View style={{ marginVertical: spacing.lg }}>
-                <TriviaLeaderboard reloadToken={reloadToken} limit={50} onLoadEnd={handleLoadEnd} />
-              </View>
-            </ContentContainer>
-          </ScrollView>
-        )}
-      </PullToRefresh>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        overScrollMode="never"
+        contentInsetAdjustmentBehavior="automatic"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+      >
+        <ContentContainer>
+          <View style={{ marginVertical: spacing.lg }}>
+            <TriviaLeaderboard reloadToken={reloadToken} limit={50} onLoadEnd={handleLoadEnd} />
+          </View>
+        </ContentContainer>
+      </ScrollView>
     </View>
   );
 }

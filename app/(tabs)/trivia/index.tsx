@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, View } from 'react-native';
+import { Platform, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { useFocusEffect, useNavigation } from 'expo-router';
@@ -7,7 +7,6 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { ContentContainer, ScreenContainer } from '../../../src/components';
-import { PullToRefresh } from '../../../src/components/home/PullToRefresh';
 import { ArrowRight, Sparkles, Trophy } from '../../../src/components/icons';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { TriviaGridCard, TriviaIntroModal, TriviaStatsHero } from '../../../src/components/trivia';
@@ -314,15 +313,16 @@ export default function TriviaScreen() {
     <ScreenContainer edges={[]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <YStack flex={1}>
-        <PullToRefresh refreshing={refreshing} onRefresh={() => loadTriviaData(true)}>
-          {(scrollProps) => (
-            <ScrollView
-              {...scrollProps}
-              ref={scrollViewRef}
-              showsVerticalScrollIndicator={false}
-              contentInsetAdjustmentBehavior="automatic"
-            >
-              <ContentContainer paddingTop={headerGap + spacing.sm} paddingBottom={spacing.xl}>
+        <ScrollView
+          ref={scrollViewRef}
+          showsVerticalScrollIndicator={false}
+          overScrollMode="never"
+          contentInsetAdjustmentBehavior="automatic"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => loadTriviaData(true)} />
+          }
+        >
+          <ContentContainer paddingTop={headerGap + spacing.sm} paddingBottom={spacing.xl}>
             {/* Always show Stats */}
             <Animated.View
               entering={FadeInDown.delay(50).duration(300)}
@@ -498,10 +498,8 @@ export default function TriviaScreen() {
                 </YStack>
               </Animated.View>
             )}
-              </ContentContainer>
-            </ScrollView>
-          )}
-        </PullToRefresh>
+          </ContentContainer>
+        </ScrollView>
       </YStack>
 
       {/* Trivia Intro Modal */}

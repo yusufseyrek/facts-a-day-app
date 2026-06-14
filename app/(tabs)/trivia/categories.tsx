@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Platform, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,7 +10,6 @@ import { StatusBar } from 'expo-status-bar';
 import { ContentContainer } from '../../../src/components';
 import { BannerAd } from '../../../src/components/ads';
 import { GlassSurface } from '../../../src/components/GlassSurface';
-import { PullToRefresh } from '../../../src/components/home/PullToRefresh';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
 import { useTranslation } from '../../../src/i18n';
@@ -147,17 +146,16 @@ export default function CategoriesAccuracyScreen() {
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      <PullToRefresh refreshing={refreshing} onRefresh={() => loadData(true)}>
-        {(scrollProps) => (
-          <ScrollView
-            {...scrollProps}
-            showsVerticalScrollIndicator={false}
-            contentInsetAdjustmentBehavior="automatic"
-            contentContainerStyle={{
-              paddingBottom: insets.bottom + spacing.xl,
-            }}
-          >
-            <ContentContainer>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        overScrollMode="never"
+        contentInsetAdjustmentBehavior="automatic"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + spacing.xl,
+        }}
+      >
+        <ContentContainer>
           <YStack padding={spacing.lg}>
             {categories.length > 0 ? (
               <>
@@ -203,9 +201,7 @@ export default function CategoriesAccuracyScreen() {
             )}
           </YStack>
         </ContentContainer>
-          </ScrollView>
-        )}
-      </PullToRefresh>
+      </ScrollView>
 
       <BannerAd respectBottomInset />
     </View>
