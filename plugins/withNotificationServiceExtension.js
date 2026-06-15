@@ -83,8 +83,36 @@ function withNSEFiles(config) {
   ]);
 }
 
-// Keep the NSE's version + signing team locked to the main app on every
-// prebuild (runs even when the target already exists, so it never drifts).
+// Find the NSE native target's uuid, matching the name whether or not the
+// xcode lib quoted it. pbxTargetByName matches the raw (quoted) comment, so a
+// plain unquoted lookup can miss an existing target and create a DUPLICATE on a
+// non-clean re-prebuild (two targets -> ambiguous .appex -> signing breaks).
+function findNSETargetUuid(xcodeProject) {
+  const nativeTargets = xcodeProject.pbxNativeTargetSection();
+  for (const key in nativeTargets) {
+    if (key.endsWith('_comment')) continue;
+    const t = nativeTargets[key];
+    if (typeof t === 'object' && t.name && String(t.name).replace(/"/g, '') === NSE_NAME) {
+      return key;
+    }
+  }
+  return null;
+}
+
+// Keep the NSE's version + automatic-signing intent in sync on every prebuild
+// (runs even when the target already exists, so a plain `expo prebuild` fixes an
+// existing ios/ without --clean).
+//
+// Signing strategy — deliberately do NOT set DEVELOPMENT_TEAM here. Expo's
+// run:ios signer only adds `-allowProvisioningUpdates` (which lets Xcode
+// register + generate the brand-new extension App ID's profile) when it detects
+// that NOT all targets already carry a team. If we hardcode the NSE's team, Expo
+// concludes signing is "already configured", skips the flag, and the build fails
+// with "No profiles for '...NotificationService' / Automatic signing is
+// disabled". Leaving the team off lets Expo's signer engage: it sets the team +
+// CODE_SIGN_STYLE=Automatic on every target (incl. this one) AND passes the flag,
+// so the profile is generated on first build. We still pin CODE_SIGN_STYLE +
+// ProvisioningStyle = Automatic so the target is unambiguously auto-signed.
 function syncNSEBuildSettings(xcodeProject, config) {
   const configurations = xcodeProject.pbxXCBuildConfigurationSection();
   for (const key in configurations) {
@@ -94,12 +122,24 @@ function syncNSEBuildSettings(xcodeProject, config) {
       cfg.buildSettings &&
       cfg.buildSettings.PRODUCT_BUNDLE_IDENTIFIER === `"${NSE_BUNDLE_ID}"`
     ) {
+      cfg.buildSettings.CODE_SIGN_STYLE = 'Automatic';
       cfg.buildSettings.MARKETING_VERSION = config.version || '1.0';
       cfg.buildSettings.CURRENT_PROJECT_VERSION = String(config.ios?.buildNumber ?? '1');
-      if (config.ios?.appleTeamId) {
-        cfg.buildSettings.DEVELOPMENT_TEAM = config.ios.appleTeamId;
-      }
+      // No DEVELOPMENT_TEAM on purpose (see above) — Expo's signer sets it and,
+      // crucially, only then passes -allowProvisioningUpdates.
     }
+  }
+
+  // Mirror automatic signing into the project's TargetAttributes for the NSE.
+  const nseUuid = findNSETargetUuid(xcodeProject);
+  if (nseUuid) {
+    const project = xcodeProject.getFirstProject().firstProject;
+    project.attributes = project.attributes || {};
+    project.attributes.TargetAttributes = project.attributes.TargetAttributes || {};
+    project.attributes.TargetAttributes[nseUuid] = {
+      ...(project.attributes.TargetAttributes[nseUuid] || {}),
+      ProvisioningStyle: 'Automatic',
+    };
   }
 }
 
@@ -110,7 +150,7 @@ function withNSETarget(config) {
   return withXcodeProject(config, (mod) => {
     const xcodeProject = mod.modResults;
 
-    if (xcodeProject.pbxTargetByName(NSE_NAME)) {
+    if (findNSETargetUuid(xcodeProject)) {
       syncNSEBuildSettings(xcodeProject, config);
       return mod;
     }
@@ -205,11 +245,9 @@ function withNSETarget(config) {
         cfg.buildSettings.SKIP_INSTALL = 'YES';
         cfg.buildSettings.GENERATE_INFOPLIST_FILE = 'NO';
         cfg.buildSettings.CLANG_ENABLE_MODULES = 'YES';
-        // The extension is added by us, so it inherits no signing team — mirror
-        // the main app's so `expo run:ios` and EAS can sign it.
-        if (config.ios?.appleTeamId) {
-          cfg.buildSettings.DEVELOPMENT_TEAM = config.ios.appleTeamId;
-        }
+        // DEVELOPMENT_TEAM intentionally omitted — see syncNSEBuildSettings:
+        // Expo's signer must see the NSE as "team-less" to engage automatic
+        // provisioning (-allowProvisioningUpdates) and generate its profile.
       }
     }
 
