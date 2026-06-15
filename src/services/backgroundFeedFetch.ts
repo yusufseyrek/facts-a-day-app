@@ -9,6 +9,7 @@ import { getLocaleFromCode } from '../i18n/config';
 
 import { API_BASE_URL } from './api';
 import { precacheFeedImages } from './images';
+import { pushWidgetFacts } from './widgetData';
 
 /**
  * Background feed refresh: while the app is closed the OS opportunistically runs
@@ -59,6 +60,11 @@ TaskManager.defineTask(BACKGROUND_FEED_TASK, async () => {
     // (keeps this headless-safe by not importing the SQLite layer).
     const facts = (data?.pages ?? []).flatMap((p) => p.facts);
     await precacheFeedImages(facts);
+
+    // Mirror the latest facts into the home-screen widget on this same ~hourly
+    // cadence, reusing the facts we just fetched (no extra network). Keeps the
+    // widget fresh while the app is closed. Headless-safe (no SQLite import).
+    await pushWidgetFacts(facts, locale);
 
     await asyncStoragePersister.persistClient({
       buster: API_BASE_URL,

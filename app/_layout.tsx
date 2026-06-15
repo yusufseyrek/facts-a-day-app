@@ -76,6 +76,7 @@ import {
 import * as triviaSync from '../src/services/triviaSync';
 import * as updates from '../src/services/updates';
 import * as userService from '../src/services/user';
+import { refreshWidgetData } from '../src/services/widgetData';
 import { AppThemeProvider, hexColors, useTheme } from '../src/theme';
 
 // Prevent "multiple linking listeners" error during Fast Refresh
@@ -496,6 +497,9 @@ export default function RootLayout() {
 
         // Refresh the on-demand feed cache so returning users see new facts.
         contentRefresh.triggerFeedRefresh();
+
+        // Mirror the latest facts into the home-screen widget on foreground.
+        refreshWidgetData(getLocaleFromCode(deviceLocale)).catch(() => {});
       }
       appStateRef.current = nextAppState;
     };
@@ -594,6 +598,9 @@ export default function RootLayout() {
 
       const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
       const locale = getLocaleFromCode(deviceLocale);
+
+      // Seed the home-screen widget with the latest facts on launch.
+      refreshWidgetData(locale).catch(() => {});
 
       if (localeStatus.changed) {
         // Locale changed (OS cold-restarted the app). The home feed is fetched

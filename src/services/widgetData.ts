@@ -1,13 +1,18 @@
 /**
  * Widget Data Service
  *
- * Pushes the most recently added facts from the local DB to the native home
- * screen widgets (iOS WidgetKit / Android AppWidget).
+ * Mirrors the latest facts from the API feed into the native home-screen
+ * widgets (iOS WidgetKit / Android AppWidget) by writing a JSON payload to
+ * shared storage via the WidgetBridge.
  *
- * The widget shows the last N facts by `created_at`, independent of what the
- * home screen feed is rendering. Call `refreshWidgetData(locale)` after any
- * event that may have changed the set of latest facts — content syncs, app
- * foreground, language switch. Safe to call frequently; errors are swallowed.
+ * Two entry points, both headless-safe (no SQLite import) so they can run from
+ * the OS background feed task as well as the foreground:
+ *  - refreshWidgetData(locale): fetch the latest facts, then push.
+ *  - pushWidgetFacts(facts, locale): push facts the caller already fetched
+ *    (e.g. the background feed task) with no extra network round-trip.
+ *
+ * The widget shows the last WIDGET_FACT_COUNT facts by `created_at`. Safe to
+ * call frequently; errors are swallowed.
  */
 
 import { Appearance } from 'react-native';
@@ -19,10 +24,9 @@ import { getCategoryNeonColor } from '../theme/glowStyles';
 import { getContrastColor } from '../utils/colors';
 
 import { getFactsFeed } from './api';
-import { mapApiFactToRelations } from './database';
 import { getIsPremium } from './premiumState';
 
-import type { FactWithRelations } from './database';
+import type { FactResponse } from './api';
 
 const THEME_STORAGE_KEY = '@app_theme_mode';
 const WIDGET_FACT_COUNT = 5;
@@ -62,17 +66,16 @@ async function resolveTheme(): Promise<'light' | 'dark'> {
   return Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
 }
 
-function toWidgetFact(f: FactWithRelations, theme: 'light' | 'dark'): WidgetFact {
-  const categorySlug = f.categoryData?.slug || f.category || 'general';
-  // Prefer the DB-provided color_hex (synced from the API so it stays in sync
-  // with the rest of the app); fall back to the theme-based neon palette for
-  // categories that don't yet have a color set server-side.
-  const categoryColor = f.categoryData?.color_hex || getCategoryNeonColor(categorySlug, theme);
+function toWidgetFact(f: FactResponse, theme: 'light' | 'dark'): WidgetFact {
+  const categorySlug = f.category || 'general';
+  // Prefer the API-provided category color; fall back to the theme-based neon
+  // palette for categories that don't yet have a color set server-side.
+  const categoryColor = f.category_color_hex || getCategoryNeonColor(categorySlug, theme);
   return {
     id: f.id,
     title: f.title || f.content.substring(0, 200),
     categorySlug,
-    categoryName: f.categoryData?.name || categorySlug,
+    categoryName: f.category_name || categorySlug,
     categoryColor,
     categoryTextColor: getContrastColor(categoryColor),
     deepLink: `factsaday://fact/${f.id}`,
@@ -85,35 +88,50 @@ function toWidgetFact(f: FactWithRelations, theme: 'light' | 'dark'): WidgetFact
 // ============================================================================
 
 /**
- * Fetch the most recently added facts from the DB and push them to the
- * widgets. Triggers a widget reload so the new data appears within seconds.
- *
- * Call this after any event that may have added new facts to the DB, or any
- * event that changes how facts should render (theme, locale, premium).
+ * Build the widget payload from raw API facts and write it to shared storage,
+ * then trigger a widget reload so the new data appears within seconds. Uses the
+ * newest WIDGET_FACT_COUNT usable facts (caller passes them newest-first).
+ */
+async function buildAndPush(facts: FactResponse[], locale: string): Promise<void> {
+  const usable = facts.filter((f) => f.title || f.content).slice(0, WIDGET_FACT_COUNT);
+  if (usable.length === 0) return;
+
+  const theme = await resolveTheme();
+  const widgetFacts = usable.map((f) => toWidgetFact(f, theme));
+
+  const payload: WidgetFactData = {
+    facts: widgetFacts,
+    updatedAt: new Date().toISOString(),
+    theme,
+    locale,
+    isPremium: getIsPremium(),
+  };
+
+  await setWidgetData(JSON.stringify(payload));
+  await reloadWidgets();
+}
+
+/**
+ * Fetch the most recent facts from the API feed and push them to the widgets.
+ * Use on foreground / cold start. Safe to call frequently; errors are swallowed.
  */
 export async function refreshWidgetData(locale: string): Promise<void> {
   try {
     const page = await getFactsFeed({ language: locale, limit: WIDGET_FACT_COUNT });
-    const facts = page.facts.map(mapApiFactToRelations);
-    if (facts.length === 0) return;
-
-    const theme = await resolveTheme();
-    const widgetFacts = facts
-      .filter((f) => f.title || f.content)
-      .map((f) => toWidgetFact(f, theme));
-    if (widgetFacts.length === 0) return;
-
-    const payload: WidgetFactData = {
-      facts: widgetFacts,
-      updatedAt: new Date().toISOString(),
-      theme,
-      locale,
-      isPremium: getIsPremium(),
-    };
-
-    await setWidgetData(JSON.stringify(payload));
-    await reloadWidgets();
+    await buildAndPush(page.facts, locale);
   } catch (error) {
     if (__DEV__) console.error('refreshWidgetData failed:', error);
+  }
+}
+
+/**
+ * Push facts the caller has already fetched (e.g. the OS background feed task)
+ * into the widgets with no extra network round-trip. Errors are swallowed.
+ */
+export async function pushWidgetFacts(facts: FactResponse[], locale: string): Promise<void> {
+  try {
+    await buildAndPush(facts, locale);
+  } catch (error) {
+    if (__DEV__) console.error('pushWidgetFacts failed:', error);
   }
 }
