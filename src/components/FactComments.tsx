@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, TextInput, View } from 'react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTranslation } from '../i18n';
@@ -8,6 +9,7 @@ import { SUPPORTED_LOCALES } from '../i18n/config';
 import * as api from '../services/api';
 import * as userService from '../services/user';
 import { hexColors, useTheme } from '../theme';
+import { openInAppBrowser } from '../utils/browser';
 import { darkenColor, getContrastColor } from '../utils/colors';
 import { countryFlagEmoji } from '../utils/countryFlag';
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
@@ -39,6 +41,9 @@ interface FactCommentsProps {
 
 const PAGE_SIZE = 10;
 const MAX_COMMENT_LENGTH = 500;
+
+// One-time community-rules agreement before a user's first post (Apple 1.2 EULA).
+const COMMENT_EULA_KEY = '@comment_eula_accepted';
 
 /** "5m" / "3h" style relative age; falls back to a localized date. */
 function timeAgo(createdAt: string, locale: string): string {
@@ -120,12 +125,14 @@ function CommentRow({
   translation,
   showOriginal,
   onToggleOriginal,
+  onMenu,
 }: {
   comment: ApiComment;
   locale: string;
   translation?: TranslationEntry;
   showOriginal: boolean;
   onToggleOriginal: () => void;
+  onMenu?: () => void;
 }) {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -171,18 +178,38 @@ function CommentRow({
         paddingVertical={spacing.sm + spacing.xs}
         gap={spacing.xs}
       >
-        <XStack alignItems="center" gap={spacing.xs} flexWrap="wrap">
-          <Text.Label
-            color="$text"
-            fontFamily={FONT_FAMILIES.semibold}
-            fontSize={typography.fontSize.caption}
-          >
-            {name}
-          </Text.Label>
-          {flag ? <Text.Label fontSize={typography.fontSize.caption}>{flag}</Text.Label> : null}
-          <Text.Label color="$textMuted" fontSize={typography.fontSize.caption}>
-            {'· ' + timeAgo(comment.created_at, locale)}
-          </Text.Label>
+        <XStack alignItems="center" gap={spacing.xs}>
+          <XStack alignItems="center" gap={spacing.xs} flexWrap="wrap" flex={1}>
+            <Text.Label
+              color="$text"
+              fontFamily={FONT_FAMILIES.semibold}
+              fontSize={typography.fontSize.caption}
+            >
+              {name}
+            </Text.Label>
+            {flag ? <Text.Label fontSize={typography.fontSize.caption}>{flag}</Text.Label> : null}
+            <Text.Label color="$textMuted" fontSize={typography.fontSize.caption}>
+              {'· ' + timeAgo(comment.created_at, locale)}
+            </Text.Label>
+          </XStack>
+          {onMenu ? (
+            <Pressable
+              onPress={onMenu}
+              accessibilityRole="button"
+              accessibilityLabel={t('commentOptions')}
+              hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: spacing.sm, right: spacing.sm }}
+              style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1, paddingHorizontal: spacing.xs })}
+            >
+              <Text.Label
+                color="$textMuted"
+                fontFamily={FONT_FAMILIES.bold}
+                fontSize={typography.fontSize.label}
+                maxFontSizeMultiplier={1}
+              >
+                {'⋯'}
+              </Text.Label>
+            </Pressable>
+          ) : null}
         </XStack>
         <Text.Body color="$text" fontSize={typography.fontSize.label}>
           {bodyText}
@@ -317,9 +344,82 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
     }
   }, [factId, nextCursor, isLoadingMore]);
 
+  // One-time community-rules agreement (Apple 1.2 EULA) before the first post.
+  const ensureCommentEula = useCallback(async (): Promise<boolean> => {
+    try {
+      if (await AsyncStorage.getItem(COMMENT_EULA_KEY)) return true;
+    } catch {
+      // storage unavailable — fall through to the prompt
+    }
+    return new Promise<boolean>((resolve) => {
+      Alert.alert(
+        t('commentEulaTitle'),
+        t('commentEulaMessage'),
+        [
+          { text: t('cancel'), style: 'cancel', onPress: () => resolve(false) },
+          {
+            text: t('commentEulaViewTerms'),
+            onPress: () => {
+              openInAppBrowser(`https://factsaday.com/${locale}/terms`, { theme }).catch(() => {});
+              resolve(false);
+            },
+          },
+          {
+            text: t('commentEulaAgree'),
+            onPress: async () => {
+              try {
+                await AsyncStorage.setItem(COMMENT_EULA_KEY, '1');
+              } catch {
+                // best-effort; they'll just be asked again next time
+              }
+              resolve(true);
+            },
+          },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) }
+      );
+    });
+  }, [t, locale, theme]);
+
+  // Per-comment overflow menu: report the comment or block its author (Apple 1.2).
+  const handleCommentMenu = useCallback(
+    (comment: ApiComment) => {
+      Alert.alert(comment.screen_name || t('comments'), undefined, [
+        {
+          text: t('commentMenuReport'),
+          onPress: async () => {
+            try {
+              await api.reportComment(comment.id);
+              Alert.alert(t('commentReportDoneTitle'), t('commentReportDoneMessage'));
+            } catch {
+              Alert.alert(t('error'), t('commentActionFailed'));
+            }
+          },
+        },
+        {
+          text: t('commentMenuBlock'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.blockCommentAuthor(comment.id);
+              // Hide their comments from the current list immediately; the feed
+              // is block-aware server-side on the next load.
+              setComments((prev) => prev.filter((c) => c.screen_name !== comment.screen_name));
+            } catch {
+              Alert.alert(t('error'), t('commentActionFailed'));
+            }
+          },
+        },
+        { text: t('cancel'), style: 'cancel' },
+      ]);
+    },
+    [t]
+  );
+
   const submit = useCallback(async () => {
     const body = draft.trim();
     if (!body || isPosting) return;
+    if (!(await ensureCommentEula())) return;
     setIsPosting(true);
     setPostError('');
     try {
@@ -329,11 +429,17 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
       setDraft('');
     } catch (error) {
       const status = (error as any)?.status;
-      setPostError(status === 429 ? t('commentCooldown') : t('commentPostFailed'));
+      setPostError(
+        status === 429
+          ? t('commentCooldown')
+          : status === 422
+            ? t('commentRejected')
+            : t('commentPostFailed')
+      );
     } finally {
       setIsPosting(false);
     }
-  }, [draft, isPosting, factId, locale, t]);
+  }, [draft, isPosting, factId, locale, t, ensureCommentEula]);
 
   // Fetch translations for any comments written in a different locale than the
   // reader's. Server-cached per (comment, locale), so this is cheap on repeat;
@@ -589,6 +695,7 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
               onToggleOriginal={() =>
                 setShowOriginal((prev) => ({ ...prev, [comment.id]: !prev[comment.id] }))
               }
+              onMenu={() => handleCommentMenu(comment)}
             />
           ))}
           {nextCursor ? (

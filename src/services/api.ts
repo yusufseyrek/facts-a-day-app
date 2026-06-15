@@ -605,7 +605,10 @@ export async function getFactComments(
   if (limit !== undefined) qp.append('limit', String(limit));
   const query = qp.toString();
   return makeRequest<CommentsPage>(
-    `/api/facts/${factId}/comments${query ? `?${query}` : ''}`
+    `/api/facts/${factId}/comments${query ? `?${query}` : ''}`,
+    // Identity (when present) lets the server hide comments from users this
+    // viewer has blocked; anonymous reads still see all visible comments.
+    { headers: await getIdentityHeaders() }
   );
 }
 
@@ -624,6 +627,23 @@ export async function postFactComment(
     }
   );
   return res.comment;
+}
+
+/** Report a comment for moderation (Apple 1.2). Identity optional; idempotent. */
+export async function reportComment(commentId: number, reason?: string): Promise<void> {
+  await makeRequest<{ ok: boolean }>(`/api/comments/${commentId}/report`, {
+    method: 'POST',
+    headers: await getIdentityHeaders(),
+    body: JSON.stringify({ reason: reason ?? null }),
+  });
+}
+
+/** Block a comment's author so their comments are hidden (Apple 1.2). Identity required. */
+export async function blockCommentAuthor(commentId: number): Promise<void> {
+  await makeRequest<{ ok: boolean }>(`/api/comments/${commentId}/block`, {
+    method: 'POST',
+    headers: await getIdentityHeaders(),
+  });
 }
 
 /**
