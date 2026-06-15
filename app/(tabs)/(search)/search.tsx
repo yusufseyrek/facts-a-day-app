@@ -293,26 +293,23 @@ function SearchScreen() {
     useCallback(() => {
       if (Platform.OS !== 'ios') return;
       const { hasQuery, hasCategory } = searchActivityRef.current;
-      // Deferred: the native search bar attaches via navigation.setOptions
-      // after mount, so an immediate focus() can hit a null ref.
-      let blurTimer: ReturnType<typeof setTimeout> | undefined;
-      const timer = setTimeout(() => {
-        searchBarRef.current?.focus();
-        if (hasQuery || hasCategory) {
-          // Returning to an active query / category browse: the focus() is only
-          // to ACTIVATE the UISearchController (see below), not to type — drop
-          // the keyboard again immediately.
-          // iOS 26 search-role tab: the ✕ in the tab bar only emits
-          // onCancelButtonPress while the controller is active; if it was never
-          // activated, UIKit swallows the press entirely and search mode can't
-          // be exited. Keeping the controller active makes ✕ reliable.
-          blurTimer = setTimeout(() => searchBarRef.current?.blur(), 60);
-        }
-      }, 100);
-      return () => {
-        clearTimeout(timer);
-        if (blurTimer) clearTimeout(blurTimer);
-      };
+      if (hasQuery || hasCategory) {
+        // Returning from a pushed fact with a live query/category. UIKit restores
+        // the still-active UISearchController's first responder when this screen
+        // re-appears on pop, so the keyboard springs back up on its own — the
+        // "search input focused after a fact closes" bug. handleFactPress already
+        // resigns the bar BEFORE pushing the fact to stop the restore at the
+        // source; this blur is the belt-and-suspenders so the field is NEVER left
+        // focused on return. Deliberately NO focus() here — re-raising the
+        // keyboard is exactly the jump we're killing.
+        const blurTimer = setTimeout(() => searchBarRef.current?.blur(), 0);
+        return () => clearTimeout(blurTimer);
+      }
+      // Fresh entry into the search tab (the search-session reset zeroes both
+      // flags when leaving for a real tab): drop straight into typing. Deferred
+      // because the native bar attaches via navigation.setOptions after mount.
+      const timer = setTimeout(() => searchBarRef.current?.focus(), 100);
+      return () => clearTimeout(timer);
     }, [])
   );
 
@@ -374,6 +371,13 @@ function SearchScreen() {
       factIdList?: number[],
       indexInList?: number
     ) => {
+      // Resign the search bar's first responder BEFORE navigating. On iOS, UIKit
+      // otherwise captures it as the first responder to restore when we pop back
+      // from the fact, so the keyboard springs up unbidden the moment the fact
+      // closes. Dismissing it here means there's nothing to restore — the field
+      // stays unfocused on return. blur() ≠ cancel, so the UISearchController
+      // stays active and the iOS-26 tab-bar ✕ keeps working.
+      if (Platform.OS === 'ios') searchBarRef.current?.blur();
       const base = factDetailBasePath(fact.id);
       if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
         router.push(
@@ -511,6 +515,12 @@ function SearchScreen() {
   // Handle category selection
   const handleCategoryPress = useCallback(
     async (categorySlug: string) => {
+      // Selecting a category pill from the (focused) search field: dismiss the
+      // keyboard. The pills sit below the active search bar, and RN's tap-to-
+      // dismiss doesn't reach the native UISearchController, so without this the
+      // keyboard stays up over the category browse. blur() ≠ cancel, so the
+      // controller stays active.
+      if (Platform.OS === 'ios') searchBarRef.current?.blur();
       // If tapping the same category, deselect it
       if (selectedCategorySlug === categorySlug) {
         setSelectedCategorySlug(null);
