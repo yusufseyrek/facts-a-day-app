@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, AppState, Linking, Platform, Pressable, SectionList, View } from 'react-native';
+import { Alert, AppState, Linking, Platform, Pressable, SectionList } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import Constants from 'expo-constants';
 import { deepLinkToSubscriptions } from 'expo-iap';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Notifications from 'expo-notifications';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -61,7 +60,7 @@ import * as userService from '../../../src/services/user';
 import { clearIdentity } from '../../../src/services/userIdentity';
 import { hexColors, useTheme } from '../../../src/theme';
 import { openInAppBrowser } from '../../../src/utils/browser';
-import { darkenColor, getContrastColor } from '../../../src/utils/colors';
+import { androidRipple } from '../../../src/utils/styles';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
 // Helper to get language display name
@@ -89,9 +88,9 @@ const getThemeName = (mode: string, t: (key: TranslationKeys) => string): string
   return themeNames[mode] || mode;
 };
 
-// Premium upsell row in the gradient game-tile signature (TriviaGridCard):
-// diagonal accent gradient, contrast-colored content, icon on a translucent
-// plate, decorative offset circles, accent glow shadow, pressed scale.
+// Premium upsell — kept simple: a plain row in the same card surface as the
+// rest of the list, set apart only by a gold crown, a gold chevron, and a
+// one-line value prop. No gradient, no glow.
 function PremiumUpgradeCard({
   label,
   isDark,
@@ -103,10 +102,8 @@ function PremiumUpgradeCard({
 }) {
   const { spacing, radius, iconSizes, media } = useResponsive();
   const { t } = useTranslation();
-  const gold = isDark ? hexColors.dark.warning : hexColors.light.warning;
-  const contrastColor = getContrastColor(gold);
-  const platBg = contrastColor === '#000000' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.22)';
-  const plateSize = media.topicCardSize * 0.5;
+  const colors = isDark ? hexColors.dark : hexColors.light;
+  const gold = colors.warning;
 
   return (
     <Pressable
@@ -114,80 +111,39 @@ function PremiumUpgradeCard({
       role="button"
       accessibilityLabel={label}
       accessibilityHint={t('settingsUpgradeHint')}
+      android_ripple={androidRipple(isDark)}
       style={({ pressed }) => [
         {
-          borderRadius: radius.xl,
-          shadowColor: gold,
-          shadowOffset: { width: 0, height: 5 },
-          shadowOpacity: 0.35,
-          shadowRadius: 10,
-          elevation: 6,
-          opacity: pressed ? 0.9 : 1,
-          transform: [{ scale: pressed ? 0.97 : 1 }],
+          borderRadius: radius.lg,
+          overflow: 'hidden',
+          opacity: Platform.OS === 'ios' && pressed ? 0.6 : 1,
         },
       ]}
     >
-      <LinearGradient
-        colors={[gold, darkenColor(gold, 0.22)]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ borderRadius: radius.xl, overflow: 'hidden' }}
+      <XStack
+        alignItems="center"
+        gap={spacing.md}
+        paddingHorizontal={spacing.lg}
+        paddingVertical={spacing.md}
+        minHeight={media.buttonHeight}
+        backgroundColor={colors.cardBackground}
+        borderRadius={radius.lg}
       >
-        {/* Layered decorative circles for depth — same as the trivia tiles */}
-        <View
-          pointerEvents="none"
-          accessible={false}
-          importantForAccessibility="no-hide-descendants"
-          style={{
-            position: 'absolute',
-            top: -plateSize * 0.6,
-            right: -plateSize * 0.5,
-            width: plateSize * 1.8,
-            height: plateSize * 1.8,
-            borderRadius: plateSize * 0.9,
-            backgroundColor:
-              contrastColor === '#000000' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.10)',
-          }}
-        />
-        <View
-          pointerEvents="none"
-          accessible={false}
-          importantForAccessibility="no-hide-descendants"
-          style={{
-            position: 'absolute',
-            bottom: -plateSize * 0.7,
-            left: -plateSize * 0.4,
-            width: plateSize * 1.4,
-            height: plateSize * 1.4,
-            borderRadius: plateSize * 0.7,
-            backgroundColor:
-              contrastColor === '#000000' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.07)',
-          }}
-        />
-        <XStack alignItems="center" gap={spacing.md} padding={spacing.lg}>
-          <YStack
-            width={plateSize}
-            height={plateSize}
-            borderRadius={plateSize / 2}
-            backgroundColor={platBg}
-            justifyContent="center"
-            alignItems="center"
-            accessible={false}
-            importantForAccessibility="no-hide-descendants"
-          >
-            <Crown size={iconSizes.lg} color={contrastColor} />
-          </YStack>
+        <Crown size={iconSizes.md} color={gold} />
+        <YStack flex={1}>
           <Text.Label
-            flex={1}
-            fontFamily={FONT_FAMILIES.bold}
-            color={contrastColor}
+            fontFamily={FONT_FAMILIES.semibold}
+            color={isDark ? '#FFFFFF' : colors.text}
             numberOfLines={1}
           >
             {label}
           </Text.Label>
-          <ChevronRight size={iconSizes.md} color={contrastColor} opacity={0.55} />
-        </XStack>
-      </LinearGradient>
+          <Text.Caption color={colors.textSecondary} numberOfLines={1}>
+            {t('paywallSubtitle')}
+          </Text.Caption>
+        </YStack>
+        <ChevronRight size={iconSizes.sm} color={gold} />
+      </XStack>
     </Pressable>
   );
 }
@@ -1110,7 +1066,7 @@ export default function SettingsPage() {
             <Animated.View
               entering={shouldAnimate ? FadeInDown.delay(animationDelay).duration(300) : undefined}
             >
-              {/* Rows of a section stack edge-to-edge into one grouped card;
+              {/* Rows of a section compose edge-to-edge into one plain card;
                   only the last row adds the gap before the next section. */}
               <ContentContainer marginBottom={isLast ? spacing.md : 0}>
                 {item.id === 'upgradePremium' ? (

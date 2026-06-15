@@ -14,16 +14,11 @@ interface SettingsRowProps {
   value?: string;
   onPress?: () => void;
   icon?: React.ReactNode;
-  /**
-   * Accent behind the icon: the chip fills with the accent at low alpha
-   * (same `${color}20` treatment as the trivia history session chips). The
-   * icon itself should be colored with the accent by the caller.
-   */
+  /** Reserved: the caller colors the icon itself; the row keeps it chrome-free. */
   accentColor?: string;
   /**
-   * Grouped-card shaping: rows of a section compose into ONE inset card.
-   * First/last control the outer radii and top/bottom hairlines; middle rows
-   * draw only the side hairlines plus an inset separator.
+   * Grouped-card shaping: rows of a section compose into ONE plain card.
+   * First/last round the outer corners; an inset hairline divides the middle.
    */
   isFirst?: boolean;
   isLast?: boolean;
@@ -38,7 +33,6 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   value,
   onPress,
   icon,
-  accentColor,
   isFirst = false,
   isLast = false,
   showExternalLink = false,
@@ -47,16 +41,14 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   const { theme } = useTheme();
   const { spacing, radius, iconSizes, media } = useResponsive();
   const colors = hexColors[theme];
+  const isDark = theme === 'dark';
 
-  // Use pure white in dark mode for better contrast
-  const labelColor = theme === 'dark' ? '#FFFFFF' : colors.text;
+  // Pure white in dark mode for better contrast.
+  const labelColor = isDark ? '#FFFFFF' : colors.text;
+  const warningColor = isDark ? colors.warning : darkenColor(colors.warning, 0.25);
 
-  // Warning indicator color - darker in light mode for better readability
-  const warningColor = theme === 'dark' ? colors.warning : darkenColor(colors.warning, 0.25);
-
-  const chipAccent = accentColor ?? colors.textSecondary;
-  // Same proven chip sizing as the trivia history session cards.
-  const chipSize = media.topicCardSize * 0.5;
+  // Width of the leading icon column — the inset divider lines up with the label.
+  const iconColumn = iconSizes.md + spacing.md;
 
   const cornerRadii = {
     borderTopLeftRadius: isFirst ? radius.lg : 0,
@@ -80,11 +72,8 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
         alignItems: 'center' as const,
         flex: 1,
       },
-      chip: {
-        width: chipSize,
-        height: chipSize,
-        borderRadius: radius.sm,
-        justifyContent: 'center' as const,
+      iconWrap: {
+        width: iconSizes.md,
         alignItems: 'center' as const,
         marginRight: spacing.md,
       },
@@ -95,36 +84,24 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
         flexDirection: 'row' as const,
         alignItems: 'center' as const,
         gap: spacing.sm,
+        marginLeft: spacing.sm,
       },
-      // Inset separator aligned with the label (past the chip), Apple-style.
+      // Inset divider aligned with the label (past the icon column).
       separator: {
         position: 'absolute' as const,
-        left: spacing.lg + chipSize + spacing.md,
+        left: spacing.lg + iconColumn,
         right: 0,
         bottom: 0,
         height: StyleSheet.hairlineWidth,
       },
     }),
-    [spacing, radius, chipSize, media]
+    [spacing, media, iconSizes, iconColumn]
   );
 
   const content = (
-    <View
-      style={[
-        styles.container,
-        cornerRadii,
-        {
-          backgroundColor: colors.cardBackground,
-          borderColor: colors.border,
-          borderLeftWidth: 1,
-          borderRightWidth: 1,
-          borderTopWidth: isFirst ? 1 : 0,
-          borderBottomWidth: isLast ? 1 : 0,
-        },
-      ]}
-    >
+    <View style={[styles.container, cornerRadii, { backgroundColor: colors.cardBackground }]}>
       <View style={styles.leftContent}>
-        {icon && <View style={[styles.chip, { backgroundColor: `${chipAccent}20` }]}>{icon}</View>}
+        {icon && <View style={styles.iconWrap}>{icon}</View>}
         <Text.Label color={labelColor} numberOfLines={1} flexShrink={1}>
           {label}
         </Text.Label>
@@ -142,9 +119,9 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
         )}
         {onPress &&
           (showExternalLink ? (
-            <ExternalLink size={iconSizes.md} color={colors.textSecondary} />
+            <ExternalLink size={iconSizes.sm} color={colors.textSecondary} />
           ) : (
-            <ChevronRight size={iconSizes.md} color={colors.textSecondary} />
+            <ChevronRight size={iconSizes.sm} color={colors.textSecondary} />
           ))}
       </View>
       {!isLast && <View style={[styles.separator, { backgroundColor: colors.border }]} />}
@@ -160,15 +137,12 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
       onPress={onPress}
       role="button"
       aria-label={`${label}${value ? `, ${value}` : ''}`}
-      android_ripple={androidRipple(theme === 'dark')}
+      android_ripple={androidRipple(isDark)}
       style={({ pressed }) => [
         cornerRadii,
         {
-          // Radii + clip on the Pressable so the Android ripple follows the
-          // group card's rounded corners. iOS keeps the opacity dim; Android
-          // gets the ripple only (no double feedback).
           overflow: 'hidden' as const,
-          opacity: Platform.OS === 'ios' && pressed ? 0.7 : 1,
+          opacity: Platform.OS === 'ios' && pressed ? 0.6 : 1,
         },
       ]}
     >
