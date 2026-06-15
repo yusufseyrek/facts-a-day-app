@@ -587,6 +587,15 @@ export const translations = {
     statsShareTitle: 'Meine Lesestatistiken',
   },
   en: {
+    settingsAccount: 'Account',
+    settingsDeleteAccount: 'Delete account & data',
+    settingsDeleteAccountTitle: 'Delete account?',
+    settingsDeleteAccountMessage:
+      'This permanently deletes your screen name and all of your comments, and removes your data from our servers. This cannot be undone.',
+    settingsDeleteAccountConfirm: 'Delete',
+    settingsDeleteAccountDoneTitle: 'Account deleted',
+    settingsDeleteAccountDoneMessage: 'Your screen name and comments have been removed.',
+    settingsDeleteAccountError: 'Could not delete your account. Please try again.',
     screenNameRandomize: 'Randomize name',
     leaderboard: 'Leaderboard',
     leaderboardAllTime: 'All Time',

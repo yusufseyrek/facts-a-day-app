@@ -556,6 +556,18 @@ export async function checkScreenName(
   );
 }
 
+/**
+ * Delete the current identity and everything personal to it (DELETE
+ * /api/users/me): the server drops the screen name, all comments, blocks, and
+ * identity links. Identity headers required. Apple guideline 5.1.1(v).
+ */
+export async function deleteAccount(): Promise<void> {
+  await makeRequest<{ ok: boolean }>('/api/users/me', {
+    method: 'DELETE',
+    headers: await getIdentityHeaders(),
+  });
+}
+
 // ====== Fact comments ======
 
 export interface ApiComment {

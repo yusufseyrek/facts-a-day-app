@@ -5,7 +5,7 @@ import { countryForTimeZone } from '../utils/timezoneCountry';
 import * as api from './api';
 import * as notificationService from './notifications';
 import { syncTriviaResults } from './triviaSync';
-import { getIdentity, saveIdentity, type UserIdentity } from './userIdentity';
+import { clearIdentity, getIdentity, saveIdentity, type UserIdentity } from './userIdentity';
 
 import type { SupportedLocale } from '../i18n/translations';
 
@@ -150,4 +150,17 @@ async function renameScreenName(screenName: string): Promise<UserIdentity> {
   const updated: UserIdentity = { ...identity, screenName };
   await saveIdentity(updated);
   return updated;
+}
+
+/**
+ * Delete the account: remove the server identity and everything personal to it
+ * (comments, blocks, identity links), then forget the local secret so the app
+ * falls back to an anonymous reader. No-op if no name was ever claimed. Apple
+ * guideline 5.1.1(v).
+ */
+export async function deleteAccount(): Promise<void> {
+  const identity = await getIdentity();
+  if (!identity) return;
+  await api.deleteAccount();
+  await clearIdentity();
 }

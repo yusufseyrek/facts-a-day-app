@@ -531,6 +531,28 @@ export default function SettingsPage() {
     setShowTimeModal(true);
   };
 
+  const handleDeleteAccount = useCallback(() => {
+    Alert.alert(t('settingsDeleteAccountTitle'), t('settingsDeleteAccountMessage'), [
+      { text: t('cancel'), style: 'cancel' },
+      {
+        text: t('settingsDeleteAccountConfirm'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await userService.deleteAccount();
+            setScreenName(null);
+            Alert.alert(
+              t('settingsDeleteAccountDoneTitle'),
+              t('settingsDeleteAccountDoneMessage')
+            );
+          } catch {
+            Alert.alert(t('error'), t('settingsDeleteAccountError'));
+          }
+        },
+      },
+    ]);
+  }, [t]);
+
   const handleResetOnboarding = async () => {
     try {
       await resetOnboarding();
@@ -969,6 +991,23 @@ export default function SettingsPage() {
     result.push(supportSection);
     result.push(legalSection);
 
+    // Account deletion (Apple 5.1.1(v)) — only meaningful once an identity
+    // (screen name) exists. Its own section at the bottom so it's easy to find.
+    if (screenName) {
+      result.push({
+        title: t('settingsAccount'),
+        data: [
+          {
+            id: 'deleteAccount',
+            label: t('settingsDeleteAccount'),
+            icon: <Trash2 size={iconSizes.md} color={colors.error} />,
+            accent: colors.error,
+            onPress: handleDeleteAccount,
+          },
+        ],
+      });
+    }
+
     return result;
   }, [
     t,
@@ -988,6 +1027,7 @@ export default function SettingsPage() {
     restorePurchases,
     devSetPremium,
     router,
+    handleDeleteAccount,
   ]);
 
   const renderFooter = () => (
