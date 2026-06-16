@@ -11,6 +11,7 @@ import * as Updates from 'expo-updates';
 
 import { ContentContainer, ScreenContainer, Text } from '../../../src/components';
 import {
+  Ban,
   BarChart3,
   Bell,
   ChevronRight,
@@ -997,6 +998,13 @@ export default function SettingsPage() {
       result.push({
         title: t('settingsAccount'),
         data: [
+          {
+            id: 'blockedUsers',
+            label: t('blockedUsers'),
+            icon: <Ban size={iconSizes.md} color={colors.neonOrange} />,
+            accent: colors.neonOrange,
+            onPress: () => router.push('/settings/blocked'),
+          },
           {
             id: 'deleteAccount',
             label: t('settingsDeleteAccount'),

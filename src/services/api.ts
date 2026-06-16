@@ -646,6 +646,27 @@ export async function blockCommentAuthor(commentId: number): Promise<void> {
   });
 }
 
+export interface BlockedUser {
+  user_id: string;
+  screen_name: string;
+}
+
+/** The users this viewer has blocked (for the manage-blocks screen). Identity required. */
+export async function getBlockedUsers(): Promise<BlockedUser[]> {
+  const res = await makeRequest<{ blocks: BlockedUser[] }>('/api/users/me/blocks', {
+    headers: await getIdentityHeaders(),
+  });
+  return res.blocks ?? [];
+}
+
+/** Unblock a previously-blocked user. Identity required; idempotent. */
+export async function unblockUser(userId: string): Promise<void> {
+  await makeRequest<{ ok: boolean }>(
+    `/api/users/me/blocks/${encodeURIComponent(userId)}`,
+    { method: 'DELETE', headers: await getIdentityHeaders() }
+  );
+}
+
 /**
  * Translate a batch of comments into `target` (the reader's locale). Anonymous
  * (App Check only); the server caches per (comment, locale), so repeat calls are
