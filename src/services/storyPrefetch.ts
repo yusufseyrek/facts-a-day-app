@@ -40,7 +40,8 @@ function fetchStoryPage(locale: string, categories: string): Promise<StoryPageRe
       limit: STORY_FETCH_LIMIT,
     });
   }
-  return api.getFactsFeed({ language: locale, categories, limit: STORY_FETCH_LIMIT });
+  // Stories read the archive forward from the start, so fetch earliest-first.
+  return api.getFactsFeed({ language: locale, categories, limit: STORY_FETCH_LIMIT, order: 'oldest' });
 }
 
 interface Entry {

@@ -143,6 +143,7 @@ export interface GetFactsFeedParams {
   includeHistorical?: boolean;
   limit?: number;
   cursor?: string; // opaque next_cursor from the previous page
+  order?: 'newest' | 'oldest'; // 'oldest' = earliest-first (stories); default newest-first
 }
 
 /** "On this day" historical facts: exact date + a ±3-day week fallback. */
@@ -702,6 +703,7 @@ export async function getFactsFeed(params: GetFactsFeedParams): Promise<FactsFee
   if (params.includeHistorical) qp.append('include_historical', 'true');
   if (params.limit !== undefined) qp.append('limit', String(params.limit));
   if (params.cursor) qp.append('cursor', params.cursor);
+  if (params.order) qp.append('order', params.order);
   return makeRequest<FactsFeedResponse>(`/api/facts/feed?${qp.toString()}`);
 }
 

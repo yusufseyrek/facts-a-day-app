@@ -244,6 +244,7 @@ export default function StoryScreen() {
               language: locale,
               categories,
               limit: STORY_FETCH_LIMIT,
+              order: 'oldest', // earliest-first; stories read the archive from the start
             }));
       const fetched = res.facts.map(mapApiFactToRelations);
 
