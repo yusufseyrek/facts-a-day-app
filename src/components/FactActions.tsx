@@ -24,6 +24,7 @@ import { absoluteFillObject } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
 import { FactAudioButton } from './FactAudioButton';
+import { animateHeartToggle, ParticleBurst } from './favoriteHeartAnimation';
 import { GlassSurface } from './GlassSurface';
 import { ChevronLeft, ChevronRight, Flag, Heart, Share as ShareIcon } from './icons';
 import { ShareCard } from './share';
@@ -61,70 +62,8 @@ const Container = styled(YStack, {
   backgroundColor: '$background',
 });
 
-// Particle burst component for the favorite animation
-const PARTICLE_COUNT = 6;
-const ParticleBurst = ({ color, isActive }: { color: string; isActive: boolean }) => {
-  const { spacing } = useResponsive();
-  const particleSize = spacing.xs + 2; // 6 on phone, 8 on tablet
-  const particles = Array.from({ length: PARTICLE_COUNT }, (_, i) => {
-    const angle = (i / PARTICLE_COUNT) * 2 * Math.PI;
-    const scale = useSharedValue(0);
-    const translateX = useSharedValue(0);
-    const translateY = useSharedValue(0);
-    const opacity = useSharedValue(0);
-
-    useEffect(() => {
-      if (isActive) {
-        const distance = 28 + Math.random() * 12;
-        const targetX = Math.cos(angle) * distance;
-        const targetY = Math.sin(angle) * distance;
-
-        scale.value = withSequence(
-          withTiming(1, { duration: 150, easing: Easing.out(Easing.cubic) }),
-          withTiming(0, { duration: 250, easing: Easing.in(Easing.cubic) })
-        );
-        opacity.value = withSequence(
-          withTiming(1, { duration: 100 }),
-          withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) })
-        );
-        translateX.value = withTiming(targetX, { duration: 400, easing: Easing.out(Easing.cubic) });
-        translateY.value = withTiming(targetY, { duration: 400, easing: Easing.out(Easing.cubic) });
-      } else {
-        scale.value = 0;
-        opacity.value = 0;
-        translateX.value = 0;
-        translateY.value = 0;
-      }
-    }, [isActive]);
-
-    const animatedStyle = useAnimatedStyle(() => ({
-      transform: [
-        { translateX: translateX.value },
-        { translateY: translateY.value },
-        { scale: scale.value },
-      ],
-      opacity: opacity.value,
-    }));
-
-    return (
-      <Animated.View
-        key={i}
-        style={[
-          {
-            position: 'absolute' as const,
-            width: particleSize,
-            height: particleSize,
-            borderRadius: particleSize / 2,
-            backgroundColor: color,
-          },
-          animatedStyle,
-        ]}
-      />
-    );
-  });
-
-  return <>{particles}</>;
-};
+// ParticleBurst + animateHeartToggle now live in ./favoriteHeartAnimation so
+// the fact cards and the story view share the exact same like animation.
 
 export function FactActions({
   factId,
@@ -220,25 +159,10 @@ export function FactActions({
   };
 
   const triggerFavoriteAnimation = (isFavoriting: boolean) => {
+    animateHeartToggle(heartScale, heartRotation, isFavoriting);
     if (isFavoriting) {
-      heartScale.value = withSequence(
-        withTiming(0.7, { duration: 80, easing: Easing.in(Easing.cubic) }),
-        withSpring(1.3, { damping: 15, stiffness: 300, mass: 0.5 }),
-        withSpring(1, { damping: 15, stiffness: 100 })
-      );
-      heartRotation.value = withSequence(
-        withTiming(-12, { duration: 80 }),
-        withTiming(12, { duration: 100 }),
-        withTiming(-6, { duration: 80 }),
-        withTiming(0, { duration: 100 })
-      );
       setShowParticles(true);
       setTimeout(() => setShowParticles(false), 500);
-    } else {
-      heartScale.value = withSequence(
-        withTiming(0.8, { duration: 100, easing: Easing.in(Easing.cubic) }),
-        withSpring(1, { damping: 20, stiffness: 100 })
-      );
     }
   };
 

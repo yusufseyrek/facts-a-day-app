@@ -1,13 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withSequence,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 
 import * as Haptics from 'expo-haptics';
 
@@ -16,6 +9,7 @@ import { performFavoriteToggle } from '../services/favorites';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
+import { animateHeartToggle, ParticleBurst } from './favoriteHeartAnimation';
 import { Heart } from './icons';
 
 interface FavoriteButtonProps {
@@ -36,7 +30,9 @@ const FavoriteButtonComponent = ({
   const containerSize = iconSize + spacing.sm;
 
   const [isFavorited, setIsFavorited] = useState(false);
+  const [showParticles, setShowParticles] = useState(false);
   const heartScale = useSharedValue(1);
+  const heartRotation = useSharedValue(0);
 
   useEffect(() => {
     database
@@ -46,7 +42,7 @@ const FavoriteButtonComponent = ({
   }, [factId]);
 
   const heartAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: heartScale.value }],
+    transform: [{ scale: heartScale.value }, { rotate: `${heartRotation.value}deg` }],
   }));
 
   const handlePress = useCallback(async () => {
@@ -55,24 +51,17 @@ const FavoriteButtonComponent = ({
       const newStatus = await performFavoriteToggle(factId, categorySlug, imageUrl);
       setIsFavorited(newStatus);
 
+      animateHeartToggle(heartScale, heartRotation, newStatus);
       if (newStatus) {
-        heartScale.value = withSequence(
-          withTiming(0.7, { duration: 80, easing: Easing.in(Easing.cubic) }),
-          withSpring(1.3, { damping: 15, stiffness: 300, mass: 0.2 }),
-          withSpring(1, { damping: 15, stiffness: 100 })
-        );
-      } else {
-        heartScale.value = withSequence(
-          withTiming(0.8, { duration: 100, easing: Easing.in(Easing.cubic) }),
-          withSpring(1, { damping: 20, stiffness: 100 })
-        );
+        setShowParticles(true);
+        setTimeout(() => setShowParticles(false), 500);
       }
     } catch (error) {
       if (__DEV__) {
         console.error('Error toggling favorite:', error);
       }
     }
-  }, [factId, imageUrl, categorySlug, heartScale]);
+  }, [factId, imageUrl, categorySlug, heartScale, heartRotation]);
 
   return (
     <Pressable
@@ -88,6 +77,9 @@ const FavoriteButtonComponent = ({
         opacity: pressed ? 0.8 : 1,
       })}
     >
+      {/* Mounted only for the ~500ms burst so idle cards in virtualized feeds
+          don't each carry the particle effect's UI-thread mappers. */}
+      {showParticles && <ParticleBurst color={heartColor} isActive />}
       <Animated.View style={heartAnimatedStyle}>
         <Heart
           size={iconSize}
