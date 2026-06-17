@@ -1031,7 +1031,7 @@ export function FactModal({
                     minHeight: titleHeight,
                     // X and play share the same right edge (different rows
                     // within the header), so only reserve one button's width.
-                    paddingRight: iconSizes.xl + spacing.xs,
+                    paddingRight: iconSizes.xl + spacing.md + spacing.xs,
                     transform: [{ translateY: headerTitleTranslateY }],
                   }}
                 >
@@ -1095,7 +1095,7 @@ export function FactModal({
             }}
           >
             <View style={{ position: 'relative' }}>
-              <View style={{ paddingRight: iconSizes.xl + spacing.xs }}>
+              <View style={{ paddingRight: iconSizes.xl + spacing.md + spacing.xs }}>
                 <Text.Headline
                   role="heading"
                   onTextLayout={(e) => {
@@ -1320,7 +1320,7 @@ export function FactModal({
                 <Animated.View
                   style={{
                     opacity: contentTitleOpacity,
-                    paddingRight: iconSizes.xl + spacing.xs,
+                    paddingRight: iconSizes.xl + spacing.md + spacing.xs,
                   }}
                 >
                   <Text.Headline
