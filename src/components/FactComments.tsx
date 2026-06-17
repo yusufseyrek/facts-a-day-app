@@ -45,7 +45,13 @@ const MAX_COMMENT_LENGTH = 500;
 // One-time community-rules agreement before a user's first post (Apple 1.2 EULA).
 const COMMENT_EULA_KEY = '@comment_eula_accepted';
 
-/** "5m" / "3h" style relative age; falls back to a localized date. */
+/**
+ * Compact "N ago" relative age: "just now" under a minute, then "5m ago" /
+ * "2h ago" / "3d ago" / "1w ago"; past ~4 weeks it falls back to a localized
+ * absolute date. Hand-rolled rather than Intl.RelativeTimeFormat, which isn't
+ * reliably supported on Hermes (it threw and rendered an empty string on
+ * device) and whose narrow style isn't a guaranteed "Nx ago" shape.
+ */
 function timeAgo(createdAt: string, locale: string): string {
   try {
     // SQLite CURRENT_TIMESTAMP is UTC space-form without a marker; normalize
@@ -54,12 +60,16 @@ function timeAgo(createdAt: string, locale: string): string {
       ? createdAt
       : createdAt.replace(' ', 'T') + 'Z';
     const then = new Date(normalized).getTime();
+    if (Number.isNaN(then)) return '';
     const seconds = Math.max(0, Math.round((Date.now() - then) / 1000));
-    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'always', style: 'narrow' });
-    if (seconds < 60) return rtf.format(-seconds, 'second');
-    if (seconds < 3600) return rtf.format(-Math.floor(seconds / 60), 'minute');
-    if (seconds < 86400) return rtf.format(-Math.floor(seconds / 3600), 'hour');
-    if (seconds < 86400 * 30) return rtf.format(-Math.floor(seconds / 86400), 'day');
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    if (days < 30) return `${Math.floor(days / 7)}w ago`;
     return new Date(normalized).toLocaleDateString(locale, {
       year: 'numeric',
       month: 'short',
