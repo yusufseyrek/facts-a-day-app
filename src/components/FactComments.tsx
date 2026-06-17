@@ -695,7 +695,14 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
               onToggleOriginal={() =>
                 setShowOriginal((prev) => ({ ...prev, [comment.id]: !prev[comment.id] }))
               }
-              onMenu={() => handleCommentMenu(comment)}
+              onMenu={
+                // Report/block both require identity and can't target yourself,
+                // so only offer the ⋯ menu to a signed-in viewer on someone
+                // else's comment.
+                screenName && comment.screen_name !== screenName
+                  ? () => handleCommentMenu(comment)
+                  : undefined
+              }
             />
           ))}
           {nextCursor ? (
