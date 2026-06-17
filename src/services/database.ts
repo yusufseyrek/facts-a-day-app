@@ -31,6 +31,14 @@ let db: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 /**
+ * Upper bound on the seconds a single fact-detail view can contribute to
+ * `detail_time_spent`. Used both at record time (FactModal caps each session)
+ * and as the one-time repair ceiling for rows written before that cap existed,
+ * so the two can never drift. 30 min is well above any plausible single read.
+ */
+export const MAX_FACT_DETAIL_SECONDS = 30 * 60;
+
+/**
  * Initialize and open the database
  */
 export async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
@@ -213,6 +221,16 @@ async function initializeSchema(): Promise<void> {
 
   // One-time upgrade: drop the old facts mirror + its FKs on user tables.
   await migrateToThinCache();
+
+  // Repair pass: clamp any `detail_time_spent` rows written before the
+  // record-time cap existed. Early builds recorded raw wall-clock (incl. time
+  // the app was backgrounded / the device idle), so a fact left open could book
+  // hours — even ~128h on an idle emulator. Idempotent and cheap (the WHERE
+  // makes it a no-op once clamped), so it's safe to run on every launch.
+  await db.execAsync(
+    `UPDATE fact_interactions SET detail_time_spent = ${MAX_FACT_DETAIL_SECONDS}
+     WHERE detail_time_spent > ${MAX_FACT_DETAIL_SECONDS};`
+  );
 }
 
 /**

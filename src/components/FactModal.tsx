@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  AppState,
   Linking,
   Platform,
   Pressable,
@@ -41,6 +42,7 @@ import {
   triggerTestBadgeToast,
 } from '../services/badges';
 import {
+  MAX_FACT_DETAIL_SECONDS,
   addFactDetailTimeSpent,
   mapApiFactToRelations,
   markFactDetailOpened,
@@ -349,9 +351,33 @@ export function FactModal({
   }, [fact.id]);
 
   // Track detail interactions
-  const mountTimeRef = useRef(Date.now());
+  // Active (foreground) time accounting for "time spent" + read detection. We
+  // sum only the spans where the app is foregrounded and this modal is mounted,
+  // so a backgrounded app or an idle device never inflates the recorded time
+  // (see the AppState effect below). activeStartRef is the live span's start, or
+  // null while paused; activeElapsedMsRef banks the completed spans.
+  const activeStartRef = useRef<number | null>(Date.now());
+  const activeElapsedMsRef = useRef(0);
+  const getActiveSeconds = useCallback(() => {
+    const live = activeStartRef.current != null ? Date.now() - activeStartRef.current : 0;
+    return Math.round((activeElapsedMsRef.current + live) / 1000);
+  }, []);
   const hasMarkedRead = useRef(false);
   const hasScrolledToBottom = useRef(false);
+
+  // Pause the active-time clock while the app is backgrounded/inactive, so
+  // locking the phone or leaving the app doesn't accrue "time spent".
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') {
+        if (activeStartRef.current == null) activeStartRef.current = Date.now();
+      } else if (activeStartRef.current != null) {
+        activeElapsedMsRef.current += Date.now() - activeStartRef.current;
+        activeStartRef.current = null;
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   // Mark detail as opened on mount
   useEffect(() => {
@@ -365,7 +391,8 @@ export function FactModal({
         }
       })
       .catch(() => {});
-    mountTimeRef.current = Date.now();
+    activeElapsedMsRef.current = 0;
+    activeStartRef.current = AppState.currentState === 'active' ? Date.now() : null;
     hasMarkedRead.current = false;
     hasScrolledToBottom.current = false;
 
@@ -377,8 +404,9 @@ export function FactModal({
         triggerTestBadgeToast();
         scheduleSatisfactionPrompt();
       }
-      // Track time spent on unmount
-      const seconds = Math.round((Date.now() - mountTimeRef.current) / 1000);
+      // Track time spent on unmount — active foreground seconds only, capped so
+      // a screen left open / idle device can't book hours of phantom time.
+      const seconds = Math.min(getActiveSeconds(), MAX_FACT_DETAIL_SECONDS);
       if (seconds > 0) {
         addFactDetailTimeSpent(fact.id, seconds)
           .then(() => checkAndAwardBadges())
@@ -564,7 +592,7 @@ export function FactModal({
         const wordCount = (fact.content || '').split(/\s+/).length;
         const estimatedSeconds = (wordCount / 200) * 60;
         const minReadingTime = Math.max(10, Math.min(30, Math.round(estimatedSeconds * 0.4)));
-        const elapsedSeconds = (Date.now() - mountTimeRef.current) / 1000;
+        const elapsedSeconds = getActiveSeconds();
 
         if (elapsedSeconds >= minReadingTime) {
           hasMarkedRead.current = true;
@@ -574,7 +602,7 @@ export function FactModal({
         }
       }
     },
-    [fact.id, fact.content]
+    [fact.id, fact.content, getActiveSeconds]
   );
 
   // Pull-down-to-close: when the user overscrolls past the top and releases,
