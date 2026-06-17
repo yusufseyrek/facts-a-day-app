@@ -711,7 +711,7 @@ export default function TriviaGameScreen() {
         })
         .catch(() => {});
 
-      // Show interstitial after non-daily trivia games (5-min global cooldown applies).
+      // Show interstitial after non-daily trivia games (10-min global cooldown applies).
       // Awaited so the ad lands between gameplay and the results screen.
       if (params.type !== 'daily') {
         const { maybeShowTriviaResultsInterstitial } = await import('../../src/services/adManager');
