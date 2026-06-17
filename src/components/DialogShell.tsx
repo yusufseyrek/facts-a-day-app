@@ -1,6 +1,7 @@
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
-  KeyboardAvoidingView,
+  Keyboard,
+  LayoutAnimation,
   Platform,
   Pressable,
   StyleProp,
@@ -52,7 +53,8 @@ import { FONT_FAMILIES, Text } from './Typography';
  *
  * `keyboardAware` is for dialogs hosting text inputs: it disables the
  * edge-to-edge Android dialog window (which loses adjustResize keyboard
- * handling) and adds an iOS KeyboardAvoidingView.
+ * handling) and, on iOS, lifts the card above the keyboard by reserving its
+ * height as bottom padding on the centred layer (see the keyboard effect).
  */
 
 const ENTER_MS = 180;
@@ -199,8 +201,8 @@ interface DialogShellProps {
   footer?: ReactNode;
   /**
    * For dialogs with TEXT INPUTS: keeps the Android dialog window out of
-   * edge-to-edge mode (restores adjustResize) and adds an iOS
-   * KeyboardAvoidingView.
+   * edge-to-edge mode (restores adjustResize) and, on iOS, lifts the card
+   * above the keyboard (reserves keyboard height as bottom padding).
    */
   keyboardAware?: boolean;
   /** Card max width; defaults to LAYOUT.MAX_CONTENT_WIDTH. */
@@ -257,19 +259,49 @@ export function DialogShell({
     if (dismissible) requestClose();
   }, [dismissible, requestClose]);
 
-  const content = (
-    <YStack flex={1} justifyContent="center" alignItems="center" padding={spacing.md}>
-      {/* Backdrop stays mounted while the overlay is up (only the card toggles
-          with showContent) — remounting GlassSurface on state churn would
-          retrigger its 450ms self-heal remount. */}
-      <ModalBackdrop
-        isDark={isDark}
-        blurIntensity={isDark ? 50 : 70}
-        androidScrim={isDark ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.55)'}
-        dim={dimOverride}
-        onPress={dismissible ? requestClose : undefined}
-      />
+  // iOS keyboard avoidance — done manually, NOT via KeyboardAvoidingView. The
+  // inline overlay bleeds past the parent's safe area (negative insets), so a
+  // KAV's frame coordinates don't line up with the keyboard's screen frame and
+  // its `padding` overlap is mis-computed — the card ends up off-centre. Instead
+  // we reserve the keyboard's height as bottom padding on the full-screen
+  // centred layer, which keeps the card centred in the visible area above the
+  // keyboard. (Android relies on the dialog window's adjustResize — see
+  // InlineOverlay's `coverNavigationBar`.)
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    if (!keyboardAware || Platform.OS !== 'ios') return;
+    const animate = (duration: number) =>
+      LayoutAnimation.configureNext({
+        duration: duration || 250,
+        update: { type: LayoutAnimation.Types.keyboard },
+      });
+    const onShow = (e: { duration: number; endCoordinates: { height: number } }) => {
+      animate(e.duration);
+      setKeyboardHeight(e.endCoordinates?.height ?? 0);
+    };
+    const onHide = (e: { duration: number }) => {
+      animate(e?.duration);
+      setKeyboardHeight(0);
+    };
+    const showSub = Keyboard.addListener('keyboardWillShow', onShow);
+    const hideSub = Keyboard.addListener('keyboardWillHide', onHide);
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [keyboardAware]);
 
+  // The centered card layer. `box-none` lets taps on empty space fall through
+  // to the backdrop's dismiss Pressable beneath — only the card takes touches.
+  const cardLayer = (
+    <YStack
+      flex={1}
+      justifyContent="center"
+      alignItems="center"
+      padding={spacing.md}
+      paddingBottom={spacing.md + keyboardHeight}
+      pointerEvents="box-none"
+    >
       {showContent && (
         <Animated.View
           entering={FadeInUp.duration(ENTER_MS)}
@@ -336,16 +368,20 @@ export function DialogShell({
       exitGraceMs={EXIT_MS + 40}
       coverNavigationBar={!keyboardAware}
     >
-      {keyboardAware ? (
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          {content}
-        </KeyboardAvoidingView>
-      ) : (
-        content
-      )}
+      {/* Backdrop fills the WHOLE overlay and sits OUTSIDE the keyboard-avoiding
+          layer: an open keyboard (autoFocus inputs) must never shrink the scrim
+          — that would leave the area behind the keyboard unblurred and push the
+          card off-centre. Only the card lifts above the keyboard. Stays mounted
+          while the overlay is up (only the card toggles with showContent) so the
+          GlassSurface doesn't retrigger its 450ms self-heal remount. */}
+      <ModalBackdrop
+        isDark={isDark}
+        blurIntensity={isDark ? 50 : 70}
+        androidScrim={isDark ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.55)'}
+        dim={dimOverride}
+        onPress={dismissible ? requestClose : undefined}
+      />
+      {cardLayer}
     </InlineOverlay>
   );
 }
