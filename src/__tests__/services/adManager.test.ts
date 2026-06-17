@@ -119,4 +119,18 @@ describe('adManager — maybeShowFactViewInterstitial', () => {
     expect(results).not.toContain(true);
     expect(showInterstitialAd).toHaveBeenCalledTimes(1);
   });
+
+  it('honors a cooldown timestamp persisted from a previous session', async () => {
+    // Simulate an interstitial shown shortly before a cold restart: the
+    // timestamp is in AsyncStorage even though in-memory module state is fresh.
+    store['@last_interstitial_shown'] = String(now - COOLDOWN_MS / 2);
+
+    await viewFacts(THRESHOLD);
+    expect(showInterstitialAd).not.toHaveBeenCalled(); // still inside the window
+
+    // Once the persisted window elapses, the next eligible view shows the ad.
+    now += COOLDOWN_MS;
+    await viewFacts(THRESHOLD);
+    expect(showInterstitialAd).toHaveBeenCalledTimes(1);
+  });
 });

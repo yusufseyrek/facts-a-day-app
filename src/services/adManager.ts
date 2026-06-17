@@ -6,30 +6,42 @@ import { INTERSTITIAL_ADS, STORAGE_KEYS } from '../config/app';
 import { type InterstitialSource, trackInterstitialShown } from './analytics';
 import { shouldShowAds } from './premiumState';
 
-/** Timestamp of the last interstitial ad shown (ms) */
-let lastInterstitialShownAt = 0;
+/**
+ * Persisted timestamp (ms) of the last interstitial shown, across ALL sources.
+ * Stored in AsyncStorage so the global cooldown survives app restarts — a
+ * module-level variable resets to 0 on every cold start, which would let an
+ * interstitial fire immediately after relaunch and defeat the cooldown.
+ */
+const LAST_INTERSTITIAL_SHOWN_KEY = '@last_interstitial_shown';
+
+const getLastInterstitialShownAt = async (): Promise<number> => {
+  const raw = await AsyncStorage.getItem(LAST_INTERSTITIAL_SHOWN_KEY);
+  return raw ? parseInt(raw, 10) || 0 : 0;
+};
 
 /**
- * Check if enough time has passed since the last interstitial
+ * Whether the global cooldown has elapsed since the last interstitial of any
+ * source. Reads the persisted timestamp so the window holds across restarts.
  */
-const isCooldownElapsed = (): boolean => {
-  if (lastInterstitialShownAt === 0) return true;
-  const elapsed = (Date.now() - lastInterstitialShownAt) / 1000;
+const isCooldownElapsed = async (): Promise<boolean> => {
+  const last = await getLastInterstitialShownAt();
+  if (last === 0) return true;
+  const elapsed = (Date.now() - last) / 1000;
   return elapsed >= INTERSTITIAL_ADS.COOLDOWN_SECONDS;
 };
 
 /**
- * Show an interstitial ad if cooldown has elapsed, updating the cooldown timer on success.
- * Returns true if an ad was shown.
+ * Show an interstitial ad if the global cooldown has elapsed, persisting the
+ * timestamp on success. Returns true if an ad was shown.
  */
 const maybeShowInterstitial = async (source: InterstitialSource): Promise<boolean> => {
   if (!INTERSTITIAL_ADS.ENABLED) return false;
   if (!shouldShowAds()) return false;
-  if (!isCooldownElapsed()) return false;
+  if (!(await isCooldownElapsed())) return false;
 
   try {
     await showInterstitialAd();
-    lastInterstitialShownAt = Date.now();
+    await AsyncStorage.setItem(LAST_INTERSTITIAL_SHOWN_KEY, Date.now().toString());
     trackInterstitialShown(source);
     return true;
   } catch (error) {
