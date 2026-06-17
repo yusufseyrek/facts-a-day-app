@@ -264,4 +264,3 @@ export const PAYWALL_PROMPT = {
   /** Delay after screen focus before showing paywall (ms) */
   DELAY_MS: 1500,
 } as const;
-
