@@ -248,8 +248,15 @@ export default function StoryScreen() {
       const fetched = res.facts.map(mapApiFactToRelations);
 
       const viewed = await database.getViewedStoryFactIds();
-      const unseen = fetched.filter((f) => !viewed.has(f.id));
-      const seen = fetched.filter((f) => viewed.has(f.id));
+      // The feed arrives newest-first (same as the Latest view), but a story
+      // should start at the EARLIEST fact the user hasn't seen yet and move
+      // forward chronologically. Order each group oldest-first by created_at
+      // (id as a stable tiebreak), with unseen leading.
+      const ca = (f: FactWithRelations) => f.created_at ?? '';
+      const byOldest = (a: FactWithRelations, b: FactWithRelations) =>
+        ca(a) < ca(b) ? -1 : ca(a) > ca(b) ? 1 : a.id - b.id;
+      const unseen = fetched.filter((f) => !viewed.has(f.id)).sort(byOldest);
+      const seen = fetched.filter((f) => viewed.has(f.id)).sort(byOldest);
       const result: FactWithRelations[] = [...unseen, ...seen];
 
       setFacts(result);
