@@ -280,10 +280,12 @@ function SearchScreen() {
     }, [])
   );
 
-  // iOS 26 search-role tab: drop straight into typing when the trailing
-  // search button is tapped. Guarded via a ref snapshot (not deps) so it fires
-  // once per focus session and never steals focus when returning from fact
-  // details with an active query or category browse.
+  // Auto-focus the search field on a fresh entry into the search tab so the
+  // user drops straight into typing — the iOS 26 search-role tab paradigm,
+  // extended to Android (where the native toolbar search is otherwise collapsed
+  // to an icon, so focus() also expands it). Guarded via a ref snapshot (not
+  // deps) so it fires once per focus session and never steals focus when
+  // returning from fact details with an active query or category browse.
   const searchActivityRef = useRef({ hasQuery: false, hasCategory: false });
   searchActivityRef.current = {
     hasQuery: searchQuery.trim().length > 0,
@@ -291,17 +293,18 @@ function SearchScreen() {
   };
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS !== 'ios') return;
       const { hasQuery, hasCategory } = searchActivityRef.current;
       if (hasQuery || hasCategory) {
-        // Returning from a pushed fact with a live query/category. UIKit restores
-        // the still-active UISearchController's first responder when this screen
-        // re-appears on pop, so the keyboard springs back up on its own — the
-        // "search input focused after a fact closes" bug. handleFactPress already
-        // resigns the bar BEFORE pushing the fact to stop the restore at the
-        // source; this blur is the belt-and-suspenders so the field is NEVER left
-        // focused on return. Deliberately NO focus() here — re-raising the
-        // keyboard is exactly the jump we're killing.
+        // Returning from a pushed fact with a live query/category: never re-focus
+        // (re-raising the keyboard is exactly the jump we're killing). On iOS,
+        // UIKit restores the still-active UISearchController's first responder
+        // when this screen re-appears on pop, so the keyboard springs back up on
+        // its own — the "search input focused after a fact closes" bug.
+        // handleFactPress already resigns the bar BEFORE pushing the fact to stop
+        // the restore at the source; this blur is the belt-and-suspenders so the
+        // field is NEVER left focused on return. Android's SearchView does NOT
+        // auto-restore focus on pop, so there's nothing to counter there.
+        if (Platform.OS !== 'ios') return;
         const blurTimer = setTimeout(() => searchBarRef.current?.blur(), 0);
         return () => clearTimeout(blurTimer);
       }
