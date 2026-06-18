@@ -11,14 +11,22 @@ import { SampleFactCardLayers } from '../../src/components/SampleFactCard';
 import { XStack, YStack } from '../../src/components/Stacks';
 import { LAYOUT } from '../../src/config/app';
 import { type SampleFact, sampleFactMorphId, sampleFacts } from '../../src/config/sampleFacts';
-import { useOnboarding } from '../../src/contexts';
+import { useOnboarding, usePremium } from '../../src/contexts';
 import { useFactMorphSource } from '../../src/hooks/useFactMorphSource';
 import { useTranslation } from '../../src/i18n';
-import { Screens, trackCarouselSwipe, trackScreenView } from '../../src/services/analytics';
+import {
+  Screens,
+  trackCarouselSwipe,
+  trackOnboardingCategoriesSelected,
+  trackScreenView,
+} from '../../src/services/analytics';
+import * as api from '../../src/services/api';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
 import type { SupportedLocale } from '../../src/i18n';
+
+const SKIP_HITSLOP = { top: 12, bottom: 12, left: 24, right: 24 };
 
 /** Immersive 1:1 fact card with image, gradient, category badge, and title */
 const FactImageCard = ({
@@ -111,8 +119,15 @@ export default function WelcomeScreen() {
 
   const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
-  const { isInitialized, isInitializing, initializationError, initializeOnboarding } =
-    useOnboarding();
+  const [isSkipping, setIsSkipping] = useState(false);
+  const {
+    isInitialized,
+    isInitializing,
+    initializationError,
+    initializeOnboarding,
+    setSelectedCategories,
+  } = useOnboarding();
+  const { isPremium } = usePremium();
 
   const facts = sampleFacts[locale as SupportedLocale] ?? sampleFacts.en;
 
@@ -139,6 +154,7 @@ export default function WelcomeScreen() {
     spacing.md + // outer YStack padding (top + bottom)
     100 + // header estimate (progress + title + subtitle)
     60 + // CTA button height + marginTop
+    spacing.md + 20 + // "Skip for now" link + gap
     dotSize +
     spacing.lg + // dots row + gap
     20 +
@@ -250,6 +266,33 @@ export default function WelcomeScreen() {
     const ampm = d.getHours() >= 12 ? 'PM' : 'AM';
     return `${h}:00 ${ampm}`;
   }, []);
+
+  // "Skip for now" selects every category the user can access and jumps
+  // straight to the success screen, which persists the selection and finishes
+  // onboarding. Premium-only categories are dropped for non-premium users,
+  // matching the quiz's deriveCategories. Metadata is already warmed by
+  // initializeOnboarding on mount; if it isn't ready, fall back to the quiz.
+  const handleSkip = async () => {
+    if (isSkipping) return;
+    setIsSkipping(true);
+    try {
+      const metadata = await api.getMetadata(locale);
+      const allSlugs = (metadata.categories ?? [])
+        .filter((category) => isPremium || !category.is_premium)
+        .map((category) => category.slug);
+      if (allSlugs.length === 0) {
+        router.push('/onboarding/questions');
+        return;
+      }
+      trackOnboardingCategoriesSelected(allSlugs);
+      setSelectedCategories(allSlugs);
+      router.push('/onboarding/success');
+    } catch {
+      router.push('/onboarding/questions');
+    } finally {
+      setIsSkipping(false);
+    }
+  };
 
   const renderItem = ({ item, index }: { item: SampleFact; index: number }) => (
     <View
@@ -459,6 +502,18 @@ export default function WelcomeScreen() {
           <Button onPress={() => router.push('/onboarding/questions')}>
             {t('personalizeMyFeed')}
           </Button>
+          <Pressable
+            disabled={isSkipping}
+            onPress={handleSkip}
+            hitSlop={SKIP_HITSLOP}
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.6 : 1,
+              marginTop: spacing.md,
+              alignItems: 'center',
+            })}
+          >
+            <Text.Caption color="$textSecondary">{t('skipForNow')}</Text.Caption>
+          </Pressable>
         </Animated.View>
       </YStack>
     </ScreenContainer>

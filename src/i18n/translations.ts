@@ -42,6 +42,7 @@ export const translations = {
     hereIsWhatYouGet: 'Das erwartet dich jeden Tag',
     chooseYourInterests: 'Wähle deine Interessen',
     personalizeMyFeed: 'Meinen Feed personalisieren',
+    skipForNow: 'Vorerst überspringen',
     tapCardToPreview: 'Tippe auf eine Karte, um die ganze Geschichte zu lesen',
 
     // Onboarding - Preference quiz
@@ -653,6 +654,7 @@ export const translations = {
     hereIsWhatYouGet: "Here's what you'll get every day",
     chooseYourInterests: 'Choose Your Interests',
     personalizeMyFeed: 'Personalize my feed',
+    skipForNow: 'Skip for now',
     tapCardToPreview: 'Tap a card to read the full story',
 
     // Onboarding - Preference quiz
@@ -1258,6 +1260,7 @@ export const translations = {
     hereIsWhatYouGet: 'Esto es lo que recibirás cada día',
     chooseYourInterests: 'Elige tus intereses',
     personalizeMyFeed: 'Personalizar mi feed',
+    skipForNow: 'Omitir por ahora',
     tapCardToPreview: 'Toca una tarjeta para leer la historia completa',
 
     // Onboarding - Preference quiz
@@ -1864,6 +1867,7 @@ export const translations = {
     hereIsWhatYouGet: 'Voici ce que vous recevrez chaque jour',
     chooseYourInterests: "Choisissez vos centres d'intérêt",
     personalizeMyFeed: 'Personnaliser mon fil',
+    skipForNow: 'Passer pour l’instant',
     tapCardToPreview: "Touchez une carte pour lire l'histoire complète",
 
     // Onboarding - Preference quiz
@@ -2473,6 +2477,7 @@ export const translations = {
     hereIsWhatYouGet: '毎日届く内容はこちら',
     chooseYourInterests: '興味を選ぼう',
     personalizeMyFeed: 'フィードをパーソナライズ',
+    skipForNow: '今はスキップ',
     tapCardToPreview: 'カードをタップすると全文を読めます',
 
     // Onboarding - Preference quiz
@@ -3074,6 +3079,7 @@ export const translations = {
     hereIsWhatYouGet: '매일 이런 내용을 받게 됩니다',
     chooseYourInterests: '관심사 선택하기',
     personalizeMyFeed: '내 피드 맞춤 설정',
+    skipForNow: '나중에 하기',
     tapCardToPreview: '카드를 누르면 전체 이야기를 읽을 수 있어요',
 
     // Onboarding - Preference quiz
@@ -3674,6 +3680,7 @@ export const translations = {
     hereIsWhatYouGet: 'Her gün seni böyle bilgiler bekliyor',
     chooseYourInterests: 'İlgi Alanlarını Seç',
     personalizeMyFeed: 'Akışımı kişiselleştir',
+    skipForNow: 'Şimdilik geç',
     tapCardToPreview: 'Hikâyenin tamamını okumak için bir karta dokun',
 
     // Onboarding - Preference quiz
@@ -4276,6 +4283,7 @@ export const translations = {
     hereIsWhatYouGet: '这是你每天会收到的内容',
     chooseYourInterests: '选择你的兴趣',
     personalizeMyFeed: '个性化我的内容',
+    skipForNow: '暂时跳过',
     tapCardToPreview: '点按卡片阅读完整故事',
 
     // Onboarding - Preference quiz
