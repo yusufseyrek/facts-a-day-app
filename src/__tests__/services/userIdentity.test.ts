@@ -5,6 +5,7 @@ import {
   clearIdentity,
   getIdentity,
   getIdentityHeaders,
+  onIdentityChange,
   saveIdentity,
 } from '../../services/userIdentity';
 
@@ -76,5 +77,35 @@ describe('userIdentity', () => {
     __resetIdentityCache();
     expect(await getIdentity()).toBeNull();
     expect(await getIdentityHeaders()).toEqual({});
+  });
+
+  it('notifies subscribers when the name is set and cleared (cross-screen sync)', async () => {
+    (AsyncStorage.removeItem as jest.Mock).mockImplementation(async (key: string) => {
+      store.delete(key);
+    });
+    const seen: (string | null)[] = [];
+    const unsubscribe = onIdentityChange((identity) => seen.push(identity?.screenName ?? null));
+
+    await saveIdentity({
+      userId: 'uuid-1',
+      userKey: 'secret-1',
+      screenName: 'CuriousMind',
+      countryCode: 'TR',
+    });
+    await clearIdentity();
+
+    // A claim/rename emits the new name; clearing emits null. This is what keeps
+    // Settings/comments/leaderboard from showing a stale name set elsewhere.
+    expect(seen).toEqual(['CuriousMind', null]);
+
+    // Unsubscribed listeners stop receiving updates.
+    unsubscribe();
+    await saveIdentity({
+      userId: 'uuid-2',
+      userKey: 'secret-2',
+      screenName: 'Renamed',
+      countryCode: 'TR',
+    });
+    expect(seen).toEqual(['CuriousMind', null]);
   });
 });

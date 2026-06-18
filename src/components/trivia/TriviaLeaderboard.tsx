@@ -344,6 +344,13 @@ function TriviaLeaderboardComponent({
     load();
   }, [load, reloadToken]);
 
+  // Reflect a name claimed/renamed/cleared from another screen (comments,
+  // settings) while the board is mounted.
+  useEffect(
+    () => userService.onIdentityChange((identity) => setScreenName(identity?.screenName ?? null)),
+    [],
+  );
+
   // A fresh claim retro-submits recent games (claimScreenName triggers the
   // sync); drain first so the immediate reload already includes them.
   const handleNameSaved = useCallback(

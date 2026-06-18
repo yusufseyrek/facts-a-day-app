@@ -203,6 +203,11 @@ export default function SettingsPage() {
       .getProfile()
       .then((profile) => setScreenName(profile?.screenName ?? null))
       .catch(() => {});
+    // Re-read when the name is claimed/renamed/cleared from another screen
+    // (e.g. a fact's comment section), so this row never shows a stale value.
+    return userService.onIdentityChange((identity) =>
+      setScreenName(identity?.screenName ?? null),
+    );
   }, []);
 
   // Preferences state

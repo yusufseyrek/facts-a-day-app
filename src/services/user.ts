@@ -10,6 +10,10 @@ import { clearIdentity, getIdentity, saveIdentity, type UserIdentity } from './u
 
 import type { SupportedLocale } from '../i18n/translations';
 
+// Re-exported so screens showing the screen name can re-read it when it's
+// claimed/renamed/cleared from anywhere (comments, leaderboard, settings).
+export { onIdentityChange } from './userIdentity';
+
 /**
  * Screen-name lifecycle on top of the identity store: claim once (mints the
  * backend identity), rename later, and keep the device token linked so admin

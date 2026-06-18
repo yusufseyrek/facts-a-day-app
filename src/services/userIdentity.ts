@@ -27,6 +27,31 @@ export interface UserIdentity {
 // AsyncStorage round-trip. `undefined` = not loaded yet, `null` = none stored.
 let cached: UserIdentity | null | undefined;
 
+// Listeners notified whenever the stored identity changes (claim, rename,
+// clear). Every screen that shows the screen name keeps its own copy in local
+// state; without this, a name set from one screen (e.g. a fact's comment
+// section) leaves the others (Settings, leaderboard) showing a stale value.
+type IdentityListener = (identity: UserIdentity | null) => void;
+const identityListeners = new Set<IdentityListener>();
+
+/** Subscribe to identity changes (claim/rename/clear). Returns an unsubscribe. */
+export function onIdentityChange(listener: IdentityListener): () => void {
+  identityListeners.add(listener);
+  return () => {
+    identityListeners.delete(listener);
+  };
+}
+
+function emitIdentityChange(identity: UserIdentity | null): void {
+  identityListeners.forEach((listener) => {
+    try {
+      listener(identity);
+    } catch (error) {
+      console.error('Error in identity change listener:', error);
+    }
+  });
+}
+
 export async function getIdentity(): Promise<UserIdentity | null> {
   if (cached !== undefined) return cached;
   try {
@@ -41,6 +66,7 @@ export async function getIdentity(): Promise<UserIdentity | null> {
 export async function saveIdentity(identity: UserIdentity): Promise<void> {
   cached = identity;
   await AsyncStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
+  emitIdentityChange(identity);
 }
 
 /**
@@ -51,6 +77,7 @@ export async function saveIdentity(identity: UserIdentity): Promise<void> {
 export async function clearIdentity(): Promise<void> {
   cached = null;
   await AsyncStorage.removeItem(IDENTITY_KEY);
+  emitIdentityChange(null);
 }
 
 /** Headers proving who we are, or {} when no name has been claimed yet. */

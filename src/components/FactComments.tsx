@@ -343,6 +343,13 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
     };
   }, [factId]);
 
+  // Reflect a name claimed/renamed/cleared from another screen (settings,
+  // leaderboard) while this composer is open.
+  useEffect(
+    () => userService.onIdentityChange((identity) => setScreenName(identity?.screenName ?? null)),
+    [],
+  );
+
   const retryLoad = useCallback(async () => {
     setIsLoading(true);
     setLoadError(false);
