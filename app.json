@@ -398,7 +398,7 @@
       "googleServicesFile": "./google/google-services.json",
       "predictiveBackGestureEnabled": false,
       "package": "dev.seyrek.factsaday",
-      "versionCode": 104,
+      "versionCode": 105,
       "permissions": [
         "INTERNET",
         "VIBRATE",
