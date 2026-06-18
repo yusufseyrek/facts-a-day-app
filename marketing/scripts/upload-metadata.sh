@@ -43,7 +43,7 @@ ALL_LOCALES=(
     "ar-SA" "ca" "cs" "da" "el" "fi" "he" "hi" "hr" "hu" "id" "it" "ms"
     "nl-NL" "no" "pl" "pt-BR" "pt-PT" "ro" "ru" "sk" "sv" "th" "uk" "vi" "zh-Hant"
     "es-ES" "en-AU" "en-CA" "en-GB" "fr-CA" "bn" "gu" "kn" "ml" "mr"
-    "pa" "sl" "ta" "te" "ur"
+    "or" "pa" "sl" "ta" "te" "ur"
 )
 
 # API endpoints
@@ -74,6 +74,19 @@ get_ios_locale() {
         ko) echo "ko" ;;
         tr) echo "tr" ;;
         zh) echo "zh-Hans" ;;
+        # App Store Connect uses region-suffixed codes for these languages
+        # (per fastlane_core ALL_LANGUAGES); the bare ISO codes are rejected.
+        bn) echo "bn-BD" ;;
+        gu) echo "gu-IN" ;;
+        kn) echo "kn-IN" ;;
+        ml) echo "ml-IN" ;;
+        mr) echo "mr-IN" ;;
+        or) echo "or-IN" ;;
+        pa) echo "pa-IN" ;;
+        sl) echo "sl-SI" ;;
+        ta) echo "ta-IN" ;;
+        te) echo "te-IN" ;;
+        ur) echo "ur-PK" ;;
         *)  echo "$1" ;;
     esac
 }
