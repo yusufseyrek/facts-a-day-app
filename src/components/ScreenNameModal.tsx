@@ -23,6 +23,13 @@ interface ScreenNameModalProps {
   currentName: string | null;
   /** Where this modal was opened from, for analytics attribution. */
   source?: 'comments' | 'leaderboard' | 'settings';
+  /**
+   * Present in a window-level Modal on iOS (see DialogShell). Set this when the
+   * modal is mounted deep in the tree (e.g. the comments section inside a
+   * scrolling fact detail) so the iOS overlay covers the whole screen instead
+   * of being clamped to its parent's frame.
+   */
+  presentInWindow?: boolean;
 }
 
 type Availability = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
@@ -41,6 +48,7 @@ export function ScreenNameModal({
   onSaved,
   currentName,
   source = 'settings',
+  presentInWindow = false,
 }: ScreenNameModalProps) {
   const { t, locale } = useTranslation();
   const { theme } = useTheme();
@@ -149,6 +157,7 @@ export function ScreenNameModal({
       visible={visible}
       onClose={handleClose}
       keyboardAware
+      presentInWindow={presentInWindow}
       title={currentName ? t('screenNameChangeTitle') : t('screenNameTitle')}
       showClose
       maxWidth={maxModalWidth}

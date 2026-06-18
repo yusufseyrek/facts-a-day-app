@@ -804,6 +804,10 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
         onSaved={(name) => setScreenName(name)}
         currentName={null}
         source="comments"
+        // Mounted inside the scrolling fact-detail comments section, not at the
+        // screen root — present in a window-level Modal so the iOS overlay
+        // covers the screen instead of being clamped to this section's box.
+        presentInWindow
       />
     </View>
   );

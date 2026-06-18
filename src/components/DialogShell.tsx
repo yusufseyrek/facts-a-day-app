@@ -207,6 +207,14 @@ interface DialogShellProps {
   keyboardAware?: boolean;
   /** Card max width; defaults to LAYOUT.MAX_CONTENT_WIDTH. */
   maxWidth?: number;
+  /**
+   * Present in a real window-level Modal on iOS too (see InlineOverlay's
+   * `forceWindow`). Required when the dialog is mounted deep in the tree (e.g.
+   * inside a scrolling section) rather than at the screen root, otherwise the
+   * iOS inline overlay is clamped to its parent's frame. Costs Liquid Glass
+   * refraction (flat blur instead). Default off for screen-root dialogs.
+   */
+  presentInWindow?: boolean;
   children?: ReactNode;
 }
 
@@ -223,6 +231,7 @@ export function DialogShell({
   footer,
   keyboardAware = false,
   maxWidth = LAYOUT.MAX_CONTENT_WIDTH,
+  presentInWindow = false,
   children,
 }: DialogShellProps) {
   const { theme } = useTheme();
@@ -367,6 +376,7 @@ export function DialogShell({
       onRequestClose={handleRequestClose}
       exitGraceMs={EXIT_MS + 40}
       coverNavigationBar={!keyboardAware}
+      forceWindow={presentInWindow}
     >
       {/* Backdrop fills the WHOLE overlay and sits OUTSIDE the keyboard-avoiding
           layer: an open keyboard (autoFocus inputs) must never shrink the scrim

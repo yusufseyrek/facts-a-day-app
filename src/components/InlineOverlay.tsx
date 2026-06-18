@@ -56,6 +56,16 @@ interface InlineOverlayProps {
    * keyboard would cover the input.
    */
   coverNavigationBar?: boolean;
+  /**
+   * iOS: present in a real window-level <Modal> instead of the inline
+   * absoluteFill view. REQUIRED when the overlay is mounted deep in the tree
+   * (e.g. inside a scrolling section), where the inline view would be bounded
+   * by its parent's frame instead of the screen — producing a clipped
+   * "square" backdrop and an off-screen card. The trade-off is that Liquid
+   * Glass can't refract content from a separate window, so the backdrop falls
+   * back to a flat blur/scrim. Screen-root callers should leave this off.
+   */
+  forceWindow?: boolean;
   children: React.ReactNode;
 }
 
@@ -65,6 +75,7 @@ export function InlineOverlay({
   exitGraceMs = 220,
   passthrough = false,
   coverNavigationBar = true,
+  forceWindow = false,
   children,
 }: InlineOverlayProps) {
   const insets = useSafeAreaInsets();
@@ -92,7 +103,11 @@ export function InlineOverlay({
   // under an open dialog. Modal owns hardware-back via onRequestClose, so no
   // BackHandler subscription needed. Passthrough overlays (toasts) keep the
   // inline path below — a Modal would block all input while they show.
-  if (Platform.OS === 'android' && !passthrough) {
+  //
+  // iOS opts into this same window-Modal path via `forceWindow` when the
+  // overlay is mounted deep in the tree (the inline absoluteFill below would
+  // otherwise be clamped to its parent's frame, not the screen).
+  if ((Platform.OS === 'android' || forceWindow) && !passthrough) {
     return (
       <Modal
         transparent
