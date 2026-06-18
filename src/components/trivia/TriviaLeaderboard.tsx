@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTranslation } from '../../i18n';
+import { trackLeaderboardWindowSwitched } from '../../services/analytics';
 import * as api from '../../services/api';
 import { syncTriviaResults } from '../../services/triviaSync';
 import * as userService from '../../services/user';
@@ -390,7 +391,16 @@ function TriviaLeaderboardComponent({
           return (
             <Pressable
               key={key}
-              onPress={() => setWindow(key)}
+              onPress={() => {
+                if (!active) {
+                  trackLeaderboardWindowSwitched({
+                    window: key,
+                    hasScreenName: !!screenName,
+                    viewerRank: me?.rank,
+                  });
+                }
+                setWindow(key);
+              }}
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
               accessibilityLabel={label}

@@ -21,6 +21,8 @@ interface ScreenNameModalProps {
   onSaved: (screenName: string) => void;
   /** Current name when renaming; null when claiming for the first time. */
   currentName: string | null;
+  /** Where this modal was opened from, for analytics attribution. */
+  source?: 'comments' | 'leaderboard' | 'settings';
 }
 
 type Availability = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
@@ -33,7 +35,13 @@ const NAME_MAX = 20;
  * (debounced) against the backend; the actual claim still handles the 409
  * race of two users grabbing the same name between check and submit.
  */
-export function ScreenNameModal({ visible, onClose, onSaved, currentName }: ScreenNameModalProps) {
+export function ScreenNameModal({
+  visible,
+  onClose,
+  onSaved,
+  currentName,
+  source = 'settings',
+}: ScreenNameModalProps) {
   const { t, locale } = useTranslation();
   const { theme } = useTheme();
   const { spacing, radius, typography, maxModalWidth, iconSizes, borderWidths } =
@@ -99,7 +107,7 @@ export function ScreenNameModal({ visible, onClose, onSaved, currentName }: Scre
     setIsSubmitting(true);
     setError('');
     try {
-      const identity = await userService.claimScreenName(trimmed, locale);
+      const identity = await userService.claimScreenName(trimmed, locale, source);
       onSaved(identity.screenName);
       onClose();
     } catch (err) {

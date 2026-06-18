@@ -8,6 +8,7 @@ import { ScreenContainer, Text } from '../../src/components';
 import { ArrowLeft } from '../../src/components/icons';
 import { XStack, YStack } from '../../src/components/Stacks';
 import { useTranslation } from '../../src/i18n';
+import { Screens, trackScreenView, trackUserUnblocked } from '../../src/services/analytics';
 import * as api from '../../src/services/api';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
@@ -38,6 +39,10 @@ export default function BlockedUsersScreen() {
   }, []);
 
   useEffect(() => {
+    trackScreenView(Screens.BLOCKED_USERS);
+  }, []);
+
+  useEffect(() => {
     load();
   }, [load]);
 
@@ -51,7 +56,14 @@ export default function BlockedUsersScreen() {
             setBusyId(u.user_id);
             try {
               await api.unblockUser(u.user_id);
-              setBlocked((prev) => prev.filter((b) => b.user_id !== u.user_id));
+              setBlocked((prev) => {
+                const next = prev.filter((b) => b.user_id !== u.user_id);
+                trackUserUnblocked({
+                  source: 'blocked_list',
+                  remainingBlockedCount: next.length,
+                });
+                return next;
+              });
             } catch {
               Alert.alert(t('error'), t('commentActionFailed'));
             } finally {

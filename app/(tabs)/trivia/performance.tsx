@@ -961,7 +961,7 @@ export default function PerformanceScreen() {
         </ContentContainer>
       </ScrollView>
 
-      <BannerAd respectBottomInset />
+      <BannerAd respectBottomInset placement="trivia_performance" />
 
       {/* Loading overlay for session fetch */}
       {loadingSession && (

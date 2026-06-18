@@ -2,6 +2,7 @@ import { memo, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   NativeAd,
+  NativeAdEventType,
   NativeAdView,
   NativeAsset,
   NativeAssetType,
@@ -14,6 +15,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { useTranslation } from '../../i18n';
+import { trackAdRevenue, trackNativeAdClick } from '../../services/analytics';
+import { aspectRatioName } from '../../services/nativeAdPool';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { ChevronRight } from '../icons';
@@ -58,6 +61,31 @@ function StoryNativeAdCardComponent({
       onAdFailed();
     }
   }, [nativeAdProp, status, onAdFailed]);
+
+  useEffect(() => {
+    if (!nativeAd) return;
+    const clickSub = nativeAd.addAdEventListener(NativeAdEventType.CLICKED, () => {
+      trackNativeAdClick({
+        placement: 'story',
+        aspectRatio: aspectRatioName(aspectRatio),
+        slotKey,
+      });
+    });
+    // Native PAID payload emits `currency` at runtime despite the typed `currencyCode`.
+    const paidSub = nativeAd.addAdEventListener(NativeAdEventType.PAID, (revenue) => {
+      trackAdRevenue({
+        format: 'native',
+        value: revenue.value,
+        currency: (revenue as { currency?: string }).currency ?? revenue.currencyCode ?? '',
+        precision: revenue.precision,
+        placement: 'story',
+      });
+    });
+    return () => {
+      clickSub.remove();
+      paidSub.remove();
+    };
+  }, [nativeAd, aspectRatio, slotKey]);
 
   // No ad bound → render nothing. The parent story swipe view will call
   // `onAdFailed` to skip this page on terminal failure.

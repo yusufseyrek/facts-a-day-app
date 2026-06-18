@@ -27,6 +27,7 @@ import { useTranslation } from '../../../src/i18n';
 import {
   Screens,
   trackCategoryBrowse,
+  trackDiscoverCategoryFilterCleared,
   trackScreenView,
   trackSearch,
 } from '../../../src/services/analytics';
@@ -163,19 +164,38 @@ function SearchScreen() {
   // cancels so the iOS 26 exit-search navigation doesn't trigger for them.
   const suppressCancelExitRef = useRef(false);
 
-  const clearCategoryFilter = useCallback(() => {
-    setSelectedCategorySlug(null);
-    setCategoryFacts([]);
-    setSearchQuery('');
-    setSearchResults([]);
-    suppressCancelExitRef.current = true;
-    searchBarRef.current?.clearText();
-    searchBarRef.current?.cancelSearch();
-    // The native event is delivered async; clear the flag well after it lands.
-    setTimeout(() => {
-      suppressCancelExitRef.current = false;
-    }, 500);
-  }, []);
+  // Mirror of the selected slug so clearCategoryFilter (a stable, empty-dep
+  // callback) can read the category being cleared without taking the state as a
+  // dependency (which would churn its identity through every memoized consumer).
+  const selectedCategorySlugRef = useRef<string | null>(null);
+  selectedCategorySlugRef.current = selectedCategorySlug;
+
+  // `source` is set only for user-initiated clears (header ✕, Android scope
+  // chip, scroll-to-top). The preference-refresh auto-clear omits it so the
+  // analytics event does not fire for that automatic path.
+  const clearCategoryFilter = useCallback(
+    (source?: 'header_x' | 'scope_chip' | 'scroll_top') => {
+      if (source) {
+        // Capture the slug being cleared before it's reset to null.
+        const clearedCategory = selectedCategorySlugRef.current;
+        if (clearedCategory) {
+          trackDiscoverCategoryFilterCleared({ category: clearedCategory, source });
+        }
+      }
+      setSelectedCategorySlug(null);
+      setCategoryFacts([]);
+      setSearchQuery('');
+      setSearchResults([]);
+      suppressCancelExitRef.current = true;
+      searchBarRef.current?.clearText();
+      searchBarRef.current?.cancelSearch();
+      // The native event is delivered async; clear the flag well after it lands.
+      setTimeout(() => {
+        suppressCancelExitRef.current = false;
+      }, 500);
+    },
+    []
+  );
 
   // End-of-session reset, emitted by the tabs layout when this tab is left for
   // another real tab (✕ exit or direct tab switch). Clears the scope so the
@@ -220,7 +240,7 @@ function SearchScreen() {
     } else if (selectedCategorySlug && categoryFacts.length > 0) {
       const isAtTop = categoryScrollOffsetRef.current <= 1;
       if (isAtTop) {
-        clearCategoryFilter();
+        clearCategoryFilter('scroll_top');
       } else {
         smartScrollToTop(categoryListRef, categoryScrollOffsetRef.current);
       }
@@ -493,7 +513,7 @@ function SearchScreen() {
         Platform.OS === 'ios' && selectedCategoryName
           ? () => (
               <Pressable
-                onPress={clearCategoryFilter}
+                onPress={() => clearCategoryFilter('header_x')}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
                 role="button"
@@ -975,7 +995,7 @@ function SearchScreen() {
         }}
       >
         <Pressable
-          onPress={clearCategoryFilter}
+          onPress={() => clearCategoryFilter('scope_chip')}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           role="button"

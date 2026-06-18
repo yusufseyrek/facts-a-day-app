@@ -162,6 +162,7 @@ export const Screens = {
   TRIVIA_HISTORY: 'TriviaHistory',
   TRIVIA_CATEGORIES: 'TriviaCategories',
   TRIVIA_RESULTS: 'TriviaResults',
+  TRIVIA_LEADERBOARD: 'TriviaLeaderboard',
   FAVORITES: 'Favorites',
   SETTINGS: 'Settings',
   FACT_DETAIL: 'FactDetail',
@@ -171,6 +172,7 @@ export const Screens = {
   ONBOARDING_NOTIFICATIONS: 'OnboardingNotifications',
   ONBOARDING_SUCCESS: 'OnboardingSuccess',
   SETTINGS_CATEGORIES: 'SettingsCategories',
+  BLOCKED_USERS: 'BlockedUsers',
   STORY: 'Story',
   BADGES: 'Badges',
   BADGE_DETAIL: 'BadgeDetail',
@@ -253,9 +255,12 @@ export const trackOnboardingNotificationsEnabled = (timesCount: number): void =>
 /**
  * Track when user skips/denies notifications
  */
-export const trackOnboardingNotificationsSkipped = (): void => {
-  logEvent('app_onboarding_notif_skip', {});
-  posthog.capture('onboarding_notifications_skipped');
+export const trackOnboardingNotificationsSkipped = (
+  source?: 'os_denied' | 'maybe_later' | 'error'
+): void => {
+  const props = { source: source ?? 'maybe_later' };
+  logEvent('app_onboarding_notif_skip', props);
+  posthog.capture('onboarding_notifications_skipped', props);
 };
 
 /**
@@ -425,7 +430,7 @@ export const trackCategoryBrowse = (params: { category: string; factsCount: numb
   posthog.capture('category_browsed', props);
 };
 
-export type FeedRefreshSource = 'pull' | 'notification' | 'auto' | 'focus';
+export type FeedRefreshSource = 'pull' | 'focus';
 
 /**
  * Track feed refresh
@@ -474,7 +479,7 @@ export const trackNotificationTimeChange = (timesCount: number): void => {
 // Ads Events
 // ============================================================================
 
-export type InterstitialSource = 'settings' | 'content_refresh' | 'trivia_results' | 'fact_view';
+export type InterstitialSource = 'settings' | 'trivia_results' | 'fact_view';
 
 /**
  * Track when interstitial ad is shown
@@ -487,7 +492,7 @@ export const trackInterstitialShown = (source: InterstitialSource): void => {
 /**
  * Track when App Open ad is shown (impression)
  */
-export const trackAppOpenAdShown = (source: 'foreground' | 'locale_change'): void => {
+export const trackAppOpenAdShown = (source: 'foreground'): void => {
   logEvent('app_open_ad_shown', { source });
   posthog.capture('app_open_ad_shown', { source });
 };
@@ -670,8 +675,16 @@ export const trackPremiumGateAdResult = (params: {
 /**
  * Track when a native ad is displayed (impression)
  */
-export const trackNativeAdImpression = (): void => {
-  logEvent('app_native_ad_impression', {});
+export const trackNativeAdImpression = (params?: {
+  placement?: 'feed' | 'story' | 'inline';
+  aspectRatio?: string;
+  slotKey?: string;
+}): void => {
+  logEvent('app_native_ad_impression', {
+    placement: params?.placement ?? '',
+    aspect_ratio: params?.aspectRatio ?? '',
+    slot_key: params?.slotKey ?? '',
+  });
 };
 
 /**
@@ -698,9 +711,18 @@ export const trackTriviaViewFactClick = (params: {
 /**
  * Track when a subscription is purchased
  */
-export const trackSubscriptionPurchased = (params: { productId: string }): void => {
-  logEvent('app_subscription_purchased', { product_id: params.productId });
-  posthog.capture('subscription_purchased', { product_id: params.productId });
+export const trackSubscriptionPurchased = (params: {
+  productId: string;
+  source?: string;
+  price?: string;
+}): void => {
+  const props = {
+    product_id: params.productId,
+    source: params.source ?? '',
+    price: params.price ?? '',
+  };
+  logEvent('app_subscription_purchased', props);
+  posthog.capture('subscription_purchased', props);
 };
 
 /**
@@ -764,11 +786,19 @@ export const trackStoryOpen = (params: {
   category: string;
   factCount: number;
   isMix: boolean;
+  // Story THEMES (query-based collections) reuse this event but must be
+  // distinguishable from a plain category open or the all-categories mix.
+  isTheme?: boolean;
+  themeSlug?: string;
+  sourceType?: 'theme' | 'mix' | 'category';
 }): void => {
   const props = {
     category: params.category,
     fact_count: params.factCount,
     is_mix: params.isMix,
+    is_theme: params.isTheme ?? false,
+    theme_slug: params.themeSlug ?? '',
+    source_type: params.sourceType ?? (params.isMix ? 'mix' : 'category'),
   };
   logEvent('app_story_open', props);
   posthog.capture('story_opened', props);
@@ -827,7 +857,7 @@ export const trackBadgeDetailView = (params: {
 // Carousel Events
 // ============================================================================
 
-export type CarouselSection = 'latest' | 'on_this_day';
+export type CarouselSection = 'latest' | 'on_this_day' | 'onboarding_welcome';
 
 /**
  * Track when user swipes to a new card in a home screen carousel
@@ -852,4 +882,624 @@ export const trackCarouselSwipe = (params: {
 export const trackSatisfactionPromptShown = (): void => {
   logEvent('app_satisfaction_prompt_shown');
   posthog.capture('satisfaction_prompt_shown');
+};
+
+/**
+ * Track the OUTCOME of the satisfaction prompt: love_it routes to the native
+ * review flow, not_really opens a feedback email, dismissed closes it.
+ */
+export const trackSatisfactionPromptResult = (params: {
+  result: 'love_it' | 'not_really' | 'dismissed';
+  nativeReviewRequested?: boolean;
+  openedFeedbackEmail?: boolean;
+}): void => {
+  const props = {
+    result: params.result,
+    native_review_requested: params.nativeReviewRequested ?? false,
+    opened_feedback_email: params.openedFeedbackEmail ?? false,
+  };
+  logEvent('app_satisfaction_result', props);
+  posthog.capture('satisfaction_prompt_result', props);
+};
+
+// ============================================================================
+// Comments / UGC Events (Apple 1.2 controls + engagement funnel)
+// ============================================================================
+
+/** A new comment was posted successfully. */
+export const trackCommentPosted = (params: {
+  factId: number;
+  commentId: number;
+  bodyLength: number;
+  locale: string;
+}): void => {
+  const props = {
+    fact_id: params.factId,
+    comment_id: params.commentId,
+    body_length: params.bodyLength,
+    locale: params.locale,
+  };
+  logEvent('app_comment_posted', props);
+  posthog.capture('comment_posted', props);
+};
+
+/** Comment post failed (cooldown 429 / moderation 422 / other). */
+export const trackCommentPostFailed = (params: {
+  factId: number;
+  reason: 'cooldown' | 'rejected' | 'error';
+  statusCode?: number;
+}): void => {
+  const props = {
+    fact_id: params.factId,
+    reason: params.reason,
+    status_code: params.statusCode ?? 0,
+  };
+  logEvent('app_comment_post_failed', props);
+  posthog.capture('comment_post_failed', props);
+};
+
+/** The comments thread for a fact was opened / first page loaded (exposure). */
+export const trackCommentsViewed = (params: {
+  factId: number;
+  totalCount: number;
+  hasComments: boolean;
+  loadError?: boolean;
+}): void => {
+  const props = {
+    fact_id: params.factId,
+    total_count: params.totalCount,
+    has_comments: params.hasComments,
+    load_error: params.loadError ?? false,
+  };
+  logEvent('app_comments_viewed', props);
+  posthog.capture('comments_viewed', props);
+};
+
+/** Tapped "show more comments" to page the thread. */
+export const trackCommentsLoadMore = (params: {
+  factId: number;
+  loadedCount: number;
+  totalCount: number;
+}): void => {
+  logEvent('app_comments_load_more', {
+    fact_id: params.factId,
+    loaded_count: params.loadedCount,
+    total_count: params.totalCount,
+  });
+};
+
+/** A comment was reported for moderation (Apple 1.2). */
+export const trackCommentReported = (params: { commentId: number; factId: number }): void => {
+  const props = { comment_id: params.commentId, fact_id: params.factId };
+  logEvent('app_comment_reported', props);
+  posthog.capture('comment_reported', props);
+};
+
+/** A comment's author was blocked (Apple 1.2). */
+export const trackCommentAuthorBlocked = (params: {
+  commentId: number;
+  factId: number;
+}): void => {
+  const props = { comment_id: params.commentId, fact_id: params.factId };
+  logEvent('app_comment_author_blocked', props);
+  posthog.capture('comment_author_blocked', props);
+};
+
+/** A previously-blocked user was unblocked from the blocked-users screen. */
+export const trackUserUnblocked = (params: {
+  source: 'blocked_list';
+  remainingBlockedCount?: number;
+}): void => {
+  const props = {
+    source: params.source,
+    remaining_blocked_count: params.remainingBlockedCount ?? 0,
+  };
+  logEvent('app_user_unblocked', props);
+  posthog.capture('user_unblocked', props);
+};
+
+/** Outcome of the one-time comment EULA / community-rules prompt (Apple 1.2). */
+export const trackCommentEulaResult = (params: {
+  result: 'agree' | 'view_terms' | 'cancel';
+  factId: number;
+}): void => {
+  const props = { result: params.result, fact_id: params.factId };
+  logEvent('app_comment_eula_result', props);
+  posthog.capture('comment_eula_result', props);
+};
+
+/** The "join the conversation" CTA (opens screen-name claim) was tapped. */
+export const trackCommentJoinCtaTapped = (params: { factId: number }): void => {
+  const props = { fact_id: params.factId, source: 'comments' };
+  logEvent('app_comment_join_cta', props);
+  posthog.capture('comment_join_cta_tapped', props);
+};
+
+// ============================================================================
+// Identity / Account Events
+// ============================================================================
+
+/**
+ * A screen name was claimed (first identity) or renamed. This is the app's only
+ * registration/identity event and the gate for UGC + leaderboard ranking.
+ */
+export const trackScreenNameClaimed = (params: {
+  isFirstClaim: boolean;
+  source: 'comments' | 'leaderboard' | 'settings';
+  nameLength: number;
+  usedRandomizer?: boolean;
+  hadTakenCollision?: boolean;
+}): void => {
+  const props = {
+    is_first_claim: params.isFirstClaim,
+    source: params.source,
+    name_length: params.nameLength,
+    used_randomizer: params.usedRandomizer ?? false,
+    had_taken_collision: params.hadTakenCollision ?? false,
+  };
+  logEvent('app_screen_name_claimed', props);
+  posthog.capture('screen_name_claimed', props);
+};
+
+/** Account deletion executed (Apple 5.1.1(v)) — hard churn + compliance signal. */
+export const trackAccountDeleted = (params: {
+  result: 'confirmed' | 'failed';
+  hadScreenName: boolean;
+}): void => {
+  const props = {
+    result: params.result,
+    had_screen_name: params.hadScreenName,
+    source: 'settings',
+  };
+  logEvent('app_account_deleted', props);
+  posthog.capture('account_deleted', props);
+};
+
+// ============================================================================
+// Audio / TTS Narration Events
+// ============================================================================
+
+export type AudioSource = 'local' | 'remote';
+
+/** User started (or resumed) fact narration. */
+export const trackFactAudioPlay = (params: {
+  factId: number;
+  categorySlug?: string;
+  locale: string;
+  source: AudioSource;
+  isResume: boolean;
+}): void => {
+  const props = {
+    fact_id: params.factId,
+    category_slug: params.categorySlug ?? '',
+    locale: params.locale,
+    source: params.source,
+    is_resume: params.isResume,
+  };
+  logEvent('app_fact_audio_play', props);
+  posthog.capture('fact_audio_play', props);
+};
+
+/** Fact narration reached the end (true completion; looping is disabled). */
+export const trackFactAudioCompleted = (params: {
+  factId: number;
+  categorySlug?: string;
+  locale: string;
+  durationSeconds: number;
+}): void => {
+  const props = {
+    fact_id: params.factId,
+    category_slug: params.categorySlug ?? '',
+    locale: params.locale,
+    duration_seconds: Math.round(params.durationSeconds),
+  };
+  logEvent('app_fact_audio_completed', props);
+  posthog.capture('fact_audio_completed', props);
+};
+
+/** User paused narration mid-playback. */
+export const trackFactAudioPause = (params: {
+  factId: number;
+  locale: string;
+  positionSeconds: number;
+  durationSeconds: number;
+}): void => {
+  logEvent('app_fact_audio_pause', {
+    fact_id: params.factId,
+    locale: params.locale,
+    position_seconds: Math.round(params.positionSeconds),
+    duration_seconds: Math.round(params.durationSeconds),
+  });
+};
+
+/** Narration playback errored (otherwise only __DEV__-logged and silently reset). */
+export const trackFactAudioError = (params: {
+  factId: number;
+  locale: string;
+  source: AudioSource;
+  errorMessage: string;
+}): void => {
+  logEvent('app_fact_audio_error', {
+    fact_id: params.factId,
+    locale: params.locale,
+    source: params.source,
+    error_message: params.errorMessage.substring(0, 200),
+  });
+};
+
+// ============================================================================
+// Story Button / Home Rail Events
+// ============================================================================
+
+/** A story button on the home rail was tapped (category, all-mix, or theme). */
+export const trackStoryButtonTap = (params: {
+  slug: string;
+  buttonKind: 'mix' | 'category' | 'theme';
+  isTheme: boolean;
+  themeId?: number;
+  position?: number;
+}): void => {
+  const props = {
+    slug: params.slug,
+    button_kind: params.buttonKind,
+    is_theme: params.isTheme,
+    theme_id: params.themeId ?? 0,
+    position: params.position ?? -1,
+  };
+  logEvent('app_story_button_tap', props);
+  posthog.capture('story_button_tapped', props);
+};
+
+// ============================================================================
+// Trivia Leaderboard / Question Events
+// ============================================================================
+
+/** Leaderboard window (today / week / all-time) switched. */
+export const trackLeaderboardWindowSwitched = (params: {
+  window: 'today' | 'week' | 'all';
+  hasScreenName: boolean;
+  viewerRank?: number;
+}): void => {
+  const props = {
+    window: params.window,
+    has_screen_name: params.hasScreenName,
+    viewer_rank: params.viewerRank ?? 0,
+  };
+  logEvent('app_leaderboard_window', props);
+  posthog.capture('trivia_leaderboard_window_switched', props);
+};
+
+/** A single trivia question was answered (high-volume; Firebase only). */
+export const trackTriviaQuestionAnswered = (params: {
+  mode: TriviaMode;
+  questionIndex: number;
+  isCorrect: boolean;
+  questionType?: string;
+  categorySlug?: string;
+}): void => {
+  logEvent('app_trivia_answer', {
+    mode: params.mode,
+    question_index: params.questionIndex,
+    is_correct: params.isCorrect,
+    question_type: params.questionType ?? '',
+    category_slug: params.categorySlug ?? '',
+  });
+};
+
+/** A trivia streak milestone was reached. */
+export const trackTriviaStreakMilestone = (params: {
+  bestStreak: number;
+  mode: TriviaMode;
+  milestoneThreshold: number;
+}): void => {
+  const props = {
+    best_streak: params.bestStreak,
+    mode: params.mode,
+    milestone_threshold: params.milestoneThreshold,
+  };
+  logEvent('app_trivia_streak_milestone', props);
+  posthog.capture('trivia_streak_milestone', props);
+};
+
+// ============================================================================
+// Paywall / Purchase Funnel Events
+// ============================================================================
+
+/** A subscription plan tile was selected on the paywall. */
+export const trackPaywallPlanSelected = (params: {
+  productId: string;
+  source: string;
+  isDefault: boolean;
+  displayPrice?: string;
+}): void => {
+  logEvent('app_paywall_plan_selected', {
+    product_id: params.productId,
+    source: params.source,
+    is_default: params.isDefault,
+    display_price: params.displayPrice ?? '',
+  });
+};
+
+/** Purchase initiated (Start Premium tapped, requestPurchase called). */
+export const trackPaywallPurchaseInitiated = (params: {
+  productId: string;
+  source: string;
+  displayPrice?: string;
+}): void => {
+  const props = {
+    product_id: params.productId,
+    source: params.source,
+    display_price: params.displayPrice ?? '',
+  };
+  logEvent('app_purchase_initiated', props);
+  posthog.capture('paywall_purchase_initiated', props);
+};
+
+/** Purchase failed (non-cancel store error). */
+export const trackPaywallPurchaseFailed = (params: {
+  productId: string;
+  source: string;
+  errorCode?: string;
+  errorMessage?: string;
+}): void => {
+  const props = {
+    product_id: params.productId,
+    source: params.source,
+    error_code: params.errorCode ?? '',
+    error_message: (params.errorMessage ?? '').substring(0, 200),
+  };
+  logEvent('app_purchase_failed', props);
+  posthog.capture('paywall_purchase_failed', props);
+};
+
+/** Purchase cancelled by the user (store sheet dismissed). */
+export const trackPaywallPurchaseCancelled = (params: {
+  productId: string;
+  source: string;
+}): void => {
+  const props = { product_id: params.productId, source: params.source };
+  logEvent('app_purchase_cancelled', props);
+  posthog.capture('paywall_purchase_cancelled', props);
+};
+
+/** Restore Purchases tapped. */
+export const trackRestorePurchasesTapped = (params: {
+  source: 'paywall' | 'settings';
+}): void => {
+  logEvent('app_restore_tapped', { source: params.source });
+  posthog.capture('restore_purchases_tapped', { source: params.source });
+};
+
+/** Restore Purchases result. */
+export const trackRestorePurchasesResult = (params: {
+  result: 'restored' | 'none' | 'error';
+  source: 'paywall' | 'settings';
+  errorMessage?: string;
+}): void => {
+  const props = {
+    result: params.result,
+    source: params.source,
+    error_message: (params.errorMessage ?? '').substring(0, 200),
+  };
+  logEvent('app_restore_result', props);
+  posthog.capture('restore_purchases_result', props);
+};
+
+/** Manage / cancel subscription row tapped (deep-links to OS subscriptions). */
+export const trackManageSubscriptionTapped = (params: { source: 'settings' }): void => {
+  logEvent('app_manage_subscription', { source: params.source });
+  posthog.capture('manage_subscription_tapped', { source: params.source });
+};
+
+// ============================================================================
+// Ad Reliability Events (fill rate, clicks, skips)
+// ============================================================================
+
+/** Native ad failed to load (no-fill or rate-limit backoff). */
+export const trackNativeAdLoadFailed = (params: {
+  reason: 'no_fill' | 'rate_limit';
+  aspectRatio?: string;
+  attemptNumber?: number;
+  retryInMs?: number;
+}): void => {
+  logEvent('app_native_ad_load_failed', {
+    reason: params.reason,
+    aspect_ratio: params.aspectRatio ?? '',
+    attempt_number: params.attemptNumber ?? 0,
+    retry_in_ms: params.retryInMs ?? 0,
+  });
+};
+
+/** Native ad clicked / opened. */
+export const trackNativeAdClick = (params: {
+  placement: 'feed' | 'story' | 'inline';
+  aspectRatio?: string;
+  slotKey?: string;
+}): void => {
+  const props = {
+    placement: params.placement,
+    aspect_ratio: params.aspectRatio ?? '',
+    slot_key: params.slotKey ?? '',
+  };
+  logEvent('app_native_ad_click', props);
+  posthog.capture('native_ad_click', props);
+};
+
+/** An interstitial was requested but skipped (cooldown / no-fill / timeout / error). */
+export const trackInterstitialSkipped = (params: {
+  source: InterstitialSource;
+  reason: 'cooldown' | 'no_fill' | 'load_timeout' | 'show_error';
+}): void => {
+  logEvent('app_interstitial_skipped', { source: params.source, reason: params.reason });
+};
+
+/** App-open ad failed to load / no-fill. */
+export const trackAppOpenAdLoadFailed = (params: {
+  source: 'foreground';
+  errorMessage?: string;
+}): void => {
+  logEvent('app_open_ad_load_failed', {
+    source: params.source,
+    error_message: (params.errorMessage ?? '').substring(0, 200),
+  });
+};
+
+export type AdFormat = 'native' | 'banner' | 'interstitial' | 'app_open' | 'rewarded';
+
+/**
+ * Ad revenue paid-event (AdMob onPaidEvent), fired per impression that earns.
+ * `value` is in MAJOR currency units — the SDK reports valueMicros and the
+ * RN library hands us valueMicros * 1e-6, so we also re-derive value_micros
+ * for integer-safe aggregation. precision is RevenuePrecisions (0 unknown,
+ * 1 estimated, 2 publisher-provided, 3 precise). High-volume technical signal,
+ * so Firebase only — matching trackNativeAdImpression.
+ */
+export const trackAdRevenue = (params: {
+  format: AdFormat;
+  value: number;
+  currency: string;
+  precision: number;
+  placement?: string;
+  adUnitId?: string;
+}): void => {
+  logEvent('app_ad_revenue', {
+    format: params.format,
+    value: params.value,
+    value_micros: Math.round((params.value || 0) * 1e6),
+    currency: params.currency || '',
+    precision: params.precision,
+    placement: params.placement ?? '',
+    ad_unit_id: params.adUnitId ?? '',
+  });
+};
+
+// ============================================================================
+// Push Notification Events (out-of-onboarding)
+// ============================================================================
+
+export type PushTrigger =
+  | 'foreground'
+  | 'time_save'
+  | 'category_change'
+  | 'identity_claim'
+  | 'cold_start'
+  | 'settings';
+
+/** Push permission requested + resolved OUTSIDE onboarding. */
+export const trackPushPermissionResult = (params: {
+  status: 'granted' | 'denied';
+  trigger: PushTrigger;
+  previouslyGranted?: boolean;
+}): void => {
+  const props = {
+    status: params.status,
+    trigger: params.trigger,
+    previously_granted: params.previouslyGranted ?? false,
+  };
+  logEvent('app_push_permission', props);
+  posthog.capture('push_permission_result', props);
+};
+
+/** Push registration (token → backend) succeeded or short-circuited. */
+export const trackPushRegisterResult = (params: {
+  success: boolean;
+  reason: 'ok' | 'permission_denied' | 'no_token' | 'no_times' | 'not_device' | 'error';
+  trigger?: PushTrigger;
+  timesCount?: number;
+}): void => {
+  logEvent('app_push_register', {
+    success: params.success,
+    reason: params.reason,
+    trigger: params.trigger ?? '',
+    times_count: params.timesCount ?? 0,
+  });
+};
+
+// ============================================================================
+// Settings / Misc Action Events
+// ============================================================================
+
+/** Rate-app row tapped in Settings (native review with store fallback). */
+export const trackRateAppTapped = (params: {
+  source: 'settings';
+  shown?: boolean;
+  fellBackToStore?: boolean;
+}): void => {
+  logEvent('app_rate_app_tapped', {
+    source: params.source,
+    shown: params.shown ?? false,
+    fell_back_to_store: params.fellBackToStore ?? false,
+  });
+  posthog.capture('rate_app_tapped', { source: params.source });
+};
+
+/** Language row tapped (opens OS per-app language settings). */
+export const trackLanguageSettingsOpened = (params: {
+  currentLocale: string;
+  source: 'settings';
+}): void => {
+  logEvent('app_language_settings_opened', {
+    current_locale: params.currentLocale,
+    source: params.source,
+  });
+};
+
+/** The category filter was cleared on the Discover screen. */
+export const trackDiscoverCategoryFilterCleared = (params: {
+  category: string;
+  source: 'header_x' | 'scope_chip' | 'scroll_top';
+}): void => {
+  logEvent('app_discover_filter_cleared', {
+    category: params.category,
+    source: params.source,
+  });
+  posthog.capture('discover_category_filter_cleared', {
+    category: params.category,
+    source: params.source,
+  });
+};
+
+/** Reading-streak indicator in the home header tapped (→ Reading Stats). */
+export const trackReadingStreakIndicatorTap = (params: { streak: number }): void => {
+  logEvent('app_reading_streak_tap', { streak: params.streak, source: 'home_header' });
+  posthog.capture('reading_streak_indicator_tap', { streak: params.streak });
+};
+
+/** Infinite-scroll load-more in the home Keep Reading feed. */
+export const trackHomeFeedLoadMore = (params: {
+  pageIndex: number;
+  loadedCount: number;
+}): void => {
+  logEvent('app_home_feed_load_more', {
+    page_index: params.pageIndex,
+    loaded_count: params.loadedCount,
+  });
+};
+
+/** A category filter chip was toggled on the Favorites screen. */
+export const trackFavoritesCategoryFilter = (params: {
+  category: string;
+  resultCount: number;
+  totalFavorites: number;
+}): void => {
+  logEvent('app_favorites_category_filter', {
+    category: params.category,
+    result_count: params.resultCount,
+    total_favorites: params.totalFavorites,
+  });
+};
+
+// ============================================================================
+// Onboarding Reliability Events
+// ============================================================================
+
+/** Onboarding init / category-metadata load failed (dead-end retry screen). */
+export const trackOnboardingLoadError = (params: {
+  reason: 'init_error' | 'metadata_empty' | 'metadata_fetch_failed';
+  retry: boolean;
+  locale: string;
+}): void => {
+  const props = { reason: params.reason, retry: params.retry, locale: params.locale };
+  logEvent('app_onboarding_load_error', props);
+  posthog.capture('onboarding_load_error', props);
 };

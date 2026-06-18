@@ -23,6 +23,12 @@ import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from 'expo-router';
 
+import {
+  trackFactAudioCompleted,
+  trackFactAudioError,
+  trackFactAudioPause,
+  trackFactAudioPlay,
+} from '../services/analytics';
 import { cacheFactAudio, getLocalFactAudioPath } from '../services/factAudio';
 
 export type PlaybackState = 'idle' | 'loading' | 'playing' | 'paused' | 'error';
@@ -109,6 +115,10 @@ export function useFactAudio(
   // stale value and, only ratcheting up, never correct it.)
   const durationRef = useRef(0);
 
+  // Guards the completion analytics event so it fires exactly once per finish:
+  // status.didJustFinish can stay true across several status ticks.
+  const finishTrackedRef = useRef(false);
+
   // When the fact changes (prev/next in the modal), reset UI state immediately
   // and stop the current player. Without explicit pause+seek, expo-audio keeps
   // emitting `status.playing=true` briefly after the source swap, and the
@@ -117,6 +127,7 @@ export function useFactAudio(
     setPlaybackState('idle');
     progress.value = 0;
     durationRef.current = 0;
+    finishTrackedRef.current = false;
     try {
       player.pause();
       // seekTo is async — a rejection after the native player is released
@@ -141,6 +152,14 @@ export function useFactAudio(
       setPlaybackState((prev) => (prev === 'loading' || prev === 'playing' ? 'paused' : prev));
     }
     if (status.didJustFinish) {
+      if (!finishTrackedRef.current) {
+        finishTrackedRef.current = true;
+        trackFactAudioCompleted({
+          factId,
+          locale: language,
+          durationSeconds: durationRef.current || (status?.duration ?? 0),
+        });
+      }
       setPlaybackState('idle');
       try {
         player.pause();
@@ -148,6 +167,8 @@ export function useFactAudio(
       } catch {
         // expo-audio throws transient errors when the player is being remounted; ignore.
       }
+    } else {
+      finishTrackedRef.current = false;
     }
   }, [
     hasAudio,
@@ -157,6 +178,8 @@ export function useFactAudio(
     status?.duration,
     status?.didJustFinish,
     player,
+    factId,
+    language,
   ]);
 
   // Pause when app backgrounds.
@@ -254,22 +277,47 @@ export function useFactAudio(
       // expo-audio throws transient errors when the player is being remounted; ignore.
     }
 
+    const source: 'local' | 'remote' = resolvedSource !== audioUrl ? 'local' : 'remote';
+
     try {
       if (playbackState === 'playing') {
+        trackFactAudioPause({
+          factId,
+          locale: language,
+          positionSeconds: status?.currentTime ?? 0,
+          durationSeconds: durationRef.current,
+        });
         player.pause();
         setPlaybackState('paused');
         return;
       }
       if (!status?.isLoaded) setPlaybackState('loading');
+      trackFactAudioPlay({
+        factId,
+        locale: language,
+        source,
+        isResume: playbackState === 'paused',
+      });
       player.play();
       setPlaybackState('playing');
     } catch (err) {
+      trackFactAudioError({ factId, locale: language, source, errorMessage: String(err) });
       setPlaybackState('error');
       if (__DEV__) console.warn('[useFactAudio] play error:', err);
       if (errorRevertTimer.current) clearTimeout(errorRevertTimer.current);
       errorRevertTimer.current = setTimeout(() => setPlaybackState('idle'), 1500);
     }
-  }, [hasAudio, playbackState, player, status?.isLoaded]);
+  }, [
+    hasAudio,
+    playbackState,
+    player,
+    status?.isLoaded,
+    status?.currentTime,
+    factId,
+    language,
+    resolvedSource,
+    audioUrl,
+  ]);
 
   useEffect(() => {
     return () => {

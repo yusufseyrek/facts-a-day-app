@@ -203,7 +203,7 @@ export default function CategoriesAccuracyScreen() {
         </ContentContainer>
       </ScrollView>
 
-      <BannerAd respectBottomInset />
+      <BannerAd respectBottomInset placement="trivia_categories" />
     </View>
   );
 }

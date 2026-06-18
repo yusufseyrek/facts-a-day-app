@@ -11,6 +11,7 @@ import Constants from 'expo-constants';
 
 import { AD_KEYWORDS } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
+import { trackAdRevenue } from '../../services/analytics';
 import { canShowRewardedAds } from '../../services/premiumState';
 
 import { suppressNextForegroundAppOpenAd } from './AppOpenAd';
@@ -78,10 +79,24 @@ const loadRewardedAd = async () => {
     loadRewardedAd();
   });
 
+  const unsubPaid = rewarded.addAdEventListener(AdEventType.PAID, (revenue) => {
+    // The lib mistypes the full-screen PAID payload as `undefined`.
+    const paid = revenue as { value: number; currency: string; precision: number } | undefined;
+    if (!paid) return;
+    trackAdRevenue({
+      format: 'rewarded',
+      value: paid.value,
+      currency: paid.currency,
+      precision: paid.precision,
+      adUnitId,
+    });
+  });
+
   cleanupLoadListeners = () => {
     unsubLoaded();
     unsubError();
     unsubClosed();
+    unsubPaid();
   };
 
   rewarded.load();

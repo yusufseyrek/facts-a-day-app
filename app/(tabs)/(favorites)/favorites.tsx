@@ -29,7 +29,11 @@ import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
 import { usePremium } from '../../../src/contexts';
 import { useHeaderContentGap } from '../../../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../../../src/i18n';
-import { Screens, trackScreenView } from '../../../src/services/analytics';
+import {
+  Screens,
+  trackFavoritesCategoryFilter,
+  trackScreenView,
+} from '../../../src/services/analytics';
 import * as api from '../../../src/services/api';
 import { getFavoriteIds, mapApiFactToRelations } from '../../../src/services/database';
 import { factDetailBasePath } from '../../../src/services/factMorph';
@@ -280,12 +284,36 @@ export default function FavoritesScreen() {
     loadFavorites(true);
   }, [loadFavorites]);
 
-  const handleCategoryPress = useCallback((categorySlug: string | null) => {
-    // No scroll-to-top here: the chips live in the list header, so they are
-    // only tappable when the list is already at the top — the old offset-0
-    // scroll just dragged the content down under the translucent header.
-    setSelectedCategory((prev) => (prev === categorySlug ? null : categorySlug));
-  }, []);
+  const handleCategoryPress = useCallback(
+    (categorySlug: string | null) => {
+      // No scroll-to-top here: the chips live in the list header, so they are
+      // only tappable when the list is already at the top — the old offset-0
+      // scroll just dragged the content down under the translucent header.
+      const nextCategory = selectedCategory === categorySlug ? null : categorySlug;
+      let result = favorites;
+      if (nextCategory) {
+        result = result.filter(
+          (f) => f.category === nextCategory || f.categoryData?.slug === nextCategory
+        );
+      }
+      if (debouncedQuery.trim()) {
+        const query = debouncedQuery.trim().toLowerCase();
+        result = result.filter(
+          (f) =>
+            f.title?.toLowerCase().includes(query) ||
+            f.content.toLowerCase().includes(query) ||
+            f.summary?.toLowerCase().includes(query)
+        );
+      }
+      trackFavoritesCategoryFilter({
+        category: nextCategory ?? 'all',
+        resultCount: result.length,
+        totalFavorites: favorites.length,
+      });
+      setSelectedCategory(nextCategory);
+    },
+    [selectedCategory, favorites, debouncedQuery]
+  );
 
   // Memoized keyExtractor
   const keyExtractor = useCallback((item: FavoritesListItem) => {

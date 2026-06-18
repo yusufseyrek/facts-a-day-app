@@ -6,6 +6,11 @@ import Constants from 'expo-constants';
 
 import { AD_KEYWORDS, INTERSTITIAL_ADS } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
+import {
+  type InterstitialSource,
+  trackAdRevenue,
+  trackInterstitialSkipped,
+} from '../../services/analytics';
 import { shouldShowAds } from '../../services/premiumState';
 
 import { suppressNextForegroundAppOpenAd } from './AppOpenAd';
@@ -57,6 +62,20 @@ const loadInterstitialAd = async () => {
     if (__DEV__) console.log('Interstitial ad closed');
     // Preload next ad
     loadInterstitialAd();
+  });
+
+  // The lib mistypes the full-screen PAID payload as `undefined`; the native
+  // side does emit { value, currency, precision } (value in major units).
+  interstitial.addAdEventListener(AdEventType.PAID, (revenue) => {
+    const paid = revenue as { value: number; currency: string; precision: number } | undefined;
+    if (!paid) return;
+    trackAdRevenue({
+      format: 'interstitial',
+      value: paid.value,
+      currency: paid.currency,
+      precision: paid.precision,
+      adUnitId,
+    });
   });
 
   // Load the ad
@@ -162,7 +181,7 @@ const waitForAdToLoad = async (timeoutMs: number = 3000): Promise<boolean> => {
 };
 
 // Export function to show interstitial ad (for use without hook)
-export const showInterstitialAd = async (): Promise<void> => {
+export const showInterstitialAd = async (source?: InterstitialSource): Promise<void> => {
   // Don't show ads if globally disabled
   if (!shouldShowAds()) {
     return;
@@ -185,6 +204,7 @@ export const showInterstitialAd = async (): Promise<void> => {
   // If ad already failed to load, skip immediately without waiting
   if (adLoadFailed) {
     if (__DEV__) console.log('⚠️ Ad already failed to load (no-fill), skipping immediately');
+    if (source) trackInterstitialSkipped({ source, reason: 'no_fill' });
     return;
   }
 
@@ -194,6 +214,7 @@ export const showInterstitialAd = async (): Promise<void> => {
     const loaded = await waitForAdToLoad(3000); // Wait up to 3 seconds
     if (!loaded) {
       if (__DEV__) console.log('⚠️ Ad did not load in time, skipping');
+      if (source) trackInterstitialSkipped({ source, reason: 'load_timeout' });
       return;
     }
   }
@@ -254,10 +275,12 @@ export const showInterstitialAd = async (): Promise<void> => {
       }
     } catch (error) {
       console.error('Error showing interstitial ad:', error);
+      if (source) trackInterstitialSkipped({ source, reason: 'show_error' });
     }
   } else {
     // If ad still not loaded, load it for next time
     if (__DEV__) console.log('⚠️ Ad still not loaded, loading for next time');
+    if (source) trackInterstitialSkipped({ source, reason: 'show_error' });
     loadInterstitialAd().catch(console.error);
   }
 };

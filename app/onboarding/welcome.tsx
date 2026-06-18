@@ -14,7 +14,7 @@ import { type SampleFact, sampleFactMorphId, sampleFacts } from '../../src/confi
 import { useOnboarding } from '../../src/contexts';
 import { useFactMorphSource } from '../../src/hooks/useFactMorphSource';
 import { useTranslation } from '../../src/i18n';
-import { Screens, trackScreenView } from '../../src/services/analytics';
+import { Screens, trackCarouselSwipe, trackScreenView } from '../../src/services/analytics';
 import { hexColors, useTheme } from '../../src/theme';
 import { useResponsive } from '../../src/utils/useResponsive';
 
@@ -230,7 +230,13 @@ export default function WelcomeScreen() {
   // === Carousel viewability ===
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0 && viewableItems[0].index != null) {
-      setActiveIndex(viewableItems[0].index);
+      const index = viewableItems[0].index;
+      setActiveIndex(index);
+      trackCarouselSwipe({
+        section: 'onboarding_welcome',
+        index,
+        factId: sampleFactMorphId(index),
+      });
     }
   }).current;
 

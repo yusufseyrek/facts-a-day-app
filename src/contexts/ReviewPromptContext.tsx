@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 
 import { SatisfactionModal } from '../components/SatisfactionModal';
 import { useTranslation } from '../i18n';
-import { trackSatisfactionPromptShown } from '../services/analytics';
+import { trackSatisfactionPromptResult, trackSatisfactionPromptShown } from '../services/analytics';
 import {
   hasPendingSatisfactionPrompt,
   openFeedbackEmail,
@@ -46,6 +46,7 @@ export function ReviewPromptProvider({ children }: { children: React.ReactNode }
 
   const handleLoveIt = useCallback(async () => {
     hide();
+    trackSatisfactionPromptResult({ result: 'love_it', nativeReviewRequested: true });
     // Small delay to let the modal dismiss before showing native review
     setTimeout(async () => {
       const shown = await requestReview();
@@ -58,12 +59,14 @@ export function ReviewPromptProvider({ children }: { children: React.ReactNode }
 
   const handleNotReally = useCallback(async () => {
     hide();
+    trackSatisfactionPromptResult({ result: 'not_really', openedFeedbackEmail: true });
     await recordSatisfactionPromptShown();
     await openFeedbackEmail();
   }, [hide]);
 
   const handleDismiss = useCallback(async () => {
     hide();
+    trackSatisfactionPromptResult({ result: 'dismissed' });
     await recordSatisfactionPromptShown();
   }, [hide]);
 

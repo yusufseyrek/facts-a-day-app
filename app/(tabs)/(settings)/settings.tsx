@@ -41,7 +41,14 @@ import { useOnboarding, usePremium, useScrollToTopHandler } from '../../../src/c
 import { useTranslation } from '../../../src/i18n';
 import { TranslationKeys } from '../../../src/i18n/translations';
 import { openAdDebugMenu } from '../../../src/services/ads';
-import { Screens, trackScreenView } from '../../../src/services/analytics';
+import {
+  Screens,
+  trackLanguageSettingsOpened,
+  trackManageSubscriptionTapped,
+  trackRateAppTapped,
+  trackRestorePurchasesTapped,
+  trackScreenView,
+} from '../../../src/services/analytics';
 import * as api from '../../../src/services/api';
 import { requestReview } from '../../../src/services/appReview';
 import { armDevDualTrigger, triggerTestBadgeToast } from '../../../src/services/badges';
@@ -513,6 +520,7 @@ export default function SettingsPage() {
   };
 
   const handleLanguagePress = async () => {
+    trackLanguageSettingsOpened({ currentLocale: locale, source: 'settings' });
     // Open device app settings where user can change app language
     // On iOS: Settings > Facts a Day > Language
     // On Android: Settings > Apps > Facts a Day > Language
@@ -680,7 +688,8 @@ export default function SettingsPage() {
 
   const handleReviewApp = async () => {
     // Use fallback to open store when in-app review isn't available
-    await requestReview(true);
+    const shown = await requestReview(true);
+    trackRateAppTapped({ source: 'settings', shown });
   };
 
   const handleClearImageCache = async () => {
@@ -948,7 +957,10 @@ export default function SettingsPage() {
               label: t('settingsPremiumActive'),
               icon: <Crown size={iconSizes.md} color="#FFD700" />,
               accent: '#FFD700',
-              onPress: () => deepLinkToSubscriptions(),
+              onPress: () => {
+                trackManageSubscriptionTapped({ source: 'settings' });
+                deepLinkToSubscriptions();
+              },
             },
           ]
         : [
@@ -979,6 +991,7 @@ export default function SettingsPage() {
         icon: <RotateCcw size={iconSizes.md} color={colors.neonCyan} />,
         accent: colors.neonCyan,
         onPress: async () => {
+          trackRestorePurchasesTapped({ source: 'settings' });
           const restored = await restorePurchases();
           Alert.alert(
             restored ? t('settingsRestoreSuccess') : t('settingsRestoreNoSubscription'),
@@ -1156,6 +1169,7 @@ export default function SettingsPage() {
         onClose={() => setShowScreenNameModal(false)}
         onSaved={(name) => setScreenName(name)}
         currentName={screenName}
+        source="settings"
       />
 
       <TimePickerModal

@@ -8,11 +8,13 @@ import * as Notifications from 'expo-notifications';
 import { NOTIFICATION_SETTINGS } from '../config/app';
 import { i18n } from '../i18n/config';
 
+import { trackPushPermissionResult, trackPushRegisterResult } from './analytics';
 import * as api from './api';
 import * as database from './database';
 import { getNotificationTimes, getSelectedCategories } from './onboarding';
 
 import type { SupportedLocale } from '../i18n/translations';
+import type { PushTrigger } from './analytics';
 
 /**
  * Notifications are now SERVER-DRIVEN (Expo push). The app no longer schedules
@@ -68,17 +70,32 @@ function timesToPreferredMinutes(isoTimes: string[]): number[] {
  * to call on cold start, after onboarding, and whenever prefs change. Returns
  * false (without throwing) if permission is denied or no times are set.
  */
-export async function registerForPush(locale: SupportedLocale): Promise<boolean> {
+export async function registerForPush(
+  locale: SupportedLocale,
+  trigger: PushTrigger = 'foreground'
+): Promise<boolean> {
   try {
-    if (!Device.isDevice) return false; // simulators can't get a push token
+    if (!Device.isDevice) {
+      trackPushRegisterResult({ success: false, reason: 'not_device', trigger });
+      return false; // simulators can't get a push token
+    }
 
     const { status } = await Notifications.getPermissionsAsync();
-    let granted = status === 'granted';
+    const previouslyGranted = status === 'granted';
+    let granted = previouslyGranted;
     if (!granted) {
       const req = await Notifications.requestPermissionsAsync();
       granted = req.status === 'granted';
+      trackPushPermissionResult({
+        status: granted ? 'granted' : 'denied',
+        trigger,
+        previouslyGranted,
+      });
     }
-    if (!granted) return false;
+    if (!granted) {
+      trackPushRegisterResult({ success: false, reason: 'permission_denied', trigger });
+      return false;
+    }
 
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
@@ -90,7 +107,10 @@ export async function registerForPush(locale: SupportedLocale): Promise<boolean>
     }
 
     const preferredMinutes = timesToPreferredMinutes(await getNotificationTimes());
-    if (preferredMinutes.length === 0) return false;
+    if (preferredMinutes.length === 0) {
+      trackPushRegisterResult({ success: false, reason: 'no_times', trigger, timesCount: 0 });
+      return false;
+    }
 
     // Expo-managed token (NOT getDevicePushTokenAsync — the backend sends via
     // Expo's push service, which requires the ExponentPushToken[...] form).
@@ -99,7 +119,15 @@ export async function registerForPush(locale: SupportedLocale): Promise<boolean>
       projectId ? { projectId } : undefined
     );
     const token = tokenResponse.data;
-    if (!token) return false;
+    if (!token) {
+      trackPushRegisterResult({
+        success: false,
+        reason: 'no_token',
+        trigger,
+        timesCount: preferredMinutes.length,
+      });
+      return false;
+    }
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     const categories = await getSelectedCategories();
@@ -113,9 +141,16 @@ export async function registerForPush(locale: SupportedLocale): Promise<boolean>
       categories: categories.length > 0 ? categories : undefined,
     });
 
+    trackPushRegisterResult({
+      success: true,
+      reason: 'ok',
+      trigger,
+      timesCount: preferredMinutes.length,
+    });
     return true;
   } catch (error) {
     if (__DEV__) console.warn('registerForPush failed:', error);
+    trackPushRegisterResult({ success: false, reason: 'error', trigger });
     return false;
   }
 }

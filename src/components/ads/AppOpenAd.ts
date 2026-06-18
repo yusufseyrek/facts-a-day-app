@@ -5,7 +5,11 @@ import Constants from 'expo-constants';
 
 import { AD_KEYWORDS, APP_OPEN_ADS } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
-import { trackAppOpenAdShown } from '../../services/analytics';
+import {
+  trackAdRevenue,
+  trackAppOpenAdLoadFailed,
+  trackAppOpenAdShown,
+} from '../../services/analytics';
 import { isModalScreenActive } from '../../services/badges';
 import { shouldShowAds } from '../../services/premiumState';
 
@@ -94,6 +98,10 @@ const loadAppOpenAd = (): Promise<boolean> => {
       const unsubError = appOpenAd!.addAdEventListener(AdEventType.ERROR, (error) => {
         console.warn('App open ad not filled:', error?.message || error);
         console.warn('App open ad load error:', String(error));
+        trackAppOpenAdLoadFailed({
+          source: 'foreground',
+          errorMessage: error?.message || String(error),
+        });
         unsubLoaded();
         unsubError();
         resolve(false);
@@ -109,8 +117,22 @@ const loadAppOpenAd = (): Promise<boolean> => {
         loadAppOpenAd().catch(console.error);
       });
 
+      const unsubPaid = appOpenAd!.addAdEventListener(AdEventType.PAID, (revenue) => {
+        // The lib mistypes the full-screen PAID payload as `undefined`.
+        const paid = revenue as { value: number; currency: string; precision: number } | undefined;
+        if (!paid) return;
+        trackAdRevenue({
+          format: 'app_open',
+          value: paid.value,
+          currency: paid.currency,
+          precision: paid.precision,
+          adUnitId,
+        });
+      });
+
       cleanupLoadListeners = () => {
         unsubClosed();
+        unsubPaid();
       };
     }
 
@@ -152,102 +174,6 @@ const ensureAdLoaded = async (): Promise<boolean> => {
   // Load (or await in-progress load)
   if (__DEV__) console.log('🔄 App open ad not ready, loading on-demand...');
   return await loadAppOpenAd();
-};
-
-/**
- * Show an app open ad when the user changes their app language.
- * If no ad is preloaded, waits for it to load (or awaits an in-progress load).
- * Returns true if the ad was shown, false otherwise.
- */
-export const showAppOpenAdForLocaleChange = async (): Promise<boolean> => {
-  if (!shouldShowAds()) {
-    return false;
-  }
-
-  // Check consent
-  try {
-    const { canRequestAds } = await AdsConsent.getConsentInfo();
-    if (!canRequestAds) {
-      if (__DEV__) console.log('⚠️ Cannot show app open ad - no consent');
-      return false;
-    }
-  } catch (error) {
-    console.error('Error checking consent:', error);
-    return false;
-  }
-
-  // Ensure ad is loaded (waits for in-progress load or starts new one)
-  const adReady = await ensureAdLoaded();
-  if (!adReady || !appOpenAd?.loaded) {
-    if (__DEV__) console.log('⚠️ App open ad failed to load, skipping');
-    return false;
-  }
-
-  try {
-    if (__DEV__) console.log('🚀 Showing app open ad for locale change...');
-
-    // iOS delay to prevent view controller conflicts
-    if (Platform.OS === 'ios') {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-
-    // Remove the load-phase CLOSED listener to prevent conflict
-    if (cleanupLoadListeners) {
-      cleanupLoadListeners();
-      cleanupLoadListeners = null;
-    }
-
-    const adCompletedPromise = new Promise<boolean>((resolve) => {
-      let resolved = false;
-
-      const cleanup = () => {
-        if (!resolved) {
-          resolved = true;
-          closeListener();
-          errorListener();
-        }
-      };
-
-      const closeListener = appOpenAd!.addAdEventListener(AdEventType.CLOSED, () => {
-        if (__DEV__) {
-          console.log('✅ App open ad closed');
-          console.log('App open ad dismissed');
-        }
-        cleanup();
-        resolve(true);
-      });
-
-      const errorListener = appOpenAd!.addAdEventListener(AdEventType.ERROR, (error) => {
-        console.error('⚠️ App open ad error during display:', error);
-        console.warn('App open ad show error:', String(error));
-        cleanup();
-        resolve(false);
-      });
-    });
-
-    trackAppOpenAdShown('locale_change');
-    await appOpenAd!.show();
-    const result = await adCompletedPromise;
-
-    // Track when ad was shown for cooldown
-    lastAppOpenAdShownAt = Date.now();
-
-    // iOS delay to restore view hierarchy
-    if (Platform.OS === 'ios') {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-    }
-
-    // Preload next ad after showing
-    loadAppOpenAd().catch(console.error);
-
-    return result;
-  } catch (error) {
-    console.error('Error showing app open ad:', error);
-    console.warn('App open ad show error:', String(error));
-    // Try to preload for next time
-    loadAppOpenAd().catch(console.error);
-    return false;
-  }
 };
 
 /**

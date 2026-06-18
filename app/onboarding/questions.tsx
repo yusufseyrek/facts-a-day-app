@@ -29,6 +29,7 @@ import { useTranslation } from '../../src/i18n';
 import {
   Screens,
   trackOnboardingCategoriesSelected,
+  trackOnboardingLoadError,
   trackOnboardingQuizAnswer,
   trackOnboardingStart,
   trackScreenView,
@@ -206,6 +207,11 @@ export default function Questions() {
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [metadataFailed, setMetadataFailed] = useState(false);
+  // Distinguishes an empty-but-successful metadata fetch from a failed one so
+  // the load-error analytics can report the precise reason.
+  const metadataFailReason = useRef<'metadata_empty' | 'metadata_fetch_failed'>(
+    'metadata_fetch_failed'
+  );
 
   const [questionIndex, setQuestionIndex] = useState(0);
   // Selected option indexes per question (multi-select)
@@ -246,9 +252,11 @@ export default function Questions() {
       setCategories(metadata.categories);
       // Without categories the quiz can't derive preferences; surface the
       // retry UI instead of letting the last answer dead-end.
+      metadataFailReason.current = 'metadata_empty';
       setMetadataFailed(metadata.categories.length === 0);
     } catch (error) {
       console.error('Error loading categories:', error);
+      metadataFailReason.current = 'metadata_fetch_failed';
       setMetadataFailed(true);
     } finally {
       setIsLoading(false);
@@ -260,6 +268,22 @@ export default function Questions() {
       loadCategories();
     }
   }, [isInitialized]);
+
+  // Fire the load-error analytics once whenever the retry screen surfaces.
+  const hasLoggedLoadError = useRef(false);
+  useEffect(() => {
+    const showingError = !!initializationError || metadataFailed;
+    if (showingError && !hasLoggedLoadError.current) {
+      hasLoggedLoadError.current = true;
+      trackOnboardingLoadError({
+        reason: initializationError ? 'init_error' : metadataFailReason.current,
+        retry: false,
+        locale,
+      });
+    } else if (!showingError) {
+      hasLoggedLoadError.current = false;
+    }
+  }, [initializationError, metadataFailed, locale]);
 
   // Animate the current question in whenever it changes (and on first load)
   useEffect(() => {
@@ -408,11 +432,18 @@ export default function Questions() {
             {t('checkInternetConnection')}
           </Text.Body>
           <Button
-            onPress={() =>
-              initializationError
-                ? initializeOnboarding(locale as SupportedLocale)
-                : loadCategories()
-            }
+            onPress={() => {
+              trackOnboardingLoadError({
+                reason: initializationError ? 'init_error' : metadataFailReason.current,
+                retry: true,
+                locale,
+              });
+              if (initializationError) {
+                initializeOnboarding(locale as SupportedLocale);
+              } else {
+                loadCategories();
+              }
+            }}
           >
             {t('tryAgain')}
           </Button>

@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { ContentContainer } from '../../../src/components';
 import { TriviaLeaderboard } from '../../../src/components/trivia';
-import { trackScreenView } from '../../../src/services/analytics';
+import { Screens, trackScreenView } from '../../../src/services/analytics';
 import { hexColors, useTheme } from '../../../src/theme';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
@@ -26,7 +26,7 @@ export default function TriviaLeaderboardScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      trackScreenView('TriviaLeaderboard');
+      trackScreenView(Screens.TRIVIA_LEADERBOARD);
       setReloadToken((n) => n + 1);
     }, [])
   );

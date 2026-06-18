@@ -11,7 +11,7 @@ import Constants from 'expo-constants';
 import { AD_KEYWORDS, ADS_ENABLED, NATIVE_ADS } from '../config/app';
 
 import { shouldRequestNonPersonalizedAdsOnly } from './adsConsent';
-import { trackNativeAdImpression } from './analytics';
+import { trackNativeAdImpression, trackNativeAdLoadFailed } from './analytics';
 import { shouldShowAds } from './premiumState';
 
 export type SlotStatus = 'idle' | 'loading' | 'ready' | 'failed';
@@ -88,6 +88,9 @@ const ASPECT_NAME: Record<number, string> = {
   [NativeMediaAspectRatio.SQUARE as number]: 'square',
 };
 const aspectName = (a: NativeMediaAspectRatio): string => ASPECT_NAME[a as number] ?? String(a);
+
+/** Readable name for an aspect ratio enum, for analytics props. */
+export const aspectRatioName = (a: NativeMediaAspectRatio): string => aspectName(a);
 
 const log = (msg: string, data?: Record<string, unknown>): void => {
   if (__DEV__) {
@@ -231,10 +234,22 @@ const requestOneAdForAspect = async (aspect: NativeMediaAspectRatio): Promise<vo
     if (retryTimerByAspect.has(aspect)) return;
     if (looksLikeRateLimit(err)) {
       log('request:backoff', { aspect: aspectName(aspect), inMs: RATE_LIMIT_COOLDOWN_MS });
+      trackNativeAdLoadFailed({
+        reason: 'rate_limit',
+        aspectRatio: aspectName(aspect),
+        retryInMs: RATE_LIMIT_COOLDOWN_MS,
+      });
       scheduleRetry(aspect, RATE_LIMIT_COOLDOWN_MS);
     } else {
+      const attemptNumber = noFillAttemptByAspect.get(aspect) ?? 0;
       const delay = nextNoFillDelayMs(aspect);
       log('request:no_fill', { aspect: aspectName(aspect), retryInMs: delay });
+      trackNativeAdLoadFailed({
+        reason: 'no_fill',
+        aspectRatio: aspectName(aspect),
+        attemptNumber,
+        retryInMs: delay,
+      });
       scheduleRetry(aspect, delay);
     }
     return;
@@ -287,7 +302,11 @@ const assignReadyAds = (): void => {
     slot.status = 'ready';
     if (!slot.impressionTracked) {
       slot.impressionTracked = true;
-      trackNativeAdImpression();
+      trackNativeAdImpression({
+        placement: 'feed',
+        aspectRatio: aspectName(slot.aspectRatio),
+        slotKey,
+      });
     }
     log('slot:bound', { slotKey, aspect: aspectName(slot.aspectRatio) });
     notifySlot(slot);
@@ -356,7 +375,11 @@ export const getSlot = (
       slot.status = 'ready';
       if (!slot.impressionTracked) {
         slot.impressionTracked = true;
-        trackNativeAdImpression();
+        trackNativeAdImpression({
+          placement: 'feed',
+          aspectRatio: aspectName(slot.aspectRatio),
+          slotKey,
+        });
       }
       log('slot:bound', { slotKey, aspect: aspectName(slot.aspectRatio) });
       // Consumed one — refill in the background.

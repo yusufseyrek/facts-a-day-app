@@ -1537,7 +1537,7 @@ export function FactModal({
             : undefined
         }
       >
-        <BannerAd />
+        <BannerAd placement="fact_modal" />
 
         <FactActions
           factId={fact.id}

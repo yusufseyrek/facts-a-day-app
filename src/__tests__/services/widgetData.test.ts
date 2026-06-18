@@ -96,7 +96,7 @@ describe('pushWidgetFacts', () => {
       categoryName: 'History',
       categoryColor: '#FFAA00',
       categoryTextColor: '#000000', // bright orange -> dark text
-      deepLink: 'factsaday://fact/42',
+      deepLink: 'factsaday://fact/42?source=widget',
       imageUrl: 'https://img/x.jpg',
     });
   });

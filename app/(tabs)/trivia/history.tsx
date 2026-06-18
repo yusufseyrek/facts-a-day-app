@@ -522,7 +522,7 @@ export default function ActivityHistoryScreen() {
         </View>
       </View>
 
-      <BannerAd respectBottomInset />
+      <BannerAd respectBottomInset placement="trivia_history" />
 
       {/* Loading overlay for session fetch */}
       {loadingSession && (

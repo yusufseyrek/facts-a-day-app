@@ -156,7 +156,7 @@ export default function NotificationsScreen() {
 
       if (status !== 'granted') {
         // Permission denied - proceed without notifications
-        proceedWithoutNotifications();
+        proceedWithoutNotifications('os_denied');
         return;
       }
 
@@ -165,12 +165,12 @@ export default function NotificationsScreen() {
     } catch (error) {
       console.error('Error requesting notification permissions:', error);
       // On error, still allow continuing without notifications
-      proceedWithoutNotifications();
+      proceedWithoutNotifications('error');
     }
   };
 
-  const proceedWithoutNotifications = () => {
-    trackOnboardingNotificationsSkipped();
+  const proceedWithoutNotifications = (source?: 'os_denied' | 'maybe_later' | 'error') => {
+    trackOnboardingNotificationsSkipped(source);
     router.push('/onboarding/success');
   };
 
@@ -278,7 +278,7 @@ export default function NotificationsScreen() {
             <Button onPress={handleEnableNotifications}>{t('enableNotifications')}</Button>
             <Pressable
               disabled={isScheduling}
-              onPress={proceedWithoutNotifications}
+              onPress={() => proceedWithoutNotifications('maybe_later')}
               hitSlop={SECONDARY_HITSLOP}
               style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
             >

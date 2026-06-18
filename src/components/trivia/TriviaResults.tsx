@@ -1038,7 +1038,7 @@ export function TriviaResults({
         {/* The banner only pads for the home indicator when it is the LAST
             element; with the return button below it, that padding would open
             a gap between the ad and the button. */}
-        <BannerAd respectBottomInset={!showReturnButton} />
+        <BannerAd respectBottomInset={!showReturnButton} placement="trivia_results" />
 
         {/* Return button (shown for normal trivia flow) */}
         {showReturnButton && (

@@ -2,6 +2,7 @@ import { memo, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   NativeAd,
+  NativeAdEventType,
   NativeAdView,
   NativeAsset,
   NativeAssetType,
@@ -13,6 +14,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { useTranslation } from '../../i18n';
+import { trackAdRevenue, trackNativeAdClick } from '../../services/analytics';
+import { aspectRatioName } from '../../services/nativeAdPool';
 import { useResponsive } from '../../utils/useResponsive';
 import { XStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
@@ -53,6 +56,32 @@ function NativeAdCardComponent({
       onAdFailed();
     }
   }, [nativeAdProp, status, onAdFailed]);
+
+  useEffect(() => {
+    if (!nativeAd) return;
+    const clickSub = nativeAd.addAdEventListener(NativeAdEventType.CLICKED, () => {
+      trackNativeAdClick({
+        placement: 'feed',
+        aspectRatio: aspectRatioName(aspectRatio),
+        slotKey,
+      });
+    });
+    // The native PAID payload is forwarded raw from the SDK, which emits
+    // `currency` on both platforms even though the lib's type says `currencyCode`.
+    const paidSub = nativeAd.addAdEventListener(NativeAdEventType.PAID, (revenue) => {
+      trackAdRevenue({
+        format: 'native',
+        value: revenue.value,
+        currency: (revenue as { currency?: string }).currency ?? revenue.currencyCode ?? '',
+        precision: revenue.precision,
+        placement: 'feed',
+      });
+    });
+    return () => {
+      clickSub.remove();
+      paidSub.remove();
+    };
+  }, [nativeAd, aspectRatio, slotKey]);
 
   const cardHeight = cardHeightProp ?? screenWidth * config.cardAspectRatio;
   // Inline usage (InlineNativeAd) and carousel usage handle outer spacing themselves.

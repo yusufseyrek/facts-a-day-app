@@ -2,6 +2,7 @@ import { getCalendars, getLocales } from 'expo-localization';
 
 import { countryForTimeZone } from '../utils/timezoneCountry';
 
+import { trackAccountDeleted, trackScreenNameClaimed } from './analytics';
 import * as api from './api';
 import * as notificationService from './notifications';
 import { syncTriviaResults } from './triviaSync';
@@ -17,6 +18,9 @@ import type { SupportedLocale } from '../i18n/translations';
 
 /** Mirrors the backend rule — validate before the round-trip. */
 export const SCREEN_NAME_RE = /^[A-Za-z0-9_]{3,20}$/;
+
+/** Where a claim/rename originated, for analytics attribution. */
+export type ScreenNameSource = 'comments' | 'leaderboard' | 'settings';
 
 export class ScreenNameTakenError extends Error {
   constructor() {
@@ -76,10 +80,11 @@ export async function getProfile(): Promise<UserIdentity | null> {
  */
 export async function claimScreenName(
   screenName: string,
-  locale: SupportedLocale
+  locale: SupportedLocale,
+  source: ScreenNameSource = 'settings'
 ): Promise<UserIdentity> {
   const existing = await getIdentity();
-  if (existing) return renameScreenName(screenName);
+  if (existing) return renameScreenName(screenName, source);
 
   let created: api.CreateUserResponse;
   try {
@@ -96,6 +101,13 @@ export async function claimScreenName(
     countryCode: created.country_code,
   };
   await saveIdentity(identity);
+
+  trackScreenNameClaimed({
+    isFirstClaim: true,
+    source,
+    nameLength: created.screen_name.length,
+    hadTakenCollision: false,
+  });
 
   // Link this device to the fresh identity. Best-effort: the next foreground
   // re-register links it anyway, so a failure here must not fail the claim.
@@ -136,7 +148,10 @@ export function __resetCountryRefresh(): void {
 }
 
 /** Rename, keeping the same identity (devices/comments/reports follow). */
-async function renameScreenName(screenName: string): Promise<UserIdentity> {
+async function renameScreenName(
+  screenName: string,
+  source: ScreenNameSource = 'settings'
+): Promise<UserIdentity> {
   const identity = await getIdentity();
   if (!identity) throw new Error('no identity to rename');
 
@@ -149,6 +164,13 @@ async function renameScreenName(screenName: string): Promise<UserIdentity> {
 
   const updated: UserIdentity = { ...identity, screenName };
   await saveIdentity(updated);
+
+  trackScreenNameClaimed({
+    isFirstClaim: false,
+    source,
+    nameLength: screenName.length,
+  });
+
   return updated;
 }
 
@@ -161,6 +183,13 @@ async function renameScreenName(screenName: string): Promise<UserIdentity> {
 export async function deleteAccount(): Promise<void> {
   const identity = await getIdentity();
   if (!identity) return;
-  await api.deleteAccount();
-  await clearIdentity();
+  const hadScreenName = Boolean(identity.screenName);
+  try {
+    await api.deleteAccount();
+    await clearIdentity();
+  } catch (error) {
+    trackAccountDeleted({ result: 'failed', hadScreenName });
+    throw error;
+  }
+  trackAccountDeleted({ result: 'confirmed', hadScreenName });
 }

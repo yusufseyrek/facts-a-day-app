@@ -28,7 +28,9 @@ import {
   trackTriviaComplete,
   trackTriviaExit,
   trackTriviaHintClick,
+  trackTriviaQuestionAnswered,
   trackTriviaStart,
+  trackTriviaStreakMilestone,
   trackTriviaViewFactClick,
 } from '../../src/services/analytics';
 import { onTriviaCompleted, scheduleSatisfactionPrompt } from '../../src/services/appReview';
@@ -38,6 +40,10 @@ import { hexColors, useTheme } from '../../src/theme';
 
 import type { TriviaMode } from '../../src/services/analytics';
 import type { QuestionWithFact, TriviaSessionWithCategory } from '../../src/services/database';
+
+// Streak milestone thresholds — a milestone fires once per crossing at the
+// highest threshold the final best streak reaches.
+const STREAK_MILESTONE_THRESHOLDS = [5, 10, 20] as const;
 
 interface TriviaGameState {
   questions: QuestionWithFact[];
@@ -456,6 +462,16 @@ export default function TriviaGameScreen() {
 
   const handleAnswerSelect = (answer: string) => {
     if (!currentQuestion) return;
+    // Track once per answered question (first selection only, not re-answers).
+    if (!gameState.answers[currentQuestion.id]) {
+      trackTriviaQuestionAnswered({
+        mode: triviaMode,
+        questionIndex: gameState.currentQuestionIndex,
+        isCorrect: triviaService.isTextAnswerCorrect(currentQuestion, answer),
+        questionType: currentQuestion.question_type,
+        categorySlug: params.categorySlug,
+      });
+    }
     setGameState((prev) => ({
       ...prev,
       answers: {
@@ -656,6 +672,14 @@ export default function TriviaGameScreen() {
         wrongIds.push(question.id);
         currentStreak = 0;
       }
+    }
+
+    // Fire a streak milestone for the highest threshold the best streak crossed.
+    const milestoneThreshold = STREAK_MILESTONE_THRESHOLDS.filter(
+      (threshold) => bestStreak >= threshold
+    ).at(-1);
+    if (milestoneThreshold != null) {
+      trackTriviaStreakMilestone({ bestStreak, mode: triviaMode, milestoneThreshold });
     }
 
     // Real seconds of active play (see getElapsedSeconds). The countdown is

@@ -15,6 +15,9 @@ import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
 import { SUBSCRIPTION } from '../config/app';
 import { setAnalyticsUserProperty } from '../config/firebase';
 import {
+  trackPaywallPurchaseCancelled,
+  trackPaywallPurchaseFailed,
+  trackRestorePurchasesResult,
   trackSubscriptionPurchased,
   trackSubscriptionRestored,
   trackSubscriptionStatusChanged,
@@ -194,8 +197,17 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
     });
 
     const errorSub = purchaseErrorListener((error) => {
-      if (error.code !== ErrorCode.UserCancelled) {
+      const productId = error.productId ?? '';
+      if (error.code === ErrorCode.UserCancelled) {
+        trackPaywallPurchaseCancelled({ productId, source: '' });
+      } else {
         console.error('Purchase error:', error.message);
+        trackPaywallPurchaseFailed({
+          productId,
+          source: '',
+          errorCode: error.code,
+          errorMessage: error.message,
+        });
       }
     });
 
@@ -310,13 +322,20 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
       if (hasActive) {
         await updatePremiumStatus(true);
         trackSubscriptionRestored();
+        trackRestorePurchasesResult({ result: 'restored', source: 'paywall' });
         return true;
       }
       // Explicit user action — trust the result and clear premium cache
       await updatePremiumStatus(false);
+      trackRestorePurchasesResult({ result: 'none', source: 'paywall' });
       return false;
     } catch (error) {
       console.error('Failed to restore purchases:', error);
+      trackRestorePurchasesResult({
+        result: 'error',
+        source: 'paywall',
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }, [getAvailablePurchases, getActiveSubscriptions, activeSubscriptions, updatePremiumStatus]);

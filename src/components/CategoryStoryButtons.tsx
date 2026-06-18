@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 
 import { useStoryMorphSource } from '../hooks/useStoryMorphSource';
 import { useTranslation } from '../i18n';
+import { trackStoryButtonTap } from '../services/analytics';
 import * as api from '../services/api';
 import { getCachedRowSync, hydrateCachedRow, setCachedRow } from '../services/categoryButtonsCache';
 import { onFeedRefresh } from '../services/contentRefresh';
@@ -281,7 +282,13 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     };
 
     const handlePress = useCallback(
-      (item: CategoryItem) => {
+      (item: CategoryItem, position: number) => {
+        trackStoryButtonTap({
+          slug: item.slug,
+          buttonKind: item.isMix ? 'mix' : item.isTheme ? 'theme' : 'category',
+          isTheme: !!item.isTheme,
+          position,
+        });
         // storyBasePath picks the morph-presented route when the pressed
         // button registered a fresh circle measurement on press-in (the
         // normal case), falling back to the plain fullScreenModal otherwise.
@@ -303,7 +310,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
     );
 
     const renderItem = useCallback(
-      ({ item }: { item: CategoryItem }) => {
+      ({ item, index }: { item: CategoryItem; index: number }) => {
         // Mix button has unseen if ANY category has unseen. Theme buttons are
         // event promos — they always wear the gradient ring.
         const hasUnseen = item.isTheme
@@ -320,7 +327,7 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
             textColor={colors.text}
             surfaceColor={colors.surface}
             borderColor={colors.border}
-            onPress={() => handlePress(item)}
+            onPress={() => handlePress(item, index)}
             onPrefetch={() => handlePrefetch(item)}
             circleSize={circleSize}
             iconSize={iconSize}

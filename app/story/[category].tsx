@@ -274,6 +274,9 @@ export default function StoryScreen() {
         category: category!,
         factCount: result.length,
         isMix: category === 'mix',
+        isTheme,
+        themeSlug: isTheme ? category!.slice(THEME_STORY_PREFIX.length) : '',
+        sourceType: isTheme ? 'theme' : category === 'mix' ? 'mix' : 'category',
       });
     } catch (error) {
       console.error('Failed to load story facts:', error);

@@ -78,7 +78,7 @@ function toWidgetFact(f: FactResponse, theme: 'light' | 'dark'): WidgetFact {
     categoryName: f.category_name || categorySlug,
     categoryColor,
     categoryTextColor: getContrastColor(categoryColor),
-    deepLink: `factsaday://fact/${f.id}`,
+    deepLink: `factsaday://fact/${f.id}?source=widget`,
     imageUrl: f.image_url,
   };
 }

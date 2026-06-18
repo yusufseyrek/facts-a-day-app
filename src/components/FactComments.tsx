@@ -6,6 +6,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTranslation } from '../i18n';
 import { SUPPORTED_LOCALES } from '../i18n/config';
+import {
+  trackCommentAuthorBlocked,
+  trackCommentEulaResult,
+  trackCommentJoinCtaTapped,
+  trackCommentPosted,
+  trackCommentPostFailed,
+  trackCommentReported,
+  trackCommentsLoadMore,
+  trackCommentsViewed,
+} from '../services/analytics';
 import * as api from '../services/api';
 import * as userService from '../services/user';
 import { hexColors, useTheme } from '../theme';
@@ -304,9 +314,18 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
         setComments(page.comments);
         setNextCursor(page.next_cursor);
         setTotal(page.total);
+        trackCommentsViewed({
+          factId,
+          totalCount: page.total,
+          hasComments: page.total > 0,
+          loadError: false,
+        });
       })
       .catch(() => {
-        if (!cancelled) setLoadError(true);
+        if (!cancelled) {
+          setLoadError(true);
+          trackCommentsViewed({ factId, totalCount: 0, hasComments: false, loadError: true });
+        }
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -344,7 +363,11 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
     setIsLoadingMore(true);
     try {
       const page = await api.getFactComments(factId, nextCursor, PAGE_SIZE);
-      setComments((prev) => [...prev, ...page.comments]);
+      setComments((prev) => {
+        const next = [...prev, ...page.comments];
+        trackCommentsLoadMore({ factId, loadedCount: next.length, totalCount: page.total });
+        return next;
+      });
       setNextCursor(page.next_cursor);
       setTotal(page.total);
     } catch {
@@ -366,10 +389,18 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
         t('commentEulaTitle'),
         t('commentEulaMessage'),
         [
-          { text: t('cancel'), style: 'cancel', onPress: () => resolve(false) },
+          {
+            text: t('cancel'),
+            style: 'cancel',
+            onPress: () => {
+              trackCommentEulaResult({ result: 'cancel', factId });
+              resolve(false);
+            },
+          },
           {
             text: t('commentEulaViewTerms'),
             onPress: () => {
+              trackCommentEulaResult({ result: 'view_terms', factId });
               openInAppBrowser(`https://factsaday.com/${locale}/terms`, { theme }).catch(() => {});
               resolve(false);
             },
@@ -377,6 +408,7 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
           {
             text: t('commentEulaAgree'),
             onPress: async () => {
+              trackCommentEulaResult({ result: 'agree', factId });
               try {
                 await AsyncStorage.setItem(COMMENT_EULA_KEY, '1');
               } catch {
@@ -386,10 +418,16 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
             },
           },
         ],
-        { cancelable: true, onDismiss: () => resolve(false) }
+        {
+          cancelable: true,
+          onDismiss: () => {
+            trackCommentEulaResult({ result: 'cancel', factId });
+            resolve(false);
+          },
+        }
       );
     });
-  }, [t, locale, theme]);
+  }, [t, locale, theme, factId]);
 
   // Per-comment overflow menu: report the comment or block its author (Apple 1.2).
   const handleCommentMenu = useCallback(
@@ -400,6 +438,7 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
           onPress: async () => {
             try {
               await api.reportComment(comment.id);
+              trackCommentReported({ commentId: comment.id, factId });
               Alert.alert(t('commentReportDoneTitle'), t('commentReportDoneMessage'));
             } catch {
               Alert.alert(t('error'), t('commentActionFailed'));
@@ -412,6 +451,7 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
           onPress: async () => {
             try {
               await api.blockCommentAuthor(comment.id);
+              trackCommentAuthorBlocked({ commentId: comment.id, factId });
               // Hide their comments from the current list immediately; the feed
               // is block-aware server-side on the next load.
               setComments((prev) => prev.filter((c) => c.screen_name !== comment.screen_name));
@@ -423,7 +463,7 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
         { text: t('cancel'), style: 'cancel' },
       ]);
     },
-    [t]
+    [t, factId]
   );
 
   const submit = useCallback(async () => {
@@ -437,8 +477,14 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
       setComments((prev) => [created, ...prev]);
       setTotal((n) => n + 1);
       setDraft('');
+      trackCommentPosted({ factId, commentId: created.id, bodyLength: body.length, locale });
     } catch (error) {
       const status = (error as any)?.status;
+      trackCommentPostFailed({
+        factId,
+        reason: status === 429 ? 'cooldown' : status === 422 ? 'rejected' : 'error',
+        statusCode: typeof status === 'number' ? status : undefined,
+      });
       setPostError(
         status === 429
           ? t('commentCooldown')
@@ -621,7 +667,10 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
         </YStack>
       ) : (
         <Pressable
-          onPress={() => setNamePromptVisible(true)}
+          onPress={() => {
+            trackCommentJoinCtaTapped({ factId });
+            setNamePromptVisible(true);
+          }}
           accessibilityRole="button"
           style={({ pressed }) => ({
             opacity: pressed ? 0.8 : 1,
@@ -754,6 +803,7 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
         onClose={() => setNamePromptVisible(false)}
         onSaved={(name) => setScreenName(name)}
         currentName={null}
+        source="comments"
       />
     </View>
   );

@@ -26,7 +26,13 @@ import { SUBSCRIPTION } from '../src/config/app';
 const { PAYWALL_PRODUCT_IDS } = SUBSCRIPTION;
 import { usePremium } from '../src/contexts';
 import { useTranslation } from '../src/i18n';
-import { trackPaywallDismissed, trackPaywallViewed } from '../src/services/analytics';
+import {
+  trackPaywallDismissed,
+  trackPaywallPlanSelected,
+  trackPaywallPurchaseInitiated,
+  trackPaywallViewed,
+  trackRestorePurchasesTapped,
+} from '../src/services/analytics';
 import { getReadingStreak } from '../src/services/badges';
 import { openDatabase } from '../src/services/database';
 import { markPaywallShown } from '../src/services/paywallTiming';
@@ -256,12 +262,22 @@ export default function PaywallScreen() {
 
   useEffect(() => {
     if (selectedPlan) return;
+    let defaultId: string | null = null;
     if (subscriptions.length > 0) {
       const monthly = subscriptions.find((s) => s.id.includes('monthly'));
-      setSelectedPlan(monthly?.id || subscriptions[0].id);
+      defaultId = monthly?.id || subscriptions[0].id;
     } else if (cachedPrices.length > 0) {
       const monthly = cachedPrices.find((c) => c.id.includes('monthly'));
-      setSelectedPlan(monthly?.id || cachedPrices[0].id);
+      defaultId = monthly?.id || cachedPrices[0].id;
+    }
+    if (defaultId) {
+      setSelectedPlan(defaultId);
+      trackPaywallPlanSelected({
+        productId: defaultId,
+        source,
+        isDefault: true,
+        displayPrice: getDisplayPrice(defaultId),
+      });
     }
   }, [subscriptions, cachedPrices, selectedPlan]);
 
@@ -304,6 +320,12 @@ export default function PaywallScreen() {
           ? sub.subscriptionOffers[0].offerTokenAndroid
           : '';
 
+      trackPaywallPurchaseInitiated({
+        productId: selectedPlan,
+        source,
+        displayPrice: getDisplayPrice(selectedPlan),
+      });
+
       await requestPurchase({
         request: {
           apple: { sku: selectedPlan, andDangerouslyFinishTransactionAutomatically: false },
@@ -324,6 +346,7 @@ export default function PaywallScreen() {
   };
 
   const handleRestore = async () => {
+    trackRestorePurchasesTapped({ source: 'paywall' });
     setIsRestoring(true);
     try {
       const restored = await restorePurchases();
@@ -751,7 +774,15 @@ export default function PaywallScreen() {
               return (
                 <Pressable
                   key={productId}
-                  onPress={() => setSelectedPlan(productId)}
+                  onPress={() => {
+                    setSelectedPlan(productId);
+                    trackPaywallPlanSelected({
+                      productId,
+                      source,
+                      isDefault: false,
+                      displayPrice: getDisplayPrice(productId),
+                    });
+                  }}
                   style={dynamicStyles.planPressable}
                 >
                   <View

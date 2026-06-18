@@ -14,6 +14,7 @@ import { AD_KEYWORDS, AD_RETRY } from '../../config/app';
 import { useInsideTabs } from '../../contexts/InsideTabsContext';
 import { usePremium } from '../../contexts/PremiumContext';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
+import { trackAdRevenue } from '../../services/analytics';
 import { shouldShowAds } from '../../services/premiumState';
 
 type CollapsiblePlacement = 'top' | 'bottom';
@@ -29,6 +30,8 @@ interface BannerAdProps {
    * already handles the inset (e.g. FactModal's action bar).
    */
   respectBottomInset?: boolean;
+  /** Where this banner renders — segments ad-revenue analytics (e.g. 'fact_modal'). */
+  placement?: string;
 }
 
 const getAdUnitId = (): string => {
@@ -44,7 +47,12 @@ const getAdUnitId = (): string => {
 
 type AdState = 'loading' | 'loaded' | 'error';
 
-function BannerAdComponent({ onAdLoadChange, collapsible, respectBottomInset }: BannerAdProps) {
+function BannerAdComponent({
+  onAdLoadChange,
+  collapsible,
+  respectBottomInset,
+  placement,
+}: BannerAdProps) {
   // Subscribe to premium context so component re-renders when premium status changes
   // (shouldShowAds() reads module-level state which doesn't trigger re-renders on its own)
   usePremium();
@@ -174,6 +182,16 @@ function BannerAdComponent({ onAdLoadChange, collapsible, respectBottomInset }: 
             }}
             onAdLoaded={handleAdLoaded}
             onAdFailedToLoad={handleAdFailedToLoad}
+            onPaid={(revenue) => {
+              trackAdRevenue({
+                format: 'banner',
+                value: revenue.value,
+                currency: revenue.currency,
+                precision: revenue.precision,
+                placement,
+                adUnitId: getAdUnitId(),
+              });
+            }}
           />
         </View>
       )}

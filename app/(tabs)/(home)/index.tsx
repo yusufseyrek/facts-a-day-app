@@ -21,7 +21,13 @@ import { useHomeFeedEvents } from '../../../src/hooks/useHomeFeedEvents';
 import { useKeepReading } from '../../../src/hooks/useKeepReading';
 import { useReadingStreak } from '../../../src/hooks/useReadingStreak';
 import { useTranslation } from '../../../src/i18n';
-import { Screens, trackFeedRefresh, trackScreenView } from '../../../src/services/analytics';
+import {
+  Screens,
+  trackFeedRefresh,
+  trackHomeFeedLoadMore,
+  trackReadingStreakIndicatorTap,
+  trackScreenView,
+} from '../../../src/services/analytics';
 import { isModalScreenActive } from '../../../src/services/badges';
 import { triggerFeedRefresh } from '../../../src/services/contentRefresh';
 import { factDetailBasePath } from '../../../src/services/factMorph';
@@ -42,14 +48,25 @@ function HomeScreen() {
   // Data hooks
   const { latestFacts, latestFactIds, onThisDayFacts, onThisDayIsWeekFallback, isLoading } =
     useHomeFeed(locale);
-  const { facts: keepReadingFacts, fetchNextPage, isFetchingNextPage } = useKeepReading(locale);
+  const {
+    facts: keepReadingFacts,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useKeepReading(locale);
   const { streak } = useReadingStreak();
 
   // Reading streak lives in the native header (replaces the old HomeHeader row).
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <ReadingStreakIndicator streak={streak} onPress={() => router.push('/stats')} />
+        <ReadingStreakIndicator
+          streak={streak}
+          onPress={() => {
+            trackReadingStreakIndicatorTap({ streak });
+            router.push('/stats');
+          }}
+        />
       ),
     });
   }, [navigation, streak, router]);
@@ -59,6 +76,7 @@ function HomeScreen() {
 
   // Refs
   const paywallCheckRef = useRef(false);
+  const loadMorePageRef = useRef(0);
   const keepReadingListRef = useRef<FlashListRef<any>>(null);
   const latestListRef = useRef<FlashListRef<FactWithRelations>>(null);
   const onThisDayListRef = useRef<FlashListRef<FactWithRelations>>(null);
@@ -178,6 +196,20 @@ function HomeScreen() {
     [handleFactPress, keepReadingIds]
   );
 
+  // Infinite-scroll load-more. useKeepReading guards the actual fetch (only when
+  // there's a next page and not already fetching), so mirror that guard here to
+  // track only when a next page is really fetched.
+  const handleEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      loadMorePageRef.current += 1;
+      trackHomeFeedLoadMore({
+        pageIndex: loadMorePageRef.current,
+        loadedCount: keepReadingFacts.length,
+      });
+    }
+    fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, keepReadingFacts.length]);
+
   const handleScroll = useCallback((_y: number) => {
     // Reserved for future scroll-dependent behavior (e.g. header collapse)
   }, []);
@@ -231,7 +263,7 @@ function HomeScreen() {
               ref={keepReadingListRef}
               facts={keepReadingFacts}
               onFactPress={handleKeepReadingPress}
-              onEndReached={fetchNextPage}
+              onEndReached={handleEndReached}
               isFetchingMore={isFetchingNextPage}
               isPremium={isPremium}
               refreshing={refreshing}

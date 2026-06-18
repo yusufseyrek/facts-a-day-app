@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showInterstitialAd } from '../components/ads/InterstitialAd';
 import { INTERSTITIAL_ADS, STORAGE_KEYS } from '../config/app';
 
-import { type InterstitialSource, trackInterstitialShown } from './analytics';
+import { type InterstitialSource, trackInterstitialShown, trackInterstitialSkipped } from './analytics';
 import { shouldShowAds } from './premiumState';
 
 /**
@@ -37,10 +37,13 @@ const isCooldownElapsed = async (): Promise<boolean> => {
 const maybeShowInterstitial = async (source: InterstitialSource): Promise<boolean> => {
   if (!INTERSTITIAL_ADS.ENABLED) return false;
   if (!shouldShowAds()) return false;
-  if (!(await isCooldownElapsed())) return false;
+  if (!(await isCooldownElapsed())) {
+    trackInterstitialSkipped({ source, reason: 'cooldown' });
+    return false;
+  }
 
   try {
-    await showInterstitialAd();
+    await showInterstitialAd(source);
     await AsyncStorage.setItem(LAST_INTERSTITIAL_SHOWN_KEY, Date.now().toString());
     trackInterstitialShown(source);
     return true;

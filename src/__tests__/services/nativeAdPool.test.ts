@@ -30,6 +30,7 @@ jest.mock('react-native-google-mobile-ads', () => ({
 
 jest.mock('../../services/analytics', () => ({
   trackNativeAdImpression: jest.fn(),
+  trackNativeAdLoadFailed: jest.fn(),
 }));
 
 jest.mock('../../services/premiumState', () => ({
