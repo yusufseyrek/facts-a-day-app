@@ -43,7 +43,7 @@ ALL_LOCALES=(
     "ar-SA" "ca" "cs" "da" "el" "fi" "he" "hi" "hr" "hu" "id" "it" "ms"
     "nl-NL" "no" "pl" "pt-BR" "pt-PT" "ro" "ru" "sk" "sv" "th" "uk" "vi" "zh-Hant"
     "es-ES" "en-AU" "en-CA" "en-GB" "fr-CA" "bn" "gu" "kn" "ml" "mr"
-    "or" "pa" "sl" "ta" "te" "ur"
+    "pa" "sl" "ta" "te" "ur"
 )
 
 # API endpoints
@@ -89,6 +89,31 @@ get_android_locale() {
         ko) echo "ko-KR" ;;
         tr) echo "tr-TR" ;;
         zh) echo "zh-CN" ;;
+        # Store-only / Android-only locales: map the ASC-style internal code to the
+        # Google Play listing code (Google uses different codes than App Store
+        # Connect). Bare codes that already match Google Play (ca, hr, id, ms, ro,
+        # sk, th, uk, vi, gu, pa, sl, ur, nl-NL, pt-BR, pt-PT, es-ES, en-AU, en-CA,
+        # en-GB, fr-CA) fall through unchanged.
+        ar-SA) echo "ar" ;;
+        cs) echo "cs-CZ" ;;
+        da) echo "da-DK" ;;
+        el) echo "el-GR" ;;
+        fi) echo "fi-FI" ;;
+        he) echo "iw-IL" ;;
+        hi) echo "hi-IN" ;;
+        hu) echo "hu-HU" ;;
+        it) echo "it-IT" ;;
+        no) echo "no-NO" ;;
+        pl) echo "pl-PL" ;;
+        ru) echo "ru-RU" ;;
+        sv) echo "sv-SE" ;;
+        zh-Hant) echo "zh-TW" ;;
+        bn) echo "bn-BD" ;;
+        kn) echo "kn-IN" ;;
+        ml) echo "ml-IN" ;;
+        mr) echo "mr-IN" ;;
+        ta) echo "ta-IN" ;;
+        te) echo "te-IN" ;;
         *)  echo "$1" ;;
     esac
 }
