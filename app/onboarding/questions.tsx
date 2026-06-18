@@ -44,6 +44,8 @@ import { useResponsive } from '../../src/utils/useResponsive';
 import type { QuizOption } from '../../src/config/onboardingQuestions';
 import type { SupportedLocale } from '../../src/i18n';
 
+const SKIP_HITSLOP = { top: 12, bottom: 12, left: 24, right: 24 };
+
 const TRANSITION_OUT_MS = 160;
 const TRANSITION_IN_MS = 220;
 
@@ -206,6 +208,7 @@ export default function Questions() {
 
   const [categories, setCategories] = useState<db.Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSkipping, setIsSkipping] = useState(false);
   const [metadataFailed, setMetadataFailed] = useState(false);
   // Distinguishes an empty-but-successful metadata fetch from a failed one so
   // the load-error analytics can report the precise reason.
@@ -383,6 +386,23 @@ export default function Questions() {
     setQuizComplete(true);
   };
 
+  // Bail out of the quiz from any question: select every category the user can
+  // access (premium-only dropped for non-premium, like deriveCategories) and go
+  // straight to the success screen, which persists the selection and finishes
+  // onboarding. Mirrors the welcome screen's "Skip for now". Categories are
+  // already loaded here (past the loading guard), so no refetch is needed.
+  const handleSkip = () => {
+    if (isSkipping || isTransitioning.current) return;
+    const allSlugs = categories
+      .filter((category) => isPremium || !category.is_premium)
+      .map((category) => category.slug);
+    if (allSlugs.length === 0) return;
+    setIsSkipping(true);
+    trackOnboardingCategoriesSelected(allSlugs);
+    setSelectedCategories(allSlugs);
+    router.push('/onboarding/success');
+  };
+
   // Wait for the context to hold the derived categories (downloadFacts reads
   // them from context state), then kick off the download and move on.
   useEffect(() => {
@@ -534,6 +554,14 @@ export default function Questions() {
           <Button onPress={handleContinue} disabled={selection.length === 0}>
             {t('continue')}
           </Button>
+          <Pressable
+            disabled={isSkipping}
+            onPress={handleSkip}
+            hitSlop={SKIP_HITSLOP}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          >
+            <Text.Caption color="$textSecondary">{t('skipForNow')}</Text.Caption>
+          </Pressable>
         </YStack>
       </YStack>
     </ScreenContainer>
