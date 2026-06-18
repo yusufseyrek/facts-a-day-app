@@ -48,6 +48,15 @@ ALL_LOCALES=(
 ASC_API_BASE="https://api.appstoreconnect.apple.com/v1"
 GOOGLE_PLAY_API_BASE="https://androidpublisher.googleapis.com/androidpublisher/v3"
 
+# App Store Connect requires, per store localization, a Support URL on the
+# version and a Privacy Policy URL in App Privacy (Marketing URL is optional).
+# Support + Marketing are fixed for every locale; the Privacy Policy URL is
+# localized to the marketing site (SITE_BASE/<lang>/privacy, see get_web_lang),
+# falling back to English for the store-only locales.
+SITE_BASE="https://factsaday.com"
+SUPPORT_URL="https://x.com/FactsaDayApp"
+MARKETING_URL="https://factsaday.com"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Locale Mappings
 # ─────────────────────────────────────────────────────────────────────────────
@@ -79,6 +88,25 @@ get_android_locale() {
         tr) echo "tr-TR" ;;
         zh) echo "zh-CN" ;;
         *)  echo "$1" ;;
+    esac
+}
+
+# Maps internal locale codes to the marketing site's language segment
+# (factsaday.com/<lang>/...). The site ships the 8 app languages; every
+# store-only locale falls back to English. Apple does not require the Support
+# or Privacy Policy URL to be localized — only that each store localization has
+# a reachable one — so English is a valid fallback for the metadata-only locales.
+get_web_lang() {
+    case "$1" in
+        en) echo "en" ;;
+        de) echo "de" ;;
+        es) echo "es" ;;
+        fr) echo "fr" ;;
+        ja) echo "ja" ;;
+        ko) echo "ko" ;;
+        tr) echo "tr" ;;
+        zh) echo "zh" ;;
+        *)  echo "en" ;;
     esac
 }
 
@@ -438,18 +466,21 @@ update_app_info_localization() {
     local loc_id="$1"
     local name="$2"
     local subtitle="$3"
+    local privacy_url="$4"
 
     local update_data
     update_data=$(jq -n \
         --arg name "$name" \
         --arg subtitle "$subtitle" \
+        --arg privacy "$privacy_url" \
         '{
             "data": {
                 "type": "appInfoLocalizations",
                 "id": "'"$loc_id"'",
                 "attributes": {
                     "name": $name,
-                    "subtitle": $subtitle
+                    "subtitle": $subtitle,
+                    "privacyPolicyUrl": $privacy
                 }
             }
         }')
@@ -474,24 +505,17 @@ update_version_localization() {
     local keywords="$3"
     local whats_new="$4"
     local promo_text="$5"
-    
-    # Escape JSON strings properly
-    local desc_escaped
-    local keywords_escaped
-    local whats_new_escaped
-    local promo_escaped
-    
-    desc_escaped=$(echo "$description" | jq -Rs '.')
-    keywords_escaped=$(echo "$keywords" | jq -Rs '.')
-    whats_new_escaped=$(echo "$whats_new" | jq -Rs '.')
-    promo_escaped=$(echo "$promo_text" | jq -Rs '.')
-    
+    local support_url="$6"
+    local marketing_url="$7"
+
     local update_data
     update_data=$(jq -n \
         --arg desc "$description" \
         --arg kw "$keywords" \
         --arg wn "$whats_new" \
         --arg promo "$promo_text" \
+        --arg support "$support_url" \
+        --arg marketing "$marketing_url" \
         '{
             "data": {
                 "type": "appStoreVersionLocalizations",
@@ -500,7 +524,9 @@ update_version_localization() {
                     "description": $desc,
                     "keywords": $kw,
                     "whatsNew": $wn,
-                    "promotionalText": $promo
+                    "promotionalText": $promo,
+                    "supportUrl": $support,
+                    "marketingUrl": $marketing
                 }
             }
         }')
@@ -714,7 +740,15 @@ upload_ios_metadata() {
         whats_new=$(echo "$metadata" | jq -r '.whatsNew // empty')
         promo_text=$(echo "$metadata" | jq -r '.promotionalText // empty')
 
-        # Update app info localization (name & subtitle)
+        # Required store URLs. Support + Marketing are fixed for every locale;
+        # the Privacy Policy URL is localized to the marketing site (English
+        # fallback for store-only locales). These satisfy ASC's per-locale
+        # "Support URL required" and "Privacy Policy URL in App Privacy".
+        local web_lang privacy_url
+        web_lang=$(get_web_lang "$locale")
+        privacy_url="$SITE_BASE/$web_lang/privacy"
+
+        # Update app info localization (name, subtitle & privacy policy URL)
         local app_info_loc_id
         app_info_loc_id=$(get_or_create_app_info_localization "$app_info_id" "$store_locale" "$name" "$subtitle")
 
@@ -724,10 +758,11 @@ upload_ios_metadata() {
             continue
         fi
 
-        info "  Updating app name & subtitle..."
-        if update_app_info_localization "$app_info_loc_id" "$name" "$subtitle"; then
+        info "  Updating app name, subtitle & privacy policy URL..."
+        if update_app_info_localization "$app_info_loc_id" "$name" "$subtitle" "$privacy_url"; then
             success "    Name: $name"
             success "    Subtitle: $subtitle"
+            success "    Privacy Policy URL: $privacy_url"
         else
             error "  Failed to update name & subtitle for $store_locale"
             ((failed++))
@@ -744,11 +779,13 @@ upload_ios_metadata() {
         fi
 
         info "  Updating version metadata..."
-        if update_version_localization "$loc_id" "$description" "$keywords" "$whats_new" "$promo_text"; then
+        if update_version_localization "$loc_id" "$description" "$keywords" "$whats_new" "$promo_text" "$SUPPORT_URL" "$MARKETING_URL"; then
             success "    Description: $(echo "$description" | head -c 50)..."
             success "    Keywords: $(echo "$keywords" | head -c 50)..."
             success "    What's New: $(echo "$whats_new" | head -c 50)..."
             success "    Promotional Text: $(echo "$promo_text" | head -c 50)..."
+            success "    Support URL: $SUPPORT_URL"
+            success "    Marketing URL: $MARKETING_URL"
             ((updated++))
         else
             error "  Failed to update metadata for $store_locale"
