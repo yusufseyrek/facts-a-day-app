@@ -42,6 +42,8 @@ ALL_LOCALES=(
     "en" "de" "es" "fr" "ja" "ko" "tr" "zh"
     "ar-SA" "ca" "cs" "da" "el" "fi" "he" "hi" "hr" "hu" "id" "it" "ms"
     "nl-NL" "no" "pl" "pt-BR" "pt-PT" "ro" "ru" "sk" "sv" "th" "uk" "vi" "zh-Hant"
+    "es-ES" "en-AU" "en-CA" "en-GB" "fr-CA" "bn" "gu" "kn" "ml" "mr"
+    "or" "pa" "sl" "ta" "te" "ur"
 )
 
 # API endpoints
@@ -100,8 +102,8 @@ get_web_lang() {
     case "$1" in
         en) echo "en" ;;
         de) echo "de" ;;
-        es) echo "es" ;;
-        fr) echo "fr" ;;
+        es|es-ES) echo "es" ;;
+        fr|fr-CA) echo "fr" ;;
         ja) echo "ja" ;;
         ko) echo "ko" ;;
         tr) echo "tr" ;;
