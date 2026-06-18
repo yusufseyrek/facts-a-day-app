@@ -17,7 +17,7 @@ import {
 import { NativeAdCard } from '../../../src/components/ads/NativeAdCard';
 import { X } from '../../../src/components/icons';
 import { ImageFactCard } from '../../../src/components/ImageFactCard';
-import { styled, View, YStack } from '../../../src/components/Stacks';
+import { styled, View, XStack, YStack } from '../../../src/components/Stacks';
 import { LAYOUT, NATIVE_ADS } from '../../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
 import { usePremium, useScrollToTopHandler } from '../../../src/contexts';
@@ -40,7 +40,7 @@ import { getSelectedCategories } from '../../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../../src/services/preferences';
 import { getLastNonSearchTabPath, onSearchSessionReset } from '../../../src/services/tabHistory';
 import { hexColors, useTheme } from '../../../src/theme';
-import { blendHexColors, hexToHue, hexToRgba } from '../../../src/utils/colors';
+import { blendHexColors, getContrastColor, hexToHue, hexToRgba } from '../../../src/utils/colors';
 import {
   insertNativeAds,
   isNativeAdPlaceholder,
@@ -466,8 +466,12 @@ function SearchScreen() {
   // under the large title, Android the native toolbar search. With a category
   // selected, the field itself carries the scope ("Search in Science...") —
   // the native search bar has no token/chip API, so the placeholder is the
-  // label — and an X appears in the header to clear the filter (replaces the
-  // old in-content chip row). Re-runs on selection/locale change only.
+  // label. The clear-filter X lives in the header on iOS ONLY: on Android the
+  // native SearchView expands to fill the toolbar in search mode and a custom
+  // headerRight collides with it (renders half-off-screen, and sits next to the
+  // SearchView's own clear button — two confusing X's). Android clears the
+  // filter via the in-content scope chip rendered below instead. Re-runs on
+  // selection/locale change only.
   useEffect(() => {
     navigation.setOptions({
       headerSearchBarOptions: {
@@ -485,23 +489,24 @@ function SearchScreen() {
         // Without it, closing the toolbar search leaves stale results state.
         onClose: clearSearch,
       },
-      headerRight: selectedCategoryName
-        ? () => (
-            <Pressable
-              onPress={clearCategoryFilter}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-              role="button"
-              aria-label={t('allCategories')}
-              testID="discover-clear-category"
-            >
-              <X
-                size={iconSizes.md}
-                color={theme === 'dark' ? hexColors.dark.primary : hexColors.light.primary}
-              />
-            </Pressable>
-          )
-        : undefined,
+      headerRight:
+        Platform.OS === 'ios' && selectedCategoryName
+          ? () => (
+              <Pressable
+                onPress={clearCategoryFilter}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                role="button"
+                aria-label={t('allCategories')}
+                testID="discover-clear-category"
+              >
+                <X
+                  size={iconSizes.md}
+                  color={theme === 'dark' ? hexColors.dark.primary : hexColors.light.primary}
+                />
+              </Pressable>
+            )
+          : undefined,
     });
   }, [
     navigation,
@@ -950,10 +955,58 @@ function SearchScreen() {
     headerGap,
   ]);
 
+  // Android-only category-clear affordance (see header-options note above). A
+  // labeled pill — the category name plus a trailing ✕ — so it's obvious it
+  // clears the active category, unlike the bare, half-off-screen header X.
+  // Shown whenever a category is selected (browse or search-within-category),
+  // mirroring the iOS header X. Pinned above the list: Android's toolbar is
+  // opaque, so a top-of-content row sits cleanly below it (the "behind the
+  // translucent header" caveat is iOS-only). Matches the Favorites chip style.
+  const scopeColor = selectedCategory?.color_hex || '#0066FF';
+  const scopeContrast = getContrastColor(scopeColor);
+  const categoryScopeChip =
+    Platform.OS === 'android' && selectedCategory && selectedCategoryName ? (
+      <View
+        style={{
+          flexDirection: 'row',
+          paddingHorizontal: spacing.lg,
+          paddingTop: headerGap,
+          paddingBottom: spacing.sm,
+        }}
+      >
+        <Pressable
+          onPress={clearCategoryFilter}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          role="button"
+          aria-label={t('allCategories')}
+          testID="discover-clear-category"
+        >
+          <XStack
+            height={media.chipHeight}
+            borderRadius={radius.full}
+            paddingLeft={spacing.md}
+            paddingRight={spacing.sm}
+            alignItems="center"
+            gap={spacing.xs}
+            backgroundColor={scopeColor}
+          >
+            <Text.Caption color={scopeContrast} fontFamily={FONT_FAMILIES.semibold}>
+              {selectedCategoryName}
+            </Text.Caption>
+            <X size={iconSizes.sm} color={scopeContrast} />
+          </XStack>
+        </Pressable>
+      </View>
+    ) : null;
+
   return (
     <ScreenContainer edges={[]}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <YStack flex={1}>{renderContent()}</YStack>
+      <YStack flex={1}>
+        {categoryScopeChip}
+        {renderContent()}
+      </YStack>
     </ScreenContainer>
   );
 }
