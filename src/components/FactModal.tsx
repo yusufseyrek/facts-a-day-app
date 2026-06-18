@@ -1092,6 +1092,14 @@ export function FactModal({
         ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         bounces={true}
+        // Without this, a tap on a button inside a descendant (the comments
+        // screen-name modal, the comment composer) is swallowed by this
+        // ScrollView to dismiss the keyboard first, so it takes two taps. RN's
+        // keyboard-dismiss walks the JS tree, so it reaches Modal children too
+        // (see facebook/react-native#28871). 'handled' = a tap a child
+        // touchable handles keeps the keyboard and fires on the first tap;
+        // taps on empty space still dismiss it.
+        keyboardShouldPersistTaps="handled"
         onScroll={handleScroll}
         onScrollEndDrag={handleScrollEndDrag}
         onMomentumScrollEnd={checkScrolledToBottom}
