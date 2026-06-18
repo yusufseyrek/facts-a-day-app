@@ -600,16 +600,18 @@ export async function saveDailyTriviaProgress(
   );
 }
 
-/**
- * Get local date in YYYY-MM-DD format
- * Used for daily trivia to properly match the user's local day
- * Note: toISOString() returns UTC date which causes issues in timezones ahead of UTC
- */
+/** Local date in YYYY-MM-DD — for streaks scoped to the user's own day. */
 function getLocalDateString(date: Date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/** UTC date in YYYY-MM-DD — the daily-challenge day key (see trivia.ts). The
+ * daily streak walks UTC days because completions are stored under the UTC day. */
+function getUtcDateString(date: Date = new Date()): string {
+  return date.toISOString().slice(0, 10);
 }
 
 /**
@@ -627,12 +629,14 @@ export async function getDailyStreak(): Promise<number> {
 
   if (result.length === 0) return 0;
 
-  // Check if today or yesterday is in the list to start counting
+  // Daily completions are keyed to the UTC day (matching the server's daily
+  // content + one-daily-per-UTC-day leaderboard rule), so the streak walks UTC
+  // days. Anchor at noon UTC so a one-day step never straddles midnight.
   const today = new Date();
-  const todayStr = getLocalDateString(today);
+  const todayStr = getUtcDateString(today);
   const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = getLocalDateString(yesterday);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const yesterdayStr = getUtcDateString(yesterday);
 
   const dates = result.map((r) => r.date);
 
@@ -642,12 +646,12 @@ export async function getDailyStreak(): Promise<number> {
   }
 
   let streak = 1;
-  let currentDate = new Date(dates[0] + 'T12:00:00'); // Use noon to avoid DST issues
+  let currentDate = new Date(dates[0] + 'T12:00:00Z'); // noon UTC anchor
 
   for (let i = 1; i < dates.length; i++) {
     const prevDate = new Date(currentDate);
-    prevDate.setDate(prevDate.getDate() - 1);
-    const prevDateStr = getLocalDateString(prevDate);
+    prevDate.setUTCDate(prevDate.getUTCDate() - 1);
+    const prevDateStr = getUtcDateString(prevDate);
 
     if (dates[i] === prevDateStr) {
       streak++;

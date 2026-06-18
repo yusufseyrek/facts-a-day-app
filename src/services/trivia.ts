@@ -70,15 +70,27 @@ export const MIXED_TRIVIA_QUESTIONS = TRIVIA_QUESTIONS.MIXED;
 export const CATEGORY_TRIVIA_QUESTIONS = TRIVIA_QUESTIONS.CATEGORY;
 
 /**
- * Get local date in YYYY-MM-DD format
- * Used for daily trivia to properly match the user's local day
- * Note: toISOString() returns UTC date which causes issues in timezones ahead of UTC
+ * Get local date in YYYY-MM-DD format. Used for per-device daily quotas (e.g.
+ * the explanation-hint allowance) that should reset at the user's own midnight.
+ * NOT for the daily challenge — see getUtcDateString.
  */
 function getLocalDateString(date: Date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * The daily-challenge day key, in UTC. The daily is global-by-UTC-day on the
+ * server: its content is "facts created on a UTC day" and the leaderboard
+ * accepts one daily result per UTC day. The client's completed-gate must use
+ * the SAME clock, or a user ahead of UTC re-opens the (unchanged) daily after
+ * their local midnight and the resubmission is rejected 409 — the daily simply
+ * has no new content until UTC midnight. getDailyStreak walks UTC days to match.
+ */
+function getUtcDateString(date: Date = new Date()): string {
+  return date.toISOString().slice(0, 10);
 }
 
 // Re-export TIME_PER_QUESTION for backwards compatibility
@@ -156,7 +168,7 @@ export async function getDailyTriviaQuestionsCount(language: string): Promise<nu
  * Get today's daily trivia progress
  */
 async function getTodayProgress(): Promise<DailyTriviaProgress | null> {
-  const today = getLocalDateString();
+  const today = getUtcDateString();
   return database.getDailyTriviaProgress(today);
 }
 
@@ -175,7 +187,7 @@ export async function saveDailyProgress(
   totalQuestions: number,
   correctAnswers: number
 ): Promise<void> {
-  const today = getLocalDateString();
+  const today = getUtcDateString();
   await database.saveDailyTriviaProgress(today, totalQuestions, correctAnswers);
 }
 
