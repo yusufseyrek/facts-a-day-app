@@ -21,6 +21,8 @@ export interface CachedCategoryItem {
   isTheme?: boolean;
   /** Full-circle image for theme buttons. */
   image_url?: string | null;
+  /** Theme button's gating category slug; null/absent = shown to all. */
+  category?: string | null;
 }
 
 export type CachedCategoryRow = {

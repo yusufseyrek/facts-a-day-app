@@ -156,16 +156,27 @@ export const CategoryStoryButtons = React.forwardRef<CategoryStoryButtonsRef>(
         }
 
         const themes = await themesPromise;
+        // Only show a theme button when its gating category is among the user's
+        // selected categories. A theme with no category (null/undefined) is
+        // global and shown to everyone. Applied to both the fresh fetch and the
+        // cached fallback so a selection change can't resurrect a hidden theme.
+        const isThemeVisible = (cat?: string | null) =>
+          cat == null || selectedSlugs.includes(cat);
         const themeItems: CategoryItem[] =
           themes !== null
-            ? themes.map((theme) => ({
-                slug: theme.slug,
-                name: theme.name,
-                color_hex: theme.color_hex ?? undefined,
-                image_url: theme.image_url,
-                isTheme: true,
-              }))
-            : (getCachedRowSync(locale)?.items ?? []).filter((it) => it.isTheme);
+            ? themes
+                .filter((theme) => isThemeVisible(theme.category))
+                .map((theme) => ({
+                  slug: theme.slug,
+                  name: theme.name,
+                  color_hex: theme.color_hex ?? undefined,
+                  image_url: theme.image_url,
+                  category: theme.category,
+                  isTheme: true,
+                }))
+            : (getCachedRowSync(locale)?.items ?? []).filter(
+                (it) => it.isTheme && isThemeVisible(it.category),
+              );
 
         // Build a map for quick lookup
         const categoryMap = new Map<string, Category>();

@@ -76,6 +76,7 @@ export interface StoryTheme {
   name: string;
   image_url: string | null;
   color_hex: string | null;
+  category: string | null; // gating category slug; null = shown to all
 }
 
 export interface QuestionResponse {
