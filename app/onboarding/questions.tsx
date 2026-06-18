@@ -288,6 +288,13 @@ export default function Questions() {
   // Animate the current question in whenever it changes (and on first load)
   useEffect(() => {
     if (isLoading) return;
+    // The new question is mounted and interactive now — release the transition
+    // lock immediately. Clearing it only in the entering spring's completion
+    // callback kept it set for the spring's full settle (~half a second), and
+    // toggleOption/handleContinue early-return while it's set, so the first tap
+    // on the new page was silently dropped and you had to tap again. The lock
+    // still guards the OUTGOING transition (goToQuestion sets it until here).
+    isTransitioning.current = false;
     contentOpacity.setValue(0);
     Animated.parallel([
       Animated.timing(contentOpacity, {
@@ -302,9 +309,7 @@ export default function Questions() {
         friction: 10,
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      isTransitioning.current = false;
-    });
+    ]).start();
   }, [isLoading, questionIndex, contentOpacity, contentTranslateX]);
 
   const goToQuestion = (nextIndex: number, direction: 1 | -1) => {
