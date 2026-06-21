@@ -580,7 +580,47 @@ update_version_localization() {
         echo "    Error: $error_msg" >&2
         return 1
     fi
-    
+
+    return 0
+}
+
+# Read the version's localizations back from App Store Connect and confirm every
+# one has non-empty release notes (whatsNew). App Store Connect requires release
+# notes per locale on an update, and its "Add for Review" validator can lag the
+# *last-written* localizations: submit too soon after a 50-locale upload and the
+# tail locales (e.g. ta-IN/te-IN/ur-PK) phantom-report "What's New is required"
+# even though the field is set. Re-fetching confirms completeness and gives ASC a
+# beat to settle. Returns non-zero (without failing the run) if any are missing.
+verify_ios_whats_new() {
+    local version_id="$1"
+
+    local tmp
+    tmp=$(mktemp)
+    asc_api GET "/appStoreVersions/$version_id/appStoreVersionLocalizations?limit=200" > "$tmp"
+
+    # jq reads from the file (not a bash var) so the large UTF-8 payload is byte-safe
+    local total
+    total=$(jq -r '.data | length' "$tmp" 2>/dev/null)
+    if [ -z "$total" ] || [ "$total" = "null" ] || [ "$total" = "0" ]; then
+        warn "  Could not read localizations back to verify release notes"
+        rm -f "$tmp"
+        return 0
+    fi
+
+    local missing
+    missing=$(jq -r '[.data[]
+        | select((.attributes.whatsNew // "" | gsub("\\s";"")) == "")
+        | .attributes.locale] | join(" ")' "$tmp" 2>/dev/null)
+    rm -f "$tmp"
+
+    if [ -n "$missing" ]; then
+        warn "  Release notes (What's New) MISSING on App Store Connect for: $missing"
+        warn "  'Add for Review' will be rejected until these are set — re-run for"
+        warn "  those locales, then wait a moment before submitting."
+        return 1
+    fi
+
+    success "  Release notes present for all $total localization(s) — ready to submit"
     return 0
 }
 
@@ -832,7 +872,15 @@ upload_ios_metadata() {
             ((failed++))
         fi
     done
-    
+
+    # Confirm the version is actually submit-ready: re-read all localizations and
+    # check that release notes landed everywhere. This also lets ASC settle the
+    # last-written locales before the user clicks "Add for Review".
+    echo ""
+    info "Verifying release notes (What's New) across all localizations..."
+    sleep 3
+    verify_ios_whats_new "$version_id" || true
+
     echo ""
     if [ $failed -eq 0 ]; then
         success "Successfully updated metadata for $updated locale(s)"
