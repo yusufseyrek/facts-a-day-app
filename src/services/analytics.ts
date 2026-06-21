@@ -490,7 +490,13 @@ export const trackInterstitialShown = (source: InterstitialSource): void => {
 };
 
 /**
- * Track when App Open ad is shown (impression)
+ * Track when App Open ad is shown (impression).
+ *
+ * NOTE: `app_open_ad_shown` is the AdMob-comparable metric — compare its count
+ * to AdMob app-open ad impressions. Do NOT compare AdMob against GA4's automatic
+ * `app_open` event (a Firebase-collected app-foreground signal) or PostHog's
+ * `Application Opened`/`Became Active` lifecycle events — those count app
+ * resumes, not ad impressions, and will always be far higher.
  */
 export const trackAppOpenAdShown = (source: 'foreground'): void => {
   logEvent('app_open_ad_shown', { source });

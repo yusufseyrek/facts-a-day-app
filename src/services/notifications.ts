@@ -83,7 +83,14 @@ export async function registerForPush(
     const { status } = await Notifications.getPermissionsAsync();
     const previouslyGranted = status === 'granted';
     let granted = previouslyGranted;
-    if (!granted) {
+    // Only prompt (and record the decision) when the OS will actually show the
+    // permission dialog — i.e. status is still 'undetermined'. registerForPush
+    // runs on every foreground, and for an already-'denied' user
+    // requestPermissionsAsync() resolves immediately WITHOUT a dialog, so the
+    // old unconditional call re-fired `push_permission_result` on every single
+    // foreground. Gating on 'undetermined' captures the event once, at the real
+    // decision moment, and never on silent re-registration.
+    if (!granted && status === 'undetermined') {
       const req = await Notifications.requestPermissionsAsync();
       granted = req.status === 'granted';
       trackPushPermissionResult({

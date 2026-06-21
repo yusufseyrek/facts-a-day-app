@@ -44,6 +44,15 @@ let lastAppOpenAdShownAt: number = 0;
 let skipNextForegroundAppOpenAd = false;
 
 /**
+ * Guards against re-entrant foreground shows. Presenting a full-screen ad
+ * (including this app-open ad) can drive the app through a background→active
+ * transition that re-fires the foreground handler before a prior show has
+ * settled. Without this, each re-entry could slip past the cooldown gate and
+ * double-count an impression.
+ */
+let showInFlight = false;
+
+/**
  * Call this before showing any full-screen ad (interstitial, rewarded) so the
  * false foreground event caused by that ad's Activity closing does not trigger
  * an app-open ad.
@@ -190,6 +199,11 @@ export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
     return false;
   }
 
+  // A prior foreground show is still in progress — don't start another.
+  if (showInFlight) {
+    return false;
+  }
+
   const now = Date.now();
 
   // Suppress if another full-screen ad was just shown — Android briefly
@@ -224,6 +238,7 @@ export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
     return false;
   }
 
+  showInFlight = true;
   try {
     if (__DEV__) console.log('🚀 Showing app open ad on foreground...');
 
@@ -266,12 +281,24 @@ export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
       });
     });
 
-    trackAppOpenAdShown('foreground');
-    await appOpenAd!.show();
-    const result = await adCompletedPromise;
-
-    // Track when ad was shown for cooldown
+    // Start the cooldown at the show *attempt*, not after dismissal. If show()
+    // throws or the dismissal promise never resolves, the 5-min cooldown still
+    // holds, so the next foreground can't immediately re-attempt — and
+    // re-count — the same ad.
     lastAppOpenAdShownAt = Date.now();
+    // Showing this ad itself backgrounds→foregrounds the app; suppress the
+    // app-open ad on that induced transition, the same way interstitial and
+    // rewarded ads already do before they show.
+    skipNextForegroundAppOpenAd = true;
+
+    await appOpenAd!.show();
+    // show() resolved without throwing → the ad is actually being presented.
+    // Count the impression here (not before show()) so failed shows that never
+    // reach AdMob aren't logged as `app_open_ad_shown`.
+    trackAppOpenAdShown('foreground');
+    showInFlight = false;
+
+    const result = await adCompletedPromise;
 
     // iOS delay to restore view hierarchy
     if (Platform.OS === 'ios') {
@@ -283,6 +310,7 @@ export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
 
     return result;
   } catch (error) {
+    showInFlight = false;
     console.error('Error showing app open ad on foreground:', error);
     console.warn('App open ad show error:', String(error));
     loadAppOpenAd().catch(console.error);
