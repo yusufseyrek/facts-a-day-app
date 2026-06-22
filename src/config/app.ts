@@ -53,6 +53,12 @@ export const INTERSTITIAL_ADS = {
   FACT_VIEWS_BETWEEN_ADS: 10,
   /** Minimum seconds between interstitial ads (cooldown) */
   COOLDOWN_SECONDS: 600,
+  /**
+   * Seconds of no in-app interaction (while foregrounded) before an idle
+   * interstitial fires. Still subject to COOLDOWN_SECONDS, so this is a trigger,
+   * not a cadence — back-to-back idle windows won't stack ads.
+   */
+  INACTIVITY_SECONDS: 150,
 } as const;
 
 /**

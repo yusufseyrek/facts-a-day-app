@@ -72,6 +72,15 @@ export const maybeShowTriviaResultsInterstitial = async (): Promise<boolean> => 
 };
 
 /**
+ * Show an interstitial when the user has been idle in-app (no interaction while
+ * foregrounded) past INTERSTITIAL_ADS.INACTIVITY_SECONDS. Subject to the global
+ * cooldown and premium gating, so repeated idle windows won't stack ads.
+ */
+export const maybeShowInactivityInterstitial = async (): Promise<boolean> => {
+  return maybeShowInterstitial('inactivity');
+};
+
+/**
  * Show interstitial ad after a fact view.
  * Fires once FACT_VIEWS_BETWEEN_ADS views have accumulated since the last
  * fact-view interstitial, subject to the global cooldown. The counter only

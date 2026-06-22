@@ -30,6 +30,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { PostHogErrorBoundary, PostHogProvider } from 'posthog-react-native';
 
 import { showAppOpenAdOnForeground } from '../src/components/ads/AppOpenAd';
+import { IdleInterstitial } from '../src/components/ads/IdleInterstitial';
 import { AppCheckBlockingScreen } from '../src/components/AppCheckBlockingScreen';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { SplashOverlay } from '../src/components/SplashOverlay';
@@ -741,7 +742,9 @@ export default function RootLayout() {
                             <NavigationThemeWrapper>
                               <ReviewPromptProvider>
                                 <BadgeToastProvider>
-                                  <AppContent />
+                                  <IdleInterstitial enabled={initialOnboardingStatus === true}>
+                                    <AppContent />
+                                  </IdleInterstitial>
                                 </BadgeToastProvider>
                               </ReviewPromptProvider>
                             </NavigationThemeWrapper>
