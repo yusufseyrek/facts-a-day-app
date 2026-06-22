@@ -1,6 +1,8 @@
 import { ReactNode, useCallback, useEffect, useRef } from 'react';
 import { AppState, AppStateStatus, View } from 'react-native';
 
+import { usePathname } from 'expo-router';
+
 import { INTERSTITIAL_ADS } from '../../config/app';
 import { maybeShowInactivityInterstitial } from '../../services/adManager';
 
@@ -9,6 +11,15 @@ interface IdleInterstitialProps {
   enabled?: boolean;
   children: ReactNode;
 }
+
+// Native-modal routes where an interstitial must NOT fire: presenting a
+// full-screen ad VC over an already-presented modal conflicts on iOS, and the
+// paywall is a purchase flow. Touches on these modals also sit on a VC above our
+// root capture view, so they never reset the idle clock — the route check (not a
+// touch reset) is what protects them. Matched by path prefix.
+const BLOCKING_ROUTE_PREFIXES = ['/paywall', '/fact/modal', '/fact/morph', '/fact/sample', '/story'];
+const isBlockingRoute = (path: string): boolean =>
+  BLOCKING_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
 
 /**
  * Wraps the app tree and fires an interstitial after the user has been idle
@@ -23,6 +34,14 @@ interface IdleInterstitialProps {
 export function IdleInterstitial({ enabled = true, children }: IdleInterstitialProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Latest foregrounded route, read at fire time (touches on modal routes don't
+  // reach our capture view, so we can't rely on a reset — we check at fire).
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
   const clear = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -34,8 +53,12 @@ export function IdleInterstitial({ enabled = true, children }: IdleInterstitialP
     clear();
     if (!enabled || AppState.currentState !== 'active') return;
     timerRef.current = setTimeout(() => {
-      // Fire-and-forget; adManager gates on premium + the global cooldown.
-      maybeShowInactivityInterstitial().catch(() => {});
+      // Skip on modal routes (paywall purchase flow, fact/story modals) — see
+      // BLOCKING_ROUTE_PREFIXES. Fire-and-forget otherwise; adManager gates on
+      // premium + the global cooldown.
+      if (!isBlockingRoute(pathnameRef.current)) {
+        maybeShowInactivityInterstitial().catch(() => {});
+      }
       // Re-arm so a still-idle user is re-evaluated next window (the cooldown
       // skips the ad until it elapses).
       arm();
