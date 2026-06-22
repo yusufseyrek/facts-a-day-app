@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { LayoutAnimation, Platform, StyleSheet, View } from 'react-native';
+import { LayoutAnimation, Platform, Pressable, StyleSheet, View } from 'react-native';
 import {
   AdsConsent,
   BannerAd as GoogleBannerAd,
@@ -13,9 +13,17 @@ import Constants from 'expo-constants';
 import { AD_KEYWORDS, AD_RETRY } from '../../config/app';
 import { useInsideTabs } from '../../contexts/InsideTabsContext';
 import { usePremium } from '../../contexts/PremiumContext';
+import { useTranslation } from '../../i18n';
+import {
+  dismissBannersForSession,
+  useBannersDismissedForSession,
+} from '../../services/adBannerSession';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { trackAdRevenue } from '../../services/analytics';
 import { shouldShowAds } from '../../services/premiumState';
+import { X } from '../icons';
+
+import { RemoveAdsSheet } from './RemoveAdsSheet';
 
 type CollapsiblePlacement = 'top' | 'bottom';
 
@@ -56,7 +64,11 @@ function BannerAdComponent({
   // Subscribe to premium context so component re-renders when premium status changes
   // (shouldShowAds() reads module-level state which doesn't trigger re-renders on its own)
   usePremium();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  // Once the user closes a banner this session, every banner stays hidden.
+  const sessionDismissed = useBannersDismissedForSession();
+  const [showRemoveAdsSheet, setShowRemoveAdsSheet] = useState(false);
   // Inside the (tabs) group the bottom edge is owned by the tab bar (Material
   // bottom nav on Android / floating glass bar on iOS); outside it, Android's
   // mandatory edge-to-edge would put the banner behind the system nav bar.
@@ -106,10 +118,18 @@ function BannerAdComponent({
     };
   }, []);
 
-  // Notify parent of load state changes
+  // Notify parent of load state changes. A session-dismissed banner reports
+  // not-loaded so any layout that reserves space for the ad reclaims it.
   useEffect(() => {
-    onAdLoadChange?.(adState === 'loaded');
-  }, [adState, onAdLoadChange]);
+    onAdLoadChange?.(adState === 'loaded' && !sessionDismissed);
+  }, [adState, onAdLoadChange, sessionDismissed]);
+
+  // Close [X]: hide banners for the rest of the session and surface the soft
+  // paywall ("remove ads?"). The full IAP upgrade lives behind that dialog.
+  const handleCloseBanner = useCallback(() => {
+    dismissBannersForSession();
+    setShowRemoveAdsSheet(true);
+  }, []);
 
   // LayoutAnimation.configureNext is GLOBAL: it arms the NEXT commit, whatever
   // that is. A banner callback landing as the user closes the screen would arm
@@ -150,52 +170,74 @@ function BannerAdComponent({
     return null;
   }
 
-  const isVisible = adState === 'loaded';
+  const isVisible = adState === 'loaded' && !sessionDismissed;
   const bottomPad =
     respectBottomInset && isVisible && (Platform.OS === 'ios' || !inTabs) ? insets.bottom : 0;
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          height: isVisible ? undefined : 0,
-          opacity: isVisible ? 1 : 0,
-          paddingBottom: bottomPad,
-        },
-      ]}
-      collapsable={!isVisible}
-      pointerEvents={isVisible ? 'auto' : 'none'}
-    >
-      {adState !== 'error' && (
-        <View style={styles.adWrapper}>
-          <GoogleBannerAd
-            key={adKey}
-            unitId={getAdUnitId()}
-            size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-            requestOptions={{
-              requestNonPersonalizedAdsOnly: requestNonPersonalized,
-              keywords: AD_KEYWORDS,
-              ...(collapsible && {
-                networkExtras: { collapsible },
-              }),
-            }}
-            onAdLoaded={handleAdLoaded}
-            onAdFailedToLoad={handleAdFailedToLoad}
-            onPaid={(revenue) => {
-              trackAdRevenue({
-                format: 'banner',
-                value: revenue.value,
-                currency: revenue.currency,
-                precision: revenue.precision,
-                placement,
-                adUnitId: getAdUnitId(),
-              });
-            }}
-          />
+    <>
+      {!sessionDismissed && (
+        <View
+          style={[
+            styles.container,
+            {
+              height: isVisible ? undefined : 0,
+              opacity: isVisible ? 1 : 0,
+              paddingBottom: bottomPad,
+            },
+          ]}
+          collapsable={!isVisible}
+          pointerEvents={isVisible ? 'auto' : 'none'}
+        >
+          {adState !== 'error' && (
+            <View style={styles.adWrapper}>
+              <GoogleBannerAd
+                key={adKey}
+                unitId={getAdUnitId()}
+                size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                requestOptions={{
+                  requestNonPersonalizedAdsOnly: requestNonPersonalized,
+                  keywords: AD_KEYWORDS,
+                  ...(collapsible && {
+                    networkExtras: { collapsible },
+                  }),
+                }}
+                onAdLoaded={handleAdLoaded}
+                onAdFailedToLoad={handleAdFailedToLoad}
+                onPaid={(revenue) => {
+                  trackAdRevenue({
+                    format: 'banner',
+                    value: revenue.value,
+                    currency: revenue.currency,
+                    precision: revenue.precision,
+                    placement,
+                    adUnitId: getAdUnitId(),
+                  });
+                }}
+              />
+              {/* Close affordance: a small corner [X] that hides banners for the
+                  session and opens the soft paywall. Sits in the corner so it
+                  doesn't obscure the creative; only shown once the ad is up. */}
+              {isVisible && (
+                <Pressable
+                  onPress={handleCloseBanner}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('a11y_closeButton')}
+                  style={styles.closeButton}
+                >
+                  <X size={11} color="#FFFFFF" />
+                </Pressable>
+              )}
+            </View>
+          )}
         </View>
       )}
-    </View>
+      <RemoveAdsSheet
+        visible={showRemoveAdsSheet}
+        onClose={() => setShowRemoveAdsSheet(false)}
+      />
+    </>
   );
 }
 
@@ -209,6 +251,17 @@ const styles = StyleSheet.create({
   adWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
   },
 });
 
