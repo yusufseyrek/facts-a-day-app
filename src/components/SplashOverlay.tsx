@@ -29,8 +29,14 @@ import {
 // Must match app.json splash config exactly so the native→JS handoff is seamless.
 const SPLASH_BACKGROUND = '#0A1628';
 const LOGO_SIZE = 200;
-// Deep blue of the calendar dots/tabs, sampled from the real logo (icon.png).
-const DOT_BLUE = '#004CB0';
+// Calendar tab color, sampled from the real splash art (splash-icon.png).
+const TAB_BLUE = '#0063AF';
+// The date dots are KNOCKOUT HOLES in splash-icon.png, so on the native splash
+// they show the navy background through them (they read as dark dots on the
+// white card). Fill the JS reconstruction's dots with the same background so the
+// native→JS handoff is seamless. They previously used a bright blue (#004CB0)
+// sampled from the OLD icon.png, which made the dots flash blue on handoff.
+const DOT_FILL = SPLASH_BACKGROUND;
 
 // Orange header band (rounded top corners matching the card, square bottom).
 const HEADER_D =
@@ -74,10 +80,10 @@ function LogoMark() {
       <Rect x={CARD.x} y={CARD.y} width={CARD.w} height={CARD.h} rx={CARD.rx} fill="#F2FAFF" />
       <Path d={HEADER_D} fill="url(#spl-hdr)" />
       {TAB_CXS.map((cx) => (
-        <Rect key={cx} x={cx - TAB.w / 2} y={TAB.y} width={TAB.w} height={TAB.h} rx={TAB.rx} fill={DOT_BLUE} />
+        <Rect key={cx} x={cx - TAB.w / 2} y={TAB.y} width={TAB.w} height={TAB.h} rx={TAB.rx} fill={TAB_BLUE} />
       ))}
       {DOTS.map((d, i) => (
-        <Circle key={i} cx={d.cx} cy={d.cy} r={DOT_R} fill={DOT_BLUE} />
+        <Circle key={i} cx={d.cx} cy={d.cy} r={DOT_R} fill={DOT_FILL} />
       ))}
     </Svg>
   );
