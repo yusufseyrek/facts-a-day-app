@@ -886,7 +886,10 @@ export interface TriviaLeaderboardEntry {
   rank: number;
   screen_name: string;
   country_code: string | null;
+  /** Total correct answers in the window (also the rank metric). */
   score: number;
+  /** Total questions answered in the window — the denominator shown as "score / total_questions". */
+  total_questions: number;
   games: number;
   total_elapsed_ms: number;
 }
@@ -894,6 +897,7 @@ export interface TriviaLeaderboardEntry {
 export interface TriviaLeaderboardStanding {
   rank: number;
   score: number;
+  total_questions: number;
   games: number;
   total_elapsed_ms: number;
   total_players: number;

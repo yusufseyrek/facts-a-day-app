@@ -59,6 +59,51 @@ function formatScore(n: number): string {
   return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+/** Spoken score for accessibility labels: "56 / 111", or just "56" when the
+ * total is unavailable (pre-total_questions backend). */
+function scoreA11y(correct: number, total: number): string {
+  return Number.isFinite(total) && total > 0
+    ? `${formatScore(correct)} / ${formatScore(total)}`
+    : formatScore(correct);
+}
+
+/** Score as "correct / total": correct answers (also the rank metric) emphasized,
+ * the answered-question total shown muted as the denominator so the number can't
+ * be misread (e.g. "56" alone vs "56 / 111"). */
+function ScoreFraction({
+  correct,
+  total,
+  numeratorColor,
+  denomColor,
+  denomOpacity,
+  big,
+}: {
+  correct: number;
+  total: number;
+  numeratorColor: string;
+  denomColor: string;
+  denomOpacity?: number;
+  big?: boolean;
+}) {
+  const Numerator = big ? Text.Title : Text.Label;
+  // Degrade to the bare score if a backend without total_questions is in play
+  // (e.g. an app build pointed at a not-yet-deployed server) so we never show
+  // "56 / undefined".
+  const showDenom = Number.isFinite(total) && total > 0;
+  return (
+    <XStack alignItems="baseline">
+      <Numerator color={numeratorColor} fontFamily={FONT_FAMILIES.bold} maxFontSizeMultiplier={1.2}>
+        {formatScore(correct)}
+      </Numerator>
+      {showDenom ? (
+        <Text.Caption color={denomColor} opacity={denomOpacity} maxFontSizeMultiplier={1.2}>
+          {` / ${formatScore(total)}`}
+        </Text.Caption>
+      ) : null}
+    </XStack>
+  );
+}
+
 /** Screen names are unique (COLLATE NOCASE server-side), so identity, not rank,
  * decides which row is the viewer — rank can repeat on ties. */
 function isSameName(a: string | null | undefined, b: string | null | undefined): boolean {
@@ -136,7 +181,7 @@ function PodiumColumn({
       gap={spacing.sm}
       justifyContent="flex-end"
       accessible
-      accessibilityLabel={`#${entry.rank} ${entry.screen_name} ${formatScore(entry.score)}${
+      accessibilityLabel={`#${entry.rank} ${entry.screen_name} ${scoreA11y(entry.score, entry.total_questions)}${
         isViewer ? ` (${youLabel})` : ''
       }`}
     >
@@ -157,13 +202,14 @@ function PodiumColumn({
         >
           {`${flag ? `${flag} ` : ''}${entry.screen_name}`}
         </Text.Caption>
-        <Text.Title
-          color={contrastColor}
-          fontFamily={FONT_FAMILIES.bold}
-          maxFontSizeMultiplier={1.2}
-        >
-          {formatScore(entry.score)}
-        </Text.Title>
+        <ScoreFraction
+          correct={entry.score}
+          total={entry.total_questions}
+          numeratorColor={contrastColor}
+          denomColor={contrastColor}
+          denomOpacity={0.7}
+          big
+        />
         {isViewer && (
           <Text.Tiny
             color={contrastColor}
@@ -558,8 +604,9 @@ function TriviaLeaderboardComponent({
                       paddingHorizontal={spacing.md}
                       backgroundColor={isMe ? hexToRgba(accent, 0.1) : 'transparent'}
                       accessible
-                      accessibilityLabel={`#${entry.rank} ${entry.screen_name} ${formatScore(
-                        entry.score
+                      accessibilityLabel={`#${entry.rank} ${entry.screen_name} ${scoreA11y(
+                        entry.score,
+                        entry.total_questions
                       )}${isMe ? ` (${t('leaderboardYou')})` : ''}`}
                     >
                       <View style={{ width: iconSizes.lg, alignItems: 'center' }}>
@@ -582,9 +629,12 @@ function TriviaLeaderboardComponent({
                         {isMe ? `${entry.screen_name} · ${t('leaderboardYou')}` : entry.screen_name}
                       </Text.Label>
                       <YStack alignItems="flex-end">
-                        <Text.Label color={accent} fontFamily={FONT_FAMILIES.bold}>
-                          {formatScore(entry.score)}
-                        </Text.Label>
+                        <ScoreFraction
+                          correct={entry.score}
+                          total={entry.total_questions}
+                          numeratorColor={accent}
+                          denomColor={colors.textMuted}
+                        />
                         <Text.Caption
                           color={colors.textMuted}
                           fontSize={typography.fontSize.tiny}
@@ -624,9 +674,13 @@ function TriviaLeaderboardComponent({
                     {`${t('leaderboardYou')} · #${me.rank}`}
                   </Text.Label>
                   <YStack alignItems="flex-end">
-                    <Text.Label color={contrastColor} fontFamily={FONT_FAMILIES.bold}>
-                      {formatScore(me.score)}
-                    </Text.Label>
+                    <ScoreFraction
+                      correct={me.score}
+                      total={me.total_questions}
+                      numeratorColor={contrastColor}
+                      denomColor={contrastColor}
+                      denomOpacity={0.7}
+                    />
                     <Text.Caption
                       color={contrastColor}
                       opacity={0.8}
