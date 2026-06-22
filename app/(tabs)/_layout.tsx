@@ -72,10 +72,14 @@ export default function TabLayout() {
   // iOS 26 contextual trailing button: while the trivia tab is active, the
   // separated role="search" button becomes a PLAY button. The search screen
   // gets preventNativeSelection, so pressing it doesn't switch tabs — the
-  // native side blocks the selection and emits onTabSelectionPrevented, which
+  // native side blocks the selection and the navigator reports it as a PREVENTED
+  // `tabPress` on the (search) route (handled in screenListeners below), which
   // launches a trivia game instead (daily if one is pending, mixed otherwise).
-  // Only the search trigger ever sets preventNativeSelection, so any prevented
-  // event is a play press. Other platforms keep the plain search tab.
+  // NOTE: expo-router (>=56) sets its own `onTabSelectionPrevented` on the host
+  // *after* spreading `unstable_nativeProps`, so a callback passed there is
+  // silently overridden — reading the prevented tabPress is the only path that
+  // works. Only the search trigger ever sets preventNativeSelection, so any
+  // prevented event is a play press. Other platforms keep the plain search tab.
   const router = useRouter();
   const useSeparatedSearchTab = Platform.OS === 'ios' && isLiquidGlassAvailable();
   const playTriviaMode = useSeparatedSearchTab && currentTab === 'trivia';
@@ -138,11 +142,16 @@ export default function TabLayout() {
           rippleColor={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}
           indicatorColor={isDark ? colors.neutralLight : colors.primaryLight}
           labelVisibilityMode="labeled"
-          unstable_nativeProps={
-            useSeparatedSearchTab ? { onTabSelectionPrevented: handleTriviaPlayPress } : undefined
-          }
           screenListeners={({ route }) => ({
-            tabPress: () => {
+            tabPress: (e) => {
+              // iOS 26 play-trivia button: the separated search button has
+              // preventNativeSelection while the trivia tab is active, so a press
+              // arrives here as a PREVENTED tabPress on the (search) route (the
+              // tab never switches). Launch a game instead of doing nothing.
+              if (route.name === '(search)' && e.data?.isPrevented) {
+                handleTriviaPlayPress();
+                return;
+              }
               const tabId = TAB_IDS[route.name] ?? route.name;
               // Every home press (switch-to or re-tap, both platforms) resets
               // the horizontal rows (story buttons, Latest carousel) to start.
