@@ -14,10 +14,6 @@ import { AD_KEYWORDS, AD_RETRY } from '../../config/app';
 import { useInsideTabs } from '../../contexts/InsideTabsContext';
 import { usePremium } from '../../contexts/PremiumContext';
 import { useTranslation } from '../../i18n';
-import {
-  dismissBannersForSession,
-  useBannersDismissedForSession,
-} from '../../services/adBannerSession';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { trackAdRevenue } from '../../services/analytics';
 import { shouldShowAds } from '../../services/premiumState';
@@ -66,8 +62,6 @@ function BannerAdComponent({
   usePremium();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  // Once the user closes a banner this session, every banner stays hidden.
-  const sessionDismissed = useBannersDismissedForSession();
   const [showRemoveAdsSheet, setShowRemoveAdsSheet] = useState(false);
   // Inside the (tabs) group the bottom edge is owned by the tab bar (Material
   // bottom nav on Android / floating glass bar on iOS); outside it, Android's
@@ -118,16 +112,16 @@ function BannerAdComponent({
     };
   }, []);
 
-  // Notify parent of load state changes. A session-dismissed banner reports
-  // not-loaded so any layout that reserves space for the ad reclaims it.
+  // Notify parent of load state changes
   useEffect(() => {
-    onAdLoadChange?.(adState === 'loaded' && !sessionDismissed);
-  }, [adState, onAdLoadChange, sessionDismissed]);
+    onAdLoadChange?.(adState === 'loaded');
+  }, [adState, onAdLoadChange]);
 
-  // Close [X]: hide banners for the rest of the session and surface the soft
-  // paywall ("remove ads?"). The full IAP upgrade lives behind that dialog.
+  // Close [X]: open the soft paywall ("remove ads?"). It intentionally does NOT
+  // hide the banner — that would be a free ad-removal. The banner only goes away
+  // if the user actually upgrades (premium flips shouldShowAds() off); cancelling
+  // the dialog leaves the banner in place.
   const handleCloseBanner = useCallback(() => {
-    dismissBannersForSession();
     setShowRemoveAdsSheet(true);
   }, []);
 
@@ -170,69 +164,68 @@ function BannerAdComponent({
     return null;
   }
 
-  const isVisible = adState === 'loaded' && !sessionDismissed;
+  const isVisible = adState === 'loaded';
   const bottomPad =
     respectBottomInset && isVisible && (Platform.OS === 'ios' || !inTabs) ? insets.bottom : 0;
 
   return (
     <>
-      {!sessionDismissed && (
-        <View
-          style={[
-            styles.container,
-            {
-              height: isVisible ? undefined : 0,
-              opacity: isVisible ? 1 : 0,
-              paddingBottom: bottomPad,
-            },
-          ]}
-          collapsable={!isVisible}
-          pointerEvents={isVisible ? 'auto' : 'none'}
-        >
-          {adState !== 'error' && (
-            <View style={styles.adWrapper}>
-              <GoogleBannerAd
-                key={adKey}
-                unitId={getAdUnitId()}
-                size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-                requestOptions={{
-                  requestNonPersonalizedAdsOnly: requestNonPersonalized,
-                  keywords: AD_KEYWORDS,
-                  ...(collapsible && {
-                    networkExtras: { collapsible },
-                  }),
-                }}
-                onAdLoaded={handleAdLoaded}
-                onAdFailedToLoad={handleAdFailedToLoad}
-                onPaid={(revenue) => {
-                  trackAdRevenue({
-                    format: 'banner',
-                    value: revenue.value,
-                    currency: revenue.currency,
-                    precision: revenue.precision,
-                    placement,
-                    adUnitId: getAdUnitId(),
-                  });
-                }}
-              />
-              {/* Close affordance: a small corner [X] that hides banners for the
-                  session and opens the soft paywall. Sits in the corner so it
-                  doesn't obscure the creative; only shown once the ad is up. */}
-              {isVisible && (
-                <Pressable
-                  onPress={handleCloseBanner}
-                  hitSlop={10}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('a11y_closeButton')}
-                  style={styles.closeButton}
-                >
-                  <X size={11} color="#FFFFFF" />
-                </Pressable>
-              )}
-            </View>
-          )}
-        </View>
-      )}
+      <View
+        style={[
+          styles.container,
+          {
+            height: isVisible ? undefined : 0,
+            opacity: isVisible ? 1 : 0,
+            paddingBottom: bottomPad,
+          },
+        ]}
+        collapsable={!isVisible}
+        pointerEvents={isVisible ? 'auto' : 'none'}
+      >
+        {adState !== 'error' && (
+          <View style={styles.adWrapper}>
+            <GoogleBannerAd
+              key={adKey}
+              unitId={getAdUnitId()}
+              size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+              requestOptions={{
+                requestNonPersonalizedAdsOnly: requestNonPersonalized,
+                keywords: AD_KEYWORDS,
+                ...(collapsible && {
+                  networkExtras: { collapsible },
+                }),
+              }}
+              onAdLoaded={handleAdLoaded}
+              onAdFailedToLoad={handleAdFailedToLoad}
+              onPaid={(revenue) => {
+                trackAdRevenue({
+                  format: 'banner',
+                  value: revenue.value,
+                  currency: revenue.currency,
+                  precision: revenue.precision,
+                  placement,
+                  adUnitId: getAdUnitId(),
+                });
+              }}
+            />
+            {/* Close affordance: a small corner [X] that opens the soft paywall.
+                Sits in the corner so it doesn't obscure the creative; only shown
+                once the ad is up. Does NOT hide the banner — the soft paywall is
+                the action, and only an actual upgrade removes ads. */}
+            {isVisible && (
+              <Pressable
+                onPress={handleCloseBanner}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t('a11y_closeButton')}
+                style={styles.closeButton}
+              >
+                <X size={11} color="#FFFFFF" />
+              </Pressable>
+            )}
+          </View>
+        )}
+      </View>
       <RemoveAdsSheet
         visible={showRemoveAdsSheet}
         onClose={() => setShowRemoveAdsSheet(false)}
