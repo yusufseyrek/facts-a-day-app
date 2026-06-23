@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, View } from 'react-native';
-import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,12 +12,9 @@ import {
   getTriviaModeBadge,
   TriviaExitModal,
   TriviaGameView,
-  TriviaNativeAdView,
   TriviaResults,
 } from '../../src/components/trivia';
-import { NATIVE_ADS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts/PremiumContext';
-import { useAdForSlot } from '../../src/hooks/useAdForSlot';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
@@ -101,24 +97,6 @@ export default function TriviaGameScreen() {
     timeExpired: false,
     totalTime: 0,
   });
-
-  // Native ad state - show every N questions (or midpoint if fewer questions than interval)
-  const questionCount = gameState.questions.length;
-  const adInterval =
-    questionCount > 0 && questionCount < NATIVE_ADS.TRIVIA_AD_QUESTION_INTERVAL
-      ? Math.ceil(questionCount / 2)
-      : NATIVE_ADS.TRIVIA_AD_QUESTION_INTERVAL;
-  const [showingNativeAd, setShowingNativeAd] = useState(false);
-  const [nativeAdShownIndices, setNativeAdShownIndices] = useState<Set<number>>(new Set());
-  // Unique slot key per question — forces a fresh pool binding for each ad
-  // break so we don't show the same creative twice in one session.
-  const [nativeAdSlotKey, setNativeAdSlotKey] = useState('trivia-0');
-  const pendingAdNextIndex = useRef<number>(0);
-  const { ad: nativeAd } = useAdForSlot(nativeAdSlotKey, NativeMediaAspectRatio.PORTRAIT);
-
-  // Ad navigation lock - block prev/next buttons briefly when native ad is shown
-  const [adNavLocked, setAdNavLocked] = useState(false);
-  const adNavLockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Hint state
   const [canUseExplanation, setCanUseExplanation] = useState(false);
@@ -228,7 +206,7 @@ export default function TriviaGameScreen() {
 
   // Timer effect
   useEffect(() => {
-    if (loading || gameState.isFinished || showingRewardedAd || showingNativeAd) {
+    if (loading || gameState.isFinished || showingRewardedAd) {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -264,13 +242,7 @@ export default function TriviaGameScreen() {
         activePlayStartRef.current = null;
       }
     };
-  }, [
-    loading,
-    gameState.isFinished,
-    gameState.currentQuestionIndex,
-    showingRewardedAd,
-    showingNativeAd,
-  ]);
+  }, [loading, gameState.isFinished, gameState.currentQuestionIndex, showingRewardedAd]);
 
   /** Real seconds of active play so far (banked spans + the live one). Used
    * for both the saved result and the on-screen results, so they agree. */
@@ -278,16 +250,6 @@ export default function TriviaGameScreen() {
     const live =
       activePlayStartRef.current != null ? Date.now() - activePlayStartRef.current : 0;
     return Math.round((activeElapsedMsRef.current + live) / 1000);
-  }, []);
-
-  // Cleanup ad nav lock timer on unmount
-  useEffect(() => {
-    return () => {
-      if (adNavLockTimer.current) {
-        clearTimeout(adNavLockTimer.current);
-        adNavLockTimer.current = null;
-      }
-    };
   }, []);
 
   // Update progress bar animation
@@ -484,27 +446,6 @@ export default function TriviaGameScreen() {
   const handleNextQuestion = () => {
     const nextIndex = gameState.currentQuestionIndex + 1;
 
-    // Show native ad every 3 questions (after Q3, Q6, Q9, etc.)
-    if (
-      nextIndex > 0 &&
-      nextIndex % adInterval === 0 &&
-      !nativeAdShownIndices.has(nextIndex) &&
-      nativeAd &&
-      nextIndex < gameState.questions.length
-    ) {
-      pendingAdNextIndex.current = nextIndex;
-      setShowingNativeAd(true);
-      setNativeAdShownIndices((prev) => new Set(prev).add(nextIndex));
-      // Lock navigation buttons briefly
-      setAdNavLocked(true);
-      if (adNavLockTimer.current) clearTimeout(adNavLockTimer.current);
-      adNavLockTimer.current = setTimeout(() => {
-        setAdNavLocked(false);
-        adNavLockTimer.current = null;
-      }, NATIVE_ADS.NAV_LOCK_DURATION_MS);
-      return;
-    }
-
     if (nextIndex >= gameState.questions.length) {
       // Check if all questions are answered
       const unansweredCount = gameState.questions.filter((q) => !gameState.answers[q.id]).length;
@@ -524,23 +465,6 @@ export default function TriviaGameScreen() {
         currentQuestionIndex: nextIndex,
       }));
     }
-  };
-
-  const handleNativeAdContinue = () => {
-    setShowingNativeAd(false);
-    // Advance to the next question
-    questionKey.current += 1;
-    setGameState((prev) => ({
-      ...prev,
-      currentQuestionIndex: pendingAdNextIndex.current,
-    }));
-    // Request a fresh ad for the next slot (new pool slot key).
-    setNativeAdSlotKey(`trivia-${pendingAdNextIndex.current}`);
-  };
-
-  const handleNativeAdPrev = () => {
-    setShowingNativeAd(false);
-    // Go back to the last question before the ad
   };
 
   const handlePrevQuestion = () => {
@@ -881,39 +805,6 @@ export default function TriviaGameScreen() {
           t,
         })}
       />
-    );
-  }
-
-  // Native ad view - shown every 3 questions
-  if (showingNativeAd && nativeAd) {
-    return (
-      <>
-        <TriviaNativeAdView
-          nativeAd={nativeAd}
-          progressWidth={progressWidth}
-          triviaTitle={getTriviaTitle()}
-          timeRemaining={timeRemaining}
-          onContinue={handleNativeAdContinue}
-          onPrevQuestion={handleNativeAdPrev}
-          onExit={handleExitConfirm}
-          isDark={isDark}
-          t={t}
-          navLocked={adNavLocked}
-          navLockDuration={NATIVE_ADS.NAV_LOCK_DURATION_MS}
-        />
-        <TriviaExitModal
-          visible={showExitModal}
-          onCancel={handleExitCancel}
-          onExit={handleExitConfirmed}
-          isDark={isDark}
-          title={t('exitTrivia') || 'Exit Quiz'}
-          message={
-            t('exitTriviaConfirm') || 'Are you sure you want to exit? Your progress will be lost.'
-          }
-          cancelText={t('cancel') || 'Cancel'}
-          exitText={t('exit') || 'Exit'}
-        />
-      </>
     );
   }
 

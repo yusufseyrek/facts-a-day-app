@@ -27,6 +27,7 @@ import { hexToRgba } from '../../utils/colors';
 import { maxFontSizeMultipliers } from '../../utils/responsive';
 import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { BannerAd } from '../ads';
 import { CloseButton } from '../CloseButton';
 import { GlassSurface } from '../GlassSurface';
 import { ChevronLeft, ChevronRight, Lightbulb, Timer } from '../icons';
@@ -783,6 +784,15 @@ export function TriviaGameView({
           </Pressable>
         </XStack>
       </View>
+
+      {/* Anchored banner ad — non-premium only. The root view already reserves
+          the bottom safe-area inset (paddingBottom above), so the banner uses
+          respectBottomInset={false} and sits within that reserved space. */}
+      {!isPremium && (
+        <View style={{ marginTop: spacing.sm }}>
+          <BannerAd respectBottomInset={false} placement="trivia_game" />
+        </View>
+      )}
     </View>
   );
 }

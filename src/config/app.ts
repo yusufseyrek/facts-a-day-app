@@ -83,16 +83,14 @@ export const NATIVE_ADS = {
   /** Whether native feed ads are active */
   ACTIVE: true,
   /** Index of the first ad in each list (0-based). Native ads now live only in
-   *  the story swipe view and the trivia game — feed ads were replaced by the
-   *  fixed tab-bar banner. */
+   *  the story swipe view — feed and trivia ads were replaced by banners. */
   FIRST_AD_INDEX: {
     STORY: 3,
   },
   /** Show a native ad every N facts in the vertical story swipe view */
   STORY_AD_INTERVAL: 6,
-  /** Show a native ad every N questions in trivia */
-  TRIVIA_AD_QUESTION_INTERVAL: 6,
-  /** Duration (ms) to block prev/next navigation when a native ad is shown in trivia */
+  /** Duration (ms) to block prev/next navigation when a native ad is shown in
+   *  the story swipe view */
   NAV_LOCK_DURATION_MS: 850,
 } as const;
 
