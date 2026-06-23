@@ -4,9 +4,10 @@ import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
 import { useResponsive } from '../../utils/useResponsive';
-import { DialogButton, DialogShell } from '../DialogShell';
+import { BottomSheet } from '../BottomSheet';
+import { DialogButton } from '../DialogShell';
 import { Crown } from '../icons';
-import { YStack } from '../Stacks';
+import { XStack, YStack } from '../Stacks';
 import { Text } from '../Typography';
 
 interface RemoveAdsSheetProps {
@@ -15,12 +16,10 @@ interface RemoveAdsSheetProps {
 }
 
 /**
- * Soft paywall shown when the user taps a banner's close [X]. A small dismissible
- * dialog offering the ad-free upgrade: "Maybe later" backs out (banners stay
- * hidden for the session), "Upgrade to Premium" opens the full IAP paywall.
- *
- * Built on DialogShell (the app's dialog grammar) and reuses existing paywall /
- * settings strings, so it ships no new copy.
+ * Soft paywall shown when the user taps a banner's close [X] — a dismissible
+ * bottom sheet offering the ad-free upgrade. "Maybe later" backs out (the banner
+ * stays); "Upgrade to Premium" opens the full IAP paywall. Built on BottomSheet
+ * and reuses existing paywall / settings strings, so it ships no new copy.
  */
 export function RemoveAdsSheet({ visible, onClose }: RemoveAdsSheetProps) {
   const { t } = useTranslation();
@@ -35,30 +34,34 @@ export function RemoveAdsSheet({ visible, onClose }: RemoveAdsSheetProps) {
   };
 
   return (
-    <DialogShell
-      visible={visible}
-      onClose={onClose}
-      showClose
-      presentInWindow
-      headerIcon={<Crown size={iconSizes.lg} color={colors.primary} />}
-      headerIconTint={hexToRgba(colors.primary, 0.14)}
-      title={t('settingsRemoveAds')}
-      footer={
-        <>
-          <DialogButton variant="outline" label={t('maybeLater')} onPress={onClose} />
-          <DialogButton
-            variant="solid"
-            label={t('settingsUpgradeToPremium')}
-            onPress={goToPaywall}
-          />
-        </>
-      }
-    >
-      <YStack paddingHorizontal={spacing.lg} paddingTop={spacing.xs} paddingBottom={spacing.lg}>
+    <BottomSheet visible={visible} onClose={onClose} showClose>
+      <YStack
+        paddingHorizontal={spacing.lg}
+        paddingTop={spacing.xs}
+        gap={spacing.md}
+        alignItems="center"
+      >
+        <YStack
+          width={iconSizes.heroLg}
+          height={iconSizes.heroLg}
+          borderRadius={iconSizes.heroLg / 2}
+          backgroundColor={hexToRgba(colors.primary, 0.14)}
+          justifyContent="center"
+          alignItems="center"
+        >
+          <Crown size={iconSizes.lg} color={colors.primary} />
+        </YStack>
+        <Text.Title color={colors.text} textAlign="center">
+          {t('settingsRemoveAds')}
+        </Text.Title>
         <Text.Body color={colors.textSecondary} textAlign="center">
           {t('paywallFeatureNoAdsDesc')}
         </Text.Body>
       </YStack>
-    </DialogShell>
+      <XStack paddingHorizontal={spacing.lg} paddingTop={spacing.lg} gap={spacing.md}>
+        <DialogButton variant="outline" label={t('maybeLater')} onPress={onClose} />
+        <DialogButton variant="solid" label={t('settingsUpgradeToPremium')} onPress={goToPaywall} />
+      </XStack>
+    </BottomSheet>
   );
 }
