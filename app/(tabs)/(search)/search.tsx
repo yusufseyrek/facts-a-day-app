@@ -14,13 +14,12 @@ import {
   ScreenContainer,
   Text,
 } from '../../../src/components';
-import { NativeAdCard } from '../../../src/components/ads/NativeAdCard';
 import { X } from '../../../src/components/icons';
 import { ImageFactCard } from '../../../src/components/ImageFactCard';
 import { styled, View, XStack, YStack } from '../../../src/components/Stacks';
-import { LAYOUT, NATIVE_ADS } from '../../../src/config/app';
+import { LAYOUT } from '../../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
-import { usePremium, useScrollToTopHandler } from '../../../src/contexts';
+import { useScrollToTopHandler } from '../../../src/contexts';
 import { useSeedFactDetailsCache } from '../../../src/hooks/useFactDetail';
 import { useHeaderContentGap } from '../../../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../../../src/i18n';
@@ -35,18 +34,12 @@ import * as api from '../../../src/services/api';
 import { mapApiFactToRelations } from '../../../src/services/database';
 import { factDetailBasePath } from '../../../src/services/factMorph';
 import { getCachedFactImageSync } from '../../../src/services/images';
-import { primePool } from '../../../src/services/nativeAdPool';
 import { getIsConnected } from '../../../src/services/network';
 import { getSelectedCategories } from '../../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../../src/services/preferences';
 import { getLastNonSearchTabPath, onSearchSessionReset } from '../../../src/services/tabHistory';
 import { hexColors, useTheme } from '../../../src/theme';
 import { blendHexColors, getContrastColor, hexToHue, hexToRgba } from '../../../src/utils/colors';
-import {
-  insertNativeAds,
-  isNativeAdPlaceholder,
-  type NativeAdPlaceholder,
-} from '../../../src/utils/insertNativeAds';
 import { smartScrollToTop } from '../../../src/utils/useFlashListScrollToTop';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
@@ -132,7 +125,6 @@ function SearchScreen() {
   // state, not React Query) so opening any of them — and swiping between them —
   // is instant instead of triggering a blocking per-fact fetch.
   const seedFactDetailsCache = useSeedFactDetailsCache(locale);
-  const { isPremium } = usePremium();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<FactWithRelations[]>([]);
@@ -296,7 +288,6 @@ function SearchScreen() {
   useFocusEffect(
     useCallback(() => {
       trackScreenView(Screens.DISCOVER);
-      primePool();
     }, [])
   );
 
@@ -587,54 +578,8 @@ function SearchScreen() {
     [selectedCategorySlug, userCategories]
   );
 
-  // Insert native ads into search results and category facts
-  type DiscoverListItem = FactWithRelations | NativeAdPlaceholder;
-
-  // When an ad slot reports failure (no-fill / AdMob rate-limit), drop its
-  // placeholder so the list closes the gap rather than showing a spacer.
-  const [failedAdKeys, setFailedAdKeys] = useState<Set<string>>(() => new Set());
-  const handleAdFailed = useCallback((key: string) => {
-    setFailedAdKeys((prev) => {
-      if (prev.has(key)) return prev;
-      const next = new Set(prev);
-      next.add(key);
-      return next;
-    });
-  }, []);
-
-  // Failures are per-moment, not per-session: ad keys derive from the
-  // preceding fact's id, so the same key can reappear in a later search (same
-  // top results). Without this reset a slot that failed once would stay
-  // filtered out of every subsequent result list.
-  useEffect(() => {
-    setFailedAdKeys((prev) => (prev.size === 0 ? prev : new Set()));
-  }, [searchResults, categoryFacts]);
-
-  // isPremium triggers re-computation to remove/add native ads
-  const searchDataWithAds = useMemo(() => {
-    const withAds = insertNativeAds(searchResults, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER);
-    if (failedAdKeys.size === 0) return withAds;
-    return withAds.filter((item) => !(isNativeAdPlaceholder(item) && failedAdKeys.has(item.key)));
-  }, [searchResults, isPremium, failedAdKeys]);
-
-  // isPremium triggers re-computation to remove/add native ads
-  const categoryDataWithAds = useMemo(() => {
-    const withAds = insertNativeAds(categoryFacts, NATIVE_ADS.FIRST_AD_INDEX.DISCOVER);
-    if (failedAdKeys.size === 0) return withAds;
-    return withAds.filter((item) => !(isNativeAdPlaceholder(item) && failedAdKeys.has(item.key)));
-  }, [categoryFacts, isPremium, failedAdKeys]);
-
   // Memoized keyExtractor
-  const keyExtractor = useCallback((item: DiscoverListItem) => {
-    if (isNativeAdPlaceholder(item)) return item.key;
-    return item.id.toString();
-  }, []);
-
-  // Split FlashList recycle pools: ad cells and fact cells never share a reusable view.
-  const getItemType = useCallback(
-    (item: DiscoverListItem) => (isNativeAdPlaceholder(item) ? 'ad' : 'fact'),
-    []
-  );
+  const keyExtractor = useCallback((item: FactWithRelations) => item.id.toString(), []);
 
   // Compute fact ID lists for navigation
   const searchFactIds = useMemo(() => searchResults.map((f) => f.id), [searchResults]);
@@ -642,15 +587,7 @@ function SearchScreen() {
 
   // Memoized renderItem for search results
   const renderSearchItem = useCallback(
-    ({ item }: ListRenderItemInfo<DiscoverListItem>) => {
-      if (isNativeAdPlaceholder(item)) {
-        const adKey = item.key;
-        return (
-          <ContentContainer>
-            <NativeAdCard slotKey={adKey} onAdFailed={() => handleAdFailed(adKey)} />
-          </ContentContainer>
-        );
-      }
+    ({ item }: ListRenderItemInfo<FactWithRelations>) => {
       const factIndex = searchFactIds.indexOf(item.id);
       return (
         <FactListItem
@@ -665,20 +602,12 @@ function SearchScreen() {
     },
     // Depend on the slug (primitive) rather than the Category object so renderItem
     // does not churn when userCategories reloads with an identical selection.
-    [isTablet, handleFactPress, selectedCategory?.slug, searchFactIds, handleAdFailed]
+    [isTablet, handleFactPress, selectedCategory?.slug, searchFactIds]
   );
 
   // Memoized renderItem for category facts
   const renderCategoryItem = useCallback(
-    ({ item }: ListRenderItemInfo<DiscoverListItem>) => {
-      if (isNativeAdPlaceholder(item)) {
-        const adKey = item.key;
-        return (
-          <ContentContainer>
-            <NativeAdCard slotKey={adKey} onAdFailed={() => handleAdFailed(adKey)} />
-          </ContentContainer>
-        );
-      }
+    ({ item }: ListRenderItemInfo<FactWithRelations>) => {
       const factIndex = categoryFactIds.indexOf(item.id);
       return (
         <FactListItem
@@ -697,7 +626,7 @@ function SearchScreen() {
       );
     },
     // See note on renderSearchItem above.
-    [isTablet, handleFactPress, selectedCategory?.slug, categoryFactIds, handleAdFailed]
+    [isTablet, handleFactPress, selectedCategory?.slug, categoryFactIds]
   );
 
   // Memoized refresh controls
@@ -877,9 +806,8 @@ function SearchScreen() {
         >
           <FlashList
             ref={searchListRef}
-            data={searchDataWithAds}
+            data={searchResults}
             keyExtractor={keyExtractor}
-            getItemType={getItemType}
             renderItem={renderSearchItem}
             refreshControl={searchRefreshControl}
             onScroll={handleSearchScroll}
@@ -934,9 +862,8 @@ function SearchScreen() {
         >
           <FlashList
             ref={categoryListRef}
-            data={categoryDataWithAds}
+            data={categoryFacts}
             keyExtractor={keyExtractor}
-            getItemType={getItemType}
             renderItem={renderCategoryItem}
             refreshControl={categoryRefreshControl}
             onScroll={handleCategoryScroll}
@@ -957,15 +884,12 @@ function SearchScreen() {
   }, [
     searchQuery,
     searchResults,
-    searchDataWithAds,
     selectedCategorySlug,
     isLoadingCategoryFacts,
     categoryFacts,
-    categoryDataWithAds,
     theme,
     t,
     keyExtractor,
-    getItemType,
     renderSearchItem,
     renderCategoryItem,
     searchRefreshControl,

@@ -265,7 +265,6 @@ function HomeScreen() {
               onFactPress={handleKeepReadingPress}
               onEndReached={handleEndReached}
               isFetchingMore={isFetchingNextPage}
-              isPremium={isPremium}
               refreshing={refreshing}
               onRefresh={handleRefresh}
               onScroll={handleScroll}

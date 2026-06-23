@@ -20,13 +20,11 @@ import {
   ScreenContainer,
   Text,
 } from '../../../src/components';
-import { NativeAdCard } from '../../../src/components/ads/NativeAdCard';
 import { Heart } from '../../../src/components/icons';
 import { ImageFactCard } from '../../../src/components/ImageFactCard';
 import { XStack, YStack } from '../../../src/components/Stacks';
-import { LAYOUT, NATIVE_ADS } from '../../../src/config/app';
+import { LAYOUT } from '../../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
-import { usePremium } from '../../../src/contexts';
 import { useHeaderContentGap } from '../../../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../../../src/i18n';
 import {
@@ -37,14 +35,8 @@ import {
 import * as api from '../../../src/services/api';
 import { getFavoriteIds, mapApiFactToRelations } from '../../../src/services/database';
 import { factDetailBasePath } from '../../../src/services/factMorph';
-import { primePool } from '../../../src/services/nativeAdPool';
 import { hexColors, useTheme } from '../../../src/theme';
 import { getContrastColor, hexToRgba } from '../../../src/utils/colors';
-import {
-  insertNativeAds,
-  isNativeAdPlaceholder,
-  type NativeAdPlaceholder,
-} from '../../../src/utils/insertNativeAds';
 import { useFlashListScrollToTop } from '../../../src/utils/useFlashListScrollToTop';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
@@ -93,7 +85,6 @@ export default function FavoritesScreen() {
   const navigation = useNavigation();
   const { iconSizes, spacing, radius, media } = useResponsive();
   const headerGap = useHeaderContentGap();
-  const { isPremium } = usePremium();
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -197,7 +188,6 @@ export default function FavoritesScreen() {
   useFocusEffect(
     useCallback(() => {
       trackScreenView(Screens.FAVORITES);
-      primePool();
       loadFavorites();
     }, [locale, loadFavorites])
   );
@@ -247,24 +237,6 @@ export default function FavoritesScreen() {
   }, [favorites, selectedCategory, debouncedQuery]);
 
   const filteredFactIds = useMemo(() => filteredFavorites.map((f) => f.id), [filteredFavorites]);
-
-  // Insert native ads after filtering
-  type FavoritesListItem = FactWithRelations | NativeAdPlaceholder;
-  const [failedAdKeys, setFailedAdKeys] = useState<Set<string>>(() => new Set());
-  const handleAdFailed = useCallback((key: string) => {
-    setFailedAdKeys((prev) => {
-      if (prev.has(key)) return prev;
-      const next = new Set(prev);
-      next.add(key);
-      return next;
-    });
-  }, []);
-  const filteredDataWithAds = useMemo(() => {
-    const withAds = insertNativeAds(filteredFavorites, NATIVE_ADS.FIRST_AD_INDEX.FAVORITES);
-    if (failedAdKeys.size === 0) return withAds;
-    return withAds.filter((item) => !(isNativeAdPlaceholder(item) && failedAdKeys.has(item.key)));
-    // isPremium triggers re-computation to remove/add native ads
-  }, [filteredFavorites, isPremium, failedAdKeys]);
 
   const handleFactPress = useCallback(
     (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => {
@@ -316,28 +288,11 @@ export default function FavoritesScreen() {
   );
 
   // Memoized keyExtractor
-  const keyExtractor = useCallback((item: FavoritesListItem) => {
-    if (isNativeAdPlaceholder(item)) return item.key;
-    return item.id.toString();
-  }, []);
-
-  // Split FlashList recycle pools so ad cells and fact cells never share a reusable view.
-  const getItemType = useCallback(
-    (item: FavoritesListItem) => (isNativeAdPlaceholder(item) ? 'ad' : 'fact'),
-    []
-  );
+  const keyExtractor = useCallback((item: FactWithRelations) => item.id.toString(), []);
 
   // Memoized renderItem
   const renderItem = useCallback(
-    ({ item }: { item: FavoritesListItem }) => {
-      if (isNativeAdPlaceholder(item)) {
-        const adKey = item.key;
-        return (
-          <ContentContainer>
-            <NativeAdCard slotKey={adKey} onAdFailed={() => handleAdFailed(adKey)} />
-          </ContentContainer>
-        );
-      }
+    ({ item }: { item: FactWithRelations }) => {
       const factIndex = filteredFactIds.indexOf(item.id);
       return (
         <FactListItem
@@ -346,7 +301,7 @@ export default function FavoritesScreen() {
         />
       );
     },
-    [handleFactPress, filteredFactIds, handleAdFailed]
+    [handleFactPress, filteredFactIds]
   );
 
   // Memoized refresh control
@@ -541,9 +496,8 @@ export default function FavoritesScreen() {
         ) : (
           <FlashList
             ref={listRef}
-            data={filteredDataWithAds}
+            data={filteredFavorites}
             keyExtractor={keyExtractor}
-            getItemType={getItemType}
             renderItem={renderItem}
             refreshControl={refreshControl}
             onScroll={handleScroll}
