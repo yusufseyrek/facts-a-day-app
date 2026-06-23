@@ -9,6 +9,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 
 import { AD_KEYWORDS, AD_RETRY } from '../../config/app';
 import { useInsideTabs } from '../../contexts/InsideTabsContext';
@@ -18,8 +19,6 @@ import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { trackAdRevenue } from '../../services/analytics';
 import { shouldShowAds } from '../../services/premiumState';
 import { X } from '../icons';
-
-import { RemoveAdsSheet } from './RemoveAdsSheet';
 
 type CollapsiblePlacement = 'top' | 'bottom';
 
@@ -62,7 +61,7 @@ function BannerAdComponent({
   usePremium();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const [showRemoveAdsSheet, setShowRemoveAdsSheet] = useState(false);
+  const router = useRouter();
   // Inside the (tabs) group the bottom edge is owned by the tab bar (Material
   // bottom nav on Android / floating glass bar on iOS); outside it, Android's
   // mandatory edge-to-edge would put the banner behind the system nav bar.
@@ -117,13 +116,13 @@ function BannerAdComponent({
     onAdLoadChange?.(adState === 'loaded');
   }, [adState, onAdLoadChange]);
 
-  // Close [X]: open the soft paywall ("remove ads?"). It intentionally does NOT
-  // hide the banner — that would be a free ad-removal. The banner only goes away
-  // if the user actually upgrades (premium flips shouldShowAds() off); cancelling
-  // the dialog leaves the banner in place.
+  // Close [X]: open the compact remove-ads paywall (a native form sheet). It
+  // intentionally does NOT hide the banner — that would be a free ad-removal.
+  // The banner only goes away if the user actually upgrades (premium flips
+  // shouldShowAds() off); dismissing the sheet leaves the banner in place.
   const handleCloseBanner = useCallback(() => {
-    setShowRemoveAdsSheet(true);
-  }, []);
+    router.push('/remove-ads?source=ad_close');
+  }, [router]);
 
   // LayoutAnimation.configureNext is GLOBAL: it arms the NEXT commit, whatever
   // that is. A banner callback landing as the user closes the screen would arm
@@ -169,68 +168,62 @@ function BannerAdComponent({
     respectBottomInset && isVisible && (Platform.OS === 'ios' || !inTabs) ? insets.bottom : 0;
 
   return (
-    <>
-      <View
-        style={[
-          styles.container,
-          {
-            height: isVisible ? undefined : 0,
-            opacity: isVisible ? 1 : 0,
-            paddingBottom: bottomPad,
-          },
-        ]}
-        collapsable={!isVisible}
-        pointerEvents={isVisible ? 'auto' : 'none'}
-      >
-        {adState !== 'error' && (
-          <View style={styles.adWrapper}>
-            <GoogleBannerAd
-              key={adKey}
-              unitId={getAdUnitId()}
-              size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-              requestOptions={{
-                requestNonPersonalizedAdsOnly: requestNonPersonalized,
-                keywords: AD_KEYWORDS,
-                ...(collapsible && {
-                  networkExtras: { collapsible },
-                }),
-              }}
-              onAdLoaded={handleAdLoaded}
-              onAdFailedToLoad={handleAdFailedToLoad}
-              onPaid={(revenue) => {
-                trackAdRevenue({
-                  format: 'banner',
-                  value: revenue.value,
-                  currency: revenue.currency,
-                  precision: revenue.precision,
-                  placement,
-                  adUnitId: getAdUnitId(),
-                });
-              }}
-            />
-            {/* Close affordance: a small corner [X] that opens the soft paywall.
-                Sits in the corner so it doesn't obscure the creative; only shown
-                once the ad is up. Does NOT hide the banner — the soft paywall is
-                the action, and only an actual upgrade removes ads. */}
-            {isVisible && (
-              <Pressable
-                onPress={handleCloseBanner}
-                hitSlop={10}
-                accessibilityRole="button"
-                accessibilityLabel={t('a11y_closeButton')}
-                style={styles.closeButton}
-              >
-                <X size={11} color="#FFFFFF" />
-              </Pressable>
-            )}
-          </View>
-        )}
-      </View>
-      <RemoveAdsSheet
-        visible={showRemoveAdsSheet}
-        onClose={() => setShowRemoveAdsSheet(false)}
-      />
-    </>
+    <View
+      style={[
+        styles.container,
+        {
+          height: isVisible ? undefined : 0,
+          opacity: isVisible ? 1 : 0,
+          paddingBottom: bottomPad,
+        },
+      ]}
+      collapsable={!isVisible}
+      pointerEvents={isVisible ? 'auto' : 'none'}
+    >
+      {adState !== 'error' && (
+        <View style={styles.adWrapper}>
+          <GoogleBannerAd
+            key={adKey}
+            unitId={getAdUnitId()}
+            size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+            requestOptions={{
+              requestNonPersonalizedAdsOnly: requestNonPersonalized,
+              keywords: AD_KEYWORDS,
+              ...(collapsible && {
+                networkExtras: { collapsible },
+              }),
+            }}
+            onAdLoaded={handleAdLoaded}
+            onAdFailedToLoad={handleAdFailedToLoad}
+            onPaid={(revenue) => {
+              trackAdRevenue({
+                format: 'banner',
+                value: revenue.value,
+                currency: revenue.currency,
+                precision: revenue.precision,
+                placement,
+                adUnitId: getAdUnitId(),
+              });
+            }}
+          />
+          {/* Close affordance: a small corner [X] that opens the remove-ads
+              paywall. Sits in the corner so it doesn't obscure the creative;
+              only shown once the ad is up. Does NOT hide the banner — only an
+              actual upgrade removes ads. */}
+          {isVisible && (
+            <Pressable
+              onPress={handleCloseBanner}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={t('a11y_closeButton')}
+              style={styles.closeButton}
+            >
+              <X size={11} color="#FFFFFF" />
+            </Pressable>
+          )}
+        </View>
+      )}
+    </View>
   );
 }
 

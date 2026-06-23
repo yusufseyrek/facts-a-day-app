@@ -371,6 +371,24 @@ function AppContent() {
             contentStyle: { backgroundColor },
           }}
         />
+        <Stack.Screen
+          name="remove-ads"
+          options={{
+            // Compact ad-removal upsell from the banner [X]. A native form sheet
+            // that sizes to its own content. On iOS it shows a grabber handle and
+            // dismisses via swipe-down (iOS 26 renders it over a glass material);
+            // on Android the grabber/corner-radius props are no-ops and it
+            // dismisses via swipe-down or hardware back. The screen paints the
+            // paywall gradient inside so it stays on-brand on both.
+            presentation: 'formSheet',
+            sheetAllowedDetents: 'fitToContents',
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 24,
+            sheetExpandsWhenScrolledToEdge: false,
+            headerShown: false,
+            contentStyle: { backgroundColor },
+          }}
+        />
       </Stack>
     </>
   );

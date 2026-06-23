@@ -4,7 +4,6 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { ErrorCode, useIAP } from 'expo-iap';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -24,15 +23,9 @@ import { FONT_FAMILIES } from '../src/components/Typography';
 import { SUBSCRIPTION } from '../src/config/app';
 
 const { PAYWALL_PRODUCT_IDS } = SUBSCRIPTION;
-import { usePremium } from '../src/contexts';
+import { usePaywallPurchase } from '../src/hooks/usePaywallPurchase';
 import { useTranslation } from '../src/i18n';
-import {
-  trackPaywallDismissed,
-  trackPaywallPlanSelected,
-  trackPaywallPurchaseInitiated,
-  trackPaywallViewed,
-  trackRestorePurchasesTapped,
-} from '../src/services/analytics';
+import { trackPaywallDismissed, trackPaywallViewed } from '../src/services/analytics';
 import { getReadingStreak } from '../src/services/badges';
 import { openDatabase } from '../src/services/database';
 import { markPaywallShown } from '../src/services/paywallTiming';
@@ -40,21 +33,6 @@ import { hexColors, PAYWALL_GOLD, paywallThemeColors, useTheme } from '../src/th
 import { openInAppBrowser } from '../src/utils/browser';
 import { hexToRgba } from '../src/utils/colors';
 import { useResponsive } from '../src/utils/useResponsive';
-
-const WEEKS_PER_MONTH = 52 / 12;
-
-/**
- * Wrapper around useIAP that suppresses init connection failures.
- * During onboarding or on simulators, IAP is unavailable — this prevents crashes.
- */
-function useSafeIAP() {
-  const iap = useIAP({
-    onError: (error) => {
-      if (__DEV__) console.warn('IAP error (non-fatal):', error.message);
-    },
-  });
-  return iap;
-}
 
 /**
  * Count of facts the user has touched (story views OR detail opens), unique by fact_id.
@@ -72,23 +50,6 @@ async function getReadCount(): Promise<number> {
   } catch {
     return 0;
   }
-}
-
-/**
- * Format a numeric per-week value back into the same currency shape as the source price.
- * "$4.99" + 1.15 → "$1.15"; "14,99 €" + 3.46 → "3,46 €"; "￥1,580" + 365 → "￥365".
- */
-function formatPriceLike(sourceDisplay: string, value: number): string {
-  const numericMatch = sourceDisplay.match(/[\d.,]+/);
-  if (!numericMatch) return value.toFixed(2);
-  const numeric = numericMatch[0];
-  const startsWith = sourceDisplay.slice(0, numericMatch.index);
-  const endsWith = sourceDisplay.slice((numericMatch.index ?? 0) + numeric.length);
-
-  const usesCommaDecimal = /^[\d.]*,\d{1,2}$/.test(numeric);
-  const fixed = value.toFixed(2);
-  const formatted = usesCommaDecimal ? fixed.replace('.', ',') : fixed;
-  return `${startsWith}${formatted}${endsWith}`;
 }
 
 /** Warm near-black used for every glyph/number ON the gold crest and the CTA
@@ -231,12 +192,18 @@ export default function PaywallScreen() {
   // Dark-theme tokens are already low-alpha rgba (pass through); light-theme
   // fills are opaque hex (#FFFFFF) and get softened here.
   const glassTintOf = (color: string) => (color.startsWith('#') ? hexToRgba(color, 0.65) : color);
-  const { isPremium, subscriptions, cachedPrices, restorePurchases, devSetPremium } = usePremium();
-  const { requestPurchase } = useSafeIAP();
-
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [isPurchasing, setIsPurchasing] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(false);
+  const {
+    isPremium,
+    selectedPlan,
+    selectPlan,
+    isPurchasing,
+    isRestoring,
+    handlePurchase,
+    handleRestore,
+    getDisplayPrice,
+    monthlySavingsPercent,
+    monthlyPerWeekDisplay,
+  } = usePaywallPurchase(source);
 
   // Personal stats — drive both the streak/facts-read tiles and the headline copy
   // (returning vs. new user). null = still loading; show neither tiles nor "on a roll" copy.
@@ -260,27 +227,6 @@ export default function PaywallScreen() {
     };
   }, []);
 
-  useEffect(() => {
-    if (selectedPlan) return;
-    let defaultId: string | null = null;
-    if (subscriptions.length > 0) {
-      const monthly = subscriptions.find((s) => s.id.includes('monthly'));
-      defaultId = monthly?.id || subscriptions[0].id;
-    } else if (cachedPrices.length > 0) {
-      const monthly = cachedPrices.find((c) => c.id.includes('monthly'));
-      defaultId = monthly?.id || cachedPrices[0].id;
-    }
-    if (defaultId) {
-      setSelectedPlan(defaultId);
-      trackPaywallPlanSelected({
-        productId: defaultId,
-        source,
-        isDefault: true,
-        displayPrice: getDisplayPrice(defaultId),
-      });
-    }
-  }, [subscriptions, cachedPrices, selectedPlan]);
-
   const [showPremiumToast, setShowPremiumToast] = useState(false);
 
   useEffect(() => {
@@ -292,72 +238,6 @@ export default function PaywallScreen() {
   const handleClose = () => {
     trackPaywallDismissed(source);
     router.back();
-  };
-
-  const handlePurchase = async () => {
-    if (isPurchasing) return;
-
-    // In dev mode, skip real IAP and just activate premium
-    if (__DEV__) {
-      setIsPurchasing(true);
-      try {
-        await devSetPremium(true);
-      } finally {
-        setIsPurchasing(false);
-      }
-      return;
-    }
-
-    if (!selectedPlan) return;
-
-    setIsPurchasing(true);
-    try {
-      const sub = subscriptions.find((s) => s.id === selectedPlan);
-      if (!sub) return;
-
-      const offerToken =
-        Platform.OS === 'android' && sub.subscriptionOffers?.[0]?.offerTokenAndroid
-          ? sub.subscriptionOffers[0].offerTokenAndroid
-          : '';
-
-      trackPaywallPurchaseInitiated({
-        productId: selectedPlan,
-        source,
-        displayPrice: getDisplayPrice(selectedPlan),
-      });
-
-      await requestPurchase({
-        request: {
-          apple: { sku: selectedPlan, andDangerouslyFinishTransactionAutomatically: false },
-          google: {
-            skus: [selectedPlan],
-            subscriptionOffers: [{ sku: selectedPlan, offerToken: offerToken || '' }],
-          },
-        },
-        type: 'subs',
-      });
-    } catch (error: any) {
-      if (error?.code !== ErrorCode.UserCancelled) {
-        console.error('Purchase error:', error);
-      }
-    } finally {
-      setIsPurchasing(false);
-    }
-  };
-
-  const handleRestore = async () => {
-    trackRestorePurchasesTapped({ source: 'paywall' });
-    setIsRestoring(true);
-    try {
-      const restored = await restorePurchases();
-      if (!restored) {
-        if (__DEV__) console.log('No active subscription found to restore');
-      }
-    } catch (error) {
-      console.error('Restore error:', error);
-    } finally {
-      setIsRestoring(false);
-    }
   };
 
   const handleTermsPress = async () => {
@@ -375,76 +255,6 @@ export default function PaywallScreen() {
       console.error('Error opening privacy policy:', error);
     }
   };
-
-  const getDisplayPrice = (productId: string): string => {
-    const sub = subscriptions.find((s) => s.id === productId);
-    if (sub?.displayPrice) return sub.displayPrice;
-    const cached = cachedPrices.find((c) => c.id === productId);
-    return cached?.displayPrice || '---';
-  };
-
-  /**
-   * Parse a localized price string like "$14.99", "14,99 €", "￥1,580" into a number.
-   * Handles both comma-decimal (14,99) and comma-thousand (1,580.00) formats.
-   */
-  const parseDisplayPrice = (displayPrice: string): number | null => {
-    const digits = displayPrice.replace(/[^\d.,]/g, '');
-    // If last separator is a comma with ≤2 digits after it, treat comma as decimal
-    const commaDecimal = digits.match(/^([\d.]*),(\d{1,2})$/);
-    if (commaDecimal) {
-      const parsed = parseFloat(commaDecimal[1].replace(/\./g, '') + '.' + commaDecimal[2]);
-      return isNaN(parsed) ? null : parsed;
-    }
-    // Otherwise treat dots/commas as thousand separators except the last dot
-    const parsed = parseFloat(digits.replace(/,/g, ''));
-    return isNaN(parsed) ? null : parsed;
-  };
-
-  /**
-   * Get numeric price for a product from live subscriptions or cached prices.
-   * Checks sub.price, subscriptionOffers, then parses displayPrice as fallback.
-   */
-  const getNumericPrice = (productId: string): number | null => {
-    const sub = subscriptions.find((s) => s.id === productId);
-    if (sub) {
-      if (sub.price != null) return sub.price;
-      const offerPrice = sub.subscriptionOffers?.[0]?.price;
-      if (offerPrice != null) return offerPrice;
-      return parseDisplayPrice(sub.displayPrice);
-    }
-    const cached = cachedPrices.find((c) => c.id === productId);
-    if (cached) {
-      if (cached.price != null) return cached.price;
-      return parseDisplayPrice(cached.displayPrice);
-    }
-    return null;
-  };
-
-  /**
-   * Dynamically calculate monthly savings percentage compared to weekly.
-   * Weekly price x ~4.3 weeks vs monthly price.
-   * Returns null if prices are unavailable.
-   */
-  const monthlySavingsPercent = useMemo(() => {
-    const weeklyPrice = getNumericPrice('factsaday_premium_weekly');
-    const monthlyPrice = getNumericPrice('factsaday_premium_monthly');
-    if (weeklyPrice == null || monthlyPrice == null || weeklyPrice <= 0) return null;
-    const monthlyAtWeeklyRate = weeklyPrice * WEEKS_PER_MONTH;
-    const savings = Math.round(((monthlyAtWeeklyRate - monthlyPrice) / monthlyAtWeeklyRate) * 100);
-    return savings > 0 ? savings : null;
-  }, [subscriptions, cachedPrices]);
-
-  /**
-   * Effective per-week price for the monthly plan: monthly / 4.33 in source currency shape.
-   * Renders "$1.15 / week" style sub-line to make the value visceral.
-   */
-  const monthlyPerWeekDisplay = useMemo(() => {
-    const monthlyPrice = getNumericPrice('factsaday_premium_monthly');
-    const monthlyDisplay = getDisplayPrice('factsaday_premium_monthly');
-    if (monthlyPrice == null || monthlyDisplay === '---') return null;
-    const perWeek = monthlyPrice / WEEKS_PER_MONTH;
-    return formatPriceLike(monthlyDisplay, perWeek);
-  }, [subscriptions, cachedPrices]);
 
   const showStats = (streak ?? 0) > 0 || (factsRead ?? 0) > 0;
 
@@ -774,15 +584,7 @@ export default function PaywallScreen() {
               return (
                 <Pressable
                   key={productId}
-                  onPress={() => {
-                    setSelectedPlan(productId);
-                    trackPaywallPlanSelected({
-                      productId,
-                      source,
-                      isDefault: false,
-                      displayPrice: getDisplayPrice(productId),
-                    });
-                  }}
+                  onPress={() => selectPlan(productId)}
                   style={dynamicStyles.planPressable}
                 >
                   <View
