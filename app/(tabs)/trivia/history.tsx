@@ -5,7 +5,6 @@ import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
-import { BannerAd } from '../../../src/components/ads';
 import { Calendar, ChevronLeft, ChevronRight, Shuffle, Zap } from '../../../src/components/icons';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { getTriviaModeBadge, TriviaResults } from '../../../src/components/trivia';
@@ -14,6 +13,7 @@ import { LAYOUT } from '../../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackScreenView, trackTriviaResultsView } from '../../../src/services/analytics';
+import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import * as triviaService from '../../../src/services/trivia';
 import { hexColors, useTheme } from '../../../src/theme';
 import { getLucideIcon } from '../../../src/utils/iconMapper';
@@ -223,6 +223,7 @@ export default function ActivityHistoryScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const { spacing, isTablet, iconSizes } = useResponsive();
+  const bannerInset = useTabBarBannerInset();
   const navigation = useNavigation();
   const isDark = theme === 'dark';
 
@@ -514,15 +515,13 @@ export default function ActivityHistoryScreen() {
                 <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
               }
               contentContainerStyle={{
-                paddingBottom: spacing.sm,
+                paddingBottom: spacing.sm + bannerInset,
               }}
               {...FLASH_LIST_SETTINGS}
             />
           )}
         </View>
       </View>
-
-      <BannerAd respectBottomInset placement="trivia_history" />
 
       {/* Loading overlay for session fetch */}
       {loadingSession && (

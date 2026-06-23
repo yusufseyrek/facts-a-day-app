@@ -18,6 +18,7 @@ import { Screens, trackScreenView } from '../../../src/services/analytics';
 import * as api from '../../../src/services/api';
 import { onPreferenceFeedRefresh } from '../../../src/services/preferences';
 import { consumePendingQuizSessionId } from '../../../src/services/quizSession';
+import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import * as triviaService from '../../../src/services/trivia';
 import { hexColors, useTheme } from '../../../src/theme';
 import { hexToHue } from '../../../src/utils/colors';
@@ -33,6 +34,7 @@ export default function TriviaScreen() {
   const isDark = theme === 'dark';
   const { isTablet, typography, config, iconSizes, spacing, radius } = useResponsive();
   const headerGap = useHeaderContentGap();
+  const bannerInset = useTabBarBannerInset();
 
   // Per-section loading instead of one full-screen gate. Four independent
   // tracks so each region settles the moment ITS data is ready and never waits
@@ -322,7 +324,7 @@ export default function TriviaScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => loadTriviaData(true)} />
           }
         >
-          <ContentContainer paddingTop={headerGap + spacing.sm} paddingBottom={spacing.xl}>
+          <ContentContainer paddingTop={headerGap + spacing.sm} paddingBottom={spacing.xl + bannerInset}>
             {/* Always show Stats */}
             <Animated.View
               entering={FadeInDown.delay(50).duration(300)}

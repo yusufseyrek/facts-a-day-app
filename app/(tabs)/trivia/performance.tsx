@@ -17,7 +17,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { ContentContainer, GlassSurface } from '../../../src/components';
-import { BannerAd } from '../../../src/components/ads';
 import { BadgeIcon } from '../../../src/components/badges/BadgeIcon';
 import {
   Calendar,
@@ -38,6 +37,7 @@ import { BADGE_DEFINITIONS } from '../../../src/config/badges';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackScreenView, trackTriviaResultsView } from '../../../src/services/analytics';
 import { getEarnedBadges } from '../../../src/services/badges';
+import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import * as triviaService from '../../../src/services/trivia';
 import { hexColors, useTheme } from '../../../src/theme';
 import { hexToRgba } from '../../../src/utils/colors';
@@ -539,6 +539,7 @@ export default function PerformanceScreen() {
   const params = useLocalSearchParams<{ sessionId?: string }>();
   const isDark = theme === 'dark';
   const { config, iconSizes, spacing, radius } = useResponsive();
+  const bannerInset = useTabBarBannerInset();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -752,6 +753,7 @@ export default function PerformanceScreen() {
         overScrollMode="never"
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />}
+        contentContainerStyle={{ paddingBottom: bannerInset }}
       >
         <ContentContainer>
           <YStack marginVertical={spacing.lg} gap={spacing.xl}>
@@ -960,8 +962,6 @@ export default function PerformanceScreen() {
           </YStack>
         </ContentContainer>
       </ScrollView>
-
-      <BannerAd respectBottomInset placement="trivia_performance" />
 
       {/* Loading overlay for session fetch */}
       {loadingSession && (

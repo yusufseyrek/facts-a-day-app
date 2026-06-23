@@ -5,6 +5,7 @@ import { FlashList, FlashListRef } from '@shopify/flash-list';
 
 import { LAYOUT } from '../../config/app';
 import { useHeaderContentGap } from '../../hooks/useGlassHeaderOptions';
+import { useTabBarBannerInset } from '../../services/tabBarBannerInset';
 import { useResponsive } from '../../utils/useResponsive';
 
 import { KeepReadingItem } from './KeepReadingItem';
@@ -50,6 +51,7 @@ export const KeepReadingList = forwardRef<FlashListRef<FactWithRelations>, KeepR
   ) {
     const { spacing } = useResponsive();
     const headerGap = useHeaderContentGap();
+    const bannerInset = useTabBarBannerInset();
 
     const renderItem = useCallback(
       ({ item, index }: { item: FactWithRelations; index: number }) => (
@@ -94,7 +96,7 @@ export const KeepReadingList = forwardRef<FlashListRef<FactWithRelations>, KeepR
         // screen open "pre-scrolled" past the section titles. Anchor the top
         // instead.
         maintainVisibleContentPosition={{ disabled: true }}
-        contentContainerStyle={{ paddingTop: headerGap }}
+        contentContainerStyle={{ paddingTop: headerGap, paddingBottom: bannerInset }}
         data={facts}
         renderItem={renderItem}
         keyExtractor={keyExtractor}

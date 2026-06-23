@@ -35,6 +35,7 @@ import {
 import * as api from '../../../src/services/api';
 import { getFavoriteIds, mapApiFactToRelations } from '../../../src/services/database';
 import { factDetailBasePath } from '../../../src/services/factMorph';
+import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import { hexColors, useTheme } from '../../../src/theme';
 import { getContrastColor, hexToRgba } from '../../../src/utils/colors';
 import { useFlashListScrollToTop } from '../../../src/utils/useFlashListScrollToTop';
@@ -85,6 +86,7 @@ export default function FavoritesScreen() {
   const navigation = useNavigation();
   const { iconSizes, spacing, radius, media } = useResponsive();
   const headerGap = useHeaderContentGap();
+  const bannerInset = useTabBarBannerInset();
 
   const [favorites, setFavorites] = useState<FactWithRelations[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -502,7 +504,7 @@ export default function FavoritesScreen() {
             refreshControl={refreshControl}
             onScroll={handleScroll}
             contentInsetAdjustmentBehavior="automatic"
-            contentContainerStyle={{ paddingTop: headerGap }}
+            contentContainerStyle={{ paddingTop: headerGap, paddingBottom: bannerInset }}
             ListHeaderComponent={chipsRow ?? undefined}
             // FlashList v2 anchors visible content by default when data
             // changes; on a filter swap that reads as a small phantom scroll.

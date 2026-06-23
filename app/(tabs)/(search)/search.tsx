@@ -37,6 +37,7 @@ import { getCachedFactImageSync } from '../../../src/services/images';
 import { getIsConnected } from '../../../src/services/network';
 import { getSelectedCategories } from '../../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../../src/services/preferences';
+import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import { getLastNonSearchTabPath, onSearchSessionReset } from '../../../src/services/tabHistory';
 import { hexColors, useTheme } from '../../../src/theme';
 import { blendHexColors, getContrastColor, hexToHue, hexToRgba } from '../../../src/utils/colors';
@@ -121,6 +122,7 @@ function SearchScreen() {
   const { t, locale } = useTranslation();
   const { isTablet, spacing, iconSizes, config, media, radius } = useResponsive();
   const headerGap = useHeaderContentGap();
+  const bannerInset = useTabBarBannerInset();
   // Seed the fact-detail cache from browse/search results (which live in local
   // state, not React Query) so opening any of them — and swiping between them —
   // is instant instead of triggering a blocking per-fact fetch.
@@ -703,7 +705,7 @@ function SearchScreen() {
           showsVerticalScrollIndicator={false}
           overScrollMode="never"
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={{ paddingTop: headerGap }}
+          contentContainerStyle={{ paddingTop: headerGap, paddingBottom: bannerInset }}
         >
           <CategoriesContainer
             paddingHorizontal={spacing.lg}
@@ -787,6 +789,7 @@ function SearchScreen() {
     media,
     iconSizes,
     headerGap,
+    bannerInset,
   ]);
 
   const renderContent = useCallback(() => {
@@ -812,7 +815,7 @@ function SearchScreen() {
             refreshControl={searchRefreshControl}
             onScroll={handleSearchScroll}
             contentInsetAdjustmentBehavior="automatic"
-            contentContainerStyle={{ paddingTop: headerGap }}
+            contentContainerStyle={{ paddingTop: headerGap, paddingBottom: bannerInset }}
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -868,7 +871,7 @@ function SearchScreen() {
             refreshControl={categoryRefreshControl}
             onScroll={handleCategoryScroll}
             contentInsetAdjustmentBehavior="automatic"
-            contentContainerStyle={{ paddingTop: headerGap }}
+            contentContainerStyle={{ paddingTop: headerGap, paddingBottom: bannerInset }}
             {...FLASH_LIST_SETTINGS}
           />
         </Animated.View>
@@ -897,6 +900,7 @@ function SearchScreen() {
     renderEmptyState,
     spacing,
     headerGap,
+    bannerInset,
   ]);
 
   // Android-only category-clear affordance (see header-options note above). A

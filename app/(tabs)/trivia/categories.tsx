@@ -8,12 +8,12 @@ import { useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { ContentContainer } from '../../../src/components';
-import { BannerAd } from '../../../src/components/ads';
 import { GlassSurface } from '../../../src/components/GlassSurface';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackScreenView } from '../../../src/services/analytics';
+import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import * as triviaService from '../../../src/services/trivia';
 import { hexColors, useTheme } from '../../../src/theme';
 import { hexToRgba } from '../../../src/utils/colors';
@@ -87,6 +87,7 @@ export default function CategoriesAccuracyScreen() {
   const { t, locale } = useTranslation();
   const { spacing, radius } = useResponsive();
   const insets = useSafeAreaInsets();
+  const bannerInset = useTabBarBannerInset();
   const isDark = theme === 'dark';
   // iOS 26 Liquid Glass backing for the accuracy card; everywhere else keeps
   // today's opaque card fill.
@@ -152,7 +153,7 @@ export default function CategoriesAccuracyScreen() {
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />}
         contentContainerStyle={{
-          paddingBottom: insets.bottom + spacing.xl,
+          paddingBottom: insets.bottom + spacing.xl + bannerInset,
         }}
       >
         <ContentContainer>
@@ -202,8 +203,6 @@ export default function CategoriesAccuracyScreen() {
           </YStack>
         </ContentContainer>
       </ScrollView>
-
-      <BannerAd respectBottomInset placement="trivia_categories" />
     </View>
   );
 }

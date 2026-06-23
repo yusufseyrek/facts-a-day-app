@@ -62,6 +62,7 @@ import {
 } from '../../../src/services/notifications';
 import * as onboardingService from '../../../src/services/onboarding';
 import { cleanupShareCards } from '../../../src/services/share';
+import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import { clearHintUsage } from '../../../src/services/trivia';
 import * as updates from '../../../src/services/updates';
 import * as userService from '../../../src/services/user';
@@ -163,6 +164,7 @@ export default function SettingsPage() {
   const { resetOnboarding } = useOnboarding();
   const { isPremium, restorePurchases, devSetPremium } = usePremium();
   const { iconSizes, spacing, isTablet } = useResponsive();
+  const bannerInset = useTabBarBannerInset();
 
   // Track if this is the initial mount to prevent re-animation on tab focus
   // We delay setting the flag to allow lazy-rendered items to also animate
@@ -1159,6 +1161,7 @@ export default function SettingsPage() {
           );
         }}
         ListFooterComponent={renderFooter}
+        contentContainerStyle={{ paddingBottom: bannerInset }}
         // RN's JS sticky headers pin to the viewport top, ignoring the
         // translucent native header's content inset — they'd float above the
         // large title. Non-sticky headers scroll with content instead.
