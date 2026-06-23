@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ContentContainer } from '../../../src/components';
 import { TriviaLeaderboard } from '../../../src/components/trivia';
 import { Screens, trackScreenView } from '../../../src/services/analytics';
+import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import { hexColors, useTheme } from '../../../src/theme';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
@@ -19,6 +20,7 @@ export default function TriviaLeaderboardScreen() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const { spacing } = useResponsive();
+  const bannerInset = useTabBarBannerInset();
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
 
   const [reloadToken, setReloadToken] = useState(0);
@@ -48,6 +50,7 @@ export default function TriviaLeaderboardScreen() {
         overScrollMode="never"
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        contentContainerStyle={{ paddingBottom: bannerInset }}
       >
         <ContentContainer>
           <View style={{ marginVertical: spacing.lg }}>
