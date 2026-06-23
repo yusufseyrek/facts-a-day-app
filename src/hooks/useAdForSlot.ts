@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { usePremium } from '../contexts/PremiumContext';
-import { getSlot, type SlotStatus, subscribeSlot } from '../services/nativeAdPool';
+import { getSlot, type SlotStatus, subscribeSlot } from '../services/nativeAds';
 
 import type { NativeAd } from 'react-native-google-mobile-ads';
 
@@ -19,16 +19,16 @@ const EMPTY: UseAdForSlotResult = { ad: null, status: 'failed' };
 const IDLE: UseAdForSlotResult = { ad: null, status: 'idle' };
 
 /**
- * Subscribe a list cell to the shared native ad pool. The same `slotKey`
+ * Subscribe a list cell to the on-demand native ad loader. The same `slotKey`
  * always returns the same ad instance across FlashList recycles, so we do not
  * re-request ads while scrolling.
  *
- * `aspectRatio` picks which preloaded queue to drain. Slots requesting a
- * non-pooled aspect are marked `failed`.
+ * `aspectRatio` is requested from the ad server; a slot requesting an
+ * unsupported aspect is marked `failed`.
  *
  * `enabled` (default `true`) gates subscription — pass `false` for list cells
  * that have been mounted by FlashList's drawDistance but not yet scrolled into
- * view, so the pool doesn't burn inventory on slots the user may never see.
+ * view, so we don't fetch an ad for a slot the user may never see.
  *
  * Premium users short-circuit to `EMPTY` without subscribing.
  */

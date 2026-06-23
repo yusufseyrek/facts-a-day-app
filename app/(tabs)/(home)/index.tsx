@@ -31,7 +31,6 @@ import {
 import { isModalScreenActive } from '../../../src/services/badges';
 import { triggerFeedRefresh } from '../../../src/services/contentRefresh';
 import { factDetailBasePath } from '../../../src/services/factMorph';
-import { primePool } from '../../../src/services/nativeAdPool';
 import { shouldShowPaywall } from '../../../src/services/paywallTiming';
 import { useTheme } from '../../../src/theme';
 
@@ -115,8 +114,6 @@ function HomeScreen() {
   // to consume here anymore.
   useFocusEffect(
     useCallback(() => {
-      primePool();
-
       const idleId = requestIdleCallback(() => {
         trackScreenView(Screens.HOME);
       });

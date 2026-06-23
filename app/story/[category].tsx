@@ -41,7 +41,7 @@ import * as api from '../../src/services/api';
 import { checkAndAwardBadges, popModalScreen, pushModalScreen } from '../../src/services/badges';
 import * as database from '../../src/services/database';
 import { mapApiFactToRelations } from '../../src/services/database';
-import { hasReadyAd } from '../../src/services/nativeAdPool';
+import { hasReadyAd } from '../../src/services/nativeAds';
 import { getSelectedCategories } from '../../src/services/onboarding';
 import { takePrefetchedStory, THEME_STORY_PREFIX } from '../../src/services/storyPrefetch';
 import { hexColors, useTheme } from '../../src/theme';
@@ -451,6 +451,11 @@ export default function StoryScreen() {
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         getItemType={getItemType}
+        // Native ads load on demand when their card mounts. Mount pages ~3
+        // screens ahead (FlashList's default is 250px) so an ad request has
+        // time to resolve before the viewability gate (hasReadyAd) decides
+        // whether to present it — otherwise the ad page is dropped as not-ready.
+        drawDistance={screenHeight * 3}
         snapToInterval={screenHeight}
         snapToAlignment="start"
         decelerationRate="fast"

@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { useTranslation } from '../../i18n';
 import { trackAdRevenue, trackNativeAdClick } from '../../services/analytics';
-import { aspectRatioName } from '../../services/nativeAdPool';
+import { aspectRatioName } from '../../services/nativeAds';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { ChevronRight } from '../icons';
@@ -27,9 +27,9 @@ interface StoryNativeAdCardProps {
   screenWidth: number;
   screenHeight: number;
   onAdFailed?: () => void;
-  /** Pre-loaded native ad (skips the pool). */
+  /** Pre-loaded native ad (skips on-demand loading). */
   nativeAd?: NativeAd;
-  /** Stable slot key for pool-driven ads. Ignored when `nativeAd` is provided. */
+  /** Stable slot key for an on-demand ad. Ignored when `nativeAd` is provided. */
   slotKey?: string;
 }
 
@@ -48,8 +48,8 @@ function StoryNativeAdCardComponent({
     ? NativeMediaAspectRatio.PORTRAIT
     : NativeMediaAspectRatio.LANDSCAPE;
 
-  const { ad: nativeAdFromPool, status } = useAdForSlot(nativeAdProp ? null : slotKey, aspectRatio);
-  const nativeAd = nativeAdProp ?? nativeAdFromPool;
+  const { ad: nativeAdFromSlot, status } = useAdForSlot(nativeAdProp ? null : slotKey, aspectRatio);
+  const nativeAd = nativeAdProp ?? nativeAdFromSlot;
   const { t } = useTranslation();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();

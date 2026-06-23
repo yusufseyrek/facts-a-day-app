@@ -13,7 +13,7 @@ import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
 import { preloadRewardedAd } from '../components/ads/RewardedAd';
 
 import { trackATTPermissionResult, trackGDPRConsentResult } from './analytics';
-import { primePool, setPoolSdkReady } from './nativeAdPool';
+import { setNativeAdsSdkReady } from './nativeAds';
 import { shouldInitializeAdsSdk, shouldShowAds } from './premiumState';
 
 // Re-export consent utilities for backwards compatibility
@@ -218,13 +218,12 @@ export const initializeAdsSDK = async (): Promise<boolean> => {
       console.log('Ads SDK initialized successfully');
     }
 
-    // Wake the native ad pool: it was gated until now to avoid wasting
-    // requests (and burning per-ad-unit rate limits) against uninitialized
-    // mediation adapters. This reruns any slots that were parked in
-    // 'loading'/'failed' by the pre-SDK guard, then fires the initial fill.
+    // Wake on-demand native ad loading: requests were gated until now to avoid
+    // burning per-ad-unit rate limits against uninitialized mediation adapters.
+    // This reruns any slots parked in 'loading'/'failed' by the pre-SDK guard;
+    // ads are then fetched on demand as their slots mount (no pre-fetch pool).
     if (shouldShowAds()) {
-      setPoolSdkReady(true);
-      primePool();
+      setNativeAdsSdkReady(true);
     }
 
     // Preload interstitial and app open ads only for non-premium users
