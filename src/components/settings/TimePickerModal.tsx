@@ -407,9 +407,15 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                 }}
               >
                 <AlertTriangle size={iconSizes.md} color={warningColor} />
-                <Text.Caption color={warningColor} style={{ flex: 1 }}>
-                  {t('notificationPermissionWarning')}
-                </Text.Caption>
+                <View style={{ flex: 1, gap: spacing.xs }}>
+                  <Text.Caption color={warningColor}>
+                    {t('notificationPermissionWarning')}
+                  </Text.Caption>
+                  {/* Bold call-to-action makes the tap target explicit. */}
+                  <Text.Caption color={warningColor} fontFamily={FONT_FAMILIES.bold}>
+                    {t('tapToEnable')}
+                  </Text.Caption>
+                </View>
                 {/* Trailing chevron signals the row is tappable, matching the
                     settings list grammar (see settings.tsx). */}
                 <ChevronRight size={iconSizes.sm} color={warningColor} />

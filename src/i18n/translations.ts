@@ -279,6 +279,7 @@ export const translations = {
     youMustHaveAtLeastOne: 'Sie müssen mindestens eine Benachrichtigungszeit haben',
     notificationPermissionWarning:
       'Sie müssen Benachrichtigungen erlauben, um tägliche Fakten zu erhalten',
+    tapToEnable: 'Zum Aktivieren tippen',
 
     // Ads Consent
     adsConsentTitle: 'Helfen Sie uns, Täglich Wissen kostenlos zu halten',
@@ -883,6 +884,7 @@ export const translations = {
     minimumRequired: 'Minimum Required',
     youMustHaveAtLeastOne: 'You must have at least one notification time',
     notificationPermissionWarning: 'You need to allow notifications to get daily facts',
+    tapToEnable: 'Tap to enable',
 
     // Ads Consent
     adsConsentTitle: 'Help Us Keep Facts a Day Free',
@@ -1491,6 +1493,7 @@ export const translations = {
     minimumRequired: 'Mínimo Requerido',
     youMustHaveAtLeastOne: 'Debes tener al menos un horario de notificación',
     notificationPermissionWarning: 'Necesitas permitir notificaciones para recibir datos diarios',
+    tapToEnable: 'Toca para activar',
 
     // Ads Consent
     adsConsentTitle: 'Ayúdanos a mantener Conocimiento Diario gratis',
@@ -2100,6 +2103,7 @@ export const translations = {
     youMustHaveAtLeastOne: 'Vous devez avoir au moins une heure de notification',
     notificationPermissionWarning:
       'Vous devez autoriser les notifications pour recevoir des faits quotidiens',
+    tapToEnable: 'Appuyez pour activer',
 
     // Ads Consent
     adsConsentTitle: 'Aidez-nous à garder Savoir Quotidien gratuit',
@@ -2705,6 +2709,7 @@ export const translations = {
     minimumRequired: '最小数が必要です',
     youMustHaveAtLeastOne: '少なくとも1件の通知時刻が必要です',
     notificationPermissionWarning: '毎日の豆知識を受け取るには通知を許可する必要があります',
+    tapToEnable: 'タップして有効にする',
 
     // Ads Consent
     adsConsentTitle: '毎日の知識を無料で維持するためにご協力ください',
@@ -3306,6 +3311,7 @@ export const translations = {
     minimumRequired: '최소 수 필요',
     youMustHaveAtLeastOne: '최소 1개의 알림 시간이 필요합니다',
     notificationPermissionWarning: '매일 정보를 받으려면 알림을 허용해야 합니다',
+    tapToEnable: '탭하여 활성화',
 
     // Ads Consent
     adsConsentTitle: '매일 지식을 무료로 유지하도록 도와주세요',
@@ -3909,6 +3915,7 @@ export const translations = {
     minimumRequired: 'Minimum Gerekli',
     youMustHaveAtLeastOne: 'En az bir bildirim zamanınız olmalıdır',
     notificationPermissionWarning: 'Günlük bilgiler almak için bildirimlere izin vermeniz gerekir',
+    tapToEnable: 'Etkinleştirmek için dokunun',
 
     // Ads Consent
     adsConsentTitle: "Günlük Bilgi'yi ücretsiz tutmamıza yardım edin",
@@ -4508,6 +4515,7 @@ export const translations = {
     minimumRequired: '需要最小值',
     youMustHaveAtLeastOne: '您必须至少设置一个通知时间',
     notificationPermissionWarning: '您需要允许通知才能获取每日知识',
+    tapToEnable: '点按以启用',
 
     // Ads Consent
     adsConsentTitle: '帮助我们保持每日知识免费',
