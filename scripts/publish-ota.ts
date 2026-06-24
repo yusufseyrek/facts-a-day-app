@@ -9,6 +9,10 @@
  *   # publish an OTA for both platforms (runtimeVersion defaults to app.json version)
  *   OTA_API_KEY=fad_... bun scripts/publish-ota.ts --platform all --message "fix X"
  *
+ *   # full release: run tests -> bump build number/version code -> build ->
+ *   # publish -> commit+push the bump. Aborts before any change if tests fail.
+ *   OTA_API_KEY=fad_... bun scripts/publish-ota.ts --release --message "fix X"
+ *
  *   # local backend
  *   OTA_API_KEY=fad_... bun scripts/publish-ota.ts --platform ios --server http://localhost:3000
  *
@@ -24,13 +28,14 @@
  */
 
 import { spawnSync } from "child_process";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join, basename, dirname } from "path";
 
 type Platform = "ios" | "android";
 
 const ROOT = join(import.meta.dir, "..");
-const APP_JSON = JSON.parse(readFileSync(join(ROOT, "app.json"), "utf8")).expo;
+const APP_JSON_PATH = join(ROOT, "app.json");
+const APP_JSON = JSON.parse(readFileSync(APP_JSON_PATH, "utf8")).expo;
 
 const EXT_MIME: Record<string, string> = {
   js: "application/javascript",
@@ -127,6 +132,127 @@ async function postPublish(
 }
 
 // ============================================
+// release pre/post steps (--release)
+// ============================================
+
+/** --release commits + pushes to main, so refuse to run from any other branch. */
+function requireMainBranch(): void {
+  const branch = spawnSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+    encoding: "utf8",
+  }).stdout?.trim();
+  if (branch !== "main") {
+    console.error(
+      `✗ --release must run on main (currently on "${branch}") — it commits + pushes the build bump to main`,
+    );
+    process.exit(1);
+  }
+}
+
+/** Run the app test suite; abort the release before any change if it fails. */
+function runTests(): void {
+  console.log("▶ running tests (npm test)");
+  const res = spawnSync("npm", ["test"], { stdio: "inherit", cwd: ROOT });
+  if (res.status !== 0) {
+    console.error("✗ tests failed — aborting release (no bump, no build, no publish)");
+    process.exit(1);
+  }
+  console.log("✓ tests passed");
+}
+
+/**
+ * Bump the native build identifiers in app.json: iOS `buildNumber` (a string)
+ * and Android `versionCode` (an int), kept in sync at max(both)+1. Edited
+ * textually so ONLY those two lines change (no JSON reformat / key reorder).
+ * Returns the new number.
+ *
+ * Note: this does NOT change `version` (= runtimeVersion under the appVersion
+ * policy), so it does not alter which installed builds receive the OTA — it's
+ * release bookkeeping / prep for the next native build.
+ */
+function bumpBuildNumbers(): number {
+  const text = readFileSync(APP_JSON_PATH, "utf8");
+  const curBuild = parseInt(APP_JSON?.ios?.buildNumber ?? "0", 10) || 0;
+  const curCode = Number(APP_JSON?.android?.versionCode ?? 0) || 0;
+  const next = Math.max(curBuild, curCode) + 1;
+
+  let buildOk = false;
+  let codeOk = false;
+  let out = text.replace(/("buildNumber"\s*:\s*")\d+(")/, (_m, p1, p2) => {
+    buildOk = true;
+    return `${p1}${next}${p2}`;
+  });
+  out = out.replace(/("versionCode"\s*:\s*)\d+/, (_m, p1) => {
+    codeOk = true;
+    return `${p1}${next}`;
+  });
+  if (!buildOk || !codeOk) {
+    console.error(
+      `✗ could not bump app.json (buildNumber found=${buildOk}, versionCode found=${codeOk})`,
+    );
+    process.exit(1);
+  }
+  writeFileSync(APP_JSON_PATH, out);
+  console.log(`▶ bumped build to ${next} (ios buildNumber + android versionCode)`);
+  return next;
+}
+
+/** Record the shipped build number on main (commit + push). */
+function commitAndPushBump(next: number): void {
+  for (const args of [
+    ["add", "app.json"],
+    ["commit", "-m", `chore(release): bump build to ${next}`],
+    ["push", "origin", "main"],
+  ]) {
+    const res = spawnSync("git", args, { stdio: "inherit", cwd: ROOT });
+    if (res.status !== 0) {
+      console.error(`✗ git ${args[0]} failed — the build bump may be partially committed/pushed`);
+      process.exit(1);
+    }
+  }
+  console.log(`✓ committed + pushed build ${next}`);
+}
+
+/**
+ * Export ONE platform's bundle. We never pass "all" to `expo export`: with no
+ * explicit `platforms` in app.json, Expo defaults to including `web`, which
+ * isn't installed (no react-native-web) and fails the export.
+ */
+function exportPlatform(platform: Platform, distDir: string): void {
+  console.log(`▶ expo export (${platform}) -> ${distDir}`);
+  const exp = spawnSync(
+    "npx",
+    ["expo", "export", "--platform", platform, "--output-dir", distDir, "--clear"],
+    { stdio: "inherit", cwd: ROOT },
+  );
+  if (exp.status !== 0) {
+    console.error(`expo export (${platform}) failed`);
+    process.exit(1);
+  }
+}
+
+/**
+ * The resolved PUBLIC Expo config. It must be embedded in the manifest as
+ * `extra.expoClient` — that is exactly what `Constants.expoConfig` is built from
+ * at runtime. Without it an OTA bundle launches with NO manifest config, so
+ * expo-linking / expo-router throw at startup ("expo-linking needs access to the
+ * expo-constants manifest … to determine what URI scheme to use"), which
+ * expo-updates turns into an ErrorRecovery crash and rolls back to the embedded
+ * bundle. A native build bakes this config in; an OTA has to carry it explicitly.
+ */
+function getExpoClientConfig(): Record<string, unknown> {
+  const res = spawnSync("npx", ["expo", "config", "--json", "--type", "public"], {
+    cwd: ROOT,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (res.status !== 0 || !res.stdout) {
+    console.error("Failed to resolve expo config (expo config --type public):", res.stderr || "");
+    process.exit(1);
+  }
+  return JSON.parse(res.stdout);
+}
+
+// ============================================
 // publish (default command)
 // ============================================
 
@@ -139,35 +265,43 @@ async function publish() {
     platformArg === "all" ? ["ios", "android"] : [platformArg as Platform];
   const distDir = join(ROOT, arg("dist", "dist")!);
   const message = arg("message");
+  const isRelease = flag("release");
+  const noExport = flag("no-export");
+
+  // Release flow (order matters): tests gate everything, THEN bump the build
+  // identifiers, THEN build + publish, and finally record the bump. A plain
+  // publish skips all three and just (re)builds + uploads.
+  if (isRelease) {
+    requireMainBranch();
+    runTests();
+  }
+  const bumpedTo = isRelease ? bumpBuildNumbers() : null;
+
   const gitCommit =
     arg("git-commit") ||
     spawnSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" })
       .stdout?.trim() ||
     undefined;
 
-  console.log(`Publishing OTA  server=${server}  runtimeVersion=${runtimeVersion}`);
+  // Embedded once in every platform's manifest so the OTA carries the app config
+  // (Constants.expoConfig) — without it expo-router/expo-linking crash at launch.
+  const expoClient = getExpoClientConfig();
 
-  if (!flag("no-export")) {
-    console.log(`▶ expo export (${platforms.join(", ")}) -> ${distDir}`);
-    const exp = spawnSync(
-      "npx",
-      ["expo", "export", "--platform", platformArg, "--output-dir", distDir, "--clear"],
-      { stdio: "inherit", cwd: ROOT },
-    );
-    if (exp.status !== 0) {
-      console.error("expo export failed");
+  console.log(
+    `Publishing OTA  server=${server}  runtimeVersion=${runtimeVersion}` +
+      (bumpedTo != null ? `  build=${bumpedTo}` : ""),
+  );
+
+  // Export + upload per platform (single-platform exports avoid the web default).
+  for (const platform of platforms) {
+    if (!noExport) exportPlatform(platform, distDir);
+
+    const metadataPath = join(distDir, "metadata.json");
+    if (!existsSync(metadataPath)) {
+      console.error(`metadata.json not found at ${metadataPath} (run without --no-export)`);
       process.exit(1);
     }
-  }
-
-  const metadataPath = join(distDir, "metadata.json");
-  if (!existsSync(metadataPath)) {
-    console.error(`metadata.json not found at ${metadataPath} (run without --no-export)`);
-    process.exit(1);
-  }
-  const metadata = JSON.parse(readFileSync(metadataPath, "utf8"));
-
-  for (const platform of platforms) {
+    const metadata = JSON.parse(readFileSync(metadataPath, "utf8"));
     const fileMeta = metadata.fileMetadata?.[platform];
     if (!fileMeta?.bundle) {
       console.warn(`  ⚠ no ${platform} bundle in metadata.json; skipping`);
@@ -206,6 +340,8 @@ async function publish() {
       platform,
       message,
       gitCommitHash: gitCommit,
+      // Carry the app config so Constants.expoConfig is populated under OTA.
+      extra: { expoClient },
       assets: assets.map((a) => ({
         field: a.field,
         ...(a.key ? { key: a.key } : {}),
@@ -218,6 +354,9 @@ async function publish() {
     console.log(`▶ uploading ${platform} (${assets.length} assets)`);
     await postPublish(server, apiKey, manifest, assets);
   }
+
+  // Record the shipped build number only after every platform published.
+  if (isRelease && bumpedTo != null) commitAndPushBump(bumpedTo);
 }
 
 // ============================================
