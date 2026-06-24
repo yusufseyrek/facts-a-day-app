@@ -13,8 +13,8 @@ import { KeepReadingList } from '../../../src/components/home/KeepReadingList';
 import { YStack } from '../../../src/components/Stacks';
 import { queryClient } from '../../../src/config/queryClient';
 import { usePremium, useScrollToTopHandler } from '../../../src/contexts';
-import { factKeys, localStateKeys, metadataKeys } from '../../../src/hooks/queryKeys';
-import { useFocusFeedRefresh } from '../../../src/hooks/useFocusFeedRefresh';
+import { localStateKeys } from '../../../src/hooks/queryKeys';
+import { useHomeContentRefresh } from '../../../src/hooks/useHomeContentRefresh';
 import { useHomeFeed } from '../../../src/hooks/useHomeFeed';
 import { useHomeFeedEvents } from '../../../src/hooks/useHomeFeedEvents';
 import { useKeepReading } from '../../../src/hooks/useKeepReading';
@@ -22,12 +22,11 @@ import { useReadingStreak } from '../../../src/hooks/useReadingStreak';
 import { useTranslation } from '../../../src/i18n';
 import {
   Screens,
-  trackFeedRefresh,
   trackHomeFeedLoadMore,
   trackReadingStreakIndicatorTap,
   trackScreenView,
 } from '../../../src/services/analytics';
-import { triggerFeedRefresh } from '../../../src/services/contentRefresh';
+import { refreshHomeContent } from '../../../src/services/contentRefresh';
 import { openFactDetail } from '../../../src/services/factMorph';
 import { useTheme } from '../../../src/theme';
 
@@ -83,8 +82,9 @@ function HomeScreen() {
     outerListRef: keepReadingListRef,
   });
 
-  // Silent stale-while-revalidate on every focus — no spinner, scroll untouched.
-  useFocusFeedRefresh(locale);
+  // Silent stale-while-revalidate when home becomes visible or the app returns
+  // to the foreground — no spinner, scroll untouched.
+  useHomeContentRefresh(locale);
 
   // Scroll-to-top handler for tab re-tap (Android only; iOS re-tap scrolls the
   // outer list natively — see the tabPress listener in (tabs)/_layout.tsx)
@@ -131,25 +131,18 @@ function HomeScreen() {
     [router]
   );
 
-  // Pull-to-refresh — re-fetch the on-demand feed sections from the API.
+  // Pull-to-refresh — force a full refresh of the home content (feed, On This
+  // Day, story buttons) plus the local reading streak, bypassing the age gate.
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    trackFeedRefresh('pull');
     try {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: factKeys.feed(locale) }),
-        queryClient.invalidateQueries({ queryKey: factKeys.onThisDay(locale) }),
+        refreshHomeContent(locale, { source: 'pull', force: true }),
         queryClient.invalidateQueries({ queryKey: localStateKeys.readingStreak() }),
-        // Story themes ride a separate cache fetched imperatively by the button
-        // row, not a useQuery observer — so invalidating alone won't refetch it.
-        // Mark it stale here, then triggerFeedRefresh re-runs loadCategories,
-        // whose fetchQuery now sees the stale entry and hits the network.
-        queryClient.invalidateQueries({ queryKey: metadataKeys.storyThemes(locale) }),
       ]);
     } catch {
       // Ignore
     }
-    triggerFeedRefresh();
     setRefreshing(false);
   }, [locale]);
 

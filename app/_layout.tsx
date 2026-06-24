@@ -498,9 +498,6 @@ export default function RootLayout() {
             console.error('OTA update check on foreground failed:', error);
           });
 
-        // Refresh the on-demand feed cache so returning users see new facts.
-        contentRefresh.triggerFeedRefresh();
-
         // Mirror the latest facts into the home-screen widget on foreground.
         refreshWidgetData(getLocaleFromCode(deviceLocale)).catch(() => {});
       }

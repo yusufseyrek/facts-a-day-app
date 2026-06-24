@@ -170,11 +170,12 @@ export const HOME_FEED = {
   /** Number of cards per category carousel on the home screen */
   CATEGORY_CAROUSEL_COUNT: 6,
   /**
-   * Min age of the feed data before a screen focus triggers another silent
-   * background refetch. Keeps "refresh on every focus" from re-fetching every
-   * loaded page of the cursor feed on each back-navigation from a detail screen.
+   * Min age of the feed data before an automatic refresh (home becoming visible
+   * or the app returning to the foreground) triggers another silent background
+   * refetch. Keeps rapid back-navigation from re-fetching every loaded page of
+   * the cursor feed each time; a manual pull-to-refresh bypasses this gate.
    */
-  FOCUS_REFRESH_MIN_AGE_MS: 30_000,
+  CONTENT_REFRESH_MIN_AGE_MS: 30_000,
 } as const;
 
 /**
