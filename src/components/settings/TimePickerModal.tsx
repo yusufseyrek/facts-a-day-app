@@ -146,7 +146,11 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       await onboardingService.setNotificationTimes(timeStrings);
 
       // Push the updated times to the backend (server-driven scheduling).
-      const registered = await notificationService.registerForPush(locale);
+      // Settings is an explicit opt-in, so prompt for permission if the user
+      // hasn't decided yet (passive callers never prompt — see registerForPush).
+      const registered = await notificationService.registerForPush(locale, {
+        promptIfUndetermined: true,
+      });
       if (!registered) {
         // The times are saved locally, but no daily push will arrive until the
         // device is registered. Showing the green "updated" toast here would

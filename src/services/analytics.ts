@@ -1409,7 +1409,14 @@ export const trackPushPermissionResult = (params: {
 /** Push registration (token → backend) succeeded or short-circuited. */
 export const trackPushRegisterResult = (params: {
   success: boolean;
-  reason: 'ok' | 'permission_denied' | 'no_token' | 'no_times' | 'not_device' | 'error';
+  reason:
+    | 'ok'
+    | 'permission_denied'
+    | 'permission_undetermined'
+    | 'no_token'
+    | 'no_times'
+    | 'not_device'
+    | 'error';
   trigger?: PushTrigger;
   timesCount?: number;
 }): void => {

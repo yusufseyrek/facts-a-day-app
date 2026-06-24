@@ -72,7 +72,10 @@ function timesToPreferredMinutes(isoTimes: string[]): number[] {
  */
 export async function registerForPush(
   locale: SupportedLocale,
-  trigger: PushTrigger = 'foreground'
+  {
+    trigger = 'foreground',
+    promptIfUndetermined = false,
+  }: { trigger?: PushTrigger; promptIfUndetermined?: boolean } = {}
 ): Promise<boolean> {
   try {
     if (!Device.isDevice) {
@@ -83,15 +86,26 @@ export async function registerForPush(
     const { status } = await Notifications.getPermissionsAsync();
     const previouslyGranted = status === 'granted';
     let granted = previouslyGranted;
-    // Only prompt (and record the decision) when the OS will actually show the
-    // permission dialog — i.e. status is still 'undetermined'. registerForPush
-    // runs on every foreground, and for an already-'denied' user
-    // requestPermissionsAsync() resolves immediately WITHOUT a dialog, so the
-    // old unconditional call re-fired `push_permission_result` on every single
-    // foreground. Gating on 'undetermined' captures the event once, at the real
-    // decision moment, and never on silent re-registration.
-    if (!granted && status === 'undetermined') {
+    // The resolved permission status: starts at the read value and updates to
+    // the dialog result if we prompt. Lets the register-result below tell a
+    // genuine denial apart from a passive caller that simply never asked.
+    let finalStatus = status;
+    // Prompt for permission ONLY when the caller explicitly opts in
+    // (promptIfUndetermined) AND the OS would actually show a dialog (status
+    // still 'undetermined'). registerForPush also runs passively on every
+    // foreground, launch, language change, and at the end of onboarding — none
+    // of those may pop the OS dialog unprompted, so they pass
+    // promptIfUndetermined=false and just register when permission was ALREADY
+    // granted. The dialog is reserved for explicit opt-in moments: the
+    // onboarding notifications screen (which calls requestPermissionsAsync
+    // directly) and the Settings time picker (which passes
+    // promptIfUndetermined=true). This is what keeps onboarding "Maybe later" an
+    // actual opt-out — the success screen no longer prompts the decliner — and
+    // never silently re-asks on foreground. (Already-'denied' never shows a
+    // dialog regardless: requestPermissionsAsync resolves immediately.)
+    if (!granted && status === 'undetermined' && promptIfUndetermined) {
       const req = await Notifications.requestPermissionsAsync();
+      finalStatus = req.status;
       granted = req.status === 'granted';
       trackPushPermissionResult({
         status: granted ? 'granted' : 'denied',
@@ -100,7 +114,14 @@ export async function registerForPush(
       });
     }
     if (!granted) {
-      trackPushRegisterResult({ success: false, reason: 'permission_denied', trigger });
+      // 'undetermined' here means a passive caller never prompted — the user
+      // hasn't decided, so it's not a denial. A real denial (read as 'denied',
+      // or chosen in the dialog above) reports 'permission_denied'.
+      trackPushRegisterResult({
+        success: false,
+        reason: finalStatus === 'undetermined' ? 'permission_undetermined' : 'permission_denied',
+        trigger,
+      });
       return false;
     }
 
