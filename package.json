@@ -19,9 +19,9 @@
     "test:coverage": "jest --forceExit --coverage --collectCoverageFrom='src/services/**/*.ts' --collectCoverageFrom='src/utils/insertNativeAds.ts'",
     "build:ios": "./scripts/build-ios.sh",
     "build:android": "./scripts/build-android.sh",
-    "update:ios": "./scripts/publish-update.sh ios",
-    "update:android": "./scripts/publish-update.sh android",
-    "update:all": "./scripts/publish-update.sh all"
+    "update:ios": "bun scripts/publish-ota.ts --platform ios",
+    "update:android": "bun scripts/publish-ota.ts --platform android",
+    "update:all": "bun scripts/publish-ota.ts --platform all"
   },
   "expo": {
     "install": {
