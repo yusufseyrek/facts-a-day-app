@@ -58,7 +58,7 @@ export const INTERSTITIAL_ADS = {
    * interstitial fires. Still subject to COOLDOWN_SECONDS, so this is a trigger,
    * not a cadence — back-to-back idle windows won't stack ads.
    */
-  INACTIVITY_SECONDS: 150,
+  INACTIVITY_SECONDS: 120,
 } as const;
 
 /**
