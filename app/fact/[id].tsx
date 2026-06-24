@@ -27,20 +27,28 @@ import type { FactViewSource } from '../../src/services/analytics';
  */
 export default function FactDetailScreen({
   presentedAsModal = false,
+  overlay,
 }: {
   presentedAsModal?: boolean;
+  /** Set when rendered by the in-tab overlay host instead of a route: these
+   *  override the (absent) route params. */
+  overlay?: {
+    id: string;
+    source?: FactViewSource;
+    factIds?: string;
+    currentIndex?: string;
+  };
 }) {
-  const {
-    id,
-    source,
-    factIds: factIdsParam,
-    currentIndex: currentIndexParam,
-  } = useLocalSearchParams<{
+  const params = useLocalSearchParams<{
     id: string;
     source?: FactViewSource;
     factIds?: string;
     currentIndex?: string;
   }>();
+  const id = overlay?.id ?? params.id;
+  const source = overlay?.source ?? params.source;
+  const factIdsParam = overlay?.factIds ?? params.factIds;
+  const currentIndexParam = overlay?.currentIndex ?? params.currentIndex;
   const router = useRouter();
   const { t, locale } = useTranslation();
   const { spacing } = useResponsive();
@@ -200,6 +208,7 @@ export default function FactDetailScreen({
       source={source}
       onRelatedFactPress={handleRelatedFactPress}
       presentedAsModal={presentedAsModal}
+      inOverlay={!!overlay}
     />
   );
 }

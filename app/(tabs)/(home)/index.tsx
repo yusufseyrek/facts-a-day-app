@@ -11,7 +11,6 @@ import { CategoryStoryButtonsRef } from '../../../src/components/CategoryStoryBu
 import { HomeListHeader, LocaleChangeOverlay } from '../../../src/components/home';
 import { KeepReadingList } from '../../../src/components/home/KeepReadingList';
 import { YStack } from '../../../src/components/Stacks';
-import { PAYWALL_PROMPT } from '../../../src/config/app';
 import { queryClient } from '../../../src/config/queryClient';
 import { usePremium, useScrollToTopHandler } from '../../../src/contexts';
 import { factKeys, localStateKeys, metadataKeys } from '../../../src/hooks/queryKeys';
@@ -28,10 +27,8 @@ import {
   trackReadingStreakIndicatorTap,
   trackScreenView,
 } from '../../../src/services/analytics';
-import { isModalScreenActive } from '../../../src/services/badges';
 import { triggerFeedRefresh } from '../../../src/services/contentRefresh';
-import { factDetailBasePath } from '../../../src/services/factMorph';
-import { shouldShowPaywall } from '../../../src/services/paywallTiming';
+import { openFactDetail } from '../../../src/services/factMorph';
 import { useTheme } from '../../../src/theme';
 
 import type { FactViewSource } from '../../../src/services/analytics';
@@ -74,7 +71,6 @@ function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   // Refs
-  const paywallCheckRef = useRef(false);
   const loadMorePageRef = useRef(0);
   const keepReadingListRef = useRef<FlashListRef<any>>(null);
   const latestListRef = useRef<FlashListRef<FactWithRelations>>(null);
@@ -109,35 +105,15 @@ function HomeScreen() {
     }, [])
   );
 
-  // Focus effect: image pre-cache, paywall check. The feed is served on demand
-  // from the API and cached by React Query, so there's no pending-refresh flag
-  // to consume here anymore.
+  // Focus effect: track the screen view. The feed is served on demand from the
+  // API and cached by React Query, so there's no pending-refresh flag to consume.
   useFocusEffect(
     useCallback(() => {
       const idleId = requestIdleCallback(() => {
         trackScreenView(Screens.HOME);
       });
-
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      if (!isPremium && !paywallCheckRef.current) {
-        timer = setTimeout(async () => {
-          try {
-            if (isModalScreenActive()) return;
-            if (await shouldShowPaywall()) {
-              paywallCheckRef.current = true;
-              router.push('/paywall?source=auto');
-            }
-          } catch {
-            // silently ignore
-          }
-        }, PAYWALL_PROMPT.DELAY_MS);
-      }
-
-      return () => {
-        cancelIdleCallback(idleId);
-        if (timer) clearTimeout(timer);
-      };
-    }, [locale, isPremium])
+      return () => cancelIdleCallback(idleId);
+    }, [])
   );
 
   // Fact press handler
@@ -148,16 +124,9 @@ function HomeScreen() {
       factIdList?: number[],
       indexInList?: number
     ) => {
-      // Cards that registered a morph source on press-in (ImageFactCard) open
-      // via the card→detail morph; everything else keeps the card presentation.
-      const base = factDetailBasePath(fact.id);
-      if (factIdList && factIdList.length > 1 && indexInList !== undefined) {
-        router.push(
-          `${base}/${fact.id}?source=${source}&factIds=${JSON.stringify(factIdList)}&currentIndex=${indexInList}`
-        );
-      } else {
-        router.push(`${base}/${fact.id}?source=${source}`);
-      }
+      // Cards that registered a morph source on press-in open as the in-tab
+      // overlay (the banner stays above); everything else uses the card route.
+      openFactDetail(router, fact.id, { source, factIds: factIdList, currentIndex: indexInList });
     },
     [router]
   );

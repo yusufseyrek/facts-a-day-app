@@ -42,11 +42,11 @@ import {
   triggerTestBadgeToast,
 } from '../services/badges';
 import {
-  MAX_FACT_DETAIL_SECONDS,
   addFactDetailTimeSpent,
   mapApiFactToRelations,
   markFactDetailOpened,
   markFactDetailRead,
+  MAX_FACT_DETAIL_SECONDS,
 } from '../services/database';
 import {
   getCachedFactImage,
@@ -54,6 +54,7 @@ import {
   purgeCachedFactImage,
 } from '../services/images';
 import { getIsConnected } from '../services/network';
+import { useTabBarBannerInset } from '../services/tabBarBannerInset';
 import { getCategoryNeonColor, hexColors, useTheme } from '../theme';
 import { PAYWALL_GOLD } from '../theme/paywallColors';
 import { getTranslatedUrl } from '../utils/browser';
@@ -94,6 +95,10 @@ interface FactModalProps {
    * UNDER it (needs the real safe-area inset). No effect on Android.
    */
   presentedAsModal?: boolean;
+  /** True when rendered by the in-tab overlay host (vs a card/modal route): the
+   *  persistent tab-bar banner floats above, so FactModal drops its own banner
+   *  and reserves clearance for the persistent one. */
+  inOverlay?: boolean;
 }
 
 // Automatic hero-image retry tuning.
@@ -156,6 +161,7 @@ export function FactModal({
   source,
   onRelatedFactPress,
   presentedAsModal,
+  inOverlay,
 }: FactModalProps) {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
@@ -175,6 +181,9 @@ export function FactModal({
   } = useResponsive();
 
   const insets = useSafeAreaInsets();
+  // In the in-tab overlay the persistent tab-bar banner floats above the action
+  // bar; reserve room for it so scroll content clears its top edge.
+  const persistentBannerInset = useTabBarBannerInset();
   const isLandscape = SCREEN_WIDTH > SCREEN_HEIGHT;
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
@@ -1112,7 +1121,18 @@ export function FactModal({
           recomputeMaxScroll();
         }}
         // When the bottom chrome floats (glass), pad so content scrolls past it.
-        contentContainerStyle={useGlassChrome ? { paddingBottom: bottomBarHeight } : undefined}
+        contentContainerStyle={
+          useGlassChrome
+            ? {
+                paddingBottom: inOverlay
+                  ? Math.max(
+                      bottomBarHeight,
+                      insets.bottom + media.tabBarHeight + persistentBannerInset
+                    )
+                  : bottomBarHeight,
+              }
+            : undefined
+        }
         // NO removeClippedSubviews here: on Android Fabric, removing clipped
         // children while the screen's fragment is being torn down (closing
         // this screen) is a native crash class — and the prop is unsupported
@@ -1545,7 +1565,10 @@ export function FactModal({
             : undefined
         }
       >
-        <BannerAd placement="fact_modal" />
+        {/* In the overlay the persistent tab-bar banner shows above this chrome;
+            don't render a second one. On the card/modal routes (banner occluded)
+            this is the fact-detail banner as before. */}
+        {!inOverlay && <BannerAd placement="fact_modal" />}
 
         <FactActions
           factId={fact.id}

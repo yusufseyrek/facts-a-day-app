@@ -7,6 +7,7 @@ import { useFocusEffect, usePathname, useRouter } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { PersistentTabBarBanner } from '../../src/components/ads/PersistentTabBarBanner';
+import { FactMorphOverlayHost } from '../../src/components/factMorph/FactMorphOverlayHost';
 import { GlobalProgressBar } from '../../src/components/GlobalProgressBar';
 import { useScrollToTop } from '../../src/contexts';
 import { InsideTabsProvider } from '../../src/contexts/InsideTabsContext';
@@ -241,6 +242,11 @@ export default function TabLayout() {
         >
           <GlobalProgressBar />
         </View>
+
+        {/* Fact-detail morph, hosted here (below the banner) so the banner
+          stays continuous across feed → fact detail instead of being covered
+          by a native modal. Renders nothing until a card opens a fact. */}
+        <FactMorphOverlayHost />
 
         {/* Fixed ad banner pinned above the native tab bar; persists across tab
           switches (rendered here, not per screen). Self-positioning. */}

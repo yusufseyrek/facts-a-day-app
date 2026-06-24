@@ -5,6 +5,7 @@ import { usePathname } from 'expo-router';
 
 import { INTERSTITIAL_ADS } from '../../config/app';
 import { maybeShowInactivityInterstitial } from '../../services/adManager';
+import { isModalScreenActive } from '../../services/badges';
 
 interface IdleInterstitialProps {
   /** Disable the idle timer (e.g. during onboarding / first session). */
@@ -54,9 +55,10 @@ export function IdleInterstitial({ enabled = true, children }: IdleInterstitialP
     if (!enabled || AppState.currentState !== 'active') return;
     timerRef.current = setTimeout(() => {
       // Skip on modal routes (paywall purchase flow, fact/story modals) — see
-      // BLOCKING_ROUTE_PREFIXES. Fire-and-forget otherwise; adManager gates on
-      // premium + the global cooldown.
-      if (!isBlockingRoute(pathnameRef.current)) {
+      // BLOCKING_ROUTE_PREFIXES — and on the in-tab fact overlay, which isn't a
+      // route but registers via pushModalScreen (isModalScreenActive). An
+      // interstitial over it would collapse the morph. adManager gates the rest.
+      if (!isBlockingRoute(pathnameRef.current) && !isModalScreenActive()) {
         maybeShowInactivityInterstitial().catch(() => {});
       }
       // Re-arm so a still-idle user is re-evaluated next window (the cooldown

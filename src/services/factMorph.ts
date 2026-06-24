@@ -1,6 +1,8 @@
-import type { ComponentType } from 'react';
+import { type ComponentType, useSyncExternalStore } from 'react';
+
 import type { ViewStyle } from 'react-native';
 import type { SampleFact } from '../config/sampleFacts';
+import type { FactViewSource } from './analytics';
 import type { Category } from './database';
 
 /**
@@ -154,4 +156,93 @@ export function subscribeActiveFactMorph(listener: ActiveMorphListener): () => v
  */
 export function factDetailBasePath(factId: number): '/fact/morph' | '/fact' {
   return hasPendingFactMorph(factId) ? '/fact/morph' : '/fact';
+}
+
+// ── Fact-detail overlay ───────────────────────────────────────────────────────
+// The morph is presented as an in-(tabs) overlay rather than a root native
+// modal, so the persistent tab-bar banner (rendered ABOVE this in the tabs
+// layout) stays mounted and visible the whole time — the bar beneath it just
+// swaps from the native tab bar to the fact action bar. A native modal would
+// paint over the banner; an in-tree overlay does not.
+
+export interface FactOverlayState {
+  factId: number;
+  /** The pressed card's measured morph anchor (drives the container transform). */
+  source: FactMorphSource;
+  /** Analytics FactViewSource — distinct from the geometric morph source. */
+  viewSource?: FactViewSource;
+  /** JSON-encoded number[] for prev/next, matching the route's factIds param. */
+  factIds?: string;
+  currentIndex?: string;
+}
+
+let activeOverlay: FactOverlayState | null = null;
+const overlayListeners = new Set<() => void>();
+
+export function openFactOverlay(state: FactOverlayState): void {
+  activeOverlay = state;
+  for (const l of overlayListeners) l();
+}
+
+export function closeFactOverlay(): void {
+  if (!activeOverlay) return;
+  activeOverlay = null;
+  for (const l of overlayListeners) l();
+}
+
+export function getFactOverlay(): FactOverlayState | null {
+  return activeOverlay;
+}
+
+/** Re-renders the caller when the active fact overlay changes. */
+export function useFactOverlay(): FactOverlayState | null {
+  return useSyncExternalStore(
+    (l) => {
+      overlayListeners.add(l);
+      return () => {
+        overlayListeners.delete(l);
+      };
+    },
+    getFactOverlay,
+    getFactOverlay
+  );
+}
+
+interface FactDetailRouter {
+  push: (href: string) => void;
+}
+
+/**
+ * Open a fact's detail from a press. When the pressed card registered a morph
+ * anchor on press-in, it opens as the in-(tabs) overlay (FactMorphOverlayHost)
+ * so the persistent banner stays above it; otherwise (deep link, non-card
+ * surface) it falls back to the plain card route.
+ */
+export function openFactDetail(
+  router: FactDetailRouter,
+  factId: number,
+  opts: { source: FactViewSource; factIds?: number[]; currentIndex?: number }
+): void {
+  const morphSource = peekPendingFactMorph(factId);
+  const hasList = !!opts.factIds && opts.factIds.length > 1 && opts.currentIndex !== undefined;
+
+  if (morphSource) {
+    clearPendingFactMorph(factId);
+    openFactOverlay({
+      factId,
+      source: morphSource,
+      viewSource: opts.source,
+      factIds: hasList ? JSON.stringify(opts.factIds) : undefined,
+      currentIndex: hasList ? String(opts.currentIndex) : undefined,
+    });
+    return;
+  }
+
+  if (hasList) {
+    router.push(
+      `/fact/${factId}?source=${opts.source}&factIds=${JSON.stringify(opts.factIds)}&currentIndex=${opts.currentIndex}`
+    );
+  } else {
+    router.push(`/fact/${factId}?source=${opts.source}`);
+  }
 }

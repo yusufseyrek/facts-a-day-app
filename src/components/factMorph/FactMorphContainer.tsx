@@ -85,9 +85,13 @@ const REPLICA_READY_FALLBACK_MS = 300;
 export function FactMorphContainer({
   source,
   children,
+  onDismiss,
 }: {
   source: FactMorphSource;
   children: React.ReactNode;
+  /** When set (in-tab overlay host), called instead of router.back() to
+   *  dismiss — there the morph is an overlay to unmount, not a route to pop. */
+  onDismiss?: () => void;
 }) {
   const router = useRouter();
   const { theme } = useTheme();
@@ -164,8 +168,12 @@ export function FactMorphContainer({
     if (poppedRef.current) return;
     poppedRef.current = true;
     setActiveFactMorph(null);
+    if (onDismiss) {
+      onDismiss();
+      return;
+    }
     if (router.canGoBack()) router.back();
-  }, [router]);
+  }, [router, onDismiss]);
 
   const close = useCallback(() => {
     if (closingRef.current) return;
