@@ -148,8 +148,12 @@ const ImageFactCardComponent = ({
         false
       );
     } else {
+      // Dissolve the loading veil instead of cutting it. The real image is
+      // already painted underneath (and itself cross-dissolves in via the
+      // Image `transition`), so fading this overlay out reveals it smoothly.
+      // Runs on the UI thread — one node, negligible cost.
       cancelAnimation(shimmerOpacity);
-      shimmerOpacity.value = 0;
+      shimmerOpacity.value = withTiming(0, { duration: IMAGE_FADE_MS });
     }
   }, [showLoadingState]);
 
@@ -389,14 +393,16 @@ const ImageFactCardComponent = ({
                   style={imageStyle}
                   contentFit="cover"
                   cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
-                  transition={0}
+                  transition={IMAGE_FADE_MS}
                   placeholder={placeholder}
                   onError={handleImageError}
                   onLoad={handleImageLoad}
                   recyclingKey={recyclingKey}
                   priority="high"
                 />
-                {showLoadingState && (
+                {/* Loading veil — kept mounted past load so it can fade out
+                    (opacity is driven to 0 by shimmerStyle) rather than cut. */}
+                {!isPermanentlyFailed && (
                   <Animated.View
                     style={[StyleSheet.absoluteFill, styles.shimmerOverlay, shimmerStyle]}
                     pointerEvents="none"
@@ -478,6 +484,9 @@ const androidRipple = {
 };
 
 const placeholder = { blurhash: IMAGE_PLACEHOLDER.DEFAULT_BLURHASH };
+// Cross-dissolve duration shared by the image's native fade-in and the loading
+// veil's fade-out, so both resolve together for one cohesive reveal.
+const IMAGE_FADE_MS = 300;
 const gradientColors = ['transparent', 'rgba(0, 0, 0, 0.45)', 'rgba(0, 0, 0, 0.85)'] as const;
 const gradientLocations = [0.25, 0.55, 1] as const;
 
@@ -495,7 +504,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   shimmerOverlay: {
-    backgroundColor: '#2d2d44', // Subtle shimmer color
+    backgroundColor: '#26262c', // Neutral charcoal shimmer (de-blued to match the placeholder)
   },
   errorOverlay: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

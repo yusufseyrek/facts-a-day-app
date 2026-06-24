@@ -9,8 +9,13 @@
  * Image placeholder settings
  */
 export const IMAGE_PLACEHOLDER = {
-  /** Dark blurhash that matches the card's dark theme for cohesive loading */
-  DEFAULT_BLURHASH: 'L03[%0IU00~q00xu00Rj00%M00M{',
+  /**
+   * Neutral charcoal (#1B1C20) flat blurhash. The previous value decoded to a
+   * saturated blue (#2223A4), which flashed as a vivid "dark blue fill" before
+   * each image loaded. A neutral dark tone blends with the card chrome so the
+   * image simply cross-dissolves up from a quiet background.
+   */
+  DEFAULT_BLURHASH: 'L038@vfQfQfQfQfQfQfQfQfQfQfQ',
 } as const;
 
 /**

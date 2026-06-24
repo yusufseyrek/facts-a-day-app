@@ -194,7 +194,7 @@ const CompactFactCardComponent = ({
                 contentFit="cover"
                 cachePolicy={Platform.OS === 'android' ? 'disk' : 'memory-disk'}
                 placeholder={placeholder}
-                transition={0}
+                transition={200}
                 priority="normal"
                 onError={handleImageError}
                 onLoad={handleImageLoad}
