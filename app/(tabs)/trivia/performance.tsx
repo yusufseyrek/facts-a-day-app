@@ -19,6 +19,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ContentContainer, GlassSurface } from '../../../src/components';
 import { BadgeIcon } from '../../../src/components/badges/BadgeIcon';
 import {
+  Award,
   Calendar,
   CheckCircle,
   ChevronLeft,
@@ -26,7 +27,6 @@ import {
   Gamepad2,
   Hash,
   Shuffle,
-  Trophy,
   Zap,
 } from '../../../src/components/icons';
 import { XStack, YStack } from '../../../src/components/Stacks';
@@ -812,7 +812,7 @@ export default function PerformanceScreen() {
                 >
                   <XStack alignItems="center" justifyContent="space-between">
                     <XStack alignItems="center" gap={spacing.sm}>
-                      <Trophy size={iconSizes.sm} color={accentColor} />
+                      <Award size={iconSizes.sm} color={accentColor} />
                       <Text.Label fontFamily={FONT_FAMILIES.semibold} color={textColor}>
                         {t('achievements')}
                       </Text.Label>

@@ -10,7 +10,7 @@ import { BadgeCard } from '../src/components/badges/BadgeCard';
 import { BadgeDetailSheet } from '../src/components/badges/BadgeDetailSheet';
 import { BadgesScreenSkeleton } from '../src/components/badges/BadgesScreenSkeleton';
 import { GlassSurface } from '../src/components/GlassSurface';
-import { BookOpen, Flame, Gamepad2, Trophy } from '../src/components/icons';
+import { Award, BookOpen, Flame, Gamepad2 } from '../src/components/icons';
 import { ContentContainer } from '../src/components/ScreenLayout';
 import { XStack, YStack } from '../src/components/Stacks';
 import { FONT_FAMILIES, Text } from '../src/components/Typography';
@@ -314,7 +314,7 @@ export default function BadgesScreen() {
                       alignItems: 'center',
                     }}
                   >
-                    <Trophy
+                    <Award
                       size={iconSizes.lg}
                       color={totalEarned > 0 ? colors.primary : colors.textMuted}
                     />

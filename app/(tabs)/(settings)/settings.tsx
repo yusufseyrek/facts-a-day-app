@@ -11,6 +11,7 @@ import * as Updates from 'expo-updates';
 
 import { ContentContainer, ScreenContainer, Text } from '../../../src/components';
 import {
+  Award,
   Ban,
   BarChart3,
   Bell,
@@ -761,7 +762,7 @@ export default function SettingsPage() {
         {
           id: 'achievements',
           label: t('achievements'),
-          icon: <Trophy size={iconSizes.md} color={colors.neonYellow} />,
+          icon: <Award size={iconSizes.md} color={colors.neonYellow} />,
           accent: colors.neonYellow,
           onPress: () => router.push('/badges'),
         },
