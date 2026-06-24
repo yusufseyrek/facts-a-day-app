@@ -254,7 +254,7 @@ const ImageFactCardComponent = ({
 
   // Register this card as the morph source on press-IN: measureInWindow is
   // async, so starting here guarantees the rect is registered by the time
-  // onPress (touch up) pushes the route via factDetailBasePath(). Skipped
+  // onPress (touch up) opens the fact via openFactDetail (in-tab overlay). Skipped
   // while the image is still loading — morphing a shimmer reads broken, and
   // the press then falls back to the plain card presentation. A press-in that
   // turns into a scroll leaves a harmless entry (fact-id + TTL guarded).

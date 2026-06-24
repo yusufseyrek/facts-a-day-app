@@ -91,7 +91,10 @@ const phoneMedia = {
   buttonHeight: 56,
   topicCardSize: 80,
   colorSwatchSize: 72,
-  tabBarHeight: 56,
+  // iOS tab bar ≈ 49–56pt; Android's NativeTabs is a Material-3
+  // BottomNavigationView whose content height is ~80dp (m3_bottom_nav_min_height),
+  // so the persistent banner / idle toast / overlay clearance all sit above it.
+  tabBarHeight: Platform.OS === 'android' ? 80 : 56,
   searchInputHeight: 44,
   clearButtonSize: 28,
   chipHeight: 28,

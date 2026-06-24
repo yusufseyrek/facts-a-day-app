@@ -7,15 +7,15 @@ import type { Category } from './database';
 
 /**
  * Pending "container transform" handoff between a pressed fact card and the
- * fact/morph/[id] route.
+ * fact-detail morph overlay.
  *
  * Flow: the card measures its morph anchor on press-IN — full-bleed cards
  * measure themselves, row cards measure just their thumbnail (measureInWindow
  * is async, so starting at press-in guarantees the rect is registered by the
- * time the press handler pushes the route). The surface's press handler then asks
- * factDetailBasePath() which route to push: when a fresh measurement for that
- * fact id exists it pushes fact/morph/[id] (transparentModal, no native
- * animation), whose FactMorphContainer expands from this rect to full screen.
+ * time the press handler opens the fact). openFactDetail() then reads this
+ * pending source: when a fresh measurement for that fact id exists it opens the
+ * in-tab overlay (FactMorphOverlayHost), whose FactMorphContainer expands from
+ * this rect to full screen; otherwise it falls back to the plain card route.
  *
  * Module state, single slot: a new press-in simply overwrites the previous
  * one. Consumers guard with fact id + TTL, so a stale registration (e.g. a
@@ -146,16 +146,6 @@ export function subscribeActiveFactMorph(listener: ActiveMorphListener): () => v
   return () => {
     activeListeners.delete(listener);
   };
-}
-
-/**
- * Which fact-detail route a press should push. Surfaces using fact cards that
- * register a morph (ImageFactCard, CompactFactCard, KeepReadingItem) get the
- * morph transition; everything else (notifications, deep links) keeps the
- * plain card presentation.
- */
-export function factDetailBasePath(factId: number): '/fact/morph' | '/fact' {
-  return hasPendingFactMorph(factId) ? '/fact/morph' : '/fact';
 }
 
 // ── Fact-detail overlay ───────────────────────────────────────────────────────

@@ -72,6 +72,17 @@ export const maybeShowTriviaResultsInterstitial = async (): Promise<boolean> => 
 };
 
 /**
+ * Whether an inactivity interstitial would actually show right now (ads enabled,
+ * not premium, global cooldown elapsed). The idle countdown checks this before
+ * it starts so it only appears when an ad will follow — never a "ghost" countdown
+ * during the cooldown window. (Doesn't check ad fill; that's a rarer no-fill.)
+ */
+export const canShowInactivityInterstitial = async (): Promise<boolean> => {
+  if (!INTERSTITIAL_ADS.ENABLED || !shouldShowAds()) return false;
+  return isCooldownElapsed();
+};
+
+/**
  * Show an interstitial when the user has been idle in-app (no interaction while
  * foregrounded) past INTERSTITIAL_ADS.INACTIVITY_SECONDS. Subject to the global
  * cooldown and premium gating, so repeated idle windows won't stack ads.

@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePathname } from 'expo-router';
 
 import { INTERSTITIAL_ADS } from '../../config/app';
-import { maybeShowInactivityInterstitial } from '../../services/adManager';
+import { canShowInactivityInterstitial, maybeShowInactivityInterstitial } from '../../services/adManager';
 import { isModalScreenActive } from '../../services/badges';
 import { useResponsive } from '../../utils/useResponsive';
 import { FONT_FAMILIES } from '../Typography';
@@ -21,7 +21,7 @@ interface IdleInterstitialProps {
 // paywall is a purchase flow. Touches on these modals also sit on a VC above our
 // root capture view, so they never reset the idle clock — the route check (not a
 // touch reset) is what protects them. Matched by path prefix.
-const BLOCKING_ROUTE_PREFIXES = ['/paywall', '/fact/modal', '/fact/morph', '/fact/sample', '/story'];
+const BLOCKING_ROUTE_PREFIXES = ['/paywall', '/fact/modal', '/fact/sample', '/story'];
 const isBlockingRoute = (path: string): boolean =>
   BLOCKING_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
 
@@ -106,7 +106,11 @@ export function IdleInterstitial({ enabled = true, children }: IdleInterstitialP
           armRef.current?.();
           return;
         }
-        runCountdown();
+        // Only run the countdown when an interstitial will actually follow
+        // (cooldown elapsed, ads enabled, not premium) — no ghost countdowns.
+        canShowInactivityInterstitial()
+          .then((can) => (can ? runCountdown() : armRef.current?.()))
+          .catch(() => armRef.current?.());
       },
       Math.max(0, INTERSTITIAL_ADS.INACTIVITY_SECONDS - COUNTDOWN_SECONDS) * 1000
     );

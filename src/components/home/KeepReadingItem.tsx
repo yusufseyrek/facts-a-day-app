@@ -52,7 +52,7 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
 
   // Register the image as the morph source on press-IN: measureInWindow is
   // async, so starting here guarantees the rect is registered by the time
-  // onPress (touch up) pushes the route via factDetailBasePath(). A press-in
+  // onPress (touch up) opens the fact via openFactDetail (in-tab overlay). A press-in
   // that turns into a scroll leaves a harmless entry (fact-id + TTL guarded).
   const handlePressIn = useCallback(() => {
     onPressIn();

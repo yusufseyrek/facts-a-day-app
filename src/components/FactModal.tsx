@@ -1120,7 +1120,12 @@ export function FactModal({
           contentHeightRef.current = h;
           recomputeMaxScroll();
         }}
-        // When the bottom chrome floats (glass), pad so content scrolls past it.
+        // Pad so content scrolls clear of whatever floats over its tail:
+        // the glass bottom chrome (iOS), and — in the in-tab overlay on every
+        // platform — the persistent tab-bar banner, which paints above the
+        // overlay (zIndex 400). On Android useGlassChrome is false, so without
+        // the overlay branch the article tail scrolls under the banner with no
+        // way to clear it.
         contentContainerStyle={
           useGlassChrome
             ? {
@@ -1131,7 +1136,9 @@ export function FactModal({
                     )
                   : bottomBarHeight,
               }
-            : undefined
+            : inOverlay
+              ? { paddingBottom: insets.bottom + media.tabBarHeight + persistentBannerInset }
+              : undefined
         }
         // NO removeClippedSubviews here: on Android Fabric, removing clipped
         // children while the screen's fragment is being torn down (closing

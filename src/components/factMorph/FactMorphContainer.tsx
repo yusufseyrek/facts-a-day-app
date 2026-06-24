@@ -46,8 +46,8 @@ const REPLICA_READY_FALLBACK_MS = 300;
  * "Container transform" shared-element morph from a pressed fact card to the
  * full-screen fact detail.
  *
- * Hosted by the fact/morph/[id] route (transparentModal, animation:'none', so
- * the feed stays visible behind and this component owns ALL motion):
+ * Hosted by the in-tab overlay (FactMorphOverlayHost), so the feed stays visible
+ * behind and this component owns ALL motion:
  *
  *  - A clipped container animates from the card's window rect to full screen.
  *  - Inside it, a ONE-SIDED dissolve: the real detail screen (rendered at

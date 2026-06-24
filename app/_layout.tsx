@@ -293,27 +293,10 @@ function AppContent() {
           }}
         />
         <Stack.Screen
-          name="fact/morph/[id]"
-          options={{
-            // Morph-presented twin of fact/[id]: a card→detail container
-            // transform. transparentModal keeps the feed visible behind while
-            // the screen expands from the pressed card's rect; animation:'none'
-            // because FactMorphContainer drives ALL motion (open, close, and
-            // Android back). Native gestures are off — dismissal goes through
-            // the morph controller (X button, pull-down-to-close, hardware
-            // back) so the reverse morph always plays.
-            presentation: 'transparentModal',
-            animation: 'none',
-            headerShown: false,
-            gestureEnabled: false,
-            contentStyle: { backgroundColor: 'transparent' },
-          }}
-        />
-        <Stack.Screen
           name="fact/sample/[id]"
           options={{
             // Onboarding sample-fact preview, morphing from a pressed welcome
-            // carousel card (same container transform as fact/morph/[id]).
+            // carousel card (the same FactMorphContainer container transform).
             // Registered on the root stack — not the onboarding one — so the
             // expanding screen covers the whole window including the
             // onboarding layout's progress bar, which stays visible (dimmed)
@@ -347,7 +330,7 @@ function AppContent() {
           name="story/morph/[category]"
           options={{
             // Morph-presented twin of story/[category]: a story-button→story
-            // container transform (same pattern as fact/morph/[id]).
+            // container transform (the same transparentModal morph pattern).
             // transparentModal keeps the home feed visible behind while the
             // screen expands from the pressed circle's rect; animation:'none'
             // because StoryMorphContainer drives ALL motion (open, close, and

@@ -32,8 +32,8 @@ const placeholder = { blurhash: IMAGE_PLACEHOLDER.DEFAULT_BLURHASH };
  * Fact detail preview for the onboarding welcome carousel — the morph twin
  * of the home screen's fact open.
  *
- * Registered on the ROOT stack (not the onboarding one) with the same
- * transparentModal options as fact/morph/[id], for two reasons: the morph
+ * Registered on the ROOT stack (not the onboarding one) as a
+ * transparentModal, for two reasons: the morph
  * must cover the whole window including the onboarding layout's progress bar
  * (on Android a nested-stack screen is clipped to the navigator's frame,
  * below the bar), and the welcome screen must stay visible behind the

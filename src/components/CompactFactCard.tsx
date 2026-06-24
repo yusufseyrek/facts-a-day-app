@@ -123,7 +123,7 @@ const CompactFactCardComponent = ({
 
   // Register the thumbnail as the morph source on press-IN: measureInWindow
   // is async, so starting here guarantees the rect is registered by the time
-  // onPress (touch up) pushes the route via factDetailBasePath(). The replica
+  // onPress (touch up) opens the fact via openFactDetail (in-tab overlay). The replica
   // mirrors whatever the thumbnail currently shows (image, blurhash, or
   // placeholder), so no imageLoaded gate is needed. A press-in that turns
   // into a scroll leaves a harmless entry (fact-id + TTL guarded).

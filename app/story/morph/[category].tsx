@@ -8,7 +8,7 @@ import StoryScreen from '../[category]';
 
 /**
  * Morph-presented variant of the story screen ("container transform"), the
- * story twin of fact/morph/[id].
+ * story-screen analogue of the fact-detail morph.
  *
  * Registered as presentation:'transparentModal' + animation:'none' (see
  * app/_layout.tsx): the home feed stays visible behind while
