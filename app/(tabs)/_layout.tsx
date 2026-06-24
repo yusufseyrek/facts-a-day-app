@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { useFocusEffect, usePathname, useRouter } from 'expo-router';
+import { useFocusEffect, usePathname } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { PersistentTabBarBanner } from '../../src/components/ads/PersistentTabBarBanner';
@@ -71,24 +70,6 @@ export default function TabLayout() {
     }
   }, [currentTab]);
 
-  // iOS 26 contextual trailing button: while the trivia tab is active, the
-  // separated role="search" button becomes a PLAY button. The search screen
-  // gets preventNativeSelection, so pressing it doesn't switch tabs — the
-  // native side blocks the selection and the navigator reports it as a PREVENTED
-  // `tabPress` on the (search) route (handled in screenListeners below), which
-  // launches a trivia game instead (daily if one is pending, mixed otherwise).
-  // NOTE: expo-router (>=56) sets its own `onTabSelectionPrevented` on the host
-  // *after* spreading `unstable_nativeProps`, so a callback passed there is
-  // silently overridden — reading the prevented tabPress is the only path that
-  // works. Only the search trigger ever sets preventNativeSelection, so any
-  // prevented event is a play press. Other platforms keep the plain search tab.
-  const router = useRouter();
-  const useSeparatedSearchTab = Platform.OS === 'ios' && isLiquidGlassAvailable();
-  const playTriviaMode = useSeparatedSearchTab && currentTab === 'trivia';
-  const handleTriviaPlayPress = useCallback(() => {
-    router.push(hasDailyTrivia ? '/trivia/game?type=daily' : '/trivia/game?type=mixed');
-  }, [router, hasDailyTrivia]);
-
   // Check for daily trivia availability
   const checkDailyTrivia = useCallback(async () => {
     try {
@@ -145,15 +126,7 @@ export default function TabLayout() {
           indicatorColor={isDark ? colors.neutralLight : colors.primaryLight}
           labelVisibilityMode="labeled"
           screenListeners={({ route }) => ({
-            tabPress: (e) => {
-              // iOS 26 play-trivia button: the separated search button has
-              // preventNativeSelection while the trivia tab is active, so a press
-              // arrives here as a PREVENTED tabPress on the (search) route (the
-              // tab never switches). Launch a game instead of doing nothing.
-              if (route.name === '(search)' && e.data?.isPrevented) {
-                handleTriviaPlayPress();
-                return;
-              }
+            tabPress: () => {
               const tabId = TAB_IDS[route.name] ?? route.name;
               // Every home press (switch-to or re-tap, both platforms) resets
               // the horizontal rows (story buttons, Latest carousel) to start.
@@ -181,31 +154,15 @@ export default function TabLayout() {
             <NativeTabs.Trigger.Label>{t('home')}</NativeTabs.Trigger.Label>
           </NativeTabs.Trigger>
 
-          {/* role="search" splits this tab into the standalone trailing search
-            button next to the Liquid Glass bar on iOS 26; Android ignores the
-            role and keeps a regular tab (hence the explicit icon/label).
-            While the trivia tab is active the button turns into a play-trivia
-            button (icon swap + preventNativeSelection, handled above). */}
-          <NativeTabs.Trigger
-            name="(search)"
-            role="search"
-            unstable_nativeProps={playTriviaMode ? { preventNativeSelection: true } : undefined}
-          >
-            <NativeTabs.Trigger.Icon
-              sf={playTriviaMode ? 'dice.fill' : 'magnifyingglass'}
-              md="search"
-            />
-            <NativeTabs.Trigger.Label>
-              {playTriviaMode ? t('trivia') : t('search')}
-            </NativeTabs.Trigger.Label>
-          </NativeTabs.Trigger>
-
-          {/* Android: an empty <Badge /> reaches rn-screens as badgeValue ' '
-            (space), which Material renders as an oversized TEXT badge; only
-            the literal '' takes the small-dot path, so override it natively.
-            iOS keeps the plain Badge child. */}
+          {/* Trivia is the prominent trailing action: role="search" splits it
+            into the standalone trailing button next to the Liquid Glass bar on
+            iOS 26; Android ignores the role and keeps it a regular tab.
+            Android badge: an empty <Badge /> reaches rn-screens as badgeValue
+            ' ' (space), which Material renders as an oversized TEXT badge; only
+            the literal '' takes the small-dot path, so override it natively. */}
           <NativeTabs.Trigger
             name="trivia"
+            role="search"
             unstable_nativeProps={
               Platform.OS === 'android' && hasDailyTrivia ? { badgeValue: '' } : undefined
             }
@@ -214,6 +171,11 @@ export default function TabLayout() {
             <NativeTabs.Trigger.Label>{t('trivia')}</NativeTabs.Trigger.Label>
             {/* Empty badge renders as a dot when daily trivia is available */}
             {hasDailyTrivia ? <NativeTabs.Trigger.Badge /> : null}
+          </NativeTabs.Trigger>
+
+          <NativeTabs.Trigger name="(search)">
+            <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
+            <NativeTabs.Trigger.Label>{t('search')}</NativeTabs.Trigger.Label>
           </NativeTabs.Trigger>
 
           <NativeTabs.Trigger name="(favorites)">
