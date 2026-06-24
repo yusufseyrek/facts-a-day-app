@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, ScrollView, View } from 'react-native';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Device from 'expo-device';
 
 import { useTranslation } from '../../i18n/useTranslation';
 import { trackNotificationTimeChange, updateNotificationProperty } from '../../services/analytics';
@@ -145,25 +146,32 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       const timeStrings = times.map((t) => t.toISOString());
       await onboardingService.setNotificationTimes(timeStrings);
 
-      // Push the updated times to the backend (server-driven scheduling).
-      // Settings is an explicit opt-in, so prompt for permission if the user
-      // hasn't decided yet (passive callers never prompt — see registerForPush).
-      const registered = await notificationService.registerForPush(locale, {
-        promptIfUndetermined: true,
-      });
-      if (!registered) {
-        // The times are saved locally, but no daily push will arrive until the
-        // device is registered. Showing the green "updated" toast here would
-        // falsely confirm delivery, so surface the real state instead — pointing
-        // to Settings when notifications are disabled (the usual cause), or a
-        // generic retry otherwise. The modal stays open so the user can act.
-        Alert.alert(
-          hasNotificationPermission ? t('error') : t('enableNotifications'),
-          hasNotificationPermission
-            ? t('failedToUpdateNotificationTimes')
-            : t('notificationPermissionWarning')
-        );
-        return;
+      // Push the updated times to the backend (server-driven scheduling). This
+      // only works on a physical device: simulators/emulators can't obtain an
+      // Expo push token, so registerForPush always short-circuits there (reason
+      // 'not_device'). On a simulator, saving the preference IS the whole job,
+      // so skip registration and treat the save as a success rather than
+      // surfacing a false "failed to update" error to a developer testing the UI.
+      if (Device.isDevice) {
+        // Settings is an explicit opt-in, so prompt for permission if the user
+        // hasn't decided yet (passive callers never prompt, see registerForPush).
+        const registered = await notificationService.registerForPush(locale, {
+          promptIfUndetermined: true,
+        });
+        if (!registered) {
+          // The times are saved locally, but no daily push will arrive until the
+          // device is registered. Showing the green "updated" toast here would
+          // falsely confirm delivery, so surface the real state instead: pointing
+          // to Settings when notifications are disabled (the usual cause), or a
+          // generic retry otherwise. The modal stays open so the user can act.
+          Alert.alert(
+            hasNotificationPermission ? t('error') : t('enableNotifications'),
+            hasNotificationPermission
+              ? t('failedToUpdateNotificationTimes')
+              : t('notificationPermissionWarning')
+          );
+          return;
+        }
       }
 
       // Update parent component with the first time (for backward compatibility)
