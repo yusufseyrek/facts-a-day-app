@@ -11,7 +11,7 @@ import * as onboardingService from '../../services/onboarding';
 import { hexColors, useTheme } from '../../theme';
 import { useResponsive } from '../../utils/useResponsive';
 import { DialogButton, DialogShell } from '../DialogShell';
-import { AlertTriangle, Plus, Trash2 } from '../icons';
+import { AlertTriangle, ChevronRight, Plus, Trash2 } from '../icons';
 import { SuccessToast } from '../SuccessToast';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -410,6 +410,9 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                 <Text.Caption color={warningColor} style={{ flex: 1 }}>
                   {t('notificationPermissionWarning')}
                 </Text.Caption>
+                {/* Trailing chevron signals the row is tappable, matching the
+                    settings list grammar (see settings.tsx). */}
+                <ChevronRight size={iconSizes.sm} color={warningColor} />
               </Pressable>
             )}
 
