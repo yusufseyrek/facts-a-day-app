@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { LayoutAnimation, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { AppState, LayoutAnimation, Platform, Pressable, StyleSheet, View } from 'react-native';
 import {
   AdsConsent,
   BannerAd as GoogleBannerAd,
@@ -50,6 +50,17 @@ const getAdUnitId = (): string => {
 
 type AdState = 'loading' | 'loaded' | 'error';
 
+/**
+ * react-native-google-mobile-ads hands onAdFailedToLoad a NativeError but types
+ * it as a plain `Error`. At runtime it carries `userInfo.code` (the bare code,
+ * e.g. 'no-fill') and `code` (the namespaced form, e.g. 'googleMobileAds/no-fill').
+ * NativeError isn't exported, so we narrow it structurally.
+ */
+type BannerAdError = Error & {
+  code?: string;
+  userInfo?: { code?: string; message?: string };
+};
+
 function BannerAdComponent({
   onAdLoadChange,
   collapsible,
@@ -71,10 +82,23 @@ function BannerAdComponent({
   const [canRequestAds, setCanRequestAds] = useState<boolean | null>(null);
   const [requestNonPersonalized, setRequestNonPersonalized] = useState(true);
   const [adState, setAdState] = useState<AdState>('loading');
-  const [retryCount, setRetryCount] = useState(0);
   const [adKey, setAdKey] = useState(0);
 
+  // Retry bookkeeping lives in refs, not state: the native onAdFailedToLoad
+  // callback fires seconds after the request and must read the live attempt
+  // count, never a value captured in a stale render closure.
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = useRef(0);
+  // A retry can come due while the app is backgrounded (banner off-screen). We
+  // don't request then — we set this so the next foreground issues it at once.
+  const pendingRetryRef = useRef(false);
+  // Mirrors adState for callbacks that must not depend on render state, so their
+  // useCallback deps stay empty and the installed native handler never goes stale.
+  const adStateRef = useRef<AdState>('loading');
+  // Previous AppState, so we react only to real background→active round-trips,
+  // not transient iOS inactive→active blips (Control Center, the ATT/permission
+  // prompt, an in-app sheet) that would otherwise churn a healthy banner.
+  const appStateRef = useRef(AppState.currentState);
 
   // AdMob load/fail callbacks arrive from native seconds after mount — often
   // exactly while the host screen is being dismissed. Ignore them once
@@ -116,6 +140,47 @@ function BannerAdComponent({
     onAdLoadChange?.(adState === 'loaded');
   }, [adState, onAdLoadChange]);
 
+  // Keep the ref in sync so the stable failure/foreground callbacks can read the
+  // current state without taking it as a dependency.
+  useEffect(() => {
+    adStateRef.current = adState;
+  }, [adState]);
+
+  // Re-request on a true background→foreground round-trip. This (a) runs a retry
+  // that came due while we were hidden, (b) resumes a banner that ended in
+  // error/loading, and (c) on iOS recovers a banner whose WKWebView the OS tore
+  // down during suspension (it loaded fine but renders blank on return). We
+  // ignore transient iOS inactive→active blips so a healthy, paying banner is
+  // never churned on a benign interruption.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      const prev = appStateRef.current;
+      appStateRef.current = next;
+      if (next !== 'active' || !mountedRef.current) return;
+
+      const hadPending = pendingRetryRef.current;
+      pendingRetryRef.current = false;
+      const cameFromBackground = prev === 'background';
+      // Reload when a deferred retry is due, OR we returned from real background
+      // with nothing showing, OR iOS returned from real background even with a
+      // "loaded" banner (its WebView may now be a blank husk). Never tear down a
+      // healthy loaded banner on Android or on a mere inactive→active blip.
+      const shouldReload =
+        hadPending ||
+        (cameFromBackground && (adStateRef.current !== 'loaded' || Platform.OS === 'ios'));
+      if (!shouldReload) return;
+
+      retryCountRef.current = 0;
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+      setAdState('loading');
+      setAdKey((k) => k + 1);
+    });
+    return () => sub.remove();
+  }, []);
+
   // Close [X]: open the compact remove-ads paywall (a native form sheet). It
   // intentionally does NOT hide the banner — that would be a free ad-removal.
   // The banner only goes away if the user actually upgrades (premium flips
@@ -141,23 +206,60 @@ function BannerAdComponent({
     if (!mountedRef.current) return;
     animateBannerResize();
     setAdState('loaded');
-    setRetryCount(0);
+    // Filled — reset the backoff so the next failure starts fast again.
+    retryCountRef.current = 0;
+    pendingRetryRef.current = false;
   }, [animateBannerResize]);
 
-  const handleAdFailedToLoad = useCallback(() => {
-    if (!mountedRef.current) return;
-    animateBannerResize();
-    setAdState('error');
+  // Schedule the next re-request. The schedule front-loads a fast first retry (a
+  // no-fill is usually transient and a re-request seconds later commonly fills),
+  // then backs off, and once exhausted keeps retrying forever at a steady,
+  // policy-safe interval — a long-lived banner must never permanently give up.
+  // Each delay is jittered so failures don't re-request in lockstep across users.
+  const scheduleRetry = useCallback(() => {
+    if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    const attempt = retryCountRef.current;
+    const base =
+      attempt < AD_RETRY.DELAYS.length ? AD_RETRY.DELAYS[attempt] : AD_RETRY.STEADY_INTERVAL_MS;
+    const jitter = 1 + (Math.random() * 2 - 1) * AD_RETRY.JITTER_FRACTION;
+    const delay = Math.round(base * jitter);
 
-    if (retryCount < AD_RETRY.MAX_RETRIES) {
-      const delay = AD_RETRY.DELAYS[retryCount] || AD_RETRY.DELAYS[AD_RETRY.DELAYS.length - 1];
-      retryTimeoutRef.current = setTimeout(() => {
-        setRetryCount((prev) => prev + 1);
-        setAdState('loading');
-        setAdKey((prev) => prev + 1);
-      }, delay);
-    }
-  }, [retryCount]);
+    retryTimeoutRef.current = setTimeout(() => {
+      retryTimeoutRef.current = null;
+      if (!mountedRef.current) return;
+      // Don't burn a request on an off-screen banner; defer to the next foreground.
+      if (AppState.currentState !== 'active') {
+        pendingRetryRef.current = true;
+        return;
+      }
+      retryCountRef.current += 1;
+      setAdState('loading');
+      setAdKey((prev) => prev + 1);
+    }, delay);
+  }, []);
+
+  const handleAdFailedToLoad = useCallback(
+    (error?: Error) => {
+      if (!mountedRef.current) return;
+      // Only animate the visible loaded→collapsed transition. Animating
+      // loading→error / error→error ticks (already 0-height) just arms the
+      // global iOS LayoutAnimation needlessly — risking collisions with
+      // navigation/sheet commits, now that retries are far more frequent.
+      if (adStateRef.current === 'loaded') animateBannerResize();
+      setAdState('error');
+
+      // Don't retry unrecoverable config errors (e.g. missing app id) — the
+      // request can never succeed and retrying only wastes it. Everything else
+      // (no-fill, network-error, timeout, …) falls through to the backoff.
+      const err = error as BannerAdError | undefined;
+      const code = err?.userInfo?.code ?? err?.code?.split('/').pop();
+      if (code && (AD_RETRY.NON_RETRYABLE_CODES as readonly string[]).includes(code)) {
+        return;
+      }
+      scheduleRetry();
+    },
+    [animateBannerResize, scheduleRetry]
+  );
 
   if (!shouldShowAds() || canRequestAds === false || canRequestAds === null) {
     return null;

@@ -95,10 +95,37 @@ export const NATIVE_ADS = {
 } as const;
 
 export const AD_RETRY = {
-  /** Maximum number of retry attempts for failed ads */
-  MAX_RETRIES: 5,
-  /** Delay intervals between retries (milliseconds): 30s, 1m, 2m, 4m, 8m */
-  DELAYS: [30000, 60000, 120000, 240000, 480000],
+  /**
+   * Banner re-request backoff (ms), indexed by attempt. The first retry is fast
+   * because a no-fill is usually transient — a re-request seconds later commonly
+   * fills, so the high-attention session-open window isn't wasted on a blank
+   * slot. Then it backs off. After the last entry we DON'T stop; we settle into
+   * STEADY_INTERVAL_MS indefinitely. 5s, 10s, 30s, 60s, 120s.
+   */
+  DELAYS: [5_000, 10_000, 30_000, 60_000, 120_000],
+  /**
+   * Steady interval (ms) used forever once DELAYS is exhausted. A long-lived
+   * banner (the persistent tab-bar slot is mounted for the whole session) must
+   * keep trying so it recovers when fill returns instead of going dark for good.
+   * 120s matches a normal banner auto-refresh cadence and stays above AdMob's
+   * ~30s request-frequency floor — re-requesting faster on a sustained basis
+   * risks being flagged as invalid traffic.
+   */
+  STEADY_INTERVAL_MS: 120_000,
+  /**
+   * Randomize each scheduled delay by ±this fraction so failures across the user
+   * base don't re-request in lockstep (thundering herd / anomalous request spikes).
+   */
+  JITTER_FRACTION: 0.2,
+  /**
+   * Bare error codes (error.userInfo.code) that are unrecoverable configuration
+   * errors — retrying can never succeed, so we stop. Everything else (no-fill,
+   * network-error, timeout, server-error, internal-error, invalid-request, …) is
+   * treated as transient and retried; when unsure we prefer retrying, since the
+   * steady cap makes a wasted retry cheap whereas a wrong "give up" loses the
+   * slot for the entire session.
+   */
+  NON_RETRYABLE_CODES: ['app-id-missing', 'application-identifier-missing'],
 } as const;
 
 /**
