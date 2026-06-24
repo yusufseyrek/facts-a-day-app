@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { CloseButton, Text } from '../../src/components';
+import { IdleScreen } from '../../src/components/ads/IdleScreen';
 import { FactModal } from '../../src/components/FactModal';
 import { useFactMorph } from '../../src/components/factMorph/FactMorphContext';
 import { useFactDetail, usePrefetchFactDetails } from '../../src/hooks/useFactDetail';
@@ -51,7 +52,7 @@ export default function FactDetailScreen({
   const currentIndexParam = overlay?.currentIndex ?? params.currentIndex;
   const router = useRouter();
   const { t, locale } = useTranslation();
-  const { spacing } = useResponsive();
+  const { spacing, media } = useResponsive();
   const insets = useSafeAreaInsets();
   // Non-null when hosted by the morph route — closing must play the reverse
   // morph instead of popping instantly.
@@ -196,19 +197,32 @@ export default function FactDetailScreen({
   }
 
   return (
-    <FactModal
-      fact={fact}
-      onClose={handleClose}
-      onNext={factIds && overrideFactId === null ? handleNext : undefined}
-      onPrevious={factIds && overrideFactId === null ? handlePrevious : undefined}
-      hasNext={hasNext}
-      hasPrevious={hasPrevious}
-      currentIndex={factIds && overrideFactId === null ? currentIndex : undefined}
-      totalCount={overrideFactId === null ? totalCount : undefined}
-      source={source}
-      onRelatedFactPress={handleRelatedFactPress}
-      presentedAsModal={presentedAsModal}
-      inOverlay={!!overlay}
-    />
+    // IdleScreen runs the idle interstitial for fact detail in ALL its forms —
+    // card (fact/[id]), modal (fact/modal/[id]), and the in-tab morph overlay —
+    // since FactModal calls pushModalScreen(), which makes the global
+    // IdleInterstitial self-skip. Only wraps the loaded state, so the spinner /
+    // error early-returns above never arm an idle ad.
+    <IdleScreen
+      // Lift the "Ads in 3…" chip clear of FactModal's bottom chrome (the banner
+      // + prev/next action bar pinned at bottom:0). Mirrors FactModal's own
+      // bottom padding (insets.bottom + tabBarHeight + banner) so the chip lands
+      // in clean space above it, the same way the story screen lifts its badge.
+      badgeStyle={{ right: insets.right + 16, bottom: insets.bottom + media.tabBarHeight + 64 }}
+    >
+      <FactModal
+        fact={fact}
+        onClose={handleClose}
+        onNext={factIds && overrideFactId === null ? handleNext : undefined}
+        onPrevious={factIds && overrideFactId === null ? handlePrevious : undefined}
+        hasNext={hasNext}
+        hasPrevious={hasPrevious}
+        currentIndex={factIds && overrideFactId === null ? currentIndex : undefined}
+        totalCount={overrideFactId === null ? totalCount : undefined}
+        source={source}
+        onRelatedFactPress={handleRelatedFactPress}
+        presentedAsModal={presentedAsModal}
+        inOverlay={!!overlay}
+      />
+    </IdleScreen>
   );
 }

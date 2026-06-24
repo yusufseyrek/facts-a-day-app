@@ -181,6 +181,18 @@ function NavigationThemeWrapper({ children }: { children: React.ReactNode }) {
   return <ThemeProvider value={navigationTheme}>{children}</ThemeProvider>;
 }
 
+// Gates the global idle interstitial on the LIVE onboarding-complete state, not
+// RootLayout's initialOnboardingStatus startup snapshot. A fresh install that
+// finishes onboarding in the same session flips the OnboardingContext to complete
+// (completeOnboarding -> isOnboardingComplete=true) but never re-runs
+// initializeApp, so that snapshot stays false and the idle listener would not arm
+// until the next cold start. Reading the context here (we're inside
+// OnboardingProvider) arms it the moment onboarding completes.
+function IdleInterstitialGate({ children }: { children: React.ReactNode }) {
+  const { isOnboardingComplete } = useOnboarding();
+  return <IdleInterstitial enabled={isOnboardingComplete === true}>{children}</IdleInterstitial>;
+}
+
 // Inner component that uses OnboardingContext for routing logic
 function AppContent() {
   const router = useRouter();
@@ -747,9 +759,9 @@ export default function RootLayout() {
                             <NavigationThemeWrapper>
                               <ReviewPromptProvider>
                                 <BadgeToastProvider>
-                                  <IdleInterstitial enabled={initialOnboardingStatus === true}>
+                                  <IdleInterstitialGate>
                                     <AppContent />
-                                  </IdleInterstitial>
+                                  </IdleInterstitialGate>
                                 </BadgeToastProvider>
                               </ReviewPromptProvider>
                             </NavigationThemeWrapper>

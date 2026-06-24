@@ -18,6 +18,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+import { IdleScreen } from '../../src/components/ads/IdleScreen';
 import { StoryNativeAdCard } from '../../src/components/ads/StoryNativeAdCard';
 import { CategoryBadge } from '../../src/components/CategoryBadge';
 import { CloseButton } from '../../src/components/CloseButton';
@@ -444,7 +445,15 @@ export default function StoryScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    // IdleScreen runs the story-view idle interstitial: story is a fullScreenModal
+    // that pushModalScreen()s, so the global IdleInterstitial can't serve it (its
+    // touches bypass the root capture, its overlay renders under the modal, and it
+    // self-skips on isModalScreenActive). Only mounted in this branch, so the
+    // loading / empty early-returns above never arm an idle ad over a spinner.
+    <IdleScreen
+      style={[styles.container, { backgroundColor: colors.background }]}
+      badgeStyle={{ bottom: insets.bottom + spacing.xl, right: spacing.lg }}
+    >
       <FlashList
         ref={listRef}
         data={storyDataWithAds}
@@ -504,7 +513,7 @@ export default function StoryScreen() {
             <ChevronsUp size={iconSizes.lg} color="rgba(255,255,255,0.7)" />
           </Animated.View>
         ))}
-    </View>
+    </IdleScreen>
   );
 }
 

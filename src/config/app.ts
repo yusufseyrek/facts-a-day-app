@@ -52,7 +52,7 @@ export const INTERSTITIAL_ADS = {
   /** Number of fact views between interstitial ads */
   FACT_VIEWS_BETWEEN_ADS: 10,
   /** Minimum seconds between interstitial ads (cooldown) */
-  COOLDOWN_SECONDS: 600,
+  COOLDOWN_SECONDS: 360,
   /**
    * Seconds of no in-app interaction (while foregrounded) before an idle
    * interstitial fires. Still subject to COOLDOWN_SECONDS, so this is a trigger,
