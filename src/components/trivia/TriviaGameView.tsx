@@ -716,6 +716,15 @@ export function TriviaGameView({
           </YStack>
         </ScrollView>
 
+        {/* Same banner as the persistent tab-bar one (shared ad unit + analytics
+            bucket), sitting just above the nav buttons. Non-premium only; the
+            content column reserves the bottom inset so the banner doesn't add its own. */}
+        {!isPremium && (
+          <View style={{ marginTop: spacing.sm }}>
+            <BannerAd respectBottomInset={false} placement="tab_bar" />
+          </View>
+        )}
+
         {/* Navigation buttons */}
         <XStack paddingHorizontal={spacing.lg} paddingTop={spacing.md} gap={spacing.md}>
           {/* Previous button */}
@@ -784,15 +793,6 @@ export function TriviaGameView({
           </Pressable>
         </XStack>
       </View>
-
-      {/* Anchored banner ad — non-premium only. The root view already reserves
-          the bottom safe-area inset (paddingBottom above), so the banner uses
-          respectBottomInset={false} and sits within that reserved space. */}
-      {!isPremium && (
-        <View style={{ marginTop: spacing.sm }}>
-          <BannerAd respectBottomInset={false} placement="trivia_game" />
-        </View>
-      )}
     </View>
   );
 }
