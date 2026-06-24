@@ -16,11 +16,6 @@
       "checkAutomatically": "NEVER",
       "fallbackToCacheTimeout": 5000,
       "url": "https://factsaday.com/api/updates/manifest",
-      "codeSigningCertificate": "./keys/codesigning-certificate.pem",
-      "codeSigningMetadata": {
-        "keyid": "root",
-        "alg": "rsa-v1_5-sha256"
-      },
       "requestHeaders": {
         "X-Firebase-AppCheck": ""
       }
@@ -70,7 +65,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.seyrek.factsaday",
-      "buildNumber": "110",
+      "buildNumber": "111",
       "googleServicesFile": "./google/GoogleService-Info.plist",
       "associatedDomains": ["applinks:factsaday.com"],
       "infoPlist": {
@@ -403,7 +398,7 @@
       "googleServicesFile": "./google/google-services.json",
       "predictiveBackGestureEnabled": false,
       "package": "dev.seyrek.factsaday",
-      "versionCode": 110,
+      "versionCode": 111,
       "permissions": [
         "INTERNET",
         "VIBRATE",
