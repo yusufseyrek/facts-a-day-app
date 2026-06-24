@@ -70,7 +70,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.seyrek.factsaday",
-      "buildNumber": "108",
+      "buildNumber": "109",
       "googleServicesFile": "./google/GoogleService-Info.plist",
       "associatedDomains": ["applinks:factsaday.com"],
       "infoPlist": {
@@ -403,7 +403,7 @@
       "googleServicesFile": "./google/google-services.json",
       "predictiveBackGestureEnabled": false,
       "package": "dev.seyrek.factsaday",
-      "versionCode": 108,
+      "versionCode": 109,
       "permissions": [
         "INTERNET",
         "VIBRATE",
