@@ -7,10 +7,12 @@ export {
   setFeedLoadPending,
   setHomeRenderPending,
   setLocaleRefreshPending,
+  setOnboardingRenderPending,
   signalFeedLoaded,
   signalHeroImageReady,
   signalHomeScreenRendered,
   signalLocaleRefreshDone,
+  signalOnboardingScreenRendered,
   waitForFeedLoaded,
   waitForHomeScreenReady,
 } from './splashGate';

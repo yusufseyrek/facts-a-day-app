@@ -17,6 +17,14 @@
  *      first Latest card's image has decoded (or will never arrive).
  *   4. The overlay fades out over a fully painted home screen.
  *
+ * Flow for a fresh install (onboarding):
+ *   1. _layout's initializeApp() calls setOnboardingRenderPending() before
+ *      flipping the app to ready. The Stack still mounts the home tab first
+ *      (initialRouteName) and redirects to /onboarding in a post-mount effect.
+ *   2. The onboarding welcome screen calls signalOnboardingScreenRendered() on
+ *      its first paint, so the overlay holds (opaque) over the transient home
+ *      mount and only fades once onboarding is on screen.
+ *
  * Every gate is capped with a timeout so a missed signal degrades to a longer
  * splash, never a stuck one.
  */
@@ -31,6 +39,11 @@ const HOME_RENDER_MAX_WAIT_MS = 6000;
 // rendered (the image can't even start drawing before that).
 const HERO_IMAGE_MAX_WAIT_MS = 2500;
 
+// Max wait for the onboarding welcome screen's first paint, measured from when
+// the SplashOverlay starts waiting. Covers the /onboarding index→welcome
+// redirect hop plus the welcome screen's first layout.
+const ONBOARDING_RENDER_MAX_WAIT_MS = 4000;
+
 // ── Home render gate ──
 let homeRenderedResolve: (() => void) | null = null;
 let homeRenderedPromise: Promise<void> | null = null;
@@ -38,6 +51,15 @@ let homeRenderedPromise: Promise<void> | null = null;
 // ── Hero image gate (first Latest carousel card) ──
 let heroImageResolve: (() => void) | null = null;
 let heroImagePromise: Promise<void> | null = null;
+
+// ── Onboarding render gate ──
+// Armed for fresh installs heading to onboarding. The root Stack mounts the
+// home tab first (initialRouteName: '(tabs)') and AppContent only redirects to
+// /onboarding in a post-mount effect, so without this gate the splash would
+// fade over the transient home skeleton before onboarding paints. Holding the
+// splash until the welcome screen's first paint masks that redirect entirely.
+let onboardingRenderedResolve: (() => void) | null = null;
+let onboardingRenderedPromise: Promise<void> | null = null;
 
 // ── Locale refresh gate ──
 // When set, the splash overlay also waits for the locale-change refresh flow.
@@ -83,6 +105,27 @@ export function signalHeroImageReady(): void {
     heroImageResolve();
     heroImageResolve = null;
     heroImagePromise = null;
+  }
+}
+
+/**
+ * Arm the onboarding-render gate. Must be called BEFORE the app tree mounts
+ * (mirrors setHomeRenderPending) so the gate exists when the SplashOverlay
+ * starts waiting. Used for fresh installs that route to /onboarding instead of
+ * the home feed.
+ */
+export function setOnboardingRenderPending(): void {
+  onboardingRenderedPromise = new Promise((resolve) => {
+    onboardingRenderedResolve = resolve;
+  });
+}
+
+/** The onboarding welcome screen has drawn its first frame. */
+export function signalOnboardingScreenRendered(): void {
+  if (onboardingRenderedResolve) {
+    onboardingRenderedResolve();
+    onboardingRenderedResolve = null;
+    onboardingRenderedPromise = null;
   }
 }
 
@@ -144,9 +187,10 @@ export function waitForFeedLoaded(): Promise<void> {
 
 /**
  * Awaited by the SplashOverlay (once the app tree is mounted) before it starts
- * its fade-out. Resolves when the home screen has actually painted — or after
- * the timeout caps, whichever comes first. Resolves immediately when no gates
- * are armed (fresh install heading to onboarding).
+ * its fade-out. Resolves when the screen behind the splash has actually
+ * painted — the home screen for returning users, or the onboarding welcome
+ * screen for fresh installs — or after the timeout caps, whichever comes
+ * first. Resolves immediately only when no gates are armed.
  */
 export function waitForHomeScreenReady(): Promise<void> {
   const gates: Promise<void>[] = [];
@@ -161,6 +205,10 @@ export function waitForHomeScreenReady(): Promise<void> {
       // rendered, so its timeout clock starts after the render gate.
       gates.push(renderGate.then(() => withTimeout(heroGate, HERO_IMAGE_MAX_WAIT_MS)));
     }
+  }
+
+  if (onboardingRenderedPromise) {
+    gates.push(withTimeout(onboardingRenderedPromise, ONBOARDING_RENDER_MAX_WAIT_MS));
   }
 
   if (localeRefreshPromise) {

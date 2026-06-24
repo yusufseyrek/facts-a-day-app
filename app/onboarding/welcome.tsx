@@ -11,7 +11,7 @@ import { SampleFactCardLayers } from '../../src/components/SampleFactCard';
 import { XStack, YStack } from '../../src/components/Stacks';
 import { LAYOUT } from '../../src/config/app';
 import { type SampleFact, sampleFactMorphId, sampleFacts } from '../../src/config/sampleFacts';
-import { useOnboarding, usePremium } from '../../src/contexts';
+import { signalOnboardingScreenRendered, useOnboarding, usePremium } from '../../src/contexts';
 import { useFactMorphSource } from '../../src/hooks/useFactMorphSource';
 import { useTranslation } from '../../src/i18n';
 import {
@@ -175,6 +175,24 @@ export default function WelcomeScreen() {
       initializeOnboarding(locale as SupportedLocale);
     }
   }, [isInitialized, isInitializing, initializationError, locale, initializeOnboarding]);
+
+  // Release the splash overlay once this screen has painted. On a fresh install
+  // the splash is held by the onboarding-render gate (see _layout's
+  // setOnboardingRenderPending) so the home-tab skeleton mounted underneath the
+  // redirect to /onboarding never shows. Two frames ensure the native side has
+  // actually drawn this screen before the splash fades (mirrors useHomeFeed).
+  // On any later entry (e.g. resetting onboarding from settings) the gate is
+  // not armed, so this is a harmless no-op.
+  useEffect(() => {
+    let secondFrame: number | undefined;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => signalOnboardingScreenRendered());
+    });
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      if (secondFrame !== undefined) cancelAnimationFrame(secondFrame);
+    };
+  }, []);
 
   // === Entrance animations ===
   const titleAnim = useRef(new Animated.Value(0)).current;

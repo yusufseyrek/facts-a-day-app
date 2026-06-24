@@ -52,6 +52,7 @@ import {
   setFeedLoadPending,
   setHomeRenderPending,
   setLocaleRefreshPending,
+  setOnboardingRenderPending,
   signalLocaleRefreshDone,
   useOnboarding,
   waitForFeedLoaded,
@@ -582,6 +583,12 @@ export default function RootLayout() {
 
       // ── Phase 2: Returning user flow ──
       if (!isComplete) {
+        // Fresh install → onboarding. The Stack mounts the home tab first
+        // (initialRouteName: '(tabs)') and AppContent redirects to /onboarding
+        // only in a post-mount effect. Arm the onboarding gate so the splash
+        // overlay stays up until the welcome screen actually paints, masking
+        // that transient home skeleton (mirrors setHomeRenderPending below).
+        setOnboardingRenderPending();
         setInitialOnboardingStatus(false);
         return;
       }
