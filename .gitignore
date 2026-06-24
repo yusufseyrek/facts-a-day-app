@@ -63,3 +63,8 @@ android/app/release.keystore
 
 # Maestro temp files
 .maestro/.temp-*
+# OTA code signing. The private key stays ignored by *.pem above (the backend
+# signs manifests with it). The PUBLIC cert + key MUST be committed — the cert is
+# embedded in the build (app.json updates.codeSigningCertificate).
+!keys/codesigning-certificate.pem
+!keys/codesigning-public-key.pem
