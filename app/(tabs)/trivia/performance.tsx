@@ -732,6 +732,11 @@ export default function PerformanceScreen() {
         showBackButton={false}
         underNavigationHeader
         showReturnButton={false}
+        // Inside the tabs the persistent tab-bar banner already covers the
+        // bottom, so don't render a second one here (was a double banner);
+        // reserve its height so the insights row clears it.
+        showBanner={false}
+        contentBottomInset={bannerInset}
         unavailableQuestionIds={selectedSession.unavailableQuestionIds}
         hideTimeAndStreak={selectedSession.trivia_mode === 'quick'}
       />

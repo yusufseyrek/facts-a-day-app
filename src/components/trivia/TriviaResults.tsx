@@ -75,6 +75,22 @@ export interface TriviaResultsProps {
    * bar inset — the header already occupies the top.
    */
   underNavigationHeader?: boolean;
+  /**
+   * Render the in-results banner ad (pinned at the bottom). Default true so the
+   * component is self-contained. Hosts that already provide a banner around it
+   * pass false: the game route (game.tsx) keeps ONE banner mounted across the
+   * game→results transition, and the in-tabs history/performance screens sit
+   * under the persistent tab-bar banner. Either way a second banner here would
+   * stack/duplicate. When false the host also owns the bottom safe-area inset.
+   */
+  showBanner?: boolean;
+  /**
+   * Extra bottom padding for the scrollable content, so it clears a banner the
+   * host floats OVER the results rather than laying it out below — i.e. the
+   * persistent tab-bar banner in history/performance. Defaults to 0, where the
+   * banner is a normal layout sibling and the flow already reserves its space.
+   */
+  contentBottomInset?: number;
 }
 
 // Horizontal progress bar component
@@ -444,6 +460,8 @@ export function TriviaResults({
   hideTimeAndStreak = false,
   underNavigationHeader = false,
   tooFastForLeaderboard = false,
+  showBanner = true,
+  contentBottomInset = 0,
 }: TriviaResultsProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -686,6 +704,7 @@ export function TriviaResults({
         // root View already pads for the status bar, so 'never' keeps that
         // layout untouched.
         contentInsetAdjustmentBehavior={underNavigationHeader ? 'automatic' : 'never'}
+        contentContainerStyle={{ paddingBottom: contentBottomInset }}
       >
         <YStack width="100%" alignItems="center">
           <YStack
@@ -1032,13 +1051,18 @@ export function TriviaResults({
 
       <View
         style={{
-          paddingBottom: showReturnButton ? insets.bottom + spacing.sm : 0,
+          // When the host owns the banner (showBanner=false) it also owns the
+          // bottom safe-area inset, so only the small gap above the return
+          // button is needed here.
+          paddingBottom: showReturnButton ? (showBanner ? insets.bottom : 0) + spacing.sm : 0,
         }}
       >
         {/* The banner only pads for the home indicator when it is the LAST
             element; with the return button below it, that padding would open
             a gap between the ad and the button. */}
-        <BannerAd respectBottomInset={!showReturnButton} placement="trivia_results" />
+        {showBanner && (
+          <BannerAd respectBottomInset={!showReturnButton} placement="trivia_results" />
+        )}
 
         {/* Return button (shown for normal trivia flow) */}
         {showReturnButton && (

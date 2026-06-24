@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, View } from 'react-native';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
+import { BannerAd } from '../../src/components/ads';
 import { showRewardedAd } from '../../src/components/ads/RewardedAd';
 import { YStack } from '../../src/components/Stacks';
 import {
@@ -741,10 +742,27 @@ export default function TriviaGameScreen() {
     return { correct, wrong, unanswered, bestStreak, elapsedTime };
   };
 
-  // Session review mode — show saved session results
+  // Get selected answer for current question
+  const selectedAnswer = currentQuestion ? gameState.answers[currentQuestion.id] || null : null;
+
+  // Check if explanation is shown for current question (free or ad-based)
+  const showExplanation =
+    explanationShownForQuestion === currentQuestion?.id ||
+    adHintUsedForQuestions.has(currentQuestion?.id ?? -1);
+
+  // The game route shows one of three content states — the active game, the
+  // post-game results, or a saved-session review — all above a SINGLE banner
+  // that stays mounted across the game→results transition, so the ad never
+  // reloads/flashes when a round ends. To keep one instance the banner is a
+  // stable sibling here rather than living inside each child: TriviaGameView and
+  // TriviaResults render no banner of their own (showBanner={false}). The screen
+  // owns the bottom safe-area inset so the banner clears the home indicator
+  // whether or not an ad is filled.
+  let content: ReactNode = null;
   if (reviewSession && reviewSession.questions && reviewSession.answers) {
+    // Session review mode — show saved session results
     const wrongCount = reviewSession.total_questions - reviewSession.correct_answers;
-    return (
+    content = (
       <TriviaResults
         correctAnswers={reviewSession.correct_answers}
         totalQuestions={reviewSession.total_questions}
@@ -768,22 +786,20 @@ export default function TriviaGameScreen() {
         })}
         showBackButton={true}
         showReturnButton={false}
+        showBanner={false}
         unavailableQuestionIds={reviewSession.unavailableQuestionIds}
         hideTimeAndStreak={reviewSession.trivia_mode === 'quick'}
       />
     );
-  }
-
-  // Results view
-  if (gameState.isFinished) {
+  } else if (gameState.isFinished) {
+    // Results view
     const results = calculateResults();
     // Same rule the server enforces: an average under MIN_SECONDS_PER_QUESTION
     // won't be ranked, so warn the player here (the submission is
     // fire-and-forget and can't surface its own outcome).
     const tooFastForLeaderboard =
       results.elapsedTime < gameState.questions.length * MIN_SECONDS_PER_QUESTION;
-
-    return (
+    content = (
       <TriviaResults
         correctAnswers={results.correct}
         totalQuestions={gameState.questions.length}
@@ -798,6 +814,7 @@ export default function TriviaGameScreen() {
         isDark={isDark}
         t={t}
         tooFastForLeaderboard={tooFastForLeaderboard}
+        showBanner={false}
         triviaModeBadge={getTriviaModeBadge({
           mode: params.type || 'mixed',
           categoryName: params.categoryName,
@@ -806,23 +823,9 @@ export default function TriviaGameScreen() {
         })}
       />
     );
-  }
-
-  // Game view
-  if (!currentQuestion) {
-    return null;
-  }
-
-  // Get selected answer for current question
-  const selectedAnswer = currentQuestion ? gameState.answers[currentQuestion.id] || null : null;
-
-  // Check if explanation is shown for current question (free or ad-based)
-  const showExplanation =
-    explanationShownForQuestion === currentQuestion?.id ||
-    adHintUsedForQuestions.has(currentQuestion?.id ?? -1);
-
-  return (
-    <>
+  } else if (currentQuestion) {
+    // Game view
+    content = (
       <TriviaGameView
         currentQuestion={currentQuestion}
         currentQuestionIndex={gameState.currentQuestionIndex}
@@ -850,6 +853,23 @@ export default function TriviaGameScreen() {
         isPremium={isPremium}
         remainingHints={remainingHints}
       />
+    );
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: bgColor, paddingBottom: insets.bottom }}>
+      <View style={{ flex: 1 }}>{content}</View>
+
+      {/* One persistent banner shared by the game and its results (see above).
+          Non-premium only; renders nothing otherwise. respectBottomInset is
+          false because the screen's paddingBottom already reserves the inset.
+          Gated on content so an empty transient state shows a bare background
+          rather than a lone ad. content is non-null across game→results, so the
+          instance still persists through that transition. */}
+      {content !== null && !isPremium && (
+        <BannerAd respectBottomInset={false} placement="tab_bar" />
+      )}
+
       <TriviaExitModal
         visible={showExitModal}
         onCancel={handleExitCancel}
@@ -875,6 +895,6 @@ export default function TriviaGameScreen() {
         cancelText={t('goBack') || 'Go Back'}
         exitText={t('continueAnyway') || 'Continue'}
       />
-    </>
+    </View>
   );
 }

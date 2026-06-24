@@ -27,7 +27,6 @@ import { hexToRgba } from '../../utils/colors';
 import { maxFontSizeMultipliers } from '../../utils/responsive';
 import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
-import { BannerAd } from '../ads';
 import { CloseButton } from '../CloseButton';
 import { GlassSurface } from '../GlassSurface';
 import { ChevronLeft, ChevronRight, Lightbulb, Timer } from '../icons';
@@ -159,7 +158,10 @@ export function TriviaGameView({
         flex: 1,
         backgroundColor: bgColor,
         paddingTop: insets.top,
-        paddingBottom: insets.bottom + spacing.sm,
+        // The bottom safe-area inset is owned by the game screen (game.tsx),
+        // which renders the persistent banner below this view; here we only
+        // keep a small gap under the nav buttons.
+        paddingBottom: spacing.sm,
         alignItems: 'center',
       }}
     >
@@ -715,15 +717,6 @@ export function TriviaGameView({
             )}
           </YStack>
         </ScrollView>
-
-        {/* Same banner as the persistent tab-bar one (shared ad unit + analytics
-            bucket), sitting just above the nav buttons. Non-premium only; the
-            content column reserves the bottom inset so the banner doesn't add its own. */}
-        {!isPremium && (
-          <View style={{ marginTop: spacing.sm }}>
-            <BannerAd respectBottomInset={false} placement="tab_bar" />
-          </View>
-        )}
 
         {/* Navigation buttons */}
         <XStack paddingHorizontal={spacing.lg} paddingTop={spacing.md} gap={spacing.md}>
