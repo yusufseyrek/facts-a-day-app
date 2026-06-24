@@ -33,53 +33,64 @@ const getInterstitialAdUnitId = (): string => {
 const adUnitId = getInterstitialAdUnitId();
 let interstitial: InterstitialAd | null = null;
 let adLoadFailed: boolean = false; // Track if ad failed to load (e.g., no-fill)
+let isShowingInterstitial = false; // an interstitial is single-use; guard re-entrant shows
+let isLoadingInterstitial = false; // coalesce concurrent (re)loads so we never create two instances
 
 // Initialize and load the interstitial ad with consent-based personalization
 const loadInterstitialAd = async () => {
-  // Reset failed state when attempting to load
-  adLoadFailed = false;
-
-  // Check consent status to determine if we should request non-personalized ads
-  const nonPersonalized = await shouldRequestNonPersonalizedAdsOnly();
-
-  interstitial = InterstitialAd.createForAdRequest(adUnitId, {
-    requestNonPersonalizedAdsOnly: nonPersonalized,
-    keywords: AD_KEYWORDS,
-  });
-
-  // Set up event listeners
-  interstitial.addAdEventListener(AdEventType.LOADED, () => {
-    if (__DEV__) console.log('Interstitial ad loaded');
+  // Coalesce concurrent (re)loads. The CLOSED preload and the show() error-path
+  // reload can fire together; without this we'd create two instances and leak
+  // the listeners on the abandoned one.
+  if (isLoadingInterstitial) return;
+  isLoadingInterstitial = true;
+  try {
+    // Reset failed state when attempting to load
     adLoadFailed = false;
-  });
 
-  interstitial.addAdEventListener(AdEventType.ERROR, (error) => {
-    console.warn('Interstitial ad not filled:', error?.message || error);
-    adLoadFailed = true;
-  });
+    // Check consent status to determine if we should request non-personalized ads
+    const nonPersonalized = await shouldRequestNonPersonalizedAdsOnly();
 
-  interstitial.addAdEventListener(AdEventType.CLOSED, () => {
-    if (__DEV__) console.log('Interstitial ad closed');
-    // Preload next ad
-    loadInterstitialAd();
-  });
-
-  // The lib mistypes the full-screen PAID payload as `undefined`; the native
-  // side does emit { value, currency, precision } (value in major units).
-  interstitial.addAdEventListener(AdEventType.PAID, (revenue) => {
-    const paid = revenue as { value: number; currency: string; precision: number } | undefined;
-    if (!paid) return;
-    trackAdRevenue({
-      format: 'interstitial',
-      value: paid.value,
-      currency: paid.currency,
-      precision: paid.precision,
-      adUnitId,
+    interstitial = InterstitialAd.createForAdRequest(adUnitId, {
+      requestNonPersonalizedAdsOnly: nonPersonalized,
+      keywords: AD_KEYWORDS,
     });
-  });
 
-  // Load the ad
-  interstitial.load();
+    // Set up event listeners
+    interstitial.addAdEventListener(AdEventType.LOADED, () => {
+      if (__DEV__) console.log('Interstitial ad loaded');
+      adLoadFailed = false;
+    });
+
+    interstitial.addAdEventListener(AdEventType.ERROR, (error) => {
+      console.warn('Interstitial ad not filled:', error?.message || error);
+      adLoadFailed = true;
+    });
+
+    interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+      if (__DEV__) console.log('Interstitial ad closed');
+      // Preload next ad
+      loadInterstitialAd();
+    });
+
+    // The lib mistypes the full-screen PAID payload as `undefined`; the native
+    // side does emit { value, currency, precision } (value in major units).
+    interstitial.addAdEventListener(AdEventType.PAID, (revenue) => {
+      const paid = revenue as { value: number; currency: string; precision: number } | undefined;
+      if (!paid) return;
+      trackAdRevenue({
+        format: 'interstitial',
+        value: paid.value,
+        currency: paid.currency,
+        precision: paid.precision,
+        adUnitId,
+      });
+    });
+
+    // Load the ad
+    interstitial.load();
+  } finally {
+    isLoadingInterstitial = false;
+  }
 };
 
 // Hook to use interstitial ads
@@ -199,6 +210,14 @@ export const showInterstitialAd = async (source?: InterstitialSource): Promise<v
     return;
   }
 
+  // An interstitial object is single-use: presenting it twice throws
+  // "ad object has been used". Concurrent triggers (e.g. an inactivity timer
+  // firing while another ad is mid-display) can race here — bail if one is up.
+  if (isShowingInterstitial) {
+    if (__DEV__) console.log('⚠️ An interstitial is already presenting, skipping duplicate request');
+    return;
+  }
+
   if (__DEV__) console.log('📺 Attempting to show interstitial ad...');
 
   // If ad already failed to load, skip immediately without waiting
@@ -219,7 +238,15 @@ export const showInterstitialAd = async (source?: InterstitialSource): Promise<v
     }
   }
 
-  if (interstitial && interstitial.loaded) {
+  // Capture the loaded instance and immediately detach it from the shared ref.
+  // An interstitial is SINGLE-USE: we present this exact object and ensure nothing
+  // else can grab it (a concurrent caller now sees `interstitial === null` and
+  // falls through to reload). A fresh ad is queued on CLOSED, and on the error
+  // path in `finally`.
+  const ad = interstitial;
+  if (ad && ad.loaded) {
+    isShowingInterstitial = true;
+    interstitial = null;
     try {
       if (__DEV__) console.log('🎬 Showing interstitial ad...');
 
@@ -244,13 +271,13 @@ export const showInterstitialAd = async (source?: InterstitialSource): Promise<v
           }
         };
 
-        const closeListener = interstitial!.addAdEventListener(AdEventType.CLOSED, () => {
+        const closeListener = ad.addAdEventListener(AdEventType.CLOSED, () => {
           if (__DEV__) console.log('✅ Interstitial ad closed');
           cleanup();
         });
 
         // Also listen for errors during ad display
-        const errorListener = interstitial!.addAdEventListener(AdEventType.ERROR, (error) => {
+        const errorListener = ad.addAdEventListener(AdEventType.ERROR, (error) => {
           console.error('⚠️ Interstitial ad error during display:', error);
           cleanup();
         });
@@ -263,7 +290,7 @@ export const showInterstitialAd = async (source?: InterstitialSource): Promise<v
       suppressNextForegroundAppOpenAd();
 
       // Show the ad
-      await interstitial.show();
+      await ad.show();
 
       // Wait for the ad to be closed or error out
       await adClosedPromise;
@@ -276,6 +303,11 @@ export const showInterstitialAd = async (source?: InterstitialSource): Promise<v
     } catch (error) {
       console.error('Error showing interstitial ad:', error);
       if (source) trackInterstitialSkipped({ source, reason: 'show_error' });
+    } finally {
+      isShowingInterstitial = false;
+      // CLOSED reloads on a clean dismiss; this covers the error path (the ad
+      // never presented, so CLOSED never fires) — always queue a fresh ad.
+      if (!interstitial) loadInterstitialAd().catch(console.error);
     }
   } else {
     // If ad still not loaded, load it for next time

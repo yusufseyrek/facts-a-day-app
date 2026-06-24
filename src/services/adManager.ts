@@ -34,14 +34,26 @@ const isCooldownElapsed = async (): Promise<boolean> => {
  * Show an interstitial ad if the global cooldown has elapsed, persisting the
  * timestamp on success. Returns true if an ad was shown.
  */
+// In-memory guard for the window where an interstitial is presenting: the show
+// call awaits until the ad is dismissed, and the persisted cooldown timestamp is
+// only written afterward. Without this, a second trigger (e.g. an inactivity
+// timer firing while a trivia-results ad is mid-display) would pass the cooldown
+// check and try to present a second, already-consumed ad.
+let isPresentingInterstitial = false;
+
 const maybeShowInterstitial = async (source: InterstitialSource): Promise<boolean> => {
   if (!INTERSTITIAL_ADS.ENABLED) return false;
   if (!shouldShowAds()) return false;
+  if (isPresentingInterstitial) {
+    trackInterstitialSkipped({ source, reason: 'cooldown' });
+    return false;
+  }
   if (!(await isCooldownElapsed())) {
     trackInterstitialSkipped({ source, reason: 'cooldown' });
     return false;
   }
 
+  isPresentingInterstitial = true;
   try {
     await showInterstitialAd(source);
     await AsyncStorage.setItem(LAST_INTERSTITIAL_SHOWN_KEY, Date.now().toString());
@@ -50,6 +62,8 @@ const maybeShowInterstitial = async (source: InterstitialSource): Promise<boolea
   } catch (error) {
     console.error(`Error showing ${source} interstitial:`, error);
     return false;
+  } finally {
+    isPresentingInterstitial = false;
   }
 };
 
