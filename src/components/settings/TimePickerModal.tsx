@@ -22,6 +22,9 @@ interface TimePickerModalProps {
   onTimeChange?: (time: Date) => void; // Made optional
   /** Whether notification permission is granted */
   hasNotificationPermission?: boolean;
+  /** Called after an in-modal permission prompt resolves, so the parent can
+   *  clear the settings-screen warning. Receives the new granted state. */
+  onPermissionChange?: (granted: boolean) => void;
 }
 
 export const TimePickerModal: React.FC<TimePickerModalProps> = ({
@@ -30,6 +33,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   currentTime,
   onTimeChange,
   hasNotificationPermission = true,
+  onPermissionChange,
 }) => {
   const { theme } = useTheme();
   const colors = hexColors[theme];
@@ -134,8 +138,11 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   };
 
   const handleSave = async () => {
-    // If no changes, just close the modal without rescheduling
-    if (!hasTimesChanged()) {
+    // Nothing to do ONLY when the times are unchanged AND notifications are
+    // already enabled. If permission was never granted (the warning state),
+    // still run the flow so Save can prompt for permission and register — that
+    // is the whole point of opening this modal after skipping onboarding.
+    if (!hasTimesChanged() && hasNotificationPermission) {
       onClose();
       return;
     }
@@ -153,23 +160,23 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       // so skip registration and treat the save as a success rather than
       // surfacing a false "failed to update" error to a developer testing the UI.
       if (Device.isDevice) {
-        // Settings is an explicit opt-in, so prompt for permission if the user
-        // hasn't decided yet (passive callers never prompt, see registerForPush).
-        const registered = await notificationService.registerForPush(locale, {
-          promptIfUndetermined: true,
-        });
+        // Ask for permission first if the user has never been asked (e.g. they
+        // skipped notifications during onboarding). ensurePermission only shows
+        // the OS dialog when the status is still 'undetermined'.
+        const { status } = await notificationService.ensurePermission();
+        onPermissionChange?.(status === 'granted');
+
+        if (status !== 'granted') {
+          // Times are saved locally, but no daily push will arrive until
+          // notifications are enabled. Surface that instead of a false success.
+          Alert.alert(t('enableNotifications'), t('notificationPermissionWarning'));
+          return;
+        }
+
+        // Permission is granted — register the device with the saved times.
+        const registered = await notificationService.registerForPush(locale);
         if (!registered) {
-          // The times are saved locally, but no daily push will arrive until the
-          // device is registered. Showing the green "updated" toast here would
-          // falsely confirm delivery, so surface the real state instead: pointing
-          // to Settings when notifications are disabled (the usual cause), or a
-          // generic retry otherwise. The modal stays open so the user can act.
-          Alert.alert(
-            hasNotificationPermission ? t('error') : t('enableNotifications'),
-            hasNotificationPermission
-              ? t('failedToUpdateNotificationTimes')
-              : t('notificationPermissionWarning')
-          );
+          Alert.alert(t('error'), t('failedToUpdateNotificationTimes'));
           return;
         }
       }
@@ -372,6 +379,22 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                   },
                 ]}
                 onPress={async () => {
+                  // Never asked yet (skipped onboarding notifications): show the
+                  // OS prompt instead of jumping to system settings. On grant the
+                  // warning clears and we register the saved times so daily push
+                  // actually starts. Only an app that was ALREADY denied (no
+                  // dialog shown, still not granted) has nothing left to prompt,
+                  // so route it to system settings; a fresh denial just leaves
+                  // the warning in place.
+                  const { status, asked } = await notificationService.ensurePermission();
+                  onPermissionChange?.(status === 'granted');
+                  if (status === 'granted') {
+                    if (Device.isDevice) {
+                      notificationService.registerForPush(locale).catch(() => {});
+                    }
+                    return;
+                  }
+                  if (asked) return;
                   try {
                     if (Platform.OS === 'ios') {
                       await Linking.openURL('app-settings:');

@@ -1189,6 +1189,9 @@ export default function SettingsPage() {
           // Adding a small delay to ensure AsyncStorage write completes
           setTimeout(() => {
             loadPreferences();
+            // Re-sync the permission state in case it changed in-modal (or via
+            // a trip to system settings) so the warning row stays accurate.
+            checkNotificationPermission();
           }, 100);
         }}
         currentTime={notificationTimes[0]}
@@ -1197,6 +1200,7 @@ export default function SettingsPage() {
           // This prevents conflicting state updates
         }}
         hasNotificationPermission={notificationPermissionGranted}
+        onPermissionChange={(granted) => setNotificationPermissionGranted(granted)}
       />
     </ScreenContainer>
   );

@@ -184,6 +184,27 @@ export async function registerForPush(
 }
 
 /**
+ * Resolve notification permission for an explicit opt-in moment (the Settings
+ * time picker). Reads the current status and shows the OS permission dialog
+ * ONLY when the user has never been asked ('undetermined') — e.g. they skipped
+ * notifications during onboarding. A prior 'granted'/'denied' is returned as-is
+ * without a dialog (the OS won't re-prompt a denied app; the caller routes such
+ * users to system settings instead).
+ *
+ * `asked` is true when this call actually presented the dialog, letting callers
+ * tell "just declined the prompt" apart from "was already denied".
+ */
+export async function ensurePermission(): Promise<{
+  status: Notifications.PermissionStatus;
+  asked: boolean;
+}> {
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status !== 'undetermined') return { status, asked: false };
+  const { status: next } = await Notifications.requestPermissionsAsync();
+  return { status: next, asked: true };
+}
+
+/**
  * Fetch this device's Expo push token (the `ExponentPushToken[...]` form the
  * backend sends through). Returns null on a simulator or if permission/token
  * can't be obtained. Dev-only diagnostics use this to show/copy the token.
