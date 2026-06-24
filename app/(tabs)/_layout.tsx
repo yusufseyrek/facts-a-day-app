@@ -154,9 +154,17 @@ export default function TabLayout() {
             <NativeTabs.Trigger.Label>{t('home')}</NativeTabs.Trigger.Label>
           </NativeTabs.Trigger>
 
-          {/* Trivia is the prominent trailing action: role="search" splits it
-            into the standalone trailing button next to the Liquid Glass bar on
-            iOS 26; Android ignores the role and keeps it a regular tab.
+          <NativeTabs.Trigger name="(search)">
+            <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
+            <NativeTabs.Trigger.Label>{t('search')}</NativeTabs.Trigger.Label>
+          </NativeTabs.Trigger>
+
+          {/* Trivia, the prominent action. On iOS 26 role="search" splits it into
+            the standalone trailing button next to the Liquid Glass bar, and UIKit
+            pins that button to the trailing edge regardless of where the trigger
+            sits here. On Android the role is ignored and the trigger renders in
+            this JSX slot, so keeping it third of five centers Trivia in the
+            Material bottom bar.
             Android badge: an empty <Badge /> reaches rn-screens as badgeValue
             ' ' (space), which Material renders as an oversized TEXT badge; only
             the literal '' takes the small-dot path, so override it natively. */}
@@ -171,11 +179,6 @@ export default function TabLayout() {
             <NativeTabs.Trigger.Label>{t('trivia')}</NativeTabs.Trigger.Label>
             {/* Empty badge renders as a dot when daily trivia is available */}
             {hasDailyTrivia ? <NativeTabs.Trigger.Badge /> : null}
-          </NativeTabs.Trigger>
-
-          <NativeTabs.Trigger name="(search)">
-            <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
-            <NativeTabs.Trigger.Label>{t('search')}</NativeTabs.Trigger.Label>
           </NativeTabs.Trigger>
 
           <NativeTabs.Trigger name="(favorites)">
