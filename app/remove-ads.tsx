@@ -109,8 +109,8 @@ export default function RemoveAdsScreen() {
         container: {
           paddingHorizontal: spacing.xl,
           // headerShown is false, so iOS adds no top safe-area inset; give the
-          // content clear breathing room below the native grabber.
-          paddingTop: spacing.xl,
+          // title clear breathing room below the native grabber.
+          paddingTop: spacing.xxl,
           // The grabber sits above; pad the bottom past the home indicator.
           paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md,
           gap: spacing.lg,
@@ -215,7 +215,7 @@ export default function RemoveAdsScreen() {
 
       {/* Header — crown + title. No subtitle: it would echo the first benefit's
           "no banners, no interruptions" copy verbatim immediately below it. */}
-      <XStack alignItems="center" gap={spacing.xs + 2}>
+      <XStack alignItems="center" gap={spacing.xs + 2} marginBottom={spacing.xs}>
         <Crown size={iconSizes.sm} color={PAYWALL_GOLD.primary} fill={PAYWALL_GOLD.primary} />
         <Text.Title fontFamily={FONT_FAMILIES.extrabold} color={tc.title} letterSpacing={-0.5}>
           {t('settingsRemoveAds')}
