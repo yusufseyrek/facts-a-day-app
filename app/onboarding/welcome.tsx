@@ -267,11 +267,15 @@ export default function WelcomeScreen() {
     return `${h}:00 ${ampm}`;
   }, []);
 
-  // "Skip for now" selects every category the user can access and jumps
-  // straight to the success screen, which persists the selection and finishes
-  // onboarding. Premium-only categories are dropped for non-premium users,
-  // matching the quiz's deriveCategories. Metadata is already warmed by
-  // initializeOnboarding on mount; if it isn't ready, fall back to the quiz.
+  // "Skip for now" selects every category the user can access (skipping the
+  // personalization questions) and continues to the NOTIFICATIONS screen — not
+  // straight to success — so the notification permission + time setup still
+  // runs, exactly like the questions screen's own skip. Routing to success
+  // instead would persist the default 9:00 time and report notifications
+  // "enabled" while the OS permission was never requested. Premium-only
+  // categories are dropped for non-premium users, matching the quiz's
+  // deriveCategories. Metadata is already warmed by initializeOnboarding on
+  // mount; if it isn't ready, fall back to the quiz.
   const handleSkip = async () => {
     if (isSkipping) return;
     setIsSkipping(true);
@@ -286,7 +290,7 @@ export default function WelcomeScreen() {
       }
       trackOnboardingCategoriesSelected(allSlugs);
       setSelectedCategories(allSlugs);
-      router.push('/onboarding/success');
+      router.push('/onboarding/notifications');
     } catch {
       router.push('/onboarding/questions');
     } finally {

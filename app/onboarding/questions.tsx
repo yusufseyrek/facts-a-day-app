@@ -387,10 +387,11 @@ export default function Questions() {
   };
 
   // Bail out of the quiz from any question: select every category the user can
-  // access (premium-only dropped for non-premium, like deriveCategories) and go
-  // straight to the success screen, which persists the selection and finishes
-  // onboarding. Mirrors the welcome screen's "Skip for now". Categories are
-  // already loaded here (past the loading guard), so no refetch is needed.
+  // access (premium-only dropped for non-premium, like deriveCategories) and
+  // continue to the NOTIFICATIONS screen — same as a normal quiz finish and the
+  // welcome screen's "Skip for now" — so the notification permission + time
+  // setup still runs instead of being skipped straight to success. Categories
+  // are already loaded here (past the loading guard), so no refetch is needed.
   const handleSkip = () => {
     if (isSkipping || isTransitioning.current) return;
     const allSlugs = categories
@@ -400,7 +401,7 @@ export default function Questions() {
     setIsSkipping(true);
     trackOnboardingCategoriesSelected(allSlugs);
     setSelectedCategories(allSlugs);
-    router.push('/onboarding/success');
+    router.push('/onboarding/notifications');
   };
 
   // Wait for the context to hold the derived categories (downloadFacts reads
