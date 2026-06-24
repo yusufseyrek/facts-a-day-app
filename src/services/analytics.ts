@@ -430,7 +430,7 @@ export const trackCategoryBrowse = (params: { category: string; factsCount: numb
   posthog.capture('category_browsed', props);
 };
 
-export type FeedRefreshSource = 'pull' | 'focus' | 'foreground';
+export type FeedRefreshSource = 'pull' | 'focus' | 'foreground' | 'interval';
 
 /**
  * Track feed refresh

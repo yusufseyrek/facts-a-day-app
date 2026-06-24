@@ -203,6 +203,15 @@ export const HOME_FEED = {
    * the cursor feed each time; a manual pull-to-refresh bypasses this gate.
    */
   CONTENT_REFRESH_MIN_AGE_MS: 30_000,
+  /**
+   * While the home tab is the active route AND the app is foregrounded, silently
+   * re-validate home content on this cadence so a user who lingers on home sees
+   * fresh facts without manually pulling. The poll is paused off-home and in the
+   * background (no off-screen requests), and the timer is re-armed after every
+   * refresh (focus/foreground/poll) so the interval is measured from the last
+   * refresh of any kind.
+   */
+  CONTENT_POLL_INTERVAL_MS: 30_000,
 } as const;
 
 /**
