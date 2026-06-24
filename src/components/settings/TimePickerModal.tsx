@@ -148,8 +148,18 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
       // Push the updated times to the backend (server-driven scheduling).
       const registered = await notificationService.registerForPush(locale);
       if (!registered) {
-        // Times were saved; push just couldn't register (permission denied / no token).
-        console.warn('Push registration skipped, but notification times were saved');
+        // The times are saved locally, but no daily push will arrive until the
+        // device is registered. Showing the green "updated" toast here would
+        // falsely confirm delivery, so surface the real state instead — pointing
+        // to Settings when notifications are disabled (the usual cause), or a
+        // generic retry otherwise. The modal stays open so the user can act.
+        Alert.alert(
+          hasNotificationPermission ? t('error') : t('enableNotifications'),
+          hasNotificationPermission
+            ? t('failedToUpdateNotificationTimes')
+            : t('notificationPermissionWarning')
+        );
+        return;
       }
 
       // Update parent component with the first time (for backward compatibility)
