@@ -1,5 +1,5 @@
-import { type ReactNode,useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { type ReactNode,useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Platform, Pressable, type ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -226,6 +226,18 @@ export default function PaywallScreen() {
       cancelled = true;
     };
   }, []);
+
+  // The paywall opens with the offer (plans + CTA) in focus rather than the
+  // emotional opener. Until the user drags, we keep the view pinned to the
+  // bottom so the prices/buttons stay framed as the stats load in and grow the
+  // content. On screens where everything fits, scrollToEnd is a no-op — the
+  // flex-spacer layout is unchanged. animated:false so it's already at rest
+  // under the entering fade, with no visible jump.
+  const scrollRef = useRef<ScrollView>(null);
+  const userScrolled = useRef(false);
+  const pinToBottom = () => {
+    if (!userScrolled.current) scrollRef.current?.scrollToEnd({ animated: false });
+  };
 
   const [showPremiumToast, setShowPremiumToast] = useState(false);
 
@@ -491,9 +503,14 @@ export default function PaywallScreen() {
           bottom group; the bottom group (benefits + plans + CTA + footer) anchors to
           the bottom. When content overflows the viewport, everything scrolls naturally. */}
       <Animated.ScrollView
+        ref={scrollRef}
         entering={FadeIn.duration(300)}
         contentContainerStyle={dynamicStyles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onContentSizeChange={pinToBottom}
+        onScrollBeginDrag={() => {
+          userScrolled.current = true;
+        }}
       >
         {/* Vertical slack is split top:middle:bottom = 3:3:3 — the stats get a
             bit more top margin (1/3 of the slack) while the features↔price gap
