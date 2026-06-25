@@ -25,8 +25,12 @@ jest.mock('expo-sqlite', () => {
 import { OFFLINE_LIBRARY, STORAGE_KEYS } from '../../config/app';
 import {
   computeSideTargets,
+  getOfflineIndexVersion,
   getOfflineLimit,
+  invalidateOfflineIndex,
+  isFactSavedOfflineSync,
   setOfflineLimit,
+  subscribeOfflineIndex,
 } from '../../services/offlineLibrary';
 
 const AsyncStorage = jest.requireMock('@react-native-async-storage/async-storage').default;
@@ -93,5 +97,29 @@ describe('offlineLibrary — size setting', () => {
     expect(await getOfflineLimit()).toBe(0);
     store[STORAGE_KEYS.OFFLINE_CACHE_LIMIT] = 'abc';
     expect(await getOfflineLimit()).toBe(0);
+  });
+});
+
+describe('offlineLibrary — index change notifications', () => {
+  it('reports a fact as not-saved until the index is populated', () => {
+    // No index loaded in this unit context → the sync resolver answers false,
+    // which is what the card badge relies on before warmup.
+    expect(isFactSavedOfflineSync(123)).toBe(false);
+  });
+
+  it('bumps the version and notifies subscribers when the index changes', () => {
+    const before = getOfflineIndexVersion();
+    const listener = jest.fn();
+    const unsubscribe = subscribeOfflineIndex(listener);
+
+    invalidateOfflineIndex();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(getOfflineIndexVersion()).toBe(before + 1);
+
+    unsubscribe();
+    invalidateOfflineIndex();
+    // Still detached → no further calls after unsubscribe.
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 });

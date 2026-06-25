@@ -97,6 +97,7 @@ export const LatestCarousel = React.memo(function LatestCarousel({
             aspectRatio={1}
             titleNumberOfLines={5}
             isPremiumLocked={isFactPremiumLocked}
+            showOfflineSave
             // First card is the splash "hero": the overlay holds its fade-out
             // until this image has decoded (see splashGate).
             onImageReady={item.id === factIds[0] ? signalHeroImageReady : undefined}

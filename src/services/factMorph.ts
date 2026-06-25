@@ -47,6 +47,8 @@ export interface ImageCardMorphSource extends FactMorphSourceBase {
   categorySlug?: string;
   titleNumberOfLines?: number;
   isPremiumLocked?: boolean;
+  /** Mirrors the card's offline-save control so the morph replica matches. */
+  showOfflineSave?: boolean;
   /** The card's resolved content overlay style, for a pixel-matching replica. */
   contentOverlayStyle?: ViewStyle;
   favoritePositionStyle?: ViewStyle;

@@ -11,6 +11,7 @@ import { FavoriteButton } from '../FavoriteButton';
 import { Crown } from '../icons';
 import { FACT_CARD_GRADIENT, factCardCrownShadow, factCardTitleShadow } from '../ImageFactCard';
 import { ImagePlaceholder } from '../ImagePlaceholder';
+import { OfflineSaveButton } from '../OfflineSaveButton';
 import { SampleFactCardLayers } from '../SampleFactCard';
 import { Text } from '../Typography';
 
@@ -127,9 +128,13 @@ function ImageCardReplica({
       <View
         style={[
           styles.badge,
+          styles.actionCluster,
           source.favoritePositionStyle ?? { top: spacing.md, right: spacing.md },
         ]}
       >
+        {source.showOfflineSave && !source.isPremiumLocked && (
+          <OfflineSaveButton factId={source.factId} />
+        )}
         {source.isPremiumLocked ? (
           <View style={factCardCrownShadow}>
             <Crown size={22} color="#FFD700" fill="#FFD700" />
@@ -230,6 +235,12 @@ const styles = StyleSheet.create({
   badge: {
     position: 'absolute',
     zIndex: 10,
+  },
+  // Matches ImageFactCard's right-anchored favorite/offline cluster.
+  actionCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   contentOverlay: {
     position: 'absolute',

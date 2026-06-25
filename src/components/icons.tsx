@@ -308,6 +308,12 @@ export const Dumbbell = icon([
   [Path, { d: 'm9.6 14.4 4.8-4.8' }],
 ]);
 
+export const Download = icon([
+  [Path, { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }],
+  [Path, { d: 'M7 10l5 5 5-5' }],
+  [Path, { d: 'M12 15V3' }],
+]);
+
 export const ExternalLink = icon([
   [Path, { d: 'M15 3h6v6' }],
   [Path, { d: 'M10 14 21 3' }],

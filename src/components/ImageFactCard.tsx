@@ -23,6 +23,7 @@ import { CategoryBadge } from './CategoryBadge';
 import { FavoriteButton } from './FavoriteButton';
 import { Crown, RefreshCw } from './icons';
 import { ImagePlaceholder } from './ImagePlaceholder';
+import { OfflineSaveButton } from './OfflineSaveButton';
 import { Text } from './Typography';
 
 import type { ImageSource } from 'expo-image';
@@ -53,6 +54,9 @@ interface ImageFactCardProps {
   titleNumberOfLines?: number;
   /** When true, shows a gold crown icon instead of the favorite button */
   isPremiumLocked?: boolean;
+  /** When true (premium), shows the "save for offline" control next to the
+   *  favorite button and the downloaded remark once the fact is pinned. */
+  showOfflineSave?: boolean;
 }
 
 const ImageFactCardComponent = ({
@@ -71,6 +75,7 @@ const ImageFactCardComponent = ({
   favoritePositionStyle,
   titleNumberOfLines,
   isPremiumLocked,
+  showOfflineSave,
 }: ImageFactCardProps) => {
   const { screenWidth, spacing, radius, config } = useResponsive();
 
@@ -282,6 +287,7 @@ const ImageFactCardComponent = ({
         categorySlug: typeof category === 'string' ? category : category?.slug,
         titleNumberOfLines: titleNumberOfLines ?? config.maxLines,
         isPremiumLocked,
+        showOfflineSave,
         contentOverlayStyle: _contentOverlayStyle,
         favoritePositionStyle: _favoritePositionStyle,
         TitleComponent,
@@ -300,6 +306,7 @@ const ImageFactCardComponent = ({
     titleNumberOfLines,
     config.maxLines,
     isPremiumLocked,
+    showOfflineSave,
     _contentOverlayStyle,
     _favoritePositionStyle,
     TitleComponent,
@@ -445,8 +452,10 @@ const ImageFactCardComponent = ({
               </View>
             )}
 
-            {/* Favorite button or premium crown */}
-            <View style={[styles.badgeContainer, _favoritePositionStyle]}>
+            {/* Favorite button or premium crown — with the offline-save control
+                tucked to its left when enabled (premium-gated inside the button). */}
+            <View style={[styles.badgeContainer, _favoritePositionStyle, styles.actionCluster]}>
+              {showOfflineSave && !isPremiumLocked && <OfflineSaveButton factId={factId} />}
               {isPremiumLocked ? (
                 <View style={styles.crownShadow}>
                   <Crown size={22} color="#FFD700" fill="#FFD700" />
@@ -515,6 +524,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 10,
   },
+  // Right-anchored row so the favorite stays put and the offline-save control
+  // (when present) sits just to its left.
+  actionCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   contentOverlay: {
     position: 'absolute',
     bottom: 0,
@@ -569,6 +585,7 @@ export const ImageFactCard = React.memo(ImageFactCardComponent, (prevProps, next
     prevProps.contentOverlayStyle === nextProps.contentOverlayStyle &&
     prevProps.favoritePositionStyle === nextProps.favoritePositionStyle &&
     prevProps.titleNumberOfLines === nextProps.titleNumberOfLines &&
-    prevProps.isPremiumLocked === nextProps.isPremiumLocked
+    prevProps.isPremiumLocked === nextProps.isPremiumLocked &&
+    prevProps.showOfflineSave === nextProps.showOfflineSave
   );
 });

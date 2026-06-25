@@ -85,6 +85,7 @@ const FactListItem = React.memo(
           categorySlug={selectedCategory?.slug || item.categoryData?.slug || item.category}
           onPress={handlePress}
           isTablet={isTablet}
+          showOfflineSave
         />
       </ContentContainer>
     );

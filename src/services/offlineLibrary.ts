@@ -27,7 +27,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 import { OFFLINE_LIBRARY, STORAGE_KEYS } from '../config/app';
 
-import { getFactsFeed } from './api';
+import { getFactById, getFactsFeed } from './api';
 import { openDatabase } from './database';
 
 import type { FactResponse } from './api';
@@ -36,7 +36,9 @@ const ROOT_DIR = `${FileSystem.documentDirectory}offline-library/`;
 const IMAGES_DIR = `${ROOT_DIR}images/`;
 const AUDIO_DIR = `${ROOT_DIR}audio/`;
 
-type Side = 'tail' | 'head'; // tail = newest, head = oldest
+// tail = newest, head = oldest (both filled by the size-based auto sync);
+// pinned = a single fact the user saved from a card, protected from auto prune.
+type Side = 'tail' | 'head' | 'pinned';
 
 interface IndexEntry {
   image: string | null; // filename in IMAGES_DIR
@@ -98,7 +100,39 @@ async function loadIndex(): Promise<Map<number, IndexEntry>> {
     map.set(r.fact_id, { image: r.image_file, audio: r.audio_file, language: r.language });
   }
   index = map;
+  notifyIndexChanged();
   return map;
+}
+
+// ── index-change notifications (so cards reflect a pin/unpin live) ───────────
+// Cards subscribe via useSyncExternalStore; any change to the saved-fact set
+// (sync finished, fact pinned/removed, library cleared) bumps the version so
+// the "saved" badge updates without the card itself re-rendering.
+
+let indexVersion = 0;
+const indexListeners = new Set<() => void>();
+
+function notifyIndexChanged(): void {
+  indexVersion++;
+  for (const l of indexListeners) l();
+}
+
+/** Subscribe to offline-index changes. Returns an unsubscribe fn. */
+export function subscribeOfflineIndex(listener: () => void): () => void {
+  indexListeners.add(listener);
+  return () => {
+    indexListeners.delete(listener);
+  };
+}
+
+/** Monotonic counter bumped whenever the saved-fact set changes. */
+export function getOfflineIndexVersion(): number {
+  return indexVersion;
+}
+
+/** Whether a fact is currently in the offline library (sync; from the index). */
+export function isFactSavedOfflineSync(factId: number): boolean {
+  return index?.has(factId) ?? false;
 }
 
 function ensureIndex(): Promise<Map<number, IndexEntry>> {
@@ -129,6 +163,7 @@ export async function initOfflineLibrary(): Promise<void> {
 export function invalidateOfflineIndex(): void {
   index = null;
   indexPromise = null;
+  notifyIndexChanged();
 }
 
 // ── settings ─────────────────────────────────────────────────────────────────
@@ -284,7 +319,9 @@ async function saveFact(
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(fact_id) DO UPDATE SET
        language = excluded.language,
-       side = excluded.side,
+       -- A manual pin outranks an auto side: once 'pinned', the size-based sync
+       -- can refresh the row but never demotes it back into prunable range.
+       side = CASE WHEN offline_facts.side = 'pinned' THEN 'pinned' ELSE excluded.side END,
        seq = excluded.seq,
        data = excluded.data,
        image_file = excluded.image_file,
@@ -402,7 +439,17 @@ export async function syncOfflineLibrary(language: string): Promise<OfflineSyncS
 
     const limit = await getOfflineLimit();
     if (limit <= 0) {
-      await clearOfflineLibrary();
+      // Auto-cache is off: drop the auto (newest/oldest) rows but keep facts the
+      // user explicitly pinned from a card. pruneOrphanMedia then sweeps only the
+      // media those removed rows referenced, leaving the pinned media intact.
+      const autoRows = await db.getAllAsync<{
+        fact_id: number;
+        image_file: string | null;
+        audio_file: string | null;
+      }>(`SELECT fact_id, image_file, audio_file FROM offline_facts WHERE side != 'pinned'`);
+      for (const row of autoRows) await removeFact(db, row);
+      await pruneOrphanMedia(db);
+      await loadIndex();
       emit({ status: 'done', phase: null, total: 0, completed: 0 });
       return syncState;
     }
@@ -465,11 +512,13 @@ export async function syncOfflineLibrary(language: string): Promise<OfflineSyncS
     if (!cancelRequested) {
       const existing = await db.getAllAsync<{
         fact_id: number;
+        side: string;
         image_file: string | null;
         audio_file: string | null;
-      }>(`SELECT fact_id, image_file, audio_file FROM offline_facts`);
+      }>(`SELECT fact_id, side, image_file, audio_file FROM offline_facts`);
       for (const row of existing) {
-        if (!targets.has(row.fact_id)) await removeFact(db, row);
+        // Manually pinned facts are never pruned by the size-based sync.
+        if (row.side !== 'pinned' && !targets.has(row.fact_id)) await removeFact(db, row);
       }
       await pruneOrphanMedia(db);
     }
@@ -574,6 +623,38 @@ export async function getOfflineAudioPath(
   return `${AUDIO_DIR}${entry.audio}`;
 }
 
+// ── manual per-fact pin (the card "save for offline" button) ─────────────────
+
+/**
+ * Pin one fact for offline from anywhere in the app. Fetches the full fact,
+ * downloads its media, and stores it with side 'pinned' so a later size-based
+ * sync never prunes it. Needs a connection (it has to fetch + download); throws
+ * if the fetch fails so the caller can surface an error. Reloads the index
+ * (which notifies subscribed cards) on success.
+ */
+export async function saveFactToOffline(factId: number, language: string): Promise<void> {
+  await ensureSchema();
+  await ensureDirs();
+  const db = await openDatabase();
+  const fact = await getFactById(factId, language);
+  await saveFact(db, fact, 'pinned', 0, language);
+  await loadIndex();
+}
+
+/** Remove one fact (row + its media) from the offline library. */
+export async function removeFactFromOffline(factId: number): Promise<void> {
+  await ensureSchema();
+  const db = await openDatabase();
+  const row = await db.getFirstAsync<{
+    fact_id: number;
+    image_file: string | null;
+    audio_file: string | null;
+  }>(`SELECT fact_id, image_file, audio_file FROM offline_facts WHERE fact_id = ?`, [factId]);
+  if (!row) return;
+  await removeFact(db, row);
+  await loadIndex();
+}
+
 // ── clear ────────────────────────────────────────────────────────────────────
 
 /** Delete every downloaded fact, image, and audio file. */
@@ -585,4 +666,5 @@ export async function clearOfflineLibrary(): Promise<void> {
     await FileSystem.deleteAsync(dir, { idempotent: true }).catch(() => {});
   }
   index = new Map();
+  notifyIndexChanged();
 }
