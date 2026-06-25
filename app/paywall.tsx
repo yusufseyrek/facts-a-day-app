@@ -581,7 +581,7 @@ export default function PaywallScreen() {
                 <XStack alignItems="center" gap={spacing.md}>
                   <View style={dynamicStyles.benefitIcon}>{b.icon}</View>
                   <YStack flex={1} gap={2}>
-                    <Text.Body fontFamily={FONT_FAMILIES.semibold} color={tc.featureTitle}>
+                    <Text.Body fontFamily={FONT_FAMILIES.bold} color={tc.featureTitle}>
                       {b.title}
                     </Text.Body>
                     <Text.Caption color={tc.featureDesc}>{b.description}</Text.Caption>

@@ -80,7 +80,7 @@ import * as triviaSync from '../src/services/triviaSync';
 import * as updates from '../src/services/updates';
 import * as userService from '../src/services/user';
 import { refreshWidgetData } from '../src/services/widgetData';
-import { AppThemeProvider, hexColors, useTheme } from '../src/theme';
+import { AppThemeProvider, hexColors, paywallThemeColors, useTheme } from '../src/theme';
 
 // Prevent "multiple linking listeners" error during Fast Refresh
 // This tells expo-router the initial route, helping it manage navigation state properly
@@ -203,6 +203,14 @@ function AppContent() {
 
   // Get theme-aware background color for screens and modals
   const backgroundColor = theme === 'dark' ? hexColors.dark.background : hexColors.light.background;
+
+  // The remove-ads form sheet paints the paywall gradient inside, but the sheet
+  // sizes to its content and the home-indicator strip below it falls back to the
+  // screen's contentStyle background. Match that strip to the gradient's bottom
+  // stop so it blends seamlessly instead of flashing the generic theme bg
+  // (gray/dark blue) under the paywall.
+  const paywallBg = paywallThemeColors[theme].bg;
+  const removeAdsBackgroundColor = paywallBg[paywallBg.length - 1];
 
   // Re-check onboarding status when navigating to onboarding paths
   // This ensures the reset onboarding button works correctly
@@ -383,7 +391,7 @@ function AppContent() {
             sheetCornerRadius: 24,
             sheetExpandsWhenScrolledToEdge: false,
             headerShown: false,
-            contentStyle: { backgroundColor },
+            contentStyle: { backgroundColor: removeAdsBackgroundColor },
           }}
         />
       </Stack>
