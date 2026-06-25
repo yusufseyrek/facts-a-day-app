@@ -154,7 +154,14 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
             exiting={toastExit}
             style={[
               containerStyle,
-              { backgroundColor: useGlass ? 'transparent' : backgroundColor },
+              // In glass mode the GlassView renders its material a frame (or, when
+              // mounted during a transition, up to GlassSurface's 450ms self-heal)
+              // after the text. Seed the card with the same low-alpha frosted fill
+              // so the background — and the card shadow — are present from the
+              // first frame instead of the text briefly floating over nothing. The
+              // GlassView then refracts on top; the fill is translucent enough to
+              // keep the see-through look.
+              { backgroundColor: useGlass ? glassTint : backgroundColor },
             ]}
           >
             {useGlass ? (
