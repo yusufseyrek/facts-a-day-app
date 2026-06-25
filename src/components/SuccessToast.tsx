@@ -1,19 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   type EntryExitAnimationFunction,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
 
-import { isLiquidGlassAvailable } from 'expo-glass-effect';
-
 import { hexColors, useTheme } from '../theme';
-import { absoluteFillObject } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
 import { dialogCardShadow } from './DialogShell';
-import { GlassSurface } from './GlassSurface';
 import { CheckCircle } from './icons';
 import { InlineOverlay } from './InlineOverlay';
 import { Text } from './Typography';
@@ -82,10 +78,6 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
   const backgroundColor = colors.cardBackground;
   const textColor = colors.text;
 
-  // iOS 26: float the toast card on Liquid Glass; keep the opaque card elsewhere.
-  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
-  const glassTint = isDark ? 'rgba(20,34,56,0.6)' : 'rgba(255,255,255,0.65)';
-
   useEffect(() => {
     if (!visible) {
       setShowContent(false);
@@ -115,12 +107,17 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
       paddingVertical: spacing.xl,
       paddingHorizontal: spacing.xxl,
       borderRadius: radius.xl,
-      // Glass paints the fill; clip it to the rounded card and drop the opaque bg.
-      overflow: useGlass ? ('hidden' as const) : ('visible' as const),
+      // Solid opaque card (no native glass): the fill is part of the JS view tree
+      // so it fades in together with the icon and text under the same entering
+      // animation. A native GlassView paints its material a frame (or, mounted
+      // mid-transition, up to ~450ms) late and masks anything behind it while
+      // empty, which made the icon/text briefly float over nothing — exactly the
+      // bug this avoids. A 1.5s toast doesn't need live refraction.
+      backgroundColor,
       minWidth: 200,
       ...dialogCardShadow(isDark),
     }),
-    [spacing, radius, useGlass, isDark]
+    [spacing, radius, backgroundColor, isDark]
   );
 
   const iconContainerStyle = useMemo(
@@ -137,9 +134,9 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
 
   if (!visible && !showContent) return null;
 
-  // Rendered inline (not in a <Modal>) so the glass card refracts the live screen
-  // behind it. No scrim: a toast floats over the app without dimming it. A toast
-  // is not back-dismissible, so hardware back is a no-op.
+  // Rendered inline (not in a <Modal>) so the toast floats over the live screen.
+  // No scrim: a toast floats over the app without dimming it. A toast is not
+  // back-dismissible, so hardware back is a no-op.
   return (
     <InlineOverlay
       visible={showContent}
@@ -149,31 +146,7 @@ export const SuccessToast: React.FC<SuccessToastProps> = ({
     >
       <View style={styles.overlay} pointerEvents="box-none">
         {showContent && (
-          <Animated.View
-            entering={toastEnter}
-            exiting={toastExit}
-            style={[
-              containerStyle,
-              // In glass mode the GlassView renders its material a frame (or, when
-              // mounted during a transition, up to GlassSurface's 450ms self-heal)
-              // after the text. Seed the card with the same low-alpha frosted fill
-              // so the background — and the card shadow — are present from the
-              // first frame instead of the text briefly floating over nothing. The
-              // GlassView then refracts on top; the fill is translucent enough to
-              // keep the see-through look.
-              { backgroundColor: useGlass ? glassTint : backgroundColor },
-            ]}
-          >
-            {useGlass ? (
-              <GlassSurface
-                variant="glass"
-                isDark={isDark}
-                tint={backgroundColor}
-                glassTint={glassTint}
-                borderRadius={radius.xl}
-                style={absoluteFillObject}
-              />
-            ) : null}
+          <Animated.View entering={toastEnter} exiting={toastExit} style={containerStyle}>
             <View style={[iconContainerStyle, { backgroundColor: `${successColor}20` }]}>
               {icon || <CheckCircle size={iconSizes.xl} color={successColor} />}
             </View>
