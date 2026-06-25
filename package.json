@@ -5,7 +5,8 @@
   "scripts": {
     "start": "expo start",
     "ios": "expo run:ios",
-    "ios:release": "expo run:ios --configuration Release",
+    "ios:release": "expo run:ios --configuration Release && bash scripts/register-embedded-ios.sh",
+    "register:embedded:ios": "bash scripts/register-embedded-ios.sh",
     "android": "expo run:android",
     "android:release": "expo run:android --variant release",
     "clean": "npx expo prebuild --clean",
