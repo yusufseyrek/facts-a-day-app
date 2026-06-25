@@ -715,7 +715,11 @@ const BY_IDS_CHUNK = 200;
  * Hydrate specific facts by id (favorites, trivia review). Chunks above the
  * backend's 200-id cap and tolerates missing ids (deleted facts just drop out).
  */
-export async function getFactsByIds(ids: number[], language: string): Promise<FactResponse[]> {
+export async function getFactsByIds(
+  ids: number[],
+  language: string,
+  includeQuestions = false
+): Promise<FactResponse[]> {
   if (ids.length === 0) return [];
   const out: FactResponse[] = [];
   for (let i = 0; i < ids.length; i += BY_IDS_CHUNK) {
@@ -723,6 +727,7 @@ export async function getFactsByIds(ids: number[], language: string): Promise<Fa
     const qp = new URLSearchParams();
     qp.append('ids', chunk.join(','));
     qp.append('language', language);
+    if (includeQuestions) qp.append('include_questions', 'true');
     const res = await makeRequest<{ facts: FactResponse[] }>(`/api/facts/by-ids?${qp.toString()}`);
     out.push(...res.facts);
   }

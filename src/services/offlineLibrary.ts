@@ -27,10 +27,10 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 import { OFFLINE_LIBRARY, STORAGE_KEYS } from '../config/app';
 
-import { getFactById, getFactsFeed } from './api';
+import { getFactById, getFactsByIds, getFactsFeed } from './api';
 import { openDatabase } from './database';
 
-import type { FactResponse } from './api';
+import type { FactResponse, QuestionResponse } from './api';
 
 const ROOT_DIR = `${FileSystem.documentDirectory}offline-library/`;
 const IMAGES_DIR = `${ROOT_DIR}images/`;
@@ -479,6 +479,33 @@ export async function syncOfflineLibrary(language: string): Promise<OfflineSyncS
     // so a cancel (or crash) mid-download never leaves the store emptier than it
     // started — the previous rows stay readable until their replacements land.
     const items = [...targets.values()];
+
+    // Enrich the target facts with their trivia questions so each offline copy
+    // is complete (read + play + quiz). /api/facts/by-ids already supports
+    // include_questions; best-effort — a fact that fails to hydrate still saves
+    // with its content and media.
+    try {
+      const withQuestions = await getFactsByIds(
+        items.map((it) => it.fact.id),
+        language,
+        true
+      );
+      const questionsById = new Map<number, QuestionResponse[]>();
+      for (const f of withQuestions) {
+        if (f.questions?.length) questionsById.set(f.id, f.questions);
+      }
+      for (const it of items) {
+        const q = questionsById.get(it.fact.id);
+        if (q) it.fact.questions = q;
+      }
+    } catch {
+      // Questions are a bonus; never let their fetch abort the media download.
+    }
+    if (cancelRequested) {
+      emit({ status: 'cancelled', phase: null });
+      return syncState;
+    }
+
     emit({ phase: 'downloading', total: items.length, completed: 0 });
 
     let next = 0;
@@ -636,7 +663,9 @@ export async function saveFactToOffline(factId: number, language: string): Promi
   await ensureSchema();
   await ensureDirs();
   const db = await openDatabase();
-  const fact = await getFactById(factId, language);
+  // Pull the fact WITH its trivia questions so a pinned offline copy is complete
+  // (read + play + quiz), matching what the bulk size-based sync stores.
+  const fact = await getFactById(factId, language, true);
   await saveFact(db, fact, 'pinned', 0, language);
   await loadIndex();
 }
