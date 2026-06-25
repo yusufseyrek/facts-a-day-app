@@ -12,6 +12,7 @@ import Constants from 'expo-constants';
 import { AD_KEYWORDS } from '../../config/app';
 import { shouldRequestNonPersonalizedAdsOnly } from '../../services/adsConsent';
 import { trackAdRevenue } from '../../services/analytics';
+import { setFullScreenAdPresenting } from '../../services/fullScreenAdState';
 import { canShowRewardedAds } from '../../services/premiumState';
 
 import { suppressNextForegroundAppOpenAd } from './AppOpenAd';
@@ -201,6 +202,8 @@ export const showRewardedAd = async (): Promise<boolean> => {
   }
 
   if (rewarded && rewarded.loaded) {
+    // Pause the idle-interstitial countdown while this full-screen ad is up.
+    setFullScreenAdPresenting(true);
     try {
       if (__DEV__) console.log('🎬 Showing rewarded ad...');
 
@@ -275,6 +278,8 @@ export const showRewardedAd = async (): Promise<boolean> => {
       // Try to preload for next time
       loadRewardedAd().catch(console.error);
       return false;
+    } finally {
+      setFullScreenAdPresenting(false);
     }
   } else {
     if (__DEV__) console.log('⚠️ Rewarded ad still not loaded, loading for next time');

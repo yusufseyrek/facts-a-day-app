@@ -134,3 +134,88 @@ describe('adManager — maybeShowFactViewInterstitial', () => {
     expect(showInterstitialAd).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('adManager — idle interstitial pauses while a full-screen ad is presenting', () => {
+  let adManager: typeof import('../../services/adManager');
+  let fullScreenAdState: typeof import('../../services/fullScreenAdState');
+  let showInterstitialAd: jest.Mock;
+  let store: Record<string, string>;
+  let now: number;
+  let dateSpy: jest.SpyInstance;
+
+  // Drain the microtask queue so an in-flight maybeShow* reaches its pending
+  // `await showInterstitialAd` (where presenting has been set true).
+  const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.resetModules();
+
+    const AsyncStorage = jest.requireMock('@react-native-async-storage/async-storage').default;
+    store = {};
+    AsyncStorage.getItem.mockImplementation(async (key: string) => store[key] ?? null);
+    AsyncStorage.setItem.mockImplementation(async (key: string, value: string) => {
+      store[key] = value;
+    });
+
+    now = 1_000_000_000;
+    dateSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
+
+    jest.requireMock('../../services/premiumState').shouldShowAds.mockReturnValue(true);
+    showInterstitialAd = jest.requireMock('../../components/ads/InterstitialAd').showInterstitialAd;
+
+    adManager = require('../../services/adManager');
+    fullScreenAdState = require('../../services/fullScreenAdState');
+  });
+
+  afterEach(() => dateSpy.mockRestore());
+
+  it('closes the idle gate and notifies subscribers while an interstitial is on screen', async () => {
+    // Hold the ad open until we dismiss it, so we can observe the presenting window.
+    let dismiss!: () => void;
+    showInterstitialAd.mockImplementation(
+      () => new Promise<void>((resolve) => (dismiss = resolve))
+    );
+
+    const transitions: boolean[] = [];
+    const unsubscribe = fullScreenAdState.subscribeFullScreenAdPresenting((p) => transitions.push(p));
+
+    // Idle, nothing presenting, cooldown elapsed → a countdown may start.
+    expect(fullScreenAdState.isFullScreenAdPresenting()).toBe(false);
+    expect(await adManager.canShowInactivityInterstitial()).toBe(true);
+
+    // Fire the inactivity ad; it stays on screen (the show promise is pending).
+    const showPromise = adManager.maybeShowInactivityInterstitial();
+    await flush();
+
+    // While up: presenting, subscribers told, idle gate CLOSED (no countdown behind it).
+    expect(fullScreenAdState.isFullScreenAdPresenting()).toBe(true);
+    expect(transitions).toEqual([true]);
+    expect(await adManager.canShowInactivityInterstitial()).toBe(false);
+
+    // Dismiss → presenting clears, subscribers told.
+    dismiss();
+    await showPromise;
+    expect(fullScreenAdState.isFullScreenAdPresenting()).toBe(false);
+    expect(transitions).toEqual([true, false]);
+
+    // Gate stays closed on the freshly-written cooldown, then reopens once it elapses
+    // (proving presenting — not a stuck flag — was the blocker).
+    expect(await adManager.canShowInactivityInterstitial()).toBe(false);
+    now += INTERSTITIAL_ADS.COOLDOWN_SECONDS * 1000;
+    expect(await adManager.canShowInactivityInterstitial()).toBe(true);
+
+    unsubscribe();
+  });
+
+  it('closes the idle gate while a non-interstitial full-screen ad (app-open/rewarded) is up', async () => {
+    // App-open and rewarded ads flip the shared flag directly (not via adManager).
+    expect(await adManager.canShowInactivityInterstitial()).toBe(true);
+
+    fullScreenAdState.setFullScreenAdPresenting(true);
+    expect(await adManager.canShowInactivityInterstitial()).toBe(false);
+
+    fullScreenAdState.setFullScreenAdPresenting(false);
+    expect(await adManager.canShowInactivityInterstitial()).toBe(true);
+  });
+});

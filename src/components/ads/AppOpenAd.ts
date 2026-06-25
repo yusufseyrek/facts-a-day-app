@@ -11,6 +11,7 @@ import {
   trackAppOpenAdShown,
 } from '../../services/analytics';
 import { isModalScreenActive } from '../../services/badges';
+import { setFullScreenAdPresenting } from '../../services/fullScreenAdState';
 import { shouldShowAds } from '../../services/premiumState';
 
 // Get App Open Ad Unit ID based on platform
@@ -239,6 +240,8 @@ export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
   }
 
   showInFlight = true;
+  // Pause the idle-interstitial countdown while this full-screen ad is up.
+  setFullScreenAdPresenting(true);
   try {
     if (__DEV__) console.log('🚀 Showing app open ad on foreground...');
 
@@ -315,6 +318,8 @@ export const showAppOpenAdOnForeground = async (): Promise<boolean> => {
     console.warn('App open ad show error:', String(error));
     loadAppOpenAd().catch(console.error);
     return false;
+  } finally {
+    setFullScreenAdPresenting(false);
   }
 };
 

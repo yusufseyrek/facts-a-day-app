@@ -3,6 +3,10 @@ import { AppState, AppStateStatus } from 'react-native';
 
 import { INTERSTITIAL_ADS } from '../config/app';
 import { canShowInactivityInterstitial, maybeShowInactivityInterstitial } from '../services/adManager';
+import {
+  isFullScreenAdPresenting,
+  subscribeFullScreenAdPresenting,
+} from '../services/fullScreenAdState';
 
 // Seconds of "Ads in 3.. 2.. 1.." shown before the ad. The idle window opens
 // the countdown this many seconds early so the ad still fires at exactly
@@ -67,6 +71,14 @@ export function useInactivityInterstitial({
   }, []);
 
   const runCountdown = useCallback(() => {
+    // A full-screen ad began presenting between the idle window's async gate
+    // (canShowInactivityInterstitial) and now — don't draw a countdown behind it;
+    // re-arm and re-evaluate next window. Belt-and-suspenders with the gate and
+    // the present-subscription clear below.
+    if (isFullScreenAdPresenting()) {
+      armRef.current?.();
+      return;
+    }
     let n = COUNTDOWN_SECONDS;
     setCountdown(n);
     countdownTimerRef.current = setInterval(() => {
@@ -124,6 +136,23 @@ export function useInactivityInterstitial({
   const reportActivity = useCallback(() => {
     arm();
   }, [arm]);
+
+  // Pause the idle engine while ANY full-screen ad (interstitial / app-open /
+  // rewarded) is on screen. Otherwise the re-armed idle window — or a second idle
+  // instance — runs a "Ads in 3.." countdown BEHIND the live ad (its cooldown
+  // gate passes because the cooldown timestamp isn't written until the ad
+  // dismisses). Clearing on present hides any in-flight countdown; re-arming on
+  // dismiss restarts the idle clock for the next window (then gated by cooldown).
+  useEffect(() => {
+    return subscribeFullScreenAdPresenting((presenting) => {
+      if (presenting) {
+        clearTimers();
+        setCountdown(null);
+      } else {
+        armRef.current?.();
+      }
+    });
+  }, [clearTimers]);
 
   useEffect(() => {
     arm();

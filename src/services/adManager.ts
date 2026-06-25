@@ -4,6 +4,7 @@ import { showInterstitialAd } from '../components/ads/InterstitialAd';
 import { INTERSTITIAL_ADS, STORAGE_KEYS } from '../config/app';
 
 import { type InterstitialSource, trackInterstitialShown, trackInterstitialSkipped } from './analytics';
+import { isFullScreenAdPresenting, setFullScreenAdPresenting } from './fullScreenAdState';
 import { shouldShowAds } from './premiumState';
 
 /**
@@ -34,17 +35,14 @@ const isCooldownElapsed = async (): Promise<boolean> => {
  * Show an interstitial ad if the global cooldown has elapsed, persisting the
  * timestamp on success. Returns true if an ad was shown.
  */
-// In-memory guard for the window where an interstitial is presenting: the show
-// call awaits until the ad is dismissed, and the persisted cooldown timestamp is
-// only written afterward. Without this, a second trigger (e.g. an inactivity
-// timer firing while a trivia-results ad is mid-display) would pass the cooldown
-// check and try to present a second, already-consumed ad.
-let isPresentingInterstitial = false;
-
 const maybeShowInterstitial = async (source: InterstitialSource): Promise<boolean> => {
   if (!INTERSTITIAL_ADS.ENABLED) return false;
   if (!shouldShowAds()) return false;
-  if (isPresentingInterstitial) {
+  // A full-screen ad (this or another interstitial / app-open / rewarded) is
+  // already on screen — don't try to stack a second one. The show call awaits
+  // until the ad dismisses and the cooldown timestamp is only written afterward,
+  // so without this a concurrent trigger would pass the cooldown check below.
+  if (isFullScreenAdPresenting()) {
     trackInterstitialSkipped({ source, reason: 'cooldown' });
     return false;
   }
@@ -53,7 +51,7 @@ const maybeShowInterstitial = async (source: InterstitialSource): Promise<boolea
     return false;
   }
 
-  isPresentingInterstitial = true;
+  setFullScreenAdPresenting(true);
   try {
     await showInterstitialAd(source);
     await AsyncStorage.setItem(LAST_INTERSTITIAL_SHOWN_KEY, Date.now().toString());
@@ -63,7 +61,7 @@ const maybeShowInterstitial = async (source: InterstitialSource): Promise<boolea
     console.error(`Error showing ${source} interstitial:`, error);
     return false;
   } finally {
-    isPresentingInterstitial = false;
+    setFullScreenAdPresenting(false);
   }
 };
 
@@ -93,6 +91,10 @@ export const maybeShowTriviaResultsInterstitial = async (): Promise<boolean> => 
  */
 export const canShowInactivityInterstitial = async (): Promise<boolean> => {
   if (!INTERSTITIAL_ADS.ENABLED || !shouldShowAds()) return false;
+  // A full-screen ad (any source) is already on screen — don't open an idle
+  // countdown behind it. The cooldown timestamp isn't persisted until the ad
+  // dismisses, so without this the cooldown gate below would wrongly pass.
+  if (isFullScreenAdPresenting()) return false;
   return isCooldownElapsed();
 };
 
