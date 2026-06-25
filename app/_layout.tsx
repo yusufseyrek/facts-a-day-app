@@ -68,6 +68,7 @@ import { pruneAudioCacheIfOverLimit } from '../src/services/factAudio';
 import { ensureImagesDirExists } from '../src/services/images';
 import { startNetworkMonitoring } from '../src/services/network';
 import * as notificationService from '../src/services/notifications';
+import { initOfflineLibrary, invalidateOfflineIndex } from '../src/services/offlineLibrary';
 import * as onboardingService from '../src/services/onboarding';
 import { setIsPremium } from '../src/services/premiumState';
 import {
@@ -519,6 +520,8 @@ export default function RootLayout() {
       ensureImagesDirExists().catch(() => {});
       notificationService.cleanupOldNotificationImages().catch(() => {});
       pruneAudioCacheIfOverLimit().catch(() => {});
+      // Warm the offline-library index so cached image/audio resolve instantly.
+      initOfflineLibrary().catch(() => {});
       // Register the OS background feed refresh so an offline open has fresh,
       // image-cached content (no-op until the next native build adds the plugin).
       registerBackgroundFeedFetch().catch(() => {});
@@ -582,6 +585,9 @@ export default function RootLayout() {
         // pre-download here — just persist the new locale and gate the splash
         // until the home screen signals it has loaded its feed.
         setLocaleRefreshPending();
+        // Offline audio is language-specific; drop the stale in-memory index so
+        // the resolvers re-read SQLite for the new locale.
+        invalidateOfflineIndex();
         await contentRefresh.saveCurrentLocale(locale);
 
         // Arm the splash gates, then let the app tree mount under the overlay.

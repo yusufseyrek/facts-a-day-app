@@ -17,6 +17,7 @@ import {
   Flame,
   Lightbulb,
   PartyPopper,
+  WifiOff,
 } from '../src/components/icons';
 import { XStack, YStack } from '../src/components/Stacks';
 import { FONT_FAMILIES } from '../src/components/Typography';
@@ -452,6 +453,11 @@ export default function PaywallScreen() {
       icon: <Lightbulb size={iconSizes.md} color={PAYWALL_GOLD.primary} />,
       title: t('paywallFeatureHints'),
       description: t('paywallFeatureHintsDesc'),
+    },
+    {
+      icon: <WifiOff size={iconSizes.md} color={PAYWALL_GOLD.primary} />,
+      title: t('paywallFeatureOffline'),
+      description: t('paywallFeatureOfflineDesc'),
     },
   ];
 

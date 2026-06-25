@@ -30,6 +30,7 @@ import {
   trackFactAudioPlay,
 } from '../services/analytics';
 import { cacheFactAudio, getLocalFactAudioPath } from '../services/factAudio';
+import { getOfflineAudioPath } from '../services/offlineLibrary';
 
 export type PlaybackState = 'idle' | 'loading' | 'playing' | 'paused' | 'error';
 
@@ -66,11 +67,18 @@ export function useFactAudio(
     }
     let cancelled = false;
     setResolvedSource(audioUrl);
-    getLocalFactAudioPath(factId, language, audioUrl)
-      .then((local) => {
-        if (!cancelled && local) setResolvedSource(local);
-      })
-      .catch(() => {});
+    // Prefer the pinned offline-library copy (kept indefinitely for the user's
+    // language), then the LRU TTS cache, then the remote URL already set above.
+    (async () => {
+      const offline = await getOfflineAudioPath(factId, language).catch(() => null);
+      if (cancelled) return;
+      if (offline) {
+        setResolvedSource(offline);
+        return;
+      }
+      const local = await getLocalFactAudioPath(factId, language, audioUrl).catch(() => null);
+      if (!cancelled && local) setResolvedSource(local);
+    })();
     return () => {
       cancelled = true;
     };

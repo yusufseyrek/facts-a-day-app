@@ -15,6 +15,7 @@ import {
   Ban,
   BarChart3,
   Bell,
+  BookOpen,
   ChevronRight,
   Crown,
   Eye,
@@ -832,6 +833,14 @@ export default function SettingsPage() {
     const storageSection: SettingsSection = {
       title: t('settingsStorage'),
       data: [
+        {
+          id: 'offlineLibrary',
+          label: t('offlineLibrary'),
+          value: t('offlineLibraryRowValue'),
+          icon: <BookOpen size={iconSizes.md} color={colors.neonCyan} />,
+          accent: colors.neonCyan,
+          onPress: () => router.push('/library'),
+        },
         {
           id: 'clearImageCache',
           label: t('settingsClearImageCache'),

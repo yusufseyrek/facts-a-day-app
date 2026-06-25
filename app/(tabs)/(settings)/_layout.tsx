@@ -10,6 +10,7 @@ export default function SettingsStackLayout() {
   return (
     <Stack screenOptions={headerOptions}>
       <Stack.Screen name="settings" options={{ title: t('settings') }} />
+      <Stack.Screen name="library" options={{ title: t('offlineLibrary') }} />
     </Stack>
   );
 }

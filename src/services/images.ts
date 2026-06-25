@@ -19,6 +19,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { IMAGE_CACHE, IMAGE_DOWNLOAD_RETRY, PRECACHE } from '../config/images';
 
 import { getIsConnected } from './network';
+import { getOfflineImageUri } from './offlineLibrary';
 
 // Directory for cached fact images - uses documentDirectory for persistence
 // cacheDirectory is NOT reliable for multi-day caching as it can be cleared by OS
@@ -561,7 +562,12 @@ export async function resolveFactImageUri(
   // guarantees expo-image fetches the new image.
   if (remoteUrl && getIsConnected()) return remoteUrl;
 
-  // Offline: fall back to local disk cache
+  // Offline (or no remote URL): prefer the pinned offline-library copy — it's
+  // kept indefinitely, unlike the 2-day TTL disk cache below — then fall back
+  // to that TTL cache for facts the user pre-cached by simply browsing.
+  const offlineUri = await getOfflineImageUri(factId);
+  if (offlineUri) return offlineUri;
+
   const localUri = await getCachedFactImage(factId);
   return localUri;
 }

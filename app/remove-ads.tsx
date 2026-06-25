@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Text } from '../src/components';
-import { Ban, Check, Crown, Lightbulb } from '../src/components/icons';
+import { Ban, Check, Crown, Lightbulb, WifiOff } from '../src/components/icons';
 import { XStack, YStack } from '../src/components/Stacks';
 import { FONT_FAMILIES } from '../src/components/Typography';
 import { usePaywallPurchase } from '../src/hooks/usePaywallPurchase';
@@ -97,6 +97,11 @@ export default function RemoveAdsScreen() {
       icon: <Lightbulb size={iconSizes.md} color={PAYWALL_GOLD.primary} />,
       title: t('paywallFeatureHints'),
       description: t('paywallFeatureHintsDesc'),
+    },
+    {
+      icon: <WifiOff size={iconSizes.md} color={PAYWALL_GOLD.primary} />,
+      title: t('paywallFeatureOffline'),
+      description: t('paywallFeatureOfflineDesc'),
     },
   ];
 

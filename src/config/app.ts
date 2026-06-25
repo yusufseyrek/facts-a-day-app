@@ -152,6 +152,30 @@ export const STORAGE_KEYS = {
   CATEGORY_CHANGES_COUNT: '@category_changes_count',
   /** Key for tracking fact views since the last fact-view interstitial */
   FACT_VIEWS_SINCE_AD: '@fact_views_since_ad',
+  /** Offline library: how many facts the user has chosen to cache (0 = off). */
+  OFFLINE_CACHE_LIMIT: '@offline_cache_limit',
+  /** Offline library: epoch-ms of the last successful download sync. */
+  OFFLINE_LAST_SYNC: '@offline_last_sync',
+} as const;
+
+/**
+ * Offline library (premium) — download facts so they can be read and played
+ * without a connection. The corpus is huge, so we cache the two ends users
+ * actually want: the newest facts and the foundational oldest ones. The total
+ * is split half/half and capped per side, giving "up to 1000 newest + 1000
+ * oldest" at the maximum.
+ */
+export const OFFLINE_LIBRARY = {
+  /** Hard ceiling on total cached facts (newest + oldest). */
+  MAX_FACTS: 2000,
+  /** Per-side cap (newest, oldest) so neither end exceeds half the max. */
+  MAX_PER_SIDE: 1000,
+  /** Stepped sizes the UI exposes (0 = off / downloads cleared). */
+  SIZE_OPTIONS: [0, 100, 250, 500, 1000, 2000],
+  /** Facts requested per feed page while collecting the download set. */
+  PAGE_SIZE: 100,
+  /** Concurrent fact (image + audio) downloads during a sync. */
+  DOWNLOAD_CONCURRENCY: 4,
 } as const;
 
 /**

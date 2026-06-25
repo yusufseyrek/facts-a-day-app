@@ -177,6 +177,7 @@ export const Screens = {
   BADGES: 'Badges',
   BADGE_DETAIL: 'BadgeDetail',
   READING_STATS: 'ReadingStats',
+  OFFLINE_LIBRARY: 'OfflineLibrary',
 } as const;
 
 // ============================================================================
