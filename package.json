@@ -9,6 +9,7 @@
     "register:embedded:ios": "bash scripts/register-embedded-ios.sh",
     "android": "expo run:android",
     "android:release": "expo run:android --variant release",
+    "register:embedded:android": "bash scripts/register-embedded-android.sh",
     "clean": "npx expo prebuild --clean",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",

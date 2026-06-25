@@ -88,6 +88,14 @@ fi
 
 echo -e "Using Team ID: ${GREEN}$TEAM_ID${NC}"
 
+# The embedded-bundle OTA registration at the end needs the OTA publish key. Fail
+# now (before a full archive + upload) rather than after, if it is missing.
+if [ -z "${OTA_API_KEY:-}" ]; then
+    print_error "OTA_API_KEY is required to register this build's embedded OTA baseline"
+    echo "Add OTA_API_KEY=fad_... to .env.local (mint one with: bun scripts/ota-create-key.ts create <name>)"
+    exit 1
+fi
+
 # Increment build number
 print_step "Incrementing build number in app.json..."
 
@@ -177,6 +185,23 @@ xcodebuild -exportArchive \
     -allowProvisioningUpdates
 
 echo -e "${GREEN}✓ App uploaded to App Store Connect!${NC}"
+
+# Register THIS build's embedded JS bundle as an OTA base, read from the SAME .app
+# inside the archive that was just exported/uploaded — so its embedded update id
+# matches the binary on devices and the FIRST OTA after a fresh install is a small
+# bsdiff patch, not a full ~7MB download. Strict: a failure fails the release. The
+# archive persists, so recovery is a one-liner (no rebuild).
+print_step "Registering embedded OTA baseline..."
+ARCHIVE_APP="$ARCHIVE_PATH/Products/Applications/FactsaDay.app"
+if REGISTER_EMBEDDED_STRICT=1 bash "$PROJECT_ROOT/scripts/register-embedded-ios.sh" "$ARCHIVE_APP"; then
+    echo -e "${GREEN}✓ Embedded OTA baseline registered${NC}"
+else
+    print_error "Embedded OTA baseline registration FAILED"
+    echo "The build was uploaded, but until the baseline is registered the first OTA for"
+    echo "fresh installs is a full download. Fix OTA_API_KEY (.env.local), then run:"
+    echo "  REGISTER_EMBEDDED_STRICT=1 bash scripts/register-embedded-ios.sh \"$ARCHIVE_APP\""
+    exit 1
+fi
 
 # Summary
 echo -e "\n${BLUE}========================================${NC}"

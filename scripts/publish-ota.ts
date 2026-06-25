@@ -105,7 +105,7 @@ async function postPublish(
   apiKey: string,
   manifest: Record<string, unknown>,
   assets: AssetUpload[],
-): Promise<void> {
+): Promise<Record<string, any>> {
   const form = new FormData();
   form.set("manifest", JSON.stringify(manifest));
   for (const a of assets) {
@@ -129,6 +129,7 @@ async function postPublish(
     `  ✓ ${u.platform} ${u.isEmbedded ? "embedded " : ""}update ${u.id} ` +
       `(${u.assetCount} assets, ${u.patchesGenerated} patches)`,
   );
+  return body;
 }
 
 // ============================================
@@ -411,7 +412,7 @@ async function registerEmbedded() {
   console.log(
     `Registering embedded base ${embeddedId} (${platform}, rv ${runtimeVersion})`,
   );
-  await postPublish(server, apiKey, manifest, [
+  const body = await postPublish(server, apiKey, manifest, [
     {
       field: "asset_0",
       path: bundlePath,
@@ -420,6 +421,23 @@ async function registerEmbedded() {
       isLaunchAsset: true,
     },
   ]);
+
+  // Integrity gate: the server MUST have stored this base under the exact embedded
+  // id the shipped binary reports as Expo-Current-Update-ID, and flagged it
+  // embedded (so it is only ever a diff source, never served as an update).
+  // Anything else means devices on this build can't be diffed — fail loudly so a
+  // release script (REGISTER_EMBEDDED_STRICT) aborts rather than silently shipping
+  // a baseline that won't match.
+  const stored = body?.update;
+  const storedId = String(stored?.id ?? "").toLowerCase();
+  if (storedId !== embeddedId.toLowerCase() || stored?.isEmbedded !== true) {
+    console.error(
+      `✗ register-embedded verification failed: server stored id=${stored?.id} ` +
+        `isEmbedded=${stored?.isEmbedded}, expected id=${embeddedId} isEmbedded=true`,
+    );
+    process.exit(1);
+  }
+  console.log(`✓ verified embedded base ${storedId} registered for rv ${runtimeVersion}`);
 }
 
 // ============================================

@@ -477,6 +477,13 @@ if [ ${#missing[@]} -gt 0 ]; then
     exit 1
 fi
 
+# The embedded-bundle OTA registration at the end needs the OTA publish key.
+if [ -z "${OTA_API_KEY:-}" ]; then
+    print_error "OTA_API_KEY is required to register this build's embedded OTA baseline"
+    echo "Add OTA_API_KEY=fad_... to .env.local (mint one with: bun scripts/ota-create-key.ts create <name>)"
+    exit 1
+fi
+
 # Increment version code
 print_step "Incrementing version code in app.json..."
 
@@ -598,6 +605,22 @@ if [ "$UPLOAD_ENABLED" = true ]; then
     else
         print_warning "Upload failed, but AAB was built successfully"
     fi
+fi
+
+# Register THIS build's embedded JS bundle as an OTA base, read straight from the
+# AAB just built — so its embedded update id and bytes match the APK Google Play
+# generates for devices, and the FIRST OTA after a fresh install is a small bsdiff
+# patch, not a full download. Strict: a failure fails the release; the AAB
+# persists, so recovery is a one-liner (no rebuild).
+print_step "Registering embedded OTA baseline..."
+if REGISTER_EMBEDDED_STRICT=1 bash "$PROJECT_ROOT/scripts/register-embedded-android.sh" "$FINAL_AAB_PATH"; then
+    print_success "Embedded OTA baseline registered"
+else
+    print_error "Embedded OTA baseline registration FAILED"
+    echo "Until the baseline is registered the first OTA for fresh installs is a full"
+    echo "download. Fix OTA_API_KEY (.env.local), then run:"
+    echo "  REGISTER_EMBEDDED_STRICT=1 bash scripts/register-embedded-android.sh \"$FINAL_AAB_PATH\""
+    exit 1
 fi
 
 # Summary
