@@ -112,12 +112,29 @@ if (TaskManager && BackgroundTask) {
 
 /** Register the periodic feed refresh. Safe to call repeatedly (no-ops if
  * already registered, if the OS restricts background work, or if the native
- * ExpoTaskManager module isn't in this build). */
+ * ExpoTaskManager module isn't in this build).
+ *
+ * DEV BUILDS: never schedule it, and actively unregister any job left over from
+ * a prior run. In a dev-client build the WorkManager job spins up the *shared*
+ * ReactHost headlessly (expo-task-manager TaskService → app.getReactHost()) to
+ * run this task while the app is closed. That creates the React context outside
+ * the dev-launcher's load flow, so the next time MainActivity launches the
+ * dev-launcher's `require(currentReactContext == null)` assertion throws
+ * "App react context shouldn't be created before." and the dev build crashes on
+ * open (expo/expo#35385). Production is unaffected — release builds don't run
+ * the dev-launcher's AppLoader. The unregister below self-heals a device whose
+ * job was already scheduled: one clean launch clears it for good. */
 export async function registerBackgroundFeedFetch(): Promise<void> {
   const backgroundTask = BackgroundTask;
   const taskManager = TaskManager;
   if (!backgroundTask || !taskManager) return;
   try {
+    if (__DEV__) {
+      if (await taskManager.isTaskRegisteredAsync(BACKGROUND_FEED_TASK)) {
+        await backgroundTask.unregisterTaskAsync(BACKGROUND_FEED_TASK);
+      }
+      return;
+    }
     const status = await backgroundTask.getStatusAsync();
     if (status === backgroundTask.BackgroundTaskStatus.Restricted) return;
     if (await taskManager.isTaskRegisteredAsync(BACKGROUND_FEED_TASK)) return;
