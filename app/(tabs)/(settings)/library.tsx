@@ -6,10 +6,11 @@ import React, {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { FlashList } from '@shopify/flash-list';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
@@ -20,7 +21,15 @@ import {
   ScreenContainer,
   Text,
 } from '../../../src/components';
-import { BookOpen, Crown, RefreshCw, Trash2, WifiOff } from '../../../src/components/icons';
+import {
+  BookOpen,
+  Clock,
+  Crown,
+  RefreshCw,
+  Smartphone,
+  Trash2,
+  WifiOff,
+} from '../../../src/components/icons';
 import { ImageFactCard } from '../../../src/components/ImageFactCard';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { OFFLINE_LIBRARY } from '../../../src/config/app';
@@ -47,11 +56,15 @@ import {
   syncOfflineLibrary,
 } from '../../../src/services/offlineLibrary';
 import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
-import { hexColors, useTheme } from '../../../src/theme';
+import { hexColors, PAYWALL_GOLD, useTheme } from '../../../src/theme';
+import { darkenColor, getContrastColor } from '../../../src/utils/colors';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
 import type { FactResponse } from '../../../src/services/api';
 import type { FactWithRelations } from '../../../src/services/database';
+
+/** Warm near-black for glyphs on the gold premium crest (matches paywall.tsx). */
+const CREST_INK = '#1A1A2E';
 
 // Human-readable byte size (mirrors the helper in settings.tsx).
 function formatBytes(bytes: number): string {
@@ -232,17 +245,144 @@ export default function OfflineLibraryScreen() {
 
   const { newest, oldest } = computeSideTargets(limit);
 
-  // ── Management header (selector, status, actions) ──────────────────────────
+  const isDark = theme === 'dark';
+  const activeInk = getContrastColor(colors.neonCyan);
+  // The single gradient moment: the cyan-to-violet premium hero (TriviaStatsHero
+  // grammar). neonCyan is the screen's signature accent (its Settings row).
+  const heroColors = [colors.primary, darkenColor(colors.neonPurple, 0.22)] as const;
+  const heroGlow = isDark ? 0.5 : 0.3;
+
+  // ── Premium hero — gradient identity + live state ──────────────────────────
+  const hero = (
+    <Animated.View entering={FadeInDown.duration(350)}>
+      <LinearGradient
+        colors={heroColors}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ borderRadius: radius.xl, overflow: 'hidden' }}
+      >
+        {/* Decorative depth circles (TriviaGridCard pattern). */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: -iconSizes.hero * 0.7,
+            right: -iconSizes.hero * 0.5,
+            width: iconSizes.hero * 2.2,
+            height: iconSizes.hero * 2.2,
+            borderRadius: iconSizes.hero * 1.1,
+            backgroundColor: 'rgba(255,255,255,0.10)',
+          }}
+        />
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            bottom: -iconSizes.hero * 0.8,
+            left: -iconSizes.hero * 0.4,
+            width: iconSizes.hero * 1.7,
+            height: iconSizes.hero * 1.7,
+            borderRadius: iconSizes.hero * 0.85,
+            backgroundColor: 'rgba(255,255,255,0.07)',
+          }}
+        />
+        <YStack padding={spacing.lg} gap={spacing.md}>
+          <XStack alignItems="center" gap={spacing.sm}>
+            <YStack
+              width={iconSizes.xxl}
+              height={iconSizes.xxl}
+              borderRadius={iconSizes.xxl / 2}
+              backgroundColor="rgba(255,255,255,0.20)"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <BookOpen size={iconSizes.md} color="#FFFFFF" />
+            </YStack>
+            <Text.Tiny
+              color="#FFFFFF"
+              opacity={0.8}
+              fontFamily={FONT_FAMILIES.semibold}
+              letterSpacing={1.2}
+              style={{ textTransform: 'uppercase' }}
+            >
+              {t('offlineLibrary')}
+            </Text.Tiny>
+          </XStack>
+
+          {count > 0 ? (
+            <YStack gap={spacing.sm}>
+              <XStack alignItems="flex-end" gap={spacing.sm}>
+                <Text.Display color="#FFFFFF" fontFamily={FONT_FAMILIES.extrabold} letterSpacing={-1}>
+                  {count}
+                </Text.Display>
+                <Text.Body
+                  color="#FFFFFF"
+                  opacity={0.85}
+                  fontFamily={FONT_FAMILIES.semibold}
+                  marginBottom={spacing.sm}
+                >
+                  {t('offlineFactsReady')}
+                </Text.Body>
+              </XStack>
+              <XStack gap={spacing.sm} flexWrap="wrap">
+                <XStack
+                  alignItems="center"
+                  gap={spacing.xs}
+                  paddingHorizontal={spacing.sm}
+                  paddingVertical={spacing.xs}
+                  borderRadius={radius.full}
+                  backgroundColor="rgba(255,255,255,0.16)"
+                >
+                  <Smartphone size={iconSizes.xs} color="#FFFFFF" />
+                  <Text.Tiny color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+                    {formatBytes(storageBytes)}
+                  </Text.Tiny>
+                </XStack>
+                {lastSync && !isSyncing && (
+                  <XStack
+                    alignItems="center"
+                    gap={spacing.xs}
+                    paddingHorizontal={spacing.sm}
+                    paddingVertical={spacing.xs}
+                    borderRadius={radius.full}
+                    backgroundColor="rgba(255,255,255,0.16)"
+                  >
+                    <Clock size={iconSizes.xs} color="#FFFFFF" />
+                    <Text.Tiny color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+                      {t('offlineLastSynced', {
+                        time: new Date(lastSync).toLocaleDateString(locale),
+                      })}
+                    </Text.Tiny>
+                  </XStack>
+                )}
+              </XStack>
+            </YStack>
+          ) : (
+            <YStack gap={spacing.xs}>
+              <Text.Headline color="#FFFFFF" fontFamily={FONT_FAMILIES.extrabold}>
+                {t('offlineLibraryRowValue')}
+              </Text.Headline>
+              <Text.Caption color="#FFFFFF" opacity={0.85}>
+                {t('offlinePremiumGate')}
+              </Text.Caption>
+            </YStack>
+          )}
+        </YStack>
+      </LinearGradient>
+    </Animated.View>
+  );
+
+  // ── Management header (hero, selector, progress/actions) ───────────────────
   const header = (
     <ContentContainer>
-      <YStack gap={spacing.md} paddingBottom={spacing.md}>
+      <YStack gap={spacing.lg} paddingBottom={spacing.md}>
         {!isOnline && (
           <XStack
             alignItems="center"
             gap={spacing.sm}
             padding={spacing.md}
             borderRadius={radius.lg}
-            backgroundColor="$surface"
+            backgroundColor="$cardBackground"
             borderWidth={1}
             borderColor="$border"
           >
@@ -255,95 +395,131 @@ export default function OfflineLibraryScreen() {
 
         {!isPremium ? (
           // Premium gate — controls hidden; any pre-existing downloads still list below.
-          <YStack
-            alignItems="center"
-            gap={spacing.md}
-            padding={spacing.xl}
-            borderRadius={radius.lg}
-            backgroundColor="$surface"
-            borderWidth={1}
-            borderColor="$border"
-          >
-            <Crown size={iconSizes.hero} color={colors.warning} />
-            <Text.Headline textAlign="center">{t('offlineLibrary')}</Text.Headline>
-            <Text.Body textAlign="center" color="$textSecondary">
-              {count > 0 ? t('offlinePremiumGateHasDownloads') : t('offlinePremiumGate')}
-            </Text.Body>
-            <YStack width="100%" maxWidth={280}>
-              <Button onPress={() => router.push('/paywall')}>{t('offlineUnlockCta')}</Button>
+          <Animated.View entering={FadeInDown.duration(350)}>
+            <YStack
+              alignItems="center"
+              gap={spacing.md}
+              padding={spacing.xl}
+              borderRadius={radius.xl}
+              backgroundColor="$cardBackground"
+              borderWidth={1}
+              borderColor="$border"
+            >
+              <LinearGradient
+                colors={[PAYWALL_GOLD.light, PAYWALL_GOLD.primary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={{
+                  width: iconSizes.hero + spacing.md,
+                  height: iconSizes.hero + spacing.md,
+                  borderRadius: (iconSizes.hero + spacing.md) / 2,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  shadowColor: PAYWALL_GOLD.primary,
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: isDark ? 0.4 : 0.3,
+                  shadowRadius: 12,
+                  elevation: 6,
+                }}
+              >
+                <Crown size={iconSizes.lg} color={CREST_INK} fill={CREST_INK} />
+              </LinearGradient>
+              <Text.Headline textAlign="center">{t('offlineLibrary')}</Text.Headline>
+              <Text.Body textAlign="center" color="$textSecondary">
+                {count > 0 ? t('offlinePremiumGateHasDownloads') : t('offlinePremiumGate')}
+              </Text.Body>
+              <YStack width="100%" maxWidth={280}>
+                <Button onPress={() => router.push('/paywall')}>{t('offlineUnlockCta')}</Button>
+              </YStack>
             </YStack>
-          </YStack>
+          </Animated.View>
         ) : (
           <>
-            <Text.Body color="$textSecondary">{t('offlinePremiumGate')}</Text.Body>
+            {hero}
 
             {/* Size selector */}
-            <Text.Label fontFamily={FONT_FAMILIES.semibold}>{t('offlineCacheSize')}</Text.Label>
-            <XStack flexWrap="wrap" gap={spacing.sm}>
-              {OFFLINE_LIBRARY.SIZE_OPTIONS.map((size) => {
-                const active = size === limit;
-                return (
-                  <Pressable
-                    key={size}
-                    onPress={() => handleSelectSize(size)}
-                    disabled={isSyncing}
-                  >
-                    <XStack
-                      height={media.chipHeight}
-                      paddingHorizontal={spacing.md}
-                      borderRadius={radius.full}
-                      alignItems="center"
-                      justifyContent="center"
-                      backgroundColor={active ? '$primary' : '$surface'}
-                      borderWidth={active ? 0 : 1}
-                      borderColor="$border"
-                      opacity={isSyncing ? 0.5 : 1}
+            <YStack gap={spacing.sm}>
+              <Text.Tiny
+                color="$textSecondary"
+                fontFamily={FONT_FAMILIES.semibold}
+                letterSpacing={1}
+                style={{ textTransform: 'uppercase' }}
+              >
+                {t('offlineCacheSize')}
+              </Text.Tiny>
+              <XStack flexWrap="wrap" gap={spacing.sm}>
+                {OFFLINE_LIBRARY.SIZE_OPTIONS.map((size) => {
+                  const active = size === limit;
+                  return (
+                    <Pressable
+                      key={size}
+                      onPress={() => handleSelectSize(size)}
+                      disabled={isSyncing}
+                      style={({ pressed }) => ({ opacity: isSyncing ? 0.5 : pressed ? 0.7 : 1 })}
                     >
-                      <Text.Caption
-                        color={active ? '#FFFFFF' : '$textSecondary'}
-                        fontFamily={FONT_FAMILIES.semibold}
+                      <XStack
+                        height={media.chipHeight}
+                        paddingHorizontal={spacing.lg}
+                        borderRadius={radius.full}
+                        alignItems="center"
+                        justifyContent="center"
+                        backgroundColor={active ? colors.neonCyan : colors.cardBackground}
+                        borderWidth={1}
+                        borderColor={active ? colors.neonCyan : colors.border}
+                        style={
+                          active
+                            ? {
+                                shadowColor: colors.neonCyan,
+                                shadowOffset: { width: 0, height: 0 },
+                                shadowOpacity: heroGlow,
+                                shadowRadius: 8,
+                                elevation: 4,
+                              }
+                            : undefined
+                        }
                       >
-                        {size === 0 ? t('offlineSizeOff') : t('offlineSizeFacts', { count: size })}
-                      </Text.Caption>
-                    </XStack>
-                  </Pressable>
-                );
-              })}
-            </XStack>
-            {limit > 0 && (
-              <Text.Caption color="$textSecondary">
-                {t('offlineSizeHint', { newest, oldest })}
-              </Text.Caption>
-            )}
-
-            {/* Status */}
-            <YStack gap={spacing.xs}>
-              <Text.Caption color="$textSecondary">
-                {count > 0
-                  ? `${t('offlineDownloaded', { count })} · ${t('offlineStorageUsed', {
-                      size: formatBytes(storageBytes),
-                    })}`
-                  : t('offlineNeverSynced')}
-              </Text.Caption>
-              {lastSync && !isSyncing && (
+                        <Text.Caption
+                          color={active ? activeInk : colors.textSecondary}
+                          fontFamily={FONT_FAMILIES.semibold}
+                        >
+                          {size === 0
+                            ? t('offlineSizeOff')
+                            : t('offlineSizeFacts', { count: size })}
+                        </Text.Caption>
+                      </XStack>
+                    </Pressable>
+                  );
+                })}
+              </XStack>
+              {limit > 0 && (
                 <Text.Caption color="$textSecondary">
-                  {t('offlineLastSynced', {
-                    time: new Date(lastSync).toLocaleDateString(locale),
-                  })}
+                  {t('offlineSizeHint', { newest, oldest })}
                 </Text.Caption>
               )}
             </YStack>
 
             {/* Progress / actions */}
             {isSyncing ? (
-              <YStack gap={spacing.sm}>
+              <YStack
+                gap={spacing.sm}
+                padding={spacing.md}
+                borderRadius={radius.lg}
+                backgroundColor="$cardBackground"
+                borderWidth={1}
+                borderColor="$border"
+              >
                 <XStack alignItems="center" gap={spacing.sm}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text.Caption flex={1} color="$textSecondary">
+                  <ActivityIndicator size="small" color={colors.neonCyan} />
+                  <Text.Label flex={1} color="$text" fontFamily={FONT_FAMILIES.semibold}>
                     {sync.phase === 'downloading'
                       ? t('offlineSyncing', { percent })
                       : t('offlinePreparing')}
-                  </Text.Caption>
+                  </Text.Label>
+                  <Pressable onPress={cancelOfflineSync} hitSlop={spacing.sm}>
+                    <Text.Caption color={colors.error} fontFamily={FONT_FAMILIES.semibold}>
+                      {t('offlineCancel')}
+                    </Text.Caption>
+                  </Pressable>
                 </XStack>
                 <YStack
                   height={8}
@@ -354,31 +530,37 @@ export default function OfflineLibraryScreen() {
                   <YStack
                     height={8}
                     borderRadius={radius.full}
-                    backgroundColor="$primary"
+                    backgroundColor={colors.neonCyan}
                     width={`${Math.max(4, percent)}%`}
                   />
                 </YStack>
-                <Pressable onPress={cancelOfflineSync}>
-                  <Text.Caption textAlign="center" color={colors.error}>
-                    {t('offlineCancel')}
-                  </Text.Caption>
-                </Pressable>
               </YStack>
             ) : (
               limit > 0 && (
                 <XStack gap={spacing.sm}>
-                  <Pressable onPress={startSync} style={{ flex: 1 }} disabled={!isOnline}>
+                  <Pressable
+                    onPress={startSync}
+                    style={({ pressed }) => ({ flex: 1, opacity: pressed && isOnline ? 0.85 : 1 })}
+                    disabled={!isOnline}
+                  >
                     <XStack
                       height={media.buttonHeight}
                       borderRadius={radius.full}
                       alignItems="center"
                       justifyContent="center"
                       gap={spacing.sm}
-                      backgroundColor="$primary"
+                      backgroundColor={colors.neonCyan}
                       opacity={isOnline ? 1 : 0.4}
+                      style={{
+                        shadowColor: colors.neonCyan,
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: isOnline ? heroGlow : 0,
+                        shadowRadius: 10,
+                        elevation: isOnline ? 5 : 0,
+                      }}
                     >
-                      <RefreshCw size={iconSizes.sm} color="#FFFFFF" />
-                      <Text.Label color="#FFFFFF" fontFamily={FONT_FAMILIES.semibold}>
+                      <RefreshCw size={iconSizes.sm} color={activeInk} />
+                      <Text.Label color={activeInk} fontFamily={FONT_FAMILIES.semibold}>
                         {count > 0 ? t('offlineUpdate') : t('offlineDownload')}
                       </Text.Label>
                     </XStack>
@@ -391,7 +573,7 @@ export default function OfflineLibraryScreen() {
                         borderRadius={radius.full}
                         alignItems="center"
                         justifyContent="center"
-                        backgroundColor="$surface"
+                        backgroundColor="$cardBackground"
                         borderWidth={1}
                         borderColor="$border"
                       >
@@ -404,15 +586,6 @@ export default function OfflineLibraryScreen() {
             )}
           </>
         )}
-
-        {count > 0 && (
-          <XStack alignItems="center" gap={spacing.sm} paddingTop={spacing.sm}>
-            <BookOpen size={iconSizes.sm} color={colors.textSecondary} />
-            <Text.Label fontFamily={FONT_FAMILIES.semibold}>
-              {t('offlineDownloaded', { count })}
-            </Text.Label>
-          </XStack>
-        )}
       </YStack>
     </ContentContainer>
   );
@@ -420,7 +593,22 @@ export default function OfflineLibraryScreen() {
   const emptyState =
     !loading && count === 0 && !isSyncing ? (
       <ContentContainer>
-        <YStack alignItems="center" gap={spacing.sm} padding={spacing.xl}>
+        <YStack
+          alignItems="center"
+          gap={spacing.md}
+          paddingVertical={spacing.xxl}
+          paddingHorizontal={spacing.xl}
+        >
+          <YStack
+            width={iconSizes.hero + spacing.lg}
+            height={iconSizes.hero + spacing.lg}
+            borderRadius={(iconSizes.hero + spacing.lg) / 2}
+            backgroundColor={`${colors.neonCyan}1A`}
+            alignItems="center"
+            justifyContent="center"
+          >
+            <BookOpen size={iconSizes.xl} color={colors.neonCyan} />
+          </YStack>
           <Text.Body textAlign="center" color="$textSecondary">
             {isPremium ? t('offlineEmptyDescription') : ''}
           </Text.Body>
