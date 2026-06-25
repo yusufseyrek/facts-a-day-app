@@ -34,7 +34,7 @@ import { IdleInterstitial } from '../src/components/ads/IdleInterstitial';
 import { AppCheckBlockingScreen } from '../src/components/AppCheckBlockingScreen';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { SplashOverlay } from '../src/components/SplashOverlay';
-import { STORAGE_KEYS, TIMING } from '../src/config/app';
+import { STORAGE_KEYS } from '../src/config/app';
 import { isAppCheckInitFailed, subscribeAppCheckFailure } from '../src/config/appCheckState';
 import {
   enableCrashlyticsConsoleLogging,
@@ -451,9 +451,6 @@ export default function RootLayout() {
   // Track previous app state to detect foreground transitions
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
-  // Track when an OTA update has been downloaded and is ready to apply
-  const pendingUpdateRef = useRef<boolean>(false);
-
   useEffect(() => {
     initializeApp();
   }, []);
@@ -469,19 +466,6 @@ export default function RootLayout() {
         nextAppState === 'active' &&
         initialOnboardingStatus === true
       ) {
-        // If an update was downloaded previously, reload the app immediately
-        if (pendingUpdateRef.current) {
-          if (__DEV__)
-            console.log('📦 Pending OTA update detected on foreground, reloading app...');
-          pendingUpdateRef.current = false;
-          try {
-            await updates.reloadApp();
-            return; // App will reload, no need to continue
-          } catch (error) {
-            console.error('Failed to reload app for OTA update:', error);
-          }
-        }
-
         if (__DEV__) console.log('📱 App entered foreground...');
         Notifications.setBadgeCountAsync(0);
         const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
@@ -495,15 +479,18 @@ export default function RootLayout() {
           console.error('Failed to show app open ad on foreground:', error);
         });
 
-        // Check for OTA updates when app enters foreground
+        // Check for an OTA update and apply it IMMEDIATELY on return-to-foreground.
+        // Cold launch is handled natively by expo-updates (checkAutomatically=
+        // ON_LOAD); this covers the app coming back after being backgrounded.
         if (__DEV__) console.log('📦 Checking for OTA updates on foreground...');
         updates
           .checkAndDownloadUpdate()
           .then((result) => {
-            if (result.updateAvailable && result.downloaded) {
-              if (__DEV__)
-                console.log('📦 OTA update downloaded, marking as pending for next foreground');
-              pendingUpdateRef.current = true;
+            if (result.downloaded) {
+              if (__DEV__) console.log('📦 OTA update downloaded — reloading now');
+              updates.reloadApp().catch((error) => {
+                console.error('OTA reload failed:', error);
+              });
             }
           })
           .catch((error) => {
@@ -520,37 +507,6 @@ export default function RootLayout() {
 
     return () => {
       subscription.remove();
-    };
-  }, [initialOnboardingStatus]);
-
-  // Periodically check for OTA updates
-  // This helps users who keep the app open for long periods get updates
-  useEffect(() => {
-    if (!initialOnboardingStatus) return;
-
-    const checkForUpdates = () => {
-      // Only check when app is in foreground
-      if (AppState.currentState === 'active') {
-        if (__DEV__) console.log('📦 Periodic OTA update check...');
-        updates
-          .checkAndDownloadUpdate()
-          .then((result) => {
-            if (result.updateAvailable && result.downloaded) {
-              if (__DEV__)
-                console.log('📦 OTA update downloaded, marking as pending for next foreground');
-              pendingUpdateRef.current = true;
-            }
-          })
-          .catch((error) => {
-            console.error('Periodic OTA update check failed:', error);
-          });
-      }
-    };
-
-    const intervalId = setInterval(checkForUpdates, TIMING.UPDATE_CHECK_INTERVAL);
-
-    return () => {
-      clearInterval(intervalId);
     };
   }, [initialOnboardingStatus]);
 
@@ -674,23 +630,9 @@ export default function RootLayout() {
       // (offline games, prior failures). Fire-and-forget.
       triviaSync.syncTriviaResults().catch(() => {});
 
-      // Check for OTA updates in the background
-      updates
-        .checkAndDownloadUpdate()
-        .then((result) => {
-          if (result.updateAvailable && result.downloaded) {
-            if (__DEV__)
-              console.log(
-                '📦 OTA update downloaded on cold start, marking as pending for next foreground'
-              );
-            pendingUpdateRef.current = true;
-          } else if (result.error) {
-            console.error('OTA update check failed:', result.error);
-          }
-        })
-        .catch((error) => {
-          console.error('OTA update check failed:', error);
-        });
+      // OTA cold-launch check → download → apply is handled NATIVELY by
+      // expo-updates (checkAutomatically=ON_LOAD + fallbackToCacheTimeout), so
+      // there's no JS check here; the foreground handler covers warm returns.
     } catch (error) {
       console.error('Failed to initialize app:', error);
       // Recover from error to prevent blank screen

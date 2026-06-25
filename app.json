@@ -13,12 +13,9 @@
     },
     "updates": {
       "enabled": true,
-      "checkAutomatically": "NEVER",
+      "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 5000,
-      "url": "https://factsaday.com/api/updates/manifest",
-      "requestHeaders": {
-        "X-Firebase-AppCheck": ""
-      }
+      "url": "https://factsaday.com/api/updates/manifest"
     },
     "locales": {
       "en": "./src/i18n/locales/en.json",
