@@ -1,14 +1,23 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { memo, useCallback, useMemo, useRef } from 'react';
 import { NativeScrollEvent, NativeSyntheticEvent, View, type ViewStyle } from 'react-native';
+import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 
-import { LAYOUT } from '../../config/app';
+import { LAYOUT, NATIVE_ADS } from '../../config/app';
 import { signalHeroImageReady } from '../../contexts';
+import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { useTranslation } from '../../i18n';
 import { trackCarouselSwipe } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  type NativeAdPlaceholder,
+  pooledAdKey,
+} from '../../utils/insertNativeAds';
 import { useResponsive } from '../../utils/useResponsive';
+import { NativeAdCard } from '../ads/NativeAdCard';
 import { Newspaper } from '../icons';
 import { ImageFactCard } from '../ImageFactCard';
 import { ShimmerPlaceholder } from '../ShimmerPlaceholder';
@@ -31,6 +40,44 @@ interface LatestCarouselProps {
   isPremium?: boolean;
   isLoading?: boolean;
 }
+
+type LatestRow = FactWithRelations | NativeAdPlaceholder;
+
+/**
+ * Square native ad cell for the Latest carousel. Subscribes to a pooled ad slot
+ * and ALWAYS reserves the full card width (via `itemStyle`) so the carousel's
+ * fixed `snapToInterval` grid stays aligned whether or not the slot has filled.
+ * Shows a shimmer while the ad loads; a no-fill leaves a blank (but
+ * correctly-sized) slot rather than shifting every card after it.
+ */
+const LatestAdCell = memo(function LatestAdCell({
+  slotKey,
+  cardWidth,
+  cardHeight,
+  itemStyle,
+}: {
+  slotKey: string;
+  cardWidth: number;
+  cardHeight: number;
+  itemStyle: ViewStyle;
+}) {
+  const { ad, status } = useAdForSlot(slotKey, NativeMediaAspectRatio.SQUARE);
+  const { spacing } = useResponsive();
+  return (
+    <View style={itemStyle}>
+      {ad ? (
+        <NativeAdCard
+          cardWidth={cardWidth}
+          cardHeight={cardHeight}
+          nativeAd={ad}
+          aspectRatio={NativeMediaAspectRatio.SQUARE}
+        />
+      ) : status === 'failed' ? null : (
+        <ShimmerPlaceholder width={cardWidth} height={cardHeight} borderRadius={spacing.sm} />
+      )}
+    </View>
+  );
+});
 
 export const LatestCarousel = React.memo(function LatestCarousel({
   facts,
@@ -57,19 +104,38 @@ export const LatestCarousel = React.memo(function LatestCarousel({
 
   const activeIndexRef = useRef(0);
 
+  // Interleave a small bounded pool of native ad placeholders (2 across the 10
+  // cards). insertNativeAds returns `facts` unchanged for premium / ads-off.
+  const data = useMemo<LatestRow[]>(
+    () =>
+      insertNativeAds(facts, {
+        firstAdIndex: NATIVE_ADS.FEED.LATEST.firstAdIndex,
+        interval: NATIVE_ADS.FEED.LATEST.interval,
+        getAdKey: pooledAdKey(NATIVE_ADS.FEED.LATEST.keyPrefix, NATIVE_ADS.FEED.LATEST.poolSize),
+      }),
+    [facts]
+  );
+
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetX = event.nativeEvent.contentOffset.x;
       const index = Math.round(offsetX / snapInterval);
       if (index !== activeIndexRef.current) {
         activeIndexRef.current = index;
-        const item = facts[index];
-        if (item) {
-          trackCarouselSwipe({ section: 'latest', index, factId: item.id });
+        const item = data[index];
+        if (item && !isNativeAdPlaceholder(item)) {
+          // Report the fact's position in the ad-free list, not the data-with-
+          // ads index, so analytics stay comparable to the no-ads carousel.
+          const factIndex = factIds.indexOf(item.id);
+          trackCarouselSwipe({
+            section: 'latest',
+            index: factIndex >= 0 ? factIndex : index,
+            factId: item.id,
+          });
         }
       }
     },
-    [snapInterval, facts]
+    [snapInterval, data, factIds]
   );
 
   const contentContainerStyle = useMemo(() => ({ paddingHorizontal: listInset }), [listInset]);
@@ -80,7 +146,17 @@ export const LatestCarousel = React.memo(function LatestCarousel({
   const separatorStyle = useMemo(() => ({ width: cardGap }), [cardGap]);
 
   const renderItem = useCallback(
-    ({ item }: { item: FactWithRelations; index: number }) => {
+    ({ item }: { item: LatestRow; index: number }) => {
+      if (isNativeAdPlaceholder(item)) {
+        return (
+          <LatestAdCell
+            slotKey={item.key}
+            cardWidth={cardWidth}
+            cardHeight={cardHeight}
+            itemStyle={itemStyle}
+          />
+        );
+      }
       const factIndex = factIds.indexOf(item.id);
       const isFactPremiumLocked =
         !isPremium && !!(typeof item.categoryData === 'object' && item.categoryData?.is_premium);
@@ -105,10 +181,19 @@ export const LatestCarousel = React.memo(function LatestCarousel({
         </View>
       );
     },
-    [cardWidth, onFactPress, factIds, itemStyle, isPremium]
+    [cardWidth, cardHeight, onFactPress, factIds, itemStyle, isPremium]
   );
 
-  const keyExtractor = useCallback((item: FactWithRelations) => `lt-${item.id}`, []);
+  const keyExtractor = useCallback(
+    (item: LatestRow) => (isNativeAdPlaceholder(item) ? item.key : `lt-${item.id}`),
+    []
+  );
+
+  // Split FlashList recycle pools so ad cells and fact cards never share a view.
+  const getItemType = useCallback(
+    (item: LatestRow) => (isNativeAdPlaceholder(item) ? 'ad' : 'fact'),
+    []
+  );
 
   const ItemSeparator = useCallback(() => <View style={separatorStyle} />, [separatorStyle]);
 
@@ -151,10 +236,11 @@ export const LatestCarousel = React.memo(function LatestCarousel({
       />
       <View style={{ height: cardHeight + spacing.xxl, width: '100%' }}>
         <FlashList
-          ref={listRef}
-          data={facts}
+          ref={listRef as unknown as React.RefObject<FlashListRef<LatestRow> | null>}
+          data={data}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
+          getItemType={getItemType}
           horizontal
           showsHorizontalScrollIndicator={false}
           overScrollMode="never"

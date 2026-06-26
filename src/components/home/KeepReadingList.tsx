@@ -3,14 +3,23 @@ import { ActivityIndicator, RefreshControl, View } from 'react-native';
 
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 
-import { LAYOUT } from '../../config/app';
+import { LAYOUT, NATIVE_ADS } from '../../config/app';
 import { useHeaderContentGap } from '../../hooks/useGlassHeaderOptions';
 import { useTabBarBannerInset } from '../../services/tabBarBannerInset';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  type NativeAdPlaceholder,
+  pooledAdKey,
+} from '../../utils/insertNativeAds';
 import { useResponsive } from '../../utils/useResponsive';
+import { NativeAdRow } from '../ads/NativeAdRow';
 
 import { KeepReadingItem } from './KeepReadingItem';
 
 import type { FactWithRelations } from '../../services/database';
+
+type KeepReadingRow = FactWithRelations | NativeAdPlaceholder;
 
 // ---------- Centered wrapper ----------
 
@@ -35,7 +44,7 @@ interface KeepReadingListProps {
 
 // ---------- Main list ----------
 
-export const KeepReadingList = forwardRef<FlashListRef<FactWithRelations>, KeepReadingListProps>(
+export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepReadingListProps>(
   function KeepReadingList(
     {
       facts,
@@ -53,16 +62,65 @@ export const KeepReadingList = forwardRef<FlashListRef<FactWithRelations>, KeepR
     const headerGap = useHeaderContentGap();
     const bannerInset = useTabBarBannerInset();
 
-    const renderItem = useCallback(
-      ({ item, index }: { item: FactWithRelations; index: number }) => (
-        <View style={centeredStyle}>
-          <KeepReadingItem fact={item} index={index} onPress={onFactPress} isOdd={index % 2 === 0} />
-        </View>
-      ),
-      [onFactPress]
+    // Insert a bounded pool of native ad rows after every N facts. Returns
+    // `facts` unchanged for premium / ads-off sessions.
+    const data = useMemo<KeepReadingRow[]>(
+      () =>
+        insertNativeAds(facts, {
+          firstAdIndex: NATIVE_ADS.FEED.KEEP_READING.firstAdIndex,
+          interval: NATIVE_ADS.FEED.KEEP_READING.interval,
+          getAdKey: pooledAdKey(
+            NATIVE_ADS.FEED.KEEP_READING.keyPrefix,
+            NATIVE_ADS.FEED.KEEP_READING.poolSize
+          ),
+        }),
+      [facts]
     );
 
-    const keyExtractor = useCallback((item: FactWithRelations) => `kr-${item.id}`, []);
+    // Ad rows shift the visual data index, but navigation (and the swipe list it
+    // opens) is keyed off the fact's position within `facts` — map id → that
+    // position so taps open the right fact. Visual alternation still uses the
+    // data index so neighbouring rows keep alternating across ad rows.
+    const factIndexById = useMemo(() => {
+      const map = new Map<number, number>();
+      facts.forEach((f, i) => map.set(f.id, i));
+      return map;
+    }, [facts]);
+
+    const renderItem = useCallback(
+      ({ item, index }: { item: KeepReadingRow; index: number }) => {
+        if (isNativeAdPlaceholder(item)) {
+          return (
+            <View style={centeredStyle}>
+              <NativeAdRow slotKey={item.key} isOdd={index % 2 === 0} />
+            </View>
+          );
+        }
+        const factIndex = factIndexById.get(item.id) ?? index;
+        return (
+          <View style={centeredStyle}>
+            <KeepReadingItem
+              fact={item}
+              index={factIndex}
+              onPress={onFactPress}
+              isOdd={index % 2 === 0}
+            />
+          </View>
+        );
+      },
+      [onFactPress, factIndexById]
+    );
+
+    const keyExtractor = useCallback(
+      (item: KeepReadingRow) => (isNativeAdPlaceholder(item) ? item.key : `kr-${item.id}`),
+      []
+    );
+
+    // Split FlashList recycle pools so ad rows and fact rows never share a view.
+    const getItemType = useCallback(
+      (item: KeepReadingRow) => (isNativeAdPlaceholder(item) ? 'ad' : 'fact'),
+      []
+    );
 
     const handleScroll = useCallback(
       (e: { nativeEvent: { contentOffset: { y: number } } }) => {
@@ -97,9 +155,10 @@ export const KeepReadingList = forwardRef<FlashListRef<FactWithRelations>, KeepR
         // instead.
         maintainVisibleContentPosition={{ disabled: true }}
         contentContainerStyle={{ paddingTop: headerGap, paddingBottom: bannerInset }}
-        data={facts}
+        data={data}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
+        getItemType={getItemType}
         ListHeaderComponent={ListHeaderComponent}
         ListFooterComponent={listFooter}
         refreshControl={refreshControl}

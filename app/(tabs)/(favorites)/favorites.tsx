@@ -6,6 +6,7 @@ import {
   RefreshControl,
   ScrollView,
 } from 'react-native';
+import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import { FlashList } from '@shopify/flash-list';
@@ -20,10 +21,11 @@ import {
   ScreenContainer,
   Text,
 } from '../../../src/components';
+import { NativeAdCard } from '../../../src/components/ads';
 import { Heart } from '../../../src/components/icons';
 import { ImageFactCard } from '../../../src/components/ImageFactCard';
 import { XStack, YStack } from '../../../src/components/Stacks';
-import { LAYOUT } from '../../../src/config/app';
+import { LAYOUT, NATIVE_ADS } from '../../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
 import { useHeaderContentGap } from '../../../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../../../src/i18n';
@@ -38,6 +40,12 @@ import { openFactDetail } from '../../../src/services/factMorph';
 import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import { hexColors, useTheme } from '../../../src/theme';
 import { getContrastColor, hexToRgba } from '../../../src/utils/colors';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  type NativeAdPlaceholder,
+  pooledAdKey,
+} from '../../../src/utils/insertNativeAds';
 import { useFlashListScrollToTop } from '../../../src/utils/useFlashListScrollToTop';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
@@ -241,6 +249,21 @@ export default function FavoritesScreen() {
 
   const filteredFactIds = useMemo(() => filteredFavorites.map((f) => f.id), [filteredFavorites]);
 
+  // Interleave a bounded pool of native ad placeholders into the favorites list.
+  // Returns `filteredFavorites` unchanged for premium / ads-off sessions.
+  const filteredFavoritesWithAds = useMemo(
+    () =>
+      insertNativeAds(filteredFavorites, {
+        firstAdIndex: NATIVE_ADS.FEED.FAVORITES.firstAdIndex,
+        interval: NATIVE_ADS.FEED.FAVORITES.interval,
+        getAdKey: pooledAdKey(
+          NATIVE_ADS.FEED.FAVORITES.keyPrefix,
+          NATIVE_ADS.FEED.FAVORITES.poolSize
+        ),
+      }),
+    [filteredFavorites]
+  );
+
   const handleFactPress = useCallback(
     (fact: FactWithRelations, factIdList?: number[], indexInList?: number) => {
       openFactDetail(router, fact.id, {
@@ -287,12 +310,30 @@ export default function FavoritesScreen() {
     [selectedCategory, favorites, debouncedQuery]
   );
 
-  // Memoized keyExtractor
-  const keyExtractor = useCallback((item: FactWithRelations) => item.id.toString(), []);
+  // Memoized keyExtractor (handles the native ad placeholder union)
+  const keyExtractor = useCallback(
+    (item: FactWithRelations | NativeAdPlaceholder) =>
+      isNativeAdPlaceholder(item) ? item.key : item.id.toString(),
+    []
+  );
+
+  // Split FlashList recycle pools so ad cells and fact cards never share a view.
+  const getItemType = useCallback(
+    (item: FactWithRelations | NativeAdPlaceholder) =>
+      isNativeAdPlaceholder(item) ? 'ad' : 'fact',
+    []
+  );
 
   // Memoized renderItem
   const renderItem = useCallback(
-    ({ item }: { item: FactWithRelations }) => {
+    ({ item }: { item: FactWithRelations | NativeAdPlaceholder }) => {
+      if (isNativeAdPlaceholder(item)) {
+        return (
+          <ContentContainer>
+            <NativeAdCard slotKey={item.key} aspectRatio={NativeMediaAspectRatio.LANDSCAPE} />
+          </ContentContainer>
+        );
+      }
       const factIndex = filteredFactIds.indexOf(item.id);
       return (
         <FactListItem
@@ -496,8 +537,9 @@ export default function FavoritesScreen() {
         ) : (
           <FlashList
             ref={listRef}
-            data={filteredFavorites}
+            data={filteredFavoritesWithAds}
             keyExtractor={keyExtractor}
+            getItemType={getItemType}
             renderItem={renderItem}
             refreshControl={refreshControl}
             onScroll={handleScroll}

@@ -82,8 +82,7 @@ export const APP_OPEN_ADS = {
 export const NATIVE_ADS = {
   /** Whether native feed ads are active */
   ACTIVE: true,
-  /** Index of the first ad in each list (0-based). Native ads now live only in
-   *  the story swipe view — feed and trivia ads were replaced by banners. */
+  /** Index of the first ad in the story swipe view (0-based). */
   FIRST_AD_INDEX: {
     STORY: 3,
   },
@@ -92,6 +91,34 @@ export const NATIVE_ADS = {
   /** Duration (ms) to block prev/next navigation when a native ad is shown in
    *  the story swipe view */
   NAV_LOCK_DURATION_MS: 850,
+  /**
+   * Inline native ad placements across the feed surfaces. Each surface reuses a
+   * SMALL FIXED POOL of ad slots assigned round-robin — the slot key is
+   * `${keyPrefix}-${adIndex % poolSize}`. So the number of distinct native-ad
+   * REQUESTS per surface is capped at `poolSize` no matter how far the user
+   * scrolls (no per-position requests, no warm-up pre-fetching). Ads are spaced
+   * `interval` items apart, which is always far enough that two cells sharing a
+   * pooled slot are never on screen at once.
+   *
+   *  - keyPrefix:    namespace for this surface's pooled slot keys
+   *  - firstAdIndex: countable items before the first ad
+   *  - interval:     countable items between subsequent ads
+   *  - poolSize:     max distinct ad requests for the surface
+   */
+  FEED: {
+    /** Home "Latest" carousel — ~2 ads across the 10 cards. */
+    LATEST: { keyPrefix: 'lt-ad', firstAdIndex: 3, interval: 4, poolSize: 2 },
+    /** Home "Keep Reading" vertical feed — a row ad after every 6 facts. */
+    KEEP_READING: { keyPrefix: 'kr-ad', firstAdIndex: 6, interval: 6, poolSize: 3 },
+    /** Discover search results. */
+    DISCOVER: { keyPrefix: 'srch-ad', firstAdIndex: 4, interval: 5, poolSize: 3 },
+    /** Discover category browse. */
+    CATEGORY: { keyPrefix: 'cat-ad', firstAdIndex: 4, interval: 5, poolSize: 3 },
+    /** Favorites list. */
+    FAVORITES: { keyPrefix: 'fav-ad', firstAdIndex: 4, interval: 5, poolSize: 3 },
+    /** Trivia results "Question Insights" horizontal cards. */
+    TRIVIA_RESULTS: { keyPrefix: 'trv-ad', firstAdIndex: 3, interval: 4, poolSize: 2 },
+  },
 } as const;
 
 export const AD_RETRY = {

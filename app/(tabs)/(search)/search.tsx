@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView } from 'react-native';
+import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
@@ -14,10 +15,11 @@ import {
   ScreenContainer,
   Text,
 } from '../../../src/components';
+import { NativeAdCard } from '../../../src/components/ads';
 import { X } from '../../../src/components/icons';
 import { ImageFactCard } from '../../../src/components/ImageFactCard';
 import { styled, View, XStack, YStack } from '../../../src/components/Stacks';
-import { LAYOUT } from '../../../src/config/app';
+import { LAYOUT, NATIVE_ADS } from '../../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
 import { useScrollToTopHandler } from '../../../src/contexts';
 import { useSeedFactDetailsCache } from '../../../src/hooks/useFactDetail';
@@ -41,6 +43,12 @@ import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import { getLastNonSearchTabPath, onSearchSessionReset } from '../../../src/services/tabHistory';
 import { hexColors, useTheme } from '../../../src/theme';
 import { blendHexColors, getContrastColor, hexToHue, hexToRgba } from '../../../src/utils/colors';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  type NativeAdPlaceholder,
+  pooledAdKey,
+} from '../../../src/utils/insertNativeAds';
 import { smartScrollToTop } from '../../../src/utils/useFlashListScrollToTop';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
@@ -574,16 +582,60 @@ function SearchScreen() {
     [selectedCategorySlug, userCategories]
   );
 
-  // Memoized keyExtractor
-  const keyExtractor = useCallback((item: FactWithRelations) => item.id.toString(), []);
+  // Memoized keyExtractor (handles the native ad placeholder union)
+  const keyExtractor = useCallback(
+    (item: FactWithRelations | NativeAdPlaceholder) =>
+      isNativeAdPlaceholder(item) ? item.key : item.id.toString(),
+    []
+  );
 
-  // Compute fact ID lists for navigation
+  // Split FlashList recycle pools so ad cells and fact cards never share a view.
+  const getItemType = useCallback(
+    (item: FactWithRelations | NativeAdPlaceholder) =>
+      isNativeAdPlaceholder(item) ? 'ad' : 'fact',
+    []
+  );
+
+  // Compute fact ID lists for navigation (ads are not part of the swipe list).
   const searchFactIds = useMemo(() => searchResults.map((f) => f.id), [searchResults]);
   const categoryFactIds = useMemo(() => categoryFacts.map((f) => f.id), [categoryFacts]);
 
+  // Interleave a bounded pool of native ad placeholders into each list's data.
+  const searchResultsWithAds = useMemo(
+    () =>
+      insertNativeAds(searchResults, {
+        firstAdIndex: NATIVE_ADS.FEED.DISCOVER.firstAdIndex,
+        interval: NATIVE_ADS.FEED.DISCOVER.interval,
+        getAdKey: pooledAdKey(
+          NATIVE_ADS.FEED.DISCOVER.keyPrefix,
+          NATIVE_ADS.FEED.DISCOVER.poolSize
+        ),
+      }),
+    [searchResults]
+  );
+  const categoryFactsWithAds = useMemo(
+    () =>
+      insertNativeAds(categoryFacts, {
+        firstAdIndex: NATIVE_ADS.FEED.CATEGORY.firstAdIndex,
+        interval: NATIVE_ADS.FEED.CATEGORY.interval,
+        getAdKey: pooledAdKey(
+          NATIVE_ADS.FEED.CATEGORY.keyPrefix,
+          NATIVE_ADS.FEED.CATEGORY.poolSize
+        ),
+      }),
+    [categoryFacts]
+  );
+
   // Memoized renderItem for search results
   const renderSearchItem = useCallback(
-    ({ item }: ListRenderItemInfo<FactWithRelations>) => {
+    ({ item }: ListRenderItemInfo<FactWithRelations | NativeAdPlaceholder>) => {
+      if (isNativeAdPlaceholder(item)) {
+        return (
+          <ContentContainer>
+            <NativeAdCard slotKey={item.key} aspectRatio={NativeMediaAspectRatio.LANDSCAPE} />
+          </ContentContainer>
+        );
+      }
       const factIndex = searchFactIds.indexOf(item.id);
       return (
         <FactListItem
@@ -603,7 +655,14 @@ function SearchScreen() {
 
   // Memoized renderItem for category facts
   const renderCategoryItem = useCallback(
-    ({ item }: ListRenderItemInfo<FactWithRelations>) => {
+    ({ item }: ListRenderItemInfo<FactWithRelations | NativeAdPlaceholder>) => {
+      if (isNativeAdPlaceholder(item)) {
+        return (
+          <ContentContainer>
+            <NativeAdCard slotKey={item.key} aspectRatio={NativeMediaAspectRatio.LANDSCAPE} />
+          </ContentContainer>
+        );
+      }
       const factIndex = categoryFactIds.indexOf(item.id);
       return (
         <FactListItem
@@ -803,8 +862,9 @@ function SearchScreen() {
         >
           <FlashList
             ref={searchListRef}
-            data={searchResults}
+            data={searchResultsWithAds}
             keyExtractor={keyExtractor}
+            getItemType={getItemType}
             renderItem={renderSearchItem}
             refreshControl={searchRefreshControl}
             onScroll={handleSearchScroll}
@@ -859,8 +919,9 @@ function SearchScreen() {
         >
           <FlashList
             ref={categoryListRef}
-            data={categoryFacts}
+            data={categoryFactsWithAds}
             keyExtractor={keyExtractor}
+            getItemType={getItemType}
             renderItem={renderCategoryItem}
             refreshControl={categoryRefreshControl}
             onScroll={handleCategoryScroll}

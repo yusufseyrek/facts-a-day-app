@@ -1,5 +1,6 @@
 import React from 'react';
 import { Platform, Pressable, ScrollView, View } from 'react-native';
+import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 import Animated, {
   FadeInDown,
   FadeInUp,
@@ -14,14 +15,20 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
-import { LAYOUT } from '../../config/app';
+import { LAYOUT, NATIVE_ADS } from '../../config/app';
+import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { indexToAnswer, isTextAnswerCorrect } from '../../services/trivia';
 import { hexColors } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
+import {
+  insertNativeAds,
+  isNativeAdPlaceholder,
+  pooledAdKey,
+} from '../../utils/insertNativeAds';
 import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
-import { BannerAd } from '../ads';
+import { BannerAd, NativeAdCard } from '../ads';
 import { GlassSurface } from '../GlassSurface';
 import { Calendar, Check, ChevronLeft, ChevronRight, Flame, Star, Timer, X, Zap } from '../icons';
 import { XStack, YStack } from '../Stacks';
@@ -32,6 +39,36 @@ import type { QuestionWithFact, StoredAnswer } from '../../services/database';
 const CARD_GAP = 12;
 
 type TranslationFunction = (key: any, params?: any) => string;
+
+/**
+ * Native ad card sized to match the question cards in the horizontal results
+ * scroll. Returns `null` (the cell collapses) until its pooled slot has a bound
+ * ad, so a no-fill leaves no blank gap and the snap interval stays consistent.
+ */
+function TriviaAdCard({
+  slotKey,
+  cardWidth,
+  cardHeight,
+}: {
+  slotKey: string;
+  cardWidth: number;
+  cardHeight?: number;
+}) {
+  // SQUARE creatives are requested only for the home feed (square cards); other
+  // surfaces request LANDSCAPE, which has broader fill.
+  const { ad } = useAdForSlot(slotKey, NativeMediaAspectRatio.LANDSCAPE);
+  if (!ad) return null;
+  return (
+    <View style={{ width: cardWidth }}>
+      <NativeAdCard
+        nativeAd={ad}
+        cardWidth={cardWidth}
+        cardHeight={cardHeight}
+        aspectRatio={NativeMediaAspectRatio.LANDSCAPE}
+      />
+    </View>
+  );
+}
 
 export interface TriviaResultsProps {
   correctAnswers: number;
@@ -506,19 +543,29 @@ export function TriviaResults({
 
   type InsightItem =
     | { kind: 'question'; question: QuestionWithFact; index: number }
-    | { kind: 'unavailable'; questionId: number; index: number };
+    | { kind: 'unavailable'; questionId: number; index: number }
+    | { kind: 'ad'; key: string };
 
-  const insightItems = React.useMemo<InsightItem[]>(
-    () => [
+  const insightItems = React.useMemo<InsightItem[]>(() => {
+    const base: InsightItem[] = [
       ...questions.map((q, i) => ({ kind: 'question' as const, question: q, index: i })),
       ...unavailableQuestionIds.map((id, i) => ({
         kind: 'unavailable' as const,
         questionId: id,
         index: questions.length + i,
       })),
-    ],
-    [questions, unavailableQuestionIds]
-  );
+    ];
+    // Interleave a bounded pool of native ad cards. insertNativeAds returns
+    // `base` unchanged for premium / ads-off sessions.
+    return insertNativeAds(base, {
+      firstAdIndex: NATIVE_ADS.FEED.TRIVIA_RESULTS.firstAdIndex,
+      interval: NATIVE_ADS.FEED.TRIVIA_RESULTS.interval,
+      getAdKey: pooledAdKey(
+        NATIVE_ADS.FEED.TRIVIA_RESULTS.keyPrefix,
+        NATIVE_ADS.FEED.TRIVIA_RESULTS.poolSize
+      ),
+    }).map((it) => (isNativeAdPlaceholder(it) ? { kind: 'ad' as const, key: it.key } : it));
+  }, [questions, unavailableQuestionIds]);
 
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
@@ -1008,6 +1055,21 @@ export function TriviaResults({
               snapToAlignment="start"
             >
               {insightItems.map((item) => {
+                if (item.kind === 'ad') {
+                  // Defer until the question cards have measured, so the ad
+                  // mounts at their synced height instead of the default and
+                  // never jumps when maxCardHeight resolves.
+                  if (maxCardHeight == null) return null;
+                  return (
+                    <TriviaAdCard
+                      key={item.key}
+                      slotKey={item.key}
+                      cardWidth={cardWidth}
+                      cardHeight={maxCardHeight}
+                    />
+                  );
+                }
+
                 if (item.kind === 'unavailable') {
                   const answer = answers[item.questionId];
                   const isCorrect = isStoredAnswer(answer) ? answer.correct : false;

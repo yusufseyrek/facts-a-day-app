@@ -46,6 +46,20 @@ const defaultGetAdKey = <T>(prevItem: T | null, adIndex: number): string => {
 };
 
 /**
+ * `getAdKey` factory that assigns ads to a small fixed pool of slot keys
+ * round-robin: `${prefix}-${adIndex % poolSize}`. Because the key depends only
+ * on the ad's ordinal (not the surrounding content), the number of distinct
+ * native-ad slots — and therefore the number of ad REQUESTS — a surface ever
+ * creates is capped at `poolSize`, however long the list grows. Pick a
+ * `poolSize` small enough to bound requests but large enough that the ad
+ * `interval` keeps any two cells sharing a slot off screen at the same time.
+ */
+export const pooledAdKey =
+  (prefix: string, poolSize: number) =>
+  (_prevItem: unknown, adIndex: number): string =>
+    `${prefix}-${adIndex % Math.max(1, poolSize)}`;
+
+/**
  * Insert native ad placeholders into an array of items. Ad keys are derived
  * from the preceding item so they stay stable across pagination and re-sorts.
  */
