@@ -179,6 +179,21 @@ export interface RegisterPushParams {
 // ====== API Helpers ======
 
 /**
+ * True for a fetch rejected because it was aborted/canceled. The installed
+ * global `fetch` is Expo's winter fetch (expo/src/winter/runtime.native.ts),
+ * which rejects an aborted request with a plain `FetchError` — name "Error",
+ * message "fetch failed: Fetch request has been canceled" / "...The operation
+ * was aborted." — NOT a DOMException named "AbortError". So name-only detection
+ * misses every abort; fall back to the message.
+ */
+function isAbortError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  if (error.name === 'AbortError') return true;
+  const message = error.message.toLowerCase();
+  return message.includes('abort') || message.includes('cancel');
+}
+
+/**
  * Fetch with timeout support
  * @param url - The URL to fetch
  * @param options - Fetch options
@@ -190,7 +205,15 @@ async function fetchWithTimeout(
   timeout: number = 30000
 ): Promise<Response> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  // Track OUR abort explicitly. We can't recognize the timeout from the thrown
+  // error (Expo's winter fetch throws a FetchError named "Error", not an
+  // AbortError), and this controller is the request's only abort source — we
+  // override any caller-supplied signal below — so the flag is unambiguous.
+  let timedOut = false;
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeout);
 
   try {
     const response = await fetch(url, {
@@ -201,9 +224,21 @@ async function fetchWithTimeout(
     return response;
   } catch (error) {
     clearTimeout(timeoutId);
-    // Check if error is due to timeout
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error(`Request timeout after ${timeout}ms`);
+    // Our timeout fired: surface it clearly and mark it non-retryable. Retrying
+    // a timeout re-incurs the full `timeout` per attempt and, under load, just
+    // adds more concurrent requests — the feedback loop that was canceling the
+    // fact detail's own fetches (comments/related) and stalling them ~90s.
+    if (timedOut) {
+      const timeoutError = new Error(`Request timeout after ${timeout}ms`) as Error & {
+        noRetry?: boolean;
+      };
+      timeoutError.noRetry = true;
+      throw timeoutError;
+    }
+    // A cancellation we didn't initiate (e.g. the native request was canceled
+    // when the app backgrounded) won't recover on an immediate retry either.
+    if (isAbortError(error)) {
+      (error as Error & { noRetry?: boolean }).noRetry = true;
     }
     throw error;
   }
@@ -229,6 +264,12 @@ async function retryWithBackoff<T>(
     } catch (error) {
       lastError = error as Error;
       attempt++;
+
+      // Aborts/timeouts are flagged non-retryable by fetchWithTimeout: retrying
+      // re-incurs the timeout and only adds load to an already-slow server.
+      if ((error as { noRetry?: boolean })?.noRetry) {
+        throw error;
+      }
 
       // Don't retry on client errors (4xx except 429). Prefer the structured
       // status (always set by makeRequest); the message check remains for

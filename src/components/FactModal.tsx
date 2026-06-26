@@ -63,6 +63,7 @@ import { absoluteFillObject } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
 import { showRewardedAd } from './ads/RewardedAd';
+import { HeaderQueueButton } from './player/HeaderQueueButton';
 import { BannerAd, NativeAdCard } from './ads';
 import { CategoryBadge } from './CategoryBadge';
 import { CloseButton } from './CloseButton';
@@ -1584,6 +1585,21 @@ export function FactModal({
         pointerEvents="box-none"
       >
         <CloseButton onPress={onClose} testID="fact-modal-close-button" />
+      </View>
+
+      {/* Queue mini-player, mirroring the close button on the left. It self-hides
+          on an empty queue, so it only appears while audio is queued/playing. */}
+      <View
+        style={{
+          position: 'absolute',
+          top: basePaddingTop,
+          left: spacing.xl,
+          zIndex: 9999,
+          ...Platform.select({ android: { elevation: 999 } }),
+        }}
+        pointerEvents="box-none"
+      >
+        <HeaderQueueButton />
       </View>
 
       {/* Bottom chrome: banner + action bar. With Liquid Glass it floats over
