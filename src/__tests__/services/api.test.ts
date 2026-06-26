@@ -70,6 +70,49 @@ describe('api — fetchWithTimeout', () => {
     expect(clearTimeoutSpy).toHaveBeenCalled();
     clearTimeoutSpy.mockRestore();
   });
+
+  it('classifies a timeout regardless of the abort error shape, and flags it non-retryable', async () => {
+    jest.useFakeTimers();
+
+    // Expo's winter fetch (the installed global) rejects an aborted request with
+    // a FetchError named "Error" — NOT a DOMException named "AbortError". The
+    // timeout must still be recognized via our own flag, not error.name.
+    (global.fetch as jest.Mock) = jest.fn().mockImplementation(
+      (_url: string, options: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          options.signal?.addEventListener('abort', () => {
+            reject(new Error('fetch failed: Fetch request has been canceled'));
+          });
+        })
+    );
+
+    const promise = fetchWithTimeout('https://api.test/slow', {}, 1000);
+    jest.advanceTimersByTime(1100);
+
+    const error = await promise.catch((e) => e);
+    expect(error.message).toBe('Request timeout after 1000ms');
+    expect(error.noRetry).toBe(true);
+
+    jest.useRealTimers();
+  });
+
+  it('flags a cancellation it did not initiate as non-retryable', async () => {
+    (global.fetch as jest.Mock) = jest
+      .fn()
+      .mockRejectedValue(new Error('fetch failed: Fetch request has been canceled'));
+
+    const error = await fetchWithTimeout('https://api.test/x', {}, 5000).catch((e) => e);
+    expect(error.message).toBe('fetch failed: Fetch request has been canceled');
+    expect(error.noRetry).toBe(true);
+  });
+
+  it('leaves a generic network error retryable', async () => {
+    (global.fetch as jest.Mock) = jest.fn().mockRejectedValue(new Error('Network request failed'));
+
+    const error = await fetchWithTimeout('https://api.test/x', {}, 5000).catch((e) => e);
+    expect(error.message).toBe('Network request failed');
+    expect(error.noRetry).toBeUndefined();
+  });
 });
 
 describe('api — retryWithBackoff', () => {
@@ -148,6 +191,16 @@ describe('api — retryWithBackoff', () => {
 
     await expect(retryWithBackoff(fn, 3, 1)).rejects.toThrow('server error');
     expect(fn).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not retry a non-retryable (timeout/abort) error', async () => {
+    jest.useRealTimers();
+
+    const err = Object.assign(new Error('Request timeout after 30000ms'), { noRetry: true });
+    const fn = jest.fn().mockRejectedValue(err);
+
+    await expect(retryWithBackoff(fn, 3, 1)).rejects.toThrow('Request timeout after 30000ms');
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 });
 

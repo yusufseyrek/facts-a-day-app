@@ -1,10 +1,11 @@
 /**
- * Compact queue-player control for the home header — upper-left on iOS, and on
- * Android right next to the reading-streak flame (headerRight). A small rounded
- * pill with two tap targets separated by a hairline: a filled play/pause disc
- * that toggles playback inline, and the equalizer/glyph + queue count that opens
- * the full player sheet. The equalizer bounces while playing (a static music
- * glyph when paused). Renders nothing when the queue is empty.
+ * Compact queue-player control. A single instance floats at the top-left across
+ * every screen (mounted once in PersistentMiniPlayer above the root navigator),
+ * so playback is reachable wherever audio is active without cloning per screen.
+ * A small rounded pill with two tap targets separated by a hairline: a filled
+ * play/pause disc that toggles playback inline, and the equalizer/glyph + queue
+ * count that opens the full player sheet. The equalizer bounces while playing (a
+ * static music glyph when paused). Renders nothing when the queue is empty.
  */
 import { Pressable, View } from 'react-native';
 
@@ -19,7 +20,7 @@ import { FONT_FAMILIES, Text } from '../Typography';
 
 import { QueueEqualizerIcon } from './QueueEqualizerIcon';
 
-export function HomeQueueButton() {
+export function HeaderQueueButton() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -27,9 +28,11 @@ export function HomeQueueButton() {
   const colors = hexColors[theme];
   const { queue, isPlaying, isLoading, togglePlayPause } = useAudioQueue();
 
+  const accent = colors.primary;
+
+  // Only shown while there's a queue — there's nothing to control otherwise.
   if (queue.length === 0) return null;
 
-  const accent = colors.primary;
   const playSize = iconSizes.lg;
 
   return (
@@ -45,6 +48,13 @@ export function HomeQueueButton() {
         paddingVertical: 5,
         paddingLeft: 4,
         paddingRight: spacing.sm,
+        // Soft neutral shadow so the floating pill reads as elevated above the
+        // scrolling content/header beneath it.
+        shadowColor: '#000',
+        shadowOpacity: 0.18,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 4,
       }}
     >
       {/* Inline play/pause — a filled accent disc, matching the full player's

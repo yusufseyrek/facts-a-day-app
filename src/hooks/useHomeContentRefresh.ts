@@ -6,6 +6,7 @@ import { usePathname } from 'expo-router';
 import { HOME_FEED } from '../config/app';
 import { type FeedRefreshSource } from '../services/analytics';
 import { refreshHomeContent } from '../services/contentRefresh';
+import { getFactOverlay, subscribeFactOverlay } from '../services/factMorph';
 
 /**
  * The home screen's single automatic refresh driver. Re-validates the feed, On
@@ -21,9 +22,12 @@ import { refreshHomeContent } from '../services/contentRefresh';
  *  - a periodic poll (CONTENT_POLL_INTERVAL_MS) while the user lingers on home,
  *    so the feed keeps refreshing without a manual pull.
  *
- * The poll only runs while home is the active route AND the app is foregrounded
- * — never off-screen, never in the background — and is re-armed after every
- * refresh so its interval is measured from the last refresh of any kind. The
+ * The poll only runs while home is the active route, the app is foregrounded,
+ * AND no fact-detail overlay is covering home — never off-screen, never in the
+ * background, never behind an open fact (that overlay presents in-(tabs) without
+ * changing the pathname, so it's tracked via the fact-overlay store, not the
+ * route). It is re-armed after every refresh so its interval is measured from
+ * the last refresh of any kind. The
  * event-driven refreshes go through refreshHomeContent's data-age gate so rapid
  * navigation can't trigger a refetch storm; the poll uses force (the timer is
  * itself the rate limiter) so a fetch completing a few ms inside the gate window
@@ -58,8 +62,19 @@ export function useHomeContentRefresh(locale: string): void {
     stopPolling();
     pollTimerRef.current = setInterval(() => {
       // Belt-and-suspenders: the lifecycle below already stops the poll when home
-      // is hidden or the app is backgrounded, but guard the tick too.
-      if (!isHomeActiveRef.current || AppState.currentState !== 'active') return;
+      // is hidden, the app is backgrounded, or a fact-detail overlay is up, but
+      // guard the tick too. The overlay presents in-(tabs) over home WITHOUT
+      // changing the pathname, so isHomeActive alone stays true while the user
+      // reads a fact — without the overlay check the poll keeps refetching the
+      // home feed off-screen (the repeated app_feed_refresh{interval}) and
+      // competes with the fact detail's own requests.
+      if (
+        !isHomeActiveRef.current ||
+        AppState.currentState !== 'active' ||
+        getFactOverlay() !== null
+      ) {
+        return;
+      }
       refreshHomeContent(localeRef.current, { source: 'interval', force: true });
     }, HOME_FEED.CONTENT_POLL_INTERVAL_MS);
   }, [stopPolling]);
@@ -79,7 +94,7 @@ export function useHomeContentRefresh(locale: string): void {
   // poll's own tick guard + the AppState effect keep it from fetching in the
   // background, so we don't gate the refresh itself on AppState here.
   useEffect(() => {
-    if (isHomeActive) {
+    if (isHomeActive && getFactOverlay() === null) {
       refreshAndArm('focus');
     }
     return stopPolling;
@@ -99,9 +114,10 @@ export function useHomeContentRefresh(locale: string): void {
         return;
       }
       if (!isHomeActiveRef.current) return;
-      // Real return-to-foreground: refresh + arm. Transient inactive→active:
-      // just resume the poll (no refetch, matching the focus gate's intent).
-      if (wasBackground) {
+      // Real return-to-foreground: refresh + arm. Transient inactive→active, or
+      // returning while a fact overlay still covers home: just resume the poll
+      // (no refetch, matching the focus gate's intent).
+      if (wasBackground && getFactOverlay() === null) {
         refreshAndArm('foreground');
       } else {
         startPolling();
@@ -109,4 +125,21 @@ export function useHomeContentRefresh(locale: string): void {
     });
     return () => sub.remove();
   }, [refreshAndArm, startPolling, stopPolling]);
+
+  // The fact-detail overlay presents in-(tabs) over home without changing the
+  // pathname, so the route-based isHomeActive can't see it. Mirror the focus
+  // lifecycle off the overlay store: opening a fact pauses the poll (the user is
+  // reading, not browsing home); dismissing it re-validates + re-arms, exactly
+  // like leaving and returning to the home route.
+  useEffect(() => {
+    return subscribeFactOverlay(() => {
+      if (getFactOverlay() !== null) {
+        stopPolling();
+        return;
+      }
+      if (isHomeActiveRef.current && AppState.currentState === 'active') {
+        refreshAndArm('focus');
+      }
+    });
+  }, [refreshAndArm, stopPolling]);
 }

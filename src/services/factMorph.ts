@@ -186,6 +186,18 @@ export function getFactOverlay(): FactOverlayState | null {
   return activeOverlay;
 }
 
+/**
+ * Imperative subscription to overlay open/close, for non-render consumers (the
+ * home content poll, which must not re-render the heavy HomeScreen). Returns an
+ * unsubscribe; read the current value with getFactOverlay().
+ */
+export function subscribeFactOverlay(listener: () => void): () => void {
+  overlayListeners.add(listener);
+  return () => {
+    overlayListeners.delete(listener);
+  };
+}
+
 /** Re-renders the caller when the active fact overlay changes. */
 export function useFactOverlay(): FactOverlayState | null {
   return useSyncExternalStore(

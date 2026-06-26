@@ -63,6 +63,7 @@ import { absoluteFillObject } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
 import { showRewardedAd } from './ads/RewardedAd';
+import { FactDetailQueueButton } from './player/FactDetailQueueButton';
 import { BannerAd, NativeAdCard } from './ads';
 import { CategoryBadge } from './CategoryBadge';
 import { CloseButton } from './CloseButton';
@@ -712,6 +713,11 @@ export function FactModal({
   const basePaddingTop =
     Platform.OS === 'ios' ? (presentedAsModal ? spacing.xl : insets.top) : insets.top;
   const basePaddingBottom = spacing.lg;
+  // Floating top-right corner buttons: the close (X), and the queue button
+  // stacked directly beneath it. cornerButtonSize is their shared footprint
+  // (matches CloseButton); cornerButtonReserve is the title's right indent.
+  const cornerButtonSize = iconSizes.xl + spacing.md;
+  const cornerButtonReserve = cornerButtonSize + spacing.xs;
   const headerHeight = basePaddingTop + basePaddingBottom + titleHeight;
   // Mirror into a ref so recomputeMaxScroll (declared above) can read the latest
   // header height without a stale closure / use-before-declaration.
@@ -1071,7 +1077,7 @@ export function FactModal({
                     minHeight: titleHeight,
                     // X and play share the same right edge (different rows
                     // within the header), so only reserve one button's width.
-                    paddingRight: iconSizes.xl + spacing.md + spacing.xs,
+                    paddingRight: cornerButtonReserve,
                     transform: [{ translateY: headerTitleTranslateY }],
                   }}
                 >
@@ -1166,7 +1172,7 @@ export function FactModal({
               <XStack
                 alignItems="flex-start"
                 gap={spacing.sm}
-                style={{ paddingRight: iconSizes.xl + spacing.md + spacing.xs }}
+                style={{ paddingRight: cornerButtonReserve }}
               >
                 <View style={{ flex: 1 }}>
                   <Text.Headline
@@ -1584,6 +1590,24 @@ export function FactModal({
         pointerEvents="box-none"
       >
         <CloseButton onPress={onClose} testID="fact-modal-close-button" />
+      </View>
+
+      {/* Queue button — stacked directly beneath the close (X) in the same
+          right column. The global floating pill is suppressed on fact detail
+          (it would land on the sticky title); this fact-detail-native control
+          takes its place. The title already reserves this right column
+          (cornerButtonReserve). Self-hides on an empty queue. */}
+      <View
+        style={{
+          position: 'absolute',
+          top: basePaddingTop + cornerButtonSize + spacing.sm,
+          right: spacing.xl,
+          zIndex: 9999,
+          ...Platform.select({ android: { elevation: 999 } }),
+        }}
+        pointerEvents="box-none"
+      >
+        <FactDetailQueueButton />
       </View>
 
       {/* Bottom chrome: banner + action bar. With Liquid Glass it floats over

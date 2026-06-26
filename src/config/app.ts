@@ -125,6 +125,18 @@ export const NATIVE_ADS = {
      * creative across facts (no firstAdIndex/interval: it is not a list).
      */
     FACT_DETAIL: { keyPrefix: 'fd-ad', poolSize: 3 },
+    /**
+     * Single ad in the full-screen queue player sheet, between the transport
+     * controls and the "Up Next" list. ONE stable slot for the whole player
+     * session — deliberately NOT keyed by the current track. The player
+     * auto-advances on a timer while the sheet stays open, so re-keying per
+     * track would fire a fresh request (and re-count an impression) on every
+     * advance, blowing past the bounded per-surface request budget. Binding a
+     * single slot once keeps it to one request per session; a no-fill collapses
+     * the card. The native ad unit is shared, so `key` is just the analytics
+     * discriminator (no pool / firstAdIndex / interval: it is not a list).
+     */
+    PLAYER: { key: 'ply-ad' },
   },
 } as const;
 

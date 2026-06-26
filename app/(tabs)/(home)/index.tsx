@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 
 import { FlashListRef } from '@shopify/flash-list';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
@@ -10,10 +10,9 @@ import { ReadingStreakIndicator } from '../../../src/components/badges/ReadingSt
 import { CategoryStoryButtonsRef } from '../../../src/components/CategoryStoryButtons';
 import { HomeListHeader, LocaleChangeOverlay } from '../../../src/components/home';
 import { KeepReadingList } from '../../../src/components/home/KeepReadingList';
-import { HomeQueueButton } from '../../../src/components/player/HomeQueueButton';
-import { XStack, YStack } from '../../../src/components/Stacks';
+import { YStack } from '../../../src/components/Stacks';
 import { queryClient } from '../../../src/config/queryClient';
-import { useAudioQueue, usePremium, useScrollToTopHandler } from '../../../src/contexts';
+import { usePremium, useScrollToTopHandler } from '../../../src/contexts';
 import { localStateKeys } from '../../../src/hooks/queryKeys';
 import { useHomeContentRefresh } from '../../../src/hooks/useHomeContentRefresh';
 import { useHomeFeed } from '../../../src/hooks/useHomeFeed';
@@ -30,40 +29,14 @@ import {
 import { refreshHomeContent } from '../../../src/services/contentRefresh';
 import { openFactDetail } from '../../../src/services/factMorph';
 import { useTheme } from '../../../src/theme';
-import { useResponsive } from '../../../src/utils/useResponsive';
 
 import type { FactViewSource } from '../../../src/services/analytics';
 import type { FactWithRelations } from '../../../src/services/database';
 
 /**
- * Wires the iOS upper-left queue-player button into the home header WITHOUT
- * subscribing the heavy HomeScreen to audio state (this trivial component
- * absorbs the audio-state re-renders instead). headerLeft is set only while the
- * queue is non-empty — a headerLeft function that returns null still leaves an
- * empty native bar-button slot on iOS, so we hand back `undefined` to clear it
- * outright. Renders nothing.
- */
-function HomeQueueHeaderSlot() {
-  const navigation = useNavigation();
-  const { queue } = useAudioQueue();
-  const hasQueue = queue.length > 0;
-
-  useEffect(() => {
-    if (Platform.OS !== 'ios') return;
-    navigation.setOptions({
-      headerLeft: hasQueue ? () => <HomeQueueButton /> : undefined,
-    });
-  }, [navigation, hasQueue]);
-
-  return null;
-}
-
-/**
- * Home header-right cluster. The reading-streak flame is always shown; on
- * Android the queue-player mini control sits right next to it (iOS keeps that
- * control in the upper-left via HomeQueueHeaderSlot). HomeQueueButton self-hides
- * when the queue is empty and lives inside this small header component, so audio
- * state never re-renders the heavy HomeScreen.
+ * Home header-right cluster: the reading-streak flame. The queue-player mini
+ * control is a single floating pill (PersistentMiniPlayer, mounted once above
+ * the root navigator), so it is no longer composed into any tab header here.
  */
 function HomeHeaderRight({
   streak,
@@ -72,13 +45,7 @@ function HomeHeaderRight({
   streak: number;
   onStreakPress: () => void;
 }) {
-  const { spacing } = useResponsive();
-  return (
-    <XStack alignItems="center" gap={spacing.sm}>
-      {Platform.OS === 'android' && <HomeQueueButton />}
-      <ReadingStreakIndicator streak={streak} onPress={onStreakPress} />
-    </XStack>
-  );
+  return <ReadingStreakIndicator streak={streak} onPress={onStreakPress} />;
 }
 
 function HomeScreen() {
@@ -100,9 +67,8 @@ function HomeScreen() {
   const { streak } = useReadingStreak();
 
   // Reading streak lives in the native header (replaces the old HomeHeader row).
-  // headerRight pairs the streak flame with the queue-player mini control on
-  // Android (see HomeHeaderRight). iOS keeps that control in the upper-left
-  // (headerLeft) via <HomeQueueHeaderSlot/> below.
+  // The queue-player mini control floats top-left as a single persistent pill
+  // (PersistentMiniPlayer), so headerRight here is just the streak flame.
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -263,7 +229,6 @@ function HomeScreen() {
   return (
     <ScreenContainer edges={[]}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <HomeQueueHeaderSlot />
 
       <YStack flex={1}>
         {!isLoading && !hasAnyContent ? (
