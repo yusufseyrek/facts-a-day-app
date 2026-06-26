@@ -25,6 +25,7 @@ import {
   BookOpen,
   Clock,
   Crown,
+  Download,
   RefreshCw,
   Smartphone,
   Trash2,
@@ -246,12 +247,10 @@ export default function OfflineLibraryScreen() {
 
   const { newest, oldest } = computeSideTargets(limit);
 
-  const isDark = theme === 'dark';
   const activeInk = getContrastColor(colors.neonCyan);
   // The single gradient moment: the cyan-to-violet premium hero (TriviaStatsHero
   // grammar). neonCyan is the screen's signature accent (its Settings row).
   const heroColors = [colors.primary, darkenColor(colors.neonPurple, 0.22)] as const;
-  const heroGlow = isDark ? 0.5 : 0.3;
 
   // ── Premium hero — gradient identity + live state ──────────────────────────
   const hero = (
@@ -416,11 +415,6 @@ export default function OfflineLibraryScreen() {
                   borderRadius: (iconSizes.hero + spacing.md) / 2,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  shadowColor: PAYWALL_GOLD.primary,
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: isDark ? 0.4 : 0.3,
-                  shadowRadius: 12,
-                  elevation: 6,
                 }}
               >
                 <Crown size={iconSizes.lg} color={CREST_INK} fill={CREST_INK} />
@@ -467,17 +461,6 @@ export default function OfflineLibraryScreen() {
                         backgroundColor={active ? colors.neonCyan : colors.cardBackground}
                         borderWidth={1}
                         borderColor={active ? colors.neonCyan : colors.border}
-                        style={
-                          active
-                            ? {
-                                shadowColor: colors.neonCyan,
-                                shadowOffset: { width: 0, height: 0 },
-                                shadowOpacity: heroGlow,
-                                shadowRadius: 8,
-                                elevation: 4,
-                              }
-                            : undefined
-                        }
                       >
                         <Text.Caption
                           color={active ? activeInk : colors.textSecondary}
@@ -552,22 +535,23 @@ export default function OfflineLibraryScreen() {
                       gap={spacing.sm}
                       backgroundColor={colors.neonCyan}
                       opacity={isOnline ? 1 : 0.4}
-                      style={{
-                        shadowColor: colors.neonCyan,
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: isOnline ? heroGlow : 0,
-                        shadowRadius: 10,
-                        elevation: isOnline ? 5 : 0,
-                      }}
                     >
-                      <RefreshCw size={iconSizes.sm} color={activeInk} />
+                      {count > 0 ? (
+                        <RefreshCw size={iconSizes.sm} color={activeInk} />
+                      ) : (
+                        <Download size={iconSizes.sm} color={activeInk} />
+                      )}
                       <Text.Label color={activeInk} fontFamily={FONT_FAMILIES.semibold}>
                         {count > 0 ? t('offlineUpdate') : t('offlineDownload')}
                       </Text.Label>
                     </XStack>
                   </Pressable>
                   {count > 0 && (
-                    <Pressable onPress={handleClear}>
+                    <Pressable
+                      onPress={handleClear}
+                      aria-label={t('offlineClear')}
+                      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                    >
                       <XStack
                         height={media.buttonHeight}
                         paddingHorizontal={spacing.lg}
