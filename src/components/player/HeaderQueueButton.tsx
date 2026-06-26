@@ -1,11 +1,11 @@
 /**
- * Compact queue-player control mounted in the headerLeft of every tab root
- * (home, search, trivia, favorites, settings) and in the fact-detail modal
- * header, so playback is reachable wherever audio is active. A small rounded
- * pill with two tap targets separated by a hairline: a filled play/pause disc
- * that toggles playback inline, and the equalizer/glyph + queue count that opens
- * the full player sheet. The equalizer bounces while playing (a static music
- * glyph when paused). Renders nothing when the queue is empty.
+ * Compact queue-player control. A single instance floats at the top-left across
+ * every screen (mounted once in PersistentMiniPlayer above the root navigator),
+ * so playback is reachable wherever audio is active without cloning per screen.
+ * A small rounded pill with two tap targets separated by a hairline: a filled
+ * play/pause disc that toggles playback inline, and the equalizer/glyph + queue
+ * count that opens the full player sheet. The equalizer bounces while playing (a
+ * static music glyph when paused). Renders nothing when the queue is empty.
  */
 import { Pressable, View } from 'react-native';
 
@@ -48,6 +48,13 @@ export function HeaderQueueButton() {
         paddingVertical: 5,
         paddingLeft: 4,
         paddingRight: spacing.sm,
+        // Soft neutral shadow so the floating pill reads as elevated above the
+        // scrolling content/header beneath it.
+        shadowColor: '#000',
+        shadowOpacity: 0.18,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 4,
       }}
     >
       {/* Inline play/pause — a filled accent disc, matching the full player's

@@ -48,6 +48,7 @@ import { showAppOpenAdOnForeground } from '../src/components/ads/AppOpenAd';
 import { IdleInterstitial } from '../src/components/ads/IdleInterstitial';
 import { AppCheckBlockingScreen } from '../src/components/AppCheckBlockingScreen';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { PersistentMiniPlayer } from '../src/components/player/PersistentMiniPlayer';
 import { SplashOverlay } from '../src/components/SplashOverlay';
 import { STORAGE_KEYS } from '../src/config/app';
 import { isAppCheckInitFailed, subscribeAppCheckFailure } from '../src/config/appCheckState';
@@ -427,6 +428,13 @@ function AppContent() {
           }}
         />
       </Stack>
+
+      {/* One persistent queue mini-player, floating top-left above every root
+          screen (tabs + their native headers, and the fact-detail card). A
+          single instance — not a per-screen header button — so it carries over
+          into fact detail without cloning, and leaves no empty native header
+          slot when idle. Self-hides when the queue is empty. */}
+      <PersistentMiniPlayer />
     </>
   );
 }

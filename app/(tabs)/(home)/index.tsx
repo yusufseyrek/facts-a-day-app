@@ -35,8 +35,8 @@ import type { FactWithRelations } from '../../../src/services/database';
 
 /**
  * Home header-right cluster: the reading-streak flame. The queue-player mini
- * control now lives in headerLeft on every tab (wired once per stack in each
- * _layout via HeaderQueueButton), so it is no longer composed here.
+ * control is a single floating pill (PersistentMiniPlayer, mounted once above
+ * the root navigator), so it is no longer composed into any tab header here.
  */
 function HomeHeaderRight({
   streak,
@@ -67,8 +67,8 @@ function HomeScreen() {
   const { streak } = useReadingStreak();
 
   // Reading streak lives in the native header (replaces the old HomeHeader row).
-  // The queue-player mini control sits in headerLeft on every tab (wired in each
-  // stack's _layout), so headerRight here is just the streak flame.
+  // The queue-player mini control floats top-left as a single persistent pill
+  // (PersistentMiniPlayer), so headerRight here is just the streak flame.
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (

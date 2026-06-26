@@ -1,6 +1,5 @@
 import { Stack } from 'expo-router';
 
-import { HeaderQueueButton } from '../../../src/components/player/HeaderQueueButton';
 import { useGlassHeaderOptions } from '../../../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../../../src/i18n';
 
@@ -10,10 +9,7 @@ export default function SettingsStackLayout() {
 
   return (
     <Stack screenOptions={headerOptions}>
-      <Stack.Screen
-        name="settings"
-        options={{ title: t('settings'), headerLeft: () => <HeaderQueueButton /> }}
-      />
+      <Stack.Screen name="settings" options={{ title: t('settings') }} />
       <Stack.Screen name="library" options={{ title: t('offlineLibrary') }} />
     </Stack>
   );
