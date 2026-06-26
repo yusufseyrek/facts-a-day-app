@@ -22,7 +22,9 @@ import { HeaderQueueButton } from './HeaderQueueButton';
  *  - the immersive trivia game (its own exit button + progress bar),
  *  - fact detail (sticky header title slides into the top-left, close button
  *    top-right) — both the card/modal routes AND the in-tab morph overlay, which
- *    keeps the underlying tab's segments so it is detected via useFactOverlay,
+ *    keeps the underlying tab's segments so it is detected via useFactOverlay;
+ *    fact detail renders its own FactDetailQueueButton (a round control mirroring
+ *    the close button) in place of this pill,
  *  - the search tab, where the native full-width search field owns the top row.
  * The queue keeps playing throughout; the pill simply returns on a tab root.
  */

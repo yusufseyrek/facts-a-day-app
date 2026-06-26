@@ -106,6 +106,13 @@ const OfflineSaveButtonComponent = ({ factId, variant = 'overlay' }: OfflineSave
   const downloadColor = plain ? colors.textSecondary : '#FFFFFF';
   const spinnerColor = plain ? colors.textSecondary : '#FFFFFF';
   const iconStyle = plain ? undefined : styles.iconShadow;
+  // The download glyph is geometrically centered in its 24×24 box but visually
+  // bottom-heavy — a wide tray under a thin stem — so flex-centering leaves it
+  // reading as sitting low in the circle. Nudge it up a hair to optically center
+  // it, scaled to the icon so both variants (and tablet display scaling) stay
+  // balanced. Same use-site optical-centering treatment as FactComments' send
+  // glyph; the check glyph is a centered circle and needs no nudge.
+  const downloadNudge = { transform: [{ translateY: -iconSize * 0.08 }] };
 
   return (
     <Pressable
@@ -132,7 +139,7 @@ const OfflineSaveButtonComponent = ({ factId, variant = 'overlay' }: OfflineSave
           {saved ? (
             <CheckCircle size={iconSize} color={colors.neonCyan} style={iconStyle} />
           ) : (
-            <Download size={iconSize} color={downloadColor} style={iconStyle} />
+            <Download size={iconSize} color={downloadColor} style={[iconStyle, downloadNudge]} />
           )}
         </Animated.View>
       )}

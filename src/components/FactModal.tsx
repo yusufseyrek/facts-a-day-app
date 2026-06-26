@@ -23,7 +23,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
 import { NATIVE_ADS } from '../config/app';
-import { usePremium } from '../contexts';
+import { useAudioQueue, usePremium } from '../contexts';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { useTranslation } from '../i18n';
 import {
@@ -63,6 +63,7 @@ import { absoluteFillObject } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
 import { showRewardedAd } from './ads/RewardedAd';
+import { FactDetailQueueButton } from './player/FactDetailQueueButton';
 import { BannerAd, NativeAdCard } from './ads';
 import { CategoryBadge } from './CategoryBadge';
 import { CloseButton } from './CloseButton';
@@ -168,6 +169,10 @@ export function FactModal({
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const { isPremium } = usePremium();
+  // Queue length drives the top-left queue button + its title-space reservation
+  // (FactDetailQueueButton self-hides when empty; we mirror that here so the
+  // header title only indents when the button is actually shown).
+  const { queue } = useAudioQueue();
   // iOS 26: the bottom chrome floats over the scroll content (see bottomBarHeight).
   const useGlassChrome = Platform.OS === 'ios' && isLiquidGlassAvailable();
   const {
@@ -712,6 +717,11 @@ export function FactModal({
   const basePaddingTop =
     Platform.OS === 'ios' ? (presentedAsModal ? spacing.xl : insets.top) : insets.top;
   const basePaddingBottom = spacing.lg;
+  // Reserve for a floating top-corner round button (close on the right, the
+  // queue button on the left). The title indents by this on the right always,
+  // and on the left only while the queue button is shown.
+  const cornerButtonReserve = iconSizes.xl + spacing.md + spacing.xs;
+  const showQueueButton = queue.length > 0;
   const headerHeight = basePaddingTop + basePaddingBottom + titleHeight;
   // Mirror into a ref so recomputeMaxScroll (declared above) can read the latest
   // header height without a stale closure / use-before-declaration.
@@ -1071,7 +1081,9 @@ export function FactModal({
                     minHeight: titleHeight,
                     // X and play share the same right edge (different rows
                     // within the header), so only reserve one button's width.
-                    paddingRight: iconSizes.xl + spacing.md + spacing.xs,
+                    paddingRight: cornerButtonReserve,
+                    // Mirror on the left for the floating queue button when shown.
+                    paddingLeft: showQueueButton ? cornerButtonReserve : 0,
                     transform: [{ translateY: headerTitleTranslateY }],
                   }}
                 >
@@ -1162,11 +1174,15 @@ export function FactModal({
           >
             <View style={{ position: 'relative' }}>
               {/* paddingRight reserves the floating close (X) zone so the download
-                  control sits just to its left, the title flexing beside it. */}
+                  control sits just to its left, the title flexing beside it.
+                  paddingLeft mirrors it for the floating queue button when shown. */}
               <XStack
                 alignItems="flex-start"
                 gap={spacing.sm}
-                style={{ paddingRight: iconSizes.xl + spacing.md + spacing.xs }}
+                style={{
+                  paddingRight: cornerButtonReserve,
+                  paddingLeft: showQueueButton ? cornerButtonReserve : 0,
+                }}
               >
                 <View style={{ flex: 1 }}>
                   <Text.Headline
@@ -1584,6 +1600,24 @@ export function FactModal({
         pointerEvents="box-none"
       >
         <CloseButton onPress={onClose} testID="fact-modal-close-button" />
+      </View>
+
+      {/* Queue button — mirrors the close button at the top-left corner. The
+          global floating pill is suppressed on fact detail (it would land on the
+          sticky title); this fact-detail-native control takes its place and the
+          header title reserves matching left space (cornerButtonReserve). Self-
+          hides on an empty queue. */}
+      <View
+        style={{
+          position: 'absolute',
+          top: basePaddingTop,
+          left: spacing.xl,
+          zIndex: 9999,
+          ...Platform.select({ android: { elevation: 999 } }),
+        }}
+        pointerEvents="box-none"
+      >
+        <FactDetailQueueButton />
       </View>
 
       {/* Bottom chrome: banner + action bar. With Liquid Glass it floats over
