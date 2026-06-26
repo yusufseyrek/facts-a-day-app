@@ -13,7 +13,7 @@ import { KeepReadingList } from '../../../src/components/home/KeepReadingList';
 import { HomeQueueButton } from '../../../src/components/player/HomeQueueButton';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { queryClient } from '../../../src/config/queryClient';
-import { useAudioQueue, usePremium, useScrollToTopHandler } from '../../../src/contexts';
+import { usePremium, useScrollToTopHandler } from '../../../src/contexts';
 import { localStateKeys } from '../../../src/hooks/queryKeys';
 import { useHomeContentRefresh } from '../../../src/hooks/useHomeContentRefresh';
 import { useHomeFeed } from '../../../src/hooks/useHomeFeed';
@@ -36,24 +36,21 @@ import type { FactViewSource } from '../../../src/services/analytics';
 import type { FactWithRelations } from '../../../src/services/database';
 
 /**
- * Wires the iOS upper-left queue-player button into the home header WITHOUT
- * subscribing the heavy HomeScreen to audio state (this trivial component
- * absorbs the audio-state re-renders instead). headerLeft is set only while the
- * queue is non-empty — a headerLeft function that returns null still leaves an
- * empty native bar-button slot on iOS, so we hand back `undefined` to clear it
- * outright. Renders nothing.
+ * Wires the iOS upper-left queue-player button into the home header. The button
+ * is ALWAYS mounted (it renders a bare music affordance when the queue is empty
+ * and the full mini player otherwise), so we set headerLeft once and let
+ * HomeQueueButton absorb the audio-state re-renders itself — the heavy
+ * HomeScreen never subscribes to audio state. Renders nothing.
  */
 function HomeQueueHeaderSlot() {
   const navigation = useNavigation();
-  const { queue } = useAudioQueue();
-  const hasQueue = queue.length > 0;
 
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
     navigation.setOptions({
-      headerLeft: hasQueue ? () => <HomeQueueButton /> : undefined,
+      headerLeft: () => <HomeQueueButton />,
     });
-  }, [navigation, hasQueue]);
+  }, [navigation]);
 
   return null;
 }
@@ -61,9 +58,10 @@ function HomeQueueHeaderSlot() {
 /**
  * Home header-right cluster. The reading-streak flame is always shown; on
  * Android the queue-player mini control sits right next to it (iOS keeps that
- * control in the upper-left via HomeQueueHeaderSlot). HomeQueueButton self-hides
- * when the queue is empty and lives inside this small header component, so audio
- * state never re-renders the heavy HomeScreen.
+ * control in the upper-left via HomeQueueHeaderSlot). HomeQueueButton is always
+ * shown (a bare music glyph when the queue is empty, the mini player otherwise)
+ * and lives inside this small header component, so audio state never re-renders
+ * the heavy HomeScreen.
  */
 function HomeHeaderRight({
   streak,

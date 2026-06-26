@@ -27,9 +27,30 @@ export function HomeQueueButton() {
   const colors = hexColors[theme];
   const { queue, isPlaying, isLoading, togglePlayPause } = useAudioQueue();
 
-  if (queue.length === 0) return null;
-
   const accent = colors.primary;
+
+  // Always present in the header. With an empty queue we show a bare music
+  // glyph (no chip — a filled pill reads as a stray box on the iOS 26 glass
+  // header, the same reasoning as the streak indicator) that opens the player
+  // on its empty state, keeping the audio entry point permanently discoverable.
+  if (queue.length === 0) {
+    return (
+      <Pressable
+        onPress={() => router.push('/player')}
+        hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: spacing.sm, right: spacing.sm }}
+        accessibilityRole="button"
+        aria-label={t('playerOpen')}
+        style={({ pressed }) => ({
+          paddingHorizontal: spacing.sm,
+          paddingVertical: spacing.xs,
+          opacity: pressed ? 0.7 : 1,
+        })}
+      >
+        <Music size={iconSizes.sm} color={accent} />
+      </Pressable>
+    );
+  }
+
   const playSize = iconSizes.lg;
 
   return (
