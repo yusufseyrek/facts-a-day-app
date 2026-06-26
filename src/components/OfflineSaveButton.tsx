@@ -26,17 +26,23 @@ import { CheckCircle, Download } from './icons';
 
 interface OfflineSaveButtonProps {
   factId: number;
+  /**
+   * 'overlay' (default) — a dark translucent circle for use over a card image.
+   * 'plain' — a bordered surface circle with themed glyphs, for content areas
+   * like the fact-detail title row where there is no image behind it.
+   */
+  variant?: 'overlay' | 'plain';
 }
 
 /**
- * Card overlay control that pins a single fact for offline reading/listening.
- * Premium only — hidden for everyone else. The saved state IS the "downloaded"
- * remark: a cyan check once the fact lives in the offline library, a download
- * glyph otherwise, and a spinner while the media downloads. It reads its own
- * state from the offline index (useSyncExternalStore) so the badge flips the
- * moment a fact is saved/removed anywhere, without the host card re-rendering.
+ * Control that pins a single fact for offline reading/listening. Premium only —
+ * hidden for everyone else. The saved state IS the "downloaded" remark: a cyan
+ * check once the fact lives in the offline library, a download glyph otherwise,
+ * and a spinner while the media downloads. It reads its own state from the
+ * offline index (useSyncExternalStore) so it flips the moment a fact is
+ * saved/removed anywhere, without the host re-rendering.
  */
-const OfflineSaveButtonComponent = ({ factId }: OfflineSaveButtonProps) => {
+const OfflineSaveButtonComponent = ({ factId, variant = 'overlay' }: OfflineSaveButtonProps) => {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const { isPremium } = usePremium();
@@ -94,8 +100,12 @@ const OfflineSaveButtonComponent = ({ factId }: OfflineSaveButtonProps) => {
   // see the control (they reach it through the Settings paywall instead).
   if (!isPremium) return null;
 
-  const iconSize = iconSizes.sm;
+  const plain = variant === 'plain';
+  const iconSize = plain ? iconSizes.md : iconSizes.sm;
   const containerSize = iconSize + spacing.sm;
+  const downloadColor = plain ? colors.textSecondary : '#FFFFFF';
+  const spinnerColor = plain ? colors.textSecondary : '#FFFFFF';
+  const iconStyle = plain ? undefined : styles.iconShadow;
 
   return (
     <Pressable
@@ -107,20 +117,22 @@ const OfflineSaveButtonComponent = ({ factId }: OfflineSaveButtonProps) => {
         width: containerSize,
         height: containerSize,
         borderRadius: containerSize / 2,
-        backgroundColor: 'rgba(0, 0, 0, 0.35)',
+        backgroundColor: plain ? colors.cardBackground : 'rgba(0, 0, 0, 0.35)',
+        borderWidth: plain ? 1 : 0,
+        borderColor: plain ? colors.border : 'transparent',
         alignItems: 'center',
         justifyContent: 'center',
         opacity: pressed ? 0.8 : 1,
       })}
     >
       {busy ? (
-        <ActivityIndicator size="small" color="#FFFFFF" />
+        <ActivityIndicator size="small" color={spinnerColor} />
       ) : (
         <Animated.View style={animatedStyle}>
           {saved ? (
-            <CheckCircle size={iconSize} color={colors.neonCyan} style={styles.iconShadow} />
+            <CheckCircle size={iconSize} color={colors.neonCyan} style={iconStyle} />
           ) : (
-            <Download size={iconSize} color="#FFFFFF" style={styles.iconShadow} />
+            <Download size={iconSize} color={downloadColor} style={iconStyle} />
           )}
         </Animated.View>
       )}

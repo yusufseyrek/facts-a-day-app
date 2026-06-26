@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, AppState, Linking, Platform, Pressable, SectionList } from 'react-native';
+import { Alert, AppState, Linking, Platform, Pressable, SectionList, Switch } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import Constants from 'expo-constants';
@@ -18,14 +18,17 @@ import {
   BookOpen,
   ChevronRight,
   Crown,
+  DoorOpen,
   Eye,
   FileText,
   Globe,
   Grid,
   Heart,
+  Music,
   Palette,
   RotateCcw,
   Shield,
+  SkipForward,
   Star,
   TestTube,
   Trash2,
@@ -40,6 +43,7 @@ import { XStack, YStack } from '../../../src/components/Stacks';
 import { FONT_FAMILIES } from '../../../src/components/Typography';
 import { DEV_SETTINGS_ENABLED, LAYOUT, SUBSCRIPTION } from '../../../src/config/app';
 import { useOnboarding, usePremium, useScrollToTopHandler } from '../../../src/contexts';
+import { useAudioSettings } from '../../../src/hooks/useAudioSettings';
 import { useTranslation } from '../../../src/i18n';
 import { TranslationKeys } from '../../../src/i18n/translations';
 import { openAdDebugMenu } from '../../../src/services/ads';
@@ -165,6 +169,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const { resetOnboarding } = useOnboarding();
   const { isPremium, restorePurchases, devSetPremium } = usePremium();
+  const { settings: audioSettings, setAudioSetting } = useAudioSettings();
   const { iconSizes, spacing, isTablet } = useResponsive();
   const bannerInset = useTabBarBannerInset();
 
@@ -738,9 +743,11 @@ export default function SettingsPage() {
     icon: React.ReactNode;
     /** Chip accent behind the icon; the icon is colored with it too. */
     accent: string;
-    onPress: () => void;
+    onPress?: () => void;
     showExternalLink?: boolean;
     showWarning?: boolean;
+    /** Inline control (a Switch) shown on the right instead of value/chevron. */
+    trailing?: React.ReactNode;
   };
 
   type SettingsSection = {
@@ -830,6 +837,57 @@ export default function SettingsPage() {
       ],
     };
 
+    const renderSwitch = (value: boolean, onChange: (next: boolean) => void) => (
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        trackColor={{ false: colors.border, true: colors.primary }}
+        thumbColor="#FFFFFF"
+        ios_backgroundColor={colors.border}
+      />
+    );
+
+    const soundsSection: SettingsSection = {
+      title: t('settingsSounds'),
+      data: [
+        {
+          id: 'soundBackground',
+          label: t('settingsSoundsBackground'),
+          value: isPremium ? undefined : t('settingsSoundsBackgroundHint'),
+          icon: <Music size={iconSizes.md} color={colors.neonPurple} />,
+          accent: colors.neonPurple,
+          // Premium-gated: tapping a locked row routes to the paywall; premium
+          // users get an inline toggle instead.
+          onPress: isPremium ? undefined : () => router.push('/paywall'),
+          trailing: isPremium ? (
+            renderSwitch(audioSettings.playInBackground, (v) =>
+              setAudioSetting('playInBackground', v)
+            )
+          ) : (
+            <Crown size={iconSizes.sm} color="#FFD700" />
+          ),
+        },
+        {
+          id: 'soundStopOnClose',
+          label: t('settingsSoundsStopOnClose'),
+          icon: <DoorOpen size={iconSizes.md} color={colors.neonOrange} />,
+          accent: colors.neonOrange,
+          trailing: renderSwitch(audioSettings.stopOnFactClose, (v) =>
+            setAudioSetting('stopOnFactClose', v)
+          ),
+        },
+        {
+          id: 'soundAutoplayNext',
+          label: t('settingsSoundsAutoplayNext'),
+          icon: <SkipForward size={iconSizes.md} color={colors.neonGreen} />,
+          accent: colors.neonGreen,
+          trailing: renderSwitch(audioSettings.autoplayNext, (v) =>
+            setAudioSetting('autoplayNext', v)
+          ),
+        },
+      ],
+    };
+
     const storageSection: SettingsSection = {
       title: t('settingsStorage'),
       data: [
@@ -840,6 +898,10 @@ export default function SettingsPage() {
           icon: <BookOpen size={iconSizes.md} color={colors.neonCyan} />,
           accent: colors.neonCyan,
           onPress: () => router.push('/library'),
+          // Premium feature: show the gold crown for non-premium users, matching
+          // the "Play in background" row. The tap still routes to /library, which
+          // hosts its own premium hero + paywall CTA.
+          trailing: isPremium ? undefined : <Crown size={iconSizes.sm} color="#FFD700" />,
         },
         {
           id: 'clearImageCache',
@@ -996,6 +1058,7 @@ export default function SettingsPage() {
     const result: SettingsSection[] = SUBSCRIPTION.ENABLED
       ? [premiumSection, generalSection, userPreferencesSection]
       : [generalSection, userPreferencesSection];
+    result.push(soundsSection);
     result.push(storageSection);
     if (isDevelopment) {
       result.push(developerSection);
@@ -1062,6 +1125,8 @@ export default function SettingsPage() {
     updateInfo,
     isCheckingUpdate,
     isPremium,
+    audioSettings,
+    setAudioSetting,
     restorePurchases,
     devSetPremium,
     router,
@@ -1164,6 +1229,7 @@ export default function SettingsPage() {
                     onPress={item.onPress}
                     showExternalLink={item.showExternalLink}
                     showWarning={item.showWarning}
+                    trailing={item.trailing}
                   />
                 )}
               </ContentContainer>

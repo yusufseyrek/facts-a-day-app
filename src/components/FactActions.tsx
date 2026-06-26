@@ -14,6 +14,7 @@ import { type ViewShotRef } from 'react-native-view-shot';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 
+import { useAudioQueue } from '../contexts';
 import { useTranslation } from '../i18n';
 import { trackFactShare } from '../services/analytics';
 import * as database from '../services/database';
@@ -49,6 +50,10 @@ interface FactActionsProps {
   currentIndex?: number;
   totalCount?: number;
   audioController?: FactAudioController;
+  /** Fact narration URL — enables the "add to queue" button when present. */
+  audioUrl?: string | null;
+  /** Locale the narration was generated in (queue source resolution key). */
+  audioLanguage?: string;
   /** Opens the report dialog. Hosted by the SCREEN (not this bar): the bar
    * can be absolutely-positioned bottom chrome, and DialogShell's inline
    * overlay fills its parent — mounted here the dialog would be squeezed
@@ -79,10 +84,13 @@ export function FactActions({
   currentIndex,
   totalCount,
   audioController,
+  audioUrl,
+  audioLanguage,
   onReportPress,
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const { queue, enqueue } = useAudioQueue();
   const { iconSizes, typography, spacing, radius } = useResponsive();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
@@ -95,6 +103,7 @@ export function FactActions({
   const shareColor = theme === 'dark' ? hexColors.dark.neonGreen : hexColors.light.neonGreen;
   const flagColor = theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
   const navColor = theme === 'dark' ? hexColors.dark.primary : hexColors.light.primary;
+  const isInQueue = queue.some((tk) => tk.factId === factId);
   const [isFavorited, setIsFavorited] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
@@ -261,6 +270,22 @@ export function FactActions({
     onReportPress();
   };
 
+  // Auto-add to the Up Next queue when the user taps play (fires on play START,
+  // not pause — see FactAudioButton). De-dupes, so replaying a fact is a no-op.
+  const handlePlayStart = () => {
+    if (!audioUrl || isInQueue) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const categoryLabel = typeof category === 'string' ? category : (category?.name ?? undefined);
+    enqueue({
+      factId,
+      title: factTitle || factContent.substring(0, 60),
+      audioUrl,
+      language: audioLanguage || 'en',
+      category: categoryLabel,
+      imageUrl,
+    });
+  };
+
   const handleNext = () => {
     if (onNext) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -327,8 +352,15 @@ export function FactActions({
         </Animated.View>
       </Pressable>
 
-      {/* Play / Audio Button — only rendered when this fact has audio */}
-      {audioController?.hasAudio && <FactAudioButton controller={audioController} />}
+      {/* Play / Audio Button — tap plays this fact's narration AND auto-adds it
+          to the Up Next queue; a check badge marks it as queued. */}
+      {audioController?.hasAudio && (
+        <FactAudioButton
+          controller={audioController}
+          onPlayStart={audioUrl ? handlePlayStart : undefined}
+          queued={isInQueue}
+        />
+      )}
 
       {/* Report Button */}
       <Pressable

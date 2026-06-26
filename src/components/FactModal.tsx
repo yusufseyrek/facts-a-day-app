@@ -23,7 +23,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
 import { NATIVE_ADS } from '../config/app';
-import { usePremium } from '../contexts';
+import { useAudioQueue, usePremium } from '../contexts';
 import { useFactAudio } from '../hooks/useFactAudio';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { useTranslation } from '../i18n';
@@ -72,6 +72,7 @@ import { FactActions } from './FactActions';
 import { FactComments } from './FactComments';
 import { Calendar, Crown, ExternalLink, ImagePlus, Play, RefreshCw } from './icons';
 import { ModalBackdrop } from './ModalBackdrop';
+import { OfflineSaveButton } from './OfflineSaveButton';
 import { RelatedFacts } from './RelatedFacts';
 import { ReportFactModal } from './ReportFactModal';
 import { styled, XStack, YStack } from './Stacks';
@@ -904,6 +905,20 @@ export function FactModal({
   // button render from this single state so they stay in sync.
   const audioController = useFactAudio(fact.id, fact.audio_url ?? null, locale);
 
+  // "Stop sound on fact close": when this fact screen unmounts (X, swipe-back,
+  // hardware back, or the in-tab overlay closing), tell the queue player so it
+  // can stop if the closed fact is the one currently sounding and the setting
+  // is on. A ref keeps the id current across prev/next (which don't unmount).
+  const { handleFactClosed } = useAudioQueue();
+  const closingFactIdRef = useRef(fact.id);
+  closingFactIdRef.current = fact.id;
+  useEffect(() => () => handleFactClosed(closingFactIdRef.current), [handleFactClosed]);
+
+  // Cross-player exclusivity — this fact's inline narration vs. the global queue
+  // vs. another open fact's inline narration — is handled by the app-wide
+  // audio-focus coordinator (src/services/audioFocus): each player takes focus
+  // when it starts and pauses whoever held it, so no per-screen wiring is needed.
+
   // Announce modal opening to screen readers
   useEffect(() => {
     // Small delay to ensure the modal is rendered
@@ -1160,20 +1175,29 @@ export function FactModal({
             }}
           >
             <View style={{ position: 'relative' }}>
-              <View style={{ paddingRight: iconSizes.xl + spacing.md + spacing.xs }}>
-                <Text.Headline
-                  role="heading"
-                  onTextLayout={(e) => {
-                    const lines = e.nativeEvent.lines;
-                    const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
-                    if (totalHeight > 0 && totalHeight !== titleHeight) {
-                      setTitleHeight(totalHeight);
-                    }
-                  }}
-                >
-                  {factTitle}
-                </Text.Headline>
-              </View>
+              {/* paddingRight reserves the floating close (X) zone so the download
+                  control sits just to its left, the title flexing beside it. */}
+              <XStack
+                alignItems="flex-start"
+                gap={spacing.sm}
+                style={{ paddingRight: iconSizes.xl + spacing.md + spacing.xs }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text.Headline
+                    role="heading"
+                    onTextLayout={(e) => {
+                      const lines = e.nativeEvent.lines;
+                      const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
+                      if (totalHeight > 0 && totalHeight !== titleHeight) {
+                        setTitleHeight(totalHeight);
+                      }
+                    }}
+                  >
+                    {factTitle}
+                  </Text.Headline>
+                </View>
+                <OfflineSaveButton factId={fact.id} variant="plain" />
+              </XStack>
             </View>
             {/* Same reading-progress border as the has-image header, anchored to
                 the sticky title's base so no-image facts get the indicator too. */}
@@ -1379,7 +1403,10 @@ export function FactModal({
 
           {/* Content Section */}
           <YStack padding={spacing.xl} paddingTop={spacing.lg} gap={spacing.md}>
-            {/* Title - shown in content only when has image (no-image uses sticky title above) */}
+            {/* Title - shown in content only when has image (no-image uses sticky title above).
+                The title keeps its reserved right padding so it wraps identically to the
+                sliding header title; the offline download control (premium only) is pinned
+                into that reserved top-right zone, sitting just right of the title. */}
             {hasImage && (
               <View style={{ position: 'relative' }}>
                 <Animated.View
@@ -1401,6 +1428,9 @@ export function FactModal({
                     {factTitle}
                   </Text.Headline>
                 </Animated.View>
+                <View style={{ position: 'absolute', top: 0, right: 0 }}>
+                  <OfflineSaveButton factId={fact.id} variant="plain" />
+                </View>
               </View>
             )}
 
@@ -1604,6 +1634,8 @@ export function FactModal({
           currentIndex={currentIndex}
           totalCount={totalCount}
           audioController={audioController}
+          audioUrl={fact.audio_url ?? undefined}
+          audioLanguage={locale}
           onReportPress={() => setShowReportModal(true)}
         />
       </View>

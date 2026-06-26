@@ -537,6 +537,30 @@ export const Microscope = icon([
 
 export const Moon = icon([[Path, { d: 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z' }]]);
 
+export const Music = icon([
+  [Path, { d: 'M9 18V5l12-2v13' }],
+  [Circle, { cx: '6', cy: '18', r: '3' }],
+  [Circle, { cx: '18', cy: '16', r: '3' }],
+]);
+
+export const ListPlus = icon([
+  [Path, { d: 'M11 12H3' }],
+  [Path, { d: 'M16 6H3' }],
+  [Path, { d: 'M16 18H3' }],
+  [Path, { d: 'M18 9v6' }],
+  [Path, { d: 'M21 12h-6' }],
+]);
+
+export const SkipBack = icon([
+  [Polygon, { points: '19 20 9 12 19 4 19 20' }],
+  [Line, { x1: '5', x2: '5', y1: '19', y2: '5' }],
+]);
+
+export const SkipForward = icon([
+  [Polygon, { points: '5 4 15 12 5 20 5 4' }],
+  [Line, { x1: '19', x2: '19', y1: '5', y2: '19' }],
+]);
+
 export const Newspaper = icon([
   [Path, { d: 'M15 18h-5' }],
   [Path, { d: 'M18 14h-8' }],

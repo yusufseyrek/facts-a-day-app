@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus, Platform, Text as RNText, TextInput, View } from 'react-native';
+import { AppState, AppStateStatus, LogBox, Platform, Text as RNText, TextInput, View } from 'react-native';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../src/utils/responsive';
@@ -8,6 +8,21 @@ import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../src/utils/responsive';
 for (const Component of [RNText, TextInput]) {
   const c = Component as { defaultProps?: Record<string, unknown> };
   c.defaultProps = { ...c.defaultProps, maxFontSizeMultiplier: DEFAULT_MAX_FONT_SIZE_MULTIPLIER };
+}
+
+// Silence a known-benign expo-router dev warning on Android cold start. Its
+// native getInitialURL returns a Promise on Android (vs a synchronous string on
+// iOS), so React Navigation's async linking path lands a setState a tick before
+// the NavigationContainer fiber commits, tripping React's
+// "state update on a component that hasn't mounted yet" warning. It's DEV-only
+// (the warning is __DEV__-gated and can't fire in production) and harmless to
+// navigation; this just keeps the dev LogBox clean. See expo-router's
+// fork/useLinking.native.js and its own "phase out in favor of expo-linking on
+// Android" TODO in link/linking.js.
+if (__DEV__ && Platform.OS === 'android') {
+  LogBox.ignoreLogs([
+    "Can't perform a React state update on a component that hasn't mounted yet",
+  ]);
 }
 
 import {
@@ -44,6 +59,7 @@ import {
 import { posthog } from '../src/config/posthog';
 import { asyncStoragePersister, persistMaxAge, queryClient } from '../src/config/queryClient';
 import {
+  AudioQueueProvider,
   BadgeToastProvider,
   OnboardingProvider,
   PremiumProvider,
@@ -61,6 +77,7 @@ import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
 import { initAnalytics } from '../src/services/analytics';
 import { API_BASE_URL } from '../src/services/api';
+import { initAudioSettings } from '../src/services/audioSettings';
 import { registerBackgroundFeedFetch } from '../src/services/backgroundFeedFetch';
 import * as contentRefresh from '../src/services/contentRefresh';
 import * as database from '../src/services/database';
@@ -367,6 +384,21 @@ function AppContent() {
           }}
         />
         <Stack.Screen name="badges" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="player"
+          options={{
+            // The full queue-player surface. A form sheet on iOS (grabber +
+            // swipe-down over glass); a bottom-anchored modal on Android. Opened
+            // from the home header button (iOS) and the floating now-playing bar
+            // (Android), so it sits on the root stack above the tabs.
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.92],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 24,
+            headerShown: false,
+            contentStyle: { backgroundColor },
+          }}
+        />
         <Stack.Screen name="trivia" options={{ gestureEnabled: false }} />
         <Stack.Screen
           name="paywall"
@@ -528,6 +560,9 @@ export default function RootLayout() {
       ensureImagesDirExists().catch(() => {});
       notificationService.cleanupOldNotificationImages().catch(() => {});
       pruneAudioCacheIfOverLimit().catch(() => {});
+      // Hydrate the queue-player settings so the audio session is configured
+      // correctly (background play, silent-switch) before the player mounts.
+      initAudioSettings().catch(() => {});
       // Warm the offline-library index so cached image/audio resolve instantly.
       initOfflineLibrary().catch(() => {});
       // Register the OS background feed refresh so an offline open has fresh,
@@ -710,19 +745,21 @@ export default function RootLayout() {
                   >
                     <OnboardingProvider initialComplete={initialOnboardingStatus}>
                       <IAPSafeProvider>
-                        <ScrollToTopProvider>
-                          <AppThemeProvider>
-                            <NavigationThemeWrapper>
-                              <ReviewPromptProvider>
-                                <BadgeToastProvider>
-                                  <IdleInterstitialGate>
-                                    <AppContent />
-                                  </IdleInterstitialGate>
-                                </BadgeToastProvider>
-                              </ReviewPromptProvider>
-                            </NavigationThemeWrapper>
-                          </AppThemeProvider>
-                        </ScrollToTopProvider>
+                        <AudioQueueProvider>
+                          <ScrollToTopProvider>
+                            <AppThemeProvider>
+                              <NavigationThemeWrapper>
+                                <ReviewPromptProvider>
+                                  <BadgeToastProvider>
+                                    <IdleInterstitialGate>
+                                      <AppContent />
+                                    </IdleInterstitialGate>
+                                  </BadgeToastProvider>
+                                </ReviewPromptProvider>
+                              </NavigationThemeWrapper>
+                            </AppThemeProvider>
+                          </ScrollToTopProvider>
+                        </AudioQueueProvider>
                       </IAPSafeProvider>
                     </OnboardingProvider>
                   </PersistQueryClientProvider>

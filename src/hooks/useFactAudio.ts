@@ -29,6 +29,7 @@ import {
   trackFactAudioPause,
   trackFactAudioPlay,
 } from '../services/analytics';
+import { acquireAudioFocus, releaseAudioFocus } from '../services/audioFocus';
 import { cacheFactAudio, getLocalFactAudioPath } from '../services/factAudio';
 import { getOfflineAudioPath } from '../services/offlineLibrary';
 
@@ -153,9 +154,14 @@ export function useFactAudio(
   useEffect(() => {
     if (!hasAudio || !status) return;
     if (status.playing) {
-      setPlaybackState((prev) =>
-        prev === 'loading' || prev === 'paused' || prev === 'playing' ? 'playing' : prev
-      );
+      // Promote to 'playing' only from states a real user play() set up
+      // (loading/playing). Deliberately NOT from 'paused': expo-audio emits a
+      // trailing status.playing=true frame for ~1 tick after player.pause(), so
+      // re-promoting a just-paused player would flicker the button AND silently
+      // resurrect playback after the audio-focus coordinator paused us to yield
+      // to another player. A genuine resume goes through toggle(), which sets
+      // 'playing' synchronously, so nothing legitimate needs the 'paused' case.
+      setPlaybackState((prev) => (prev === 'loading' || prev === 'playing' ? 'playing' : prev));
     } else if (status.isLoaded && (status.currentTime ?? 0) > 0) {
       setPlaybackState((prev) => (prev === 'loading' || prev === 'playing' ? 'paused' : prev));
     }
@@ -277,6 +283,27 @@ export function useFactAudio(
       : withTiming(next, { duration: 260, easing: Easing.linear });
   }, [status?.currentTime, status?.duration, status?.isLoaded, reduceMotion, progress]);
 
+  // Pause this inline player WITHOUT haptics/analytics — invoked by the audio-
+  // focus coordinator when another player (the queue, or another open fact's
+  // inline narration) starts. Mirrors AudioQueueContext.pausePlayback.
+  const pause = useCallback(() => {
+    try {
+      player.pause();
+    } catch {
+      // player may be mid-remount/released; ignore
+    }
+    setPlaybackState((prev) => (prev === 'playing' || prev === 'loading' ? 'paused' : prev));
+  }, [player]);
+
+  // A stable identity wrapping the LATEST `pause`. It is both the focus token and
+  // the silence callback the coordinator stores: stable so re-acquiring never
+  // self-pauses, and indirected through a ref so a source-resolution remount
+  // (which gives `pause` a new identity) doesn't strand the coordinator with a
+  // stale callback bound to a released player.
+  const pauseRef = useRef(pause);
+  pauseRef.current = pause;
+  const focusPause = useRef<() => void>(() => pauseRef.current()).current;
+
   const toggle = useCallback(() => {
     if (!hasAudio) return;
     try {
@@ -296,6 +323,7 @@ export function useFactAudio(
           durationSeconds: durationRef.current,
         });
         player.pause();
+        releaseAudioFocus(focusPause);
         setPlaybackState('paused');
         return;
       }
@@ -307,6 +335,9 @@ export function useFactAudio(
         isResume: playbackState === 'paused',
       });
       player.play();
+      // Take audio focus the instant we start: this pauses the queue player or
+      // any other open fact's inline narration so two narrations never overlap.
+      acquireAudioFocus(focusPause);
       setPlaybackState('playing');
     } catch (err) {
       trackFactAudioError({ factId, locale: language, source, errorMessage: String(err) });
@@ -325,13 +356,16 @@ export function useFactAudio(
     language,
     resolvedSource,
     audioUrl,
+    focusPause,
   ]);
 
   useEffect(() => {
     return () => {
       if (errorRevertTimer.current) clearTimeout(errorRevertTimer.current);
+      // Drop focus if we still hold it so a torn-down player isn't paused later.
+      releaseAudioFocus(focusPause);
     };
-  }, []);
+  }, [focusPause]);
 
   return {
     playbackState,

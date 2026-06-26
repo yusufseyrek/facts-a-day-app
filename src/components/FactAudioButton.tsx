@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedProps,
   useAnimatedStyle,
@@ -12,7 +12,7 @@ import { useTranslation } from '../i18n';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
-import { Pause, Play } from './icons';
+import { Check, Pause, Play } from './icons';
 
 import type { FactAudioController } from '../hooks/useFactAudio';
 
@@ -20,13 +20,19 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface FactAudioButtonProps {
   controller: FactAudioController;
+  /** Fired when a tap STARTS playback (not when pausing). The parent uses this
+   *  to auto-add the fact to the Up Next queue. */
+  onPlayStart?: () => void;
+  /** True when this fact is already in the queue — shows a small check badge. */
+  queued?: boolean;
 }
 
-export function FactAudioButton({ controller }: FactAudioButtonProps) {
+export function FactAudioButton({ controller, onPlayStart, queued = false }: FactAudioButtonProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const { iconSizes, borderWidths, spacing } = useResponsive();
   const isDark = theme === 'dark';
+  const colors = hexColors[theme];
 
   const { playbackState, progress, durationSeconds, currentSeconds, toggle } = controller;
 
@@ -57,6 +63,13 @@ export function FactAudioButton({ controller }: FactAudioButtonProps) {
 
   const ringStyle = useAnimatedStyle(() => ({ opacity: ringOpacity.value }));
 
+  // Tapping to START playback also auto-adds the fact to the queue (the parent
+  // owns the enqueue + feedback). Tapping to pause does not.
+  const handlePress = () => {
+    if (!isPlaying && !isLoading) onPlayStart?.();
+    toggle();
+  };
+
   const percent = durationSeconds > 0 ? Math.round((currentSeconds / durationSeconds) * 100) : 0;
 
   const a11yLabel = isLoading
@@ -65,9 +78,11 @@ export function FactAudioButton({ controller }: FactAudioButtonProps) {
       ? t('a11y_pauseFactAudio')
       : t('a11y_playFactAudio');
 
+  const badge = iconSizes.xs - 2;
+
   return (
     <Pressable
-      onPress={toggle}
+      onPress={handlePress}
       hitSlop={spacing.sm}
       accessibilityRole="button"
       accessibilityState={{ busy: isLoading, selected: isPlaying }}
@@ -85,15 +100,13 @@ export function FactAudioButton({ controller }: FactAudioButtonProps) {
             }
           : undefined
       }
-      style={({ pressed }) => [
-        {
-          width: SVG_SIZE,
-          height: SVG_SIZE,
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: pressed ? 0.8 : 1,
-        },
-      ]}
+      style={({ pressed }) => ({
+        width: SVG_SIZE,
+        height: SVG_SIZE,
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: pressed ? 0.8 : 1,
+      })}
     >
       <Animated.View style={[StyleSheet.absoluteFill, ringStyle]} pointerEvents="none">
         <Svg width={SVG_SIZE} height={SVG_SIZE}>
@@ -128,6 +141,28 @@ export function FactAudioButton({ controller }: FactAudioButtonProps) {
         <Pause size={ICON_SIZE} color={accentColor} fill={accentColor} />
       ) : (
         <Play size={ICON_SIZE} color={accentColor} fill={accentColor} />
+      )}
+
+      {/* In-queue badge — a small accent check once the fact is in the queue. */}
+      {queued && (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: badge,
+            height: badge,
+            borderRadius: badge / 2,
+            backgroundColor: accentColor,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1.5,
+            borderColor: colors.background,
+          }}
+        >
+          <Check size={badge - 6} color={colors.background} />
+        </View>
       )}
     </Pressable>
   );

@@ -26,6 +26,8 @@ interface SettingsRowProps {
   showExternalLink?: boolean;
   /** Show warning indicator (e.g., for missing permissions) */
   showWarning?: boolean;
+  /** Replaces the value/chevron cluster — used for inline controls (a Switch). */
+  trailing?: React.ReactNode;
 }
 
 export const SettingsRow: React.FC<SettingsRowProps> = ({
@@ -37,6 +39,7 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
   isLast = false,
   showExternalLink = false,
   showWarning = false,
+  trailing,
 }) => {
   const { theme } = useTheme();
   const { spacing, radius, iconSizes, media } = useResponsive();
@@ -112,17 +115,21 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
         )}
       </View>
       <View style={styles.rightContent}>
-        {value && (
-          <Text.Label color={colors.textSecondary} numberOfLines={1} flexShrink={1}>
-            {value}
-          </Text.Label>
+        {trailing ?? (
+          <>
+            {value && (
+              <Text.Label color={colors.textSecondary} numberOfLines={1} flexShrink={1}>
+                {value}
+              </Text.Label>
+            )}
+            {onPress &&
+              (showExternalLink ? (
+                <ExternalLink size={iconSizes.sm} color={colors.textSecondary} />
+              ) : (
+                <ChevronRight size={iconSizes.sm} color={colors.textSecondary} />
+              ))}
+          </>
         )}
-        {onPress &&
-          (showExternalLink ? (
-            <ExternalLink size={iconSizes.sm} color={colors.textSecondary} />
-          ) : (
-            <ChevronRight size={iconSizes.sm} color={colors.textSecondary} />
-          ))}
       </View>
       {!isLast && <View style={[styles.separator, { backgroundColor: colors.border }]} />}
     </View>
