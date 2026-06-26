@@ -25,7 +25,6 @@ export const translations = {
     settingsSounds: 'Ton',
     settingsSoundsBackground: 'Im Hintergrund abspielen',
     settingsSoundsBackgroundHint: 'Premium',
-    settingsSoundsStopOnClose: 'Ton beim Schließen eines Fakts stoppen',
     settingsSoundsAutoplayNext: 'Nächstes in der Warteschlange automatisch abspielen',
     // Offline library (premium)
     offlineLibrary: 'Offline-Bibliothek',
@@ -698,7 +697,6 @@ export const translations = {
     settingsSounds: 'Sound',
     settingsSoundsBackground: 'Play in background',
     settingsSoundsBackgroundHint: 'Premium',
-    settingsSoundsStopOnClose: 'Stop sound when a fact is closed',
     settingsSoundsAutoplayNext: 'Autoplay next in queue',
     // Offline library (premium)
     offlineLibrary: 'Offline Library',
@@ -1362,7 +1360,6 @@ export const translations = {
     settingsSounds: 'Sonido',
     settingsSoundsBackground: 'Reproducir en segundo plano',
     settingsSoundsBackgroundHint: 'Premium',
-    settingsSoundsStopOnClose: 'Detener el sonido al cerrar un dato',
     settingsSoundsAutoplayNext: 'Reproducir automáticamente el siguiente de la cola',
     // Offline library (premium)
     offlineLibrary: 'Biblioteca sin conexión',
@@ -2029,7 +2026,6 @@ export const translations = {
     settingsSounds: 'Son',
     settingsSoundsBackground: 'Lire en arrière-plan',
     settingsSoundsBackgroundHint: 'Premium',
-    settingsSoundsStopOnClose: 'Arrêter le son à la fermeture d’un fait',
     settingsSoundsAutoplayNext: 'Lire automatiquement le suivant dans la file',
     // Offline library (premium)
     offlineLibrary: 'Bibliothèque hors ligne',
@@ -2699,7 +2695,6 @@ export const translations = {
     settingsSounds: 'サウンド',
     settingsSoundsBackground: 'バックグラウンドで再生',
     settingsSoundsBackgroundHint: 'プレミアム',
-    settingsSoundsStopOnClose: '豆知識を閉じたら音声を停止',
     settingsSoundsAutoplayNext: 'キューの次を自動再生',
     // Offline library (premium)
     offlineLibrary: 'オフラインライブラリ',
@@ -3360,7 +3355,6 @@ export const translations = {
     settingsSounds: '소리',
     settingsSoundsBackground: '백그라운드에서 재생',
     settingsSoundsBackgroundHint: '프리미엄',
-    settingsSoundsStopOnClose: '사실을 닫으면 소리 중지',
     settingsSoundsAutoplayNext: '대기열의 다음 항목 자동 재생',
     // Offline library (premium)
     offlineLibrary: '오프라인 보관함',
@@ -4020,7 +4014,6 @@ export const translations = {
     settingsSounds: 'Ses',
     settingsSoundsBackground: 'Arka planda çal',
     settingsSoundsBackgroundHint: 'Premium',
-    settingsSoundsStopOnClose: 'Bir bilgi kapatıldığında sesi durdur',
     settingsSoundsAutoplayNext: 'Sıradakini otomatik oynat',
     // Offline library (premium)
     offlineLibrary: 'Çevrimdışı Kitaplık',
@@ -4683,7 +4676,6 @@ export const translations = {
     settingsSounds: '声音',
     settingsSoundsBackground: '后台播放',
     settingsSoundsBackgroundHint: '高级会员',
-    settingsSoundsStopOnClose: '关闭冷知识时停止声音',
     settingsSoundsAutoplayNext: '自动播放队列中的下一个',
     // Offline library (premium)
     offlineLibrary: '离线图书馆',

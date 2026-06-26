@@ -18,7 +18,6 @@ import {
   BookOpen,
   ChevronRight,
   Crown,
-  DoorOpen,
   Eye,
   FileText,
   Globe,
@@ -865,15 +864,6 @@ export default function SettingsPage() {
             )
           ) : (
             <Crown size={iconSizes.sm} color="#FFD700" />
-          ),
-        },
-        {
-          id: 'soundStopOnClose',
-          label: t('settingsSoundsStopOnClose'),
-          icon: <DoorOpen size={iconSizes.md} color={colors.neonOrange} />,
-          accent: colors.neonOrange,
-          trailing: renderSwitch(audioSettings.stopOnFactClose, (v) =>
-            setAudioSetting('stopOnFactClose', v)
           ),
         },
         {

@@ -24,7 +24,6 @@ describe('audioSettings', () => {
     const { svc } = freshModule();
     expect(svc.getAudioSettings()).toEqual({
       playInBackground: false,
-      stopOnFactClose: true,
       autoplayNext: true,
     });
     expect(svc.isAudioSettingsLoaded()).toBe(false);
@@ -34,8 +33,7 @@ describe('audioSettings', () => {
     const { svc, storage } = freshModule();
     storage.multiGet.mockResolvedValueOnce([
       [STORAGE_KEYS.AUDIO_PLAY_IN_BACKGROUND, 'true'],
-      [STORAGE_KEYS.AUDIO_STOP_ON_FACT_CLOSE, 'false'],
-      [STORAGE_KEYS.AUDIO_AUTOPLAY_NEXT, null],
+      [STORAGE_KEYS.AUDIO_AUTOPLAY_NEXT, 'false'],
     ]);
 
     await svc.initAudioSettings();
@@ -43,9 +41,7 @@ describe('audioSettings', () => {
     expect(svc.isAudioSettingsLoaded()).toBe(true);
     expect(svc.getAudioSettings()).toEqual({
       playInBackground: true,
-      stopOnFactClose: false,
-      // missing key keeps its default (true)
-      autoplayNext: true,
+      autoplayNext: false,
     });
   });
 
@@ -55,7 +51,7 @@ describe('audioSettings', () => {
 
     await svc.initAudioSettings();
 
-    expect(svc.getAudioSettings().stopOnFactClose).toBe(true);
+    expect(svc.getAudioSettings().autoplayNext).toBe(true);
     expect(svc.isAudioSettingsLoaded()).toBe(true);
   });
 
@@ -76,8 +72,8 @@ describe('audioSettings', () => {
 
   it('is a no-op when the value is unchanged', async () => {
     const { svc, storage } = freshModule();
-    // default stopOnFactClose is already true
-    await svc.setAudioSetting('stopOnFactClose', true);
+    // default autoplayNext is already true
+    await svc.setAudioSetting('autoplayNext', true);
     expect(storage.setItem).not.toHaveBeenCalled();
   });
 

@@ -1,14 +1,12 @@
 /**
  * Audio queue player settings.
  *
- * Three persisted toggles that govern the global queue player (see
+ * Two persisted toggles that govern the global queue player (see
  * `AudioQueueContext`):
  *   - playInBackground   — keep audio going when the app is backgrounded or the
  *                          screen is locked. Premium-only: the context never
  *                          enables `shouldPlayInBackground` unless the user is
  *                          premium AND this is on.
- *   - stopOnFactClose    — stop playback when the fact detail screen the user
- *                          is on closes (so closing a fact silences it).
  *   - autoplayNext       — auto-advance to the next queued sound when one ends.
  *
  * Values are mirrored in memory so synchronous reads (e.g. the AppState
@@ -21,13 +19,11 @@ import { STORAGE_KEYS } from '../config/app';
 
 export interface AudioSettings {
   playInBackground: boolean;
-  stopOnFactClose: boolean;
   autoplayNext: boolean;
 }
 
 const DEFAULTS: AudioSettings = {
   playInBackground: false,
-  stopOnFactClose: true,
   autoplayNext: true,
 };
 
@@ -40,7 +36,6 @@ const listeners = new Set<Listener>();
 
 const KEY_BY_FIELD: Record<keyof AudioSettings, string> = {
   playInBackground: STORAGE_KEYS.AUDIO_PLAY_IN_BACKGROUND,
-  stopOnFactClose: STORAGE_KEYS.AUDIO_STOP_ON_FACT_CLOSE,
   autoplayNext: STORAGE_KEYS.AUDIO_AUTOPLAY_NEXT,
 };
 

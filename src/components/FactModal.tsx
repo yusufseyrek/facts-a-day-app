@@ -23,7 +23,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
 import { NATIVE_ADS } from '../config/app';
-import { useAudioQueue, usePremium } from '../contexts';
+import { usePremium } from '../contexts';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { useTranslation } from '../i18n';
 import {
@@ -899,15 +899,6 @@ export function FactModal({
     : 1;
 
   const factTitle = fact.title || fact.content.substring(0, 60) + '...';
-
-  // "Stop sound on fact close": when this fact screen unmounts (X, swipe-back,
-  // hardware back, or the in-tab overlay closing), tell the queue player so it
-  // can stop if the closed fact is the one currently sounding and the setting
-  // is on. A ref keeps the id current across prev/next (which don't unmount).
-  const { handleFactClosed } = useAudioQueue();
-  const closingFactIdRef = useRef(fact.id);
-  closingFactIdRef.current = fact.id;
-  useEffect(() => () => handleFactClosed(closingFactIdRef.current), [handleFactClosed]);
 
   // Cross-player exclusivity — this fact's inline narration vs. the global queue
   // vs. another open fact's inline narration — is handled by the app-wide

@@ -192,8 +192,6 @@ export const STORAGE_KEYS = {
   OFFLINE_LAST_SYNC: '@offline_last_sync',
   /** Audio queue player: keep playing when the app is backgrounded (premium). */
   AUDIO_PLAY_IN_BACKGROUND: '@audio_play_in_background',
-  /** Audio queue player: stop playback when the open fact screen is closed. */
-  AUDIO_STOP_ON_FACT_CLOSE: '@audio_stop_on_fact_close',
   /** Audio queue player: auto-advance to the next queued sound when one ends. */
   AUDIO_AUTOPLAY_NEXT: '@audio_autoplay_next',
 } as const;

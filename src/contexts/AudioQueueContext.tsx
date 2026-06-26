@@ -85,9 +85,6 @@ interface AudioQueueContextValue {
   /** Pause the queue so another player (the per-fact inline narration) can take
    *  over without the same audio echoing from both. */
   pausePlayback: () => void;
-  /** Called when a fact screen closes; stops playback if the setting is on and
-   *  the closed fact is the one currently sounding. */
-  handleFactClosed: (factId: number) => void;
 }
 
 const noop = () => {};
@@ -113,7 +110,6 @@ const AudioQueueContext = createContext<AudioQueueContextValue>({
   playIndex: noop,
   seekTo: noop,
   pausePlayback: noop,
-  handleFactClosed: noop,
 });
 
 export const useAudioQueue = () => useContext(AudioQueueContext);
@@ -578,24 +574,6 @@ export function AudioQueueProvider({ children }: { children: React.ReactNode }) 
     [player]
   );
 
-  const handleFactClosed = useCallback(
-    (factId: number) => {
-      if (!getAudioSettings().stopOnFactClose) return;
-      const cur = indexRef.current;
-      const track = queueRef.current[cur];
-      if (track && track.factId === factId && isPlayingRef.current) {
-        try {
-          player.pause();
-          setIsPlaying(false);
-          isPlayingRef.current = false;
-        } catch {
-          // ignore
-        }
-      }
-    },
-    [player]
-  );
-
   const currentTrack = currentIndex >= 0 ? (queue[currentIndex] ?? null) : null;
 
   const value = useMemo<AudioQueueContextValue>(
@@ -620,7 +598,6 @@ export function AudioQueueProvider({ children }: { children: React.ReactNode }) 
       playIndex,
       seekTo,
       pausePlayback,
-      handleFactClosed,
     }),
     [
       queue,
@@ -641,7 +618,6 @@ export function AudioQueueProvider({ children }: { children: React.ReactNode }) 
       playIndex,
       seekTo,
       pausePlayback,
-      handleFactClosed,
     ]
   );
 
