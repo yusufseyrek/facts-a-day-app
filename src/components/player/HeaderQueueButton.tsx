@@ -1,10 +1,11 @@
 /**
- * Compact queue-player control for the home header — upper-left on iOS, and on
- * Android right next to the reading-streak flame (headerRight). A small rounded
- * pill with two tap targets separated by a hairline: a filled play/pause disc
- * that toggles playback inline, and the equalizer/glyph + queue count that opens
- * the full player sheet. The equalizer bounces while playing (a static music
- * glyph when paused). Renders nothing when the queue is empty.
+ * Compact queue-player control mounted in the headerLeft of every tab root
+ * (home, search, trivia, favorites, settings) so playback is reachable from
+ * anywhere. A small rounded pill with two tap targets separated by a hairline:
+ * a filled play/pause disc that toggles playback inline, and the equalizer/glyph
+ * + queue count that opens the full player sheet. The equalizer bounces while
+ * playing (a static music glyph when paused). With an empty queue it collapses
+ * to a bare music glyph that just opens the (empty) player — always present.
  */
 import { Pressable, View } from 'react-native';
 
@@ -19,7 +20,7 @@ import { FONT_FAMILIES, Text } from '../Typography';
 
 import { QueueEqualizerIcon } from './QueueEqualizerIcon';
 
-export function HomeQueueButton() {
+export function HeaderQueueButton() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t } = useTranslation();

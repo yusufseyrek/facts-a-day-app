@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 
+import { HeaderQueueButton } from '../../../src/components/player/HeaderQueueButton';
 import { useGlassHeaderOptions } from '../../../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../../../src/i18n';
 
@@ -9,7 +10,10 @@ export default function SearchStackLayout() {
 
   return (
     <Stack screenOptions={headerOptions}>
-      <Stack.Screen name="search" options={{ title: t('search') }} />
+      <Stack.Screen
+        name="search"
+        options={{ title: t('search'), headerLeft: () => <HeaderQueueButton /> }}
+      />
     </Stack>
   );
 }
