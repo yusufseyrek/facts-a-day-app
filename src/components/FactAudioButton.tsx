@@ -1,105 +1,94 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import Animated, {
-  useAnimatedProps,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, G } from 'react-native-svg';
 
+import * as Haptics from 'expo-haptics';
+
+import { type QueueTrack, useAudioQueue, usePlaybackProgress } from '../contexts';
 import { useTranslation } from '../i18n';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
-import { Check, Pause, Play } from './icons';
-
-import type { FactAudioController } from '../hooks/useFactAudio';
+import { Check, ListPlus, Pause, Play } from './icons';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface FactAudioButtonProps {
-  controller: FactAudioController;
-  /** Fired when a tap STARTS playback (not when pausing). The parent uses this
-   *  to auto-add the fact to the Up Next queue. */
-  onPlayStart?: () => void;
-  /** True when this fact is already in the queue — shows a small check badge. */
-  queued?: boolean;
+  /** This fact's queue payload — built once by the parent (FactActions). */
+  track: QueueTrack;
 }
 
-export function FactAudioButton({ controller, onPlayStart, queued = false }: FactAudioButtonProps) {
+/**
+ * The per-fact audio control, driven entirely by the app-wide queue player.
+ *
+ * Its meaning depends on the queue, not on an inline per-fact player:
+ *   - nothing playing            → Play  → playNow (enqueue + start immediately)
+ *   - a session is live, not this fact → Add-to-queue (ListPlus) → enqueue "in line"
+ *   - this fact IS the active track     → Play/Pause toggle, with a progress ring
+ *
+ * So tapping Play on the first fact starts it; on any later fact the button has
+ * already turned into an "add to queue" affordance that appends behind it.
+ */
+export function FactAudioButton({ track }: FactAudioButtonProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { iconSizes, borderWidths, spacing } = useResponsive();
+  const { iconSizes, spacing } = useResponsive();
   const isDark = theme === 'dark';
   const colors = hexColors[theme];
 
-  const { playbackState, progress, durationSeconds, currentSeconds, toggle } = controller;
+  const { currentTrack, isPlaying, isLoading, queue, playNow, enqueue, togglePlayPause } =
+    useAudioQueue();
 
-  // Icon matches sibling action icons (Heart/Share/Flag) exactly. The SVG adds
-  // one spacing step around the icon so the progress ring has clear breathing room.
-  const ICON_SIZE = iconSizes.lg;
-  const SVG_SIZE = iconSizes.lg + spacing.sm;
-  const RING_STROKE = borderWidths.heavy;
-  const RADIUS = (SVG_SIZE - RING_STROKE) / 2;
-  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+  const isCurrent = currentTrack?.factId === track.factId;
+  const isQueued = queue.some((q) => q.factId === track.factId);
+  const hasSession = currentTrack != null;
 
   const accentColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
 
-  const animatedRingProps = useAnimatedProps(() => ({
-    strokeDashoffset: CIRCUMFERENCE * (1 - progress.value),
-  }));
+  // Geometry matches the sibling action icons (Heart/Share/Flag); the SVG adds
+  // one spacing step so the progress ring has breathing room around the glyph.
+  const ICON_SIZE = iconSizes.lg;
+  const SVG_SIZE = iconSizes.lg + spacing.sm;
+  const badge = iconSizes.xs - 2;
 
-  const isPlaying = playbackState === 'playing';
-  const isLoading = playbackState === 'loading';
-  const isIdle = playbackState === 'idle' || playbackState === 'error';
+  const loading = isCurrent && isLoading;
+  const playing = isCurrent && isPlaying;
+  const showAddToQueue = !isCurrent && hasSession;
 
-  // Ring fades in once audio has been engaged (loading/playing/paused) and out
-  // again when we return to a clean idle state.
-  const ringOpacity = useSharedValue(0);
-  useEffect(() => {
-    ringOpacity.value = withTiming(isIdle ? 0 : 1, { duration: 220 });
-  }, [isIdle, ringOpacity]);
-
-  const ringStyle = useAnimatedStyle(() => ({ opacity: ringOpacity.value }));
-
-  // Tapping to START playback also auto-adds the fact to the queue (the parent
-  // owns the enqueue + feedback). Tapping to pause does not.
   const handlePress = () => {
-    if (!isPlaying && !isLoading) onPlayStart?.();
-    toggle();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (isCurrent) {
+      togglePlayPause();
+      return;
+    }
+    if (hasSession) {
+      // A session is live — append behind it. enqueue de-dupes, so a second tap
+      // on an already-queued fact is a harmless no-op.
+      if (!isQueued) enqueue(track);
+      return;
+    }
+    // Nothing playing — this becomes the current track and starts immediately.
+    playNow(track);
   };
 
-  const percent = durationSeconds > 0 ? Math.round((currentSeconds / durationSeconds) * 100) : 0;
-
-  const a11yLabel = isLoading
+  const a11yLabel = loading
     ? t('a11y_audioLoading')
-    : isPlaying
+    : playing
       ? t('a11y_pauseFactAudio')
-      : t('a11y_playFactAudio');
-
-  const badge = iconSizes.xs - 2;
+      : showAddToQueue
+        ? isQueued
+          ? t('playerAlreadyQueued')
+          : t('playerAddToQueue')
+        : t('a11y_playFactAudio');
 
   return (
     <Pressable
       onPress={handlePress}
       hitSlop={spacing.sm}
       accessibilityRole="button"
-      accessibilityState={{ busy: isLoading, selected: isPlaying }}
+      accessibilityState={{ busy: loading, selected: playing }}
       aria-label={a11yLabel}
-      accessibilityValue={
-        durationSeconds > 0
-          ? {
-              now: percent,
-              min: 0,
-              max: 100,
-              text: t('a11y_audioProgress', {
-                seconds: Math.round(currentSeconds),
-                total: Math.round(durationSeconds),
-              }),
-            }
-          : undefined
-      }
       style={({ pressed }) => ({
         width: SVG_SIZE,
         height: SVG_SIZE,
@@ -108,43 +97,23 @@ export function FactAudioButton({ controller, onPlayStart, queued = false }: Fac
         opacity: pressed ? 0.8 : 1,
       })}
     >
-      <Animated.View style={[StyleSheet.absoluteFill, ringStyle]} pointerEvents="none">
-        <Svg width={SVG_SIZE} height={SVG_SIZE}>
-          <G transform={`rotate(-90 ${SVG_SIZE / 2} ${SVG_SIZE / 2})`}>
-            <Circle
-              cx={SVG_SIZE / 2}
-              cy={SVG_SIZE / 2}
-              r={RADIUS}
-              stroke={accentColor}
-              strokeOpacity={0.2}
-              strokeWidth={RING_STROKE}
-              fill="transparent"
-            />
-            <AnimatedCircle
-              cx={SVG_SIZE / 2}
-              cy={SVG_SIZE / 2}
-              r={RADIUS}
-              stroke={accentColor}
-              strokeWidth={RING_STROKE}
-              strokeLinecap="round"
-              fill="transparent"
-              strokeDasharray={CIRCUMFERENCE}
-              animatedProps={animatedRingProps}
-            />
-          </G>
-        </Svg>
-      </Animated.View>
+      {/* Progress ring — mounted only while this fact is the active track, so the
+          ~2×/sec playback-position re-render stays isolated to the ring. */}
+      {isCurrent && <QueueProgressRing size={SVG_SIZE} stroke={accentColor} />}
 
-      {isLoading ? (
+      {loading ? (
         <ActivityIndicator size="small" color={accentColor} />
-      ) : isPlaying ? (
+      ) : playing ? (
         <Pause size={ICON_SIZE} color={accentColor} fill={accentColor} />
+      ) : showAddToQueue ? (
+        <ListPlus size={ICON_SIZE} color={accentColor} />
       ) : (
         <Play size={ICON_SIZE} color={accentColor} fill={accentColor} />
       )}
 
-      {/* In-queue badge — a small accent check once the fact is in the queue. */}
-      {queued && (
+      {/* In-queue badge — a small accent check once an "add to queue" fact is
+          already in line. */}
+      {showAddToQueue && isQueued && (
         <View
           pointerEvents="none"
           style={{
@@ -165,5 +134,58 @@ export function FactAudioButton({ controller, onPlayStart, queued = false }: Fac
         </View>
       )}
     </Pressable>
+  );
+}
+
+/**
+ * The circular progress ring around the play/pause glyph for the active track.
+ * Reads the shared playback-progress store (high-frequency) in isolation so only
+ * this small subtree re-renders as the position ticks.
+ */
+function QueueProgressRing({ size, stroke }: { size: number; stroke: string }) {
+  const { borderWidths } = useResponsive();
+  const { position, duration } = usePlaybackProgress();
+
+  const RING_STROKE = borderWidths.heavy;
+  const RADIUS = (size - RING_STROKE) / 2;
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+  const target = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
+  const progress = useSharedValue(target);
+  useEffect(() => {
+    progress.value = withTiming(target, { duration: 260 });
+  }, [target, progress]);
+
+  const animatedRingProps = useAnimatedProps(() => ({
+    strokeDashoffset: CIRCUMFERENCE * (1 - progress.value),
+  }));
+
+  return (
+    <Animated.View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Svg width={size} height={size}>
+        <G transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={RADIUS}
+            stroke={stroke}
+            strokeOpacity={0.2}
+            strokeWidth={RING_STROKE}
+            fill="transparent"
+          />
+          <AnimatedCircle
+            cx={size / 2}
+            cy={size / 2}
+            r={RADIUS}
+            stroke={stroke}
+            strokeWidth={RING_STROKE}
+            strokeLinecap="round"
+            fill="transparent"
+            strokeDasharray={CIRCUMFERENCE}
+            animatedProps={animatedRingProps}
+          />
+        </G>
+      </Svg>
+    </Animated.View>
   );
 }

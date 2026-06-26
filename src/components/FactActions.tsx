@@ -14,7 +14,7 @@ import { type ViewShotRef } from 'react-native-view-shot';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 
-import { useAudioQueue } from '../contexts';
+import { type QueueTrack } from '../contexts';
 import { useTranslation } from '../i18n';
 import { trackFactShare } from '../services/analytics';
 import * as database from '../services/database';
@@ -32,7 +32,6 @@ import { ShareCard } from './share';
 import { styled, View, XStack, YStack } from './Stacks';
 import { Text } from './Typography';
 
-import type { FactAudioController } from '../hooks/useFactAudio';
 import type { Category } from '../services/database';
 
 interface FactActionsProps {
@@ -49,8 +48,7 @@ interface FactActionsProps {
   hasPrevious?: boolean;
   currentIndex?: number;
   totalCount?: number;
-  audioController?: FactAudioController;
-  /** Fact narration URL — enables the "add to queue" button when present. */
+  /** Fact narration URL — enables the play / add-to-queue button when present. */
   audioUrl?: string | null;
   /** Locale the narration was generated in (queue source resolution key). */
   audioLanguage?: string;
@@ -83,14 +81,12 @@ export function FactActions({
   hasPrevious,
   currentIndex,
   totalCount,
-  audioController,
   audioUrl,
   audioLanguage,
   onReportPress,
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const { queue, enqueue } = useAudioQueue();
   const { iconSizes, typography, spacing, radius } = useResponsive();
   const insets = useSafeAreaInsets();
   const isDark = theme === 'dark';
@@ -103,7 +99,21 @@ export function FactActions({
   const shareColor = theme === 'dark' ? hexColors.dark.neonGreen : hexColors.light.neonGreen;
   const flagColor = theme === 'dark' ? hexColors.dark.textSecondary : hexColors.light.textSecondary;
   const navColor = theme === 'dark' ? hexColors.dark.primary : hexColors.light.primary;
-  const isInQueue = queue.some((tk) => tk.factId === factId);
+
+  // This fact's queue payload — built once and handed to the queue-driven audio
+  // button (which decides between play-now and add-to-queue from queue state).
+  const categoryLabel = typeof category === 'string' ? category : (category?.name ?? undefined);
+  const audioTrack: QueueTrack | null = audioUrl
+    ? {
+        factId,
+        title: factTitle || factContent.substring(0, 60),
+        audioUrl,
+        language: audioLanguage || 'en',
+        category: categoryLabel,
+        imageUrl,
+      }
+    : null;
+
   const [isFavorited, setIsFavorited] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
@@ -270,22 +280,6 @@ export function FactActions({
     onReportPress();
   };
 
-  // Auto-add to the Up Next queue when the user taps play (fires on play START,
-  // not pause — see FactAudioButton). De-dupes, so replaying a fact is a no-op.
-  const handlePlayStart = () => {
-    if (!audioUrl || isInQueue) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const categoryLabel = typeof category === 'string' ? category : (category?.name ?? undefined);
-    enqueue({
-      factId,
-      title: factTitle || factContent.substring(0, 60),
-      audioUrl,
-      language: audioLanguage || 'en',
-      category: categoryLabel,
-      imageUrl,
-    });
-  };
-
   const handleNext = () => {
     if (onNext) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -352,15 +346,9 @@ export function FactActions({
         </Animated.View>
       </Pressable>
 
-      {/* Play / Audio Button — tap plays this fact's narration AND auto-adds it
-          to the Up Next queue; a check badge marks it as queued. */}
-      {audioController?.hasAudio && (
-        <FactAudioButton
-          controller={audioController}
-          onPlayStart={audioUrl ? handlePlayStart : undefined}
-          queued={isInQueue}
-        />
-      )}
+      {/* Audio button — queue-driven: Play (start now) when nothing's playing,
+          then "add to queue" on later facts; Play/Pause when this fact is live. */}
+      {audioTrack && <FactAudioButton track={audioTrack} />}
 
       {/* Report Button */}
       <Pressable

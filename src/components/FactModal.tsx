@@ -24,7 +24,6 @@ import { useRouter } from 'expo-router';
 
 import { NATIVE_ADS } from '../config/app';
 import { useAudioQueue, usePremium } from '../contexts';
-import { useFactAudio } from '../hooks/useFactAudio';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
 import { useTranslation } from '../i18n';
 import {
@@ -901,10 +900,6 @@ export function FactModal({
 
   const factTitle = fact.title || fact.content.substring(0, 60) + '...';
 
-  // Shared audio controller — both the content-area button and the header
-  // button render from this single state so they stay in sync.
-  const audioController = useFactAudio(fact.id, fact.audio_url ?? null, locale);
-
   // "Stop sound on fact close": when this fact screen unmounts (X, swipe-back,
   // hardware back, or the in-tab overlay closing), tell the queue player so it
   // can stop if the closed fact is the one currently sounding and the setting
@@ -1633,7 +1628,6 @@ export function FactModal({
           hasPrevious={hasPrevious}
           currentIndex={currentIndex}
           totalCount={totalCount}
-          audioController={audioController}
           audioUrl={fact.audio_url ?? undefined}
           audioLanguage={locale}
           onReportPress={() => setShowReportModal(true)}
