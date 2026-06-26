@@ -18,6 +18,8 @@ import {
 import { posthog } from '../config/posthog';
 import { getAppVersionInfo } from '../utils/appInfo';
 
+import { enqueueFactEvent } from './factEvents';
+
 import { getNotificationTimes, getSelectedCategories } from './onboarding';
 
 const THEME_STORAGE_KEY = '@app_theme_mode';
@@ -315,6 +317,8 @@ export const trackFactView = (params: {
     category: params.category,
     source: params.source,
   });
+  // First-party engagement tracker (our own backend) — see factEvents.ts.
+  enqueueFactEvent(params.factId, 'view');
 };
 
 /**
@@ -354,6 +358,9 @@ export const trackFactShareWithPlatform = (params: {
     platform: params.platform,
     success: params.success,
   });
+  // First-party tracker: count one event per COMPLETED share (not cancellations),
+  // and only here — trackFactShare fires on the share *intent* and would double-count.
+  if (params.success) enqueueFactEvent(params.factId, 'share');
 };
 
 /**
@@ -368,6 +375,8 @@ export const trackFactFavoriteAdd = (params: { factId: number; category: string 
     fact_id: params.factId,
     category: params.category,
   });
+  // First-party engagement tracker (our own backend) — see factEvents.ts.
+  enqueueFactEvent(params.factId, 'favorite');
 };
 
 /**

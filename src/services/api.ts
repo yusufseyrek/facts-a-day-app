@@ -961,3 +961,29 @@ export async function registerPushToken(params: RegisterPushParams): Promise<{ o
     }),
   });
 }
+
+// ====== First-party engagement events ======
+
+/** One per-fact interaction reported to our own backend (see factEvents.ts). */
+export interface FactEventPayload {
+  fact_id: number;
+  type: 'view' | 'favorite' | 'share';
+}
+
+/**
+ * Report a batch of first-party engagement events. Anonymous by design — no
+ * identity headers, only the fact + interaction type (App Check still proves the
+ * caller). skipRetry: a dropped engagement ping is harmless, not worth retrying.
+ */
+export async function postFactEvents(
+  events: FactEventPayload[]
+): Promise<{ accepted: number }> {
+  return makeRequest<{ accepted: number }>(
+    '/api/events',
+    {
+      method: 'POST',
+      body: JSON.stringify({ events }),
+    },
+    true // skipRetry
+  );
+}
