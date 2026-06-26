@@ -21,6 +21,7 @@ import {
   ScrollView,
   View,
 } from 'react-native';
+import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -33,18 +34,20 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 
-import { LAYOUT } from '../../config/app';
+import { LAYOUT, NATIVE_ADS } from '../../config/app';
 import {
   type QueueTrack,
   useAudioQueue,
   usePlaybackProgress,
   usePremium,
 } from '../../contexts';
+import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { useAudioSettings } from '../../hooks/useAudioSettings';
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
 import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
+import { NativeAdCard } from '../ads';
 import { GlassSurface } from '../GlassSurface';
 import { Crown, ListX, Moon, Music, Pause, Play, SkipBack, SkipForward, X } from '../icons';
 import { Text } from '../Typography';
@@ -586,6 +589,36 @@ function GlassIconButton({
   );
 }
 
+/**
+ * Single inline native ad between the transport controls and the "Up Next" list.
+ * Uses ONE stable slot for the whole player session (NOT keyed by the current
+ * track), so a timer-driven auto-advance can't re-request the ad or re-count an
+ * impression on every track change. Renders nothing — no slot, no top margin —
+ * until a real ad binds, so premium / no-fill leaves no phantom gap;
+ * `useAdForSlot` short-circuits for premium without subscribing. Sized from the
+ * centered reading column (not the device width) so the LANDSCAPE creative stays
+ * correctly proportioned on tablets, where the column is clamped.
+ */
+function PlayerAdCard() {
+  const { spacing, screenWidth, config, isTablet } = useResponsive();
+  const slotKey = NATIVE_ADS.FEED.PLAYER.key;
+  const { ad } = useAdForSlot(slotKey, NativeMediaAspectRatio.LANDSCAPE);
+  if (!ad) return null;
+  const columnWidth = isTablet ? Math.min(screenWidth, LAYOUT.MAX_CONTENT_WIDTH) : screenWidth;
+  const cardWidth = columnWidth - spacing.lg * 2;
+  return (
+    <View style={{ marginTop: spacing.lg }}>
+      <NativeAdCard
+        nativeAd={ad}
+        slotKey={slotKey}
+        aspectRatio={NativeMediaAspectRatio.LANDSCAPE}
+        cardWidth={cardWidth}
+        cardHeight={cardWidth * config.cardAspectRatio}
+      />
+    </View>
+  );
+}
+
 export function PlayerSheet() {
   const router = useRouter();
   const { theme } = useTheme();
@@ -797,6 +830,10 @@ export function PlayerSheet() {
 
               {/* Background-play — a clear labelled toggle (was a cryptic Moon). */}
               <BackgroundPlayRow />
+
+              {/* Sponsored — a single inline native card between the controls and
+                  the queue. Collapses (renders null) for premium / no-fill. */}
+              <PlayerAdCard />
             </>
           )}
 
