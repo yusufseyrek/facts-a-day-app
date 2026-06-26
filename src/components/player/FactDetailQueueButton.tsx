@@ -12,16 +12,16 @@ import { FONT_FAMILIES, Text } from '../Typography';
 import { QueueEqualizerIcon } from './QueueEqualizerIcon';
 
 /**
- * Fact-detail queue control. A round glass button that MIRRORS the close button
- * at the opposite top corner — same footprint, translucent disc, and soft shadow
- * (the screen's top-corner grammar) — so the global top-left pill (which would
- * land on the sticky header title) is replaced here by a control that belongs to
- * fact detail. An animated equalizer while playing (a static music glyph when
- * paused) with the queue count badged; opens the full player on tap.
+ * Fact-detail queue control. A round glass button matching the close button's
+ * footprint, translucent disc, and soft shadow (the screen's top-corner
+ * grammar), stacked directly beneath the close (X) in the same right column —
+ * so the global top-left pill (which would land on the sticky header title) is
+ * replaced here by a control that belongs to fact detail. An animated equalizer
+ * while playing (a static music glyph when paused) with the queue count badged;
+ * opens the full player on tap.
  *
- * The caller (FactModal) owns positioning (absolute top/left, mirroring the
- * close button) and reserves matching title space. Renders nothing when the
- * queue is empty, exactly like the global pill.
+ * The caller (FactModal) owns positioning (absolute, below the close button).
+ * Renders nothing when the queue is empty, exactly like the global pill.
  */
 export function FactDetailQueueButton() {
   const router = useRouter();
