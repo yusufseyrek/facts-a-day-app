@@ -4,6 +4,7 @@ import { countryForTimeZone } from '../utils/timezoneCountry';
 
 import { trackAccountDeleted, trackScreenNameClaimed } from './analytics';
 import * as api from './api';
+import { getStableDeviceId } from './deviceBinding';
 import * as notificationService from './notifications';
 import { syncTriviaResults } from './triviaSync';
 import { clearIdentity, getIdentity, saveIdentity, type UserIdentity } from './userIdentity';
@@ -90,9 +91,13 @@ export async function claimScreenName(
   const existing = await getIdentity();
   if (existing) return renameScreenName(screenName, source);
 
+  // Bind the claim to this device (Android SSAID; null on iOS) so the name is
+  // recoverable after a reinstall. The server binds atomically with the claim.
+  const deviceId = await getStableDeviceId();
+
   let created: api.CreateUserResponse;
   try {
-    created = await api.createUser(screenName, deviceCountryCode());
+    created = await api.createUser(screenName, deviceCountryCode(), deviceId);
   } catch (error) {
     if (isTakenError(error)) throw new ScreenNameTakenError();
     throw error;
@@ -149,6 +154,49 @@ export async function refreshCountryIfStale(): Promise<void> {
 /** Test hook: allow refreshCountryIfStale to run again. */
 export function __resetCountryRefresh(): void {
   countryRefreshed = false;
+}
+
+/**
+ * On cold start, recover a screen name lost to an app reinstall, then keep this
+ * device's binding fresh so future reinstalls can recover.
+ *
+ * iOS restores silently from the Keychain-persisted secret (getIdentity already
+ * returns it), so this is effectively the Android path: Android's secret does
+ * NOT survive uninstall, but its SSAID does, so the server hands the bound
+ * account back with a freshly rotated secret. Best-effort and idempotent — on
+ * the hot path (identity already present, or no stable id) it makes no blocking
+ * network call. Run this BEFORE push re-register / trivia drain so they attach
+ * to the restored identity.
+ */
+export async function bootstrapIdentityRecovery(): Promise<void> {
+  const deviceId = await getStableDeviceId();
+  if (!deviceId) return; // iOS, or SSAID unavailable → nothing to do here
+
+  let identity = await getIdentity();
+
+  if (!identity) {
+    try {
+      const recovered = await api.recoverUser(deviceId);
+      if (recovered) {
+        identity = {
+          userId: recovered.user_id,
+          userKey: recovered.user_secret,
+          screenName: recovered.screen_name,
+          countryCode: recovered.country_code,
+        };
+        await saveIdentity(identity);
+      }
+    } catch {
+      // offline / server error → stay anonymous; next launch retries
+    }
+  }
+
+  // Keep the binding warm for whoever we are now (claimed or restored), so a
+  // future reinstall of THIS device can recover it. Also binds users who
+  // claimed before device binding existed. Fire-and-forget.
+  if (identity) {
+    api.bindDevice(deviceId).catch(() => {});
+  }
 }
 
 /** Rename, keeping the same identity (devices/comments/reports follow). */

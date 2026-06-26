@@ -666,6 +666,12 @@ export default function RootLayout() {
       // Clear notification badge on app launch
       Notifications.setBadgeCountAsync(0);
 
+      // Recover a screen name lost to a reinstall (Android device binding; iOS
+      // restores from the Keychain) and keep this device's binding fresh, BEFORE
+      // push re-register and trivia drain so they attach to the restored
+      // identity. Fast no-op when an identity is already present. Best-effort.
+      await userService.bootstrapIdentityRecovery().catch(() => {});
+
       // Register this device for server-driven push — fire-and-forget.
       notificationService.registerForPush(locale).catch((error) => {
         console.error('Push registration failed:', error);

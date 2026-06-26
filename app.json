@@ -50,7 +50,9 @@
                   "targetName": "FactsaDayWidget",
                   "bundleIdentifier": "dev.seyrek.factsaday.widget",
                   "entitlements": {
-                    "com.apple.security.application-groups": ["group.dev.seyrek.factsaday"]
+                    "com.apple.security.application-groups": [
+                      "group.dev.seyrek.factsaday"
+                    ]
                   }
                 }
               ]
@@ -64,7 +66,9 @@
       "bundleIdentifier": "dev.seyrek.factsaday",
       "buildNumber": "115",
       "googleServicesFile": "./google/GoogleService-Info.plist",
-      "associatedDomains": ["applinks:factsaday.com"],
+      "associatedDomains": [
+        "applinks:factsaday.com"
+      ],
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false,
@@ -383,7 +387,16 @@
             "SKAdNetworkIdentifier": "xy9t38ct57.skadnetwork"
           }
         ],
-        "CFBundleLocalizations": ["en", "de", "es", "fr", "ja", "ko", "tr", "zh"]
+        "CFBundleLocalizations": [
+          "en",
+          "de",
+          "es",
+          "fr",
+          "ja",
+          "ko",
+          "tr",
+          "zh"
+        ]
       },
       "appleTeamId": "JNM4QM97AV"
     },
@@ -415,7 +428,10 @@
               "pathPattern": "/.*/fact/.*"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -425,7 +441,16 @@
       [
         "expo-localization",
         {
-          "supportedLocales": ["en", "de", "es", "fr", "ja", "ko", "tr", "zh"]
+          "supportedLocales": [
+            "en",
+            "de",
+            "es",
+            "fr",
+            "ja",
+            "ko",
+            "tr",
+            "zh"
+          ]
         }
       ],
       "@react-native-firebase/app",
@@ -496,7 +521,8 @@
       "expo-asset",
       "expo-font",
       "expo-image",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-secure-store"
     ],
     "owner": "yusufseyrek"
   }

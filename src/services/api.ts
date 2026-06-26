@@ -524,15 +524,62 @@ export interface CreateUserResponse {
  */
 export async function createUser(
   screenName: string,
-  countryCode: string | null
+  countryCode: string | null,
+  deviceId?: string | null
 ): Promise<CreateUserResponse> {
   return makeRequest<CreateUserResponse>('/api/users', {
     method: 'POST',
     body: JSON.stringify({
       screen_name: screenName,
       country_code: countryCode ?? undefined,
+      // Bind the claim to this device so it's recoverable after a reinstall.
+      device_id: deviceId ?? undefined,
+      platform: deviceId ? Platform.OS : undefined,
     }),
   });
+}
+
+/**
+ * Reclaim the account bound to this device after a reinstall (POST
+ * /api/users/recover), proving ownership with a stable device id instead of the
+ * lost secret. The server rotates the secret and returns a fresh identity.
+ * Returns null when no account is bound to the device (404 NO_BINDING). Only
+ * Android binds, so iOS always resolves to null here (it restores from Keychain).
+ */
+export async function recoverUser(
+  deviceId: string
+): Promise<CreateUserResponse | null> {
+  try {
+    return await makeRequest<CreateUserResponse>(
+      '/api/users/recover',
+      {
+        method: 'POST',
+        body: JSON.stringify({ device_id: deviceId, platform: Platform.OS }),
+      },
+      true // skipRetry: keep cold-launch snappy; next launch retries anyway
+    );
+  } catch (error) {
+    if ((error as any)?.status === 404 || (error as any)?.code === 'NO_BINDING') {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Bind this device to the current identity (POST /api/users/device) so a future
+ * reinstall can recover it. Identity headers required; best-effort.
+ */
+export async function bindDevice(deviceId: string): Promise<void> {
+  await makeRequest<{ ok: boolean }>(
+    '/api/users/device',
+    {
+      method: 'POST',
+      headers: await getIdentityHeaders(),
+      body: JSON.stringify({ device_id: deviceId, platform: Platform.OS }),
+    },
+    true // skipRetry: a missed refresh is re-attempted next launch
+  );
 }
 
 /** Rename / refresh country for the current identity. 409 on a taken name. */

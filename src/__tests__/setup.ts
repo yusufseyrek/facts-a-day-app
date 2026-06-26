@@ -88,6 +88,28 @@ jest.mock('expo-localization', () => ({
   locale: 'en-US',
 }));
 
+// ── SecureStore (iOS Keychain identity store) ──
+// No-op by default (getItemAsync → null), so identity reads fall back to the
+// AsyncStorage mock below. Tests that exercise the Keychain path override these
+// jest.fn()s with a Map-backed implementation.
+
+jest.mock('expo-secure-store', () => ({
+  __esModule: true,
+  getItemAsync: jest.fn().mockResolvedValue(null),
+  setItemAsync: jest.fn().mockResolvedValue(undefined),
+  deleteItemAsync: jest.fn().mockResolvedValue(undefined),
+  AFTER_FIRST_UNLOCK: 'afterFirstUnlock',
+  WHEN_UNLOCKED: 'whenUnlocked',
+}));
+
+// ── Application (stable device id for reinstall recovery) ──
+
+jest.mock('expo-application', () => ({
+  __esModule: true,
+  getAndroidId: jest.fn(() => 'mock-android-ssaid-0123456789'),
+  getIosIdForVendorAsync: jest.fn().mockResolvedValue('mock-idfv-0123456789'),
+}));
+
 // ── AsyncStorage ──
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
