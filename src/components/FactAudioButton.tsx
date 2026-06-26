@@ -37,7 +37,7 @@ export function FactAudioButton({ track }: FactAudioButtonProps) {
   const isDark = theme === 'dark';
   const colors = hexColors[theme];
 
-  const { currentTrack, isPlaying, isLoading, queue, playNow, enqueue, togglePlayPause } =
+  const { currentTrack, isPlaying, isLoading, queue, playNow, toggleInQueue, togglePlayPause } =
     useAudioQueue();
 
   const isCurrent = currentTrack?.factId === track.factId;
@@ -63,9 +63,9 @@ export function FactAudioButton({ track }: FactAudioButtonProps) {
       return;
     }
     if (hasSession) {
-      // A session is live — append behind it. enqueue de-dupes, so a second tap
-      // on an already-queued fact is a harmless no-op.
-      if (!isQueued) enqueue(track);
+      // A session is live — add this fact behind it, or remove it if it's
+      // already in line (tapping the checked state un-queues it).
+      toggleInQueue(track);
       return;
     }
     // Nothing playing — this becomes the current track and starts immediately.
@@ -78,7 +78,7 @@ export function FactAudioButton({ track }: FactAudioButtonProps) {
       ? t('a11y_pauseFactAudio')
       : showAddToQueue
         ? isQueued
-          ? t('playerAlreadyQueued')
+          ? t('playerRemoveFromQueue')
           : t('playerAddToQueue')
         : t('a11y_playFactAudio');
 
