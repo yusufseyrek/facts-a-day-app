@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 import Reanimated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,6 +22,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
+import { NATIVE_ADS } from '../config/app';
 import { usePremium } from '../contexts';
 import { useFactAudio } from '../hooks/useFactAudio';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
@@ -62,7 +64,7 @@ import { absoluteFillObject } from '../utils/styles';
 import { useResponsive } from '../utils/useResponsive';
 
 import { showRewardedAd } from './ads/RewardedAd';
-import { BannerAd } from './ads';
+import { BannerAd, NativeAdCard } from './ads';
 import { CategoryBadge } from './CategoryBadge';
 import { CloseButton } from './CloseButton';
 import { DialogCard } from './DialogShell';
@@ -1504,6 +1506,16 @@ export function FactModal({
             >
               {/* Comments */}
               <FactComments factId={fact.id} categoryColor={categoryColor} />
+
+              {/* Native ad after the comments section. Keyed by factId into a
+                  small pool so requests stay bounded; collapses (renders null)
+                  for premium / no-fill. LANDSCAPE — SQUARE is home-feed only. */}
+              <NativeAdCard
+                slotKey={`${NATIVE_ADS.FEED.FACT_DETAIL.keyPrefix}-${
+                  fact.id % NATIVE_ADS.FEED.FACT_DETAIL.poolSize
+                }`}
+                aspectRatio={NativeMediaAspectRatio.LANDSCAPE}
+              />
 
               {/* Related Facts */}
               {relatedFacts.length > 0 && onRelatedFactPress && (

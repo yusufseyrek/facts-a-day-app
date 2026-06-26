@@ -118,6 +118,13 @@ export const NATIVE_ADS = {
     FAVORITES: { keyPrefix: 'fav-ad', firstAdIndex: 4, interval: 5, poolSize: 3 },
     /** Trivia results "Question Insights" horizontal cards. */
     TRIVIA_RESULTS: { keyPrefix: 'trv-ad', firstAdIndex: 3, interval: 4, poolSize: 2 },
+    /**
+     * Single ad at the bottom of the fact detail, after the comments section.
+     * Only one fact detail is on screen at a time, so the slot key is keyed by
+     * `factId % poolSize` — bounding requests to `poolSize` while rotating the
+     * creative across facts (no firstAdIndex/interval: it is not a list).
+     */
+    FACT_DETAIL: { keyPrefix: 'fd-ad', poolSize: 3 },
   },
 } as const;
 
