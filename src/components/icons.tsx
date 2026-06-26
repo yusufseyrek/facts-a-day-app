@@ -551,6 +551,16 @@ export const ListPlus = icon([
   [Path, { d: 'M21 12h-6' }],
 ]);
 
+// "Clear the list" — three list rows with an X (vs. Trash2's "delete"). Used by
+// the player's clear-queue control.
+export const ListX = icon([
+  [Path, { d: 'M11 12H3' }],
+  [Path, { d: 'M16 6H3' }],
+  [Path, { d: 'M16 18H3' }],
+  [Path, { d: 'm15 9 6 6' }],
+  [Path, { d: 'm21 9-6 6' }],
+]);
+
 export const SkipBack = icon([
   [Polygon, { points: '19 20 9 12 19 4 19 20' }],
   [Line, { x1: '5', x2: '5', y1: '19', y2: '5' }],

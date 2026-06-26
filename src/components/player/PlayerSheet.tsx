@@ -9,7 +9,7 @@
  * content view's frame and blanks it on cold present). The header is a flow
  * sibling above the real content ScrollView.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
   type GestureResponderEvent,
   type LayoutChangeEvent,
@@ -29,8 +29,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 
 import { LAYOUT } from '../../config/app';
@@ -43,8 +43,10 @@ import {
 import { useAudioSettings } from '../../hooks/useAudioSettings';
 import { useTranslation } from '../../i18n';
 import { hexColors, useTheme } from '../../theme';
+import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
-import { Crown, Moon, Music, Pause, Play, SkipBack, SkipForward, Trash2, X } from '../icons';
+import { GlassSurface } from '../GlassSurface';
+import { Crown, ListX, Moon, Music, Pause, Play, SkipBack, SkipForward, X } from '../icons';
 import { Text } from '../Typography';
 
 import { QueueEqualizerIcon } from './QueueEqualizerIcon';
@@ -197,7 +199,7 @@ function BackgroundPlayRow() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { spacing, radius, iconSizes } = useResponsive();
+  const { spacing, radius, iconSizes, typography } = useResponsive();
   const colors = hexColors[theme];
   const { isPremium } = usePremium();
   const { settings, setAudioSetting } = useAudioSettings();
@@ -262,15 +264,20 @@ function BackgroundPlayRow() {
           backgroundColor: on ? accent : colors.background,
         }}
       >
-        <Moon
-          size={iconSizes.sm}
-          color={on ? colors.background : colors.textSecondary}
-          fill={on ? colors.background : 'transparent'}
-        />
+        {/* Outline glyph at a FIXED size in both states — the active cue is the
+            tile turning accent, not the moon changing weight. Toggling `fill`
+            made the filled crescent read heavier (a perceived size jump). */}
+        <Moon size={iconSizes.sm} color={on ? colors.background : colors.textSecondary} />
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <Text.Label color={colors.text}>{t('playerBackgroundPlay')}</Text.Label>
-        <Text.Caption color={colors.textSecondary} numberOfLines={2}>
+        {/* Reserve two caption lines so swapping the on/off/premium subtitle
+            (different lengths) never reflows the row height. */}
+        <Text.Caption
+          color={colors.textSecondary}
+          numberOfLines={2}
+          style={{ minHeight: typography.lineHeight.caption * 2 }}
+        >
           {subtitle}
         </Text.Caption>
       </View>
@@ -529,14 +536,63 @@ function ArtworkCarousel({
   );
 }
 
+/**
+ * iOS 26 toolbar-style control: the icon rides a circular Liquid Glass pill
+ * (interactive), falling back via GlassSurface to a solid card-tinted circle on
+ * Android / iOS < 26 / reduce-transparency.
+ */
+function GlassIconButton({
+  onPress,
+  label,
+  children,
+}: {
+  onPress: () => void;
+  label: string;
+  children: ReactNode;
+}) {
+  const { theme } = useTheme();
+  const { spacing, iconSizes } = useResponsive();
+  const colors = hexColors[theme];
+  const isDark = theme === 'dark';
+  const size = iconSizes.md + spacing.sm * 2;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={spacing.sm}
+      accessibilityRole="button"
+      aria-label={label}
+      style={({ pressed }) => ({
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        overflow: 'hidden',
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: pressed ? 0.6 : 1,
+      })}
+    >
+      <GlassSurface
+        variant="glass"
+        isDark={isDark}
+        tint={colors.cardBackground}
+        glassTint={isDark ? 'rgba(255,255,255,0.10)' : 'rgba(120,120,128,0.18)'}
+        isInteractive
+        borderRadius={size / 2}
+        style={absoluteFillObject}
+      />
+      {children}
+    </Pressable>
+  );
+}
+
 export function PlayerSheet() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { spacing, radius, iconSizes, screenWidth, isTablet } = useResponsive();
+  const { spacing, iconSizes, screenWidth, isTablet } = useResponsive();
   const insets = useSafeAreaInsets();
   const colors = hexColors[theme];
-  const isDark = theme === 'dark';
   // On tablets the player content is centered in a comfortable reading column
   // instead of stretching edge-to-edge.
   const contentMaxWidth = isTablet ? LAYOUT.MAX_CONTENT_WIDTH : undefined;
@@ -567,29 +623,18 @@ export function PlayerSheet() {
   const headerTopPad = Platform.OS === 'android' ? insets.top + spacing.md : spacing.xxl;
 
   const closeButton = (
-    <Pressable
-      onPress={() => router.back()}
-      hitSlop={spacing.md}
-      accessibilityRole="button"
-      aria-label={t('playerClose')}
-      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: spacing.xs })}
-    >
-      <X size={iconSizes.md} color={colors.textSecondary} />
-    </Pressable>
+    <GlassIconButton onPress={() => router.back()} label={t('playerClose')}>
+      <X size={iconSizes.md} color={colors.text} />
+    </GlassIconButton>
   );
 
   // Clear the whole queue — lives in the header next to close, shown only when
-  // there's something to clear.
+  // there's something to clear. A "clear list" glyph, not a trash can: this
+  // empties the Up Next queue, it doesn't delete the facts.
   const clearButton = (
-    <Pressable
-      onPress={clearQueue}
-      hitSlop={spacing.md}
-      accessibilityRole="button"
-      aria-label={t('playerClearQueue')}
-      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: spacing.xs })}
-    >
-      <Trash2 size={iconSizes.md} color={colors.textSecondary} />
-    </Pressable>
+    <GlassIconButton onPress={clearQueue} label={t('playerClearQueue')}>
+      <ListX size={iconSizes.md} color={colors.text} />
+    </GlassIconButton>
   );
 
   return (
@@ -722,13 +767,10 @@ export function PlayerSheet() {
                     backgroundColor: accent,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    opacity: pressed ? 0.85 : 1,
-                    // Accent glow gives the primary control a tactile, lit feel.
-                    shadowColor: accent,
-                    shadowOpacity: 0.5,
-                    shadowRadius: 14,
-                    shadowOffset: { width: 0, height: 4 },
-                    elevation: 8,
+                    // Flat solid disc (no accent glow) with a subtle press-down —
+                    // an iOS-26 prominent button, not a lit halo.
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.96 : 1 }],
                   })}
                 >
                   {isLoading ? (
