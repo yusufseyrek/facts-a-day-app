@@ -468,6 +468,13 @@ function TriviaLeaderboardComponent({
                 borderRadius={radius.full}
                 paddingVertical={spacing.sm}
                 alignItems="center"
+                // Fill the whole segment so the selected pill is the SAME width on
+                // every tab. The parent Pressable's implicit cross-axis stretch was
+                // unreliable on Android (flex:1 + gap sized middle tabs to content,
+                // shrinking the active pill to hug its label); an explicit 100%
+                // width is deterministic. It also gives the label a definite width
+                // so it truncates to one line instead of wrapping mid-word.
+                width="100%"
               >
                 <Text.Label
                   fontSize={typography.fontSize.caption}
@@ -475,13 +482,10 @@ function TriviaLeaderboardComponent({
                   color={active ? contrastColor : colors.textSecondary}
                   numberOfLines={1}
                   ellipsizeMode="tail"
-                  // Give the label the full segment width as a DEFINITE constraint
-                  // (alignSelf stretch overrides the column's alignItems:center) so
-                  // Android truncates to one line instead of breaking mid-word when
-                  // the active font widens (medium→semibold) or a long locale runs
-                  // out of room. textBreakStrategy=simple stops Android hyphenation.
-                  alignSelf="stretch"
                   textAlign="center"
+                  // textBreakStrategy=simple stops Android breaking the label
+                  // mid-word; the pill's definite width (above) makes it truncate
+                  // cleanly when the active font widens (medium→semibold).
                   textBreakStrategy="simple"
                 >
                   {label}
