@@ -1,4 +1,4 @@
-import { __testing, reportFact } from '../../services/api';
+import { __testing, recoverUser, reportFact } from '../../services/api';
 
 const { fetchWithTimeout, retryWithBackoff } = __testing;
 
@@ -11,6 +11,12 @@ jest.mock('../../services/appCheckToken', () => ({
 // Mock appInfo
 jest.mock('../../utils/appInfo', () => ({
   getAppVersionInfo: jest.fn(() => ({ platformBuildId: 'test-1.0.0' })),
+}));
+
+// makeRequest awaits App Check readiness before issuing any request.
+jest.mock('../../config/appCheckState', () => ({
+  getAppCheckReady: jest.fn().mockResolvedValue(undefined),
+  isAppCheckInitialized: jest.fn().mockReturnValue(true),
 }));
 
 describe('api — fetchWithTimeout', () => {
@@ -216,5 +222,37 @@ describe('api — reportFact', () => {
   it('rejects text longer than 1000 chars', async () => {
     const longText = 'a'.repeat(1001);
     await expect(reportFact(1, longText)).rejects.toThrow('at most 1000 characters');
+  });
+});
+
+describe('api — recoverUser (NO_BINDING is expected, not a failure)', () => {
+  beforeEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  it('returns null and does NOT log an error for the expected 404 NO_BINDING', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ error: 'NO_BINDING', message: 'No account is bound to this device' }),
+        { status: 404 }
+      )
+    );
+
+    await expect(recoverUser('android-ssaid')).resolves.toBeNull();
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('still logs and rethrows an unexpected server error', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    (global.fetch as jest.Mock) = jest
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ error: 'SERVER_ERROR', message: 'boom' }), { status: 500 })
+      );
+
+    await expect(recoverUser('android-ssaid')).rejects.toThrow('boom');
+    expect(errorSpy).toHaveBeenCalledTimes(1);
   });
 });

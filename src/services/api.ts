@@ -306,7 +306,11 @@ async function retryWithBackoff<T>(
 async function makeRequest<T>(
   endpoint: string,
   options: RequestInit = {},
-  skipRetry: boolean = false
+  skipRetry: boolean = false,
+  // HTTP statuses the caller treats as normal control flow rather than failures
+  // (e.g. recoverUser's 404 NO_BINDING). The error is still thrown so the caller
+  // can branch on it — we just don't shout about it in the dev console.
+  expectedStatuses: number[] = []
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
@@ -402,7 +406,9 @@ async function makeRequest<T>(
     }
     return await retryWithBackoff(executeRequest);
   } catch (error) {
-    if (__DEV__) {
+    const status = (error as { status?: number } | null)?.status;
+    const expected = status !== undefined && expectedStatuses.includes(status);
+    if (__DEV__ && !expected) {
       console.error(`API request failed: ${endpoint}`, error);
     }
     throw error;
@@ -597,7 +603,10 @@ export async function recoverUser(
         method: 'POST',
         body: JSON.stringify({ device_id: deviceId, platform: Platform.OS }),
       },
-      true // skipRetry: keep cold-launch snappy; next launch retries anyway
+      true, // skipRetry: keep cold-launch snappy; next launch retries anyway
+      // 404 NO_BINDING ("nothing bound to this device yet") is the expected
+      // outcome on a never-claimed device — handled below, not a real failure.
+      [404]
     );
   } catch (error) {
     if ((error as any)?.status === 404 || (error as any)?.code === 'NO_BINDING') {
