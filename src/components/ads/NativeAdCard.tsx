@@ -95,7 +95,16 @@ function NativeAdCardComponent({
   }
 
   return (
-    <NativeAdView nativeAd={nativeAd} style={needsMargin ? { marginBottom: spacing.md } : undefined}>
+    // `key` ties the native view's lifetime to the specific ad. If the bound ad
+    // ever changes (e.g. a recycled list cell re-pointed at a different pooled
+    // slot), React unmounts this NativeAdView — which destroys it natively and
+    // RELEASES the GMS binding — before mounting a fresh one, instead of an
+    // in-place setNativeAd that crashes when the ad is still bound elsewhere.
+    <NativeAdView
+      key={nativeAd.responseId}
+      nativeAd={nativeAd}
+      style={needsMargin ? { marginBottom: spacing.md } : undefined}
+    >
       <View
         style={{
           borderRadius: radius.lg,

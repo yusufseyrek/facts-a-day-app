@@ -219,9 +219,13 @@ export const LatestCarousel = React.memo(function LatestCarousel({
     []
   );
 
-  // Split FlashList recycle pools so ad cells and fact cards never share a view.
+  // Split FlashList recycle pools so ad cells and fact cards never share a view,
+  // AND give each pooled ad slot its OWN type (item.key) so FlashList never
+  // recycles one ad cell's NativeAdView into a different slot — which would
+  // re-point a live view at another pooled NativeAd still bound elsewhere and
+  // crash GMS setNativeAd with "child already has a parent".
   const getItemType = useCallback(
-    (item: LatestRow) => (isNativeAdPlaceholder(item) ? 'ad' : 'fact'),
+    (item: LatestRow) => (isNativeAdPlaceholder(item) ? item.key : 'fact'),
     []
   );
 

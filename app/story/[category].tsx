@@ -391,9 +391,13 @@ export default function StoryScreen() {
     []
   );
 
-  // Split FlashList recycle pools: ad pages and story pages never share a reusable view.
+  // Split FlashList recycle pools: ad pages and story pages never share a
+  // reusable view, AND each pooled ad slot gets its OWN type (item.key) so
+  // FlashList never recycles one ad page's NativeAdView into a different slot —
+  // which would re-point a live view at another pooled NativeAd still bound
+  // elsewhere and crash GMS setNativeAd with "child already has a parent".
   const getItemType = useCallback(
-    (item: StoryListItem) => (isNativeAdPlaceholder(item) ? 'ad' : 'fact'),
+    (item: StoryListItem) => (isNativeAdPlaceholder(item) ? item.key : 'fact'),
     []
   );
 

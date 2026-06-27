@@ -116,9 +116,14 @@ export const KeepReadingList = forwardRef<FlashListRef<KeepReadingRow>, KeepRead
       []
     );
 
-    // Split FlashList recycle pools so ad rows and fact rows never share a view.
+    // Split FlashList recycle pools so ad rows and fact rows never share a view,
+    // AND give each pooled ad slot its OWN type (item.key) so FlashList never
+    // recycles one ad row's NativeAdView into a different slot. Without this a
+    // recycle re-points a live NativeAdView at another pooled NativeAd that may
+    // still be bound to another realized cell — GMS setNativeAd then crashes
+    // with "child already has a parent".
     const getItemType = useCallback(
-      (item: KeepReadingRow) => (isNativeAdPlaceholder(item) ? 'ad' : 'fact'),
+      (item: KeepReadingRow) => (isNativeAdPlaceholder(item) ? item.key : 'fact'),
       []
     );
 

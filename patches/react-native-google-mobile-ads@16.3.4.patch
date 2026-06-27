@@ -1,0 +1,29 @@
+diff --git a/node_modules/react-native-google-mobile-ads/.bun-tag-fe1e80eb5557ab25 b/.bun-tag-fe1e80eb5557ab25
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeAdView.kt b/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeAdView.kt
+index eecb15788c40f16a3a4ca64e392566f12a176293..c2875d29b9b90cc99896d4013dd2b308bb2e7efc 100644
+--- a/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeAdView.kt
++++ b/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeAdView.kt
+@@ -80,7 +80,20 @@ class ReactNativeGoogleMobileAdsNativeAdView(
+     reloadJob?.cancel()
+     reloadJob = CoroutineScope(Dispatchers.Main).launch {
+       delay(100)
+-      nativeAd?.let { nativeAdView.setNativeAd(it) }
++      nativeAd?.let {
++        try {
++          nativeAdView.setNativeAd(it)
++        } catch (e: IllegalStateException) {
++          // GMS NativeAdView.setNativeAd re-parents the ad's content view via
++          // addView. When the SAME NativeAd is transiently bound to two
++          // NativeAdViews at once — or setNativeAd runs twice for one view
++          // before GMS clears the prior binding — addView throws "The specified
++          // child already has a parent" and crashes the whole app. The state is
++          // transient and self-heals on the next reloadAd once the other view
++          // releases the ad, so swallow it instead of crashing.
++          android.util.Log.w("RNGMA", "setNativeAd skipped (transient double-bind): " + e.message)
++        }
++      }
+       nativeAdView.rootView.requestLayout()
+     }
+   }

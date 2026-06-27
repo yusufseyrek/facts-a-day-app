@@ -21,11 +21,7 @@ import { indexToAnswer, isTextAnswerCorrect } from '../../services/trivia';
 import { hexColors } from '../../theme';
 import { hexToRgba } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
-import {
-  insertNativeAds,
-  isNativeAdPlaceholder,
-  pooledAdKey,
-} from '../../utils/insertNativeAds';
+import { insertNativeAds, isNativeAdPlaceholder } from '../../utils/insertNativeAds';
 import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { BannerAd, NativeAdCard } from '../ads';
@@ -560,10 +556,13 @@ export function TriviaResults({
     return insertNativeAds(base, {
       firstAdIndex: NATIVE_ADS.FEED.TRIVIA_RESULTS.firstAdIndex,
       interval: NATIVE_ADS.FEED.TRIVIA_RESULTS.interval,
-      getAdKey: pooledAdKey(
-        NATIVE_ADS.FEED.TRIVIA_RESULTS.keyPrefix,
-        NATIVE_ADS.FEED.TRIVIA_RESULTS.poolSize
-      ),
+      // This results list is a plain (non-virtualized) horizontal ScrollView
+      // that mounts ALL cards at once, so a POOLED key that repeats would mount
+      // two cells on the same slotKey → two NativeAdViews bound to one NativeAd
+      // → fatal "child already has a parent". Give every ad cell a UNIQUE
+      // per-position slot (bounded by the round's card count) so no two
+      // simultaneously-mounted cells ever share an ad.
+      getAdKey: (_prev, adIndex) => `${NATIVE_ADS.FEED.TRIVIA_RESULTS.keyPrefix}-${adIndex}`,
     }).map((it) => (isNativeAdPlaceholder(it) ? { kind: 'ad' as const, key: it.key } : it));
   }, [questions, unavailableQuestionIds]);
 

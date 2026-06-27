@@ -92,7 +92,13 @@ function StoryNativeAdCardComponent({
   if (!nativeAd) return null;
 
   return (
+    // `key` ties the native view to this specific ad: if the bound ad changes
+    // (recycled story page re-pointed at another pooled slot), React unmounts —
+    // natively destroying/releasing the GMS binding — before remounting,
+    // instead of an in-place setNativeAd that crashes when the ad is bound
+    // elsewhere.
     <NativeAdView
+      key={nativeAd.responseId}
       nativeAd={nativeAd}
       style={{ width: screenWidth, height: screenHeight, overflow: 'hidden' }}
     >

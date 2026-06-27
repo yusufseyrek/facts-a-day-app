@@ -65,7 +65,11 @@ function NativeAdRowComponent({ slotKey, isOdd = false }: NativeAdRowProps) {
   if (!ad) return null;
 
   return (
-    <NativeAdView nativeAd={ad}>
+    // `key` ties the native view to this specific ad: if the bound ad changes
+    // (recycled cell re-pointed at another pooled slot), React unmounts — and
+    // natively destroys/releases the GMS binding — before remounting, instead
+    // of an in-place setNativeAd that crashes when the ad is bound elsewhere.
+    <NativeAdView key={ad.responseId} nativeAd={ad}>
       <View
         style={[
           styles.item,
