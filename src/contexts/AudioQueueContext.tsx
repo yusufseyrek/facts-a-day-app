@@ -87,6 +87,24 @@ interface AudioQueueContextValue {
   pausePlayback: () => void;
 }
 
+/**
+ * Lock-screen / Control Center options for expo-audio's `setActiveForLockScreen`.
+ *
+ * `isLiveStream: false` is the important one. We call `setActiveForLockScreen`
+ * right after `player.replace()`, while the asset's duration is still indefinite,
+ * so expo-audio's auto-detect (`AVPlayerItem.duration.isIndefinite`) sees a "live"
+ * stream and LATCHES it (it computes `isLiveStream` once and never re-checks).
+ * That left Control Center stuck on "LIVE": no scrub bar, seek disabled, only
+ * play/pause. Forcing it false keeps the duration + scrubber; expo-audio fills in
+ * the real duration once the item is ready. Seek buttons surface ±10s controls so
+ * the lock screen offers more than just play/pause.
+ */
+const LOCK_SCREEN_OPTIONS = {
+  isLiveStream: false,
+  showSeekForward: true,
+  showSeekBackward: true,
+} as const;
+
 const noop = () => {};
 
 const AudioQueueContext = createContext<AudioQueueContextValue>({
@@ -212,11 +230,15 @@ export function AudioQueueProvider({ children }: { children: React.ReactNode }) 
   const updateLockScreen = useCallback(
     (track: QueueTrack) => {
       try {
-        player.setActiveForLockScreen(true, {
-          title: track.title,
-          artist: track.category || t('appName'),
-          artworkUrl: track.imageUrl,
-        });
+        player.setActiveForLockScreen(
+          true,
+          {
+            title: track.title,
+            artist: track.category || t('appName'),
+            artworkUrl: track.imageUrl,
+          },
+          LOCK_SCREEN_OPTIONS
+        );
       } catch {
         // not fatal — lock screen metadata is best-effort
       }
