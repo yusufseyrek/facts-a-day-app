@@ -57,6 +57,14 @@ interface FactActionsProps {
    * overlay fills its parent — mounted here the dialog would be squeezed
    * into the bar's box instead of covering the screen. */
   onReportPress: () => void;
+  /**
+   * In the in-tab overlay on Android the persistent tab-bar banner floats a
+   * tab-bar height above the screen bottom (see PersistentTabBarBanner). Pass
+   * that height here and the bar grows to fill the tab-bar slot directly beneath
+   * the banner — its row centered, like the tab bar it stands in for — instead
+   * of sitting at the very bottom with a banner-to-bar gap. Omit elsewhere.
+   */
+  bottomSlotHeight?: number;
 }
 
 const Container = styled(YStack, {
@@ -84,6 +92,7 @@ export function FactActions({
   audioUrl,
   audioLanguage,
   onReportPress,
+  bottomSlotHeight,
 }: FactActionsProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -93,6 +102,9 @@ export function FactActions({
   // iOS 26: frost the bottom action bar with Liquid Glass; opaque elsewhere.
   const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
   const glassTint = isDark ? 'rgba(10,22,40,0.6)' : 'rgba(240,245,252,0.65)';
+  // Safe-area cushion below the action row (gesture/nav bar), with a small
+  // fallback when there's no inset so the row never hugs the screen edge.
+  const bottomInset = insets.bottom > 0 ? insets.bottom : spacing.xs;
 
   // Neon colors for actions
   const heartColor = theme === 'dark' ? hexColors.dark.neonRed : hexColors.light.neonRed;
@@ -383,9 +395,15 @@ export function FactActions({
         borderTopWidth={useGlass ? 0 : 1}
         overflow={useGlass ? undefined : 'hidden'}
         style={{
-          paddingBottom: insets.bottom > 0 ? insets.bottom : spacing.xs,
+          paddingBottom: bottomInset,
           paddingTop: spacing.xs,
           paddingHorizontal: useGlass ? spacing.lg : 0,
+          // Overlay (Android): grow into the tab-bar slot beneath the floating
+          // banner and center the row in it, so the bar reads as sitting
+          // directly under the banner instead of detached at the screen bottom.
+          ...(bottomSlotHeight
+            ? { minHeight: bottomInset + bottomSlotHeight, justifyContent: 'center' as const }
+            : null),
         }}
       >
         {useGlass ? (

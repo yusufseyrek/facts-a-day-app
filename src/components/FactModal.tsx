@@ -1646,6 +1646,12 @@ export function FactModal({
           audioUrl={fact.audio_url ?? undefined}
           audioLanguage={locale}
           onReportPress={() => setShowReportModal(true)}
+          // In the in-tab overlay on Android the persistent tab-bar banner floats
+          // a tab-bar height above the bottom; have the action bar fill that slot
+          // so it sits directly beneath the banner instead of leaving a gap.
+          bottomSlotHeight={
+            inOverlay && Platform.OS === 'android' ? media.tabBarHeight : undefined
+          }
         />
       </View>
 
