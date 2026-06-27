@@ -436,10 +436,6 @@ function TriviaLeaderboardComponent({
         accessibilityRole="tablist"
         backgroundColor={colors.surface}
         borderRadius={radius.full}
-        // Clip the active accent pill to the track's rounded path. Android does
-        // not clip children to a parent's borderRadius without this, so the two
-        // antialiased rounded layers left a visible square fringe at the corners.
-        overflow="hidden"
         padding={spacing.xs}
         gap={spacing.xs}
       >
@@ -468,13 +464,14 @@ function TriviaLeaderboardComponent({
                 borderRadius={radius.full}
                 paddingVertical={spacing.sm}
                 alignItems="center"
-                // Fill the whole segment so the selected pill is the SAME width on
-                // every tab. The parent Pressable's implicit cross-axis stretch was
-                // unreliable on Android (flex:1 + gap sized middle tabs to content,
-                // shrinking the active pill to hug its label); an explicit 100%
-                // width is deterministic. It also gives the label a definite width
-                // so it truncates to one line instead of wrapping mid-word.
+                // width:100% keeps the pill the same size on every tab. overflow:
+                // hidden clips the accent fill to the pill's OWN rounded shape:
+                // on Android the rounded background was dropped on middle tabs
+                // (they rendered as a sharp rectangle while the end tabs looked
+                // rounded only because the track's rounded ends clipped them), so
+                // clipping to the radius here forces a consistent rounded pill.
                 width="100%"
+                overflow="hidden"
               >
                 <Text.Label
                   fontSize={typography.fontSize.caption}
