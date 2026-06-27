@@ -2,7 +2,7 @@
   "expo": {
     "name": "Facts a Day",
     "slug": "facts-a-day-app",
-    "version": "1.3.3",
+    "version": "1.3.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -50,9 +50,7 @@
                   "targetName": "FactsaDayWidget",
                   "bundleIdentifier": "dev.seyrek.factsaday.widget",
                   "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.dev.seyrek.factsaday"
-                    ]
+                    "com.apple.security.application-groups": ["group.dev.seyrek.factsaday"]
                   }
                 }
               ]
@@ -64,11 +62,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.seyrek.factsaday",
-      "buildNumber": "115",
+      "buildNumber": "116",
       "googleServicesFile": "./google/GoogleService-Info.plist",
-      "associatedDomains": [
-        "applinks:factsaday.com"
-      ],
+      "associatedDomains": ["applinks:factsaday.com"],
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false,
@@ -387,16 +383,7 @@
             "SKAdNetworkIdentifier": "xy9t38ct57.skadnetwork"
           }
         ],
-        "CFBundleLocalizations": [
-          "en",
-          "de",
-          "es",
-          "fr",
-          "ja",
-          "ko",
-          "tr",
-          "zh"
-        ]
+        "CFBundleLocalizations": ["en", "de", "es", "fr", "ja", "ko", "tr", "zh"]
       },
       "appleTeamId": "JNM4QM97AV"
     },
@@ -428,10 +415,7 @@
               "pathPattern": "/.*/fact/.*"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
@@ -441,16 +425,7 @@
       [
         "expo-localization",
         {
-          "supportedLocales": [
-            "en",
-            "de",
-            "es",
-            "fr",
-            "ja",
-            "ko",
-            "tr",
-            "zh"
-          ]
+          "supportedLocales": ["en", "de", "es", "fr", "ja", "ko", "tr", "zh"]
         }
       ],
       "@react-native-firebase/app",
