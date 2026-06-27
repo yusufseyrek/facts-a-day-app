@@ -436,6 +436,10 @@ function TriviaLeaderboardComponent({
         accessibilityRole="tablist"
         backgroundColor={colors.surface}
         borderRadius={radius.full}
+        // Clip the active accent pill to the track's rounded path. Android does
+        // not clip children to a parent's borderRadius without this, so the two
+        // antialiased rounded layers left a visible square fringe at the corners.
+        overflow="hidden"
         padding={spacing.xs}
         gap={spacing.xs}
       >
@@ -470,6 +474,15 @@ function TriviaLeaderboardComponent({
                   fontFamily={active ? FONT_FAMILIES.semibold : FONT_FAMILIES.medium}
                   color={active ? contrastColor : colors.textSecondary}
                   numberOfLines={1}
+                  ellipsizeMode="tail"
+                  // Give the label the full segment width as a DEFINITE constraint
+                  // (alignSelf stretch overrides the column's alignItems:center) so
+                  // Android truncates to one line instead of breaking mid-word when
+                  // the active font widens (medium→semibold) or a long locale runs
+                  // out of room. textBreakStrategy=simple stops Android hyphenation.
+                  alignSelf="stretch"
+                  textAlign="center"
+                  textBreakStrategy="simple"
                 >
                   {label}
                 </Text.Label>

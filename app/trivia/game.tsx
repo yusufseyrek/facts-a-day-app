@@ -188,18 +188,6 @@ export default function TriviaGameScreen() {
     trackScreenView(Screens.TRIVIA_GAME);
   }, []);
 
-  // Trivia games are premium — defense-in-depth for the direct/deep-link route
-  // (factsaday://trivia/game?type=...) which bypasses the hub's start gate. Gate
-  // on the cache-backed isPremium, which is reliable offline (isLoading never
-  // settles offline, so it can't be part of the condition). Only the real
-  // game-start modes are gated: quick quizzes (spawned from a fact) and session
-  // review (params.sessionId — viewing your own past results) stay open.
-  // router.replace so back doesn't return to a dead game screen.
-  useEffect(() => {
-    if (params.sessionId || triviaMode === 'quick') return;
-    if (!isPremium) router.replace('/paywall?source=trivia');
-  }, [isPremium, triviaMode, params.sessionId, router]);
-
   // Check if explanation hint is available today
   const checkHintAvailability = async () => {
     const canUse = await triviaService.canUseExplanationHint();

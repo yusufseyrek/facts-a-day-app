@@ -11,7 +11,7 @@ import { ArrowRight, Sparkles, Trophy } from '../../../src/components/icons';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { TriviaGridCard, TriviaIntroModal, TriviaStatsHero } from '../../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
-import { usePremium, useScrollToTopHandler } from '../../../src/contexts';
+import { useScrollToTopHandler } from '../../../src/contexts';
 import { useHeaderContentGap } from '../../../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackScreenView } from '../../../src/services/analytics';
@@ -31,7 +31,6 @@ export default function TriviaScreen() {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const navigation = useNavigation();
-  const { isPremium } = usePremium();
   const isDark = theme === 'dark';
   const { isTablet, typography, config, iconSizes, spacing, radius } = useResponsive();
   const headerGap = useHeaderContentGap();
@@ -220,22 +219,8 @@ export default function TriviaScreen() {
     });
   }, [navigation, allTimeRank, isDark, router, spacing, iconSizes]);
 
-  // Trivia is a premium feature. Gate every start path on the cached premium
-  // flag (usePremium().isPremium is seeded from cache and trusted offline), so
-  // a free user gets the paywall instead of the intro modal — enforced the same
-  // whether online or offline (where the gate previously never fired because the
-  // question fetch was the only thing that failed). Returns false when blocked.
-  const ensurePremium = () => {
-    if (!isPremium) {
-      router.push('/paywall?source=trivia');
-      return false;
-    }
-    return true;
-  };
-
-  // Show intro modal before starting trivia
+  // Show intro modal before starting trivia. Trivia is free — no premium gate.
   const showDailyTriviaIntro = () => {
-    if (!ensurePremium()) return;
     setPendingTrivia({
       type: 'daily',
       questionCount: Math.min(dailyQuestionsCount, triviaService.DAILY_TRIVIA_QUESTIONS),
@@ -247,7 +232,6 @@ export default function TriviaScreen() {
   };
 
   const showMixedTriviaIntro = () => {
-    if (!ensurePremium()) return;
     setPendingTrivia({
       type: 'mixed',
       questionCount: Math.min(mixedQuestionsCount, triviaService.MIXED_TRIVIA_QUESTIONS),
@@ -259,7 +243,6 @@ export default function TriviaScreen() {
   };
 
   const showCategoryTriviaIntro = (category: CategoryWithProgress) => {
-    if (!ensurePremium()) return;
     // Category sessions fetch a fixed number of questions from the API on start;
     // there's no local pool to subtract a "mastered" count from. Show the
     // session size (clamped at fetch time if a category has fewer available).

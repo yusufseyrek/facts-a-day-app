@@ -1146,7 +1146,20 @@ export function FactModal({
                   : bottomBarHeight,
               }
             : inOverlay
-              ? { paddingBottom: insets.bottom + media.tabBarHeight + persistentBannerInset }
+              ? {
+                  // Android seats the in-flow action bar in the tab-bar slot
+                  // (insets.bottom + media.tabBarHeight), which already shrinks the
+                  // scroll viewport — so only the persistent banner's upward
+                  // overhang needs reserving. Adding the slot again double-counted
+                  // it and left a dead gap below the article. (persistentBannerInset
+                  // is 0 when no ad fills, so nothing is reserved then.) Pre-26 iOS
+                  // (non-glass) doesn't seat the bar in the slot, so it still needs
+                  // the full reservation.
+                  paddingBottom:
+                    Platform.OS === 'android'
+                      ? persistentBannerInset
+                      : insets.bottom + media.tabBarHeight + persistentBannerInset,
+                }
               : undefined
         }
         // NO removeClippedSubviews here: on Android Fabric, removing clipped
