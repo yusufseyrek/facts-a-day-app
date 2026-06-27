@@ -5,6 +5,7 @@ export {
   usePlaybackProgress,
 } from './AudioQueueContext';
 export { BadgeToastProvider } from './BadgeToastContext';
+export { FactCardMenuProvider, useFactCardMenu } from './FactCardMenuContext';
 export { OnboardingProvider, useOnboarding } from './OnboardingContext';
 export { PremiumProvider, usePremium } from './PremiumContext';
 export { ReviewPromptProvider } from './ReviewPromptContext';

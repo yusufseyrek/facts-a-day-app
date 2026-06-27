@@ -5,6 +5,7 @@ import Animated from 'react-native-reanimated';
 import { Image } from 'expo-image';
 
 import { IMAGE_PLACEHOLDER, IMAGE_RETRY } from '../config/images';
+import { useFactCardMenu } from '../contexts';
 import { useFactMorphSource } from '../hooks/useFactMorphSource';
 import { usePressFeedback } from '../hooks/usePressFeedback';
 import { useResolvedImageUri } from '../hooks/useResolvedImageUri';
@@ -41,6 +42,7 @@ const CompactFactCardComponent = ({
   const { theme } = useTheme();
   const { spacing, radius, media, typography, iconSizes } = useResponsive();
   const colors = hexColors[theme];
+  const openFactMenu = useFactCardMenu();
 
   const thumbnailSize = imageSize ?? media.compactCardThumbnailSize;
 
@@ -157,6 +159,7 @@ const CompactFactCardComponent = ({
     >
       <Pressable
         onPress={onPress}
+        onLongPress={fact.audio_url ? () => openFactMenu(fact) : undefined}
         onPressIn={handlePressIn}
         onPressOut={onPressOut}
         android_ripple={androidRipple(theme === 'dark')}

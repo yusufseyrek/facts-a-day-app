@@ -5,7 +5,7 @@ import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 
 import { LAYOUT, NATIVE_ADS } from '../../config/app';
-import { signalHeroImageReady } from '../../contexts';
+import { signalHeroImageReady, useFactCardMenu } from '../../contexts';
 import { useAdForSlot } from '../../hooks/useAdForSlot';
 import { useTranslation } from '../../i18n';
 import { trackCarouselSwipe } from '../../services/analytics';
@@ -91,6 +91,7 @@ export const LatestCarousel = React.memo(function LatestCarousel({
   const { t } = useTranslation();
   const { spacing, screenWidth, config, iconSizes } = useResponsive();
   const colors = hexColors[theme];
+  const openFactMenu = useFactCardMenu();
 
   const contentWidth = Math.min(screenWidth, LAYOUT.MAX_CONTENT_WIDTH);
   const listInset = (screenWidth - contentWidth) / 2 + spacing.md;
@@ -169,6 +170,7 @@ export const LatestCarousel = React.memo(function LatestCarousel({
             category={item.categoryData || item.category}
             categorySlug={item.categoryData?.slug || item.category}
             onPress={() => onFactPress(item, 'home_latest', factIds, factIndex)}
+            onLongPress={item.audio_url ? () => openFactMenu(item) : undefined}
             cardWidth={cardWidth}
             aspectRatio={1}
             titleNumberOfLines={5}
@@ -181,7 +183,7 @@ export const LatestCarousel = React.memo(function LatestCarousel({
         </View>
       );
     },
-    [cardWidth, cardHeight, onFactPress, factIds, itemStyle, isPremium]
+    [cardWidth, cardHeight, onFactPress, factIds, itemStyle, isPremium, openFactMenu]
   );
 
   const keyExtractor = useCallback(

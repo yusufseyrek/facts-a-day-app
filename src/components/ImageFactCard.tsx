@@ -36,6 +36,10 @@ interface ImageFactCardProps {
   category?: string | Category;
   categorySlug?: string;
   onPress: () => void;
+  /** Long-press opens the fact context menu (add to play queue). Parent supplies
+   *  it (this card has no audio data); pass it only when the fact has audio so
+   *  the menu never opens with a dead-end action. */
+  onLongPress?: () => void;
   isTablet?: boolean;
   /** Optional testID for automated testing with Maestro */
   testID?: string;
@@ -65,6 +69,7 @@ const ImageFactCardComponent = ({
   factId,
   category,
   onPress,
+  onLongPress,
   isTablet: _isTabletProp = false,
   testID,
   onImageReady,
@@ -326,6 +331,7 @@ const ImageFactCardComponent = ({
       >
         <Pressable
           onPress={onPress}
+          onLongPress={onLongPress}
           onPressIn={onPressIn}
           onPressOut={onPressOut}
           android_ripple={androidRipple}
@@ -380,6 +386,7 @@ const ImageFactCardComponent = ({
       <Pressable
         ref={cardRef}
         onPress={onPress}
+        onLongPress={onLongPress}
         onPressIn={handlePressIn}
         onPressOut={onPressOut}
         android_ripple={androidRipple}

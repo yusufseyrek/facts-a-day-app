@@ -62,6 +62,7 @@ import { asyncStoragePersister, persistMaxAge, queryClient } from '../src/config
 import {
   AudioQueueProvider,
   BadgeToastProvider,
+  FactCardMenuProvider,
   OnboardingProvider,
   PremiumProvider,
   ReviewPromptProvider,
@@ -765,9 +766,11 @@ export default function RootLayout() {
                               <NavigationThemeWrapper>
                                 <ReviewPromptProvider>
                                   <BadgeToastProvider>
-                                    <IdleInterstitialGate>
-                                      <AppContent />
-                                    </IdleInterstitialGate>
+                                    <FactCardMenuProvider>
+                                      <IdleInterstitialGate>
+                                        <AppContent />
+                                      </IdleInterstitialGate>
+                                    </FactCardMenuProvider>
                                   </BadgeToastProvider>
                                 </ReviewPromptProvider>
                               </NavigationThemeWrapper>

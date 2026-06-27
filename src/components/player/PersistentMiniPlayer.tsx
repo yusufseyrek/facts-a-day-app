@@ -48,6 +48,22 @@ export function PersistentMiniPlayer() {
   const factOverlayOpen = useFactOverlay() !== null;
 
   const root = segments[0];
+  // Pushed (second-level) tab screens carry a back control in the header's
+  // top-LEFT corner — exactly where the iOS pill floats. The floating pill then
+  // sits on top of the back chevron and steals its tap (a "back" press lands on
+  // the pill's open-player zone, double-pushing /player and crashing). On these
+  // screens the queue control moves into the native header-RIGHT instead (see
+  // the trivia + settings layouts), so the floating pill is suppressed here:
+  //  - the offline library (pushed under (settings)),
+  //  - any pushed trivia screen (performance/leaderboard/categories/history);
+  //    the trivia INDEX is a tab root with an empty top-left, so it keeps the
+  //    pill. Scoped to the trivia stack so settings/categories is unaffected.
+  const onPushedTriviaScreen =
+    segments.includes('trivia') &&
+    (segments.includes('performance') ||
+      segments.includes('leaderboard') ||
+      segments.includes('categories') ||
+      segments.includes('history'));
   const hidden =
     root === 'player' ||
     root === 'onboarding' ||
@@ -55,6 +71,8 @@ export function PersistentMiniPlayer() {
     root === 'fact' || // fact-detail card + modal routes
     root === 'story' || // story viewer owns its chrome (close X + bottom overlay), both modal + morph
     segments.includes('(search)') || // search tab: the native search field owns the top row
+    segments.includes('library') || // offline library: queue control lives in headerRight
+    onPushedTriviaScreen || // pushed trivia screens: queue control lives in headerRight
     factOverlayOpen; // in-tab morph fact overlay (same tab segments, so read the store)
 
   if (hidden) return null;

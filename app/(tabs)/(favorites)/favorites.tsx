@@ -27,6 +27,7 @@ import { ImageFactCard } from '../../../src/components/ImageFactCard';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { LAYOUT, NATIVE_ADS } from '../../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
+import { useFactCardMenu } from '../../../src/contexts';
 import { useHeaderContentGap } from '../../../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../../../src/i18n';
 import {
@@ -59,6 +60,7 @@ interface FactListItemProps {
 
 const FactListItem = React.memo(
   ({ item, onPress }: FactListItemProps) => {
+    const openFactMenu = useFactCardMenu();
     const handlePress = useCallback(() => {
       onPress(item);
     }, [item, onPress]);
@@ -72,6 +74,7 @@ const FactListItem = React.memo(
           category={item.categoryData || item.category}
           categorySlug={item.categoryData?.slug || item.category}
           onPress={handlePress}
+          onLongPress={item.audio_url ? () => openFactMenu(item) : undefined}
           showOfflineSave
         />
       </ContentContainer>

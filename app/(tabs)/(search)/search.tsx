@@ -21,7 +21,7 @@ import { ImageFactCard } from '../../../src/components/ImageFactCard';
 import { styled, View, XStack, YStack } from '../../../src/components/Stacks';
 import { LAYOUT, NATIVE_ADS } from '../../../src/config/app';
 import { FLASH_LIST_SETTINGS } from '../../../src/config/factListSettings';
-import { useScrollToTopHandler } from '../../../src/contexts';
+import { useFactCardMenu, useScrollToTopHandler } from '../../../src/contexts';
 import { useSeedFactDetailsCache } from '../../../src/hooks/useFactDetail';
 import { useHeaderContentGap } from '../../../src/hooks/useGlassHeaderOptions';
 import { useTranslation } from '../../../src/i18n';
@@ -79,6 +79,7 @@ interface FactListItemProps {
 
 const FactListItem = React.memo(
   ({ item, isTablet, onPress, selectedCategory }: FactListItemProps) => {
+    const openFactMenu = useFactCardMenu();
     const handlePress = useCallback(() => {
       onPress(item);
     }, [item, onPress]);
@@ -92,6 +93,7 @@ const FactListItem = React.memo(
           category={selectedCategory || item.categoryData || item.category}
           categorySlug={selectedCategory?.slug || item.categoryData?.slug || item.category}
           onPress={handlePress}
+          onLongPress={item.audio_url ? () => openFactMenu(item) : undefined}
           isTablet={isTablet}
           showOfflineSave
         />
@@ -396,13 +398,18 @@ function SearchScreen() {
       factIdList?: number[],
       indexInList?: number
     ) => {
-      // Resign the search bar's first responder BEFORE navigating. On iOS, UIKit
-      // otherwise captures it as the first responder to restore when we pop back
-      // from the fact, so the keyboard springs up unbidden the moment the fact
-      // closes. Dismissing it here means there's nothing to restore — the field
-      // stays unfocused on return. blur() ≠ cancel, so the UISearchController
-      // stays active and the iOS-26 tab-bar ✕ keeps working.
-      if (Platform.OS === 'ios') searchBarRef.current?.blur();
+      // Resign the search field's first responder BEFORE opening the fact —
+      // cross-platform now, not iOS-only.
+      // Android: a result opens an in-tab morph overlay that mounts ON TOP of the
+      // still-mounted search screen, so the native header SearchView keeps focus
+      // and the soft keyboard stays raised over the detail. blur() →
+      // SearchView.clearFocus() drops the keyboard without collapsing the search
+      // (the query/results survive).
+      // iOS: this also stops UIKit restoring the UISearchController first
+      // responder on pop, so the keyboard doesn't spring back when the fact
+      // closes. blur() ≠ cancel, so the controller stays active and the iOS-26
+      // tab-bar ✕ keeps working.
+      searchBarRef.current?.blur();
       openFactDetail(router, fact.id, { source, factIds: factIdList, currentIndex: indexInList });
     },
     [router]
@@ -539,11 +546,12 @@ function SearchScreen() {
   const handleCategoryPress = useCallback(
     async (categorySlug: string) => {
       // Selecting a category pill from the (focused) search field: dismiss the
-      // keyboard. The pills sit below the active search bar, and RN's tap-to-
-      // dismiss doesn't reach the native UISearchController, so without this the
-      // keyboard stays up over the category browse. blur() ≠ cancel, so the
-      // controller stays active.
-      if (Platform.OS === 'ios') searchBarRef.current?.blur();
+      // keyboard so it doesn't stay up over the category browse. The pills sit
+      // below the active search field, and RN's tap-to-dismiss doesn't reach the
+      // native search controller (UISearchController on iOS, SearchView on
+      // Android), so blur it explicitly on both. blur() ≠ cancel, so the
+      // controller stays active and the query/scope survive.
+      searchBarRef.current?.blur();
       // If tapping the same category, deselect it
       if (selectedCategorySlug === categorySlug) {
         setSelectedCategorySlug(null);

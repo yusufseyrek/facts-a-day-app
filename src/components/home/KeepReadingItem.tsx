@@ -4,6 +4,7 @@ import Animated from 'react-native-reanimated';
 
 import { Image } from 'expo-image';
 
+import { useFactCardMenu } from '../../contexts';
 import { useFactMorphSource } from '../../hooks/useFactMorphSource';
 import { usePressFeedback } from '../../hooks/usePressFeedback';
 import { useResolvedImageUri } from '../../hooks/useResolvedImageUri';
@@ -30,6 +31,7 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
   const { theme } = useTheme();
   const { spacing, media } = useResponsive();
   const colors = hexColors[theme];
+  const openFactMenu = useFactCardMenu();
   const resolvedUri = useResolvedImageUri(fact.id, fact.image_url);
 
   const imageSize = media.keepReadingImageSize;
@@ -78,6 +80,7 @@ export const KeepReadingItem = React.memo(function KeepReadingItem({
     <Animated.View style={pressStyle}>
       <Pressable
         onPress={handlePress}
+        onLongPress={fact.audio_url ? () => openFactMenu(fact) : undefined}
         onPressIn={handlePressIn}
         onPressOut={onPressOut}
         style={[
