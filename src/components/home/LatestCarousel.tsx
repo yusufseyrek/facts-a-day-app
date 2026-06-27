@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo, useRef } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { NativeScrollEvent, NativeSyntheticEvent, View, type ViewStyle } from 'react-native';
 import { NativeMediaAspectRatio } from 'react-native-google-mobile-ads';
 
@@ -7,6 +7,7 @@ import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { LAYOUT, NATIVE_ADS } from '../../config/app';
 import { signalHeroImageReady, useFactCardMenu } from '../../contexts';
 import { useAdForSlot } from '../../hooks/useAdForSlot';
+import { useFailedAdSlots } from '../../hooks/useFailedAdSlots';
 import { useTranslation } from '../../i18n';
 import { trackCarouselSwipe } from '../../services/analytics';
 import { hexColors, useTheme } from '../../theme';
@@ -45,24 +46,43 @@ type LatestRow = FactWithRelations | NativeAdPlaceholder;
 
 /**
  * Square native ad cell for the Latest carousel. Subscribes to a pooled ad slot
- * and ALWAYS reserves the full card width (via `itemStyle`) so the carousel's
- * fixed `snapToInterval` grid stays aligned whether or not the slot has filled.
- * Shows a shimmer while the ad loads; a no-fill leaves a blank (but
- * correctly-sized) slot rather than shifting every card after it.
+ * and reserves a shimmer at the full card width while the ad loads, so the
+ * `snapToInterval` grid stays aligned during the fetch. On a terminal no-fill it
+ * reports the slot up via `onFailed` and the parent drops this placeholder, so
+ * the cell leaves no blank gap.
+ *
+ * The report is gated on `index >= activeIndexRef.current`: a horizontal
+ * FlashList does NOT re-anchor on data change (maintainVisibleContentPosition is
+ * force-disabled when `horizontal`), so dropping a cell BEFORE the focused card
+ * would slide that card sideways. Removing the focused card itself (next fact
+ * snaps into its place) or one ahead of it (off-screen) never moves what the
+ * user is looking at. An ad that no-fills after being scrolled past is left as a
+ * reserved — but off-screen, so invisible — cell rather than jumping the view.
  */
 const LatestAdCell = memo(function LatestAdCell({
   slotKey,
+  index,
+  activeIndexRef,
   cardWidth,
   cardHeight,
   itemStyle,
+  onFailed,
 }: {
   slotKey: string;
+  index: number;
+  activeIndexRef: React.MutableRefObject<number>;
   cardWidth: number;
   cardHeight: number;
   itemStyle: ViewStyle;
+  onFailed: (key: string) => void;
 }) {
   const { ad, status } = useAdForSlot(slotKey, NativeMediaAspectRatio.SQUARE);
   const { spacing } = useResponsive();
+
+  useEffect(() => {
+    if (status === 'failed' && index >= activeIndexRef.current) onFailed(slotKey);
+  }, [status, index, slotKey, onFailed, activeIndexRef]);
+
   return (
     <View style={itemStyle}>
       {ad ? (
@@ -105,16 +125,21 @@ export const LatestCarousel = React.memo(function LatestCarousel({
 
   const activeIndexRef = useRef(0);
 
+  // Drop ad cells whose slot reported a no-fill, so they leave no blank gap.
+  const { markAdFailed, dropFailedAds } = useFailedAdSlots(facts);
+
   // Interleave a small bounded pool of native ad placeholders (2 across the 10
   // cards). insertNativeAds returns `facts` unchanged for premium / ads-off.
   const data = useMemo<LatestRow[]>(
     () =>
-      insertNativeAds(facts, {
-        firstAdIndex: NATIVE_ADS.FEED.LATEST.firstAdIndex,
-        interval: NATIVE_ADS.FEED.LATEST.interval,
-        getAdKey: pooledAdKey(NATIVE_ADS.FEED.LATEST.keyPrefix, NATIVE_ADS.FEED.LATEST.poolSize),
-      }),
-    [facts]
+      dropFailedAds(
+        insertNativeAds(facts, {
+          firstAdIndex: NATIVE_ADS.FEED.LATEST.firstAdIndex,
+          interval: NATIVE_ADS.FEED.LATEST.interval,
+          getAdKey: pooledAdKey(NATIVE_ADS.FEED.LATEST.keyPrefix, NATIVE_ADS.FEED.LATEST.poolSize),
+        })
+      ),
+    [facts, isPremium, dropFailedAds]
   );
 
   const handleScroll = useCallback(
@@ -147,14 +172,17 @@ export const LatestCarousel = React.memo(function LatestCarousel({
   const separatorStyle = useMemo(() => ({ width: cardGap }), [cardGap]);
 
   const renderItem = useCallback(
-    ({ item }: { item: LatestRow; index: number }) => {
+    ({ item, index }: { item: LatestRow; index: number }) => {
       if (isNativeAdPlaceholder(item)) {
         return (
           <LatestAdCell
             slotKey={item.key}
+            index={index}
+            activeIndexRef={activeIndexRef}
             cardWidth={cardWidth}
             cardHeight={cardHeight}
             itemStyle={itemStyle}
+            onFailed={markAdFailed}
           />
         );
       }
@@ -183,7 +211,7 @@ export const LatestCarousel = React.memo(function LatestCarousel({
         </View>
       );
     },
-    [cardWidth, cardHeight, onFactPress, factIds, itemStyle, isPremium, openFactMenu]
+    [cardWidth, cardHeight, onFactPress, factIds, itemStyle, isPremium, openFactMenu, markAdFailed]
   );
 
   const keyExtractor = useCallback(

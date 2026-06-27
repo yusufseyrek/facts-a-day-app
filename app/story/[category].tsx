@@ -28,6 +28,7 @@ import { useStoryMorph } from '../../src/components/storyMorph/StoryMorphContext
 import { FONT_FAMILIES, Text } from '../../src/components/Typography';
 import { NATIVE_ADS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts';
+import { useFailedAdSlots } from '../../src/hooks/useFailedAdSlots';
 import { useResolvedImageUri } from '../../src/hooks/useResolvedImageUri';
 import { useTranslation } from '../../src/i18n';
 import {
@@ -118,29 +119,21 @@ export default function StoryScreen() {
     }
   }, []);
 
-  const [failedAdKeys, setFailedAdKeys] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    setFailedAdKeys(new Set());
-  }, [facts]);
-
-  const handleAdFailed = useCallback((key: string) => {
-    setFailedAdKeys((prev) => {
-      const next = new Set(prev);
-      next.add(key);
-      return next;
-    });
-  }, []);
+  // Drop ad pages whose slot reported a no-fill, so the list closes the gap and
+  // the next fact takes the page's place instead of trapping the user on a blank.
+  const { markAdFailed, dropFailedAds } = useFailedAdSlots(facts);
 
   const storyDataWithAds = useMemo(
     () =>
-      insertNativeAds(
-        facts,
-        NATIVE_ADS.FIRST_AD_INDEX.STORY,
-        undefined,
-        NATIVE_ADS.STORY_AD_INTERVAL
-      ).filter((item) => !isNativeAdPlaceholder(item) || !failedAdKeys.has(item.key)),
-    [facts, isPremium, failedAdKeys]
+      dropFailedAds(
+        insertNativeAds(
+          facts,
+          NATIVE_ADS.FIRST_AD_INDEX.STORY,
+          undefined,
+          NATIVE_ADS.STORY_AD_INTERVAL
+        )
+      ),
+    [facts, isPremium, dropFailedAds]
   );
 
   // Orientation change: clear FlashList layout cache (must run during render,
@@ -322,7 +315,7 @@ export default function StoryScreen() {
       // page's place immediately.
       if (landedAdKey !== null && !scrollLocked) {
         if (!hasReadyAd(landedAdKey)) {
-          handleAdFailed(landedAdKey);
+          markAdFailed(landedAdKey);
           return;
         }
         setScrollLocked(true);
@@ -340,7 +333,7 @@ export default function StoryScreen() {
         }, NATIVE_ADS.NAV_LOCK_DURATION_MS);
       }
     },
-    [category, scrollLocked, adPauseProgress, handleAdFailed]
+    [category, scrollLocked, adPauseProgress, markAdFailed]
   );
 
   const viewabilityConfig = useMemo(
@@ -376,7 +369,7 @@ export default function StoryScreen() {
             screenWidth={screenWidth}
             screenHeight={screenHeight}
             slotKey={item.key}
-            onAdFailed={() => handleAdFailed(item.key)}
+            onAdFailed={() => markAdFailed(item.key)}
           />
         );
       }
@@ -390,7 +383,7 @@ export default function StoryScreen() {
         />
       );
     },
-    [screenWidth, screenHeight, triggerPrefetch, handleAdFailed]
+    [screenWidth, screenHeight, triggerPrefetch, markAdFailed]
   );
 
   const keyExtractor = useCallback(
