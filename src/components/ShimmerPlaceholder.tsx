@@ -7,6 +7,11 @@ interface ShimmerPlaceholderProps {
   width: number | `${number}%`;
   height: number;
   borderRadius?: number;
+  /** Override the placeholder fill. Defaults to the theme border tone; pass a
+   * translucent light colour when the placeholder sits on a coloured surface
+   * (e.g. the leaderboard podium's blue gradient) where the border tone would
+   * disappear. */
+  color?: string;
   style?: ViewStyle;
 }
 
@@ -14,6 +19,7 @@ export function ShimmerPlaceholder({
   width,
   height,
   borderRadius = 8,
+  color,
   style,
 }: ShimmerPlaceholderProps) {
   const { theme } = useTheme();
@@ -46,7 +52,7 @@ export function ShimmerPlaceholder({
           width,
           height,
           borderRadius,
-          backgroundColor: colors.border,
+          backgroundColor: color ?? colors.border,
           opacity: shimmerAnim.interpolate({
             inputRange: [0, 1],
             outputRange: [0.3, 0.6],

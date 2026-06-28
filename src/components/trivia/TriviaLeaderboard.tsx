@@ -253,6 +253,15 @@ function LeaderboardSkeleton() {
   const { theme } = useTheme();
   const { spacing, radius, borderWidths, media } = useResponsive();
   const colors = hexColors[theme];
+  // Same accent → contrast → plate derivation as the real podium so the loading
+  // box renders the identical blue gradient, decorative circles and plinths.
+  const accent = colors.primary;
+  const contrastColor = getContrastColor(accent);
+  const plateBg = contrastColor === '#000000' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.22)';
+  // The player-info marks sit on the blue gradient, where the theme border tone
+  // (a dark blue) would vanish — shimmer a translucent tint of the contrast
+  // colour instead so they read as placeholders against the fill.
+  const markColor = contrastColor === '#000000' ? 'rgba(0,0,0,0.32)' : 'rgba(255,255,255,0.9)';
   const disc = media.topicCardSize * 0.62;
   // 2nd, 1st, 3rd — same column order and plinth heights as the real podium,
   // derived from the same single base so the two stay proportional.
@@ -265,36 +274,77 @@ function LeaderboardSkeleton() {
 
   return (
     <YStack gap={spacing.lg}>
-      {/* Podium frame */}
-      <YStack
-        backgroundColor={colors.cardBackground}
-        borderRadius={radius.xl}
-        paddingHorizontal={spacing.lg}
-        paddingTop={spacing.xl}
-        overflow="hidden"
-      >
-        <XStack alignItems="flex-end" gap={spacing.md}>
-          {columns.map((c, i) => (
-            <YStack
-              key={i}
-              flex={1}
-              alignItems="center"
-              gap={spacing.sm}
-              justifyContent="flex-end"
-            >
-              <ShimmerPlaceholder width={c.d} height={c.d} borderRadius={c.d / 2} />
-              <ShimmerPlaceholder width="70%" height={12} />
-              <ShimmerPlaceholder width={28} height={18} />
-              <ShimmerPlaceholder
-                width="100%"
-                height={c.plinth}
-                borderRadius={radius.md}
-                style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}
-              />
-            </YStack>
-          ))}
-        </XStack>
-      </YStack>
+      {/* Podium frame — mirrors the real podium hero (blue gradient + the two
+          decorative circles + translucent plinths) so the box background stays
+          constant across the loading→loaded swap; only the per-player info
+          (avatar / name / score) shimmers on top. */}
+      <View style={[styles.heroShadow, { borderRadius: radius.xl, shadowColor: accent }]}>
+        <LinearGradient
+          colors={[accent, darkenColor(accent, 0.22)]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ borderRadius: radius.xl, overflow: 'hidden' }}
+        >
+          {/* Layered decorative circles — identical to the loaded podium. */}
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: -disc * 0.8,
+              right: -disc * 0.6,
+              width: disc * 2.2,
+              height: disc * 2.2,
+              borderRadius: disc * 1.1,
+              backgroundColor:
+                contrastColor === '#000000' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.10)',
+            }}
+          />
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              bottom: -disc * 0.9,
+              left: -disc * 0.5,
+              width: disc * 1.8,
+              height: disc * 1.8,
+              borderRadius: disc * 0.9,
+              backgroundColor:
+                contrastColor === '#000000' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.07)',
+            }}
+          />
+          <XStack
+            alignItems="flex-end"
+            gap={spacing.md}
+            paddingHorizontal={spacing.lg}
+            paddingTop={spacing.xl}
+          >
+            {columns.map((c, i) => (
+              <YStack
+                key={i}
+                flex={1}
+                alignItems="center"
+                gap={spacing.sm}
+                justifyContent="flex-end"
+              >
+                <ShimmerPlaceholder width={c.d} height={c.d} borderRadius={c.d / 2} color={markColor} />
+                <YStack alignItems="center" gap={4}>
+                  <ShimmerPlaceholder width={c.d} height={13} color={markColor} />
+                  <ShimmerPlaceholder width={c.d * 0.6} height={20} color={markColor} />
+                </YStack>
+                {/* Plinth = static translucent plate (part of the box), matching
+                    the loaded podium minus its rank number. */}
+                <YStack
+                  alignSelf="stretch"
+                  height={c.plinth}
+                  borderTopLeftRadius={radius.md}
+                  borderTopRightRadius={radius.md}
+                  backgroundColor={plateBg}
+                />
+              </YStack>
+            ))}
+          </XStack>
+        </LinearGradient>
+      </View>
 
       {/* Ranked rows frame */}
       <YStack
