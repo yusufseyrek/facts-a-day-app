@@ -33,6 +33,7 @@ import {
 import * as Haptics from 'expo-haptics';
 
 import { useTranslation } from '../i18n';
+import { maybeShowQueueNextFactInterstitial } from '../services/adManager';
 import {
   trackFactAudioCompleted,
   trackFactAudioPause,
@@ -210,6 +211,11 @@ export function AudioQueueProvider({ children }: { children: React.ReactNode }) 
   const durationRef = useRef(0);
   // Fire the completion event exactly once per track finish.
   const finishGuardRef = useRef(false);
+  // True while a between-facts interstitial is showing and the auto-advance is
+  // awaiting it. Holds finishGuardRef pinned so a stray status frame during the
+  // (multi-second) ad can't reset the guard and re-enter handleFinish — which
+  // would stack a second advance / ad attempt.
+  const queueAdInFlightRef = useRef(false);
 
   // Pause WITHOUT haptics/analytics — the queue's audio-focus "yield" callback.
   // Stable identity (deps only on the lifetime-stable player), so it doubles as
@@ -324,7 +330,7 @@ export function AudioQueueProvider({ children }: { children: React.ReactNode }) 
 
   // ── Status subscription: drives play state, progress, and auto-advance ──
   useEffect(() => {
-    const handleFinish = () => {
+    const handleFinish = async () => {
       if (finishGuardRef.current) return;
       finishGuardRef.current = true;
       const cur = indexRef.current;
@@ -338,7 +344,29 @@ export function AudioQueueProvider({ children }: { children: React.ReactNode }) 
         });
       }
       if (getAudioSettings().autoplayNext && cur >= 0 && cur < q.length - 1) {
-        loadIndex(cur + 1, q, true);
+        // Between-facts interstitial (non-premium). Only on natural auto-advance,
+        // and only while foregrounded — audio commonly advances with the screen
+        // off, where an ad would interrupt a background listening session (and
+        // breach AdMob policy). Awaited so the ad fully dismisses before the next
+        // fact plays (no audio running behind it); the in-flight ref keeps the
+        // finish guard pinned across the await so a stray frame can't re-enter.
+        // All other gating (premium, global cooldown, no-stacking, warm-up
+        // counter) lives in adManager; a no-show resolves immediately.
+        if (AppState.currentState === 'active') {
+          queueAdInFlightRef.current = true;
+          try {
+            await maybeShowQueueNextFactInterstitial();
+          } finally {
+            queueAdInFlightRef.current = false;
+          }
+        }
+        // The ad await can span seconds, during which the user can still skip via
+        // remote / lock-screen controls (indexRef moves off the track that just
+        // finished). Only auto-advance if nothing moved — otherwise a stale
+        // cur+1 would override the user's explicit navigation.
+        if (cur === indexRef.current) {
+          loadIndex(cur + 1, q, true);
+        }
       } else {
         setIsPlaying(false);
         isPlayingRef.current = false;
@@ -374,8 +402,11 @@ export function AudioQueueProvider({ children }: { children: React.ReactNode }) 
       }
 
       if (status.didJustFinish) {
-        handleFinish();
-      } else {
+        void handleFinish();
+      } else if (!queueAdInFlightRef.current) {
+        // While a between-facts ad is in flight the auto-advance hasn't run yet,
+        // so keep the guard pinned — resetting it here would let a finish frame
+        // re-enter handleFinish and stack a second advance.
         finishGuardRef.current = false;
       }
     });

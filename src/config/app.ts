@@ -51,6 +51,14 @@ export const INTERSTITIAL_ADS = {
   CATEGORY_CHANGES_BETWEEN_ADS: 3,
   /** Number of fact views between interstitial ads */
   FACT_VIEWS_BETWEEN_ADS: 10,
+  /**
+   * Number of queued-fact auto-advances before a between-facts interstitial may
+   * fire. A short warm-up so the first ad never lands right after fact one;
+   * after it the global COOLDOWN_SECONDS is the real limiter (the counter keeps
+   * attempting on each advance and only resets on an actual show, so an advance
+   * inside the cooldown window defers the ad rather than dropping it).
+   */
+  QUEUE_FACTS_BETWEEN_ADS: 3,
   /** Minimum seconds between interstitial ads (cooldown) */
   COOLDOWN_SECONDS: 360,
   /**
@@ -198,6 +206,8 @@ export const STORAGE_KEYS = {
   CATEGORY_CHANGES_COUNT: '@category_changes_count',
   /** Key for tracking fact views since the last fact-view interstitial */
   FACT_VIEWS_SINCE_AD: '@fact_views_since_ad',
+  /** Key for tracking queued-fact auto-advances since the last between-facts interstitial */
+  QUEUE_FACTS_SINCE_AD: '@queue_facts_since_ad',
   /** Offline library: how many facts the user has chosen to cache (0 = off). */
   OFFLINE_CACHE_LIMIT: '@offline_cache_limit',
   /** Offline library: epoch-ms of the last successful download sync. */

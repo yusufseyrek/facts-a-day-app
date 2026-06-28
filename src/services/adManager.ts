@@ -139,6 +139,36 @@ export const maybeShowFactViewInterstitial = async (opts?: {
 };
 
 /**
+ * Show an interstitial between facts while listening to the queue — fired on a
+ * natural auto-advance (one fact's audio finished and the next is about to play),
+ * never on a manual skip or the queue end. The caller must confirm the app is
+ * foregrounded first (audio advances with the screen off; an ad must not pop into
+ * a background listening session). A short warm-up
+ * (QUEUE_FACTS_BETWEEN_ADS) holds the first ad back a few facts; after that the
+ * global cooldown governs. The counter only resets on an actual show, so an
+ * advance inside the cooldown window defers the ad instead of dropping it.
+ * Mirrors maybeShowFactViewInterstitial.
+ */
+export const maybeShowQueueNextFactInterstitial = async (): Promise<boolean> => {
+  if (!INTERSTITIAL_ADS.ENABLED) return false;
+  if (!shouldShowAds()) return false;
+
+  try {
+    const count = await incrementCounter(STORAGE_KEYS.QUEUE_FACTS_SINCE_AD);
+    if (count < INTERSTITIAL_ADS.QUEUE_FACTS_BETWEEN_ADS) return false;
+
+    const shown = await maybeShowInterstitial('queue_next_fact');
+    if (shown) {
+      await AsyncStorage.setItem(STORAGE_KEYS.QUEUE_FACTS_SINCE_AD, '0');
+    }
+    return shown;
+  } catch (error) {
+    console.error('Error showing queue interstitial:', error);
+    return false;
+  }
+};
+
+/**
  * Show interstitial ad after a category-save action.
  * Fires every Nth save (configured in INTERSTITIAL_ADS.CATEGORY_CHANGES_BETWEEN_ADS)
  * and respects the global cooldown.

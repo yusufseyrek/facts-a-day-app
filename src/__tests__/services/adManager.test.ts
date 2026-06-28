@@ -4,6 +4,7 @@ jest.mock('../../components/ads/InterstitialAd', () => ({
 
 jest.mock('../../services/analytics', () => ({
   trackInterstitialShown: jest.fn(),
+  trackInterstitialSkipped: jest.fn(),
 }));
 
 import { INTERSTITIAL_ADS, STORAGE_KEYS } from '../../config/app';
@@ -132,6 +133,85 @@ describe('adManager — maybeShowFactViewInterstitial', () => {
     now += COOLDOWN_MS;
     await viewFacts(THRESHOLD);
     expect(showInterstitialAd).toHaveBeenCalledTimes(1);
+  });
+});
+
+const QUEUE_THRESHOLD = INTERSTITIAL_ADS.QUEUE_FACTS_BETWEEN_ADS;
+
+describe('adManager — maybeShowQueueNextFactInterstitial', () => {
+  let adManager: typeof import('../../services/adManager');
+  let showInterstitialAd: jest.Mock;
+  let trackInterstitialShown: jest.Mock;
+  let premiumState: { shouldShowAds: jest.Mock };
+  let store: Record<string, string>;
+  let now: number;
+  let dateSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.resetModules();
+
+    const AsyncStorage = jest.requireMock('@react-native-async-storage/async-storage').default;
+    store = {};
+    AsyncStorage.getItem.mockImplementation(async (key: string) => store[key] ?? null);
+    AsyncStorage.setItem.mockImplementation(async (key: string, value: string) => {
+      store[key] = value;
+    });
+
+    now = 1_000_000_000;
+    dateSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
+
+    premiumState = jest.requireMock('../../services/premiumState');
+    premiumState.shouldShowAds.mockReturnValue(true);
+    showInterstitialAd = jest.requireMock('../../components/ads/InterstitialAd').showInterstitialAd;
+    trackInterstitialShown = jest.requireMock('../../services/analytics').trackInterstitialShown;
+
+    adManager = require('../../services/adManager');
+  });
+
+  afterEach(() => {
+    dateSpy.mockRestore();
+  });
+
+  const advance = async (count: number) => {
+    const results: boolean[] = [];
+    for (let i = 0; i < count; i++) {
+      results.push(await adManager.maybeShowQueueNextFactInterstitial());
+    }
+    return results;
+  };
+
+  it('holds the ad through the warm-up, then shows it on the Nth advance and resets', async () => {
+    const results = await advance(QUEUE_THRESHOLD);
+
+    expect(results.slice(0, QUEUE_THRESHOLD - 1)).not.toContain(true);
+    expect(results[QUEUE_THRESHOLD - 1]).toBe(true);
+    expect(showInterstitialAd).toHaveBeenCalledTimes(1);
+    expect(trackInterstitialShown).toHaveBeenCalledWith('queue_next_fact');
+    expect(store[STORAGE_KEYS.QUEUE_FACTS_SINCE_AD]).toBe('0');
+  });
+
+  it('defers within the global cooldown, then shows once it elapses', async () => {
+    await advance(QUEUE_THRESHOLD); // first ad, cooldown starts
+
+    const blocked = await advance(QUEUE_THRESHOLD); // still inside the window
+    expect(blocked).not.toContain(true);
+    expect(showInterstitialAd).toHaveBeenCalledTimes(1);
+
+    now += COOLDOWN_MS;
+    expect(await adManager.maybeShowQueueNextFactInterstitial()).toBe(true);
+    expect(showInterstitialAd).toHaveBeenCalledTimes(2);
+    expect(store[STORAGE_KEYS.QUEUE_FACTS_SINCE_AD]).toBe('0');
+  });
+
+  it('does nothing for premium / ads-disabled users', async () => {
+    premiumState.shouldShowAds.mockReturnValue(false);
+
+    const results = await advance(QUEUE_THRESHOLD + 1);
+
+    expect(results).not.toContain(true);
+    expect(showInterstitialAd).not.toHaveBeenCalled();
+    expect(store[STORAGE_KEYS.QUEUE_FACTS_SINCE_AD]).toBeUndefined();
   });
 });
 
