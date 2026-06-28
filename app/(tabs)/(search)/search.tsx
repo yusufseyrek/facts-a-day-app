@@ -39,6 +39,7 @@ import { getCachedFactImageSync } from '../../../src/services/images';
 import { getIsConnected } from '../../../src/services/network';
 import { getSelectedCategories } from '../../../src/services/onboarding';
 import { onPreferenceFeedRefresh } from '../../../src/services/preferences';
+import { setSearchHeaderRightEdgeOccupied } from '../../../src/services/searchHeaderState';
 import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import { getLastNonSearchTabPath, onSearchSessionReset } from '../../../src/services/tabHistory';
 import { hexColors, useTheme } from '../../../src/theme';
@@ -143,6 +144,11 @@ function SearchScreen() {
   const [searchResults, setSearchResults] = useState<FactWithRelations[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  // Whether the native search field is currently active (focused → the cancel
+  // button shows). Drives the floating mini-player's right-edge offset. Stays
+  // true after a programmatic blur (category select) since iOS keeps the cancel
+  // button until an actual cancel; only clearSearch (cancel/close) flips it off.
+  const [searchActive, setSearchActive] = useState(false);
   // Imperative handle to the native header search bar (it is uncontrolled, so
   // programmatic state resets must also clear the native field).
   const searchBarRef = useRef<SearchBarCommands>(null);
@@ -460,6 +466,7 @@ function SearchScreen() {
     setSearchQuery('');
     setSearchResults([]);
     setIsSearching(false);
+    setSearchActive(false);
   }, []);
 
   // iOS 26 search-role tab: the ✕ next to the tab-bar-integrated search field
@@ -505,6 +512,8 @@ function SearchScreen() {
         hideWhenScrolling: false,
         onChangeText: (e: { nativeEvent: { text: string } }) =>
           handleSearchChange(e.nativeEvent.text),
+        // Field focused → active (cancel button appears); drives the pill offset.
+        onFocus: () => setSearchActive(true),
         // iOS ✕/Cancel: clears state and (on iOS 26) exits the search tab.
         onCancelButtonPress: handleCancelButtonPress,
         // onCancelButtonPress is iOS-only; Android's collapse event is onClose.
@@ -541,6 +550,19 @@ function SearchScreen() {
     iconSizes.md,
     theme,
   ]);
+
+  // Tell the floating mini-player whether the header's right edge is occupied —
+  // the active-search cancel button, or the category-clear ✕ — so it tucks left
+  // of that control instead of hugging the edge. Re-asserted on focus so
+  // returning to this tab restores the right value regardless of what the
+  // favorites tab last wrote to the shared flag.
+  useFocusEffect(
+    useCallback(() => {
+      setSearchHeaderRightEdgeOccupied(
+        searchActive || (Platform.OS === 'ios' && !!selectedCategoryName)
+      );
+    }, [searchActive, selectedCategoryName])
+  );
 
   // Handle category selection
   const handleCategoryPress = useCallback(

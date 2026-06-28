@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSegments } from 'expo-router';
 
 import { useFactOverlay } from '../../services/factMorph';
+import { useSearchHeaderRightEdgeOccupied } from '../../services/searchHeaderState';
 import { useResponsive } from '../../utils/useResponsive';
 
 import { HeaderQueueButton } from './HeaderQueueButton';
@@ -37,15 +38,31 @@ import { HeaderQueueButton } from './HeaderQueueButton';
  *    top-right) — both the card/modal routes AND the in-tab morph overlay, which
  *    keeps the underlying tab's segments so it is detected via useFactOverlay;
  *    fact detail renders its own FactDetailQueueButton (a round control stacked
- *    under the close button) in place of this pill,
- *  - the search tab, where the native full-width search field owns the top row.
+ *    under the close button) in place of this pill.
  * The queue keeps playing throughout; the pill simply returns on a tab root.
+ *
+ * The search-bearing tabs (search + favorites) keep the floating pill, but on
+ * iOS flip it to the top-RIGHT instead of the usual top-left, with a state-driven
+ * offset (searchHeaderState): it tucks left of whatever occupies the right edge
+ * (the cancel button while the field is active, or the category-clear ✕) and
+ * hugs the edge when that corner is clear. This keeps it beside — never over —
+ * the field/controls across every view state (idle, focused, typing, category),
+ * and because the floating pill renders above the native search bar it stays
+ * visible even while the field is active (when a native headerRight control would
+ * be hidden by the system). Android floats the pill top-right with a fixed
+ * clearance on the tab roots that own a header-right control (a custom
+ * headerRight collides with its toolbar-filling SearchView). See the positioning
+ * block below.
  */
 export function PersistentMiniPlayer() {
   const segments = useSegments();
   const insets = useSafeAreaInsets();
   const { spacing, iconSizes } = useResponsive();
   const factOverlayOpen = useFactOverlay() !== null;
+  // On iOS search/favorites: does a native control occupy the header's right
+  // edge right now (search cancel button / category ✕)? Drives whether the pill
+  // tucks left of it or hugs the edge — see the iOS positioning block below.
+  const rightEdgeOccupied = useSearchHeaderRightEdgeOccupied();
 
   const root = segments[0];
   // Pushed (second-level) tab screens carry a back control in the header's
@@ -70,31 +87,63 @@ export function PersistentMiniPlayer() {
     root === 'trivia' || // standalone fullscreen game (the trivia TAB sits under '(tabs)')
     root === 'fact' || // fact-detail card + modal routes
     root === 'story' || // story viewer owns its chrome (close X + bottom overlay), both modal + morph
-    segments.includes('(search)') || // search tab: the native search field owns the top row
     segments.includes('library') || // offline library: queue control lives in headerRight
     onPushedTriviaScreen || // pushed trivia screens: queue control lives in headerRight
     factOverlayOpen; // in-tab morph fact overlay (same tab segments, so read the store)
 
   if (hidden) return null;
 
-  // On the Android tab screens the pill floats top-right (the toolbar left-aligns
-  // the title). The home and trivia tab roots own a native header-right control,
-  // so on those reserve room for it — generously, since over-reserving only
-  // nudges the pill a little further from the edge (still clearly top-right)
-  // whereas under-reserving would overlap the control. The clearance is built
-  // from responsive tokens so it scales with phone/tablet sizing.
+  // Clearance that tucks the pill ~2x a header control's width in from the right
+  // edge, so it lands BESIDE (just left of) that control rather than over it.
+  // Built from responsive tokens so it scales with phone/tablet.
+  const headerRightClearance = iconSizes.xl + spacing.xxl * 2;
+
+  // Android floats the pill top-right (the toolbar left-aligns its title). Four
+  // tab roots own a native header-right control: home (the reading-streak flame),
+  // trivia (the leaderboard trophy), favorites and search (the search-bar
+  // magnifier Android docks as a toolbar action on the right). On those reserve
+  // room for it — generously, since over-reserving only nudges the pill a little
+  // further from the edge (still clearly top-right) whereas under-reserving would
+  // overlap the control. Favorites/search only show the magnifier once there is
+  // something to search, but reserving in the empty state too is harmless.
   const onScreenWithHeaderRightControl =
-    segments.includes('(home)') || segments.includes('trivia');
-  const androidRight =
-    spacing.lg + (onScreenWithHeaderRightControl ? iconSizes.xl + spacing.xxl * 2 : 0);
+    segments.includes('(home)') ||
+    segments.includes('trivia') ||
+    segments.includes('(favorites)') ||
+    segments.includes('(search)');
+  const androidRight = spacing.lg + (onScreenWithHeaderRightControl ? headerRightClearance : 0);
+
+  // iOS floats the pill top-LEFT (UIKit centers the title, leaving that corner
+  // free) — EXCEPT on the tabs that own a native header search bar (search and
+  // favorites), where it floats top-RIGHT. The floating pill renders above the
+  // native search bar, so unlike a headerRight control (which the system hides
+  // while the field is active) it stays visible across every view state. Its
+  // exact right offset is state-driven (searchHeaderState): when a control
+  // occupies the right edge — the cancel button while the field is active, or the
+  // category-clear ✕ — the pill tucks ~2x that control's width to its left so it
+  // sits beside, not over, it; otherwise (idle, empty corner) it hugs the edge
+  // instead of floating awkwardly inboard. Without this the field, when focused,
+  // would slide up over the usual top-left spot and the pill would overlap it.
+  const onSearchBearingTab =
+    segments.includes('(search)') || segments.includes('(favorites)');
+  const iosSearchRight = rightEdgeOccupied ? spacing.lg + headerRightClearance : spacing.lg;
+  const horizontal =
+    Platform.OS === 'android'
+      ? { right: androidRight }
+      : onSearchBearingTab
+        ? { right: iosSearchRight }
+        : { left: spacing.lg };
 
   return (
     <View
       pointerEvents="box-none"
       style={{
         position: 'absolute',
-        top: insets.top + spacing.xs,
-        ...(Platform.OS === 'android' ? { right: androidRight } : { left: spacing.lg }),
+        // A touch below the status bar so the pill's centerline drops into line
+        // with the vertically-centered native nav-bar icons (it read a hair high
+        // at spacing.xs).
+        top: insets.top + spacing.sm,
+        ...horizontal,
         zIndex: 1000,
       }}
     >

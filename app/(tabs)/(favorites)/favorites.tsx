@@ -38,6 +38,7 @@ import {
 import * as api from '../../../src/services/api';
 import { getFavoriteIds, mapApiFactToRelations } from '../../../src/services/database';
 import { openFactDetail } from '../../../src/services/factMorph';
+import { setSearchHeaderRightEdgeOccupied } from '../../../src/services/searchHeaderState';
 import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import { hexColors, useTheme } from '../../../src/theme';
 import { getContrastColor, hexToRgba } from '../../../src/utils/colors';
@@ -107,6 +108,9 @@ export default function FavoritesScreen() {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Whether the native search field is active (focused → cancel button shows);
+  // drives the floating mini-player's right-edge offset on iOS.
+  const [searchActive, setSearchActive] = useState(false);
   const previousFavoritesCount = useRef<number>(0);
 
   // Scroll to top handler with smart instant/animated behavior
@@ -127,14 +131,18 @@ export default function FavoritesScreen() {
             placeholder: t('searchFavorites'),
             onChangeText: (e: NativeSyntheticEvent<{ text: string }>) =>
               setSearchQuery(e.nativeEvent.text),
+            // Field focused → active (cancel button appears); drives the pill offset.
+            onFocus: () => setSearchActive(true),
             onCancelButtonPress: () => {
               setSearchQuery('');
               setDebouncedQuery('');
+              setSearchActive(false);
             },
             // onCancelButtonPress is iOS-only; Android's collapse event is onClose.
             onClose: () => {
               setSearchQuery('');
               setDebouncedQuery('');
+              setSearchActive(false);
             },
             hideWhenScrolling: false,
           }
@@ -204,6 +212,15 @@ export default function FavoritesScreen() {
       trackScreenView(Screens.FAVORITES);
       loadFavorites();
     }, [locale, loadFavorites])
+  );
+
+  // Re-assert the floating mini-player's right-edge state on focus. Favorites has
+  // no header-right control, so it's just whether the search field is active.
+  // Mirrors the search tab so the shared flag is correct on each entry.
+  useFocusEffect(
+    useCallback(() => {
+      setSearchHeaderRightEdgeOccupied(searchActive);
+    }, [searchActive])
   );
 
   // Debounce search query
