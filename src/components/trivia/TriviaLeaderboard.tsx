@@ -463,27 +463,40 @@ function TriviaLeaderboardComponent({
                 backgroundColor={active ? accent : 'transparent'}
                 borderRadius={radius.full}
                 paddingVertical={spacing.sm}
-                alignItems="center"
-                // width:100% keeps the pill the same size on every tab. overflow:
-                // hidden clips the accent fill to the pill's OWN rounded shape:
-                // on Android the rounded background was dropped on middle tabs
-                // (they rendered as a sharp rectangle while the end tabs looked
-                // rounded only because the track's rounded ends clipped them), so
-                // clipping to the radius here forces a consistent rounded pill.
+                // width:100% keeps every pill the same size; overflow:hidden clips
+                // the accent fill to this pill's OWN rounded shape (on Android the
+                // radius was dropped on the middle tab without it). No
+                // alignItems:center here: that cross-axis override content-sizes the
+                // label (Yoga measures it AT_MOST/narrow instead of the pill's
+                // definite width), which on Fabric produced the early narrow measure
+                // that wrapped "This Week" to "This". The label below owns a definite
+                // full-pill width and centres its own glyphs instead.
                 width="100%"
                 overflow="hidden"
               >
                 <Text.Label
+                  // Weight-invariant + definite-width label. Two things used to make
+                  // this reflow: (1) the active/inactive font swap (semibold<->medium)
+                  // changed the glyph FILE, and on Android the file carries the weight
+                  // (fontWeight is dropped for a custom fontFamily, see Typography),
+                  // so the active label's intrinsic width differed from the inactive
+                  // one; (2) a content-sized text box got an early NARROW measure on
+                  // Fabric and was never rebuilt, collapsing the widest label to its
+                  // first token. Fix both at the source: pin a SINGLE font file
+                  // (Montserrat_500Medium) on every tab so the text metrics never
+                  // change on selection, and give the box a definite width:100% so
+                  // Yoga measures it EXACTLY at the final pill width on the first pass.
+                  // Active state reads from the accent pill + contrast color. The
+                  // fontWeight "500" makes iOS render the same medium face the Android
+                  // file already encodes. numberOfLines={1} is a hard single-line
+                  // guard for extreme locales / large font scales.
+                  width="100%"
                   fontSize={typography.fontSize.caption}
-                  fontFamily={active ? FONT_FAMILIES.semibold : FONT_FAMILIES.medium}
+                  fontFamily={FONT_FAMILIES.medium}
+                  fontWeight="500"
                   color={active ? contrastColor : colors.textSecondary}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
                   textAlign="center"
-                  // textBreakStrategy=simple stops Android breaking the label
-                  // mid-word; the pill's definite width (above) makes it truncate
-                  // cleanly when the active font widens (medium→semibold).
-                  textBreakStrategy="simple"
+                  numberOfLines={1}
                 >
                   {label}
                 </Text.Label>
