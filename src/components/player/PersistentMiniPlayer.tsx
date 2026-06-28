@@ -87,6 +87,8 @@ export function PersistentMiniPlayer() {
     root === 'trivia' || // standalone fullscreen game (the trivia TAB sits under '(tabs)')
     root === 'fact' || // fact-detail card + modal routes
     root === 'story' || // story viewer owns its chrome (close X + bottom overlay), both modal + morph
+    root === 'paywall' || // paywall owns a top-right close button the Android pill was landing on
+    root === 'remove-ads' || // remove-ads paywall sheet (same family; keep the pill off it)
     segments.includes('library') || // offline library: queue control lives in headerRight
     onPushedTriviaScreen || // pushed trivia screens: queue control lives in headerRight
     factOverlayOpen; // in-tab morph fact overlay (same tab segments, so read the store)

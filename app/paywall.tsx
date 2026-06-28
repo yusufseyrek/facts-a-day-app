@@ -16,6 +16,7 @@ import {
   Crown,
   Flame,
   Lightbulb,
+  Music,
   PartyPopper,
   WifiOff,
 } from '../src/components/icons';
@@ -458,6 +459,11 @@ export default function PaywallScreen() {
       icon: <WifiOff size={iconSizes.md} color={PAYWALL_GOLD.primary} />,
       title: t('paywallFeatureOffline'),
       description: t('paywallFeatureOfflineDesc'),
+    },
+    {
+      icon: <Music size={iconSizes.md} color={PAYWALL_GOLD.primary} />,
+      title: t('settingsSoundsBackground'),
+      description: t('playerBackgroundOn'),
     },
   ];
 
