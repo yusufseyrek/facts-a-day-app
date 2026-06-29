@@ -195,7 +195,13 @@ export default function TriviaScreen() {
       headerRight: () => (
         <Pressable
           testID="trivia-header-trophy-button"
-          onPress={() => router.push('/(tabs)/trivia/leaderboard')}
+          // Navigate on onPressIn, not onPress. This Pressable is hosted inside
+          // the native large-title nav bar; under the new architecture (Fabric)
+          // a header-hosted Pressable never completes onPress when the app runs
+          // on Mac ("Designed for iPad"), where a trackpad click's synthesized
+          // touch-up/cancel doesn't satisfy the press. touch-down still fires,
+          // so onPressIn is the reliable hook (see react-native-screens #2219).
+          onPressIn={() => router.push('/(tabs)/trivia/leaderboard')}
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
         >
           {/* Bare icon + rank: no chip background — inside the iOS 26 glass

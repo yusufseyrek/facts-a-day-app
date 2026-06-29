@@ -1528,10 +1528,12 @@ export function FactModal({
               </View>
             )}
 
-            {/* Appended tail (comments + "more from category"). Measured so its
-                height can be excluded from the progress border's content length —
-                the border tracks the article, not these sections. Same gap as the
-                parent YStack so spacing is unchanged. */}
+            {/* Appended tail (ad + comments + "more from category"). Measured so
+                its height can be excluded from the progress border's content
+                length — the border tracks the article, not these sections. The
+                ad leads the tail so it sits directly under the source link while
+                still being excluded (an ad isn't reading progress). Same gap as
+                the parent YStack so spacing is unchanged. */}
             <View
               style={{ gap: spacing.md }}
               onLayout={(e) => {
@@ -1539,10 +1541,7 @@ export function FactModal({
                 recomputeMaxScroll();
               }}
             >
-              {/* Comments */}
-              <FactComments factId={fact.id} categoryColor={categoryColor} />
-
-              {/* Native ad after the comments section. Keyed by factId into a
+              {/* Native ad, right after the source link. Keyed by factId into a
                   small pool so requests stay bounded; collapses (renders null)
                   for premium / no-fill. LANDSCAPE — SQUARE is home-feed only. */}
               <NativeAdCard
@@ -1551,6 +1550,9 @@ export function FactModal({
                 }`}
                 aspectRatio={NativeMediaAspectRatio.LANDSCAPE}
               />
+
+              {/* Comments */}
+              <FactComments factId={fact.id} categoryColor={categoryColor} />
 
               {/* Related Facts */}
               {relatedFacts.length > 0 && onRelatedFactPress && (
