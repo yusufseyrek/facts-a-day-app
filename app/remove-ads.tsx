@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,6 +14,7 @@ import { useTranslation } from '../src/i18n';
 import { trackPaywallDismissed, trackPaywallViewed } from '../src/services/analytics';
 import { PAYWALL_GOLD, paywallThemeColors, useTheme } from '../src/theme';
 import { openInAppBrowser } from '../src/utils/browser';
+import { isMacOS } from '../src/utils/platform';
 import { useResponsive } from '../src/utils/useResponsive';
 
 /** Warm near-black for glyphs/labels on the gold gradient (matches paywall.tsx). */
@@ -35,7 +36,7 @@ export default function RemoveAdsScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { t, locale } = useTranslation();
-  const { spacing, radius, iconSizes, media, borderWidths } = useResponsive();
+  const { spacing, radius, iconSizes, media, borderWidths, isTablet } = useResponsive();
   const tc = paywallThemeColors[theme];
   const isDark = theme === 'dark';
 
@@ -124,6 +125,15 @@ export default function RemoveAdsScreen() {
           // The grabber sits above; pad the bottom past the home indicator.
           paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md,
           gap: spacing.lg,
+        },
+        // Tablet / iPad-on-Mac only: a fixed-size form-sheet host for the
+        // scroller (see the return below). The gradient backdrop lives here so
+        // it stays pinned to the sheet while the content scrolls over it.
+        scrollRoot: {
+          flex: 1,
+        },
+        scroll: {
+          flex: 1,
         },
         ambientGlow: {
           position: 'absolute',
@@ -214,15 +224,20 @@ export default function RemoveAdsScreen() {
   );
   /* eslint-enable react-native/no-unused-styles */
 
-  return (
-    <View style={styles.container}>
-      {/* Premium gradient backdrop + a soft gold glow up top, so the sheet
-          reads as part of the paywall family rather than a plain dialog. */}
+  // Premium gradient backdrop + a soft gold glow up top, so the sheet reads as
+  // part of the paywall family rather than a plain dialog. On the tablet path it
+  // sits behind the scroller so it stays pinned while the content scrolls.
+  const backdrop = (
+    <>
       <LinearGradient colors={[...tc.bg]} style={StyleSheet.absoluteFill} />
       <View style={styles.ambientGlow} pointerEvents="none">
         <LinearGradient colors={[...tc.ambientGlow]} style={StyleSheet.absoluteFill} />
       </View>
+    </>
+  );
 
+  const content = (
+    <>
       {/* Header — crown + title. No subtitle: it would echo the first benefit's
           "no banners, no interruptions" copy verbatim immediately below it. */}
       <XStack alignItems="center" gap={spacing.xs + 2} marginBottom={spacing.xs}>
@@ -392,6 +407,37 @@ export default function RemoveAdsScreen() {
           )}
         </Pressable>
       </YStack>
+    </>
+  );
+
+  // On phones the sheet uses the `fitToContents` detent (app/_layout.tsx) and
+  // wraps this content exactly, so a plain View is correct. On tablets and on
+  // Mac (a "Designed for iPad" app) the OS presents `formSheet` as a fixed-size
+  // centered card that ignores that detent, so taller content would clip with no
+  // way to reach the plans/CTA — host it in a ScrollView instead. The isTablet
+  // width gate covers iPad; isMacOS() also covers a Mac window narrowed below the
+  // tablet breakpoint, where the card stays fixed-size but width alone would
+  // otherwise fall back to the phone path and clip again.
+  if (isTablet || isMacOS()) {
+    return (
+      <View style={styles.scrollRoot}>
+        {backdrop}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+          alwaysBounceVertical={false}
+        >
+          {content}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {backdrop}
+      {content}
     </View>
   );
 }

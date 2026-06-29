@@ -31,6 +31,7 @@ import * as Device from 'expo-device';
 
 import { primeTokenCache } from '../services/appCheckToken';
 import { isDeviceOnline } from '../utils/network';
+import { isMacOS } from '../utils/platform';
 
 import { APP_CHECK } from './app';
 // Import macOS debug token from platform-specific file
@@ -91,35 +92,6 @@ const {
   FIRST_TOKEN_MAX_ATTEMPTS,
   FIRST_TOKEN_RETRY_DELAY_MS,
 } = APP_CHECK;
-
-/**
- * Check if the app is running on macOS (Mac Catalyst or "Designed for iPad" on Mac)
- * App Attest is NOT supported on macOS, so we need to use debug provider there.
- */
-function isMacOS(): boolean {
-  // Method 1: Check Device.deviceType === DESKTOP (3)
-  // This works for both Mac Catalyst and "Designed for iPad" running on Mac
-  // expo-device correctly identifies the host machine as DESKTOP
-  if (Device.deviceType === Device.DeviceType.DESKTOP) {
-    return true;
-  }
-
-  // Method 2: Check React Native's Platform.isMac (for Mac Catalyst)
-
-  if ((Platform as any).isMac === true) {
-    return true;
-  }
-
-  // Method 3: Check expo-device osName/modelName (fallback)
-  const osName = Device.osName?.toLowerCase() || '';
-  const modelName = Device.modelName?.toLowerCase() || '';
-
-  if (osName.includes('macos') || osName.includes('mac os') || modelName.includes('mac')) {
-    return true;
-  }
-
-  return false;
-}
 
 /**
  * Initialize Firebase App Check
