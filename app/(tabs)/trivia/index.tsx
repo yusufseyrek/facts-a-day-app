@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { useFocusEffect, useNavigation } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
@@ -30,7 +30,6 @@ export default function TriviaScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const navigation = useNavigation();
   const isDark = theme === 'dark';
   const { isTablet, typography, config, iconSizes, spacing, radius } = useResponsive();
   const headerGap = useHeaderContentGap();
@@ -182,49 +181,6 @@ export default function TriviaScreen() {
     return () => unsubscribe();
   }, [loadTriviaData]);
 
-  // Leaderboard entry lives in the native header (replaced the achievements
-  // streak badge); shows the viewer's all-time rank when they have one.
-  useEffect(() => {
-    const secondaryTextColor = isDark
-      ? hexColors.dark.textSecondary
-      : hexColors.light.textSecondary;
-    const rankedColor = isDark ? hexColors.dark.warning : hexColors.light.warning;
-    const trophyColor = allTimeRank !== null ? rankedColor : secondaryTextColor;
-
-    navigation.setOptions({
-      headerRight: () => (
-        <Pressable
-          testID="trivia-header-trophy-button"
-          // Navigate on onPressIn, not onPress. This Pressable is hosted inside
-          // the native large-title nav bar; under the new architecture (Fabric)
-          // a header-hosted Pressable never completes onPress when the app runs
-          // on Mac ("Designed for iPad"), where a trackpad click's synthesized
-          // touch-up/cancel doesn't satisfy the press. touch-down still fires,
-          // so onPressIn is the reliable hook (see react-native-screens #2219).
-          onPressIn={() => router.push('/(tabs)/trivia/leaderboard')}
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-        >
-          {/* Bare icon + rank: no chip background — inside the iOS 26 glass
-              header a filled pill reads as a stray box. Padding kept for the
-              touch target. */}
-          <XStack
-            alignItems="center"
-            gap={spacing.xs}
-            paddingHorizontal={spacing.sm}
-            paddingVertical={spacing.xs}
-          >
-            <Trophy size={iconSizes.sm} color={trophyColor} />
-            {allTimeRank !== null && (
-              <Text.Label fontFamily={FONT_FAMILIES.semibold} color={trophyColor}>
-                {`#${allTimeRank}`}
-              </Text.Label>
-            )}
-          </XStack>
-        </Pressable>
-      ),
-    });
-  }, [navigation, allTimeRank, isDark, router, spacing, iconSizes]);
-
   // Show intro modal before starting trivia. Trivia is free — no premium gate.
   const showDailyTriviaIntro = () => {
     setPendingTrivia({
@@ -345,6 +301,58 @@ export default function TriviaScreen() {
                 t={t}
                 onPress={() => router.push('/(tabs)/trivia/performance')}
               />
+            </Animated.View>
+
+            {/* Leaderboard entry. Lives in the body, not the native header:
+                custom header buttons receive no touches when the app runs on
+                Mac ("Designed for iPad"), where the iOS 26 Catalyst nav bar
+                does not forward clicks to RN-hosted header views. A normal RN
+                row works on every platform. Shows the all-time rank once the
+                board fetch lands (decorative; the row is always tappable). */}
+            <Animated.View
+              entering={FadeInDown.delay(75).duration(300)}
+              needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+            >
+              <Pressable
+                testID="trivia-leaderboard-button"
+                onPress={() => router.push('/(tabs)/trivia/leaderboard')}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing.md,
+                  marginTop: spacing.lg,
+                  backgroundColor: cardBg,
+                  borderRadius: radius.lg,
+                  paddingVertical: spacing.md,
+                  paddingHorizontal: spacing.lg,
+                  opacity: pressed ? 0.85 : 1,
+                })}
+              >
+                <YStack
+                  width={iconSizes.xl}
+                  height={iconSizes.xl}
+                  borderRadius={iconSizes.xl / 2}
+                  backgroundColor={primaryLightColor}
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  <Trophy size={iconSizes.sm} color={primaryColor} />
+                </YStack>
+                <YStack flex={1}>
+                  <Text.Body color={textColor} fontFamily={FONT_FAMILIES.semibold}>
+                    {t('leaderboard')}
+                  </Text.Body>
+                  <Text.Tiny color={secondaryTextColor} fontFamily={FONT_FAMILIES.medium}>
+                    {t('leaderboardAllTime')}
+                  </Text.Tiny>
+                </YStack>
+                {allTimeRank !== null && (
+                  <Text.Label color={primaryColor} fontFamily={FONT_FAMILIES.semibold}>
+                    {`#${allTimeRank}`}
+                  </Text.Label>
+                )}
+                <ArrowRight size={iconSizes.sm} color={secondaryTextColor} />
+              </Pressable>
             </Animated.View>
 
             {/* Hold the whole modes section until the category load lands so
