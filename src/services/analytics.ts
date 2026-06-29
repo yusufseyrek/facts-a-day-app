@@ -297,6 +297,7 @@ export type FactViewSource =
   | 'story'
   | 'notification'
   | 'trivia_review'
+  | 'queue_player'
   | 'widget';
 
 /**

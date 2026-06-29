@@ -419,14 +419,17 @@ function ArtworkCarousel({
   queue,
   currentIndex,
   onSelect,
+  onOpenFact,
   artworkSize,
 }: {
   queue: QueueTrack[];
   currentIndex: number;
   onSelect: (index: number) => void;
+  onOpenFact: (factId: number) => void;
   artworkSize: number;
 }) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const { spacing, radius, iconSizes, screenWidth } = useResponsive();
   const colors = hexColors[theme];
   const isDark = theme === 'dark';
@@ -471,9 +474,15 @@ function ArtworkCarousel({
       >
         {queue.map((item, i) => (
           <View key={`${item.factId}-${i}`} style={{ width: pageW, alignItems: 'center' }}>
-            {/* Shadow on an outer wrapper so it isn't clipped by overflow:hidden. */}
-            <View
-              style={{
+            {/* Tapping the artwork opens that fact's detail. Inside a horizontal
+                paging ScrollView a swipe is claimed by the scroll responder, so
+                only a clean tap fires onPress — the carousel still pages. Shadow
+                on this outer wrapper so it isn't clipped by overflow:hidden. */}
+            <Pressable
+              onPress={() => onOpenFact(item.factId)}
+              accessibilityRole="button"
+              aria-label={`${item.title}, ${t('a11y_viewFactButton')}`}
+              style={({ pressed }) => ({
                 borderRadius: radius.lg,
                 backgroundColor: isDark ? colors.surface : colors.cardBackground,
                 shadowColor: '#000',
@@ -481,7 +490,8 @@ function ArtworkCarousel({
                 shadowRadius: 12,
                 shadowOffset: { width: 0, height: 8 },
                 elevation: 8,
-              }}
+                opacity: pressed ? 0.9 : 1,
+              })}
             >
               <View
                 style={{
@@ -507,7 +517,7 @@ function ArtworkCarousel({
                   <Music size={iconSizes.xxl} color={accent} />
                 )}
               </View>
-            </View>
+            </Pressable>
           </View>
         ))}
       </ScrollView>
@@ -650,6 +660,17 @@ export function PlayerSheet() {
   const accent = colors.primary;
   const artworkSize = Math.min(screenWidth - spacing.xl * 2, 320);
 
+  // Open the now-playing fact's detail from the artwork or the title. Present
+  // the MODAL variant (not the /fact/[id] card): the player is itself a form
+  // sheet, and on iOS a `card` pushed over a sheet lands BEHIND it — the same
+  // reason the story screen routes to fact/modal (see app/fact/modal/[id].tsx).
+  const openFact = useCallback(
+    (factId: number) => {
+      router.push(`/fact/modal/${factId}?source=queue_player`);
+    },
+    [router]
+  );
+
   // iOS floats the sheet below the notch with a grabber, so it needs a real top
   // margin below the grabber (spacing.md read as none). Android adds the status-
   // bar inset because its sheet can sit flush under the status bar.
@@ -741,16 +762,29 @@ export function PlayerSheet() {
             </View>
           ) : (
             <>
-              {/* Artwork carousel — swipe through the queued facts' images. */}
+              {/* Artwork carousel — swipe through the queued facts' images;
+                  tap the artwork to open that fact's detail. */}
               <ArtworkCarousel
                 queue={queue}
                 currentIndex={currentIndex}
                 onSelect={playIndex}
+                onOpenFact={openFact}
                 artworkSize={artworkSize}
               />
 
-              {/* Title + category (follows the current track). */}
-              <View style={{ alignItems: 'center', gap: spacing.xs, marginBottom: spacing.md }}>
+              {/* Title + category (follows the current track). Tapping opens the
+                  current fact's detail, mirroring the artwork tap. */}
+              <Pressable
+                onPress={() => openFact(currentTrack.factId)}
+                accessibilityRole="button"
+                aria-label={`${currentTrack.title}, ${t('a11y_viewFactButton')}`}
+                style={({ pressed }) => ({
+                  alignItems: 'center',
+                  gap: spacing.xs,
+                  marginBottom: spacing.md,
+                  opacity: pressed ? 0.6 : 1,
+                })}
+              >
                 <Text.Headline color={colors.text} numberOfLines={2} style={{ textAlign: 'center' }}>
                   {currentTrack.title}
                 </Text.Headline>
@@ -760,7 +794,7 @@ export function PlayerSheet() {
                     <Text.Label color={colors.textSecondary}>{currentTrack.category}</Text.Label>
                   </View>
                 )}
-              </View>
+              </Pressable>
 
               {/* Seek bar */}
               <SeekBar accent={accent} track={colors.border} onSeek={seekTo} />

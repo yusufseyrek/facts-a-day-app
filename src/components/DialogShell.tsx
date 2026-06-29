@@ -11,6 +11,7 @@ import {
 import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
 
 import { LAYOUT } from '../config/app';
+import { registerModalPresent } from '../services/modalPresence';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -267,6 +268,23 @@ export function DialogShell({
   const handleRequestClose = useCallback(() => {
     if (dismissible) requestClose();
   }, [dismissible, requestClose]);
+
+  // While the dialog is up, suppress the persistent tab-bar banner. On iOS the
+  // banner is an in-window sibling painted ABOVE this overlay (see
+  // modalPresence), so it would otherwise float over the backdrop and cover a
+  // tall dialog's footer — the notification time picker's Save button being the
+  // reported case. The release is deferred by the overlay's exit grace (the
+  // backdrop stays mounted that long — see InlineOverlay's exitGraceMs below) so
+  // the banner doesn't flash back over the still-fading scrim; a reopen within
+  // that window re-registers and keeps it hidden (ref-counted, idempotent
+  // release, so firing late or after unmount is harmless).
+  useEffect(() => {
+    if (!visible) return;
+    const release = registerModalPresent();
+    return () => {
+      setTimeout(release, EXIT_MS + 40);
+    };
+  }, [visible]);
 
   // iOS keyboard avoidance — done manually, NOT via KeyboardAvoidingView. The
   // inline overlay bleeds past the parent's safe area (negative insets), so a
