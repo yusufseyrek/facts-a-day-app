@@ -61,6 +61,12 @@ type StoryListItem = FactWithRelations | NativeAdPlaceholder;
 // How many facts to pull for a story session (one feed page).
 const STORY_FETCH_LIMIT = 100;
 
+// Oldest-first feed pages to skip past when the reader has already seen every
+// fact on the earlier pages. Bounds the open-time fetches so a fully caught-up
+// reader can't walk the whole archive; beyond this cap they restart at the
+// earliest still-unfetched page — an acceptable "you've read it all" fallback.
+const STORY_MAX_PAGES = 10;
+
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export default function StoryScreen() {
@@ -224,27 +230,56 @@ export default function StoryScreen() {
       const isTheme = category!.startsWith(THEME_STORY_PREFIX);
       const categories =
         category === 'mix' ? (await getSelectedCategories()).join(',') : category!;
-      // Use a warmed feed from the story-button prefetch when available, so the
-      // first card shows instantly instead of waiting on a network round-trip.
-      const res =
-        (await takePrefetchedStory(locale, categories)) ??
-        (isTheme
-          ? await api.getStoryThemeFacts({
-              slug: category!.slice(THEME_STORY_PREFIX.length),
-              language: locale,
-              limit: STORY_FETCH_LIMIT,
-            })
-          : await api.getFactsFeed({
+
+      const viewed = await database.getViewedStoryFactIds();
+
+      // Pull the facts for this session. Themes are curated single-page
+      // collections; the category/mix feed reads the archive oldest-first,
+      // advancing PAST pages the reader has already seen in a story so a
+      // caught-up user lands on their first unseen fact instead of reopening on
+      // the very first archive fact. (A single fixed oldest-first page — with
+      // no cursor advance — is why "mix" used to restart on the earliest fact
+      // every time once its oldest page had been fully seen.)
+      let fetched: FactWithRelations[] = [];
+      if (isTheme) {
+        // Use a warmed feed from the story-button prefetch when available, so
+        // the first card shows instantly instead of a network round-trip.
+        const res =
+          (await takePrefetchedStory(locale, categories)) ??
+          (await api.getStoryThemeFacts({
+            slug: category!.slice(THEME_STORY_PREFIX.length),
+            language: locale,
+            limit: STORY_FETCH_LIMIT,
+          }));
+        fetched = res.facts.map(mapApiFactToRelations);
+      } else {
+        let cursor: string | undefined;
+        for (let page = 0; page < STORY_MAX_PAGES; page += 1) {
+          // The warmed prefetch only covers the first (cursor-less) page.
+          const res =
+            (page === 0 ? await takePrefetchedStory(locale, categories) : null) ??
+            (await api.getFactsFeed({
               language: locale,
               categories,
               limit: STORY_FETCH_LIMIT,
               order: 'oldest', // earliest-first; stories read the archive from the start
+              cursor,
             }));
-      const fetched = res.facts.map(mapApiFactToRelations);
+          fetched = res.facts.map(mapApiFactToRelations);
+          // Stop on the first page that still holds an unseen fact, or at the
+          // end of the archive; otherwise skip this fully-seen page and go on.
+          if (
+            fetched.length === 0 ||
+            !res.next_cursor ||
+            fetched.some((f) => !viewed.has(f.id))
+          ) {
+            break;
+          }
+          cursor = res.next_cursor ?? undefined;
+        }
+      }
 
-      const viewed = await database.getViewedStoryFactIds();
-      // The feed arrives newest-first (same as the Latest view), but a story
-      // should start at the EARLIEST fact the user hasn't seen yet and move
+      // A story opens on the EARLIEST fact the reader hasn't seen and moves
       // forward chronologically. Order each group oldest-first by created_at
       // (id as a stable tiebreak), with unseen leading.
       const ca = (f: FactWithRelations) => f.created_at ?? '';

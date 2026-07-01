@@ -27,6 +27,12 @@ const PREFETCH_TTL_MS = 60_000;
 /** The slice of the feed/theme responses a story session consumes. */
 export interface StoryPageResponse {
   facts: FactResponse[];
+  /**
+   * Keyset cursor for the next oldest-first page, when the feed has more.
+   * Present on the category/mix feed; absent (undefined) on theme pages, which
+   * don't cursor-paginate. Lets the story loader page past already-seen facts.
+   */
+  next_cursor?: string | null;
 }
 
 /** Story slugs are namespaced: `theme:<slug>` pages from the theme endpoint. */
