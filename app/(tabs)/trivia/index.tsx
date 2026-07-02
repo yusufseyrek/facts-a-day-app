@@ -2,17 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useNavigation } from 'expo-router';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { ContentContainer, ScreenContainer } from '../../../src/components';
-import { ArrowRight, Sparkles, Trophy } from '../../../src/components/icons';
+import { ArrowRight, Lightbulb, Sparkles, Trophy } from '../../../src/components/icons';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { TriviaGridCard, TriviaIntroModal, TriviaStatsHero } from '../../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
 import { useScrollToTopHandler } from '../../../src/contexts';
 import { useHeaderContentGap } from '../../../src/hooks/useGlassHeaderOptions';
+import { useHintPurchase } from '../../../src/hooks/useHintPurchase';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackScreenView } from '../../../src/services/analytics';
 import * as api from '../../../src/services/api';
@@ -30,10 +31,17 @@ export default function TriviaScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
   const router = useRouter();
+  const navigation = useNavigation();
   const isDark = theme === 'dark';
   const { isTablet, typography, config, iconSizes, spacing, radius } = useResponsive();
   const headerGap = useHeaderContentGap();
   const bannerInset = useTabBarBannerInset();
+
+  // Purchased hint balance + pack availability. Mounting the hook here also
+  // fetches and caches pack prices, which is what lets the in-game "Get Hints"
+  // CTA (gated on the cache) appear.
+  const { balance: hintBalance, productsAvailable: hintPacksAvailable } =
+    useHintPurchase('trivia_hub');
 
   // Per-section loading instead of one full-screen gate. Four independent
   // tracks so each region settles the moment ITS data is ready and never waits
@@ -181,6 +189,71 @@ export default function TriviaScreen() {
     return () => unsubscribe();
   }, [loadTriviaData]);
 
+  // Leaderboard entry lives in the native header (right side); shows the
+  // viewer's all-time rank when they have one.
+  //
+  // iOS (incl. Mac "Designed for iPad"): a real UIBarButtonItem via
+  // unstable_headerRightItems. RN-hosted headerRight views receive no touches
+  // on Mac — the iOS 26 Catalyst nav bar never forwards clicks down to them
+  // (see e3636ba) — but a bar button item's target/action is handled by UIKit
+  // itself, so it works everywhere. The rank rides as a badge (iOS 26+; older
+  // iOS shows just the trophy).
+  //
+  // Android: the Material toolbar delivers touches to RN headerRight views
+  // fine, so it keeps the RN trophy + "#rank" row.
+  useEffect(() => {
+    const secondaryTextColor = isDark
+      ? hexColors.dark.textSecondary
+      : hexColors.light.textSecondary;
+    const rankedColor = isDark ? hexColors.dark.warning : hexColors.light.warning;
+    const trophyColor = allTimeRank !== null ? rankedColor : secondaryTextColor;
+    const openLeaderboard = () => router.push('/(tabs)/trivia/leaderboard');
+
+    if (Platform.OS === 'ios') {
+      navigation.setOptions({
+        unstable_headerRightItems: () => [
+          {
+            type: 'button' as const,
+            label: t('leaderboard'),
+            icon: { type: 'sfSymbol' as const, name: 'trophy' as const },
+            tintColor: trophyColor,
+            ...(allTimeRank !== null && {
+              badge: {
+                value: `#${allTimeRank}`,
+                style: { backgroundColor: rankedColor, fontFamily: FONT_FAMILIES.semibold },
+              },
+            }),
+            onPress: openLeaderboard,
+          },
+        ],
+      });
+    } else {
+      navigation.setOptions({
+        headerRight: () => (
+          <Pressable
+            testID="trivia-header-trophy-button"
+            onPress={openLeaderboard}
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          >
+            <XStack
+              alignItems="center"
+              gap={spacing.xs}
+              paddingHorizontal={spacing.sm}
+              paddingVertical={spacing.xs}
+            >
+              <Trophy size={iconSizes.sm} color={trophyColor} />
+              {allTimeRank !== null && (
+                <Text.Label fontFamily={FONT_FAMILIES.semibold} color={trophyColor}>
+                  {`#${allTimeRank}`}
+                </Text.Label>
+              )}
+            </XStack>
+          </Pressable>
+        ),
+      });
+    }
+  }, [navigation, allTimeRank, isDark, router, spacing, iconSizes, t]);
+
   // Show intro modal before starting trivia. Trivia is free — no premium gate.
   const showDailyTriviaIntro = () => {
     setPendingTrivia({
@@ -303,57 +376,52 @@ export default function TriviaScreen() {
               />
             </Animated.View>
 
-            {/* Leaderboard entry. Lives in the body, not the native header:
-                custom header buttons receive no touches when the app runs on
-                Mac ("Designed for iPad"), where the iOS 26 Catalyst nav bar
-                does not forward clicks to RN-hosted header views. A normal RN
-                row works on every platform. Shows the all-time rank once the
-                board fetch lands (decorative; the row is always tappable). */}
-            <Animated.View
-              entering={FadeInDown.delay(75).duration(300)}
-              needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-            >
-              <Pressable
-                testID="trivia-leaderboard-button"
-                onPress={() => router.push('/(tabs)/trivia/leaderboard')}
-                style={({ pressed }) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: spacing.md,
-                  marginTop: spacing.lg,
-                  backgroundColor: cardBg,
-                  borderRadius: radius.lg,
-                  paddingVertical: spacing.md,
-                  paddingHorizontal: spacing.lg,
-                  opacity: pressed ? 0.85 : 1,
-                })}
+            {/* Hint store entry (the leaderboard lives in the native header).
+                Hidden until packs are known to be purchasable (or a balance
+                exists), so the row never dead-ends before the store products
+                go live. */}
+            {(hintPacksAvailable || hintBalance > 0) && (
+              <Animated.View
+                entering={FadeInDown.delay(75).duration(300)}
+                needsOffscreenAlphaCompositing={Platform.OS === 'android'}
               >
-                <YStack
-                  width={iconSizes.xl}
-                  height={iconSizes.xl}
-                  borderRadius={iconSizes.xl / 2}
-                  backgroundColor={primaryLightColor}
-                  justifyContent="center"
-                  alignItems="center"
+                <Pressable
+                  testID="trivia-hint-store-button"
+                  onPress={() => router.push('/hint-store?source=trivia_hub')}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.md,
+                    marginTop: spacing.lg,
+                    backgroundColor: cardBg,
+                    borderRadius: radius.lg,
+                    paddingVertical: spacing.md,
+                    paddingHorizontal: spacing.lg,
+                    opacity: pressed ? 0.85 : 1,
+                  })}
                 >
-                  <Trophy size={iconSizes.sm} color={primaryColor} />
-                </YStack>
-                <YStack flex={1}>
-                  <Text.Body color={textColor} fontFamily={FONT_FAMILIES.semibold}>
-                    {t('leaderboard')}
-                  </Text.Body>
-                  <Text.Tiny color={secondaryTextColor} fontFamily={FONT_FAMILIES.medium}>
-                    {t('leaderboardAllTime')}
-                  </Text.Tiny>
-                </YStack>
-                {allTimeRank !== null && (
-                  <Text.Label color={primaryColor} fontFamily={FONT_FAMILIES.semibold}>
-                    {`#${allTimeRank}`}
-                  </Text.Label>
-                )}
-                <ArrowRight size={iconSizes.sm} color={secondaryTextColor} />
-              </Pressable>
-            </Animated.View>
+                  <YStack
+                    width={iconSizes.xl}
+                    height={iconSizes.xl}
+                    borderRadius={iconSizes.xl / 2}
+                    backgroundColor={primaryLightColor}
+                    justifyContent="center"
+                    alignItems="center"
+                  >
+                    <Lightbulb size={iconSizes.sm} color={primaryColor} />
+                  </YStack>
+                  <YStack flex={1}>
+                    <Text.Body color={textColor} fontFamily={FONT_FAMILIES.semibold}>
+                      {t('hintStoreTitle')}
+                    </Text.Body>
+                    <Text.Tiny color={secondaryTextColor} fontFamily={FONT_FAMILIES.medium}>
+                      {t('hintStoreBalance', { count: hintBalance })}
+                    </Text.Tiny>
+                  </YStack>
+                  <ArrowRight size={iconSizes.sm} color={secondaryTextColor} />
+                </Pressable>
+              </Animated.View>
+            )}
 
             {/* Hold the whole modes section until the category load lands so
                 the daily/mixed row and the category rows mount in the same
