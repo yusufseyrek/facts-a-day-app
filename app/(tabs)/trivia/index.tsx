@@ -23,6 +23,7 @@ import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import * as triviaService from '../../../src/services/trivia';
 import { hexColors, useTheme } from '../../../src/theme';
 import { hexToHue } from '../../../src/utils/colors';
+import { isMacOS } from '../../../src/utils/platform';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
 import type { CategoryWithProgress } from '../../../src/services/trivia';
@@ -192,15 +193,16 @@ export default function TriviaScreen() {
   // Leaderboard entry lives in the native header (right side); shows the
   // viewer's all-time rank when they have one.
   //
-  // iOS (incl. Mac "Designed for iPad"): a real UIBarButtonItem via
-  // unstable_headerRightItems. RN-hosted headerRight views receive no touches
-  // on Mac — the iOS 26 Catalyst nav bar never forwards clicks down to them
-  // (see e3636ba) — but a bar button item's target/action is handled by UIKit
-  // itself, so it works everywhere. The rank rides as a badge (iOS 26+; older
-  // iOS shows just the trophy).
+  // Everywhere except Mac: the RN trophy + "#rank" row hosted in the header —
+  // the original design; header-hosted RN views receive touches fine on
+  // iPhone/iPad/Android.
   //
-  // Android: the Material toolbar delivers touches to RN headerRight views
-  // fine, so it keeps the RN trophy + "#rank" row.
+  // Mac ("Designed for iPad"): the iOS 26 Catalyst nav bar never forwards
+  // clicks down to RN-hosted header views (see e3636ba), so the button becomes
+  // a real UIBarButtonItem via unstable_headerRightItems — its target/action
+  // is handled by UIKit itself. hidesSharedBackground drops the glass disk the
+  // system would draw around it, and the rank rides as a badge (one compact
+  // item; separate bar items get a wide, uncloseable system gap).
   useEffect(() => {
     const secondaryTextColor = isDark
       ? hexColors.dark.textSecondary
@@ -209,7 +211,7 @@ export default function TriviaScreen() {
     const trophyColor = allTimeRank !== null ? rankedColor : secondaryTextColor;
     const openLeaderboard = () => router.push('/(tabs)/trivia/leaderboard');
 
-    if (Platform.OS === 'ios') {
+    if (Platform.OS === 'ios' && isMacOS()) {
       navigation.setOptions({
         unstable_headerRightItems: () => [
           {
@@ -217,10 +219,14 @@ export default function TriviaScreen() {
             label: t('leaderboard'),
             icon: { type: 'sfSymbol' as const, name: 'trophy' as const },
             tintColor: trophyColor,
+            hidesSharedBackground: true,
             ...(allTimeRank !== null && {
               badge: {
                 value: `#${allTimeRank}`,
-                style: { backgroundColor: rankedColor, fontFamily: FONT_FAMILIES.semibold },
+                style: {
+                  backgroundColor: rankedColor,
+                  fontFamily: FONT_FAMILIES.semibold,
+                },
               },
             }),
             onPress: openLeaderboard,
@@ -235,6 +241,9 @@ export default function TriviaScreen() {
             onPress={openLeaderboard}
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           >
+            {/* Bare icon + rank: no chip background — inside the iOS 26 glass
+                header a filled pill reads as a stray box. Padding kept for the
+                touch target. */}
             <XStack
               alignItems="center"
               gap={spacing.xs}
