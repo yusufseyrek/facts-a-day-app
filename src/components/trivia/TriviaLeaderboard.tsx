@@ -251,8 +251,12 @@ function PodiumColumn({
  */
 function LeaderboardSkeleton() {
   const { theme } = useTheme();
-  const { spacing, radius, borderWidths, media } = useResponsive();
+  const { spacing, radius, borderWidths, media, typography, iconSizes } = useResponsive();
   const colors = hexColors[theme];
+  // Placeholder heights come from the SAME lineHeight tokens the loaded text
+  // renders with (Caption name + big Title score on the podium; Label + Caption
+  // stacked in each row), so the swap to real data doesn't shift layout.
+  const { lineHeight } = typography;
   // Same accent → contrast → plate derivation as the real podium so the loading
   // box renders the identical blue gradient, decorative circles and plinths.
   const accent = colors.primary;
@@ -327,9 +331,9 @@ function LeaderboardSkeleton() {
                 justifyContent="flex-end"
               >
                 <ShimmerPlaceholder width={c.d} height={c.d} borderRadius={c.d / 2} color={markColor} />
-                <YStack alignItems="center" gap={4}>
-                  <ShimmerPlaceholder width={c.d} height={13} color={markColor} />
-                  <ShimmerPlaceholder width={c.d * 0.6} height={20} color={markColor} />
+                <YStack alignItems="center" gap={2}>
+                  <ShimmerPlaceholder width={c.d} height={lineHeight.caption} color={markColor} />
+                  <ShimmerPlaceholder width={c.d * 0.6} height={lineHeight.title} color={markColor} />
                 </YStack>
                 {/* Plinth = static translucent plate (part of the box), matching
                     the loaded podium minus its rank number. */}
@@ -355,18 +359,35 @@ function LeaderboardSkeleton() {
         paddingVertical={spacing.xs}
       >
         {Array.from({ length: 6 }).map((_, i) => (
-          <XStack
-            key={i}
-            alignItems="center"
-            gap={spacing.sm}
-            paddingVertical={spacing.sm}
-            paddingHorizontal={spacing.md}
-          >
-            <ShimmerPlaceholder width={18} height={16} />
-            <ShimmerPlaceholder width="45%" height={14} />
-            <View style={{ flex: 1 }} />
-            <ShimmerPlaceholder width={28} height={16} />
-          </XStack>
+          <React.Fragment key={i}>
+            {i > 0 && (
+              <View
+                style={{
+                  height: borderWidths.hairline,
+                  backgroundColor: colors.border,
+                  marginHorizontal: spacing.md,
+                }}
+              />
+            )}
+            <XStack
+              alignItems="center"
+              gap={spacing.sm}
+              paddingVertical={spacing.sm}
+              paddingHorizontal={spacing.md}
+            >
+              <View style={{ width: iconSizes.lg, alignItems: 'center' }}>
+                <ShimmerPlaceholder width={18} height={lineHeight.label} />
+              </View>
+              <ShimmerPlaceholder width="45%" height={lineHeight.label} />
+              <View style={{ flex: 1 }} />
+              {/* Score fraction over the games count — the real row's tallest
+                  column, so it, not the name, sets the row height. */}
+              <YStack alignItems="flex-end">
+                <ShimmerPlaceholder width={44} height={lineHeight.label} />
+                <ShimmerPlaceholder width={30} height={lineHeight.caption} />
+              </YStack>
+            </XStack>
+          </React.Fragment>
         ))}
       </YStack>
     </YStack>
