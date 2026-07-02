@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { hasActiveSubscriptions, initConnection } from 'expo-iap';
 
-import { SUBSCRIPTION } from '../config/app';
+import { HINT_PACKS, SUBSCRIPTION } from '../config/app';
 
 import { getIsConnected } from './network';
 import { getIsPremium, setIsPremium } from './premiumState';
@@ -142,6 +142,37 @@ export const cacheSubscriptions = async (subs: CachedSubscription[]): Promise<vo
 export const getCachedSubscriptions = async (): Promise<CachedSubscription[]> => {
   try {
     const value = await AsyncStorage.getItem(SUBSCRIPTION_CACHE_KEY);
+    return value ? JSON.parse(value) : [];
+  } catch {
+    return [];
+  }
+};
+
+// --- Hint pack price caching ---
+
+export interface CachedHintPack {
+  id: string;
+  displayPrice: string;
+}
+
+/**
+ * Cache hint pack product info (id + displayPrice) for instant hint-store
+ * display (mirrors cacheSubscriptions).
+ */
+export const cacheHintPackPrices = async (packs: CachedHintPack[]): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(HINT_PACKS.PRICE_CACHE_KEY, JSON.stringify(packs));
+  } catch (error) {
+    console.error('Failed to cache hint pack prices:', error);
+  }
+};
+
+/**
+ * Read cached hint pack products. Returns empty array if none cached.
+ */
+export const getCachedHintPackPrices = async (): Promise<CachedHintPack[]> => {
+  try {
+    const value = await AsyncStorage.getItem(HINT_PACKS.PRICE_CACHE_KEY);
     return value ? JSON.parse(value) : [];
   } catch {
     return [];

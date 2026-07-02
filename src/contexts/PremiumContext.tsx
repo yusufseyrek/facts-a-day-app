@@ -12,9 +12,10 @@ import {
 
 import { preloadAppOpenAd } from '../components/ads/AppOpenAd';
 import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
-import { SUBSCRIPTION } from '../config/app';
+import { HINT_PACKS, SUBSCRIPTION } from '../config/app';
 import { setAnalyticsUserProperty } from '../config/firebase';
 import {
+  trackHintPackPurchased,
   trackPaywallPurchaseCancelled,
   trackPaywallPurchaseFailed,
   trackRestorePurchasesResult,
@@ -23,6 +24,7 @@ import {
   trackSubscriptionStatusChanged,
 } from '../services/analytics';
 import { getStoredLocale } from '../services/contentRefresh';
+import { creditHints } from '../services/hintWallet';
 import { getIsConnected } from '../services/network';
 import { handlePremiumDowngrade } from '../services/premiumDowngrade';
 import {
@@ -185,6 +187,19 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const purchaseSub = purchaseUpdatedListener(async (purchase: Purchase) => {
       try {
+        const hintCount = HINT_PACKS.HINTS_BY_PRODUCT[purchase.productId];
+        if (hintCount) {
+          // Consumable hint pack. Credit BEFORE finishing: if we die in
+          // between, the store redelivers the unfinished purchase on the next
+          // launch and creditHints' txn-id dedup makes the retry a no-op.
+          // finishTransaction with isConsumable is what allows repurchase.
+          const credited = await creditHints(hintCount, purchase.id);
+          await finishTransactionModule({ purchase, isConsumable: true });
+          if (credited) {
+            trackHintPackPurchased({ productId: purchase.productId, hints: hintCount });
+          }
+          return;
+        }
         await finishTransactionModule({ purchase, isConsumable: false });
         await updatePremiumRef.current?.(true);
         trackSubscriptionPurchased({ productId: purchase.productId });

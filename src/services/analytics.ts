@@ -19,7 +19,6 @@ import { posthog } from '../config/posthog';
 import { getAppVersionInfo } from '../utils/appInfo';
 
 import { enqueueFactEvent } from './factEvents';
-
 import { getNotificationTimes, getSelectedCategories } from './onboarding';
 
 const THEME_STORAGE_KEY = '@app_theme_mode';
@@ -613,7 +612,7 @@ export const trackTriviaResultsView = (params: {
 export const trackTriviaHintClick = (params: {
   mode: TriviaMode;
   questionIndex: number;
-  source: 'free' | 'rewarded_ad';
+  source: 'free' | 'rewarded_ad' | 'purchased';
   categorySlug?: string;
 }): void => {
   const props = {
@@ -1311,6 +1310,23 @@ export const trackRestorePurchasesResult = (params: {
 export const trackManageSubscriptionTapped = (params: { source: 'settings' }): void => {
   logEvent('app_manage_subscription', { source: params.source });
   posthog.capture('manage_subscription_tapped', { source: params.source });
+};
+
+// ============================================================================
+// Hint Pack (consumable IAP) Events
+// ============================================================================
+
+/** The hint store sheet was viewed. */
+export const trackHintStoreViewed = (source: string): void => {
+  logEvent('app_hint_store_viewed', { source });
+  posthog.capture('hint_store_viewed', { source });
+};
+
+/** A consumable hint pack purchase completed and the balance was credited. */
+export const trackHintPackPurchased = (params: { productId: string; hints: number }): void => {
+  const props = { product_id: params.productId, hints: params.hints };
+  logEvent('app_hint_pack_purchased', props);
+  posthog.capture('hint_pack_purchased', props);
 };
 
 // ============================================================================

@@ -15,7 +15,9 @@ import {
   TriviaGameView,
   TriviaResults,
 } from '../../src/components/trivia';
+import { HINT_PACKS } from '../../src/config/app';
 import { usePremium } from '../../src/contexts/PremiumContext';
+import { useHintBalance } from '../../src/hooks/useHintPurchase';
 import { useTranslation } from '../../src/i18n';
 import {
   Screens,
@@ -31,6 +33,8 @@ import {
   trackTriviaViewFactClick,
 } from '../../src/services/analytics';
 import { onTriviaCompleted, scheduleSatisfactionPrompt } from '../../src/services/appReview';
+import { spendPurchasedHint } from '../../src/services/hintWallet';
+import { getCachedHintPackPrices } from '../../src/services/purchases';
 import * as triviaService from '../../src/services/trivia';
 import { MIN_SECONDS_PER_QUESTION, TIME_PER_QUESTION } from '../../src/services/trivia';
 import { hexColors, useTheme } from '../../src/theme';
@@ -107,6 +111,16 @@ export default function TriviaGameScreen() {
   );
   const [adHintUsedForQuestions, setAdHintUsedForQuestions] = useState<Set<number>>(new Set());
   const [showingRewardedAd, setShowingRewardedAd] = useState(false);
+  // Purchased hints (consumable IAP) — spent only after the free daily quota.
+  const purchasedHints = useHintBalance();
+  // Offer the "Get Hints" CTA only when packs are known to be purchasable:
+  // prices are cached by the hub/store sheet fetching products (dev always
+  // shows it — there's no store).
+  const [hintPacksAvailable, setHintPacksAvailable] = useState(__DEV__ && HINT_PACKS.ENABLED);
+  useEffect(() => {
+    if (__DEV__ || !HINT_PACKS.ENABLED) return;
+    getCachedHintPackPrices().then((packs) => setHintPacksAvailable(packs.length > 0));
+  }, []);
 
   // Timer state
   const [timeRemaining, setTimeRemaining] = useState(0);
@@ -532,6 +546,29 @@ export default function TriviaGameScreen() {
     gameState.currentQuestionIndex,
   ]);
 
+  // Handle spending a purchased hint (after the free daily quota is gone)
+  const handleUsePurchasedHint = useCallback(async () => {
+    if (!currentQuestion) return;
+
+    trackTriviaHintClick({
+      mode: triviaMode,
+      questionIndex: gameState.currentQuestionIndex,
+      source: 'purchased',
+      categorySlug: params.categorySlug,
+    });
+
+    // Reveal only if the wallet actually had a hint (guards a raced balance).
+    const spent = await spendPurchasedHint();
+    if (!spent) return;
+
+    setExplanationShownForQuestion(currentQuestion.id);
+  }, [currentQuestion, params.type, params.categorySlug, gameState.currentQuestionIndex]);
+
+  // Open the hint store sheet (quota and purchased balance both exhausted)
+  const handleGetHints = useCallback(() => {
+    router.push('/hint-store?source=trivia_game');
+  }, [router]);
+
   // Handle watching a rewarded ad to unlock a hint
   const handleWatchAdForHint = useCallback(async () => {
     if (!currentQuestion || showingRewardedAd) return;
@@ -852,6 +889,9 @@ export default function TriviaGameScreen() {
         questionImageUri={questionImageUri}
         isPremium={isPremium}
         remainingHints={remainingHints}
+        purchasedHints={purchasedHints}
+        onUsePurchasedHint={handleUsePurchasedHint}
+        onGetHints={hintPacksAvailable ? handleGetHints : undefined}
       />
     );
   }

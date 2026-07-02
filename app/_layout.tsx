@@ -428,6 +428,22 @@ function AppContent() {
             contentStyle: { backgroundColor: removeAdsBackgroundColor },
           }}
         />
+        <Stack.Screen
+          name="hint-store"
+          options={{
+            // Consumable trivia hint packs, opened from the trivia hub's
+            // balance chip and the in-game "Get Hints" pill. Identical native
+            // form-sheet treatment to remove-ads above (it paints the same
+            // paywall-family gradient inside).
+            presentation: 'formSheet',
+            sheetAllowedDetents: 'fitToContents',
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 24,
+            sheetExpandsWhenScrolledToEdge: false,
+            headerShown: false,
+            contentStyle: { backgroundColor: removeAdsBackgroundColor },
+          }}
+        />
       </Stack>
 
       {/* One persistent queue mini-player, floating top-left above every root

@@ -377,6 +377,27 @@ export const SUBSCRIPTION = {
 } as const;
 
 /**
+ * Consumable trivia hint packs. Purchased hints sit on top of the free daily
+ * quota (HINT_LIMITS) and never expire; the balance lives on-device in
+ * services/hintWallet.ts.
+ */
+export const HINT_PACKS = {
+  /** Whether hint packs are purchasable */
+  ENABLED: true,
+  /** Hints granted per product ID (must match App Store Connect / Google Play Console) */
+  HINTS_BY_PRODUCT: {
+    factsaday_hints_small: 10,
+    factsaday_hints_medium: 50,
+    factsaday_hints_large: 150,
+  } as Readonly<Record<string, number>>,
+  /** AsyncStorage key for caching pack prices (instant hint-store render) */
+  PRICE_CACHE_KEY: '@factsaday_hint_pack_cache',
+} as const;
+
+/** Hint pack product IDs in display order (small → large). */
+export const HINT_PACK_IDS = Object.keys(HINT_PACKS.HINTS_BY_PRODUCT);
+
+/**
  * Paywall prompt settings (auto-show interval)
  */
 export const PAYWALL_PROMPT = {

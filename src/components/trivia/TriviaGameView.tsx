@@ -29,7 +29,7 @@ import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { CloseButton } from '../CloseButton';
 import { GlassSurface } from '../GlassSurface';
-import { ChevronLeft, ChevronRight, Lightbulb, Timer } from '../icons';
+import { ChevronLeft, ChevronRight, Lightbulb, Sparkles, Timer } from '../icons';
 import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -67,6 +67,11 @@ export interface TriviaGameViewProps {
   // Premium status and remaining hints
   isPremium?: boolean;
   remainingHints?: number;
+  // Purchased hints (consumable IAP) — spent after the free quota
+  purchasedHints?: number;
+  onUsePurchasedHint?: () => void;
+  /** Opens the hint store; undefined hides the "Get Hints" CTA (packs unavailable). */
+  onGetHints?: () => void;
 }
 
 export function TriviaGameView({
@@ -95,6 +100,9 @@ export function TriviaGameView({
   questionImageUri,
   isPremium = false,
   remainingHints = 0,
+  purchasedHints = 0,
+  onUsePurchasedHint,
+  onGetHints,
 }: TriviaGameViewProps) {
   const insets = useSafeAreaInsets();
   const { borderWidths, isTablet, media, typography, iconSizes, spacing, radius, screenHeight } =
@@ -128,6 +136,8 @@ export function TriviaGameView({
 
   const isTrueFalse = currentQuestion.question_type === 'true_false';
   const hasExplanation = !!currentQuestion.explanation;
+  // Purchased hints kick in only once the free daily quota is spent.
+  const hasPurchasedHint = purchasedHints > 0 && !!onUsePurchasedHint;
   const letterLabels = ['A', 'B', 'C', 'D'];
 
   const formatTime = (seconds: number) => {
@@ -451,11 +461,104 @@ export function TriviaGameView({
                     </Pressable>
                   )}
 
+                  {/* Use Purchased Hint Button - Free quota spent, wallet has hints */}
+                  {hasExplanation && !showExplanation && !canUseExplanation && hasPurchasedHint && (
+                    <Pressable
+                      onPress={() => handlePressWithHaptics(onUsePurchasedHint!)}
+                      role="button"
+                      aria-label={t('a11y_useHintButton') || 'Use a purchased hint'}
+                      style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                    >
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          backgroundColor: useGlass ? 'transparent' : `${accentColor}55`,
+                          paddingHorizontal: spacing.md,
+                          paddingVertical: spacing.sm,
+                          borderRadius: radius.full,
+                          alignItems: 'center',
+                          gap: spacing.xs,
+                          ...(useGlass && { overflow: 'hidden' as const }),
+                        }}
+                      >
+                        {useGlass && (
+                          <GlassSurface
+                            variant="glass"
+                            isDark={isDark}
+                            tint={`${accentColor}55`}
+                            borderRadius={radius.full}
+                            style={absoluteFillObject}
+                          />
+                        )}
+                        <Lightbulb size={typography.fontSize.caption} color={accentColor} />
+                        <RNText
+                          maxFontSizeMultiplier={maxFontSizeMultipliers.label}
+                          style={{
+                            fontFamily: FONT_FAMILIES.semibold,
+                            fontSize: typography.fontSize.caption,
+                            color: accentColor,
+                          }}
+                        >
+                          {`${t('useHint') || 'Use Hint'} (${purchasedHints})`}
+                        </RNText>
+                      </View>
+                    </Pressable>
+                  )}
+
+                  {/* Get Hints Button - quota and purchased balance both exhausted */}
+                  {hasExplanation &&
+                    onGetHints &&
+                    !showExplanation &&
+                    !canUseExplanation &&
+                    !hasPurchasedHint && (
+                      <Pressable
+                        onPress={() => handlePressWithHaptics(onGetHints)}
+                        role="button"
+                        aria-label={t('a11y_getHintsButton') || 'Get more hints'}
+                        style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                      >
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            backgroundColor: useGlass ? 'transparent' : `${accentColor}55`,
+                            paddingHorizontal: spacing.md,
+                            paddingVertical: spacing.sm,
+                            borderRadius: radius.full,
+                            alignItems: 'center',
+                            gap: spacing.xs,
+                            ...(useGlass && { overflow: 'hidden' as const }),
+                          }}
+                        >
+                          {useGlass && (
+                            <GlassSurface
+                              variant="glass"
+                              isDark={isDark}
+                              tint={`${accentColor}55`}
+                              borderRadius={radius.full}
+                              style={absoluteFillObject}
+                            />
+                          )}
+                          <Sparkles size={typography.fontSize.caption} color={accentColor} />
+                          <RNText
+                            maxFontSizeMultiplier={maxFontSizeMultipliers.label}
+                            style={{
+                              fontFamily: FONT_FAMILIES.semibold,
+                              fontSize: typography.fontSize.caption,
+                              color: accentColor,
+                            }}
+                          >
+                            {t('getHints') || 'Get Hints'}
+                          </RNText>
+                        </View>
+                      </Pressable>
+                    )}
+
                   {/* Watch Ad for Hint Button - Free hint used, ad available */}
                   {hasExplanation &&
                     onWatchAdForHint &&
                     !showExplanation &&
                     !canUseExplanation &&
+                    !hasPurchasedHint &&
                     canWatchAdForHint && (
                       <Pressable
                         onPress={() => handlePressWithHaptics(onWatchAdForHint)}
@@ -498,10 +601,12 @@ export function TriviaGameView({
                       </Pressable>
                     )}
 
-                  {/* Hint Used - No free hint, no ad option */}
+                  {/* Hint Used - no free hint, no purchased hints, no store, no ad */}
                   {hasExplanation &&
                     !showExplanation &&
                     !canUseExplanation &&
+                    !hasPurchasedHint &&
+                    !onGetHints &&
                     !canWatchAdForHint && (
                       <View
                         style={{
