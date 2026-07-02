@@ -384,11 +384,14 @@ export const SUBSCRIPTION = {
 export const HINT_PACKS = {
   /** Whether hint packs are purchasable */
   ENABLED: true,
-  /** Hints granted per product ID (must match App Store Connect / Google Play Console) */
+  /** Hints granted per product ID (must match App Store Connect / Google Play Console).
+   *  Sized against the real sub prices ($0.69 wk / $1.99 mo): packs carry a
+   *  ~1.5x no-commitment premium over the equivalent sub period, and the large
+   *  pack caps at parity with 3 months of premium. */
   HINTS_BY_PRODUCT: {
-    factsaday_hints_small: 10,
-    factsaday_hints_medium: 50,
-    factsaday_hints_large: 150,
+    factsaday_hints_small: 20,
+    factsaday_hints_medium: 100,
+    factsaday_hints_large: 300,
   } as Readonly<Record<string, number>>,
   /** AsyncStorage key for caching pack prices (instant hint-store render) */
   PRICE_CACHE_KEY: '@factsaday_hint_pack_cache',
