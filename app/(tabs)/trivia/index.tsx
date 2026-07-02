@@ -415,7 +415,11 @@ export default function TriviaScreen() {
                       {t('hintStoreTitle')}
                     </Text.Body>
                     <Text.Tiny color={secondaryTextColor} fontFamily={FONT_FAMILIES.medium}>
-                      {t('hintStoreBalance', { count: hintBalance })}
+                      {/* Zero is the common first-visit state — pitch the
+                          feature instead of announcing an empty wallet. */}
+                      {hintBalance > 0
+                        ? t('hintStoreBalance', { count: hintBalance })
+                        : t('hintStoreDescription')}
                     </Text.Tiny>
                   </YStack>
                   <ArrowRight size={iconSizes.sm} color={secondaryTextColor} />

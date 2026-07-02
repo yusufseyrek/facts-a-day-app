@@ -377,12 +377,14 @@ export function TriviaGameView({
                   {currentQuestion.question_text}
                 </Text.Title>
 
-                {/* Hint Buttons */}
+                {/* Hint Buttons — wraps so the two-pill state (Get Hints +
+                    Watch Ad) never overflows on narrow screens / long locales */}
                 <XStack
                   marginTop={spacing.lg}
                   gap={spacing.md}
                   justifyContent="center"
                   alignItems="center"
+                  flexWrap="wrap"
                 >
                   {/* View Fact Button — disabled, may re-enable later */}
                   {/* {currentQuestion.fact?.id && onOpenFact && (

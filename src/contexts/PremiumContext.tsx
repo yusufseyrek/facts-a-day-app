@@ -193,7 +193,14 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
           // between, the store redelivers the unfinished purchase on the next
           // launch and creditHints' txn-id dedup makes the retry a no-op.
           // finishTransaction with isConsumable is what allows repurchase.
-          const credited = await creditHints(hintCount, purchase.id);
+          // The id fallbacks guarantee a non-empty dedup key — creditHints
+          // refuses empty ids, and a refused credit on a real purchase would
+          // mean the user paid and got nothing.
+          const txnId =
+            purchase.id ||
+            purchase.purchaseToken ||
+            `${purchase.productId}-${purchase.transactionDate}`;
+          const credited = await creditHints(hintCount, txnId);
           await finishTransactionModule({ purchase, isConsumable: true });
           if (credited) {
             trackHintPackPurchased({ productId: purchase.productId, hints: hintCount });

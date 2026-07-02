@@ -517,6 +517,7 @@ export const translations = {
     hintStoreHintsUnit: 'HINWEISE',
     hintStoreCta: '%{count} Hinweise kaufen',
     hintStoreNeverExpires: 'Hinweise verfallen nie und gelten in jedem Quiz-Modus.',
+    hintStoreAdded: 'Hinweise hinzugefügt!',
 
     // Fact Action Bar
     actionSave: 'Merken',
@@ -1192,6 +1193,7 @@ export const translations = {
     hintStoreHintsUnit: 'HINTS',
     hintStoreCta: 'Get %{count} Hints',
     hintStoreNeverExpires: 'Hints never expire and work in every trivia mode.',
+    hintStoreAdded: 'Hints added!',
 
     // Fact Action Bar
     actionSave: 'Save',
@@ -1867,6 +1869,7 @@ export const translations = {
     hintStoreHintsUnit: 'PISTAS',
     hintStoreCta: 'Conseguir %{count} pistas',
     hintStoreNeverExpires: 'Las pistas nunca caducan y sirven en todos los modos de trivia.',
+    hintStoreAdded: '¡Pistas añadidas!',
 
     // Fact Action Bar
     actionSave: 'Guardar',
@@ -2545,6 +2548,7 @@ export const translations = {
     hintStoreHintsUnit: 'INDICES',
     hintStoreCta: 'Obtenir %{count} indices',
     hintStoreNeverExpires: "Les indices n'expirent jamais et fonctionnent dans tous les modes de quiz.",
+    hintStoreAdded: 'Indices ajoutés !',
 
     // Fact Action Bar
     actionSave: 'Sauver',
@@ -3217,6 +3221,7 @@ export const translations = {
     hintStoreHintsUnit: 'ヒント',
     hintStoreCta: 'ヒントを%{count}個入手',
     hintStoreNeverExpires: 'ヒントに有効期限はなく、すべてのトリビアモードで使えます。',
+    hintStoreAdded: 'ヒントを追加しました！',
 
     // Fact Action Bar
     actionSave: '保存',
@@ -3886,6 +3891,7 @@ export const translations = {
     hintStoreHintsUnit: '힌트',
     hintStoreCta: '힌트 %{count}개 받기',
     hintStoreNeverExpires: '힌트는 만료되지 않으며 모든 트리비아 모드에서 사용할 수 있습니다.',
+    hintStoreAdded: '힌트가 추가되었습니다!',
 
     // Fact Action Bar
     actionSave: '저장',
@@ -4558,6 +4564,7 @@ export const translations = {
     hintStoreHintsUnit: 'İPUCU',
     hintStoreCta: '%{count} İpucu Al',
     hintStoreNeverExpires: 'İpuçlarının süresi dolmaz ve tüm trivia modlarında geçerlidir.',
+    hintStoreAdded: 'İpuçları eklendi!',
 
     // Fact Action Bar
     actionSave: 'Kaydet',
@@ -5223,6 +5230,7 @@ export const translations = {
     hintStoreHintsUnit: '提示',
     hintStoreCta: '获取 %{count} 条提示',
     hintStoreNeverExpires: '提示永不过期，适用于所有问答模式。',
+    hintStoreAdded: '提示已到账！',
 
     // Fact Action Bar
     actionSave: '收藏',

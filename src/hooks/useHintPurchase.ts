@@ -69,6 +69,12 @@ export interface HintPurchase {
   purchasePack: (productId: string) => Promise<void>;
   /** Whether any pack is purchasable (live or cached prices present). */
   productsAvailable: boolean;
+  /**
+   * Whether a pack can be bought RIGHT NOW — requires the live store product,
+   * not just a cached price (cached prices render tiles; purchases need the
+   * fetched product). Always true in dev.
+   */
+  isPackAvailable: (productId: string) => boolean;
 }
 
 /**
@@ -122,9 +128,14 @@ export function useHintPurchase(source: string): HintPurchase {
     []
   );
 
+  const isPackAvailable = useCallback(
+    (productId: string): boolean => __DEV__ || products.some((p) => p.id === productId),
+    [products]
+  );
+
   const purchasePack = useCallback(
     async (productId: string) => {
-      if (purchasingId) return;
+      if (purchasingId || !isPackAvailable(productId)) return;
 
       trackPaywallPurchaseInitiated({
         productId,
@@ -162,7 +173,7 @@ export function useHintPurchase(source: string): HintPurchase {
         setPurchasingId(null);
       }
     },
-    [purchasingId, source, getDisplayPrice, requestPurchase]
+    [purchasingId, source, getDisplayPrice, requestPurchase, isPackAvailable]
   );
 
   const productsAvailable =
@@ -177,5 +188,6 @@ export function useHintPurchase(source: string): HintPurchase {
     purchasingId,
     purchasePack,
     productsAvailable,
+    isPackAvailable,
   };
 }

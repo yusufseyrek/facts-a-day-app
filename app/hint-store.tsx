@@ -38,8 +38,15 @@ export default function HintStoreScreen() {
   const tc = paywallThemeColors[theme];
   const isDark = theme === 'dark';
 
-  const { balance, productIds, hintsFor, getDisplayPrice, purchasingId, purchasePack } =
-    useHintPurchase(source);
+  const {
+    balance,
+    productIds,
+    hintsFor,
+    getDisplayPrice,
+    purchasingId,
+    purchasePack,
+    isPackAvailable,
+  } = useHintPurchase(source);
 
   // Default selection: the middle pack.
   const [selectedId, setSelectedId] = useState<string>(
@@ -64,6 +71,9 @@ export default function HintStoreScreen() {
 
   const isPurchasing = purchasingId !== null;
   const largestId = productIds[productIds.length - 1];
+  // Cached prices can render the tiles before the store answers, but a
+  // purchase needs the LIVE product — keep the CTA down until it's in.
+  const selectedAvailable = isPackAvailable(selectedId);
 
   /* eslint-disable react-native/no-unused-styles -- styles used via styles.* */
   const styles = useMemo(
@@ -95,6 +105,9 @@ export default function HintStoreScreen() {
           borderColor: tc.featureBorder,
           paddingVertical: spacing.sm + 2,
           paddingHorizontal: spacing.md,
+        },
+        balanceCardSuccess: {
+          borderColor: PAYWALL_GOLD.primary,
         },
         packPressable: {
           flex: 1,
@@ -170,11 +183,7 @@ export default function HintStoreScreen() {
       {/* Header — lightbulb + title, description below. */}
       <YStack gap={spacing.xs}>
         <XStack alignItems="center" gap={spacing.xs + 2}>
-          <Lightbulb
-            size={iconSizes.sm}
-            color={PAYWALL_GOLD.primary}
-            fill={PAYWALL_GOLD.primary}
-          />
+          <Lightbulb size={iconSizes.sm} color={PAYWALL_GOLD.primary} />
           <Text.Title fontFamily={FONT_FAMILIES.extrabold} color={tc.title} letterSpacing={-0.5}>
             {t('hintStoreTitle')}
           </Text.Title>
@@ -183,16 +192,26 @@ export default function HintStoreScreen() {
       </YStack>
 
       {/* Current balance (turns into the success row right after a purchase). */}
-      <View style={styles.balanceCard}>
+      <View
+        style={[styles.balanceCard, justCredited && styles.balanceCardSuccess]}
+        accessibilityLiveRegion="polite"
+      >
         <XStack alignItems="center" gap={spacing.md}>
           {justCredited ? (
             <Check size={iconSizes.sm} color={PAYWALL_GOLD.primary} strokeWidth={2.4} />
           ) : (
             <Lightbulb size={iconSizes.sm} color={PAYWALL_GOLD.primary} />
           )}
-          <Text.Body fontFamily={FONT_FAMILIES.semibold} color={tc.featureTitle}>
-            {t('hintStoreBalance', { count: balance })}
-          </Text.Body>
+          <YStack flex={1} gap={2}>
+            <Text.Body fontFamily={FONT_FAMILIES.semibold} color={tc.featureTitle}>
+              {t('hintStoreBalance', { count: balance })}
+            </Text.Body>
+            {justCredited && (
+              <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={PAYWALL_GOLD.primary}>
+                {t('hintStoreAdded')}
+              </Text.Caption>
+            )}
+          </YStack>
         </XStack>
       </View>
 
@@ -207,6 +226,9 @@ export default function HintStoreScreen() {
               key={productId}
               onPress={() => setSelectedId(productId)}
               disabled={isPurchasing}
+              role="radio"
+              aria-label={`${hintsFor(productId)} ${t('hintStoreHintsUnit')}, ${getDisplayPrice(productId)}`}
+              aria-selected={selected}
               style={styles.packPressable}
             >
               <View style={[styles.packCard, selected && styles.packCardSelected]}>
@@ -261,10 +283,12 @@ export default function HintStoreScreen() {
       <YStack gap={spacing.sm}>
         <Pressable
           onPress={() => purchasePack(selectedId)}
-          disabled={isPurchasing}
+          disabled={isPurchasing || !selectedAvailable}
+          role="button"
+          aria-label={t('hintStoreCta', { count: hintsFor(selectedId) })}
           style={({ pressed }) => [
             styles.ctaButton,
-            isPurchasing && styles.ctaButtonDisabled,
+            (isPurchasing || !selectedAvailable) && styles.ctaButtonDisabled,
             pressed && styles.ctaButtonPressed,
           ]}
         >
