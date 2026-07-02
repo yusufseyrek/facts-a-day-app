@@ -77,7 +77,7 @@ import {
 } from '../src/contexts';
 import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
-import { initAnalytics } from '../src/services/analytics';
+import { initAnalytics, syncEngagementPersonProps } from '../src/services/analytics';
 import { API_BASE_URL } from '../src/services/api';
 import { initAudioSettings } from '../src/services/audioSettings';
 import { registerBackgroundFeedFetch } from '../src/services/backgroundFeedFetch';
@@ -705,6 +705,12 @@ export default function RootLayout() {
       // Sync the profile's country flag if the device reading changed — the
       // claim-time capture is otherwise permanent. Fire-and-forget.
       userService.refreshCountryIfStale().catch(() => {});
+
+      // Refresh engagement person properties (reading streak, trivia stats,
+      // favorites, notification state) now that the DB is open — after the
+      // identity bootstrap above so they land on the identified person.
+      // Fire-and-forget.
+      syncEngagementPersonProps().catch(() => {});
 
       // Drain trivia results that didn't reach the leaderboard yet
       // (offline games, prior failures). Fire-and-forget.

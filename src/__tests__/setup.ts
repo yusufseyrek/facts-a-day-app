@@ -177,6 +177,7 @@ jest.mock('../services/analytics', () => ({
   identifyUser: jest.fn(),
   resetAnalyticsUser: jest.fn(),
   updatePremiumProperty: jest.fn(),
+  syncEngagementPersonProps: jest.fn(),
   trackATTPermissionResult: jest.fn(),
   trackGDPRConsentResult: jest.fn(),
   trackAppUpdate: jest.fn(),

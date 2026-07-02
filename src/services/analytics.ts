@@ -8,6 +8,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 import * as Localization from 'expo-localization';
+import * as Notifications from 'expo-notifications';
 
 import {
   logEvent,
@@ -18,8 +19,14 @@ import {
 import { posthog } from '../config/posthog';
 import { getAppVersionInfo } from '../utils/appInfo';
 
+import { getEarnedBadges } from './badges';
+import { getFavoritesCount } from './database';
 import { enqueueFactEvent } from './factEvents';
+import { getHintBalance } from './hintWallet';
+import { getOfflineFactCount } from './offlineLibrary';
 import { getNotificationTimes, getSelectedCategories } from './onboarding';
+import { getReadingOverview } from './stats';
+import { getOverallStats } from './trivia';
 
 const THEME_STORAGE_KEY = '@app_theme_mode';
 
@@ -121,6 +128,7 @@ export const initAnalytics = async (): Promise<void> => {
         is_device: isDevice,
         theme: themeValue,
         categories: categoriesValue,
+        categories_count: categories.length,
         notif_times: notifTimesValue,
       },
       { first_app_version: appVersion, first_locale: locale },
@@ -179,6 +187,58 @@ export const updatePremiumProperty = async (isPremium: boolean): Promise<void> =
 };
 
 /**
+ * Engagement aggregates as person properties: reading streak/volume, trivia
+ * performance, favorites, badges, hint balance, offline library size, and the
+ * effective notification state (OS permission + configured times).
+ *
+ * These live in SQLite/SecureStore, so this can't run from initAnalytics
+ * (module load, DB not open yet) — the root layout calls it on cold start once
+ * the database is ready. Values drift during a session (streaks grow, favorites
+ * change); the next launch heals them, which is plenty for cohort-level
+ * analysis. The SDK drops the $set when nothing changed, so the steady-state
+ * cost is zero events.
+ */
+export const syncEngagementPersonProps = async (): Promise<void> => {
+  try {
+    const [reading, trivia, favoritesCount, earnedBadges, hintBalance, offlineFacts, permission, notifTimes] =
+      await Promise.all([
+        getReadingOverview(),
+        getOverallStats(),
+        getFavoritesCount(),
+        getEarnedBadges(),
+        getHintBalance(),
+        getOfflineFactCount(),
+        Notifications.getPermissionsAsync(),
+        getNotificationTimes(),
+      ]);
+
+    posthog.setPersonProperties(
+      {
+        reading_streak: reading.currentStreak,
+        reading_streak_best: reading.longestStreak,
+        reading_facts_read: reading.factsDeepRead,
+        reading_stories_viewed: reading.storiesViewed,
+        reading_minutes: Math.round(reading.totalSeconds / 60),
+        trivia_answered: trivia.totalAnswered,
+        trivia_accuracy: trivia.accuracy,
+        trivia_best_streak: trivia.bestStreak,
+        trivia_tests_taken: trivia.testsTaken,
+        favorites_count: favoritesCount,
+        badges_earned: earnedBadges.length,
+        hint_balance: hintBalance,
+        offline_facts_count: offlineFacts,
+        push_permission: permission.status,
+        notifications_enabled: permission.status === 'granted' && notifTimes.length > 0,
+      },
+      undefined,
+      false
+    );
+  } catch (error) {
+    console.error('Failed to sync engagement person props:', error);
+  }
+};
+
+/**
  * Update theme user property when theme changes
  * Updates both Analytics and Crashlytics
  */
@@ -198,7 +258,11 @@ export const updateCategoriesProperty = async (categories: string[]): Promise<vo
   await setAnalyticsUserProperty('categories', categoriesValue);
   await setCrashlyticsAttribute('categories', categoriesValue);
   posthog.register({ categories: categoriesValue });
-  posthog.setPersonProperties({ categories: categoriesValue }, undefined, false);
+  posthog.setPersonProperties(
+    { categories: categoriesValue, categories_count: categories.length },
+    undefined,
+    false
+  );
 };
 
 /**
@@ -354,6 +418,11 @@ export const trackOnboardingComplete = (params: {
   };
   logEvent('app_onboarding_done', props);
   posthog.capture('onboarding_complete', props);
+  posthog.setPersonProperties(
+    { onboarding_completed: true, notifications_enabled: params.notificationsEnabled },
+    undefined,
+    false
+  );
 };
 
 // ============================================================================
@@ -1510,6 +1579,7 @@ export const trackPushPermissionResult = (params: {
   };
   logEvent('app_push_permission', props);
   posthog.capture('push_permission_result', props);
+  posthog.setPersonProperties({ push_permission: params.status }, undefined, false);
 };
 
 /** Push registration (token → backend) succeeded or short-circuited. */

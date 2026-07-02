@@ -146,18 +146,33 @@ async function getTopCategoriesRead(_limit: number): Promise<CategoryStat[]> {
 }
 
 // ============================================
-// BATCHED ENTRY POINT
+// BATCHED ENTRY POINTS
 // ============================================
 
 /**
+ * Just the overview numbers (streaks + lifetime read/story/time aggregates).
+ * Cheap: two queries. Used by the Reading Stats screen via getAllReadingStats
+ * and by analytics to sync engagement person properties on cold start.
+ */
+export async function getReadingOverview(): Promise<ReadingOverview> {
+  const [agg, streaks] = await Promise.all([getOverviewAggregates(), getReadingStreaks()]);
+  return {
+    storiesViewed: agg?.stories_viewed ?? 0,
+    factsDeepRead: agg?.facts_deep_read ?? 0,
+    totalSeconds: agg?.total_seconds ?? 0,
+    currentStreak: streaks.current,
+    longestStreak: streaks.best,
+  };
+}
+
+/**
  * Fetch every stat the Reading Stats screen needs in a single call.
- * All 6 independent queries run in parallel via Promise.all, so the total
+ * All independent queries run in parallel via Promise.all, so the total
  * wall time is bounded by the slowest query — not the sum.
  */
 export async function getAllReadingStats(): Promise<AllReadingStats> {
-  const [agg, streaks, dailyActivity, habits, topCategories, earnedBadges] = await Promise.all([
-    getOverviewAggregates(),
-    getReadingStreaks(),
+  const [overview, dailyActivity, habits, topCategories, earnedBadges] = await Promise.all([
+    getReadingOverview(),
     getDailyReadingActivity(90),
     getReadingHabits(),
     getTopCategoriesRead(5),
@@ -165,13 +180,7 @@ export async function getAllReadingStats(): Promise<AllReadingStats> {
   ]);
 
   return {
-    overview: {
-      storiesViewed: agg?.stories_viewed ?? 0,
-      factsDeepRead: agg?.facts_deep_read ?? 0,
-      totalSeconds: agg?.total_seconds ?? 0,
-      currentStreak: streaks.current,
-      longestStreak: streaks.best,
-    },
+    overview,
     dailyActivity,
     habits,
     topCategories,
