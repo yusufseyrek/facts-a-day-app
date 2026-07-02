@@ -27,6 +27,8 @@ jest.mock('../../services/triviaSync', () => ({
   syncTriviaResults: jest.fn(async () => {}),
 }));
 jest.mock('../../services/analytics', () => ({
+  identifyUser: jest.fn(),
+  resetAnalyticsUser: jest.fn(),
   trackScreenNameClaimed: jest.fn(),
   trackAccountDeleted: jest.fn(),
 }));

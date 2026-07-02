@@ -2,7 +2,12 @@ import { getCalendars, getLocales } from 'expo-localization';
 
 import { countryForTimeZone } from '../utils/timezoneCountry';
 
-import { trackAccountDeleted, trackScreenNameClaimed } from './analytics';
+import {
+  identifyUser,
+  resetAnalyticsUser,
+  trackAccountDeleted,
+  trackScreenNameClaimed,
+} from './analytics';
 import * as api from './api';
 import { getStableDeviceId } from './deviceBinding';
 import * as notificationService from './notifications';
@@ -111,6 +116,10 @@ export async function claimScreenName(
   };
   await saveIdentity(identity);
 
+  // Switch the PostHog person from the install's anonymous id to the backend
+  // user_id, merging pre-claim behavior into the identified person.
+  identifyUser(identity);
+
   trackScreenNameClaimed({
     isFirstClaim: true,
     source,
@@ -148,7 +157,9 @@ export async function refreshCountryIfStale(): Promise<void> {
   if (!device || device === identity.countryCode) return;
 
   await api.updateUser({ country_code: device });
-  await saveIdentity({ ...identity, countryCode: device });
+  const updated = { ...identity, countryCode: device };
+  await saveIdentity(updated);
+  identifyUser(updated); // heal the person's country_code too
 }
 
 /** Test hook: allow refreshCountryIfStale to run again. */
@@ -161,20 +172,21 @@ export function __resetCountryRefresh(): void {
  * device's binding fresh so future reinstalls can recover.
  *
  * iOS restores silently from the Keychain-persisted secret (getIdentity already
- * returns it), so this is effectively the Android path: Android's secret does
- * NOT survive uninstall, but its SSAID does, so the server hands the bound
- * account back with a freshly rotated secret. Best-effort and idempotent — on
- * the hot path (identity already present, or no stable id) it makes no blocking
+ * returns it), so the RECOVERY half is effectively the Android path: Android's
+ * secret does NOT survive uninstall, but its SSAID does, so the server hands
+ * the bound account back with a freshly rotated secret. On BOTH platforms this
+ * then re-identifies analytics with whatever identity we hold, since PostHog's
+ * own storage never survives a reinstall. Best-effort and idempotent — on the
+ * hot path (identity already present, or no stable id) it makes no blocking
  * network call. Run this BEFORE push re-register / trivia drain so they attach
  * to the restored identity.
  */
 export async function bootstrapIdentityRecovery(): Promise<void> {
-  const deviceId = await getStableDeviceId();
-  if (!deviceId) return; // iOS, or SSAID unavailable → nothing to do here
+  const deviceId = await getStableDeviceId(); // Android SSAID; null on iOS
 
   let identity = await getIdentity();
 
-  if (!identity) {
+  if (!identity && deviceId) {
     try {
       const recovered = await api.recoverUser(deviceId);
       if (recovered) {
@@ -191,11 +203,20 @@ export async function bootstrapIdentityRecovery(): Promise<void> {
     }
   }
 
-  // Keep the binding warm for whoever we are now (claimed or restored), so a
-  // future reinstall of THIS device can recover it. Also binds users who
-  // claimed before device binding existed. Fire-and-forget.
   if (identity) {
-    api.bindDevice(deviceId).catch(() => {});
+    // Re-attach analytics to this person on every cold start. A reinstall
+    // wipes PostHog's stored distinct id (app container) even where the
+    // identity itself survives (iOS Keychain, or the Android recovery above),
+    // so without this the reinstalled app would report as a brand-new
+    // anonymous person. No-op when the distinct id already matches.
+    identifyUser(identity);
+
+    // Keep the binding warm for whoever we are now (claimed or restored), so a
+    // future reinstall of THIS device can recover it. Also binds users who
+    // claimed before device binding existed. Fire-and-forget.
+    if (deviceId) {
+      api.bindDevice(deviceId).catch(() => {});
+    }
   }
 }
 
@@ -216,6 +237,9 @@ async function renameScreenName(
 
   const updated: UserIdentity = { ...identity, screenName };
   await saveIdentity(updated);
+
+  // Same distinct id → just refreshes the screen_name person property.
+  identifyUser(updated);
 
   trackScreenNameClaimed({
     isFirstClaim: false,
@@ -244,4 +268,7 @@ export async function deleteAccount(): Promise<void> {
     throw error;
   }
   trackAccountDeleted({ result: 'confirmed', hadScreenName });
+  // After the deletion event is attributed to the (now deleted) person, detach
+  // analytics so future events mint a fresh anonymous person.
+  resetAnalyticsUser();
 }

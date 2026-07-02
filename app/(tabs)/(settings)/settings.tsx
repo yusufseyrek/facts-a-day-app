@@ -47,6 +47,7 @@ import { useTranslation } from '../../../src/i18n';
 import { TranslationKeys } from '../../../src/i18n/translations';
 import { openAdDebugMenu } from '../../../src/services/ads';
 import {
+  resetAnalyticsUser,
   Screens,
   trackLanguageSettingsOpened,
   trackManageSubscriptionTapped,
@@ -583,6 +584,9 @@ export default function SettingsPage() {
       // again (local only — re-claiming the same name needs the backend row
       // gone, since the secret is unrecoverable).
       await clearIdentity();
+      // Detach the PostHog person too — the factory-fresh run should mint a
+      // fresh anonymous person, like a real new install would.
+      resetAnalyticsUser();
       // Clear cached images on disk
       const { clearAllCachedImages } = await import('../../../src/services/images');
       await clearAllCachedImages();

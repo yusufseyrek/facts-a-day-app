@@ -174,6 +174,9 @@ jest.mock('react-native-google-mobile-ads', () => ({
 
 jest.mock('../services/analytics', () => ({
   initAnalytics: jest.fn(),
+  identifyUser: jest.fn(),
+  resetAnalyticsUser: jest.fn(),
+  updatePremiumProperty: jest.fn(),
   trackATTPermissionResult: jest.fn(),
   trackGDPRConsentResult: jest.fn(),
   trackAppUpdate: jest.fn(),

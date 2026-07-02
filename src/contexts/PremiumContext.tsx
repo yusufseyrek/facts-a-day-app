@@ -13,7 +13,6 @@ import {
 import { preloadAppOpenAd } from '../components/ads/AppOpenAd';
 import { preloadInterstitialAd } from '../components/ads/InterstitialAd';
 import { HINT_PACKS, SUBSCRIPTION } from '../config/app';
-import { setAnalyticsUserProperty } from '../config/firebase';
 import {
   trackHintPackPurchased,
   trackPaywallPurchaseCancelled,
@@ -22,6 +21,7 @@ import {
   trackSubscriptionPurchased,
   trackSubscriptionRestored,
   trackSubscriptionStatusChanged,
+  updatePremiumProperty,
 } from '../services/analytics';
 import { getStoredLocale } from '../services/contentRefresh';
 import { creditHints } from '../services/hintWallet';
@@ -91,7 +91,7 @@ function DevPremiumProvider({ children }: { children: React.ReactNode }) {
     setIsPremium(status);
     setPremiumState(status);
     await cachePremiumStatus(status);
-    await setAnalyticsUserProperty('is_premium', status ? 'true' : 'false');
+    await updatePremiumProperty(status);
 
     // Handle downgrade: deselect premium categories and delete their facts
     if (wasPremium === true && !status) {
@@ -158,7 +158,7 @@ function IAPPremiumProvider({ children }: { children: React.ReactNode }) {
     setIsPremium(status);
     setPremiumState(status);
     await cachePremiumStatus(status);
-    await setAnalyticsUserProperty('is_premium', status ? 'true' : 'false');
+    await updatePremiumProperty(status);
     // Only fire analytics on actual transitions, not initial load
     if (lastKnownStatusRef.current !== null && lastKnownStatusRef.current !== status) {
       trackSubscriptionStatusChanged(status);

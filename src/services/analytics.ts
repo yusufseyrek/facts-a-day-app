@@ -102,9 +102,80 @@ export const initAnalytics = async (): Promise<void> => {
       theme: themeValue,
       categories: categoriesValue,
     });
+
+    // Mirror the same info onto the PostHog PERSON profile. Super properties
+    // only ride along on each event; person properties live on the person, so
+    // they can drive person filters/cohorts ("premium users on Android who
+    // follow history") against the whole behavior stream. $set_once keeps the
+    // install-time version/locale even after updates. The SDK dedups a repeat
+    // call with unchanged values, so this is one $set event per actual change.
+    posthog.setPersonProperties(
+      {
+        platform,
+        os_version: osVersion,
+        device_brand: deviceBrand,
+        device_model: deviceModel,
+        app_version: appVersion,
+        build_number: buildNumber,
+        locale,
+        is_device: isDevice,
+        theme: themeValue,
+        categories: categoriesValue,
+        notif_times: notifTimesValue,
+      },
+      { first_app_version: appVersion, first_locale: locale },
+      false // no feature flags in use — skip the flags reload round-trip
+    );
   } catch (error) {
     console.error('Failed to initialize analytics:', error);
   }
+};
+
+// ============================================================================
+// Person Identity (PostHog persons)
+// ============================================================================
+
+/**
+ * Tie this install's events to the backend app-user identity (the user_id
+ * minted when a screen name is claimed). PostHog merges the anonymous person
+ * into the identified one, so pre-claim behavior stays attached to the same
+ * person, and the distinct id equals the backend user_id — persons can be
+ * cross-referenced with API rows (comments, reports). Idempotent: when the
+ * distinct id already matches, only changed person properties are sent.
+ */
+export const identifyUser = (params: {
+  userId: string;
+  screenName: string;
+  countryCode: string | null;
+}): void => {
+  posthog.identify(params.userId, {
+    $set: {
+      screen_name: params.screenName,
+      country_code: params.countryCode ?? 'unknown',
+      has_screen_name: true,
+    },
+  });
+};
+
+/**
+ * Forget the current person (account deletion / reset onboarding) so the next
+ * events mint a fresh anonymous person instead of polluting the old one.
+ * reset() also clears registered super properties, so re-seed device/settings
+ * properties for the new person.
+ */
+export const resetAnalyticsUser = (): void => {
+  posthog.reset();
+  void initAnalytics();
+};
+
+/**
+ * Premium status everywhere it's useful: Firebase user property, PostHog super
+ * property (on every event) and PostHog person property (for cohorts).
+ */
+export const updatePremiumProperty = async (isPremium: boolean): Promise<void> => {
+  await setAnalyticsUserProperty('is_premium', isPremium ? 'true' : 'false');
+  posthog.register({ is_premium: isPremium });
+  posthog.setPersonProperties({ is_premium: isPremium }, undefined, false);
 };
 
 /**
@@ -115,6 +186,7 @@ export const updateThemeProperty = async (theme: string): Promise<void> => {
   await setAnalyticsUserProperty('theme', theme);
   await setCrashlyticsAttribute('theme', theme);
   posthog.register({ theme });
+  posthog.setPersonProperties({ theme }, undefined, false);
 };
 
 /**
@@ -126,6 +198,7 @@ export const updateCategoriesProperty = async (categories: string[]): Promise<vo
   await setAnalyticsUserProperty('categories', categoriesValue);
   await setCrashlyticsAttribute('categories', categoriesValue);
   posthog.register({ categories: categoriesValue });
+  posthog.setPersonProperties({ categories: categoriesValue }, undefined, false);
 };
 
 /**
@@ -142,6 +215,7 @@ export const updateNotificationProperty = async (times: Date[]): Promise<void> =
   const notifTimesValue = formattedTimes || 'none';
   await setAnalyticsUserProperty('notif_times', notifTimesValue);
   await setCrashlyticsAttribute('notif_times', notifTimesValue);
+  posthog.setPersonProperties({ notif_times: notifTimesValue }, undefined, false);
 };
 
 // ============================================================================
