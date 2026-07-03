@@ -75,7 +75,11 @@ export default function TriviaGameScreen() {
         ? 'category'
         : params.type === 'quick'
           ? 'quick'
-          : 'mixed';
+          : params.type === 'true_false'
+            ? 'true_false'
+            : params.type === 'multiple_choice'
+              ? 'multiple_choice'
+              : 'mixed';
 
   const [loading, setLoading] = useState(true);
   // Questions come from local SQLite, so loads are near-instant. Show nothing
@@ -173,6 +177,10 @@ export default function TriviaGameScreen() {
         return t('mixedTrivia');
       case 'category':
         return t('categoryTrivia');
+      case 'true_false':
+        return t('trueFalseTrivia');
+      case 'multiple_choice':
+        return t('multipleChoiceTrivia');
       default:
         return t('trivia');
     }
@@ -286,6 +294,8 @@ export default function TriviaGameScreen() {
         questions = await triviaService.getDailyTriviaQuestions(locale);
       } else if (params.type === 'mixed') {
         questions = await triviaService.getMixedTriviaQuestions(locale);
+      } else if (params.type === 'true_false' || params.type === 'multiple_choice') {
+        questions = await triviaService.getMixedTriviaQuestions(locale, params.type);
       } else if (params.type === 'category' && params.categorySlug) {
         questions = await triviaService.getCategoryTriviaQuestions(params.categorySlug, locale);
       }
@@ -295,8 +305,15 @@ export default function TriviaGameScreen() {
         return;
       }
 
-      // Calculate total time based on question count (using average time per question)
-      const totalTime = questions.length * TIME_PER_QUESTION.AVERAGE;
+      // Total time scales with the format: T/F rounds read faster than
+      // 3-option rounds, mixed batches use the average.
+      const secondsPerQuestion =
+        params.type === 'true_false'
+          ? TIME_PER_QUESTION.TRUE_FALSE
+          : params.type === 'multiple_choice'
+            ? TIME_PER_QUESTION.MULTIPLE_CHOICE
+            : TIME_PER_QUESTION.AVERAGE;
+      const totalTime = questions.length * secondsPerQuestion;
       setTimeRemaining(totalTime);
 
       // Fresh game: clear any banked elapsed (the timer effect starts a new

@@ -157,7 +157,8 @@ describe('claimScreenName binds the device', () => {
 
     await claimScreenName('Newcomer', 'en', 'settings');
 
-    expect(mockCreate).toHaveBeenCalledWith('Newcomer', expect.anything(), ANDROID_SSAID);
+    // Trailing null = no avatar chosen on this claim (the modal's default).
+    expect(mockCreate).toHaveBeenCalledWith('Newcomer', expect.anything(), ANDROID_SSAID, null);
     expect((await getIdentity())?.screenName).toBe('Newcomer');
   });
 });

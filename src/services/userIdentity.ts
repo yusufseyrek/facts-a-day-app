@@ -40,6 +40,9 @@ export interface UserIdentity {
   userKey: string;
   screenName: string;
   countryCode: string | null;
+  /** Curated avatar emoji (see config/avatars). Identities stored before the
+   * avatar feature parse without the key — treat undefined as null. */
+  avatar?: string | null;
 }
 
 // In-memory cache so hot paths (every comment/report request) skip the

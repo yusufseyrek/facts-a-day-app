@@ -205,18 +205,23 @@ export default function SettingsPage() {
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [showScreenNameModal, setShowScreenNameModal] = useState(false);
 
-  // Claimed screen name (null until the user picks one)
+  // Claimed screen name + avatar (null until the user picks one)
   const [screenName, setScreenName] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
   useEffect(() => {
     userService
       .getProfile()
-      .then((profile) => setScreenName(profile?.screenName ?? null))
+      .then((profile) => {
+        setScreenName(profile?.screenName ?? null);
+        setAvatar(profile?.avatar ?? null);
+      })
       .catch(() => {});
     // Re-read when the name is claimed/renamed/cleared from another screen
     // (e.g. a fact's comment section), so this row never shows a stale value.
-    return userService.onIdentityChange((identity) =>
-      setScreenName(identity?.screenName ?? null),
-    );
+    return userService.onIdentityChange((identity) => {
+      setScreenName(identity?.screenName ?? null);
+      setAvatar(identity?.avatar ?? null);
+    });
   }, []);
 
   // Preferences state
@@ -786,7 +791,8 @@ export default function SettingsPage() {
         {
           id: 'screenName',
           label: t('screenName'),
-          value: screenName ?? t('screenNameNotSet'),
+          // The chosen avatar rides along so the row previews the identity.
+          value: screenName ? `${avatar ? `${avatar} ` : ''}${screenName}` : t('screenNameNotSet'),
           icon: <User size={iconSizes.md} color={colors.neonPurple} />,
           accent: colors.neonPurple,
           onPress: () => setShowScreenNameModal(true),
@@ -1115,6 +1121,7 @@ export default function SettingsPage() {
     isDevelopment,
     theme,
     screenName,
+    avatar,
     imageCacheSize,
     updateInfo,
     isCheckingUpdate,
@@ -1247,6 +1254,7 @@ export default function SettingsPage() {
         onClose={() => setShowScreenNameModal(false)}
         onSaved={(name) => setScreenName(name)}
         currentName={screenName}
+        currentAvatar={avatar}
         source="settings"
       />
 

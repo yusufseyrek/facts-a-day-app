@@ -20,11 +20,12 @@ import * as api from '../services/api';
 import * as userService from '../services/user';
 import { hexColors, useTheme } from '../theme';
 import { openInAppBrowser } from '../utils/browser';
-import { darkenColor, getContrastColor } from '../utils/colors';
+import { avatarColor, darkenColor, getContrastColor } from '../utils/colors';
 import { countryFlagEmoji } from '../utils/countryFlag';
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { useResponsive } from '../utils/useResponsive';
 
+import { AvatarDisc } from './AvatarDisc';
 import { ChevronRight, MessageCircle, Send } from './icons';
 import { ScreenNameModal } from './ScreenNameModal';
 import { XStack, YStack } from './Stacks';
@@ -90,28 +91,8 @@ function timeAgo(createdAt: string, locale: string): string {
   }
 }
 
-// Per-user accent drawn from the app's neon palette so avatars distinguish
-// authors while staying on-brand; the hash keeps a name's color stable.
-const AVATAR_COLOR_KEYS = [
-  'neonCyan',
-  'neonOrange',
-  'neonMagenta',
-  'neonGreen',
-  'neonPurple',
-  'neonYellow',
-  'neonRed',
-] as const;
-
-function avatarColor(
-  name: string,
-  palette: Record<(typeof AVATAR_COLOR_KEYS)[number], string>
-): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-  return palette[AVATAR_COLOR_KEYS[hash % AVATAR_COLOR_KEYS.length]];
-}
-
-/** Gradient initial disc — the discover/trivia tile signature at avatar size. */
+/** Gradient icon disc (send button, join CTA) — the identity discs use the
+ * shared AvatarDisc instead. */
 function GradientDisc({
   color,
   size,
@@ -175,16 +156,7 @@ function CommentRow({
 
   return (
     <XStack gap={spacing.sm} alignItems="flex-start">
-      <GradientDisc color={accent} size={avatarSize}>
-        <Text
-          fontFamily={FONT_FAMILIES.bold}
-          fontSize={avatarSize * 0.42}
-          color={getContrastColor(accent)}
-          maxFontSizeMultiplier={1}
-        >
-          {name[0].toUpperCase()}
-        </Text>
-      </GradientDisc>
+      <AvatarDisc name={name} avatar={comment.avatar} color={accent} size={avatarSize} />
 
       {/* Speech-bubble card: small corner toward the avatar */}
       <YStack

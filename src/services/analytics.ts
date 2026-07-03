@@ -302,6 +302,7 @@ export const Screens = {
   TRIVIA_CATEGORIES: 'TriviaCategories',
   TRIVIA_RESULTS: 'TriviaResults',
   TRIVIA_LEADERBOARD: 'TriviaLeaderboard',
+  TRIVIA_PROFILE: 'TriviaProfile',
   FAVORITES: 'Favorites',
   SETTINGS: 'Settings',
   FACT_DETAIL: 'FactDetail',
@@ -665,7 +666,13 @@ export const trackAppOpenAdShown = (source: 'foreground'): void => {
 // Trivia Events
 // ============================================================================
 
-export type TriviaMode = 'daily' | 'mixed' | 'category' | 'quick';
+export type TriviaMode =
+  | 'daily'
+  | 'mixed'
+  | 'category'
+  | 'quick'
+  | 'true_false'
+  | 'multiple_choice';
 
 /**
  * Track when user starts a trivia session

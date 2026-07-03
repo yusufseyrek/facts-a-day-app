@@ -6,11 +6,11 @@ import { hexColors, useTheme } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
 import { DialogShell } from '../DialogShell';
-import { CheckCircle, Clock, HelpCircle, Play, Shuffle, Trophy, Zap } from '../icons';
+import { CheckCircle, Clock, Grid, HelpCircle, Play, Shuffle, Trophy, Zap } from '../icons';
 import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
-export type TriviaType = 'daily' | 'mixed' | 'category';
+export type TriviaType = 'daily' | 'mixed' | 'category' | 'true_false' | 'multiple_choice';
 
 interface TriviaIntroModalProps {
   visible: boolean;
@@ -57,12 +57,16 @@ export function TriviaIntroModal({
   const surfaceColor = isDark ? hexColors.dark.surface : hexColors.light.surface;
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
   const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
+  const greenColor = isDark ? hexColors.dark.neonGreen : hexColors.light.neonGreen;
+  const orangeColor = isDark ? hexColors.dark.neonOrange : hexColors.light.neonOrange;
   const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
 
-  // Determine accent color based on type
+  // Determine accent color based on type (same hue map as TriviaGridCard).
   const getAccentColor = () => {
     if (type === 'daily') return primaryColor;
     if (type === 'mixed') return purpleColor;
+    if (type === 'true_false') return greenColor;
+    if (type === 'multiple_choice') return orangeColor;
     return categoryColor || primaryColor;
   };
   const accentColor = getAccentColor();
@@ -75,6 +79,12 @@ export function TriviaIntroModal({
     if (type === 'mixed') {
       return <Shuffle size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />;
     }
+    if (type === 'true_false') {
+      return <CheckCircle size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />;
+    }
+    if (type === 'multiple_choice') {
+      return <Grid size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />;
+    }
     return getLucideIcon(categoryIcon, iconSizes.lg, '#FFFFFF');
   };
 
@@ -82,6 +92,8 @@ export function TriviaIntroModal({
   const getTitle = () => {
     if (type === 'daily') return t('dailyTrivia');
     if (type === 'mixed') return t('mixedTrivia');
+    if (type === 'true_false') return t('trueFalseTrivia');
+    if (type === 'multiple_choice') return t('multipleChoiceTrivia');
     return `${categoryName} ${t('trivia')}`;
   };
 
@@ -89,6 +101,8 @@ export function TriviaIntroModal({
   const getDescription = () => {
     if (type === 'daily') return t('dailyTriviaDesc');
     if (type === 'mixed') return t('mixedTriviaDesc');
+    if (type === 'true_false') return t('trueFalseTriviaDesc');
+    if (type === 'multiple_choice') return t('multipleChoiceTriviaDesc');
     return categoryDescription || '';
   };
 
@@ -214,7 +228,11 @@ export function TriviaIntroModal({
       <YStack paddingHorizontal={spacing.lg} gap={spacing.xs} marginBottom={spacing.md}>
         {/* Personal accuracy (replaces the answered/mastered progress
             card — accuracy is the number players actually chase) */}
-        {(type === 'category' || type === 'mixed') && answeredCount > 0 && (
+        {(type === 'category' ||
+          type === 'mixed' ||
+          type === 'true_false' ||
+          type === 'multiple_choice') &&
+          answeredCount > 0 && (
           <XStack
             backgroundColor={surfaceColor}
             borderRadius={radius.md}

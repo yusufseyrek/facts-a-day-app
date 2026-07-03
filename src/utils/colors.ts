@@ -77,3 +77,25 @@ export const getContrastColor = (hexColor: string): string => {
   const luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
   return luminance > 0.5 ? '#000000' : '#FFFFFF';
 };
+
+// Per-user accent drawn from the app's neon palette so identity discs
+// distinguish users while staying on-brand; the hash keeps a name's color
+// stable everywhere it renders (comments, leaderboard, profiles).
+const AVATAR_COLOR_KEYS = [
+  'neonCyan',
+  'neonOrange',
+  'neonMagenta',
+  'neonGreen',
+  'neonPurple',
+  'neonYellow',
+  'neonRed',
+] as const;
+
+export const avatarColor = (
+  name: string,
+  palette: Record<(typeof AVATAR_COLOR_KEYS)[number], string>
+): string => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  return palette[AVATAR_COLOR_KEYS[hash % AVATAR_COLOR_KEYS.length]];
+};

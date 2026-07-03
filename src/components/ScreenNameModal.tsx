@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, TextInput } from 'react-native';
 
+import { AVATAR_EMOJI } from '../config/avatars';
 import { useTranslation } from '../i18n';
 import * as api from '../services/api';
 import * as userService from '../services/user';
 import { hexColors, useTheme } from '../theme';
+import { avatarColor } from '../utils/colors';
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { generateScreenName } from '../utils/screenNameGenerator';
 import { useResponsive } from '../utils/useResponsive';
 
+import { AvatarDisc } from './AvatarDisc';
 import { DialogButton, DialogShell } from './DialogShell';
 import { Shuffle } from './icons';
 import { XStack, YStack } from './Stacks';
@@ -21,6 +24,8 @@ interface ScreenNameModalProps {
   onSaved: (screenName: string) => void;
   /** Current name when renaming; null when claiming for the first time. */
   currentName: string | null;
+  /** Current avatar emoji when renaming; null/omitted = none chosen yet. */
+  currentAvatar?: string | null;
   /** Where this modal was opened from, for analytics attribution. */
   source?: 'comments' | 'leaderboard' | 'settings';
   /**
@@ -47,6 +52,7 @@ export function ScreenNameModal({
   onClose,
   onSaved,
   currentName,
+  currentAvatar = null,
   source = 'settings',
   presentInWindow = false,
 }: ScreenNameModalProps) {
@@ -56,22 +62,25 @@ export function ScreenNameModal({
     useResponsive();
 
   const [name, setName] = useState(currentName ?? '');
+  const [avatar, setAvatar] = useState<string | null>(currentAvatar);
   const [availability, setAvailability] = useState<Availability>('idle');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Re-seed the input each time the dialog opens (it stays mounted between).
+  // Re-seed the inputs each time the dialog opens (it stays mounted between).
   useEffect(() => {
     if (visible) {
       setName(currentName ?? '');
+      setAvatar(currentAvatar);
       setAvailability('idle');
       setError('');
     }
-  }, [visible, currentName]);
+  }, [visible, currentName, currentAvatar]);
 
   const trimmed = name.trim();
   const unchanged = currentName !== null && trimmed === currentName;
+  const avatarChanged = avatar !== currentAvatar;
 
   // Debounced live availability. Local-format failures short-circuit without
   // a request; the network check is best-effort (errors fall back to idle so
@@ -115,7 +124,7 @@ export function ScreenNameModal({
     setIsSubmitting(true);
     setError('');
     try {
-      const identity = await userService.claimScreenName(trimmed, locale, source);
+      const identity = await userService.claimScreenName(trimmed, locale, source, avatar);
       onSaved(identity.screenName);
       onClose();
     } catch (err) {
@@ -145,9 +154,11 @@ export function ScreenNameModal({
     }
   }, [availability, t, theme]);
 
+  // An avatar-only change is a valid submit (rename PATCHes both fields); the
+  // name rules still gate it so we never submit an invalid handle.
   const canSubmit =
     !isSubmitting &&
-    !unchanged &&
+    (!unchanged || avatarChanged) &&
     trimmed.length >= NAME_MIN &&
     availability !== 'taken' &&
     availability !== 'invalid';
@@ -185,6 +196,54 @@ export function ScreenNameModal({
       >
         <Text.Caption color="$textSecondary">{t('screenNameHint')}</Text.Caption>
 
+        {/* Avatar picker: preview disc + curated emoji grid. Tapping the
+            selected emoji again clears back to the initial disc. */}
+        <XStack gap={spacing.md} alignItems="center">
+          <AvatarDisc
+            name={trimmed || '?'}
+            avatar={avatar}
+            color={avatarColor(trimmed || '?', hexColors[theme])}
+            size={iconSizes.xl + spacing.md}
+          />
+          <YStack flex={1} gap={2}>
+            <Text.Label color="$text">{t('avatarPickerTitle')}</Text.Label>
+            <Text.Tiny color="$textSecondary">{t('avatarPickerHint')}</Text.Tiny>
+          </YStack>
+        </XStack>
+        <XStack flexWrap="wrap" gap={spacing.xs} justifyContent="center">
+          {AVATAR_EMOJI.map((emoji) => {
+            const selected = avatar === emoji;
+            return (
+              <Pressable
+                key={emoji}
+                onPress={() => setAvatar(selected ? null : emoji)}
+                disabled={isSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel={emoji}
+                accessibilityState={{ selected }}
+                style={({ pressed }) => ({
+                  width: iconSizes.xl,
+                  height: iconSizes.xl,
+                  borderRadius: iconSizes.xl / 2,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: selected
+                    ? hexColors[theme].primaryLight
+                    : hexColors[theme].surface,
+                  borderWidth: selected ? 2 : borderWidths.hairline,
+                  borderColor: selected ? hexColors[theme].primary : hexColors[theme].border,
+                  opacity: pressed ? 0.7 : 1,
+                  transform: [{ scale: pressed ? 0.92 : 1 }],
+                })}
+              >
+                <Text fontSize={iconSizes.xl * 0.5} maxFontSizeMultiplier={1}>
+                  {emoji}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </XStack>
+
         <XStack gap={spacing.sm} alignItems="stretch" style={{ flexShrink: 0 }}>
           <TextInput
             maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER}
@@ -196,7 +255,8 @@ export function ScreenNameModal({
             autoCorrect={false}
             maxLength={NAME_MAX}
             editable={!isSubmitting}
-            autoFocus
+            // No autoFocus: the keyboard would cover the avatar grid the
+            // moment the dialog opens; picking an avatar comes first now.
             style={{
               flex: 1,
               backgroundColor: hexColors[theme].surface,

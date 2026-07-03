@@ -5,7 +5,15 @@ import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
-import { Calendar, ChevronLeft, ChevronRight, Shuffle, Zap } from '../../../src/components/icons';
+import {
+  Calendar,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Grid,
+  Shuffle,
+  Zap,
+} from '../../../src/components/icons';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { getTriviaModeBadge, TriviaResults } from '../../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
@@ -98,6 +106,10 @@ function SessionCard({
         return t('dailyTrivia');
       case 'mixed':
         return t('mixedTrivia');
+      case 'true_false':
+        return t('trueFalseTrivia');
+      case 'multiple_choice':
+        return t('multipleChoiceTrivia');
       case 'quick':
         // Legacy mode (Quick Quiz feature removed); historical sessions still render.
         return 'Quick Quiz';
@@ -125,9 +137,27 @@ function SessionCard({
       );
     }
 
+    // Same icon + hue map as the hub cards so history rows read as their mode.
     const IconComponent =
-      session.trivia_mode === 'daily' ? Calendar : session.trivia_mode === 'quick' ? Zap : Shuffle;
-    const iconColor = primaryColor;
+      session.trivia_mode === 'daily'
+        ? Calendar
+        : session.trivia_mode === 'quick'
+          ? Zap
+          : session.trivia_mode === 'true_false'
+            ? CheckCircle
+            : session.trivia_mode === 'multiple_choice'
+              ? Grid
+              : Shuffle;
+    const iconColor =
+      session.trivia_mode === 'true_false'
+        ? isDark
+          ? hexColors.dark.neonGreen
+          : hexColors.light.neonGreen
+        : session.trivia_mode === 'multiple_choice'
+          ? isDark
+            ? hexColors.dark.neonOrange
+            : hexColors.light.neonOrange
+          : primaryColor;
 
     return (
       <View

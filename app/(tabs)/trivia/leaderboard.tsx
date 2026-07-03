@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { ContentContainer } from '../../../src/components';
@@ -19,9 +19,17 @@ import { useResponsive } from '../../../src/utils/useResponsive';
 export default function TriviaLeaderboardScreen() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const router = useRouter();
   const { spacing } = useResponsive();
   const bannerInset = useTabBarBannerInset();
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
+
+  const openProfile = useCallback(
+    (name: string) => {
+      router.push(`/(tabs)/trivia/profile?name=${encodeURIComponent(name)}`);
+    },
+    [router]
+  );
 
   const [reloadToken, setReloadToken] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,7 +62,12 @@ export default function TriviaLeaderboardScreen() {
       >
         <ContentContainer>
           <View style={{ marginVertical: spacing.lg }}>
-            <TriviaLeaderboard reloadToken={reloadToken} limit={50} onLoadEnd={handleLoadEnd} />
+            <TriviaLeaderboard
+              reloadToken={reloadToken}
+              limit={50}
+              onLoadEnd={handleLoadEnd}
+              onPlayerPress={openProfile}
+            />
           </View>
         </ContentContainer>
       </ScrollView>

@@ -9,9 +9,10 @@ import * as api from '../../services/api';
 import { syncTriviaResults } from '../../services/triviaSync';
 import * as userService from '../../services/user';
 import { hexColors, useTheme } from '../../theme';
-import { darkenColor, getContrastColor, hexToRgba } from '../../utils/colors';
+import { avatarColor, darkenColor, getContrastColor, hexToRgba } from '../../utils/colors';
 import { countryFlagEmoji } from '../../utils/countryFlag';
 import { useResponsive } from '../../utils/useResponsive';
+import { AvatarDisc } from '../AvatarDisc';
 import { ChevronRight, Trophy } from '../icons';
 import { ScreenNameModal } from '../ScreenNameModal';
 import { ShimmerPlaceholder } from '../ShimmerPlaceholder';
@@ -33,6 +34,8 @@ interface TriviaLeaderboardProps {
   /** Fires when a load settles (success or error) — lets a hosting screen
    * clear its RefreshControl. */
   onLoadEnd?: () => void;
+  /** Tap on any player (podium, row, pinned standing) → their profile. */
+  onPlayerPress?: (screenName: string) => void;
 }
 
 const DEFAULT_BOARD_LIMIT = 50;
@@ -110,45 +113,6 @@ function isSameName(a: string | null | undefined, b: string | null | undefined):
   return !!a && !!b && a.toLowerCase() === b.toLowerCase();
 }
 
-/** Gradient initial disc — the same signature as the comments avatars. */
-function InitialDisc({
-  name,
-  color,
-  size,
-  borderColor,
-}: {
-  name: string;
-  color: string;
-  size: number;
-  borderColor?: string;
-}) {
-  return (
-    <LinearGradient
-      colors={[color, darkenColor(color, 0.22)]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: borderColor ? 2 : 0,
-        borderColor: borderColor ?? 'transparent',
-      }}
-    >
-      <Text
-        fontFamily={FONT_FAMILIES.bold}
-        fontSize={size * 0.4}
-        color={getContrastColor(color)}
-        maxFontSizeMultiplier={1}
-      >
-        {(name[0] || '?').toUpperCase()}
-      </Text>
-    </LinearGradient>
-  );
-}
-
 /**
  * One podium column: medal disc with the player's initial on a translucent
  * plinth whose height carries the rank. Center column (#1) towers.
@@ -161,6 +125,7 @@ function PodiumColumn({
   contrastColor,
   plateBg,
   youLabel,
+  onPress,
 }: {
   entry: TriviaLeaderboardEntry;
   isViewer: boolean;
@@ -169,12 +134,19 @@ function PodiumColumn({
   contrastColor: string;
   plateBg: string;
   youLabel: string;
+  onPress?: () => void;
 }) {
   const { spacing, radius, typography } = useResponsive();
   const medal = medalFor(entry.rank) ?? MEDAL_COLORS[2];
   const flag = countryFlagEmoji(entry.country_code);
 
   return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      style={({ pressed }) => ({ flex: 1, opacity: pressed && onPress ? 0.8 : 1 })}
+    >
     <YStack
       flex={1}
       alignItems="center"
@@ -185,8 +157,9 @@ function PodiumColumn({
         isViewer ? ` (${youLabel})` : ''
       }`}
     >
-      <InitialDisc
+      <AvatarDisc
         name={entry.screen_name}
+        avatar={entry.avatar}
         color={medal}
         size={discSize}
         // Border (the viewer marker) must contrast its own medal disc, not the
@@ -241,6 +214,7 @@ function PodiumColumn({
         </Text>
       </YStack>
     </YStack>
+    </Pressable>
   );
 }
 
@@ -378,7 +352,13 @@ function LeaderboardSkeleton() {
               <View style={{ width: iconSizes.lg, alignItems: 'center' }}>
                 <ShimmerPlaceholder width={18} height={lineHeight.label} />
               </View>
-              <ShimmerPlaceholder width="45%" height={lineHeight.label} />
+              {/* Row avatar disc shim — mirrors the loaded rows' AvatarDisc. */}
+              <ShimmerPlaceholder
+                width={iconSizes.lg}
+                height={iconSizes.lg}
+                borderRadius={iconSizes.lg / 2}
+              />
+              <ShimmerPlaceholder width="40%" height={lineHeight.label} />
               <View style={{ flex: 1 }} />
               {/* Score fraction over the games count — the real row's tallest
                   column, so it, not the name, sets the row height. */}
@@ -404,6 +384,7 @@ function TriviaLeaderboardComponent({
   reloadToken = 0,
   limit = DEFAULT_BOARD_LIMIT,
   onLoadEnd,
+  onPlayerPress,
 }: TriviaLeaderboardProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -666,6 +647,9 @@ function TriviaLeaderboardComponent({
                     contrastColor={contrastColor}
                     plateBg={plateBg}
                     youLabel={t('leaderboardYou')}
+                    onPress={
+                      onPlayerPress ? () => onPlayerPress(entry.screen_name) : undefined
+                    }
                   />
                 ))}
               </XStack>
@@ -695,52 +679,73 @@ function TriviaLeaderboardComponent({
                         }}
                       />
                     )}
-                    <XStack
-                      alignItems="center"
-                      gap={spacing.sm}
-                      paddingVertical={spacing.sm}
-                      paddingHorizontal={spacing.md}
-                      backgroundColor={isMe ? hexToRgba(accent, 0.1) : 'transparent'}
-                      accessible
-                      accessibilityLabel={`#${entry.rank} ${entry.screen_name} ${scoreA11y(
-                        entry.score,
-                        entry.total_questions
-                      )}${isMe ? ` (${t('leaderboardYou')})` : ''}`}
+                    <Pressable
+                      onPress={
+                        onPlayerPress ? () => onPlayerPress(entry.screen_name) : undefined
+                      }
+                      disabled={!onPlayerPress}
+                      accessibilityRole={onPlayerPress ? 'button' : undefined}
+                      style={({ pressed }) => ({
+                        opacity: pressed && onPlayerPress ? 0.7 : 1,
+                      })}
                     >
-                      <View style={{ width: iconSizes.lg, alignItems: 'center' }}>
-                        <Text.Label
-                          color={colors.textSecondary}
-                          fontFamily={FONT_FAMILIES.semibold}
-                        >
-                          {entry.rank}
-                        </Text.Label>
-                      </View>
-                      {flag ? (
-                        <Text.Label fontSize={typography.fontSize.caption}>{flag}</Text.Label>
-                      ) : null}
-                      <Text.Label
-                        flex={1}
-                        color={colors.text}
-                        fontFamily={isMe ? FONT_FAMILIES.bold : FONT_FAMILIES.medium}
-                        numberOfLines={1}
+                      <XStack
+                        alignItems="center"
+                        gap={spacing.sm}
+                        paddingVertical={spacing.sm}
+                        paddingHorizontal={spacing.md}
+                        backgroundColor={isMe ? hexToRgba(accent, 0.1) : 'transparent'}
+                        accessible
+                        accessibilityLabel={`#${entry.rank} ${entry.screen_name} ${scoreA11y(
+                          entry.score,
+                          entry.total_questions
+                        )}${isMe ? ` (${t('leaderboardYou')})` : ''}`}
                       >
-                        {isMe ? `${entry.screen_name} · ${t('leaderboardYou')}` : entry.screen_name}
-                      </Text.Label>
-                      <YStack alignItems="flex-end">
-                        <ScoreFraction
-                          correct={entry.score}
-                          total={entry.total_questions}
-                          numeratorColor={accent}
-                          denomColor={colors.textMuted}
+                        <View style={{ width: iconSizes.lg, alignItems: 'center' }}>
+                          <Text.Label
+                            color={colors.textSecondary}
+                            fontFamily={FONT_FAMILIES.semibold}
+                          >
+                            {entry.rank}
+                          </Text.Label>
+                        </View>
+                        {/* Row avatar disc — same hash accent as comments so a
+                            player looks identical across surfaces. */}
+                        <AvatarDisc
+                          name={entry.screen_name}
+                          avatar={entry.avatar}
+                          color={avatarColor(entry.screen_name, colors)}
+                          size={iconSizes.lg}
                         />
-                        <Text.Caption
-                          color={colors.textMuted}
-                          fontSize={typography.fontSize.tiny}
+                        {flag ? (
+                          <Text.Label fontSize={typography.fontSize.caption}>{flag}</Text.Label>
+                        ) : null}
+                        <Text.Label
+                          flex={1}
+                          color={colors.text}
+                          fontFamily={isMe ? FONT_FAMILIES.bold : FONT_FAMILIES.medium}
+                          numberOfLines={1}
                         >
-                          {t('leaderboardGamesCount', { count: String(entry.games) })}
-                        </Text.Caption>
-                      </YStack>
-                    </XStack>
+                          {isMe
+                            ? `${entry.screen_name} · ${t('leaderboardYou')}`
+                            : entry.screen_name}
+                        </Text.Label>
+                        <YStack alignItems="flex-end">
+                          <ScoreFraction
+                            correct={entry.score}
+                            total={entry.total_questions}
+                            numeratorColor={accent}
+                            denomColor={colors.textMuted}
+                          />
+                          <Text.Caption
+                            color={colors.textMuted}
+                            fontSize={typography.fontSize.tiny}
+                          >
+                            {t('leaderboardGamesCount', { count: String(entry.games) })}
+                          </Text.Caption>
+                        </YStack>
+                      </XStack>
+                    </Pressable>
                   </React.Fragment>
                 );
               })}
@@ -749,7 +754,21 @@ function TriviaLeaderboardComponent({
 
           {/* Viewer's standing when they're beyond the visible list */}
           {me !== null && !meInList && (
-            <View style={[styles.heroShadow, { borderRadius: radius.lg, shadowColor: accent }]}>
+            <Pressable
+              onPress={
+                onPlayerPress && screenName ? () => onPlayerPress(screenName) : undefined
+              }
+              disabled={!onPlayerPress || !screenName}
+              accessibilityRole={onPlayerPress && screenName ? 'button' : undefined}
+              style={({ pressed }) => [
+                styles.heroShadow,
+                {
+                  borderRadius: radius.lg,
+                  shadowColor: accent,
+                  opacity: pressed && onPlayerPress && screenName ? 0.85 : 1,
+                },
+              ]}
+            >
               <LinearGradient
                 colors={[accent, darkenColor(accent, 0.22)]}
                 start={{ x: 0, y: 0 }}
@@ -789,7 +808,7 @@ function TriviaLeaderboardComponent({
                   </YStack>
                 </XStack>
               </LinearGradient>
-            </View>
+            </Pressable>
           )}
         </>
       )}
@@ -815,7 +834,7 @@ function TriviaLeaderboardComponent({
             borderColor="$border"
             padding={spacing.md}
           >
-            <InitialDisc name="?" color={accent} size={iconSizes.xl} />
+            <AvatarDisc name="?" color={accent} size={iconSizes.xl} />
             <Text.Label
               flex={1}
               color={colors.text}

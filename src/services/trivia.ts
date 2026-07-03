@@ -147,16 +147,27 @@ export async function getDailyTriviaQuestions(language: string): Promise<Questio
  * to read their length — and then re-download them when the user taps to play.
  * Excludes locally-answered questions for the mixed count.
  */
-export async function getTriviaAvailability(
-  language: string
-): Promise<{ daily: number; mixed: number }> {
+export async function getTriviaAvailability(language: string): Promise<{
+  daily: number;
+  mixed: number;
+  true_false: number;
+  multiple_choice: number;
+}> {
   const answered = await getAnsweredQuestionIds();
-  return api.getTriviaAvailability(
+  const counts = await api.getTriviaAvailability(
     language,
     answered,
     DAILY_TRIVIA_QUESTIONS,
     MIXED_TRIVIA_QUESTIONS
   );
+  // Per-format counts arrived with the format-only modes; a pre-upgrade server
+  // omits them — normalize to 0 so those cards render disabled, not broken.
+  return {
+    daily: counts.daily,
+    mixed: counts.mixed,
+    true_false: counts.true_false ?? 0,
+    multiple_choice: counts.multiple_choice ?? 0,
+  };
 }
 
 /** Number of questions available for today's daily trivia (lightweight count). */
@@ -195,11 +206,16 @@ export async function saveDailyProgress(
 
 /**
  * Get questions for a mixed trivia session: N random questions the user hasn't
- * answered yet (exclude set comes from local attempt history).
+ * answered yet (exclude set comes from local attempt history). `format`
+ * narrows the same pool to one question type — the True/False-only and
+ * Multiple-Choice-only modes are format lenses over mixed, not new pools.
  */
-export async function getMixedTriviaQuestions(language: string): Promise<QuestionWithFact[]> {
+export async function getMixedTriviaQuestions(
+  language: string,
+  format?: api.TriviaQuestionFormat
+): Promise<QuestionWithFact[]> {
   const answered = await getAnsweredQuestionIds();
-  const questions = await api.getTriviaRandom(language, MIXED_TRIVIA_QUESTIONS, answered);
+  const questions = await api.getTriviaRandom(language, MIXED_TRIVIA_QUESTIONS, answered, format);
   return hydrateTriviaQuestions(questions, language);
 }
 
@@ -222,26 +238,41 @@ export async function getCategoryTriviaQuestions(
 /**
  * Get the user's selected categories for the trivia category list.
  *
- * The "mastered N of TOTAL" / accuracy-per-category progress depended on the
- * full local question catalog (total pool) and a question→category map, both of
- * which lived in the removed local mirror. Those stats are no longer computable
- * client-side, so progress fields are zeroed — the category cards still render
- * for play, but the per-category progress bars are not shown.
+ * "Mastered N of TOTAL" progress depended on the full local question catalog
+ * (removed with the mirror), so mastered/total stay zeroed. Per-category
+ * answered/correct/accuracy ARE recoverable from CATEGORY-mode sessions
+ * (they store their slug + score), which is what feeds the accuracy-by-
+ * category bars and the hero's top-category branch. Daily/mixed answers
+ * can't be attributed to categories locally and simply don't count here.
  */
 export async function getCategoriesWithProgress(language: string): Promise<CategoryWithProgress[]> {
-  const selectedCategories = await onboardingService.getSelectedCategories();
-  const metadata = await api.getMetadata(language);
+  const [selectedCategories, metadata, sessionAggregates] = await Promise.all([
+    onboardingService.getSelectedCategories(),
+    api.getMetadata(language),
+    database.getCategorySessionAggregates().catch(() => []),
+  ]);
+  const bySlug = new Map(sessionAggregates.map((a) => [a.category_slug, a]));
   return metadata.categories
     .filter((cat) => selectedCategories.includes(cat.slug))
-    .map((cat) => ({
-      ...(cat as Category),
-      mastered: 0,
-      total: 0,
-      answered: 0,
-      correct: 0,
-      accuracy: 0,
-      isComplete: false,
-    }));
+    .map((cat) => {
+      const agg = bySlug.get(cat.slug);
+      const answered = agg?.answered ?? 0;
+      const correct = agg?.correct ?? 0;
+      return {
+        ...(cat as Category),
+        mastered: 0,
+        total: 0,
+        answered,
+        correct,
+        accuracy: answered > 0 ? Math.round((correct / answered) * 100) : 0,
+        isComplete: false,
+      };
+    });
+}
+
+/** Sessions per local day for the trailing week — the activity strip. */
+export async function getWeeklyActivity(): Promise<{ date: string; count: number }[]> {
+  return database.getDailySessionCounts(7);
 }
 
 // ====== QUESTION ATTEMPTS ======
@@ -252,7 +283,7 @@ export async function getCategoriesWithProgress(language: string): Promise<Categ
 export async function recordAnswer(
   questionId: number,
   isCorrect: boolean,
-  triviaMode: 'daily' | 'category' | 'mixed' | 'quick',
+  triviaMode: database.LocalTriviaMode,
   triviaSessionId?: number
 ): Promise<void> {
   await database.recordQuestionAttempt(questionId, isCorrect, triviaMode, triviaSessionId);
@@ -437,7 +468,7 @@ export function isTextAnswerCorrect(question: Question, selectedAnswer: string):
  *   This will be converted to answer indexes with correctness info for storage
  */
 export async function saveSessionResult(
-  triviaMode: 'daily' | 'category' | 'mixed' | 'quick',
+  triviaMode: database.LocalTriviaMode,
   totalQuestions: number,
   correctAnswers: number,
   categorySlug?: string,

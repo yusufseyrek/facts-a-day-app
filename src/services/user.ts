@@ -91,10 +91,11 @@ export async function getProfile(): Promise<UserIdentity | null> {
 export async function claimScreenName(
   screenName: string,
   locale: SupportedLocale,
-  source: ScreenNameSource = 'settings'
+  source: ScreenNameSource = 'settings',
+  avatar: string | null = null
 ): Promise<UserIdentity> {
   const existing = await getIdentity();
-  if (existing) return renameScreenName(screenName, source);
+  if (existing) return renameScreenName(screenName, source, avatar);
 
   // Bind the claim to this device (Android SSAID; null on iOS) so the name is
   // recoverable after a reinstall. The server binds atomically with the claim.
@@ -102,7 +103,7 @@ export async function claimScreenName(
 
   let created: api.CreateUserResponse;
   try {
-    created = await api.createUser(screenName, deviceCountryCode(), deviceId);
+    created = await api.createUser(screenName, deviceCountryCode(), deviceId, avatar);
   } catch (error) {
     if (isTakenError(error)) throw new ScreenNameTakenError();
     throw error;
@@ -113,6 +114,7 @@ export async function claimScreenName(
     userKey: created.user_secret,
     screenName: created.screen_name,
     countryCode: created.country_code,
+    avatar: created.avatar ?? null,
   };
   await saveIdentity(identity);
 
@@ -195,6 +197,7 @@ export async function bootstrapIdentityRecovery(): Promise<void> {
           userKey: recovered.user_secret,
           screenName: recovered.screen_name,
           countryCode: recovered.country_code,
+          avatar: recovered.avatar ?? null,
         };
         await saveIdentity(identity);
       }
@@ -220,22 +223,25 @@ export async function bootstrapIdentityRecovery(): Promise<void> {
   }
 }
 
-/** Rename, keeping the same identity (devices/comments/reports follow). */
+/** Rename and/or change avatar, keeping the same identity (devices/comments/
+ * reports follow). Always sends both fields — the modal submits its full
+ * current state, and PATCHing avatar:null is how a user clears it. */
 async function renameScreenName(
   screenName: string,
-  source: ScreenNameSource = 'settings'
+  source: ScreenNameSource = 'settings',
+  avatar: string | null = null
 ): Promise<UserIdentity> {
   const identity = await getIdentity();
   if (!identity) throw new Error('no identity to rename');
 
   try {
-    await api.updateUser({ screen_name: screenName });
+    await api.updateUser({ screen_name: screenName, avatar });
   } catch (error) {
     if (isTakenError(error)) throw new ScreenNameTakenError();
     throw error;
   }
 
-  const updated: UserIdentity = { ...identity, screenName };
+  const updated: UserIdentity = { ...identity, screenName, avatar };
   await saveIdentity(updated);
 
   // Same distinct id → just refreshes the screen_name person property.

@@ -539,7 +539,7 @@ export interface DailyTriviaProgress {
 export async function recordQuestionAttempt(
   questionId: number,
   isCorrect: boolean,
-  triviaMode: 'daily' | 'category' | 'mixed' | 'quick',
+  triviaMode: LocalTriviaMode,
   triviaSessionId?: number
 ): Promise<void> {
   const database = await openDatabase();
@@ -748,9 +748,23 @@ export async function getOverallTriviaStats(): Promise<{
 
 // ====== TRIVIA SESSIONS ======
 
+/**
+ * Every mode a local session can carry. 'quick' is legacy (removed feature,
+ * historical rows still render); 'true_false' / 'multiple_choice' are the
+ * format-only lenses over the mixed pool — they submit to the server
+ * leaderboard AS 'mixed' (see triviaSync), the distinction is local-only.
+ */
+export type LocalTriviaMode =
+  | 'daily'
+  | 'category'
+  | 'mixed'
+  | 'quick'
+  | 'true_false'
+  | 'multiple_choice';
+
 export interface TriviaSession {
   id: number;
-  trivia_mode: 'daily' | 'category' | 'mixed' | 'quick';
+  trivia_mode: LocalTriviaMode;
   category_slug: string | null;
   total_questions: number;
   correct_answers: number;
@@ -789,7 +803,7 @@ export interface TriviaSessionWithCategory extends TriviaSession {
  *   - correct: boolean indicating if this answer was correct
  */
 export async function saveTriviaSession(
-  triviaMode: 'daily' | 'category' | 'mixed' | 'quick',
+  triviaMode: LocalTriviaMode,
   totalQuestions: number,
   correctAnswers: number,
   categorySlug?: string,
@@ -838,7 +852,7 @@ export async function getUnsyncedTriviaSessions(
      LEFT JOIN trivia_result_sync y ON y.session_id = s.id
      WHERE y.session_id IS NULL
        AND s.completed_at >= ?
-       AND s.trivia_mode IN ('daily', 'mixed', 'category')
+       AND s.trivia_mode IN ('daily', 'mixed', 'category', 'true_false', 'multiple_choice')
      ORDER BY s.completed_at ASC
      LIMIT ?`,
     [sinceIso, limit]
@@ -974,6 +988,61 @@ export async function getWeeklyAnsweredCount(): Promise<number> {
   );
 
   return result?.count || 0;
+}
+
+/**
+ * Sessions per local calendar day for the trailing `days` window (today
+ * inclusive), oldest first. Days without play are filled with 0 so the
+ * activity strip renders a fixed-width week.
+ */
+export async function getDailySessionCounts(
+  days: number = 7
+): Promise<{ date: string; count: number }[]> {
+  const database = await openDatabase();
+  const since = new Date();
+  since.setDate(since.getDate() - (days - 1));
+  since.setHours(0, 0, 0, 0);
+
+  const rows = await database.getAllAsync<{ day: string; count: number }>(
+    `SELECT date(completed_at, 'localtime') as day, COUNT(*) as count
+       FROM trivia_sessions
+      WHERE completed_at >= ?
+      GROUP BY day`,
+    [since.toISOString()]
+  );
+  const byDay = new Map(rows.map((r) => [r.day, r.count]));
+
+  const out: { date: string; count: number }[] = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(since);
+    d.setDate(since.getDate() + i);
+    // Local YYYY-MM-DD to match SQLite's date(...,'localtime').
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+      d.getDate()
+    ).padStart(2, '0')}`;
+    out.push({ date: key, count: byDay.get(key) ?? 0 });
+  }
+  return out;
+}
+
+/**
+ * Per-category play volume + accuracy inputs from CATEGORY-mode sessions.
+ * The local question→category map died with the question mirror, so
+ * daily/mixed answers can't be attributed — category sessions carry their
+ * slug and are enough to light the accuracy-by-category bars back up.
+ */
+export async function getCategorySessionAggregates(): Promise<
+  { category_slug: string; answered: number; correct: number }[]
+> {
+  const database = await openDatabase();
+  return database.getAllAsync<{ category_slug: string; answered: number; correct: number }>(
+    `SELECT category_slug,
+            SUM(total_questions) as answered,
+            SUM(correct_answers) as correct
+       FROM trivia_sessions
+      WHERE category_slug IS NOT NULL AND category_slug != ''
+      GROUP BY category_slug`
+  );
 }
 
 /**

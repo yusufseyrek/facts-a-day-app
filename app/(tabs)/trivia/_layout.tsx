@@ -44,6 +44,11 @@ export default function TriviaTabLayout() {
         name="history"
         options={{ title: t('testHistory'), headerRight: queueHeaderRight }}
       />
+      <Stack.Screen
+        name="profile"
+        // Title is set by the screen itself once the player's name is known.
+        options={{ title: t('playerProfile'), headerRight: queueHeaderRight }}
+      />
     </Stack>
   );
 }

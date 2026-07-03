@@ -562,6 +562,8 @@ export interface CreateUserResponse {
   user_secret: string;
   screen_name: string;
   country_code: string | null;
+  /** Curated avatar emoji; null (or absent from a pre-avatar server) = none. */
+  avatar?: string | null;
 }
 
 /**
@@ -572,13 +574,15 @@ export interface CreateUserResponse {
 export async function createUser(
   screenName: string,
   countryCode: string | null,
-  deviceId?: string | null
+  deviceId?: string | null,
+  avatar?: string | null
 ): Promise<CreateUserResponse> {
   return makeRequest<CreateUserResponse>('/api/users', {
     method: 'POST',
     body: JSON.stringify({
       screen_name: screenName,
       country_code: countryCode ?? undefined,
+      avatar: avatar ?? undefined,
       // Bind the claim to this device so it's recoverable after a reinstall.
       device_id: deviceId ?? undefined,
       platform: deviceId ? Platform.OS : undefined,
@@ -632,16 +636,21 @@ export async function bindDevice(deviceId: string): Promise<void> {
   );
 }
 
-/** Rename / refresh country for the current identity. 409 on a taken name. */
+/** Rename / refresh country / set-or-clear avatar (null clears) for the
+ * current identity. 409 on a taken name. */
 export async function updateUser(params: {
   screen_name?: string;
   country_code?: string;
-}): Promise<{ ok: boolean; screen_name: string }> {
-  return makeRequest<{ ok: boolean; screen_name: string }>('/api/users/me', {
-    method: 'PATCH',
-    headers: await getIdentityHeaders(),
-    body: JSON.stringify(params),
-  });
+  avatar?: string | null;
+}): Promise<{ ok: boolean; screen_name: string; avatar?: string | null }> {
+  return makeRequest<{ ok: boolean; screen_name: string; avatar?: string | null }>(
+    '/api/users/me',
+    {
+      method: 'PATCH',
+      headers: await getIdentityHeaders(),
+      body: JSON.stringify(params),
+    }
+  );
 }
 
 /** Live availability for the claim form (debounced by the caller). */
@@ -674,6 +683,8 @@ export interface ApiComment {
   body: string;
   screen_name: string;
   country_code: string | null;
+  /** Author's chosen avatar emoji; null/absent = render the initial disc. */
+  avatar?: string | null;
   /** Author's content language; lets the app offer a translation to readers in
    *  a different locale. Null for legacy comments posted before locale capture. */
   locale: string | null;
@@ -869,13 +880,22 @@ export async function searchFacts(params: SearchFactsParams): Promise<FactRespon
 
 // ====== Trivia (replaces the local questions table) ======
 
-function triviaQuery(language: string, limit?: number, excludeIds?: number[]): string {
+/** The two quiz formats; also the filter the format-only modes send. */
+export type TriviaQuestionFormat = 'multiple_choice' | 'true_false';
+
+function triviaQuery(
+  language: string,
+  limit?: number,
+  excludeIds?: number[],
+  questionType?: TriviaQuestionFormat
+): string {
   const qp = new URLSearchParams();
   qp.append('language', language);
   if (limit !== undefined) qp.append('limit', String(limit));
   if (excludeIds && excludeIds.length > 0) {
     qp.append('exclude_question_ids', excludeIds.join(','));
   }
+  if (questionType) qp.append('question_type', questionType);
   return qp.toString();
 }
 
@@ -891,14 +911,16 @@ export async function getTriviaDaily(
   return res.questions;
 }
 
-/** Random/mixed trivia, excluding question ids the user already answered. */
+/** Random/mixed trivia, excluding question ids the user already answered.
+ * `questionType` narrows the pool to one format (T/F-only / MC-only modes). */
 export async function getTriviaRandom(
   language: string,
   limit?: number,
-  excludeIds?: number[]
+  excludeIds?: number[],
+  questionType?: TriviaQuestionFormat
 ): Promise<TriviaQuestionResponse[]> {
   const res = await makeRequest<{ questions: TriviaQuestionResponse[] }>(
-    `/api/trivia/random?${triviaQuery(language, limit, excludeIds)}`
+    `/api/trivia/random?${triviaQuery(language, limit, excludeIds, questionType)}`
   );
   return res.questions;
 }
@@ -926,7 +948,7 @@ export async function getTriviaAvailability(
   excludeIds?: number[],
   dailyLimit?: number,
   mixedLimit?: number
-): Promise<{ daily: number; mixed: number }> {
+): Promise<{ daily: number; mixed: number; true_false: number; multiple_choice: number }> {
   // React Query (instant within staleTime) over the shared ETag layer (a cheap
   // 304 when it does revalidate). Keyed by language only — the answered-exclude
   // list isn't in the key (it would thrash on every play); freshness after a
@@ -941,9 +963,12 @@ export async function getTriviaAvailability(
       if (excludeIds && excludeIds.length > 0) {
         qp.append('exclude_question_ids', excludeIds.join(','));
       }
-      return makeRequest<{ daily: number; mixed: number }>(
-        `/api/trivia/availability?${qp.toString()}`
-      );
+      return makeRequest<{
+        daily: number;
+        mixed: number;
+        true_false: number;
+        multiple_choice: number;
+      }>(`/api/trivia/availability?${qp.toString()}`);
     },
     staleTime: AVAILABILITY_STALE_TIME,
   });
@@ -988,6 +1013,8 @@ export interface TriviaLeaderboardEntry {
   rank: number;
   screen_name: string;
   country_code: string | null;
+  /** Player's chosen avatar emoji; null/absent = render the initial disc. */
+  avatar?: string | null;
   /** Total correct answers in the window (also the rank metric). */
   score: number;
   /** Total questions answered in the window — the denominator shown as "score / total_questions". */
@@ -1034,6 +1061,63 @@ export async function getTriviaLeaderboard(
   return makeRequest<TriviaLeaderboardResponse>(`/api/trivia/leaderboard?${qp.toString()}`, {
     headers: await getIdentityHeaders(),
   });
+}
+
+// ====== Public trivia profiles ======
+
+/** Lifetime aggregates in the shapes the quiz badges are defined over; the
+ * app maps them through BADGE_DEFINITIONS thresholds to derive star tiers
+ * (master_scholar excepted — it needs local attempt history and is never
+ * shown on other players' profiles). */
+export interface TriviaProfileStats {
+  games: number;
+  answered: number;
+  correct: number;
+  accuracy: number;
+  perfect_games: number;
+  quick_games: number;
+  ace_categories: number;
+  total_elapsed_ms: number;
+  current_streak: number;
+  best_streak: number;
+}
+
+export interface TriviaProfileWindowStanding {
+  rank: number;
+  score: number;
+  total_questions: number;
+  games: number;
+  total_players: number;
+}
+
+export interface TriviaProfileCategory {
+  category_slug: string;
+  games: number;
+  answered: number;
+  correct: number;
+}
+
+export interface TriviaProfileResponse {
+  screen_name: string;
+  country_code: string | null;
+  avatar: string | null;
+  /** YYYY-MM-DD the account was created. */
+  member_since: string;
+  stats: TriviaProfileStats;
+  windows: {
+    today: TriviaProfileWindowStanding | null;
+    week: TriviaProfileWindowStanding | null;
+    all: TriviaProfileWindowStanding | null;
+  };
+  top_categories: TriviaProfileCategory[];
+}
+
+/** Public trivia profile for any claimed screen name. 404s → thrown ApiError
+ * with status 404 (deleted account, typo'd deep link). */
+export async function getTriviaProfile(screenName: string): Promise<TriviaProfileResponse> {
+  return makeRequest<TriviaProfileResponse>(
+    `/api/trivia/profile/${encodeURIComponent(screenName)}`
+  );
 }
 
 // ====== Push registration ======

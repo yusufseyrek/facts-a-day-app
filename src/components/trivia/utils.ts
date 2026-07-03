@@ -56,6 +56,23 @@ export function getTriviaModeBadge(options: TriviaModeBadgeOptions): TriviaModeB
     };
   }
 
+  // Format-only lenses over the mixed pool (same hue map as the hub cards).
+  if (mode === 'true_false') {
+    return {
+      label: t('trueFalseTrivia') || 'True or False',
+      icon: 'check-circle',
+      color: isDark ? hexColors.dark.neonGreen : hexColors.light.neonGreen,
+    };
+  }
+
+  if (mode === 'multiple_choice') {
+    return {
+      label: t('multipleChoiceTrivia') || 'Multiple Choice',
+      icon: 'grid',
+      color: isDark ? hexColors.dark.neonOrange : hexColors.light.neonOrange,
+    };
+  }
+
   // Quick mode (legacy: home screen quiz teaser, removed feature).
   // Kept so historical session-history entries with trivia_mode='quick' still render.
   if (mode === 'quick') {

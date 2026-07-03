@@ -40,17 +40,29 @@ function deviceLanguage(): string {
   }
 }
 
-function toSubmission(session: TriviaSession, language: string): api.TriviaResultSubmission | null {
-  if (
-    session.trivia_mode !== 'daily' &&
-    session.trivia_mode !== 'mixed' &&
-    session.trivia_mode !== 'category'
-  ) {
-    return null;
+/** Local mode → server mode. The format-only modes (T/F-only, MC-only) are
+ * lenses over the mixed pool, so they rank as 'mixed' — the server never
+ * learns the format. null = not leaderboard-eligible (legacy 'quick'). */
+function serverMode(mode: TriviaSession['trivia_mode']): api.TriviaResultSubmission['mode'] | null {
+  switch (mode) {
+    case 'daily':
+    case 'mixed':
+    case 'category':
+      return mode;
+    case 'true_false':
+    case 'multiple_choice':
+      return 'mixed';
+    default:
+      return null;
   }
+}
+
+function toSubmission(session: TriviaSession, language: string): api.TriviaResultSubmission | null {
+  const mode = serverMode(session.trivia_mode);
+  if (!mode) return null;
   return {
     client_session_id: clientSessionId(session),
-    mode: session.trivia_mode,
+    mode,
     category_slug:
       session.trivia_mode === 'category' ? (session.category_slug ?? undefined) : undefined,
     language,

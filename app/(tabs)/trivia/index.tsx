@@ -67,13 +67,16 @@ export default function TriviaScreen() {
   const [dailyQuestionsCount, setDailyQuestionsCount] = useState(0);
   const [isDailyCompleted, setIsDailyCompleted] = useState(false);
   const [mixedQuestionsCount, setMixedQuestionsCount] = useState(0);
+  // Per-format slices of the mixed pool — gate the T/F-only and MC-only cards.
+  const [trueFalseCount, setTrueFalseCount] = useState(0);
+  const [multipleChoiceCount, setMultipleChoiceCount] = useState(0);
   const [overallStats, setOverallStats] = useState<triviaService.TriviaStats | null>(null);
   const [allTimeRank, setAllTimeRank] = useState<number | null>(null);
   const [categoriesWithProgress, setCategoriesWithProgress] = useState<CategoryWithProgress[]>([]);
 
   // Pending trivia modal state
   const [pendingTrivia, setPendingTrivia] = useState<{
-    type: 'daily' | 'mixed' | 'category';
+    type: 'daily' | 'mixed' | 'category' | 'true_false' | 'multiple_choice';
     categorySlug?: string;
     categoryName?: string;
     categoryDescription?: string;
@@ -142,9 +145,12 @@ export default function TriviaScreen() {
       // mixed playable counts (no question payloads), gating the mode cards.
       const countsLoad = (async () => {
         try {
-          const { daily, mixed } = await triviaService.getTriviaAvailability(locale);
+          const { daily, mixed, true_false, multiple_choice } =
+            await triviaService.getTriviaAvailability(locale);
           setDailyQuestionsCount(daily);
           setMixedQuestionsCount(mixed);
+          setTrueFalseCount(true_false);
+          setMultipleChoiceCount(multiple_choice);
         } catch (error) {
           console.error('Error loading trivia question counts:', error);
         } finally {
@@ -211,8 +217,24 @@ export default function TriviaScreen() {
     const trophyColor = allTimeRank !== null ? rankedColor : secondaryTextColor;
     const openLeaderboard = () => router.push('/(tabs)/trivia/leaderboard');
 
+    // Hint-store entry rides in the header next to the trophy (it replaced a
+    // full-width hub row). Same gate as the old row: hidden until packs are
+    // purchasable or a balance exists, so it never dead-ends. The hub header
+    // hosts no queue button (deliberately — see trivia/_layout), so the pair
+    // never collides with the audio player.
+    const showHints = hintPacksAvailable || hintBalance > 0;
+    const hintColor =
+      hintBalance > 0
+        ? isDark
+          ? hexColors.dark.primary
+          : hexColors.light.primary
+        : secondaryTextColor;
+    const openHintStore = () => router.push('/hint-store?source=trivia_hub');
+
     if (Platform.OS === 'ios' && isMacOS()) {
       navigation.setOptions({
+        // First array item renders rightmost (UIBarButtonItem order): trophy
+        // keeps the outer edge, hints slot in beside it.
         unstable_headerRightItems: () => [
           {
             type: 'button' as const,
@@ -231,37 +253,95 @@ export default function TriviaScreen() {
             }),
             onPress: openLeaderboard,
           },
+          ...(showHints
+            ? [
+                {
+                  type: 'button' as const,
+                  label: t('hintStoreTitle'),
+                  icon: { type: 'sfSymbol' as const, name: 'lightbulb' as const },
+                  tintColor: hintColor,
+                  hidesSharedBackground: true,
+                  ...(hintBalance > 0 && {
+                    badge: {
+                      value: String(hintBalance),
+                      style: {
+                        backgroundColor: hintColor,
+                        fontFamily: FONT_FAMILIES.semibold,
+                      },
+                    },
+                  }),
+                  onPress: openHintStore,
+                },
+              ]
+            : []),
         ],
       });
     } else {
       navigation.setOptions({
         headerRight: () => (
-          <Pressable
-            testID="trivia-header-trophy-button"
-            onPress={openLeaderboard}
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-          >
-            {/* Bare icon + rank: no chip background — inside the iOS 26 glass
-                header a filled pill reads as a stray box. Padding kept for the
-                touch target. */}
-            <XStack
-              alignItems="center"
-              gap={spacing.xs}
-              paddingHorizontal={spacing.sm}
-              paddingVertical={spacing.xs}
+          <XStack alignItems="center" gap={spacing.xs}>
+            {/* Bare icons + numbers: no chip background — inside the iOS 26
+                glass header a filled pill reads as a stray box. Padding kept
+                for the touch targets. */}
+            {showHints && (
+              <Pressable
+                testID="trivia-header-hints-button"
+                onPress={openHintStore}
+                accessibilityRole="button"
+                accessibilityLabel={t('hintStoreTitle')}
+                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+              >
+                <XStack
+                  alignItems="center"
+                  gap={spacing.xs}
+                  paddingHorizontal={spacing.sm}
+                  paddingVertical={spacing.xs}
+                >
+                  <Lightbulb size={iconSizes.sm} color={hintColor} />
+                  {hintBalance > 0 && (
+                    <Text.Label fontFamily={FONT_FAMILIES.semibold} color={hintColor}>
+                      {String(hintBalance)}
+                    </Text.Label>
+                  )}
+                </XStack>
+              </Pressable>
+            )}
+            <Pressable
+              testID="trivia-header-trophy-button"
+              onPress={openLeaderboard}
+              accessibilityRole="button"
+              accessibilityLabel={t('leaderboard')}
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
             >
-              <Trophy size={iconSizes.sm} color={trophyColor} />
-              {allTimeRank !== null && (
-                <Text.Label fontFamily={FONT_FAMILIES.semibold} color={trophyColor}>
-                  {`#${allTimeRank}`}
-                </Text.Label>
-              )}
-            </XStack>
-          </Pressable>
+              <XStack
+                alignItems="center"
+                gap={spacing.xs}
+                paddingHorizontal={spacing.sm}
+                paddingVertical={spacing.xs}
+              >
+                <Trophy size={iconSizes.sm} color={trophyColor} />
+                {allTimeRank !== null && (
+                  <Text.Label fontFamily={FONT_FAMILIES.semibold} color={trophyColor}>
+                    {`#${allTimeRank}`}
+                  </Text.Label>
+                )}
+              </XStack>
+            </Pressable>
+          </XStack>
         ),
       });
     }
-  }, [navigation, allTimeRank, isDark, router, spacing, iconSizes, t]);
+  }, [
+    navigation,
+    allTimeRank,
+    isDark,
+    router,
+    spacing,
+    iconSizes,
+    t,
+    hintBalance,
+    hintPacksAvailable,
+  ]);
 
   // Show intro modal before starting trivia. Trivia is free — no premium gate.
   const showDailyTriviaIntro = () => {
@@ -281,6 +361,20 @@ export default function TriviaScreen() {
       questionCount: Math.min(mixedQuestionsCount, triviaService.MIXED_TRIVIA_QUESTIONS),
       masteredCount: overallStats?.totalMastered || 0,
       totalQuestions: mixedQuestionsCount,
+      answeredCount: overallStats?.totalAnswered || 0,
+      correctCount: overallStats?.totalCorrect || 0,
+    });
+  };
+
+  // Format-only modes: the same mixed pool through a single-format lens, so
+  // they share mixed's personal-history numbers in the intro.
+  const showFormatTriviaIntro = (format: 'true_false' | 'multiple_choice') => {
+    const available = format === 'true_false' ? trueFalseCount : multipleChoiceCount;
+    setPendingTrivia({
+      type: format,
+      questionCount: Math.min(available, triviaService.MIXED_TRIVIA_QUESTIONS),
+      masteredCount: overallStats?.totalMastered || 0,
+      totalQuestions: available,
       answeredCount: overallStats?.totalAnswered || 0,
       correctCount: overallStats?.totalCorrect || 0,
     });
@@ -316,6 +410,8 @@ export default function TriviaScreen() {
       router.push('/trivia/game?type=daily');
     } else if (triviaInfo.type === 'mixed') {
       router.push('/trivia/game?type=mixed');
+    } else if (triviaInfo.type === 'true_false' || triviaInfo.type === 'multiple_choice') {
+      router.push(`/trivia/game?type=${triviaInfo.type}`);
     } else if (triviaInfo.type === 'category' && triviaInfo.categorySlug) {
       router.push(
         `/trivia/game?type=category&categorySlug=${triviaInfo.categorySlug}&categoryName=${encodeURIComponent(triviaInfo.categoryName || '')}`
@@ -385,57 +481,6 @@ export default function TriviaScreen() {
               />
             </Animated.View>
 
-            {/* Hint store entry (the leaderboard lives in the native header).
-                Hidden until packs are known to be purchasable (or a balance
-                exists), so the row never dead-ends before the store products
-                go live. */}
-            {(hintPacksAvailable || hintBalance > 0) && (
-              <Animated.View
-                entering={FadeInDown.delay(75).duration(300)}
-                needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-              >
-                <Pressable
-                  testID="trivia-hint-store-button"
-                  onPress={() => router.push('/hint-store?source=trivia_hub')}
-                  style={({ pressed }) => ({
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: spacing.md,
-                    marginTop: spacing.lg,
-                    backgroundColor: cardBg,
-                    borderRadius: radius.lg,
-                    paddingVertical: spacing.md,
-                    paddingHorizontal: spacing.lg,
-                    opacity: pressed ? 0.85 : 1,
-                  })}
-                >
-                  <YStack
-                    width={iconSizes.xl}
-                    height={iconSizes.xl}
-                    borderRadius={iconSizes.xl / 2}
-                    backgroundColor={primaryLightColor}
-                    justifyContent="center"
-                    alignItems="center"
-                  >
-                    <Lightbulb size={iconSizes.sm} color={primaryColor} />
-                  </YStack>
-                  <YStack flex={1}>
-                    <Text.Body color={textColor} fontFamily={FONT_FAMILIES.semibold}>
-                      {t('hintStoreTitle')}
-                    </Text.Body>
-                    <Text.Tiny color={secondaryTextColor} fontFamily={FONT_FAMILIES.medium}>
-                      {/* Zero is the common first-visit state — pitch the
-                          feature instead of announcing an empty wallet. */}
-                      {hintBalance > 0
-                        ? t('hintStoreBalance', { count: hintBalance })
-                        : t('hintStoreDescription')}
-                    </Text.Tiny>
-                  </YStack>
-                  <ArrowRight size={iconSizes.sm} color={secondaryTextColor} />
-                </Pressable>
-              </Animated.View>
-            )}
-
             {/* Hold the whole modes section until the category load lands so
                 the daily/mixed row and the category rows mount in the same
                 frame — their staggered entering delays then play as one
@@ -496,6 +541,35 @@ export default function TriviaScreen() {
                         isLoading={countsLoading}
                         isDark={isDark}
                         onPress={showMixedTriviaIntro}
+                        centerContent={isTablet}
+                      />
+                    </XStack>
+                  </Animated.View>
+
+                  {/* Second row: format-only lenses over the mixed pool */}
+                  <Animated.View
+                    entering={FadeInDown.delay(175).duration(300)}
+                    needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+                  >
+                    <XStack gap={spacing.lg}>
+                      <TriviaGridCard
+                        type="true_false"
+                        title={t('trueFalseTrivia')}
+                        subtitle={t('trueFalseTriviaDescription')}
+                        isDisabled={!countsLoading && trueFalseCount === 0}
+                        isLoading={countsLoading}
+                        isDark={isDark}
+                        onPress={() => showFormatTriviaIntro('true_false')}
+                        centerContent={isTablet}
+                      />
+                      <TriviaGridCard
+                        type="multiple_choice"
+                        title={t('multipleChoiceTrivia')}
+                        subtitle={t('multipleChoiceTriviaDescription')}
+                        isDisabled={!countsLoading && multipleChoiceCount === 0}
+                        isLoading={countsLoading}
+                        isDark={isDark}
+                        onPress={() => showFormatTriviaIntro('multiple_choice')}
                         centerContent={isTablet}
                       />
                     </XStack>
