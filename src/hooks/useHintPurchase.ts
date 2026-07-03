@@ -31,8 +31,8 @@ function useSafeIAP() {
  */
 const DEV_MOCK_PACK_PRICES: CachedHintPack[] = [
   { id: 'factsaday_hints_small', displayPrice: '$0.99' },
-  { id: 'factsaday_hints_medium', displayPrice: '$2.99' },
-  { id: 'factsaday_hints_large', displayPrice: '$5.99' },
+  { id: 'factsaday_hints_medium', displayPrice: '$1.99' },
+  { id: 'factsaday_hints_large', displayPrice: '$2.99' },
 ];
 
 /** Live purchased-hint balance, kept in sync with the wallet. */

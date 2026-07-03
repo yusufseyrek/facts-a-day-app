@@ -7,10 +7,10 @@ Creates the three **consumable** products for the trivia hint packs feature (com
 | Product ID | Type | Hints | USD price | Reference name (internal) |
 |---|---|---|---|---|
 | `factsaday_hints_small` | Consumable | 20 | $0.99 | Hint Pack Small (20) |
-| `factsaday_hints_medium` | Consumable | 100 | $2.99 | Hint Pack Medium (100) |
-| `factsaday_hints_large` | Consumable | 300 | $5.99 | Hint Pack Large (300) |
+| `factsaday_hints_medium` | Consumable | 50 | $1.99 | Hint Pack Medium (50) |
+| `factsaday_hints_large` | Consumable | 100 | $2.99 | Hint Pack Large (100) |
 
-Sizing rationale (real sub anchors: weekly $0.69, monthly $1.99): per hint $0.050 / $0.030 (40% off) / $0.020 (60% off); entry+middle carry ~1.5x over the equivalent premium period for being banked and commitment-free, the large pack sits at parity with 3 months of premium. Net per hint (Small Business Program 85%) stays above the ~$0.015 rewarded-ad floor on every tier.
+Sizing rationale (real sub anchors: weekly $0.69, monthly $1.99): per hint 5.0¢ / 4.0¢ (20% off) / 3.0¢ (40% off) — a flat, genre-normal ladder. Net per hint (Small Business Program 85%) is 2.8x / 2.3x / 1.7x the ~$0.015 rewarded-ad floor. The middle pack deliberately shares the monthly-premium price point ($1.99) so premium reads as the better deal (upsell foil); the top pack is about a month of heavy hint use, giving regulars a roughly monthly repurchase rhythm.
 
 - ✅ App renders its own store sheet (`app/hint-store.tsx`); the console localizations below only surface in the native payment sheet, receipts, and store search.
 - ✅ All store UI self-hides until live product prices load, so console setup and the app rollout can happen in either order.
@@ -30,7 +30,7 @@ Per product:
 - ☐ Availability: all countries/regions.
 - ☐ Localizations — add all 8 (Display Name ≤ 30 chars, Description ≤ 45 chars; the strings below fit):
 
-| ASC locale | Display Name («N» = 20/100/300) | Description |
+| ASC locale | Display Name («N» = 20/50/100) | Description |
 |---|---|---|
 | en-US | `N Trivia Hints` | `N hints that never expire` |
 | de-DE | `N Quiz-Hinweise` | `N Hinweise, verfallen nie` |

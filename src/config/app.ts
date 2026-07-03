@@ -385,13 +385,14 @@ export const HINT_PACKS = {
   /** Whether hint packs are purchasable */
   ENABLED: true,
   /** Hints granted per product ID (must match App Store Connect / Google Play Console).
-   *  Sized against the real sub prices ($0.69 wk / $1.99 mo): packs carry a
-   *  ~1.5x no-commitment premium over the equivalent sub period, and the large
-   *  pack caps at parity with 3 months of premium. */
+   *  Priced $0.99 / $1.99 / $2.99 against the real sub prices ($0.69 wk /
+   *  $1.99 mo): per hint 5.0¢ / 4.0¢ (20% off) / 3.0¢ (40% off), every tier
+   *  nets above the rewarded-ad floor, and the top pack is about a month of
+   *  heavy use so hint regulars repurchase on a roughly monthly rhythm. */
   HINTS_BY_PRODUCT: {
     factsaday_hints_small: 20,
-    factsaday_hints_medium: 100,
-    factsaday_hints_large: 300,
+    factsaday_hints_medium: 50,
+    factsaday_hints_large: 100,
   } as Readonly<Record<string, number>>,
   /** AsyncStorage key for caching pack prices (instant hint-store render) */
   PRICE_CACHE_KEY: '@factsaday_hint_pack_cache',
