@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -9,6 +8,7 @@ import { Text } from '../src/components';
 import { Ban, Check, Crown, Lightbulb, Music, WifiOff } from '../src/components/icons';
 import { XStack, YStack } from '../src/components/Stacks';
 import { FONT_FAMILIES } from '../src/components/Typography';
+import { useFormSheetBottomPadding } from '../src/hooks/useFormSheetBottomPadding';
 import { usePaywallPurchase } from '../src/hooks/usePaywallPurchase';
 import { useTranslation } from '../src/i18n';
 import { trackPaywallDismissed, trackPaywallViewed } from '../src/services/analytics';
@@ -34,7 +34,7 @@ export default function RemoveAdsScreen() {
   const { source: sourceParam } = useLocalSearchParams<{ source?: string }>();
   const source = sourceParam || 'ad_close';
   const { theme } = useTheme();
-  const insets = useSafeAreaInsets();
+  const sheetBottomPadding = useFormSheetBottomPadding();
   const { t, locale } = useTranslation();
   const { spacing, radius, iconSizes, media, borderWidths, isTablet } = useResponsive();
   const tc = paywallThemeColors[theme];
@@ -122,8 +122,9 @@ export default function RemoveAdsScreen() {
           // headerShown is false, so iOS adds no top safe-area inset; give the
           // title clear breathing room below the native grabber.
           paddingTop: spacing.xxl,
-          // The grabber sits above; pad the bottom past the home indicator.
-          paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md,
+          // The grabber sits above; on edge-anchored sheets this clears the
+          // home indicator, on floating iOS 26 sheets it's just breathing room.
+          paddingBottom: sheetBottomPadding,
           gap: spacing.lg,
         },
         // Tablet / iPad-on-Mac only: a fixed-size form-sheet host for the
@@ -220,7 +221,7 @@ export default function RemoveAdsScreen() {
           paddingVertical: spacing.xs,
         },
       }),
-    [tc, isDark, spacing, radius, media, borderWidths, insets, benefitIconSize]
+    [tc, isDark, spacing, radius, media, borderWidths, sheetBottomPadding, benefitIconSize]
   );
   /* eslint-enable react-native/no-unused-styles */
 

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,6 +9,7 @@ import { Text } from '../src/components';
 import { Check, Lightbulb } from '../src/components/icons';
 import { XStack, YStack } from '../src/components/Stacks';
 import { FONT_FAMILIES } from '../src/components/Typography';
+import { useFormSheetBottomPadding } from '../src/hooks/useFormSheetBottomPadding';
 import { useHintPurchase } from '../src/hooks/useHintPurchase';
 import { useTranslation } from '../src/i18n';
 import { trackHintStoreViewed } from '../src/services/analytics';
@@ -32,7 +32,7 @@ export default function HintStoreScreen() {
   const { source: sourceParam } = useLocalSearchParams<{ source?: string }>();
   const source = sourceParam || 'hint_store';
   const { theme } = useTheme();
-  const insets = useSafeAreaInsets();
+  const sheetBottomPadding = useFormSheetBottomPadding();
   const { t } = useTranslation();
   const { spacing, radius, iconSizes, media, borderWidths, isTablet } = useResponsive();
   const tc = paywallThemeColors[theme];
@@ -78,6 +78,7 @@ export default function HintStoreScreen() {
 
   const isPurchasing = purchasingId !== null;
   const largestId = productIds[productIds.length - 1];
+  const balanceIconSize = iconSizes.xl + spacing.md;
   // Cached prices can render the tiles before the store answers, but a
   // purchase needs the LIVE product — keep the CTA down until it's in.
   const selectedAvailable = isPackAvailable(selectedId);
@@ -97,7 +98,7 @@ export default function HintStoreScreen() {
         container: {
           paddingHorizontal: spacing.xl,
           paddingTop: spacing.xxl,
-          paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md,
+          paddingBottom: sheetBottomPadding,
           gap: spacing.lg,
         },
         scrollRoot: {
@@ -123,6 +124,17 @@ export default function HintStoreScreen() {
         },
         balanceCardSuccess: {
           borderColor: PAYWALL_GOLD.primary,
+        },
+        // Same circular icon treatment as remove-ads' benefit rows.
+        balanceIcon: {
+          width: balanceIconSize,
+          height: balanceIconSize,
+          borderRadius: balanceIconSize / 2,
+          backgroundColor: tc.featureIconBg,
+          borderWidth: 1,
+          borderColor: tc.featureBorder,
+          alignItems: 'center',
+          justifyContent: 'center',
         },
         packPressable: {
           flex: 1,
@@ -180,7 +192,7 @@ export default function HintStoreScreen() {
           justifyContent: 'center',
         },
       }),
-    [tc, isDark, spacing, radius, media, borderWidths, insets]
+    [tc, isDark, spacing, radius, media, borderWidths, sheetBottomPadding, balanceIconSize]
   );
   /* eslint-enable react-native/no-unused-styles */
 
@@ -198,7 +210,11 @@ export default function HintStoreScreen() {
       {/* Header — lightbulb + title, description below. */}
       <YStack gap={spacing.xs}>
         <XStack alignItems="center" gap={spacing.xs + 2}>
-          <Lightbulb size={iconSizes.sm} color={PAYWALL_GOLD.primary} />
+          <Lightbulb
+            size={iconSizes.sm}
+            color={PAYWALL_GOLD.primary}
+            fill={PAYWALL_GOLD.primary}
+          />
           <Text.Title fontFamily={FONT_FAMILIES.extrabold} color={tc.title} letterSpacing={-0.5}>
             {t('hintStoreTitle')}
           </Text.Title>
@@ -212,11 +228,13 @@ export default function HintStoreScreen() {
         accessibilityLiveRegion="polite"
       >
         <XStack alignItems="center" gap={spacing.md}>
-          {justCredited ? (
-            <Check size={iconSizes.sm} color={PAYWALL_GOLD.primary} strokeWidth={2.4} />
-          ) : (
-            <Lightbulb size={iconSizes.sm} color={PAYWALL_GOLD.primary} />
-          )}
+          <View style={styles.balanceIcon}>
+            {justCredited ? (
+              <Check size={iconSizes.md} color={PAYWALL_GOLD.primary} strokeWidth={2.4} />
+            ) : (
+              <Lightbulb size={iconSizes.md} color={PAYWALL_GOLD.primary} />
+            )}
+          </View>
           <YStack flex={1} gap={2}>
             <Text.Body fontFamily={FONT_FAMILIES.semibold} color={tc.featureTitle}>
               {t('hintStoreBalance', { count: balance })}
